@@ -1,0 +1,10 @@
+[package]
+name = "eternum"
+version = "0.1.0"
+
+[scripts]
+
+[dependencies]
+dojo = { git = "https://github.com/dojoengine/dojo.git" }
+
+[[target.dojo]]
