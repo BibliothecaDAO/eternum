@@ -5,6 +5,8 @@ version = "0.1.0"
 [scripts]
 
 [dependencies]
-dojo = { git = "https://github.com/dojoengine/dojo.git" }
+quaireaux_math = { git = "https://github.com/keep-starknet-strange/quaireaux.git" }
+dojo_core = { git = "https://github.com/dojoengine/dojo.git" }
+
 
 [[target.dojo]]
