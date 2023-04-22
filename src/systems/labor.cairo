@@ -19,7 +19,6 @@ mod BuildLabor {
     use eternum::utils::convert::convert_u64_to_u128;
     use eternum::utils::convert::convert_u8_to_u128;
     use eternum::utils::unpack::unpack_resource_ids;
-    use eternum::utils::unpack::test_unpack;
 
     #[external]
     fn execute(realm_id: felt252, resource_id: felt252, labor_units: u128, multiplier: u128) {
@@ -27,6 +26,8 @@ mod BuildLabor {
         let player_id: ContractAddress = starknet::get_caller_address();
         let realm: Realm = commands::<Realm>::entity(realm_id.into());
         assert(realm.owner == player_id, 'Realm does not belong to player');
+
+        // TODO: check that resource is on realm
 
         // Get Config
         let labor_config: LaborConf = commands::<LaborConf>::entity(LABOR_CONFIG_ID.into());
@@ -153,11 +154,12 @@ mod HarvestLabor {
     use eternum::utils::convert::convert_u8_to_u128;
     use integer::u128_safe_divmod;
 
-    fn execute(realm_id: felt252, resource_id: felt252) { // 1. Check owner of s_realm
-        // 2. Check resource on Realm
+    fn execute(realm_id: felt252, resource_id: felt252) {
+        // TOOD: Check resource on Realm
         let player_id: ContractAddress = starknet::get_caller_address();
         let realm: Realm = commands::<Realm>::entity(realm_id.into());
 
+        // Check owner of s_realm
         assert(realm.owner == player_id, 'Realm does not belong to player');
 
         // Get Config
@@ -286,3 +288,18 @@ mod Pillage {
     }
 }
 
+// miniting function, only for testing 
+#[system]
+mod MintResources {
+    use traits::Into;
+    use array::ArrayTrait;
+    use eternum::components::resources::Resource;
+    #[external]
+    fn execute(realm_id: felt252, resource_id: felt252, amount: u128) {
+        let resource = commands::<Resource>::entity((realm_id, (resource_id)).into());
+        commands::set_entity(
+            (realm_id, (resource_id)).into(),
+            (Resource { id: resource_id, balance: resource.balance + amount,  }, )
+        );
+    }
+}
