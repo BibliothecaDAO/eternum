@@ -27,7 +27,8 @@ mod BuildLabor {
         let realm: Realm = commands::<Realm>::entity(realm_id.into());
         assert(realm.owner == player_id, 'Realm does not belong to player');
 
-        // TODO: check that resource is on realm
+        // check that resource is on realm
+        assert(realm.has_resource(resource_id) == true, 'Resource is not on realm');
 
         // Get Config
         let labor_config: LaborConf = commands::<LaborConf>::entity(LABOR_CONFIG_ID.into());
@@ -107,7 +108,8 @@ mod BuildLabor {
             labor_cost_resources.resource_ids_packed, labor_cost_resources.resource_ids_count
         );
         // TODO: add loop when supported in dojo
-        // // loop {
+        // TODO: use indices for loops instead of match
+        // loop {
         match labor_cost_resource_ids.pop_front() {
             Option::Some(labor_cost_resource_id) => {
                 let labor_cost_per_unit = commands::<LaborCV>::entity(
@@ -155,12 +157,14 @@ mod HarvestLabor {
     use integer::u128_safe_divmod;
 
     fn execute(realm_id: felt252, resource_id: felt252) {
-        // TOOD: Check resource on Realm
         let player_id: ContractAddress = starknet::get_caller_address();
         let realm: Realm = commands::<Realm>::entity(realm_id.into());
 
         // Check owner of s_realm
         assert(realm.owner == player_id, 'Realm does not belong to player');
+
+        // Check resource on Realm
+        assert(realm.has_resource(resource_id) == true, 'Resource is not on realm');
 
         // Get Config
         let labor_config: LaborConf = commands::<LaborConf>::entity(LABOR_CONFIG_ID.into());
@@ -283,7 +287,7 @@ mod Pillage {
             },
             Option::None(_) => {},
         }
-        index = index + 1_usize;
+        index += 1_usize;
     // }
     }
 }
