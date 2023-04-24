@@ -4,5 +4,5 @@ mod labor;
 // mod tick;
 mod world_config;
 // mod buildings;
-
+mod resources;
 

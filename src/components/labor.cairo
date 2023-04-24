@@ -50,3 +50,21 @@ impl LaborImpl of LaborTrait {
         }
     }
 }
+
+#[test]
+fn get_labor_generated_is_complete() {
+    let labor = Labor { balance: 100, last_harvest: 0, multiplier: 1,  };
+    let (labor_generated, is_complete, new_balance) = labor.get_labor_generated(50);
+    assert(labor_generated == 50, 'labor_generated is not 50');
+    assert(is_complete == false, 'is_complete is not false');
+    assert(new_balance == 50, 'new_balance is not 50');
+}
+
+#[test]
+fn get_labor_generated_is_not_complete() {
+    let labor = Labor { balance: 100, last_harvest: 0, multiplier: 1,  };
+    let (labor_generated, is_complete, new_balance) = labor.get_labor_generated(150);
+    assert(labor_generated == 100, 'labor_generated is not 100');
+    assert(is_complete == true, 'is_complete is not true');
+    assert(new_balance == 0, 'new_balance is not 0');
+}
