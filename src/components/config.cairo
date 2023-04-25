@@ -60,3 +60,17 @@ struct LaborCV {
     resource_id: felt252,
     value: u128,
 }
+
+#[derive(Component)]
+struct TrvlCnf {
+    resource_ids_packed: u256,
+    resource_ids_count: usize,
+}
+
+// cost value per resource id in TravelConfig
+// per km
+#[derive(Component)]
+struct TravelCV {
+    resource_id: felt252,
+    value: u128,
+}
