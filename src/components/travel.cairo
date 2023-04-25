@@ -63,6 +63,7 @@ struct Route {
     order: u8,
     owner: ContractAddress,
     realm_id: ID,
+    construction_time: u128,
 }
 
 trait RouteTrait {
@@ -109,6 +110,7 @@ fn test_calculate_distance() {
         order: 0,
         owner: starknet::contract_address_const::<0x420>(),
         realm_id: 0,
+        construction_time: 0,
     };
 
     let distance = route.calculate_distance();

@@ -8,4 +8,4 @@ mod resources;
 mod labor;
 // mod tick;
 mod travel;
-
+mod owner;
