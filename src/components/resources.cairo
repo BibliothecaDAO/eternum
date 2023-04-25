@@ -1,21 +1,13 @@
 // Used as helper struct throughout the world
-#[derive(Copy, Drop)]
+#[derive(Component)]
 struct Resource {
-    labor_balance: felt252, // balance of labor still to generate - ts
-    last_update: felt252, // last update of labor
-    qty_built: felt252, // resource_id -> qty
-    balance: felt252, // resource_id -> balance on Entity
-    vault_balance: felt252, // resource_id -> balance
+    id: felt252,
+    balance: u128,
 }
 
-
 #[derive(Component)]
-struct Wood {
-    labor_balance: felt252, // balance of labor still to generate - ts
-    last_update: felt252, // last update of labor
-    qty_built: felt252, // resource_id -> qty
-    balance: felt252, // resource_id -> balance on Entity
-    vault_balance: felt252, // resource_id -> balance
+struct Vault {
+    balance: u128, 
 }
 // trait ResourcesTrait {
 //     // population

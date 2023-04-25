@@ -13,9 +13,8 @@ mod Settle {
     use super::interfaces::IRealmsMetaDispatcherTrait;
 
     #[event]
-    fn Settled(owner: ContractAddress, realm: ID);
-
-    fn execute(realm_id: ID) {
+    fn Settled(owner: ContractAddress, realm: ID)
+    ; fn execute(realm_id: ID) {
         // TODO: assert owner?
 
         // TODO: how to bring in the address of the L2 Realms NFT?
@@ -27,7 +26,6 @@ mod Settle {
         l2_nft.transfer_from(current_owner, get_contract_address(), realm_id);
 
         // mint srealm? idk
-
 
         // call metadata on Realm contract, inject into Realm struct
 
@@ -57,8 +55,6 @@ mod Settle {
         Settled(owner, realm_id);
     }
 }
-
-
 // #[system]
 // mod Unsettle {
 //     #[event]
@@ -68,3 +64,5 @@ mod Settle {
 //         // TODO: delete any and all entities related to the realm
 //     }
 // }
+
+
