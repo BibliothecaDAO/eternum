@@ -5,4 +5,5 @@ mod labor;
 mod world_config;
 // mod buildings;
 mod resources;
+mod payment;
 

@@ -7,5 +7,5 @@ mod realm;
 mod resources;
 mod labor;
 // mod tick;
-
+mod owner;
 
