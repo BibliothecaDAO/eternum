@@ -3,7 +3,6 @@ use traits::Into;
 use eternum::alias::ID;
 use starknet::ContractAddress;
 use option::OptionTrait;
-use quaireaux_math::fast_power::fast_power;
 use eternum::constants::RESOURCE_IDS_PACKED_SIZE;
 use eternum::constants::PRIME;
 use traits::BitAnd;

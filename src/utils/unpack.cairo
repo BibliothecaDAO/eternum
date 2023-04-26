@@ -4,18 +4,18 @@ use traits::TryInto;
 use eternum::constants::RESOURCE_IDS_PACKED_SIZE;
 use eternum::constants::PRIME;
 use traits::BitAnd;
-use quaireaux_math::fast_power::fast_power;
+use eternum::utils::math::pow;
 
 fn unpack_resource_ids(resource_ids_packed: u256, resource_ids_count: usize) -> Array<u256> {
     let mut resource_ids = ArrayTrait::<u256>::new();
-    let mask_size: u256 = (fast_power(2, RESOURCE_IDS_PACKED_SIZE.into(), PRIME) - 1).into();
+    let mask_size: u256 = (pow(2, RESOURCE_IDS_PACKED_SIZE.into()) - 1).into();
     let mut i = 0_usize;
     loop {
         if i == resource_ids_count {
             break ();
         }
         let index = i * RESOURCE_IDS_PACKED_SIZE;
-        let power: u256 = fast_power(2, index.into(), PRIME).into();
+        let power: u256 = pow(2, index.into()).into();
         let mask: u256 = mask_size * power;
 
         // 2. Apply mask using bitwise operation: mask AND data.

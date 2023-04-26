@@ -4,7 +4,6 @@ use traits::TryInto;
 use eternum::constants::RESOURCE_IDS_PACKED_SIZE;
 use eternum::constants::PRIME;
 use traits::BitAnd;
-use quaireaux_math::fast_power::fast_power;
 
 #[derive(Component)]
 struct WorldConfig {
