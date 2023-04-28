@@ -4,7 +4,6 @@ use traits::TryInto;
 use eternum::constants::RESOURCE_IDS_PACKED_SIZE;
 use eternum::constants::PRIME;
 use traits::BitAnd;
-use quaireaux_math::fast_power::fast_power;
 
 #[derive(Component)]
 struct WorldConfig {
@@ -47,7 +46,8 @@ struct LaborConf {
 #[derive(Component)]
 struct LaborCR {
     id: felt252,
-    resource_ids_packed: u256,
+    resource_ids_packed_low: u128,
+    resource_ids_packed_high: u128,
     resource_ids_count: usize,
 }
 

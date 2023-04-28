@@ -9,6 +9,8 @@ const RESOURCE_IDS_PACKED_SIZE: usize = 8_usize;
 // prime 
 const PRIME: felt252 = 3618502788666131213697322783095070105623107215331596699973092056135872020480;
 
+// had to trasnform to u128 because when converting u8 to felt252 with into(), 
+// was getting a withdraw_gas missing error
 mod ResourceIds {
     const WOOD: u8 = 0;
     const STONE: u8 = 1;
@@ -38,8 +40,8 @@ mod ResourceIds {
     const UNREFINED_ORE: u8 = 25;
     const SUNKEN_SHEKEL: u8 = 26;
     const DEMONHIDE: u8 = 27;
-    const WHEAT: u8 = 10000;
-    const FISH: u8 = 10001;
+    const WHEAT: u128 = 10000;
+    const FISH: u128 = 10001;
 }
 
 
