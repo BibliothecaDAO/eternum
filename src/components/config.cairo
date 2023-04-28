@@ -46,7 +46,8 @@ struct LaborConf {
 #[derive(Component)]
 struct LaborCR {
     id: felt252,
-    resource_ids_packed: u256,
+    resource_ids_packed_low: u128,
+    resource_ids_packed_high: u128,
     resource_ids_count: usize,
 }
 

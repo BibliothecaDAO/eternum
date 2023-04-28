@@ -5,6 +5,7 @@ use eternum::constants::RESOURCE_IDS_PACKED_SIZE;
 use eternum::constants::PRIME;
 use traits::BitAnd;
 use eternum::utils::math::pow;
+use debug::PrintTrait;
 
 fn unpack_resource_ids(resource_ids_packed: u256, resource_ids_count: usize) -> Array<u256> {
     let mut resource_ids = ArrayTrait::<u256>::new();

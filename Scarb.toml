@@ -5,7 +5,7 @@ version = "0.1.0"
 [scripts]
 
 [dependencies]
-dojo_core = { git = "https://github.com/dojoengine/dojo.git" }
+dojo_core = { git = "https://github.com/dojoengine/dojo.git", rev="4d1fe45" }
 
 
 [[target.dojo]]

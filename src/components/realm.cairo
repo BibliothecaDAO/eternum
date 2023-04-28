@@ -7,6 +7,7 @@ use eternum::constants::RESOURCE_IDS_PACKED_SIZE;
 use eternum::constants::PRIME;
 use traits::BitAnd;
 use eternum::utils::unpack::unpack_resource_ids;
+use debug::PrintTrait;
 
 #[derive(Component)]
 struct Realm {
@@ -14,7 +15,8 @@ struct Realm {
     owner: ContractAddress,
     resource_ids_hash: ID, // hash of ids
     // packed resource ids of realm
-    resource_ids_packed: u256,
+    resource_ids_packed_low: u128, // u256
+    resource_ids_packed_high: u128, // u256
     resource_ids_count: usize,
     cities: u8,
     harbors: u8,
@@ -42,7 +44,8 @@ impl RealmImpl of RealmTrait {
 
     fn has_resource(self: Realm, resource_id: felt252) -> bool {
         let mut resource_ids: Array<u256> = unpack_resource_ids(
-            self.resource_ids_packed, self.resource_ids_count
+            u256 { low: self.resource_ids_packed_low, high: self.resource_ids_packed_high },
+            self.resource_ids_count
         );
         let mut index = 0;
         let has_resource = loop {
