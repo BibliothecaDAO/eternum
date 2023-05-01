@@ -32,13 +32,6 @@ use dojo_core::interfaces::IExecutorDispatcherTrait;
 use dojo_core::interfaces::IWorldDispatcher;
 use dojo_core::interfaces::IWorldDispatcherTrait;
 use dojo_core::storage::query::Query;
-use dojo_core::storage::query::Felt252IntoQuery;
-use dojo_core::storage::query::TupleSize1IntoQuery;
-use dojo_core::storage::query::TupleSize2IntoQuery;
-use dojo_core::storage::query::TupleSize3IntoQuery;
-use dojo_core::storage::query::TupleSize1IntoPartitionedQuery;
-use dojo_core::storage::query::TupleSize2IntoPartitionedQuery;
-use dojo_core::storage::query::ContractAddressIntoQuery;
 
 #[system]
 mod CreateLaborConf {
@@ -166,10 +159,10 @@ fn test_build_labor_non_food() {
     // set realm entity
     let mut create_realm_calldata = array::ArrayTrait::<felt252>::new();
     create_realm_calldata.append(1);
-    world.execute('CreateRealm', create_realm_calldata.span());
+    world.execute('CreateRealm'.into(), create_realm_calldata.span());
     // set labor configuration entity
     let create_labor_conf_calldata = array::ArrayTrait::<felt252>::new();
-    world.execute('CreateLaborConf', create_labor_conf_calldata.span());
+    world.execute('CreateLaborConf'.into(), create_labor_conf_calldata.span());
     // mint some resources
     let mut mint_resources_calldata = array::ArrayTrait::<felt252>::new();
 
@@ -177,7 +170,7 @@ fn test_build_labor_non_food() {
     mint_resources_calldata.append(1);
     mint_resources_calldata.append(1);
     mint_resources_calldata.append(100000);
-    world.execute('MintResources', mint_resources_calldata.span());
+    world.execute('MintResources'.into(), mint_resources_calldata.span());
 
     // set block timestamp in order to harvest labor
     // initial ts = 0
@@ -190,15 +183,15 @@ fn test_build_labor_non_food() {
     build_labor_calldata.append(20);
     // multiplier
     build_labor_calldata.append(1);
-    world.execute('BuildLabor', build_labor_calldata.span());
+    world.execute('BuildLabor'.into(), build_labor_calldata.span());
 
     // assert resource is right amount
-    let resource = world.entity('Resource', (1, (1)).into(), 0_u8, 0_usize);
+    let resource = world.entity('Resource'.into(), (1, (1)).into(), 0_u8, 0_usize);
     assert(*resource[0] == 1, 'failed resource id');
     assert(*resource[1] == 80000, 'failed resource amount');
 
     // assert labor is right amount
-    let labor = world.entity('Labor', (1, (1)).into(), 0_u8, 0_usize);
+    let labor = world.entity('Labor'.into(), (1, (1)).into(), 0_u8, 0_usize);
     // timestamp + labor_per_unit * labor_units
     assert(*labor[0] == 10000 + 7200 * 20, 'labor balance is wrong');
     assert(*labor[1] == 10000, 'labor last harvest is wrong');
@@ -242,10 +235,10 @@ fn test_harvest_labor_non_food() {
     // set realm entity
     let mut create_realm_calldata = array::ArrayTrait::<felt252>::new();
     create_realm_calldata.append(1);
-    world.execute('CreateRealm', create_realm_calldata.span());
+    world.execute('CreateRealm'.into(), create_realm_calldata.span());
     // set labor configuration entity
     let create_labor_conf_calldata = array::ArrayTrait::<felt252>::new();
-    world.execute('CreateLaborConf', create_labor_conf_calldata.span());
+    world.execute('CreateLaborConf'.into(), create_labor_conf_calldata.span());
     // mint some resources
     let mut mint_resources_calldata = array::ArrayTrait::<felt252>::new();
 
@@ -253,7 +246,7 @@ fn test_harvest_labor_non_food() {
     mint_resources_calldata.append(1);
     mint_resources_calldata.append(1);
     mint_resources_calldata.append(100000);
-    world.execute('MintResources', mint_resources_calldata.span());
+    world.execute('MintResources'.into(), mint_resources_calldata.span());
 
     // set block timestamp in order to harvest labor
     // initial ts = 0
@@ -266,7 +259,7 @@ fn test_harvest_labor_non_food() {
     build_labor_calldata.append(20);
     // multiplier
     build_labor_calldata.append(1);
-    world.execute('BuildLabor', build_labor_calldata.span());
+    world.execute('BuildLabor'.into(), build_labor_calldata.span());
 
     // set block timestamp in order to harvest labor
     // initial ts = 0
@@ -278,10 +271,10 @@ fn test_harvest_labor_non_food() {
     harvest_labor_calldata.append(1);
     // resource_id
     harvest_labor_calldata.append(1);
-    world.execute('HarvestLabor', harvest_labor_calldata.span());
+    world.execute('HarvestLabor'.into(), harvest_labor_calldata.span());
 
     // get labor after harvest 
-    let labor_after_harvest = world.entity('Labor', (1, (1)).into(), 0_u8, 0_usize);
+    let labor_after_harvest = world.entity('Labor'.into(), (1, (1)).into(), 0_u8, 0_usize);
     // labor after harvest = current labor balance + rest from division by 72000
     assert(*labor_after_harvest[0] == 145000 + 3000, 'wrong labor balance');
     assert(*labor_after_harvest[1] == 40000, 'wrong last harvest');
@@ -305,13 +298,13 @@ fn test_harvest_labor_non_food() {
     let generated_resources = generated_units * base_resources_per_cycle;
 
     // verify resource is right amount
-    let resource = world.entity('Resource', (1, (1)).into(), 0_u8, 0_usize);
+    let resource = world.entity('Resource'.into(), (1, (1)).into(), 0_u8, 0_usize);
     assert(
         *resource[1] == (resource_balance_before_harvest + generated_resources).into(),
         'failed resource amount'
     );
 
     // verify vault balance 
-    let vault = world.entity('Vault', (1, (1)).into(), 0_u8, 0_usize);
+    let vault = world.entity('Vault'.into(), (1, (1)).into(), 0_u8, 0_usize);
     assert(*vault[0] == 1, 'failed vault balance');
 }
