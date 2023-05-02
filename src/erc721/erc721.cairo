@@ -12,6 +12,66 @@
 //     the code is cleaner this way so I kept it
 //   * not sure yet where the auth asserts should be - in the 721 interface or in systems?
 
+use starknet::StorageAccess;
+use starknet::StorageBaseAddress;
+use starknet::SyscallResult;
+use starknet::storage_read_syscall;
+use starknet::storage_write_syscall;
+use starknet::storage_address_from_base_and_offset;
+use traits::Into;
+use traits::TryInto;
+use option::OptionTrait;
+
+use eternum::alias::ID;
+
+#[derive(Drop, Serde)]
+struct Position {
+    x: u32,
+    y: u32,
+}
+
+#[derive(Drop, Serde)]
+struct RealmData {
+    realm_id: ID, // OG Realm Id
+    // packed resource ids of realm
+    resource_ids_packed_low: u128, // u256
+    resource_ids_packed_high: u128, // u256
+    resource_ids_count: usize,
+    cities: u8,
+    harbors: u8,
+    rivers: u8,
+    regions: u8,
+    wonder: u8,
+    order: u8,
+}
+
+impl Pos2DStorageAccess of StorageAccess<Position> {
+    fn read(address_domain: u32, base: StorageBaseAddress) -> SyscallResult::<Position> {
+        Result::Ok(
+            Position {
+                x: storage_read_syscall(
+                    address_domain, storage_address_from_base_and_offset(base, 0_u8)
+                )?.try_into().unwrap(),
+                y: storage_read_syscall(
+                    address_domain, storage_address_from_base_and_offset(base, 1_u8)
+                )?.try_into().unwrap(),
+            }
+        )
+    }
+
+    fn write(
+        address_domain: u32, base: StorageBaseAddress, value: Position
+    ) -> SyscallResult::<()> {
+        storage_write_syscall(
+            address_domain, storage_address_from_base_and_offset(base, 0_u8), value.x.into()
+        )?;
+        storage_write_syscall(
+            address_domain, storage_address_from_base_and_offset(base, 1_u8), value.y.into()
+        )
+    }
+}
+
+
 #[contract]
 mod ERC721 {
     use array::ArrayTrait;
@@ -25,6 +85,11 @@ mod ERC721 {
     use zeroable::Zeroable;
     use starknet::contract_address::Felt252TryIntoContractAddress;
 
+    use eternum::utils::unpack::unpack_realms_data;
+    use super::Position;
+    use super::Pos2DStorageAccess;
+    use super::RealmData;
+
     use dojo_core::storage::query::Query;
     use dojo_core::storage::query::QueryTrait;
     use dojo_core::storage::query::LiteralIntoQuery;
@@ -36,6 +101,8 @@ mod ERC721 {
     use super::super::components::Owner;
     use super::super::components::TokenApproval;
 
+    use debug::PrintTrait;
+
     #[event]
     fn Transfer(from: ContractAddress, to: ContractAddress, token_id: felt252) {}
 
@@ -46,7 +113,10 @@ mod ERC721 {
         _world: ContractAddress,
         _name: felt252,
         _symbol: felt252,
-        _token_counter: felt252,
+        _total_supply: felt252,
+        _realm_data: LegacyMap<felt252, u256>,
+        _realm_name: LegacyMap<felt252, u256>,
+        _realm_position: LegacyMap<felt252, Position>,
     }
 
     //
@@ -58,7 +128,6 @@ mod ERC721 {
         _world::write(world_addr);
         _name::write(token_name);
         _symbol::write(token_symbol);
-        _token_counter::write(0);
     }
 
     //
@@ -66,13 +135,57 @@ mod ERC721 {
     //
 
     #[view]
-    fn name() -> felt252 {
+    fn name(realm_id: felt252) -> felt252 {
         _name::read()
     }
 
     #[view]
     fn symbol() -> felt252 {
         _symbol::read()
+    }
+
+    //
+    // Realm specific metadata
+    //
+
+    #[view]
+    fn realm_name(realm_id: felt252) -> u256 {
+        _realm_name::read(realm_id)
+    }
+
+    #[view]
+    fn realm_position(realm_id: felt252) -> Position {
+        _realm_position::read(realm_id)
+    }
+
+    #[view]
+    fn fetch_realm_data(realm_id: felt252) -> RealmData {
+        let realms_data_packed = _realm_data::read(realm_id);
+        let realms_data = unpack_realms_data(realms_data_packed);
+        // TODO: need to refactor this, should not use u256 but u8
+        return RealmData {
+            realm_id: realm_id,
+            regions: (*realms_data[0]).low.into().try_into().unwrap(),
+            cities: (*realms_data[1]).low.into().try_into().unwrap(),
+            harbors: (*realms_data[2]).low.into().try_into().unwrap(),
+            rivers: (*realms_data[3]).low.into().try_into().unwrap(),
+            resource_ids_count: (*realms_data[4]).low.into().try_into().unwrap(),
+            resource_ids_packed_low: *realms_data[5].low,
+            resource_ids_packed_high: *realms_data[5].high,
+            wonder: (*realms_data[6]).low.into().try_into().unwrap(),
+            order: (*realms_data[7]).low.into().try_into().unwrap(),
+        };
+    }
+
+    // TODO: should this be a system ?
+    #[external]
+    fn set_realm_data(
+        realm_id: felt252, realm_data: u256, realm_name: u256, realm_position: Position
+    ) {
+        //TODO: assert only owner
+        _realm_data::write(realm_id, realm_data);
+        _realm_name::write(realm_id, realm_name);
+        _realm_position::write(realm_id, realm_position);
     }
 
     //
@@ -112,8 +225,8 @@ mod ERC721 {
         // TODO: assert can mint
 
         let token = get_contract_address();
-        let token_id = _token_counter::read();
-        _token_counter::write(token_id + 1);
+        let token_id = _total_supply::read() + 1;
+        _total_supply::write(token_id);
         let mut calldata = ArrayTrait::<felt252>::new();
         calldata.append(token.into());
         calldata.append(to.into());

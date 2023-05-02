@@ -4,6 +4,7 @@ use traits::TryInto;
 use eternum::constants::RESOURCE_IDS_PACKED_SIZE;
 use eternum::constants::PRIME;
 use traits::BitAnd;
+use starknet::ContractAddress;
 
 #[derive(Component)]
 struct WorldConfig {
@@ -13,6 +14,7 @@ struct WorldConfig {
     vault_unix: u128,
     lords_per_day: u128,
     tick_time: u128,
+    realm_l2_contract: ContractAddress,
 }
 
 #[derive(Component)]

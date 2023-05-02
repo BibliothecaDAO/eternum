@@ -12,6 +12,7 @@ use debug::PrintTrait;
 #[derive(Component)]
 struct Realm {
     realm_id: ID, // OG Realm Id
+    // TODO: no need for owner ? since we use Owner component
     owner: ContractAddress,
     resource_ids_hash: ID, // hash of ids
     // packed resource ids of realm
