@@ -93,6 +93,7 @@ mod ERC721 {
     use dojo_core::storage::query::Query;
     use dojo_core::storage::query::QueryTrait;
     use dojo_core::storage::query::LiteralIntoQuery;
+    use dojo_core::storage::query::TupleSize2IntoQuery;
 
     use dojo_core::interfaces::IWorldDispatcher;
     use dojo_core::interfaces::IWorldDispatcherTrait;
@@ -259,7 +260,9 @@ mod ERC721 {
 
     #[inline(always)]
     fn owner(token: felt252) -> ContractAddress {
-        let owner = world().entity('Owner'.into(), get_contract_address().into(), 0_u8, 0_usize);
+        let contract_address: felt252 = get_contract_address().into();
+        let query: Query = (contract_address, token).into();
+        let owner = world().entity('Owner'.into(), query, 0_u8, 0_usize);
         (*owner[0]).try_into().unwrap()
     }
 

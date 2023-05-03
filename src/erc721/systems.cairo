@@ -22,6 +22,7 @@ mod ERC721TransferFrom {
     use traits::TryInto;
     use super::super::components::TokenApproval;
     use super::super::components::Owner;
+    use debug::PrintTrait;
     use super::super::components::Balance;
     use starknet::contract_address::Felt252TryIntoContractAddress;
 
@@ -46,7 +47,12 @@ mod ERC721TransferFrom {
 
         // update new owner balance
         let query: Query = (token, to).into();
-        let balance = commands::<Balance>::entity(query);
+        let maybe_balance = commands::<Balance>::try_entity(query);
+        let balance = match maybe_balance {
+            Option::Some(balance) => balance,
+            Option::None(_) => Balance { value: 0 },
+        };
+
         commands::set_entity(query, (Balance { value: balance.value + 1 }));
     }
 }

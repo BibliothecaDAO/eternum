@@ -1,5 +1,5 @@
-use eternum::tests::executor::Executor;
-use eternum::tests::world::World;
+use dojo_core::executor::Executor;
+use dojo_core::world::World;
 use eternum::components::labor::LaborComponent;
 use eternum::components::realm::RealmComponent;
 use eternum::components::config::LaborConfComponent;
