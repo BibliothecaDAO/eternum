@@ -4,6 +4,7 @@ mod Settle {
     use traits::TryInto;
     use debug::PrintTrait;
 
+    use eternum::utils::unpack::unpack_resource_ids;
     use eternum::constants::WORLD_CONFIG_ID;
     use eternum::interfaces::IERC721Dispatcher;
     use eternum::interfaces::IERC721DispatcherTrait;
@@ -12,13 +13,14 @@ mod Settle {
     // use eternum::components::position::Position as PositionComponent;
     use eternum::components::owner::Owner;
     use eternum::components::realm::Realm;
+    use eternum::components::resources::Resource;
+    use eternum::components::age::Age;
     use eternum::components::config::WorldConfig;
 
     fn execute(realm_id: felt252) { // get the ERC721 contract
         // get the owner
         let config = commands::<WorldConfig>::entity(WORLD_CONFIG_ID.into());
         let token = config.realm_l2_contract;
-        // // TODO: token id = realm id ? 
         let owner = commands::<Owner>::entity((token, realm_id).into());
         let caller = starknet::get_caller_address();
         // TODO: withdraw gas error with assert 
@@ -52,9 +54,31 @@ mod Settle {
                     order: realm_data.order,
                     }, Owner {
                     address: owner.address, 
+                    }, Age {
+                    born_timestamp: starknet::get_block_timestamp(), 
                 }
             )
         );
+        // mint base resources for the realm
+        let resource_ids: Array<u256> = unpack_resource_ids(
+            u256 {
+                low: realm_data.resource_ids_packed_low, high: realm_data.resource_ids_packed_high
+            },
+            realm_data.resource_ids_count
+        );
+        let mut index = 0;
+        loop {
+            if index == realm_data.resource_ids_count {
+                break ();
+            };
+            let resource_id: felt252 = (*resource_ids[index]).low.into();
+            let resource_query: Query = (realm_id, resource_id).into();
+            commands::<Resource>::set_entity(
+                resource_query,
+                (Resource { id: resource_id, balance: config.base_resources_per_day,  })
+            );
+            index += 1;
+        };
     }
 }
 
@@ -88,6 +112,8 @@ mod tests {
     use eternum::components::realm::RealmComponent;
     use eternum::components::position::PositionComponent;
     use eternum::components::config::WorldConfigComponent;
+    use eternum::components::resources::ResourceComponent;
+    use eternum::components::age::AgeComponent;
     // systems
     use eternum::erc721::systems::ERC721ApproveSystem;
     use eternum::erc721::systems::ERC721TransferFromSystem;
@@ -106,6 +132,8 @@ mod tests {
         components.append(RealmComponent::TEST_CLASS_HASH);
         components.append(PositionComponent::TEST_CLASS_HASH);
         components.append(WorldConfigComponent::TEST_CLASS_HASH);
+        components.append(ResourceComponent::TEST_CLASS_HASH);
+        components.append(AgeComponent::TEST_CLASS_HASH);
         // systems
         let mut systems = array::ArrayTrait::<felt252>::new();
         systems.append(ERC721ApproveSystem::TEST_CLASS_HASH);
@@ -158,13 +186,17 @@ mod tests {
         let mut world_config_call_data = array::ArrayTrait::<felt252>::new();
         world_config_call_data.append(0);
         world_config_call_data.append(0);
-        world_config_call_data.append(0);
+        world_config_call_data.append(252000000000000000000);
         world_config_call_data.append(0);
         world_config_call_data.append(0);
         world_config_call_data.append(0);
         world_config_call_data.append(erc721_address.into());
 
         world.execute('WorldConfig'.into(), world_config_call_data.span());
+
+        // set timestamp to someting other than 0
+        starknet::testing::set_block_timestamp(10000);
+
         // settle
         let mut settle_call_data = array::ArrayTrait::<felt252>::new();
         settle_call_data.append(1);
@@ -173,9 +205,11 @@ mod tests {
         // assert settled realm
         let token: felt252 = erc721_address.into();
         let realm_query: Query = (token, 1).into();
+        // position
         let position = world.entity('Position'.into(), realm_query, 0_u8, 0_usize);
         assert(*position[0] == 10000, 'failed position x');
         assert(*position[1] == 10000, 'failed position y');
+        // owner
         let owner = world.entity('Owner'.into(), realm_query, 0_u8, 0_usize);
         assert(*owner[0] == caller.into(), 'failed owner');
         let s_realm_data = world.entity('Realm'.into(), realm_query, 0_u8, 0_usize);
@@ -191,5 +225,15 @@ mod tests {
         assert(*s_realm_data[9] == 6, 'failed regions');
         assert(*s_realm_data[10] == 2, 'failed wonder');
         assert(*s_realm_data[11] == 0, 'failed order');
+        // resources
+        let resource_coal = world.entity('Resource'.into(), (1, 2).into(), 0_u8, 0_usize);
+        assert(*resource_coal[0] == 2, 'failed resource id');
+        assert(*resource_coal[1] == 252000000000000000000, 'failed resource amount');
+        let resource_stone = world.entity('Resource'.into(), (1, 3).into(), 0_u8, 0_usize);
+        assert(*resource_stone[0] == 3, 'failed resource id');
+        assert(*resource_stone[1] == 252000000000000000000, 'failed resource amount');
+        // age
+        let age = world.entity('Age'.into(), realm_query, 0_u8, 0_usize);
+        assert(*age[0] == 10000, 'failed age');
     }
 }

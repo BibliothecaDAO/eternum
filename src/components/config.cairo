@@ -10,7 +10,7 @@ use starknet::ContractAddress;
 struct WorldConfig {
     day_unix: u128,
     vault_bp: u128,
-    base_resources_per_day: u128,
+    base_resources_per_day: u128, //252 * 10 ** 18 = 252000000000000000000
     vault_unix: u128,
     lords_per_day: u128,
     tick_time: u128,

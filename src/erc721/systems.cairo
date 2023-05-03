@@ -63,9 +63,11 @@ mod ERC721Mint {
 
     fn execute(token: felt252, owner: felt252, token_id: felt252) {
         // assign token to owner
-        let query: Query = (token, owner).into();
-        commands::set_entity(query, (Owner { address: owner.try_into().unwrap() }));
+        commands::set_entity(
+            (token, token_id).into(), (Owner { address: owner.try_into().unwrap() })
+        );
 
+        let query: Query = (token, owner).into();
         // update owner's balance
         let maybe_balance = commands::<Balance>::try_entity(query);
         let balance = match maybe_balance {
