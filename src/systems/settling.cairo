@@ -2,6 +2,7 @@
 mod Settle {
     use traits::Into;
     use traits::TryInto;
+    use box::BoxTrait;
     use debug::PrintTrait;
 
     use eternum::utils::unpack::unpack_resource_ids;
@@ -21,13 +22,13 @@ mod Settle {
         let config = commands::<WorldConfig>::entity(WORLD_CONFIG_ID.into());
         let token = config.realm_l2_contract;
         let owner = commands::<Owner>::entity((token, realm_id).into());
+        // TODO: wait for set_account_contract_address to be available
+        // let caller = starknet::get_tx_info().unbox().account_contract_address;
         let caller = starknet::get_caller_address();
         // TODO: withdraw gas error with assert 
         // assert(owner.address == caller, 'Only owner can settle');
         // get the metadata
-        let erc721 = IERC721Dispatcher {
-            contract_address: token
-        };
+        let erc721 = IERC721Dispatcher { contract_address: token };
         let realm_data: RealmData = erc721.fetch_realm_data(realm_id);
         let position: Position = erc721.realm_position(realm_id);
         // create Realm Metadata
@@ -79,12 +80,7 @@ mod Settle {
         };
 
         // transfer Realm ERC721 to world contract
-        erc721.transfer_from(
-            owner.address,
-            world_address,
-            realm_id,
-        );
-
+        erc721.transfer_from(owner.address, world_address, realm_id, );
     }
 }
 
@@ -115,7 +111,9 @@ mod Settle {
 //         // get the owner
 //         let realm_query: Query = realm_id.into();
 //         let owner = commands::<Owner>::entity(realm_query);
-//         let caller = starknet::get_caller_address();
+//         // TODO: wait for set_account_contract_address to be available
+//         // let caller = starknet::get_tx_info().unbox().account_contract_address;
+//         let caller = get_caller_address();
 //         // assert caller is owner
 //         // TODO: how to retrieve caller address ? Since it's world contract that calls this
 //         // assert(owner.address == caller, 'Only owner can settle');
@@ -215,6 +213,8 @@ mod tests {
         ).unwrap();
         let erc721 = IERC721Dispatcher { contract_address: erc721_address };
 
+        // add when available in latest release
+        // starknet::testing::set_account_contract_address(starknet::contract_address_const::<0x420>());
         starknet::testing::set_caller_address(starknet::contract_address_const::<0x420>());
         let caller = starknet::get_caller_address();
 
@@ -264,7 +264,9 @@ mod tests {
         world.execute('Settle'.into(), settle_call_data.span());
 
         // assert not owner of the nft anymore
-        let new_erc721_owner = world.entity('Owner'.into(), (erc721_address_felt, 1).into(), 0_u8, 0_usize);
+        let new_erc721_owner = world.entity(
+            'Owner'.into(), (erc721_address_felt, 1).into(), 0_u8, 0_usize
+        );
         assert(*new_erc721_owner[0] == world.contract_address.into(), 'wrong erc721 owner');
 
         // assert settled realm
@@ -299,25 +301,25 @@ mod tests {
         // assert(*resource_stone[1] == 252000000000000000000, 'failed resource amount');
         // age
         let age = world.entity('Age'.into(), realm_query, 0_u8, 0_usize);
-        // assert(*age[0] == 10000, 'failed age');
+    // assert(*age[0] == 10000, 'failed age');
 
-        // TODO: allow delete_entity in dojo first
-        // // unsettle
-        // let mut unsettle_call_data = array::ArrayTrait::<felt252>::new();
-        // unsettle_call_data.append(1);
-        // world.execute('Unsettle'.into(), unsettle_call_data.span());
+    // TODO: allow delete_entity in dojo first
+    // // unsettle
+    // let mut unsettle_call_data = array::ArrayTrait::<felt252>::new();
+    // unsettle_call_data.append(1);
+    // world.execute('Unsettle'.into(), unsettle_call_data.span());
 
-        // // assert owner of the nft again
-        // let new_erc721_owner = world.entity('Owner'.into(), (erc721_address_felt, 1).into(), 0_u8, 0_usize);
-        // assert(*new_erc721_owner[0] == caller.into(), 'wrong erc721 owner');
+    // // assert owner of the nft again
+    // let new_erc721_owner = world.entity('Owner'.into(), (erc721_address_felt, 1).into(), 0_u8, 0_usize);
+    // assert(*new_erc721_owner[0] == caller.into(), 'wrong erc721 owner');
 
-        // let age = world.entity('Age'.into(), realm_query, 0_u8, 0_usize);
-        // assert(age.len() == 0, 'age not deleted');
+    // let age = world.entity('Age'.into(), realm_query, 0_u8, 0_usize);
+    // assert(age.len() == 0, 'age not deleted');
 
-        // let position = world.entity('Position'.into(), realm_query, 0_u8, 0_usize);
-        // assert(position.len() == 0, 'position not deleted');
+    // let position = world.entity('Position'.into(), realm_query, 0_u8, 0_usize);
+    // assert(position.len() == 0, 'position not deleted');
 
-        // let realm_data = world.entity('Realm'.into(), realm_query, 0_u8, 0_usize);
-        // assert(realm_data.len() == 0, 'realm_data not deleted');
+    // let realm_data = world.entity('Realm'.into(), realm_query, 0_u8, 0_usize);
+    // assert(realm_data.len() == 0, 'realm_data not deleted');
     }
 }
