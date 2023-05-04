@@ -1,8 +1,12 @@
-use army;
-use buildings;
-use config;
-use metadata;
-use position;
-use realm;
-use resources;
-use tick;
+mod army;
+mod buildings;
+mod config;
+mod age;
+// mod metadata;
+mod position;
+mod realm;
+mod resources;
+mod labor;
+// mod tick;
+mod owner;
+
