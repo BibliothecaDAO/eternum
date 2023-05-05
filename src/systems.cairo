@@ -6,4 +6,5 @@ mod labor;
 mod resources;
 mod payment;
 mod config;
+mod test;
 
