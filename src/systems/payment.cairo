@@ -5,7 +5,7 @@ mod SpendResources {
     use eternum::components::resources::Resource;
     use eternum::components::owner::Owner;
 
-    fn execute(entity_id: felt252, resource_id: felt252, amount: u128) {
+    fn execute(entity_id: felt252, resource_id: u8, amount: u128) {
         // DISCUSS: will get_caller_address give the original caller address ?
         let caller = starknet::get_caller_address();
 

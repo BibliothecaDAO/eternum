@@ -22,7 +22,9 @@ trait IERC721 {
     fn fetch_realm_data(realm_id: ID) -> RealmData;
     fn realm_position(realm_id: ID) -> Position;
     fn mint(to: ContractAddress);
-    fn set_realm_data(realm_id: felt252, realm_data: u256, realm_name: u256, realm_position: Position);
+    fn set_realm_data(
+        realm_id: felt252, realm_data: u128, realm_name: u256, realm_position: Position
+    );
 }
 
 #[abi]

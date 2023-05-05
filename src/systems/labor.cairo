@@ -23,7 +23,7 @@ mod BuildLabor {
     use debug::PrintTrait;
 
     #[external]
-    fn execute(realm_id: felt252, resource_id: felt252, labor_units: u128, multiplier: u128) {
+    fn execute(realm_id: felt252, resource_id: u8, labor_units: u128, multiplier: u128) {
         // assert owner of realm
         let player_id: ContractAddress = starknet::get_caller_address();
         let realm: Realm = commands::<Realm>::entity(realm_id.into());
@@ -38,8 +38,10 @@ mod BuildLabor {
         // transform timestamp from u64 to u128
         let ts: u128 = convert_u64_to_u128(starknet::get_block_timestamp());
 
+        let resource_id_felt: felt252 = resource_id.into();
+        let resource_query: Query = (realm_id, resource_id_felt).into();
         // get labor
-        let maybe_labor = commands::<Labor>::try_entity((realm_id, (resource_id)).into());
+        let maybe_labor = commands::<Labor>::try_entity(resource_query);
         let labor = match maybe_labor {
             Option::Some(labor) => labor,
             Option::None(_) => Labor { balance: 0, last_harvest: ts, multiplier: 1,  },
@@ -57,21 +59,19 @@ mod BuildLabor {
         // if multiplier is bigger than 1, verify that it's either fish or wheat 
         // assert ressource_id is fish or wheat
         if multiplier > 1 {
-            if resource_id == ResourceIds::FISH.into() {
+            if resource_id == ResourceIds::FISH {
                 // assert that realm can have that many fishing villages
                 let harbors: u128 = convert_u8_to_u128(realm.harbors);
                 assert(harbors >= multiplier, 'Not enough harbors')
             } else {
-                assert(resource_id == ResourceIds::WHEAT.into(), 'Resource id is not valid');
+                assert(resource_id == ResourceIds::WHEAT, 'Resource id is not valid');
                 // assert that realm can have that many farms
                 let rivers: u128 = convert_u8_to_u128(realm.rivers);
                 assert(rivers >= multiplier, 'Not enough rivers')
             }
         }
 
-        let maybe_current_resource = commands::<Resource>::try_entity(
-            (realm_id, (resource_id)).into()
-        );
+        let maybe_current_resource = commands::<Resource>::try_entity(resource_query);
 
         // since we might harvest, check current resources
         let mut current_resource = match maybe_current_resource {
@@ -95,7 +95,7 @@ mod BuildLabor {
                 / labor_config.base_labor_units; // get current resource
             // add these resources to balance
             commands::<Resource>::set_entity(
-                (realm_id, (resource_id)).into(),
+                resource_query,
                 (Resource {
                     id: current_resource.id,
                     balance: current_resource.balance
@@ -108,7 +108,7 @@ mod BuildLabor {
 
         // update the labor
         commands::set_entity(
-            (realm_id, (resource_id)).into(),
+            resource_query,
             (Labor {
                 balance: new_labor_balance,
                 last_harvest: labor.last_harvest,
@@ -117,31 +117,24 @@ mod BuildLabor {
         );
 
         // pay for labor 
-        let labor_cost_resources = commands::<LaborCR>::entity(resource_id.into());
-        let labor_cost_resource_ids: Array<u256> = unpack_resource_ids(
-            u256 {
-                low: labor_cost_resources.resource_ids_packed_low,
-                high: labor_cost_resources.resource_ids_packed_high
-            },
-            labor_cost_resources.resource_ids_count
+        let labor_cost_resources = commands::<LaborCR>::entity(resource_id_felt.into());
+        let labor_cost_resource_ids: Array<u8> = unpack_resource_ids(
+            labor_cost_resources.resource_ids_packed, labor_cost_resources.resource_ids_count
         );
-        let mut index = 0;
 
+        let mut index = 0_usize;
         loop {
-            if index == labor_cost_resources.resource_ids_count {
+            if index == labor_cost_resources.resource_ids_count.into() {
                 break ();
             }
-            let labor_cost_resource_id = *labor_cost_resource_ids[index];
-            let labor_cost_per_unit = commands::<LaborCV>::entity(
-                (resource_id, (labor_cost_resource_id.low.into())).into()
-            );
-            let current_resource: Resource = commands::<Resource>::entity(
-                (realm_id, (labor_cost_resource_id.low.into())).into()
-            );
+            let labor_cost_resource_id: felt252 = (*labor_cost_resource_ids[index]).into();
+            let resource_query = (resource_id_felt, labor_cost_resource_id).into();
+            let labor_cost_per_unit = commands::<LaborCV>::entity(resource_query);
+            let current_resource: Resource = commands::<Resource>::entity(resource_query);
             let total_cost = labor_cost_per_unit.value * labor_units * multiplier;
             assert(current_resource.balance >= total_cost, 'Not enough resources');
             commands::<Resource>::set_entity(
-                (realm_id, (labor_cost_resource_id.low.into())).into(),
+                resource_query,
                 (Resource {
                     id: current_resource.id, balance: current_resource.balance - total_cost
                 })
@@ -175,7 +168,7 @@ mod HarvestLabor {
     use eternum::utils::convert::convert_u8_to_u128;
     use eternum::constants::ResourceIds;
 
-    fn execute(realm_id: felt252, resource_id: felt252) {
+    fn execute(realm_id: felt252, resource_id: u8) {
         let player_id: ContractAddress = starknet::get_caller_address();
         let realm: Realm = commands::<Realm>::entity(realm_id.into());
 
@@ -188,12 +181,14 @@ mod HarvestLabor {
         // Get Config
         let labor_config: LaborConf = commands::<LaborConf>::entity(LABOR_CONFIG_ID.into());
 
-        let maybe_labor = commands::<Labor>::try_entity((realm_id, (resource_id)).into());
+        let resource_id_felt: felt252 = resource_id.into();
+        let resource_query: Query = (realm_id, resource_id_felt).into();
+        let maybe_labor = commands::<Labor>::try_entity(resource_query);
         let labor = match maybe_labor {
             Option::Some(labor) => labor,
             Option::None(_) => Labor { balance: 0, last_harvest: 0, multiplier: 1,  }
         };
-        let maybe_resource = commands::<Resource>::try_entity((realm_id, (resource_id)).into());
+        let maybe_resource = commands::<Resource>::try_entity(resource_query);
         let resource = match maybe_resource {
             Option::Some(resource) => resource,
             Option::None(_) => Resource { id: resource_id, balance: 0,  }
@@ -216,7 +211,7 @@ mod HarvestLabor {
         // get vault for that resource
         // let is_not_fish = ;
         // let is_not_wheat = ;
-        let maybe_vault = commands::<Vault>::try_entity((realm_id, (resource_id)).into());
+        let maybe_vault = commands::<Vault>::try_entity(resource_query);
         let vault = match maybe_vault {
             Option::Some(vault) => {
                 vault
@@ -225,23 +220,23 @@ mod HarvestLabor {
                 Vault { balance: 0 }
             },
         };
-        if resource_id != ResourceIds::FISH.into() & resource_id != ResourceIds::WHEAT.into() {
-            // remove 25% to the vault
-            let vault_units_generated = (labor_units_generated * labor_config.vault_percentage)
-                / 1000;
-            labor_units_generated = labor_units_generated - vault_units_generated;
+        if resource_id != ResourceIds::FISH
+            & resource_id != ResourceIds::WHEAT {
+                // remove 25% to the vault
+                let vault_units_generated = (labor_units_generated * labor_config.vault_percentage)
+                    / 1000;
+                labor_units_generated = labor_units_generated - vault_units_generated;
 
-            // the balance in the vault is in cycles so need to multiply by base resource per cycle
-            // update the vault
-            commands::set_entity(
-                (realm_id, (resource_id)).into(),
-                (Vault { balance: vault.balance + vault_units_generated }, )
-            );
-        }
+                // the balance in the vault is in cycles so need to multiply by base resource per cycle
+                // update the vault
+                commands::set_entity(
+                    resource_query, (Vault { balance: vault.balance + vault_units_generated }, )
+                );
+            }
 
         // update the labor and resources
         commands::set_entity(
-            (realm_id, (resource_id)).into(),
+            resource_query,
             (
                 Resource {
                     id: resource_id,

@@ -1,7 +1,7 @@
 // Used as helper struct throughout the world
 #[derive(Component)]
 struct Resource {
-    id: felt252,
+    id: u8,
     balance: u128,
 }
 
