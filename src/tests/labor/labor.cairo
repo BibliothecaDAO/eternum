@@ -54,13 +54,7 @@ mod CreateLaborConf {
         );
         // set cost of creating labor for resource id 1 to only resource id 1 cost
         commands::<LaborCR>::set_entity(
-            1.into(),
-            (LaborCR {
-                id: 1,
-                resource_ids_packed_low: 1,
-                resource_ids_packed_high: 0,
-                resource_ids_count: 1,
-            })
+            1.into(), (LaborCR { id: 1, resource_ids_packed: 1, resource_ids_count: 1,  })
         ); // set value of resource id 1 for resource id 1 creation to 1000
         commands::<LaborCV>::set_entity(
             (1, (1)).into(), (LaborCV { id: 1, resource_id: 1, value: 1000 })
@@ -78,16 +72,17 @@ mod MintResources {
     use array::ArrayTrait;
     use eternum::components::resources::Resource;
     #[external]
-    fn execute(realm_id: felt252, resource_id: felt252, amount: u128) {
-        let maybe_resource = commands::<Resource>::try_entity((realm_id, (resource_id)).into());
+    fn execute(realm_id: felt252, resource_id: u8, amount: u128) {
+        let resource_id_felt: felt252 = resource_id.into();
+        let query: Query = (realm_id, resource_id_felt).into();
+        let maybe_resource = commands::<Resource>::try_entity(query);
         let resource = match maybe_resource {
             Option::Some(resource) => resource,
             Option::None(_) => Resource { id: resource_id, balance: 0 },
         };
 
         commands::set_entity(
-            (realm_id, (resource_id)).into(),
-            (Resource { id: resource_id, balance: resource.balance + amount,  }, )
+            query, (Resource { id: resource_id, balance: resource.balance + amount,  }, )
         );
     }
 }
@@ -105,11 +100,8 @@ mod CreateRealm {
             (Realm {
                 realm_id: realm_id, // OG Realm Id
                 owner: owner,
-                resource_ids_hash: 0, // hash of ids
                 // packed resource ids of realm
-                resource_ids_packed_low: 1,
-                resource_ids_packed_high: 0,
-                // resource_ids_packed: 0.into(), // bug in dojo with u256
+                resource_ids_packed: 1,
                 resource_ids_count: 1,
                 cities: 1_u8,
                 harbors: 1_u8,

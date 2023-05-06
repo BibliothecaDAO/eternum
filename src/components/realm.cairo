@@ -14,24 +14,21 @@ struct Realm {
     realm_id: ID, // OG Realm Id
     // TODO: no need for owner ? since we use Owner component
     owner: ContractAddress,
-    resource_ids_hash: ID, // hash of ids
     // packed resource ids of realm
-    resource_ids_packed_low: u128, // u256
-    resource_ids_packed_high: u128, // u256
-    resource_ids_count: usize,
+    resource_ids_packed: u128, // max 16 resources
+    resource_ids_count: u8,
     cities: u8,
     harbors: u8,
     rivers: u8,
     regions: u8,
-    // TODO: resources
-    wonder: u8, // TODO: maybe its own component?
-    order: u8 // TODO: use consts for orders, somewhere    
+    wonder: u8,
+    order: u8
 }
 
 
 trait RealmTrait {
     fn is_owner(self: Realm, address: ContractAddress) -> bool;
-    fn has_resource(self: Realm, resource_id: felt252) -> bool;
+    fn has_resource(self: Realm, resource_id: u8) -> bool;
 }
 
 impl RealmImpl of RealmTrait {
@@ -43,17 +40,16 @@ impl RealmImpl of RealmTrait {
         }
     }
 
-    fn has_resource(self: Realm, resource_id: felt252) -> bool {
-        let mut resource_ids: Array<u256> = unpack_resource_ids(
-            u256 { low: self.resource_ids_packed_low, high: self.resource_ids_packed_high },
-            self.resource_ids_count
+    fn has_resource(self: Realm, resource_id: u8) -> bool {
+        let mut resource_ids: Array<u8> = unpack_resource_ids(
+            self.resource_ids_packed, self.resource_ids_count
         );
-        let mut index = 0;
+        let mut index = 0_usize;
         let has_resource = loop {
-            if index == self.resource_ids_count {
+            if index == self.resource_ids_count.into() {
                 break false;
             };
-            if resource_id.into() == *resource_ids[index] {
+            if resource_id == *resource_ids[index] {
                 break true;
             };
             index += 1;

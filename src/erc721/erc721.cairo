@@ -34,9 +34,8 @@ struct Position {
 struct RealmData {
     realm_id: ID, // OG Realm Id
     // packed resource ids of realm
-    resource_ids_packed_low: u128, // u256
-    resource_ids_packed_high: u128, // u256
-    resource_ids_count: usize,
+    resource_ids_packed: u128, // u256
+    resource_ids_count: u8,
     cities: u8,
     harbors: u8,
     rivers: u8,
@@ -85,7 +84,6 @@ mod ERC721 {
     use zeroable::Zeroable;
     use starknet::contract_address::Felt252TryIntoContractAddress;
 
-    use eternum::utils::unpack::unpack_realms_data;
     use super::Position;
     use super::Pos2DStorageAccess;
     use super::RealmData;
@@ -102,6 +100,9 @@ mod ERC721 {
     use super::super::components::Owner;
     use super::super::components::TokenApproval;
 
+    use eternum::utils::math::pow;
+    use eternum::constants::REALMS_DATA_PACKED_SIZE;
+
     use debug::PrintTrait;
 
     #[event]
@@ -115,7 +116,7 @@ mod ERC721 {
         _name: felt252,
         _symbol: felt252,
         _total_supply: felt252,
-        _realm_data: LegacyMap<felt252, u256>,
+        _realm_data: LegacyMap<felt252, u128>,
         _realm_name: LegacyMap<felt252, u256>,
         _realm_position: LegacyMap<felt252, Position>,
     }
@@ -162,26 +163,13 @@ mod ERC721 {
     #[view]
     fn fetch_realm_data(realm_id: felt252) -> RealmData {
         let realms_data_packed = _realm_data::read(realm_id);
-        let realms_data = unpack_realms_data(realms_data_packed);
-        // TODO: need to refactor this, should not use u256 but u8
-        return RealmData {
-            realm_id: realm_id,
-            regions: (*realms_data[0]).low.into().try_into().unwrap(),
-            cities: (*realms_data[1]).low.into().try_into().unwrap(),
-            harbors: (*realms_data[2]).low.into().try_into().unwrap(),
-            rivers: (*realms_data[3]).low.into().try_into().unwrap(),
-            resource_ids_count: (*realms_data[4]).low.into().try_into().unwrap(),
-            resource_ids_packed_low: *realms_data[5].low,
-            resource_ids_packed_high: *realms_data[5].high,
-            wonder: (*realms_data[6]).low.into().try_into().unwrap(),
-            order: (*realms_data[7]).low.into().try_into().unwrap(),
-        };
+        return unpack_realms_data(realm_id, realms_data_packed);
     }
 
     // TODO: should this be a system ?
     #[external]
     fn set_realm_data(
-        realm_id: felt252, realm_data: u256, realm_name: u256, realm_position: Position
+        realm_id: felt252, realm_data: u128, realm_name: u256, realm_position: Position
     ) {
         //TODO: assert only owner
         _realm_data::write(realm_id, realm_data);
@@ -281,5 +269,58 @@ mod ERC721 {
         world().execute('ERC721TransferFrom'.into(), calldata.span());
 
         Transfer(from, to, token_id);
+    }
+
+
+    fn unpack_realms_data(realm_id: felt252, realms_data_packed: u128) -> RealmData {
+        let mut realms_data = ArrayTrait::<u128>::new();
+        let mut i = 0_usize;
+        loop {
+            // max number of resources on a realm = 7
+            if i == 8 {
+                break ();
+            }
+            let mut mask_size: u128 = 0_u128;
+            let mut index: usize = 0_usize;
+
+            // for resources need to have mask_size = 2^56 - 1
+            if i == 5 {
+                mask_size = (pow(2, (REALMS_DATA_PACKED_SIZE.into() * 7)) - 1).try_into().unwrap();
+            } else {
+                mask_size = (pow(2, REALMS_DATA_PACKED_SIZE.into()) - 1).try_into().unwrap();
+            }
+
+            // after resources need to skip 7 * 8 bits
+            if i >= 6 {
+                index = (i + 7) * REALMS_DATA_PACKED_SIZE;
+            } else {
+                index = i * REALMS_DATA_PACKED_SIZE
+            }
+
+            let power: u128 = pow(2, index.into()).try_into().unwrap();
+            let mask: u128 = mask_size * power;
+
+            // 2. Apply mask using bitwise operation: mask AND data.
+            let masked: u128 = BitAnd::bitand(mask, realms_data_packed);
+
+            // 3. Shift element right by dividing by the order of the mask.
+            let result: u128 = masked / power;
+
+            realms_data.append(result);
+
+            i = i + 1_usize;
+        };
+
+        return RealmData {
+            realm_id: realm_id,
+            regions: (*realms_data[0]).try_into().unwrap(),
+            cities: (*realms_data[1]).try_into().unwrap(),
+            harbors: (*realms_data[2]).try_into().unwrap(),
+            rivers: (*realms_data[3]).try_into().unwrap(),
+            resource_ids_count: (*realms_data[4]).try_into().unwrap(),
+            resource_ids_packed: *realms_data[5],
+            wonder: (*realms_data[6]).try_into().unwrap(),
+            order: (*realms_data[7]).try_into().unwrap(),
+        };
     }
 }

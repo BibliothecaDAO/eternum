@@ -41,45 +41,10 @@ mod ResourceIds {
     const UNREFINED_ORE: u8 = 25;
     const SUNKEN_SHEKEL: u8 = 26;
     const DEMONHIDE: u8 = 27;
-    const WHEAT: u128 = 10000;
-    const FISH: u128 = 10001;
+    const WHEAT: u8 = 254;
+    const FISH: u8 = 255;
 }
 
-
-// problem1: no implementation of the PartialEq trait for enums
-// problem2: match of enum need to use all arms for now
-// enum ResourceIds {
-//     Wood: (),
-//     Stone: (),
-//     Coal: (),
-//     Copper: (),
-//     Obsidian: (),
-//     Silver: (),
-//     Ironwood: (),
-//     ColdIron: (),
-//     Gold: (),
-//     Hartwood: (),
-//     Diamonds: (),
-//     Sapphire: (),
-//     Ruby: (),
-//     DeepCrystal: (),
-//     Ignium: (),
-//     EtherealSilica: (),
-//     TrueIce: (),
-//     TwilightQuartz: (),
-//     AlchemicalSilver: (),
-//     Adamantine: (),
-//     Mithral: (),
-//     Dragonhide: (),
-//     DesertGlass: (),
-//     DivineCloth: (),
-//     CuriousSpore: (),
-//     UnrefinedOre: (),
-//     SunkenShekel: (),
-//     Demonhide: (),
-//     Wheat: (),
-//     Fish: (),
-// }
 
 enum BuildingIds {
     HOUSE: u8,
