@@ -34,3 +34,17 @@ fn unpack_resource_ids(resource_ids_packed: u128, resource_ids_count: u8) -> Arr
     resource_ids
 }
 
+mod tests {
+    use debug::PrintTrait;
+    use super::unpack_resource_ids;
+    use traits::BitAnd;
+
+    #[test]
+    #[available_gas(30000000)]
+    fn test_unpack_resource_ids() {
+        let packed_data = 515_u128;
+        let resource_ids: Array<u8> = unpack_resource_ids(packed_data, 2);
+        assert(*resource_ids[0] == 3, 'resource_id should be 3');
+        assert(*resource_ids[1] == 2, 'resource_id should be 2');
+    }
+}

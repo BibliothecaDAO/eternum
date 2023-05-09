@@ -24,7 +24,6 @@ mod Settle {
         let owner = commands::<Owner>::entity((token, realm_id).into());
         // TODO: wait for set_account_contract_address to be available
         // let caller = starknet::get_tx_info().unbox().account_contract_address;
-        let caller = starknet::get_caller_address();
         // TODO: withdraw gas error with assert 
         // assert(owner.address == caller, 'Only owner can settle');
         // get the metadata
@@ -80,56 +79,53 @@ mod Settle {
     }
 }
 
-// TODO: allow delete_entity in dojo first
-// #[system]
-// mod Unsettle {
-//     use traits::Into;
-//     use traits::TryInto;
-//     use debug::PrintTrait;
+#[system]
+mod Unsettle {
+    use traits::Into;
+    use traits::TryInto;
+    use debug::PrintTrait;
 
-//     use eternum::utils::unpack::unpack_resource_ids;
-//     use eternum::constants::WORLD_CONFIG_ID;
-//     use eternum::interfaces::IERC721Dispatcher;
-//     use eternum::interfaces::IERC721DispatcherTrait;
-//     use eternum::erc721::erc721::RealmData;
-//     use eternum::erc721::erc721::Position;
-//     use eternum::components::owner::Owner;
-//     use eternum::components::realm::Realm;
-//     use eternum::components::resources::Resource;
-//     use eternum::components::age::Age;
-//     use eternum::components::config::WorldConfig;
+    use eternum::utils::unpack::unpack_resource_ids;
+    use eternum::constants::WORLD_CONFIG_ID;
+    use eternum::interfaces::IERC721Dispatcher;
+    use eternum::interfaces::IERC721DispatcherTrait;
+    use eternum::erc721::erc721::RealmData;
+    use eternum::erc721::erc721::Position;
+    use eternum::components::owner::Owner;
+    use eternum::components::realm::Realm;
+    use eternum::components::resources::Resource;
+    use eternum::components::age::Age;
+    use eternum::components::config::WorldConfig;
 
-//     fn execute(realm_id: felt252) {
-//         // get the ERC721 contract
-//         let config = commands::<WorldConfig>::entity(WORLD_CONFIG_ID.into());
-//         let token = config.realm_l2_contract;
+    fn execute(realm_id: felt252) {
+        // get the ERC721 contract
+        let config = commands::<WorldConfig>::entity(WORLD_CONFIG_ID.into());
+        let token = config.realm_l2_contract;
 
-//         // get the owner
-//         let realm_query: Query = realm_id.into();
-//         let owner = commands::<Owner>::entity(realm_query);
-//         // TODO: wait for set_account_contract_address to be available
-//         // let caller = starknet::get_tx_info().unbox().account_contract_address;
-//         let caller = get_caller_address();
-//         // assert caller is owner
-//         // TODO: how to retrieve caller address ? Since it's world contract that calls this
-//         // assert(owner.address == caller, 'Only owner can settle');
+        // get the owner
+        let realm_query: Query = realm_id.into();
+        let owner = commands::<Owner>::entity(realm_query);
+        // TODO: wait for set_account_contract_address to be available
+        // let caller = starknet::get_tx_info().unbox().account_contract_address;
+        // assert caller is owner
+        // assert(owner.address == caller, 'Only owner can unsettle');
 
-//         // transfer back nft from world to owner
-//         IERC721Dispatcher { contract_address: token }.transfer_from(
-//             world_address,
-//             owner.address,
-//             realm_id,
-//         );
+        // transfer back nft from world to owner
+        IERC721Dispatcher { contract_address: token }.transfer_from(
+            world_address,
+            owner.address,
+            realm_id,
+        );
 
-//         // delete entity
-//         let world = IWorldDispatcher {contract_address: world_address};
-//         world.delete_entity('Owner'.into(), realm_query);
-//         world.delete_entity('Position'.into(), realm_query);
-//         world.delete_entity('Realm'.into(), realm_query);
-//         world.delete_entity('Age'.into(), realm_query);
-//         // TODO: should delete resources ?
-//     }
-// }
+        // delete entity
+        let world = IWorldDispatcher {contract_address: world_address};
+        world.delete_entity('Owner'.into(), realm_query);
+        world.delete_entity('Position'.into(), realm_query);
+        world.delete_entity('Realm'.into(), realm_query);
+        world.delete_entity('Age'.into(), realm_query);
+        // TODO: should delete resources ?
+    }
+}
 
 mod tests {
     use starknet::syscalls::deploy_syscall;
@@ -169,9 +165,8 @@ mod tests {
     use eternum::erc721::systems::ERC721TransferFromSystem;
     use eternum::erc721::systems::ERC721MintSystem;
     use eternum::systems::settling::SettleSystem;
-    // TODO: allow delete_entity in dojo first
-    // use eternum::systems::settling::UnsettleSystem;
-    use eternum::systems::world_config::WorldConfigSystem;
+    use eternum::systems::settling::UnsettleSystem;
+    use eternum::systems::config::world_config::WorldConfigSystem;
 
     #[test]
     #[available_gas(30000000)]
@@ -192,8 +187,7 @@ mod tests {
         systems.append(ERC721TransferFromSystem::TEST_CLASS_HASH);
         systems.append(ERC721MintSystem::TEST_CLASS_HASH);
         systems.append(SettleSystem::TEST_CLASS_HASH);
-        // TODO: allow delete_entity in dojo first
-        // systems.append(UnsettleSystem::TEST_CLASS_HASH);
+        systems.append(UnsettleSystem::TEST_CLASS_HASH);
         systems.append(WorldConfigSystem::TEST_CLASS_HASH);
 
         // deploy executor, world and register components/systems
@@ -293,23 +287,22 @@ mod tests {
         // age
         let age = world.entity('Age'.into(), realm_query, 0_u8, 0_usize);
         assert(*age[0] == 10000, 'failed age');
-    // TODO: allow delete_entity in dojo first
-    // // unsettle
-    // let mut unsettle_call_data = array::ArrayTrait::<felt252>::new();
-    // unsettle_call_data.append(1);
-    // world.execute('Unsettle'.into(), unsettle_call_data.span());
+        // unsettle
+        let mut unsettle_call_data = array::ArrayTrait::<felt252>::new();
+        unsettle_call_data.append(1);
+        world.execute('Unsettle'.into(), unsettle_call_data.span());
 
-    // // assert owner of the nft again
-    // let new_erc721_owner = world.entity('Owner'.into(), (erc721_address_felt, 1).into(), 0_u8, 0_usize);
-    // assert(*new_erc721_owner[0] == caller.into(), 'wrong erc721 owner');
+        // assert owner of the nft again
+        let new_erc721_owner = world.entity('Owner'.into(), (erc721_address_felt, 1).into(), 0_u8, 0_usize);
+        assert(*new_erc721_owner[0] == caller.into(), 'wrong erc721 owner');
 
-    // let age = world.entity('Age'.into(), realm_query, 0_u8, 0_usize);
-    // assert(age.len() == 0, 'age not deleted');
+        let age = world.entity('Age'.into(), realm_query, 0_u8, 0_usize);
+        assert(age.len() == 0, 'age not deleted');
 
-    // let position = world.entity('Position'.into(), realm_query, 0_u8, 0_usize);
-    // assert(position.len() == 0, 'position not deleted');
+        let position = world.entity('Position'.into(), realm_query, 0_u8, 0_usize);
+        assert(position.len() == 0, 'position not deleted');
 
-    // let realm_data = world.entity('Realm'.into(), realm_query, 0_u8, 0_usize);
-    // assert(realm_data.len() == 0, 'realm_data not deleted');
+        let realm_data = world.entity('Realm'.into(), realm_query, 0_u8, 0_usize);
+        assert(realm_data.len() == 0, 'realm_data not deleted');
     }
 }

@@ -1,7 +1,3 @@
-// #[contract] is here only so that this file compiles as it should
-#[contract]
-mod TodoRemoveEventually {}
-
 use starknet::ContractAddress;
 use eternum::erc721::erc721::RealmData;
 use eternum::erc721::erc721::Position;

@@ -10,7 +10,7 @@ struct Labor {
 
 trait LaborTrait {
     fn get_labor_generated(self: Labor, ts: u128) -> (u128, bool, u128);
-    fn get_new_labor_balance(self: Labor, additionnal_labor: u128, ts: u128) -> u128;
+    fn get_new_labor_balance(self: Labor, additional_labor: u128, ts: u128) -> u128;
 }
 
 impl LaborImpl of LaborTrait {
@@ -24,11 +24,11 @@ impl LaborImpl of LaborTrait {
         }
     }
 
-    fn get_new_labor_balance(self: Labor, additionnal_labor: u128, ts: u128) -> u128 {
+    fn get_new_labor_balance(self: Labor, additional_labor: u128, ts: u128) -> u128 {
         if self.balance == 0 {
-            return ts + additionnal_labor;
+            return ts + additional_labor;
         } else {
-            return self.balance + additionnal_labor;
+            return self.balance + additional_labor;
         }
     }
 }

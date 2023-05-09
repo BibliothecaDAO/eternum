@@ -1,3 +1,4 @@
+// TODO for a later milestone
 #[system]
 mod BuildBuilding {
     use array::ArrayTrait;
@@ -10,7 +11,6 @@ mod BuildBuilding {
     use eternum::components::resources::Resource;
     use eternum::components::buildings::Building;
 
-    // todo need better way to store resources
     use eternum::constants::Resources;
     use eternum::constants::BuildingIds;
     use eternum::constants::BUILDING_CONFIG_ID;
