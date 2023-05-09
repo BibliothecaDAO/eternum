@@ -19,8 +19,6 @@ mod HarvestLabor {
     use starknet::ContractAddress;
     use eternum::constants::WORLD_CONFIG_ID;
     use eternum::constants::LABOR_CONFIG_ID;
-    use eternum::utils::convert::convert_u64_to_u128;
-    use eternum::utils::convert::convert_u8_to_u128;
     use eternum::constants::ResourceIds;
 
     fn execute(realm_id: felt252, resource_id: felt252) {
@@ -53,7 +51,7 @@ mod HarvestLabor {
         };
 
         // transform timestamp from u64 to u128
-        let ts: u128 = convert_u64_to_u128(starknet::get_block_timestamp());
+        let ts: u128 = starknet::get_block_timestamp().into();
 
         // generated labor
         let (labor_generated, _, _) = labor.get_labor_generated(ts);

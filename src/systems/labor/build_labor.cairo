@@ -19,8 +19,6 @@ mod BuildLabor {
     use eternum::constants::WORLD_CONFIG_ID;
     use eternum::constants::LABOR_CONFIG_ID;
     use eternum::constants::ResourceIds;
-    use eternum::utils::convert::convert_u64_to_u128;
-    use eternum::utils::convert::convert_u8_to_u128;
     use eternum::utils::unpack::unpack_resource_ids;
 
     use debug::PrintTrait;
@@ -46,7 +44,7 @@ mod BuildLabor {
         let labor_config: LaborConf = commands::<LaborConf>::entity(LABOR_CONFIG_ID.into());
 
         // transform timestamp from u64 to u128
-        let ts: u128 = convert_u64_to_u128(starknet::get_block_timestamp());
+        let ts: u128 = starknet::get_block_timestamp().into();
 
         // get labor
         let maybe_labor = commands::<Labor>::try_entity((realm_id, (resource_id)).into());
@@ -56,10 +54,10 @@ mod BuildLabor {
         };
 
         // config
-        let additionnal_labor = labor_units * labor_config.base_labor_units;
+        let additional_labor = labor_units * labor_config.base_labor_units;
 
         // set new labor balance
-        let mut new_labor_balance = labor.get_new_labor_balance(additionnal_labor, ts);
+        let mut new_labor_balance = labor.get_new_labor_balance(additional_labor, ts);
         let mut new_last_harvest = labor.last_harvest;
 
         // assert multiplier higher than 0
@@ -70,12 +68,12 @@ mod BuildLabor {
         if multiplier > 1 {
             if resource_id == ResourceIds::FISH.into() {
                 // assert that realm can have that many fishing villages
-                let harbors: u128 = convert_u8_to_u128(realm.harbors);
+                let harbors: u128 = realm.harbors.into();
                 assert(harbors >= multiplier, 'Not enough harbors')
             } else {
                 assert(resource_id == ResourceIds::WHEAT.into(), 'Resource id is not valid');
                 // assert that realm can have that many farms
-                let rivers: u128 = convert_u8_to_u128(realm.rivers);
+                let rivers: u128 = realm.rivers.into();
                 assert(rivers >= multiplier, 'Not enough rivers')
             }
         }

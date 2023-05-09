@@ -1,6 +1,7 @@
 // TODO: cannot use Pillage yet because of cairo error :
 // #13661->#13662: Got 'Unknown ap change' error while moving [79]
 // wait for it to be solved
+// TODO in next milestone
 // #[system]
 // mod Pillage {
 //     use traits::Into;
@@ -18,7 +19,6 @@
 //     // todo need better way to store resources
 //     use eternum::constants::WORLD_CONFIG_ID;
 //     use eternum::constants::LABOR_CONFIG_ID;
-//     use eternum::utils::convert::convert_u64_to_u128;
 //     use eternum::utils::unpack::unpack_resource_ids;
 //     use integer::u128_safe_divmod;
 //     // 2. check ressources on realm
