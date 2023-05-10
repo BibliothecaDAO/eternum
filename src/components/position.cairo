@@ -1,25 +1,29 @@
-use array::ArrayTrait;
-
 #[derive(Component)]
 struct Position {
     x: u32,
     y: u32
 }
 
-trait PositionTrait {
-    // fn is_zero(self: Position) -> bool;
-    fn is_equal(self: Position, b: Position) -> bool;
+impl PositionPartialEq of PartialEq<Position> {
+    #[inline(always)]
+    fn eq(lhs: Position, rhs: Position) -> bool {
+        lhs.x == rhs.x & lhs.y == rhs.y
+    }
+    #[inline(always)]
+    fn ne(lhs: Position, rhs: Position) -> bool {
+        !(lhs.x == rhs.x & lhs.y == rhs.y)
+    }
 }
 
-impl PositionImpl of PositionTrait {
-    // fn is_zero(self: Position) -> bool {
-    //     match self.x - self.y {
-    //         0 => false,
-    //         _ => true,
-    //     }
-    // }
-
-    fn is_equal(self: Position, b: Position) -> bool {
-        self.x == b.x & self.y == b.y
-    }
+#[test]
+fn test_position_equal() {
+    let a = Position { x: 1, y: 2 };
+    let b = Position { x: 1, y: 2 };
+    assert(a == b, 'a should equal b');
+}
+#[test]
+fn test_position_non_equal() {
+    let a = Position { x: 1, y: 2 };
+    let b = Position { x: 2, y: 1 };
+    assert(a != b, 'a should not equal b');
 }

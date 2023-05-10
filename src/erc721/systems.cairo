@@ -1,9 +1,7 @@
 #[system]
 mod ERC721Approve {
-    use starknet::ContractAddress;
     use super::super::components::TokenApproval;
-    use traits::Into;
-    use traits::TryInto;
+    use traits::{Into, TryInto};
     use starknet::contract_address::Felt252TryIntoContractAddress;
 
     fn execute(token: felt252, approved: felt252, token_id: felt252) {
@@ -16,14 +14,9 @@ mod ERC721Approve {
 
 #[system]
 mod ERC721TransferFrom {
-    use starknet::ContractAddress;
     use zeroable::Zeroable;
-    use traits::Into;
-    use traits::TryInto;
-    use super::super::components::TokenApproval;
-    use super::super::components::Owner;
-    use debug::PrintTrait;
-    use super::super::components::Balance;
+    use traits::{Into, TryInto};
+    use super::super::components::{TokenApproval, Owner, Balance};
     use starknet::contract_address::Felt252TryIntoContractAddress;
 
     fn execute(token: felt252, from: felt252, to: felt252, token_id: felt252) {
@@ -59,13 +52,9 @@ mod ERC721TransferFrom {
 
 #[system]
 mod ERC721Mint {
-    use starknet::contract_address;
-    use starknet::ContractAddress;
-    use traits::Into;
-    use traits::TryInto;
+    use traits::{Into, TryInto};
     use starknet::contract_address::Felt252TryIntoContractAddress;
-    use super::super::components::Balance;
-    use super::super::components::Owner;
+    use super::super::components::{Balance, Owner};
 
     fn execute(token: felt252, owner: felt252, token_id: felt252) {
         // assign token to owner

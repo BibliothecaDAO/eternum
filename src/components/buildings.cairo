@@ -2,6 +2,7 @@
 // ---------- Buildings
 // NB: Have left this open and not specifcially tied to only Realms. Barbarians could share the same buildings.
 use array::ArrayTrait;
+// TODO for next milestone
 
 #[derive(Component)]
 struct Buildings {
@@ -19,18 +20,10 @@ trait BuildingsTrait {
 
 impl BuildingsImpl of BuildingsTrait {
     fn is_decayed(self: Buildings) -> bool {
-        if self.integrity == 0 {
-            return bool::True(());
-        } else {
-            return bool::False(());
-        }
+        self.integrity == 0
     }
     fn is_empty(self: Buildings) -> bool {
-        if self.population == 0 {
-            return bool::True(());
-        } else {
-            return bool::False(());
-        }
+        self.population == 0
     }
 }
 

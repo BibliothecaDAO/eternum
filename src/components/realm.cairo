@@ -1,13 +1,7 @@
-use array::ArrayTrait;
 use traits::Into;
 use eternum::alias::ID;
 use starknet::ContractAddress;
-use option::OptionTrait;
-use eternum::constants::RESOURCE_IDS_PACKED_SIZE;
-use eternum::constants::PRIME;
-use traits::BitAnd;
 use eternum::utils::unpack::unpack_resource_ids;
-use debug::PrintTrait;
 
 #[derive(Component)]
 struct Realm {
@@ -27,21 +21,12 @@ struct Realm {
 
 
 trait RealmTrait {
-    fn is_owner(self: Realm, address: ContractAddress) -> bool;
     fn has_resource(self: Realm, resource_id: u8) -> bool;
 }
 
 impl RealmImpl of RealmTrait {
-    fn is_owner(self: Realm, address: ContractAddress) -> bool {
-        if (self.owner == address) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     fn has_resource(self: Realm, resource_id: u8) -> bool {
-        let mut resource_ids: Array<u8> = unpack_resource_ids(
+        let mut resource_ids: Span<u8> = unpack_resource_ids(
             self.resource_ids_packed, self.resource_ids_count
         );
         let mut index = 0_usize;

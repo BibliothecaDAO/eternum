@@ -4,9 +4,11 @@ use eternum::components::buildings::Buildings;
 // ----------- Army
 // Armies can be attacked to any Entity if it has a Spawn function. Realms can spawn them and have ownership over them, however they can exist
 // outside of a Realm. They might spawn randomly on the Map.
+// TODO for next milestone 
 
 #[derive(Component)]
 struct Army {
+    // TODO: Why not use the ID alias? I know it's a different type, but does it have to be?
     owner_entity_id: u32, // Armies are Entities. We assign an Army to a Realm for example, to give ownership to the Realm.
     light_cavalry_qty: u32,
     light_cavalry_health: u32,
@@ -41,6 +43,7 @@ struct ArmyStatistics {
 
 trait ArmyTrait {
     // population
+    // TODO move away from felt252 where possible
     fn population(self: Army) -> felt252;
     // calculates statistics of Army
     fn statistics(self: Army) -> felt252;

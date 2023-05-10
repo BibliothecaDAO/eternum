@@ -1,7 +1,6 @@
+// TODO: should we create a system to increase/decrease balance?
 // #[system]
 // mod IncreaseBalance {
-//     use starknet::ContractAddress;
-
 //     use traits::Into;
 //     use array::ArrayTrait;
 
@@ -27,8 +26,6 @@
 
 // #[system]
 // mod DecreaseBalance {
-//     use starknet::ContractAddress;
-
 //     use traits::Into;
 //     use array::ArrayTrait;
 

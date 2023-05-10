@@ -3,7 +3,6 @@
 #[system]
 mod MintResources {
     use traits::Into;
-    use array::ArrayTrait;
     use eternum::components::resources::Resource;
     #[external]
     fn execute(realm_id: felt252, resource_id: u8, amount: u128) {
@@ -24,11 +23,11 @@ mod MintResources {
 
 #[system]
 mod CreateRealm {
-    use eternum::components::realm::Realm;
     use traits::Into;
-    use debug::PrintTrait;
-    use eternum::components::owner::Owner;
     use starknet::ContractAddress;
+
+    use eternum::components::realm::Realm;
+    use eternum::components::owner::Owner;
 
     fn execute(
         realm_id: felt252,
@@ -49,16 +48,16 @@ mod CreateRealm {
                 Owner {
                     address: owner
                     }, Realm {
-                    realm_id: realm_id,
-                    owner: owner,
-                    resource_ids_packed: resource_ids_packed,
-                    resource_ids_count: resource_ids_count,
-                    cities: cities,
-                    harbors: harbors,
-                    rivers: rivers,
-                    regions: regions,
-                    wonder: wonder,
-                    order: order,
+                    realm_id,
+                    owner,
+                    resource_ids_packed,
+                    resource_ids_count,
+                    cities,
+                    harbors,
+                    rivers,
+                    regions,
+                    wonder,
+                    order,
                 }
             )
         );

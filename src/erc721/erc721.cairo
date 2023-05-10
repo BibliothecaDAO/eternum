@@ -1,25 +1,10 @@
-// TODO: proper safe_transfer_from
-//       token URI - wat do?
-//       use low level API for execute
-//       check for EIP compliance
-//       auth?
-//       pass in the token: felt252 as the first param to system::execute, since there can be more than 1 in a game; same as erc20
-//       try ((get_contract_address(), token_id).into()) - without using into() on get_contract_address
-//       maybe some nice / smart way how to use the get_contract_address automatically to build a query? so I don't have to inject it everywhere
+// TODO this is a temporary version of ERC721
+// TODO have final implementation for further milestone
 
-// NOTES:
-//   * owner_of is less optimal because it calls `owner` twice (once in `validate_token_id`) but
-//     the code is cleaner this way so I kept it
-//   * not sure yet where the auth asserts should be - in the 721 interface or in systems?
-
-use starknet::StorageAccess;
-use starknet::StorageBaseAddress;
-use starknet::SyscallResult;
-use starknet::storage_read_syscall;
-use starknet::storage_write_syscall;
-use starknet::storage_address_from_base_and_offset;
-use traits::Into;
-use traits::TryInto;
+use starknet::{StorageAccess, StorageBaseAddress, SyscallResult, 
+              storage_read_syscall, storage_write_syscall, 
+              storage_address_from_base_and_offset};
+use traits::{Into, TryInto};
 use option::OptionTrait;
 
 use eternum::alias::ID;
@@ -75,7 +60,6 @@ impl Pos2DStorageAccess of StorageAccess<Position> {
 mod ERC721 {
     use array::ArrayTrait;
     use option::OptionTrait;
-    use starknet::contract_address;
     use starknet::ContractAddress;
     use starknet::get_caller_address;
     use starknet::get_contract_address;
@@ -96,14 +80,10 @@ mod ERC721 {
     use dojo_core::interfaces::IWorldDispatcher;
     use dojo_core::interfaces::IWorldDispatcherTrait;
 
-    use super::super::components::Balance;
-    use super::super::components::Owner;
     use super::super::components::TokenApproval;
 
     use eternum::utils::math::pow;
     use eternum::constants::REALMS_DATA_PACKED_SIZE;
-
-    use debug::PrintTrait;
 
     #[event]
     fn Transfer(from: ContractAddress, to: ContractAddress, token_id: felt252) {}
@@ -233,14 +213,6 @@ mod ERC721 {
     fn world() -> IWorldDispatcher {
         IWorldDispatcher { contract_address: _world::read() }
     }
-
-    // fn assert_approved_or_owner(owner: ContractAddress, operator: ContractAddress, token_id: felt252) {
-    //     let approved = commands::<TokenApproval>::entity((get_contract_address().into(), token_id).into());
-    //     assert(
-    //         operator == owner | operator == approved.address,
-    //         'operation not allowed'
-    //     );
-    // }
 
     fn assert_valid_address(address: ContractAddress) {
         assert(address.is_non_zero(), 'invalid address');

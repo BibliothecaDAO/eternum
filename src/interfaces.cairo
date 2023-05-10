@@ -1,9 +1,6 @@
 use starknet::ContractAddress;
-use eternum::erc721::erc721::RealmData;
-use eternum::erc721::erc721::Position;
-// TODO: import alias eventually
-// use super::alias::ID;
-type ID = felt252;
+use eternum::erc721::erc721::{RealmData, Position};
+use eternum::alias::ID;
 
 #[abi]
 trait IERC721 {
@@ -21,11 +18,4 @@ trait IERC721 {
     fn set_realm_data(
         realm_id: felt252, realm_data: u128, realm_name: u256, realm_position: Position
     );
-}
-
-#[abi]
-trait IRealmsMeta {
-    // TODO: adapt this once the NFT bridge is ready to match the interface
-    fn get_cities(realm_id: ID);
-    fn get_harbors(realm_id: ID);
 }

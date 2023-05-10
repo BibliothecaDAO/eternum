@@ -1,25 +1,17 @@
 #[system]
 mod HarvestLabor {
-    use traits::Into;
+    use traits::{Into, TryInto};
     use array::ArrayTrait;
     use box::BoxTrait;
-    use traits::TryInto;
-    use debug::PrintTrait;
-    use integer::u128_safe_divmod;
 
     use eternum::components::config::WorldConfig;
     use eternum::components::owner::Owner;
-    use eternum::components::realm::Realm;
-    use eternum::components::realm::RealmTrait;
-    use eternum::components::resources::Resource;
-    use eternum::components::resources::Vault;
-    use eternum::components::labor::Labor;
-    use eternum::components::labor::LaborTrait;
-    use eternum::components::config::LaborConf;
+    use eternum::components::realm::{Realm, RealmTrait};
+    use eternum::components::resources::{Resource, Vault};
+    use eternum::components::labor::{Labor, LaborTrait};
+    use eternum::components::config::LaborConfig;
     use starknet::ContractAddress;
-    use eternum::constants::WORLD_CONFIG_ID;
-    use eternum::constants::LABOR_CONFIG_ID;
-    use eternum::constants::ResourceIds;
+    use eternum::constants::{LABOR_CONFIG_ID, WORLD_CONFIG_ID, ResourceIds};
 
     fn execute(realm_id: felt252, resource_id: u8) {
         let player_id: ContractAddress = starknet::get_tx_info().unbox().account_contract_address;
@@ -37,7 +29,7 @@ mod HarvestLabor {
         }
 
         // Get Config
-        let labor_config: LaborConf = commands::<LaborConf>::entity(LABOR_CONFIG_ID.into());
+        let labor_config: LaborConfig = commands::<LaborConfig>::entity(LABOR_CONFIG_ID.into());
 
         let resource_id_felt: felt252 = resource_id.into();
         let resource_query: Query = (realm_id, resource_id_felt).into();
@@ -112,44 +104,27 @@ mod tests {
     use eternum::components::owner::OwnerComponent;
     use eternum::components::labor::LaborComponent;
     use eternum::components::realm::RealmComponent;
-    use eternum::components::config::LaborConfComponent;
-    use eternum::components::config::LaborCVComponent;
-    use eternum::components::config::LaborCRComponent;
-    use eternum::components::resources::ResourceComponent;
-    use eternum::components::resources::VaultComponent;
+    use eternum::components::config::{LaborConfigComponent, LaborCostAmountComponent, LaborCostResourcesComponent};
+    use eternum::components::resources::{ResourceComponent, VaultComponent};
     use eternum::components::realm::Realm;
-    use eternum::components::config::LaborConf;
-    use eternum::components::config::LaborCR;
-    use eternum::components::config::LaborCV;
+    use eternum::components::config::{LaborConfig, LaborCostResources, LaborCostAmount};
 
     // systems
     use eternum::systems::labor::build_labor::BuildLaborSystem;
     use eternum::systems::labor::harvest_labor::HarvestLaborSystem;
-    use eternum::systems::config::labor_config::CreateLaborConfSystem;
-    use eternum::systems::config::labor_config::CreateLaborCRSystem;
-    use eternum::systems::config::labor_config::CreateLaborCVSystem;
-    use eternum::systems::test::CreateRealmSystem;
-    use eternum::systems::test::MintResourcesSystem;
+    use eternum::systems::config::labor_config::{CreateLaborConfigSystem, CreateLaborCostResourcesSystem, CreateLaborCostAmountSystem};
+    use eternum::systems::test::{CreateRealmSystem, MintResourcesSystem};
 
-    use eternum::constants::LABOR_CONFIG_ID;
+    // constants
     use eternum::constants::ResourceIds;
 
     use core::traits::Into;
     use core::result::ResultTrait;
     use array::ArrayTrait;
     use option::OptionTrait;
-    use traits::TryInto;
-    use debug::PrintTrait;
 
     use starknet::syscalls::deploy_syscall;
-    use starknet::class_hash::Felt252TryIntoClassHash;
-    use starknet::ClassHash;
 
-    use dojo_core::world::World;
-    use dojo_core::executor::Executor;
-    use dojo_core::interfaces::IExecutorDispatcher;
-    use dojo_core::interfaces::IExecutorDispatcherTrait;
-    use dojo_core::interfaces::IWorldDispatcher;
     use dojo_core::interfaces::IWorldDispatcherTrait;
     use dojo_core::storage::query::Query;
     use dojo_core::test_utils::spawn_test_world;
@@ -161,9 +136,9 @@ mod tests {
         let mut components = array::ArrayTrait::<felt252>::new();
         components.append(LaborComponent::TEST_CLASS_HASH);
         components.append(RealmComponent::TEST_CLASS_HASH);
-        components.append(LaborConfComponent::TEST_CLASS_HASH);
-        components.append(LaborCVComponent::TEST_CLASS_HASH);
-        components.append(LaborCRComponent::TEST_CLASS_HASH);
+        components.append(LaborConfigComponent::TEST_CLASS_HASH);
+        components.append(LaborCostAmountComponent::TEST_CLASS_HASH);
+        components.append(LaborCostResourcesComponent::TEST_CLASS_HASH);
         components.append(ResourceComponent::TEST_CLASS_HASH);
         components.append(VaultComponent::TEST_CLASS_HASH);
         components.append(OwnerComponent::TEST_CLASS_HASH);
@@ -173,9 +148,9 @@ mod tests {
         systems.append(BuildLaborSystem::TEST_CLASS_HASH);
         systems.append(HarvestLaborSystem::TEST_CLASS_HASH);
         systems.append(CreateRealmSystem::TEST_CLASS_HASH);
-        systems.append(CreateLaborConfSystem::TEST_CLASS_HASH);
-        systems.append(CreateLaborCRSystem::TEST_CLASS_HASH);
-        systems.append(CreateLaborCVSystem::TEST_CLASS_HASH);
+        systems.append(CreateLaborConfigSystem::TEST_CLASS_HASH);
+        systems.append(CreateLaborCostResourcesSystem::TEST_CLASS_HASH);
+        systems.append(CreateLaborCostAmountSystem::TEST_CLASS_HASH);
         systems.append(MintResourcesSystem::TEST_CLASS_HASH);
 
         let world = spawn_test_world(components, systems);
@@ -200,19 +175,19 @@ mod tests {
         create_labor_conf_calldata.append(7200);
         create_labor_conf_calldata.append(250);
         create_labor_conf_calldata.append(21000000000000000000);
-        world.execute('CreateLaborConf'.into(), create_labor_conf_calldata.span());
+        world.execute('CreateLaborConfig'.into(), create_labor_conf_calldata.span());
 
         let mut creat_labor_cr_calldata = array::ArrayTrait::<felt252>::new();
         creat_labor_cr_calldata.append(1);
         creat_labor_cr_calldata.append(1);
         creat_labor_cr_calldata.append(1);
-        world.execute('CreateLaborCR'.into(), creat_labor_cr_calldata.span());
+        world.execute('CreateLaborCostResources'.into(), creat_labor_cr_calldata.span());
 
         let mut create_labor_cv_calldata = array::ArrayTrait::<felt252>::new();
         create_labor_cv_calldata.append(1);
         create_labor_cv_calldata.append(1);
         create_labor_cv_calldata.append(1000);
-        world.execute('CreateLaborCV'.into(), create_labor_cv_calldata.span());
+        world.execute('CreateLaborCostAmount'.into(), create_labor_cv_calldata.span());
 
         // mint 100000 resource id 1 for realm id 1;
         let mut mint_resources_calldata = array::ArrayTrait::<felt252>::new();
@@ -289,9 +264,9 @@ mod tests {
         let mut components = array::ArrayTrait::<felt252>::new();
         components.append(LaborComponent::TEST_CLASS_HASH);
         components.append(RealmComponent::TEST_CLASS_HASH);
-        components.append(LaborConfComponent::TEST_CLASS_HASH);
-        components.append(LaborCVComponent::TEST_CLASS_HASH);
-        components.append(LaborCRComponent::TEST_CLASS_HASH);
+        components.append(LaborConfigComponent::TEST_CLASS_HASH);
+        components.append(LaborCostAmountComponent::TEST_CLASS_HASH);
+        components.append(LaborCostResourcesComponent::TEST_CLASS_HASH);
         components.append(ResourceComponent::TEST_CLASS_HASH);
         components.append(VaultComponent::TEST_CLASS_HASH);
         components.append(OwnerComponent::TEST_CLASS_HASH);
@@ -301,9 +276,9 @@ mod tests {
         systems.append(BuildLaborSystem::TEST_CLASS_HASH);
         systems.append(HarvestLaborSystem::TEST_CLASS_HASH);
         systems.append(CreateRealmSystem::TEST_CLASS_HASH);
-        systems.append(CreateLaborConfSystem::TEST_CLASS_HASH);
-        systems.append(CreateLaborCRSystem::TEST_CLASS_HASH);
-        systems.append(CreateLaborCVSystem::TEST_CLASS_HASH);
+        systems.append(CreateLaborConfigSystem::TEST_CLASS_HASH);
+        systems.append(CreateLaborCostResourcesSystem::TEST_CLASS_HASH);
+        systems.append(CreateLaborCostAmountSystem::TEST_CLASS_HASH);
         systems.append(MintResourcesSystem::TEST_CLASS_HASH);
 
         let world = spawn_test_world(components, systems);
@@ -328,19 +303,19 @@ mod tests {
         create_labor_conf_calldata.append(7200);
         create_labor_conf_calldata.append(250);
         create_labor_conf_calldata.append(21000000000000000000);
-        world.execute('CreateLaborConf'.into(), create_labor_conf_calldata.span());
+        world.execute('CreateLaborConfig'.into(), create_labor_conf_calldata.span());
 
         let mut creat_labor_cr_calldata = array::ArrayTrait::<felt252>::new();
         creat_labor_cr_calldata.append(ResourceIds::WHEAT.into());
         creat_labor_cr_calldata.append(1);
         creat_labor_cr_calldata.append(1);
-        world.execute('CreateLaborCR'.into(), creat_labor_cr_calldata.span());
+        world.execute('CreateLaborCostResources'.into(), creat_labor_cr_calldata.span());
 
         let mut create_labor_cv_calldata = array::ArrayTrait::<felt252>::new();
         create_labor_cv_calldata.append(ResourceIds::WHEAT.into());
         create_labor_cv_calldata.append(1);
         create_labor_cv_calldata.append(1000);
-        world.execute('CreateLaborCV'.into(), create_labor_cv_calldata.span());
+        world.execute('CreateLaborCostAmount'.into(), create_labor_cv_calldata.span());
 
         // mint 100000 resource id 1 for realm id 1;
         let mut mint_resources_calldata = array::ArrayTrait::<felt252>::new();

@@ -1,14 +1,11 @@
 use array::ArrayTrait;
-use traits::Into;
-use traits::TryInto;
+use traits::{Into, TryInto, BitAnd};
 use option::OptionTrait;
-use eternum::constants::RESOURCE_IDS_PACKED_SIZE;
-use eternum::constants::PRIME;
-use traits::BitAnd;
-use eternum::utils::math::pow;
-use debug::PrintTrait;
 
-fn unpack_resource_ids(resource_ids_packed: u128, resource_ids_count: u8) -> Array<u8> {
+use eternum::constants::RESOURCE_IDS_PACKED_SIZE;
+use eternum::utils::math::pow;
+
+fn unpack_resource_ids(resource_ids_packed: u128, resource_ids_count: u8) -> Span<u8> {
     let mut resource_ids = ArrayTrait::<u8>::new();
     let mut i = 0_usize;
     loop {
@@ -31,11 +28,10 @@ fn unpack_resource_ids(resource_ids_packed: u128, resource_ids_count: u8) -> Arr
         i = i + 1;
     };
 
-    resource_ids
+    resource_ids.span()
 }
 
 mod tests {
-    use debug::PrintTrait;
     use super::unpack_resource_ids;
     use traits::BitAnd;
 
@@ -43,7 +39,7 @@ mod tests {
     #[available_gas(30000000)]
     fn test_unpack_resource_ids() {
         let packed_data = 515_u128;
-        let resource_ids: Array<u8> = unpack_resource_ids(packed_data, 2);
+        let resource_ids: Span<u8> = unpack_resource_ids(packed_data, 2);
         assert(*resource_ids[0] == 3, 'resource_id should be 3');
         assert(*resource_ids[1] == 2, 'resource_id should be 2');
     }

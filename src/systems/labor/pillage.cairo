@@ -14,7 +14,7 @@
 //     use eternum::components::resources::Vault;
 //     use eternum::components::labor::Labor;
 //     use eternum::components::labor::LaborTrait;
-//     use eternum::components::config::LaborConf;
+//     use eternum::components::config::LaborConfig;
 //     use starknet::ContractAddress;
 //     // todo need better way to store resources
 //     use eternum::constants::WORLD_CONFIG_ID;
@@ -28,7 +28,7 @@
 //     fn execute(realm_id: felt252, attacker: ContractAddress) {
 //         // get all resources that are raidable
 //         let pillaged_realm = commands::<Realm>::entity(realm_id.into());
-//         let resource_ids: Array<u256> = unpack_resource_ids(
+//         let resource_ids: Span<u256> = unpack_resource_ids(
 //             pillaged_realm.resource_ids_packed, pillaged_realm.resource_ids_count
 //         );
 //         let resource_ids_count = pillaged_realm.resource_ids_count;

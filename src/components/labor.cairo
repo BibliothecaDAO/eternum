@@ -1,6 +1,3 @@
-use debug::PrintTrait;
-use traits::Into;
-
 #[derive(Component)]
 struct Labor {
     balance: u128,

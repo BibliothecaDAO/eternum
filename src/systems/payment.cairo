@@ -1,7 +1,6 @@
 #[system]
 mod SpendResources {
     use traits::Into;
-    use array::ArrayTrait;
     use eternum::components::resources::Resource;
     use eternum::components::owner::Owner;
 

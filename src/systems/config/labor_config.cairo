@@ -1,44 +1,30 @@
 #[system]
-mod CreateLaborCR {
+mod CreateLaborCostResources {
     use traits::Into;
-    use traits::TryInto;
-    use array::ArrayTrait;
-    use box::BoxTrait;
-    use eternum::utils::unpack::unpack_resource_ids;
-    use eternum::components::config::LaborCR;
-    use eternum::components::config::LaborCV;
+    use eternum::components::config::LaborCostResources;
 
-    use debug::PrintTrait;
-
-    fn execute(resource_id_labor: felt252, resource_id_packed: u128, resource_id_count: u8) {
+    fn execute(resource_id_labor: felt252, resource_ids_packed: u128, resource_ids_count: u8) {
         // set cost of creating labor for resource id 1 to only resource id 1 cost
-        commands::<LaborCR>::set_entity(
+        commands::<LaborCostResources>::set_entity(
             resource_id_labor.into(),
-            (LaborCR {
+            (LaborCostResources {
                 id: resource_id_labor,
-                resource_ids_packed: resource_id_packed,
-                resource_ids_count: resource_id_count,
+                resource_ids_packed,
+                resource_ids_count,
             })
         );
     }
 }
 
 #[system]
-mod CreateLaborCV {
+mod CreateLaborCostAmount {
     use traits::Into;
-    use traits::TryInto;
-    use array::ArrayTrait;
-    use box::BoxTrait;
-    use eternum::utils::unpack::unpack_resource_ids;
-    use eternum::components::config::LaborCR;
-    use eternum::components::config::LaborCV;
-
-    use debug::PrintTrait;
+    use eternum::components::config::LaborCostAmount;
 
     fn execute(resource_id_labor: felt252, resource_id_cost: felt252, resource_id_value: u128) {
-        commands::<LaborCV>::set_entity(
+        commands::<LaborCostAmount>::set_entity(
             (resource_id_labor, resource_id_cost).into(),
-            (LaborCV {
+            (LaborCostAmount {
                 id: resource_id_labor, resource_id: resource_id_cost, value: resource_id_value
             })
         );
@@ -46,19 +32,19 @@ mod CreateLaborCV {
 }
 
 #[system]
-mod CreateLaborConf {
+mod CreateLaborConfig {
     use traits::Into;
     use eternum::constants::LABOR_CONFIG_ID;
-    use eternum::components::config::LaborConf;
+    use eternum::components::config::LaborConfig;
 
     fn execute(base_labor_units: u128, vault_percentage: u128, base_resources_per_cycle: u128) {
         // set labor config
-        commands::<LaborConf>::set_entity(
+        commands::<LaborConfig>::set_entity(
             LABOR_CONFIG_ID.into(),
-            (LaborConf {
-                base_labor_units: base_labor_units,
-                vault_percentage: vault_percentage,
-                base_resources_per_cycle: base_resources_per_cycle
+            (LaborConfig {
+                base_labor_units,
+                vault_percentage,
+                base_resources_per_cycle
             })
         );
     }

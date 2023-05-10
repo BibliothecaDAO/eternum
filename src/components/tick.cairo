@@ -1,6 +1,6 @@
+// TODO next milestone
 use eternum::components::config::WorldConfig;
 use eternum::utils::math::get_past_time;
-use eternum::constants::WORLD_CONFIG_ID;
 
 #[derive(Component)]
 struct Tick {

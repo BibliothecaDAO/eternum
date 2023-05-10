@@ -1,15 +1,15 @@
 // stores entity metadata that is global to the world
 // eg: birth time, moveable, alive
+// TODO for next milestone
 
 use eternum::constants::TICK_TIME;
-use starknet;
 
 #[derive(Component)]
-struct MetaData {
+struct Metadata {
     name: felt252,
-    creation_timestamp: felt252,
-    moveable: bool, // can move
-    alive: bool,
+    created_at: u64,
+    is_moveable: bool, // can move
+    is_alive: bool,
     parent_entity: felt252, // if entity has parent
     last_update: felt252
 }
@@ -19,11 +19,11 @@ trait RealmTrait {
     fn tick(self: Realm) -> bool;
 }
 
+// TODO: find new name
 impl RealmImpl of RealmTrait {
     fn tick(self: Realm) -> bool {
-        let info = starknet::get_block_info().unbox();
 
-        if (self.last_update + TICK_TIME) < info.block_timestamp {
+        if (self.last_update + TICK_TIME) < starknet::get_block_timestamp() {
             true
         } else {
             false

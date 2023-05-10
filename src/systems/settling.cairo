@@ -1,16 +1,12 @@
 #[system]
 mod Settle {
     use traits::Into;
-    use traits::TryInto;
     use box::BoxTrait;
-    use debug::PrintTrait;
 
     use eternum::utils::unpack::unpack_resource_ids;
     use eternum::constants::WORLD_CONFIG_ID;
-    use eternum::interfaces::IERC721Dispatcher;
-    use eternum::interfaces::IERC721DispatcherTrait;
-    use eternum::erc721::erc721::RealmData;
-    use eternum::erc721::erc721::Position;
+    use eternum::interfaces::{IERC721Dispatcher, IERC721DispatcherTrait};
+    use eternum::erc721::erc721::{RealmData, Position};
     use eternum::components::owner::Owner;
     use eternum::components::realm::Realm;
     use eternum::components::resources::Resource;
@@ -38,7 +34,7 @@ mod Settle {
                 Position {
                     x: position.x, y: position.y, 
                     }, Realm {
-                    realm_id: realm_id,
+                    realm_id,
                     owner: owner.address,
                     resource_ids_packed: realm_data.resource_ids_packed,
                     resource_ids_count: realm_data.resource_ids_count,
@@ -51,12 +47,12 @@ mod Settle {
                     }, Owner {
                     address: owner.address, 
                     }, Age {
-                    born_timestamp: starknet::get_block_timestamp(), 
+                    born_at: starknet::get_block_timestamp(), 
                 }
             )
         );
         // mint base resources for the realm
-        let resource_ids: Array<u8> = unpack_resource_ids(
+        let resource_ids: Span<u8> = unpack_resource_ids(
             realm_data.resource_ids_packed, realm_data.resource_ids_count
         );
         let mut index = 0_usize;
@@ -72,7 +68,7 @@ mod Settle {
                 (Resource { id: resource_id, balance: config.base_resources_per_day,  })
             );
             index += 1;
-        };
+        }
 
         // transfer Realm ERC721 to world contract
         erc721.transfer_from(owner.address, world_address, realm_id, );
@@ -82,14 +78,9 @@ mod Settle {
 #[system]
 mod Unsettle {
     use traits::Into;
-    use traits::TryInto;
-    use debug::PrintTrait;
 
-    use eternum::utils::unpack::unpack_resource_ids;
     use eternum::constants::WORLD_CONFIG_ID;
-    use eternum::interfaces::IERC721Dispatcher;
-    use eternum::interfaces::IERC721DispatcherTrait;
-    use eternum::erc721::erc721::RealmData;
+    use eternum::interfaces::{IERC721Dispatcher, IERC721DispatcherTrait};
     use eternum::erc721::erc721::Position;
     use eternum::components::owner::Owner;
     use eternum::components::realm::Realm;
@@ -131,29 +122,22 @@ mod tests {
     use starknet::syscalls::deploy_syscall;
     use starknet::testing::set_caller_address;
     use starknet::class_hash::Felt252TryIntoClassHash;
-    use core::traits::Into;
-    use core::traits::TryInto;
+    use core::traits::{Into, TryInto};
     use array::ArrayTrait;
     use option::OptionTrait;
     use core::result::ResultTrait;
     use array::SpanTrait;
-    use debug::PrintTrait;
 
     use dojo_core::interfaces::IWorldDispatcherTrait;
     use dojo_core::test_utils::spawn_test_world;
     use dojo_core::storage::query::Query;
-    use dojo_core::storage::query::QueryTrait;
 
-    use eternum::erc721::erc721::Position;
-    use eternum::erc721::erc721::RealmData;
-    use eternum::erc721::erc721::ERC721;
-    use eternum::interfaces::IERC721Dispatcher;
-    use eternum::interfaces::IERC721DispatcherTrait;
+    // erc721
+    use eternum::erc721::erc721::{Position, RealmData, ERC721};
+    use eternum::interfaces::{IERC721Dispatcher, IERC721DispatcherTrait};
 
     // components
-    use eternum::erc721::components::TokenApprovalComponent;
-    use eternum::erc721::components::BalanceComponent;
-    // use eternum::erc721::components::OwnerComponent;
+    use eternum::erc721::components::{TokenApprovalComponent, BalanceComponent};
     use eternum::components::owner::OwnerComponent;
     use eternum::components::realm::RealmComponent;
     use eternum::components::position::PositionComponent;
@@ -161,11 +145,8 @@ mod tests {
     use eternum::components::resources::ResourceComponent;
     use eternum::components::age::AgeComponent;
     // systems
-    use eternum::erc721::systems::ERC721ApproveSystem;
-    use eternum::erc721::systems::ERC721TransferFromSystem;
-    use eternum::erc721::systems::ERC721MintSystem;
-    use eternum::systems::settling::SettleSystem;
-    use eternum::systems::settling::UnsettleSystem;
+    use eternum::erc721::systems::{ERC721ApproveSystem, ERC721TransferFromSystem, ERC721MintSystem};
+    use eternum::systems::settling::{SettleSystem, UnsettleSystem};
     use eternum::systems::config::world_config::WorldConfigSystem;
 
     #[test]

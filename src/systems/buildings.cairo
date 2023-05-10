@@ -145,23 +145,6 @@ mod BuildBuilding {
         return ();
     }
 
-    fn unpack_resource_ids(
-        resource_ids_packed: felt252, resource_ids: Array<u8>, resource_ids_count: u8, index: u8
-    ) -> Array<u8> {
-        if (index == resource_ids_count) {
-            return resource_ids;
-        }
-        let mask_size = 2 * *constants.RESOURCE_IDS_PACKED_SIZE - 1;
-        let resource_id = unpack_data(
-            resource_ids_packed, index * constants.RESOURCE_IDS_PACKED_SIZE, mask_size
-        );
-        resource_ids.append(resource_id);
-
-        return unpack_resource_ids(
-            resource_ids_packed, resource_ids, resource_ids_count, index + 1
-        );
-    }
-
     fn unpack_data(data: felt252, index: Array<u8>, mask_size: u8) -> u8 {
         let (power) = 2 * *index;
         let mask = mask_size * power;

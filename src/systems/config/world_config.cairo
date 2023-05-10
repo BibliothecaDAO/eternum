@@ -6,10 +6,10 @@ mod WorldConfig {
     use eternum::constants::WORLD_CONFIG_ID;
 
     fn execute(
-        day_unix: u128,
+        day_time: u128,
         vault_bp: u128,
         base_resources_per_day: u128,
-        vault_unix: u128,
+        vault_time: u128,
         lords_per_day: u128,
         tick_time: u128,
         realm_l2_contract: starknet::ContractAddress
@@ -18,10 +18,10 @@ mod WorldConfig {
         let _ = commands::set_entity(
             WORLD_CONFIG_ID.into(),
             (WorldConfig {
-                day_unix,
+                day_time,
                 vault_bp,
                 base_resources_per_day,
-                vault_unix,
+                vault_time,
                 lords_per_day,
                 tick_time,
                 realm_l2_contract
