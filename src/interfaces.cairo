@@ -6,7 +6,7 @@ use eternum::alias::ID;
 trait IERC721 {
     fn balance_of(owner: ContractAddress) -> u256;
     fn owner_of(token_id: ID) -> ContractAddress;
-    fn get_approved(token_id: u256) -> ContractAddress;
+    fn get_approved(token_id: ID) -> ContractAddress;
     fn is_approved_for_all(owner: ContractAddress, operator: ContractAddress);
     fn transfer_from(from: ContractAddress, to: ContractAddress, token_id: ID);
     // TODO: safe_transfer_from
@@ -16,6 +16,6 @@ trait IERC721 {
     fn realm_position(realm_id: ID) -> Position;
     fn mint(to: ContractAddress);
     fn set_realm_data(
-        realm_id: felt252, realm_data: u128, realm_name: u256, realm_position: Position
+        realm_id: ID, realm_data: u128, realm_name: u256, realm_position: Position
     );
 }

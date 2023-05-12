@@ -40,7 +40,7 @@ mod CreateLaborConfig {
     fn execute(base_labor_units: u128, vault_percentage: u128, base_resources_per_cycle: u128) {
         // set labor config
         commands::<LaborConfig>::set_entity(
-            LABOR_CONFIG_ID.into(),
+            (LABOR_CONFIG_ID.into()).into(),
             (LaborConfig {
                 base_labor_units,
                 vault_percentage,

@@ -9,7 +9,6 @@ use eternum::components::buildings::Buildings;
 #[derive(Component)]
 struct Army {
     // TODO: Why not use the ID alias? I know it's a different type, but does it have to be?
-    owner_entity_id: u32, // Armies are Entities. We assign an Army to a Realm for example, to give ownership to the Realm.
     light_cavalry_qty: u32,
     light_cavalry_health: u32,
     heavy_cavalry_qty: u32,

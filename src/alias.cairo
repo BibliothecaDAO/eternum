@@ -1,1 +1,1 @@
-type ID = felt252;
+type ID = u128;

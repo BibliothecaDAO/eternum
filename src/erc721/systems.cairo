@@ -1,13 +1,15 @@
 #[system]
 mod ERC721Approve {
-    use super::super::components::TokenApproval;
     use traits::{Into, TryInto};
     use starknet::contract_address::Felt252TryIntoContractAddress;
 
-    fn execute(token: felt252, approved: felt252, token_id: felt252) {
+    use super::super::components::TokenApproval;
+    use eternum::alias::ID;
+
+    fn execute(token: felt252, approved: felt252, token_id: ID) {
         // approve an address
         commands::set_entity(
-            (token, token_id).into(), (TokenApproval { address: approved.try_into().unwrap() })
+            (token, token_id.into()).into(), (TokenApproval { address: approved.try_into().unwrap() })
         );
     }
 }
@@ -16,11 +18,13 @@ mod ERC721Approve {
 mod ERC721TransferFrom {
     use zeroable::Zeroable;
     use traits::{Into, TryInto};
-    use super::super::components::{TokenApproval, Owner, Balance};
     use starknet::contract_address::Felt252TryIntoContractAddress;
 
-    fn execute(token: felt252, from: felt252, to: felt252, token_id: felt252) {
-        let query: Query = (token, token_id).into();
+    use super::super::components::{TokenApproval, Owner, Balance};
+    use eternum::alias::ID;
+
+    fn execute(token: felt252, from: felt252, to: felt252, token_id: ID) {
+        let query: Query = (token, token_id.into()).into();
         commands::set_entity(
             query,
             ( // reset approvals
@@ -54,12 +58,14 @@ mod ERC721TransferFrom {
 mod ERC721Mint {
     use traits::{Into, TryInto};
     use starknet::contract_address::Felt252TryIntoContractAddress;
+
+    use eternum::alias::ID;
     use super::super::components::{Balance, Owner};
 
-    fn execute(token: felt252, owner: felt252, token_id: felt252) {
+    fn execute(token: felt252, owner: felt252, token_id: ID) {
         // assign token to owner
         commands::set_entity(
-            (token, token_id).into(), (Owner { address: owner.try_into().unwrap() })
+            (token, token_id.into()).into(), (Owner { address: owner.try_into().unwrap() })
         );
 
         let query: Query = (token, owner).into();

@@ -1,7 +1,9 @@
+use eternum::alias::ID;
+
 // Config ID to fetch world config
-const WORLD_CONFIG_ID: felt252 = 999999999999999999;
-const BUILDING_CONFIG_ID: felt252 = 999999999999999998;
-const LABOR_CONFIG_ID: felt252 = 999999999999999997;
+const WORLD_CONFIG_ID: ID = 999999999999999999;
+const BUILDING_CONFIG_ID: ID = 999999999999999998;
+const LABOR_CONFIG_ID: ID = 999999999999999997;
 
 // 8 bits
 const RESOURCE_IDS_PACKED_SIZE: usize = 8_usize;
@@ -41,6 +43,7 @@ mod ResourceIds {
 }
 
 
+// TODO: change to consts
 enum BuildingIds {
     HOUSE: u8,
     STORE_HOUSE: u8,

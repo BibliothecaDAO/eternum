@@ -3,6 +3,7 @@ mod BuildLabor {
     use traits::Into;
     use box::BoxTrait;
 
+    use eternum::alias::ID;
     use eternum::components::owner::Owner;
     use eternum::components::realm::{Realm, RealmTrait};
     use eternum::components::resources::Resource;
@@ -13,10 +14,10 @@ mod BuildLabor {
     use eternum::utils::unpack::unpack_resource_ids;
 
     #[external]
-    fn execute(realm_id: felt252, resource_id: u8, labor_units: u128, multiplier: u128) {
+    fn execute(realm_id: ID, resource_id: u8, labor_units: u128, multiplier: u128) {
         // assert owner of realm
         let player_id: ContractAddress = starknet::get_tx_info().unbox().account_contract_address;
-        let (realm, owner) = commands::<Realm, Owner>::entity(realm_id.into());
+        let (realm, owner) = commands::<Realm, Owner>::entity((realm_id.into()).into());
         // TODO: do that when starknet::testing::set_account_contract_address works in test
         // assert(owner.address == player_id, 'Realm does not belong to player');
 
@@ -29,14 +30,14 @@ mod BuildLabor {
         }
 
         // Get Config
-        let labor_config: LaborConfig = commands::<LaborConfig>::entity(LABOR_CONFIG_ID.into());
+        let labor_config: LaborConfig = commands::<LaborConfig>::entity((LABOR_CONFIG_ID.into()).into());
 
         // transform timestamp from u64 to u128
         let ts: u128 = starknet::get_block_timestamp().into();
 
         // get labor
         let resource_id_felt: felt252 = resource_id.into();
-        let resource_query: Query = (realm_id, resource_id_felt).into();
+        let resource_query: Query = (realm_id.into(), resource_id_felt).into();
         let maybe_labor = commands::<Labor>::try_entity(resource_query);
         let labor = match maybe_labor {
             Option::Some(labor) => labor,
@@ -136,12 +137,12 @@ mod BuildLabor {
                 (resource_id_felt, labor_cost_resource_id_felt).into()
             );
             let current_resource: Resource = commands::<Resource>::entity(
-                (realm_id, labor_cost_resource_id_felt).into()
+                (realm_id.into(), labor_cost_resource_id_felt).into()
             );
             let total_cost = labor_cost_per_unit.value * labor_units * multiplier;
             assert(current_resource.balance >= total_cost, 'Not enough resources');
             commands::<Resource>::set_entity(
-                (realm_id, labor_cost_resource_id_felt).into(),
+                (realm_id.into(), labor_cost_resource_id_felt).into(),
                 (Resource {
                     id: current_resource.id, balance: current_resource.balance - total_cost
                 })

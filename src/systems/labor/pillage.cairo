@@ -25,7 +25,7 @@
 //     // 3. get_raidable => 25% of vault balance for each resource, as base labor units (86400 / 12)
 
 //     #[external]
-//     fn execute(realm_id: felt252, attacker: ContractAddress) {
+//     fn execute(realm_id: ID, attacker: ContractAddress) {
 //         // get all resources that are raidable
 //         let pillaged_realm = commands::<Realm>::entity(realm_id.into());
 //         let resource_ids: Span<u256> = unpack_resource_ids(

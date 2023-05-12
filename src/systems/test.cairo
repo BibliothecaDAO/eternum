@@ -4,10 +4,12 @@
 mod MintResources {
     use traits::Into;
     use eternum::components::resources::Resource;
+    use eternum::alias::ID;
+
     #[external]
-    fn execute(realm_id: felt252, resource_id: u8, amount: u128) {
+    fn execute(realm_id: ID, resource_id: u8, amount: u128) {
         let resource_id_felt: felt252 = resource_id.into();
-        let resource_query: Query = (realm_id, resource_id_felt).into();
+        let resource_query: Query = (realm_id.into(), resource_id_felt).into();
         let maybe_resource = commands::<Resource>::try_entity(resource_query);
         let resource = match maybe_resource {
             Option::Some(resource) => resource,
@@ -29,8 +31,10 @@ mod CreateRealm {
     use eternum::components::realm::Realm;
     use eternum::components::owner::Owner;
 
+    use eternum::alias::ID;
+
     fn execute(
-        realm_id: felt252,
+        realm_id: ID,
         owner: ContractAddress,
         resource_ids_packed: u128,
         resource_ids_count: u8,
@@ -41,7 +45,7 @@ mod CreateRealm {
         wonder: u8,
         order: u8
     ) {
-        let realm_query = realm_id.into();
+        let realm_query = (realm_id.into()).into();
         commands::<Realm>::set_entity(
             realm_query,
             (
@@ -49,7 +53,6 @@ mod CreateRealm {
                     address: owner
                     }, Realm {
                     realm_id,
-                    owner,
                     resource_ids_packed,
                     resource_ids_count,
                     cities,

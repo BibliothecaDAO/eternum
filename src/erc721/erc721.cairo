@@ -84,21 +84,22 @@ mod ERC721 {
 
     use eternum::utils::math::pow;
     use eternum::constants::REALMS_DATA_PACKED_SIZE;
+    use eternum::alias::ID;
 
     #[event]
-    fn Transfer(from: ContractAddress, to: ContractAddress, token_id: felt252) {}
+    fn Transfer(from: ContractAddress, to: ContractAddress, token_id: ID) {}
 
     #[event]
-    fn Approval(owner: ContractAddress, approved: ContractAddress, token_id: felt252) {}
+    fn Approval(owner: ContractAddress, approved: ContractAddress, token_id: ID) {}
 
     struct Storage {
         _world: ContractAddress,
         _name: felt252,
         _symbol: felt252,
-        _total_supply: felt252,
-        _realm_data: LegacyMap<felt252, u128>,
-        _realm_name: LegacyMap<felt252, u256>,
-        _realm_position: LegacyMap<felt252, Position>,
+        _total_supply: ID,
+        _realm_data: LegacyMap<ID, u128>,
+        _realm_name: LegacyMap<ID, u256>,
+        _realm_position: LegacyMap<ID, Position>,
     }
 
     //
@@ -117,7 +118,7 @@ mod ERC721 {
     //
 
     #[view]
-    fn name(realm_id: felt252) -> felt252 {
+    fn name(realm_id: ID) -> felt252 {
         _name::read()
     }
 
@@ -131,17 +132,17 @@ mod ERC721 {
     //
 
     #[view]
-    fn realm_name(realm_id: felt252) -> u256 {
+    fn realm_name(realm_id: ID) -> u256 {
         _realm_name::read(realm_id)
     }
 
     #[view]
-    fn realm_position(realm_id: felt252) -> Position {
+    fn realm_position(realm_id: ID) -> Position {
         _realm_position::read(realm_id)
     }
 
     #[view]
-    fn fetch_realm_data(realm_id: felt252) -> RealmData {
+    fn fetch_realm_data(realm_id: ID) -> RealmData {
         let realms_data_packed = _realm_data::read(realm_id);
         return unpack_realms_data(realm_id, realms_data_packed);
     }
@@ -149,7 +150,7 @@ mod ERC721 {
     // TODO: should this be a system ?
     #[external]
     fn set_realm_data(
-        realm_id: felt252, realm_data: u128, realm_name: u256, realm_position: Position
+        realm_id: ID, realm_data: u128, realm_name: u256, realm_position: Position
     ) {
         //TODO: assert only owner
         _realm_data::write(realm_id, realm_data);
@@ -162,12 +163,12 @@ mod ERC721 {
     //
 
     #[external]
-    fn transfer_from(from: ContractAddress, to: ContractAddress, token_id: felt252) {
+    fn transfer_from(from: ContractAddress, to: ContractAddress, token_id: ID) {
         transfer(from, to, token_id);
     }
 
     #[external]
-    fn approve(approved: ContractAddress, token_id: felt252) {
+    fn approve(approved: ContractAddress, token_id: ID) {
         let owner = owner(token_id);
         assert(owner != approved, 'approval to owner');
 
@@ -178,7 +179,7 @@ mod ERC721 {
         let mut calldata = ArrayTrait::new();
         calldata.append(token);
         calldata.append(approved.into());
-        calldata.append(token_id);
+        calldata.append(token_id.into());
         world().execute('ERC721Approve'.into(), calldata.span());
 
         Approval(owner, approved, token_id);
@@ -199,7 +200,7 @@ mod ERC721 {
         let mut calldata = ArrayTrait::<felt252>::new();
         calldata.append(token.into());
         calldata.append(to.into());
-        calldata.append(token_id);
+        calldata.append(token_id.into());
         world().execute('ERC721Mint'.into(), calldata.span());
 
         Transfer(Zeroable::zero(), to, token_id);
@@ -219,14 +220,14 @@ mod ERC721 {
     }
 
     #[inline(always)]
-    fn owner(token: felt252) -> ContractAddress {
+    fn owner(token_id: ID) -> ContractAddress {
         let contract_address: felt252 = get_contract_address().into();
-        let query: Query = (contract_address, token).into();
+        let query: Query = (contract_address, token_id.into()).into();
         let owner = world().entity('Owner'.into(), query, 0_u8, 0_usize);
         (*owner[0]).try_into().unwrap()
     }
 
-    fn transfer(from: ContractAddress, to: ContractAddress, token_id: felt252) {
+    fn transfer(from: ContractAddress, to: ContractAddress, token_id: ID) {
         let token = get_contract_address();
         let owner = owner(token_id);
 
@@ -237,14 +238,14 @@ mod ERC721 {
         calldata.append(token.into());
         calldata.append(from.into());
         calldata.append(to.into());
-        calldata.append(token_id);
+        calldata.append(token_id.into());
         world().execute('ERC721TransferFrom'.into(), calldata.span());
 
         Transfer(from, to, token_id);
     }
 
 
-    fn unpack_realms_data(realm_id: felt252, realms_data_packed: u128) -> RealmData {
+    fn unpack_realms_data(realm_id: ID, realms_data_packed: u128) -> RealmData {
         let mut realms_data = ArrayTrait::<u128>::new();
         let mut i = 0_usize;
         loop {

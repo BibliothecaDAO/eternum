@@ -3,6 +3,7 @@ mod Settle {
     use traits::Into;
     use box::BoxTrait;
 
+    use eternum::alias::ID;
     use eternum::utils::unpack::unpack_resource_ids;
     use eternum::constants::WORLD_CONFIG_ID;
     use eternum::interfaces::{IERC721Dispatcher, IERC721DispatcherTrait};
@@ -13,21 +14,21 @@ mod Settle {
     use eternum::components::age::Age;
     use eternum::components::config::WorldConfig;
 
-    fn execute(realm_id: felt252) { // get the ERC721 contract
+    fn execute(realm_id: ID) { // get the ERC721 contract
         // get the owner
-        let config = commands::<WorldConfig>::entity(WORLD_CONFIG_ID.into());
-        let token = config.realm_l2_contract;
-        let owner = commands::<Owner>::entity((token, realm_id).into());
+        let config = commands::<WorldConfig>::entity((WORLD_CONFIG_ID.into()).into());
+        let token: felt252 = config.realm_l2_contract.into();
+        let owner = commands::<Owner>::entity((token, realm_id.into()).into());
         // TODO: wait for set_account_contract_address to be available
         // let caller = starknet::get_tx_info().unbox().account_contract_address;
         // TODO: withdraw gas error with assert 
         // assert(owner.address == caller, 'Only owner can settle');
         // get the metadata
-        let erc721 = IERC721Dispatcher { contract_address: token };
+        let erc721 = IERC721Dispatcher { contract_address: config.realm_l2_contract };
         let realm_data: RealmData = erc721.fetch_realm_data(realm_id);
         let position: Position = erc721.realm_position(realm_id);
         // create Realm Metadata
-        let realm_query: Query = realm_id.into();
+        let realm_query: Query = (realm_id.into()).into();
         commands::set_entity(
             realm_query,
             (
@@ -35,7 +36,6 @@ mod Settle {
                     x: position.x, y: position.y, 
                     }, Realm {
                     realm_id,
-                    owner: owner.address,
                     resource_ids_packed: realm_data.resource_ids_packed,
                     resource_ids_count: realm_data.resource_ids_count,
                     cities: realm_data.cities,
@@ -52,23 +52,26 @@ mod Settle {
             )
         );
         // mint base resources for the realm
-        let resource_ids: Span<u8> = unpack_resource_ids(
+        let mut resource_ids: Span<u8> = unpack_resource_ids(
             realm_data.resource_ids_packed, realm_data.resource_ids_count
         );
         let mut index = 0_usize;
         loop {
-            if index == realm_data.resource_ids_count.into() {
-                break ();
+            match resource_ids.pop_front() {
+                Option::Some(v) => {
+                    let resource_id: u8 = *v;
+                    let resource_id_felt: felt252 = resource_id.into();
+                    let resource_query: Query = (realm_id.into(), resource_id_felt).into();
+                    commands::<Resource>::set_entity(
+                        resource_query,
+                        (Resource { id: resource_id, balance: config.base_resources_per_day,  })
+                    );
+                },
+                Option::None(_) => {
+                    break ();
+                },
             };
-            let resource_id: u8 = *resource_ids[index];
-            let resource_id_felt: felt252 = resource_id.into();
-            let resource_query: Query = (realm_id, resource_id_felt).into();
-            commands::<Resource>::set_entity(
-                resource_query,
-                (Resource { id: resource_id, balance: config.base_resources_per_day,  })
-            );
-            index += 1;
-        }
+        };
 
         // transfer Realm ERC721 to world contract
         erc721.transfer_from(owner.address, world_address, realm_id, );
@@ -87,14 +90,15 @@ mod Unsettle {
     use eternum::components::resources::Resource;
     use eternum::components::age::Age;
     use eternum::components::config::WorldConfig;
+    use eternum::alias::ID;
 
-    fn execute(realm_id: felt252) {
+    fn execute(realm_id: ID) {
         // get the ERC721 contract
-        let config = commands::<WorldConfig>::entity(WORLD_CONFIG_ID.into());
+        let config = commands::<WorldConfig>::entity((WORLD_CONFIG_ID.into()).into());
         let token = config.realm_l2_contract;
 
         // get the owner
-        let realm_query: Query = realm_id.into();
+        let realm_query: Query = (realm_id.into()).into();
         let owner = commands::<Owner>::entity(realm_query);
         // TODO: wait for set_account_contract_address to be available
         // let caller = starknet::get_tx_info().unbox().account_contract_address;
@@ -102,19 +106,17 @@ mod Unsettle {
         // assert(owner.address == caller, 'Only owner can unsettle');
 
         // transfer back nft from world to owner
-        IERC721Dispatcher { contract_address: token }.transfer_from(
-            world_address,
-            owner.address,
-            realm_id,
-        );
+        IERC721Dispatcher {
+            contract_address: token
+        }.transfer_from(world_address, owner.address, realm_id, );
 
         // delete entity
-        let world = IWorldDispatcher {contract_address: world_address};
+        let world = IWorldDispatcher { contract_address: world_address };
         world.delete_entity('Owner'.into(), realm_query);
         world.delete_entity('Position'.into(), realm_query);
         world.delete_entity('Realm'.into(), realm_query);
         world.delete_entity('Age'.into(), realm_query);
-        // TODO: should delete resources ?
+    // TODO: should delete resources ?
     }
 }
 
@@ -249,15 +251,14 @@ mod tests {
         assert(*owner[0] == caller.into(), 'failed owner');
         let s_realm_data = world.entity('Realm'.into(), realm_query, 0_u8, 0_usize);
         assert(*s_realm_data[0] == 1, 'failed realm id');
-        assert(*s_realm_data[1] == caller.into(), 'failed realm owner');
-        assert(*s_realm_data[2] == 770, 'failed resource_ids_packed');
-        assert(*s_realm_data[3] == 2, 'failed resource_ids_count');
-        assert(*s_realm_data[4] == 8, 'failed cities');
-        assert(*s_realm_data[5] == 17, 'failed harbors');
-        assert(*s_realm_data[6] == 26, 'failed rivers');
-        assert(*s_realm_data[7] == 6, 'failed regions');
-        assert(*s_realm_data[8] == 2, 'failed wonder');
-        assert(*s_realm_data[9] == 0, 'failed order');
+        assert(*s_realm_data[1] == 770, 'failed resource_ids_packed');
+        assert(*s_realm_data[2] == 2, 'failed resource_ids_count');
+        assert(*s_realm_data[3] == 8, 'failed cities');
+        assert(*s_realm_data[4] == 17, 'failed harbors');
+        assert(*s_realm_data[5] == 26, 'failed rivers');
+        assert(*s_realm_data[6] == 6, 'failed regions');
+        assert(*s_realm_data[7] == 2, 'failed wonder');
+        assert(*s_realm_data[8] == 0, 'failed order');
         // resources
         let resource_coal = world.entity('Resource'.into(), (1, 2).into(), 0_u8, 0_usize);
         assert(*resource_coal[0] == 2, 'failed resource id');
@@ -274,7 +275,9 @@ mod tests {
         world.execute('Unsettle'.into(), unsettle_call_data.span());
 
         // assert owner of the nft again
-        let new_erc721_owner = world.entity('Owner'.into(), (erc721_address_felt, 1).into(), 0_u8, 0_usize);
+        let new_erc721_owner = world.entity(
+            'Owner'.into(), (erc721_address_felt, 1).into(), 0_u8, 0_usize
+        );
         assert(*new_erc721_owner[0] == caller.into(), 'wrong erc721 owner');
 
         let age = world.entity('Age'.into(), realm_query, 0_u8, 0_usize);

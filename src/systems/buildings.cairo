@@ -5,7 +5,6 @@ mod BuildBuilding {
     use traits::Into;
 
     use eternum::components::config::WorldConfig;
-
     use eternum::components::realm::Realm;
     use eternum::components::tick::Tick;
     use eternum::components::resources::Resource;
@@ -18,11 +17,14 @@ mod BuildBuilding {
     use eternum::utils::math::u128_div_remainder;
     use eternum::utils::math::get_percentage_by_bp;
 
+    use eternum::alias::ID;
+
     #[external]
-    fn execute(realm_id: felt252, building_type: felt252, quantity: felt252) {
+    fn execute(realm_id: ID, building_type: felt252, quantity: felt252) {
         let player_id: felt252 = starknet::get_caller_address().into();
         let realm: Realm = commands::<Realm>::entity(realm_id.into());
 
+        // TODO: use Owner component
         assert(realm.owner == player_id, 'Realm does not belong to player');
 
         // Get Config
