@@ -9,7 +9,8 @@ mod ERC721Approve {
     fn execute(token: felt252, approved: felt252, token_id: ID) {
         // approve an address
         commands::set_entity(
-            (token, token_id.into()).into(), (TokenApproval { address: approved.try_into().unwrap() })
+            (token, token_id.into()).into(),
+            (TokenApproval { address: approved.try_into().unwrap() })
         );
     }
 }

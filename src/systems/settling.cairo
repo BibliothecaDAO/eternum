@@ -18,13 +18,13 @@ mod Settle {
         // get the owner
         let config = commands::<WorldConfig>::entity((WORLD_CONFIG_ID.into()).into());
         let token: felt252 = config.realm_l2_contract.into();
-        let owner = commands::<Owner>::entity((token, realm_id.into()).into());
         // TODO: wait for set_account_contract_address to be available
         // let caller = starknet::get_tx_info().unbox().account_contract_address;
         // TODO: withdraw gas error with assert 
-        // assert(owner.address == caller, 'Only owner can settle');
+        // assert(owner == caller, 'Only owner can settle');
         // get the metadata
         let erc721 = IERC721Dispatcher { contract_address: config.realm_l2_contract };
+        let owner = erc721.owner_of(realm_id);
         let realm_data: RealmData = erc721.fetch_realm_data(realm_id);
         let position: Position = erc721.realm_position(realm_id);
         // create Realm Metadata
@@ -45,7 +45,7 @@ mod Settle {
                     wonder: realm_data.wonder,
                     order: realm_data.order,
                     }, Owner {
-                    address: owner.address, 
+                    address: owner, 
                     }, Age {
                     born_at: starknet::get_block_timestamp(), 
                 }
@@ -74,7 +74,7 @@ mod Settle {
         }
 
         // transfer Realm ERC721 to world contract
-        erc721.transfer_from(owner.address, world_address, realm_id, );
+        erc721.transfer_from(owner, world_address, realm_id, );
     }
 }
 
@@ -116,7 +116,6 @@ mod Unsettle {
         world.delete_entity('Position'.into(), realm_query);
         world.delete_entity('Realm'.into(), realm_query);
         world.delete_entity('Age'.into(), realm_query);
-    // TODO: should delete resources ?
     }
 }
 
@@ -225,10 +224,11 @@ mod tests {
 
         world.execute('WorldConfig'.into(), world_config_call_data.span());
 
+        // TODO: approve erc721 to be transferred from caller to world when we have final erc721
+
         // set timestamp to someting other than 0
         starknet::testing::set_block_timestamp(10000);
 
-        // settle
         let mut settle_call_data = array::ArrayTrait::<felt252>::new();
         settle_call_data.append(1);
         world.execute('Settle'.into(), settle_call_data.span());

@@ -1,5 +1,5 @@
-// TODO this is a temporary version of ERC721
-// TODO have final implementation for further milestone
+// TODO this is a temporary version of ERC721 in Dojo ECS
+// TODO use openzeppelin implementation in final version
 
 use starknet::{
     StorageAccess, StorageBaseAddress, SyscallResult, storage_read_syscall, storage_write_syscall,
@@ -128,6 +128,11 @@ mod ERC721 {
         _symbol::read()
     }
 
+    #[view]
+    fn owner_of(token_id: ID) -> ContractAddress {
+        owner(token_id)
+    }
+
     //
     // Realm specific metadata
     //
@@ -172,8 +177,9 @@ mod ERC721 {
         assert(owner != approved, 'approval to owner');
 
         let token: felt252 = get_contract_address().into();
-        let caller = get_caller_address();
-        assert(caller == owner, 'not approved');
+        // TODO: get origin contract address when available
+        // let caller = get_caller_address();
+        // assert(caller == owner, 'not approved');
 
         let mut calldata = ArrayTrait::new();
         calldata.append(token);
@@ -226,12 +232,24 @@ mod ERC721 {
         (*owner[0]).try_into().unwrap()
     }
 
+    // TODO: use approval when we have final ERC721
+    // fn assert_approved_or_owner(owner: ContractAddress, operator: ContractAddress, token_id: ID) {
+    //     let contract_address: felt252 = get_contract_address().into();
+    //     let approved = world().entity(
+    //         'TokenApproval'.into(), (contract_address, token_id.into()).into(), 0_u8, 0_usize
+    //     );
+    //     assert(operator == owner | operator.into() == *approved[0], 'operation not allowed');
+    // }
+
     fn transfer(from: ContractAddress, to: ContractAddress, token_id: ID) {
         let token = get_contract_address();
         let owner = owner(token_id);
 
         assert(owner == from, 'source not owner');
         assert(to.is_non_zero(), 'transferring to zero');
+
+        // TODO: use approval when we have final ERC721
+        // assert_approved_or_owner(owner, get_caller_address(), token_id);
 
         let mut calldata = ArrayTrait::new();
         calldata.append(token.into());
