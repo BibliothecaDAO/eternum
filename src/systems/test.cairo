@@ -7,18 +7,17 @@ mod MintResources {
     use eternum::alias::ID;
 
     #[external]
-    fn execute(realm_id: ID, resource_id: u8, amount: u128) {
-        let resource_id_felt: felt252 = resource_id.into();
-        let resource_query: Query = (realm_id.into(), resource_id_felt).into();
+    fn execute(realm_id: ID, resource_type: u8, amount: u128) {
+        let resource_type_felt: felt252 = resource_type.into();
+        let resource_query: Query = (realm_id.into(), resource_type_felt).into();
         let maybe_resource = commands::<Resource>::try_entity(resource_query);
         let resource = match maybe_resource {
             Option::Some(resource) => resource,
-            Option::None(_) => Resource { id: resource_id, balance: 0 },
+            Option::None(_) => Resource { resource_type, balance: 0 },
         };
 
         commands::set_entity(
-            resource_query,
-            (Resource { id: resource_id, balance: resource.balance + amount,  }, )
+            resource_query, (Resource { resource_type, balance: resource.balance + amount,  }, )
         );
     }
 }
@@ -36,8 +35,8 @@ mod CreateRealm {
     fn execute(
         realm_id: ID,
         owner: ContractAddress,
-        resource_ids_packed: u128,
-        resource_ids_count: u8,
+        resource_types_packed: u128,
+        resource_types_count: u8,
         cities: u8,
         harbors: u8,
         rivers: u8,
@@ -53,8 +52,8 @@ mod CreateRealm {
                     address: owner
                     }, Realm {
                     realm_id,
-                    resource_ids_packed,
-                    resource_ids_count,
+                    resource_types_packed,
+                    resource_types_count,
                     cities,
                     harbors,
                     rivers,

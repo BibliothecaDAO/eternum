@@ -4,7 +4,7 @@ mod Settle {
     use box::BoxTrait;
 
     use eternum::alias::ID;
-    use eternum::utils::unpack::unpack_resource_ids;
+    use eternum::utils::unpack::unpack_resource_types;
     use eternum::constants::WORLD_CONFIG_ID;
     use eternum::interfaces::{IERC721Dispatcher, IERC721DispatcherTrait};
     use eternum::erc721::erc721::{RealmData, Position};
@@ -36,8 +36,8 @@ mod Settle {
                     x: position.x, y: position.y, 
                     }, Realm {
                     realm_id,
-                    resource_ids_packed: realm_data.resource_ids_packed,
-                    resource_ids_count: realm_data.resource_ids_count,
+                    resource_types_packed: realm_data.resource_types_packed,
+                    resource_types_count: realm_data.resource_types_count,
                     cities: realm_data.cities,
                     harbors: realm_data.harbors,
                     rivers: realm_data.rivers,
@@ -52,26 +52,26 @@ mod Settle {
             )
         );
         // mint base resources for the realm
-        let mut resource_ids: Span<u8> = unpack_resource_ids(
-            realm_data.resource_ids_packed, realm_data.resource_ids_count
+        let mut resource_types: Span<u8> = unpack_resource_types(
+            realm_data.resource_types_packed, realm_data.resource_types_count
+        );
+        let resource_types: Span<u8> = unpack_resource_types(
+            realm_data.resource_types_packed, realm_data.resource_types_count
         );
         let mut index = 0_usize;
         loop {
-            match resource_ids.pop_front() {
-                Option::Some(v) => {
-                    let resource_id: u8 = *v;
-                    let resource_id_felt: felt252 = resource_id.into();
-                    let resource_query: Query = (realm_id.into(), resource_id_felt).into();
-                    commands::<Resource>::set_entity(
-                        resource_query,
-                        (Resource { id: resource_id, balance: config.base_resources_per_day,  })
-                    );
-                },
-                Option::None(_) => {
-                    break ();
-                },
+            if index == realm_data.resource_types_count.into() {
+                break ();
             };
-        };
+            let resource_type: u8 = *resource_types[index];
+            let resource_type_felt: felt252 = resource_type.into();
+            let resource_query: Query = (realm_id.into(), resource_type_felt).into();
+            commands::<Resource>::set_entity(
+                resource_query,
+                (Resource { resource_type, balance: config.base_resources_per_day,  })
+            );
+            index += 1;
+        }
 
         // transfer Realm ERC721 to world contract
         erc721.transfer_from(owner.address, world_address, realm_id, );
@@ -201,8 +201,8 @@ mod tests {
 
         let realm_data: RealmData = erc721.fetch_realm_data(1);
         assert(realm_data.realm_id == 1, 'Wrong realm id');
-        assert(realm_data.resource_ids_packed == 770, 'Wrong resource_ids_packed');
-        assert(realm_data.resource_ids_count == 2, 'Wrong resource_ids_count');
+        assert(realm_data.resource_types_packed == 770, 'Wrong resource_types_packed');
+        assert(realm_data.resource_types_count == 2, 'Wrong resource_types_count');
         assert(realm_data.cities == 8, 'Wrong cities');
         assert(realm_data.harbors == 17, 'Wrong harbors');
         assert(realm_data.rivers == 26, 'Wrong rivers');
@@ -251,8 +251,8 @@ mod tests {
         assert(*owner[0] == caller.into(), 'failed owner');
         let s_realm_data = world.entity('Realm'.into(), realm_query, 0_u8, 0_usize);
         assert(*s_realm_data[0] == 1, 'failed realm id');
-        assert(*s_realm_data[1] == 770, 'failed resource_ids_packed');
-        assert(*s_realm_data[2] == 2, 'failed resource_ids_count');
+        assert(*s_realm_data[1] == 770, 'failed resource_types_packed');
+        assert(*s_realm_data[2] == 2, 'failed resource_types_count');
         assert(*s_realm_data[3] == 8, 'failed cities');
         assert(*s_realm_data[4] == 17, 'failed harbors');
         assert(*s_realm_data[5] == 26, 'failed rivers');

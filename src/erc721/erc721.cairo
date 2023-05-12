@@ -1,9 +1,10 @@
 // TODO this is a temporary version of ERC721
 // TODO have final implementation for further milestone
 
-use starknet::{StorageAccess, StorageBaseAddress, SyscallResult, 
-              storage_read_syscall, storage_write_syscall, 
-              storage_address_from_base_and_offset};
+use starknet::{
+    StorageAccess, StorageBaseAddress, SyscallResult, storage_read_syscall, storage_write_syscall,
+    storage_address_from_base_and_offset
+};
 use traits::{Into, TryInto};
 use option::OptionTrait;
 
@@ -19,8 +20,8 @@ struct Position {
 struct RealmData {
     realm_id: ID, // OG Realm Id
     // packed resource ids of realm
-    resource_ids_packed: u128, // u256
-    resource_ids_count: u8,
+    resource_types_packed: u128, // u256
+    resource_types_count: u8,
     cities: u8,
     harbors: u8,
     rivers: u8,
@@ -149,9 +150,7 @@ mod ERC721 {
 
     // TODO: should this be a system ?
     #[external]
-    fn set_realm_data(
-        realm_id: ID, realm_data: u128, realm_name: u256, realm_position: Position
-    ) {
+    fn set_realm_data(realm_id: ID, realm_data: u128, realm_name: u256, realm_position: Position) {
         //TODO: assert only owner
         _realm_data::write(realm_id, realm_data);
         _realm_name::write(realm_id, realm_name);
@@ -290,8 +289,8 @@ mod ERC721 {
             cities: (*realms_data[1]).try_into().unwrap(),
             harbors: (*realms_data[2]).try_into().unwrap(),
             rivers: (*realms_data[3]).try_into().unwrap(),
-            resource_ids_count: (*realms_data[4]).try_into().unwrap(),
-            resource_ids_packed: *realms_data[5],
+            resource_types_count: (*realms_data[4]).try_into().unwrap(),
+            resource_types_packed: *realms_data[5],
             wonder: (*realms_data[6]).try_into().unwrap(),
             order: (*realms_data[7]).try_into().unwrap(),
         };

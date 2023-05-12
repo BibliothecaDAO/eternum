@@ -11,7 +11,7 @@ mod BuildBuilding {
     use eternum::components::buildings::Building;
 
     use eternum::constants::Resources;
-    use eternum::constants::BuildingIds;
+    use eternum::constants::BuildingTypes;
     use eternum::constants::BUILDING_CONFIG_ID;
 
     use eternum::utils::math::u128_div_remainder;
@@ -50,25 +50,27 @@ mod BuildBuilding {
         );
 
         // get resource ids of realm
-        let resource_ids = Array::<u8>::new();
+        let resource_types = Array::<u8>::new();
         let resource_costs = Array::<felt252>::new();
-        unpack_resource_ids(realm.resource_ids_packed, resource_ids, realm.resource_ids_count, 0);
+        unpack_resource_types(
+            realm.resource_types_packed, resource_types, realm.resource_types_count, 0
+        );
 
-        let building_cost_resource_ids = Array::<u8>::new();
+        let building_cost_resource_types = Array::<u8>::new();
 
         // else get building cost
         // if building is a house, it's a fixed cost
-        if building_type == BuildingIds.HOUSE {
-            get_workhut_costs(resource_ids, resource_costs, quantity);
+        if building_type == BuildingTypes.HOUSE {
+            get_workhut_costs(resource_types, resource_costs, quantity);
         } else {
-            get_building_costs(building_type, resource_ids, resource_costs, quantity);
+            get_building_costs(building_type, resource_types, resource_costs, quantity);
         }
     // decrease only resources that are on the realm ?
-    // for (resource_id, i) in resource_ids {
-    //     let (resources) = commands::<Resource>::entities((realm_id, (resource_id)).into());
+    // for (resource_type, i) in resource_types {
+    //     let (resources) = commands::<Resource>::entities((realm_id, (resource_type)).into());
 
     //     commands::<Resource>::set_entity(
-    //         (realm_id, (resource_id)).into(),
+    //         (realm_id, (resource_type)).into(),
     //         Resource {
     //             quantity: resources.quantity - resource_costs[i],
     //         }
@@ -107,7 +109,7 @@ mod BuildBuilding {
     }
 
     fn get_workhut_costs(
-        resource_costs: Array<felt252>, resource_ids: Array<u8>, quantity: felt252
+        resource_costs: Array<felt252>, resource_types: Array<u8>, quantity: felt252
     ) {
         let building_config: BuildingConfig = commands::<BuildingConfig>::entity(
             BUILDING_CONFIG_ID.into()
@@ -116,17 +118,17 @@ mod BuildBuilding {
 
         let workhut_cost = (building_config.workhut_cost * 10 * *18) * quantity;
         // // TODO: do recursion?
-        // for resource_id in resource_ids {
+        // for resource_type in resource_types {
         //     resource_cost.append(workhut_cost); 
         // }
 
-        return (realm.resource_ids, resource_cost);
+        return (realm.resource_types, resource_cost);
     }
 
     fn get_building_costs(
         building_id: felt252,
         resource_costs: Array<felt252>,
-        resource_ids: Array<u8>,
+        resource_types: Array<u8>,
         quantity: felt252
     ) {
         let building_config: BuildingConfig = commands::<BuildingConfig>::entity(
@@ -134,13 +136,13 @@ mod BuildBuilding {
         );
 
         // get list of resource ids needed for that building id
-        let resource_ids_packed = building_config.resource_ids_packed;
-        let resource_ids_count = building_config.resource_ids_count;
-        unpack_resource_ids(resource_ids_packed, resource_ids, resource_ids_count, 0)
+        let resource_types_packed = building_config.resource_types_packed;
+        let resource_types_count = building_config.resource_types_count;
+        unpack_resource_types(resource_types_packed, resource_types, resource_types_count, 0)
 
         // // TODO: do recursion?
-        // for resource_id in resource_ids {
-        //     let cost = building_config.costs[building_id, resource_id] * quantity;
+        // for resource_type in resource_types {
+        //     let cost = building_config.costs[building_id, resource_type] * quantity;
         //     resource_costs.append(cost);
         // }
 

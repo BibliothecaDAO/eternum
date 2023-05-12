@@ -6,7 +6,7 @@ mod SpendResources {
     use eternum::components::owner::Owner;
     use eternum::alias::ID;
 
-    fn execute(entity_id: ID, resource_id: u8, amount: u128) {
+    fn execute(entity_id: ID, resource_type: u8, amount: u128) {
         // DISCUSS: will get_caller_address give the original caller address ?
         let caller = starknet::get_caller_address();
 
@@ -22,7 +22,7 @@ mod SpendResources {
         let final_balance = resource.balance - amount;
         assert(final_balance >= 0, 'Not enough balance');
         commands::<Resource>::set_entity(
-            query, (Resource { id: resource_id, balance: final_balance,  })
+            query, (Resource { resource_type, balance: final_balance,  })
         );
     }
 }

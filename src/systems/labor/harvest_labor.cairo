@@ -12,10 +12,10 @@ mod HarvestLabor {
     use eternum::components::resources::{Resource, Vault};
     use eternum::components::labor::{Labor, LaborTrait};
     use eternum::components::config::LaborConfig;
-    use eternum::constants::{LABOR_CONFIG_ID, WORLD_CONFIG_ID, ResourceIds};
+    use eternum::constants::{LABOR_CONFIG_ID, WORLD_CONFIG_ID, ResourceTypes};
     use eternum::alias::ID;
 
-    fn execute(realm_id: ID, resource_id: u8) {
+    fn execute(realm_id: ID, resource_type: u8) {
         let player_id: ContractAddress = starknet::get_tx_info().unbox().account_contract_address;
         let (realm, owner) = commands::<Realm, Owner>::entity((realm_id.into()).into());
 
@@ -23,18 +23,19 @@ mod HarvestLabor {
         // assert(owner.address == player_id, 'Realm does not belong to player');
 
         // check that resource is on realm
-        let realm_has_resource = realm.has_resource(resource_id);
-        let is_food = resource_id == ResourceIds::FISH
-            | resource_id == ResourceIds::WHEAT;
+        let realm_has_resource = realm.has_resource(resource_type);
+        let is_food = resource_type == ResourceTypes::FISH | resource_type == ResourceTypes::WHEAT;
         if realm_has_resource == false {
             assert(is_food == true, 'Resource is not on realm');
         }
 
         // Get Config
-        let labor_config: LaborConfig = commands::<LaborConfig>::entity((LABOR_CONFIG_ID.into()).into());
+        let labor_config: LaborConfig = commands::<LaborConfig>::entity(
+            (LABOR_CONFIG_ID.into()).into()
+        );
 
-        let resource_id_felt: felt252 = resource_id.into();
-        let resource_query: Query = (realm_id.into(), resource_id_felt).into();
+        let resource_type_felt: felt252 = resource_type.into();
+        let resource_query: Query = (realm_id.into(), resource_type_felt).into();
         let maybe_labor = commands::<Labor>::try_entity(resource_query);
         let labor = match maybe_labor {
             Option::Some(labor) => labor,
@@ -43,7 +44,7 @@ mod HarvestLabor {
         let maybe_resource = commands::<Resource>::try_entity(resource_query);
         let resource = match maybe_resource {
             Option::Some(resource) => resource,
-            Option::None(_) => Resource { id: resource_id, balance: 0,  }
+            Option::None(_) => Resource { resource_type, balance: 0,  }
         };
 
         // transform timestamp from u64 to u128
@@ -70,8 +71,8 @@ mod HarvestLabor {
             },
         };
 
-        if resource_id != ResourceIds::FISH
-            & resource_id != ResourceIds::WHEAT {
+        if resource_type != ResourceTypes::FISH
+            & resource_type != ResourceTypes::WHEAT {
                 // remove 25% to the vault
                 let vault_units_generated = (labor_units_generated * labor_config.vault_percentage)
                     / 1000;
@@ -80,8 +81,7 @@ mod HarvestLabor {
                 // the balance in the vault is in cycles so need to multiply by base resource per cycle
                 // update the vault
                 commands::set_entity(
-                    resource_query,
-                    (Vault { balance: vault.balance + vault_units_generated }, )
+                    resource_query, (Vault { balance: vault.balance + vault_units_generated }, )
                 );
             }
 
@@ -90,7 +90,7 @@ mod HarvestLabor {
             resource_query,
             (
                 Resource {
-                    id: resource_id,
+                    resource_type,
                     balance: resource.balance
                         + labor_units_generated * labor_config.base_resources_per_cycle
                     }, Labor {
@@ -106,7 +106,9 @@ mod tests {
     use eternum::components::owner::OwnerComponent;
     use eternum::components::labor::LaborComponent;
     use eternum::components::realm::RealmComponent;
-    use eternum::components::config::{LaborConfigComponent, LaborCostAmountComponent, LaborCostResourcesComponent};
+    use eternum::components::config::{
+        LaborConfigComponent, LaborCostAmountComponent, LaborCostResourcesComponent
+    };
     use eternum::components::resources::{ResourceComponent, VaultComponent};
     use eternum::components::realm::Realm;
     use eternum::components::config::{LaborConfig, LaborCostResources, LaborCostAmount};
@@ -114,11 +116,13 @@ mod tests {
     // systems
     use eternum::systems::labor::build_labor::BuildLaborSystem;
     use eternum::systems::labor::harvest_labor::HarvestLaborSystem;
-    use eternum::systems::config::labor_config::{CreateLaborConfigSystem, CreateLaborCostResourcesSystem, CreateLaborCostAmountSystem};
+    use eternum::systems::config::labor_config::{
+        CreateLaborConfigSystem, CreateLaborCostResourcesSystem, CreateLaborCostAmountSystem
+    };
     use eternum::systems::test::{CreateRealmSystem, MintResourcesSystem};
 
     // constants
-    use eternum::constants::ResourceIds;
+    use eternum::constants::ResourceTypes;
 
     use core::traits::Into;
     use core::result::ResultTrait;
@@ -219,7 +223,7 @@ mod tests {
     //     let mut harvest_labor_calldata = array::ArrayTrait::<felt252>::new();
     //     // realm_id
     //     harvest_labor_calldata.append(1);
-    //     // resource_id
+    //     // resource_type
     //     harvest_labor_calldata.append(1);
     //     world.execute('HarvestLabor'.into(), harvest_labor_calldata.span());
 
@@ -308,13 +312,13 @@ mod tests {
         world.execute('CreateLaborConfig'.into(), create_labor_conf_calldata.span());
 
         let mut creat_labor_cr_calldata = array::ArrayTrait::<felt252>::new();
-        creat_labor_cr_calldata.append(ResourceIds::WHEAT.into());
+        creat_labor_cr_calldata.append(ResourceTypes::WHEAT.into());
         creat_labor_cr_calldata.append(1);
         creat_labor_cr_calldata.append(1);
         world.execute('CreateLaborCostResources'.into(), creat_labor_cr_calldata.span());
 
         let mut create_labor_cv_calldata = array::ArrayTrait::<felt252>::new();
-        create_labor_cv_calldata.append(ResourceIds::WHEAT.into());
+        create_labor_cv_calldata.append(ResourceTypes::WHEAT.into());
         create_labor_cv_calldata.append(1);
         create_labor_cv_calldata.append(1000);
         world.execute('CreateLaborCostAmount'.into(), create_labor_cv_calldata.span());
@@ -333,7 +337,7 @@ mod tests {
         // call build labor system
         let mut build_labor_calldata = array::ArrayTrait::<felt252>::new();
         build_labor_calldata.append(1);
-        build_labor_calldata.append(ResourceIds::WHEAT.into());
+        build_labor_calldata.append(ResourceTypes::WHEAT.into());
         build_labor_calldata.append(20);
         // multiplier
         build_labor_calldata.append(1);
@@ -347,16 +351,14 @@ mod tests {
         let mut harvest_labor_calldata = array::ArrayTrait::<felt252>::new();
         // realm_id
         harvest_labor_calldata.append(1);
-        // resource_id
-        harvest_labor_calldata.append(ResourceIds::WHEAT.into());
+        // resource_type
+        harvest_labor_calldata.append(ResourceTypes::WHEAT.into());
         world.execute('HarvestLabor'.into(), harvest_labor_calldata.span());
 
-        let wheat_felt: felt252 = ResourceIds::WHEAT.into();
+        let wheat_felt: felt252 = ResourceTypes::WHEAT.into();
         let wheat_query: Query = (1, wheat_felt).into();
         // get labor after harvest 
-        let labor_after_harvest = world.entity(
-            'Labor'.into(), wheat_query, 0_u8, 0_usize
-        );
+        let labor_after_harvest = world.entity('Labor'.into(), wheat_query, 0_u8, 0_usize);
         // labor after harvest = current labor balance + rest from division by 72000
         assert(*labor_after_harvest[0] == 145000 + 3000, 'wrong labor balance');
         assert(*labor_after_harvest[1] == 40000, 'wrong last harvest');
@@ -375,9 +377,7 @@ mod tests {
         let generated_resources = generated_units * base_resources_per_cycle;
 
         // verify resource is right amount
-        let resource = world.entity(
-            'Resource'.into(), wheat_query, 0_u8, 0_usize
-        );
+        let resource = world.entity('Resource'.into(), wheat_query, 0_u8, 0_usize);
         assert(*resource[1] == generated_resources.into(), 'failed resource amount');
     }
 }

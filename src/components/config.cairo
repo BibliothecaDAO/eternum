@@ -13,7 +13,7 @@ struct WorldConfig {
 
 #[derive(Component)]
 struct BuildingCost {
-    resource_id: felt252,
+    resource_type: felt252,
     cost: u128,
 }
 
@@ -21,8 +21,8 @@ struct BuildingCost {
 struct BuildingTypeConfig {
     id: felt252,
     sqm: u128,
-    resource_ids_packed: u256,
-    resource_ids_count: u8,
+    resource_types_packed: u256,
+    resource_types_count: u8,
 }
 
 #[derive(Component)]
@@ -42,15 +42,15 @@ struct LaborConfig {
 #[derive(Component)]
 struct LaborCostResources {
     id: felt252,
-    resource_ids_packed: u128,
-    resource_ids_count: u8,
+    resource_types_packed: u128,
+    resource_types_count: u8,
 }
 
 // labor cost values
-// mapping of resource_id for which we want to increase labor, resource_id that needs to be burned, value to be burned
+// mapping of resource_type for which we want to increase labor, resource_type that needs to be burned, value to be burned
 #[derive(Component)]
 struct LaborCostAmount {
     id: felt252,
-    resource_id: felt252,
+    resource_type: felt252,
     value: u128,
 }

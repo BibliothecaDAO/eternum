@@ -9,7 +9,7 @@ const LABOR_CONFIG_ID: ID = 999999999999999997;
 const RESOURCE_IDS_PACKED_SIZE: usize = 8_usize;
 const REALMS_DATA_PACKED_SIZE: usize = 8_usize;
 
-mod ResourceIds {
+mod ResourceTypes {
     const WOOD: u8 = 1;
     const STONE: u8 = 2;
     const COAL: u8 = 3;
@@ -44,7 +44,7 @@ mod ResourceIds {
 
 
 // TODO: change to consts
-enum BuildingIds {
+enum BuildingTypes {
     HOUSE: u8,
     STORE_HOUSE: u8,
     GRANARY: u8,

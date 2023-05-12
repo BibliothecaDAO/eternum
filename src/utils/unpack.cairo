@@ -5,11 +5,11 @@ use option::OptionTrait;
 use eternum::constants::RESOURCE_IDS_PACKED_SIZE;
 use eternum::utils::math::pow;
 
-fn unpack_resource_ids(resource_ids_packed: u128, resource_ids_count: u8) -> Span<u8> {
-    let mut resource_ids = ArrayTrait::<u8>::new();
+fn unpack_resource_types(resource_types_packed: u128, resource_types_count: u8) -> Span<u8> {
+    let mut resource_types = ArrayTrait::<u8>::new();
     let mut i = 0_usize;
     loop {
-        if i == resource_ids_count.into() {
+        if i == resource_types_count.into() {
             break ();
         }
         let mask_size: u128 = (pow(2, RESOURCE_IDS_PACKED_SIZE.into()) - 1).try_into().unwrap();
@@ -18,29 +18,29 @@ fn unpack_resource_ids(resource_ids_packed: u128, resource_ids_count: u8) -> Spa
         let mask: u128 = mask_size * power;
 
         // 2. Apply mask using bitwise operation: mask AND data.
-        let masked: u128 = BitAnd::bitand(mask, resource_ids_packed);
+        let masked: u128 = BitAnd::bitand(mask, resource_types_packed);
 
         // 3. Shift element right by dividing by the order of the mask.
         let result: u128 = masked / power;
 
-        resource_ids.append(result.try_into().unwrap());
+        resource_types.append(result.try_into().unwrap());
 
         i = i + 1;
     };
 
-    resource_ids.span()
+    resource_types.span()
 }
 
 mod tests {
-    use super::unpack_resource_ids;
+    use super::unpack_resource_types;
     use traits::BitAnd;
 
     #[test]
     #[available_gas(30000000)]
-    fn test_unpack_resource_ids() {
+    fn test_unpack_resource_types() {
         let packed_data = 515_u128;
-        let resource_ids: Span<u8> = unpack_resource_ids(packed_data, 2);
-        assert(*resource_ids[0] == 3, 'resource_id should be 3');
-        assert(*resource_ids[1] == 2, 'resource_id should be 2');
+        let resource_types: Span<u8> = unpack_resource_types(packed_data, 2);
+        assert(*resource_types[0] == 3, 'resource_type should be 3');
+        assert(*resource_types[1] == 2, 'resource_type should be 2');
     }
 }
