@@ -1,4 +1,4 @@
-#[derive(Component)]
+#[derive(Component, Copy, Drop, Serde)]
 struct Labor {
     balance: u128,
     last_harvest: u128,

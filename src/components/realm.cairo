@@ -4,7 +4,7 @@ use array::SpanTrait;
 use eternum::alias::ID;
 use eternum::utils::unpack::unpack_resource_types;
 
-#[derive(Component)]
+#[derive(Component, Copy, Drop, Serde)]
 struct Realm {
     realm_id: ID, // OG Realm Id
     // TODO: no need for owner ? since we use Owner component

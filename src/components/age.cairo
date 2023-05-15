@@ -1,4 +1,4 @@
-#[derive(Component)]
+#[derive(Component, Copy, Drop, Serde)]
 struct Age {
     born_at: u64, 
 }
@@ -25,9 +25,7 @@ impl AgeImpl of AgeTrait {
 #[test]
 #[available_gas(30000000)]
 fn test_get_age_difference() {
-    let age = Age {
-        born_at: 100,
-    };
+    let age = Age { born_at: 100,  };
     let age_difference = age.get_age_difference(200);
     assert(age_difference == 100, 'Age difference should be 100');
 }
@@ -35,9 +33,7 @@ fn test_get_age_difference() {
 #[test]
 #[available_gas(30000000)]
 fn get_current_age() {
-    let age = Age {
-        born_at: 100,
-    };
+    let age = Age { born_at: 100,  };
     starknet::testing::set_block_timestamp(200);
     let current_age = age.get_current_age();
     assert(current_age == 100, 'Current age should be 100');
