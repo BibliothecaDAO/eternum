@@ -4,7 +4,7 @@
 use array::ArrayTrait;
 // TODO for next milestone
 
-#[derive(Component)]
+#[derive(Component, Copy, Drop, Serde)]
 struct Buildings {
     id: felt252,
     quantity: u128,

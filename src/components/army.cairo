@@ -6,7 +6,7 @@ use eternum::components::buildings::Buildings;
 // outside of a Realm. They might spawn randomly on the Map.
 // TODO for next milestone 
 
-#[derive(Component)]
+#[derive(Component, Copy, Drop, Serde)]
 struct Army {
     // TODO: Why not use the ID alias? I know it's a different type, but does it have to be?
     light_cavalry_qty: u32,

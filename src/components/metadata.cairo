@@ -4,7 +4,7 @@
 
 use eternum::constants::TICK_TIME;
 
-#[derive(Component)]
+#[derive(Component, Copy, Drop, Serde)]
 struct Metadata {
     name: felt252,
     created_at: u64,
@@ -22,7 +22,6 @@ trait RealmTrait {
 // TODO: find new name
 impl RealmImpl of RealmTrait {
     fn tick(self: Realm) -> bool {
-
         if (self.last_update + TICK_TIME) < starknet::get_block_timestamp() {
             true
         } else {

@@ -1,6 +1,6 @@
 use starknet::ContractAddress;
 
-#[derive(Component)]
+#[derive(Component, Copy, Drop, Serde)]
 struct WorldConfig {
     day_time: u128,
     vault_bp: u128,
@@ -11,13 +11,13 @@ struct WorldConfig {
     realm_l2_contract: ContractAddress,
 }
 
-#[derive(Component)]
+#[derive(Component, Copy, Drop, Serde)]
 struct BuildingCost {
     resource_type: felt252,
     cost: u128,
 }
 
-#[derive(Component)]
+#[derive(Component, Copy, Drop, Serde)]
 struct BuildingTypeConfig {
     id: felt252,
     sqm: u128,
@@ -25,13 +25,13 @@ struct BuildingTypeConfig {
     resource_types_count: u8,
 }
 
-#[derive(Component)]
+#[derive(Component, Copy, Drop, Serde)]
 struct BuildingConfig {
     base_sqm: u128,
     workhut_cost: u128,
 }
 
-#[derive(Component)]
+#[derive(Component, Copy, Drop, Serde)]
 struct LaborConfig {
     base_labor_units: u128, // 86400 / 12    
     vault_percentage: u128, // 250 
@@ -39,7 +39,7 @@ struct LaborConfig {
 }
 
 // labor cost resources
-#[derive(Component)]
+#[derive(Component, Copy, Drop, Serde)]
 struct LaborCostResources {
     id: felt252,
     resource_types_packed: u128,
@@ -48,7 +48,7 @@ struct LaborCostResources {
 
 // labor cost values
 // mapping of resource_type for which we want to increase labor, resource_type that needs to be burned, value to be burned
-#[derive(Component)]
+#[derive(Component, Copy, Drop, Serde)]
 struct LaborCostAmount {
     id: felt252,
     resource_type: felt252,

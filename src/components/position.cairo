@@ -1,4 +1,4 @@
-#[derive(Component)]
+#[derive(Component, Copy, Drop, Serde)]
 struct Position {
     x: u32,
     y: u32
