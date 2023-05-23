@@ -150,7 +150,6 @@ mod BuildLabor {
         };
     }
 }
-
 mod tests {
     // components
     use eternum::components::labor::LaborComponent;
@@ -187,6 +186,7 @@ mod tests {
     use dojo_core::interfaces::IWorldDispatcherTrait;
     use dojo_core::storage::query::Query;
     use dojo_core::test_utils::spawn_test_world;
+    use dojo_core::auth::systems::{Route, RouteTrait};
 
     #[test]
     #[available_gas(300000000000)]
@@ -211,7 +211,37 @@ mod tests {
         systems.append(CreateLaborCostAmountSystem::TEST_CLASS_HASH);
         systems.append(MintResourcesSystem::TEST_CLASS_HASH);
 
-        let world = spawn_test_world(components, systems);
+        let mut routes = array::ArrayTrait::new();
+        // CreateRealm
+        routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Owner'.into(), ));
+        routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Realm'.into(), ));
+        // CreateLaborConfig
+        routes
+            .append(
+                RouteTrait::new('CreateLaborConfig'.into(), 'Tester'.into(), 'LaborConfig'.into(), )
+            );
+        // CreateLaborCostResources
+        routes
+            .append(
+                RouteTrait::new(
+                    'CreateLaborCostResources'.into(), 'Tester'.into(), 'LaborCostResources'.into(), 
+                )
+            );
+        // CreateLaborCostAmount
+        routes
+            .append(
+                RouteTrait::new(
+                    'CreateLaborCostAmount'.into(), 'Tester'.into(), 'LaborCostAmount'.into(), 
+                )
+            );
+        // MintResources
+        routes
+            .append(RouteTrait::new('MintResources'.into(), 'Tester'.into(), 'Resource'.into(), ));
+        // BuildLabor
+        routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Resource'.into(), ));
+        routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Labor'.into(), ));
+
+        let world = spawn_test_world(components, systems, routes);
 
         /// CREATE ENTITIES ///
         // set realm entity
@@ -319,7 +349,36 @@ mod tests {
         systems.append(CreateLaborCostAmountSystem::TEST_CLASS_HASH);
         systems.append(MintResourcesSystem::TEST_CLASS_HASH);
 
-        let world = spawn_test_world(components, systems);
+        let mut routes = array::ArrayTrait::new();
+        // CreateRealm
+        routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Owner'.into(), ));
+        routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Realm'.into(), ));
+        // CreateLaborConfig
+        routes
+            .append(
+                RouteTrait::new('CreateLaborConfig'.into(), 'Tester'.into(), 'LaborConfig'.into(), )
+            );
+        // CreateLaborCostResources
+        routes
+            .append(
+                RouteTrait::new(
+                    'CreateLaborCostResources'.into(), 'Tester'.into(), 'LaborCostResources'.into(), 
+                )
+            );
+        // CreateLaborCostAmount
+        routes
+            .append(
+                RouteTrait::new(
+                    'CreateLaborCostAmount'.into(), 'Tester'.into(), 'LaborCostAmount'.into(), 
+                )
+            );
+        // MintResources
+        routes
+            .append(RouteTrait::new('MintResources'.into(), 'Tester'.into(), 'Resource'.into(), ));
+        // BuildLabor
+        routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Resource'.into(), ));
+        routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Labor'.into(), ));
+        let world = spawn_test_world(components, systems, routes);
 
         /// CREATE ENTITIES ///
         // set realm entity
