@@ -71,19 +71,18 @@ mod HarvestLabor {
             },
         };
 
-        if resource_type != ResourceTypes::FISH
-            & resource_type != ResourceTypes::WHEAT {
-                // remove 25% to the vault
-                let vault_units_generated = (labor_units_generated * labor_config.vault_percentage)
-                    / 1000;
-                labor_units_generated = labor_units_generated - vault_units_generated;
+        if resource_type != ResourceTypes::FISH & resource_type != ResourceTypes::WHEAT {
+            // remove 25% to the vault
+            let vault_units_generated = (labor_units_generated * labor_config.vault_percentage)
+                / 1000;
+            labor_units_generated = labor_units_generated - vault_units_generated;
 
-                // the balance in the vault is in cycles so need to multiply by base resource per cycle
-                // update the vault
-                commands::set_entity(
-                    resource_query, (Vault { balance: vault.balance + vault_units_generated }, )
-                );
-            }
+            // the balance in the vault is in cycles so need to multiply by base resource per cycle
+            // update the vault
+            commands::set_entity(
+                resource_query, (Vault { balance: vault.balance + vault_units_generated }, )
+            );
+        }
 
         // update the labor and resources
         commands::set_entity(
@@ -134,137 +133,173 @@ mod tests {
     use dojo_core::interfaces::IWorldDispatcherTrait;
     use dojo_core::storage::query::Query;
     use dojo_core::test_utils::spawn_test_world;
-
-    // #[test]
-    // #[available_gas(30000000)]
-    // fn test_harvest_labor_non_food() {
-    //     /// REGISTER COMPONENTS ///
-    //     let mut components = array::ArrayTrait::<felt252>::new();
-    //     components.append(LaborComponent::TEST_CLASS_HASH);
-    //     components.append(RealmComponent::TEST_CLASS_HASH);
-    //     components.append(LaborConfigComponent::TEST_CLASS_HASH);
-    //     components.append(LaborCostAmountComponent::TEST_CLASS_HASH);
-    //     components.append(LaborCostResourcesComponent::TEST_CLASS_HASH);
-    //     components.append(ResourceComponent::TEST_CLASS_HASH);
-    //     components.append(VaultComponent::TEST_CLASS_HASH);
-    //     components.append(OwnerComponent::TEST_CLASS_HASH);
-
-    //     /// REGISTER SYSTEMS ///
-    //     let mut systems = array::ArrayTrait::<felt252>::new();
-    //     systems.append(BuildLaborSystem::TEST_CLASS_HASH);
-    //     systems.append(HarvestLaborSystem::TEST_CLASS_HASH);
-    //     systems.append(CreateRealmSystem::TEST_CLASS_HASH);
-    //     systems.append(CreateLaborConfigSystem::TEST_CLASS_HASH);
-    //     systems.append(CreateLaborCostResourcesSystem::TEST_CLASS_HASH);
-    //     systems.append(CreateLaborCostAmountSystem::TEST_CLASS_HASH);
-    //     systems.append(MintResourcesSystem::TEST_CLASS_HASH);
-
-    //     let world = spawn_test_world(components, systems);
-
-    //     /// CREATE ENTITIES ///
-    //     // set realm entity
-    //     let mut create_realm_calldata = array::ArrayTrait::<felt252>::new();
-    //     create_realm_calldata.append(1);
-    //     create_realm_calldata.append(starknet::get_caller_address().into());
-    //     create_realm_calldata.append(1);
-    //     create_realm_calldata.append(1);
-    //     create_realm_calldata.append(5);
-    //     create_realm_calldata.append(5);
-    //     create_realm_calldata.append(5);
-    //     create_realm_calldata.append(5);
-    //     create_realm_calldata.append(1);
-    //     create_realm_calldata.append(1);
-    //     world.execute('CreateRealm'.into(), create_realm_calldata.span());
-
-    //     // set labor configuration entity
-    //     let mut create_labor_conf_calldata = array::ArrayTrait::<felt252>::new();
-    //     create_labor_conf_calldata.append(7200);
-    //     create_labor_conf_calldata.append(250);
-    //     create_labor_conf_calldata.append(21000000000000000000);
-    //     world.execute('CreateLaborConfig'.into(), create_labor_conf_calldata.span());
-
-    //     let mut creat_labor_cr_calldata = array::ArrayTrait::<felt252>::new();
-    //     creat_labor_cr_calldata.append(1);
-    //     creat_labor_cr_calldata.append(1);
-    //     creat_labor_cr_calldata.append(1);
-    //     world.execute('CreateLaborCostResources'.into(), creat_labor_cr_calldata.span());
-
-    //     let mut create_labor_cv_calldata = array::ArrayTrait::<felt252>::new();
-    //     create_labor_cv_calldata.append(1);
-    //     create_labor_cv_calldata.append(1);
-    //     create_labor_cv_calldata.append(1000);
-    //     world.execute('CreateLaborCostAmount'.into(), create_labor_cv_calldata.span());
-
-    //     // mint 100000 resource id 1 for realm id 1;
-    //     let mut mint_resources_calldata = array::ArrayTrait::<felt252>::new();
-    //     mint_resources_calldata.append(1);
-    //     mint_resources_calldata.append(1);
-    //     mint_resources_calldata.append(100000);
-    //     world.execute('MintResources'.into(), mint_resources_calldata.span());
-
-    //     // set block timestamp in order to harvest labor
-    //     // initial ts = 0
-    //     starknet::testing::set_block_timestamp(1000);
-
-    //     // call build labor system
-    //     let mut build_labor_calldata = array::ArrayTrait::<felt252>::new();
-    //     build_labor_calldata.append(1);
-    //     build_labor_calldata.append(1);
-    //     build_labor_calldata.append(20);
-    //     // multiplier
-    //     build_labor_calldata.append(1);
-    //     world.execute('BuildLabor'.into(), build_labor_calldata.span());
-
-    //     // set block timestamp in order to harvest labor
-    //     // initial ts = 0
-    //     starknet::testing::set_block_timestamp(40000);
-
-    //     // call build labor system
-    //     let mut harvest_labor_calldata = array::ArrayTrait::<felt252>::new();
-    //     // realm_id
-    //     harvest_labor_calldata.append(1);
-    //     // resource_type
-    //     harvest_labor_calldata.append(1);
-    //     world.execute('HarvestLabor'.into(), harvest_labor_calldata.span());
-
-    //     // get labor after harvest 
-    //     let labor_after_harvest = world.entity('Labor'.into(), (1, (1)).into(), 0_u8, 0_usize);
-    //     // labor after harvest = current labor balance + rest from division by 72000
-    //     assert(*labor_after_harvest[0] == 145000 + 3000, 'wrong labor balance');
-    //     assert(*labor_after_harvest[1] == 40000, 'wrong last harvest');
-
-    //     let last_harvest = 1000_u128;
-    //     let current_ts = 40000_u128;
-    //     let labor_per_unit = 7200_u128;
-    //     let base_resources_per_cycle = 21000000000000000000_u128;
-    //     let vault_percentage = 250; // on base 1000
-    //     let resource_balance_before_harvest = 80000_u128;
-
-    //     // because current_ts < balance
-    //     let generated_labor = current_ts - last_harvest;
-
-    //     // generated units
-    //     let mut generated_units = generated_labor / labor_per_unit;
-    //     // vault units
-    //     let vault_units = generated_units * vault_percentage / 1000;
-    //     generated_units -= vault_units;
-
-    //     let generated_resources = generated_units * base_resources_per_cycle;
-
-    //     // verify resource is right amount
-    //     let resource = world.entity('Resource'.into(), (1, (1)).into(), 0_u8, 0_usize);
-    //     assert(
-    //         *resource[1] == (resource_balance_before_harvest + generated_resources).into(),
-    //         'failed resource amount'
-    //     );
-
-    //     // verify vault balance 
-    //     let vault = world.entity('Vault'.into(), (1, (1)).into(), 0_u8, 0_usize);
-    //     assert(*vault[0] == 1, 'failed vault balance');
-    // }
+    use dojo_core::auth::systems::{Route, RouteTrait};
 
     #[test]
-    #[available_gas(30000000)]
+    // need higher gas limit because of new auth system
+    #[available_gas(3000000000)]
+    fn test_harvest_labor_non_food() {
+        /// REGISTER COMPONENTS ///
+        let mut components = array::ArrayTrait::<felt252>::new();
+        components.append(LaborComponent::TEST_CLASS_HASH);
+        components.append(RealmComponent::TEST_CLASS_HASH);
+        components.append(LaborConfigComponent::TEST_CLASS_HASH);
+        components.append(LaborCostAmountComponent::TEST_CLASS_HASH);
+        components.append(LaborCostResourcesComponent::TEST_CLASS_HASH);
+        components.append(ResourceComponent::TEST_CLASS_HASH);
+        components.append(VaultComponent::TEST_CLASS_HASH);
+        components.append(OwnerComponent::TEST_CLASS_HASH);
+
+        /// REGISTER SYSTEMS ///
+        let mut systems = array::ArrayTrait::<felt252>::new();
+        systems.append(BuildLaborSystem::TEST_CLASS_HASH);
+        systems.append(HarvestLaborSystem::TEST_CLASS_HASH);
+        systems.append(CreateRealmSystem::TEST_CLASS_HASH);
+        systems.append(CreateLaborConfigSystem::TEST_CLASS_HASH);
+        systems.append(CreateLaborCostResourcesSystem::TEST_CLASS_HASH);
+        systems.append(CreateLaborCostAmountSystem::TEST_CLASS_HASH);
+        systems.append(MintResourcesSystem::TEST_CLASS_HASH);
+
+        let mut routes = array::ArrayTrait::new();
+        // CreateRealm
+        routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Owner'.into(), ));
+        routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Realm'.into(), ));
+        // CreateLaborConfig
+        routes
+            .append(
+                RouteTrait::new('CreateLaborConfig'.into(), 'Tester'.into(), 'LaborConfig'.into(), )
+            );
+        // CreateLaborCostResources
+        routes
+            .append(
+                RouteTrait::new(
+                    'CreateLaborCostResources'.into(), 'Tester'.into(), 'LaborCostResources'.into(), 
+                )
+            );
+        // CreateLaborCostAmount
+        routes
+            .append(
+                RouteTrait::new(
+                    'CreateLaborCostAmount'.into(), 'Tester'.into(), 'LaborCostAmount'.into(), 
+                )
+            );
+        // MintResources
+        routes
+            .append(RouteTrait::new('MintResources'.into(), 'Tester'.into(), 'Resource'.into(), ));
+        // BuildLabor
+        routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Resource'.into(), ));
+        routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Labor'.into(), ));
+        // HarvestLabor
+        routes.append(RouteTrait::new('HarvestLabor'.into(), 'Tester'.into(), 'Labor'.into(), ));
+        routes.append(RouteTrait::new('HarvestLabor'.into(), 'Tester'.into(), 'Resource'.into(), ));
+        routes.append(RouteTrait::new('HarvestLabor'.into(), 'Tester'.into(), 'Vault'.into(), ));
+
+        let world = spawn_test_world(components, systems, routes);
+
+        /// CREATE ENTITIES ///
+        // set realm entity
+        let mut create_realm_calldata = array::ArrayTrait::<felt252>::new();
+        create_realm_calldata.append(1);
+        create_realm_calldata.append(starknet::get_caller_address().into());
+        create_realm_calldata.append(1);
+        create_realm_calldata.append(1);
+        create_realm_calldata.append(5);
+        create_realm_calldata.append(5);
+        create_realm_calldata.append(5);
+        create_realm_calldata.append(5);
+        create_realm_calldata.append(1);
+        create_realm_calldata.append(1);
+        world.execute('CreateRealm'.into(), create_realm_calldata.span());
+
+        // set labor configuration entity
+        let mut create_labor_conf_calldata = array::ArrayTrait::<felt252>::new();
+        create_labor_conf_calldata.append(7200);
+        create_labor_conf_calldata.append(250);
+        create_labor_conf_calldata.append(21000000000000000000);
+        world.execute('CreateLaborConfig'.into(), create_labor_conf_calldata.span());
+
+        let mut creat_labor_cr_calldata = array::ArrayTrait::<felt252>::new();
+        creat_labor_cr_calldata.append(1);
+        creat_labor_cr_calldata.append(1);
+        creat_labor_cr_calldata.append(1);
+        world.execute('CreateLaborCostResources'.into(), creat_labor_cr_calldata.span());
+
+        let mut create_labor_cv_calldata = array::ArrayTrait::<felt252>::new();
+        create_labor_cv_calldata.append(1);
+        create_labor_cv_calldata.append(1);
+        create_labor_cv_calldata.append(1000);
+        world.execute('CreateLaborCostAmount'.into(), create_labor_cv_calldata.span());
+
+        // mint 100000 resource id 1 for realm id 1;
+        let mut mint_resources_calldata = array::ArrayTrait::<felt252>::new();
+        mint_resources_calldata.append(1);
+        mint_resources_calldata.append(1);
+        mint_resources_calldata.append(100000);
+        world.execute('MintResources'.into(), mint_resources_calldata.span());
+
+        // set block timestamp in order to harvest labor
+        // initial ts = 0
+        starknet::testing::set_block_timestamp(1000);
+
+        // call build labor system
+        let mut build_labor_calldata = array::ArrayTrait::<felt252>::new();
+        build_labor_calldata.append(1);
+        build_labor_calldata.append(1);
+        build_labor_calldata.append(20);
+        // multiplier
+        build_labor_calldata.append(1);
+        world.execute('BuildLabor'.into(), build_labor_calldata.span());
+
+        // set block timestamp in order to harvest labor
+        // initial ts = 0
+        starknet::testing::set_block_timestamp(40000);
+
+        // call build labor system
+        let mut harvest_labor_calldata = array::ArrayTrait::<felt252>::new();
+        // realm_id
+        harvest_labor_calldata.append(1);
+        // resource_type
+        harvest_labor_calldata.append(1);
+        world.execute('HarvestLabor'.into(), harvest_labor_calldata.span());
+
+        // get labor after harvest 
+        let labor_after_harvest = world.entity('Labor'.into(), (1, (1)).into(), 0_u8, 0_usize);
+        // labor after harvest = current labor balance + rest from division by 72000
+        assert(*labor_after_harvest[0] == 145000 + 3000, 'wrong labor balance');
+        assert(*labor_after_harvest[1] == 40000, 'wrong last harvest');
+
+        let last_harvest = 1000_u128;
+        let current_ts = 40000_u128;
+        let labor_per_unit = 7200_u128;
+        let base_resources_per_cycle = 21000000000000000000_u128;
+        let vault_percentage = 250; // on base 1000
+        let resource_balance_before_harvest = 80000_u128;
+
+        // because current_ts < balance
+        let generated_labor = current_ts - last_harvest;
+
+        // generated units
+        let mut generated_units = generated_labor / labor_per_unit;
+        // vault units
+        let vault_units = generated_units * vault_percentage / 1000;
+        generated_units -= vault_units;
+
+        let generated_resources = generated_units * base_resources_per_cycle;
+
+        // verify resource is right amount
+        let resource = world.entity('Resource'.into(), (1, (1)).into(), 0_u8, 0_usize);
+        assert(
+            *resource[1] == (resource_balance_before_harvest + generated_resources).into(),
+            'failed resource amount'
+        );
+
+        // verify vault balance 
+        let vault = world.entity('Vault'.into(), (1, (1)).into(), 0_u8, 0_usize);
+        assert(*vault[0] == 1, 'failed vault balance');
+    }
+
+    #[test]
+    #[available_gas(3000000000)]
     fn test_harvest_labor_food() {
         /// REGISTER COMPONENTS ///
         let mut components = array::ArrayTrait::<felt252>::new();
@@ -287,7 +322,41 @@ mod tests {
         systems.append(CreateLaborCostAmountSystem::TEST_CLASS_HASH);
         systems.append(MintResourcesSystem::TEST_CLASS_HASH);
 
-        let world = spawn_test_world(components, systems);
+        let mut routes = array::ArrayTrait::new();
+        // CreateRealm
+        routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Owner'.into(), ));
+        routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Realm'.into(), ));
+        // CreateLaborConfig
+        routes
+            .append(
+                RouteTrait::new('CreateLaborConfig'.into(), 'Tester'.into(), 'LaborConfig'.into(), )
+            );
+        // CreateLaborCostResources
+        routes
+            .append(
+                RouteTrait::new(
+                    'CreateLaborCostResources'.into(), 'Tester'.into(), 'LaborCostResources'.into(), 
+                )
+            );
+        // CreateLaborCostAmount
+        routes
+            .append(
+                RouteTrait::new(
+                    'CreateLaborCostAmount'.into(), 'Tester'.into(), 'LaborCostAmount'.into(), 
+                )
+            );
+        // MintResources
+        routes
+            .append(RouteTrait::new('MintResources'.into(), 'Tester'.into(), 'Resource'.into(), ));
+        // BuildLabor
+        routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Resource'.into(), ));
+        routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Labor'.into(), ));
+        // HarvestLabor
+        routes.append(RouteTrait::new('HarvestLabor'.into(), 'Tester'.into(), 'Labor'.into(), ));
+        routes.append(RouteTrait::new('HarvestLabor'.into(), 'Tester'.into(), 'Resource'.into(), ));
+        routes.append(RouteTrait::new('HarvestLabor'.into(), 'Tester'.into(), 'Vault'.into(), ));
+
+        let world = spawn_test_world(components, systems, routes);
 
         /// CREATE ENTITIES ///
         // set realm entity
