@@ -4,10 +4,14 @@ use eternum::alias::ID;
 const WORLD_CONFIG_ID: ID = 999999999999999999;
 const BUILDING_CONFIG_ID: ID = 999999999999999998;
 const LABOR_CONFIG_ID: ID = 999999999999999997;
+const RESOURCE_CONFIG_ID: ID = 999999999999999996;
 
 // 8 bits
 const RESOURCE_IDS_PACKED_SIZE: usize = 8_usize;
 const REALMS_DATA_PACKED_SIZE: usize = 8_usize;
+
+// LORDS
+const LORDS_ID: ID = 999999999999999996;
 
 mod ResourceTypes {
     const WOOD: u8 = 1;
@@ -42,6 +46,9 @@ mod ResourceTypes {
     const FISH: u8 = 255;
 }
 
+// DISCUSS: instead of using constants for entity_type, store the entity_type in the storage
+// DISCUSS: register each new entity_type to the system by creating an entity containing the config components
+const FREE_TRANSPORT_ENTITY_TYPE = 256;
 
 // TODO: change to consts
 enum BuildingTypes {

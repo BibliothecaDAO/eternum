@@ -15,6 +15,21 @@ impl PositionPartialEq of PartialEq<Position> {
     }
 }
 
+// TODO: implement position traits
+// trait PositionTrait {
+//     fn calculate_travel_distance(self: Position, destination: Position) -> u128;
+//     fn calculate_travel_time(self: Position, destination: Position, speed: ...) -> u64;
+// }
+// impl PositionImpl of PositionTrait {
+//     fn calculate_travel_distance(self: Position, destination: Position) -> u128 {
+
+//     }
+//     fn calculate_travel_time(self: Position, destination: Position, speed: ...) -> u64 {
+
+//     }
+
+}
+
 #[test]
 fn test_position_equal() {
     let a = Position { x: 1, y: 2 };

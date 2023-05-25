@@ -54,3 +54,28 @@ struct LaborCostAmount {
     resource_type: felt252,
     value: u128,
 }
+
+// weight
+#[derive(Component, Copy, Drop, Serde)]
+struct ResourceWeightConfig {
+    resource_type: u8,
+    weight_gram: u128,
+}
+
+// capacity
+// DISCUSS: entity_type allows us to link the config to an entity in the world
+// DISCUSS: entity_type is a shared id for all entities of same type
+// DISCUSS: so there's no difference between types for resources and types for buildings,
+// DISCUSS: the difference is the components that compose them
+// entity_type => CapacityConfig
+#[derive(Component, Copy, Drop, Serde)]
+struct CapacityConfig {
+    entity_type: u128,
+    weight_gram: u128,
+}
+
+#[derive(Component, Copy, Drop, Serde)]
+struct SpeedConfig {
+    entity_type: u128,
+    speed: u128,
+}
