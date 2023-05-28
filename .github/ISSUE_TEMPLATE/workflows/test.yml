@@ -1,0 +1,32 @@
+name: test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl
+
+      - name: Download Dojo release artifact
+        run: |
+          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v0.1.0-alpha.3/dojo-linux-x86_64.tar.gz
+          tar -xzf dojo-linux-x86_64.tar.gz
+          sudo mv dojo-test /usr/local/bin/
+
+      - name: Run Dojo Test
+        run: |
+          dojo-test .
