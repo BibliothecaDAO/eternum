@@ -1,13 +1,9 @@
 mod AttachCaravan {
+    use eternum::alias::ID;
+    use eternum::components::entities::FungibleEntities;
+
     fn execute(order_id: ID, caravan_id: ID) {
-        // check if there is an owner on the order id, if it's the case, needs to be same as caller
-        let maybe_owner = commands::<Owner>::try_entity(order_id);
-        match maybe_owner { // if owner assert that caller
-        // if no owner than ok 
-        }
-
-        let fungible_entites = commands::<FungibleEntities>::entity(order_id);
-
+        // DISCUSS: anybody can attach a caravan so need to check if that's an issue
         // get the fungible entities from the order
         let fungible_entities = commands::<FungibleEntities>::entity(order_id);
 
@@ -20,14 +16,13 @@ mod AttachCaravan {
             }
 
             // get quantity and entity_type from fungible_entities
-            let (quantity, entity_type) = commands::<Quantity,
-            EntityType>::entity(order_id, fungible_entites.key, index);
+            let resource = commands::<Resource>::entity(order_id, fungible_entities.key, index);
 
             let entity_type_weight = commands::<EntityTypeWeight>::entity(
-                (ENTITY_TYPE_CONFIG_ID, entity_type)
+                (ENTITY_TYPE_CONFIG_ID, resource.resource_type)
             );
 
-            let weight = entity_type_weight.weight_gram * quantity.value;
+            let weight = entity_type_weight.weight_gram * resource.balance;
             total_weight += weight;
         };
         // get the caravan capacity

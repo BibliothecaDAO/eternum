@@ -6,3 +6,6 @@ mod resources;
 mod labor;
 mod owner;
 mod order;
+mod entities;
+mod capacity;
+mod movable;
