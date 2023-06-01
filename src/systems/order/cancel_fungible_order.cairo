@@ -18,5 +18,12 @@ mod CancelOrder {
 
     #[external]
     fn execute(order_id: ID) { // TODO
+        let meta = commands::<Meta>::entity(trade_id);
+        assert(meta.status != Status::Accepted, 'Order already executed');
+        // only if order is not executed
+        commands::set_status(trade_id, Meta {
+            ...
+            status: Status::Cancelled,
+        })
     }
 }
