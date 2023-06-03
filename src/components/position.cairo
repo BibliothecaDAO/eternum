@@ -28,7 +28,7 @@ impl PositionPartialEq of PartialEq<Position> {
 
 //     }
 
-}
+// }
 
 #[test]
 fn test_position_equal() {

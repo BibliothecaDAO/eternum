@@ -43,7 +43,7 @@ mod AcceptOrder {
                 // if we reach capacity limit, we need to add additionnal free caravan units
                 let (free_transport_unit_capacity, free_transport_unit_speed) =
                     commands::<CapacityConfig,
-                SpeedConfig>::entity(FREE_TRANSPORT_ENTITY_TYPE);
+                SpeedConfig>::entity((WORLD_CONFIG, FREE_TRANSPORT_ENTITY_TYPE).into());
                 let mut quantity = remaining_weight / free_transport_unit_capacity.weight_gram;
                 let rem = remaining_weight % free_transport_unit_capacity.weight_gram;
                 if rem > 0 {

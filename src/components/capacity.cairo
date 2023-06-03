@@ -1,4 +1,4 @@
 #[derive(Component, Copy, Drop, Serde)]
 struct Capacity {
-    weight_gram: u32, 
+    weight_gram: u128, 
 }

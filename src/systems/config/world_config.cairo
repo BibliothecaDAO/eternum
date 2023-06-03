@@ -12,7 +12,8 @@ mod WorldConfig {
         vault_time: u128,
         lords_per_day: u128,
         tick_time: u128,
-        realm_l2_contract: starknet::ContractAddress
+        realm_l2_contract: starknet::ContractAddress,
+        free_transport_per_city: u128,
     ) {
         // TODO: can only be executed by Governance Vote
         let _ = commands::set_entity(
@@ -24,7 +25,8 @@ mod WorldConfig {
                 vault_time,
                 lords_per_day,
                 tick_time,
-                realm_l2_contract
+                realm_l2_contract,
+                free_transport_per_city
             })
         );
     }

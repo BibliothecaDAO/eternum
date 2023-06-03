@@ -1,7 +1,8 @@
 // speed in km per hour
 #[derive(Component, Copy, Drop, Serde)]
 struct Movable {
-    speed: u8, 
+    km_per_hr: u8,
+    blocked: bool,
 }
 
 #[derive(Component, Copy, Drop, Serde)]
