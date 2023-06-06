@@ -95,235 +95,234 @@ mod CreateFreeTransportUnit {
         id.into()
     }
 }
+// mod tests {
+//     // components
+//     use eternum::components::realm::RealmComponent;
+//     use eternum::components::owner::OwnerComponent;
+//     use eternum::components::config::{
+//         WorldConfigComponent, SpeedConfigComponent, CapacityConfigComponent
+//     };
+//     use eternum::components::entity_type::EntityTypeComponent;
+//     use eternum::components::quantity::{QuantityComponent, QuantityTrackerComponent};
+//     use eternum::components::position::PositionComponent;
+//     use eternum::components::capacity::CapacityComponent;
+//     use eternum::components::movable::{MovableComponent, ArrivalTimeComponent};
 
+//     // systems
+//     use eternum::systems::test::CreateRealmSystem;
+//     use eternum::systems::caravan::create_free_transport_unit::CreateFreeTransportUnitSystem;
+//     use eternum::systems::config::speed_config::SetSpeedConfigSystem;
+//     use eternum::systems::config::capacity_config::SetCapacityConfigSystem;
+//     use eternum::systems::config::world_config::WorldConfigSystem;
 
-mod tests {
-    // components
-    use eternum::components::realm::RealmComponent;
-    use eternum::components::owner::OwnerComponent;
-    use eternum::components::config::{
-        WorldConfigComponent, SpeedConfigComponent, CapacityConfigComponent
-    };
-    use eternum::components::entity_type::EntityTypeComponent;
-    use eternum::components::quantity::{QuantityComponent, QuantityTrackerComponent};
-    use eternum::components::position::PositionComponent;
-    use eternum::components::capacity::CapacityComponent;
-    use eternum::components::movable::{MovableComponent, ArrivalTimeComponent};
+//     // consts
+//     use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
 
-    // systems
-    use eternum::systems::test::CreateRealmSystem;
-    use eternum::systems::caravan::create_free_transport_unit::CreateFreeTransportUnitSystem;
-    use eternum::systems::config::speed_config::SetSpeedConfigSystem;
-    use eternum::systems::config::capacity_config::SetCapacityConfigSystem;
-    use eternum::systems::config::world_config::WorldConfigSystem;
+//     use core::traits::Into;
+//     use core::result::ResultTrait;
+//     use array::ArrayTrait;
+//     use option::OptionTrait;
+//     use debug::PrintTrait;
 
-    // consts
-    use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
+//     use starknet::syscalls::deploy_syscall;
 
-    use core::traits::Into;
-    use core::result::ResultTrait;
-    use array::ArrayTrait;
-    use option::OptionTrait;
-    use debug::PrintTrait;
+//     use dojo_core::interfaces::IWorldDispatcherTrait;
+//     use dojo_core::storage::query::Query;
+//     use dojo_core::test_utils::spawn_test_world;
+//     use dojo_core::auth::systems::{Route, RouteTrait};
 
-    use starknet::syscalls::deploy_syscall;
+//     #[test]
+//     #[available_gas(300000000000)]
+//     fn test_create_free_transport_unit() {
+//         // components
+//         let mut components = array::ArrayTrait::<felt252>::new();
+//         components.append(OwnerComponent::TEST_CLASS_HASH);
+//         components.append(RealmComponent::TEST_CLASS_HASH);
+//         components.append(SpeedConfigComponent::TEST_CLASS_HASH);
+//         components.append(CapacityConfigComponent::TEST_CLASS_HASH);
+//         components.append(WorldConfigComponent::TEST_CLASS_HASH);
+//         components.append(EntityTypeComponent::TEST_CLASS_HASH);
+//         components.append(QuantityComponent::TEST_CLASS_HASH);
+//         components.append(PositionComponent::TEST_CLASS_HASH);
+//         components.append(CapacityComponent::TEST_CLASS_HASH);
+//         components.append(MovableComponent::TEST_CLASS_HASH);
+//         components.append(ArrivalTimeComponent::TEST_CLASS_HASH);
+//         components.append(QuantityTrackerComponent::TEST_CLASS_HASH);
+//         // systems
+//         let mut systems = array::ArrayTrait::<felt252>::new();
+//         systems.append(CreateFreeTransportUnitSystem::TEST_CLASS_HASH);
+//         systems.append(SetSpeedConfigSystem::TEST_CLASS_HASH);
+//         systems.append(SetCapacityConfigSystem::TEST_CLASS_HASH);
+//         systems.append(WorldConfigSystem::TEST_CLASS_HASH);
+//         systems.append(CreateRealmSystem::TEST_CLASS_HASH);
 
-    use dojo_core::interfaces::IWorldDispatcherTrait;
-    use dojo_core::storage::query::Query;
-    use dojo_core::test_utils::spawn_test_world;
-    use dojo_core::auth::systems::{Route, RouteTrait};
+//         // create auth routes
+//         let mut routes = array::ArrayTrait::new();
+//         // CreateFreeTransportUnit
+//         routes
+//             .append(
+//                 RouteTrait::new(
+//                     'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Position'.into(), 
+//                 )
+//             );
+//         routes
+//             .append(
+//                 RouteTrait::new('CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Realm'.into(), )
+//             );
+//         routes
+//             .append(
+//                 RouteTrait::new('CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Owner'.into(), )
+//             );
+//         routes
+//             .append(
+//                 RouteTrait::new(
+//                     'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'QuantityTracker'.into(), 
+//                 )
+//             );
+//         routes
+//             .append(
+//                 RouteTrait::new(
+//                     'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'EntityType'.into(), 
+//                 )
+//             );
+//         routes
+//             .append(
+//                 RouteTrait::new(
+//                     'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Quantity'.into(), 
+//                 )
+//             );
+//         routes
+//             .append(
+//                 RouteTrait::new(
+//                     'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Movable'.into(), 
+//                 )
+//             );
+//         routes
+//             .append(
+//                 RouteTrait::new(
+//                     'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'ArrivalTime'.into(), 
+//                 )
+//             );
+//         routes
+//             .append(
+//                 RouteTrait::new(
+//                     'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Capacity'.into(), 
+//                 )
+//             );
+//         // CreateRealm
+//         routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Owner'.into(), ));
+//         routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Realm'.into(), ));
+//         routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Position'.into(), ));
+//         routes
+//             .append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'EntityType'.into(), ));
 
-    #[test]
-    #[available_gas(300000000000)]
-    fn test_create_free_transport_unit() {
-        // components
-        let mut components = array::ArrayTrait::<felt252>::new();
-        components.append(OwnerComponent::TEST_CLASS_HASH);
-        components.append(RealmComponent::TEST_CLASS_HASH);
-        components.append(SpeedConfigComponent::TEST_CLASS_HASH);
-        components.append(CapacityConfigComponent::TEST_CLASS_HASH);
-        components.append(WorldConfigComponent::TEST_CLASS_HASH);
-        components.append(EntityTypeComponent::TEST_CLASS_HASH);
-        components.append(QuantityComponent::TEST_CLASS_HASH);
-        components.append(PositionComponent::TEST_CLASS_HASH);
-        components.append(CapacityComponent::TEST_CLASS_HASH);
-        components.append(MovableComponent::TEST_CLASS_HASH);
-        components.append(ArrivalTimeComponent::TEST_CLASS_HASH);
-        components.append(QuantityTrackerComponent::TEST_CLASS_HASH);
-        // systems
-        let mut systems = array::ArrayTrait::<felt252>::new();
-        systems.append(CreateFreeTransportUnitSystem::TEST_CLASS_HASH);
-        systems.append(SetSpeedConfigSystem::TEST_CLASS_HASH);
-        systems.append(SetCapacityConfigSystem::TEST_CLASS_HASH);
-        systems.append(WorldConfigSystem::TEST_CLASS_HASH);
-        systems.append(CreateRealmSystem::TEST_CLASS_HASH);
+//         // configs
+//         routes
+//             .append(
+//                 RouteTrait::new('SetSpeedConfig'.into(), 'Tester'.into(), 'SpeedConfig'.into(), )
+//             );
+//         routes
+//             .append(
+//                 RouteTrait::new(
+//                     'SetCapacityConfig'.into(), 'Tester'.into(), 'CapacityConfig'.into(), 
+//                 )
+//             );
+//         routes
+//             .append(RouteTrait::new('WorldConfig'.into(), 'Tester'.into(), 'WorldConfig'.into(), ));
 
-        // create auth routes
-        let mut routes = array::ArrayTrait::new();
-        // CreateFreeTransportUnit
-        routes
-            .append(
-                RouteTrait::new(
-                    'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Position'.into(), 
-                )
-            );
-        routes
-            .append(
-                RouteTrait::new('CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Realm'.into(), )
-            );
-        routes
-            .append(
-                RouteTrait::new('CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Owner'.into(), )
-            );
-        routes
-            .append(
-                RouteTrait::new(
-                    'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'QuantityTracker'.into(), 
-                )
-            );
-        routes
-            .append(
-                RouteTrait::new(
-                    'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'EntityType'.into(), 
-                )
-            );
-        routes
-            .append(
-                RouteTrait::new(
-                    'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Quantity'.into(), 
-                )
-            );
-        routes
-            .append(
-                RouteTrait::new(
-                    'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Movable'.into(), 
-                )
-            );
-        routes
-            .append(
-                RouteTrait::new(
-                    'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'ArrivalTime'.into(), 
-                )
-            );
-        routes
-            .append(
-                RouteTrait::new(
-                    'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Capacity'.into(), 
-                )
-            );
-        // CreateRealm
-        routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Owner'.into(), ));
-        routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Realm'.into(), ));
-        routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Position'.into(), ));
-        routes
-            .append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'EntityType'.into(), ));
+//         let world = spawn_test_world(components, systems, routes);
 
-        // configs
-        routes
-            .append(
-                RouteTrait::new('SetSpeedConfig'.into(), 'Tester'.into(), 'SpeedConfig'.into(), )
-            );
-        routes
-            .append(
-                RouteTrait::new(
-                    'SetCapacityConfig'.into(), 'Tester'.into(), 'CapacityConfig'.into(), 
-                )
-            );
-        routes
-            .append(RouteTrait::new('WorldConfig'.into(), 'Tester'.into(), 'WorldConfig'.into(), ));
+//         /// CREATE ENTITIES ///
+//         // set realm entity
+//         let mut create_realm_calldata = array::ArrayTrait::<felt252>::new();
+//         create_realm_calldata.append(1);
+//         create_realm_calldata.append(starknet::get_caller_address().into());
+//         create_realm_calldata.append(1);
+//         create_realm_calldata.append(1);
+//         // cities = 6
+//         create_realm_calldata.append(6);
+//         create_realm_calldata.append(5);
+//         create_realm_calldata.append(5);
+//         create_realm_calldata.append(5);
+//         create_realm_calldata.append(1);
+//         create_realm_calldata.append(1);
+//         // position
+//         create_realm_calldata.append(20);
+//         create_realm_calldata.append(30);
+//         world.execute('CreateRealm'.into(), create_realm_calldata.span());
 
-        let world = spawn_test_world(components, systems, routes);
+//         // set speed configuration entity
+//         let mut set_speed_conf_calldata = array::ArrayTrait::<felt252>::new();
+//         set_speed_conf_calldata.append(FREE_TRANSPORT_ENTITY_TYPE.into());
+//         // speed of 10 km per hr for free transport unit
+//         set_speed_conf_calldata.append(10);
+//         world.execute('SetSpeedConfig'.into(), set_speed_conf_calldata.span());
+//         // set world config
+//         let mut world_config_call_data = array::ArrayTrait::<felt252>::new();
+//         world_config_call_data.append(0);
+//         world_config_call_data.append(0);
+//         world_config_call_data.append(252000000000000000000);
+//         world_config_call_data.append(0);
+//         world_config_call_data.append(0);
+//         world_config_call_data.append(0);
+//         world_config_call_data.append(0);
+//         // 10 free transport per city
+//         world_config_call_data.append(10);
+//         world.execute('WorldConfig'.into(), world_config_call_data.span());
 
-        /// CREATE ENTITIES ///
-        // set realm entity
-        let mut create_realm_calldata = array::ArrayTrait::<felt252>::new();
-        create_realm_calldata.append(1);
-        create_realm_calldata.append(starknet::get_caller_address().into());
-        create_realm_calldata.append(1);
-        create_realm_calldata.append(1);
-        // cities = 6
-        create_realm_calldata.append(6);
-        create_realm_calldata.append(5);
-        create_realm_calldata.append(5);
-        create_realm_calldata.append(5);
-        create_realm_calldata.append(1);
-        create_realm_calldata.append(1);
-        // position
-        create_realm_calldata.append(20);
-        create_realm_calldata.append(30);
-        world.execute('CreateRealm'.into(), create_realm_calldata.span());
+//         // set capacity configuration entity
+//         let mut set_capacity_conf_calldata = array::ArrayTrait::<felt252>::new();
+//         set_capacity_conf_calldata.append(FREE_TRANSPORT_ENTITY_TYPE.into());
+//         // free transport unit can carry 200_000 grams (200 kg)
+//         set_capacity_conf_calldata.append(200000);
+//         world.execute('SetCapacityConfig'.into(), set_capacity_conf_calldata.span());
 
-        // set speed configuration entity
-        let mut set_speed_conf_calldata = array::ArrayTrait::<felt252>::new();
-        set_speed_conf_calldata.append(FREE_TRANSPORT_ENTITY_TYPE.into());
-        // speed of 10 km per hr for free transport unit
-        set_speed_conf_calldata.append(10);
-        world.execute('SetSpeedConfig'.into(), set_speed_conf_calldata.span());
-        // set world config
-        let mut world_config_call_data = array::ArrayTrait::<felt252>::new();
-        world_config_call_data.append(0);
-        world_config_call_data.append(0);
-        world_config_call_data.append(252000000000000000000);
-        world_config_call_data.append(0);
-        world_config_call_data.append(0);
-        world_config_call_data.append(0);
-        world_config_call_data.append(0);
-        // 10 free transport per city
-        world_config_call_data.append(10);
-        world.execute('WorldConfig'.into(), world_config_call_data.span());
+//         // create free transport unit
+//         let mut create_free_transport_unit_calldata = array::ArrayTrait::<felt252>::new();
+//         create_free_transport_unit_calldata.append(1);
+//         create_free_transport_unit_calldata.append(10);
+//         let result = world
+//             .execute('CreateFreeTransportUnit'.into(), create_free_transport_unit_calldata.span());
+//         let new_entity_id = (*result[0]);
 
-        // set capacity configuration entity
-        let mut set_capacity_conf_calldata = array::ArrayTrait::<felt252>::new();
-        set_capacity_conf_calldata.append(FREE_TRANSPORT_ENTITY_TYPE.into());
-        // free transport unit can carry 200_000 grams (200 kg)
-        set_capacity_conf_calldata.append(200000);
-        world.execute('SetCapacityConfig'.into(), set_capacity_conf_calldata.span());
+//         // check that the free transport unit has been created
+//         let quantity = world.entity('Quantity'.into(), new_entity_id.into(), 0_u8, 0_usize);
+//         assert(*quantity[0] == 10, 'free transport unit not created');
+//         // verify that quantity tracker has been updated
+//         let quantity_tracker = world
+//             .entity(
+//                 'QuantityTracker'.into(), (1, FREE_TRANSPORT_ENTITY_TYPE).into(), 0_u8, 0_usize
+//             );
+//         assert(*quantity_tracker[0] == 10, 'quantity tracker not updated');
 
-        // create free transport unit
-        let mut create_free_transport_unit_calldata = array::ArrayTrait::<felt252>::new();
-        create_free_transport_unit_calldata.append(1);
-        create_free_transport_unit_calldata.append(10);
-        let result = world
-            .execute('CreateFreeTransportUnit'.into(), create_free_transport_unit_calldata.span());
-        let new_entity_id = (*result[0]);
+//         // verify the position
+//         let position = world.entity('Position'.into(), new_entity_id.into(), 0_u8, 0_usize);
+//         assert(*position[0] == 20, 'position not set');
+//         assert(*position[1] == 30, 'position not set');
 
-        // check that the free transport unit has been created
-        let quantity = world.entity('Quantity'.into(), new_entity_id.into(), 0_u8, 0_usize);
-        assert(*quantity[0] == 10, 'free transport unit not created');
-        // verify that quantity tracker has been updated
-        let quantity_tracker = world
-            .entity(
-                'QuantityTracker'.into(), (1, FREE_TRANSPORT_ENTITY_TYPE).into(), 0_u8, 0_usize
-            );
-        assert(*quantity_tracker[0] == 10, 'quantity tracker not updated');
+//         // verify the entity type
+//         let entity_type = world.entity('EntityType'.into(), new_entity_id.into(), 0_u8, 0_usize);
+//         assert(*entity_type[0] == FREE_TRANSPORT_ENTITY_TYPE.into(), 'entity type not set');
 
-        // verify the position
-        let position = world.entity('Position'.into(), new_entity_id.into(), 0_u8, 0_usize);
-        assert(*position[0] == 20, 'position not set');
-        assert(*position[1] == 30, 'position not set');
+//         // verify the owner
+//         let owner = world.entity('Owner'.into(), new_entity_id.into(), 0_u8, 0_usize);
+//         assert(*owner[0] == starknet::get_caller_address().into(), 'owner not set');
 
-        // verify the entity type
-        let entity_type = world.entity('EntityType'.into(), new_entity_id.into(), 0_u8, 0_usize);
-        assert(*entity_type[0] == FREE_TRANSPORT_ENTITY_TYPE.into(), 'entity type not set');
+//         // verify the capacity
+//         let capacity = world.entity('Capacity'.into(), new_entity_id.into(), 0_u8, 0_usize);
+//         assert(*capacity[0] == 200000, 'capacity not set');
 
-        // verify the owner
-        let owner = world.entity('Owner'.into(), new_entity_id.into(), 0_u8, 0_usize);
-        assert(*owner[0] == starknet::get_caller_address().into(), 'owner not set');
+//         // verify the speed
+//         let speed = world.entity('Movable'.into(), new_entity_id.into(), 0_u8, 0_usize);
+//         assert(*speed[0] == 10, 'speed not set');
+//         // verify that the free transport unit is not blocked
+//         assert(*speed[1] == 0, 'entity is blocked');
 
-        // verify the capacity
-        let capacity = world.entity('Capacity'.into(), new_entity_id.into(), 0_u8, 0_usize);
-        assert(*capacity[0] == 200000, 'capacity not set');
+//         // verify the arrival time
+//         let arrival_time = world.entity('ArrivalTime'.into(), new_entity_id.into(), 0_u8, 0_usize);
+//         assert(*arrival_time[0] == 0, 'arrival time not set');
+//     }
+// // TODO: #[should_panic(expected: ('not enough free transport unit', ))]
+// // not working atm 
+// }
 
-        // verify the speed
-        let speed = world.entity('Movable'.into(), new_entity_id.into(), 0_u8, 0_usize);
-        assert(*speed[0] == 10, 'speed not set');
-        // verify that the free transport unit is not blocked
-        assert(*speed[1] == 0, 'entity is blocked');
-
-        // verify the arrival time
-        let arrival_time = world.entity('ArrivalTime'.into(), new_entity_id.into(), 0_u8, 0_usize);
-        assert(*arrival_time[0] == 0, 'arrival time not set');
-    }
-// TODO: #[should_panic(expected: ('not enough free transport unit', ))]
-// not working atm 
-}

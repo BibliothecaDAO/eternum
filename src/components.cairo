@@ -11,3 +11,4 @@ mod movable;
 mod quantity;
 mod entity_type;
 mod caravan;
+mod trade;

@@ -6,11 +6,14 @@ use eternum::components::config::{
 };
 use eternum::components::entity_type::EntityTypeComponent;
 use eternum::components::quantity::{QuantityComponent, QuantityTrackerComponent};
+use eternum::components::resources::ResourceComponent;
 use eternum::components::position::PositionComponent;
 use eternum::components::capacity::CapacityComponent;
 use eternum::components::movable::{MovableComponent, ArrivalTimeComponent};
 use eternum::components::caravan::CaravanMembersComponent;
 use eternum::components::entities::ForeignKeyComponent;
+use eternum::components::trade::FungibleTradeComponent;
+use eternum::components::entities::FungibleEntitiesComponent;
 
 // systems
 use eternum::systems::test::CreateRealmSystem;
@@ -20,6 +23,7 @@ use eternum::systems::config::speed_config::SetSpeedConfigSystem;
 use eternum::systems::config::capacity_config::SetCapacityConfigSystem;
 use eternum::systems::config::world_config::WorldConfigSystem;
 use eternum::systems::caravan::utils::{GetAverageSpeedSystem, GetQuantitySystem};
+use eternum::systems::order::make_fungible_order::MakeFungibleOrderSystem;
 
 // consts
 use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
@@ -55,6 +59,9 @@ fn spawn_test_world_with_setup() -> IWorldDispatcher {
     components.append(ArrivalTimeComponent::TEST_CLASS_HASH);
     components.append(CaravanMembersComponent::TEST_CLASS_HASH);
     components.append(ForeignKeyComponent::TEST_CLASS_HASH);
+    components.append(FungibleTradeComponent::TEST_CLASS_HASH);
+    components.append(FungibleEntitiesComponent::TEST_CLASS_HASH);
+    components.append(ResourceComponent::TEST_CLASS_HASH);
     // systems
     let mut systems = array::ArrayTrait::<felt252>::new();
     systems.append(GetAverageSpeedSystem::TEST_CLASS_HASH);
@@ -65,6 +72,7 @@ fn spawn_test_world_with_setup() -> IWorldDispatcher {
     systems.append(WorldConfigSystem::TEST_CLASS_HASH);
     systems.append(CreateRealmSystem::TEST_CLASS_HASH);
     systems.append(GetQuantitySystem::TEST_CLASS_HASH);
+    systems.append(MakeFungibleOrderSystem::TEST_CLASS_HASH);
 
     // create auth routes
     let mut routes = array::ArrayTrait::new();

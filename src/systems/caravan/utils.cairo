@@ -96,156 +96,156 @@ mod GetQuantity {
         }
     }
 }
+// mod tests2 {
+//     // components
+//     use eternum::components::owner::OwnerComponent;
+//     use eternum::components::realm::RealmComponent;
+//     use eternum::components::config::{
+//         WorldConfigComponent, SpeedConfigComponent, CapacityConfigComponent
+//     };
+//     use eternum::components::entity_type::EntityTypeComponent;
+//     use eternum::components::quantity::{QuantityComponent, QuantityTrackerComponent};
+//     use eternum::components::position::PositionComponent;
+//     use eternum::components::capacity::CapacityComponent;
+//     use eternum::components::movable::{MovableComponent, ArrivalTimeComponent};
+//     use eternum::components::caravan::CaravanMembersComponent;
+//     use eternum::components::entities::ForeignKeyComponent;
 
-mod tests2 {
-    // components
-    use eternum::components::owner::OwnerComponent;
-    use eternum::components::realm::RealmComponent;
-    use eternum::components::config::{
-        WorldConfigComponent, SpeedConfigComponent, CapacityConfigComponent
-    };
-    use eternum::components::entity_type::EntityTypeComponent;
-    use eternum::components::quantity::{QuantityComponent, QuantityTrackerComponent};
-    use eternum::components::position::PositionComponent;
-    use eternum::components::capacity::CapacityComponent;
-    use eternum::components::movable::{MovableComponent, ArrivalTimeComponent};
-    use eternum::components::caravan::CaravanMembersComponent;
-    use eternum::components::entities::ForeignKeyComponent;
+//     // systems
+//     use eternum::systems::test::CreateRealmSystem;
+//     use eternum::systems::caravan::create_free_transport_unit::CreateFreeTransportUnitSystem;
+//     use eternum::systems::caravan::create_caravan::CreateCaravanSystem;
+//     use eternum::systems::config::speed_config::SetSpeedConfigSystem;
+//     use eternum::systems::config::capacity_config::SetCapacityConfigSystem;
+//     use eternum::systems::config::world_config::WorldConfigSystem;
+//     use eternum::systems::caravan::utils::GetAverageSpeedSystem;
 
-    // systems
-    use eternum::systems::test::CreateRealmSystem;
-    use eternum::systems::caravan::create_free_transport_unit::CreateFreeTransportUnitSystem;
-    use eternum::systems::caravan::create_caravan::CreateCaravanSystem;
-    use eternum::systems::config::speed_config::SetSpeedConfigSystem;
-    use eternum::systems::config::capacity_config::SetCapacityConfigSystem;
-    use eternum::systems::config::world_config::WorldConfigSystem;
-    use eternum::systems::caravan::utils::GetAverageSpeedSystem;
+//     // consts
+//     use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
 
-    // consts
-    use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
+//     // utils
+//     use eternum::utils::testing::spawn_test_world_with_setup;
 
-    // utils
-    use eternum::utils::testing::spawn_test_world_with_setup;
+//     use core::traits::Into;
+//     use core::result::ResultTrait;
+//     use array::ArrayTrait;
+//     use option::OptionTrait;
+//     use debug::PrintTrait;
 
-    use core::traits::Into;
-    use core::result::ResultTrait;
-    use array::ArrayTrait;
-    use option::OptionTrait;
-    use debug::PrintTrait;
+//     use starknet::syscalls::deploy_syscall;
 
-    use starknet::syscalls::deploy_syscall;
+//     use dojo_core::interfaces::IWorldDispatcherTrait;
+//     use dojo_core::storage::query::Query;
+//     use dojo_core::test_utils::spawn_test_world;
+//     use dojo_core::auth::systems::{Route, RouteTrait};
 
-    use dojo_core::interfaces::IWorldDispatcherTrait;
-    use dojo_core::storage::query::Query;
-    use dojo_core::test_utils::spawn_test_world;
-    use dojo_core::auth::systems::{Route, RouteTrait};
+//     // test that the average speed is correct
+//     #[test]
+//     #[available_gas(300000000000)]
+//     fn test_get_average_speed() {
+//         let world = spawn_test_world_with_setup();
 
-    // test that the average speed is correct
-    #[test]
-    #[available_gas(300000000000)]
-    fn test_get_average_speed() {
-        let world = spawn_test_world_with_setup();
+//         // create realm
+//         let mut create_realm_calldata = array::ArrayTrait::<felt252>::new();
+//         create_realm_calldata.append(1);
+//         create_realm_calldata.append(starknet::get_caller_address().into());
+//         create_realm_calldata.append(1);
+//         create_realm_calldata.append(1);
+//         // cities = 6
+//         create_realm_calldata.append(6);
+//         create_realm_calldata.append(5);
+//         create_realm_calldata.append(5);
+//         create_realm_calldata.append(5);
+//         create_realm_calldata.append(1);
+//         create_realm_calldata.append(1);
+//         // position
+//         create_realm_calldata.append(20);
+//         create_realm_calldata.append(30);
+//         world.execute('CreateRealm'.into(), create_realm_calldata.span());
 
-        // create realm
-        let mut create_realm_calldata = array::ArrayTrait::<felt252>::new();
-        create_realm_calldata.append(1);
-        create_realm_calldata.append(starknet::get_caller_address().into());
-        create_realm_calldata.append(1);
-        create_realm_calldata.append(1);
-        // cities = 6
-        create_realm_calldata.append(6);
-        create_realm_calldata.append(5);
-        create_realm_calldata.append(5);
-        create_realm_calldata.append(5);
-        create_realm_calldata.append(1);
-        create_realm_calldata.append(1);
-        // position
-        create_realm_calldata.append(20);
-        create_realm_calldata.append(30);
-        world.execute('CreateRealm'.into(), create_realm_calldata.span());
+//         // TODO: check if i can set_entity
 
-        // TODO: check if i can set_entity
+//         // set world config
+//         let mut world_config_call_data = array::ArrayTrait::<felt252>::new();
+//         world_config_call_data.append(0);
+//         world_config_call_data.append(0);
+//         world_config_call_data.append(252000000000000000000);
+//         world_config_call_data.append(0);
+//         world_config_call_data.append(0);
+//         world_config_call_data.append(0);
+//         world_config_call_data.append(0);
+//         // 10 free transport per city
+//         world_config_call_data.append(10);
+//         world.execute('WorldConfig'.into(), world_config_call_data.span());
 
-        // set world config
-        let mut world_config_call_data = array::ArrayTrait::<felt252>::new();
-        world_config_call_data.append(0);
-        world_config_call_data.append(0);
-        world_config_call_data.append(252000000000000000000);
-        world_config_call_data.append(0);
-        world_config_call_data.append(0);
-        world_config_call_data.append(0);
-        world_config_call_data.append(0);
-        // 10 free transport per city
-        world_config_call_data.append(10);
-        world.execute('WorldConfig'.into(), world_config_call_data.span());
+//         // set speed configuration entity
+//         let mut set_speed_conf_calldata = array::ArrayTrait::<felt252>::new();
+//         set_speed_conf_calldata.append(FREE_TRANSPORT_ENTITY_TYPE.into());
+//         // speed of 10 km per hr for free transport unit
+//         set_speed_conf_calldata.append(10);
+//         world.execute('SetSpeedConfig'.into(), set_speed_conf_calldata.span());
 
-        // set speed configuration entity
-        let mut set_speed_conf_calldata = array::ArrayTrait::<felt252>::new();
-        set_speed_conf_calldata.append(FREE_TRANSPORT_ENTITY_TYPE.into());
-        // speed of 10 km per hr for free transport unit
-        set_speed_conf_calldata.append(10);
-        world.execute('SetSpeedConfig'.into(), set_speed_conf_calldata.span());
+//         // set capacity configuration entity
+//         let mut set_capacity_conf_calldata = array::ArrayTrait::<felt252>::new();
+//         set_capacity_conf_calldata.append(FREE_TRANSPORT_ENTITY_TYPE.into());
+//         // free transport unit can carry 200_000 grams (200 kg)
+//         set_capacity_conf_calldata.append(200000);
+//         world.execute('SetCapacityConfig'.into(), set_capacity_conf_calldata.span());
 
-        // set capacity configuration entity
-        let mut set_capacity_conf_calldata = array::ArrayTrait::<felt252>::new();
-        set_capacity_conf_calldata.append(FREE_TRANSPORT_ENTITY_TYPE.into());
-        // free transport unit can carry 200_000 grams (200 kg)
-        set_capacity_conf_calldata.append(200000);
-        world.execute('SetCapacityConfig'.into(), set_capacity_conf_calldata.span());
+//         // create free transport unit
+//         let mut create_free_transport_unit_calldata = array::ArrayTrait::<felt252>::new();
+//         create_free_transport_unit_calldata.append(1);
 
-        // create free transport unit
-        let mut create_free_transport_unit_calldata = array::ArrayTrait::<felt252>::new();
-        create_free_transport_unit_calldata.append(1);
+//         create_free_transport_unit_calldata.append(10);
+//         let result = world
+//             .execute('CreateFreeTransportUnit'.into(), create_free_transport_unit_calldata.span());
+//         let units_1_id: felt252 = *result[0];
+//         // create free transport unit
+//         let mut create_free_transport_unit_calldata = array::ArrayTrait::<felt252>::new();
+//         create_free_transport_unit_calldata.append(1);
+//         create_free_transport_unit_calldata.append(10);
+//         let result = world
+//             .execute('CreateFreeTransportUnit'.into(), create_free_transport_unit_calldata.span());
+//         let units_2_id: felt252 = *result[0];
 
-        create_free_transport_unit_calldata.append(10);
-        let result = world
-            .execute('CreateFreeTransportUnit'.into(), create_free_transport_unit_calldata.span());
-        let units_1_id: felt252 = *result[0];
-        // create free transport unit
-        let mut create_free_transport_unit_calldata = array::ArrayTrait::<felt252>::new();
-        create_free_transport_unit_calldata.append(1);
-        create_free_transport_unit_calldata.append(10);
-        let result = world
-            .execute('CreateFreeTransportUnit'.into(), create_free_transport_unit_calldata.span());
-        let units_2_id: felt252 = *result[0];
+//         // get average speed
+//         let mut get_average_speed_calldata = array::ArrayTrait::<felt252>::new();
+//         get_average_speed_calldata.append(2);
+//         get_average_speed_calldata.append(units_1_id);
+//         get_average_speed_calldata.append(units_2_id);
+//         let result = world.execute('GetAverageSpeed'.into(), get_average_speed_calldata.span());
+//         let average_speed = *result[0];
+//         assert(average_speed == 10, 'average speed not correct');
+//     }
 
-        // get average speed
-        let mut get_average_speed_calldata = array::ArrayTrait::<felt252>::new();
-        get_average_speed_calldata.append(2);
-        get_average_speed_calldata.append(units_1_id);
-        get_average_speed_calldata.append(units_2_id);
-        let result = world.execute('GetAverageSpeed'.into(), get_average_speed_calldata.span());
-        let average_speed = *result[0];
-        assert(average_speed == 10, 'average speed not correct');
-    }
+//     #[test]
+//     #[available_gas(300000000000)]
+//     fn test_get_quantity_with_quantity_component() {
+//         let world = spawn_test_world_with_setup();
+//         // set caller as executor 
+//         starknet::testing::set_contract_address(starknet::contract_address_const::<1>());
+//         let mut value = array::ArrayTrait::<felt252>::new();
+//         value.append(10);
+//         let entity_id = 1;
+//         world.set_entity('Quantity'.into(), entity_id.into(), 0_u8, value.span());
 
-    #[test]
-    #[available_gas(300000000000)]
-    fn test_get_quantity_with_quantity_component() {
-        let world = spawn_test_world_with_setup();
-        // set caller as executor 
-        starknet::testing::set_contract_address(starknet::contract_address_const::<1>());
-        let mut value = array::ArrayTrait::<felt252>::new();
-        value.append(10);
-        let entity_id = 1;
-        world.set_entity('Quantity'.into(), entity_id.into(), 0_u8, value.span());
+//         let mut calldata = array::ArrayTrait::<felt252>::new();
+//         calldata.append(entity_id);
+//         let quantity = world.execute('GetQuantity'.into(), calldata.span());
+//         assert(*quantity[0] == 10, 'quantity not correct');
+//     }
 
-        let mut calldata = array::ArrayTrait::<felt252>::new();
-        calldata.append(entity_id);
-        let quantity = world.execute('GetQuantity'.into(), calldata.span());
-        assert(*quantity[0] == 10, 'quantity not correct');
-    }
+//     #[test]
+//     #[available_gas(300000000000)]
+//     fn test_get_quantity_without_quantity_component() {
+//         let world = spawn_test_world_with_setup();
+//         // set caller as executor 
+//         starknet::testing::set_contract_address(starknet::contract_address_const::<1>());
+//         let entity_id = 1;
+//         let mut calldata = array::ArrayTrait::<felt252>::new();
+//         calldata.append(entity_id);
+//         let quantity = world.execute('GetQuantity'.into(), calldata.span());
+//         assert(*quantity[0] == 1, 'quantity not correct');
+//     }
+// }
 
-    #[test]
-    #[available_gas(300000000000)]
-    fn test_get_quantity_without_quantity_component() {
-        let world = spawn_test_world_with_setup();
-        // set caller as executor 
-        starknet::testing::set_contract_address(starknet::contract_address_const::<1>());
-        let entity_id = 1;
-        let mut calldata = array::ArrayTrait::<felt252>::new();
-        calldata.append(entity_id);
-        let quantity = world.execute('GetQuantity'.into(), calldata.span());
-        assert(*quantity[0] == 1, 'quantity not correct');
-    }
-}

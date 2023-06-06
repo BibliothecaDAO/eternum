@@ -8,7 +8,7 @@ struct FungibleTrade {
     taker_id: ID,
     maker_order_id: ID,
     taker_order_id: ID,
-    expire_at: u64,
+    expires_at: u64,
     claimed_by_maker: bool,
     claimed_by_taker: bool,
     // DISCUSS: maybe force to use caravan if the maker attaches caravan as well?
