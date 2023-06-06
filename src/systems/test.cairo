@@ -9,7 +9,7 @@ mod MintResources {
     #[external]
     fn execute(realm_id: ID, resource_type: u8, amount: u128) {
         let resource_type_felt: felt252 = resource_type.into();
-        let resource_query: Query = (realm_id.into(), resource_type_felt).into();
+        let resource_query: Query = (realm_id, resource_type_felt).into();
         let maybe_resource = commands::<Resource>::try_entity(resource_query);
         let resource = match maybe_resource {
             Option::Some(resource) => resource,
@@ -29,6 +29,9 @@ mod CreateRealm {
 
     use eternum::components::realm::Realm;
     use eternum::components::owner::Owner;
+    use eternum::components::position::Position;
+    use eternum::components::entity_type::EntityType;
+    use eternum::constants::REALM_ENTITY_TYPE;
 
     use eternum::alias::ID;
 
@@ -42,11 +45,11 @@ mod CreateRealm {
         rivers: u8,
         regions: u8,
         wonder: u8,
-        order: u8
+        order: u8,
+        position: Position
     ) {
-        let realm_query = (realm_id.into()).into();
         commands::<Realm>::set_entity(
-            realm_query,
+            realm_id.into(),
             (
                 Owner {
                     address: owner
@@ -60,7 +63,11 @@ mod CreateRealm {
                     regions,
                     wonder,
                     order,
-                }
+                    }, Position {
+                    x: position.x, y: position.y, 
+                    }, EntityType {
+                    value: REALM_ENTITY_TYPE, 
+                },
             )
         );
     }

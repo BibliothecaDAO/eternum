@@ -7,7 +7,7 @@ struct Entities {
 }
 
 #[derive(Component, Copy, Drop, Serde)]
-struct Entity {
+struct ForeignKey {
     entity_id: ID, 
 }
 

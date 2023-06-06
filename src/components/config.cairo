@@ -9,7 +9,7 @@ struct WorldConfig {
     lords_per_day: u128,
     tick_time: u128,
     realm_l2_contract: ContractAddress,
-    free_transport_per_city: u128,
+    free_transport_per_city: u128
 }
 
 #[derive(Component, Copy, Drop, Serde)]

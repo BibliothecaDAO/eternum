@@ -48,7 +48,8 @@ mod ResourceTypes {
 
 // DISCUSS: instead of using constants for entity_type, store the entity_type in the storage
 // DISCUSS: register each new entity_type to the system by creating an entity containing the config components
-const FREE_TRANSPORT_ENTITY_TYPE = 256;
+const FREE_TRANSPORT_ENTITY_TYPE: u128 = 256;
+const REALM_ENTITY_TYPE: u128 = 257;
 
 // TODO: change to consts
 enum BuildingTypes {

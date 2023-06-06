@@ -10,3 +10,4 @@ mod capacity;
 mod movable;
 mod quantity;
 mod entity_type;
+mod caravan;
