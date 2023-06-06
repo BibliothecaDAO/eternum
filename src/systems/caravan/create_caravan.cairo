@@ -39,6 +39,7 @@ mod CreateCaravan {
         let caravan_id = commands::uuid();
         let mut entity_position: Position = Position { x: 0, y: 0 };
 
+        let world = IWorldDispatcher { contract_address: world_address };
         let caller = starknet::get_tx_info().unbox().account_contract_address;
         let mut index = 0;
         // loop over the entities
@@ -66,17 +67,23 @@ mod CreateCaravan {
             // assert that they are not blocked
             assert(movable.blocked == false, 'entity is blocked');
 
-            // try to retrieve the Quantity component of the entity
-            let maybe_quantity = commands::<Quantity>::try_entity((*entity_ids[index]).into());
-            // TODO: match inside a loop does not work yet on dojo
-            let quantity = match maybe_quantity {
-                Option::Some(res) => {
-                    res.value
-                },
-                Option::None(_) => { // if not present quantity = 1
-                    1_u128
-                }
-            };
+            // DISUCSS: is that more cumbersome than just getting the quantity?
+            let mut calldata = array::ArrayTrait::<felt252>::new();
+            calldata.append((*entity_ids[index]).into());
+            let result = world.execute('GetQuantity'.into(), calldata.span());
+            let quantity: u128 = (*result[0]).try_into().unwrap();
+
+            // // try to retrieve the Quantity component of the entity
+            // let maybe_quantity = commands::<Quantity>::try_entity((*entity_ids[index]).into());
+            // // TODO: match inside a loop does not work yet on dojo
+            // let quantity = match maybe_quantity {
+            //     Option::Some(res) => {
+            //         res.value
+            //     },
+            //     Option::None(_) => { // if not present quantity = 1
+            //         1_u128
+            //     }
+            // };
             // set entity in the caravan
             commands::set_entity(
                 (caravan_id, entities_key, index).into(),
@@ -87,6 +94,12 @@ mod CreateCaravan {
             total_capacity += capacity.weight_gram;
             index += 1;
         };
+        // DISCUSS: i created a getAverageSpeed system but
+        // it would mean that we'd have to loop 2x over the entities
+
+        // DISCUSS: i could also create a new CheckSamePosition system that checks
+        // if a list of entities are at the same position, but again that would be 
+        // an extra loop
         let average_speed = total_speed / total_quantity;
         let average_speed: u8 = average_speed.try_into().unwrap();
 
@@ -137,6 +150,9 @@ mod tests {
     // consts
     use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
 
+    // testing
+    use eternum::utils::testing::spawn_test_world_with_setup;
+
     use core::traits::Into;
     use core::result::ResultTrait;
     use array::ArrayTrait;
@@ -153,121 +169,123 @@ mod tests {
     #[test]
     #[available_gas(300000000000)]
     fn test_create_caravan() {
-        // components
-        let mut components = array::ArrayTrait::<felt252>::new();
-        components.append(OwnerComponent::TEST_CLASS_HASH);
-        components.append(RealmComponent::TEST_CLASS_HASH);
-        components.append(SpeedConfigComponent::TEST_CLASS_HASH);
-        components.append(CapacityConfigComponent::TEST_CLASS_HASH);
-        components.append(WorldConfigComponent::TEST_CLASS_HASH);
-        components.append(EntityTypeComponent::TEST_CLASS_HASH);
-        components.append(QuantityComponent::TEST_CLASS_HASH);
-        components.append(QuantityTrackerComponent::TEST_CLASS_HASH);
-        components.append(PositionComponent::TEST_CLASS_HASH);
-        components.append(CapacityComponent::TEST_CLASS_HASH);
-        components.append(MovableComponent::TEST_CLASS_HASH);
-        components.append(ArrivalTimeComponent::TEST_CLASS_HASH);
-        components.append(CaravanMembersComponent::TEST_CLASS_HASH);
-        components.append(ForeignKeyComponent::TEST_CLASS_HASH);
-        // systems
-        let mut systems = array::ArrayTrait::<felt252>::new();
-        systems.append(CreateFreeTransportUnitSystem::TEST_CLASS_HASH);
-        systems.append(CreateCaravanSystem::TEST_CLASS_HASH);
-        systems.append(SetSpeedConfigSystem::TEST_CLASS_HASH);
-        systems.append(SetCapacityConfigSystem::TEST_CLASS_HASH);
-        systems.append(WorldConfigSystem::TEST_CLASS_HASH);
-        systems.append(CreateRealmSystem::TEST_CLASS_HASH);
+        // // components
+        // let mut components = array::ArrayTrait::<felt252>::new();
+        // components.append(OwnerComponent::TEST_CLASS_HASH);
+        // components.append(RealmComponent::TEST_CLASS_HASH);
+        // components.append(SpeedConfigComponent::TEST_CLASS_HASH);
+        // components.append(CapacityConfigComponent::TEST_CLASS_HASH);
+        // components.append(WorldConfigComponent::TEST_CLASS_HASH);
+        // components.append(EntityTypeComponent::TEST_CLASS_HASH);
+        // components.append(QuantityComponent::TEST_CLASS_HASH);
+        // components.append(QuantityTrackerComponent::TEST_CLASS_HASH);
+        // components.append(PositionComponent::TEST_CLASS_HASH);
+        // components.append(CapacityComponent::TEST_CLASS_HASH);
+        // components.append(MovableComponent::TEST_CLASS_HASH);
+        // components.append(ArrivalTimeComponent::TEST_CLASS_HASH);
+        // components.append(CaravanMembersComponent::TEST_CLASS_HASH);
+        // components.append(ForeignKeyComponent::TEST_CLASS_HASH);
+        // // systems
+        // let mut systems = array::ArrayTrait::<felt252>::new();
+        // systems.append(CreateFreeTransportUnitSystem::TEST_CLASS_HASH);
+        // systems.append(CreateCaravanSystem::TEST_CLASS_HASH);
+        // systems.append(SetSpeedConfigSystem::TEST_CLASS_HASH);
+        // systems.append(SetCapacityConfigSystem::TEST_CLASS_HASH);
+        // systems.append(WorldConfigSystem::TEST_CLASS_HASH);
+        // systems.append(CreateRealmSystem::TEST_CLASS_HASH);
 
-        // create auth routes
-        let mut routes = array::ArrayTrait::new();
-        // CreateFreeTransportUnit
-        routes
-            .append(
-                RouteTrait::new(
-                    'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Position'.into(), 
-                )
-            );
-        routes
-            .append(
-                RouteTrait::new('CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Realm'.into(), )
-            );
-        routes
-            .append(
-                RouteTrait::new('CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Owner'.into(), )
-            );
-        routes
-            .append(
-                RouteTrait::new(
-                    'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'QuantityTracker'.into(), 
-                )
-            );
-        routes
-            .append(
-                RouteTrait::new(
-                    'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'EntityType'.into(), 
-                )
-            );
-        routes
-            .append(
-                RouteTrait::new(
-                    'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Quantity'.into(), 
-                )
-            );
-        routes
-            .append(
-                RouteTrait::new(
-                    'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Movable'.into(), 
-                )
-            );
-        routes
-            .append(
-                RouteTrait::new(
-                    'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'ArrivalTime'.into(), 
-                )
-            );
-        routes
-            .append(
-                RouteTrait::new(
-                    'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Capacity'.into(), 
-                )
-            );
-        // CreateCaravan
-        routes
-            .append(
-                RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'CaravanMembers'.into(), )
-            );
-        routes.append(RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'Movable'.into(), ));
-        routes
-            .append(RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'Capacity'.into(), ));
-        routes.append(RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'Owner'.into(), ));
-        routes
-            .append(RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'Position'.into(), ));
-        routes
-            .append(
-                RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'ForeignKey'.into(), )
-            );
-        // CreateRealm
-        routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Owner'.into(), ));
-        routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Realm'.into(), ));
-        routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Position'.into(), ));
-        routes
-            .append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'EntityType'.into(), ));
+        // // create auth routes
+        // let mut routes = array::ArrayTrait::new();
+        // // CreateFreeTransportUnit
+        // routes
+        //     .append(
+        //         RouteTrait::new(
+        //             'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Position'.into(), 
+        //         )
+        //     );
+        // routes
+        //     .append(
+        //         RouteTrait::new('CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Realm'.into(), )
+        //     );
+        // routes
+        //     .append(
+        //         RouteTrait::new('CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Owner'.into(), )
+        //     );
+        // routes
+        //     .append(
+        //         RouteTrait::new(
+        //             'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'QuantityTracker'.into(), 
+        //         )
+        //     );
+        // routes
+        //     .append(
+        //         RouteTrait::new(
+        //             'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'EntityType'.into(), 
+        //         )
+        //     );
+        // routes
+        //     .append(
+        //         RouteTrait::new(
+        //             'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Quantity'.into(), 
+        //         )
+        //     );
+        // routes
+        //     .append(
+        //         RouteTrait::new(
+        //             'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Movable'.into(), 
+        //         )
+        //     );
+        // routes
+        //     .append(
+        //         RouteTrait::new(
+        //             'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'ArrivalTime'.into(), 
+        //         )
+        //     );
+        // routes
+        //     .append(
+        //         RouteTrait::new(
+        //             'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Capacity'.into(), 
+        //         )
+        //     );
+        // // CreateCaravan
+        // routes
+        //     .append(
+        //         RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'CaravanMembers'.into(), )
+        //     );
+        // routes.append(RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'Movable'.into(), ));
+        // routes
+        //     .append(RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'Capacity'.into(), ));
+        // routes.append(RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'Owner'.into(), ));
+        // routes
+        //     .append(RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'Position'.into(), ));
+        // routes
+        //     .append(
+        //         RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'ForeignKey'.into(), )
+        //     );
+        // // CreateRealm
+        // routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Owner'.into(), ));
+        // routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Realm'.into(), ));
+        // routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Position'.into(), ));
+        // routes
+        //     .append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'EntityType'.into(), ));
 
-        // configs
-        routes
-            .append(
-                RouteTrait::new('SetSpeedConfig'.into(), 'Tester'.into(), 'SpeedConfig'.into(), )
-            );
-        routes
-            .append(
-                RouteTrait::new(
-                    'SetCapacityConfig'.into(), 'Tester'.into(), 'CapacityConfig'.into(), 
-                )
-            );
-        routes
-            .append(RouteTrait::new('WorldConfig'.into(), 'Tester'.into(), 'WorldConfig'.into(), ));
+        // // configs
+        // routes
+        //     .append(
+        //         RouteTrait::new('SetSpeedConfig'.into(), 'Tester'.into(), 'SpeedConfig'.into(), )
+        //     );
+        // routes
+        //     .append(
+        //         RouteTrait::new(
+        //             'SetCapacityConfig'.into(), 'Tester'.into(), 'CapacityConfig'.into(), 
+        //         )
+        //     );
+        // routes
+        //     .append(RouteTrait::new('WorldConfig'.into(), 'Tester'.into(), 'WorldConfig'.into(), ));
 
-        let world = spawn_test_world(components, systems, routes);
+        // let world = spawn_test_world(components, systems, routes);
+
+        let world = spawn_test_world_with_setup();
 
         /// CREATE ENTITIES ///
         // set realm entity
