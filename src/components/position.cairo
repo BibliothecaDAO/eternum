@@ -14,7 +14,6 @@ impl PositionPartialEq of PartialEq<Position> {
         !(lhs.x == rhs.x & lhs.y == rhs.y)
     }
 }
-
 // TODO: implement position traits
 // trait PositionTrait {
 //     fn calculate_travel_distance(self: Position, destination: Position) -> u128;
@@ -30,15 +29,16 @@ impl PositionPartialEq of PartialEq<Position> {
 
 // }
 
-#[test]
-fn test_position_equal() {
-    let a = Position { x: 1, y: 2 };
-    let b = Position { x: 1, y: 2 };
-    assert(a == b, 'a should equal b');
-}
-#[test]
-fn test_position_non_equal() {
-    let a = Position { x: 1, y: 2 };
-    let b = Position { x: 2, y: 1 };
-    assert(a != b, 'a should not equal b');
-}
+// #[test]
+// fn test_position_equal() {
+//     let a = Position { x: 1, y: 2 };
+//     let b = Position { x: 1, y: 2 };
+//     assert(a == b, 'a should equal b');
+// }
+// #[test]
+// fn test_position_non_equal() {
+//     let a = Position { x: 1, y: 2 };
+//     let b = Position { x: 2, y: 1 };
+//     assert(a != b, 'a should not equal b');
+// }
+

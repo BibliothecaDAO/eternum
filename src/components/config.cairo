@@ -56,12 +56,6 @@ struct LaborCostAmount {
     value: u128,
 }
 
-// weight
-#[derive(Component, Copy, Drop, Serde)]
-struct ResourceWeightConfig {
-    resource_type: u8,
-    weight_gram: u128,
-}
 
 // capacity
 // DISCUSS: entity_type allows us to link the config to an entity in the world
@@ -79,4 +73,11 @@ struct CapacityConfig {
 struct SpeedConfig {
     entity_type: u128,
     km_per_hr: u128,
+}
+
+// weight
+#[derive(Component, Copy, Drop, Serde)]
+struct WeightConfig {
+    entity_type: u128,
+    weight_gram: u128,
 }

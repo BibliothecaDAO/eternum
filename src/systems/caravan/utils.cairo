@@ -103,7 +103,7 @@ mod GetQuantity {
 //     use eternum::components::config::{
 //         WorldConfigComponent, SpeedConfigComponent, CapacityConfigComponent
 //     };
-//     use eternum::components::entity_type::EntityTypeComponent;
+//     use eternum::components::metadata::MetaDataComponent;
 //     use eternum::components::quantity::{QuantityComponent, QuantityTrackerComponent};
 //     use eternum::components::position::PositionComponent;
 //     use eternum::components::capacity::CapacityComponent;
@@ -248,4 +248,5 @@ mod GetQuantity {
 //         assert(*quantity[0] == 1, 'quantity not correct');
 //     }
 // }
+
 

@@ -9,6 +9,6 @@ mod entities;
 mod capacity;
 mod movable;
 mod quantity;
-mod entity_type;
+mod metadata;
 mod caravan;
 mod trade;

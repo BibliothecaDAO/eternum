@@ -39,7 +39,6 @@ mod CreateCaravan {
         let caravan_id = commands::uuid();
         let mut entity_position: Position = Position { x: 0, y: 0 };
 
-        let world = IWorldDispatcher { contract_address: world_address };
         let caller = starknet::get_tx_info().unbox().account_contract_address;
         let mut index = 0;
         // loop over the entities
@@ -70,7 +69,7 @@ mod CreateCaravan {
             // DISUCSS: is that more cumbersome than just getting the quantity?
             let mut calldata = array::ArrayTrait::<felt252>::new();
             calldata.append((*entity_ids[index]).into());
-            let result = world.execute('GetQuantity'.into(), calldata.span());
+            let result = ctx.world.execute('GetQuantity'.into(), calldata.span());
             let quantity: u128 = (*result[0]).try_into().unwrap();
 
             // // try to retrieve the Quantity component of the entity
@@ -123,30 +122,7 @@ mod CreateCaravan {
         caravan_id.into()
     }
 }
-
 mod tests {
-    // components
-    use eternum::components::owner::OwnerComponent;
-    use eternum::components::realm::RealmComponent;
-    use eternum::components::config::{
-        WorldConfigComponent, SpeedConfigComponent, CapacityConfigComponent
-    };
-    use eternum::components::entity_type::EntityTypeComponent;
-    use eternum::components::quantity::{QuantityComponent, QuantityTrackerComponent};
-    use eternum::components::position::PositionComponent;
-    use eternum::components::capacity::CapacityComponent;
-    use eternum::components::movable::{MovableComponent, ArrivalTimeComponent};
-    use eternum::components::caravan::CaravanMembersComponent;
-    use eternum::components::entities::ForeignKeyComponent;
-
-    // systems
-    use eternum::systems::test::CreateRealmSystem;
-    use eternum::systems::caravan::create_free_transport_unit::CreateFreeTransportUnitSystem;
-    use eternum::systems::caravan::create_caravan::CreateCaravanSystem;
-    use eternum::systems::config::speed_config::SetSpeedConfigSystem;
-    use eternum::systems::config::capacity_config::SetCapacityConfigSystem;
-    use eternum::systems::config::world_config::WorldConfigSystem;
-
     // consts
     use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
 
@@ -162,129 +138,14 @@ mod tests {
     use starknet::syscalls::deploy_syscall;
 
     use dojo_core::interfaces::IWorldDispatcherTrait;
-    use dojo_core::storage::query::Query;
+    use dojo_core::storage::query::{
+        Query, TupleSize2IntoQuery, LiteralIntoQuery, TupleSize3IntoQuery
+    };
     use dojo_core::test_utils::spawn_test_world;
-    use dojo_core::auth::systems::{Route, RouteTrait};
 
     #[test]
     #[available_gas(300000000000)]
     fn test_create_caravan() {
-        // // components
-        // let mut components = array::ArrayTrait::<felt252>::new();
-        // components.append(OwnerComponent::TEST_CLASS_HASH);
-        // components.append(RealmComponent::TEST_CLASS_HASH);
-        // components.append(SpeedConfigComponent::TEST_CLASS_HASH);
-        // components.append(CapacityConfigComponent::TEST_CLASS_HASH);
-        // components.append(WorldConfigComponent::TEST_CLASS_HASH);
-        // components.append(EntityTypeComponent::TEST_CLASS_HASH);
-        // components.append(QuantityComponent::TEST_CLASS_HASH);
-        // components.append(QuantityTrackerComponent::TEST_CLASS_HASH);
-        // components.append(PositionComponent::TEST_CLASS_HASH);
-        // components.append(CapacityComponent::TEST_CLASS_HASH);
-        // components.append(MovableComponent::TEST_CLASS_HASH);
-        // components.append(ArrivalTimeComponent::TEST_CLASS_HASH);
-        // components.append(CaravanMembersComponent::TEST_CLASS_HASH);
-        // components.append(ForeignKeyComponent::TEST_CLASS_HASH);
-        // // systems
-        // let mut systems = array::ArrayTrait::<felt252>::new();
-        // systems.append(CreateFreeTransportUnitSystem::TEST_CLASS_HASH);
-        // systems.append(CreateCaravanSystem::TEST_CLASS_HASH);
-        // systems.append(SetSpeedConfigSystem::TEST_CLASS_HASH);
-        // systems.append(SetCapacityConfigSystem::TEST_CLASS_HASH);
-        // systems.append(WorldConfigSystem::TEST_CLASS_HASH);
-        // systems.append(CreateRealmSystem::TEST_CLASS_HASH);
-
-        // // create auth routes
-        // let mut routes = array::ArrayTrait::new();
-        // // CreateFreeTransportUnit
-        // routes
-        //     .append(
-        //         RouteTrait::new(
-        //             'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Position'.into(), 
-        //         )
-        //     );
-        // routes
-        //     .append(
-        //         RouteTrait::new('CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Realm'.into(), )
-        //     );
-        // routes
-        //     .append(
-        //         RouteTrait::new('CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Owner'.into(), )
-        //     );
-        // routes
-        //     .append(
-        //         RouteTrait::new(
-        //             'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'QuantityTracker'.into(), 
-        //         )
-        //     );
-        // routes
-        //     .append(
-        //         RouteTrait::new(
-        //             'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'EntityType'.into(), 
-        //         )
-        //     );
-        // routes
-        //     .append(
-        //         RouteTrait::new(
-        //             'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Quantity'.into(), 
-        //         )
-        //     );
-        // routes
-        //     .append(
-        //         RouteTrait::new(
-        //             'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Movable'.into(), 
-        //         )
-        //     );
-        // routes
-        //     .append(
-        //         RouteTrait::new(
-        //             'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'ArrivalTime'.into(), 
-        //         )
-        //     );
-        // routes
-        //     .append(
-        //         RouteTrait::new(
-        //             'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Capacity'.into(), 
-        //         )
-        //     );
-        // // CreateCaravan
-        // routes
-        //     .append(
-        //         RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'CaravanMembers'.into(), )
-        //     );
-        // routes.append(RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'Movable'.into(), ));
-        // routes
-        //     .append(RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'Capacity'.into(), ));
-        // routes.append(RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'Owner'.into(), ));
-        // routes
-        //     .append(RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'Position'.into(), ));
-        // routes
-        //     .append(
-        //         RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'ForeignKey'.into(), )
-        //     );
-        // // CreateRealm
-        // routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Owner'.into(), ));
-        // routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Realm'.into(), ));
-        // routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Position'.into(), ));
-        // routes
-        //     .append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'EntityType'.into(), ));
-
-        // // configs
-        // routes
-        //     .append(
-        //         RouteTrait::new('SetSpeedConfig'.into(), 'Tester'.into(), 'SpeedConfig'.into(), )
-        //     );
-        // routes
-        //     .append(
-        //         RouteTrait::new(
-        //             'SetCapacityConfig'.into(), 'Tester'.into(), 'CapacityConfig'.into(), 
-        //         )
-        //     );
-        // routes
-        //     .append(RouteTrait::new('WorldConfig'.into(), 'Tester'.into(), 'WorldConfig'.into(), ));
-
-        // let world = spawn_test_world(components, systems, routes);
-
         let world = spawn_test_world_with_setup();
 
         /// CREATE ENTITIES ///
@@ -398,3 +259,4 @@ mod tests {
         assert(*foreign_key_2[0] == units_2_id, 'foreign key not set');
     }
 }
+

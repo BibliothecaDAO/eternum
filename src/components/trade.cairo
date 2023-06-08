@@ -15,8 +15,15 @@ struct FungibleTrade {
     taker_needs_caravan: bool,
 }
 
-enum Status {
+#[derive(Component, Copy, Drop, Serde)]
+struct Status {
+    value: status, 
+}
+
+
+#[derive(Copy, Drop, Serde)]
+enum status {
     Open: (),
-    Closed: (),
+    Accepted: (),
     Cancelled: (),
 }

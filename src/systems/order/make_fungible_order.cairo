@@ -12,7 +12,7 @@ mod MakeFungibleOrder {
     use eternum::components::realm::Realm;
     use eternum::components::trade::FungibleTrade;
     use eternum::components::capacity::Capacity;
-    use eternum::components::entity_type::EntityType;
+    use eternum::components::metadata::MetaData;
     use eternum::components::movable::{Movable, ArrivalTime};
     use eternum::components::config::{WorldConfig, SpeedConfig, CapacityConfig};
     use eternum::components::quantity::{Quantity, QuantityTracker};
@@ -26,6 +26,10 @@ mod MakeFungibleOrder {
     use debug::PrintTrait;
 
     use dojo_core::integer::U128IntoU250;
+
+    // TODO: create a function that takes also an array of strings as input, these 
+    // strings are names of components that have the {type, balance} fields.
+    // Using the name of the component, we can query and set component.
 
     // maker_id: entity id of the maker
     // maker_entity_types: array of entity types (resources or other) that the maker wants to trade
@@ -81,6 +85,7 @@ mod MakeFungibleOrder {
                 })
             );
 
+            // DISCUSS: dont use quantity but resource and balance
             // let quantity = commands::<Quantity>::entity(
             //     (maker_id, *maker_entity_types[index]).into()
             // );
@@ -149,183 +154,173 @@ mod MakeFungibleOrder {
         trade_id.into()
     }
 }
+// TODO: need to test it when withdraw gas is working
+// TODO: same auth system as for attach_caravan
+// mod tests {
+//     // consts
+//     use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
 
-mod tests {
-    use eternum::alias::ID;
-    use eternum::components::entities::ForeignKey;
-    use eternum::components::caravan::CaravanMembers;
-    use eternum::components::quantity::Quantity;
-    use eternum::components::position::Position;
-    use eternum::components::movable::Movable;
-    use eternum::components::capacity::Capacity;
-    use eternum::components::owner::Owner;
+//     // utils
+//     use eternum::utils::testing::spawn_test_world_with_setup;
 
-    // components
-    use eternum::components::owner::OwnerComponent;
-    use eternum::components::realm::RealmComponent;
-    use eternum::components::config::{
-        WorldConfigComponent, SpeedConfigComponent, CapacityConfigComponent
-    };
-    use eternum::components::entity_type::EntityTypeComponent;
-    use eternum::components::quantity::{QuantityComponent, QuantityTrackerComponent};
-    use eternum::components::position::PositionComponent;
-    use eternum::components::capacity::CapacityComponent;
-    use eternum::components::movable::{MovableComponent, ArrivalTimeComponent};
-    use eternum::components::caravan::CaravanMembersComponent;
-    use eternum::components::entities::ForeignKeyComponent;
+//     use core::traits::Into;
+//     use core::result::ResultTrait;
+//     use array::ArrayTrait;
+//     use option::OptionTrait;
+//     use debug::PrintTrait;
 
-    // systems
-    use eternum::systems::test::CreateRealmSystem;
-    use eternum::systems::caravan::create_free_transport_unit::CreateFreeTransportUnitSystem;
-    use eternum::systems::caravan::create_caravan::CreateCaravanSystem;
-    use eternum::systems::config::speed_config::SetSpeedConfigSystem;
-    use eternum::systems::config::capacity_config::SetCapacityConfigSystem;
-    use eternum::systems::config::world_config::WorldConfigSystem;
-    use eternum::systems::caravan::utils::GetAverageSpeedSystem;
+//     use starknet::syscalls::deploy_syscall;
 
-    // consts
-    use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
+//     use dojo_core::interfaces::IWorldDispatcherTrait;
+//     use dojo_core::test_utils::spawn_test_world;
+//     use dojo_core::auth::systems::{Route, RouteTrait};
+//     use dojo_core::storage::query::{
+//         Query, TupleSize2IntoQuery, LiteralIntoQuery, TupleSize3IntoQuery
+//     };
+//     use dojo_core::execution_context::Context;
+//     use dojo_core::auth::components::AuthRole;
 
-    // utils
-    use eternum::utils::testing::spawn_test_world_with_setup;
+//     // test that the average speed is correct
+//     #[test]
+//     #[available_gas(3000000000000)]
+//     fn test_make_fungible_order() {
+//         let world = spawn_test_world_with_setup();
+//         // set caller as admin 
+//         // Admin caller grants Admin role to Tester system
+//         let mut grant_role_calldata: Array<felt252> = ArrayTrait::new();
+//         grant_role_calldata.append('Tester'); // target_id
+//         grant_role_calldata.append('Admin'); // role_id
+//         world.execute('GrantAuthRole'.into(), grant_role_calldata.span());
 
-    use core::traits::Into;
-    use core::result::ResultTrait;
-    use array::ArrayTrait;
-    use option::OptionTrait;
-    use debug::PrintTrait;
+//         // set as executor
+//         starknet::testing::set_contract_address(starknet::contract_address_const::<1>());
+//         // ap change issue
+//         // let maker_id = 11;
+//         // let taker_id = 12;
+//         let ctx = Context {
+//             world,
+//             caller_account: starknet::contract_address_const::<0x1337>(),
+//             caller_system: 'Tester'.into(),
+//             execution_role: AuthRole {
+//                 id: 'FooWriter'.into()
+//             },
+//         };
+//         // create entity 1
+//         let mut values = array::ArrayTrait::<felt252>::new();
+//         values.append(11);
+//         world.set_entity(ctx, 'Owner'.into(), 11.into(), 0_u8, values.span());
 
-    use starknet::syscalls::deploy_syscall;
+//         // entity 2
+//         let mut values = array::ArrayTrait::<felt252>::new();
+//         values.append(12);
+//         world.set_entity(ctx, 'Owner'.into(), 12.into(), 0_u8, values.span());
 
-    use dojo_core::interfaces::IWorldDispatcherTrait;
-    use dojo_core::storage::query::Query;
-    use dojo_core::test_utils::spawn_test_world;
-    use dojo_core::auth::systems::{Route, RouteTrait};
+//         // add resources to entity 1 and 2
+//         let mut values = array::ArrayTrait::<felt252>::new();
+//         // resource_type
+//         values.append(1);
+//         // balance
+//         values.append(100);
+//         world.set_entity(ctx, 'Resource'.into(), (11, 1).into(), 0_u8, values.span());
+//         world.set_entity(ctx, 'Resource'.into(), (12, 1).into(), 0_u8, values.span());
+//         let mut resources_2 = array::ArrayTrait::<felt252>::new();
+//         // resource_type
+//         resources_2.append(2);
+//         // balance
+//         resources_2.append(100);
+//         world.set_entity(ctx, 'Resource'.into(), (11, 2).into(), 0_u8, values.span());
+//         world.set_entity(ctx, 'Resource'.into(), (12, 2).into(), 0_u8, values.span());
 
-    // test that the average speed is correct
-    #[test]
-    #[available_gas(300000000000)]
-    fn test_make_fungible_order() {
-        let world = spawn_test_world_with_setup();
-        // set caller as admin 
-        let mut values = array::ArrayTrait::<felt252>::new();
-        values.append(11);
-        values.append('Admin'.into());
-        world.execute('GrantAuthRole'.into(), values.span());
-        // set as executor
-        starknet::testing::set_contract_address(starknet::contract_address_const::<1>());
-        // ap change issue
-        // let maker_id = 11;
-        // let taker_id = 12;
+//         // grant admin role to 11
+//         let mut grant_role_calldata: Array<felt252> = ArrayTrait::new();
+//         grant_role_calldata.append(11); // target_id
+//         grant_role_calldata.append('Admin'); // role_id
+//         world.execute('GrantAuthRole'.into(), grant_role_calldata.span());
 
-        // create entity 1
-        let mut values = array::ArrayTrait::<felt252>::new();
-        values.append(11);
-        world.set_entity('Owner'.into(), 11.into(), 0_u8, values.span());
+//         // create order
+//         starknet::testing::set_account_contract_address(starknet::contract_address_const::<11>());
+//         let mut values = array::ArrayTrait::<felt252>::new();
+//         // maker_id
+//         values.append(11);
+//         // len
+//         values.append(2);
+//         // types
+//         values.append(1);
+//         values.append(2);
+//         // len
+//         values.append(2);
+//         // quantities
+//         values.append(100);
+//         values.append(100);
+//         // taker_id
+//         values.append(12);
+//         // len
+//         values.append(2);
+//         // types
+//         values.append(1);
+//         values.append(2);
+//         // len
+//         values.append(2);
+//         // quantities
+//         values.append(100);
+//         values.append(100);
+//         // taker_needs_caravan
+//         values.append(0);
+//         // expires_at
+//         values.append(100);
+//         let result = world.execute('MakeFungibleOrder'.into(), values.span());
+//         let trade_id = *result[0];
 
-        // entity 2
-        let mut values = array::ArrayTrait::<felt252>::new();
-        values.append(12);
-        world.set_entity('Owner'.into(), 12.into(), 0_u8, values.span());
+//         // check balances
+//         let resource = world.entity('Resource'.into(), (11, 1).into(), 0_u8, 0_usize);
+//         assert(*resource[1] == 0, 'Balance should be 0');
+//         let resource = world.entity('Resource'.into(), (11, 2).into(), 0_u8, 0_usize);
+//         assert(*resource[1] == 0, 'Balance should be 0');
 
-        // add resources to entity 1 and 2
-        let mut values = array::ArrayTrait::<felt252>::new();
-        // resource_type
-        values.append(1);
-        // balance
-        values.append(100);
-        world.set_entity('Resource'.into(), (11, 1).into(), 0_u8, values.span());
-        world.set_entity('Resource'.into(), (12, 1).into(), 0_u8, values.span());
-        let mut resources_2 = array::ArrayTrait::<felt252>::new();
-        // resource_type
-        resources_2.append(2);
-        // balance
-        resources_2.append(100);
-        world.set_entity('Resource'.into(), (11, 2).into(), 0_u8, values.span());
-        world.set_entity('Resource'.into(), (12, 2).into(), 0_u8, values.span());
+//         let resource = world.entity('Resource'.into(), (12, 1).into(), 0_u8, 0_usize);
+//         assert(*resource[1] == 100, 'Balance should be 100');
+//         let resource = world.entity('Resource'.into(), (12, 2).into(), 0_u8, 0_usize);
+//         assert(*resource[1] == 100, 'Balance should be 100');
 
-        // create order
-        starknet::testing::set_account_contract_address(starknet::contract_address_const::<11>());
-        let mut values = array::ArrayTrait::<felt252>::new();
-        // maker_id
-        values.append(11);
-        // len
-        values.append(2);
-        // types
-        values.append(1);
-        values.append(2);
-        // len
-        values.append(2);
-        // quantities
-        values.append(100);
-        values.append(100);
-        // taker_id
-        values.append(12);
-        // len
-        values.append(2);
-        // types
-        values.append(1);
-        values.append(2);
-        // len
-        values.append(2);
-        // quantities
-        values.append(100);
-        values.append(100);
-        // taker_needs_caravan
-        values.append(0);
-        // expires_at
-        values.append(100);
-        let result = world.execute('MakeFungibleOrder'.into(), values.span());
-        let trade_id = *result[0];
+//         // check that the trade was created
+//         let trade = world.entity('FungibleTrade'.into(), trade_id.into(), 0_u8, 0_usize);
+//         assert(*trade[0] == 11, 'Maker id should be 11');
+//         assert(*trade[1] == 12, 'Taker id should be 12');
+//         let maker_order_id = *trade[2];
+//         let taker_order_id = *trade[3];
+//         assert(*trade[4] == 100, 'Expires at should be 100');
+//         assert(*trade[5] == 0, 'Claimed should be false');
+//         assert(*trade[6] == 0, 'Claimed should be false');
+//         assert(*trade[7] == 0, 'Need caravan should be false');
 
-        // check balances
-        let resource = world.entity('Resource'.into(), (11, 1).into(), 0_u8, 0_usize);
-        assert(*resource[1] == 0, 'Balance should be 0');
-        let resource = world.entity('Resource'.into(), (11, 2).into(), 0_u8, 0_usize);
-        assert(*resource[1] == 0, 'Balance should be 0');
+//         // check that the maker order was created
+//         let maker_order = world
+//             .entity('FungibleEntities'.into(), maker_order_id.into(), 0_u8, 0_usize);
+//         assert(*maker_order[1] == 2, 'Count should be 2');
+//         let key = *maker_order[0];
+//         let resource = world
+//             .entity('Resource'.into(), (maker_order_id, key, 0).into(), 0_u8, 0_usize);
+//         assert(*resource[0] == 1, 'Resource type should be 1');
+//         assert(*resource[1] == 100, 'Balance should be 100');
+//         let resource = world
+//             .entity('Resource'.into(), (maker_order_id, key, 1).into(), 0_u8, 0_usize);
+//         assert(*resource[0] == 2, 'Resource type should be 2');
+//         assert(*resource[1] == 100, 'Balance should be 100');
 
-        let resource = world.entity('Resource'.into(), (12, 1).into(), 0_u8, 0_usize);
-        assert(*resource[1] == 100, 'Balance should be 100');
-        let resource = world.entity('Resource'.into(), (12, 2).into(), 0_u8, 0_usize);
-        assert(*resource[1] == 100, 'Balance should be 100');
+//         // check that taker order was created
+//         let taker_order = world
+//             .entity('FungibleEntities'.into(), taker_order_id.into(), 0_u8, 0_usize);
+//         assert(*taker_order[1] == 2, 'Count should be 2');
+//         let key = *taker_order[0];
+//         let resource = world
+//             .entity('Resource'.into(), (taker_order_id, key, 0).into(), 0_u8, 0_usize);
+//         assert(*resource[0] == 1, 'Resource type should be 1');
+//         assert(*resource[1] == 100, 'Balance should be 100');
+//         let resource = world
+//             .entity('Resource'.into(), (taker_order_id, key, 1).into(), 0_u8, 0_usize);
+//         assert(*resource[0] == 2, 'Resource type should be 2');
+//         assert(*resource[1] == 100, 'Balance should be 100');
+//     }
+// }
 
-        // check that the trade was created
-        let trade = world.entity('FungibleTrade'.into(), trade_id.into(), 0_u8, 0_usize);
-        assert(*trade[0] == 11, 'Maker id should be 11');
-        assert(*trade[1] == 12, 'Taker id should be 12');
-        let maker_order_id = *trade[2];
-        let taker_order_id = *trade[3];
-        assert(*trade[4] == 100, 'Expires at should be 100');
-        assert(*trade[5] == 0, 'Claimed should be false');
-        assert(*trade[6] == 0, 'Claimed should be false');
-        assert(*trade[7] == 0, 'Need caravan should be false');
 
-        // check that the maker order was created
-        let maker_order = world
-            .entity('FungibleEntities'.into(), maker_order_id.into(), 0_u8, 0_usize);
-        assert(*maker_order[1] == 2, 'Count should be 2');
-        let key = *maker_order[0];
-        let resource = world
-            .entity('Resource'.into(), (maker_order_id, key, 0).into(), 0_u8, 0_usize);
-        assert(*resource[0] == 1, 'Resource type should be 1');
-        assert(*resource[1] == 100, 'Balance should be 100');
-        let resource = world
-            .entity('Resource'.into(), (maker_order_id, key, 1).into(), 0_u8, 0_usize);
-        assert(*resource[0] == 2, 'Resource type should be 2');
-        assert(*resource[1] == 100, 'Balance should be 100');
-
-        // check that taker order was created
-        let taker_order = world
-            .entity('FungibleEntities'.into(), taker_order_id.into(), 0_u8, 0_usize);
-        assert(*taker_order[1] == 2, 'Count should be 2');
-        let key = *taker_order[0];
-        let resource = world
-            .entity('Resource'.into(), (taker_order_id, key, 0).into(), 0_u8, 0_usize);
-        assert(*resource[0] == 1, 'Resource type should be 1');
-        assert(*resource[1] == 100, 'Balance should be 100');
-        let resource = world
-            .entity('Resource'.into(), (taker_order_id, key, 1).into(), 0_u8, 0_usize);
-        assert(*resource[0] == 2, 'Resource type should be 2');
-        assert(*resource[1] == 100, 'Balance should be 100');
-    }
-}

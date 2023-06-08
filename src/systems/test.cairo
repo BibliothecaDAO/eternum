@@ -30,7 +30,7 @@ mod CreateRealm {
     use eternum::components::realm::Realm;
     use eternum::components::owner::Owner;
     use eternum::components::position::Position;
-    use eternum::components::entity_type::EntityType;
+    use eternum::components::metadata::MetaData;
     use eternum::constants::REALM_ENTITY_TYPE;
 
     use eternum::alias::ID;
@@ -65,8 +65,8 @@ mod CreateRealm {
                     order,
                     }, Position {
                     x: position.x, y: position.y, 
-                    }, EntityType {
-                    value: REALM_ENTITY_TYPE, 
+                    }, MetaData {
+                    entity_type: REALM_ENTITY_TYPE, 
                 },
             )
         );
