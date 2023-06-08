@@ -52,7 +52,7 @@ mod GetAverageSpeed {
                 }
             };
 
-            total_speed += movable.km_per_hr.into() * quantity;
+            total_speed += movable.sec_per_km.into() * quantity;
             total_quantity += quantity;
             index += 1;
         }

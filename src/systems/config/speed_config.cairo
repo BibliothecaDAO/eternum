@@ -4,9 +4,9 @@ mod SetSpeedConfig {
     use eternum::components::config::SpeedConfig;
     use eternum::constants::WORLD_CONFIG_ID;
 
-    fn execute(entity_type: u128, km_per_hr: u128) {
+    fn execute(entity_type: u128, sec_per_km: u16) {
         commands::<SpeedConfig>::set_entity(
-            (WORLD_CONFIG_ID, entity_type).into(), (SpeedConfig { entity_type, km_per_hr,  })
+            (WORLD_CONFIG_ID, entity_type).into(), (SpeedConfig { entity_type, sec_per_km,  })
         );
     }
 }

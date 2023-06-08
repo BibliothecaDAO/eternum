@@ -115,7 +115,7 @@ mod AttachCaravan {
 
         // set the caravan to blocked
         commands::set_entity(
-            caravan_id.into(), (Movable { km_per_hr: movable.km_per_hr, blocked: true })
+            caravan_id.into(), (Movable { sec_per_km: movable.sec_per_km, blocked: true })
         );
     }
 }

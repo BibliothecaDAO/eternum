@@ -85,9 +85,8 @@ mod TakeFungibleOrder {
                 let (capacity, movable, caravan_position) = commands::<Capacity,
                 Movable,
                 Position>::entity(caravan.caravan_id.into());
-                let travel_time = 20;
-                // let travel_time = caravan_position
-                //     .calculate_travel_time(taker_position, movable.speed);
+                let travel_time = caravan_position
+                    .calculate_travel_time(taker_position, movable.sec_per_km);
 
                 // SET ORDER
                 commands::set_entity(
@@ -112,7 +111,7 @@ mod TakeFungibleOrder {
                         ArrivalTime {
                             arrives_at: ts + travel_time * 2
                             }, Movable {
-                            km_per_hr: movable.km_per_hr, blocked: false, 
+                            sec_per_km: movable.sec_per_km, blocked: false, 
                         }
                     )
                 );
@@ -144,8 +143,8 @@ mod TakeFungibleOrder {
             Position,
             Owner>::entity(caravan.caravan_id.into());
             // if caravan, starts from the caravan position (not taker position)
-            // let travel_time = caravan_position.calculate_travel_time(maker_position, movable.speed);
-            let travel_time = 10;
+            let travel_time = caravan_position
+                .calculate_travel_time(maker_position, movable.sec_per_km);
 
             // assert that the owner of the caravan is the caller
             assert(owner.address == caller, 'not owned by caller');
@@ -171,7 +170,7 @@ mod TakeFungibleOrder {
                     ArrivalTime {
                         arrives_at: ts + travel_time * 2
                         }, Movable {
-                        km_per_hr: movable.km_per_hr, blocked: false, 
+                        sec_per_km: movable.sec_per_km, blocked: false, 
                     }
                 )
             );

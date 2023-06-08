@@ -72,7 +72,7 @@ struct CapacityConfig {
 #[derive(Component, Copy, Drop, Serde)]
 struct SpeedConfig {
     entity_type: u128,
-    km_per_hr: u128,
+    sec_per_km: u16,
 }
 
 // weight
