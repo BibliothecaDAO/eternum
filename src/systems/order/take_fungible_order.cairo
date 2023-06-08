@@ -28,11 +28,19 @@ mod TakeFungibleOrder {
     use dojo_core::integer::U128IntoU250;
     fn execute(taker_id: ID, trade_id: ID) {
         // get the trade 
-        let meta = commands::<FungibleTrade>::entity(trade_id.into());
+        let (meta, trade_status) = commands::<FungibleTrade, Status>::entity(trade_id.into());
 
         // verify expiration date
         let ts = starknet::get_block_timestamp();
         assert(meta.expires_at > ts, 'trade expired');
+
+        // assert that the status is open
+        let is_open = match trade_status.value {
+            status::Open(_) => true,
+            status::Accepted(_) => false,
+            status::Cancelled(_) => false,
+        };
+        assert(is_open, 'Trade is not open');
 
         // assert that taker entity is owned by caller
         let caller = starknet::get_tx_info().unbox().account_contract_address;
