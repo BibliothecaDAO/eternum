@@ -17,7 +17,7 @@ mod WorldConfig {
     ) {
         // TODO: can only be executed by Governance Vote
         let _ = commands::set_entity(
-            (WORLD_CONFIG_ID).into(),
+            WORLD_CONFIG_ID.into(),
             (WorldConfig {
                 day_time,
                 vault_bp,

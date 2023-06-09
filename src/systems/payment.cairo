@@ -14,7 +14,7 @@ mod SpendResources {
         assert(amount > 0, 'amount must be positive');
 
         // verify owner
-        let query: Query = (entity_id.into()).into();
+        let query: Query = entity_id.into();
         let (resource, owner) = commands::<Resource, Owner>::entity(query);
         assert(owner.address == caller, 'Only owner can spend resources');
 

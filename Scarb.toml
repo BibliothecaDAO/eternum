@@ -9,6 +9,7 @@ dojo_core = { path = "/Users/aymericdelabrousse/Projects/blockchain/cairo/dojo_f
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git" }
 
 
+
 [[target.dojo]]
 
 [tool.dojo.env]

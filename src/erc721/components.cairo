@@ -9,8 +9,3 @@ struct TokenApproval {
 struct Balance {
     value: u128
 }
-
-#[derive(Component, Copy, Drop, Serde)]
-struct Owner {
-    address: ContractAddress
-}
