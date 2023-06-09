@@ -22,7 +22,6 @@ impl PositionPartialEq of PartialEq<Position> {
         !(lhs.x == rhs.x & lhs.y == rhs.y)
     }
 }
-// TODO: implement position traits
 trait PositionTrait {
     fn calculate_distance(self: Position, destination: Position) -> u32;
     fn calculate_travel_time(self: Position, destination: Position, sec_per_km: u16) -> u64;

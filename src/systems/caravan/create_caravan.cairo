@@ -100,7 +100,7 @@ mod CreateCaravan {
         // if a list of entities are at the same position, but again that would be 
         // an extra loop
         let average_speed = total_speed / total_quantity;
-        let average_speed: u8 = average_speed.try_into().unwrap();
+        let average_speed: u16 = average_speed.try_into().unwrap();
 
         // set the caravan entity
         commands::set_entity(

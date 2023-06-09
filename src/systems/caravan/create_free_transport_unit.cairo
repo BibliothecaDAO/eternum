@@ -84,7 +84,7 @@ mod CreateFreeTransportUnit {
                     }, Quantity {
                     value: quantity
                     }, Movable {
-                    sec_per_km: speed.sec_per_km.try_into().unwrap(), blocked: false, 
+                    sec_per_km: speed.sec_per_km, blocked: false, 
                     }, ArrivalTime {
                     arrives_at: 0, 
                     }, Capacity {

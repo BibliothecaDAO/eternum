@@ -6,7 +6,7 @@ mod TakeFungibleOrder {
     use eternum::components::resources::Resource;
     use eternum::alias::ID;
     use eternum::components::owner::Owner;
-    use eternum::components::position::Position;
+    use eternum::components::position::{Position, PositionTrait};
     use eternum::components::realm::Realm;
     use eternum::components::trade::{FungibleTrade, Status, status};
     use eternum::components::capacity::Capacity;
