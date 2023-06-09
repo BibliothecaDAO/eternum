@@ -1,47 +1,110 @@
-# Eternum
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-Eternum is an enchanting blockchain-powered odyssey that transports players to a mystical realm of unending conquest and dominion. Amidst the ever-shifting sands of time, no empire can withstand the inevitable decay as even the most formidable kingdoms dissolve into the mists of history. Unite with formidable allies, amass invaluable resources, embark on spellbinding adventures, and tailor your gameplay to conquer the infinite tapestry of the eternal realm. Embrace the exhilarating rush of victory and the daunting challenge of sustaining supremacy in the fantastical world of Eternum.
 
 
-## Table of Contents
-- [Introduction](#introduction)
-- [Technology](#technology)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-- [Contributing](#contributing)
-- [License](#license)
-- [Acknowledgements](#acknowledgements)
+<!-- <picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/mark-dark.svg">
+  <img alt="Dojo logo" align="right" width="120" src=".github/mark-light.svg">
+</picture> -->
 
-## Introduction
+<a href="https://twitter.com/lootrealms">
+<img src="https://img.shields.io/twitter/follow/lootrealms?style=social"/>
+</a>
+<a href="https://twitter.com/BibliothecaDAO">
+<img src="https://img.shields.io/twitter/follow/BibliothecaDAO?style=social"/>
+</a>
 
-Eternum is a timeless blockchain-powered game, meticulously crafted to endure the eons. This repository houses the Cairo 1.0 component of the game, which serves as the core foundation for the headless gaming experience. The inclusive design of Eternum allows anyone to host a client and seamlessly interact with the ever-evolving world, providing limitless opportunities for exploration and engagement within this digital realm.
 
-## Technology
-Eternum is constructed upon the robust [Dojo](https://dojoengine.org/) on-chain game engine, utilizing the power of Cairo to create an enthralling and immersive on-chain experience. 
+[![discord](https://img.shields.io/badge/join-bibliothecadao-black?logo=discord&logoColor=white)](https://discord.gg/bibliothecadao)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-### Starknet
-StarkNet is a validity Ethereum rollup, engineered to deliver exceptional throughput and demonstrably robust computational capabilities. By leveraging STARKs, StarkNet facilitates scalable and secure interactions within the Ethereum ecosystem.
+![background](./bg.png)
 
-### Autonomous Worlds
-TODO:
-## Getting Started
-TODO:
+# Realms: Eternum
+Eternum is the first mod of the Realms Autonomous World built on [dojo](https://github.com/dojoengine/dojo). It will form the base economic layer of the Autonomous World.
 
-### Prerequisites
+### Table of Contents
+- [Installation](#Installation)
+- [Contributing](#Contributing)
+- [License](#License)
+
+# Development
+
+## Prerequisites
 You will require an understanding of Cairo 1.0 and smart contracts in order to contribute to the code base.
 
-### Installation
-TODO:
+## Cairo development setup guide
 
+### Linux
 
+#### 1. Install Rust and Dependencies
+
+Start by installing Rust and running the test suite to confirm your setup:
+
+```bash
+rustup override set stable && rustup update
+```
+
+> Note: Depending on your Linux distribution, you may need to install additional dependencies. Make sure to install any suggested or missing dependencies that arise during the setup process.
+
+#### 2. Install Scarb Package Manager
+
+Next, install the [Scarb](https://docs.swmansion.com/scarb) package manager by running:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://docs.swmansion.com/scarb/install.sh | sh
+```
+
+#### 3. Setup Cairo VSCode Extension
+
+For proper linting and syntax highlighting, you should install the Cairo 1.0 extension for Visual Studio Code.
+
+- Clone the Cairo repository somewhere on your machine (make sure not to clone within the Eternum directory).
+
+```bash
+git clone https://github.com/starkware-libs/cairo.git
+```
+
+- Install the Cairo Language Server extension. Here's a step-by-step guide, or you can follow the [official instructions](https://github.com/starkware-libs/cairo/blob/main/vscode-cairo/README.md).
+
+Navigate to the vscode-cairo directory:
+
+```bash
+cd cairo/vscode-cairo
+```
+
+Install the required packages:
+
+```bash
+sudo npm install --global @vscode/vsce
+npm install
+```
+
+Package the extension:
+
+```bash
+vsce package
+```
+
+Install the extension:
+
+```bash
+code --install-extension cairo1*.vsix
+```
+
+The Cairo language server should now be installed globally in your Visual Studio Code. If you have the server enabled, Scarb should automatically pick this up and start linting your Cairo files.
+
+#### 4. Dojo
+
+Eternum is built using dojo engine. You can install the dojo toolchain by:
+
+```
+curl -L https://install.dojoengine.org | bash
+```
+
+Read the dojo book [here](https://book.dojoengine.org/index.html) to discover the toolchain in depth.
+
+---
 ## Contributing
-We welcome contributions from the community! Please read the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines on how to contribute to the project.
+We welcome contributions from the community! Please read the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines on how to contribute to the project. 
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.
-
-## Acknowledgements
-
-TODO:

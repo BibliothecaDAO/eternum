@@ -209,6 +209,42 @@ mod tests {
         routes
             .append(RouteTrait::new('WorldConfig'.into(), 'Tester'.into(), 'WorldConfig'.into(), ));
 
+        // create auth routes
+        let mut routes = array::ArrayTrait::new();
+        // settle
+        routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Position'.into(), ));
+        routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Realm'.into(), ));
+        routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Owner'.into(), ));
+        routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Age'.into(), ));
+        routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Resource'.into(), ));
+        // unsettle
+        routes.append(RouteTrait::new('Unsettle'.into(), 'Tester'.into(), 'Position'.into(), ));
+        routes.append(RouteTrait::new('Unsettle'.into(), 'Tester'.into(), 'Realm'.into(), ));
+        routes.append(RouteTrait::new('Unsettle'.into(), 'Tester'.into(), 'Owner'.into(), ));
+        routes.append(RouteTrait::new('Unsettle'.into(), 'Tester'.into(), 'Age'.into(), ));
+
+        // // erc721
+        routes
+            .append(
+                RouteTrait::new(
+                    'ERC721TransferFrom'.into(), 'Tester'.into(), 'TokenApproval'.into(), 
+                )
+            );
+        routes
+            .append(
+                RouteTrait::new('ERC721TransferFrom'.into(), 'Tester'.into(), 'Owner'.into(), )
+            );
+        routes
+            .append(
+                RouteTrait::new('ERC721TransferFrom'.into(), 'Tester'.into(), 'Balance'.into(), )
+            );
+        routes.append(RouteTrait::new('ERC721Mint'.into(), 'Tester'.into(), 'Balance'.into(), ));
+        routes.append(RouteTrait::new('ERC721Mint'.into(), 'Tester'.into(), 'Owner'.into(), ));
+
+        // config
+        routes
+            .append(RouteTrait::new('WorldConfig'.into(), 'Tester'.into(), 'WorldConfig'.into(), ));
+
         // deploy executor, world and register components/systems
         let world = spawn_test_world(components, systems, routes);
 

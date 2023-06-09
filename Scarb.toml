@@ -5,7 +5,9 @@ version = "0.1.0"
 [scripts]
 
 [dependencies]
-dojo_core = { git = "https://github.com/dojoengine/dojo.git" }
+#dojo_core = { git = "https://github.com/dojoengine/dojo.git" }
+dojo_core = { path = "/Users/aymericdelabrousse/Projects/blockchain/cairo/dojo_folder/dojo-aymeric/crates/dojo-core" }
+
 
 
 [[target.dojo]]
