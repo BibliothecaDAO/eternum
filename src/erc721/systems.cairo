@@ -20,7 +20,8 @@ mod ERC721TransferFrom {
     use traits::{Into, TryInto};
     use starknet::contract_address::Felt252TryIntoContractAddress;
 
-    use super::super::components::{TokenApproval, Owner, Balance};
+    use super::super::components::{TokenApproval, Balance};
+    use eternum::components::owner::Owner;
     use eternum::alias::ID;
 
     fn execute(token: felt252, from: felt252, to: felt252, token_id: ID) {
@@ -60,7 +61,8 @@ mod ERC721Mint {
     use starknet::contract_address::Felt252TryIntoContractAddress;
 
     use eternum::alias::ID;
-    use super::super::components::{Balance, Owner};
+    use super::super::components::Balance;
+    use eternum::components::owner::Owner;
 
     fn execute(token: felt252, owner: felt252, token_id: ID) {
         // assign token to owner
