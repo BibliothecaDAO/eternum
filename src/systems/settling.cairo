@@ -16,7 +16,7 @@ mod Settle {
 
     fn execute(realm_id: ID) { // get the ERC721 contract
         // get the owner
-        let config = commands::<WorldConfig>::entity((WORLD_CONFIG_ID.into()).into());
+        let config = commands::<WorldConfig>::entity(WORLD_CONFIG_ID.into());
         let token: felt252 = config.realm_l2_contract.into();
         // TODO: wait for set_account_contract_address to be available
         // let caller = starknet::get_tx_info().unbox().account_contract_address;
@@ -28,7 +28,7 @@ mod Settle {
         let realm_data: RealmData = erc721.fetch_realm_data(realm_id);
         let position: Position = erc721.realm_position(realm_id);
         // create Realm Metadata
-        let realm_query: Query = (realm_id.into()).into();
+        let realm_query: Query = realm_id.into();
         commands::set_entity(
             realm_query,
             (
@@ -64,8 +64,7 @@ mod Settle {
                 break ();
             };
             let resource_type: u8 = *resource_types[index];
-            let resource_type_felt: felt252 = resource_type.into();
-            let resource_query: Query = (realm_id.into(), resource_type_felt).into();
+            let resource_query: Query = (realm_id, resource_type).into();
             commands::<Resource>::set_entity(
                 resource_query,
                 (Resource { resource_type, balance: config.base_resources_per_day,  })
@@ -74,7 +73,7 @@ mod Settle {
         }
 
         // transfer Realm ERC721 to world contract
-        erc721.transfer_from(owner, world_address, realm_id, );
+        erc721.transfer_from(owner, ctx.world.contract_address, realm_id, );
     }
 }
 
@@ -94,28 +93,28 @@ mod Unsettle {
 
     fn execute(realm_id: ID) {
         // get the ERC721 contract
-        let config = commands::<WorldConfig>::entity((WORLD_CONFIG_ID.into()).into());
+        let config = commands::<WorldConfig>::entity(WORLD_CONFIG_ID.into());
         let token = config.realm_l2_contract;
 
         // get the owner
-        let realm_query: Query = (realm_id.into()).into();
-        let owner = commands::<Owner>::entity(realm_query);
+        let owner = commands::<Owner>::entity(realm_id.into());
         // TODO: wait for set_account_contract_address to be available
         // let caller = starknet::get_tx_info().unbox().account_contract_address;
         // assert caller is owner
         // assert(owner.address == caller, 'Only owner can unsettle');
 
+        // delete entity
+        // TODO: use commands when available
+        ctx.world.delete_entity(ctx, 'Owner'.into(), realm_id.into());
+        ctx.world.delete_entity(ctx, 'Position'.into(), realm_id.into());
+        ctx.world.delete_entity(ctx, 'Realm'.into(), realm_id.into());
+        ctx.world.delete_entity(ctx, 'Age'.into(), realm_id.into());
+
         // transfer back nft from world to owner
+        // need to call other systems after updating entities
         IERC721Dispatcher {
             contract_address: token
-        }.transfer_from(world_address, owner.address, realm_id, );
-
-        // delete entity
-        let world = IWorldDispatcher { contract_address: world_address };
-        world.delete_entity('Owner'.into(), realm_query);
-        world.delete_entity('Position'.into(), realm_query);
-        world.delete_entity('Realm'.into(), realm_query);
-        world.delete_entity('Age'.into(), realm_query);
+        }.transfer_from(ctx.world.contract_address, owner.address, realm_id, );
     }
 }
 
@@ -132,6 +131,7 @@ mod tests {
     use dojo_core::interfaces::IWorldDispatcherTrait;
     use dojo_core::test_utils::spawn_test_world;
     use dojo_core::storage::query::Query;
+    use dojo_core::auth::systems::{Route, RouteTrait};
 
     // erc721
     use eternum::erc721::erc721::{Position, RealmData, ERC721};
@@ -146,12 +146,13 @@ mod tests {
     use eternum::components::resources::ResourceComponent;
     use eternum::components::age::AgeComponent;
     // systems
-    use eternum::erc721::systems::{ERC721ApproveSystem, ERC721TransferFromSystem, ERC721MintSystem};
-    use eternum::systems::settling::{SettleSystem, UnsettleSystem};
-    use eternum::systems::config::world_config::WorldConfigSystem;
+    use eternum::erc721::systems::{ERC721Approve, ERC721TransferFrom, ERC721Mint};
+    use eternum::systems::settling::{Settle, Unsettle};
+    use eternum::systems::config::world_config::WorldConfig;
 
     #[test]
-    #[available_gas(30000000)]
+    // need higher gas limit because of new auth system
+    #[available_gas(300000000000)]
     fn test_settle_unsettle_realm() {
         // components
         let mut components = array::ArrayTrait::<felt252>::new();
@@ -165,15 +166,51 @@ mod tests {
         components.append(AgeComponent::TEST_CLASS_HASH);
         // systems
         let mut systems = array::ArrayTrait::<felt252>::new();
-        systems.append(ERC721ApproveSystem::TEST_CLASS_HASH);
-        systems.append(ERC721TransferFromSystem::TEST_CLASS_HASH);
-        systems.append(ERC721MintSystem::TEST_CLASS_HASH);
-        systems.append(SettleSystem::TEST_CLASS_HASH);
-        systems.append(UnsettleSystem::TEST_CLASS_HASH);
-        systems.append(WorldConfigSystem::TEST_CLASS_HASH);
+        systems.append(ERC721Approve::TEST_CLASS_HASH);
+        systems.append(ERC721TransferFrom::TEST_CLASS_HASH);
+        systems.append(ERC721Mint::TEST_CLASS_HASH);
+        systems.append(Settle::TEST_CLASS_HASH);
+        systems.append(Unsettle::TEST_CLASS_HASH);
+        systems.append(WorldConfig::TEST_CLASS_HASH);
+
+        // create auth routes
+        let mut routes = array::ArrayTrait::new();
+        // settle
+        routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Position'.into(), ));
+        routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Realm'.into(), ));
+        routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Owner'.into(), ));
+        routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Age'.into(), ));
+        routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Resource'.into(), ));
+        // unsettle
+        routes.append(RouteTrait::new('Unsettle'.into(), 'Tester'.into(), 'Position'.into(), ));
+        routes.append(RouteTrait::new('Unsettle'.into(), 'Tester'.into(), 'Realm'.into(), ));
+        routes.append(RouteTrait::new('Unsettle'.into(), 'Tester'.into(), 'Owner'.into(), ));
+        routes.append(RouteTrait::new('Unsettle'.into(), 'Tester'.into(), 'Age'.into(), ));
+
+        // // erc721
+        routes
+            .append(
+                RouteTrait::new(
+                    'ERC721TransferFrom'.into(), 'Tester'.into(), 'TokenApproval'.into(), 
+                )
+            );
+        routes
+            .append(
+                RouteTrait::new('ERC721TransferFrom'.into(), 'Tester'.into(), 'Owner'.into(), )
+            );
+        routes
+            .append(
+                RouteTrait::new('ERC721TransferFrom'.into(), 'Tester'.into(), 'Balance'.into(), )
+            );
+        routes.append(RouteTrait::new('ERC721Mint'.into(), 'Tester'.into(), 'Balance'.into(), ));
+        routes.append(RouteTrait::new('ERC721Mint'.into(), 'Tester'.into(), 'Owner'.into(), ));
+
+        // config
+        routes
+            .append(RouteTrait::new('WorldConfig'.into(), 'Tester'.into(), 'WorldConfig'.into(), ));
 
         // deploy executor, world and register components/systems
-        let world = spawn_test_world(components, systems);
+        let world = spawn_test_world(components, systems, routes);
 
         let mut constructor_calldata = array::ArrayTrait::<felt252>::new();
         constructor_calldata.append(world.contract_address.into());
@@ -182,7 +219,8 @@ mod tests {
         // deploy ERC721 contract
         let (erc721_address, _) = deploy_syscall(
             ERC721::TEST_CLASS_HASH.try_into().unwrap(), 0, constructor_calldata.span(), false
-        ).unwrap();
+        )
+            .unwrap();
         let erc721 = IERC721Dispatcher { contract_address: erc721_address };
 
         // add when available in latest release
@@ -234,9 +272,8 @@ mod tests {
         world.execute('Settle'.into(), settle_call_data.span());
 
         // assert not owner of the nft anymore
-        let new_erc721_owner = world.entity(
-            'Owner'.into(), (erc721_address_felt, 1).into(), 0_u8, 0_usize
-        );
+        let new_erc721_owner = world
+            .entity('Owner'.into(), (erc721_address_felt, 1).into(), 0_u8, 0_usize);
         assert(*new_erc721_owner[0] == world.contract_address.into(), 'wrong erc721 owner');
 
         // assert settled realm
@@ -275,9 +312,8 @@ mod tests {
         world.execute('Unsettle'.into(), unsettle_call_data.span());
 
         // assert owner of the nft again
-        let new_erc721_owner = world.entity(
-            'Owner'.into(), (erc721_address_felt, 1).into(), 0_u8, 0_usize
-        );
+        let new_erc721_owner = world
+            .entity('Owner'.into(), (erc721_address_felt, 1).into(), 0_u8, 0_usize);
         assert(*new_erc721_owner[0] == caller.into(), 'wrong erc721 owner');
 
         let age = world.entity('Age'.into(), realm_query, 0_u8, 0_usize);

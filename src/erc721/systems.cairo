@@ -9,8 +9,7 @@ mod ERC721Approve {
     fn execute(token: felt252, approved: felt252, token_id: ID) {
         // approve an address
         commands::set_entity(
-            (token, token_id.into()).into(),
-            (TokenApproval { address: approved.try_into().unwrap() })
+            (token, token_id).into(), (TokenApproval { address: approved.try_into().unwrap() })
         );
     }
 }
@@ -25,7 +24,7 @@ mod ERC721TransferFrom {
     use eternum::alias::ID;
 
     fn execute(token: felt252, from: felt252, to: felt252, token_id: ID) {
-        let query: Query = (token, token_id.into()).into();
+        let query: Query = (token, token_id).into();
         commands::set_entity(
             query,
             ( // reset approvals
@@ -66,7 +65,7 @@ mod ERC721Mint {
     fn execute(token: felt252, owner: felt252, token_id: ID) {
         // assign token to owner
         commands::set_entity(
-            (token, token_id.into()).into(), (Owner { address: owner.try_into().unwrap() })
+            (token, token_id).into(), (Owner { address: owner.try_into().unwrap() })
         );
 
         let query: Query = (token, owner).into();

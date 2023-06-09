@@ -8,8 +8,7 @@ mod MintResources {
 
     #[external]
     fn execute(realm_id: ID, resource_type: u8, amount: u128) {
-        let resource_type_felt: felt252 = resource_type.into();
-        let resource_query: Query = (realm_id.into(), resource_type_felt).into();
+        let resource_query: Query = (realm_id, resource_type).into();
         let maybe_resource = commands::<Resource>::try_entity(resource_query);
         let resource = match maybe_resource {
             Option::Some(resource) => resource,
@@ -44,7 +43,7 @@ mod CreateRealm {
         wonder: u8,
         order: u8
     ) {
-        let realm_query = (realm_id.into()).into();
+        let realm_query = realm_id.into();
         commands::<Realm>::set_entity(
             realm_query,
             (

@@ -17,7 +17,7 @@ mod BuildLabor {
     fn execute(realm_id: ID, resource_type: u8, labor_units: u128, multiplier: u128) {
         // assert owner of realm
         let player_id: ContractAddress = starknet::get_tx_info().unbox().account_contract_address;
-        let (realm, owner) = commands::<Realm, Owner>::entity((realm_id.into()).into());
+        let (realm, owner) = commands::<Realm, Owner>::entity(realm_id.into());
         // TODO: do that when starknet::testing::set_account_contract_address works in test
         // assert(owner.address == player_id, 'Realm does not belong to player');
 
@@ -29,16 +29,13 @@ mod BuildLabor {
         }
 
         // Get Config
-        let labor_config: LaborConfig = commands::<LaborConfig>::entity(
-            (LABOR_CONFIG_ID.into()).into()
-        );
+        let labor_config: LaborConfig = commands::<LaborConfig>::entity(LABOR_CONFIG_ID.into());
 
         // transform timestamp from u64 to u128
         let ts: u128 = starknet::get_block_timestamp().into();
 
         // get labor
-        let resource_type_felt: felt252 = resource_type.into();
-        let resource_query: Query = (realm_id.into(), resource_type_felt).into();
+        let resource_query: Query = (realm_id, resource_type).into();
         let maybe_labor = commands::<Labor>::try_entity(resource_query);
         let labor = match maybe_labor {
             Option::Some(labor) => labor,
@@ -118,9 +115,7 @@ mod BuildLabor {
         );
 
         // pay for labor 
-        let labor_cost_resources = commands::<LaborCostResources>::entity(
-            resource_type_felt.into()
-        );
+        let labor_cost_resources = commands::<LaborCostResources>::entity(resource_type.into());
         let labor_cost_resource_types: Span<u8> = unpack_resource_types(
             labor_cost_resources.resource_types_packed, labor_cost_resources.resource_types_count
         );
@@ -130,17 +125,17 @@ mod BuildLabor {
             if index == labor_cost_resources.resource_types_count.into() {
                 break ();
             }
-            let labor_cost_resource_type_felt: felt252 = (*labor_cost_resource_types[index]).into();
+            let labor_cost_resource_type = *labor_cost_resource_types[index];
             let labor_cost_per_unit = commands::<LaborCostAmount>::entity(
-                (resource_type_felt, labor_cost_resource_type_felt).into()
+                (resource_type, labor_cost_resource_type).into()
             );
             let current_resource: Resource = commands::<Resource>::entity(
-                (realm_id.into(), labor_cost_resource_type_felt).into()
+                (realm_id, labor_cost_resource_type).into()
             );
             let total_cost = labor_cost_per_unit.value * labor_units * multiplier;
             assert(current_resource.balance >= total_cost, 'Not enough resources');
             commands::<Resource>::set_entity(
-                (realm_id.into(), labor_cost_resource_type_felt).into(),
+                (realm_id, labor_cost_resource_type).into(),
                 (Resource {
                     resource_type: current_resource.resource_type,
                     balance: current_resource.balance - total_cost
@@ -150,7 +145,6 @@ mod BuildLabor {
         };
     }
 }
-
 mod tests {
     // components
     use eternum::components::labor::LaborComponent;
@@ -167,12 +161,12 @@ mod tests {
     use eternum::components::config::LaborCostAmount;
 
     // systems
-    use eternum::systems::labor::build_labor::BuildLaborSystem;
-    use eternum::systems::config::labor_config::CreateLaborConfigSystem;
-    use eternum::systems::config::labor_config::CreateLaborCostResourcesSystem;
-    use eternum::systems::config::labor_config::CreateLaborCostAmountSystem;
-    use eternum::systems::test::MintResourcesSystem;
-    use eternum::systems::test::CreateRealmSystem;
+    use eternum::systems::labor::build_labor::BuildLabor;
+    use eternum::systems::config::labor_config::CreateLaborConfig;
+    use eternum::systems::config::labor_config::CreateLaborCostResources;
+    use eternum::systems::config::labor_config::CreateLaborCostAmount;
+    use eternum::systems::test::MintResources;
+    use eternum::systems::test::CreateRealm;
 
     // constants
     use eternum::constants::ResourceTypes;
@@ -187,6 +181,7 @@ mod tests {
     use dojo_core::interfaces::IWorldDispatcherTrait;
     use dojo_core::storage::query::Query;
     use dojo_core::test_utils::spawn_test_world;
+    use dojo_core::auth::systems::{Route, RouteTrait};
 
     #[test]
     #[available_gas(300000000000)]
@@ -204,14 +199,44 @@ mod tests {
 
         /// REGISTER SYSTEMS ///
         let mut systems = array::ArrayTrait::<felt252>::new();
-        systems.append(BuildLaborSystem::TEST_CLASS_HASH);
-        systems.append(CreateRealmSystem::TEST_CLASS_HASH);
-        systems.append(CreateLaborConfigSystem::TEST_CLASS_HASH);
-        systems.append(CreateLaborCostResourcesSystem::TEST_CLASS_HASH);
-        systems.append(CreateLaborCostAmountSystem::TEST_CLASS_HASH);
-        systems.append(MintResourcesSystem::TEST_CLASS_HASH);
+        systems.append(BuildLabor::TEST_CLASS_HASH);
+        systems.append(CreateRealm::TEST_CLASS_HASH);
+        systems.append(CreateLaborConfig::TEST_CLASS_HASH);
+        systems.append(CreateLaborCostResources::TEST_CLASS_HASH);
+        systems.append(CreateLaborCostAmount::TEST_CLASS_HASH);
+        systems.append(MintResources::TEST_CLASS_HASH);
 
-        let world = spawn_test_world(components, systems);
+        let mut routes = array::ArrayTrait::new();
+        // CreateRealm
+        routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Owner'.into(), ));
+        routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Realm'.into(), ));
+        // CreateLaborConfig
+        routes
+            .append(
+                RouteTrait::new('CreateLaborConfig'.into(), 'Tester'.into(), 'LaborConfig'.into(), )
+            );
+        // CreateLaborCostResources
+        routes
+            .append(
+                RouteTrait::new(
+                    'CreateLaborCostResources'.into(), 'Tester'.into(), 'LaborCostResources'.into(), 
+                )
+            );
+        // CreateLaborCostAmount
+        routes
+            .append(
+                RouteTrait::new(
+                    'CreateLaborCostAmount'.into(), 'Tester'.into(), 'LaborCostAmount'.into(), 
+                )
+            );
+        // MintResources
+        routes
+            .append(RouteTrait::new('MintResources'.into(), 'Tester'.into(), 'Resource'.into(), ));
+        // BuildLabor
+        routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Resource'.into(), ));
+        routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Labor'.into(), ));
+
+        let world = spawn_test_world(components, systems, routes);
 
         /// CREATE ENTITIES ///
         // set realm entity
@@ -312,14 +337,43 @@ mod tests {
 
         /// REGISTER SYSTEMS ///
         let mut systems = array::ArrayTrait::<felt252>::new();
-        systems.append(BuildLaborSystem::TEST_CLASS_HASH);
-        systems.append(CreateRealmSystem::TEST_CLASS_HASH);
-        systems.append(CreateLaborConfigSystem::TEST_CLASS_HASH);
-        systems.append(CreateLaborCostResourcesSystem::TEST_CLASS_HASH);
-        systems.append(CreateLaborCostAmountSystem::TEST_CLASS_HASH);
-        systems.append(MintResourcesSystem::TEST_CLASS_HASH);
+        systems.append(BuildLabor::TEST_CLASS_HASH);
+        systems.append(CreateRealm::TEST_CLASS_HASH);
+        systems.append(CreateLaborConfig::TEST_CLASS_HASH);
+        systems.append(CreateLaborCostResources::TEST_CLASS_HASH);
+        systems.append(CreateLaborCostAmount::TEST_CLASS_HASH);
+        systems.append(MintResources::TEST_CLASS_HASH);
 
-        let world = spawn_test_world(components, systems);
+        let mut routes = array::ArrayTrait::new();
+        // CreateRealm
+        routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Owner'.into(), ));
+        routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Realm'.into(), ));
+        // CreateLaborConfig
+        routes
+            .append(
+                RouteTrait::new('CreateLaborConfig'.into(), 'Tester'.into(), 'LaborConfig'.into(), )
+            );
+        // CreateLaborCostResources
+        routes
+            .append(
+                RouteTrait::new(
+                    'CreateLaborCostResources'.into(), 'Tester'.into(), 'LaborCostResources'.into(), 
+                )
+            );
+        // CreateLaborCostAmount
+        routes
+            .append(
+                RouteTrait::new(
+                    'CreateLaborCostAmount'.into(), 'Tester'.into(), 'LaborCostAmount'.into(), 
+                )
+            );
+        // MintResources
+        routes
+            .append(RouteTrait::new('MintResources'.into(), 'Tester'.into(), 'Resource'.into(), ));
+        // BuildLabor
+        routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Resource'.into(), ));
+        routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Labor'.into(), ));
+        let world = spawn_test_world(components, systems, routes);
 
         /// CREATE ENTITIES ///
         // set realm entity

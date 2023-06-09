@@ -36,10 +36,14 @@ impl Pos2DStorageAccess of StorageAccess<Position> {
             Position {
                 x: storage_read_syscall(
                     address_domain, storage_address_from_base_and_offset(base, 0_u8)
-                )?.try_into().unwrap(),
+                )?
+                    .try_into()
+                    .unwrap(),
                 y: storage_read_syscall(
                     address_domain, storage_address_from_base_and_offset(base, 1_u8)
-                )?.try_into().unwrap(),
+                )?
+                    .try_into()
+                    .unwrap(),
             }
         )
     }
@@ -227,7 +231,7 @@ mod ERC721 {
     #[inline(always)]
     fn owner(token_id: ID) -> ContractAddress {
         let contract_address: felt252 = get_contract_address().into();
-        let query: Query = (contract_address, token_id.into()).into();
+        let query: Query = (contract_address, token_id).into();
         let owner = world().entity('Owner'.into(), query, 0_u8, 0_usize);
         (*owner[0]).try_into().unwrap()
     }
@@ -236,7 +240,7 @@ mod ERC721 {
     // fn assert_approved_or_owner(owner: ContractAddress, operator: ContractAddress, token_id: ID) {
     //     let contract_address: felt252 = get_contract_address().into();
     //     let approved = world().entity(
-    //         'TokenApproval'.into(), (contract_address, token_id.into()).into(), 0_u8, 0_usize
+    //         'TokenApproval'.into(), (contract_address, token_id.into(), 0_u8, 0_usize
     //     );
     //     assert(operator == owner | operator.into() == *approved[0], 'operation not allowed');
     // }
