@@ -1,5 +1,7 @@
 // file containing systems used for testing
 // miniting function, only for testing 
+// TODO: remvoe these systems from tests since we can now
+// set storage directly in the tests without using systems
 #[system]
 mod MintResources {
     use traits::Into;

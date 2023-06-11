@@ -114,7 +114,7 @@ mod tests {
     use eternum::systems::labor::build_labor::BuildLabor;
     use eternum::systems::labor::harvest_labor::HarvestLabor;
     use eternum::systems::config::labor_config::{
-        CreateLaborConfig, CreateLaborCostResources, CreateLaborCostAmount
+        SetLaborConfig, SetLaborCostResources, SetLaborCostAmount
     };
     use eternum::systems::test::{CreateRealm, MintResources};
 
@@ -153,32 +153,32 @@ mod tests {
         systems.append(BuildLabor::TEST_CLASS_HASH);
         systems.append(HarvestLabor::TEST_CLASS_HASH);
         systems.append(CreateRealm::TEST_CLASS_HASH);
-        systems.append(CreateLaborConfig::TEST_CLASS_HASH);
-        systems.append(CreateLaborCostResources::TEST_CLASS_HASH);
-        systems.append(CreateLaborCostAmount::TEST_CLASS_HASH);
+        systems.append(SetLaborConfig::TEST_CLASS_HASH);
+        systems.append(SetLaborCostResources::TEST_CLASS_HASH);
+        systems.append(SetLaborCostAmount::TEST_CLASS_HASH);
         systems.append(MintResources::TEST_CLASS_HASH);
 
         let mut routes = array::ArrayTrait::new();
         // CreateRealm
         routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Owner'.into(), ));
         routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Realm'.into(), ));
-        // CreateLaborConfig
+        // SetLaborConfig
         routes
             .append(
-                RouteTrait::new('CreateLaborConfig'.into(), 'Tester'.into(), 'LaborConfig'.into(), )
+                RouteTrait::new('SetLaborConfig'.into(), 'Tester'.into(), 'LaborConfig'.into(), )
             );
-        // CreateLaborCostResources
+        // SetLaborCostResources
         routes
             .append(
                 RouteTrait::new(
-                    'CreateLaborCostResources'.into(), 'Tester'.into(), 'LaborCostResources'.into(), 
+                    'SetLaborCostResources'.into(), 'Tester'.into(), 'LaborCostResources'.into(), 
                 )
             );
-        // CreateLaborCostAmount
+        // SetLaborCostAmount
         routes
             .append(
                 RouteTrait::new(
-                    'CreateLaborCostAmount'.into(), 'Tester'.into(), 'LaborCostAmount'.into(), 
+                    'SetLaborCostAmount'.into(), 'Tester'.into(), 'LaborCostAmount'.into(), 
                 )
             );
         // MintResources
@@ -214,19 +214,19 @@ mod tests {
         create_labor_conf_calldata.append(7200);
         create_labor_conf_calldata.append(250);
         create_labor_conf_calldata.append(21000000000000000000);
-        world.execute('CreateLaborConfig'.into(), create_labor_conf_calldata.span());
+        world.execute('SetLaborConfig'.into(), create_labor_conf_calldata.span());
 
-        let mut creat_labor_cr_calldata = array::ArrayTrait::<felt252>::new();
-        creat_labor_cr_calldata.append(1);
-        creat_labor_cr_calldata.append(1);
-        creat_labor_cr_calldata.append(1);
-        world.execute('CreateLaborCostResources'.into(), creat_labor_cr_calldata.span());
+        let mut create_labor_cr_calldata = array::ArrayTrait::<felt252>::new();
+        create_labor_cr_calldata.append(1);
+        create_labor_cr_calldata.append(1);
+        create_labor_cr_calldata.append(1);
+        world.execute('SetLaborCostResources'.into(), create_labor_cr_calldata.span());
 
         let mut create_labor_cv_calldata = array::ArrayTrait::<felt252>::new();
         create_labor_cv_calldata.append(1);
         create_labor_cv_calldata.append(1);
         create_labor_cv_calldata.append(1000);
-        world.execute('CreateLaborCostAmount'.into(), create_labor_cv_calldata.span());
+        world.execute('SetLaborCostAmount'.into(), create_labor_cv_calldata.span());
 
         // mint 100000 resource id 1 for realm id 1;
         let mut mint_resources_calldata = array::ArrayTrait::<felt252>::new();
@@ -315,32 +315,32 @@ mod tests {
         systems.append(BuildLabor::TEST_CLASS_HASH);
         systems.append(HarvestLabor::TEST_CLASS_HASH);
         systems.append(CreateRealm::TEST_CLASS_HASH);
-        systems.append(CreateLaborConfig::TEST_CLASS_HASH);
-        systems.append(CreateLaborCostResources::TEST_CLASS_HASH);
-        systems.append(CreateLaborCostAmount::TEST_CLASS_HASH);
+        systems.append(SetLaborConfig::TEST_CLASS_HASH);
+        systems.append(SetLaborCostResources::TEST_CLASS_HASH);
+        systems.append(SetLaborCostAmount::TEST_CLASS_HASH);
         systems.append(MintResources::TEST_CLASS_HASH);
 
         let mut routes = array::ArrayTrait::new();
         // CreateRealm
         routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Owner'.into(), ));
         routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Realm'.into(), ));
-        // CreateLaborConfig
+        // SetLaborConfig
         routes
             .append(
-                RouteTrait::new('CreateLaborConfig'.into(), 'Tester'.into(), 'LaborConfig'.into(), )
+                RouteTrait::new('SetLaborConfig'.into(), 'Tester'.into(), 'LaborConfig'.into(), )
             );
-        // CreateLaborCostResources
+        // SetLaborCostResources
         routes
             .append(
                 RouteTrait::new(
-                    'CreateLaborCostResources'.into(), 'Tester'.into(), 'LaborCostResources'.into(), 
+                    'SetLaborCostResources'.into(), 'Tester'.into(), 'LaborCostResources'.into(), 
                 )
             );
-        // CreateLaborCostAmount
+        // SetLaborCostAmount
         routes
             .append(
                 RouteTrait::new(
-                    'CreateLaborCostAmount'.into(), 'Tester'.into(), 'LaborCostAmount'.into(), 
+                    'SetLaborCostAmount'.into(), 'Tester'.into(), 'LaborCostAmount'.into(), 
                 )
             );
         // MintResources
@@ -376,19 +376,19 @@ mod tests {
         create_labor_conf_calldata.append(7200);
         create_labor_conf_calldata.append(250);
         create_labor_conf_calldata.append(21000000000000000000);
-        world.execute('CreateLaborConfig'.into(), create_labor_conf_calldata.span());
+        world.execute('SetLaborConfig'.into(), create_labor_conf_calldata.span());
 
-        let mut creat_labor_cr_calldata = array::ArrayTrait::<felt252>::new();
-        creat_labor_cr_calldata.append(ResourceTypes::WHEAT.into());
-        creat_labor_cr_calldata.append(1);
-        creat_labor_cr_calldata.append(1);
-        world.execute('CreateLaborCostResources'.into(), creat_labor_cr_calldata.span());
+        let mut create_labor_cr_calldata = array::ArrayTrait::<felt252>::new();
+        create_labor_cr_calldata.append(ResourceTypes::WHEAT.into());
+        create_labor_cr_calldata.append(1);
+        create_labor_cr_calldata.append(1);
+        world.execute('SetLaborCostResources'.into(), create_labor_cr_calldata.span());
 
         let mut create_labor_cv_calldata = array::ArrayTrait::<felt252>::new();
         create_labor_cv_calldata.append(ResourceTypes::WHEAT.into());
         create_labor_cv_calldata.append(1);
         create_labor_cv_calldata.append(1000);
-        world.execute('CreateLaborCostAmount'.into(), create_labor_cv_calldata.span());
+        world.execute('SetLaborCostAmount'.into(), create_labor_cv_calldata.span());
 
         // mint 100000 resource id 1 for realm id 1;
         let mut mint_resources_calldata = array::ArrayTrait::<felt252>::new();

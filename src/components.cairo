@@ -5,7 +5,6 @@ mod realm;
 mod resources;
 mod labor;
 mod owner;
-mod entities;
 mod capacity;
 mod movable;
 mod quantity;

@@ -2,33 +2,27 @@
 // trade_id is the entity holding the Meta of the trade 
 #[system]
 mod TakeFungibleOrder {
-    use eternum::components::entities::FungibleEntities;
+    use eternum::components::trade::FungibleEntities;
     use eternum::components::resources::Resource;
     use eternum::alias::ID;
     use eternum::components::owner::Owner;
     use eternum::components::position::{Position, PositionTrait};
-    use eternum::components::realm::Realm;
-    use eternum::components::trade::{FungibleTrade, Status, status};
-    use eternum::components::capacity::Capacity;
+    use eternum::components::trade::{Trade, Status, status};
     use eternum::components::caravan::Caravan;
-    use eternum::components::metadata::MetaData;
     use eternum::components::movable::{Movable, ArrivalTime};
-    use eternum::components::config::{WorldConfig, SpeedConfig, CapacityConfig};
-    use eternum::components::quantity::{Quantity, QuantityTracker};
-    use eternum::constants::{REALM_ENTITY_TYPE, WORLD_CONFIG_ID, FREE_TRANSPORT_ENTITY_TYPE};
 
     use traits::Into;
     use traits::TryInto;
     use box::BoxTrait;
     use array::ArrayTrait;
-    use dojo_core::serde::SpanSerde;
-    use debug::PrintTrait;
 
+    use dojo_core::serde::SpanSerde;
     // you can attach a caravan only if it's needed
     use dojo_core::integer::U128IntoU250;
+
     fn execute(taker_id: ID, trade_id: ID) {
         // get the trade 
-        let (meta, trade_status) = commands::<FungibleTrade, Status>::entity(trade_id.into());
+        let (meta, trade_status) = commands::<Trade, Status>::entity(trade_id.into());
 
         // verify expiration date
         let ts = starknet::get_block_timestamp();
@@ -54,7 +48,7 @@ mod TakeFungibleOrder {
                 (
                     Status {
                         value: status::Accepted(())
-                        }, FungibleTrade {
+                        }, Trade {
                         maker_id: meta.maker_id,
                         taker_id,
                         maker_order_id: meta.maker_order_id,
@@ -82,8 +76,7 @@ mod TakeFungibleOrder {
         match maybe_caravan {
             // travel
             Option::Some(caravan) => {
-                let (capacity, movable, caravan_position) = commands::<Capacity,
-                Movable,
+                let (movable, caravan_position) = commands::<Movable,
                 Position>::entity(caravan.caravan_id.into());
                 let travel_time = caravan_position
                     .calculate_travel_time(taker_position, movable.sec_per_km);
@@ -138,8 +131,7 @@ mod TakeFungibleOrder {
         // before one of them accepts it
         if meta.taker_needs_caravan == true {
             let caravan = commands::<Caravan>::entity((meta.taker_order_id, taker_id).into());
-            let (capacity, movable, caravan_position, owner) = commands::<Capacity,
-            Movable,
+            let (movable, caravan_position, owner) = commands::<Movable,
             Position,
             Owner>::entity(caravan.caravan_id.into());
             // if caravan, starts from the caravan position (not taker position)
@@ -319,7 +311,7 @@ mod TakeFungibleOrder {
 
 //         // trade_id
 //         let trade_id = 10;
-//         world.set_entity(ctx, 'FungibleTrade'.into(), trade_id.into(), 0_u8, values.span());
+//         world.set_entity(ctx, 'Trade'.into(), trade_id.into(), 0_u8, values.span());
 
 //         // set fungible entities for maker
 //         let mut values = array::ArrayTrait::<felt252>::new();
@@ -485,7 +477,7 @@ mod TakeFungibleOrder {
 
 //         // trade_id
 //         let trade_id = 10;
-//         world.set_entity(ctx, 'FungibleTrade'.into(), trade_id.into(), 0_u8, values.span());
+//         world.set_entity(ctx, 'Trade'.into(), trade_id.into(), 0_u8, values.span());
 
 //         // set fungible entities for maker
 //         let mut values = array::ArrayTrait::<felt252>::new();

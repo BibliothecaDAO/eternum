@@ -1,9 +1,7 @@
 use eternum::alias::ID;
 
-// DISCUSSION: in future we should be able 
-// to trade any entity with any other entity as long it has a weight component
 #[derive(Component, Copy, Drop, Serde)]
-struct FungibleTrade {
+struct Trade {
     maker_id: ID,
     taker_id: ID,
     maker_order_id: ID,
@@ -21,9 +19,19 @@ struct Status {
 }
 
 
+// status of the trade
 #[derive(Copy, Drop, Serde)]
 enum status {
     Open: (),
     Accepted: (),
     Cancelled: (),
+}
+
+// DISCUSS: rename this to avoid using Entities?
+// here fungible entities represents a collection of entities
+// that will be traded through the orderbook
+#[derive(Component, Copy, Drop, Serde)]
+struct FungibleEntities {
+    key: ID,
+    count: usize,
 }

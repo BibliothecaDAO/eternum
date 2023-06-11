@@ -1,10 +1,17 @@
 use eternum::alias::ID;
 
-// Config ID to fetch world config
+// Config ID to fetch global configs
 const WORLD_CONFIG_ID: ID = 999999999999999999;
 const BUILDING_CONFIG_ID: ID = 999999999999999998;
+// DISCUSS: these config IDs are used to query a global config for a set of systems (like labor systems)
+// and are not linked to a specific entity_type, 
+// e.g. LaborConfig holds a set of configuration values 
+// that are used for all labor, regardless of the resource
+// - base_labor_units
+// - vault_percentage
+// - base_resources_per_cycle
 const LABOR_CONFIG_ID: ID = 999999999999999997;
-const RESOURCE_CONFIG_ID: ID = 999999999999999996;
+const TRANSPORT_CONFIG_ID: ID = 999999999999999996;
 
 // 8 bits
 const RESOURCE_IDS_PACKED_SIZE: usize = 8_usize;
@@ -48,6 +55,7 @@ mod ResourceTypes {
 
 // DISCUSS: instead of using constants for entity_type, store the entity_type in the storage
 // DISCUSS: register each new entity_type to the system by creating an entity containing the config components
+// Using FREE_TRANSPORT_ENTITY_TYPE I can look up the speed and capacity of that entity when creating it
 const FREE_TRANSPORT_ENTITY_TYPE: u128 = 256;
 const REALM_ENTITY_TYPE: u128 = 257;
 

@@ -11,9 +11,9 @@ use eternum::components::position::PositionComponent;
 use eternum::components::capacity::CapacityComponent;
 use eternum::components::movable::{MovableComponent, ArrivalTimeComponent};
 use eternum::components::caravan::{CaravanMembersComponent, CaravanComponent};
-use eternum::components::entities::ForeignKeyComponent;
-use eternum::components::trade::{StatusComponent, FungibleTradeComponent};
-use eternum::components::entities::FungibleEntitiesComponent;
+use eternum::components::metadata::ForeignKeyComponent;
+use eternum::components::trade::{StatusComponent, TradeComponent};
+use eternum::components::trade::FungibleEntitiesComponent;
 
 // systems
 use eternum::systems::test::CreateRealm;
@@ -21,7 +21,7 @@ use eternum::systems::caravan::create_free_transport_unit::CreateFreeTransportUn
 use eternum::systems::caravan::create_caravan::CreateCaravan;
 use eternum::systems::config::speed_config::SetSpeedConfig;
 use eternum::systems::config::capacity_config::SetCapacityConfig;
-use eternum::systems::config::world_config::WorldConfig;
+use eternum::systems::config::world_config::SetWorldConfig;
 use eternum::systems::caravan::utils::{GetAverageSpeed, GetQuantity};
 use eternum::systems::order::make_fungible_order::MakeFungibleOrder;
 use eternum::systems::order::take_fungible_order::TakeFungibleOrder;
@@ -45,7 +45,9 @@ use dojo_core::test_utils::spawn_test_world;
 use dojo_core::auth::systems::{GrantAuthRole, Route, RouteTrait};
 use dojo_core::auth::components::{AuthRoleComponent, AuthStatusComponent};
 
+// used for testing, to register all systems and components in the world
 fn spawn_test_world_with_setup() -> IWorldDispatcher {
+    // register all systems and components in the world
     // components
     let mut components = array::ArrayTrait::<felt252>::new();
     components.append(OwnerComponent::TEST_CLASS_HASH);
@@ -63,7 +65,7 @@ fn spawn_test_world_with_setup() -> IWorldDispatcher {
     components.append(CaravanMembersComponent::TEST_CLASS_HASH);
     components.append(CaravanComponent::TEST_CLASS_HASH);
     components.append(ForeignKeyComponent::TEST_CLASS_HASH);
-    components.append(FungibleTradeComponent::TEST_CLASS_HASH);
+    components.append(TradeComponent::TEST_CLASS_HASH);
     components.append(FungibleEntitiesComponent::TEST_CLASS_HASH);
     components.append(ResourceComponent::TEST_CLASS_HASH);
     components.append(StatusComponent::TEST_CLASS_HASH);
@@ -76,7 +78,7 @@ fn spawn_test_world_with_setup() -> IWorldDispatcher {
     systems.append(CreateCaravan::TEST_CLASS_HASH);
     systems.append(SetSpeedConfig::TEST_CLASS_HASH);
     systems.append(SetCapacityConfig::TEST_CLASS_HASH);
-    systems.append(WorldConfig::TEST_CLASS_HASH);
+    systems.append(SetWorldConfig::TEST_CLASS_HASH);
     systems.append(CreateRealm::TEST_CLASS_HASH);
     systems.append(GetQuantity::TEST_CLASS_HASH);
     systems.append(MakeFungibleOrder::TEST_CLASS_HASH);
@@ -84,80 +86,8 @@ fn spawn_test_world_with_setup() -> IWorldDispatcher {
     systems.append(GrantAuthRole::TEST_CLASS_HASH);
     systems.append(AttachCaravan::TEST_CLASS_HASH);
 
-    // create auth routes
-    let mut routes = array::ArrayTrait::new();
-    // GetAverageSpeed
-    routes.append(RouteTrait::new('GetAverageSpeed'.into(), 'Tester'.into(), 'Owner'.into(), ));
-    routes.append(RouteTrait::new('GetAverageSpeed'.into(), 'Tester'.into(), 'Movable'.into(), ));
-    routes.append(RouteTrait::new('GetAverageSpeed'.into(), 'Tester'.into(), 'Quantity'.into(), ));
-
-    // CreateFreeTransportUnit
-    routes
-        .append(
-            RouteTrait::new('CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Position'.into(), )
-        );
-    routes
-        .append(
-            RouteTrait::new('CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Realm'.into(), )
-        );
-    routes
-        .append(
-            RouteTrait::new('CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Owner'.into(), )
-        );
-    routes
-        .append(
-            RouteTrait::new(
-                'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'QuantityTracker'.into(), 
-            )
-        );
-    routes
-        .append(
-            RouteTrait::new('CreateFreeTransportUnit'.into(), 'Tester'.into(), 'MetaData'.into(), )
-        );
-    routes
-        .append(
-            RouteTrait::new('CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Quantity'.into(), )
-        );
-    routes
-        .append(
-            RouteTrait::new('CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Movable'.into(), )
-        );
-    routes
-        .append(
-            RouteTrait::new(
-                'CreateFreeTransportUnit'.into(), 'Tester'.into(), 'ArrivalTime'.into(), 
-            )
-        );
-    routes
-        .append(
-            RouteTrait::new('CreateFreeTransportUnit'.into(), 'Tester'.into(), 'Capacity'.into(), )
-        );
-
-    // CreateCaravan
-    routes
-        .append(
-            RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'CaravanMembers'.into(), )
-        );
-    routes.append(RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'Movable'.into(), ));
-    routes.append(RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'Capacity'.into(), ));
-    routes.append(RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'Owner'.into(), ));
-    routes.append(RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'Position'.into(), ));
-    routes.append(RouteTrait::new('CreateCaravan'.into(), 'Tester'.into(), 'ForeignKey'.into(), ));
-
-    // CreateRealm
-    routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Owner'.into(), ));
-    routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Realm'.into(), ));
-    routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Position'.into(), ));
-    routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'MetaData'.into(), ));
-
-    // configs
-    routes
-        .append(RouteTrait::new('SetSpeedConfig'.into(), 'Tester'.into(), 'SpeedConfig'.into(), ));
-    routes
-        .append(
-            RouteTrait::new('SetCapacityConfig'.into(), 'Tester'.into(), 'CapacityConfig'.into(), )
-        );
-    routes.append(RouteTrait::new('WorldConfig'.into(), 'Tester'.into(), 'WorldConfig'.into(), ));
+    // routes
+    let mut routes = array::ArrayTrait::<Route>::new();
 
     let world = spawn_test_world(components, systems, routes);
 

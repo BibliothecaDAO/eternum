@@ -148,12 +148,13 @@ mod tests {
     // systems
     use eternum::erc721::systems::{ERC721Approve, ERC721TransferFrom, ERC721Mint};
     use eternum::systems::settling::{Settle, Unsettle};
-    use eternum::systems::config::world_config::WorldConfig;
+    use eternum::systems::config::world_config::SetWorldConfig;
 
     #[test]
     // need higher gas limit because of new auth system
     #[available_gas(300000000000)]
     fn test_settle_unsettle_realm() {
+        // TODO: use the new testing utils
         // components
         let mut components = array::ArrayTrait::<felt252>::new();
         components.append(TokenApprovalComponent::TEST_CLASS_HASH);
@@ -171,7 +172,7 @@ mod tests {
         systems.append(ERC721Mint::TEST_CLASS_HASH);
         systems.append(Settle::TEST_CLASS_HASH);
         systems.append(Unsettle::TEST_CLASS_HASH);
-        systems.append(WorldConfig::TEST_CLASS_HASH);
+        systems.append(SetWorldConfig::TEST_CLASS_HASH);
 
         // create auth routes
         let mut routes = array::ArrayTrait::new();
@@ -207,7 +208,9 @@ mod tests {
 
         // config
         routes
-            .append(RouteTrait::new('WorldConfig'.into(), 'Tester'.into(), 'WorldConfig'.into(), ));
+            .append(
+                RouteTrait::new('SetWorldConfig'.into(), 'Tester'.into(), 'WorldConfig'.into(), )
+            );
 
         // create auth routes
         let mut routes = array::ArrayTrait::new();
@@ -243,7 +246,9 @@ mod tests {
 
         // config
         routes
-            .append(RouteTrait::new('WorldConfig'.into(), 'Tester'.into(), 'WorldConfig'.into(), ));
+            .append(
+                RouteTrait::new('SetWorldConfig'.into(), 'Tester'.into(), 'WorldConfig'.into(), )
+            );
 
         // deploy executor, world and register components/systems
         let world = spawn_test_world(components, systems, routes);
@@ -296,7 +301,7 @@ mod tests {
         world_config_call_data.append(0);
         world_config_call_data.append(erc721_address_felt);
 
-        world.execute('WorldConfig'.into(), world_config_call_data.span());
+        world.execute('SetWorldConfig'.into(), world_config_call_data.span());
 
         // TODO: approve erc721 to be transferred from caller to world when we have final erc721
 

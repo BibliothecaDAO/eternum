@@ -1,8 +1,5 @@
-// store the number of free transport unit per realm
-// get the maximum number of free transport unit per realm from the world config
-
-// DISCUSS: non fungible because can have different positions, so cannot be attached to an entity
-// so each group of transport unit is an independent entity
+// need store the number of free transport unit per realm
+// need to get the maximum number of free transport unit per realm from the transport config
 
 #[system]
 mod CreateFreeTransportUnit {
@@ -13,9 +10,11 @@ mod CreateFreeTransportUnit {
     use eternum::components::capacity::Capacity;
     use eternum::components::metadata::MetaData;
     use eternum::components::movable::{Movable, ArrivalTime};
-    use eternum::components::config::{WorldConfig, SpeedConfig, CapacityConfig};
+    use eternum::components::config::{TravelConfig, SpeedConfig, CapacityConfig};
     use eternum::components::quantity::{Quantity, QuantityTracker};
-    use eternum::constants::{REALM_ENTITY_TYPE, WORLD_CONFIG_ID, FREE_TRANSPORT_ENTITY_TYPE};
+    use eternum::constants::{
+        REALM_ENTITY_TYPE, WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, FREE_TRANSPORT_ENTITY_TYPE
+    };
 
     use traits::Into;
     use traits::TryInto;
@@ -36,10 +35,10 @@ mod CreateFreeTransportUnit {
         assert(caller == owner.address, 'entity is not owned by caller');
 
         // check how many free transport units you can still build
-        let world_config = commands::<WorldConfig>::entity(WORLD_CONFIG_ID.into());
+        let travel_config = commands::<TravelConfig>::entity(TRANSPORT_CONFIG_ID.into());
 
         // nb cities for the realm
-        let max_free_transport = realm.cities.into() * world_config.free_transport_per_city;
+        let max_free_transport = realm.cities.into() * travel_config.free_transport_per_city;
 
         // check the quantity_tracker for free transport unit
         let maybe_quantity_tracker = commands::<QuantityTracker>::try_entity(
@@ -53,25 +52,18 @@ mod CreateFreeTransportUnit {
         };
         assert(count + quantity <= max_free_transport, 'not enough free transport unit');
 
-        // increment count
-        // DISCUSS: need to decrease count when transport unit is destroyed
+        // increment count when create new units
+        // TODO: need to decrease count when transport unit is destroyed
         commands::set_entity(
             (entity_id, FREE_TRANSPORT_ENTITY_TYPE).into(),
             (QuantityTracker { count: count + quantity })
         );
 
-        // create the transport unit
-        let id = commands::uuid();
-        let id_1 = commands::uuid();
+        // get the speed and capacity of the free transport unit from the config entity
         let (speed, capacity) = commands::<SpeedConfig,
         CapacityConfig>::entity((WORLD_CONFIG_ID, FREE_TRANSPORT_ENTITY_TYPE).into());
-        // a free transport unit has 
-        // - position
-        // - entity_type
-        // - owner
-        // - quantity
-        // - speed
-        // - arrival time
+        // create the transport unit
+        let id = commands::uuid();
         commands::set_entity(
             id.into(),
             (
@@ -144,19 +136,12 @@ mod CreateFreeTransportUnit {
 //         // speed of 10 km per hr for free transport unit
 //         set_speed_conf_calldata.append(10);
 //         world.execute('SetSpeedConfig'.into(), set_speed_conf_calldata.span());
-//         // set world config
-//         let mut world_config_call_data = array::ArrayTrait::<felt252>::new();
-//         world_config_call_data.append(0);
-//         world_config_call_data.append(0);
-//         world_config_call_data.append(252000000000000000000);
-//         world_config_call_data.append(0);
-//         world_config_call_data.append(0);
-//         world_config_call_data.append(0);
-//         world_config_call_data.append(0);
-//         // 10 free transport per city
-//         world_config_call_data.append(10);
-//         world.execute('WorldConfig'.into(), world_config_call_data.span());
-
+//
+//         // set travel config
+//         let mut travel_config_call_data = array::ArrayTrait::<felt252>::new();
+//         travel_config_call_data.append(10);
+//         world.execute('TravelConfig'.into(), travel_config_call_data.span());
+//
 //         // set capacity configuration entity
 //         let mut set_capacity_conf_calldata = array::ArrayTrait::<felt252>::new();
 //         set_capacity_conf_calldata.append(FREE_TRANSPORT_ENTITY_TYPE.into());

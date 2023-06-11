@@ -4,13 +4,13 @@
 
 #[system]
 mod MakeFungibleOrder {
-    use eternum::components::entities::FungibleEntities;
+    use eternum::components::trade::FungibleEntities;
     use eternum::components::resources::Resource;
     use eternum::alias::ID;
     use eternum::components::owner::Owner;
     use eternum::components::position::Position;
     use eternum::components::realm::Realm;
-    use eternum::components::trade::FungibleTrade;
+    use eternum::components::trade::Trade;
     use eternum::components::capacity::Capacity;
     use eternum::components::metadata::MetaData;
     use eternum::components::movable::{Movable, ArrivalTime};
@@ -33,8 +33,11 @@ mod MakeFungibleOrder {
 
     // maker_id: entity id of the maker
     // maker_entity_types: array of entity types (resources or other) that the maker wants to trade
+    // DISCUSS: called entity_types and not resource_types because initial goal is to create a system
+    // that is not only for resources but for any other fungible entity type (like coins)
     // maker_quantities: array of quantities of the entity types that the maker wants to trade
     // taker_id: entity id of the taker
+    // DISCUSS: if taker_id = 0, then the order can be taken by any entity, is there better way?
     // taker_entity_types: array of entity types (resources or other) that the taker wants to trade
     // taker_quantities: array of quantities of the entity types that the taker wants to trade
     // taker_needs_caravan: if true, the taker needs to send a caravan to the maker
@@ -49,9 +52,10 @@ mod MakeFungibleOrder {
         taker_needs_caravan: bool,
         expires_at: u64
     ) -> ID {
+        let caller = starknet::get_tx_info().unbox().account_contract_address;
+
         // assert that maker entity is owned by caller
         let maker_owner = commands::<Owner>::entity(maker_id.into());
-        let caller = starknet::get_tx_info().unbox().account_contract_address;
         assert(maker_owner.address == caller, 'Only owner can create order');
 
         // assert that length of maker_entity_types is equal to length of maker_quantities
@@ -85,13 +89,6 @@ mod MakeFungibleOrder {
                 })
             );
 
-            // DISCUSS: dont use quantity but resource and balance
-            // let quantity = commands::<Quantity>::entity(
-            //     (maker_id, *maker_entity_types[index]).into()
-            // );
-
-            // assert(quantity.value >= *maker_quantities[index], 'Balance too small');
-
             // decrease balance of maker
             let query = (maker_id, *maker_entity_types[index]).into();
             let resource = commands::<Resource>::entity(query);
@@ -119,7 +116,7 @@ mod MakeFungibleOrder {
         );
 
         // create taker fungible entities but dont remove them from the taker balance, because 
-        // needs to be taken first
+        // needs to be taken first by a taker
         let mut index = 0;
         loop {
             if index == taker_entity_types.len() {
@@ -140,7 +137,7 @@ mod MakeFungibleOrder {
         let trade_id = commands::uuid();
         commands::set_entity(
             trade_id.into(),
-            (FungibleTrade {
+            (Trade {
                 maker_id,
                 taker_id,
                 maker_order_id: maker_order_id.into(),
@@ -283,7 +280,7 @@ mod MakeFungibleOrder {
 //         assert(*resource[1] == 100, 'Balance should be 100');
 
 //         // check that the trade was created
-//         let trade = world.entity('FungibleTrade'.into(), trade_id.into(), 0_u8, 0_usize);
+//         let trade = world.entity('Trade'.into(), trade_id.into(), 0_u8, 0_usize);
 //         assert(*trade[0] == 11, 'Maker id should be 11');
 //         assert(*trade[1] == 12, 'Taker id should be 12');
 //         let maker_order_id = *trade[2];

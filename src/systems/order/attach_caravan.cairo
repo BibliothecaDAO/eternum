@@ -10,8 +10,8 @@ mod AttachCaravan {
     use eternum::components::position::Position;
     use eternum::components::resources::Resource;
     use eternum::components::caravan::Caravan;
-    use eternum::components::trade::{FungibleTrade, Status, status};
-    use eternum::components::entities::FungibleEntities;
+    use eternum::components::trade::{Trade, Status, status};
+    use eternum::components::trade::FungibleEntities;
 
     use traits::Into;
     use traits::TryInto;
@@ -20,10 +20,10 @@ mod AttachCaravan {
     use dojo_core::serde::SpanSerde;
     use debug::PrintTrait;
 
-    // TODO: if you attach a caravan to the order, it will be blocked = true
-    // can only attach caravan if it's asked by the maker
-
-    // when you attach a caravan, it's attached to your entity as a key as well so that any entity can attach caravans
+    // This system can be called by the maker or the taker.
+    // Taker can only attach caravan if it's asked by the maker.
+    // When taker attach a caravan, it's attached to your entity as a composite key 
+    // so that any possible taker can attach his caravan to it until a taker takes the order.
     // like this:
     // commands::set_entity((order_id, entity_id), (Caravan { caravan_id }));
 
@@ -31,7 +31,7 @@ mod AttachCaravan {
         let caller = starknet::get_tx_info().unbox().account_contract_address;
 
         // get trade info
-        let (meta, trade_status) = commands::<FungibleTrade, Status>::entity(trade_id.into());
+        let (meta, trade_status) = commands::<Trade, Status>::entity(trade_id.into());
 
         // assert that caller is the owner of entity_id
         let (owner, position) = commands::<Owner, Position>::entity(entity_id.into());
@@ -202,7 +202,7 @@ mod AttachCaravan {
 
 //         // trade_id
 //         let trade_id = 10;
-//         world.set_entity(ctx, 'FungibleTrade'.into(), trade_id.into(), 0_u8, values.span());
+//         world.set_entity(ctx, 'Trade'.into(), trade_id.into(), 0_u8, values.span());
 
 //         // set status of trade
 //         let mut values = array::ArrayTrait::<felt252>::new();

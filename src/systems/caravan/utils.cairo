@@ -1,19 +1,16 @@
+// DISCUSS: created 2 systems in order to make systems more atomic
+
+// GetAverageSpeed: can be used in order to calculate how fast a group of entities can move
+// together. Haven't used it for the CreateCaravan system because it would mean making an extra loop
+// over the entities
 #[system]
 mod GetAverageSpeed {
     use eternum::alias::ID;
-    use eternum::components::entities::ForeignKey;
-    use eternum::components::caravan::CaravanMembers;
     use eternum::components::quantity::Quantity;
-    use eternum::components::position::Position;
     use eternum::components::movable::Movable;
-    use eternum::components::capacity::Capacity;
-    use eternum::components::owner::Owner;
 
     use traits::Into;
-    use traits::TryInto;
-    use array::ArrayTrait;
     use box::BoxTrait;
-    use debug::PrintTrait;
 
     use dojo_core::integer::U128IntoU250;
     use dojo_core::serde::SpanSerde;
@@ -30,15 +27,7 @@ mod GetAverageSpeed {
                 break ();
             }
             // assert that they are movable
-            // assert that they have a capacity component
             let movable = commands::<Movable>::entity((*entity_ids[index]).into());
-
-            // assert that caller is the owner of the entities
-            let owner = commands::<Owner>::entity((*entity_ids[index]).into());
-            assert(caller == owner.address, 'entity is not owned by caller');
-
-            // assert that they are not blocked
-            assert(movable.blocked == false, 'entity is blocked');
 
             // try to retrieve the Quantity component of the entity
             let maybe_quantity = commands::<Quantity>::try_entity((*entity_ids[index]).into());
@@ -63,25 +52,16 @@ mod GetAverageSpeed {
 }
 
 
+// GetQuantity: either return 1 if no quantity component or the value of the 
+// quantity component.
 #[system]
 mod GetQuantity {
     use eternum::alias::ID;
-    use eternum::components::entities::ForeignKey;
-    use eternum::components::caravan::CaravanMembers;
     use eternum::components::quantity::Quantity;
-    use eternum::components::position::Position;
-    use eternum::components::movable::Movable;
-    use eternum::components::capacity::Capacity;
-    use eternum::components::owner::Owner;
 
     use traits::Into;
-    use traits::TryInto;
-    use array::ArrayTrait;
-    use box::BoxTrait;
-    use debug::PrintTrait;
 
     use dojo_core::integer::U128IntoU250;
-    use dojo_core::serde::SpanSerde;
     fn execute(entity_id: ID) -> u128 {
         // try to retrieve the Quantity component of the entity
         let maybe_quantity = commands::<Quantity>::try_entity(entity_id.into());
@@ -96,30 +76,7 @@ mod GetQuantity {
         }
     }
 }
-// mod tests2 {
-//     // components
-//     use eternum::components::owner::OwnerComponent;
-//     use eternum::components::realm::RealmComponent;
-//     use eternum::components::config::{
-//         WorldConfigComponent, SpeedConfigComponent, CapacityConfigComponent
-//     };
-//     use eternum::components::metadata::MetaDataComponent;
-//     use eternum::components::quantity::{QuantityComponent, QuantityTrackerComponent};
-//     use eternum::components::position::PositionComponent;
-//     use eternum::components::capacity::CapacityComponent;
-//     use eternum::components::movable::{MovableComponent, ArrivalTimeComponent};
-//     use eternum::components::caravan::CaravanMembersComponent;
-//     use eternum::components::entities::ForeignKeyComponent;
-
-//     // systems
-//     use eternum::systems::test::CreateRealmSystem;
-//     use eternum::systems::caravan::create_free_transport_unit::CreateFreeTransportUnitSystem;
-//     use eternum::systems::caravan::create_caravan::CreateCaravanSystem;
-//     use eternum::systems::config::speed_config::SetSpeedConfigSystem;
-//     use eternum::systems::config::capacity_config::SetCapacityConfigSystem;
-//     use eternum::systems::config::world_config::WorldConfigSystem;
-//     use eternum::systems::caravan::utils::GetAverageSpeedSystem;
-
+// mod tests {
 //     // consts
 //     use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
 
@@ -176,7 +133,7 @@ mod GetQuantity {
 //         world_config_call_data.append(0);
 //         // 10 free transport per city
 //         world_config_call_data.append(10);
-//         world.execute('WorldConfig'.into(), world_config_call_data.span());
+//         world.execute('SetWorldConfig'.into(), world_config_call_data.span());
 
 //         // set speed configuration entity
 //         let mut set_speed_conf_calldata = array::ArrayTrait::<felt252>::new();

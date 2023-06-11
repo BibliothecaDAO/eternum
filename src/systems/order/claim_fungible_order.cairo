@@ -13,8 +13,8 @@ mod ClaimFungibleOrder {
     use eternum::components::position::Position;
     use eternum::components::resources::Resource;
     use eternum::components::caravan::Caravan;
-    use eternum::components::trade::{FungibleTrade, Status, status};
-    use eternum::components::entities::FungibleEntities;
+    use eternum::components::trade::{Trade, Status, status};
+    use eternum::components::trade::FungibleEntities;
 
     use traits::Into;
     use traits::TryInto;
@@ -29,7 +29,7 @@ mod ClaimFungibleOrder {
         let owner = commands::<Owner>::entity(entity_id.into());
         assert(owner.address == caller, 'not owned by caller');
 
-        let meta = commands::<FungibleTrade>::entity(trade_id.into());
+        let meta = commands::<Trade>::entity(trade_id.into());
 
         // check if entity is maker or taker
         // if taker then query maker order id
@@ -53,7 +53,7 @@ mod ClaimFungibleOrder {
         // set status to claimed
         commands::set_entity(
             trade_id.into(),
-            (FungibleTrade {
+            (Trade {
                 maker_id: meta.maker_id,
                 taker_id: meta.taker_id,
                 maker_order_id: meta.maker_order_id,
@@ -203,7 +203,7 @@ mod ClaimFungibleOrder {
 
 //         // trade_id
 //         let trade_id = 10;
-//         world.set_entity(ctx, 'FungibleTrade'.into(), trade_id.into(), 0_u8, values.span());
+//         world.set_entity(ctx, 'Trade'.into(), trade_id.into(), 0_u8, values.span());
 
 //         // set arrival of the taker order in the future
 //         let mut values = array::ArrayTrait::<felt252>::new();
@@ -249,7 +249,7 @@ mod ClaimFungibleOrder {
 //         world.execute('ClaimFungibleOrder'.into(), calldata.span());
 
 //         // assert that trade has been claimed by the maker
-//         let trade_meta = world.entity('FungibleTrade'.into(), 10.into(), 0_u8, 0_usize);
+//         let trade_meta = world.entity('Trade'.into(), 10.into(), 0_u8, 0_usize);
 //         assert(*trade_meta[5] == 1, 'trade not claimed by maker');
 //         // assert that trade has not been claimed by the taker
 //         assert(*trade_meta[6] == 0, 'trade claimed by taker');

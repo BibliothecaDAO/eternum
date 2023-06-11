@@ -1,5 +1,5 @@
-// from an array of entities that are movable, create one with a new movable component 
-// and capacity component
+// from an array of entities that have the movable, capacity and position components,
+// create one with a new movable component and capacity component
 
 // 1. you need to remove the position component of all entities in the caravan
 // 2. position is reset for all subentities when the caravan is deleted 
@@ -8,7 +8,7 @@
 #[system]
 mod CreateCaravan {
     use eternum::alias::ID;
-    use eternum::components::entities::ForeignKey;
+    use eternum::components::metadata::ForeignKey;
     use eternum::components::caravan::CaravanMembers;
     use eternum::components::quantity::Quantity;
     use eternum::components::position::Position;
@@ -34,14 +34,19 @@ mod CreateCaravan {
 
         // get key to write each entity of the caravan
         let entities_key = commands::uuid();
-
         // get caravan id
         let caravan_id = commands::uuid();
+
         let mut entity_position: Position = Position { x: 0, y: 0 };
 
         let caller = starknet::get_tx_info().unbox().account_contract_address;
+
         let mut index = 0;
-        // loop over the entities
+        // loop over the entities to
+        // - sum speed and capacity
+        // - check that all positions are identical
+        // - assert owner is caller
+        // - assert entity is not already blocked (e.g. by another caravan)
         loop {
             if index == entity_ids.len() {
                 break ();
@@ -52,7 +57,8 @@ mod CreateCaravan {
             Capacity,
             Position>::entity((*entity_ids[index]).into());
 
-            // assert that they are all at the same position
+            // assert that they are all at the same position when index > 0
+            // if index == 0, then initialize position as the first entity position
             if index != 0 {
                 assert(entity_position == position, 'entities not same position');
             } else {
@@ -67,6 +73,7 @@ mod CreateCaravan {
             assert(movable.blocked == false, 'entity is blocked');
 
             // DISUCSS: is that more cumbersome than just getting the quantity?
+            // like below
             let mut calldata = array::ArrayTrait::<felt252>::new();
             calldata.append((*entity_ids[index]).into());
             let result = ctx.world.execute('GetQuantity'.into(), calldata.span());
@@ -83,11 +90,14 @@ mod CreateCaravan {
             //         1_u128
             //     }
             // };
+
             // set entity in the caravan
             commands::set_entity(
                 (caravan_id, entities_key, index).into(),
                 (ForeignKey { entity_id: (*entity_ids[index]).try_into().unwrap(),  })
             );
+            // TODO: add the Caravan component to each entity
+            // so that when we know it's in a caravan
             total_speed += movable.sec_per_km.into() * quantity;
             total_quantity += quantity;
             total_capacity += capacity.weight_gram;
@@ -96,7 +106,7 @@ mod CreateCaravan {
         // DISCUSS: i created a getAverageSpeed system but
         // it would mean that we'd have to loop 2x over the entities
 
-        // DISCUSS: i could also create a new CheckSamePosition system that checks
+        // DISCUSS: i could also create a new CheckAllSamePosition system that checks
         // if a list of entities are at the same position, but again that would be 
         // an extra loop
         let average_speed = total_speed / total_quantity;
