@@ -27,7 +27,7 @@
 //     #[external]
 //     fn execute(realm_id: ID, attacker: ContractAddress) {
 //         // get all resources that are raidable
-//         let pillaged_realm = commands::<Realm>::entity(realm_id.into());
+//         let pillaged_realm = commands::<Realm>::entity(realm_id);
 //         let resource_types: Span<u256> = unpack_resource_types(
 //             pillaged_realm.resource_types_packed, pillaged_realm.resource_types_count
 //         );

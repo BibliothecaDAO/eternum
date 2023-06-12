@@ -17,7 +17,7 @@ mod HarvestLabor {
 
     fn execute(realm_id: ID, resource_type: u8) {
         let player_id: ContractAddress = starknet::get_tx_info().unbox().account_contract_address;
-        let (realm, owner) = commands::<Realm, Owner>::entity((realm_id.into()).into());
+        let (realm, owner) = commands::<Realm, Owner>::entity(realm_id.into());
 
         // TODO: do that when starknet::testing::set_account_contract_address works in test
         // assert(owner.address == player_id, 'Realm does not belong to player');
@@ -30,12 +30,10 @@ mod HarvestLabor {
         }
 
         // Get Config
-        let labor_config: LaborConfig = commands::<LaborConfig>::entity(
-            (LABOR_CONFIG_ID.into()).into()
-        );
+        let labor_config: LaborConfig = commands::<LaborConfig>::entity(LABOR_CONFIG_ID.into());
 
         let resource_type_felt: felt252 = resource_type.into();
-        let resource_query: Query = (realm_id.into(), resource_type_felt).into();
+        let resource_query: Query = (realm_id, resource_type_felt).into();
         let maybe_labor = commands::<Labor>::try_entity(resource_query);
         let labor = match maybe_labor {
             Option::Some(labor) => labor,
@@ -113,12 +111,12 @@ mod tests {
     use eternum::components::config::{LaborConfig, LaborCostResources, LaborCostAmount};
 
     // systems
-    use eternum::systems::labor::build_labor::BuildLaborSystem;
-    use eternum::systems::labor::harvest_labor::HarvestLaborSystem;
+    use eternum::systems::labor::build_labor::BuildLabor;
+    use eternum::systems::labor::harvest_labor::HarvestLabor;
     use eternum::systems::config::labor_config::{
-        CreateLaborConfigSystem, CreateLaborCostResourcesSystem, CreateLaborCostAmountSystem
+        CreateLaborConfig, CreateLaborCostResources, CreateLaborCostAmount
     };
-    use eternum::systems::test::{CreateRealmSystem, MintResourcesSystem};
+    use eternum::systems::test::{CreateRealm, MintResources};
 
     // constants
     use eternum::constants::ResourceTypes;
@@ -152,13 +150,13 @@ mod tests {
 
         /// REGISTER SYSTEMS ///
         let mut systems = array::ArrayTrait::<felt252>::new();
-        systems.append(BuildLaborSystem::TEST_CLASS_HASH);
-        systems.append(HarvestLaborSystem::TEST_CLASS_HASH);
-        systems.append(CreateRealmSystem::TEST_CLASS_HASH);
-        systems.append(CreateLaborConfigSystem::TEST_CLASS_HASH);
-        systems.append(CreateLaborCostResourcesSystem::TEST_CLASS_HASH);
-        systems.append(CreateLaborCostAmountSystem::TEST_CLASS_HASH);
-        systems.append(MintResourcesSystem::TEST_CLASS_HASH);
+        systems.append(BuildLabor::TEST_CLASS_HASH);
+        systems.append(HarvestLabor::TEST_CLASS_HASH);
+        systems.append(CreateRealm::TEST_CLASS_HASH);
+        systems.append(CreateLaborConfig::TEST_CLASS_HASH);
+        systems.append(CreateLaborCostResources::TEST_CLASS_HASH);
+        systems.append(CreateLaborCostAmount::TEST_CLASS_HASH);
+        systems.append(MintResources::TEST_CLASS_HASH);
 
         let mut routes = array::ArrayTrait::new();
         // CreateRealm
@@ -314,13 +312,13 @@ mod tests {
 
         /// REGISTER SYSTEMS ///
         let mut systems = array::ArrayTrait::<felt252>::new();
-        systems.append(BuildLaborSystem::TEST_CLASS_HASH);
-        systems.append(HarvestLaborSystem::TEST_CLASS_HASH);
-        systems.append(CreateRealmSystem::TEST_CLASS_HASH);
-        systems.append(CreateLaborConfigSystem::TEST_CLASS_HASH);
-        systems.append(CreateLaborCostResourcesSystem::TEST_CLASS_HASH);
-        systems.append(CreateLaborCostAmountSystem::TEST_CLASS_HASH);
-        systems.append(MintResourcesSystem::TEST_CLASS_HASH);
+        systems.append(BuildLabor::TEST_CLASS_HASH);
+        systems.append(HarvestLabor::TEST_CLASS_HASH);
+        systems.append(CreateRealm::TEST_CLASS_HASH);
+        systems.append(CreateLaborConfig::TEST_CLASS_HASH);
+        systems.append(CreateLaborCostResources::TEST_CLASS_HASH);
+        systems.append(CreateLaborCostAmount::TEST_CLASS_HASH);
+        systems.append(MintResources::TEST_CLASS_HASH);
 
         let mut routes = array::ArrayTrait::new();
         // CreateRealm
