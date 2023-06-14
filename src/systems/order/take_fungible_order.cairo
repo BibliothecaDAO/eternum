@@ -7,7 +7,7 @@ mod TakeFungibleOrder {
     use eternum::alias::ID;
     use eternum::components::owner::Owner;
     use eternum::components::position::{Position, PositionTrait};
-    use eternum::components::trade::{Trade, Status, status};
+    use eternum::components::trade::{Trade, Status, TradeStatus};
     use eternum::components::caravan::Caravan;
     use eternum::components::movable::{Movable, ArrivalTime};
 
@@ -15,31 +15,36 @@ mod TakeFungibleOrder {
     use traits::TryInto;
     use box::BoxTrait;
     use array::ArrayTrait;
+    use debug::PrintTrait;
 
     use dojo_core::serde::SpanSerde;
     // you can attach a caravan only if it's needed
     use dojo_core::integer::U128IntoU250;
 
     fn execute(taker_id: ID, trade_id: ID) {
+        'start'.print();
         // get the trade 
         let (meta, trade_status) = commands::<Trade, Status>::entity(trade_id.into());
 
         // verify expiration date
         let ts = starknet::get_block_timestamp();
         assert(meta.expires_at > ts, 'trade expired');
+        'trade not expired'.print();
 
         // assert that the status is open
         let is_open = match trade_status.value {
-            status::Open(_) => true,
-            status::Accepted(_) => false,
-            status::Cancelled(_) => false,
+            TradeStatus::Open(_) => true,
+            TradeStatus::Accepted(_) => false,
+            TradeStatus::Cancelled(_) => false,
         };
         assert(is_open, 'Trade is not open');
+        'trade open'.print();
 
         // assert that taker entity is owned by caller
         let caller = starknet::get_tx_info().unbox().account_contract_address;
         let owner = commands::<Owner>::entity(taker_id.into());
         assert(owner.address == caller, 'not owned by caller');
+        'not owned by caller'.print();
 
         // if taker_entity in meta is 0, then set the taker_id
         if meta.taker_id == 0 {
@@ -47,7 +52,7 @@ mod TakeFungibleOrder {
                 trade_id.into(),
                 (
                     Status {
-                        value: status::Accepted(())
+                        value: TradeStatus::Accepted(())
                         }, Trade {
                         maker_id: meta.maker_id,
                         taker_id,
@@ -63,7 +68,8 @@ mod TakeFungibleOrder {
         } else {
             // if not 0, then verify if the taker_id is the one specified
             assert(meta.taker_id == taker_id, 'not the taker');
-            commands::set_entity(trade_id.into(), (Status { value: status::Accepted(()) }, ));
+            'is the taker'.print();
+            commands::set_entity(trade_id.into(), (Status { value: TradeStatus::Accepted(()) }, ));
         };
 
         // caravan only needed if both are not on the same position

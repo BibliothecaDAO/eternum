@@ -10,7 +10,7 @@ mod AttachCaravan {
     use eternum::components::position::Position;
     use eternum::components::resources::Resource;
     use eternum::components::caravan::Caravan;
-    use eternum::components::trade::{Trade, Status, status};
+    use eternum::components::trade::{Trade, Status, TradeStatus};
     use eternum::components::trade::FungibleEntities;
 
     use traits::Into;
@@ -39,9 +39,9 @@ mod AttachCaravan {
 
         // assert that the status is open
         let is_open = match trade_status.value {
-            status::Open(_) => true,
-            status::Accepted(_) => false,
-            status::Cancelled(_) => false,
+            TradeStatus::Open(_) => true,
+            TradeStatus::Accepted(_) => false,
+            TradeStatus::Cancelled(_) => false,
         };
         assert(is_open, 'Trade is not open');
 

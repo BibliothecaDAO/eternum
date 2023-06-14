@@ -10,7 +10,7 @@ mod MakeFungibleOrder {
     use eternum::components::owner::Owner;
     use eternum::components::position::Position;
     use eternum::components::realm::Realm;
-    use eternum::components::trade::Trade;
+    use eternum::components::trade::{Trade, Status, TradeStatus};
     use eternum::components::capacity::Capacity;
     use eternum::components::metadata::MetaData;
     use eternum::components::movable::{Movable, ArrivalTime};
@@ -57,6 +57,7 @@ mod MakeFungibleOrder {
         // assert that maker entity is owned by caller
         let maker_owner = commands::<Owner>::entity(maker_id.into());
         assert(maker_owner.address == caller, 'Only owner can create order');
+        
 
         // assert that length of maker_entity_types is equal to length of maker_quantities
         assert(maker_entity_types.len() == maker_quantities.len(), 'length not equal');
@@ -146,8 +147,12 @@ mod MakeFungibleOrder {
                 claimed_by_taker: false,
                 expires_at: expires_at,
                 taker_needs_caravan: taker_needs_caravan,
-            })
+            }, Status {
+                value: TradeStatus::Open(()),
+            }),
         );
+        'trade_id'.print();
+        trade_id.print();
         trade_id.into()
     }
 }

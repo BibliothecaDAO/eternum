@@ -15,13 +15,13 @@ struct Trade {
 
 #[derive(Component, Copy, Drop, Serde)]
 struct Status {
-    value: status, 
+    value: TradeStatus, 
 }
 
 
 // status of the trade
 #[derive(Copy, Drop, Serde)]
-enum status {
+enum TradeStatus {
     Open: (),
     Accepted: (),
     Cancelled: (),
