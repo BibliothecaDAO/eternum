@@ -1,10 +1,3 @@
-
-
-<!-- <picture>
-  <source media="(prefers-color-scheme: dark)" srcset=".github/mark-dark.svg">
-  <img alt="Dojo logo" align="right" width="120" src=".github/mark-light.svg">
-</picture> -->
-
 <a href="https://twitter.com/lootrealms">
 <img src="https://img.shields.io/twitter/follow/lootrealms?style=social"/>
 </a>
