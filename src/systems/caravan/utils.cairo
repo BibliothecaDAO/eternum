@@ -12,7 +12,6 @@ mod GetAverageSpeed {
     use traits::Into;
     use box::BoxTrait;
 
-    use dojo_core::integer::U128IntoU250;
     use dojo_core::serde::SpanSerde;
     // create an execute function that takes a list of entity ids as input and
     // returns the average speed of the entities 
@@ -61,7 +60,6 @@ mod GetQuantity {
 
     use traits::Into;
 
-    use dojo_core::integer::U128IntoU250;
     fn execute(entity_id: ID) -> u128 {
         // try to retrieve the Quantity component of the entity
         let maybe_quantity = commands::<Quantity>::try_entity(entity_id.into());

@@ -25,8 +25,6 @@ mod MakeFungibleOrder {
     use dojo_core::serde::SpanSerde;
     use debug::PrintTrait;
 
-    use dojo_core::integer::U128IntoU250;
-
     // TODO: create a function that takes also an array of strings as input, these 
     // strings are names of components that have the {type, balance} fields.
     // Using the name of the component, we can query and set component.

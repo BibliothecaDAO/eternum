@@ -21,8 +21,6 @@ mod CreateFreeTransportUnit {
     use box::BoxTrait;
     use debug::PrintTrait;
 
-    use dojo_core::integer::U128IntoU250;
-
     fn execute(entity_id: ID, quantity: u128) -> ID {
         // assert that the entity is a realm by querying the entity type
         let (owner, realm, position, entity_type) = commands::<Owner,

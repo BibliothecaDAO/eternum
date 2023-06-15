@@ -22,7 +22,6 @@ mod CreateCaravan {
     use box::BoxTrait;
     use debug::PrintTrait;
 
-    use dojo_core::integer::U128IntoU250;
     use dojo_core::serde::SpanSerde;
 
     fn execute(entity_ids: Span<felt252>) -> ID {

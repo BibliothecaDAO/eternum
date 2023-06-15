@@ -19,7 +19,6 @@ mod TakeFungibleOrder {
 
     use dojo_core::serde::SpanSerde;
     // you can attach a caravan only if it's needed
-    use dojo_core::integer::U128IntoU250;
 
     fn execute(taker_id: ID, trade_id: ID) {
         'start'.print();
