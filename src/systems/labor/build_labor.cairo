@@ -145,32 +145,13 @@ mod BuildLabor {
         };
     }
 }
+// TODO: test when withdraw gas is solved
 // mod tests {
-//     // components
-//     use eternum::components::labor::LaborComponent;
-//     use eternum::components::realm::RealmComponent;
-//     use eternum::components::config::LaborConfigComponent;
-//     use eternum::components::config::LaborCostAmountComponent;
-//     use eternum::components::config::LaborCostResourcesComponent;
-//     use eternum::components::owner::OwnerComponent;
-//     use eternum::components::resources::ResourceComponent;
-//     use eternum::components::resources::VaultComponent;
-//     use eternum::components::realm::Realm;
-//     use eternum::components::config::LaborConfig;
-//     use eternum::components::config::LaborCostResources;
-//     use eternum::components::config::LaborCostAmount;
-
-//     // systems
-//     use eternum::systems::labor::build_labor::BuildLabor;
-//     use eternum::systems::config::labor_config::SetLaborConfig;
-//     use eternum::systems::config::labor_config::SetLaborCostResources;
-//     use eternum::systems::config::labor_config::SetLaborCostAmount;
-//     use eternum::systems::test::MintResources;
-//     use eternum::systems::test::CreateRealm;
-
 //     // constants
 //     use eternum::constants::ResourceTypes;
 
+//     // testing utils
+//     use eternum::utils::testing::spawn_test_world_without_init;
 //     use core::traits::Into;
 //     use core::result::ResultTrait;
 //     use array::ArrayTrait;
@@ -179,64 +160,15 @@ mod BuildLabor {
 //     use starknet::syscalls::deploy_syscall;
 
 //     use dojo_core::interfaces::IWorldDispatcherTrait;
-//     use dojo_core::storage::query::Query;
-//     use dojo_core::test_utils::spawn_test_world;
 //     use dojo_core::auth::systems::{Route, RouteTrait};
+//     use dojo_core::storage::query::{
+//         Query, TupleSize2IntoQuery, LiteralIntoQuery, TupleSize3IntoQuery
+//     };
 
 //     #[test]
 //     #[available_gas(300000000000)]
 //     fn test_build_labor_non_food() {
-//         /// REGISTER COMPONENTS ///
-//         let mut components = array::ArrayTrait::<felt252>::new();
-//         components.append(LaborComponent::TEST_CLASS_HASH);
-//         components.append(RealmComponent::TEST_CLASS_HASH);
-//         components.append(LaborConfigComponent::TEST_CLASS_HASH);
-//         components.append(LaborCostAmountComponent::TEST_CLASS_HASH);
-//         components.append(LaborCostResourcesComponent::TEST_CLASS_HASH);
-//         components.append(ResourceComponent::TEST_CLASS_HASH);
-//         components.append(VaultComponent::TEST_CLASS_HASH);
-//         components.append(OwnerComponent::TEST_CLASS_HASH);
-
-//         /// REGISTER SYSTEMS ///
-//         let mut systems = array::ArrayTrait::<felt252>::new();
-//         systems.append(BuildLabor::TEST_CLASS_HASH);
-//         systems.append(CreateRealm::TEST_CLASS_HASH);
-//         systems.append(SetLaborConfig::TEST_CLASS_HASH);
-//         systems.append(SetLaborCostResources::TEST_CLASS_HASH);
-//         systems.append(SetLaborCostAmount::TEST_CLASS_HASH);
-//         systems.append(MintResources::TEST_CLASS_HASH);
-
-//         let mut routes = array::ArrayTrait::new();
-//         // CreateRealm
-//         routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Owner'.into(), ));
-//         routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Realm'.into(), ));
-//         // SetLaborConfig
-//         routes
-//             .append(
-//                 RouteTrait::new('SetLaborConfig'.into(), 'Tester'.into(), 'LaborConfig'.into(), )
-//             );
-//         // SetLaborCostResources
-//         routes
-//             .append(
-//                 RouteTrait::new(
-//                     'SetLaborCostResources'.into(), 'Tester'.into(), 'LaborCostResources'.into(), 
-//                 )
-//             );
-//         // SetLaborCostAmount
-//         routes
-//             .append(
-//                 RouteTrait::new(
-//                     'SetLaborCostAmount'.into(), 'Tester'.into(), 'LaborCostAmount'.into(), 
-//                 )
-//             );
-//         // MintResources
-//         routes
-//             .append(RouteTrait::new('MintResources'.into(), 'Tester'.into(), 'Resource'.into(), ));
-//         // BuildLabor
-//         routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Resource'.into(), ));
-//         routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Labor'.into(), ));
-
-//         let world = spawn_test_world(components, systems, routes);
+//         let world = spawn_test_world_without_init();
 
 //         /// CREATE ENTITIES ///
 //         // set realm entity
@@ -249,6 +181,9 @@ mod BuildLabor {
 //         create_realm_calldata.append(5);
 //         create_realm_calldata.append(5);
 //         create_realm_calldata.append(5);
+//         create_realm_calldata.append(1);
+//         create_realm_calldata.append(1);
+//         // position
 //         create_realm_calldata.append(1);
 //         create_realm_calldata.append(1);
 //         world.execute('CreateRealm'.into(), create_realm_calldata.span());
@@ -306,16 +241,16 @@ mod BuildLabor {
 //         build_labor_calldata.append(1);
 //         world.execute('BuildLabor'.into(), build_labor_calldata.span());
 //         // assert resource is right amount
-//         let resource = world.entity('Resource'.into(), (1, (2)).into(), 0_u8, 0_usize);
+//         let resource = world.entity('Resource'.into(), (1, 2).into(), 0_u8, 0_usize);
 //         assert(*resource[0] == 2, 'failed resource id');
 //         assert(*resource[1] == 80000, 'failed resource amount');
 
-//         let resource = world.entity('Resource'.into(), (1, (3)).into(), 0_u8, 0_usize);
+//         let resource = world.entity('Resource'.into(), (1, 3).into(), 0_u8, 0_usize);
 //         assert(*resource[0] == 3, 'failed resource id');
 //         assert(*resource[1] == 80000, 'failed resource amount');
 
 //         // assert labor is right amount
-//         let labor = world.entity('Labor'.into(), (1, (1)).into(), 0_u8, 0_usize);
+//         let labor = world.entity('Labor'.into(), (1, 1).into(), 0_u8, 0_usize);
 //         // timestamp + labor_per_unit * labor_units
 //         assert(*labor[0] == 10000 + 7200 * 20, 'labor balance is wrong');
 //         assert(*labor[1] == 10000, 'labor last harvest is wrong');
@@ -324,56 +259,7 @@ mod BuildLabor {
 //     #[test]
 //     #[available_gas(300000000000)]
 //     fn test_build_labor_food() {
-//         /// REGISTER COMPONENTS ///
-//         let mut components = array::ArrayTrait::<felt252>::new();
-//         components.append(LaborComponent::TEST_CLASS_HASH);
-//         components.append(RealmComponent::TEST_CLASS_HASH);
-//         components.append(LaborConfigComponent::TEST_CLASS_HASH);
-//         components.append(LaborCostAmountComponent::TEST_CLASS_HASH);
-//         components.append(LaborCostResourcesComponent::TEST_CLASS_HASH);
-//         components.append(ResourceComponent::TEST_CLASS_HASH);
-//         components.append(VaultComponent::TEST_CLASS_HASH);
-//         components.append(OwnerComponent::TEST_CLASS_HASH);
-
-//         /// REGISTER SYSTEMS ///
-//         let mut systems = array::ArrayTrait::<felt252>::new();
-//         systems.append(BuildLabor::TEST_CLASS_HASH);
-//         systems.append(CreateRealm::TEST_CLASS_HASH);
-//         systems.append(SetLaborConfig::TEST_CLASS_HASH);
-//         systems.append(SetLaborCostResources::TEST_CLASS_HASH);
-//         systems.append(SetLaborCostAmount::TEST_CLASS_HASH);
-//         systems.append(MintResources::TEST_CLASS_HASH);
-
-//         let mut routes = array::ArrayTrait::new();
-//         // CreateRealm
-//         routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Owner'.into(), ));
-//         routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Realm'.into(), ));
-//         // SetLaborConfig
-//         routes
-//             .append(
-//                 RouteTrait::new('SetLaborConfig'.into(), 'Tester'.into(), 'LaborConfig'.into(), )
-//             );
-//         // SetLaborCostResources
-//         routes
-//             .append(
-//                 RouteTrait::new(
-//                     'SetLaborCostResources'.into(), 'Tester'.into(), 'LaborCostResources'.into(), 
-//                 )
-//             );
-//         // SetLaborCostAmount
-//         routes
-//             .append(
-//                 RouteTrait::new(
-//                     'SetLaborCostAmount'.into(), 'Tester'.into(), 'LaborCostAmount'.into(), 
-//                 )
-//             );
-//         // MintResources
-//         routes
-//             .append(RouteTrait::new('MintResources'.into(), 'Tester'.into(), 'Resource'.into(), ));
-//         // BuildLabor
-//         routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Resource'.into(), ));
-//         routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Labor'.into(), ));
-//         let world = spawn_test_world(components, systems, routes);
+//         let world = spawn_test_world_without_init();
 
 //         /// CREATE ENTITIES ///
 //         // set realm entity
@@ -386,6 +272,9 @@ mod BuildLabor {
 //         create_realm_calldata.append(5);
 //         create_realm_calldata.append(5);
 //         create_realm_calldata.append(5);
+//         create_realm_calldata.append(1);
+//         create_realm_calldata.append(1);
+//         // position
 //         create_realm_calldata.append(1);
 //         create_realm_calldata.append(1);
 //         world.execute('CreateRealm'.into(), create_realm_calldata.span());
@@ -449,11 +338,11 @@ mod BuildLabor {
 //         world.execute('BuildLabor'.into(), build_labor_calldata.span());
 
 //         // assert resource is right amount
-//         let resource = world.entity('Resource'.into(), (1, (2)).into(), 0_u8, 0_usize);
+//         let resource = world.entity('Resource'.into(), (1, 2).into(), 0_u8, 0_usize);
 //         assert(*resource[0] == 2, 'failed resource id');
 //         assert(*resource[1] == 80000, 'failed resource amount');
 
-//         let resource = world.entity('Resource'.into(), (1, (3)).into(), 0_u8, 0_usize);
+//         let resource = world.entity('Resource'.into(), (1, 3).into(), 0_u8, 0_usize);
 //         assert(*resource[0] == 3, 'failed resource id');
 //         assert(*resource[1] == 80000, 'failed resource amount');
 
@@ -480,12 +369,12 @@ mod BuildLabor {
 //         world.execute('BuildLabor'.into(), build_labor_calldata.span());
 
 //         // assert resource is right amount
-//         let resource = world.entity('Resource'.into(), (1, (2)).into(), 0_u8, 0_usize);
+//         let resource = world.entity('Resource'.into(), (1, 2).into(), 0_u8, 0_usize);
 //         assert(*resource[0] == 2, 'failed resource id');
 //         // 80000 - (20000 * 2)
 //         assert(*resource[1] == 80000 - (20000 * 2), 'failed resource amount');
 
-//         let resource = world.entity('Resource'.into(), (1, (3)).into(), 0_u8, 0_usize);
+//         let resource = world.entity('Resource'.into(), (1, 3).into(), 0_u8, 0_usize);
 //         assert(*resource[0] == 3, 'failed resource id');
 //         // 80000 - (20000 * 2)
 //         assert(*resource[1] == 80000 - (20000 * 2), 'failed resource amount');
@@ -509,3 +398,4 @@ mod BuildLabor {
 //         assert(*labor[2] == 2, 'multiplier is wrong');
 //     }
 // }
+

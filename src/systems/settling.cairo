@@ -117,7 +117,6 @@ mod Unsettle {
         }.transfer_from(ctx.world.contract_address, owner.address, realm_id, );
     }
 }
-
 // mod tests {
 //     use starknet::syscalls::deploy_syscall;
 //     use starknet::testing::set_caller_address;
@@ -137,121 +136,15 @@ mod Unsettle {
 //     use eternum::erc721::erc721::{Position, RealmData, ERC721};
 //     use eternum::interfaces::{IERC721Dispatcher, IERC721DispatcherTrait};
 
-//     // components
-//     use eternum::erc721::components::{TokenApprovalComponent, BalanceComponent};
-//     use eternum::components::owner::OwnerComponent;
-//     use eternum::components::realm::RealmComponent;
-//     use eternum::components::position::PositionComponent;
-//     use eternum::components::config::WorldConfigComponent;
-//     use eternum::components::resources::ResourceComponent;
-//     use eternum::components::age::AgeComponent;
-//     // systems
-//     use eternum::erc721::systems::{ERC721Approve, ERC721TransferFrom, ERC721Mint};
-//     use eternum::systems::settling::{Settle, Unsettle};
-//     use eternum::systems::config::world_config::SetWorldConfig;
+//     // testing
+//     use eternum::utils::testing::spawn_test_world_without_init;
 
 //     #[test]
 //     // need higher gas limit because of new auth system
 //     #[available_gas(300000000000)]
 //     fn test_settle_unsettle_realm() {
-//         // TODO: use the new testing utils
-//         // components
-//         let mut components = array::ArrayTrait::<felt252>::new();
-//         components.append(TokenApprovalComponent::TEST_CLASS_HASH);
-//         components.append(BalanceComponent::TEST_CLASS_HASH);
-//         components.append(OwnerComponent::TEST_CLASS_HASH);
-//         components.append(RealmComponent::TEST_CLASS_HASH);
-//         components.append(PositionComponent::TEST_CLASS_HASH);
-//         components.append(WorldConfigComponent::TEST_CLASS_HASH);
-//         components.append(ResourceComponent::TEST_CLASS_HASH);
-//         components.append(AgeComponent::TEST_CLASS_HASH);
-//         // systems
-//         let mut systems = array::ArrayTrait::<felt252>::new();
-//         systems.append(ERC721Approve::TEST_CLASS_HASH);
-//         systems.append(ERC721TransferFrom::TEST_CLASS_HASH);
-//         systems.append(ERC721Mint::TEST_CLASS_HASH);
-//         systems.append(Settle::TEST_CLASS_HASH);
-//         systems.append(Unsettle::TEST_CLASS_HASH);
-//         systems.append(SetWorldConfig::TEST_CLASS_HASH);
-
-//         // create auth routes
-//         let mut routes = array::ArrayTrait::new();
-//         // settle
-//         routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Position'.into(), ));
-//         routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Realm'.into(), ));
-//         routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Owner'.into(), ));
-//         routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Age'.into(), ));
-//         routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Resource'.into(), ));
-//         // unsettle
-//         routes.append(RouteTrait::new('Unsettle'.into(), 'Tester'.into(), 'Position'.into(), ));
-//         routes.append(RouteTrait::new('Unsettle'.into(), 'Tester'.into(), 'Realm'.into(), ));
-//         routes.append(RouteTrait::new('Unsettle'.into(), 'Tester'.into(), 'Owner'.into(), ));
-//         routes.append(RouteTrait::new('Unsettle'.into(), 'Tester'.into(), 'Age'.into(), ));
-
-//         // // erc721
-//         routes
-//             .append(
-//                 RouteTrait::new(
-//                     'ERC721TransferFrom'.into(), 'Tester'.into(), 'TokenApproval'.into(), 
-//                 )
-//             );
-//         routes
-//             .append(
-//                 RouteTrait::new('ERC721TransferFrom'.into(), 'Tester'.into(), 'Owner'.into(), )
-//             );
-//         routes
-//             .append(
-//                 RouteTrait::new('ERC721TransferFrom'.into(), 'Tester'.into(), 'Balance'.into(), )
-//             );
-//         routes.append(RouteTrait::new('ERC721Mint'.into(), 'Tester'.into(), 'Balance'.into(), ));
-//         routes.append(RouteTrait::new('ERC721Mint'.into(), 'Tester'.into(), 'Owner'.into(), ));
-
-//         // config
-//         routes
-//             .append(
-//                 RouteTrait::new('SetWorldConfig'.into(), 'Tester'.into(), 'WorldConfig'.into(), )
-//             );
-
-//         // create auth routes
-//         let mut routes = array::ArrayTrait::new();
-//         // settle
-//         routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Position'.into(), ));
-//         routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Realm'.into(), ));
-//         routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Owner'.into(), ));
-//         routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Age'.into(), ));
-//         routes.append(RouteTrait::new('Settle'.into(), 'Tester'.into(), 'Resource'.into(), ));
-//         // unsettle
-//         routes.append(RouteTrait::new('Unsettle'.into(), 'Tester'.into(), 'Position'.into(), ));
-//         routes.append(RouteTrait::new('Unsettle'.into(), 'Tester'.into(), 'Realm'.into(), ));
-//         routes.append(RouteTrait::new('Unsettle'.into(), 'Tester'.into(), 'Owner'.into(), ));
-//         routes.append(RouteTrait::new('Unsettle'.into(), 'Tester'.into(), 'Age'.into(), ));
-
-//         // // erc721
-//         routes
-//             .append(
-//                 RouteTrait::new(
-//                     'ERC721TransferFrom'.into(), 'Tester'.into(), 'TokenApproval'.into(), 
-//                 )
-//             );
-//         routes
-//             .append(
-//                 RouteTrait::new('ERC721TransferFrom'.into(), 'Tester'.into(), 'Owner'.into(), )
-//             );
-//         routes
-//             .append(
-//                 RouteTrait::new('ERC721TransferFrom'.into(), 'Tester'.into(), 'Balance'.into(), )
-//             );
-//         routes.append(RouteTrait::new('ERC721Mint'.into(), 'Tester'.into(), 'Balance'.into(), ));
-//         routes.append(RouteTrait::new('ERC721Mint'.into(), 'Tester'.into(), 'Owner'.into(), ));
-
-//         // config
-//         routes
-//             .append(
-//                 RouteTrait::new('SetWorldConfig'.into(), 'Tester'.into(), 'WorldConfig'.into(), )
-//             );
-
 //         // deploy executor, world and register components/systems
-//         let world = spawn_test_world(components, systems, routes);
+//         let world = spawn_test_world_without_init();
 
 //         let mut constructor_calldata = array::ArrayTrait::<felt252>::new();
 //         constructor_calldata.append(world.contract_address.into());
@@ -367,3 +260,5 @@ mod Unsettle {
 //         assert(realm_data.len() == 0, 'realm_data not deleted');
 //     }
 // }
+
+

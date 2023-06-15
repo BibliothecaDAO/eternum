@@ -122,7 +122,7 @@ mod AttachCaravan {
 // TODO: need to test it when withdraw gas is working
 // mod tests {
 //     // utils
-//     use eternum::utils::testing::spawn_test_world_with_setup;
+//     use eternum::utils::testing::spawn_test_world_without_init;
 //     use eternum::constants::WORLD_CONFIG_ID;
 
 //     use core::traits::Into;
@@ -141,19 +141,12 @@ mod AttachCaravan {
 //     // 1. attach for the maker
 //     // 2. attach for the taker
 //     fn test_attach_caravan() {
-//         let world = spawn_test_world_with_setup();
+//         let world = spawn_test_world_without_init();
 
 //         // set as executor
 //         starknet::testing::set_contract_address(starknet::contract_address_const::<1>());
 
-//         // Admin caller grants Admin role to Tester system
-//         let mut grant_role_calldata: Array<felt252> = ArrayTrait::new();
-//         grant_role_calldata.append('Tester'); // target_id
-//         grant_role_calldata.append('Admin'); // role_id
-//         world.execute('GrantAuthRole'.into(), grant_role_calldata.span());
-
-//         // context to set entity
-//         // only caller_system is used here
+//         // context (can be any value since world not init)
 //         let ctx = Context {
 //             world,
 //             caller_account: starknet::contract_address_const::<0x1337>(),
@@ -262,12 +255,6 @@ mod AttachCaravan {
 //         values.append(45);
 //         values.append(50);
 //         world.set_entity(ctx, 'Position'.into(), 20.into(), 0_u8, values.span());
-
-//         // set caller/maker as admin (for testing)
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(0);
-//         values.append('Admin'.into());
-//         world.execute('GrantAuthRole'.into(), values.span());
 
 //         // attach caravan to maker
 //         let mut calldata = array::ArrayTrait::<felt252>::new();

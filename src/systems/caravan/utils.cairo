@@ -81,7 +81,7 @@ mod GetQuantity {
 //     use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
 
 //     // utils
-//     use eternum::utils::testing::spawn_test_world_with_setup;
+//     use eternum::utils::testing::spawn_test_world_without_init;
 
 //     use core::traits::Into;
 //     use core::result::ResultTrait;
@@ -91,16 +91,16 @@ mod GetQuantity {
 
 //     use starknet::syscalls::deploy_syscall;
 
-//     use dojo_core::interfaces::IWorldDispatcherTrait;
+//     use dojo_core::interfaces::{IWorldDispatcherTrait, IWorldDispatcherImpl};
 //     use dojo_core::storage::query::Query;
-//     use dojo_core::test_utils::spawn_test_world;
-//     use dojo_core::auth::systems::{Route, RouteTrait};
+//     use dojo_core::execution_context::Context;
+//     use dojo_core::auth::components::AuthRole;
 
 //     // test that the average speed is correct
 //     #[test]
 //     #[available_gas(300000000000)]
 //     fn test_get_average_speed() {
-//         let world = spawn_test_world_with_setup();
+//         let world = spawn_test_world_without_init();
 
 //         // create realm
 //         let mut create_realm_calldata = array::ArrayTrait::<felt252>::new();
@@ -120,20 +120,10 @@ mod GetQuantity {
 //         create_realm_calldata.append(30);
 //         world.execute('CreateRealm'.into(), create_realm_calldata.span());
 
-//         // TODO: check if i can set_entity
-
 //         // set world config
-//         let mut world_config_call_data = array::ArrayTrait::<felt252>::new();
-//         world_config_call_data.append(0);
-//         world_config_call_data.append(0);
-//         world_config_call_data.append(252000000000000000000);
-//         world_config_call_data.append(0);
-//         world_config_call_data.append(0);
-//         world_config_call_data.append(0);
-//         world_config_call_data.append(0);
-//         // 10 free transport per city
-//         world_config_call_data.append(10);
-//         world.execute('SetWorldConfig'.into(), world_config_call_data.span());
+//         let mut travel_config_call_data = array::ArrayTrait::<felt252>::new();
+//         travel_config_call_data.append(10);
+//         world.execute('SetTravelConfig'.into(), travel_config_call_data.span());
 
 //         // set speed configuration entity
 //         let mut set_speed_conf_calldata = array::ArrayTrait::<felt252>::new();
@@ -178,13 +168,22 @@ mod GetQuantity {
 //     #[test]
 //     #[available_gas(300000000000)]
 //     fn test_get_quantity_with_quantity_component() {
-//         let world = spawn_test_world_with_setup();
+//         let world = spawn_test_world_without_init();
+//         // random, does not matter since world is not init yet
+//         let ctx = Context {
+//             world,
+//             caller_account: starknet::contract_address_const::<0x1337>(),
+//             caller_system: 'Tester'.into(),
+//             execution_role: AuthRole {
+//                 id: 'FooWriter'.into()
+//             },
+//         };
 //         // set caller as executor 
 //         starknet::testing::set_contract_address(starknet::contract_address_const::<1>());
 //         let mut value = array::ArrayTrait::<felt252>::new();
 //         value.append(10);
 //         let entity_id = 1;
-//         world.set_entity('Quantity'.into(), entity_id.into(), 0_u8, value.span());
+//         world.set_entity(ctx, 'Quantity'.into(), entity_id.into(), 0_u8, value.span());
 
 //         let mut calldata = array::ArrayTrait::<felt252>::new();
 //         calldata.append(entity_id);
@@ -195,7 +194,7 @@ mod GetQuantity {
 //     #[test]
 //     #[available_gas(300000000000)]
 //     fn test_get_quantity_without_quantity_component() {
-//         let world = spawn_test_world_with_setup();
+//         let world = spawn_test_world_without_init();
 //         // set caller as executor 
 //         starknet::testing::set_contract_address(starknet::contract_address_const::<1>());
 //         let entity_id = 1;

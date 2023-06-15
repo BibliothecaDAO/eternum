@@ -2,7 +2,9 @@
 use eternum::components::owner::OwnerComponent;
 use eternum::components::realm::RealmComponent;
 use eternum::components::config::{
-    WorldConfigComponent, SpeedConfigComponent, CapacityConfigComponent
+    WorldConfigComponent, SpeedConfigComponent, CapacityConfigComponent, TravelConfigComponent,
+    LaborConfigComponent, LaborCostAmountComponent, LaborCostResourcesComponent,
+    WeightConfigComponent
 };
 use eternum::components::metadata::MetaDataComponent;
 use eternum::components::quantity::{QuantityComponent, QuantityTrackerComponent};
@@ -14,12 +16,19 @@ use eternum::components::caravan::{CaravanMembersComponent, CaravanComponent};
 use eternum::components::metadata::ForeignKeyComponent;
 use eternum::components::trade::{StatusComponent, TradeComponent};
 use eternum::components::trade::FungibleEntitiesComponent;
+use eternum::erc721::components::{TokenApprovalComponent, BalanceComponent};
+use eternum::components::age::AgeComponent;
+use eternum::components::labor::LaborComponent;
+use eternum::components::resources::VaultComponent;
 
 // systems
+use eternum::erc721::systems::{ERC721Approve, ERC721TransferFrom, ERC721Mint};
+use eternum::systems::settling::{Settle, Unsettle};
 use eternum::systems::test::CreateRealm;
 use eternum::systems::caravan::create_free_transport_unit::CreateFreeTransportUnit;
 use eternum::systems::caravan::create_caravan::CreateCaravan;
 use eternum::systems::config::speed_config::SetSpeedConfig;
+use eternum::systems::config::travel_config::SetTravelConfig;
 use eternum::systems::config::capacity_config::SetCapacityConfig;
 use eternum::systems::config::world_config::SetWorldConfig;
 use eternum::systems::caravan::utils::{GetAverageSpeed, GetQuantity};
@@ -27,9 +36,13 @@ use eternum::systems::order::make_fungible_order::MakeFungibleOrder;
 use eternum::systems::order::take_fungible_order::TakeFungibleOrder;
 use eternum::systems::order::attach_caravan::AttachCaravan;
 use eternum::systems::order::claim_fungible_order::ClaimFungibleOrder;
-
-// consts
-use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
+use eternum::systems::labor::build_labor::BuildLabor;
+use eternum::systems::config::labor_config::SetLaborConfig;
+use eternum::systems::config::labor_config::SetLaborCostResources;
+use eternum::systems::config::labor_config::SetLaborCostAmount;
+use eternum::systems::config::weight_config::SetWeightConfig;
+use eternum::systems::test::MintResources;
+use eternum::systems::labor::harvest_labor::HarvestLabor;
 
 use core::traits::Into;
 use core::result::ResultTrait;
@@ -75,6 +88,16 @@ fn retrieve_list_of_world_components_and_systems() -> (Array<felt252>, Array<fel
     components.append(StatusComponent::TEST_CLASS_HASH);
     components.append(AuthRoleComponent::TEST_CLASS_HASH);
     components.append(AuthStatusComponent::TEST_CLASS_HASH);
+    components.append(TokenApprovalComponent::TEST_CLASS_HASH);
+    components.append(BalanceComponent::TEST_CLASS_HASH);
+    components.append(AgeComponent::TEST_CLASS_HASH);
+    components.append(TravelConfigComponent::TEST_CLASS_HASH);
+    components.append(LaborComponent::TEST_CLASS_HASH);
+    components.append(LaborConfigComponent::TEST_CLASS_HASH);
+    components.append(LaborCostAmountComponent::TEST_CLASS_HASH);
+    components.append(LaborCostResourcesComponent::TEST_CLASS_HASH);
+    components.append(VaultComponent::TEST_CLASS_HASH);
+    components.append(WeightConfigComponent::TEST_CLASS_HASH);
     // systems
     let mut systems = array::ArrayTrait::<felt252>::new();
     systems.append(GetAverageSpeed::TEST_CLASS_HASH);
@@ -90,22 +113,25 @@ fn retrieve_list_of_world_components_and_systems() -> (Array<felt252>, Array<fel
     systems.append(GrantAuthRole::TEST_CLASS_HASH);
     systems.append(AttachCaravan::TEST_CLASS_HASH);
     systems.append(ClaimFungibleOrder::TEST_CLASS_HASH);
+    systems.append(ERC721Approve::TEST_CLASS_HASH);
+    systems.append(ERC721TransferFrom::TEST_CLASS_HASH);
+    systems.append(ERC721Mint::TEST_CLASS_HASH);
+    systems.append(Settle::TEST_CLASS_HASH);
+    systems.append(Unsettle::TEST_CLASS_HASH);
+    systems.append(SetTravelConfig::TEST_CLASS_HASH);
+    systems.append(BuildLabor::TEST_CLASS_HASH);
+    systems.append(SetLaborConfig::TEST_CLASS_HASH);
+    systems.append(SetLaborCostResources::TEST_CLASS_HASH);
+    systems.append(SetLaborCostAmount::TEST_CLASS_HASH);
+    systems.append(MintResources::TEST_CLASS_HASH);
+    systems.append(HarvestLabor::TEST_CLASS_HASH);
+    systems.append(SetWeightConfig::TEST_CLASS_HASH);
 
     (components, systems)
 }
 
-// used for testing, to register all systems and components in the world
-fn spawn_test_world_with_setup() -> IWorldDispatcher {
-    let (components, systems) = retrieve_list_of_world_components_and_systems();
-
-    // routes
-    let mut routes = array::ArrayTrait::<Route>::new();
-
-    let world = spawn_test_world(components, systems, routes);
-
-    world
-}
-
+// used to spawn a test world with all the components and systems registered
+// but without initialization which means that there is no need to handle authorization
 fn spawn_test_world_without_init() -> IWorldDispatcher {
     // deploy executor
     let constructor_calldata = array::ArrayTrait::new();

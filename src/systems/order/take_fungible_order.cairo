@@ -220,11 +220,8 @@ mod TakeFungibleOrder {
 // TODO: need to test it when withdraw gas is working
 // TODO: same auth system as for attach_caravan
 // mod tests {
-//     // consts
-//     use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
-
 //     // utils
-//     use eternum::utils::testing::spawn_test_world_with_setup;
+//     use eternum::utils::testing::spawn_test_world_without_init;
 
 //     use core::traits::Into;
 //     use core::result::ResultTrait;
@@ -240,22 +237,15 @@ mod TakeFungibleOrder {
 //     };
 //     use dojo_core::auth::components::AuthRole;
 //     use dojo_core::execution_context::Context;
-//     use dojo_core::test_utils::spawn_test_world;
 //     use dojo_core::auth::systems::{Route, RouteTrait};
 
 //     #[test]
 //     #[available_gas(30000000000000)]
 //     fn test_take_trade_without_caravan() {
-//         let world = spawn_test_world_with_setup();
+//         let world = spawn_test_world_without_init();
 
 //         // set as executor
 //         starknet::testing::set_contract_address(starknet::contract_address_const::<1>());
-
-//         // Admin caller grants Admin role to Tester system
-//         let mut grant_role_calldata: Array<felt252> = ArrayTrait::new();
-//         grant_role_calldata.append('Tester'); // target_id
-//         grant_role_calldata.append('Admin'); // role_id
-//         world.execute('GrantAuthRole'.into(), grant_role_calldata.span());
 
 //         // context to set entity
 //         // only caller_system is used here
@@ -363,11 +353,6 @@ mod TakeFungibleOrder {
 //         values.append(200);
 //         world.set_entity(ctx, 'Resource'.into(), (14, 1324, 1).into(), 0_u8, values.span());
 
-//         // set taker owner as admin (for testing)
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(15);
-//         values.append('Admin'.into());
-//         world.execute('GrantAuthRole'.into(), values.span());
 //         // taker takes trade
 //         starknet::testing::set_account_contract_address(starknet::contract_address_const::<15>());
 //         let mut calldata = array::ArrayTrait::<felt252>::new();
@@ -412,16 +397,10 @@ mod TakeFungibleOrder {
 //     #[test]
 //     #[available_gas(30000000000000)]
 //     fn test_take_trade_with_caravan() {
-//         let world = spawn_test_world_with_setup();
+//         let world = spawn_test_world_without_init();
 
 //         // set as executor
 //         starknet::testing::set_contract_address(starknet::contract_address_const::<1>());
-
-//         // Admin caller grants Admin role to Tester system
-//         let mut grant_role_calldata: Array<felt252> = ArrayTrait::new();
-//         grant_role_calldata.append('Tester'); // target_id
-//         grant_role_calldata.append('Admin'); // role_id
-//         world.execute('GrantAuthRole'.into(), grant_role_calldata.span());
 
 //         // context to set entity
 //         // only caller_system is used here
@@ -553,11 +532,6 @@ mod TakeFungibleOrder {
 //         values.append(20);
 //         world.set_entity(ctx, 'Caravan'.into(), 13.into(), 0_u8, values.span());
 
-//         // set taker owner as admin (for testing)
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(15);
-//         values.append('Admin'.into());
-//         world.execute('GrantAuthRole'.into(), values.span());
 //         // taker takes trade
 //         starknet::testing::set_account_contract_address(starknet::contract_address_const::<15>());
 //         let mut calldata = array::ArrayTrait::<felt252>::new();

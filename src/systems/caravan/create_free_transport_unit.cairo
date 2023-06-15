@@ -88,28 +88,25 @@ mod CreateFreeTransportUnit {
     }
 }
 // mod tests {
-//     // consts
-//     use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
+// // consts
+// use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
 
-//     use core::traits::Into;
-//     use core::result::ResultTrait;
-//     use array::ArrayTrait;
-//     use option::OptionTrait;
-//     use debug::PrintTrait;
+// use core::traits::Into;
+// use core::result::ResultTrait;
+// use array::ArrayTrait;
+// use option::OptionTrait;
+// use debug::PrintTrait;
 
-//     use starknet::syscalls::deploy_syscall;
+// use starknet::syscalls::deploy_syscall;
 
-//     use eternum::utils::testing::spawn_test_world_with_setup;
+// use eternum::utils::testing::spawn_test_world_without_init;
 
-//     use dojo_core::interfaces::IWorldDispatcherTrait;
-//     use dojo_core::storage::query::{
-//         Query, TupleSize2IntoQuery, LiteralIntoQuery, TupleSize3IntoQuery
-//     };
-
+// use dojo_core::interfaces::IWorldDispatcherTrait;
+// use dojo_core::storage::query::{Query, TupleSize2IntoQuery, LiteralIntoQuery, TupleSize3IntoQuery};
 //     #[test]
 //     #[available_gas(300000000000)]
 //     fn test_create_free_transport_unit() {
-//         let world = spawn_test_world_with_setup();
+//         let world = spawn_test_world_without_init();
 
 //         /// CREATE ENTITIES ///
 //         // set realm entity
@@ -136,12 +133,12 @@ mod CreateFreeTransportUnit {
 //         // speed of 10 km per hr for free transport unit
 //         set_speed_conf_calldata.append(10);
 //         world.execute('SetSpeedConfig'.into(), set_speed_conf_calldata.span());
-//
+
 //         // set travel config
 //         let mut travel_config_call_data = array::ArrayTrait::<felt252>::new();
 //         travel_config_call_data.append(10);
 //         world.execute('TravelConfig'.into(), travel_config_call_data.span());
-//
+
 //         // set capacity configuration entity
 //         let mut set_capacity_conf_calldata = array::ArrayTrait::<felt252>::new();
 //         set_capacity_conf_calldata.append(FREE_TRANSPORT_ENTITY_TYPE.into());

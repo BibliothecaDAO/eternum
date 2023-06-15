@@ -101,27 +101,8 @@ mod HarvestLabor {
         );
     }
 }
-
-mod tests {
-    // components
-    use eternum::components::owner::OwnerComponent;
-    use eternum::components::labor::LaborComponent;
-    use eternum::components::realm::RealmComponent;
-    use eternum::components::config::{
-        LaborConfigComponent, LaborCostAmountComponent, LaborCostResourcesComponent
-    };
-    use eternum::components::resources::{ResourceComponent, VaultComponent};
-    use eternum::components::realm::Realm;
-    use eternum::components::config::{LaborConfig, LaborCostResources, LaborCostAmount};
-
-//     // systems
-//     use eternum::systems::labor::build_labor::BuildLabor;
-//     use eternum::systems::labor::harvest_labor::HarvestLabor;
-//     use eternum::systems::config::labor_config::{
-//         SetLaborConfig, SetLaborCostResources, SetLaborCostAmount
-//     };
-//     use eternum::systems::test::{CreateRealm, MintResources};
-
+// TODO: test when withdraw gas is solved
+// mod tests {
 //     // constants
 //     use eternum::constants::ResourceTypes;
 
@@ -132,71 +113,20 @@ mod tests {
 
 //     use starknet::syscalls::deploy_syscall;
 
+//     // testing utils
+//     use eternum::utils::testing::spawn_test_world_without_init;
+
 //     use dojo_core::interfaces::IWorldDispatcherTrait;
-//     use dojo_core::storage::query::Query;
-//     use dojo_core::test_utils::spawn_test_world;
 //     use dojo_core::auth::systems::{Route, RouteTrait};
+//     use dojo_core::storage::query::{
+//         Query, TupleSize2IntoQuery, LiteralIntoQuery, TupleSize3IntoQuery
+//     };
 
 //     #[test]
 //     // need higher gas limit because of new auth system
 //     #[available_gas(3000000000)]
 //     fn test_harvest_labor_non_food() {
-//         /// REGISTER COMPONENTS ///
-//         let mut components = array::ArrayTrait::<felt252>::new();
-//         components.append(LaborComponent::TEST_CLASS_HASH);
-//         components.append(RealmComponent::TEST_CLASS_HASH);
-//         components.append(LaborConfigComponent::TEST_CLASS_HASH);
-//         components.append(LaborCostAmountComponent::TEST_CLASS_HASH);
-//         components.append(LaborCostResourcesComponent::TEST_CLASS_HASH);
-//         components.append(ResourceComponent::TEST_CLASS_HASH);
-//         components.append(VaultComponent::TEST_CLASS_HASH);
-//         components.append(OwnerComponent::TEST_CLASS_HASH);
-
-//         /// REGISTER SYSTEMS ///
-//         let mut systems = array::ArrayTrait::<felt252>::new();
-//         systems.append(BuildLabor::TEST_CLASS_HASH);
-//         systems.append(HarvestLabor::TEST_CLASS_HASH);
-//         systems.append(CreateRealm::TEST_CLASS_HASH);
-//         systems.append(SetLaborConfig::TEST_CLASS_HASH);
-//         systems.append(SetLaborCostResources::TEST_CLASS_HASH);
-//         systems.append(SetLaborCostAmount::TEST_CLASS_HASH);
-//         systems.append(MintResources::TEST_CLASS_HASH);
-
-//         let mut routes = array::ArrayTrait::new();
-//         // CreateRealm
-//         routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Owner'.into(), ));
-//         routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Realm'.into(), ));
-//         // SetLaborConfig
-//         routes
-//             .append(
-//                 RouteTrait::new('SetLaborConfig'.into(), 'Tester'.into(), 'LaborConfig'.into(), )
-//             );
-//         // SetLaborCostResources
-//         routes
-//             .append(
-//                 RouteTrait::new(
-//                     'SetLaborCostResources'.into(), 'Tester'.into(), 'LaborCostResources'.into(), 
-//                 )
-//             );
-//         // SetLaborCostAmount
-//         routes
-//             .append(
-//                 RouteTrait::new(
-//                     'SetLaborCostAmount'.into(), 'Tester'.into(), 'LaborCostAmount'.into(), 
-//                 )
-//             );
-//         // MintResources
-//         routes
-//             .append(RouteTrait::new('MintResources'.into(), 'Tester'.into(), 'Resource'.into(), ));
-//         // BuildLabor
-//         routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Resource'.into(), ));
-//         routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Labor'.into(), ));
-//         // HarvestLabor
-//         routes.append(RouteTrait::new('HarvestLabor'.into(), 'Tester'.into(), 'Labor'.into(), ));
-//         routes.append(RouteTrait::new('HarvestLabor'.into(), 'Tester'.into(), 'Resource'.into(), ));
-//         routes.append(RouteTrait::new('HarvestLabor'.into(), 'Tester'.into(), 'Vault'.into(), ));
-
-//         let world = spawn_test_world(components, systems, routes);
+//         let world = spawn_test_world_without_init();
 
 //         /// CREATE ENTITIES ///
 //         // set realm entity
@@ -303,62 +233,7 @@ mod tests {
 //     #[test]
 //     #[available_gas(3000000000)]
 //     fn test_harvest_labor_food() {
-//         /// REGISTER COMPONENTS ///
-//         let mut components = array::ArrayTrait::<felt252>::new();
-//         components.append(LaborComponent::TEST_CLASS_HASH);
-//         components.append(RealmComponent::TEST_CLASS_HASH);
-//         components.append(LaborConfigComponent::TEST_CLASS_HASH);
-//         components.append(LaborCostAmountComponent::TEST_CLASS_HASH);
-//         components.append(LaborCostResourcesComponent::TEST_CLASS_HASH);
-//         components.append(ResourceComponent::TEST_CLASS_HASH);
-//         components.append(VaultComponent::TEST_CLASS_HASH);
-//         components.append(OwnerComponent::TEST_CLASS_HASH);
-
-//         /// REGISTER SYSTEMS ///
-//         let mut systems = array::ArrayTrait::<felt252>::new();
-//         systems.append(BuildLabor::TEST_CLASS_HASH);
-//         systems.append(HarvestLabor::TEST_CLASS_HASH);
-//         systems.append(CreateRealm::TEST_CLASS_HASH);
-//         systems.append(SetLaborConfig::TEST_CLASS_HASH);
-//         systems.append(SetLaborCostResources::TEST_CLASS_HASH);
-//         systems.append(SetLaborCostAmount::TEST_CLASS_HASH);
-//         systems.append(MintResources::TEST_CLASS_HASH);
-
-//         let mut routes = array::ArrayTrait::new();
-//         // CreateRealm
-//         routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Owner'.into(), ));
-//         routes.append(RouteTrait::new('CreateRealm'.into(), 'Tester'.into(), 'Realm'.into(), ));
-//         // SetLaborConfig
-//         routes
-//             .append(
-//                 RouteTrait::new('SetLaborConfig'.into(), 'Tester'.into(), 'LaborConfig'.into(), )
-//             );
-//         // SetLaborCostResources
-//         routes
-//             .append(
-//                 RouteTrait::new(
-//                     'SetLaborCostResources'.into(), 'Tester'.into(), 'LaborCostResources'.into(), 
-//                 )
-//             );
-//         // SetLaborCostAmount
-//         routes
-//             .append(
-//                 RouteTrait::new(
-//                     'SetLaborCostAmount'.into(), 'Tester'.into(), 'LaborCostAmount'.into(), 
-//                 )
-//             );
-//         // MintResources
-//         routes
-//             .append(RouteTrait::new('MintResources'.into(), 'Tester'.into(), 'Resource'.into(), ));
-//         // BuildLabor
-//         routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Resource'.into(), ));
-//         routes.append(RouteTrait::new('BuildLabor'.into(), 'Tester'.into(), 'Labor'.into(), ));
-//         // HarvestLabor
-//         routes.append(RouteTrait::new('HarvestLabor'.into(), 'Tester'.into(), 'Labor'.into(), ));
-//         routes.append(RouteTrait::new('HarvestLabor'.into(), 'Tester'.into(), 'Resource'.into(), ));
-//         routes.append(RouteTrait::new('HarvestLabor'.into(), 'Tester'.into(), 'Vault'.into(), ));
-
-//         let world = spawn_test_world(components, systems, routes);
+//         let world = spawn_test_world_without_init();
 
 //         /// CREATE ENTITIES ///
 //         // set realm entity
@@ -452,3 +327,5 @@ mod tests {
 //         assert(*resource[1] == generated_resources.into(), 'failed resource amount');
 //     }
 // }
+
+

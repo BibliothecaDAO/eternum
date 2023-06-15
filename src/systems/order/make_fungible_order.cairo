@@ -57,7 +57,6 @@ mod MakeFungibleOrder {
         // assert that maker entity is owned by caller
         let maker_owner = commands::<Owner>::entity(maker_id.into());
         assert(maker_owner.address == caller, 'Only owner can create order');
-        
 
         // assert that length of maker_entity_types is equal to length of maker_quantities
         assert(maker_entity_types.len() == maker_quantities.len(), 'length not equal');
@@ -138,21 +137,21 @@ mod MakeFungibleOrder {
         let trade_id = commands::uuid();
         commands::set_entity(
             trade_id.into(),
-            (Trade {
-                maker_id,
-                taker_id,
-                maker_order_id: maker_order_id.into(),
-                taker_order_id: taker_order_id.into(),
-                claimed_by_maker: false,
-                claimed_by_taker: false,
-                expires_at: expires_at,
-                taker_needs_caravan: taker_needs_caravan,
-            }, Status {
-                value: TradeStatus::Open(()),
-            }),
+            (
+                Trade {
+                    maker_id,
+                    taker_id,
+                    maker_order_id: maker_order_id.into(),
+                    taker_order_id: taker_order_id.into(),
+                    claimed_by_maker: false,
+                    claimed_by_taker: false,
+                    expires_at: expires_at,
+                    taker_needs_caravan: taker_needs_caravan,
+                    }, Status {
+                    value: TradeStatus::Open(()), 
+                }
+            ),
         );
-        'trade_id'.print();
-        trade_id.print();
         trade_id.into()
     }
 }
@@ -163,7 +162,7 @@ mod MakeFungibleOrder {
 //     use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
 
 //     // utils
-//     use eternum::utils::testing::spawn_test_world_with_setup;
+//     use eternum::utils::testing::spawn_test_world_without_init;
 
 //     use core::traits::Into;
 //     use core::result::ResultTrait;
@@ -174,7 +173,6 @@ mod MakeFungibleOrder {
 //     use starknet::syscalls::deploy_syscall;
 
 //     use dojo_core::interfaces::IWorldDispatcherTrait;
-//     use dojo_core::test_utils::spawn_test_world;
 //     use dojo_core::auth::systems::{Route, RouteTrait};
 //     use dojo_core::storage::query::{
 //         Query, TupleSize2IntoQuery, LiteralIntoQuery, TupleSize3IntoQuery
@@ -186,14 +184,7 @@ mod MakeFungibleOrder {
 //     #[test]
 //     #[available_gas(3000000000000)]
 //     fn test_make_fungible_order() {
-//         let world = spawn_test_world_with_setup();
-//         // set caller as admin 
-//         // Admin caller grants Admin role to Tester system
-//         let mut grant_role_calldata: Array<felt252> = ArrayTrait::new();
-//         grant_role_calldata.append('Tester'); // target_id
-//         grant_role_calldata.append('Admin'); // role_id
-//         world.execute('GrantAuthRole'.into(), grant_role_calldata.span());
-
+//         let world = spawn_test_world_without_init();
 //         // set as executor
 //         starknet::testing::set_contract_address(starknet::contract_address_const::<1>());
 //         // ap change issue
@@ -232,12 +223,6 @@ mod MakeFungibleOrder {
 //         resources_2.append(100);
 //         world.set_entity(ctx, 'Resource'.into(), (11, 2).into(), 0_u8, values.span());
 //         world.set_entity(ctx, 'Resource'.into(), (12, 2).into(), 0_u8, values.span());
-
-//         // grant admin role to 11
-//         let mut grant_role_calldata: Array<felt252> = ArrayTrait::new();
-//         grant_role_calldata.append(11); // target_id
-//         grant_role_calldata.append('Admin'); // role_id
-//         world.execute('GrantAuthRole'.into(), grant_role_calldata.span());
 
 //         // create order
 //         starknet::testing::set_account_contract_address(starknet::contract_address_const::<11>());

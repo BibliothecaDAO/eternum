@@ -137,7 +137,7 @@ mod CreateCaravan {
 //     use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
 
 //     // testing
-//     use eternum::utils::testing::spawn_test_world_with_setup;
+//     use eternum::utils::testing::spawn_test_world_without_init;
 
 //     use core::traits::Into;
 //     use core::result::ResultTrait;
@@ -156,7 +156,7 @@ mod CreateCaravan {
 //     #[test]
 //     #[available_gas(300000000000)]
 //     fn test_create_caravan() {
-//         let world = spawn_test_world_with_setup();
+//         let world = spawn_test_world_without_init();
 
 //         /// CREATE ENTITIES ///
 //         // set realm entity

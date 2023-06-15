@@ -4,6 +4,7 @@ mod SetTravelConfig {
 
     use eternum::components::config::WorldConfig;
     use eternum::constants::TRANSPORT_CONFIG_ID;
+    use eternum::components::config::TravelConfig;
 
     fn execute(free_transport_per_city: u128) {
         // TODO: can only be executed by Governance Vote
