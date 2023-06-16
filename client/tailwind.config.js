@@ -21,6 +21,7 @@ export default {
         gray: '#1B1B1B',
         brown: '#24130A',
         'light-red': '#EF5858',
+        dark: '#48413C',
         'dark-green': '#064105',
         'dark-green-accent': '#3A3D23',
         order: {

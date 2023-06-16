@@ -9,7 +9,8 @@ interface ButtonProps {
 }
 
 const STYLES = {
-  baseStyle: "h-8 inline-flex transition-all duration-300 items-center justify-center p-3 text-xs font-medium rounded-lg",
+  baseStyle: "inline-flex transition-all duration-300 items-center justify-center p-2 text-xs font-medium rounded-lg",
+  primary: "!rounded-full py-1 bg-gold hover:bg-gold/50 focus:outline-none",
   default:
     "text-white/90 border border-transparent shadow-sm",
   enabledStyle:
