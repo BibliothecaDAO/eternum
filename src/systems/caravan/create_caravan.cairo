@@ -95,6 +95,13 @@ mod CreateCaravan {
                 (caravan_id, entities_key, index).into(),
                 (ForeignKey { entity_id: (*entity_ids[index]).try_into().unwrap(),  })
             );
+
+            // set the entity as blocked so that it cannot be used in another caravan
+            commands::set_entity(
+                (*entity_ids[index]).into(),
+                (Movable { sec_per_km: movable.sec_per_km, blocked: true,  })
+            );
+
             // TODO: add the Caravan component to each entity
             // so that when we know it's in a caravan
             total_speed += movable.sec_per_km.into() * quantity;

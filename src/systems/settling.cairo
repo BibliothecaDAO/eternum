@@ -18,19 +18,18 @@ mod Settle {
         // get the owner
         let config = commands::<WorldConfig>::entity(WORLD_CONFIG_ID.into());
         let token: felt252 = config.realm_l2_contract.into();
-        // TODO: wait for set_account_contract_address to be available
-        // let caller = starknet::get_tx_info().unbox().account_contract_address;
-        // TODO: withdraw gas error with assert 
-        // assert(owner == caller, 'Only owner can settle');
+        let caller = starknet::get_tx_info().unbox().account_contract_address;
         // get the metadata
         let erc721 = IERC721Dispatcher { contract_address: config.realm_l2_contract };
+        // verify owner
         let owner = erc721.owner_of(realm_id);
+        assert(owner == caller, 'Only owner can settle');
         let realm_data: RealmData = erc721.fetch_realm_data(realm_id);
         let position: Position = erc721.realm_position(realm_id);
         // create Realm Metadata
-        let realm_query: Query = realm_id.into();
+        let realm_entity_id = commands::uuid();
         commands::set_entity(
-            realm_query,
+            realm_entity_id.into(),
             (
                 Position {
                     x: position.x, y: position.y, 
@@ -80,6 +79,7 @@ mod Settle {
 #[system]
 mod Unsettle {
     use traits::Into;
+    use box::BoxTrait;
 
     use eternum::constants::WORLD_CONFIG_ID;
     use eternum::interfaces::{IERC721Dispatcher, IERC721DispatcherTrait};
@@ -98,10 +98,9 @@ mod Unsettle {
 
         // get the owner
         let owner = commands::<Owner>::entity(realm_id.into());
-        // TODO: wait for set_account_contract_address to be available
-        // let caller = starknet::get_tx_info().unbox().account_contract_address;
+        let caller = starknet::get_tx_info().unbox().account_contract_address;
         // assert caller is owner
-        // assert(owner.address == caller, 'Only owner can unsettle');
+        assert(owner.address == caller, 'Only owner can unsettle');
 
         // delete entity
         // TODO: use commands when available

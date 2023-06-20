@@ -21,14 +21,12 @@ mod TakeFungibleOrder {
     // you can attach a caravan only if it's needed
 
     fn execute(taker_id: ID, trade_id: ID) {
-        'start'.print();
         // get the trade 
         let (meta, trade_status) = commands::<Trade, Status>::entity(trade_id.into());
 
         // verify expiration date
         let ts = starknet::get_block_timestamp();
         assert(meta.expires_at > ts, 'trade expired');
-        'trade not expired'.print();
 
         // assert that the status is open
         let is_open = match trade_status.value {
@@ -37,13 +35,11 @@ mod TakeFungibleOrder {
             TradeStatus::Cancelled(_) => false,
         };
         assert(is_open, 'Trade is not open');
-        'trade open'.print();
 
         // assert that taker entity is owned by caller
         let caller = starknet::get_tx_info().unbox().account_contract_address;
         let owner = commands::<Owner>::entity(taker_id.into());
         assert(owner.address == caller, 'not owned by caller');
-        'not owned by caller'.print();
 
         // if taker_entity in meta is 0, then set the taker_id
         if meta.taker_id == 0 {
@@ -67,7 +63,6 @@ mod TakeFungibleOrder {
         } else {
             // if not 0, then verify if the taker_id is the one specified
             assert(meta.taker_id == taker_id, 'not the taker');
-            'is the taker'.print();
             commands::set_entity(trade_id.into(), (Status { value: TradeStatus::Accepted(()) }, ));
         };
 
@@ -77,7 +72,9 @@ mod TakeFungibleOrder {
         let taker_position = commands::<Position>::entity(meta.taker_id.into());
 
         // check if there is a caravan attached to the maker
-        let maybe_caravan = commands::<Caravan>::try_entity(meta.maker_order_id.into());
+        let maybe_caravan = commands::<Caravan>::try_entity(
+            (meta.maker_order_id, meta.maker_id).into()
+        );
         match maybe_caravan {
             // travel
             Option::Some(caravan) => {
@@ -217,7 +214,6 @@ mod TakeFungibleOrder {
     }
 }
 // TODO: need to test it when withdraw gas is working
-// TODO: same auth system as for attach_caravan
 // mod tests {
 //     // utils
 //     use eternum::utils::testing::spawn_test_world_without_init;

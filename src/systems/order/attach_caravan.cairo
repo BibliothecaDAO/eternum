@@ -79,6 +79,7 @@ mod AttachCaravan {
 
             let weight = entity_type_weight.weight_gram * resource.balance;
             total_weight += weight;
+            index += 1;
         };
 
         // get the caravan capacity, movable and owner
@@ -107,7 +108,17 @@ mod AttachCaravan {
         // assert that the caravan can move the total weight
         assert(capacity.weight_gram * quantity >= total_weight, 'Caravan capacity is not enough');
 
-        // attach the caravan to the order
+        // assert that there is not already another caravan
+        let maybe_carvan = commands::<Caravan>::try_entity((order_id, entity_id).into());
+        match maybe_carvan {
+            Option::Some(_) => {
+                assert(false, 'Caravan already attached');
+            },
+            Option::None(_) => { // do nothing
+            }
+        };
+
+        // attach the caravan to the order + entity so that multiple different takers can attach caravans
         commands::set_entity((order_id, entity_id).into(), (Caravan { caravan_id }))
 
         // assert that the caravan is not already blocked by a system

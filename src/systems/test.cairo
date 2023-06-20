@@ -49,8 +49,9 @@ mod CreateRealm {
         order: u8,
         position: Position
     ) {
+        let entity_id = commands::uuid();
         commands::<Realm>::set_entity(
-            realm_id.into(),
+            entity_id.into(),
             (
                 Owner {
                     address: owner

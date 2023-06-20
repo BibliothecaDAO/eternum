@@ -23,10 +23,7 @@ mod CreateFreeTransportUnit {
 
     fn execute(entity_id: ID, quantity: u128) -> ID {
         // assert that the entity is a realm by querying the entity type
-        let (owner, realm, position, entity_type) = commands::<Owner,
-        Realm,
-        Position,
-        MetaData>::entity(entity_id.into());
+        let (owner, realm, position) = commands::<Owner, Realm, Position>::entity(entity_id.into());
 
         // assert that entity is owned by caller
         let caller = starknet::get_tx_info().unbox().account_contract_address;
@@ -40,7 +37,7 @@ mod CreateFreeTransportUnit {
 
         // check the quantity_tracker for free transport unit
         let maybe_quantity_tracker = commands::<QuantityTracker>::try_entity(
-            (entity_id, REALM_ENTITY_TYPE).into()
+            (entity_id, FREE_TRANSPORT_ENTITY_TYPE).into()
         );
         let count = match maybe_quantity_tracker {
             Option::Some(quantity_tracker) => (quantity_tracker.count),
@@ -135,7 +132,7 @@ mod CreateFreeTransportUnit {
 //         // set travel config
 //         let mut travel_config_call_data = array::ArrayTrait::<felt252>::new();
 //         travel_config_call_data.append(10);
-//         world.execute('TravelConfig'.into(), travel_config_call_data.span());
+//         world.execute('SetTravelConfig'.into(), travel_config_call_data.span());
 
 //         // set capacity configuration entity
 //         let mut set_capacity_conf_calldata = array::ArrayTrait::<felt252>::new();
