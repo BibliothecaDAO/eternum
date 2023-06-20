@@ -1,0 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Aleo:wght@300;400;700&family=Merriweather:wght@300;400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+    overflow: hidden;
+    font-family: 'Merriweather', serif;
+    touch-action: none;
+}
+
+.container-bg-gradient {
+    background: linear-gradient(180deg, #1B1B1B 0%, rgba(24, 24, 24, 0.95) 100%);
+}
+
+.container-bg-gradient-secondary {
+    background: linear-gradient(180deg, #B0B8AE 3.09%, rgba(72, 53, 47, 0.6) 100%);
+}
