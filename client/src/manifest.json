@@ -1,0 +1,1824 @@
+{
+  "world": {
+    "name": "World",
+    "address": null,
+    "class_hash": "0x11e11b6bc082eeed5cab42ab93db2c79f420250797d09592b35926be9fc3c72"
+  },
+  "executor": {
+    "name": "Excecutor",
+    "address": null,
+    "class_hash": "0x2939c2759b92890519f3a16e3594a313c8d27a91ad716f466560d06ef60fc08"
+  },
+  "systems": [
+    {
+      "name": "BuildLabor",
+      "inputs": [
+        {
+          "name": "realm_id",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "labor_units",
+          "type": "core::integer::u128"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x2ea7629797b2227a2cf6554b6a72fd873925c93e9fd3140cb60207ea10a26a7",
+      "dependencies": [
+        {
+          "name": "Labor",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "LaborConfig",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "LaborCostAmount",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "LaborCostResources",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Owner",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Realm",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Resource",
+          "read": true,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "HarvestLabor",
+      "inputs": [
+        {
+          "name": "realm_id",
+          "type": "core::integer::u128"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x187e2a16ed0d294a1acf484dc000b97f22eb0a51bc7ad240f39f629545a496b",
+      "dependencies": [
+        {
+          "name": "Labor",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "LaborConfig",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Owner",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Realm",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Resource",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "Vault",
+          "read": true,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "Settle",
+      "inputs": [],
+      "outputs": [],
+      "class_hash": "0x3c6f2f27f397b81d51e5f21892e58cd3cd8010a14c831980d827f53d154cb0f",
+      "dependencies": [
+        {
+          "name": "Age",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "Owner",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "Position",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "Realm",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "Resource",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "WorldConfig",
+          "read": true,
+          "write": false
+        }
+      ]
+    },
+    {
+      "name": "Unsettle",
+      "inputs": [],
+      "outputs": [],
+      "class_hash": "0x3546bc1bf2d93b971647e75f41016714ba9621fb0e9627fd37a79a874f8082b",
+      "dependencies": [
+        {
+          "name": "Owner",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "WorldConfig",
+          "read": true,
+          "write": false
+        }
+      ]
+    },
+    {
+      "name": "SpendResources",
+      "inputs": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x5b0f8a6b64c5b47aaf83f661da324d9eb94a8ef19c718a2f97c4a4817839428",
+      "dependencies": [
+        {
+          "name": "Owner",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Resource",
+          "read": true,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "SetLaborCostResources",
+      "inputs": [
+        {
+          "name": "resource_type_labor",
+          "type": "core::felt252"
+        },
+        {
+          "name": "resource_types_packed",
+          "type": "core::integer::u128"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x51832bbafcc9f47b0b6489fc742446ee1e6cd05c6523963af10f8edd1576200",
+      "dependencies": [
+        {
+          "name": "LaborCostResources",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "SetLaborCostAmount",
+      "inputs": [
+        {
+          "name": "resource_type_labor",
+          "type": "core::felt252"
+        },
+        {
+          "name": "resource_type_cost",
+          "type": "core::felt252"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x5bab1aab6a81f9060ca6915a13739f3b1a39958e9918624e7f7a9d04baf7968",
+      "dependencies": [
+        {
+          "name": "LaborCostAmount",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "SetLaborConfig",
+      "inputs": [
+        {
+          "name": "base_labor_units",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "vault_percentage",
+          "type": "core::integer::u128"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x43e612ba610827cb30e82b2591dc1674738315a069924638c5e21756d7c43a9",
+      "dependencies": [
+        {
+          "name": "LaborConfig",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "SetWorldConfig",
+      "inputs": [
+        {
+          "name": "day_time",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "vault_bp",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "base_resources_per_day",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "vault_time",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "lords_per_day",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "tick_time",
+          "type": "core::integer::u128"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x78e45e946f897960ec61575d8c26da50b1dc55c474aa2a7e9a6a3eb5416eff9",
+      "dependencies": [
+        {
+          "name": "WorldConfig",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "SetCapacityConfig",
+      "inputs": [
+        {
+          "name": "entity_type",
+          "type": "core::integer::u128"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x1818f3bc4f87d30e29e547bf46ac9ede1c72559ecc288a648b305f6f851fad3",
+      "dependencies": [
+        {
+          "name": "CapacityConfig",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "SetSpeedConfig",
+      "inputs": [
+        {
+          "name": "entity_type",
+          "type": "core::integer::u128"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x2d224907773318de47f769a0799e6b7e7032d30611eed3b277a9d62c12d747d",
+      "dependencies": [
+        {
+          "name": "SpeedConfig",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "SetTravelConfig",
+      "inputs": [],
+      "outputs": [],
+      "class_hash": "0x45cfc49d96434c36846cb3a9eb4fff336b8e28a3ba89682175dd32dca6525ea",
+      "dependencies": [
+        {
+          "name": "TravelConfig",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "SetWeightConfig",
+      "inputs": [
+        {
+          "name": "entity_type",
+          "type": "core::integer::u128"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x434028023196b20c7c701f6372d6c48ae6c7cdb8512bbd9607e4f83252eb4d5",
+      "dependencies": [
+        {
+          "name": "WeightConfig",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "MintResources",
+      "inputs": [
+        {
+          "name": "realm_id",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "resource_type",
+          "type": "core::integer::u8"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x640dc5fbb76a74a02c931bc1ed91304570fac9e2ad5001c8c9b6846bcfcad75",
+      "dependencies": [
+        {
+          "name": "Resource",
+          "read": true,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "CreateRealm",
+      "inputs": [
+        {
+          "name": "realm_id",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "owner",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "resource_types_packed",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "resource_types_count",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "cities",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "harbors",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "rivers",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "regions",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "wonder",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "order",
+          "type": "core::integer::u8"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x5f155ccfc19dccd5574715aef50d462861191ced583b2e87e26dafa0f0b95a1",
+      "dependencies": [
+        {
+          "name": "MetaData",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "Owner",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "Position",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "Realm",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "ClaimFungibleOrder",
+      "inputs": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u128"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x79613f006ff2b9f351d786cfd734c9f53eae1ead3c0ae2ec91dfed69185acaf",
+      "dependencies": [
+        {
+          "name": "ArrivalTime",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "FungibleEntities",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Owner",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Position",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Resource",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "Trade",
+          "read": true,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "MakeFungibleOrder",
+      "inputs": [
+        {
+          "name": "maker_id",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "maker_entity_types",
+          "type": "core::array::Span::<core::integer::u8>"
+        },
+        {
+          "name": "maker_quantities",
+          "type": "core::array::Span::<core::integer::u128>"
+        },
+        {
+          "name": "taker_id",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "taker_entity_types",
+          "type": "core::array::Span::<core::integer::u8>"
+        },
+        {
+          "name": "taker_quantities",
+          "type": "core::array::Span::<core::integer::u128>"
+        },
+        {
+          "name": "taker_needs_caravan",
+          "type": "core::bool"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "core::integer::u128"
+        }
+      ],
+      "class_hash": "0x5eb810546f0fa0eb7356816e22b7c527d9659481c668e9072d3e75028d5217b",
+      "dependencies": [
+        {
+          "name": "FungibleEntities",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "Owner",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Resource",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "Status",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "Trade",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "TakeFungibleOrder",
+      "inputs": [
+        {
+          "name": "taker_id",
+          "type": "core::integer::u128"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x6ea22186ff9e071069c1ca538039f42b740c0ee50b9a82bc7ac7c1630069e92",
+      "dependencies": [
+        {
+          "name": "ArrivalTime",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "Caravan",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "FungibleEntities",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Movable",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "Owner",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Position",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "Resource",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "Status",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "Trade",
+          "read": true,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "ChangeOrderStatus",
+      "inputs": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "trade_id",
+          "type": "core::integer::u128"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x4b33e6cd98bd10f8ec8febf1c35a78b18e05426cfacfe83ff8d8f93f69db511",
+      "dependencies": [
+        {
+          "name": "Owner",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Status",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "Trade",
+          "read": true,
+          "write": false
+        }
+      ]
+    },
+    {
+      "name": "AttachCaravan",
+      "inputs": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "trade_id",
+          "type": "core::integer::u128"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x599afa74fc9270dda480c26e0a116cbbfb9fe0591eff7851a413ec402d43e73",
+      "dependencies": [
+        {
+          "name": "Capacity",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Caravan",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "FungibleEntities",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Movable",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "Owner",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Position",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Quantity",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Resource",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Status",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Trade",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "WeightConfig",
+          "read": true,
+          "write": false
+        }
+      ]
+    },
+    {
+      "name": "CreateCaravan",
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "core::integer::u128"
+        }
+      ],
+      "class_hash": "0x68cf3e8ba26075cf4073d5825c726ccface550015e7dbbaa48ff9e559092640",
+      "dependencies": [
+        {
+          "name": "Capacity",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "CaravanMembers",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "ForeignKey",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "Movable",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "Owner",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "Position",
+          "read": true,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "CreateFreeTransportUnit",
+      "inputs": [
+        {
+          "name": "entity_id",
+          "type": "core::integer::u128"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "core::integer::u128"
+        }
+      ],
+      "class_hash": "0x6d3bd898d4c282f969550d2b9c46cb32249816f3ffdf61fd79a93dc03bd7102",
+      "dependencies": [
+        {
+          "name": "ArrivalTime",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "Capacity",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "CapacityConfig",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "MetaData",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "Movable",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "Owner",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "Position",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "Quantity",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "QuantityTracker",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "Realm",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "SpeedConfig",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "TravelConfig",
+          "read": true,
+          "write": false
+        }
+      ]
+    },
+    {
+      "name": "GetAverageSpeed",
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "core::integer::u128"
+        }
+      ],
+      "class_hash": "0x2036e85fd5ef3aef37508cecbe9ce1747804d35525caaf1e3ccd8f9dfcc3a75",
+      "dependencies": [
+        {
+          "name": "Movable",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "Quantity",
+          "read": true,
+          "write": false
+        }
+      ]
+    },
+    {
+      "name": "GetQuantity",
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "core::integer::u128"
+        }
+      ],
+      "class_hash": "0x671c48d229ac217f77765628f46473c145db7b4785bb8c8817018c369d41ae7",
+      "dependencies": [
+        {
+          "name": "Quantity",
+          "read": true,
+          "write": false
+        }
+      ]
+    },
+    {
+      "name": "ERC721Approve",
+      "inputs": [
+        {
+          "name": "token",
+          "type": "core::felt252"
+        },
+        {
+          "name": "approved",
+          "type": "core::felt252"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x417b6403eee4fa06a1ca34d794d2e3a04359035bd640485764f61338ea893b",
+      "dependencies": [
+        {
+          "name": "TokenApproval",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "ERC721TransferFrom",
+      "inputs": [
+        {
+          "name": "token",
+          "type": "core::felt252"
+        },
+        {
+          "name": "from",
+          "type": "core::felt252"
+        },
+        {
+          "name": "to",
+          "type": "core::felt252"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x7a031183361f44ba985400d38fa5f117d05056248b741ab7c465f589601c2c6",
+      "dependencies": [
+        {
+          "name": "Balance",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "Owner",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "TokenApproval",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "ERC721Mint",
+      "inputs": [
+        {
+          "name": "token",
+          "type": "core::felt252"
+        },
+        {
+          "name": "owner",
+          "type": "core::felt252"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x15a56ee627bcddae18a435c88c83ee92a05c858050e2aaa4306114fe1cc80d2",
+      "dependencies": [
+        {
+          "name": "Balance",
+          "read": true,
+          "write": true
+        },
+        {
+          "name": "Owner",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "RouteAuth",
+      "inputs": [],
+      "outputs": [],
+      "class_hash": "0x328155f2126a5ddbfaeaadd84b0ae2aade22c8e764c981bdf66ed593b5f611c",
+      "dependencies": [
+        {
+          "name": "AuthRole",
+          "read": false,
+          "write": true
+        },
+        {
+          "name": "AuthStatus",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "IsAccountAdmin",
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "core::bool"
+        }
+      ],
+      "class_hash": "0xa1971b109c62b8c664bb6d7770d10a279a13c65c605831ab2971699995ade8",
+      "dependencies": [
+        {
+          "name": "AuthRole",
+          "read": true,
+          "write": false
+        }
+      ]
+    },
+    {
+      "name": "IsAuthorized",
+      "inputs": [
+        {
+          "name": "target_id",
+          "type": "core::felt252"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "core::bool"
+        }
+      ],
+      "class_hash": "0x71154d247157ff6b95e700130779ae2ff0d2ded5d1e854612c96b6df71bb650",
+      "dependencies": [
+        {
+          "name": "AuthRole",
+          "read": true,
+          "write": false
+        },
+        {
+          "name": "AuthStatus",
+          "read": true,
+          "write": false
+        }
+      ]
+    },
+    {
+      "name": "GrantAuthRole",
+      "inputs": [
+        {
+          "name": "target_id",
+          "type": "core::felt252"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x6c055a55217d1adeb0b4061a533eb9e4d0705c6b5cbc59da4b841b3a195ab85",
+      "dependencies": [
+        {
+          "name": "AuthRole",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "GrantScopedAuthRole",
+      "inputs": [
+        {
+          "name": "target_id",
+          "type": "core::felt252"
+        },
+        {
+          "name": "role_id",
+          "type": "core::felt252"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x2c854482f2c3db0b59aa597ae21fd47a65c383badb2490780cb72731883238",
+      "dependencies": [
+        {
+          "name": "AuthRole",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "GrantResource",
+      "inputs": [
+        {
+          "name": "role_id",
+          "type": "core::felt252"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x3c0afbab7b4e99eb3fc7d06afadf0d0c1b0754a5458d012c87a732586fb39cc",
+      "dependencies": [
+        {
+          "name": "AuthStatus",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "RevokeAuthRole",
+      "inputs": [],
+      "outputs": [],
+      "class_hash": "0x333e5278b473877e1fcb2c590c9c540bc77e8db28c9402b127da8658a60976e",
+      "dependencies": [
+        {
+          "name": "AuthRole",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "RevokeScopedAuthRole",
+      "inputs": [
+        {
+          "name": "target_id",
+          "type": "core::felt252"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x287979f15e7d95b97b4fd5a4c6ee44d7902e695e2017fc71a54ba696f6df06f",
+      "dependencies": [
+        {
+          "name": "AuthRole",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "RevokeResource",
+      "inputs": [
+        {
+          "name": "role_id",
+          "type": "core::felt252"
+        }
+      ],
+      "outputs": [],
+      "class_hash": "0x6f6068fccc50d14dc65a34e3b3372c40ba66e27570c264f3d44ec1989d3bdf5",
+      "dependencies": [
+        {
+          "name": "AuthStatus",
+          "read": false,
+          "write": true
+        }
+      ]
+    },
+    {
+      "name": "LibraryCall",
+      "inputs": [
+        {
+          "name": "class_hash",
+          "type": "core::starknet::class_hash::ClassHash"
+        },
+        {
+          "name": "entrypoint",
+          "type": "core::felt252"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "core::array::Span::<core::felt252>"
+        }
+      ],
+      "class_hash": "0x912b21a6d10657808535a4f7ef5f3cbbb594df8082925b9694159ff0dab2f",
+      "dependencies": []
+    }
+  ],
+  "contracts": [],
+  "components": [
+    {
+      "name": "WorldConfig",
+      "members": [
+        {
+          "name": "day_time",
+          "type": "u128",
+          "slot": 0,
+          "offset": 0
+        },
+        {
+          "name": "vault_bp",
+          "type": "u128",
+          "slot": 1,
+          "offset": 0
+        },
+        {
+          "name": "base_resources_per_day",
+          "type": "u128",
+          "slot": 2,
+          "offset": 0
+        },
+        {
+          "name": "vault_time",
+          "type": "u128",
+          "slot": 3,
+          "offset": 0
+        },
+        {
+          "name": "lords_per_day",
+          "type": "u128",
+          "slot": 4,
+          "offset": 0
+        },
+        {
+          "name": "tick_time",
+          "type": "u128",
+          "slot": 5,
+          "offset": 0
+        },
+        {
+          "name": "realm_l2_contract",
+          "type": "ContractAddress",
+          "slot": 6,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0xc5729b0c2abe3056b7f1b4fe7abe190ca079b6311eddba7c52ef204cd22ffb"
+    },
+    {
+      "name": "LaborConfig",
+      "members": [
+        {
+          "name": "base_labor_units",
+          "type": "u128",
+          "slot": 0,
+          "offset": 0
+        },
+        {
+          "name": "vault_percentage",
+          "type": "u128",
+          "slot": 1,
+          "offset": 0
+        },
+        {
+          "name": "base_resources_per_cycle",
+          "type": "u128",
+          "slot": 2,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x593a5c94c4243a041734daefadf9d43d875eab1eee5c70671c4c7c17b87a1fe"
+    },
+    {
+      "name": "TravelConfig",
+      "members": [
+        {
+          "name": "free_transport_per_city",
+          "type": "u128",
+          "slot": 0,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0xd2dc765bb314758f473aa1b0d4fe20f25ec87afbf8a9d08d213827f783d473"
+    },
+    {
+      "name": "BuildingConfig",
+      "members": [
+        {
+          "name": "base_sqm",
+          "type": "u128",
+          "slot": 0,
+          "offset": 0
+        },
+        {
+          "name": "workhut_cost",
+          "type": "u128",
+          "slot": 1,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0xe3f13543e559d5dff1c2d86f7fbc8e3ca4413c52a0d112ded156333466d1f9"
+    },
+    {
+      "name": "BuildingCost",
+      "members": [
+        {
+          "name": "resource_type",
+          "type": "felt252",
+          "slot": 0,
+          "offset": 0
+        },
+        {
+          "name": "cost",
+          "type": "u128",
+          "slot": 1,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x179a713e19efce5396ee12ee5a7d9ea19bed308fa901e83b329346b02e285a3"
+    },
+    {
+      "name": "BuildingTypeConfig",
+      "members": [
+        {
+          "name": "id",
+          "type": "felt252",
+          "slot": 0,
+          "offset": 0
+        },
+        {
+          "name": "sqm",
+          "type": "u128",
+          "slot": 1,
+          "offset": 0
+        },
+        {
+          "name": "resource_types_packed",
+          "type": "u256",
+          "slot": 2,
+          "offset": 0
+        },
+        {
+          "name": "resource_types_count",
+          "type": "u8",
+          "slot": 3,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x7b98a9d9d6b7c7f89e4999ae2a85bcfe0e1e646cac7d45cf96b58ae0c429472"
+    },
+    {
+      "name": "LaborCostResources",
+      "members": [
+        {
+          "name": "resource_type_labor",
+          "type": "felt252",
+          "slot": 0,
+          "offset": 0
+        },
+        {
+          "name": "resource_types_packed",
+          "type": "u128",
+          "slot": 1,
+          "offset": 0
+        },
+        {
+          "name": "resource_types_count",
+          "type": "u8",
+          "slot": 2,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x752fc8b1fb484c010061ecf3fd982cc6be8c54e3dbec00a11d83690ea0e1136"
+    },
+    {
+      "name": "LaborCostAmount",
+      "members": [
+        {
+          "name": "resource_type_labor",
+          "type": "felt252",
+          "slot": 0,
+          "offset": 0
+        },
+        {
+          "name": "resource_type_cost",
+          "type": "felt252",
+          "slot": 1,
+          "offset": 0
+        },
+        {
+          "name": "value",
+          "type": "u128",
+          "slot": 2,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x59757b5af29b8475a6c5045b49da32cc819cf8ec7559510c6bc2aa2fcac311b"
+    },
+    {
+      "name": "CapacityConfig",
+      "members": [
+        {
+          "name": "entity_type",
+          "type": "u128",
+          "slot": 0,
+          "offset": 0
+        },
+        {
+          "name": "weight_gram",
+          "type": "u128",
+          "slot": 1,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x5dbb220dc438ff1ed082d21f5e73d28ac1a6b402ddc4d77ddc34c890acbc8a9"
+    },
+    {
+      "name": "SpeedConfig",
+      "members": [
+        {
+          "name": "entity_type",
+          "type": "u128",
+          "slot": 0,
+          "offset": 0
+        },
+        {
+          "name": "sec_per_km",
+          "type": "u16",
+          "slot": 1,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0xa9ca2aa08cd17391b5ee741faafb9b660b5527321800bd00b78d9b7462dc9"
+    },
+    {
+      "name": "WeightConfig",
+      "members": [
+        {
+          "name": "entity_type",
+          "type": "u128",
+          "slot": 0,
+          "offset": 0
+        },
+        {
+          "name": "weight_gram",
+          "type": "u128",
+          "slot": 1,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x7d67a33e291f6d172ae615b05381cb4df74af9b6aa1a038183c503d867b6fe6"
+    },
+    {
+      "name": "Age",
+      "members": [
+        {
+          "name": "born_at",
+          "type": "u64",
+          "slot": 0,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x33d2747c3837ad314e8985bd43448d48b12ada9dbd651ad460727989c6f323f"
+    },
+    {
+      "name": "Position",
+      "members": [
+        {
+          "name": "x",
+          "type": "u32",
+          "slot": 0,
+          "offset": 0
+        },
+        {
+          "name": "y",
+          "type": "u32",
+          "slot": 1,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x4117714e639fd215c1b99b0b9e9b28485bcd557628b90960e1c4652c2e6a0c3"
+    },
+    {
+      "name": "Realm",
+      "members": [
+        {
+          "name": "realm_id",
+          "type": "ID",
+          "slot": 0,
+          "offset": 0
+        },
+        {
+          "name": "resource_types_packed",
+          "type": "u128",
+          "slot": 1,
+          "offset": 0
+        },
+        {
+          "name": "resource_types_count",
+          "type": "u8",
+          "slot": 2,
+          "offset": 0
+        },
+        {
+          "name": "cities",
+          "type": "u8",
+          "slot": 3,
+          "offset": 0
+        },
+        {
+          "name": "harbors",
+          "type": "u8",
+          "slot": 4,
+          "offset": 0
+        },
+        {
+          "name": "rivers",
+          "type": "u8",
+          "slot": 5,
+          "offset": 0
+        },
+        {
+          "name": "regions",
+          "type": "u8",
+          "slot": 6,
+          "offset": 0
+        },
+        {
+          "name": "wonder",
+          "type": "u8",
+          "slot": 7,
+          "offset": 0
+        },
+        {
+          "name": "order",
+          "type": "u8",
+          "slot": 8,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x7bb9b41e98dae5fa72d47dcefc5c4e798923a9cda7018d46fb08e7b56520059"
+    },
+    {
+      "name": "Resource",
+      "members": [
+        {
+          "name": "resource_type",
+          "type": "u8",
+          "slot": 0,
+          "offset": 0
+        },
+        {
+          "name": "balance",
+          "type": "u128",
+          "slot": 1,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x73d3c79036e7b852c89dd201a5db316a8f9b5e6cc7347ca951ccc43eda7e995"
+    },
+    {
+      "name": "Vault",
+      "members": [
+        {
+          "name": "balance",
+          "type": "u128",
+          "slot": 0,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x2cc325a4e01bd541a0fe07d5847c2c003e7d974dd2798c09557efd3abb7f9b6"
+    },
+    {
+      "name": "Labor",
+      "members": [
+        {
+          "name": "balance",
+          "type": "u128",
+          "slot": 0,
+          "offset": 0
+        },
+        {
+          "name": "last_harvest",
+          "type": "u128",
+          "slot": 1,
+          "offset": 0
+        },
+        {
+          "name": "multiplier",
+          "type": "u128",
+          "slot": 2,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x816ca1eeed4aa3a424290171438d6bf4688d1ba0caef2b946c6d6ae256be0c"
+    },
+    {
+      "name": "Owner",
+      "members": [
+        {
+          "name": "address",
+          "type": "starknet::ContractAddress",
+          "slot": 0,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x3591f65ceaef3836fe543a4c7efc185ad22ce052ebdc359a1f9e50ecac59f95"
+    },
+    {
+      "name": "Capacity",
+      "members": [
+        {
+          "name": "weight_gram",
+          "type": "u128",
+          "slot": 0,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x3063d9a310325a6f99c7bd18094a798bd5db05582fb6635efb1dd3594d7abde"
+    },
+    {
+      "name": "Movable",
+      "members": [
+        {
+          "name": "sec_per_km",
+          "type": "u16",
+          "slot": 0,
+          "offset": 0
+        },
+        {
+          "name": "blocked",
+          "type": "bool",
+          "slot": 1,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x4a1141739acd212a2370d73f110d3823ad256d00866e8d5c177e2c0df376165"
+    },
+    {
+      "name": "ArrivalTime",
+      "members": [
+        {
+          "name": "arrives_at",
+          "type": "u64",
+          "slot": 0,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x21ea1a9972f99978dc3f78945a45c3ca7a54995aa1a997257914e4710dba03d"
+    },
+    {
+      "name": "Quantity",
+      "members": [
+        {
+          "name": "value",
+          "type": "u128",
+          "slot": 0,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x444cec6b4dc9bfd63376ca6b4182a028dcbcb45aecac6a765d509e566759456"
+    },
+    {
+      "name": "QuantityTracker",
+      "members": [
+        {
+          "name": "count",
+          "type": "u128",
+          "slot": 0,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x47e78a4bfe9ab1be41ec9e7521800c17ddf1f90dbaf15d9b87cc70a560be65e"
+    },
+    {
+      "name": "MetaData",
+      "members": [
+        {
+          "name": "entity_type",
+          "type": "u128",
+          "slot": 0,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x5927b9a74a8c82d21f4dd90fbe1d493f9eac574dbfb367613682c691a9363a6"
+    },
+    {
+      "name": "ForeignKey",
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "ID",
+          "slot": 0,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x24417673306406e9009fe141830f73b3566fb67f6392d5e0251681c6d6d32ba"
+    },
+    {
+      "name": "Caravan",
+      "members": [
+        {
+          "name": "caravan_id",
+          "type": "ID",
+          "slot": 0,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x22816911228ef4237b1720c98021d69a25eacf7fb62f45a07a2adfdb09a2d6a"
+    },
+    {
+      "name": "CaravanMembers",
+      "members": [
+        {
+          "name": "key",
+          "type": "ID",
+          "slot": 0,
+          "offset": 0
+        },
+        {
+          "name": "count",
+          "type": "usize",
+          "slot": 1,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x31b380c7149402d14ad99888883e8b225f1d91341331cd97bda52995c98cfbb"
+    },
+    {
+      "name": "Trade",
+      "members": [
+        {
+          "name": "maker_id",
+          "type": "ID",
+          "slot": 0,
+          "offset": 0
+        },
+        {
+          "name": "taker_id",
+          "type": "ID",
+          "slot": 1,
+          "offset": 0
+        },
+        {
+          "name": "maker_order_id",
+          "type": "ID",
+          "slot": 2,
+          "offset": 0
+        },
+        {
+          "name": "taker_order_id",
+          "type": "ID",
+          "slot": 3,
+          "offset": 0
+        },
+        {
+          "name": "expires_at",
+          "type": "u64",
+          "slot": 4,
+          "offset": 0
+        },
+        {
+          "name": "claimed_by_maker",
+          "type": "bool",
+          "slot": 5,
+          "offset": 0
+        },
+        {
+          "name": "claimed_by_taker",
+          "type": "bool",
+          "slot": 6,
+          "offset": 0
+        },
+        {
+          "name": "taker_needs_caravan",
+          "type": "bool",
+          "slot": 7,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x77f78b049c471174a91e9b68c96bdadcdd2e8455d0d28daa3c563d6bec50b3b"
+    },
+    {
+      "name": "Status",
+      "members": [
+        {
+          "name": "value",
+          "type": "TradeStatus",
+          "slot": 0,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x6f51715e0099272b7e834ba8f2e5cf9c0b9fee510b1fe85aafde37e5fd819e4"
+    },
+    {
+      "name": "FungibleEntities",
+      "members": [
+        {
+          "name": "key",
+          "type": "ID",
+          "slot": 0,
+          "offset": 0
+        },
+        {
+          "name": "count",
+          "type": "usize",
+          "slot": 1,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x5e58c1ea11db40e9ebae60a17fdf233378e5eacf94f6ca607bf6d03f26e86be"
+    },
+    {
+      "name": "TokenApproval",
+      "members": [
+        {
+          "name": "address",
+          "type": "ContractAddress",
+          "slot": 0,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x7a1a416b5b89c235d22eee8eb320a1a191514469295dfee4b0de475613ae7d8"
+    },
+    {
+      "name": "Balance",
+      "members": [
+        {
+          "name": "value",
+          "type": "u128",
+          "slot": 0,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x7183b8ea47a9b81f41d26189011223342e8071518c9cc1e56ab4f44f4fcded6"
+    },
+    {
+      "name": "AuthStatus",
+      "members": [
+        {
+          "name": "is_authorized",
+          "type": "bool",
+          "slot": 0,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x3e0b3ffb3e7cd8a661a7ac6b935bad3de651462ea1fb005cd4fff6550ac5337"
+    },
+    {
+      "name": "AuthRole",
+      "members": [
+        {
+          "name": "id",
+          "type": "felt252",
+          "slot": 0,
+          "offset": 0
+        }
+      ],
+      "class_hash": "0x2b61fb54b7be43094bca77ffe3c7da3d1aa1d8ca5ff3aef303d0672cce3c555"
+    }
+  ]
+}
