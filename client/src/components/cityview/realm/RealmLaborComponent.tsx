@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Tabs } from '../../../elements/tab';
+import { LaborPanel } from './labor/LaborPanel';
 
 type RealmLaborComponentProps = {}
 
@@ -15,7 +16,7 @@ export const RealmLaborComponent = ({ }: RealmLaborComponentProps) => {
                         <div>Resources</div>
                     </div>
                 ),
-                component: <div />,
+                component: <LaborPanel />,
             },
             {
                 label: (

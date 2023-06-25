@@ -14,7 +14,7 @@ export const VARIANTS = {
       active: 'border !border-gold rounded-md text-gold',
       inactive: 'text-gray-gold',
     },
-    tabList: 'flex w-full justify-center bg-gradient-to-t from-black to-[#151515]  p-2 border border-gray-gold',
+    tabList: 'flex w-full justify-center bg-gradient-to-t from-black to-[#151515]  p-2 border-y border-gold',
   },
   primary: {
     tab: {
