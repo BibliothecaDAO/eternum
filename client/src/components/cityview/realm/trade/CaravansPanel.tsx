@@ -3,7 +3,7 @@ import { FiltersPanel } from '../../../../elements/FiltersPanel';
 import { FilterButton } from '../../../../elements/FilterButton';
 import { SortPanel } from '../../../../elements/SortPanel';
 import { SortButton, SortInterface } from '../../../../elements/SortButton';
-import { TradeOffer } from './TradeOffer';
+import { Caravan } from './Caravan';
 
 type CaravansPanelProps = {}
 
@@ -12,11 +12,10 @@ export const CaravansPanel = ({ }: CaravansPanelProps) => {
 
     const sortingParams = useMemo(() => {
         return [
-            { label: 'Realm', sortKey: 'realm' },
-            { label: 'Give', sortKey: 'give', className: 'ml-4' },
-            { label: 'Exchange rate', sortKey: 'ratio', className: 'ml-auto mr-4' },
-            { label: 'Get', sortKey: 'get', className: 'ml-auto mr-4' },
-            { label: 'Travel time', sortKey: 'time', className: 'ml-auto mr-4' }
+            { label: 'Number', sortKey: 'number' },
+            { label: 'Health-bar', sortKey: 'health', className: 'ml-4' },
+            { label: 'Items', sortKey: 'items', className: 'ml-auto mr-4' },
+            { label: 'Time-left', sortKey: 'time', className: '' }
         ]
     }, []);
 
@@ -24,93 +23,6 @@ export const CaravansPanel = ({ }: CaravansPanelProps) => {
         sortKey: 'number',
         sort: 'none'
     });
-
-    const dummyTradeOffer = {
-        realm: {
-            name: 'Realm',
-            id: 1,
-            order: 'power'
-        },
-        resourcesGive: [
-            {
-                resourceId: 1,
-                amount: 100
-            },
-            {
-                resourceId: 2,
-                amount: 100
-            },
-            {
-                resourceId: 3,
-                amount: 100
-            },
-            {
-                resourceId: 4,
-                amount: 100
-            },
-            {
-                resourceId: 5,
-                amount: 100
-            },
-            {
-                resourceId: 6,
-                amount: 100
-            },
-            {
-                resourceId: 7,
-                amount: 100
-            },
-            {
-                resourceId: 8,
-                amount: 100
-            },
-            {
-                resourceId: 9,
-                amount: 100
-            },
-        ],
-        resourcesGet: [
-            {
-                resourceId: 1,
-                amount: 100
-            },
-            {
-                resourceId: 2,
-                amount: 100
-            },
-            {
-                resourceId: 3,
-                amount: 100
-            },
-            {
-                resourceId: 4,
-                amount: 100
-            },
-            {
-                resourceId: 5,
-                amount: 100
-            },
-            {
-                resourceId: 6,
-                amount: 100
-            },
-            {
-                resourceId: 7,
-                amount: 100
-            },
-            {
-                resourceId: 8,
-                amount: 100
-            },
-            {
-                resourceId: 9,
-                amount: 100
-            },
-        ],
-        ratio: 1,
-        timeLeft: 1000,
-        offerId: 1
-    };
 
     return (
         <div className='flex flex-col' >
@@ -128,7 +40,7 @@ export const CaravansPanel = ({ }: CaravansPanelProps) => {
                 ))}
             </SortPanel>
             <div className='flex flex-col p-2'>
-                <TradeOffer {...dummyTradeOffer} />
+                <Caravan />
             </div>
         </div >
     );
