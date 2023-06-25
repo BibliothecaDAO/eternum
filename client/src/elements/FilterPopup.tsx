@@ -7,7 +7,7 @@ type FilterPopupProps = {
 export const FilterPopup = ({ children }: FilterPopupProps) => {
 
     return (
-        <div className='fixed flex flex-col translate-x-6 -translate-y-4 left-1/4'>
+        <div className='fixed flex flex-col translate-x-6 -translate-y-4 left-[420px]'>
             {children}
         </div>
     );
