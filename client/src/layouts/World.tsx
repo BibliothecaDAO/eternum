@@ -44,7 +44,7 @@ export const World = () => {
         <RealmManagementModule />
       </ContentContainer>
       <BottomMiddleContainer>
-        <WolrdMapLayersModule />
+        {/* <WolrdMapLayersModule /> */}
       </BottomMiddleContainer>
       <BottomRightContainer>
         <ChatModule />
