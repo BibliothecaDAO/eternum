@@ -16,6 +16,8 @@ export default {
         gold: '#E0AF65',
         crimson: '#89192D',
         brilliance: '#7DFFBA',
+        orange: '#FE993C',
+        yellow: '#FAFF00',
         'anger-light': '#CD8290',
         'gray-gold': '#776756',
         gray: '#1B1B1B',
