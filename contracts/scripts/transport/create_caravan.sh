@@ -7,7 +7,7 @@ IFS=',' read -ra units_array <<< "$transport_units"
 num_units=${#units_array[@]}
 calldata="$num_units,$transport_units"
 
-command="sozo execute --world $world CreateCaravan --calldata $calldata"
+command="sozo execute --world $world CreateCaravan --account-address $DOJO_ACCOUNT_ADDRESS --calldata $calldata"
 
 echo "Executing command: $command"
 output=$(eval "$command")

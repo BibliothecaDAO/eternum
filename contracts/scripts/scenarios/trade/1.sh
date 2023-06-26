@@ -1,0 +1,72 @@
+#!/bin/bash
+
+### STEPS
+
+# 0. set configuration
+# 1. Create 2 realms
+# 2. Mint resources 1 and 2 for realm 1
+# 3. Mint resources 3 and 4 for realm 2
+# 4. Create free transport units for realm 1
+# 5. Create free transport units for realm 2
+# 6. Create caravan for realm 1
+# 7. Create caravan for realm 2
+# 8. Realm 1 makes order
+# 9. Realm 1 attaches caravan to order
+# 10. Realm 2 attaches caravan to order
+# 11. Realm 2 accepts order
+
+world="$SOZO_WORLD"
+
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+# console log script dir  
+echo "Script dir: $script_dir"
+# set config
+source "$script_dir/../set_config.sh"
+
+commands=(
+    # create realm 1 and 2
+    # (2 cities)
+    "sozo execute --world $world CreateRealm --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,0x06f62894bfd81d2e396ce266b2ad0f21e0668d604e5bb1077337b6d570a54aea,1,1,2,1,1,1,1,1,100000,200000"
+    "sozo execute --world $world CreateRealm --account-address $DOJO_ACCOUNT_ADDRESS --calldata 2,0x06f62894bfd81d2e396ce266b2ad0f21e0668d604e5bb1077337b6d570a54aea,1,1,2,1,1,1,1,1,200000,1000000"
+    # mint resources 1 and 2 for realm 1
+    "sozo execute --world $world MintResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,1,1000"
+    "sozo execute --world $world MintResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,2,1000"
+    # mint resources 3 and 4 for realm 2
+    "sozo execute --world $world MintResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,3,1000"
+    "sozo execute --world $world MintResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,4,1000"
+
+    # create free transport units for realm 1
+    "sozo execute --world $world CreateFreeTransportUnit --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,10"
+    "sozo execute --world $world CreateFreeTransportUnit --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,10"
+    # create caravan for realm 1
+    "sozo execute --world $world CreateCaravan --account-address $DOJO_ACCOUNT_ADDRESS --calldata 2,2,3"
+
+    # create free transport units for realm 2
+    "sozo execute --world $world CreateFreeTransportUnit --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,10"
+    "sozo execute --world $world CreateFreeTransportUnit --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,10"
+    # create caravan for realm 1
+    "sozo execute --world $world CreateCaravan --account-address $DOJO_ACCOUNT_ADDRESS --calldata 2,6,7"
+
+    # make order
+    # realm 1 trades 50 resource type 1 and 100 resource type 2 against 200 resource type 3 and 300 resource type 4
+    "sozo execute --world $world MakeFungibleOrder --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,2,1,2,2,50,100,1,2,3,4,2,200,300,1,1000000000000"
+
+    #attach caravan to order
+    #realm 1
+    # carvan id = 5
+    "sozo execute --world $world AttachCaravan --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,13,5" 
+    #realm 2
+    "sozo execute --world $world AttachCaravan --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,13,9"
+
+    #take order
+    "sozo execute --world $world TakeFungibleOrder --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,13"
+
+)
+
+for cmd in "${commands[@]}"; do
+    echo "Executing command: $cmd"
+    output=$(eval "$cmd")
+    echo "Output:"
+    echo "$output"
+    echo "--------------------------------------"
+done
