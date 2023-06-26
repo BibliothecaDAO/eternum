@@ -1,5 +1,3 @@
-use eternum::components::buildings::Buildings;
-
 //
 // ----------- Army
 // Armies can be attacked to any Entity if it has a Spawn function. Realms can spawn them and have ownership over them, however they can exist

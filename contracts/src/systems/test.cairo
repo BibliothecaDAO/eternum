@@ -1,5 +1,7 @@
 // file containing systems used for testing
 // miniting function, only for testing 
+// TODO: remvoe these systems from tests since we can now
+// set storage directly in the tests without using systems
 #[system]
 mod MintResources {
     use traits::Into;
@@ -28,6 +30,9 @@ mod CreateRealm {
 
     use eternum::components::realm::Realm;
     use eternum::components::owner::Owner;
+    use eternum::components::position::Position;
+    use eternum::components::metadata::MetaData;
+    use eternum::constants::REALM_ENTITY_TYPE;
 
     use eternum::alias::ID;
 
@@ -41,11 +46,12 @@ mod CreateRealm {
         rivers: u8,
         regions: u8,
         wonder: u8,
-        order: u8
+        order: u8,
+        position: Position
     ) {
-        let realm_query = realm_id.into();
+        let entity_id = commands::uuid();
         commands::<Realm>::set_entity(
-            realm_query,
+            entity_id.into(),
             (
                 Owner {
                     address: owner
@@ -59,7 +65,11 @@ mod CreateRealm {
                     regions,
                     wonder,
                     order,
-                }
+                    }, Position {
+                    x: position.x, y: position.y, 
+                    }, MetaData {
+                    entity_type: REALM_ENTITY_TYPE, 
+                },
             )
         );
     }

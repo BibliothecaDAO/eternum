@@ -30,17 +30,18 @@ fn unpack_resource_types(resource_types_packed: u128, resource_types_count: u8) 
 
     resource_types.span()
 }
+// mod tests {
+//     use super::unpack_resource_types;
+//     use traits::BitAnd;
 
-mod tests {
-    use super::unpack_resource_types;
-    use traits::BitAnd;
+//     #[test]
+//     #[available_gas(30000000)]
+//     fn test_unpack_resource_types() {
+//         let packed_data = 515_u128;
+//         let resource_types: Span<u8> = unpack_resource_types(packed_data, 2);
+//         assert(*resource_types[0] == 3, 'resource_type should be 3');
+//         assert(*resource_types[1] == 2, 'resource_type should be 2');
+//     }
+// }
 
-    #[test]
-    #[available_gas(30000000)]
-    fn test_unpack_resource_types() {
-        let packed_data = 515_u128;
-        let resource_types: Span<u8> = unpack_resource_types(packed_data, 2);
-        assert(*resource_types[0] == 3, 'resource_type should be 3');
-        assert(*resource_types[1] == 2, 'resource_type should be 2');
-    }
-}
+

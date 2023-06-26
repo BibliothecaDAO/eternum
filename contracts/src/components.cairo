@@ -5,4 +5,9 @@ mod realm;
 mod resources;
 mod labor;
 mod owner;
-
+mod capacity;
+mod movable;
+mod quantity;
+mod metadata;
+mod caravan;
+mod trade;

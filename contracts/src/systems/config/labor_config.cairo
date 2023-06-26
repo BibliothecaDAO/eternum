@@ -1,5 +1,5 @@
 #[system]
-mod CreateLaborCostResources {
+mod SetLaborCostResources {
     use traits::Into;
     use eternum::components::config::LaborCostResources;
 
@@ -10,14 +10,14 @@ mod CreateLaborCostResources {
         commands::<LaborCostResources>::set_entity(
             resource_type_labor.into(),
             (LaborCostResources {
-                id: resource_type_labor, resource_types_packed, resource_types_count, 
+                resource_type_labor, resource_types_packed, resource_types_count, 
             })
         );
     }
 }
 
 #[system]
-mod CreateLaborCostAmount {
+mod SetLaborCostAmount {
     use traits::Into;
     use eternum::components::config::LaborCostAmount;
 
@@ -27,16 +27,14 @@ mod CreateLaborCostAmount {
         commands::<LaborCostAmount>::set_entity(
             (resource_type_labor, resource_type_cost).into(),
             (LaborCostAmount {
-                id: resource_type_labor,
-                resource_type: resource_type_cost,
-                value: resource_type_value
+                resource_type_labor, resource_type_cost, value: resource_type_value
             })
         );
     }
 }
 
 #[system]
-mod CreateLaborConfig {
+mod SetLaborConfig {
     use traits::Into;
     use eternum::constants::LABOR_CONFIG_ID;
     use eternum::components::config::LaborConfig;

@@ -1,32 +1,19 @@
-// stores entity metadata that is global to the world
-// eg: birth time, moveable, alive
-// TODO for next milestone
+use eternum::alias::ID;
 
-use eternum::constants::TICK_TIME;
-
+// a way to store the type of the entity in addition
+// to the list of components which we already have
 #[derive(Component, Copy, Drop, Serde)]
-struct Metadata {
-    name: felt252,
-    created_at: u64,
-    is_moveable: bool, // can move
-    is_alive: bool,
-    parent_entity: felt252, // if entity has parent
-    last_update: felt252
+struct MetaData {
+    entity_type: u128, 
 }
 
-trait RealmTrait {
-    // check last update in the past
-    fn tick(self: Realm) -> bool;
-}
 
-// TODO: find new name
-impl RealmImpl of RealmTrait {
-    fn tick(self: Realm) -> bool {
-        if (self.last_update + TICK_TIME) < starknet::get_block_timestamp() {
-            true
-        } else {
-            false
-        }
-    }
+// a way to link one entity id to another
+// e.g. in a caravan, you want to store the list of entities in the caravan
+// using an index and the foreign key
+// see CreateCaravan for an example
+#[derive(Component, Copy, Drop, Serde)]
+struct ForeignKey {
+    entity_id: ID, 
 }
 
