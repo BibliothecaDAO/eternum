@@ -1,23 +1,68 @@
 #!/bin/bash
 
-# TODO: in order for easy testing in the UI, we should create scripts that set the game into a certain state
-# like 2 people trading resources and waiting for their caravans to arrive
-
 world="$SOZO_WORLD"
 
 read -p "Enter maker_id: " maker_id
-read -p "Enter taker_id: " taker_id
+if [ -z "$maker_id" ]; then
+    maker_id=1
+fi
 
-# maker_id
-# maker_entity_types = 1,2 (len 2)
-# maker_quantities = 50, 100 (len 2)
-# taker_id
-# taker_entity_types = 3,4 (len 2)
-# taker_quantities = 200, 300 (len 2)
-# taker_needs_caravan = 0
+read -p "Enter taker_id: " taker_id
+if [ -z "$taker_id" ]; then
+    taker_id=2
+fi
+
+maker_entity_types=""
+maker_entity_amounts=""
+
+while true; do
+    read -p "Enter resource type for maker (press Enter to skip): " resource_type
+    if [ -z "$resource_type" ]; then
+        break
+    fi
+
+    read -p "Enter resource amount for maker: " resource_amount
+
+    if [ -n "$maker_entity_types" ]; then
+        maker_entity_types+=",$resource_type"
+        maker_entity_amounts+=",$resource_amount"
+    else
+        maker_entity_types="$resource_type"
+        maker_entity_amounts="$resource_amount"
+    fi
+done
+
+# Calculate the length of maker_entity_types
+IFS=',' read -ra maker_entity_types_arr <<< "$maker_entity_types"
+maker_entity_types_len=${#maker_entity_types_arr[@]}
+
+taker_entity_types=""
+taker_entity_amounts=""
+
+while true; do
+    read -p "Enter resource type for taker (press Enter to skip): " resource_type
+    if [ -z "$resource_type" ]; then
+        break
+    fi
+
+    read -p "Enter resource amount for taker: " resource_amount
+
+    if [ -n "$taker_entity_types" ]; then
+        taker_entity_types+=",$resource_type"
+        taker_entity_amounts+=",$resource_amount"
+    else
+        taker_entity_types="$resource_type"
+        taker_entity_amounts="$resource_amount"
+    fi
+done
+
+# Calculate the length of taker_entity_types
+IFS=',' read -ra taker_entity_types_arr <<< "$taker_entity_types"
+taker_entity_types_len=${#taker_entity_types_arr[@]}
+
+# taker_needs_caravan = 1
 # expires_at = 100000000000000000000
-# calldata = 1, 2, 1, 2, 2, 50, 100, 2, 2, 3, 4, 2, 200, 300, 0
-command="sozo execute --world $world MakeFungibleOrder --calldata $maker_id,2,1,2,2,50,100,$taker_id,2,3,4,2,200,300,1,1000000000000"
+command="sozo execute --world $world MakeFungibleOrder --account-address $DOJO_ACCOUNT_ADDRESS --calldata $maker_id,$maker_entity_types_len,$maker_entity_types,$maker_entity_types_len,$maker_entity_amounts,$taker_id,$taker_entity_types_len,$taker_entity_types,$taker_entity_types_len,$taker_entity_amounts,1,1000000000000"
 
 echo "Executing command: $command"
 output=$(eval "$command")
