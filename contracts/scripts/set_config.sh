@@ -17,21 +17,9 @@ commands=(
 
     ### LABOR ###
     # base_labor_units 7200
-    # vault_percentage 250
-    # base_resources_per_cycle 21000000000000000000
-    "sozo execute --world $world SetLaborConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 7200,250,21000000000000000000"
-    # resource_type_labor = 1
-    # resource_types_packed = 515 (3 et 2)
-    # resource_types_count = 2
-    "sozo execute --world $world SetLaborCostResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,515,2"
-    # resource_type_labor = 1
-    # resource_type_cost = 2
-    # resource_type_value = 10
-    "sozo execute --world $world SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,10"
-    # resource_type_labor = 1
-    # resource_type_cost = 3
-    # resource_type_value = 10
-    "sozo execute --world $world SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,3,10"
+    # vault_percentage 0 => TODO: remove vault entirely
+    # base_resources_per_cycle 21 * 10**18
+    "sozo execute --world $world SetLaborConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 7200,0,21"
 
     ### SPEED ###
     # entity type FREE_TRANSPORT_ENTITY_TYPE = 256
@@ -53,6 +41,35 @@ commands=(
     "sozo execute --world $world SetWeightConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 2,1"
     "sozo execute --world $world SetWeightConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 3,1"
     "sozo execute --world $world SetWeightConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 4,1"
+)
+
+
+# Loop for resource types 1 to 28
+for resource_type in {1..2}
+do
+    # resource_type_cost = 3
+    # resource_type_value = 10
+    commands+=(
+        "sozo execute --world "$world" SetLaborCostResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $resource_type,515,2"
+        # resource_type_cost = 3
+        # resource_type_value = 10
+        "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $resource_type,2,10"
+        # resource_type_cost = 3
+        # resource_type_value = 10
+        "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $resource_type,3,10"
+    )
+done
+
+commands+=(
+    # Resource type 254
+    "sozo execute --world "$world" SetLaborCostResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata 254,515,2"
+    "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 254,2,10"
+    "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 254,3,10"
+
+    # Resource type 255
+    "sozo execute --world "$world" SetLaborCostResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata 255,515,2"
+    "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 255,2,10"
+    "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 255,3,10"
 )
 
 for cmd in "${commands[@]}"; do

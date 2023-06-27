@@ -12,7 +12,5 @@ export function unpackResources(packedValue: bigint, valueCount: number): number
     remainingValue = remainingValue >> BigInt(MAX_NUMBER_SIZE);
   }
 
-  console.log('unpack of resources');
-  console.log(unpackedNumbers);
   return unpackedNumbers;
 }
