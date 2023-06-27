@@ -3,19 +3,19 @@ import { FiltersPanel } from '../../../../elements/FiltersPanel';
 import { FilterButton } from '../../../../elements/FilterButton';
 import { SortPanel } from '../../../../elements/SortPanel';
 import { SortButton, SortInterface } from '../../../../elements/SortButton';
-import { Caravan } from './Caravan';
+import { LaborComponent } from './LaborComponent';
 
-type CaravansPanelProps = {}
+type LaborPanelProps = {}
 
-export const CaravansPanel = ({ }: CaravansPanelProps) => {
+export const LaborPanel = ({ }: LaborPanelProps) => {
     const [activeFilter, setActiveFilter] = useState(false);
 
     const sortingParams = useMemo(() => {
         return [
-            { label: 'Number', sortKey: 'number' },
-            { label: 'Health-bar', sortKey: 'health', className: 'ml-4' },
-            { label: 'Items', sortKey: 'items', className: 'ml-auto mr-4' },
-            { label: 'Time-left', sortKey: 'time', className: '' }
+            { label: 'Number', sortKey: 'number', className: 'mr-auto' },
+            { label: 'Balance', sortKey: 'balance', className: 'mr-auto' },
+            { label: 'Expires', sortKey: 'expires', className: 'mr-auto' },
+            { label: 'Harvested', sortKey: 'harvested', className: 'mr-auto' }
         ]
     }, []);
 
@@ -26,9 +26,6 @@ export const CaravansPanel = ({ }: CaravansPanelProps) => {
 
     return (
         <div className='flex flex-col' >
-            <FiltersPanel className='px-3 py-2'>
-                <FilterButton active={activeFilter} onClick={() => setActiveFilter(!activeFilter)}>Filter</FilterButton>
-            </FiltersPanel>
             <SortPanel className='px-3 py-2'>
                 {sortingParams.map(({ label, sortKey, className }) => (
                     <SortButton className={className} key={sortKey} label={label} sortKey={sortKey} activeSort={activeSort} onChange={(_sortKey, _sort) => {
@@ -40,7 +37,7 @@ export const CaravansPanel = ({ }: CaravansPanelProps) => {
                 ))}
             </SortPanel>
             <div className='flex flex-col p-2'>
-                <Caravan />
+                <LaborComponent resourceId={10001} />
             </div>
         </div >
     );

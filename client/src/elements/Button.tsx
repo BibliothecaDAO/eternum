@@ -5,17 +5,19 @@ interface ButtonProps {
   children: React.ReactNode;
   className?: string;
   disabled?: boolean;
-  variant: "primary" | "secondary" | "success" | "danger";
+  variant: "primary" | "secondary" | "success" | "danger" | "default" | "outline";
 }
 
 const STYLES = {
-  baseStyle: "h-8 inline-flex transition-all duration-300 items-center justify-center p-3 text-xs font-medium rounded-lg",
+  baseStyle: "inline-flex transition-all duration-300 items-center justify-center p-2 text-xs font-medium rounded-md",
+  primary: "!rounded-full py-1 bg-gold hover:bg-gold/50 focus:outline-none",
   default:
     "text-white/90 border border-transparent shadow-sm",
   enabledStyle:
     "bg-black/10 hover:bg-black/30 focus:outline-none",
   disabledStyle: "bg-gray-300 cursor-not-allowed",
   success: "border border-brilliance !text-brilliance bg-transparent hover:bg-brilliance/10",
+  outline: "border border-gold !text-gold bg-transparent hover:bg-gold/10",
 }
 const Button: React.FC<ButtonProps> = ({
   onClick,

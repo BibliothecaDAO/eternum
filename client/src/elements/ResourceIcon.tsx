@@ -38,6 +38,7 @@ export type Props = {
   className?: string;
   label?: boolean;
   withTooltip?: boolean;
+  containerClassName?: string;
 };
 
 type Resource = {
@@ -93,7 +94,7 @@ const STYLES = {
 export const ResourceIcon = (props: Props) => {
   const Icon = (
     <div
-      className={` flex self-center w-min paper relative rounded-xl p-1 justify-center w-full`}
+      className={`flex self-center w-min paper relative rounded-xl justify-center w-full ${props.containerClassName}`}
     >
       <span
         className={` mx-auto ${clsx(

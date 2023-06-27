@@ -3,7 +3,7 @@ import React from 'react';
 import { ReactComponent as Checkmark } from '../assets/icons/common/checkmark.svg';
 type CheckboxProps = {
     enabled: boolean;
-    disabled: boolean;
+    disabled?: boolean;
 }
 
 export const Checkbox = ({ enabled, disabled }: CheckboxProps) => (

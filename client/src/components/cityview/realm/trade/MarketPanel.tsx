@@ -4,7 +4,7 @@ import { FilterButton } from '../../../../elements/FilterButton';
 import { SortPanel } from '../../../../elements/SortPanel';
 import { SortButton, SortInterface } from '../../../../elements/SortButton';
 import { TradeOffer } from './TradeOffer';
-import { ResourceFilter } from '../../../ResorceFilterComponent';
+import { ResourceFilter } from '../../../ResourceFilterComponent';
 
 type MarketPanelProps = {}
 

@@ -9,6 +9,7 @@ import { ReactComponent as Map } from '../../../assets/icons/common/map.svg';
 
 import { Tabs } from "../../../elements/tab";
 import RealmTradeComponent from "./RealmTradeComponent";
+import RealmLaborComponent from "./RealmLaborComponent";
 
 
 const RealmManagementComponent = () => {
@@ -23,7 +24,7 @@ const RealmManagementComponent = () => {
                         <div>Labor</div>
                     </div>
                 ),
-                component: <div />,
+                component: <RealmLaborComponent />,
             },
             {
                 label: (
@@ -56,7 +57,7 @@ const RealmManagementComponent = () => {
                     ))}
                 </Tabs.Panels>
             </Tabs>
-            <button className="absolute flex items-center hover:bg-gold/20 transition-bg duration-200 z-10 px-3 py-2 ml-auto text-xs border rounded-full right-3 top-[3.6rem] text-gold border-gold">
+            <button className="absolute flex items-center hover:bg-gold/20 transition-bg duration-200 z-10 px-2 py-1 ml-auto text-xxs border rounded-md right-3 top-[3.9rem] text-gold border-gold">
                 <Map className='mr-1 fill-current' />
                 Show on map
             </button>
