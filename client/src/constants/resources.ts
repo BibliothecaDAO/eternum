@@ -248,20 +248,20 @@ export const resources: Array<Resources> = [
 
   {
     trait: 'Wheat',
-    value: 10000,
+    value: 254,
     colour: '#ec4899',
     colourClass: '',
-    id: 10000,
+    id: 254,
     description: 'Wheat.',
     img: 'https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/wheat.gif?raw=true',
   },
 
   {
     trait: 'Fish',
-    value: 10001,
+    value: 255,
     colour: '#ec4899',
     colourClass: '',
-    id: 10001,
+    id: 255,
     description: 'Fish.',
     img: 'https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/.gif?raw=true',
   },
@@ -292,6 +292,6 @@ export enum ResourcesIds {
   Adamantine = 20,
   Mithral = 21,
   Dragonhide = 22,
-  Wheat = 10000,
-  Fish = 10001,
+  Wheat = 254,
+  Fish = 255,
 }

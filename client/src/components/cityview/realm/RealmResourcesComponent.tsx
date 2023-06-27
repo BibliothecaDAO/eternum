@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ReactComponent as SkullIcon } from '../../../assets/icons/common/skull.svg';
 import { ResourceIcon } from '../../../elements/ResourceIcon';
-import { findResourceById } from '../../../constants/resources';
+import { ResourcesIds, findResourceById } from '../../../constants/resources';
 import { currencyFormat } from '../../../utils/utils.jsx';
 import { useComponentValue } from "@dojoengine/react";
 import clsx from 'clsx';
@@ -14,7 +14,7 @@ type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<'div'>
 
 export const RealmResourcesComponent = ({ className }: RealmResourcesComponentProps) => {
     const {
-      components: { Resource, Realm },
+      components: { Realm },
     } = useDojo();
   
     let realmEntityId = useRealm((state) => state.realmEntityId);
@@ -22,7 +22,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
     let realm = useComponentValue(Realm, Utils.getEntityIdFromKeys([BigInt(realmEntityId)]));
   
     // unpack the resources
-    let realmResourceIds: number[] = [10000, 10001];
+    let realmResourceIds: number[] = [ResourcesIds['Wheat'], ResourcesIds['Fish']];
     let unpackedResources: number[] = [];
   
     if (realm) {
@@ -73,7 +73,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
                 {resource.speed !== 0 ? `${resource.speed}/s` : 'IDLE'}
             </div> */}
         </div>
-        {resourceId === 10001 && <div className="flex items-center mx-3 -translate-y-2">|</div>}
+        {resourceId === ResourcesIds['Fish'] && <div className="flex items-center mx-3 -translate-y-2">|</div>}
       </>
     );
   };

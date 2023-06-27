@@ -3,6 +3,7 @@ import { createPopupsSlice, PopupsStore } from './_popups';
 
 interface Realm {
     realmEntityId: number;
+    setRealmEntityId: (realmEntityId: number) => void,
 }
 
 const useRealm = create<Realm>((set) => ({
