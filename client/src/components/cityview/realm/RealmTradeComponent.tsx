@@ -49,7 +49,7 @@ export const RealmTradeComponent = ({ }: RealmTradeComponentProps) => {
                         <div>Market</div>
                     </div>
                 ),
-                component: <MarketPanel />,
+                component: <MarketPanel trades={trades} />,
             },
             {
                 label: (
