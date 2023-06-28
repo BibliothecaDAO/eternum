@@ -39,6 +39,15 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, ...props }: Lab
             timeLeftToHarvest = laborConfig.base_labor_units - (timeLeftToHarvest % laborConfig.base_labor_units)
         }
     }
+    
+    // if the labor balance does not exist or is lower than the current time, 
+    // then there is no labor left
+    let laborLeft: number | undefined;
+    if (labor && labor.balance > Date.now()/1000) {
+        laborLeft = labor.balance - Date.now()/1000;
+    } else {
+        laborLeft = 0;
+    }
 
     const [state, setState] = useState();
 
@@ -65,8 +74,7 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, ...props }: Lab
                     <ProgressBar rounded progress={laborConfig && timeLeftToHarvest? 100 - timeLeftToHarvest/laborConfig.base_labor_units*100: 0} className='bg-white' />
                     <div className='flex items-center mt-2'>
                         <><Clock />
-                        {/* // TODO: is time left the balance or the time left until next harvest? */}
-                        <div className='ml-1 italic text-white/70'>{timeLeftToHarvest? `${formatTimeLeft(timeLeftToHarvest)} left`: 'No Labor'}</div></>
+                        <div className='ml-1 italic text-white/70'>{laborLeft? `${formatTimeLeft(laborLeft)} left`: 'No Labor'}</div></>
 
                         <div className='flex items-center mx-auto text-white/70'>
                         {laborConfig && labor ? `+${calculateProductivity(laborConfig.base_resources_per_cycle, labor.multiplier, laborConfig.base_labor_units).toFixed(2)}` : '+0'}
