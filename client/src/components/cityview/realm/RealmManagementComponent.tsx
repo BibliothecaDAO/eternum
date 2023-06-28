@@ -44,14 +44,14 @@ const RealmManagementComponent = () => {
                 selectedIndex={selectedTab}
                 onChange={(index) => setSelectedTab(index as number)}
                 variant="primary"
-                className="flex-1 mt-[6px]"
+                className="flex-1 mt-[6px] overflow-hidden"
             >
                 <Tabs.List>
                     {tabs.map((tab, index) => (
                         <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
                     ))}
                 </Tabs.List>
-                <Tabs.Panels>
+                <Tabs.Panels className="overflow-hidden">
                     {tabs.map((tab, index) => (
                         <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
                     ))}
