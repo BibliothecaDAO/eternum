@@ -13,7 +13,7 @@ import { Dot } from '../../../../elements/Dot';
 
 type CaravanProps = {
 
-}
+} & React.HTMLAttributes<HTMLDivElement>;
 
 export const Caravan = ({ ...props }: CaravanProps) => {
     const [state, setState] = useState();
@@ -21,7 +21,7 @@ export const Caravan = ({ ...props }: CaravanProps) => {
     useEffect(() => { }, []);
 
     return (
-        <div className='flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold'>
+        <div className='flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold' onClick={props.onClick}>
             <div className='flex items-center text-xxs'>
                 <div className='flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold'>
                     #1
