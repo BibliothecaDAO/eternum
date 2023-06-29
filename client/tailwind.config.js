@@ -29,6 +29,7 @@ export default {
         'dark-green': '#064105',
         'dark-green-accent': '#3A3D23',
         green: '#33FF00',
+        lightest: '#FFF5EA',
         order: {
           power: '#F4B547',
           giants: '#EB544D',

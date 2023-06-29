@@ -4,11 +4,13 @@ import { FilterButton } from '../../../../elements/FilterButton';
 import { SortPanel } from '../../../../elements/SortPanel';
 import { SortButton, SortInterface } from '../../../../elements/SortButton';
 import { Caravan } from './Caravan';
+import { CaravanDetails } from '../../../caravans/CaravanDetailsComponent';
 
 type CaravansPanelProps = {}
 
 export const CaravansPanel = ({ }: CaravansPanelProps) => {
     const [activeFilter, setActiveFilter] = useState(false);
+    const [showCaravanDetails, setShowCaravanDetails] = useState(false);
 
     const sortingParams = useMemo(() => {
         return [
@@ -39,8 +41,9 @@ export const CaravansPanel = ({ }: CaravansPanelProps) => {
                     }} />
                 ))}
             </SortPanel>
+            {showCaravanDetails && <CaravanDetails caravanId={1} onClose={() => setShowCaravanDetails(false)} />}
             <div className='flex flex-col p-2'>
-                <Caravan />
+                <Caravan onClick={() => setShowCaravanDetails(true)} />
             </div>
         </div >
     );
