@@ -5,6 +5,7 @@ import { SortPanel } from '../../../../elements/SortPanel';
 import { SortButton, SortInterface } from '../../../../elements/SortButton';
 import { TradeOffer } from './TradeOffer';
 import { ResourceFilter } from '../../../ResourceFilterComponent';
+import { OrdersFilter } from '../../../OrdersFilterComponent';
 
 type MarketPanelProps = {
     trades: number[];
@@ -120,6 +121,7 @@ export const MarketPanel = ({ trades }: MarketPanelProps) => {
             <FiltersPanel className='px-3 py-2'>
                 <FilterButton active={activeFilter} onClick={() => setActiveFilter(!activeFilter)}>Filter</FilterButton>
                 <ResourceFilter />
+                <OrdersFilter />
             </FiltersPanel>
             <SortPanel className='px-3 py-2'>
                 {sortingParams.map(({ label, sortKey, className }) => (
