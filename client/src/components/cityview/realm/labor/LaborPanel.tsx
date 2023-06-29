@@ -63,7 +63,7 @@ export const LaborPanel = ({ }: LaborPanelProps) => {
                     }} />
                 ))}
             </SortPanel>
-            {buildResource && <LaborBuildPopup resourceId={buildResource} onClose={() => setBuildResource(null)} />}
+            {buildResource && <LaborBuildPopup resourceId={buildResource} onClose={() => setBuildResource(null)} onBuild={() => { }} />}
             {realmResourceIds.map((resourceId) => <div className='flex flex-col p-2'>
                 <LaborComponent onBuild={() => setBuildResource(resourceId)} resourceId={resourceId} realm={realm} laborConfig={laborConfig} />
             </div>)}

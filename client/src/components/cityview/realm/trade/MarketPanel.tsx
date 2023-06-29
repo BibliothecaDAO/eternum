@@ -135,7 +135,7 @@ export const MarketPanel = ({ trades }: MarketPanelProps) => {
                 ))}
             </SortPanel>
             {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
-            <CreateOfferPopup onClose={() => { }} onCreate={() => { }} />
+            {/* <CreateOfferPopup onClose={() => { }} onCreate={() => { }} /> */}
             {trades.map((tradeId) => <div className='flex flex-col p-2'>
                 <TradeOffer tradeId={tradeId} />
             </div>)}
