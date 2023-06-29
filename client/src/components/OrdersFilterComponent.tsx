@@ -1,51 +1,52 @@
 import React, { useEffect, useState } from 'react';
 import { FilterButton } from '../elements/FilterButton';
 import { FilterPopup } from '../elements/FilterPopup';
-import { resources } from '../constants/resources';
+import { orders } from '../constants/orders';
 import { SelectBox } from '../elements/SelectBox';
 import { ResourceIcon } from '../elements/ResourceIcon';
 import { ReactComponent as CloseIcon } from '../assets/icons/common/cross.svg';
 import Button from '../elements/Button';
+import { OrderIcon } from '../elements/OrderIcon';
 
-type ResourceFilterProps = {}
+type OrdersFilterProps = {}
 
-export const ResourceFilter = ({ }: ResourceFilterProps) => {
-    const [selectedResources, setSelectedResources] = useState<string[]>([]);
+export const OrdersFilter = ({ }: OrdersFilterProps) => {
+    const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
     const [popupOpened, setPopupOpened] = useState<boolean>(false);
 
     const selectResource = (resource: string) => {
-        if (selectedResources.includes(resource)) {
-            setSelectedResources(selectedResources.filter((r) => r !== resource));
+        if (selectedOrders.includes(resource)) {
+            setSelectedOrders(selectedOrders.filter((r) => r !== resource));
         } else {
-            setSelectedResources([...selectedResources, resource]);
+            setSelectedOrders([...selectedOrders, resource]);
         }
     };
 
     return (
         <>
             <FilterButton active={popupOpened} onClick={() => setPopupOpened(!popupOpened)}>
-                Resources
+                Orders
             </FilterButton>
             {popupOpened && <FilterPopup>
                 <FilterPopup.Head>
                     <div className='flex items-center space-x-1'>
-                        <div className='mr-0.5'>Resources:</div>
-                        {selectedResources.map((resource, index) => (
+                        <div className='mr-0.5'>Orders:</div>
+                        {selectedOrders.map((resource, index) => (
                             <ResourceIcon size='xs' resource={resource} />
 
                         ))}
-                        <CloseIcon className="w-3 h-3 cursor-pointer fill-white" onClick={() => setSelectedResources([])} />
+                        <CloseIcon className="w-3 h-3 cursor-pointer fill-white" onClick={() => setSelectedOrders([])} />
                     </div>
                 </FilterPopup.Head>
                 <FilterPopup.Body>
-                    <div className='grid grid-cols-3 gap-1 p-2'>
-                        {resources.map((resource, index) => (
-                            <SelectBox key={index} selected={selectedResources.includes(resource.trait)} onClick={() => selectResource(resource.trait)}>
-                                <div className='flex items-center'>
-                                    <ResourceIcon className='mr-1' size='xs' resource={resource.trait} />
-                                    {resource.trait}
+                    <div className='grid grid-cols-4 gap-1 p-1'>
+                        {orders.map((order, index) => (
+                            <div className='flex flex-col rounded-xl'>
+                                <OrderIcon order={order.orderName} size='xs' />
+                                <div>
+                                    {order.orderName}
                                 </div>
-                            </SelectBox>
+                            </div>
                         ))}
                     </div>
                     <div className='flex justify-end mb-2 mr-2'>

@@ -26,7 +26,7 @@ export const orders: IOrder[] = [
     },
     {
         orderId: 6,
-        orderName: 'The Fox'
+        orderName: 'Fox'
     },
     {
         orderId: 7,
@@ -54,7 +54,7 @@ export const orders: IOrder[] = [
     },
     {
         orderId: 13,
-        orderName: 'The Twins'
+        orderName: 'Twins'
     },
     {
         orderId: 14,
