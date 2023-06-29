@@ -38,7 +38,7 @@ export const OrdersFilter = ({ }: OrdersFilterProps) => {
                         <CloseIcon className="w-3 h-3 cursor-pointer fill-white" onClick={() => setSelectedOrders([])} />
                     </div>
                 </SecondaryPopup.Head>
-                <SecondaryPopup.Body width={'284px'}>
+                <SecondaryPopup.Body width={'w-[284px]'}>
                     <div className='grid grid-cols-4 gap-2 p-2'>
                         {orders.map((order, index) => (
                             <div className={clsx('flex cursor-pointer flex-col items-center py-2 hover:bg-dark rounded-xl text-gold text-xxs',

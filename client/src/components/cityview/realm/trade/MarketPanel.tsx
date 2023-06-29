@@ -6,6 +6,7 @@ import { SortButton, SortInterface } from '../../../../elements/SortButton';
 import { TradeOffer } from './TradeOffer';
 import { ResourceFilter } from '../../../ResourceFilterComponent';
 import { OrdersFilter } from '../../../OrdersFilterComponent';
+import { CreateOfferPopup } from './CreateOffer';
 
 type MarketPanelProps = {}
 
@@ -131,6 +132,7 @@ export const MarketPanel = ({ }: MarketPanelProps) => {
                     }} />
                 ))}
             </SortPanel>
+            <CreateOfferPopup onClose={() => { }} onCreate={() => { }} />
             <div className='flex flex-col p-2'>
                 <TradeOffer {...dummyTradeOffer} />
             </div>

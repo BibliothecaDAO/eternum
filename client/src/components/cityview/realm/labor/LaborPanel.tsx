@@ -21,7 +21,7 @@ export const LaborPanel = ({ }: LaborPanelProps) => {
     } = useDojo();
 
     const [activeFilter, setActiveFilter] = useState(false);
-    const [buildResource, setBuildResource] = useState<number | null>(1);
+    const [buildResource, setBuildResource] = useState<number | null>(null);
 
     const sortingParams = useMemo(() => {
         return [

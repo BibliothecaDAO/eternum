@@ -15,6 +15,6 @@ export const SecondaryPopup = ({ children }: FilterPopupProps) => {
 
 SecondaryPopup.Head = ({ children }: { children: React.ReactNode }) => <div className='text-xxs relative -mb-[1px] z-20 bg-brown px-1 py-0.5 rounded-t-[4px] border-t border-x border-white text-white w-min whitespace-nowrap'> {children} </div>
 
-SecondaryPopup.Body = ({ width = null, children }: { width?: string | null, children: React.ReactNode }) => <div className={`w-[${width ? width : '438px'}] relative z-10 bg-gray border flex flex-col border-white rounded-tr-[4px] rounded-b-[4px]`}>
+SecondaryPopup.Body = ({ width = null, children }: { width?: string | null, children: React.ReactNode }) => <div className={`${width ? width : 'w-[438px]'}] relative z-10 bg-gray border flex flex-col border-white rounded-tr-[4px] rounded-b-[4px]`}>
     {children}
 </div>
