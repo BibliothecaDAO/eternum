@@ -14,7 +14,7 @@ export const ResourceCost = ({ ...props }: ResourceCostProps) => {
     return (
         <div className="relative flex flex-row items-center justify-start w-full gap-1 px-1 rounded">
             <ResourceIcon resource={trait || ''} size='xs' />
-            <div className="relative flex flex-col text-lightest shrink-0">
+            <div className="relative flex flex-col ml-1 text-lightest shrink-0">
                 <div className={clsx("relative text-xs font-bold", props.color)}>
                     {(props.color && props.amount > 0) ? '+' : ''}
                     {(props.color && props.amount < 0) ? '-' : ''}
