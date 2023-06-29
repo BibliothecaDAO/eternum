@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FilterButton } from '../elements/FilterButton';
-import { FilterPopup } from '../elements/FilterPopup';
+import { SecondaryPopup } from '../elements/SecondaryPopup';
 import { orders } from '../constants/orders';
 import { SelectBox } from '../elements/SelectBox';
 import { ResourceIcon } from '../elements/ResourceIcon';
@@ -28,8 +28,8 @@ export const OrdersFilter = ({ }: OrdersFilterProps) => {
             <FilterButton active={popupOpened} onClick={() => setPopupOpened(!popupOpened)}>
                 Orders
             </FilterButton>
-            {popupOpened && <FilterPopup>
-                <FilterPopup.Head>
+            {popupOpened && <SecondaryPopup>
+                <SecondaryPopup.Head>
                     <div className='flex items-center space-x-1'>
                         <div className='mr-0.5'>Orders:</div>
                         {selectedOrders.map((order, index) => (
@@ -37,8 +37,8 @@ export const OrdersFilter = ({ }: OrdersFilterProps) => {
                         ))}
                         <CloseIcon className="w-3 h-3 cursor-pointer fill-white" onClick={() => setSelectedOrders([])} />
                     </div>
-                </FilterPopup.Head>
-                <FilterPopup.Body width={'284px'}>
+                </SecondaryPopup.Head>
+                <SecondaryPopup.Body width={'284px'}>
                     <div className='grid grid-cols-4 gap-2 p-2'>
                         {orders.map((order, index) => (
                             <div className={clsx('flex cursor-pointer flex-col items-center py-2 hover:bg-dark rounded-xl text-gold text-xxs',
@@ -54,8 +54,8 @@ export const OrdersFilter = ({ }: OrdersFilterProps) => {
                     <div className='flex justify-start mx-2 mb-2'>
                         <Button onClick={() => setPopupOpened(false)} variant='primary'>Close</Button>
                     </div>
-                </FilterPopup.Body>
-            </FilterPopup>}
+                </SecondaryPopup.Body>
+            </SecondaryPopup>}
         </>
     );
 };

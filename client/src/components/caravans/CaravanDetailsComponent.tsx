@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FilterButton } from '../../elements/FilterButton';
-import { FilterPopup } from '../../elements/FilterPopup';
+import { SecondaryPopup } from '../../elements/SecondaryPopup';
 import { resources } from '../../constants/resources';
 import { SelectBox } from '../../elements/SelectBox';
 import { ResourceIcon } from '../../elements/ResourceIcon';
@@ -18,14 +18,14 @@ type CaravanDetailsProps = {
 export const CaravanDetails = ({ caravanId, onClose }: CaravanDetailsProps) => {
 
     return (
-        <FilterPopup>
-            <FilterPopup.Head>
+        <SecondaryPopup>
+            <SecondaryPopup.Head>
                 <div className='flex items-center space-x-1'>
                     <div className='mr-0.5'>Caravan #4 9’999’403 / 10’000’000</div>
                     <CloseIcon className="w-3 h-3 cursor-pointer fill-white" />
                 </div>
-            </FilterPopup.Head>
-            <FilterPopup.Body>
+            </SecondaryPopup.Head>
+            <SecondaryPopup.Body>
                 <div className='flex items-center mt-2 ml-2 text-xxs'>
                     <span className='italic text-light-pink'>
                         Traveling to
@@ -56,7 +56,7 @@ export const CaravanDetails = ({ caravanId, onClose }: CaravanDetailsProps) => {
                 <div className='flex justify-start m-2'>
                     <Button onClick={onClose} variant='primary'>Close</Button>
                 </div>
-            </FilterPopup.Body>
-        </FilterPopup >
+            </SecondaryPopup.Body>
+        </SecondaryPopup >
     );
 };

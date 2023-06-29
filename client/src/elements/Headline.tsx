@@ -7,9 +7,9 @@ type HeadlineProps = {
 }
 
 export const Headline = ({ children }: HeadlineProps) => (
-    <div className='flex items-center justify-center'>
+    <div className='flex items-center justify-center select-none'>
         <HeadlineLeft />
-        <div className='mx-3 font-bold text-white'>
+        <div className='mx-3 text-xs font-bold text-white'>
             {children}
         </div>
         <HeadlineRight />
