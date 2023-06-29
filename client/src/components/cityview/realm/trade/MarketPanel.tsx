@@ -132,7 +132,7 @@ export const MarketPanel = ({ }: MarketPanelProps) => {
                     }} />
                 ))}
             </SortPanel>
-            <CreateOfferPopup onClose={() => { }} onCreate={() => { }} />
+            {/* <CreateOfferPopup onClose={() => { }} onCreate={() => { }} /> */}
             <div className='flex flex-col p-2'>
                 <TradeOffer {...dummyTradeOffer} />
             </div>
