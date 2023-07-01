@@ -6,9 +6,11 @@ import { SortButton, SortInterface } from '../../../../elements/SortButton';
 import { TradeOffer } from './TradeOffer';
 import { ResourceFilter } from '../../../ResourceFilterComponent';
 
-type MarketPanelProps = {}
+type MarketPanelProps = {
+    trades: number[];
+}
 
-export const MarketPanel = ({ }: MarketPanelProps) => {
+export const MarketPanel = ({ trades }: MarketPanelProps) => {
     const [activeFilter, setActiveFilter] = useState(false);
 
     const sortingParams = useMemo(() => {
@@ -129,9 +131,10 @@ export const MarketPanel = ({ }: MarketPanelProps) => {
                     }} />
                 ))}
             </SortPanel>
-            <div className='flex flex-col p-2'>
-                <TradeOffer {...dummyTradeOffer} />
-            </div>
+            {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
+            {trades.map((tradeId) => <div className='flex flex-col p-2'>
+                <TradeOffer tradeId={tradeId} />
+            </div>)}
         </div >
     );
 };

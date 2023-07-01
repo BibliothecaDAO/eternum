@@ -51,17 +51,18 @@ mod HarvestLabor {
         // generated labor
         let (labor_generated, _, _) = labor.get_labor_generated(ts);
 
-        // assert that at least some labor has been generated
-        // TODO: additionnal testing
-        assert(labor_generated != 0, 'No labor has been generated');
-
         // assert base labor units not zero
         assert(labor_config.base_labor_units != 0, 'Base labor units cannot be zero');
 
         // labor units and part units
         let mut labor_units_generated = labor_generated / labor_config.base_labor_units;
+        // assert that at least some labor has been generated
+        // TODO: additionnal testing
+        assert(labor_units_generated != 0, 'Wait end of harvest cycle');
+
         let rest = labor_generated % labor_config.base_labor_units;
 
+        // TODO: remove whole vault logic from contracts
         // get vault for that resource
         let maybe_vault = commands::<Vault>::try_entity(resource_query);
         let vault = match maybe_vault {
@@ -74,7 +75,7 @@ mod HarvestLabor {
         };
 
         if resource_type != ResourceTypes::FISH & resource_type != ResourceTypes::WHEAT {
-            // remove 25% to the vault
+            // remove X% to the vault
             let vault_units_generated = (labor_units_generated * labor_config.vault_percentage)
                 / 1000;
             labor_units_generated = labor_units_generated - vault_units_generated;
