@@ -7,7 +7,7 @@ import { useComponentValue } from "@dojoengine/react";
 import clsx from 'clsx';
 import { Utils } from '@dojoengine/core';
 import { useDojo } from '../../../DojoContext';
-import useRealm from '../../../hooks/store/useRealm';
+import useRealm from '../../../hooks/store/useRealmStore';
 import { unpackResources } from '../../../utils/packedData';
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<'div'>

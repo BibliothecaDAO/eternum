@@ -4,7 +4,7 @@ import { FilterButton } from '../../../../elements/FilterButton';
 import { SortPanel } from '../../../../elements/SortPanel';
 import { SortButton, SortInterface } from '../../../../elements/SortButton';
 import { LaborComponent } from './LaborComponent';
-import useRealm from '../../../../hooks/store/useRealm';
+import useRealm from '../../../../hooks/store/useRealmStore';
 import { useComponentValue } from '@dojoengine/react';
 import { useDojo } from '../../../../DojoContext';
 import { Utils } from '@dojoengine/core';

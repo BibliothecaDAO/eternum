@@ -10,7 +10,7 @@ import { ReactComponent as Village } from '../../../../assets/icons/common/villa
 
 import ProgressBar from '../../../../elements/ProgressBar';
 import { useDojo } from '../../../../DojoContext';
-import useRealm from '../../../../hooks/store/useRealm';
+import useRealm from '../../../../hooks/store/useRealmStore';
 import { useComponentValue } from '@dojoengine/react';
 import { Utils } from '@dojoengine/core';
 import { LaborConfig, Realm } from '../../../../types';
@@ -24,6 +24,7 @@ type LaborComponentProps = {
 export const LaborComponent = ({ resourceId, realm, laborConfig, ...props }: LaborComponentProps) => {
     const {
         components: { Labor, Resource },
+        systemCalls: { build_labor }
       } = useDojo();
     
     let realmEntityId = useRealm((state) => state.realmEntityId);
@@ -68,7 +69,7 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, ...props }: Lab
                             {(resourceId == ResourcesIds['Wheat'] || resourceId == ResourcesIds['Fish']) && <Village />}
                             {resourceId == ResourcesIds['Wheat'] && <div className='px-2'>{`${labor? labor.multiplier: 0}/${realm?.cities}`}</div>}
                             {resourceId == ResourcesIds['Fish'] && <div className='px-2'>{`${labor? labor.multiplier: 0}/${realm?.harbors}`}</div>}
-                            <Button variant='outline' className='px-2 py-1' onClick={() => { }}>Build</Button>
+                            <Button variant='outline' className='px-2 py-1' onClick={() => {}}>Build</Button>
                         </div>
                     </div>
                     <ProgressBar rounded progress={laborConfig && timeLeftToHarvest? 100 - timeLeftToHarvest/laborConfig.base_labor_units*100: 0} className='bg-white' />

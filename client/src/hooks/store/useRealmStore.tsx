@@ -1,14 +1,14 @@
 import { create } from 'zustand';
-import { createPopupsSlice, PopupsStore } from './_popups';
 
+// TODO: find a way to switch realms
 interface Realm {
     realmEntityId: number;
     setRealmEntityId: (realmEntityId: number) => void,
 }
 
-const useRealm = create<Realm>((set) => ({
+const useRealmStore = create<Realm>((set) => ({
     realmEntityId: 0,
     setRealmEntityId: (realmEntityId: number) => set({ realmEntityId }),
 }));
 
-export default useRealm;
+export default useRealmStore;
