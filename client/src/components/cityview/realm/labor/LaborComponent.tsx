@@ -26,7 +26,7 @@ type LaborComponentProps = {
 export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...props }: LaborComponentProps) => {
     const {
         components: { Labor, Resource },
-        systemCalls: { build_labor }
+        systemCalls: { harvest_labor }
       } = useDojo();
     
     const {nextBlockTimestamp} = useBlockchainStore();
@@ -85,10 +85,12 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
                         <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size='sm' />
                         <div className='ml-2 text-xs font-bold text-white'>{currencyFormat(resource ? resource.balance : 0)}</div>
                         <div className='flex items-center ml-auto'>
-                            {(resourceId == ResourcesIds['Wheat'] || resourceId == ResourcesIds['Fish']) && <Village />}
-                            {resourceId == ResourcesIds['Wheat'] && <div className='px-2'>{`${labor ? labor.multiplier : 0}/${realm?.rivers}`}</div>}
-                            {resourceId == ResourcesIds['Fish'] && <div className='px-2'>{`${labor ? labor.multiplier : 0}/${realm?.harbors}`}</div>}
-                            <Button variant='outline' className='px-2 py-1' onClick={onBuild}>Build</Button>
+                            {isFood(resourceId) && <Village />}
+                            {/* // DISCUSS: when there is no labor anymore, it means full decay of the buildings, so it should be multiplier 0 */}
+                            {resourceId == ResourcesIds['Wheat'] && <div className='px-2'>{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${realm?.rivers}`}</div>}
+                            {resourceId == ResourcesIds['Fish'] && <div className='px-2'>{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${realm?.harbors}`}</div>}
+                            {/* // TODO: show visual cue that it's disabled */}
+                            <Button variant='outline' className='px-2 py-1' onClick={onBuild} disabled={isFood(resourceId) && laborLeft > 0} >Build</Button>
                         </div>
                     </div>
                     <ProgressBar rounded progress={laborConfig && timeLeftToHarvest ? 100 - timeLeftToHarvest / laborConfig.base_labor_units * 100 : 0} className='bg-white' />
@@ -104,7 +106,8 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
 
                         <><ResourceIcon resource={findResourceById(resourceId)?.trait as any} size='xs' className='!w-[12px]' />
                             <div className='mx-1 text-brilliance'>{`+${nextHarvest}`}</div></>
-                        <Button className='!px-[6px] !py-[2px] text-xxs' variant='success' onClick={() => { }}>Harvest</Button>
+                        {/* // TODO: visual cue to show disabled? */}
+                        <Button className='!px-[6px] !py-[2px] text-xxs' variant='success' disabled={nextHarvest === 0} onClick={() => { harvest_labor({ realm_id: realmEntityId, resource_type: resourceId }) }}>Harvest</Button>
                     </div>
                 </div>
             </div>
@@ -130,11 +133,11 @@ const calculateProductivity = (resources_per_cycle: number, multiplier: number, 
 // calculates how much you will have when you click on harvest
 const calculateNextHarvest = (last_harvest: number, multiplier: number, cycle_length: number, production_per_cycle: number, nextBlockTime: number): number => {
     // in seconds
-    let harvest_seconds = (nextBlockTime - last_harvest) * multiplier;
+    let harvest_seconds = nextBlockTime - last_harvest;
     // in units
     let next_harvest_units = Math.floor(harvest_seconds / cycle_length);
     // return production
-    return next_harvest_units*production_per_cycle;
+    return next_harvest_units * production_per_cycle * multiplier;
 }
 
 const isFood = (resourceId: number): boolean => {
