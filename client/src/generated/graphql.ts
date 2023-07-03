@@ -133,16 +133,16 @@ export type Fungibleentities = {
 
 export type Labor = {
   __typename?: 'Labor';
-  balance: Scalars['u128']['output'];
-  last_harvest: Scalars['u128']['output'];
-  multiplier: Scalars['u128']['output'];
+  balance: Scalars['u64']['output'];
+  last_harvest: Scalars['u64']['output'];
+  multiplier: Scalars['u64']['output'];
 };
 
 export type Laborconfig = {
   __typename?: 'Laborconfig';
-  base_labor_units: Scalars['u128']['output'];
+  base_food_per_cycle: Scalars['u128']['output'];
+  base_labor_units: Scalars['u64']['output'];
   base_resources_per_cycle: Scalars['u128']['output'];
-  vault_percentage: Scalars['u128']['output'];
 };
 
 export type Laborcostamount = {
@@ -353,18 +353,18 @@ export type QueryFungibleentitiesComponentsArgs = {
 
 
 export type QueryLaborComponentsArgs = {
-  balance?: InputMaybe<Scalars['u128']['input']>;
-  last_harvest?: InputMaybe<Scalars['u128']['input']>;
+  balance?: InputMaybe<Scalars['u64']['input']>;
+  last_harvest?: InputMaybe<Scalars['u64']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
-  multiplier?: InputMaybe<Scalars['u128']['input']>;
+  multiplier?: InputMaybe<Scalars['u64']['input']>;
 };
 
 
 export type QueryLaborconfigComponentsArgs = {
-  base_labor_units?: InputMaybe<Scalars['u128']['input']>;
+  base_food_per_cycle?: InputMaybe<Scalars['u128']['input']>;
+  base_labor_units?: InputMaybe<Scalars['u64']['input']>;
   base_resources_per_cycle?: InputMaybe<Scalars['u128']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
-  vault_percentage?: InputMaybe<Scalars['u128']['input']>;
 };
 
 
@@ -510,14 +510,8 @@ export type QueryWeightconfigComponentsArgs = {
 
 
 export type QueryWorldconfigComponentsArgs = {
-  base_resources_per_day?: InputMaybe<Scalars['u128']['input']>;
-  day_time?: InputMaybe<Scalars['u128']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
-  lords_per_day?: InputMaybe<Scalars['u128']['input']>;
   realm_l2_contract?: InputMaybe<Scalars['ContractAddress']['input']>;
-  tick_time?: InputMaybe<Scalars['u128']['input']>;
-  vault_bp?: InputMaybe<Scalars['u128']['input']>;
-  vault_time?: InputMaybe<Scalars['u128']['input']>;
 };
 
 export type Realm = {
@@ -606,13 +600,7 @@ export type Weightconfig = {
 
 export type Worldconfig = {
   __typename?: 'Worldconfig';
-  base_resources_per_day: Scalars['u128']['output'];
-  day_time: Scalars['u128']['output'];
-  lords_per_day: Scalars['u128']['output'];
   realm_l2_contract: Scalars['ContractAddress']['output'];
-  tick_time: Scalars['u128']['output'];
-  vault_bp: Scalars['u128']['output'];
-  vault_time: Scalars['u128']['output'];
 };
 
 export type GetCaravansQueryVariables = Exact<{ [key: string]: never; }>;

@@ -9,12 +9,6 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
-          day_time: RecsType.Number,
-          vault_bp: RecsType.Number,
-          base_resources_per_day: RecsType.Number,
-          vault_time: RecsType.Number,
-          lords_per_day: RecsType.Number,
-          tick_time: RecsType.Number,
           realm_l2_contract: RecsType.Number,
         },
         {
@@ -30,8 +24,8 @@ export function defineContractComponents(world: World) {
         world,
         {
           base_labor_units: RecsType.Number,
-          vault_percentage: RecsType.Number,
           base_resources_per_cycle: RecsType.Number,
+          base_food_per_cycle: RecsType.Number,
         },
         {
           metadata: {
