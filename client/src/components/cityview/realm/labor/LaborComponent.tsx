@@ -55,6 +55,19 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
         }
         return 0;
       }, [nextBlockTimestamp, labor]);
+    
+    const nextHarvest = React.useMemo(() => {
+        if (labor && laborConfig && nextBlockTimestamp) {
+            return calculateNextHarvest(
+                labor.last_harvest, 
+                labor.multiplier, 
+                laborConfig.base_labor_units,
+                isFood(resourceId)? laborConfig.base_food_per_cycle : laborConfig.base_resources_per_cycle, 
+                nextBlockTimestamp);
+        } else {
+            return 0;
+        }
+    }, [labor, laborConfig, nextBlockTimestamp]);
 
     const [state, setState] = useState();
 
@@ -90,7 +103,7 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
                         </div>
 
                         <><ResourceIcon resource={findResourceById(resourceId)?.trait as any} size='xs' className='!w-[12px]' />
-                            <div className='mx-1 text-brilliance'>{`+${labor && laborConfig ? calculateNextHarvest(labor.last_harvest, labor.multiplier, laborConfig.base_labor_units, laborConfig.base_resources_per_cycle) : 0}`}</div></>
+                            <div className='mx-1 text-brilliance'>{`+${nextHarvest}`}</div></>
                         <Button className='!px-[6px] !py-[2px] text-xxs' variant='success' onClick={() => { }}>Harvest</Button>
                     </div>
                 </div>
@@ -114,12 +127,20 @@ const calculateProductivity = (resources_per_cycle: number, multiplier: number, 
     return productivity * 3600;
 }
 
-// TODO: should we use Date.now() or the current block timestamp?
 // calculates how much you will have when you click on harvest
-const calculateNextHarvest = (last_harvest: number, multiplier: number, cycle_length: number, resources_per_cycle: number): number => {
-    let next_harvest = (Date.now() / 1000 - last_harvest) * multiplier / cycle_length * resources_per_cycle;
-    // remove what you cannot harvest yet
-    let rest = next_harvest % cycle_length;
+const calculateNextHarvest = (last_harvest: number, multiplier: number, cycle_length: number, production_per_cycle: number, nextBlockTime: number): number => {
     // in seconds
-    return Number((next_harvest - rest).toFixed(2));
+    let harvest_seconds = (nextBlockTime - last_harvest) * multiplier;
+    // in units
+    let next_harvest_units = Math.floor(harvest_seconds / cycle_length);
+    // return production
+    return next_harvest_units*production_per_cycle;
+}
+
+const isFood = (resourceId: number): boolean => {
+    if (resourceId == ResourcesIds['Wheat'] || resourceId == ResourcesIds['Fish']) {
+        return true;
+    } else {
+        return false;
+    }
 }
