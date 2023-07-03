@@ -27,6 +27,7 @@ type LaborBuildPopupProps = {
 export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopupProps) => {
     const {
         components: { Realm, LaborConfig, LaborCostResources, LaborCostAmount },
+        systemCalls: { build_labor },
     } = useDojo();
 
     const {nextBlockTimestamp} = useBlockchainStore();
@@ -66,6 +67,15 @@ export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopu
 
     const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
     const resource = useMemo(() => findResourceById(resourceId), [resourceId]);
+
+    // TODO: make sure you have enough resources before allowing to click
+    const handleBuild = () => {
+        build_labor({realm_id: realmEntityId, 
+                    resource_type: resourceId, 
+                    labor_units: isFood? 12: laborAmount, 
+                    multiplier: multiplier})
+        onClose();
+    }
 
     useEffect(() => { }, []);
 
@@ -137,7 +147,10 @@ export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopu
                             <div className='italic text-gold'>Max {resourceId === 254? realm?.rivers || 0 : realm?.harbors || 0}</div>
                         </div>
                     }
-                    <Button className='!px-[6px] !py-[2px] text-xxs' onClick={onBuild} variant='outline'>{isFood? `Build`: `Buy Tools`}</Button>
+                    <Button className='!px-[6px] !py-[2px] text-xxs' 
+                            onClick={() => handleBuild()} 
+                            variant='outline'>{isFood? `Build`: `Buy Tools`}
+                    </Button>
                 </div>
             </SecondaryPopup.Body>
         </SecondaryPopup>

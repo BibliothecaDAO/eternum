@@ -39,7 +39,7 @@ commands=(
 
 
 # Loop for resource types 1 to 28
-for resource_type in {1..2}
+for resource_type in {1..28}
 do
     # resource_type_cost = 3
     # resource_type_value = 10
