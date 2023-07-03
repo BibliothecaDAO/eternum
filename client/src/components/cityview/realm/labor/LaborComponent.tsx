@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { OrderIcon } from '../../../../elements/OrderIcon';
 import Button from '../../../../elements/Button';
 import { ResourceIcon } from '../../../../elements/ResourceIcon';
@@ -55,6 +55,8 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
         }
         return 0;
       }, [nextBlockTimestamp, labor]);
+
+    const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
     
     const nextHarvest = React.useMemo(() => {
         if (labor && laborConfig && nextBlockTimestamp) {
@@ -62,7 +64,7 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
                 labor.last_harvest, 
                 labor.multiplier, 
                 laborConfig.base_labor_units,
-                isFood(resourceId)? laborConfig.base_food_per_cycle : laborConfig.base_resources_per_cycle, 
+                isFood? laborConfig.base_food_per_cycle : laborConfig.base_resources_per_cycle, 
                 nextBlockTimestamp);
         } else {
             return 0;
@@ -85,12 +87,12 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
                         <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size='sm' />
                         <div className='ml-2 text-xs font-bold text-white'>{currencyFormat(resource ? resource.balance : 0)}</div>
                         <div className='flex items-center ml-auto'>
-                            {isFood(resourceId) && <Village />}
+                            {isFood && <Village />}
                             {/* // DISCUSS: when there is no labor anymore, it means full decay of the buildings, so it should be multiplier 0 */}
                             {resourceId == ResourcesIds['Wheat'] && <div className='px-2'>{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${realm?.rivers}`}</div>}
                             {resourceId == ResourcesIds['Fish'] && <div className='px-2'>{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${realm?.harbors}`}</div>}
                             {/* // TODO: show visual cue that it's disabled */}
-                            <Button variant='outline' className='px-2 py-1' onClick={onBuild} disabled={isFood(resourceId) && laborLeft > 0} >Build</Button>
+                            <Button variant='outline' className='px-2 py-1' onClick={onBuild} disabled={isFood && laborLeft > 0} >{isFood? `Build`: `Buy Tools`}</Button>
                         </div>
                     </div>
                     <ProgressBar rounded progress={laborConfig && timeLeftToHarvest ? 100 - timeLeftToHarvest / laborConfig.base_labor_units * 100 : 0} className='bg-white' />
@@ -138,12 +140,4 @@ const calculateNextHarvest = (last_harvest: number, multiplier: number, cycle_le
     let next_harvest_units = Math.floor(harvest_seconds / cycle_length);
     // return production
     return next_harvest_units * production_per_cycle * multiplier;
-}
-
-const isFood = (resourceId: number): boolean => {
-    if (resourceId == ResourcesIds['Wheat'] || resourceId == ResourcesIds['Fish']) {
-        return true;
-    } else {
-        return false;
-    }
 }
