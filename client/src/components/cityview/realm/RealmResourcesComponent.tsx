@@ -25,6 +25,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
     let realmResourceIds: number[] = [ResourcesIds['Wheat'], ResourcesIds['Fish']];
     let unpackedResources: number[] = [];
   
+    // TODO: don't do unpacking at each render but rather in useRealmStore at beginning and store result
     if (realm) {
       unpackedResources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
       realmResourceIds = realmResourceIds.concat(unpackedResources);

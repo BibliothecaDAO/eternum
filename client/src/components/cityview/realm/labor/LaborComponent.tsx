@@ -50,8 +50,9 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
     // if the labor balance does not exist or is lower than the current time, 
     // then there is no labor left
     const laborLeft = React.useMemo(() => {
-        if (nextBlockTimestamp && labor && labor.balance > nextBlockTimestamp) {
-          return labor.balance - nextBlockTimestamp;
+        if (nextBlockTimestamp && labor && laborConfig && labor.balance > nextBlockTimestamp) {
+          let left = labor.balance - nextBlockTimestamp;
+          return left < laborConfig.base_labor_units? 0: left;
         }
         return 0;
       }, [nextBlockTimestamp, labor]);
@@ -61,6 +62,7 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
     const nextHarvest = React.useMemo(() => {
         if (labor && laborConfig && nextBlockTimestamp) {
             return calculateNextHarvest(
+                labor.balance,
                 labor.last_harvest, 
                 labor.multiplier, 
                 laborConfig.base_labor_units,
@@ -101,7 +103,7 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
                             <div className='ml-1 italic text-white/70'>{laborLeft ? `${formatTimeLeft(laborLeft)} left` : 'No Labor'}</div></>
 
                         <div className='flex items-center mx-auto text-white/70'>
-                            {laborConfig && labor ? `+${calculateProductivity(laborConfig.base_resources_per_cycle, labor.multiplier, laborConfig.base_labor_units).toFixed(2)}` : '+0'}
+                            {laborConfig && labor && laborLeft > 0? `+${calculateProductivity(isFood? laborConfig.base_food_per_cycle: laborConfig.base_resources_per_cycle, labor.multiplier, laborConfig.base_labor_units).toFixed(0)}` : '+0'}
                             <ResourceIcon containerClassName='mx-0.5' className='!w-[12px]' resource={findResourceById(resourceId)?.trait as any} size='xs' />
                             /h
                         </div>
@@ -133,9 +135,9 @@ const calculateProductivity = (resources_per_cycle: number, multiplier: number, 
 }
 
 // calculates how much you will have when you click on harvest
-const calculateNextHarvest = (last_harvest: number, multiplier: number, cycle_length: number, production_per_cycle: number, nextBlockTime: number): number => {
+const calculateNextHarvest = (balance: number, last_harvest: number, multiplier: number, cycle_length: number, production_per_cycle: number, nextBlockTime: number): number => {
     // in seconds
-    let harvest_seconds = nextBlockTime - last_harvest;
+    let harvest_seconds = nextBlockTime > balance ? balance - last_harvest: nextBlockTime - last_harvest;
     // in units
     let next_harvest_units = Math.floor(harvest_seconds / cycle_length);
     // return production

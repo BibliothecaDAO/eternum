@@ -67,7 +67,6 @@ export const TradeOffer = ({ tradeId, ...props }: TradeOfferProps) => {
                 {makerRealm && <div className='flex items-center p-1 -mt-2 -ml-2 border border-t-0 border-l-0 rounded-br-md border-gray-gold'>
                     {/* // order of the order maker */}
                     {makerRealm.order && <OrderIcon order={orderNameDict[makerRealm.order]} size="xs" className='mr-1' />}
-                    {/* // TODO: get realm name (by realm ID) */}
                     {realmsData['features'][makerRealm.realm_id - 1].name }
                 </div>}
                 <div className='-mt-2 text-gold'>
