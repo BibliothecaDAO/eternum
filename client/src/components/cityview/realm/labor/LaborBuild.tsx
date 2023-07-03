@@ -16,6 +16,7 @@ import { useDojo } from '../../../../DojoContext';
 import { Utils } from '@dojoengine/core';
 import { LABOR_CONFIG_ID } from '../../../../constants/labor';
 import useBlockchainStore from '../../../../hooks/store/useBlockchainStore';
+import { unpackResources } from '../../../../utils/packedData';
 
 type LaborBuildPopupProps = {
     resourceId: number;
@@ -25,7 +26,7 @@ type LaborBuildPopupProps = {
 
 export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopupProps) => {
     const {
-        components: { Realm, LaborConfig, Labor },
+        components: { Realm, LaborConfig, LaborCostResources, LaborCostAmount },
     } = useDojo();
 
     const {nextBlockTimestamp} = useBlockchainStore();
@@ -40,7 +41,26 @@ export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopu
 
     let realmEntityId = useRealmStore((state) => state.realmEntityId);
     let realm = useComponentValue(Realm, Utils.getEntityIdFromKeys([BigInt(realmEntityId)]));
-    let labor = useComponentValue(Labor, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]))
+
+    // TODO: find a more optimized way to do this
+    // let costResourcesPacked = useComponentValue(LaborCostResources, Utils.getEntityIdFromKeys([BigInt(resourceId)]))
+    // calculate the costs of building/buying tools
+    // let costResources: number[] = [];
+    // if (costResourcesPacked) {
+    //   costResources = unpackResources(
+    //     BigInt(costResourcesPacked.resource_types_packed),
+    //     costResourcesPacked.resource_types_count
+    //   );
+    // }
+    let resourceCost: {resourceId: number, amount: number}[] = [
+        {resourceId: 1, amount: 100}, {resourceId: 2, amount: 100}, {resourceId: 3, amount: 100},
+         {resourceId: 4, amount: 100}, {resourceId: 5, amount: 100}, {resourceId: 6, amount: 100}];
+    // for (const resource of costResources) {
+    //     const costAmount = useComponentValue(LaborCostAmount, Utils.getEntityIdFromKeys([BigInt(resourceId), BigInt(resource)]));
+    //     if (costAmount) {
+    //         resourceCost.push({ resourceId: resource, amount: costAmount.value });
+    //     }
+    // }
 
     let laborConfig = useComponentValue(LaborConfig, Utils.getEntityIdFromKeys([BigInt(LABOR_CONFIG_ID)]))
 
@@ -96,10 +116,9 @@ export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopu
                         <div className='fle flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60'>
                             <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
                             <div className='grid grid-cols-4 gap-2'>
-                                <ResourceCost type='vertical' resourceId={1} amount={100} />
-                                <ResourceCost type='vertical' resourceId={2} amount={100} />
-                                <ResourceCost type='vertical' resourceId={3} amount={100} />
-                                <ResourceCost type='vertical' resourceId={4} amount={100} />
+                            {resourceCost.map(({ resourceId, amount }) => (
+                                <ResourceCost type='vertical' resourceId={resourceId} amount={amount} />
+                            ))}
                             </div>
                         </div>
 
