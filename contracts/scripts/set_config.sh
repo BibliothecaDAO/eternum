@@ -6,20 +6,14 @@ world="$SOZO_WORLD"
 
 commands=(
     ### WORLD ###
-    # day_timee
-    # vault_bp
-    # base_resource_per_day = 252
-    # vault_time 
-    # lords_per_day
-    # tick_time
     # realm_l2_contract
-    "sozo execute --world $world SetWorldConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,0,252000000000000000000,0,0,0,0"
+    "sozo execute --world $world SetWorldConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0"
 
     ### LABOR ###
     # base_labor_units 7200
-    # vault_percentage 0 => TODO: remove vault entirely
-    # base_resources_per_cycle 21 * 10**18
-    "sozo execute --world $world SetLaborConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 7200,0,21"
+    # base_resources_per_cycle 21
+    # base_food_per_cycle 14000
+    "sozo execute --world $world SetLaborConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 7200,21,14000"
 
     ### SPEED ###
     # entity type FREE_TRANSPORT_ENTITY_TYPE = 256

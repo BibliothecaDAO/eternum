@@ -1,26 +1,19 @@
 use starknet::ContractAddress;
 
-
 //
 // GLOBAL CONFIGS
 //
 
 #[derive(Component, Copy, Drop, Serde)]
 struct WorldConfig {
-    day_time: u128,
-    vault_bp: u128,
-    base_resources_per_day: u128, //252 * 10 ** 18 = 252000000000000000000
-    vault_time: u128,
-    lords_per_day: u128,
-    tick_time: u128,
-    realm_l2_contract: ContractAddress,
+    realm_l2_contract: ContractAddress, 
 }
 
 #[derive(Component, Copy, Drop, Serde)]
 struct LaborConfig {
-    base_labor_units: u128, // 86400 / 12    
-    vault_percentage: u128, // 250 
+    base_labor_units: u64, // 86400 / 12    
     base_resources_per_cycle: u128, // (252 / 12) * 10 ** 18;
+    base_food_per_cycle: u128,
 }
 
 #[derive(Component, Copy, Drop, Serde)]

@@ -39,11 +39,11 @@ mod SetLaborConfig {
     use eternum::constants::LABOR_CONFIG_ID;
     use eternum::components::config::LaborConfig;
 
-    fn execute(base_labor_units: u128, vault_percentage: u128, base_resources_per_cycle: u128) {
+    fn execute(base_labor_units: u64, base_resources_per_cycle: u128, base_food_per_cycle: u128) {
         // set labor config
         commands::<LaborConfig>::set_entity(
             (LABOR_CONFIG_ID).into(),
-            (LaborConfig { base_labor_units, vault_percentage, base_resources_per_cycle })
+            (LaborConfig { base_labor_units, base_resources_per_cycle, base_food_per_cycle })
         );
     }
 }

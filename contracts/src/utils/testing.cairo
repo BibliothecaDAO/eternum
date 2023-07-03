@@ -48,7 +48,6 @@ use core::traits::Into;
 use core::result::ResultTrait;
 use array::ArrayTrait;
 use option::OptionTrait;
-use debug::PrintTrait;
 use traits::TryInto;
 
 use starknet::{

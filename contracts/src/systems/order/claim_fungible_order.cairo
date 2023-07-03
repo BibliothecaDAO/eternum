@@ -21,7 +21,6 @@ mod ClaimFungibleOrder {
     use box::BoxTrait;
     use array::ArrayTrait;
     use dojo_core::serde::SpanSerde;
-    use debug::PrintTrait;
 
     fn execute(entity_id: ID, trade_id: ID) {
         // assert caller is owner of the entity_id

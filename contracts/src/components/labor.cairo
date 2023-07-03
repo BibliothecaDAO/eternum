@@ -1,31 +1,22 @@
 #[derive(Component, Copy, Drop, Serde)]
 struct Labor {
-    balance: u128,
-    last_harvest: u128,
-    multiplier: u128,
+    balance: u64,
+    last_harvest: u64,
+    multiplier: u64,
 }
 
 trait LaborTrait {
-    fn get_labor_generated(self: Labor, ts: u128) -> (u128, bool, u128);
-    fn get_new_labor_balance(self: Labor, additional_labor: u128, ts: u128) -> u128;
+    fn get_labor_generated(self: Labor, ts: u64) -> (u64, bool, u64);
 }
 
 impl LaborImpl of LaborTrait {
-    fn get_labor_generated(self: Labor, ts: u128) -> (u128, bool, u128) {
+    fn get_labor_generated(self: Labor, ts: u64) -> (u64, bool, u64) {
         if self.balance <= ts {
             // if complete only take until balance
-            return ((self.balance - self.last_harvest) * self.multiplier, true, 0);
+            return (self.balance - self.last_harvest, true, 0);
         } else {
             // if not complete, take everyting until timestamp
-            return ((ts - self.last_harvest) * self.multiplier, false, self.balance - ts);
-        }
-    }
-
-    fn get_new_labor_balance(self: Labor, additional_labor: u128, ts: u128) -> u128 {
-        if self.balance == 0 {
-            return ts + additional_labor;
-        } else {
-            return self.balance + additional_labor;
+            return (ts - self.last_harvest, false, self.balance - ts);
         }
     }
 }
@@ -82,4 +73,5 @@ impl LaborImpl of LaborTrait {
 //     assert(is_complete == true, 'is_complete is not true');
 //     assert(new_balance == 0, 'new_balance is not 0');
 // }
+
 
