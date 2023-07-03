@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FilterButton } from '../elements/FilterButton';
-import { FilterPopup } from '../elements/FilterPopup';
+import { SecondaryPopup } from '../elements/SecondaryPopup';
 import { resources } from '../constants/resources';
 import { SelectBox } from '../elements/SelectBox';
 import { ResourceIcon } from '../elements/ResourceIcon';
@@ -26,8 +26,8 @@ export const ResourceFilter = ({ }: ResourceFilterProps) => {
             <FilterButton active={popupOpened} onClick={() => setPopupOpened(!popupOpened)}>
                 Resources
             </FilterButton>
-            {popupOpened && <FilterPopup>
-                <FilterPopup.Head>
+            {popupOpened && <SecondaryPopup>
+                <SecondaryPopup.Head>
                     <div className='flex items-center space-x-1'>
                         <div className='mr-0.5'>Resources:</div>
                         {selectedResources.map((resource, index) => (
@@ -36,9 +36,9 @@ export const ResourceFilter = ({ }: ResourceFilterProps) => {
                         ))}
                         <CloseIcon className="w-3 h-3 cursor-pointer fill-white" onClick={() => setSelectedResources([])} />
                     </div>
-                </FilterPopup.Head>
-                <FilterPopup.Body>
-                    <div className='grid grid-cols-3 gap-1 p-1'>
+                </SecondaryPopup.Head>
+                <SecondaryPopup.Body>
+                    <div className='grid grid-cols-3 gap-1 p-2'>
                         {resources.map((resource, index) => (
                             <SelectBox key={index} selected={selectedResources.includes(resource.trait)} onClick={() => selectResource(resource.trait)}>
                                 <div className='flex items-center'>
@@ -51,8 +51,8 @@ export const ResourceFilter = ({ }: ResourceFilterProps) => {
                     <div className='flex justify-end mb-2 mr-2'>
                         <Button onClick={() => setPopupOpened(false)} variant='primary'>Close</Button>
                     </div>
-                </FilterPopup.Body>
-            </FilterPopup>}
+                </SecondaryPopup.Body>
+            </SecondaryPopup>}
         </>
     );
 };
