@@ -14,6 +14,7 @@ import useRealm from '../../../../hooks/store/useRealmStore';
 import { useComponentValue } from '@dojoengine/react';
 import { Utils } from '@dojoengine/core';
 import { LaborConfig, Realm } from '../../../../types';
+import useBlockchainStore from '../../../../hooks/store/useBlockchainStore';
 
 type LaborComponentProps = {
     resourceId: number
@@ -28,28 +29,32 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
         systemCalls: { build_labor }
       } = useDojo();
     
+    const {nextBlockTimestamp} = useBlockchainStore();
+    
     let realmEntityId = useRealm((state) => state.realmEntityId);
     let labor = useComponentValue(Labor, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]))
     let resource = useComponentValue(Resource, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]))
 
     // time until the next possible harvest (that happens every 7200 seconds (2hrs))
     // if labor balance is less than current time, then there is no time to next harvest
-    let timeLeftToHarvest: number | undefined;
-    if (labor && laborConfig && labor.last_harvest > 0) {
-        if (labor.balance > Date.now() / 1000) {
-            timeLeftToHarvest = Date.now() / 1000 - labor.last_harvest
-            timeLeftToHarvest = laborConfig.base_labor_units - (timeLeftToHarvest % laborConfig.base_labor_units)
+    const timeLeftToHarvest = React.useMemo(() => {
+        if (nextBlockTimestamp && labor && laborConfig && labor.last_harvest > 0) {
+          if (labor.balance > nextBlockTimestamp) {
+            const timeSinceLastHarvest = nextBlockTimestamp - labor.last_harvest;
+            return laborConfig.base_labor_units - (timeSinceLastHarvest % laborConfig.base_labor_units);
+          }
         }
-    }
+        return undefined;
+      }, [labor, laborConfig, nextBlockTimestamp]);
 
     // if the labor balance does not exist or is lower than the current time, 
     // then there is no labor left
-    let laborLeft: number | undefined;
-    if (labor && labor.balance > Date.now() / 1000) {
-        laborLeft = labor.balance - Date.now() / 1000;
-    } else {
-        laborLeft = 0;
-    }
+    const laborLeft = React.useMemo(() => {
+        if (nextBlockTimestamp && labor && labor.balance > nextBlockTimestamp) {
+          return labor.balance - nextBlockTimestamp;
+        }
+        return 0;
+      }, [nextBlockTimestamp, labor]);
 
     const [state, setState] = useState();
 
@@ -68,7 +73,7 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
                         <div className='ml-2 text-xs font-bold text-white'>{currencyFormat(resource ? resource.balance : 0)}</div>
                         <div className='flex items-center ml-auto'>
                             {(resourceId == ResourcesIds['Wheat'] || resourceId == ResourcesIds['Fish']) && <Village />}
-                            {resourceId == ResourcesIds['Wheat'] && <div className='px-2'>{`${labor ? labor.multiplier : 0}/${realm?.cities}`}</div>}
+                            {resourceId == ResourcesIds['Wheat'] && <div className='px-2'>{`${labor ? labor.multiplier : 0}/${realm?.rivers}`}</div>}
                             {resourceId == ResourcesIds['Fish'] && <div className='px-2'>{`${labor ? labor.multiplier : 0}/${realm?.harbors}`}</div>}
                             <Button variant='outline' className='px-2 py-1' onClick={onBuild}>Build</Button>
                         </div>
@@ -95,6 +100,7 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
 };
 
 
+// TODO: move to utils
 const formatTimeLeft = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
@@ -108,6 +114,7 @@ const calculateProductivity = (resources_per_cycle: number, multiplier: number, 
     return productivity * 3600;
 }
 
+// TODO: should we use Date.now() or the current block timestamp?
 // calculates how much you will have when you click on harvest
 const calculateNextHarvest = (last_harvest: number, multiplier: number, cycle_length: number, resources_per_cycle: number): number => {
     let next_harvest = (Date.now() / 1000 - last_harvest) * multiplier / cycle_length * resources_per_cycle;
