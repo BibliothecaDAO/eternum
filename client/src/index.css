@@ -17,3 +17,13 @@ html, body {
 .container-bg-gradient-secondary {
     background: linear-gradient(180deg, #B0B8AE 3.09%, rgba(72, 53, 47, 0.6) 100%);
 }
+
+@layer base {
+    input[type='number']::-webkit-outer-spin-button,
+    input[type='number']::-webkit-inner-spin-button,
+    input[type='number'] {
+      -webkit-appearance: none;
+      margin: 0;
+      -moz-appearance: textfield !important;
+    }
+ }
