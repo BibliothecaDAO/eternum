@@ -25,9 +25,14 @@ export interface Realm {
 
 export interface LaborConfig {
     base_labor_units: number;
-    vault_percentage: number;
     base_resources_per_cycle: number;
     base_food_per_cycle: number;
+}
+
+export interface Labor {
+    balance: number;
+    last_harvest: number;
+    multiplier: number;
 }
 
 export interface EntityData {

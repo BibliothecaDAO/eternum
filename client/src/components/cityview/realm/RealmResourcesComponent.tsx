@@ -9,6 +9,7 @@ import { Utils } from '@dojoengine/core';
 import { useDojo } from '../../../DojoContext';
 import useRealm from '../../../hooks/store/useRealmStore';
 import { unpackResources } from '../../../utils/packedData';
+import { useLaborStore } from '../../../hooks/store/useLaborStore';
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<'div'>
 
@@ -24,7 +25,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
     // unpack the resources
     let realmResourceIds: number[] = [ResourcesIds['Wheat'], ResourcesIds['Fish']];
     let unpackedResources: number[] = [];
-  
+
     // TODO: don't do unpacking at each render but rather in useRealmStore at beginning and store result
     if (realm) {
       unpackedResources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
@@ -55,7 +56,9 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
     const {
       components: { Resource },
     } = useDojo();
-  
+
+    const {productivity} = useLaborStore((state) => state);
+
     let resource = useComponentValue(Resource, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
   
     return (
@@ -65,19 +68,21 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
             <ResourceIcon resource={findResourceById(resourceId)?.trait as string} size="xs" className="mr-1" />
             <div className="text-xs">{currencyFormat(resource ? resource.balance : 0)}</div>
           </div>
-            {/* TODO: speed at which resources get harvested */}
-            {/* <div className={clsx('text-xxs mt-2 rounded-[5px] px-2 h-4 w-min',
-                resource.speed > 0 && 'text-order-vitriol bg-dark-green',
-                resource.speed < 0 && 'text-light-red bg-brown',
-                resource.speed == 0 && 'text-gold bg-brown'
-            )}>
-                {resource.speed !== 0 ? `${resource.speed}/s` : 'IDLE'}
-            </div> */}
+          {/* TODO: speed at which resources get harvested */}
+            <div
+              className={clsx(
+                'text-xxs mt-2 rounded-[5px] px-2 h-4 w-min',
+                productivity[resourceId] > 0 && 'text-order-vitriol bg-dark-green',
+                (productivity[resourceId] === 0 || productivity[resourceId] === undefined) && 'text-gold bg-brown'
+              )}
+            >
+              {productivity[resourceId] === 0 || productivity[resourceId] === undefined ? 'IDLE': `${productivity[resourceId]}/s` }
+            </div>
         </div>
         {resourceId === ResourcesIds['Fish'] && <div className="flex items-center mx-3 -translate-y-2">|</div>}
       </>
     );
-  };
+}
   
 
 export default RealmResourcesComponent;
