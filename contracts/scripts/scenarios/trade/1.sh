@@ -21,7 +21,7 @@ script_dir="$(cd "$(dirname "$0")" && pwd)"
 # console log script dir  
 echo "Script dir: $script_dir"
 # set config
-source "$script_dir/../set_config.sh"
+source "$script_dir/../../set_config.sh"
 
 commands=(
     # create realm 1 and 2

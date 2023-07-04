@@ -23,11 +23,11 @@
         },
         {
           "name": "labor_units",
-          "type": "core::integer::u128"
+          "type": "core::integer::u64"
         }
       ],
       "outputs": [],
-      "class_hash": "0x2ea7629797b2227a2cf6554b6a72fd873925c93e9fd3140cb60207ea10a26a7",
+      "class_hash": "0x26acd7f2f15d966597f095b1b0f707c2ae3ffa991f22aaad7ac76f9b57ee06b",
       "dependencies": [
         {
           "name": "Labor",
@@ -75,7 +75,7 @@
         }
       ],
       "outputs": [],
-      "class_hash": "0x187e2a16ed0d294a1acf484dc000b97f22eb0a51bc7ad240f39f629545a496b",
+      "class_hash": "0x3b904910c48cd04abc686c86da8a99b240c5f55dff983a22467e09860cf521c",
       "dependencies": [
         {
           "name": "Labor",
@@ -101,11 +101,6 @@
           "name": "Resource",
           "read": true,
           "write": true
-        },
-        {
-          "name": "Vault",
-          "read": true,
-          "write": true
         }
       ]
     },
@@ -113,12 +108,17 @@
       "name": "Settle",
       "inputs": [],
       "outputs": [],
-      "class_hash": "0x3c6f2f27f397b81d51e5f21892e58cd3cd8010a14c831980d827f53d154cb0f",
+      "class_hash": "0x6cf157bf11121d986a14f14931b2d02a595180497c2274cbb8e30146f34103c",
       "dependencies": [
         {
           "name": "Age",
           "read": false,
           "write": true
+        },
+        {
+          "name": "LaborConfig",
+          "read": true,
+          "write": false
         },
         {
           "name": "Owner",
@@ -151,8 +151,13 @@
       "name": "Unsettle",
       "inputs": [],
       "outputs": [],
-      "class_hash": "0x3546bc1bf2d93b971647e75f41016714ba9621fb0e9627fd37a79a874f8082b",
+      "class_hash": "0x704f52fac35fbd75c0919a2d4c77ff0c646f1fa17cf5ac9d94fc541996efff0",
       "dependencies": [
+        {
+          "name": "LaborConfig",
+          "read": true,
+          "write": false
+        },
         {
           "name": "Owner",
           "read": true,
@@ -241,15 +246,15 @@
       "inputs": [
         {
           "name": "base_labor_units",
-          "type": "core::integer::u128"
+          "type": "core::integer::u64"
         },
         {
-          "name": "vault_percentage",
+          "name": "base_resources_per_cycle",
           "type": "core::integer::u128"
         }
       ],
       "outputs": [],
-      "class_hash": "0x43e612ba610827cb30e82b2591dc1674738315a069924638c5e21756d7c43a9",
+      "class_hash": "0x2d65e38dc6de4f40055352dba5d973172f8c330e58cc1ffd42509fde1e2b320",
       "dependencies": [
         {
           "name": "LaborConfig",
@@ -260,34 +265,9 @@
     },
     {
       "name": "SetWorldConfig",
-      "inputs": [
-        {
-          "name": "day_time",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "vault_bp",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "base_resources_per_day",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "vault_time",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "lords_per_day",
-          "type": "core::integer::u128"
-        },
-        {
-          "name": "tick_time",
-          "type": "core::integer::u128"
-        }
-      ],
+      "inputs": [],
       "outputs": [],
-      "class_hash": "0x78e45e946f897960ec61575d8c26da50b1dc55c474aa2a7e9a6a3eb5416eff9",
+      "class_hash": "0x2f616ce12797eebf6e39d3dbc6f82a3d64ba6d44d1a2e3f18bd3a6fecde5312",
       "dependencies": [
         {
           "name": "WorldConfig",
@@ -1164,73 +1144,37 @@
       "name": "WorldConfig",
       "members": [
         {
-          "name": "day_time",
-          "type": "u128",
-          "slot": 0,
-          "offset": 0
-        },
-        {
-          "name": "vault_bp",
-          "type": "u128",
-          "slot": 1,
-          "offset": 0
-        },
-        {
-          "name": "base_resources_per_day",
-          "type": "u128",
-          "slot": 2,
-          "offset": 0
-        },
-        {
-          "name": "vault_time",
-          "type": "u128",
-          "slot": 3,
-          "offset": 0
-        },
-        {
-          "name": "lords_per_day",
-          "type": "u128",
-          "slot": 4,
-          "offset": 0
-        },
-        {
-          "name": "tick_time",
-          "type": "u128",
-          "slot": 5,
-          "offset": 0
-        },
-        {
           "name": "realm_l2_contract",
           "type": "ContractAddress",
-          "slot": 6,
+          "slot": 0,
           "offset": 0
         }
       ],
-      "class_hash": "0xc5729b0c2abe3056b7f1b4fe7abe190ca079b6311eddba7c52ef204cd22ffb"
+      "class_hash": "0x1d473d0d56b1d0ba0943845c02e3a258a78809f2e80462f9b25f453cc14a581"
     },
     {
       "name": "LaborConfig",
       "members": [
         {
           "name": "base_labor_units",
-          "type": "u128",
+          "type": "u64",
           "slot": 0,
-          "offset": 0
-        },
-        {
-          "name": "vault_percentage",
-          "type": "u128",
-          "slot": 1,
           "offset": 0
         },
         {
           "name": "base_resources_per_cycle",
           "type": "u128",
+          "slot": 1,
+          "offset": 0
+        },
+        {
+          "name": "base_food_per_cycle",
+          "type": "u128",
           "slot": 2,
           "offset": 0
         }
       ],
-      "class_hash": "0x593a5c94c4243a041734daefadf9d43d875eab1eee5c70671c4c7c17b87a1fe"
+      "class_hash": "0x4db46c383d4a9451f884d157e3693787754dad2f9b270d68316e68972a08226"
     },
     {
       "name": "TravelConfig",
@@ -1537,36 +1481,36 @@
       "members": [
         {
           "name": "balance",
-          "type": "u128",
+          "type": "u64",
           "slot": 0,
           "offset": 0
         },
         {
           "name": "last_harvest",
-          "type": "u128",
+          "type": "u64",
           "slot": 1,
           "offset": 0
         },
         {
           "name": "multiplier",
-          "type": "u128",
+          "type": "u64",
           "slot": 2,
           "offset": 0
         }
       ],
-      "class_hash": "0x816ca1eeed4aa3a424290171438d6bf4688d1ba0caef2b946c6d6ae256be0c"
+      "class_hash": "0x526986ca45d0d419f0047c75a2111ff147addcfe5796dc05e3002e5b7347760"
     },
     {
       "name": "Owner",
       "members": [
         {
           "name": "address",
-          "type": "starknet::ContractAddress",
+          "type": "ContractAddress",
           "slot": 0,
           "offset": 0
         }
       ],
-      "class_hash": "0x3591f65ceaef3836fe543a4c7efc185ad22ce052ebdc359a1f9e50ecac59f95"
+      "class_hash": "0x581cee5887314c648661fa8e0f4a69964345b74342de9a6b12d1db8065e30af"
     },
     {
       "name": "Capacity",

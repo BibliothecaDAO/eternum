@@ -19,7 +19,6 @@ mod CreateFreeTransportUnit {
     use traits::Into;
     use traits::TryInto;
     use box::BoxTrait;
-    use debug::PrintTrait;
 
     fn execute(entity_id: ID, quantity: u128) -> ID {
         // assert that the entity is a realm by querying the entity type

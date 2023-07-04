@@ -8,7 +8,6 @@ const BUILDING_CONFIG_ID: ID = 999999999999999998;
 // e.g. LaborConfig holds a set of configuration values 
 // that are used for all labor, regardless of the resource
 // - base_labor_units
-// - vault_percentage
 // - base_resources_per_cycle
 const LABOR_CONFIG_ID: ID = 999999999999999997;
 const TRANSPORT_CONFIG_ID: ID = 999999999999999996;

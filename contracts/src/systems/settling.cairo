@@ -5,18 +5,19 @@ mod Settle {
 
     use eternum::alias::ID;
     use eternum::utils::unpack::unpack_resource_types;
-    use eternum::constants::WORLD_CONFIG_ID;
+    use eternum::constants::{WORLD_CONFIG_ID, LABOR_CONFIG_ID};
     use eternum::interfaces::{IERC721Dispatcher, IERC721DispatcherTrait};
     use eternum::erc721::erc721::{RealmData, Position};
     use eternum::components::owner::Owner;
     use eternum::components::realm::Realm;
     use eternum::components::resources::Resource;
     use eternum::components::age::Age;
-    use eternum::components::config::WorldConfig;
+    use eternum::components::config::{WorldConfig, LaborConfig};
 
     fn execute(realm_id: ID) { // get the ERC721 contract
         // get the owner
         let config = commands::<WorldConfig>::entity(WORLD_CONFIG_ID.into());
+        let laborConfig = commands::<LaborConfig>::entity(LABOR_CONFIG_ID.into());
         let token: felt252 = config.realm_l2_contract.into();
         let caller = starknet::get_tx_info().unbox().account_contract_address;
         // get the metadata
@@ -57,6 +58,11 @@ mod Settle {
         let resource_types: Span<u8> = unpack_resource_types(
             realm_data.resource_types_packed, realm_data.resource_types_count
         );
+
+        // get daily resource production
+        let daily_resource_production = laborConfig.base_resources_per_cycle
+            * (86400_u128 / laborConfig.base_labor_units.into());
+
         let mut index = 0_usize;
         loop {
             if index == realm_data.resource_types_count.into() {
@@ -65,8 +71,7 @@ mod Settle {
             let resource_type: u8 = *resource_types[index];
             let resource_query: Query = (realm_id, resource_type).into();
             commands::<Resource>::set_entity(
-                resource_query,
-                (Resource { resource_type, balance: config.base_resources_per_day,  })
+                resource_query, (Resource { resource_type, balance: daily_resource_production,  })
             );
             index += 1;
         }
@@ -81,19 +86,20 @@ mod Unsettle {
     use traits::Into;
     use box::BoxTrait;
 
-    use eternum::constants::WORLD_CONFIG_ID;
+    use eternum::constants::{WORLD_CONFIG_ID, LABOR_CONFIG_ID};
     use eternum::interfaces::{IERC721Dispatcher, IERC721DispatcherTrait};
     use eternum::erc721::erc721::Position;
     use eternum::components::owner::Owner;
     use eternum::components::realm::Realm;
     use eternum::components::resources::Resource;
     use eternum::components::age::Age;
-    use eternum::components::config::WorldConfig;
+    use eternum::components::config::{WorldConfig, LaborConfig};
     use eternum::alias::ID;
 
     fn execute(realm_id: ID) {
         // get the ERC721 contract
         let config = commands::<WorldConfig>::entity(WORLD_CONFIG_ID.into());
+        let laborConfig = commands::<LaborConfig>::entity(LABOR_CONFIG_ID.into());
         let token = config.realm_l2_contract;
 
         // get the owner

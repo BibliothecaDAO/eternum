@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { OrderIcon } from '../../../../elements/OrderIcon';
 import Button from '../../../../elements/Button';
 import { ResourceIcon } from '../../../../elements/ResourceIcon';
@@ -10,10 +10,11 @@ import { ReactComponent as Village } from '../../../../assets/icons/common/villa
 
 import ProgressBar from '../../../../elements/ProgressBar';
 import { useDojo } from '../../../../DojoContext';
-import useRealm from '../../../../hooks/store/useRealm';
+import useRealm from '../../../../hooks/store/useRealmStore';
 import { useComponentValue } from '@dojoengine/react';
 import { Utils } from '@dojoengine/core';
 import { LaborConfig, Realm } from '../../../../types';
+import useBlockchainStore from '../../../../hooks/store/useBlockchainStore';
 
 type LaborComponentProps = {
     resourceId: number
@@ -25,30 +26,52 @@ type LaborComponentProps = {
 export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...props }: LaborComponentProps) => {
     const {
         components: { Labor, Resource },
-    } = useDojo();
-
+        systemCalls: { harvest_labor }
+      } = useDojo();
+    
+    const {nextBlockTimestamp} = useBlockchainStore();
+    
     let realmEntityId = useRealm((state) => state.realmEntityId);
     let labor = useComponentValue(Labor, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]))
     let resource = useComponentValue(Resource, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]))
 
     // time until the next possible harvest (that happens every 7200 seconds (2hrs))
     // if labor balance is less than current time, then there is no time to next harvest
-    let timeLeftToHarvest: number | undefined;
-    if (labor && laborConfig && labor.last_harvest > 0) {
-        if (labor.balance > Date.now() / 1000) {
-            timeLeftToHarvest = Date.now() / 1000 - labor.last_harvest
-            timeLeftToHarvest = laborConfig.base_labor_units - (timeLeftToHarvest % laborConfig.base_labor_units)
+    const timeLeftToHarvest = React.useMemo(() => {
+        if (nextBlockTimestamp && labor && laborConfig && labor.last_harvest > 0) {
+          if (labor.balance > nextBlockTimestamp) {
+            const timeSinceLastHarvest = nextBlockTimestamp - labor.last_harvest;
+            return laborConfig.base_labor_units - (timeSinceLastHarvest % laborConfig.base_labor_units);
+          }
         }
-    }
+        return undefined;
+      }, [labor, laborConfig, nextBlockTimestamp]);
 
     // if the labor balance does not exist or is lower than the current time, 
     // then there is no labor left
-    let laborLeft: number | undefined;
-    if (labor && labor.balance > Date.now() / 1000) {
-        laborLeft = labor.balance - Date.now() / 1000;
-    } else {
-        laborLeft = 0;
-    }
+    const laborLeft = React.useMemo(() => {
+        if (nextBlockTimestamp && labor && laborConfig && labor.balance > nextBlockTimestamp) {
+          let left = labor.balance - nextBlockTimestamp;
+          return left < laborConfig.base_labor_units? 0: left;
+        }
+        return 0;
+      }, [nextBlockTimestamp, labor]);
+
+    const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
+    
+    const nextHarvest = React.useMemo(() => {
+        if (labor && laborConfig && nextBlockTimestamp) {
+            return calculateNextHarvest(
+                labor.balance,
+                labor.last_harvest, 
+                labor.multiplier, 
+                laborConfig.base_labor_units,
+                isFood? laborConfig.base_food_per_cycle : laborConfig.base_resources_per_cycle, 
+                nextBlockTimestamp);
+        } else {
+            return 0;
+        }
+    }, [labor, laborConfig, nextBlockTimestamp]);
 
     const [state, setState] = useState();
 
@@ -66,10 +89,12 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
                         <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size='sm' />
                         <div className='ml-2 text-xs font-bold text-white'>{currencyFormat(resource ? resource.balance : 0)}</div>
                         <div className='flex items-center ml-auto'>
-                            {(resourceId == ResourcesIds['Wheat'] || resourceId == ResourcesIds['Fish']) && <Village />}
-                            {resourceId == ResourcesIds['Wheat'] && <div className='px-2'>{`${labor ? labor.multiplier : 0}/${realm?.cities}`}</div>}
-                            {resourceId == ResourcesIds['Fish'] && <div className='px-2'>{`${labor ? labor.multiplier : 0}/${realm?.harbors}`}</div>}
-                            <Button variant='outline' className='px-2 py-1' onClick={onBuild}>Build</Button>
+                            {isFood && <Village />}
+                            {/* // DISCUSS: when there is no labor anymore, it means full decay of the buildings, so it should be multiplier 0 */}
+                            {resourceId == ResourcesIds['Wheat'] && <div className='px-2'>{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${realm?.rivers}`}</div>}
+                            {resourceId == ResourcesIds['Fish'] && <div className='px-2'>{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${realm?.harbors}`}</div>}
+                            {/* // TODO: show visual cue that it's disabled */}
+                            <Button variant='outline' className='px-2 py-1' onClick={onBuild} disabled={isFood && laborLeft > 0} >{isFood? `Build`: `Buy Tools`}</Button>
                         </div>
                     </div>
                     <ProgressBar rounded progress={laborConfig && timeLeftToHarvest ? 100 - timeLeftToHarvest / laborConfig.base_labor_units * 100 : 0} className='bg-white' />
@@ -78,14 +103,15 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
                             <div className='ml-1 italic text-white/70'>{laborLeft ? `${formatTimeLeft(laborLeft)} left` : 'No Labor'}</div></>
 
                         <div className='flex items-center mx-auto text-white/70'>
-                            {laborConfig && labor ? `+${calculateProductivity(laborConfig.base_resources_per_cycle, labor.multiplier, laborConfig.base_labor_units).toFixed(2)}` : '+0'}
+                            {laborConfig && labor && laborLeft > 0? `+${calculateProductivity(isFood? laborConfig.base_food_per_cycle: laborConfig.base_resources_per_cycle, labor.multiplier, laborConfig.base_labor_units).toFixed(0)}` : '+0'}
                             <ResourceIcon containerClassName='mx-0.5' className='!w-[12px]' resource={findResourceById(resourceId)?.trait as any} size='xs' />
                             /h
                         </div>
 
                         <><ResourceIcon resource={findResourceById(resourceId)?.trait as any} size='xs' className='!w-[12px]' />
-                            <div className='mx-1 text-brilliance'>{`+${labor && laborConfig ? calculateNextHarvest(labor.last_harvest, labor.multiplier, laborConfig.base_labor_units, laborConfig.base_resources_per_cycle) : 0}`}</div></>
-                        <Button className='!px-[6px] !py-[2px] text-xxs' variant='success' onClick={() => { }}>Harvest</Button>
+                            <div className='mx-1 text-brilliance'>{`+${nextHarvest}`}</div></>
+                        {/* // TODO: visual cue to show disabled? */}
+                        <Button className='!px-[6px] !py-[2px] text-xxs' variant='success' disabled={nextHarvest === 0} onClick={() => { harvest_labor({ realm_id: realmEntityId, resource_type: resourceId }) }}>Harvest</Button>
                     </div>
                 </div>
             </div>
@@ -94,6 +120,7 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
 };
 
 
+// TODO: move to utils
 const formatTimeLeft = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
@@ -108,10 +135,11 @@ const calculateProductivity = (resources_per_cycle: number, multiplier: number, 
 }
 
 // calculates how much you will have when you click on harvest
-const calculateNextHarvest = (last_harvest: number, multiplier: number, cycle_length: number, resources_per_cycle: number): number => {
-    let next_harvest = (Date.now() / 1000 - last_harvest) * multiplier / cycle_length * resources_per_cycle;
-    // remove what you cannot harvest yet
-    let rest = next_harvest % cycle_length;
+const calculateNextHarvest = (balance: number, last_harvest: number, multiplier: number, cycle_length: number, production_per_cycle: number, nextBlockTime: number): number => {
     // in seconds
-    return Number((next_harvest - rest).toFixed(2));
+    let harvest_seconds = nextBlockTime > balance ? balance - last_harvest: nextBlockTime - last_harvest;
+    // in units
+    let next_harvest_units = Math.floor(harvest_seconds / cycle_length);
+    // return production
+    return next_harvest_units * production_per_cycle * multiplier;
 }

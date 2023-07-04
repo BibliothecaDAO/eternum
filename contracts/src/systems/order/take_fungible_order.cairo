@@ -15,7 +15,6 @@ mod TakeFungibleOrder {
     use traits::TryInto;
     use box::BoxTrait;
     use array::ArrayTrait;
-    use debug::PrintTrait;
 
     use dojo_core::serde::SpanSerde;
     // you can attach a caravan only if it's needed

@@ -20,7 +20,6 @@ mod CreateCaravan {
     use traits::TryInto;
     use array::ArrayTrait;
     use box::BoxTrait;
-    use debug::PrintTrait;
 
     use dojo_core::serde::SpanSerde;
 

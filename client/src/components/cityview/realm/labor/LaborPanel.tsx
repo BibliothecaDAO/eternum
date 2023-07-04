@@ -4,7 +4,7 @@ import { FilterButton } from '../../../../elements/FilterButton';
 import { SortPanel } from '../../../../elements/SortPanel';
 import { SortButton, SortInterface } from '../../../../elements/SortButton';
 import { LaborComponent } from './LaborComponent';
-import useRealm from '../../../../hooks/store/useRealm';
+import useRealmStore from '../../../../hooks/store/useRealmStore';
 import { useComponentValue } from '@dojoengine/react';
 import { useDojo } from '../../../../DojoContext';
 import { Utils } from '@dojoengine/core';
@@ -37,7 +37,7 @@ export const LaborPanel = ({ }: LaborPanelProps) => {
         sort: 'none'
     });
 
-    let realmEntityId = useRealm((state) => state.realmEntityId);
+    let realmEntityId = useRealmStore((state) => state.realmEntityId);
     let realm = useComponentValue(Realm, Utils.getEntityIdFromKeys([BigInt(realmEntityId)]));
 
     // unpack the resources

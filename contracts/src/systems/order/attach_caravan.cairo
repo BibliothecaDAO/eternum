@@ -18,7 +18,6 @@ mod AttachCaravan {
     use box::BoxTrait;
     use array::ArrayTrait;
     use dojo_core::serde::SpanSerde;
-    use debug::PrintTrait;
 
     // This system can be called by the maker or the taker.
     // Taker can only attach caravan if it's asked by the maker.

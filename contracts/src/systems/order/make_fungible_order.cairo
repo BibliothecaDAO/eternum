@@ -23,7 +23,6 @@ mod MakeFungibleOrder {
     use box::BoxTrait;
     use array::ArrayTrait;
     use dojo_core::serde::SpanSerde;
-    use debug::PrintTrait;
 
     // TODO: create a function that takes also an array of strings as input, these 
     // strings are names of components that have the {type, balance} fields.

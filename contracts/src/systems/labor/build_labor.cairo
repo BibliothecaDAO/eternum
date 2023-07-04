@@ -14,12 +14,11 @@ mod BuildLabor {
     use eternum::utils::unpack::unpack_resource_types;
 
     #[external]
-    fn execute(realm_id: ID, resource_type: u8, labor_units: u128, multiplier: u128) {
+    fn execute(realm_id: ID, resource_type: u8, labor_units: u64, multiplier: u64) {
         // assert owner of realm
         let player_id: ContractAddress = starknet::get_tx_info().unbox().account_contract_address;
         let (realm, owner) = commands::<Realm, Owner>::entity(realm_id.into());
-        // TODO: do that when starknet::testing::set_account_contract_address works in test
-        // assert(owner.address == player_id, 'Realm does not belong to player');
+        assert(owner.address == player_id, 'Realm does not belong to player');
 
         // check that resource is on realm
         let realm_has_resource = realm.has_resource(resource_type);
@@ -31,22 +30,21 @@ mod BuildLabor {
         // Get Config
         let labor_config: LaborConfig = commands::<LaborConfig>::entity(LABOR_CONFIG_ID.into());
 
-        // transform timestamp from u64 to u128
-        let ts: u128 = starknet::get_block_timestamp().into();
+        let ts = starknet::get_block_timestamp();
 
         // get labor
         let resource_query: Query = (realm_id, resource_type).into();
         let maybe_labor = commands::<Labor>::try_entity(resource_query);
         let labor = match maybe_labor {
             Option::Some(labor) => labor,
-            Option::None(_) => Labor { balance: 0, last_harvest: ts, multiplier: 1,  },
+            Option::None(_) => Labor { balance: ts, last_harvest: ts, multiplier: 1,  },
         };
 
         // config
         let additional_labor = labor_units * labor_config.base_labor_units;
 
         // set new labor balance
-        let mut new_labor_balance = labor.get_new_labor_balance(additional_labor, ts);
+        let mut new_labor_balance = labor.balance + additional_labor;
         let mut new_last_harvest = labor.last_harvest;
 
         // assert multiplier higher than 0
@@ -57,12 +55,12 @@ mod BuildLabor {
         if multiplier > 1 {
             if resource_type == ResourceTypes::FISH {
                 // assert that realm can have that many fishing villages
-                let harbors: u128 = realm.harbors.into();
+                let harbors: u64 = realm.harbors.into();
                 assert(harbors >= multiplier, 'Not enough harbors')
             } else {
                 assert(resource_type == ResourceTypes::WHEAT, 'Resource id is not valid');
                 // assert that realm can have that many farms
-                let rivers: u128 = realm.rivers.into();
+                let rivers: u64 = realm.rivers.into();
                 assert(rivers >= multiplier, 'Not enough rivers')
             }
         }
@@ -96,14 +94,14 @@ mod BuildLabor {
                 (Resource {
                     resource_type: current_resource.resource_type,
                     balance: current_resource.balance
-                        + (total_harvest_units
-                            * labor.multiplier
-                            * labor_config.base_resources_per_cycle)
+                        + (total_harvest_units.into()
+                            * labor.multiplier.into()
+                            * labor_config.base_food_per_cycle)
                 })
             );
 
             // if unharvested has been harvested, remove it from the labor balance
-            new_labor_balance -= labor_unharvested;
+            new_labor_balance = new_labor_balance - labor_unharvested;
             // if unharvested has been harvested, update last_harvest
             new_last_harvest = ts;
         }
@@ -132,7 +130,7 @@ mod BuildLabor {
             let current_resource: Resource = commands::<Resource>::entity(
                 (realm_id, labor_cost_resource_type).into()
             );
-            let total_cost = labor_cost_per_unit.value * labor_units * multiplier;
+            let total_cost = labor_cost_per_unit.value * labor_units.into() * multiplier.into();
             assert(current_resource.balance >= total_cost, 'Not enough resources');
             commands::<Resource>::set_entity(
                 (realm_id, labor_cost_resource_type).into(),
@@ -146,6 +144,7 @@ mod BuildLabor {
     }
 }
 // TODO: test when withdraw gas is solved
+// // TODO: remove everything related to vault
 // mod tests {
 //     // constants
 //     use eternum::constants::ResourceTypes;
@@ -398,4 +397,5 @@ mod BuildLabor {
 //         assert(*labor[2] == 2, 'multiplier is wrong');
 //     }
 // }
+
 

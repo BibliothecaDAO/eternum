@@ -1,4 +1,3 @@
-use core::debug::PrintTrait;
 use traits::Into;
 use traits::TryInto;
 use option::OptionTrait;

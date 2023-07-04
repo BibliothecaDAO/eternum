@@ -5,6 +5,7 @@ struct Resource {
     balance: u128,
 }
 
+// TODO: need to change the whole vault logic
 #[derive(Component, Copy, Drop, Serde)]
 struct Vault {
     balance: u128, 

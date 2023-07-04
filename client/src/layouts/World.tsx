@@ -17,9 +17,11 @@ import EpochCountdown from "../components/network/EpochCountdown";
 import RealmStatusComponent from "../components/cityview/realm/RealmStatusComponent";
 import { Redirect } from "wouter";
 import RealmResourcesComponent from "../components/cityview/realm/RealmResourcesComponent";
+import { useFetchBlockchainData } from "../hooks/store/useBlockchainStore";
 
 
 export const World = () => {
+  useFetchBlockchainData()
 
 
 
