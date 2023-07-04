@@ -6,14 +6,14 @@ import { ResourceCost } from '../../../../elements/ResourceCost';
 import { NumberInput } from '../../../../elements/NumberInput';
 import { SelectableResource } from '../../../../elements/SelectableResource';
 import { resources } from '../../../../constants/resources';
-
+import { ReactComponent as ArrowSeparator } from '../../../../assets/icons/common/arrow-separator.svg';
 type CreateOfferPopupProps = {
     onClose: () => void;
     onCreate: () => void;
 }
 
 export const CreateOfferPopup = ({ onClose, onCreate }: CreateOfferPopupProps) => {
-    const [step, setStep] = useState<1 | 2 | 3>(1);
+    const [step, setStep] = useState<number>(1);
     const [selectedResourceIdsGive, setSelectedResourceIdsGive] = useState<number[]>([]);
     const [selectedResourceIdsGet, setSelectedResourceIdsGet] = useState<number[]>([]);
     const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] = useState<{ [key: number]: number }>({});
@@ -31,19 +31,35 @@ export const CreateOfferPopup = ({ onClose, onCreate }: CreateOfferPopupProps) =
             </SecondaryPopup.Head>
             <SecondaryPopup.Body>
                 <div className='flex flex-col items-center pt-2'>
-                    <SelectResourcesPanel
+                    {step == 1 && <SelectResourcesPanel
                         selectedResourceIdsGive={selectedResourceIdsGive}
-                        setSelectedResourceIdsGive={setSelectedResourceIdsGive}
+                        setSelectedResourceIdsGive={e => {
+                            setSelectedResourceIdsGive(e); setSelectedResourcesGiveAmounts(
+                                Object.fromEntries(e.map(id => [id, 0]))
+                            )
+                        }}
                         selectedResourceIdsGet={selectedResourceIdsGet}
-                        setSelectedResourceIdsGet={setSelectedResourceIdsGet}
-                    />
+                        setSelectedResourceIdsGet={e => {
+                            setSelectedResourceIdsGet(e); setSelectedResourcesGetAmounts(
+                                Object.fromEntries(e.map(id => [id, 0]))
+                            )
+                        }}
+                    />}
+                    {step == 2 && <SelectResourcesAmountPanel
+                        selectedResourceIdsGive={selectedResourceIdsGive}
+                        selectedResourcesGiveAmounts={selectedResourcesGiveAmounts}
+                        setSelectedResourcesGiveAmounts={setSelectedResourcesGiveAmounts}
+                        selectedResourceIdsGet={selectedResourceIdsGet}
+                        selectedResourcesGetAmounts={selectedResourcesGetAmounts}
+                        setSelectedResourcesGetAmounts={setSelectedResourcesGetAmounts}
+                    />}
                 </div>
                 <div className='flex justify-between m-2 text-xxs'>
-                    <Button className='!px-[6px] !py-[2px] text-xxs' onClick={onClose} variant='primary'>Close</Button>
-                    <Button className='!px-[6px] !py-[2px] text-xxs' onClick={onCreate} variant='success'>Create</Button>
+                    <Button className='!px-[6px] !py-[2px] text-xxs' onClick={() => setStep(step - 1)} variant='primary'>Close</Button>
+                    <Button className='!px-[6px] !py-[2px] text-xxs' onClick={() => setStep(step + 1)} variant='success'>Create</Button>
                 </div>
             </SecondaryPopup.Body>
-        </SecondaryPopup>
+        </SecondaryPopup >
     );
 };
 
@@ -76,9 +92,7 @@ const SelectResourcesPanel = ({ selectedResourceIdsGive, setSelectedResourceIdsG
             </div>
         </div>
         <div className='flex items-center justify-center'>
-            <svg width="12" height="256" viewBox="0 0 12 256" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2 110L9.83871 127.5L2 145" stroke="#E0AF65" />
-            </svg>
+            <ArrowSeparator />
         </div>
         <div className='flex flex-col items-center col-span-4'>
             <Headline className='mb-2'>You Get</Headline>
@@ -102,4 +116,55 @@ const SelectResourcesPanel = ({ selectedResourceIdsGive, setSelectedResourceIdsG
             </div>
         </div>
     </div>
+}
+
+const SelectResourcesAmountPanel = ({ selectedResourceIdsGive, selectedResourceIdsGet, selectedResourcesGiveAmounts, selectedResourcesGetAmounts, setSelectedResourcesGiveAmounts, setSelectedResourcesGetAmounts }: {
+    selectedResourceIdsGive: number[];
+    selectedResourceIdsGet: number[];
+    selectedResourcesGiveAmounts: { [key: number]: number };
+    selectedResourcesGetAmounts: { [key: number]: number };
+    setSelectedResourcesGiveAmounts: (selectedResourcesGiveAmounts: { [key: number]: number }) => void;
+    setSelectedResourcesGetAmounts: (selectedResourcesGetAmounts: { [key: number]: number }) => void;
+}) => {
+
+    return <>
+        <div className='grid grid-cols-9 gap-2 p-2'>
+            <div className='flex flex-col items-center col-span-4 space-y-2'>
+                <Headline className='mb-2'>You Give</Headline>
+                {
+                    selectedResourceIdsGive.map((id) => (
+                        <div key={id} className='flex items-center w-full'>
+                            <NumberInput max={100000} value={selectedResourcesGiveAmounts[id]} onChange={(value) => {
+                                setSelectedResourcesGiveAmounts({ ...selectedResourcesGiveAmounts, [id]: value });
+                            }} />
+                            <div className='ml-2'>
+                                <ResourceCost resourceId={id} amount={selectedResourcesGiveAmounts[id]} />
+                            </div>
+                        </div>
+                    ))
+                }
+            </div>
+            <div className='flex items-center justify-center'>
+                <ArrowSeparator />
+            </div>
+            <div className='flex flex-col items-center col-span-4 space-y-2'>
+                <Headline className='mb-2'>You Get</Headline>
+                {
+                    selectedResourceIdsGet.map((id) => (
+                        <div key={id} className='flex items-center w-full'>
+                            <NumberInput max={100000} value={selectedResourcesGetAmounts[id]} onChange={(value) => {
+                                setSelectedResourcesGetAmounts({ ...selectedResourcesGetAmounts, [id]: value });
+                            }} />
+                            <div className='ml-2'>
+                                <ResourceCost resourceId={id} amount={selectedResourcesGetAmounts[id]} />
+                            </div>
+                        </div>
+                    ))
+                }
+            </div>
+        </div>
+        <div className='flex text-xs text-center text-white'>
+            Caravan Capacity <div className='ml-1 text-gold'>0kg</div>
+        </div>
+    </>
 }

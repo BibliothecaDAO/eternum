@@ -18,7 +18,7 @@ export const ResourceCost = ({ type = "horizontal", ...props }: ResourceCostProp
             type === "horizontal" ? "flex-row justify-start" : "flex-col justify-center",
         )}>
             <ResourceIcon resource={trait || ''} size='xs' />
-            <div className={clsx("relative flex flex-col items-center text-lightest shrink-0", type === "horizontal" ? 'ml-1 font-bold' : '')}>
+            <div className={clsx("relative flex flex-col  text-lightest shrink-0", type === "horizontal" ? 'ml-1 font-bold' : 'items-center')}>
                 <div className={clsx("relative text-xs", props.color)}>
                     {(props.color && props.amount > 0) ? '+' : ''}
                     {(props.color && props.amount < 0) ? '-' : ''}
