@@ -8,14 +8,16 @@ type ResourceCostProps = {
     amount: number;
     color?: string;
     type?: "horizontal" | "vertical";
+    className?: string;
 }
 
-export const ResourceCost = ({ type = "horizontal", ...props }: ResourceCostProps) => {
+export const ResourceCost = ({ type = "horizontal", className, ...props }: ResourceCostProps) => {
     const trait = useMemo(() => findResourceById(props.resourceId)?.trait, [props.resourceId])
     return (
         <div className={clsx(
             "relative flex items-center w-full gap-1 px-1 rounded",
             type === "horizontal" ? "flex-row justify-start" : "flex-col justify-center",
+            className,
         )}>
             <ResourceIcon resource={trait || ''} size='xs' />
             <div className={clsx("relative flex flex-col  text-lightest shrink-0", type === "horizontal" ? 'ml-1 font-bold' : 'items-center')}>
