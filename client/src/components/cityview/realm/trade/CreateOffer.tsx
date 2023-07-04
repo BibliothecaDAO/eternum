@@ -10,6 +10,7 @@ import { ReactComponent as ArrowSeparator } from '../../../../assets/icons/commo
 import { ReactComponent as Danger } from '../../../../assets/icons/common/danger.svg';
 import { ReactComponent as Donkey } from '../../../../assets/icons/units/donkey.svg';
 import { Caravan } from './Caravan';
+import { Steps } from '../../../../elements/Steps';
 
 type CreateOfferPopupProps = {
     onClose: () => void;
@@ -68,6 +69,7 @@ export const CreateOfferPopup = ({ onClose, onCreate }: CreateOfferPopupProps) =
                 </div>
                 <div className='flex justify-between m-2 text-xxs'>
                     <Button className='!px-[6px] !py-[2px] text-xxs' onClick={() => setStep(step - 1)} variant='outline'>{step === 1 ? 'Cancel' : 'Back'}</Button>
+                    <Steps className='absolute -translate-x-1/2 left-1/2 bottom-4' step={step} maxStep={3} />
                     <Button className='!px-[6px] !py-[2px] text-xxs' onClick={() => { if (step === 3) { onCreate() } else { setStep(step + 1) } }} variant='success'>{step == 3 ? 'Create Offer' : 'Next Step'}</Button>
                 </div>
             </SecondaryPopup.Body>
