@@ -15,8 +15,8 @@ import { useComponentValue } from '@dojoengine/react';
 import { useDojo } from '../../../../DojoContext';
 import { Utils } from '@dojoengine/core';
 import { LABOR_CONFIG_ID } from '../../../../constants/labor';
-import useBlockchainStore from '../../../../hooks/store/useBlockchainStore';
 import { unpackResources } from '../../../../utils/packedData';
+import { formatSecondsLeftInDaysHours } from './laborUtils';
 
 type LaborBuildPopupProps = {
     resourceId: number;
@@ -29,8 +29,6 @@ export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopu
         components: { Realm, LaborConfig, LaborCostResources, LaborCostAmount },
         systemCalls: { build_labor },
     } = useDojo();
-
-    const {nextBlockTimestamp} = useBlockchainStore();
 
     const [state, setState] = useState();
     const [laborAmount, setLaborAmount] = useState(1);
@@ -138,7 +136,7 @@ export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopu
                     {
                         !isFood && <div className='flex items-center'><div className='italic text-light-pink'>Amount</div>
                             <NumberInput className='ml-2 mr-2' value={laborAmount} step={5} onChange={setLaborAmount} max={9999}/>
-                            <div className='italic text-gold'>{formatTimeLeft(laborAmount * (laborConfig?.base_labor_units || 0))}</div>
+                            <div className='italic text-gold'>{formatSecondsLeftInDaysHours(laborAmount * (laborConfig?.base_labor_units || 0))}</div>
                         </div>
                     }
                     {
@@ -155,13 +153,4 @@ export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopu
             </SecondaryPopup.Body>
         </SecondaryPopup>
     );
-};
-
-// TODO: move to utils
-const formatTimeLeft = (seconds: number) => {
-    const days = Math.floor(seconds / 86400)
-    const secondsLeft = seconds % 86400;
-    const hours = Math.floor(secondsLeft / 3600);
-
-    return `${days} days ${hours}h`;
 };
