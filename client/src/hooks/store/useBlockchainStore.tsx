@@ -33,7 +33,7 @@ export const useFetchBlockchainData = () => {
     return () => {
       clearInterval(intervalId); // Clear interval on component unmount
     };
-  }, [setNextBlockTimestamp]);
+  }, []);
 };
 
 const fetchBlockTimestamp = async (): Promise<number | undefined> => {

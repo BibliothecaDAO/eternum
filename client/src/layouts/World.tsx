@@ -18,6 +18,7 @@ import RealmStatusComponent from "../components/cityview/realm/RealmStatusCompon
 import { Redirect } from "wouter";
 import RealmResourcesComponent from "../components/cityview/realm/RealmResourcesComponent";
 import { useFetchBlockchainData } from "../hooks/store/useBlockchainStore";
+import { InvisibleComponent } from "../hooks/store/useLaborStore";
 
 
 export const World = () => {
@@ -27,6 +28,7 @@ export const World = () => {
 
   return (
     <div className="fixed top-0 left-0 z-0 w-screen h-screen p-2">
+      <InvisibleComponent></InvisibleComponent>
       <BackgroundContainer className="border-2 border-[#E0AF65] rounded-xl relative">
         <div className="absolute top-0 left-0 z-10 w-full pointer-events-none rounded-xl h-44 bg-gradient-to-b from-black to-transparent opacity-90" />
         <MainScene />
