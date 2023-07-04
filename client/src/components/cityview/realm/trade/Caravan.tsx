@@ -10,6 +10,7 @@ import { ReactComponent as PremiumIcon } from '../../../../assets/icons/units/pr
 
 import ProgressBar from '../../../../elements/ProgressBar';
 import { Dot } from '../../../../elements/Dot';
+import clsx from 'clsx';
 
 type CaravanProps = {
 
@@ -21,7 +22,7 @@ export const Caravan = ({ ...props }: CaravanProps) => {
     useEffect(() => { }, []);
 
     return (
-        <div className='flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold' onClick={props.onClick}>
+        <div className={clsx('flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold', props.className)} onClick={props.onClick}>
             <div className='flex items-center text-xxs'>
                 <div className='flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold'>
                     #1

@@ -7,6 +7,7 @@ import { TradeOffer } from './TradeOffer';
 import { ResourceFilter } from '../../../ResourceFilterComponent';
 import { OrdersFilter } from '../../../OrdersFilterComponent';
 import { CreateOfferPopup } from './CreateOffer';
+import Button from '../../../../elements/Button';
 
 type MarketPanelProps = {
     trades: number[];
@@ -14,6 +15,7 @@ type MarketPanelProps = {
 
 export const MarketPanel = ({ trades }: MarketPanelProps) => {
     const [activeFilter, setActiveFilter] = useState(false);
+    const [showCreateOffer, setShowCreateOffer] = useState(false);
 
     const sortingParams = useMemo(() => {
         return [
@@ -47,10 +49,11 @@ export const MarketPanel = ({ trades }: MarketPanelProps) => {
                 ))}
             </SortPanel>
             {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
-            {/* <CreateOfferPopup onClose={() => { }} onCreate={() => { }} /> */}
+            {showCreateOffer && <CreateOfferPopup onClose={() => { }} onCreate={() => { }} />}
             {trades.map((tradeId) => <div className='flex flex-col p-2'>
                 <TradeOffer tradeId={tradeId} />
             </div>)}
+            <Button className='absolute -translate-x-1/2 bottom-3 left-1/2' onClick={() => setShowCreateOffer(true)} variant='primary'>+ Create new offer</Button>
         </div >
     );
 };
