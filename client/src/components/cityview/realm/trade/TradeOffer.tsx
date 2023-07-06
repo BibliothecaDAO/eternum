@@ -7,14 +7,10 @@ import { ReactComponent as RatioIcon } from '../../../../assets/icons/common/rat
 import { useComponentValue } from '@dojoengine/react';
 import { useDojo } from '../../../../DojoContext';
 import { Utils } from '@dojoengine/core';
-import { Realm } from '../../../../types';
+import { Realm, ResourcesOffer } from '../../../../types';
 import { orderNameDict } from '../../../../constants/orders';
 import * as realmsData from '../../../../geodata/realms.json';
 
-type ResourcesOffer = {
-    resourceId: number;
-    amount: number;
-}
 type TradeOfferProps = {
     tradeId: number;
 }

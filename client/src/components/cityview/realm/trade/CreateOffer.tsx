@@ -11,6 +11,7 @@ import { ReactComponent as Danger } from '../../../../assets/icons/common/danger
 import { ReactComponent as Donkey } from '../../../../assets/icons/units/donkey.svg';
 import { Caravan } from './Caravan';
 import { Steps } from '../../../../elements/Steps';
+import { FetchStatus, useGetTrades } from '../../../../hooks/useGraphQLQueries';
 
 type CreateOfferPopupProps = {
     onClose: () => void;
@@ -193,6 +194,19 @@ const SelectCaravanPanel = ({ selectedCaravan, setSelectedCaravan, selectedResou
 }) => {
     const [donkeysCount, setDonkeysCount] = useState(0);
     const [isNewCaravan, setIsNewCaravan] = useState(false);
+
+    // get trades list
+    const {data: tradeData, status: tradeStatus} = useGetTrades();
+    // TODO: find a better way to parse this
+    let trades: number[] = [];
+    if (tradeData && tradeStatus === FetchStatus.Success) {
+        tradeData.entities?.forEach((entity) => {
+            if (entity) {
+                trades.push(parseInt(entity.keys))
+            }
+        })
+    }
+
     return <div className='flex flex-col items-center w-full p-2'>
         <div className='grid grid-cols-9 gap-2'>
             <div className='flex flex-col items-center col-span-4 space-y-2 h-min'>
@@ -254,6 +268,7 @@ const SelectCaravanPanel = ({ selectedCaravan, setSelectedCaravan, selectedResou
             <div className="text-xs text-center text-gold">Show 2 idle Caravans</div>
         </div>}
         {
+            // TODO: add trade ids
             !isNewCaravan && <>
                 <Caravan className='w-full mb-2' />
                 <Caravan className='w-full' />

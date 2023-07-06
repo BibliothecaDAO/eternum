@@ -5,12 +5,33 @@ import { SortPanel } from '../../../../elements/SortPanel';
 import { SortButton, SortInterface } from '../../../../elements/SortButton';
 import { Caravan } from './Caravan';
 import { CaravanDetails } from '../../../caravans/CaravanDetailsComponent';
+import { FetchStatus, useGetTrades } from '../../../../hooks/useGraphQLQueries';
 
 type CaravansPanelProps = {}
 
 export const CaravansPanel = ({ }: CaravansPanelProps) => {
     const [activeFilter, setActiveFilter] = useState(false);
     const [showCaravanDetails, setShowCaravanDetails] = useState(false);
+    const [selectedTradeId, setSelectedTradeId] = useState<number | null>(null);
+
+    const onClick = (tradeId: number) => {
+        setShowCaravanDetails(true);
+        setSelectedTradeId(tradeId);
+    }
+
+    // get trades list
+    const {data: tradeData, status: tradeStatus} = useGetTrades();
+    // TODO: find a better way to parse this
+    let trades: number[] = [];
+    if (tradeData && tradeStatus === FetchStatus.Success) {
+        tradeData.entities?.forEach((entity) => {
+            if (entity) {
+                trades.push(parseInt(entity.keys))
+            }
+        })
+    }
+    console.log('trades');
+    console.log(trades);
 
     const sortingParams = useMemo(() => {
         return [
@@ -41,10 +62,10 @@ export const CaravansPanel = ({ }: CaravansPanelProps) => {
                     }} />
                 ))}
             </SortPanel>
-            {showCaravanDetails && <CaravanDetails caravanId={1} onClose={() => setShowCaravanDetails(false)} />}
-            <div className='flex flex-col p-2'>
-                <Caravan onClick={() => setShowCaravanDetails(true)} />
-            </div>
+            {selectedTradeId && showCaravanDetails && <CaravanDetails tradeId={selectedTradeId} onClose={() => setShowCaravanDetails(false)} />}
+            {trades.map((tradeId) => <div className='flex flex-col p-2'>
+                <Caravan tradeId={tradeId} onClick={() => onClick(tradeId)} />
+            </div>)}
         </div >
     );
 };
