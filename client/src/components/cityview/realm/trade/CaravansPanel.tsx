@@ -5,33 +5,66 @@ import { SortPanel } from '../../../../elements/SortPanel';
 import { SortButton, SortInterface } from '../../../../elements/SortButton';
 import { Caravan } from './Caravan';
 import { CaravanDetails } from '../../../caravans/CaravanDetailsComponent';
-import { FetchStatus, useGetTrades } from '../../../../hooks/useGraphQLQueries';
+import { FetchStatus, useGetCaravans, useGetOrders, useGetTradeFromCaravanId, useGetTrades } from '../../../../hooks/useGraphQLQueries';
+import { getComponentValue } from '@latticexyz/recs';
+import { useDojo } from '../../../../DojoContext';
+import { Utils } from '@dojoengine/core';
+import useRealmStore from '../../../../hooks/store/useRealmStore';
+import { useComponentValue } from '@dojoengine/react';
+import useBlockchainStore from '../../../../hooks/store/useBlockchainStore';
 
 type CaravansPanelProps = {}
 
 export const CaravansPanel = ({ }: CaravansPanelProps) => {
     const [activeFilter, setActiveFilter] = useState(false);
     const [showCaravanDetails, setShowCaravanDetails] = useState(false);
-    const [selectedTradeId, setSelectedTradeId] = useState<number | null>(null);
+    const [selectedCaravanId, setSelectedCaravanId] = useState<number | null>(null);
 
-    const onClick = (tradeId: number) => {
+    const {components: { Position, ArrivalTime }} = useDojo();
+
+    const { realmEntityId } = useRealmStore();
+    const { nextBlockTimestamp } = useBlockchainStore();
+
+    const realmPosition = getComponentValue(Position, Utils.getEntityIdFromKeys([BigInt(realmEntityId)]));
+
+    const onClick = (caravanId: number) => {
         setShowCaravanDetails(true);
-        setSelectedTradeId(tradeId);
+        setSelectedCaravanId(caravanId);
     }
 
-    // get trades list
-    const {data: tradeData, status: tradeStatus} = useGetTrades();
+    const {data: caravanData, status} = useGetCaravans();
     // TODO: find a better way to parse this
-    let trades: number[] = [];
-    if (tradeData && tradeStatus === FetchStatus.Success) {
-        tradeData.entities?.forEach((entity) => {
+    let caravanIds: number[] = [];
+    if (caravanData && status === FetchStatus.Success) {
+        caravanData.entities?.forEach((entity) => {
             if (entity) {
-                trades.push(parseInt(entity.keys))
+                caravanIds.push(parseInt(entity.keys))
             }
         })
     }
-    console.log('trades');
-    console.log(trades);
+
+    const {data: orderData, status: orderStatus} = useGetOrders();
+    let orderIds: number[] = [];
+    if (orderData && orderStatus === FetchStatus.Success) {
+        orderData.entities?.forEach((entity) => {
+            if (entity) {
+                orderIds.push(parseInt(entity.keys))
+            }
+        })
+    }
+
+    let realmCaravanIds: number[] = [];
+    for (const caravanId of caravanIds) {
+        let position = getComponentValue(Position, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
+        let arrivalTime = getComponentValue(ArrivalTime, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
+
+        const isSamePosition = position && realmPosition && position.x === realmPosition.x && position.y === realmPosition.y;
+        const hasArrived = nextBlockTimestamp && arrivalTime && arrivalTime.arrives_at <= nextBlockTimestamp;
+
+        if (isSamePosition && hasArrived) {
+            realmCaravanIds.push(caravanId);
+        }
+    }
 
     const sortingParams = useMemo(() => {
         return [
@@ -62,9 +95,9 @@ export const CaravansPanel = ({ }: CaravansPanelProps) => {
                     }} />
                 ))}
             </SortPanel>
-            {selectedTradeId && showCaravanDetails && <CaravanDetails tradeId={selectedTradeId} onClose={() => setShowCaravanDetails(false)} />}
-            {trades.map((tradeId) => <div className='flex flex-col p-2'>
-                <Caravan tradeId={tradeId} onClick={() => onClick(tradeId)} />
+            {selectedCaravanId && showCaravanDetails && <CaravanDetails caravanId={selectedCaravanId} onClose={() => setShowCaravanDetails(false)} />}
+            {realmCaravanIds.map((caravanId) => <div className='flex flex-col p-2'>
+                <Caravan caravanId={caravanId} onClick={() => onClick(caravanId)} />
             </div>)}
         </div >
     );

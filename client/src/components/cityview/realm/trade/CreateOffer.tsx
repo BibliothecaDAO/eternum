@@ -11,7 +11,12 @@ import { ReactComponent as Danger } from '../../../../assets/icons/common/danger
 import { ReactComponent as Donkey } from '../../../../assets/icons/units/donkey.svg';
 import { Caravan } from './Caravan';
 import { Steps } from '../../../../elements/Steps';
-import { FetchStatus, useGetTrades } from '../../../../hooks/useGraphQLQueries';
+import { FetchStatus, useGetCaravans, useGetTrades } from '../../../../hooks/useGraphQLQueries';
+import { getComponentValue } from '@latticexyz/recs';
+import { Utils } from '@dojoengine/core';
+import { useDojo } from '../../../../DojoContext';
+import useRealmStore from '../../../../hooks/store/useRealmStore';
+import useBlockchainStore from '../../../../hooks/store/useBlockchainStore';
 
 type CreateOfferPopupProps = {
     onClose: () => void;
@@ -25,6 +30,7 @@ export const CreateOfferPopup = ({ onClose, onCreate }: CreateOfferPopupProps) =
     const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] = useState<{ [key: number]: number }>({});
     const [selectedResourcesGetAmounts, setSelectedResourcesGetAmounts] = useState<{ [key: number]: number }>({});
     const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
+
 
     useEffect(() => { }, []);
 
@@ -195,16 +201,38 @@ const SelectCaravanPanel = ({ selectedCaravan, setSelectedCaravan, selectedResou
     const [donkeysCount, setDonkeysCount] = useState(0);
     const [isNewCaravan, setIsNewCaravan] = useState(false);
 
-    // get trades list
-    const {data: tradeData, status: tradeStatus} = useGetTrades();
+    
+    const {
+        components: { ArrivalTime, Position },
+    } = useDojo();
+
+    const {realmEntityId} = useRealmStore();
+    const realmPosition = getComponentValue(Position, Utils.getEntityIdFromKeys([BigInt(realmEntityId)]));
+
+    const {nextBlockTimestamp} = useBlockchainStore();
+
+    const {data: caravanData, status} = useGetCaravans();
     // TODO: find a better way to parse this
-    let trades: number[] = [];
-    if (tradeData && tradeStatus === FetchStatus.Success) {
-        tradeData.entities?.forEach((entity) => {
+    let caravanIds: number[] = [];
+    if (caravanData && status === FetchStatus.Success) {
+        caravanData.entities?.forEach((entity) => {
             if (entity) {
-                trades.push(parseInt(entity.keys))
+                caravanIds.push(parseInt(entity.keys))
             }
         })
+    }
+
+    let idleCaravans: number[] = [];
+    for (const caravanId of caravanIds) {
+        let position = getComponentValue(Position, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
+        let arrivalTime = getComponentValue(ArrivalTime, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
+
+        const isSamePosition = position && realmPosition && position.x === realmPosition.x && position.y === realmPosition.y;
+        const hasArrived = nextBlockTimestamp && arrivalTime && arrivalTime.arrives_at <= nextBlockTimestamp;
+
+        if (isSamePosition && hasArrived) {
+            idleCaravans.push(caravanId);
+        }
     }
 
     return <div className='flex flex-col items-center w-full p-2'>
@@ -268,10 +296,9 @@ const SelectCaravanPanel = ({ selectedCaravan, setSelectedCaravan, selectedResou
             <div className="text-xs text-center text-gold">Show 2 idle Caravans</div>
         </div>}
         {
-            // TODO: add trade ids
             !isNewCaravan && <>
-                <Caravan className='w-full mb-2' />
-                <Caravan className='w-full' />
+                {idleCaravans.map((caravanId) => <Caravan caravanId={caravanId} className='w-full mb-2' />)}
+                {/* <Caravan className='w-full' /> */}
             </>
         }
     </div>

@@ -22,27 +22,33 @@ import useBlockchainStore from '../../../../hooks/store/useBlockchainStore';
 import { formatSecondsLeftInDaysHours } from '../labor/laborUtils';
 import { getOrderIdsFromTrade, getRealmIdByPosition, getRealmNameById, getRealmOrderNameById, getResourceIdsFromFungibleEntities, getTotalResourceWeight } from './TradeUtils';
 import { getComponentValue } from '@latticexyz/recs';
+import { useGetTradeFromCaravanId } from '../../../../hooks/useGraphQLQueries';
 
 type CaravanProps = {
-    tradeId: number;
+    caravanId: number;
+    idleOnly?: boolean;
+    selectedCaravan?: number;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const Caravan = ({ tradeId, ...props }: CaravanProps) => {
+export const Caravan = ({ caravanId, ...props }: CaravanProps) => {
     const [state, setState] = useState();
+
+    // find the order ids of the caravan
+    const {data: tradeId} = useGetTradeFromCaravanId(caravanId);
 
     const {realmEntityId} = useRealmStore();
 
     const {
-        components: { Caravan, Quantity, Capacity, ForeignKey, Trade, ArrivalTime, FungibleEntities, Resource, Position, CaravanMembers },
+        components: { Movable, Quantity, Capacity, ForeignKey, Trade, ArrivalTime, FungibleEntities, Resource, Position, CaravanMembers },
     } = useDojo();
 
     const {nextBlockTimestamp} = useBlockchainStore();
 
-    let trade = getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
+    let trade = tradeId && getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
     const {realmOrderId, counterpartyOrderId} = (trade && realmEntityId !== undefined) && getOrderIdsFromTrade(trade, realmEntityId) || {realmOrderId: 0, counterpartyOrderId: 0};
-    let arrivalTime = getComponentValue(ArrivalTime, Utils.getEntityIdFromKeys([BigInt(realmOrderId)]));
+    let arrivalTime = getComponentValue(ArrivalTime, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
+    let movable = getComponentValue(Movable, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
 
-    let caravanID = getComponentValue(Caravan, Utils.getEntityIdFromKeys([BigInt(realmOrderId), BigInt(realmEntityId)]))?.caravan_id || 0;
     const fungibleEntitiesGive = getComponentValue(FungibleEntities, Utils.getEntityIdFromKeys([BigInt(realmOrderId)]));
     const fungibleEntitiesGet = getComponentValue(FungibleEntities, Utils.getEntityIdFromKeys([BigInt(counterpartyOrderId)]));
 
@@ -59,7 +65,7 @@ export const Caravan = ({ tradeId, ...props }: CaravanProps) => {
 
     // capacity
     let resourceWeight = getTotalResourceWeight([...resourcesGive, ...resourcesGet]);
-    let caravanCapacity = getComponentValue(Capacity, Utils.getEntityIdFromKeys([BigInt(caravanID)]))?.weight_gram || 0;
+    let caravanCapacity = getComponentValue(Capacity, Utils.getEntityIdFromKeys([BigInt(caravanId)]))?.weight_gram || 0;
 
     let position = useComponentValue(Position, Utils.getEntityIdFromKeys([BigInt(realmOrderId)]));
 
@@ -68,13 +74,17 @@ export const Caravan = ({ tradeId, ...props }: CaravanProps) => {
 
     const isTravelling = nextBlockTimestamp && arrivalTime && (arrivalTime.arrives_at > nextBlockTimestamp);
 
+    if ((movable?.blocked || isTravelling) && props.idleOnly) {
+        return null;
+    }
+
     useEffect(() => { }, []);
 
     return (
         <div className={clsx('flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold', props.className)} onClick={props.onClick}>
             <div className='flex items-center text-xxs'>
                 <div className='flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold'>
-                    #{caravanID}
+                    #{caravanId}
                 </div>
                 {isTravelling && realmName && <div className='flex items-center ml-1 -mt-2'>
                     <span className='italic text-light-pink'>

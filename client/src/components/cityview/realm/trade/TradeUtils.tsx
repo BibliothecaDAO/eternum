@@ -5,6 +5,7 @@ import { orderNameDict } from '../../../../constants/orders';
 import { Utils } from '@dojoengine/core';
 import { EntityIndex } from '@latticexyz/recs';
 import { Resource, Trade } from '../../../../types';
+import { useDojo } from '../../../../DojoContext';
 
 export const getRealmIdByPosition = (positionRaw: {x: number, y: number}): number | undefined => {
     let offset = 1800000;
@@ -47,3 +48,4 @@ export const getOrderIdsFromTrade = (trade: Trade, realmEntityId: number): {real
 export const getTotalResourceWeight = (resources: (Resource | undefined)[]) => {
     return resources.reduce((total, resource) => total + (resource?.balance || 0) * 1, 0);
 }
+

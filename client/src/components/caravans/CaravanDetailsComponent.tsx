@@ -18,13 +18,14 @@ import { getOrderIdsFromTrade, getTotalResourceWeight } from '../cityview/realm/
 import { EntityIndex, getComponentValue } from '@latticexyz/recs';
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById, getResourceIdsFromFungibleEntities } from '../cityview/realm/trade/TradeUtils';
 import { Resource } from '../../types';
+import { useGetTradeFromCaravanId } from '../../hooks/useGraphQLQueries';
 
 type CaravanDetailsProps = {
-    tradeId: number;
+    caravanId: number;
     onClose: () => void;
 }
 
-export const CaravanDetails = ({ tradeId, onClose }: CaravanDetailsProps) => {
+export const CaravanDetails = ({ caravanId, onClose }: CaravanDetailsProps) => {
     const {realmEntityId} = useRealmStore();
 
     const {
@@ -33,11 +34,12 @@ export const CaravanDetails = ({ tradeId, onClose }: CaravanDetailsProps) => {
 
     const {nextBlockTimestamp} = useBlockchainStore();
 
-    let trade = getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
+    let {data: tradeId} = useGetTradeFromCaravanId(caravanId); 
+
+    let trade = tradeId && getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
     const {realmOrderId, counterpartyOrderId} = (trade && realmEntityId !== undefined) && getOrderIdsFromTrade(trade, realmEntityId) || {realmOrderId: 0, counterpartyOrderId: 0};
     let arrivalTime = getComponentValue(ArrivalTime, Utils.getEntityIdFromKeys([BigInt(realmOrderId)]));
 
-    let caravanID = getComponentValue(Caravan, Utils.getEntityIdFromKeys([BigInt(realmOrderId), BigInt(realmEntityId)]))?.caravan_id || 0;
     const fungibleEntitiesGive = getComponentValue(FungibleEntities, Utils.getEntityIdFromKeys([BigInt(realmOrderId)]));
     const fungibleEntitiesGet = getComponentValue(FungibleEntities, Utils.getEntityIdFromKeys([BigInt(counterpartyOrderId)]));
 
@@ -54,7 +56,7 @@ export const CaravanDetails = ({ tradeId, onClose }: CaravanDetailsProps) => {
 
     // capacity
     let resourceWeight = getTotalResourceWeight([...resourcesGive, ...resourcesGet]);
-    let caravanCapacity = getComponentValue(Capacity, Utils.getEntityIdFromKeys([BigInt(caravanID)]))?.weight_gram || 0;
+    let caravanCapacity = getComponentValue(Capacity, Utils.getEntityIdFromKeys([BigInt(caravanId)]))?.weight_gram || 0;
       
     let position = useComponentValue(Position, Utils.getEntityIdFromKeys([BigInt(realmOrderId)]));
 
@@ -66,7 +68,7 @@ export const CaravanDetails = ({ tradeId, onClose }: CaravanDetailsProps) => {
         <SecondaryPopup>
             <SecondaryPopup.Head>
                 <div className='flex items-center space-x-1'>
-                    <div className='mr-0.5'>Caravan #{caravanID} {resourceWeight} / {caravanCapacity}</div>
+                    <div className='mr-0.5'>Caravan #{caravanId} {resourceWeight} / {caravanCapacity}</div>
                     <CloseIcon className="w-3 h-3 cursor-pointer fill-white" />
                 </div>
             </SecondaryPopup.Head>
