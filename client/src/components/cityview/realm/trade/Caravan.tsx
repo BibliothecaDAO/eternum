@@ -33,10 +33,10 @@ type CaravanProps = {
 export const Caravan = ({ caravanId, ...props }: CaravanProps) => {
     const [state, setState] = useState();
 
-    // find the order ids of the caravan
-    const {data: tradeId} = useGetTradeFromCaravanId(caravanId);
-
     const {realmEntityId} = useRealmStore();
+
+    // find the order ids of the caravan
+    const {data: tradeId} = useGetTradeFromCaravanId(realmEntityId, caravanId);
 
     const {
         components: { Movable, Quantity, Capacity, ForeignKey, Trade, ArrivalTime, FungibleEntities, Resource, Position, CaravanMembers },
@@ -45,6 +45,7 @@ export const Caravan = ({ caravanId, ...props }: CaravanProps) => {
     const {nextBlockTimestamp} = useBlockchainStore();
 
     let trade = tradeId && getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
+    console.log({tradeId})
     const {realmOrderId, counterpartyOrderId} = (trade && realmEntityId !== undefined) && getOrderIdsFromTrade(trade, realmEntityId) || {realmOrderId: 0, counterpartyOrderId: 0};
     let arrivalTime = getComponentValue(ArrivalTime, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
     let movable = getComponentValue(Movable, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
@@ -72,9 +73,9 @@ export const Caravan = ({ caravanId, ...props }: CaravanProps) => {
     const realmId = position && getRealmIdByPosition(position);
     const realmName = realmId && getRealmNameById(realmId);
 
-    const isTravelling = nextBlockTimestamp && arrivalTime && (arrivalTime.arrives_at > nextBlockTimestamp);
+    const isTraveling = nextBlockTimestamp && arrivalTime && (arrivalTime.arrives_at > nextBlockTimestamp);
 
-    if ((movable?.blocked || isTravelling) && props.idleOnly) {
+    if ((movable?.blocked || isTraveling) && props.idleOnly) {
         return null;
     }
 
@@ -86,7 +87,7 @@ export const Caravan = ({ caravanId, ...props }: CaravanProps) => {
                 <div className='flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold'>
                     #{caravanId}
                 </div>
-                {isTravelling && realmName && <div className='flex items-center ml-1 -mt-2'>
+                {isTraveling && realmName && <div className='flex items-center ml-1 -mt-2'>
                     <span className='italic text-light-pink'>
                         Traveling to
                     </span>
@@ -112,7 +113,7 @@ export const Caravan = ({ caravanId, ...props }: CaravanProps) => {
                 {nextBlockTimestamp && arrivalTime && arrivalTime.arrives_at <= nextBlockTimestamp && <div className='flex ml-auto -mt-2 italic text-gold'>
                     Idle <Pen className="ml-1 fill-gold" />
                 </div>}
-                {isTravelling && arrivalTime && <div className='flex ml-auto -mt-2 italic text-light-pink'>
+                {isTraveling && arrivalTime && <div className='flex ml-auto -mt-2 italic text-light-pink'>
                     {formatSecondsLeftInDaysHours(arrivalTime.arrives_at - nextBlockTimestamp)}
                 </div>}
             </div>

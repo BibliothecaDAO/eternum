@@ -110,7 +110,7 @@ export function useGetOrders() {
   };
 }
 
-export function useGetTradeFromCaravanId(caravanId: number) {
+export function useGetTradeFromCaravanId(realmEntityId: number, caravanId: number) {
   const { components: { Trade, Caravan } } = useDojo()
 
   const [data, setData] = useState<number | null>(null);
@@ -138,8 +138,8 @@ export function useGetTradeFromCaravanId(caravanId: number) {
         const sortedTradeIds = tradeIds.sort((a, b) => b - a);
         for (const tradeId of sortedTradeIds) {
           let trade = getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
-          let makerCaravan = getComponentValue(Caravan, Utils.getEntityIdFromKeys([BigInt(trade?.maker_order_id || 0)]));
-          let takerCaravan = getComponentValue(Caravan, Utils.getEntityIdFromKeys([BigInt(trade?.maker_order_id || 0)]));
+          let makerCaravan = getComponentValue(Caravan, Utils.getEntityIdFromKeys([BigInt(trade?.maker_order_id || 0), BigInt(realmEntityId)]));
+          let takerCaravan = getComponentValue(Caravan, Utils.getEntityIdFromKeys([BigInt(trade?.taker_order_id || 0), BigInt(realmEntityId)]));
           if (makerCaravan?.caravan_id === caravanId) {
             mostRecentTradeId = tradeId;
           } else if (takerCaravan?.caravan_id === caravanId) {

@@ -17,6 +17,7 @@ import { Utils } from '@dojoengine/core';
 import { useDojo } from '../../../../DojoContext';
 import useRealmStore from '../../../../hooks/store/useRealmStore';
 import useBlockchainStore from '../../../../hooks/store/useBlockchainStore';
+import { attach } from '@react-three/fiber/dist/declarations/src/core/utils';
 
 type CreateOfferPopupProps = {
     onClose: () => void;
@@ -30,7 +31,34 @@ export const CreateOfferPopup = ({ onClose, onCreate }: CreateOfferPopupProps) =
     const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] = useState<{ [key: number]: number }>({});
     const [selectedResourcesGetAmounts, setSelectedResourcesGetAmounts] = useState<{ [key: number]: number }>({});
     const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
+    const [isNewCaravan, setIsNewCaravan] = useState(false);
+    const [donkeysCount, setDonkeysCount] = useState(0);
 
+    const {systemCalls: { create_caravan, create_free_transport_unit, make_fungible_order, attach_caravan  }} = useDojo()
+
+    const {realmEntityId} = useRealmStore();
+
+    const createOrder = async () => {
+        if (isNewCaravan) {
+            const transport_units_id = await create_free_transport_unit({realm_id: realmEntityId, quantity: donkeysCount});
+            const caravan_id = await create_caravan({entity_ids: [transport_units_id]});
+            const trade_id = await make_fungible_order({maker_id: realmEntityId, 
+                maker_entity_types: selectedResourceIdsGive,
+                maker_quantities: Object.values(selectedResourcesGiveAmounts),
+                taker_entity_types: selectedResourceIdsGet,
+                taker_quantities: Object.values(selectedResourcesGetAmounts), 
+            })
+            await attach_caravan({realm_id: realmEntityId, trade_id, caravan_id})
+        } else {
+            const trade_id = await make_fungible_order({maker_id: realmEntityId, 
+                maker_entity_types: selectedResourceIdsGive,
+                maker_quantities: Object.values(selectedResourcesGiveAmounts),
+                taker_entity_types: selectedResourceIdsGet,
+                taker_quantities: Object.values(selectedResourcesGetAmounts), 
+            })
+            await attach_caravan({realm_id: realmEntityId, trade_id, caravan_id: selectedCaravan})
+        }
+    }
 
     useEffect(() => { }, []);
 
@@ -66,6 +94,10 @@ export const CreateOfferPopup = ({ onClose, onCreate }: CreateOfferPopupProps) =
                         setSelectedResourcesGetAmounts={setSelectedResourcesGetAmounts}
                     />}
                     {step == 3 && <SelectCaravanPanel
+                        donkeysCount={donkeysCount}
+                        setDonkeysCount={setDonkeysCount}
+                        isNewCaravan={isNewCaravan}
+                        setIsNewCaravan={setIsNewCaravan}
                         selectedCaravan={selectedCaravan}
                         setSelectedCaravan={setSelectedCaravan}
                         selectedResourceIdsGet={selectedResourceIdsGet}
@@ -77,7 +109,10 @@ export const CreateOfferPopup = ({ onClose, onCreate }: CreateOfferPopupProps) =
                 <div className='flex justify-between m-2 text-xxs'>
                     <Button className='!px-[6px] !py-[2px] text-xxs' onClick={() => setStep(step - 1)} variant='outline'>{step === 1 ? 'Cancel' : 'Back'}</Button>
                     <Steps className='absolute -translate-x-1/2 left-1/2 bottom-4' step={step} maxStep={3} />
-                    <Button className='!px-[6px] !py-[2px] text-xxs' onClick={() => { if (step === 3) { onCreate() } else { setStep(step + 1) } }} variant='success'>{step == 3 ? 'Create Offer' : 'Next Step'}</Button>
+                    <Button className='!px-[6px] !py-[2px] text-xxs' onClick={() => { if (step === 3) { 
+                        createOrder(); 
+                        onClose() 
+                    } else { setStep(step + 1) } }} variant='success'>{step == 3 ? 'Create Offer' : 'Next Step'}</Button>
                 </div>
             </SecondaryPopup.Body>
         </SecondaryPopup >
@@ -190,7 +225,11 @@ const SelectResourcesAmountPanel = ({ selectedResourceIdsGive, selectedResourceI
     </>
 }
 
-const SelectCaravanPanel = ({ selectedCaravan, setSelectedCaravan, selectedResourceIdsGet, selectedResourceIdsGive, selectedResourcesGetAmounts, selectedResourcesGiveAmounts }: {
+const SelectCaravanPanel = ({ donkeysCount, setDonkeysCount, isNewCaravan, setIsNewCaravan, selectedCaravan, setSelectedCaravan, selectedResourceIdsGet, selectedResourceIdsGive, selectedResourcesGetAmounts, selectedResourcesGiveAmounts }: {
+    donkeysCount: number,
+    setDonkeysCount: (donkeysCount: number) => void,
+    isNewCaravan: boolean,
+    setIsNewCaravan: (isNewCaravan: boolean) => void,
     selectedCaravan: number;
     setSelectedCaravan: (selectedCaravanId: number) => void;
     selectedResourceIdsGet: number[];
@@ -198,10 +237,6 @@ const SelectCaravanPanel = ({ selectedCaravan, setSelectedCaravan, selectedResou
     selectedResourcesGetAmounts: { [key: number]: number };
     selectedResourcesGiveAmounts: { [key: number]: number };
 }) => {
-    const [donkeysCount, setDonkeysCount] = useState(0);
-    const [isNewCaravan, setIsNewCaravan] = useState(false);
-
-    
     const {
         components: { ArrivalTime, Position },
     } = useDojo();
@@ -212,7 +247,6 @@ const SelectCaravanPanel = ({ selectedCaravan, setSelectedCaravan, selectedResou
     const {nextBlockTimestamp} = useBlockchainStore();
 
     const {data: caravanData, status} = useGetCaravans();
-    // TODO: find a better way to parse this
     let caravanIds: number[] = [];
     if (caravanData && status === FetchStatus.Success) {
         caravanData.entities?.forEach((entity) => {
@@ -297,7 +331,7 @@ const SelectCaravanPanel = ({ selectedCaravan, setSelectedCaravan, selectedResou
         </div>}
         {
             !isNewCaravan && <>
-                {idleCaravans.map((caravanId) => <Caravan caravanId={caravanId} className='w-full mb-2' />)}
+                {idleCaravans.map((caravanId) => <Caravan caravanId={caravanId} onClick={() => setSelectedCaravan(caravanId)} className={`w-full mb-2 border rounded-md ${selectedCaravan === caravanId? 'border-yellow': ''}`} />)}
                 {/* <Caravan className='w-full' /> */}
             </>
         }

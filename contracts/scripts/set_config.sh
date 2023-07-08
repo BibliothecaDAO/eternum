@@ -21,8 +21,8 @@ commands=(
     "sozo execute --world $world SetSpeedConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 256,360"
 
     ### TRAVEL ###
-    # free transport per city = 10;
-    "sozo execute --world $world SetTravelConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 10"
+    # free transport per city = 100 (for testing);
+    "sozo execute --world $world SetTravelConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 100"
 
     ### CAPACITY ###
     # entity type FREE_TRANSPORT_ENTITY_TYPE = 256

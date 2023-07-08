@@ -3,6 +3,7 @@ import { Tabs } from '../../../elements/tab';
 import { CaravansPanel } from './trade/CaravansPanel';
 import { MarketPanel } from './trade/MarketPanel';
 import { FetchStatus, useGetCaravans, useGetTrades } from '../../../hooks/useGraphQLQueries';
+import { MyOffersPanel } from './trade/MyOffersPanel';
 
 type RealmTradeComponentProps = {}
 
@@ -41,7 +42,7 @@ export const RealmTradeComponent = ({ }: RealmTradeComponentProps) => {
                         <div>My Offers</div>
                     </div>
                 ),
-                component: <div />,
+                component: <MyOffersPanel trades={trades} />,
             },
             {
                 label: (

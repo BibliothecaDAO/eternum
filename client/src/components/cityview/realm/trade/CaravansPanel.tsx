@@ -5,7 +5,7 @@ import { SortPanel } from '../../../../elements/SortPanel';
 import { SortButton, SortInterface } from '../../../../elements/SortButton';
 import { Caravan } from './Caravan';
 import { CaravanDetails } from '../../../caravans/CaravanDetailsComponent';
-import { FetchStatus, useGetCaravans, useGetOrders, useGetTradeFromCaravanId, useGetTrades } from '../../../../hooks/useGraphQLQueries';
+import { FetchStatus, useGetCaravans, useGetOrders } from '../../../../hooks/useGraphQLQueries';
 import { getComponentValue } from '@latticexyz/recs';
 import { useDojo } from '../../../../DojoContext';
 import { Utils } from '@dojoengine/core';
@@ -20,10 +20,9 @@ export const CaravansPanel = ({ }: CaravansPanelProps) => {
     const [showCaravanDetails, setShowCaravanDetails] = useState(false);
     const [selectedCaravanId, setSelectedCaravanId] = useState<number | null>(null);
 
-    const {components: { Position, ArrivalTime }} = useDojo();
+    const {components: { Position }} = useDojo();
 
     const { realmEntityId } = useRealmStore();
-    const { nextBlockTimestamp } = useBlockchainStore();
 
     const realmPosition = getComponentValue(Position, Utils.getEntityIdFromKeys([BigInt(realmEntityId)]));
 
@@ -56,12 +55,8 @@ export const CaravansPanel = ({ }: CaravansPanelProps) => {
     let realmCaravanIds: number[] = [];
     for (const caravanId of caravanIds) {
         let position = getComponentValue(Position, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
-        let arrivalTime = getComponentValue(ArrivalTime, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
-
         const isSamePosition = position && realmPosition && position.x === realmPosition.x && position.y === realmPosition.y;
-        const hasArrived = nextBlockTimestamp && arrivalTime && arrivalTime.arrives_at <= nextBlockTimestamp;
-
-        if (isSamePosition && hasArrived) {
+        if (isSamePosition) {
             realmCaravanIds.push(caravanId);
         }
     }

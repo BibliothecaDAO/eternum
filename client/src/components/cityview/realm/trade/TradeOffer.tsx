@@ -10,6 +10,8 @@ import { Utils } from '@dojoengine/core';
 import { Realm, ResourcesOffer } from '../../../../types';
 import { orderNameDict } from '../../../../constants/orders';
 import * as realmsData from '../../../../geodata/realms.json';
+import useRealmStore from '../../../../hooks/store/useRealmStore';
+import { getComponentValue } from '@latticexyz/recs';
 
 type TradeOfferProps = {
     tradeId: number;
@@ -19,15 +21,42 @@ export const TradeOffer = ({ tradeId, ...props }: TradeOfferProps) => {
     const [state, setState] = useState();
 
     const {
+        systemCalls: { attach_caravan, take_fungible_order, create_free_transport_unit, create_caravan, change_order_status },
         components: { Trade, FungibleEntities, Resource, Realm },
       } = useDojo();
 
+    const { realmEntityId } = useRealmStore();
+
     let trade = useComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
+
+    let isMyOffer = trade && trade.maker_id === realmEntityId;
+
+    const acceptOffer = async () => {
+        const isNewCaravan = true;
+        if (isNewCaravan) {
+            const transport_units_id = await create_free_transport_unit({realm_id: realmEntityId, quantity: 10});
+            const caravan_id = await create_caravan({entity_ids: [transport_units_id]});
+            await attach_caravan({realm_id: realmEntityId, trade_id: tradeId, caravan_id})
+            await take_fungible_order({taker_id: realmEntityId, 
+                trade_id: tradeId
+            })
+        } else {
+            await attach_caravan({realm_id: realmEntityId, trade_id: tradeId, caravan_id: 0});
+            await take_fungible_order({taker_id: realmEntityId, 
+                trade_id: tradeId
+            })
+        }
+    } 
+
+    const cancelOffer = async () => {
+        // status 2 = cancel
+        change_order_status({realm_id: realmEntityId, trade_id: tradeId, new_status: 2})
+    }
     
     // set maker order
     let makerRealm: Realm | undefined;
     if (trade) {
-        makerRealm = useComponentValue(Realm, Utils.getEntityIdFromKeys([BigInt(trade.maker_id)]));
+        makerRealm = getComponentValue(Realm, Utils.getEntityIdFromKeys([BigInt(trade.maker_id)]));
     }
 
     const resourcesGet = trade && getResources(trade.maker_order_id);
@@ -35,10 +64,10 @@ export const TradeOffer = ({ tradeId, ...props }: TradeOfferProps) => {
     
     function getResources(orderId: number): ResourcesOffer[] {
         const resources: ResourcesOffer[] = [];
-        const fungibleEntities = useComponentValue(FungibleEntities, Utils.getEntityIdFromKeys([BigInt(orderId)]));
+        const fungibleEntities = getComponentValue(FungibleEntities, Utils.getEntityIdFromKeys([BigInt(orderId)]));
         if (fungibleEntities) {
           for (let i = 0; i < fungibleEntities.count; i++) {
-            const resource = useComponentValue(
+            const resource = getComponentValue(
               Resource,
               Utils.getEntityIdFromKeys([BigInt(orderId), BigInt(fungibleEntities.key), BigInt(i)])
             );
@@ -92,7 +121,7 @@ export const TradeOffer = ({ tradeId, ...props }: TradeOfferProps) => {
                         ))}
                     </div>
                 </div>
-                <Button onClick={() => { }} variant='success' className='ml-auto p-2 !h-4 text-xxs !rounded-md'>Accept</Button>
+                {isMyOffer && <Button onClick={() => { isMyOffer? cancelOffer(): acceptOffer() }} variant={isMyOffer? 'danger': 'success'} className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{isMyOffer? `Cancel`: `Accept`}</Button>}
             </div>
         </div >
     );

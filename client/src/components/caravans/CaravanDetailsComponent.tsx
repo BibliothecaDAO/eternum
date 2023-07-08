@@ -34,7 +34,7 @@ export const CaravanDetails = ({ caravanId, onClose }: CaravanDetailsProps) => {
 
     const {nextBlockTimestamp} = useBlockchainStore();
 
-    let {data: tradeId} = useGetTradeFromCaravanId(caravanId); 
+    let {data: tradeId} = useGetTradeFromCaravanId(realmEntityId, caravanId); 
 
     let trade = tradeId && getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
     const {realmOrderId, counterpartyOrderId} = (trade && realmEntityId !== undefined) && getOrderIdsFromTrade(trade, realmEntityId) || {realmOrderId: 0, counterpartyOrderId: 0};

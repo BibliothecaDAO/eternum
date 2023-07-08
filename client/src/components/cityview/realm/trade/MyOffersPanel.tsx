@@ -17,7 +17,7 @@ type MarketPanelProps = {
     trades: number[];
 }
 
-export const MarketPanel = ({ trades }: MarketPanelProps) => {
+export const MyOffersPanel = ({ trades }: MarketPanelProps) => {
 
     const { components: { Trade, Status }} = useDojo()
 
@@ -36,15 +36,17 @@ export const MarketPanel = ({ trades }: MarketPanelProps) => {
         ]
     }, []);
 
-    const openTrades: number[] = [];
+    const myTrades: number[] = [];
     for (const tradeId of trades) {
         let trade = getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
         let status = getComponentValue(Status, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
+        console.log({trade})
         // status 0 === open
-        if (trade?.maker_id !== realmEntityId && status?.value === 0) {
-            openTrades.push(tradeId);
+        if (trade?.maker_id === realmEntityId && status?.value === 0) {
+            myTrades.push(tradeId);
         }
     }
+
 
     const [activeSort, setActiveSort] = useState<SortInterface>({
         sortKey: 'number',
@@ -69,10 +71,9 @@ export const MarketPanel = ({ trades }: MarketPanelProps) => {
             </SortPanel>
             {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
             {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => { }} />}
-            {openTrades.map((tradeId) => <div className='flex flex-col p-2'>
+            {myTrades.map((tradeId) => <div className='flex flex-col p-2'>
                 <TradeOffer tradeId={tradeId} />
             </div>)}
-            <Button className='absolute -translate-x-1/2 bottom-3 left-1/2' onClick={() => setShowCreateOffer(true)} variant='primary'>+ Create new offer</Button>
         </div >
     );
 };
