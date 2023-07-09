@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Tabs } from '../../../elements/tab';
-import { CaravansPanel } from './trade/CaravansPanel';
-import { MarketPanel } from './trade/MarketPanel';
+import { CaravansPanel } from './trade/Caravans/CaravansPanel';
+import { MarketPanel } from './trade/Market/MarketPanel';
 import { FetchStatus, useGetCaravans, useGetTrades } from '../../../hooks/useGraphQLQueries';
-import { MyOffersPanel } from './trade/MyOffersPanel';
+import { MyOffersPanel } from './trade/MyOffers/MyOffersPanel';
 import { getComponentValue } from '@latticexyz/recs';
 import { useDojo } from '../../../DojoContext';
 import { Utils } from '@dojoengine/core';

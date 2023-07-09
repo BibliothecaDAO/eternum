@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { OrderIcon } from '../../../../elements/OrderIcon';
-import Button from '../../../../elements/Button';
-import { ResourceIcon } from '../../../../elements/ResourceIcon';
-import { findResourceById } from '../../../../constants/resources';
+import { OrderIcon } from '../../../../../elements/OrderIcon';
+import Button from '../../../../../elements/Button';
+import { ResourceIcon } from '../../../../../elements/ResourceIcon';
+import { findResourceById } from '../../../../../constants/resources';
 import { ReactComponent as Pen } from '../../../../assets/icons/common/pen.svg';
 import { ReactComponent as Clock } from '../../../../assets/icons/common/clock.svg';
 import { ReactComponent as CaretDownFill } from '../../../../assets/icons/common/caret-down-fill.svg';
@@ -10,19 +10,19 @@ import { ReactComponent as DonkeyIcon } from '../../../../assets/icons/units/don
 import { ReactComponent as PremiumIcon } from '../../../../assets/icons/units/premium.svg';
 
 
-import ProgressBar from '../../../../elements/ProgressBar';
-import { Dot } from '../../../../elements/Dot';
+import ProgressBar from '../../../../../elements/ProgressBar';
+import { Dot } from '../../../../../elements/Dot';
 import clsx from 'clsx';
-import { useDojo } from '../../../../DojoContext';
-import { CaravanMember, Order, Resource, ResourcesOffer, Trade } from '../../../../types';
+import { useDojo } from '../../../../../DojoContext';
+import { CaravanMember, Order, Resource, ResourcesOffer, Trade } from '../../../../../types';
 import { useComponentValue } from '@dojoengine/react';
 import { Utils } from '@dojoengine/core';
-import useRealmStore from '../../../../hooks/store/useRealmStore';
-import useBlockchainStore from '../../../../hooks/store/useBlockchainStore';
-import { formatSecondsLeftInDaysHours } from '../labor/laborUtils';
-import { getOrderIdsFromTrade, getRealmIdByPosition, getRealmNameById, getRealmOrderNameById, getResourceIdsFromFungibleEntities, getTotalResourceWeight } from './TradeUtils';
+import useRealmStore from '../../../../../hooks/store/useRealmStore';
+import useBlockchainStore from '../../../../../hooks/store/useBlockchainStore';
+import { formatSecondsLeftInDaysHours } from '../../labor/laborUtils';
+import { getOrderIdsFromTrade, getRealmIdByPosition, getRealmNameById, getRealmOrderNameById, getResourceIdsFromFungibleEntities, getTotalResourceWeight } from '../TradeUtils';
 import { getComponentValue } from '@latticexyz/recs';
-import { useGetTradeFromCaravanId } from '../../../../hooks/useGraphQLQueries';
+import { useGetTradeFromCaravanId } from '../../../../../hooks/useGraphQLQueries';
 
 type CaravanProps = {
     caravanId: number;

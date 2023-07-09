@@ -1,17 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FiltersPanel } from '../../../../elements/FiltersPanel';
-import { FilterButton } from '../../../../elements/FilterButton';
-import { SortPanel } from '../../../../elements/SortPanel';
-import { SortButton, SortInterface } from '../../../../elements/SortButton';
+import { FiltersPanel } from '../../../../../elements/FiltersPanel';
+import { FilterButton } from '../../../../../elements/FilterButton';
+import { SortPanel } from '../../../../../elements/SortPanel';
+import { SortButton, SortInterface } from '../../../../../elements/SortButton';
 import { Caravan } from './Caravan';
-import { CaravanDetails } from '../../../caravans/CaravanDetailsComponent';
-import { FetchStatus, useGetCaravans, useGetOrders } from '../../../../hooks/useGraphQLQueries';
+import { CaravanDetails } from '../../../../caravans/CaravanDetailsComponent';
+import { FetchStatus, useGetCaravans, useGetOrders } from '../../../../../hooks/useGraphQLQueries';
 import { getComponentValue } from '@latticexyz/recs';
-import { useDojo } from '../../../../DojoContext';
+import { useDojo } from '../../../../../DojoContext';
 import { Utils } from '@dojoengine/core';
-import useRealmStore from '../../../../hooks/store/useRealmStore';
+import useRealmStore from '../../../../../hooks/store/useRealmStore';
 import { useComponentValue } from '@dojoengine/react';
-import useBlockchainStore from '../../../../hooks/store/useBlockchainStore';
+import useBlockchainStore from '../../../../../hooks/store/useBlockchainStore';
 
 type CaravansPanelProps = {}
 

@@ -9,7 +9,7 @@ import { resources } from '../../../../constants/resources';
 import { ReactComponent as ArrowSeparator } from '../../../../assets/icons/common/arrow-separator.svg';
 import { ReactComponent as Danger } from '../../../../assets/icons/common/danger.svg';
 import { ReactComponent as Donkey } from '../../../../assets/icons/units/donkey.svg';
-import { Caravan } from './Caravan';
+import { Caravan } from './Caravans/Caravan';
 import { Steps } from '../../../../elements/Steps';
 import { FetchStatus, useGetCaravans, useGetTrades } from '../../../../hooks/useGraphQLQueries';
 import { getComponentValue } from '@latticexyz/recs';

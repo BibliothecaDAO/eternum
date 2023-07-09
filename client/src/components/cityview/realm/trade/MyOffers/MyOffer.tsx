@@ -1,24 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { OrderIcon } from '../../../../elements/OrderIcon';
-import Button from '../../../../elements/Button';
-import { ResourceIcon } from '../../../../elements/ResourceIcon';
-import { findResourceById } from '../../../../constants/resources';
-import { ReactComponent as RatioIcon } from '../../../../assets/icons/common/ratio.svg';
+import { OrderIcon } from '../../../../../elements/OrderIcon';
+import Button from '../../../../../elements/Button';
+import { ResourceIcon } from '../../../../../elements/ResourceIcon';
+import { findResourceById } from '../../../../../constants/resources';
+import { ReactComponent as RatioIcon } from '../../../../../assets/icons/common/ratio.svg';
 import { useComponentValue } from '@dojoengine/react';
-import { useDojo } from '../../../../DojoContext';
+import { useDojo } from '../../../../../DojoContext';
 import { Utils } from '@dojoengine/core';
-import { Realm, ResourcesOffer } from '../../../../types';
-import { orderNameDict } from '../../../../constants/orders';
-import * as realmsData from '../../../../geodata/realms.json';
-import useRealmStore from '../../../../hooks/store/useRealmStore';
+import { Realm, ResourcesOffer } from '../../../../../types';
+import { orderNameDict } from '../../../../../constants/orders';
+import * as realmsData from '../../../../../geodata/realms.json';
+import useRealmStore from '../../../../../hooks/store/useRealmStore';
 import { getComponentValue } from '@latticexyz/recs';
 
 type TradeOfferProps = {
     tradeId: number;
 }
 
-export const TradeOffer = ({ tradeId, ...props }: TradeOfferProps) => {
-    const [state, setState] = useState();
+export const MyOffer = ({ tradeId, ...props }: TradeOfferProps) => {
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
@@ -26,7 +25,7 @@ export const TradeOffer = ({ tradeId, ...props }: TradeOfferProps) => {
     }, [tradeId])
 
     const {
-        systemCalls: { attach_caravan, take_fungible_order, create_free_transport_unit, create_caravan, change_order_status },
+        systemCalls: { change_order_status },
         components: { Trade, Status, FungibleEntities, Resource, Realm },
       } = useDojo();
 
@@ -36,28 +35,7 @@ export const TradeOffer = ({ tradeId, ...props }: TradeOfferProps) => {
     let status = useComponentValue(Status, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
 
     // status 0 = open
-    let isMyOffer = trade && status && trade.maker_id === realmEntityId && status.value === 0;
-    let isCounterpartyOffer = trade && status && trade.maker_id !== realmEntityId && status.value === 0;
-
-    const acceptOffer = async () => {
-        // TODO: need screen to select or create caravan
-        const isNewCaravan = true;
-        if (isNewCaravan) {
-            setIsLoading(true);
-            const transport_units_id = await create_free_transport_unit({realm_id: realmEntityId, quantity: 10});
-            const caravan_id = await create_caravan({entity_ids: [transport_units_id]});
-            await attach_caravan({realm_id: realmEntityId, trade_id: tradeId, caravan_id})
-            await take_fungible_order({taker_id: realmEntityId, 
-                trade_id: tradeId
-            })
-        } else {
-            setIsLoading(true);
-            await attach_caravan({realm_id: realmEntityId, trade_id: tradeId, caravan_id: 0});
-            await take_fungible_order({taker_id: realmEntityId, 
-                trade_id: tradeId
-            })
-        }
-    } 
+    let isMyOffer = trade?.maker_id === realmEntityId && status?.value === 0;
 
     const cancelOffer = async () => {
         // status 2 = cancel
@@ -89,14 +67,12 @@ export const TradeOffer = ({ tradeId, ...props }: TradeOfferProps) => {
           }
         }
         return resources;
-      }
+    }
 
     let timeLeft: string | undefined;
     if (trade) {
         timeLeft = formatTimeLeft(trade.expires_at - Date.now()/1000);
     };
-
-    useEffect(() => { }, []);
 
     return (
         <div className='flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold'>
@@ -133,7 +109,7 @@ export const TradeOffer = ({ tradeId, ...props }: TradeOfferProps) => {
                         ))}
                     </div>
                 </div>
-                {!isLoading && isMyOffer !== undefined && <Button onClick={() => { isMyOffer? cancelOffer(): acceptOffer() }} variant={isMyOffer? 'danger': 'success'} className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{isMyOffer? `Cancel`: `Accept`}</Button>}
+                {!isLoading && isMyOffer && <Button onClick={() => { cancelOffer() }} variant={'danger'} className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{`Cancel`}</Button>}
                 {isLoading && <Button isLoading={true} onClick={() => {}} variant="danger" className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{}</Button>}
             </div>
         </div >
