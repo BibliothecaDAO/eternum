@@ -44,7 +44,7 @@ export const CaravanDetails = ({ caravanId, onClose }: CaravanDetailsProps) => {
     const fungibleEntitiesGet = getComponentValue(FungibleEntities, Utils.getEntityIdFromKeys([BigInt(counterpartyOrderId)]));
 
     let resourceEntityIdsGive = getResourceIdsFromFungibleEntities(realmOrderId, fungibleEntitiesGive?.key || 0, fungibleEntitiesGive?.count || 0);
-    let resourceEntityIdsGet = getResourceIdsFromFungibleEntities(realmOrderId, fungibleEntitiesGet?.key || 0, fungibleEntitiesGet?.count || 0);
+    let resourceEntityIdsGet = getResourceIdsFromFungibleEntities(counterpartyOrderId, fungibleEntitiesGet?.key || 0, fungibleEntitiesGet?.count || 0);
     let resourcesGive: Resource[] = [];
     for (let i = 0; i < resourceEntityIdsGive.length; i++) {
         resourcesGive.push(getComponentValue(Resource, resourceEntityIdsGive[i]) ?? {resource_type: 0, balance: 0});

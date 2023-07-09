@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { GraphQLClient } from 'graphql-request';
 import { GetCaravansQuery, GetOrdersQuery, GetTradesQuery, getSdk } from '../generated/graphql';
 import { useDojo } from '../DojoContext';
@@ -31,7 +31,13 @@ export function useGetTrades() {
         setStatus(FetchStatus.Error);
       }
     }
-    fetchData();
+    fetchData(); // Initial fetch
+
+    const intervalId = setInterval(fetchData, 5000); // Fetch every 5 seconds
+
+    return () => {
+      clearInterval(intervalId); // Clear interval on component unmount
+    };
   }, []);
 
 
@@ -132,8 +138,6 @@ export function useGetTradeFromCaravanId(realmEntityId: number, caravanId: numbe
                 }
             })
         }
-        console.log('tradeIds');
-        console.log(tradeIds)
         let mostRecentTradeId: number| null = null;
         const sortedTradeIds = tradeIds.sort((a, b) => b - a);
         for (const tradeId of sortedTradeIds) {

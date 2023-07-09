@@ -19,21 +19,31 @@ type TradeOfferProps = {
 
 export const TradeOffer = ({ tradeId, ...props }: TradeOfferProps) => {
     const [state, setState] = useState();
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        setIsLoading(false);
+    }, [tradeId])
 
     const {
         systemCalls: { attach_caravan, take_fungible_order, create_free_transport_unit, create_caravan, change_order_status },
-        components: { Trade, FungibleEntities, Resource, Realm },
+        components: { Trade, Status, FungibleEntities, Resource, Realm },
       } = useDojo();
 
     const { realmEntityId } = useRealmStore();
 
     let trade = useComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
+    let status = useComponentValue(Status, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
 
-    let isMyOffer = trade && trade.maker_id === realmEntityId;
+    // status 0 = open
+    let isMyOffer = trade && status && trade.maker_id === realmEntityId && status.value === 0;
+    let isCounterpartyOffer = trade && status && trade.maker_id !== realmEntityId && status.value === 0;
 
     const acceptOffer = async () => {
+        // TODO: need screen to select or create caravan
         const isNewCaravan = true;
         if (isNewCaravan) {
+            setIsLoading(true);
             const transport_units_id = await create_free_transport_unit({realm_id: realmEntityId, quantity: 10});
             const caravan_id = await create_caravan({entity_ids: [transport_units_id]});
             await attach_caravan({realm_id: realmEntityId, trade_id: tradeId, caravan_id})
@@ -41,6 +51,7 @@ export const TradeOffer = ({ tradeId, ...props }: TradeOfferProps) => {
                 trade_id: tradeId
             })
         } else {
+            setIsLoading(true);
             await attach_caravan({realm_id: realmEntityId, trade_id: tradeId, caravan_id: 0});
             await take_fungible_order({taker_id: realmEntityId, 
                 trade_id: tradeId
@@ -50,6 +61,7 @@ export const TradeOffer = ({ tradeId, ...props }: TradeOfferProps) => {
 
     const cancelOffer = async () => {
         // status 2 = cancel
+        setIsLoading(true);
         change_order_status({realm_id: realmEntityId, trade_id: tradeId, new_status: 2})
     }
     
@@ -121,7 +133,8 @@ export const TradeOffer = ({ tradeId, ...props }: TradeOfferProps) => {
                         ))}
                     </div>
                 </div>
-                {isMyOffer && <Button onClick={() => { isMyOffer? cancelOffer(): acceptOffer() }} variant={isMyOffer? 'danger': 'success'} className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{isMyOffer? `Cancel`: `Accept`}</Button>}
+                {!isLoading && isMyOffer !== undefined && <Button onClick={() => { isMyOffer? cancelOffer(): acceptOffer() }} variant={isMyOffer? 'danger': 'success'} className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{isMyOffer? `Cancel`: `Accept`}</Button>}
+                {isLoading && <Button isLoading={true} onClick={() => {}} variant="danger" className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{}</Button>}
             </div>
         </div >
     );

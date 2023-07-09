@@ -17,7 +17,7 @@ type MarketPanelProps = {
     trades: number[];
 }
 
-export const MyOffersPanel = ({ trades }: MarketPanelProps) => {
+export const MyOffersPanel = ({ trades: myTrades }: MarketPanelProps) => {
 
     const { components: { Trade, Status }} = useDojo()
 
@@ -35,18 +35,6 @@ export const MyOffersPanel = ({ trades }: MarketPanelProps) => {
             { label: 'Travel time', sortKey: 'time', className: 'ml-auto mr-4' }
         ]
     }, []);
-
-    const myTrades: number[] = [];
-    for (const tradeId of trades) {
-        let trade = getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
-        let status = getComponentValue(Status, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
-        console.log({trade})
-        // status 0 === open
-        if (trade?.maker_id === realmEntityId && status?.value === 0) {
-            myTrades.push(tradeId);
-        }
-    }
-
 
     const [activeSort, setActiveSort] = useState<SortInterface>({
         sortKey: 'number',

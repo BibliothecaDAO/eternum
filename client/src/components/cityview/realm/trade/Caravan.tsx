@@ -45,7 +45,6 @@ export const Caravan = ({ caravanId, ...props }: CaravanProps) => {
     const {nextBlockTimestamp} = useBlockchainStore();
 
     let trade = tradeId && getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
-    console.log({tradeId})
     const {realmOrderId, counterpartyOrderId} = (trade && realmEntityId !== undefined) && getOrderIdsFromTrade(trade, realmEntityId) || {realmOrderId: 0, counterpartyOrderId: 0};
     let arrivalTime = getComponentValue(ArrivalTime, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
     let movable = getComponentValue(Movable, Utils.getEntityIdFromKeys([BigInt(caravanId)]));

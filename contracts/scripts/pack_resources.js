@@ -28,7 +28,26 @@ function packResources(numbers) {
   return packedValue.toString();
 }
 
+function unpackResources(packedValue, valueCount) {
+  const MAX_BITS = 128;
+  const MAX_NUMBER_SIZE = 8;
+
+  const unpackedNumbers = [];
+
+  let remainingValue = BigInt(packedValue);
+
+  for (let i = 0; i < valueCount; i++) {
+    const number = remainingValue & BigInt((1 << MAX_NUMBER_SIZE) - 1);
+    unpackedNumbers.unshift(Number(number));
+    remainingValue = remainingValue >> BigInt(MAX_NUMBER_SIZE);
+  }
+
+  return unpackedNumbers;
+}
+
 // Example usage
-const numbers = [1, 2, 3];
+const numbers = [6, 7, 8, 9, 10, 11];
 const packedResult = packResources(numbers);
-console.log(packedResult);
+const unpackedResult = unpackResources(packedResult, numbers.length);
+console.log({ packedResult });
+console.log({ unpackedResult });

@@ -10,6 +10,7 @@ import { useDojo } from '../../../DojoContext';
 import useRealm from '../../../hooks/store/useRealmStore';
 import { unpackResources } from '../../../utils/packedData';
 import { useLaborStore } from '../../../hooks/store/useLaborStore';
+import useRealmStore from '../../../hooks/store/useRealmStore';
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<'div'>
 
@@ -18,10 +19,10 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
       components: { Realm },
     } = useDojo();
   
-    let realmEntityId = useRealm((state) => state.realmEntityId);
-  
+    let { realmEntityId } = useRealmStore();
+
     let realm = useComponentValue(Realm, Utils.getEntityIdFromKeys([BigInt(realmEntityId)]));
-  
+
     // unpack the resources
     let realmResourceIds: number[] = [ResourcesIds['Wheat'], ResourcesIds['Fish']];
     let unpackedResources: number[] = [];
@@ -60,7 +61,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
     const {productivity} = useLaborStore((state) => state);
 
     let resource = useComponentValue(Resource, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
-  
+
     return (
       <>
         <div className="flex flex-col">
