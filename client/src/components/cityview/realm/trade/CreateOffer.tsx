@@ -33,6 +33,7 @@ export const CreateOfferPopup = ({ onClose, onCreate }: CreateOfferPopupProps) =
     const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
     const [isNewCaravan, setIsNewCaravan] = useState(false);
     const [donkeysCount, setDonkeysCount] = useState(0);
+    const [resourceWeight, setResourceWeight] = useState(0);
 
     const {systemCalls: { create_caravan, create_free_transport_unit, make_fungible_order, attach_caravan  }} = useDojo()
 
@@ -89,9 +90,11 @@ export const CreateOfferPopup = ({ onClose, onCreate }: CreateOfferPopupProps) =
                         selectedResourceIdsGive={selectedResourceIdsGive}
                         selectedResourcesGiveAmounts={selectedResourcesGiveAmounts}
                         setSelectedResourcesGiveAmounts={setSelectedResourcesGiveAmounts}
+                        resourceWeight={resourceWeight}
                         selectedResourceIdsGet={selectedResourceIdsGet}
                         selectedResourcesGetAmounts={selectedResourcesGetAmounts}
                         setSelectedResourcesGetAmounts={setSelectedResourcesGetAmounts}
+                        setResourceWeight={setResourceWeight}
                     />}
                     {step == 3 && <SelectCaravanPanel
                         donkeysCount={donkeysCount}
@@ -104,6 +107,7 @@ export const CreateOfferPopup = ({ onClose, onCreate }: CreateOfferPopupProps) =
                         selectedResourcesGetAmounts={selectedResourcesGetAmounts}
                         selectedResourceIdsGive={selectedResourceIdsGive}
                         selectedResourcesGiveAmounts={selectedResourcesGiveAmounts}
+                        resourceWeight={resourceWeight}
                     />}
                 </div>
                 <div className='flex justify-between m-2 text-xxs'>
@@ -125,16 +129,22 @@ const SelectResourcesPanel = ({ selectedResourceIdsGive, setSelectedResourceIdsG
     selectedResourceIdsGet: number[];
     setSelectedResourceIdsGet: (selectedResourceIds: number[]) => void;
 }) => {
+
+    const {components: { Resource }} = useDojo();
+    const { realmEntityId } = useRealmStore();
+    
     return <div className="grid grid-cols-9 gap-2 p-2">
         <div className='flex flex-col items-center col-span-4'>
             <Headline className='mb-2'>You Give</Headline>
             <div className='grid grid-cols-4 gap-2'>
-                {resources.map(({ id, trait: name }) => (
+                {resources.map(({ id, trait: name }) => {
+                    let resourceBalance = getComponentValue(Resource, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]))?.balance?? 0;
+                    return (
                     <SelectableResource
                         key={id}
                         resourceId={id}
                         amount={100}
-                        disabled={100 < 0 /*check amount*/}
+                        disabled={resourceBalance === 0}
                         selected={selectedResourceIdsGive.includes(id)}
                         onClick={() => {
                             if (selectedResourceIdsGive.includes(id)) {
@@ -144,7 +154,7 @@ const SelectResourcesPanel = ({ selectedResourceIdsGive, setSelectedResourceIdsG
                             }
                         }}
                     />
-                ))}
+                )})}
             </div>
         </div>
         <div className='flex items-center justify-center'>
@@ -174,30 +184,50 @@ const SelectResourcesPanel = ({ selectedResourceIdsGive, setSelectedResourceIdsG
     </div>
 }
 
-const SelectResourcesAmountPanel = ({ selectedResourceIdsGive, selectedResourceIdsGet, selectedResourcesGiveAmounts, selectedResourcesGetAmounts, setSelectedResourcesGiveAmounts, setSelectedResourcesGetAmounts }: {
+const SelectResourcesAmountPanel = ({ selectedResourceIdsGive, selectedResourceIdsGet, selectedResourcesGiveAmounts, selectedResourcesGetAmounts, resourceWeight, setSelectedResourcesGiveAmounts, setSelectedResourcesGetAmounts, setResourceWeight }: {
     selectedResourceIdsGive: number[];
     selectedResourceIdsGet: number[];
     selectedResourcesGiveAmounts: { [key: number]: number };
     selectedResourcesGetAmounts: { [key: number]: number };
+    resourceWeight: number;
     setSelectedResourcesGiveAmounts: (selectedResourcesGiveAmounts: { [key: number]: number }) => void;
     setSelectedResourcesGetAmounts: (selectedResourcesGetAmounts: { [key: number]: number }) => void;
+    setResourceWeight: (resourceWeight: number) => void;
 }) => {
+
+    const {components: { Resource }} = useDojo();
+    const { realmEntityId } = useRealmStore();
+
+
+    useEffect(() => {
+        let weight = 0;
+        for (const [resourceId, amount] of Object.entries(selectedResourcesGiveAmounts)) {
+            weight += amount * 1;
+        }
+        setResourceWeight(weight);
+    },[selectedResourcesGiveAmounts])
 
     return <>
         <div className='grid grid-cols-9 gap-2 p-2'>
             <div className='flex flex-col items-center col-span-4 space-y-2'>
                 <Headline className='mb-2'>You Give</Headline>
                 {
-                    selectedResourceIdsGive.map((id) => (
+                    selectedResourceIdsGive.map((id) => {
+                        let resourceBalance = getComponentValue(Resource, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]))?.balance?? 0;
+                        return (
                         <div key={id} className='flex items-center w-full'>
-                            <NumberInput max={100000} value={selectedResourcesGiveAmounts[id]} onChange={(value) => {
+                            <NumberInput max={resourceBalance} value={selectedResourcesGiveAmounts[id]} onChange={(value) => {
                                 setSelectedResourcesGiveAmounts({ ...selectedResourcesGiveAmounts, [id]: value });
                             }} />
                             <div className='ml-2'>
                                 <ResourceCost resourceId={id} amount={selectedResourcesGiveAmounts[id]} />
                             </div>
+                            <div className={`ml-2 text-xs ${selectedResourcesGiveAmounts[id] <= resourceBalance? "text-orange": "text-red"} cursor-pointer`} onClick={() => {
+                                setSelectedResourcesGiveAmounts({ ...selectedResourcesGiveAmounts, [id]: resourceBalance })}}>
+                                {`Max ${resourceBalance}`}
+                            </div>
                         </div>
-                    ))
+                    )})
                 }
             </div>
             <div className='flex items-center justify-center'>
@@ -220,12 +250,12 @@ const SelectResourcesAmountPanel = ({ selectedResourceIdsGive, selectedResourceI
             </div>
         </div>
         <div className='flex text-xs text-center text-white'>
-            Items Weight <div className='ml-1 text-gold'>0kg</div>
+            Items Weight <div className='ml-1 text-gold'>{`${resourceWeight}kg`}</div>
         </div>
     </>
 }
 
-const SelectCaravanPanel = ({ donkeysCount, setDonkeysCount, isNewCaravan, setIsNewCaravan, selectedCaravan, setSelectedCaravan, selectedResourceIdsGet, selectedResourceIdsGive, selectedResourcesGetAmounts, selectedResourcesGiveAmounts }: {
+const SelectCaravanPanel = ({ donkeysCount, setDonkeysCount, isNewCaravan, setIsNewCaravan, selectedCaravan, setSelectedCaravan, selectedResourceIdsGet, selectedResourceIdsGive, selectedResourcesGetAmounts, selectedResourcesGiveAmounts, resourceWeight }: {
     donkeysCount: number,
     setDonkeysCount: (donkeysCount: number) => void,
     isNewCaravan: boolean,
@@ -236,6 +266,7 @@ const SelectCaravanPanel = ({ donkeysCount, setDonkeysCount, isNewCaravan, setIs
     selectedResourceIdsGive: number[];
     selectedResourcesGetAmounts: { [key: number]: number };
     selectedResourcesGiveAmounts: { [key: number]: number };
+    resourceWeight: number;
 }) => {
     const {
         components: { ArrivalTime, Position },
@@ -297,7 +328,7 @@ const SelectCaravanPanel = ({ donkeysCount, setDonkeysCount, isNewCaravan, setIs
             </div>
         </div>
         <div className='flex mb-3 text-xs text-center text-white'>
-            Items Weight <div className='ml-1 text-gold'>0kg</div>
+            Items Weight <div className='ml-1 text-gold'>{`${resourceWeight}kg`}</div>
         </div>
         {isNewCaravan && <>
             <div className='flex flex-col'>
@@ -314,7 +345,7 @@ const SelectCaravanPanel = ({ donkeysCount, setDonkeysCount, isNewCaravan, setIs
                 </div>
             </div>
             <div className='flex mb-1 text-xs text-center text-white'>
-                Caravan Capacity <div className='ml-1 text-danger'>0kg</div>
+                Caravan Capacity <div className='ml-1 text-danger'>{`${donkeysCount * 100}kg`}</div>
             </div>
             <div className='flex items-center mb-1 text-xs text-center text-white'>
                 <Danger /><div className='ml-1 uppercase text-danger'>Increase the amount of units</div>
