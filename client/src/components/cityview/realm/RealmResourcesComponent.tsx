@@ -58,7 +58,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
       components: { Resource },
     } = useDojo();
 
-    const {productivity} = useLaborStore((state) => state);
+    const { productivity } = useLaborStore((state) => state);
 
     let resource = useComponentValue(Resource, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
 

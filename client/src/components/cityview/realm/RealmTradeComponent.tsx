@@ -9,6 +9,7 @@ import { useDojo } from '../../../DojoContext';
 import { Utils } from '@dojoengine/core';
 import useRealmStore from '../../../hooks/store/useRealmStore';
 import { GetTradesQuery } from '../../../generated/graphql';
+import { IncomingOrdersPanel } from './trade/Caravans/IncomingCaravansPanel';
 
 type RealmTradeComponentProps = {}
 
@@ -19,6 +20,7 @@ export const RealmTradeComponent = ({ }: RealmTradeComponentProps) => {
     const [selectedTab, setSelectedTab] = useState(2);
     const [myTrades, setMyTrades] = useState<number[]>([]);
     const [counterpartyTrades, setCounterpartyTrades] = useState<number[]>([]);
+    const [incomingOrders, setIncomingOrders] = useState<{orderId: number, tradeId: number}[]>([]);
     const {realmEntityId} = useRealmStore();
 
     const {data: tradeData, status: tradeStatus} = useGetTrades();
@@ -35,21 +37,37 @@ export const RealmTradeComponent = ({ }: RealmTradeComponentProps) => {
     useEffect(() => {
         let myTrades: number[] = [];
         let counterpartyTrades: number[] = [];
+        let incomingOrders: {orderId: number, tradeId: number}[] = [];
         // TODO: how to only update when tradeData actually changes?
         if (tradeData && tradeStatus === FetchStatus.Success) {
             tradeData.entities?.forEach((entity) => {
                 if (entity) {
-                    let trade = getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(parseInt(entity.keys))]));
-                    let status = getComponentValue(Status, Utils.getEntityIdFromKeys([BigInt(parseInt(entity.keys))]));
+                    let tradeId = parseInt(entity.keys);
+                    let trade = getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
+                    console.log('trade', trade)
+                    let status = getComponentValue(Status, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
                     if (trade?.maker_id === realmEntityId && status?.value === 0) {
-                        myTrades.push(parseInt(entity.keys))
+                        myTrades.push(tradeId)
                     }
                     else if (trade?.maker_id !== realmEntityId && status?.value === 0) {
-                        counterpartyTrades.push(parseInt(entity.keys))
+                        counterpartyTrades.push(tradeId)
+                    // status 1 = accepted
+                    // if you are maker, then check if the order coming your way has been claimed yet
+                    } else if ((trade?.maker_id === realmEntityId && Number(trade.claimed_by_maker) !== 1) && status?.value === 1) {
+                        console.log('not claimed by taker order id: ', trade.maker_order_id)
+                        console.log('maker', trade.maker_id)
+                        console.log('realm entity id', realmEntityId)
+                        incomingOrders.push({orderId: trade.taker_order_id, tradeId});
+
+                    } else if (trade && (trade.taker_id === realmEntityId && Number(trade.claimed_by_taker) !== 1) && status?.value === 1) {
+                        console.log('not claimed by maker order id: ', trade?.maker_order_id)
+                        console.log('is claimed by maker', trade?.claimed_by_maker)
+                        incomingOrders.push({orderId: trade.maker_order_id, tradeId});
                     }
                 }
             })
         }
+        setIncomingOrders(incomingOrders);
         setMyTrades(myTrades);
         setCounterpartyTrades(counterpartyTrades);
     }, [tradeData, realmEntityId]);
@@ -95,13 +113,13 @@ export const RealmTradeComponent = ({ }: RealmTradeComponentProps) => {
             {
                 label: (
                     <div className="flex flex-col items-center">
-                        <div>Trade Routes</div>
+                        <div> Incoming Caravans </div>
                     </div>
                 ),
-                component: <div />,
+                component: <IncomingOrdersPanel orders={incomingOrders} />,
             }
         ],
-        [selectedTab, myTrades, counterpartyTrades]
+        [selectedTab, myTrades, counterpartyTrades, incomingOrders]
     );
 
     return (

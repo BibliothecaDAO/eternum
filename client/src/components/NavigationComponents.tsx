@@ -26,7 +26,7 @@ const NavgationComponent = () => {
                 <ForwardBurgerIcon className="fill-current" />
             </CircleButton>
             <RealmSwitch className={clsx("absolute z-0 text-[10px]",
-                "top-16 left-16 -ml-2 -mt-2"
+                "top-20 left-16 -ml-2 -mt-4"
             )} />
         </div>
     )

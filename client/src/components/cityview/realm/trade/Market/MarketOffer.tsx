@@ -84,14 +84,10 @@ export const MarketOffer = ({ tradeId, ...props }: TradeOfferProps) => {
     // TODO: check if this works
     useEffect(() => {
         function canAcceptOffer() {
-            if (trade && resourcesGive && resourcesGet) {
+            if (resourcesGive && resourcesGet) {
                 for (let i = 0; i < resourcesGive.length; i++) {
                     const resourceBalance = getComponentValue(Resource, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourcesGive[i].resourceId)])) || {resource_type: 0, balance: 0};
-                    console.log('resource id ', resourcesGive[i].resourceId)
-                    console.log('resource balance ', resourceBalance)
-                    console.log('resource amount ', resourcesGive[i].amount)
                     if (resourceBalance.balance < resourcesGive[i].amount) {
-                        console.log('cannot accept')
                         setCanAccept(false);
                     }; 
                 }
@@ -122,7 +118,7 @@ export const MarketOffer = ({ tradeId, ...props }: TradeOfferProps) => {
             <div className='flex items-end mt-2'>
                 <div className='flex items-center justify-around flex-1'>
                     <div className='grid w-1/3 grid-cols-3 gap-2 text-gold'>
-                        {resourcesGive && resourcesGive.map(({ resourceId, amount }) => (
+                        {resourcesGet && resourcesGet.map(({ resourceId, amount }) => (
                             <div className='flex flex-col items-center'>
                                 <ResourceIcon key={resourceId} resource={findResourceById(resourceId)?.trait as any} size='xs' className='mb-1' />
                                 {amount}
@@ -131,10 +127,10 @@ export const MarketOffer = ({ tradeId, ...props }: TradeOfferProps) => {
                     </div>
                     <div className='flex flex-col items-center text-white'>
                         <RatioIcon className="mb-1 fill-white" />
-                       {resourcesGive && resourcesGet && calculateRatio(resourcesGive, resourcesGet)} 
+                       {resourcesGive && resourcesGet && calculateRatio(resourcesGet, resourcesGive).toFixed(2)} 
                     </div>
                     <div className='grid w-1/3 grid-cols-3 gap-2 text-gold'>
-                        {resourcesGet && resourcesGet.map(({ resourceId, amount }) => (
+                        {resourcesGive && resourcesGive.map(({ resourceId, amount }) => (
                             <div className='flex flex-col items-center'>
                                 <ResourceIcon key={resourceId} resource={findResourceById(resourceId)?.trait as any} size='xs' />
                                 {amount}

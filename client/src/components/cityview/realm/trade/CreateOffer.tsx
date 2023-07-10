@@ -111,7 +111,7 @@ export const CreateOfferPopup = ({ onClose, onCreate }: CreateOfferPopupProps) =
                     />}
                 </div>
                 <div className='flex justify-between m-2 text-xxs'>
-                    <Button className='!px-[6px] !py-[2px] text-xxs' onClick={() => setStep(step - 1)} variant='outline'>{step === 1 ? 'Cancel' : 'Back'}</Button>
+                    <Button className='!px-[6px] !py-[2px] text-xxs' onClick={() => step === 1? onClose(): setStep(step - 1)} variant='outline'>{step === 1 ? 'Cancel' : 'Back'}</Button>
                     <Steps className='absolute -translate-x-1/2 left-1/2 bottom-4' step={step} maxStep={3} />
                     <Button className='!px-[6px] !py-[2px] text-xxs' onClick={() => { if (step === 3) { 
                         createOrder(); 
@@ -269,7 +269,7 @@ const SelectCaravanPanel = ({ donkeysCount, setDonkeysCount, isNewCaravan, setIs
     resourceWeight: number;
 }) => {
     const {
-        components: { ArrivalTime, Position },
+        components: { ArrivalTime, Position, Movable },
     } = useDojo();
 
     const {realmEntityId} = useRealmStore();
@@ -287,15 +287,19 @@ const SelectCaravanPanel = ({ donkeysCount, setDonkeysCount, isNewCaravan, setIs
         })
     }
 
-    let myCaravans: number[] = [];
+    let myIdleCaravans: number[] = [];
     for (const caravanId of caravanIds) {
         let position = getComponentValue(Position, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
         let arrivalTime = getComponentValue(ArrivalTime, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
+        let movable = getComponentValue(Movable, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
 
         const isSamePosition = position && realmPosition && position.x === realmPosition.x && position.y === realmPosition.y;
 
         if (isSamePosition) {
-            myCaravans.push(caravanId);
+            const isIdle = nextBlockTimestamp && ((arrivalTime && arrivalTime.arrives_at <= nextBlockTimestamp) || !arrivalTime) && movable && !movable.blocked;
+            if (isIdle) {
+                myIdleCaravans.push(caravanId);
+            }
         }
     }
 
@@ -353,15 +357,15 @@ const SelectCaravanPanel = ({ donkeysCount, setDonkeysCount, isNewCaravan, setIs
         {!isNewCaravan && <div onClick={() => setIsNewCaravan(true)} className="w-full mx-4 h-8 py-[7px] bg-dark-brown cursor-pointer rounded justify-center items-center">
             <div className="text-xs text-center text-gold">+ New Caravan</div>
         </div>}
-        <div className='flex flex-col w-full mt-2'>
+        {isNewCaravan && myIdleCaravans.length > 0 && <div className='flex flex-col w-full mt-2'>
             <Headline className='mb-2'>Or choose from existing Caravans</Headline>
-        </div>
-        {isNewCaravan && <div onClick={() => setIsNewCaravan(false)} className="w-full mx-4 h-8 py-[7px] bg-dark-brown cursor-pointer rounded justify-center items-center">
-            <div className="text-xs text-center text-gold">Show 2 idle Caravans</div>
+        </div>}
+        {isNewCaravan && myIdleCaravans.length > 0 && <div onClick={() => setIsNewCaravan(false)} className="w-full mx-4 h-8 py-[7px] bg-dark-brown cursor-pointer rounded justify-center items-center">
+            <div className="text-xs text-center text-gold">{`Show ${myIdleCaravans.length} idle Caravans`}</div>
         </div>}
         {
             !isNewCaravan && <>
-                {myCaravans.map((caravanId) => <Caravan caravanId={caravanId} idleOnly={true} onClick={() => setSelectedCaravan(caravanId)} className={`w-full mb-2 border rounded-md ${selectedCaravan === caravanId? 'border-yellow': ''}`} />)}
+                {myIdleCaravans.map((caravanId) => <Caravan caravanId={caravanId} idleOnly={true} onClick={() => setSelectedCaravan(caravanId)} className={`w-full mb-2 border rounded-md ${selectedCaravan === caravanId? 'border-yellow': ''}`} />)}
             </>
         }
     </div>

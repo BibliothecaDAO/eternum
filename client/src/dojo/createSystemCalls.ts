@@ -80,12 +80,18 @@ export function createSystemCalls(
         syncWorker.sync(tx.transaction_hash);
     }
 
+    const claim_fungible_order = async({entity_id, trade_id}: {entity_id: number.BigNumberish, trade_id: number.BigNumberish}) => {
+        const tx = await execute("ClaimFungibleOrder", [entity_id, trade_id]);
+        syncWorker.sync(tx.transaction_hash);
+    }
+
     return {
         build_labor,
         harvest_labor,
         mint_resources,
         make_fungible_order,
         take_fungible_order,
+        claim_fungible_order,
         change_order_status,
         create_free_transport_unit,
         create_caravan,

@@ -63,6 +63,7 @@ export const MyOffersPanel = ({ trades: myTrades }: MarketPanelProps) => {
             {myTrades.map((tradeId) => <div className='flex flex-col p-2'>
                 <MyOffer tradeId={tradeId} />
             </div>)}
+            <Button className='absolute -translate-x-1/2 bottom-3 left-1/2' onClick={() => setShowCreateOffer(true)} variant='primary'>+ Create new offer</Button>
         </div >
     );
 };

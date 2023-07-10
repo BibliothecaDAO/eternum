@@ -98,7 +98,7 @@ export const MyOffer = ({ tradeId, ...props }: TradeOfferProps) => {
                     </div>
                     <div className='flex flex-col items-center text-white'>
                         <RatioIcon className="mb-1 fill-white" />
-                       {resourcesGive && resourcesGet && calculateRatio(resourcesGive, resourcesGet)} 
+                       {resourcesGive && resourcesGet && calculateRatio(resourcesGive, resourcesGet).toFixed(2)} 
                     </div>
                     <div className='grid w-1/3 grid-cols-3 gap-2 text-gold'>
                         {resourcesGet && resourcesGet.map(({ resourceId, amount }) => (

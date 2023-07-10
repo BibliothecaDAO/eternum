@@ -61,9 +61,9 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
             }>
                 {dummyRealms.map((realm, index) => (
                     // TODO: could not click on realm switch with the link
-                    // <Link href='/realmView'>
-                        <RealmBadge key={realm.id} realm={realm} active={realmEntityId === index} onClick={() => setRealmEntityId(index)} />
-                    // </Link>
+                    <Link href='/realmView' onClick={() => setRealmEntityId(index)}>
+                        <RealmBadge key={realm.id} realm={realm} active={realmEntityId === index} />
+                    </Link>
                 ))}
             </div>
             {!showRealms && <Badge size="lg" className='absolute top-0 right-0 translate-x-1 -translate-y-2 text-xxs text-brown'>

@@ -10,6 +10,8 @@ import useBlockchainStore from "./useBlockchainStore";
 import { Labor, LaborConfig } from "../../types"
 import { LABOR_CONFIG_ID } from "../../constants/labor";
 import { calculateNextHarvest, calculateProductivity } from "../../components/cityview/realm/labor/laborUtils";
+import useRealmStore from "./useRealmStore";
+import { getComponentValue } from "@latticexyz/recs";
 
 export interface LaborState {
   timeLeftToHarvest: { [resourceId: number]: number };
@@ -90,22 +92,23 @@ export const InvisibleComponent = () => {
     } = useDojo();
 
     const { nextBlockTimestamp } = useBlockchainStore();
+    const { realmEntityId } = useRealmStore();
     let laborConfig = useComponentValue(LaborConfig, Utils.getEntityIdFromKeys([BigInt(LABOR_CONFIG_ID)]))
 
     // Loop from 1 to 28
     for (let resourceId = 1; resourceId <= 28; resourceId++) {
-        let labor = useComponentValue(Labor, Utils.getEntityIdFromKeys([BigInt(0), BigInt(resourceId)]));
+        let labor = useComponentValue(Labor, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
         useEffect(() => {
             laborConfig && nextBlockTimestamp && labor && setLaborState(resourceId, labor, laborConfig, nextBlockTimestamp);
-        }, [labor, laborConfig, nextBlockTimestamp]);
+        }, [labor, nextBlockTimestamp, realmEntityId]);
     }
 
     // Loop for resourceIds 254 and 255
     for (let resourceId = 254; resourceId <= 255; resourceId++) {
-    const labor = useComponentValue(Labor, Utils.getEntityIdFromKeys([BigInt(0), BigInt(resourceId)]));
+    const labor = useComponentValue(Labor, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
     useEffect(() => {
         laborConfig && nextBlockTimestamp && labor && setLaborState(resourceId, labor, laborConfig, nextBlockTimestamp);
-    }, [labor, nextBlockTimestamp]);
+    }, [labor, nextBlockTimestamp, realmEntityId]);
     }
 
 
