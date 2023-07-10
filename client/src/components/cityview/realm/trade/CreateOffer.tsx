@@ -287,16 +287,15 @@ const SelectCaravanPanel = ({ donkeysCount, setDonkeysCount, isNewCaravan, setIs
         })
     }
 
-    let idleCaravans: number[] = [];
+    let myCaravans: number[] = [];
     for (const caravanId of caravanIds) {
         let position = getComponentValue(Position, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
         let arrivalTime = getComponentValue(ArrivalTime, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
 
         const isSamePosition = position && realmPosition && position.x === realmPosition.x && position.y === realmPosition.y;
-        const hasArrived = nextBlockTimestamp && arrivalTime && arrivalTime.arrives_at <= nextBlockTimestamp;
 
-        if (isSamePosition && hasArrived) {
-            idleCaravans.push(caravanId);
+        if (isSamePosition) {
+            myCaravans.push(caravanId);
         }
     }
 
@@ -362,8 +361,7 @@ const SelectCaravanPanel = ({ donkeysCount, setDonkeysCount, isNewCaravan, setIs
         </div>}
         {
             !isNewCaravan && <>
-                {idleCaravans.map((caravanId) => <Caravan caravanId={caravanId} onClick={() => setSelectedCaravan(caravanId)} className={`w-full mb-2 border rounded-md ${selectedCaravan === caravanId? 'border-yellow': ''}`} />)}
-                {/* <Caravan className='w-full' /> */}
+                {myCaravans.map((caravanId) => <Caravan caravanId={caravanId} idleOnly={true} onClick={() => setSelectedCaravan(caravanId)} className={`w-full mb-2 border rounded-md ${selectedCaravan === caravanId? 'border-yellow': ''}`} />)}
             </>
         }
     </div>

@@ -42,11 +42,9 @@ export const RealmTradeComponent = ({ }: RealmTradeComponentProps) => {
                     let trade = getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(parseInt(entity.keys))]));
                     let status = getComponentValue(Status, Utils.getEntityIdFromKeys([BigInt(parseInt(entity.keys))]));
                     if (trade?.maker_id === realmEntityId && status?.value === 0) {
-                        console.log('my trade', parseInt(entity.keys))
                         myTrades.push(parseInt(entity.keys))
                     }
                     else if (trade?.maker_id !== realmEntityId && status?.value === 0) {
-                        console.log('counterparty trade', parseInt(entity.keys))
                         counterpartyTrades.push(parseInt(entity.keys))
                     }
                 }

@@ -46,7 +46,7 @@ function unpackResources(packedValue, valueCount) {
 }
 
 // Example usage
-const numbers = [6, 7, 8, 9, 10, 11];
+const numbers = [2, 3];
 const packedResult = packResources(numbers);
 const unpackedResult = unpackResources(packedResult, numbers.length);
 console.log({ packedResult });

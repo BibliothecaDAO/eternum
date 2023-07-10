@@ -10,7 +10,8 @@ import { useDojo } from '../../../../DojoContext';
 export const getRealmIdByPosition = (positionRaw: {x: number, y: number}): number | undefined => {
     let offset = 1800000;
     let position = {x: positionRaw.x - offset, y: positionRaw.y - offset};
-    for (let realm of realmsCoordsJson['features'].slice(0,2)) {
+    // TODO: find a better way to find position
+    for (let realm of realmsCoordsJson['features'].slice(0,10)) {
         if (parseInt(realm['geometry']['coordinates'][0]) === position.x && parseInt(realm['geometry']['coordinates'][1]) === position.y) {
             return realm['properties']['tokenId'];
         }
@@ -29,8 +30,8 @@ export const getRealmNameById = (realmId: number): string | undefined => {
 }
 
 export const getRealmOrderNameById = (realmId: number): string => {
-    const orderId = realmsOrdersJson[realmId - 1].id;
-    return orderNameDict[orderId];
+    const orderName = realmsOrdersJson[realmId - 1].order;
+    return orderName.toLowerCase().replace('the ', '');
 }   
 
 

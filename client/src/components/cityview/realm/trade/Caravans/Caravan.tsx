@@ -3,11 +3,11 @@ import { OrderIcon } from '../../../../../elements/OrderIcon';
 import Button from '../../../../../elements/Button';
 import { ResourceIcon } from '../../../../../elements/ResourceIcon';
 import { findResourceById } from '../../../../../constants/resources';
-import { ReactComponent as Pen } from '../../../../assets/icons/common/pen.svg';
-import { ReactComponent as Clock } from '../../../../assets/icons/common/clock.svg';
-import { ReactComponent as CaretDownFill } from '../../../../assets/icons/common/caret-down-fill.svg';
-import { ReactComponent as DonkeyIcon } from '../../../../assets/icons/units/donkey.svg';
-import { ReactComponent as PremiumIcon } from '../../../../assets/icons/units/premium.svg';
+import { ReactComponent as Pen } from '../../../../../assets/icons/common/pen.svg';
+import { ReactComponent as Clock } from '../../../../../assets/icons/common/clock.svg';
+import { ReactComponent as CaretDownFill } from '../../../../../assets/icons/common/caret-down-fill.svg';
+import { ReactComponent as DonkeyIcon } from '../../../../../assets/icons/units/donkey.svg';
+import { ReactComponent as PremiumIcon } from '../../../../../assets/icons/units/premium.svg';
 
 
 import ProgressBar from '../../../../../elements/ProgressBar';
@@ -31,9 +31,7 @@ type CaravanProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Caravan = ({ caravanId, ...props }: CaravanProps) => {
-    const [state, setState] = useState();
-
-    const {realmEntityId} = useRealmStore();
+    const { realmEntityId } = useRealmStore();
 
     // find the order ids of the caravan
     const {data: tradeId} = useGetTradeFromCaravanId(realmEntityId, caravanId);
@@ -63,6 +61,8 @@ export const Caravan = ({ caravanId, ...props }: CaravanProps) => {
         resourcesGet.push(getComponentValue(Resource, resourceEntityIdsGet[i]) ?? {resource_type: 0, balance: 0});
     }
 
+    // TODO: get the number of donkeys travelling
+
     // capacity
     let resourceWeight = getTotalResourceWeight([...resourcesGive, ...resourcesGet]);
     let caravanCapacity = getComponentValue(Capacity, Utils.getEntityIdFromKeys([BigInt(caravanId)]))?.weight_gram || 0;
@@ -72,13 +72,14 @@ export const Caravan = ({ caravanId, ...props }: CaravanProps) => {
     const realmId = position && getRealmIdByPosition(position);
     const realmName = realmId && getRealmNameById(realmId);
 
-    const isTraveling = nextBlockTimestamp && arrivalTime && (arrivalTime.arrives_at > nextBlockTimestamp);
+    const isTraveling = movable && !movable.blocked && nextBlockTimestamp && arrivalTime && (arrivalTime.arrives_at > nextBlockTimestamp);
+    // TODO: why movable.blocked is considered boolean and not int
+    const isWaitingForDeparture = movable && (Number(movable.blocked) === 1);
+    const isIdle = nextBlockTimestamp && ((arrivalTime && arrivalTime.arrives_at <= nextBlockTimestamp) || !arrivalTime) && movable && !movable.blocked;
 
     if ((movable?.blocked || isTraveling) && props.idleOnly) {
         return null;
     }
-
-    useEffect(() => { }, []);
 
     return (
         <div className={clsx('flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold', props.className)} onClick={props.onClick}>
@@ -106,13 +107,13 @@ export const Caravan = ({ caravanId, ...props }: CaravanProps) => {
                         <CaretDownFill className='ml-1 fill-current' />
                     </div>}
                 </div>}
-                {nextBlockTimestamp && !arrivalTime && <div className='flex ml-auto -mt-2 italic text-gold'>
+                {isWaitingForDeparture && <div className='flex ml-auto -mt-2 italic text-gold'>
                     Waiting departure <Pen className="ml-1 fill-gold" />
                 </div>}
-                {nextBlockTimestamp && arrivalTime && arrivalTime.arrives_at <= nextBlockTimestamp && <div className='flex ml-auto -mt-2 italic text-gold'>
-                    Idle <Pen className="ml-1 fill-gold" />
+                {isIdle && <div className='flex ml-auto -mt-2 italic text-gold'>
+                    Idle<Pen className="ml-1 fill-gold" />
                 </div>}
-                {isTraveling && arrivalTime && <div className='flex ml-auto -mt-2 italic text-light-pink'>
+                {isTraveling && nextBlockTimestamp && arrivalTime && <div className='flex ml-auto -mt-2 italic text-light-pink'>
                     {formatSecondsLeftInDaysHours(arrivalTime.arrives_at - nextBlockTimestamp)}
                 </div>}
             </div>
@@ -130,23 +131,23 @@ export const Caravan = ({ caravanId, ...props }: CaravanProps) => {
                                 <div className='flex flex-col items-center'>
                                     <Dot colorClass='bg-green' />
                                     {/* // TODO: get number in the caravan */}
-                                    <div className='mt-1 text-green'>30</div>
+                                    <div className='mt-1 text-green'>{30}</div>
                                 </div>
                                 <div className='flex flex-col items-center'>
                                     <Dot colorClass='bg-yellow' />
-                                    <div className='mt-1 text-dark'>0</div>
+                                    <div className='mt-1 text-dark'>{0}</div>
                                 </div>
                                 <div className='flex flex-col items-center'>
                                     <Dot colorClass='bg-orange' />
-                                    <div className='mt-1 text-orange'>0</div>
+                                    <div className='mt-1 text-orange'>{0}</div>
                                 </div>
                                 <div className='flex flex-col items-center'>
                                     <Dot colorClass='bg-red' />
-                                    <div className='mt-1 text-red'>0</div>
+                                    <div className='mt-1 text-red'>{0}</div>
                                 </div>
                                 <div className='flex flex-col items-center'>
                                     <Dot colorClass='bg-light-pink' />
-                                    <div className='mt-1 text-dark'>0</div>
+                                    <div className='mt-1 text-dark'>{0}</div>
                                 </div>
                             </div>
                         </div>
@@ -162,29 +163,28 @@ export const Caravan = ({ caravanId, ...props }: CaravanProps) => {
                             <div className='flex items-center space-x-[6px]'>
                                 <div className='flex flex-col items-center'>
                                     <Dot colorClass='bg-green' />
-                                    <div className='mt-1 text-green'>30</div>
+                                    <div className='mt-1 text-green'>{30}</div>
                                 </div>
                                 <div className='flex flex-col items-center'>
                                     <Dot colorClass='bg-yellow' />
-                                    <div className='mt-1 text-dark'>0</div>
+                                    <div className='mt-1 text-dark'>{0}</div>
                                 </div>
                                 <div className='flex flex-col items-center'>
                                     <Dot colorClass='bg-orange' />
-                                    <div className='mt-1 text-orange'>5</div>
+                                    <div className='mt-1 text-orange'>{5}</div>
                                 </div>
                                 <div className='flex flex-col items-center'>
                                     <Dot colorClass='bg-red' />
-                                    <div className='mt-1 text-red'>10</div>
+                                    <div className='mt-1 text-red'>{10}</div>
                                 </div>
                                 <div className='flex flex-col items-center'>
                                     <Dot colorClass='bg-light-pink' />
-                                    <div className='mt-1 text-dark'>0</div>
+                                    <div className='mt-1 text-dark'>{0}</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div >
     );

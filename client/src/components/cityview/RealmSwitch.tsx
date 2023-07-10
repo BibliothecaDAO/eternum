@@ -14,28 +14,28 @@ type RealmSwitchProps = {
 const dummyRealms = [
     {
         id: 1,
-        name: 'Múklulik',
-        order: 'brilliance',
-    },
-    {
-        id: 2,
-        name: 'Sitünti',
-        order: 'enlightenment',
-    },
-    {
-        id: 3,
-        name: 'Änkum',
-        order: 'fox',
-    },
-    {
-        id: 4,
-        name: 'nun-Nin',
+        name: 'Stolsli',
         order: 'giants',
     },
     {
-        id: 5,
-        name: 'Künti',
+        id: 2,
+        name: 'Ilgzhijajilg',
         order: 'perfection',
+    },
+    {
+        id: 3,
+        name: 'Hetokamohuti',
+        order: 'rage',
+    },
+    {
+        id: 4,
+        name: 'Egonal',
+        order: 'fox',
+    },
+    {
+        id: 5,
+        name: '‘oak Leukue',
+        order: 'twins',
     }
 ]
 

@@ -30,7 +30,13 @@ export function createSystemCalls(
                 event.keys[0] === EVENT_KEY;
             })
         })
-        const trade_id = parseInt(events[5].data[2]);
+        let trade_id: number = 0;
+        for (const event of events) {
+            // if component change is Trade, take entity_id
+            if (event.data[0] === '0x5472616465') {
+                trade_id = parseInt(event.data[2]);
+            }
+        }
         return trade_id;
     }
 
