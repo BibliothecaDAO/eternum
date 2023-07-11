@@ -22,7 +22,7 @@ mod CreateFreeTransportUnit {
 
     use dojo::world::Context;
 
-    fn execute(ctx: Context, entity_id: ID, quantity: u128) -> ID {
+    fn execute(ctx: Context, entity_id: u128, quantity: u128) -> ID {
         // assert that the entity is a realm by querying the entity type
         let (owner, realm, position) = get !(ctx.world, entity_id.into(), (Owner, Realm, Position));
 

@@ -8,7 +8,7 @@ mod ERC721Approve {
 
     use dojo::world::Context;
 
-    fn execute(ctx: Context, token: felt252, approved: felt252, token_id: ID) {
+    fn execute(ctx: Context, token: felt252, approved: felt252, token_id: u128) {
         // approve an address
         set !(ctx.world, 
             (token, token_id).into(), (TokenApproval { address: approved.try_into().unwrap() })
@@ -28,7 +28,7 @@ mod ERC721TransferFrom {
 
     use dojo::world::Context;
 
-    fn execute(ctx: Context, token: felt252, from: felt252, to: felt252, token_id: ID) {
+    fn execute(ctx: Context, token: felt252, from: felt252, to: felt252, token_id: u128) {
         let query: Query = (token, token_id).into();
         set !(ctx.world, 
             query,
@@ -70,7 +70,7 @@ mod ERC721Mint {
 
     use dojo::world::Context;
 
-    fn execute(ctx: Context, token: felt252, owner: felt252, token_id: ID) {
+    fn execute(ctx: Context, token: felt252, owner: felt252, token_id: u128) {
         // assign token to owner
         set !(ctx.world, 
             (token, token_id).into(), (Owner { address: owner.try_into().unwrap() })

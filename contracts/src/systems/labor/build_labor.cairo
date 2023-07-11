@@ -16,7 +16,7 @@ mod BuildLabor {
     use dojo::world::Context;
 
     #[external]
-    fn execute(ctx: Context, realm_id: ID, resource_type: u8, labor_units: u64, multiplier: u64) {
+    fn execute(ctx: Context, realm_id: u128, resource_type: u8, labor_units: u64, multiplier: u64) {
         // assert owner of realm
         let player_id: ContractAddress = starknet::get_tx_info().unbox().account_contract_address;
         let (realm, owner) = get !(ctx.world, realm_id.into(), (Realm, Owner));

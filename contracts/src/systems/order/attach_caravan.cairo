@@ -27,7 +27,7 @@ mod AttachCaravan {
     // like this:
     // set !(ctx.world, (order_id, entity_id), (Caravan { caravan_id }));
 
-    fn execute(ctx: Context, entity_id: ID, trade_id: ID, caravan_id: ID) {
+    fn execute(ctx: Context, entity_id: u128, trade_id: u128, caravan_id: u128) {
         let caller = starknet::get_tx_info().unbox().account_contract_address;
 
         // get trade info
@@ -38,10 +38,13 @@ mod AttachCaravan {
         assert(owner.address == caller, 'Caller not owner of entity_id');
 
         // assert that the status is open
-        let is_open = match trade_status.value {
-            TradeStatus::Open(_) => true,
-            TradeStatus::Accepted(_) => false,
-            TradeStatus::Cancelled(_) => false,
+        // TODO: change back to enum when works with torii 
+        let is_open = if (trade_status.value == 0) {
+            true
+        } else if (trade_status.value == 1) {
+            false
+        } else {
+            false
         };
         assert(is_open, 'Trade is not open');
 

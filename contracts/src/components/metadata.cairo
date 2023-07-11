@@ -14,6 +14,6 @@ struct MetaData {
 // see CreateCaravan for an example
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct ForeignKey {
-    entity_id: ID, 
+    entity_id: u128, 
 }
 

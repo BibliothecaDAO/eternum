@@ -22,7 +22,7 @@ mod BuildBuilding {
     use dojo::world::Context;
 
     #[external]
-    fn execute(ctx: Context, realm_id: ID, building_type: felt252, quantity: felt252) {
+    fn execute(ctx: Context, realm_id: u128, building_type: felt252, quantity: felt252) {
         let player_id: felt252 = starknet::get_caller_address().into();
         let realm: Realm = get!(ctx.world, realm_id.into(), Realm);
 

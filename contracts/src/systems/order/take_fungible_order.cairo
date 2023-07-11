@@ -19,7 +19,7 @@ mod TakeFungibleOrder {
     use dojo::world::Context;
     // you can attach a caravan only if it's needed
 
-    fn execute(ctx: Context, taker_id: ID, trade_id: ID) {
+    fn execute(ctx: Context, taker_id: u128, trade_id: u128) {
         // get the trade 
         let (meta, trade_status) = get !(ctx.world, trade_id.into(), (Trade, Status));
 
@@ -28,10 +28,13 @@ mod TakeFungibleOrder {
         assert(meta.expires_at > ts, 'trade expired');
 
         // assert that the status is open
-        let is_open = match trade_status.value {
-            TradeStatus::Open(_) => true,
-            TradeStatus::Accepted(_) => false,
-            TradeStatus::Cancelled(_) => false,
+        // TODO: change back to enum when works with torii
+        let is_open = if (trade_status.value == 0) {
+            true
+        } else if (trade_status.value == 1) {
+            false
+        } else {
+            false
         };
         assert(is_open, 'Trade is not open');
 
@@ -46,8 +49,9 @@ mod TakeFungibleOrder {
                 ctx.world,
                 trade_id.into(),
                 (
+                    // TODO: change back to enum when works with torii
                     Status {
-                        value: TradeStatus::Accepted(())
+                        value: 1
                         }, Trade {
                         maker_id: meta.maker_id,
                         taker_id,
@@ -63,7 +67,8 @@ mod TakeFungibleOrder {
         } else {
             // if not 0, then verify if the taker_id is the one specified
             assert(meta.taker_id == taker_id, 'not the taker');
-            set !(ctx.world, trade_id.into(), (Status { value: TradeStatus::Accepted(()) }, ));
+            // TODO: change back to enum when works with torii
+            set !(ctx.world, trade_id.into(), (Status { value: 1 }, ));
         };
 
         // caravan only needed if both are not on the same position

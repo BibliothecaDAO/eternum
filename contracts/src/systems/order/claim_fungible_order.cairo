@@ -23,7 +23,7 @@ mod ClaimFungibleOrder {
 
     use dojo::world::Context;
 
-    fn execute(ctx: Context, entity_id: ID, trade_id: ID) {
+    fn execute(ctx: Context, entity_id: u128, trade_id: u128) {
         // assert caller is owner of the entity_id
         let caller = starknet::get_tx_info().unbox().account_contract_address;
         let owner = get !(ctx.world, entity_id.into(), Owner);

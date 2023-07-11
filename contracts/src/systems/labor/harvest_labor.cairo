@@ -17,7 +17,7 @@ mod HarvestLabor {
 
     use dojo::world::Context;
 
-    fn execute(ctx: Context, realm_id: ID, resource_type: u8) {
+    fn execute(ctx: Context, realm_id: u128, resource_type: u8) {
         let player_id: ContractAddress = starknet::get_tx_info().unbox().account_contract_address;
         let (realm, owner) = get !(ctx.world, realm_id.into(), (Realm, Owner));
 

@@ -15,7 +15,7 @@ mod CreateRealm {
 
     fn execute(
         ctx: Context,
-        realm_id: ID,
+        realm_id: u128,
         owner: ContractAddress,
         resource_types_packed: u128,
         resource_types_count: u8,

@@ -42,10 +42,10 @@ mod MakeFungibleOrder {
     // expires_at: timestamp when the order expires
     fn execute(
         ctx: Context,
-        maker_id: ID,
+        maker_id: u128,
         maker_entity_types: Span<u8>,
         maker_quantities: Span<u128>,
-        taker_id: ID,
+        taker_id: u128,
         taker_entity_types: Span<u8>,
         taker_quantities: Span<u128>,
         taker_needs_caravan: bool,
@@ -153,7 +153,8 @@ mod MakeFungibleOrder {
                     expires_at: expires_at,
                     taker_needs_caravan: taker_needs_caravan,
                     }, Status {
-                    value: TradeStatus::Open(()), 
+                    // TODO: change back to enum when works with torii
+                    value: 0,
                 }
             ),
         );

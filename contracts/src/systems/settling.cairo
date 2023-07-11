@@ -16,7 +16,7 @@ mod Settle {
 
     use dojo::world::Context;
 
-    fn execute(ctx: Context, realm_id: ID) { // get the ERC721 contract
+    fn execute(ctx: Context, realm_id: u128) { // get the ERC721 contract
         // get the owner
         let config = get !(ctx.world, WORLD_CONFIG_ID.into(), WorldConfig);
         let laborConfig = get !(ctx.world, LABOR_CONFIG_ID.into(), LaborConfig);
@@ -103,7 +103,7 @@ mod Unsettle {
 
     use dojo::world::Context;
 
-    fn execute(ctx: Context, realm_id: ID) {
+    fn execute(ctx: Context, realm_id: u128) {
         // get the ERC721 contract
         let config = get !(ctx.world, WORLD_CONFIG_ID.into(), WorldConfig);
         let laborConfig = get !(ctx.world, LABOR_CONFIG_ID.into(), LaborConfig);

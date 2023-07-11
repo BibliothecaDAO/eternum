@@ -10,7 +10,7 @@ mod MintResources {
 
     use dojo::world::Context;
 
-    fn execute(ctx: Context, realm_id: ID, resource_type: u8, amount: u128) {
+    fn execute(ctx: Context, realm_id: u128, resource_type: u8, amount: u128) {
         let resource_query: Query = (realm_id, resource_type).into();
         let maybe_resource = try_get !(ctx.world, resource_query, Resource);
         let resource = match maybe_resource {

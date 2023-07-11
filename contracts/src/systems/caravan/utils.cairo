@@ -63,7 +63,7 @@ mod GetQuantity {
 
     use dojo::world::Context;
 
-    fn execute(ctx: Context, entity_id: ID) -> u128 {
+    fn execute(ctx: Context, entity_id: u128) -> u128 {
         // try to retrieve the Quantity component of the entity
         let maybe_quantity = try_get !(ctx.world, entity_id.into(), Quantity);
 

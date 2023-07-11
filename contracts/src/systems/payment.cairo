@@ -8,7 +8,7 @@ mod SpendResources {
 
     use dojo::world::Context;
 
-    fn execute(ctx: Context, entity_id: ID, resource_type: u8, amount: u128) {
+    fn execute(ctx: Context, entity_id: u128, resource_type: u8, amount: u128) {
         // DISCUSS: will get_caller_address give the original caller address ?
         let caller = starknet::get_caller_address();
 
@@ -23,9 +23,6 @@ mod SpendResources {
         // assert balance is enough
         let final_balance = resource.balance - amount;
         assert(final_balance >= 0, 'Not enough balance');
-        set !(
-            ctx.world,
-            query, (Resource { resource_type, balance: final_balance,  })
-        );
+        set !(ctx.world, query, (Resource { resource_type, balance: final_balance,  }));
     }
 }

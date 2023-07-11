@@ -10,7 +10,9 @@ mod TickSystem {
 
     use dojo::world::Context;
 
-    fn execute(ctx: Context, realm_id: ID) { // auth function - can only be called by approved systems
+    fn execute(
+        ctx: Context, realm_id: u128
+    ) { // auth function - can only be called by approved systems
     // Can only be approved modules
 
     // Adjust state on Realm
