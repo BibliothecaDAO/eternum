@@ -23,11 +23,10 @@ echo "Script dir: $script_dir"
 # set config
 source "$script_dir/../../set_config.sh"
 
+# mint realms
+source "$script_dir/../mint_realms.sh"
+
 commands=(
-    # create realm 1 and 2
-    # (2 cities)
-    "sozo execute --world $world CreateRealm --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,0x06f62894bfd81d2e396ce266b2ad0f21e0668d604e5bb1077337b6d570a54aea,1,1,2,1,1,1,1,1,100000,200000"
-    "sozo execute --world $world CreateRealm --account-address $DOJO_ACCOUNT_ADDRESS --calldata 2,0x06f62894bfd81d2e396ce266b2ad0f21e0668d604e5bb1077337b6d570a54aea,1,1,2,1,1,1,1,1,200000,1000000"
     # mint resources 1 and 2 for realm 1
     "sozo execute --world $world MintResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,1,1000"
     "sozo execute --world $world MintResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,2,1000"

@@ -68,7 +68,7 @@ mod TakeFungibleOrder {
         // caravan only needed if both are not on the same position
         // get the maker position
         let maker_position = commands::<Position>::entity(meta.maker_id.into());
-        let taker_position = commands::<Position>::entity(meta.taker_id.into());
+        let taker_position = commands::<Position>::entity(taker_id.into());
 
         // check if there is a caravan attached to the maker
         let maybe_caravan = commands::<Caravan>::try_entity(
@@ -194,7 +194,7 @@ mod TakeFungibleOrder {
 
             // remove the quantity from the taker balance
             let taker_resource = commands::<Resource>::entity(
-                (meta.taker_id, resource.resource_type).into()
+                (taker_id, resource.resource_type).into()
             );
 
             // assert has enough

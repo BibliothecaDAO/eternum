@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { ReactComponent as SkullIcon } from '../../../assets/icons/common/skull.svg';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ResourceIcon } from '../../../elements/ResourceIcon';
 import { ResourcesIds, findResourceById } from '../../../constants/resources';
 import { currencyFormat } from '../../../utils/utils.jsx';
@@ -7,9 +6,12 @@ import { useComponentValue } from "@dojoengine/react";
 import clsx from 'clsx';
 import { Utils } from '@dojoengine/core';
 import { useDojo } from '../../../DojoContext';
-import useRealm from '../../../hooks/store/useRealmStore';
 import { unpackResources } from '../../../utils/packedData';
-import { useLaborStore } from '../../../hooks/store/useLaborStore';
+import { getComponentValue } from '@latticexyz/recs';
+import useBlockchainStore from '../../../hooks/store/useBlockchainStore';
+import { LABOR_CONFIG_ID } from '../../../constants/labor';
+import { calculateProductivity } from './labor/laborUtils';
+import useRealmStore from '../../../hooks/store/useRealmStore';
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<'div'>
 
@@ -18,10 +20,10 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
       components: { Realm },
     } = useDojo();
   
-    let realmEntityId = useRealm((state) => state.realmEntityId);
-  
-    let realm = useComponentValue(Realm, Utils.getEntityIdFromKeys([BigInt(realmEntityId)]));
-  
+    let { realmEntityId } = useRealmStore();
+
+    let realm = getComponentValue(Realm, Utils.getEntityIdFromKeys([BigInt(realmEntityId)]));
+
     // unpack the resources
     let realmResourceIds: number[] = [ResourcesIds['Wheat'], ResourcesIds['Fish']];
     let unpackedResources: number[] = [];
@@ -54,13 +56,29 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
   
   const ResourceComponent: React.FC<ResourceComponentProps> = ({ realmEntityId, resourceId }) => {
     const {
-      components: { Resource },
+      components: { Resource, Labor, LaborConfig },
     } = useDojo();
 
-    const {productivity} = useLaborStore((state) => state);
+    const { nextBlockTimestamp } = useBlockchainStore();
+    const [productivity, setProductivity] = useState<number>(0);
 
     let resource = useComponentValue(Resource, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
-  
+    let labor = useComponentValue(Labor, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
+    let laborConfig = getComponentValue(LaborConfig, Utils.getEntityIdFromKeys([BigInt(LABOR_CONFIG_ID)]));
+
+    const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
+
+    useEffect(() => {
+      let laborLeft: number = 0;
+      if (nextBlockTimestamp && labor && laborConfig && labor.balance > nextBlockTimestamp) {
+          let left = labor.balance - nextBlockTimestamp;
+          laborLeft = left < laborConfig.base_labor_units? 0: left;
+      }
+      const productivity = (labor && laborLeft && laborConfig)? calculateProductivity(isFood? laborConfig.base_food_per_cycle: laborConfig.base_resources_per_cycle, labor.multiplier, laborConfig.base_labor_units): 0;
+      setProductivity(productivity)
+
+    }, [nextBlockTimestamp, labor, laborConfig]);
+
     return (
       <>
         <div className="flex flex-col">
@@ -68,15 +86,14 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
             <ResourceIcon resource={findResourceById(resourceId)?.trait as string} size="xs" className="mr-1" />
             <div className="text-xs">{currencyFormat(resource ? resource.balance : 0)}</div>
           </div>
-          {/* TODO: speed at which resources get harvested */}
             <div
               className={clsx(
                 'text-xxs mt-2 rounded-[5px] px-2 h-4 w-min',
-                productivity[resourceId] > 0 && 'text-order-vitriol bg-dark-green',
-                (productivity[resourceId] === 0 || productivity[resourceId] === undefined) && 'text-gold bg-brown'
+                productivity > 0 && 'text-order-vitriol bg-dark-green',
+                (productivity === 0 || productivity === undefined) && 'text-gold bg-brown'
               )}
             >
-              {productivity[resourceId] === 0 || productivity[resourceId] === undefined ? 'IDLE': `${productivity[resourceId]}/s` }
+              {productivity === 0 || productivity === undefined ? 'IDLE': `${productivity}/h` }
             </div>
         </div>
         {resourceId === ResourcesIds['Fish'] && <div className="flex items-center mx-3 -translate-y-2">|</div>}

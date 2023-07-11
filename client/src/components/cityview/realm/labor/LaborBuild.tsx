@@ -17,6 +17,7 @@ import { Utils } from '@dojoengine/core';
 import { LABOR_CONFIG_ID } from '../../../../constants/labor';
 import { unpackResources } from '../../../../utils/packedData';
 import { formatSecondsLeftInDaysHours } from './laborUtils';
+import { getComponentValue } from '@latticexyz/recs';
 
 type LaborBuildPopupProps = {
     resourceId: number;
@@ -26,11 +27,11 @@ type LaborBuildPopupProps = {
 
 export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopupProps) => {
     const {
-        components: { Realm, LaborConfig, LaborCostResources, LaborCostAmount },
+        components: { Realm, Resource, LaborConfig, LaborCostResources, LaborCostAmount },
         systemCalls: { build_labor },
     } = useDojo();
 
-    const [state, setState] = useState();
+    const [canBuild, setCanBuild] = useState(true);
     const [laborAmount, setLaborAmount] = useState(1);
     const [multiplier, setMultiplier] = useState(1);
 
@@ -41,30 +42,38 @@ export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopu
     let realmEntityId = useRealmStore((state) => state.realmEntityId);
     let realm = useComponentValue(Realm, Utils.getEntityIdFromKeys([BigInt(realmEntityId)]));
 
-    // TODO: find a more optimized way to do this
-    // let costResourcesPacked = useComponentValue(LaborCostResources, Utils.getEntityIdFromKeys([BigInt(resourceId)]))
-    // calculate the costs of building/buying tools
-    // let costResources: number[] = [];
-    // if (costResourcesPacked) {
-    //   costResources = unpackResources(
-    //     BigInt(costResourcesPacked.resource_types_packed),
-    //     costResourcesPacked.resource_types_count
-    //   );
-    // }
-    let resourceCost: {resourceId: number, amount: number}[] = [
-        {resourceId: 1, amount: 100}, {resourceId: 2, amount: 100}, {resourceId: 3, amount: 100},
-         {resourceId: 4, amount: 100}, {resourceId: 5, amount: 100}, {resourceId: 6, amount: 100}];
-    // for (const resource of costResources) {
-    //     const costAmount = useComponentValue(LaborCostAmount, Utils.getEntityIdFromKeys([BigInt(resourceId), BigInt(resource)]));
-    //     if (costAmount) {
-    //         resourceCost.push({ resourceId: resource, amount: costAmount.value });
-    //     }
-    // }
-
-    let laborConfig = useComponentValue(LaborConfig, Utils.getEntityIdFromKeys([BigInt(LABOR_CONFIG_ID)]))
-
     const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
     const resource = useMemo(() => findResourceById(resourceId), [resourceId]);
+
+    // TODO: find a more optimized way to do this
+    let costResourcesPacked = getComponentValue(LaborCostResources, Utils.getEntityIdFromKeys([BigInt(resourceId)]))
+    // calculate the costs of building/buying tools
+    let costResources: {resourceId: number, amount: number}[] = [];
+    if (costResourcesPacked) {
+      const resourceIdsCost = unpackResources(
+        BigInt(costResourcesPacked.resource_types_packed),
+        costResourcesPacked.resource_types_count
+      );
+      for (const resourceIdCost of resourceIdsCost) {
+        const amount = getComponentValue(LaborCostAmount, Utils.getEntityIdFromKeys([BigInt(resourceId), BigInt(resourceIdCost)]))?.value || 0;
+        const totalAmount = amount * multiplier * (isFood? 12: laborAmount);
+        amount && costResources.push({resourceId: resourceIdCost, amount: totalAmount})
+      }
+    }
+
+    useEffect(() => { 
+        setCanBuild(true)
+        costResources.forEach(({ resourceId, amount }) => {
+            const realmBalance = getComponentValue(Resource, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]))?.balance || 0;
+            if (realmBalance < amount) {
+                setCanBuild(false);
+            }
+        });
+    }, [laborAmount, multiplier]);
+
+
+    let laborConfig = getComponentValue(LaborConfig, Utils.getEntityIdFromKeys([BigInt(LABOR_CONFIG_ID)]))
+
 
     // TODO: make sure you have enough resources before allowing to click
     const handleBuild = () => {
@@ -75,7 +84,6 @@ export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopu
         onClose();
     }
 
-    useEffect(() => { }, []);
 
     return (
         <SecondaryPopup>
@@ -124,7 +132,7 @@ export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopu
                         <div className='fle flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60'>
                             <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
                             <div className='grid grid-cols-4 gap-2'>
-                            {resourceCost.map(({ resourceId, amount }) => (
+                            {costResources.map(({ resourceId, amount }) => (
                                 <ResourceCost type='vertical' resourceId={resourceId} amount={amount} />
                             ))}
                             </div>
@@ -146,6 +154,7 @@ export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopu
                         </div>
                     }
                     <Button className='!px-[6px] !py-[2px] text-xxs' 
+                            disabled={!canBuild}        
                             onClick={() => handleBuild()} 
                             variant='outline'>{isFood? `Build`: `Buy Tools`}
                     </Button>

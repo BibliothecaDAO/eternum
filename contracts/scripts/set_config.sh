@@ -21,28 +21,39 @@ commands=(
     "sozo execute --world $world SetSpeedConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 256,360"
 
     ### TRAVEL ###
-    # free transport per city = 10;
-    "sozo execute --world $world SetTravelConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 10"
+    # free transport per city = 100 (for testing);
+    "sozo execute --world $world SetTravelConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 100"
 
     ### CAPACITY ###
     # entity type FREE_TRANSPORT_ENTITY_TYPE = 256
     # 100000 gr = 100 kg
     "sozo execute --world $world SetCapacityConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 256,100000"
 
-    ### WEIGHT ###
-    # 1 gr for resource type 1,2,3,4
-    "sozo execute --world $world SetWeightConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,1"
-    "sozo execute --world $world SetWeightConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 2,1"
-    "sozo execute --world $world SetWeightConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 3,1"
-    "sozo execute --world $world SetWeightConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 4,1"
 )
 
+### WEIGHT ###
+# Loop for resource types 1 to 28
+for resource_type in {1..28}
+do
+    commands+=(
+        # 1 g per resource
+        "sozo execute --world $world SetWeightConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata $resource_type,1"
+    )
+done
+
+### WEIGHT ###
+commands+=(
+    # Resource type 254
+    "sozo execute --world $world SetWeightConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 254,1"
+    # Resource type 255
+    "sozo execute --world $world SetWeightConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 255,1"
+)
 
 # Loop for resource types 1 to 28
 for resource_type in {1..28}
 do
-    # resource_type_cost = 3
-    # resource_type_value = 10
+    # resource_type_cost = 2,3
+    # resource_type_value = 10,10
     commands+=(
         "sozo execute --world "$world" SetLaborCostResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $resource_type,515,2"
         # resource_type_cost = 3

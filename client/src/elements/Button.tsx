@@ -6,6 +6,7 @@ interface ButtonProps {
   className?: string;
   disabled?: boolean;
   variant: "primary" | "secondary" | "success" | "danger" | "default" | "outline";
+  isLoading?: boolean;
 }
 
 const STYLES = {
@@ -18,6 +19,10 @@ const STYLES = {
   disabledStyle: "bg-gray-300 cursor-not-allowed",
   success: "border border-brilliance !text-brilliance bg-transparent hover:bg-brilliance/10",
   outline: "border border-gold !text-gold bg-transparent hover:bg-gold/10",
+  danger: "border border-orange !text-orange bg-transparent hover:bg-orange/10",
+  secondary: "border border-orange !text-orange bg-transparent hover:bg-orange/10",
+  loadingStyle: "relative",
+
 }
 const Button: React.FC<ButtonProps> = ({
   onClick,
@@ -25,17 +30,24 @@ const Button: React.FC<ButtonProps> = ({
   className = "",
   disabled = false,
   variant = "default",
+  isLoading = false,
 }) => {
-
   return (
     <button
       type="button"
-      onClick={disabled ? undefined : onClick}
-      className={`${STYLES.baseStyle} ${STYLES[variant]} ${disabled ? STYLES.disabledStyle : STYLES.enabledStyle
-        } ${className}`}
-      disabled={disabled}
+      onClick={disabled || isLoading ? undefined : onClick}
+      className={`${STYLES.baseStyle} ${STYLES[variant]} ${
+        disabled ? STYLES.disabledStyle : STYLES.enabledStyle
+      } ${isLoading ? STYLES.loadingStyle : ""} ${className}`}
+      disabled={disabled || isLoading}
     >
-      {children}
+      {isLoading ? (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-gray-900"></div>
+        </div>
+      ) : (
+        children
+      )}
     </button>
   );
 };

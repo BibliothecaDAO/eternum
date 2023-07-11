@@ -608,6 +608,11 @@ export type GetCaravansQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type GetCaravansQuery = { __typename?: 'Query', entities?: Array<{ __typename?: 'Entity', keys: string } | null> | null };
 
+export type GetOrdersQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetOrdersQuery = { __typename?: 'Query', entities?: Array<{ __typename?: 'Entity', keys: string } | null> | null };
+
 export type GetTradesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -617,6 +622,13 @@ export type GetTradesQuery = { __typename?: 'Query', entities?: Array<{ __typena
 export const GetCaravansDocument = gql`
     query getCaravans {
   entities(keys: ["%"], componentName: "CaravanMembers") {
+    keys
+  }
+}
+    `;
+export const GetOrdersDocument = gql`
+    query getOrders {
+  entities(keys: ["%"], componentName: "Caravan") {
     keys
   }
 }
@@ -634,11 +646,15 @@ export type SdkFunctionWrapper = <T>(action: (requestHeaders?:Record<string, str
 
 const defaultWrapper: SdkFunctionWrapper = (action, _operationName, _operationType) => action();
 const GetCaravansDocumentString = print(GetCaravansDocument);
+const GetOrdersDocumentString = print(GetOrdersDocument);
 const GetTradesDocumentString = print(GetTradesDocument);
 export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = defaultWrapper) {
   return {
     getCaravans(variables?: GetCaravansQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetCaravansQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetCaravansQuery>(GetCaravansDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getCaravans', 'query');
+    },
+    getOrders(variables?: GetOrdersQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetOrdersQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetOrdersQuery>(GetOrdersDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getOrders', 'query');
     },
     getTrades(variables?: GetTradesQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetTradesQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetTradesQuery>(GetTradesDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getTrades', 'query');

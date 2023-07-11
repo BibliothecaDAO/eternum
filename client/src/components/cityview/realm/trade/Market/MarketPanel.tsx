@@ -1,19 +1,29 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FiltersPanel } from '../../../../elements/FiltersPanel';
-import { FilterButton } from '../../../../elements/FilterButton';
-import { SortPanel } from '../../../../elements/SortPanel';
-import { SortButton, SortInterface } from '../../../../elements/SortButton';
-import { TradeOffer } from './TradeOffer';
-import { ResourceFilter } from '../../../ResourceFilterComponent';
-import { OrdersFilter } from '../../../OrdersFilterComponent';
-import { CreateOfferPopup } from './CreateOffer';
-import Button from '../../../../elements/Button';
+import { FiltersPanel } from '../../../../../elements/FiltersPanel';
+import { FilterButton } from '../../../../../elements/FilterButton';
+import { SortPanel } from '../../../../../elements/SortPanel';
+import { SortButton, SortInterface } from '../../../../../elements/SortButton';
+import { TradeOffer } from '../TradeOffer';
+import { ResourceFilter } from '../../../../ResourceFilterComponent';
+import { OrdersFilter } from '../../../../OrdersFilterComponent';
+import { CreateOfferPopup } from '../CreateOffer';
+import Button from '../../../../../elements/Button';
+import { getComponentValue } from '@latticexyz/recs';
+import { useDojo } from '../../../../../DojoContext';
+import { Utils } from '@dojoengine/core';
+import useRealmStore from '../../../../../hooks/store/useRealmStore';
+import { MarketOffer } from './MarketOffer';
 
 type MarketPanelProps = {
     trades: number[];
 }
 
 export const MarketPanel = ({ trades }: MarketPanelProps) => {
+
+    const { components: { Trade, Status }} = useDojo()
+
+    const { realmEntityId } = useRealmStore();
+
     const [activeFilter, setActiveFilter] = useState(false);
     const [showCreateOffer, setShowCreateOffer] = useState(false);
 
@@ -26,6 +36,16 @@ export const MarketPanel = ({ trades }: MarketPanelProps) => {
             { label: 'Travel time', sortKey: 'time', className: 'ml-auto mr-4' }
         ]
     }, []);
+
+    const openTrades: number[] = [];
+    for (const tradeId of trades) {
+        let trade = getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
+        let status = getComponentValue(Status, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
+        // status 0 === open
+        if (trade?.maker_id !== realmEntityId && status?.value === 0) {
+            openTrades.push(tradeId);
+        }
+    }
 
     const [activeSort, setActiveSort] = useState<SortInterface>({
         sortKey: 'number',
@@ -49,9 +69,9 @@ export const MarketPanel = ({ trades }: MarketPanelProps) => {
                 ))}
             </SortPanel>
             {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
-            {showCreateOffer && <CreateOfferPopup onClose={() => { }} onCreate={() => { }} />}
-            {trades.map((tradeId) => <div className='flex flex-col p-2'>
-                <TradeOffer tradeId={tradeId} />
+            {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => { }} />}
+            {openTrades.map((tradeId) => <div className='flex flex-col p-2'>
+                <MarketOffer tradeId={tradeId} />
             </div>)}
             <Button className='absolute -translate-x-1/2 bottom-3 left-1/2' onClick={() => setShowCreateOffer(true)} variant='primary'>+ Create new offer</Button>
         </div >
