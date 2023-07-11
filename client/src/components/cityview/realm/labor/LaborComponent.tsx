@@ -1,4 +1,3 @@
-import React, { useEffect, useMemo, useState } from 'react';
 import { OrderIcon } from '../../../../elements/OrderIcon';
 import Button from '../../../../elements/Button';
 import { ResourceIcon } from '../../../../elements/ResourceIcon';
@@ -15,6 +14,8 @@ import { useComponentValue } from '@dojoengine/react';
 import { Utils } from '@dojoengine/core';
 import { LaborConfig, Realm } from '../../../../types';
 import useBlockchainStore from '../../../../hooks/store/useBlockchainStore';
+import { calculateNextHarvest, calculateProductivity, formatSecondsInHoursMinutes } from './laborUtils';
+import { useMemo } from 'react';
 
 type LaborComponentProps = {
     resourceId: number
@@ -37,7 +38,7 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
 
     // time until the next possible harvest (that happens every 7200 seconds (2hrs))
     // if labor balance is less than current time, then there is no time to next harvest
-    const timeLeftToHarvest = React.useMemo(() => {
+    const timeLeftToHarvest = useMemo(() => {
         if (nextBlockTimestamp && labor && laborConfig && labor.last_harvest > 0) {
             if (labor.balance > nextBlockTimestamp) {
                 const timeSinceLastHarvest = nextBlockTimestamp - labor.last_harvest;
@@ -49,7 +50,7 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
 
     // if the labor balance does not exist or is lower than the current time, 
     // then there is no labor left
-    const laborLeft = React.useMemo(() => {
+    const laborLeft = useMemo(() => {
         if (nextBlockTimestamp && labor && laborConfig && labor.balance > nextBlockTimestamp) {
             let left = labor.balance - nextBlockTimestamp;
             return left < laborConfig.base_labor_units ? 0 : left;
@@ -59,7 +60,7 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
 
     const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 
-    const nextHarvest = React.useMemo(() => {
+    const nextHarvest = useMemo(() => {
         if (labor && laborConfig && nextBlockTimestamp) {
             return calculateNextHarvest(
                 labor.balance,
@@ -72,10 +73,6 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
             return 0;
         }
     }, [labor, laborConfig, nextBlockTimestamp]);
-
-    const [state, setState] = useState();
-
-    useEffect(() => { }, []);
 
     return (
         <div className='relative flex flex-col border rounded-md border-gray-gold text-xxs text-gray-gold'>
@@ -100,7 +97,7 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
                     <ProgressBar rounded progress={laborConfig && timeLeftToHarvest ? 100 - timeLeftToHarvest / laborConfig.base_labor_units * 100 : 0} className='bg-white' />
                     <div className='flex items-center mt-2'>
                         <><Clock />
-                            <div className='ml-1 italic text-white/70'>{laborLeft ? `${formatTimeLeft(laborLeft)} left` : 'No Labor'}</div></>
+                            <div className='ml-1 italic text-white/70'>{laborLeft ? `${formatSecondsInHoursMinutes(laborLeft)} left` : 'No Labor'}</div></>
 
                         <div className='flex items-center mx-auto text-white/70'>
                             {laborConfig && labor && laborLeft > 0 ? `+${calculateProductivity(isFood ? laborConfig.base_food_per_cycle : laborConfig.base_resources_per_cycle, labor.multiplier, laborConfig.base_labor_units).toFixed(0)}` : '+0'}

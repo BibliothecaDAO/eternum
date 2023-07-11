@@ -1,11 +1,8 @@
 #!/bin/bash
 
-# mints resources for realm 1 and 2
-# realm 1: 1000 of resource 1 and 2
-# realm 2: 1000 of resource 3 and 4
+# mints 1000 of some resources for a relam 
 
-read -p "Enter entity_1_id: " entity_1_id
-read -p "Enter entity_2_id: " entity_2_id
+read -p "Enter entityId: " entity_1_id
 
 world="$SOZO_WORLD"
 
@@ -15,11 +12,10 @@ commands=(
     "sozo execute --world $world MintResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_1_id,2,1000"
     "sozo execute --world $world MintResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_1_id,3,1000"
     "sozo execute --world $world MintResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_1_id,4,1000"
-    # realm 2
-    "sozo execute --world $world MintResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_2_id,1,1000"
-    "sozo execute --world $world MintResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_2_id,2,1000"
-    "sozo execute --world $world MintResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_2_id,3,1000"
-    "sozo execute --world $world MintResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_2_id,4,1000"
+    "sozo execute --world $world MintResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_1_id,5,1000"
+    "sozo execute --world $world MintResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_2_id,6,1000"
+    "sozo execute --world $world MintResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_2_id,7,1000"
+    "sozo execute --world $world MintResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_2_id,8,1000"
 )
 
 for cmd in "${commands[@]}"; do

@@ -1,37 +1,52 @@
 import React, { useEffect, useState } from 'react';
-import { OrderIcon } from '../../../../elements/OrderIcon';
-import Button from '../../../../elements/Button';
-import { ResourceIcon } from '../../../../elements/ResourceIcon';
-import { findResourceById } from '../../../../constants/resources';
-import { ReactComponent as RatioIcon } from '../../../../assets/icons/common/ratio.svg';
+import { OrderIcon } from '../../../../../elements/OrderIcon';
+import Button from '../../../../../elements/Button';
+import { ResourceIcon } from '../../../../../elements/ResourceIcon';
+import { findResourceById } from '../../../../../constants/resources';
+import { ReactComponent as RatioIcon } from '../../../../../assets/icons/common/ratio.svg';
 import { useComponentValue } from '@dojoengine/react';
-import { useDojo } from '../../../../DojoContext';
+import { useDojo } from '../../../../../DojoContext';
 import { Utils } from '@dojoengine/core';
-import { Realm } from '../../../../types';
-import { orderNameDict } from '../../../../constants/orders';
-import * as realmsData from '../../../../geodata/realms.json';
+import { Realm, ResourcesOffer } from '../../../../../types';
+import { orderNameDict } from '../../../../../constants/orders';
+import * as realmsData from '../../../../../geodata/realms.json';
+import useRealmStore from '../../../../../hooks/store/useRealmStore';
+import { getComponentValue } from '@latticexyz/recs';
 
-type ResourcesOffer = {
-    resourceId: number;
-    amount: number;
-}
 type TradeOfferProps = {
     tradeId: number;
 }
 
-export const TradeOffer = ({ tradeId, ...props }: TradeOfferProps) => {
-    const [state, setState] = useState();
+export const MyOffer = ({ tradeId, ...props }: TradeOfferProps) => {
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        setIsLoading(false);
+    }, [tradeId])
 
     const {
-        components: { Trade, FungibleEntities, Resource, Realm },
+        systemCalls: { change_order_status },
+        components: { Trade, Status, FungibleEntities, Resource, Realm },
       } = useDojo();
 
+    const { realmEntityId } = useRealmStore();
+
     let trade = useComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
+    let status = useComponentValue(Status, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
+
+    // status 0 = open
+    let isMyOffer = trade?.maker_id === realmEntityId && status?.value === 0;
+
+    const cancelOffer = async () => {
+        // status 2 = cancel
+        setIsLoading(true);
+        change_order_status({realm_id: realmEntityId, trade_id: tradeId, new_status: 2})
+    }
     
     // set maker order
     let makerRealm: Realm | undefined;
     if (trade) {
-        makerRealm = useComponentValue(Realm, Utils.getEntityIdFromKeys([BigInt(trade.maker_id)]));
+        makerRealm = getComponentValue(Realm, Utils.getEntityIdFromKeys([BigInt(trade.maker_id)]));
     }
 
     const resourcesGet = trade && getResources(trade.maker_order_id);
@@ -39,10 +54,10 @@ export const TradeOffer = ({ tradeId, ...props }: TradeOfferProps) => {
     
     function getResources(orderId: number): ResourcesOffer[] {
         const resources: ResourcesOffer[] = [];
-        const fungibleEntities = useComponentValue(FungibleEntities, Utils.getEntityIdFromKeys([BigInt(orderId)]));
+        const fungibleEntities = getComponentValue(FungibleEntities, Utils.getEntityIdFromKeys([BigInt(orderId)]));
         if (fungibleEntities) {
           for (let i = 0; i < fungibleEntities.count; i++) {
-            const resource = useComponentValue(
+            const resource = getComponentValue(
               Resource,
               Utils.getEntityIdFromKeys([BigInt(orderId), BigInt(fungibleEntities.key), BigInt(i)])
             );
@@ -52,14 +67,12 @@ export const TradeOffer = ({ tradeId, ...props }: TradeOfferProps) => {
           }
         }
         return resources;
-      }
+    }
 
     let timeLeft: string | undefined;
     if (trade) {
         timeLeft = formatTimeLeft(trade.expires_at - Date.now()/1000);
     };
-
-    useEffect(() => { }, []);
 
     return (
         <div className='flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold'>
@@ -85,7 +98,7 @@ export const TradeOffer = ({ tradeId, ...props }: TradeOfferProps) => {
                     </div>
                     <div className='flex flex-col items-center text-white'>
                         <RatioIcon className="mb-1 fill-white" />
-                       {resourcesGive && resourcesGet && calculateRatio(resourcesGive, resourcesGet)} 
+                       {resourcesGive && resourcesGet && calculateRatio(resourcesGive, resourcesGet).toFixed(2)} 
                     </div>
                     <div className='grid w-1/3 grid-cols-3 gap-2 text-gold'>
                         {resourcesGet && resourcesGet.map(({ resourceId, amount }) => (
@@ -96,7 +109,8 @@ export const TradeOffer = ({ tradeId, ...props }: TradeOfferProps) => {
                         ))}
                     </div>
                 </div>
-                <Button onClick={() => { }} variant='success' className='ml-auto p-2 !h-4 text-xxs !rounded-md'>Accept</Button>
+                {!isLoading && isMyOffer && <Button onClick={() => { cancelOffer() }} variant={'danger'} className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{`Cancel`}</Button>}
+                {isLoading && <Button isLoading={true} onClick={() => {}} variant="danger" className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{}</Button>}
             </div>
         </div >
     );

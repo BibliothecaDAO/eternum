@@ -25,9 +25,61 @@ export interface Realm {
 
 export interface LaborConfig {
     base_labor_units: number;
-    vault_percentage: number;
     base_resources_per_cycle: number;
     base_food_per_cycle: number;
+}
+
+export interface Labor {
+    balance: number;
+    last_harvest: number;
+    multiplier: number;
+}
+
+export interface CaravanMember {
+    capacity: Capacity;
+    quantity: Quantity;
+}
+
+export interface Quantity {
+    value: number
+}
+
+export interface Capacity {
+    weight_gram: number
+}
+
+export interface Trade {
+    maker_id: number,
+    taker_id: number,
+    maker_order_id: number,
+    taker_order_id: number,
+    expires_at: number,
+    claimed_by_maker: boolean,
+    claimed_by_taker: boolean,
+    taker_needs_caravan: boolean,
+}
+
+export interface Resource {
+    resource_type: number;
+    balance: number;
+}
+
+export interface Order {
+    entityId: number;
+    arrivalTime: number;
+    position: Position;
+    resourcesGive: ResourcesOffer[];
+    resourcesGet: ResourcesOffer[];
+}
+
+export interface ResourcesOffer {
+    resourceId: number;
+    amount: number;
+}
+
+export interface Position {
+    x: number;
+    y: number;
 }
 
 export interface EntityData {
