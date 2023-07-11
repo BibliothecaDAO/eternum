@@ -1,3 +1,4 @@
+
 import { Tab as HeadlessTab } from '@headlessui/react';
 import clsx from 'clsx';
 import type { ComponentProps } from 'react';
@@ -13,6 +14,7 @@ export const Tab = ({ className, children, noText, ...props }: TabProps) => {
   const isPrimary = variant === 'primary';
 
   return (
+    // @ts-ignore
     <HeadlessTab
       className={({ selected }) =>
         clsx(

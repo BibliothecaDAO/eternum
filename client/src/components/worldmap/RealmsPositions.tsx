@@ -66,7 +66,7 @@ const RealmsPositions = () => {
         depthWrite: false,
         vertexColors: true,
     });
-    const clickHandler = (e) => {
+    const clickHandler = (e: any) => {
         const colors = calculatedColors;
         const positions = calculatedPositions;
         for (let inter of e.intersections) {

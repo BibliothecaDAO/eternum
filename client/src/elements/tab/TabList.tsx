@@ -11,6 +11,7 @@ export const TabList = ({ className, children, ...props }: TabListProps) => {
   const { variant } = useContext(TabContext)!;
 
   return (
+    // @ts-ignore
     <Tab.List className={clsx(VARIANTS[variant].tabList, className)} {...props}>
       {children}
     </Tab.List>

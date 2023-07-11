@@ -3,7 +3,7 @@ import clsx from "clsx"
 interface AvatarProps {
     src: string;
     className?: string;
-    size: "xs" | "sm" | "md" | "lg" | "xl";
+    size?: "xs" | "sm" | "md" | "lg" | "xl";
 }
 
 const sizes = {
@@ -16,7 +16,7 @@ const sizes = {
 
 const Avatar = ({ src, className, size }: AvatarProps) => {
     return (
-        <img draggable={false} src={src} alt="avatar" className={clsx("object-contain rounded-full border-2 border-white/10 border-solid", className, sizes[size])} />
+        <img draggable={false} src={src} alt="avatar" className={clsx("object-contain rounded-full border-2 border-white/10 border-solid", className, size ? sizes[size] : '')} />
     );
 };
 

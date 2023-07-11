@@ -5,7 +5,7 @@ interface ButtonProps {
   children: React.ReactNode;
   className?: string;
   disabled?: boolean;
-  variant: "primary" | "secondary" | "success" | "danger" | "default" | "outline";
+  variant?: "primary" | "secondary" | "success" | "danger" | "default" | "outline";
 }
 
 const STYLES = {
@@ -18,6 +18,8 @@ const STYLES = {
   disabledStyle: "bg-gray-300 cursor-not-allowed",
   success: "border border-brilliance !text-brilliance bg-transparent hover:bg-brilliance/10",
   outline: "border border-gold !text-gold bg-transparent hover:bg-gold/10",
+  secondary: '',
+  danger: ''
 }
 const Button: React.FC<ButtonProps> = ({
   onClick,

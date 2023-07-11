@@ -1,4 +1,5 @@
 import { GraphQLClient } from 'graphql-request';
+// @ts-ignore
 import * as Dom from 'graphql-request/dist/types.dom';
 import { print } from 'graphql'
 import gql from 'graphql-tag';

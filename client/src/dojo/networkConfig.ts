@@ -1,21 +1,22 @@
-// import worldsJson from "contracts/worlds.json";
+// // import worldsJson from "contracts/worlds.json";
 
-const worlds = worldsJson as Partial<Record<string, { address: string; blockNumber?: number }>>;
+// const worlds = worldsJson as Partial<Record<string, { address: string; blockNumber?: number }>>;
 
-type NetworkConfig = SetupContractConfig & {
-    privateKey: string;
-    faucetServiceUrl?: string;
-    snapSync?: boolean;
-};
+// type NetworkConfig = SetupContractConfig & {
+//     privateKey: string;
+//     faucetServiceUrl?: string;
+//     snapSync?: boolean;
+// };
 
-// providers
+// // providers
 
-export async function getNetworkConfig(): Promise<NetworkConfig> {
+// export async function getNetworkConfig(): Promise<NetworkConfig> {
 
-    return {
-        provider: {
-            rpc: ""
-        },
-        privateKey: getBurnerWallet().value
-    };
-}
+//     return {
+//         provider: {
+//             rpc: ""
+//         },
+//         privateKey: getBurnerWallet().value
+//     };
+// }
+export {}

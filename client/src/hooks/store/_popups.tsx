@@ -4,9 +4,9 @@ export interface PopupsStore {
     closePopup: (name: string) => void;
     closeAllPopups: () => void;
 }
-export const createPopupsSlice = (set) => ({
+export const createPopupsSlice = (set: any) => ({
     openedPopups: [],
-    openPopup: (name: string) => set((state) => ({ openedPopups: [...state.openedPopups, name] })),
-    closePopup: (name: string) => set((state) => ({ openedPopups: state.openedPopups.filter(_name => _name !== name) })),
-    closeAllPopups: () => set({ openedPopups: []})
-  })
+    openPopup: (name: string) => set((state: any) => ({ openedPopups: [...state.openedPopups, name] })),
+    closePopup: (name: string) => set((state: any) => ({ openedPopups: state.openedPopups.filter((_name: any) => _name !== name) })),
+    closeAllPopups: () => set({ openedPopups: [] })
+})

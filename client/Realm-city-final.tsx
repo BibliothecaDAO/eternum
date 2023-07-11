@@ -4,11 +4,9 @@ Command: npx gltfjsx@6.2.5 --types --keepnames --keepgroups --keepmeshes --trans
 */
 
 import * as THREE from 'three'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useRef } from 'react'
 import { useGLTF } from '@react-three/drei'
 import { GLTF } from 'three-stdlib'
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -90,29 +88,11 @@ type GLTFResult = GLTF & {
   }
 }
 
-const dracoloader = new DRACOLoader().setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.5/')
-
-let gltfLoader = new GLTFLoader()
-  .setCrossOrigin('anonymous')
-  .setDRACOLoader(dracoloader)
-
 export function Model(props: JSX.IntrinsicElements['group']) {
-  // const gltf = useGLTF('/models/realm-city-final-transformed.glb', false, true) as GLTFResult
-  const [scene, setScene] = useState<any | null>(null)
-
-  useEffect(() => {
-    gltfLoader.load('/models/realm-city-final-transformed.glb', function (gltf) {
-
-      const scene = gltf.scene;
-      setScene(scene)
-      console.log(scene)
-    });
-  }, [])
-
-
+  const scene = useGLTF('/models/realm-city-final-transformed.glb') as GLTFResult
   return (
     <group {...props} dispose={null}>
-      {scene && <primitive object={scene} />}
+      <primitive object={scene} />
     </group>
   )
 }
