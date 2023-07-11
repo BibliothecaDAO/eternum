@@ -3,7 +3,6 @@ import { FiltersPanel } from '../../../../../elements/FiltersPanel';
 import { FilterButton } from '../../../../../elements/FilterButton';
 import { SortPanel } from '../../../../../elements/SortPanel';
 import { SortButton, SortInterface } from '../../../../../elements/SortButton';
-import { TradeOffer } from '../TradeOffer';
 import { ResourceFilter } from '../../../../ResourceFilterComponent';
 import { OrdersFilter } from '../../../../OrdersFilterComponent';
 import { CreateOfferPopup } from '../CreateOffer';
