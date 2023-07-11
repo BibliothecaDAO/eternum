@@ -15,6 +15,8 @@
 # 10. Realm 2 attaches caravan to order
 # 11. Realm 2 accepts order
 
+# TODO: wrong entity ids for creating caravan and trade
+
 world="$SOZO_WORLD"
 
 script_dir="$(cd "$(dirname "$0")" && pwd)"
@@ -38,13 +40,13 @@ commands=(
     "sozo execute --world $world CreateFreeTransportUnit --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,10"
     "sozo execute --world $world CreateFreeTransportUnit --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,10"
     # create caravan for realm 1
-    "sozo execute --world $world CreateCaravan --account-address $DOJO_ACCOUNT_ADDRESS --calldata 2,2,3"
+    "sozo execute --world $world CreateCaravan --account-address $DOJO_ACCOUNT_ADDRESS --calldata 2,5,6"
 
     # create free transport units for realm 2
     "sozo execute --world $world CreateFreeTransportUnit --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,10"
     "sozo execute --world $world CreateFreeTransportUnit --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,10"
     # create caravan for realm 1
-    "sozo execute --world $world CreateCaravan --account-address $DOJO_ACCOUNT_ADDRESS --calldata 2,6,7"
+    "sozo execute --world $world CreateCaravan --account-address $DOJO_ACCOUNT_ADDRESS --calldata 2,9,10"
 
     # make order
     # realm 1 trades 50 resource type 1 and 100 resource type 2 against 200 resource type 3 and 300 resource type 4

@@ -7,7 +7,7 @@ read -p "Enter realm_id: " realm_id
 # Check if owner is empty and assign a default value
 read -p "Enter owner address: " owner
 if [ -z "$owner" ]; then
-    owner="0x06f62894bfd81d2e396ce266b2ad0f21e0668d604e5bb1077337b6d570a54aea"
+    owner=$DOJO_ACCOUNT_ADDRESS
 fi
 
 read -p "Enter packed resources (use pack_resources file): " packed_resources
