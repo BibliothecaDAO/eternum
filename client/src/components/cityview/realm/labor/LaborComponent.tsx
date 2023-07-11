@@ -124,19 +124,3 @@ const formatTimeLeft = (seconds: number) => {
 
     return `${hours}h:${minutes}m`;
 };
-
-const calculateProductivity = (resources_per_cycle: number, multiplier: number, cycle_length: number): number => {
-    let productivity = resources_per_cycle * multiplier / cycle_length;
-    // in hours
-    return productivity * 3600;
-}
-
-// calculates how much you will have when you click on harvest
-const calculateNextHarvest = (balance: number, last_harvest: number, multiplier: number, cycle_length: number, production_per_cycle: number, nextBlockTime: number): number => {
-    // in seconds
-    let harvest_seconds = nextBlockTime > balance ? balance - last_harvest : nextBlockTime - last_harvest;
-    // in units
-    let next_harvest_units = Math.floor(harvest_seconds / cycle_length);
-    // return production
-    return next_harvest_units * production_per_cycle * multiplier;
-}
