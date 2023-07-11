@@ -77,13 +77,13 @@ mod ERC721 {
     use super::Pos2DStorageAccess;
     use super::RealmData;
 
-    use dojo_core::storage::query::Query;
-    use dojo_core::storage::query::QueryTrait;
-    use dojo_core::storage::query::LiteralIntoQuery;
-    use dojo_core::storage::query::TupleSize2IntoQuery;
+    use dojo::storage::query::Query;
+    use dojo::storage::query::QueryTrait;
+    use dojo::storage::query::LiteralIntoQuery;
+    use dojo::storage::query::TupleSize2IntoQuery;
 
-    use dojo_core::interfaces::IWorldDispatcher;
-    use dojo_core::interfaces::IWorldDispatcherTrait;
+    use dojo::interfaces::IWorldDispatcher;
+    use dojo::interfaces::IWorldDispatcherTrait;
 
     use super::super::components::TokenApproval;
 

@@ -6,7 +6,9 @@ mod SpendResources {
     use eternum::components::owner::Owner;
     use eternum::alias::ID;
 
-    fn execute(entity_id: ID, resource_type: u8, amount: u128) {
+    use dojo::world::Context;
+
+    fn execute(ctx: Context, entity_id: ID, resource_type: u8, amount: u128) {
         // DISCUSS: will get_caller_address give the original caller address ?
         let caller = starknet::get_caller_address();
 
@@ -15,13 +17,14 @@ mod SpendResources {
 
         // verify owner
         let query: Query = entity_id.into();
-        let (resource, owner) = commands::<Resource, Owner>::entity(query);
+        let (resource, owner) = get !(ctx.world, query, (Resource, Owner));
         assert(owner.address == caller, 'Only owner can spend resources');
 
         // assert balance is enough
         let final_balance = resource.balance - amount;
         assert(final_balance >= 0, 'Not enough balance');
-        commands::<Resource>::set_entity(
+        set !(
+            ctx.world,
             query, (Resource { resource_type, balance: final_balance,  })
         );
     }

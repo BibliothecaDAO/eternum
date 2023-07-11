@@ -5,9 +5,8 @@ version = "0.1.0"
 [scripts]
 
 [dependencies]
-# TODO: change that when dojo is stable
-dojo_core = { git = "https://github.com/dojoengine/dojo", rev = "1e471b4019233b77bde10b4e02bfc167b7904937" }
-alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "c72195f66978e4ade72d67db0e25ec9b23c22829" }
+dojo = { git = "https://github.com/dojoengine/dojo" }
+alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "e1aa42853815f04ff00e4ed3507cfd74d7b0c644" }
 
 
 

@@ -8,16 +8,18 @@ mod ChangeOrderStatus {
     use box::BoxTrait;
     use traits::Into;
 
+    use dojo::world::Context;
+
     #[external]
-    fn execute(entity_id: ID, trade_id: ID, new_status: TradeStatus) {
+    fn execute(ctx: Context, entity_id: ID, trade_id: ID, new_status: TradeStatus) {
         // assert that the trade is open or cancelled
-        let (meta, current_status) = commands::<Trade, Status>::entity(trade_id.into());
+        let (meta, current_status) = get!(ctx.world, trade_id.into(), (Trade, Status));
         // TODO: how to compare enum?
         // assert(current_status.value == TradeStatus::Open, 'Order already executed');
 
         // assert that caller is owner of the maker_id
         let caller = starknet::get_tx_info().unbox().account_contract_address;
-        let owner = commands::<Owner>::entity(meta.maker_id.into());
+        let owner = get!(ctx.world, meta.maker_id.into(), Owner);
         assert(owner.address == caller, 'not owned by caller');
 
         // assert that status is not the same
@@ -25,6 +27,6 @@ mod ChangeOrderStatus {
         // assert(current_status.value != new_status, 'status is the same');
 
         // set new status
-        commands::set_entity(trade_id.into(), (Status { value: new_status }));
+        set !(ctx.world, trade_id.into(), (Status { value: new_status }));
     }
 }

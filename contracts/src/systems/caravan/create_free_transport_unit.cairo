@@ -20,23 +20,25 @@ mod CreateFreeTransportUnit {
     use traits::TryInto;
     use box::BoxTrait;
 
-    fn execute(entity_id: ID, quantity: u128) -> ID {
+    use dojo::world::Context;
+
+    fn execute(ctx: Context, entity_id: ID, quantity: u128) -> ID {
         // assert that the entity is a realm by querying the entity type
-        let (owner, realm, position) = commands::<Owner, Realm, Position>::entity(entity_id.into());
+        let (owner, realm, position) = get !(ctx.world, entity_id.into(), (Owner, Realm, Position));
 
         // assert that entity is owned by caller
         let caller = starknet::get_tx_info().unbox().account_contract_address;
         assert(caller == owner.address, 'entity is not owned by caller');
 
         // check how many free transport units you can still build
-        let travel_config = commands::<TravelConfig>::entity(TRANSPORT_CONFIG_ID.into());
+        let travel_config = get !(ctx.world, TRANSPORT_CONFIG_ID.into(), TravelConfig);
 
         // nb cities for the realm
         let max_free_transport = realm.cities.into() * travel_config.free_transport_per_city;
 
         // check the quantity_tracker for free transport unit
-        let maybe_quantity_tracker = commands::<QuantityTracker>::try_entity(
-            (entity_id, FREE_TRANSPORT_ENTITY_TYPE).into()
+        let maybe_quantity_tracker = try_get !(
+            ctx.world, (entity_id, FREE_TRANSPORT_ENTITY_TYPE).into(), QuantityTracker
         );
         let count = match maybe_quantity_tracker {
             Option::Some(quantity_tracker) => (quantity_tracker.count),
@@ -48,17 +50,22 @@ mod CreateFreeTransportUnit {
 
         // increment count when create new units
         // TODO: need to decrease count when transport unit is destroyed
-        commands::set_entity(
+        set !(
+            ctx.world,
             (entity_id, FREE_TRANSPORT_ENTITY_TYPE).into(),
             (QuantityTracker { count: count + quantity })
         );
 
         // get the speed and capacity of the free transport unit from the config entity
-        let (speed, capacity) = commands::<SpeedConfig,
-        CapacityConfig>::entity((WORLD_CONFIG_ID, FREE_TRANSPORT_ENTITY_TYPE).into());
+        let (speed, capacity) = get !(
+            ctx.world,
+            (WORLD_CONFIG_ID, FREE_TRANSPORT_ENTITY_TYPE).into(),
+            (SpeedConfig, CapacityConfig)
+        );
         // create the transport unit
-        let id = commands::uuid();
-        commands::set_entity(
+        let id = ctx.world.uuid();
+        set !(
+            ctx.world,
             id.into(),
             (
                 Position {
@@ -95,8 +102,8 @@ mod CreateFreeTransportUnit {
 
 // use eternum::utils::testing::spawn_test_world_without_init;
 
-// use dojo_core::interfaces::IWorldDispatcherTrait;
-// use dojo_core::storage::query::{Query, TupleSize2IntoQuery, LiteralIntoQuery, TupleSize3IntoQuery};
+// use dojo::interfaces::IWorldDispatcherTrait;
+// use dojo::storage::query::{Query, TupleSize2IntoQuery, LiteralIntoQuery, TupleSize3IntoQuery};
 //     #[test]
 //     #[available_gas(300000000000)]
 //     fn test_create_free_transport_unit() {

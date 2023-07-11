@@ -1,5 +1,5 @@
 // speed seconds per km
-#[derive(Component, Copy, Drop, Serde)]
+#[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct Movable {
     sec_per_km: u16,
     blocked: bool,
@@ -8,7 +8,7 @@ struct Movable {
 // DISCUSS: separated from the Movable component because
 // we want to attach an ArrivalTime to the trading order
 // without having to attach a Movable component to the order
-#[derive(Component, Copy, Drop, Serde)]
+#[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct ArrivalTime {
     arrives_at: u64, 
 }

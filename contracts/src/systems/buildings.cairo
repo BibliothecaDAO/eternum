@@ -19,27 +19,30 @@ mod BuildBuilding {
 
     use eternum::alias::ID;
 
+    use dojo::world::Context;
+
     #[external]
-    fn execute(realm_id: ID, building_type: felt252, quantity: felt252) {
+    fn execute(ctx: Context, realm_id: ID, building_type: felt252, quantity: felt252) {
         let player_id: felt252 = starknet::get_caller_address().into();
-        let realm: Realm = commands::<Realm>::entity(realm_id.into());
+        let realm: Realm = get!(ctx.world, realm_id.into(), Realm);
 
         // TODO: use Owner component
         assert(realm.owner == player_id, 'Realm does not belong to player');
 
         // Get Config
-        let building_config: BuildingConfig = commands::<BuildingConfig>::entity(
-            BUILDING_CONFIG_ID.into()
+        let building_config: BuildingConfig = get !(ctx.world,
+            BUILDING_CONFIG_ID.into(), BuildingConfig
         );
         // check if player can build building
         let can_build_ = can_build(building_id, quantity, realm.regions, realm.cities);
         assert(can_build_, 'Player cannot build building');
         // get current building quantity for that building type
         // TODO: what if not found?
-        let building = commands::<Building>::entity((realm_id, (building_type)).into());
+        let building = get !(ctx.world, (realm_id, (building_type)).into(), Building);
 
         // build building and set state
-        commands::<Building>::set_entity(
+        set !(
+            ctx.world,
             (realm_id, (building_type)).into(),
             Building {
                 quantity: building.quantity + quantity,
@@ -69,7 +72,8 @@ mod BuildBuilding {
     // for (resource_type, i) in resource_types {
     //     let (resources) = commands::<Resource>::entities((realm_id, (resource_type)).into());
 
-    //     commands::<Resource>::set_entity(
+    //     set !(
+    //         ctx.world,
     //         (realm_id, (resource_type)).into(),
     //         Resource {
     //             quantity: resources.quantity - resource_costs[i],
@@ -111,10 +115,10 @@ mod BuildBuilding {
     fn get_workhut_costs(
         resource_costs: Array<felt252>, resource_types: Array<u8>, quantity: felt252
     ) {
-        let building_config: BuildingConfig = commands::<BuildingConfig>::entity(
-            BUILDING_CONFIG_ID.into()
+        let building_config: BuildingConfig = get !(ctx.world,
+            BUILDING_CONFIG_ID.into(), BuildingConfig
         );
-        let realm: Realm = commands::<Realm>::entity(realm_id.into());
+        let realm: Realm = get !(ctx.world, realm_id.into(), Realm);
 
         let workhut_cost = (building_config.workhut_cost * 10 * *18) * quantity;
         // // TODO: do recursion?
@@ -131,8 +135,8 @@ mod BuildBuilding {
         resource_types: Array<u8>,
         quantity: felt252
     ) {
-        let building_config: BuildingConfig = commands::<BuildingConfig>::entity(
-            BUILDING_CONFIG_ID.into()
+        let building_config: BuildingConfig = get !(ctx.world,
+            BUILDING_CONFIG_ID.into(), BuildingConfig
         );
 
         // get list of resource ids needed for that building id

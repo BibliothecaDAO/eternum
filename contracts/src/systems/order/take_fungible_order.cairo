@@ -16,12 +16,12 @@ mod TakeFungibleOrder {
     use box::BoxTrait;
     use array::ArrayTrait;
 
-    use dojo_core::serde::SpanSerde;
+    use dojo::world::Context;
     // you can attach a caravan only if it's needed
 
-    fn execute(taker_id: ID, trade_id: ID) {
+    fn execute(ctx: Context, taker_id: ID, trade_id: ID) {
         // get the trade 
-        let (meta, trade_status) = commands::<Trade, Status>::entity(trade_id.into());
+        let (meta, trade_status) = get !(ctx.world, trade_id.into(), (Trade, Status));
 
         // verify expiration date
         let ts = starknet::get_block_timestamp();
@@ -37,12 +37,13 @@ mod TakeFungibleOrder {
 
         // assert that taker entity is owned by caller
         let caller = starknet::get_tx_info().unbox().account_contract_address;
-        let owner = commands::<Owner>::entity(taker_id.into());
+        let owner = get !(ctx.world, taker_id.into(), Owner);
         assert(owner.address == caller, 'not owned by caller');
 
         // if taker_entity in meta is 0, then set the taker_id
         if meta.taker_id == 0 {
-            commands::set_entity(
+            set !(
+                ctx.world,
                 trade_id.into(),
                 (
                     Status {
@@ -62,28 +63,30 @@ mod TakeFungibleOrder {
         } else {
             // if not 0, then verify if the taker_id is the one specified
             assert(meta.taker_id == taker_id, 'not the taker');
-            commands::set_entity(trade_id.into(), (Status { value: TradeStatus::Accepted(()) }, ));
+            set !(ctx.world, trade_id.into(), (Status { value: TradeStatus::Accepted(()) }, ));
         };
 
         // caravan only needed if both are not on the same position
         // get the maker position
-        let maker_position = commands::<Position>::entity(meta.maker_id.into());
-        let taker_position = commands::<Position>::entity(taker_id.into());
+        let maker_position = get !(ctx.world, meta.maker_id.into(), Position);
+        let taker_position = get !(ctx.world, taker_id.into(), Position);
 
         // check if there is a caravan attached to the maker
-        let maybe_caravan = commands::<Caravan>::try_entity(
-            (meta.maker_order_id, meta.maker_id).into()
+        let maybe_caravan = try_get !(
+            ctx.world, (meta.maker_order_id, meta.maker_id).into(), Caravan
         );
         match maybe_caravan {
             // travel
             Option::Some(caravan) => {
-                let (movable, caravan_position) = commands::<Movable,
-                Position>::entity(caravan.caravan_id.into());
+                let (movable, caravan_position) = get !(
+                    ctx.world, caravan.caravan_id.into(), (Movable, Position)
+                );
                 let travel_time = caravan_position
                     .calculate_travel_time(taker_position, movable.sec_per_km);
 
                 // SET ORDER
-                commands::set_entity(
+                set !(
+                    ctx.world,
                     meta.maker_order_id.into(),
                     (
                         ArrivalTime {
@@ -99,7 +102,8 @@ mod TakeFungibleOrder {
                 // set arrival time * 2
                 // dont change position because round trip
                 // set back blocked to false
-                commands::set_entity(
+                set !(
+                    ctx.world,
                     caravan.caravan_id.into(),
                     (
                         ArrivalTime {
@@ -113,7 +117,8 @@ mod TakeFungibleOrder {
             // dont travel
             Option::None(_) => {
                 // SET ORDER
-                commands::set_entity(
+                set !(
+                    ctx.world,
                     meta.maker_order_id.into(),
                     (
                         ArrivalTime {
@@ -131,10 +136,10 @@ mod TakeFungibleOrder {
         // (taker_order_id, taker_id), this is because more than one taker can attach a caravan to the same order
         // before one of them accepts it
         if meta.taker_needs_caravan == true {
-            let caravan = commands::<Caravan>::entity((meta.taker_order_id, taker_id).into());
-            let (movable, caravan_position, owner) = commands::<Movable,
-            Position,
-            Owner>::entity(caravan.caravan_id.into());
+            let caravan = get !(ctx.world, (meta.taker_order_id, taker_id).into(), Caravan);
+            let (movable, caravan_position, owner) = get !(
+                ctx.world, caravan.caravan_id.into(), (Movable, Position, Owner)
+            );
             // if caravan, starts from the caravan position (not taker position)
             let travel_time = caravan_position
                 .calculate_travel_time(maker_position, movable.sec_per_km);
@@ -143,7 +148,8 @@ mod TakeFungibleOrder {
             assert(owner.address == caller, 'not owned by caller');
 
             // SET ORDER
-            commands::set_entity(
+            set !(
+                ctx.world,
                 meta.taker_order_id.into(),
                 (
                     ArrivalTime {
@@ -157,7 +163,8 @@ mod TakeFungibleOrder {
             // set arrival time * 2
             // dont change position because round trip
             // set back blocked to false
-            commands::set_entity(
+            set !(
+                ctx.world,
                 caravan.caravan_id.into(),
                 (
                     ArrivalTime {
@@ -169,7 +176,8 @@ mod TakeFungibleOrder {
             );
         } else {
             // dont travel
-            commands::set_entity(
+            set !(
+                ctx.world,
                 meta.taker_order_id.into(),
                 (
                     ArrivalTime {
@@ -183,25 +191,26 @@ mod TakeFungibleOrder {
 
         // remove fungible entities from the taker balance
         let mut index = 0;
-        let fungible_entities = commands::<FungibleEntities>::entity(meta.taker_order_id.into());
+        let fungible_entities = get !(ctx.world, meta.taker_order_id.into(), FungibleEntities);
         loop {
             if index == fungible_entities.count {
                 break ();
             };
-            let resource = commands::<Resource>::entity(
-                (meta.taker_order_id, fungible_entities.key, index).into()
+            let resource = get !(
+                ctx.world, (meta.taker_order_id, fungible_entities.key, index).into(), Resource
             );
 
             // remove the quantity from the taker balance
-            let taker_resource = commands::<Resource>::entity(
-                (taker_id, resource.resource_type).into()
+            let taker_resource = get !(
+                ctx.world, (taker_id, resource.resource_type).into(), Resource
             );
 
             // assert has enough
             assert(taker_resource.balance >= resource.balance, 'not enough balance');
 
             // remove the quantity from the taker balance
-            commands::set_entity(
+            set !(
+                ctx.world,
                 (taker_id, resource.resource_type).into(),
                 (Resource {
                     resource_type: resource.resource_type,
@@ -225,13 +234,13 @@ mod TakeFungibleOrder {
 
 //     use starknet::syscalls::deploy_syscall;
 
-//     use dojo_core::interfaces::IWorldDispatcherTrait;
-//     use dojo_core::storage::query::{
+//     use dojo::interfaces::IWorldDispatcherTrait;
+//     use dojo::storage::query::{
 //         Query, TupleSize2IntoQuery, LiteralIntoQuery, TupleSize3IntoQuery
 //     };
-//     use dojo_core::auth::components::AuthRole;
-//     use dojo_core::execution_context::Context;
-//     use dojo_core::auth::systems::{Route, RouteTrait};
+//     use dojo::auth::components::AuthRole;
+//     use dojo::execution_context::Context;
+//     use dojo::auth::systems::{Route, RouteTrait};
 
 //     #[test]
 //     #[available_gas(30000000000000)]

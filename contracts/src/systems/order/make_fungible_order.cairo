@@ -22,7 +22,8 @@ mod MakeFungibleOrder {
     use traits::TryInto;
     use box::BoxTrait;
     use array::ArrayTrait;
-    use dojo_core::serde::SpanSerde;
+
+    use dojo::world::Context;
 
     // TODO: create a function that takes also an array of strings as input, these 
     // strings are names of components that have the {type, balance} fields.
@@ -40,6 +41,7 @@ mod MakeFungibleOrder {
     // taker_needs_caravan: if true, the taker needs to send a caravan to the maker
     // expires_at: timestamp when the order expires
     fn execute(
+        ctx: Context,
         maker_id: ID,
         maker_entity_types: Span<u8>,
         maker_quantities: Span<u128>,
@@ -52,7 +54,7 @@ mod MakeFungibleOrder {
         let caller = starknet::get_tx_info().unbox().account_contract_address;
 
         // assert that maker entity is owned by caller
-        let maker_owner = commands::<Owner>::entity(maker_id.into());
+        let maker_owner = get !(ctx.world, maker_id.into(), Owner);
         assert(maker_owner.address == caller, 'Only owner can create order');
 
         // assert that length of maker_entity_types is equal to length of maker_quantities
@@ -62,9 +64,10 @@ mod MakeFungibleOrder {
         assert(taker_entity_types.len() == taker_quantities.len(), 'length not equal');
 
         // create maker order entity
-        let maker_order_id = commands::uuid();
-        let fungible_entities_id = commands::uuid();
-        commands::set_entity(
+        let maker_order_id = ctx.world.uuid();
+        let fungible_entities_id = ctx.world.uuid();
+        set !(
+            ctx.world,
             maker_order_id.into(),
             (
                 FungibleEntities {
@@ -79,7 +82,8 @@ mod MakeFungibleOrder {
                 break ();
             }
 
-            commands::set_entity(
+            set !(
+                ctx.world,
                 (maker_order_id, fungible_entities_id, index).into(),
                 (Resource {
                     resource_type: *maker_entity_types[index], balance: *maker_quantities[index]
@@ -88,9 +92,10 @@ mod MakeFungibleOrder {
 
             // decrease balance of maker
             let query = (maker_id, *maker_entity_types[index]).into();
-            let resource = commands::<Resource>::entity(query);
+            let resource = get !(ctx.world, query, Resource);
             assert(resource.balance >= *maker_quantities[index], 'Balance too small');
-            commands::set_entity(
+            set !(
+                ctx.world,
                 query,
                 (Resource {
                     resource_type: *maker_entity_types[index],
@@ -102,8 +107,9 @@ mod MakeFungibleOrder {
         };
 
         // create taker order entity
-        let taker_order_id = commands::uuid();
-        commands::set_entity(
+        let taker_order_id = ctx.world.uuid();
+        set !(
+            ctx.world,
             taker_order_id.into(),
             (
                 FungibleEntities {
@@ -120,7 +126,8 @@ mod MakeFungibleOrder {
                 break ();
             }
 
-            commands::set_entity(
+            set !(
+                ctx.world,
                 (taker_order_id, fungible_entities_id, index).into(),
                 (Resource {
                     balance: *taker_quantities[index], resource_type: *taker_entity_types[index]
@@ -131,8 +138,9 @@ mod MakeFungibleOrder {
         };
 
         // create trade entity
-        let trade_id = commands::uuid();
-        commands::set_entity(
+        let trade_id = ctx.world.uuid();
+        set !(
+            ctx.world,
             trade_id.into(),
             (
                 Trade {
@@ -169,13 +177,13 @@ mod MakeFungibleOrder {
 
 //     use starknet::syscalls::deploy_syscall;
 
-//     use dojo_core::interfaces::IWorldDispatcherTrait;
-//     use dojo_core::auth::systems::{Route, RouteTrait};
-//     use dojo_core::storage::query::{
+//     use dojo::interfaces::IWorldDispatcherTrait;
+//     use dojo::auth::systems::{Route, RouteTrait};
+//     use dojo::storage::query::{
 //         Query, TupleSize2IntoQuery, LiteralIntoQuery, TupleSize3IntoQuery
 //     };
-//     use dojo_core::execution_context::Context;
-//     use dojo_core::auth::components::AuthRole;
+//     use dojo::execution_context::Context;
+//     use dojo::auth::components::AuthRole;
 
 //     // test that the average speed is correct
 //     #[test]

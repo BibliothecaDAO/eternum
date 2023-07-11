@@ -21,9 +21,9 @@ mod CreateCaravan {
     use array::ArrayTrait;
     use box::BoxTrait;
 
-    use dojo_core::serde::SpanSerde;
+    use dojo::world::Context;
 
-    fn execute(entity_ids: Span<felt252>) -> ID {
+    fn execute(ctx: Context, entity_ids: Span<felt252>) -> ID {
         // speed
         let mut total_speed: u128 = 0_u128;
         let mut total_quantity: u128 = 0_u128;
@@ -31,9 +31,9 @@ mod CreateCaravan {
         let mut total_capacity: u128 = 0_u128;
 
         // get key to write each entity of the caravan
-        let entities_key = commands::uuid();
+        let entities_key = ctx.world.uuid();
         // get caravan id
-        let caravan_id = commands::uuid();
+        let caravan_id = ctx.world.uuid();
 
         let mut entity_position: Position = Position { x: 0, y: 0 };
 
@@ -51,9 +51,9 @@ mod CreateCaravan {
             }
             // assert that they are movable
             // assert that they have a capacity component
-            let (movable, capacity, position) = commands::<Movable,
-            Capacity,
-            Position>::entity((*entity_ids[index]).into());
+            let (movable, capacity, position) = get !(
+                ctx.world, (*entity_ids[index]).into(), (Movable, Capacity, Position)
+            );
 
             // assert that they are all at the same position when index > 0
             // if index == 0, then initialize position as the first entity position
@@ -64,7 +64,7 @@ mod CreateCaravan {
             }
 
             // assert that caller is the owner of the entities
-            let owner = commands::<Owner>::entity((*entity_ids[index]).into());
+            let owner = get !(ctx.world, (*entity_ids[index]).into(), Owner);
             assert(caller == owner.address, 'entity is not owned by caller');
 
             // assert that they are not blocked
@@ -90,13 +90,15 @@ mod CreateCaravan {
             // };
 
             // set entity in the caravan
-            commands::set_entity(
+            set !(
+                ctx.world,
                 (caravan_id, entities_key, index).into(),
                 (ForeignKey { entity_id: (*entity_ids[index]).try_into().unwrap(),  })
             );
 
             // set the entity as blocked so that it cannot be used in another caravan
-            commands::set_entity(
+            set !(
+                ctx.world,
                 (*entity_ids[index]).into(),
                 (Movable { sec_per_km: movable.sec_per_km, blocked: true,  })
             );
@@ -118,7 +120,8 @@ mod CreateCaravan {
         let average_speed: u16 = average_speed.try_into().unwrap();
 
         // set the caravan entity
-        commands::set_entity(
+        set !(
+            ctx.world,
             caravan_id.into(),
             (
                 Owner {
@@ -152,11 +155,11 @@ mod CreateCaravan {
 
 //     use starknet::syscalls::deploy_syscall;
 
-//     use dojo_core::interfaces::IWorldDispatcherTrait;
-//     use dojo_core::storage::query::{
+//     use dojo::interfaces::IWorldDispatcherTrait;
+//     use dojo::storage::query::{
 //         Query, TupleSize2IntoQuery, LiteralIntoQuery, TupleSize3IntoQuery
 //     };
-//     use dojo_core::test_utils::spawn_test_world;
+//     use dojo::test_utils::spawn_test_world;
 
 //     #[test]
 //     #[available_gas(300000000000)]

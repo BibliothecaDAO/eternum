@@ -17,23 +17,24 @@ mod AttachCaravan {
     use traits::TryInto;
     use box::BoxTrait;
     use array::ArrayTrait;
-    use dojo_core::serde::SpanSerde;
+
+    use dojo::world::Context;
 
     // This system can be called by the maker or the taker.
     // Taker can only attach caravan if it's asked by the maker.
     // When taker attach a caravan, it's attached to your entity as a composite key 
     // so that any possible taker can attach his caravan to it until a taker takes the order.
     // like this:
-    // commands::set_entity((order_id, entity_id), (Caravan { caravan_id }));
+    // set !(ctx.world, (order_id, entity_id), (Caravan { caravan_id }));
 
-    fn execute(entity_id: ID, trade_id: ID, caravan_id: ID) {
+    fn execute(ctx: Context, entity_id: ID, trade_id: ID, caravan_id: ID) {
         let caller = starknet::get_tx_info().unbox().account_contract_address;
 
         // get trade info
-        let (meta, trade_status) = commands::<Trade, Status>::entity(trade_id.into());
+        let (meta, trade_status) = get !(ctx.world, trade_id.into(), (Trade, Status));
 
         // assert that caller is the owner of entity_id
-        let (owner, position) = commands::<Owner, Position>::entity(entity_id.into());
+        let (owner, position) = get !(ctx.world, entity_id.into(), (Owner, Position));
         assert(owner.address == caller, 'Caller not owner of entity_id');
 
         // assert that the status is open
@@ -57,7 +58,7 @@ mod AttachCaravan {
         };
 
         // get the fungible entities from the order
-        let fungible_entities = commands::<FungibleEntities>::entity(order_id.into());
+        let fungible_entities = get !(ctx.world, order_id.into(), FungibleEntities);
 
         let mut total_weight = 0;
         let mut index = 0;
@@ -68,12 +69,12 @@ mod AttachCaravan {
             }
 
             // get quantity and entity_type from fungible_entities
-            let resource = commands::<Resource>::entity(
-                (order_id, fungible_entities.key, index).into()
+            let resource = get !(
+                ctx.world, (order_id, fungible_entities.key, index).into(), Resource
             );
 
-            let entity_type_weight = commands::<WeightConfig>::entity(
-                (WORLD_CONFIG_ID, resource.resource_type).into()
+            let entity_type_weight = get !(
+                ctx.world, (WORLD_CONFIG_ID, resource.resource_type).into(), WeightConfig
             );
 
             let weight = entity_type_weight.weight_gram * resource.balance;
@@ -83,12 +84,11 @@ mod AttachCaravan {
 
         // get the caravan capacity, movable and owner
         // get quantity as well, if quantity not present then it's 1
-        let (capacity, movable, caravan_owner, caravan_position) = commands::<Capacity,
-        Movable,
-        Owner,
-        Position>::entity(caravan_id.into());
+        let (capacity, movable, caravan_owner, caravan_position) = get !(
+            ctx.world, caravan_id.into(), (Capacity, Movable, Owner, Position)
+        );
 
-        let maybe_quantity = commands::<Quantity>::try_entity(caravan_id.into());
+        let maybe_quantity = try_get !(ctx.world, caravan_id.into(), Quantity);
         let quantity = match maybe_quantity {
             Option::Some(quantity) => {
                 quantity.value
@@ -108,7 +108,7 @@ mod AttachCaravan {
         assert(capacity.weight_gram * quantity >= total_weight, 'Caravan capacity is not enough');
 
         // assert that there is not already another caravan
-        let maybe_carvan = commands::<Caravan>::try_entity((order_id, entity_id).into());
+        let maybe_carvan = try_get !(ctx.world, (order_id, entity_id).into(), Caravan);
         match maybe_carvan {
             Option::Some(_) => {
                 assert(false, 'Caravan already attached');
@@ -118,14 +118,16 @@ mod AttachCaravan {
         };
 
         // attach the caravan to the order + entity so that multiple different takers can attach caravans
-        commands::set_entity((order_id, entity_id).into(), (Caravan { caravan_id }))
+        set !(ctx.world, (order_id, entity_id).into(), (Caravan { caravan_id }))
 
         // assert that the caravan is not already blocked by a system
         assert(!movable.blocked, 'Caravan is already blocked');
 
         // set the caravan to blocked
-        commands::set_entity(
-            caravan_id.into(), (Movable { sec_per_km: movable.sec_per_km, blocked: true })
+        set !(
+            ctx.world,
+            caravan_id.into(),
+            (Movable { sec_per_km: movable.sec_per_km, blocked: true })
         );
     }
 }
@@ -140,11 +142,11 @@ mod AttachCaravan {
 //     use option::OptionTrait;
 //     use debug::PrintTrait;
 
-//     use dojo_core::interfaces::IWorldDispatcherTrait;
-//     use dojo_core::storage::query::{Query, TupleSize3IntoQuery};
-//     use dojo_core::storage::query::TupleSize2IntoQuery;
-//     use dojo_core::execution_context::Context;
-//     use dojo_core::auth::components::AuthRole;
+//     use dojo::interfaces::IWorldDispatcherTrait;
+//     use dojo::storage::query::{Query, TupleSize3IntoQuery};
+//     use dojo::storage::query::TupleSize2IntoQuery;
+//     use dojo::execution_context::Context;
+//     use dojo::auth::components::AuthRole;
 
 //     #[test]
 //     #[available_gas(30000000000000)]

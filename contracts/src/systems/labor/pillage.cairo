@@ -25,9 +25,9 @@
 //     // 3. get_raidable => 25% of vault balance for each resource, as base labor units (86400 / 12)
 
 //     #[external]
-//     fn execute(realm_id: ID, attacker: ContractAddress) {
+//     fn execute(ctx: Context, realm_id: ID, attacker: ContractAddress) {
 //         // get all resources that are raidable
-//         let pillaged_realm = commands::<Realm>::entity(realm_id);
+//         let pillaged_realm = get!(ctx.world, realm_id, Realm);
 //         let resource_types: Span<u256> = unpack_resource_types(
 //             pillaged_realm.resource_types_packed, pillaged_realm.resource_types_count
 //         );
@@ -42,7 +42,7 @@
 //         }
 //         // get 25% of the resource id in the vault
 //         let resource_type: felt252 = (*resource_types[index]).low.into();
-//         let maybe_vault = commands::<Vault>::try_entity((realm_id, (resource_type)).into());
+//         let maybe_vault = try_get !(ctx.world, (realm_id, (resource_type)).into(), Vault);
 //         match maybe_vault {
 //             Option::Some(vault) => {
 //                 let mut pillaged_amount = vault.balance / 4;
@@ -51,14 +51,14 @@
 //                     // if not enough take all
 //                     pillaged_amount = vault.balance;
 //                 }
-//                 commands::set_entity(
+//                 set !(ctx.world, 
 //                     (realm_id, (resource_type)).into(),
 //                     (Vault { balance: vault.balance - pillaged_amount }),
 //                 );
-//                 let attacker_resources = commands::<Resource>::entity(
-//                     (attacker.into(), (resource_type)).into()
+//                 let attacker_resources = get!(ctx.world,
+//                     (attacker.into(), (resource_type)).into(), Resource
 //                 ); // add these resources to the pillager
-//                 commands::set_entity(
+//                 set !(ctx.world, 
 //                     (attacker.into(), (resource_type)).into(),
 //                     (Resource {
 //                         resource_type, balance: attacker_resources.balance + (pillaged_amount * labor_config.base_resources_per_cycle)
