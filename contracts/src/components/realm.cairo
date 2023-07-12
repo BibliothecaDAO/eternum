@@ -4,9 +4,9 @@ use array::SpanTrait;
 use eternum::alias::ID;
 use eternum::utils::unpack::unpack_resource_types;
 
-#[derive(Component, Copy, Drop, Serde)]
+#[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct Realm {
-    realm_id: ID, // OG Realm Id
+    realm_id: u128, // OG Realm Id
     // TODO: no need for owner ? since we use Owner component
     // packed resource ids of realm
     resource_types_packed: u128, // max 16 resources

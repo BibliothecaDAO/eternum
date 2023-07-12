@@ -12,10 +12,11 @@ mod GetAverageSpeed {
     use traits::Into;
     use box::BoxTrait;
 
-    use dojo_core::serde::SpanSerde;
+    use dojo::world::Context;
+
     // create an execute function that takes a list of entity ids as input and
     // returns the average speed of the entities 
-    fn execute(entity_ids: Span<ID>) -> u128 {
+    fn execute(ctx: Context, entity_ids: Span<ID>) -> u128 {
         let mut total_speed: u128 = 0_u128;
         let mut total_quantity: u128 = 0_u128;
         let caller = starknet::get_tx_info().unbox().account_contract_address;
@@ -26,10 +27,10 @@ mod GetAverageSpeed {
                 break ();
             }
             // assert that they are movable
-            let movable = commands::<Movable>::entity((*entity_ids[index]).into());
+            let movable = get !(ctx.world, (*entity_ids[index]).into(), Movable);
 
             // try to retrieve the Quantity component of the entity
-            let maybe_quantity = commands::<Quantity>::try_entity((*entity_ids[index]).into());
+            let maybe_quantity = try_get !(ctx.world, (*entity_ids[index]).into(), Quantity);
 
             let quantity = match maybe_quantity {
                 Option::Some(res) => {
@@ -60,9 +61,11 @@ mod GetQuantity {
 
     use traits::Into;
 
-    fn execute(entity_id: ID) -> u128 {
+    use dojo::world::Context;
+
+    fn execute(ctx: Context, entity_id: u128) -> u128 {
         // try to retrieve the Quantity component of the entity
-        let maybe_quantity = commands::<Quantity>::try_entity(entity_id.into());
+        let maybe_quantity = try_get !(ctx.world, entity_id.into(), Quantity);
 
         match maybe_quantity {
             Option::Some(res) => {
@@ -89,10 +92,10 @@ mod GetQuantity {
 
 //     use starknet::syscalls::deploy_syscall;
 
-//     use dojo_core::interfaces::{IWorldDispatcherTrait, IWorldDispatcherImpl};
-//     use dojo_core::storage::query::Query;
-//     use dojo_core::execution_context::Context;
-//     use dojo_core::auth::components::AuthRole;
+//     use dojo::interfaces::{IWorldDispatcherTrait, IWorldDispatcherImpl};
+//     use dojo::storage::query::Query;
+//     use dojo::execution_context::Context;
+//     use dojo::auth::components::AuthRole;
 
 //     // test that the average speed is correct
 //     #[test]

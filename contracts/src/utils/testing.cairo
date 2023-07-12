@@ -54,14 +54,12 @@ use starknet::{
     ClassHash, syscalls::deploy_syscall, class_hash::Felt252TryIntoClassHash, get_caller_address
 };
 
-use dojo_core::storage::query::Query;
-use dojo_core::test_utils::spawn_test_world;
-use dojo_core::auth::systems::{GrantAuthRole, Route, RouteTrait};
-use dojo_core::auth::components::{AuthRoleComponent, AuthStatusComponent};
-use dojo_core::test_utils::mock_auth_components_systems;
-use dojo_core::{
-    executor::Executor, world::World, interfaces::{IWorldDispatcher, IWorldDispatcherTrait}
-};
+use dojo::storage::query::Query;
+use dojo::test_utils::spawn_test_world;
+use dojo::auth::systems::{GrantAuthRole, Route, RouteTrait};
+use dojo::auth::components::{AuthRoleComponent, AuthStatusComponent};
+use dojo::test_utils::mock_auth_components_systems;
+use dojo::{executor::Executor, world::World, interfaces::{IWorldDispatcher, IWorldDispatcherTrait}};
 
 fn retrieve_list_of_world_components_and_systems() -> (Array<felt252>, Array<felt252>) {
     // components

@@ -20,15 +20,16 @@ mod ClaimFungibleOrder {
     use traits::TryInto;
     use box::BoxTrait;
     use array::ArrayTrait;
-    use dojo_core::serde::SpanSerde;
 
-    fn execute(entity_id: ID, trade_id: ID) {
+    use dojo::world::Context;
+
+    fn execute(ctx: Context, entity_id: u128, trade_id: u128) {
         // assert caller is owner of the entity_id
         let caller = starknet::get_tx_info().unbox().account_contract_address;
-        let owner = commands::<Owner>::entity(entity_id.into());
+        let owner = get !(ctx.world, entity_id.into(), Owner);
         assert(owner.address == caller, 'not owned by caller');
 
-        let meta = commands::<Trade>::entity(trade_id.into());
+        let meta = get !(ctx.world, trade_id.into(), Trade);
 
         // check if entity is maker or taker
         // if taker then query maker order id
@@ -51,7 +52,8 @@ mod ClaimFungibleOrder {
         };
 
         // set status to claimed
-        commands::set_entity(
+        set !(
+            ctx.world,
             trade_id.into(),
             (Trade {
                 maker_id: meta.maker_id,
@@ -66,11 +68,11 @@ mod ClaimFungibleOrder {
         );
 
         // check position and arrival time
-        let (position, arrival_time, fungible_entities) = commands::<Position,
-        ArrivalTime,
-        FungibleEntities>::entity(order_id.into());
+        let (position, arrival_time, fungible_entities) = get !(
+            ctx.world, order_id.into(), (Position, ArrivalTime, FungibleEntities)
+        );
         // assert that position is same as entity
-        let entity_position = commands::<Position>::entity(entity_id.into());
+        let entity_position = get !(ctx.world, entity_id.into(), Position);
         assert(position == entity_position, 'position mismatch');
 
         let ts = starknet::get_block_timestamp();
@@ -85,18 +87,19 @@ mod ClaimFungibleOrder {
                 break ();
             }
 
-            let order_resource = commands::<Resource>::entity(
-                (order_id, fungible_entities.key, index).into()
+            let order_resource = get !(
+                ctx.world, (order_id, fungible_entities.key, index).into(), Resource
             );
 
             // add quantity to balance of entity
-            let maybe_current_resource = commands::<Resource>::try_entity(
-                (entity_id, order_resource.resource_type).into()
+            let maybe_current_resource = try_get !(
+                ctx.world, (entity_id, order_resource.resource_type).into(), Resource
             );
             match maybe_current_resource {
                 Option::Some(current_resource) => {
                     // set new balance 
-                    commands::set_entity(
+                    set !(
+                        ctx.world,
                         (entity_id, order_resource.resource_type).into(),
                         (Resource {
                             resource_type: order_resource.resource_type,
@@ -106,7 +109,8 @@ mod ClaimFungibleOrder {
                 },
                 Option::None(_) => {
                     // create new resource
-                    commands::set_entity(
+                    set !(
+                        ctx.world,
                         (entity_id, order_resource.resource_type).into(),
                         (Resource {
                             balance: order_resource.balance,
@@ -130,11 +134,11 @@ mod ClaimFungibleOrder {
 //     use option::OptionTrait;
 //     use debug::PrintTrait;
 
-//     use dojo_core::interfaces::IWorldDispatcherTrait;
-//     use dojo_core::storage::query::{Query, TupleSize3IntoQuery};
-//     use dojo_core::storage::query::TupleSize2IntoQuery;
-//     use dojo_core::execution_context::Context;
-//     use dojo_core::auth::components::AuthRole;
+//     use dojo::interfaces::IWorldDispatcherTrait;
+//     use dojo::storage::query::{Query, TupleSize3IntoQuery};
+//     use dojo::storage::query::TupleSize2IntoQuery;
+//     use dojo::execution_context::Context;
+//     use dojo::auth::components::AuthRole;
 
 //     #[test]
 //     #[available_gas(30000000000000)]

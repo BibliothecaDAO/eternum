@@ -2,7 +2,7 @@
 use eternum::components::config::WorldConfig;
 use eternum::utils::math::get_past_time;
 
-#[derive(Component)]
+#[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct Tick {
     last_update: u128
 }

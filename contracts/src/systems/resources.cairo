@@ -7,8 +7,8 @@
 //     use eternum::components::resources::Resource;
 
 //     // could be id of a player, of the realm, of a vault
-//     fn execute(owner_id: felt252, resource_type: u8, amount: u128) {
-//         let maybe_resource = commands::<Resource>::try_entity((owner_id, (resource_type)).into());
+//     fn execute(ctx: Context, owner_id: felt252, resource_type: u8, amount: u128) {
+//         let maybe_resource = try_get !(ctx.world, (owner_id, (resource_type)).into(), Resource);
 
 //         let mut resource_balance = 0;
 //         match maybe_resource {
@@ -17,7 +17,8 @@
 //             },
 //             Option::None(_) => {},
 //         }
-//         commands::<Resource>::set_entity(
+//         set !(
+//             ctx.world,
 //             (owner_id, (resource_type)).into(),
 //             (Resource { resource_type, balance: resource_balance + amount }),
 //         )
@@ -32,8 +33,8 @@
 //     use eternum::components::resources::Resource;
 
 //     // could be id of a player, of the realm, of a vault
-//     fn execute(owner_id: felt252, resource_type: felt252, amount: u128) {
-//         let maybe_resource = commands::<Resource>::try_entity((owner_id, (resource_type)).into());
+//     fn execute(ctx: Context, owner_id: felt252, resource_type: felt252, amount: u128) {
+//         let maybe_resource = try_get !(ctx.world, (owner_id, (resource_type)).into(), Resource);
 
 //         let mut resource_balance = 0;
 //         match maybe_resource {
@@ -43,7 +44,8 @@
 //             Option::None(_) => {},
 //         }
 //         assert(resource_balance >= amount, 'Insufficient balance');
-//         commands::<Resource>::set_entity(
+//         set !(
+//             ctx.world,
 //             (owner_id, (resource_type)).into(),
 //             (Resource { resource_type, balance: resource_balance - amount }),
 //         )

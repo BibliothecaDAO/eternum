@@ -5,22 +5,22 @@ use option::OptionTrait;
 use alexandria_math::math::pow;
 
 
-#[derive(Component, Copy, Drop, Serde)]
+#[derive(Component, PartialEq, Copy, Drop, Serde, SerdeLen)]
 struct Position {
     x: u32,
     y: u32
 }
 
-impl PositionPartialEq of PartialEq<Position> {
-    #[inline(always)]
-    fn eq(lhs: Position, rhs: Position) -> bool {
-        lhs.x == rhs.x & lhs.y == rhs.y
-    }
-    #[inline(always)]
-    fn ne(lhs: Position, rhs: Position) -> bool {
-        !(lhs.x == rhs.x & lhs.y == rhs.y)
-    }
-}
+// impl PositionPartialEq of PartialEq<Position> {
+//     #[inline(always)]
+//     fn eq(lhs: Position, rhs: Position) -> bool {
+//         lhs.x == rhs.x & lhs.y == rhs.y
+//     }
+//     #[inline(always)]
+//     fn ne(lhs: Position, rhs: Position) -> bool {
+//         !(lhs.x == rhs.x & lhs.y == rhs.y)
+//     }
+// }
 trait PositionTrait {
     fn calculate_distance(self: Position, destination: Position) -> u32;
     fn calculate_travel_time(self: Position, destination: Position, sec_per_km: u16) -> u64;

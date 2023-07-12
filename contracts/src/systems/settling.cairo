@@ -14,10 +14,12 @@ mod Settle {
     use eternum::components::age::Age;
     use eternum::components::config::{WorldConfig, LaborConfig};
 
-    fn execute(realm_id: ID) { // get the ERC721 contract
+    use dojo::world::Context;
+
+    fn execute(ctx: Context, realm_id: u128) { // get the ERC721 contract
         // get the owner
-        let config = commands::<WorldConfig>::entity(WORLD_CONFIG_ID.into());
-        let laborConfig = commands::<LaborConfig>::entity(LABOR_CONFIG_ID.into());
+        let config = get !(ctx.world, WORLD_CONFIG_ID.into(), WorldConfig);
+        let laborConfig = get !(ctx.world, LABOR_CONFIG_ID.into(), LaborConfig);
         let token: felt252 = config.realm_l2_contract.into();
         let caller = starknet::get_tx_info().unbox().account_contract_address;
         // get the metadata
@@ -28,8 +30,9 @@ mod Settle {
         let realm_data: RealmData = erc721.fetch_realm_data(realm_id);
         let position: Position = erc721.realm_position(realm_id);
         // create Realm Metadata
-        let realm_entity_id = commands::uuid();
-        commands::set_entity(
+        let realm_entity_id = ctx.world.uuid();
+        set !(
+            ctx.world,
             realm_entity_id.into(),
             (
                 Position {
@@ -70,8 +73,10 @@ mod Settle {
             };
             let resource_type: u8 = *resource_types[index];
             let resource_query: Query = (realm_id, resource_type).into();
-            commands::<Resource>::set_entity(
-                resource_query, (Resource { resource_type, balance: daily_resource_production,  })
+            set !(
+                ctx.world,
+                resource_query,
+                (Resource { resource_type, balance: daily_resource_production,  })
             );
             index += 1;
         }
@@ -96,14 +101,16 @@ mod Unsettle {
     use eternum::components::config::{WorldConfig, LaborConfig};
     use eternum::alias::ID;
 
-    fn execute(realm_id: ID) {
+    use dojo::world::Context;
+
+    fn execute(ctx: Context, realm_id: u128) {
         // get the ERC721 contract
-        let config = commands::<WorldConfig>::entity(WORLD_CONFIG_ID.into());
-        let laborConfig = commands::<LaborConfig>::entity(LABOR_CONFIG_ID.into());
+        let config = get !(ctx.world, WORLD_CONFIG_ID.into(), WorldConfig);
+        let laborConfig = get !(ctx.world, LABOR_CONFIG_ID.into(), LaborConfig);
         let token = config.realm_l2_contract;
 
         // get the owner
-        let owner = commands::<Owner>::entity(realm_id.into());
+        let owner = get !(ctx.world, realm_id.into(), Owner);
         let caller = starknet::get_tx_info().unbox().account_contract_address;
         // assert caller is owner
         assert(owner.address == caller, 'Only owner can unsettle');
@@ -132,10 +139,10 @@ mod Unsettle {
 //     use core::result::ResultTrait;
 //     use array::SpanTrait;
 
-//     use dojo_core::interfaces::IWorldDispatcherTrait;
-//     use dojo_core::test_utils::spawn_test_world;
-//     use dojo_core::storage::query::Query;
-//     use dojo_core::auth::systems::{Route, RouteTrait};
+//     use dojo::interfaces::IWorldDispatcherTrait;
+//     use dojo::test_utils::spawn_test_world;
+//     use dojo::storage::query::Query;
+//     use dojo::auth::systems::{Route, RouteTrait};
 
 //     // erc721
 //     use eternum::erc721::erc721::{Position, RealmData, ERC721};

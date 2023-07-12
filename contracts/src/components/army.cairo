@@ -4,7 +4,7 @@
 // outside of a Realm. They might spawn randomly on the Map.
 // TODO for next milestone 
 
-#[derive(Component, Copy, Drop, Serde)]
+#[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct Army {
     // TODO: Why not use the ID alias? I know it's a different type, but does it have to be?
     light_cavalry_qty: u32,
@@ -26,7 +26,7 @@ struct Army {
 }
 
 // Holds statistics for Army used in calculations
-#[derive(Copy, Drop)]
+#[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct ArmyStatistics {
     cavalry_attack: u32,
     archery_attack: u32,

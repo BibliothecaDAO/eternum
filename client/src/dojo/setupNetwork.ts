@@ -5,9 +5,9 @@ import { number } from 'starknet';
 import { Providers, Query, SyncWorker} from "@dojoengine/core";
 import { Account, ec } from "starknet";
 
-export const KATANA_ACCOUNT_1_ADDRESS = "0x06f62894bfd81d2e396ce266b2ad0f21e0668d604e5bb1077337b6d570a54aea"
-export const KATANA_ACCOUNT_1_PRIVATEKEY = "0x07230b49615d175307d580c33d6fda61fc7b9aec91df0f5c1a5ebe3b8cbfee02"
-export const WORLD_ADDRESS = "0x7f1d6c1b15e03673062d8356dc1174d5d85c310479ec49fe781e8bf89e4c4f8"
+export const KATANA_ACCOUNT_1_ADDRESS = "0x03ee9e18edc71a6df30ac3aca2e0b02a198fbce19b7480a63a0d71cbd76652e0"
+export const KATANA_ACCOUNT_1_PRIVATEKEY = "0x0300001800000000300000180000000000030000000000003006001800006600"
+export const WORLD_ADDRESS = "0x26065106fa319c3981618e7567480a50132f23932226a51c219ffb8e47daa84"
 export const EVENT_KEY = "0x1a2f334228cee715f1f0f54053bb6b5eac54fa336e0bc1aacf7516decb0471d"
 
 

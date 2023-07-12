@@ -6,9 +6,11 @@ mod SetTravelConfig {
     use eternum::constants::TRANSPORT_CONFIG_ID;
     use eternum::components::config::TravelConfig;
 
-    fn execute(free_transport_per_city: u128) {
+    use dojo::world::Context;
+
+    fn execute(ctx: Context, free_transport_per_city: u128) {
         // TODO: can only be executed by Governance Vote
-        let _ = commands::set_entity(
+        let _ = set !(ctx.world, 
             TRANSPORT_CONFIG_ID.into(), (TravelConfig { free_transport_per_city })
         );
     }

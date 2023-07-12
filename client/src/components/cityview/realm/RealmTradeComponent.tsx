@@ -44,7 +44,6 @@ export const RealmTradeComponent = ({ }: RealmTradeComponentProps) => {
                 if (entity) {
                     let tradeId = parseInt(entity.keys);
                     let trade = getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
-                    console.log('trade', trade)
                     let status = getComponentValue(Status, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
                     if (trade?.maker_id === realmEntityId && status?.value === 0) {
                         myTrades.push(tradeId)
@@ -54,14 +53,9 @@ export const RealmTradeComponent = ({ }: RealmTradeComponentProps) => {
                     // status 1 = accepted
                     // if you are maker, then check if the order coming your way has been claimed yet
                     } else if ((trade?.maker_id === realmEntityId && Number(trade.claimed_by_maker) !== 1) && status?.value === 1) {
-                        console.log('not claimed by taker order id: ', trade.maker_order_id)
-                        console.log('maker', trade.maker_id)
-                        console.log('realm entity id', realmEntityId)
                         incomingOrders.push({orderId: trade.taker_order_id, tradeId});
 
                     } else if (trade && (trade.taker_id === realmEntityId && Number(trade.claimed_by_taker) !== 1) && status?.value === 1) {
-                        console.log('not claimed by maker order id: ', trade?.maker_order_id)
-                        console.log('is claimed by maker', trade?.claimed_by_maker)
                         incomingOrders.push({orderId: trade.maker_order_id, tradeId});
                     }
                 }

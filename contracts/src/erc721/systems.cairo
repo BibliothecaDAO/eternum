@@ -6,9 +6,11 @@ mod ERC721Approve {
     use super::super::components::TokenApproval;
     use eternum::alias::ID;
 
-    fn execute(token: felt252, approved: felt252, token_id: ID) {
+    use dojo::world::Context;
+
+    fn execute(ctx: Context, token: felt252, approved: felt252, token_id: u128) {
         // approve an address
-        commands::set_entity(
+        set !(ctx.world, 
             (token, token_id).into(), (TokenApproval { address: approved.try_into().unwrap() })
         );
     }
@@ -24,9 +26,11 @@ mod ERC721TransferFrom {
     use eternum::components::owner::Owner;
     use eternum::alias::ID;
 
-    fn execute(token: felt252, from: felt252, to: felt252, token_id: ID) {
+    use dojo::world::Context;
+
+    fn execute(ctx: Context, token: felt252, from: felt252, to: felt252, token_id: u128) {
         let query: Query = (token, token_id).into();
-        commands::set_entity(
+        set !(ctx.world, 
             query,
             ( // reset approvals
                 TokenApproval {
@@ -40,18 +44,18 @@ mod ERC721TransferFrom {
 
         // update old owner balance
         let query: Query = (token, from).into();
-        let balance = commands::<Balance>::entity(query);
-        commands::set_entity(query, (Balance { value: balance.value - 1 }));
+        let balance = get !(ctx.world, query, Balance);
+        set !(ctx.world, y, (Balance { value: balance.value - 1 }));
 
         // update new owner balance
         let query: Query = (token, to).into();
-        let maybe_balance = commands::<Balance>::try_entity(query);
+        let maybe_balance = try_get !(ctx.world, query, Balance);
         let balance = match maybe_balance {
             Option::Some(balance) => balance,
             Option::None(_) => Balance { value: 0 },
         };
 
-        commands::set_entity(query, (Balance { value: balance.value + 1 }));
+        set !(ctx.world, query, (Balance { value: balance.value + 1 }));
     }
 }
 
@@ -64,19 +68,21 @@ mod ERC721Mint {
     use super::super::components::Balance;
     use eternum::components::owner::Owner;
 
-    fn execute(token: felt252, owner: felt252, token_id: ID) {
+    use dojo::world::Context;
+
+    fn execute(ctx: Context, token: felt252, owner: felt252, token_id: u128) {
         // assign token to owner
-        commands::set_entity(
+        set !(ctx.world, 
             (token, token_id).into(), (Owner { address: owner.try_into().unwrap() })
         );
 
         let query: Query = (token, owner).into();
         // update owner's balance
-        let maybe_balance = commands::<Balance>::try_entity(query);
+        let maybe_balance = try_get !(ctx.world, query, Balance);
         let balance = match maybe_balance {
             Option::Some(balance) => balance,
             Option::None(_) => Balance { value: 0 },
         };
-        commands::set_entity(query, (Balance { value: balance.value + 1 }));
+        fn execute(ctx: Context, y, (Balance { value: balance.value + 1 }));
     }
 }

@@ -1,23 +1,23 @@
 use eternum::alias::ID;
 
 // Config ID to fetch global configs
-const WORLD_CONFIG_ID: ID = 999999999999999999;
-const BUILDING_CONFIG_ID: ID = 999999999999999998;
+const WORLD_CONFIG_ID: u128 = 999999999999999999;
+const BUILDING_CONFIG_ID: u128 = 999999999999999998;
 // DISCUSS: these config IDs are used to query a global config for a set of systems (like labor systems)
 // and are not linked to a specific entity_type, 
 // e.g. LaborConfig holds a set of configuration values 
 // that are used for all labor, regardless of the resource
 // - base_labor_units
 // - base_resources_per_cycle
-const LABOR_CONFIG_ID: ID = 999999999999999997;
-const TRANSPORT_CONFIG_ID: ID = 999999999999999996;
+const LABOR_CONFIG_ID: u128 = 999999999999999997;
+const TRANSPORT_CONFIG_ID: u128 = 999999999999999996;
 
 // 8 bits
 const RESOURCE_IDS_PACKED_SIZE: usize = 8_usize;
 const REALMS_DATA_PACKED_SIZE: usize = 8_usize;
 
 // LORDS
-const LORDS_ID: ID = 999999999999999996;
+const LORDS_ID: u128 = 999999999999999996;
 
 mod ResourceTypes {
     const WOOD: u8 = 1;

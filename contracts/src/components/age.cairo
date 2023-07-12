@@ -1,4 +1,4 @@
-#[derive(Component, Copy, Drop, Serde)]
+#[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct Age {
     born_at: u64, 
 }
@@ -36,4 +36,5 @@ impl AgeImpl of AgeTrait {
 //     let current_age = age.get_current_age();
 //     assert(current_age == 100, 'Current age should be 100');
 // }
+
 
