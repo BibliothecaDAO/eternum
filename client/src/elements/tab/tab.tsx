@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import type { ComponentProps } from 'react';
 import { Fragment, useContext } from 'react';
 import { TabContext } from './TabProvider';
-import { VARIANTS } from './Tabs';
+import { VARIANTS } from './tabs';
 
 type TabProps = ComponentProps<'button'> & { noText?: boolean };
 
