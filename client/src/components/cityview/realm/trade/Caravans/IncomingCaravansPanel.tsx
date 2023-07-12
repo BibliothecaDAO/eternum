@@ -15,7 +15,7 @@ import useBlockchainStore from '../../../../../hooks/store/useBlockchainStore';
 import { IncomingOrders } from './IncomingOrders';
 
 type CaravansPanelProps = {
-    orders: {orderId: number, tradeId: number} [];
+    orders: { orderId: number, tradeId: number }[];
 }
 
 export const IncomingOrdersPanel = ({ orders }: CaravansPanelProps) => {
@@ -23,7 +23,7 @@ export const IncomingOrdersPanel = ({ orders }: CaravansPanelProps) => {
     const [showCaravanDetails, setShowCaravanDetails] = useState(false);
     const [selectedCaravanId, setSelectedCaravanId] = useState<number | null>(null);
 
-    const {components: { Position }} = useDojo();
+    const { components: { Position } } = useDojo();
 
     const { realmEntityId } = useRealmStore();
 
@@ -64,7 +64,7 @@ export const IncomingOrdersPanel = ({ orders }: CaravansPanelProps) => {
                 ))}
             </SortPanel>
             {selectedCaravanId && showCaravanDetails && <CaravanDetails caravanId={selectedCaravanId} onClose={() => setShowCaravanDetails(false)} />}
-            {orders.map(({orderId, tradeId}) => <div className='flex flex-col p-2'>
+            {orders.map(({ orderId, tradeId }) => <div className='flex flex-col p-2'>
                 <IncomingOrders orderId={orderId} tradeId={tradeId} />
             </div>)}
         </div >

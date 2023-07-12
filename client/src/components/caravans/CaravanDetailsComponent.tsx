@@ -26,18 +26,18 @@ type CaravanDetailsProps = {
 }
 
 export const CaravanDetails = ({ caravanId, onClose }: CaravanDetailsProps) => {
-    const {realmEntityId} = useRealmStore();
+    const { realmEntityId } = useRealmStore();
 
     const {
         components: { Caravan, Capacity, Trade, ArrivalTime, FungibleEntities, Resource, Position },
     } = useDojo();
 
-    const {nextBlockTimestamp} = useBlockchainStore();
+    const { nextBlockTimestamp } = useBlockchainStore();
 
-    let {data: tradeId} = useGetTradeFromCaravanId(realmEntityId, caravanId); 
+    let { data: tradeId } = useGetTradeFromCaravanId(realmEntityId, caravanId);
 
     let trade = tradeId && getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
-    const {realmOrderId, counterpartyOrderId} = (trade && realmEntityId !== undefined) && getOrderIdsFromTrade(trade, realmEntityId) || {realmOrderId: 0, counterpartyOrderId: 0};
+    const { realmOrderId, counterpartyOrderId } = (trade && realmEntityId !== undefined) && getOrderIdsFromTrade(trade, realmEntityId) || { realmOrderId: 0, counterpartyOrderId: 0 };
     let arrivalTime = getComponentValue(ArrivalTime, Utils.getEntityIdFromKeys([BigInt(realmOrderId)]));
 
     const fungibleEntitiesGive = getComponentValue(FungibleEntities, Utils.getEntityIdFromKeys([BigInt(realmOrderId)]));
@@ -47,17 +47,17 @@ export const CaravanDetails = ({ caravanId, onClose }: CaravanDetailsProps) => {
     let resourceEntityIdsGet = getResourceIdsFromFungibleEntities(counterpartyOrderId, fungibleEntitiesGet?.key || 0, fungibleEntitiesGet?.count || 0);
     let resourcesGive: Resource[] = [];
     for (let i = 0; i < resourceEntityIdsGive.length; i++) {
-        resourcesGive.push(getComponentValue(Resource, resourceEntityIdsGive[i]) ?? {resource_type: 0, balance: 0});
+        resourcesGive.push(getComponentValue(Resource, resourceEntityIdsGive[i]) ?? { resource_type: 0, balance: 0 });
     }
     let resourcesGet: Resource[] = [];
     for (let i = 0; i < resourceEntityIdsGet.length; i++) {
-        resourcesGet.push(getComponentValue(Resource, resourceEntityIdsGet[i]) ?? {resource_type: 0, balance: 0});
+        resourcesGet.push(getComponentValue(Resource, resourceEntityIdsGet[i]) ?? { resource_type: 0, balance: 0 });
     }
 
     // capacity
     let resourceWeight = getTotalResourceWeight([...resourcesGive, ...resourcesGet]);
     let caravanCapacity = getComponentValue(Capacity, Utils.getEntityIdFromKeys([BigInt(caravanId)]))?.weight_gram || 0;
-      
+
     let position = useComponentValue(Position, Utils.getEntityIdFromKeys([BigInt(realmOrderId)]));
 
     const realmId = position && getRealmIdByPosition(position);
@@ -78,7 +78,7 @@ export const CaravanDetails = ({ caravanId, onClose }: CaravanDetailsProps) => {
                         Traveling to
                     </span>
                     <div className='flex items-center ml-1 mr-1 text-gold'>
-                    <OrderIcon order={getRealmOrderNameById(realmId)} className='mr-1' size='xs' />
+                        <OrderIcon order={getRealmOrderNameById(realmId)} className='mr-1' size='xs' />
                         {realmName}
                     </div>
                     <span className='italic text-light-pink'>
@@ -94,7 +94,7 @@ export const CaravanDetails = ({ caravanId, onClose }: CaravanDetailsProps) => {
                     </span>
                 </div>
                 {resourcesGet && <div className='grid grid-cols-3 gap-2 px-2 py-1'>
-                {resourcesGet.map((resource) => resource && <ResourceCost resourceId={resource.resource_type} amount={resource.balance} />)}
+                    {resourcesGet.map((resource) => resource && <ResourceCost resourceId={resource.resource_type} amount={resource.balance} />)}
                 </div>}
                 <div className='flex justify-start m-2'>
                     <Button onClick={onClose} variant='primary'>Close</Button>

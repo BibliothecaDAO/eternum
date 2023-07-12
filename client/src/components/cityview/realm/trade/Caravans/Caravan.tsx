@@ -34,16 +34,16 @@ export const Caravan = ({ caravanId, ...props }: CaravanProps) => {
     const { realmEntityId } = useRealmStore();
 
     // find the order ids of the caravan
-    const {data: tradeId} = useGetTradeFromCaravanId(realmEntityId, caravanId);
+    const { data: tradeId } = useGetTradeFromCaravanId(realmEntityId, caravanId);
 
     const {
         components: { Movable, Quantity, Capacity, ForeignKey, Trade, ArrivalTime, FungibleEntities, Resource, Position, CaravanMembers },
     } = useDojo();
 
-    const {nextBlockTimestamp} = useBlockchainStore();
+    const { nextBlockTimestamp } = useBlockchainStore();
 
     let trade = tradeId && getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
-    const {realmOrderId, counterpartyOrderId} = (trade && realmEntityId !== undefined) && getOrderIdsFromTrade(trade, realmEntityId) || {realmOrderId: 0, counterpartyOrderId: 0};
+    const { realmOrderId, counterpartyOrderId } = (trade && realmEntityId !== undefined) && getOrderIdsFromTrade(trade, realmEntityId) || { realmOrderId: 0, counterpartyOrderId: 0 };
     let arrivalTime = getComponentValue(ArrivalTime, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
     let movable = getComponentValue(Movable, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
 
@@ -54,11 +54,11 @@ export const Caravan = ({ caravanId, ...props }: CaravanProps) => {
     let resourceEntityIdsGet = getResourceIdsFromFungibleEntities(realmOrderId, fungibleEntitiesGet?.key || 0, fungibleEntitiesGet?.count || 0);
     let resourcesGive: Resource[] = [];
     for (let i = 0; i < resourceEntityIdsGive.length; i++) {
-        resourcesGive.push(getComponentValue(Resource, resourceEntityIdsGive[i]) ?? {resource_type: 0, balance: 0});
+        resourcesGive.push(getComponentValue(Resource, resourceEntityIdsGive[i]) ?? { resource_type: 0, balance: 0 });
     }
     let resourcesGet: Resource[] = [];
     for (let i = 0; i < resourceEntityIdsGet.length; i++) {
-        resourcesGet.push(getComponentValue(Resource, resourceEntityIdsGet[i]) ?? {resource_type: 0, balance: 0});
+        resourcesGet.push(getComponentValue(Resource, resourceEntityIdsGet[i]) ?? { resource_type: 0, balance: 0 });
     }
 
     // TODO: get the number of donkeys travelling

@@ -10,8 +10,8 @@
     "codegen": "graphql-codegen"
   },
   "dependencies": {
-    "@dojoengine/core": "^0.0.1",
-    "@dojoengine/react": "^0.0.1",
+    "@dojoengine/core": "^0.0.2",
+    "@dojoengine/react": "^0.0.3",
     "@graphql-codegen/cli": "^4.0.1",
     "@graphql-codegen/typescript": "^4.0.1",
     "@headlessui/react": "^1.7.14",
@@ -24,6 +24,7 @@
     "@react-three/postprocessing": "^2.7.1",
     "clsx": "^1.2.1",
     "ethers": "5.7.2",
+    "events": "^3.3.0",
     "graphql": "^16.7.1",
     "gsap": "^3.11.5",
     "mobx": "^6.9.0",

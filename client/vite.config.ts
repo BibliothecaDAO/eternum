@@ -5,10 +5,15 @@ import svgr from "vite-plugin-svgr";
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [svgr(), react()],
+  resolve: {
+    alias: {
+      'events': 'events',
+    },
+  },
   build: {
     target: 'esnext',
     rollupOptions: {
-      //external: ['proxy-deep', 'ethers', 'ethers/lib/utils', '@latticexyz/utils']
+      external: ['micro-starknet']
     }
   },
 })
