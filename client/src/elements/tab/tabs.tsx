@@ -1,13 +1,13 @@
 import { Tab as HeadlessTab } from '@headlessui/react';
 import clsx from 'clsx';
 import type { ReactNode, SyntheticEvent } from 'react';
-import { Tab } from './Tab';
+import { Tab } from './tab';
 import { TabList } from './TabList';
 import { TabPanel } from './TabPanel';
 import { TabPanels } from './TabPanels';
 import { TabProvider } from './TabProvider';
 
-export const VARIANTS = {
+export const VARIANTS: any = {
   default: {
     tab: {
       base: 'text-xxs px-3 !outline-none border border-transparent transition-color duration-200',

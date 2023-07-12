@@ -1,9 +1,10 @@
+
 import { Tab as HeadlessTab } from '@headlessui/react';
 import clsx from 'clsx';
 import type { ComponentProps } from 'react';
 import { Fragment, useContext } from 'react';
 import { TabContext } from './TabProvider';
-import { VARIANTS } from './Tabs';
+import { VARIANTS } from './tabs';
 
 type TabProps = ComponentProps<'button'> & { noText?: boolean };
 
@@ -13,6 +14,7 @@ export const Tab = ({ className, children, noText, ...props }: TabProps) => {
   const isPrimary = variant === 'primary';
 
   return (
+    // @ts-ignore
     <HeadlessTab
       className={({ selected }) =>
         clsx(

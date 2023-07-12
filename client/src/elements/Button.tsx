@@ -5,7 +5,7 @@ interface ButtonProps {
   children: React.ReactNode;
   className?: string;
   disabled?: boolean;
-  variant: "primary" | "secondary" | "success" | "danger" | "default" | "outline";
+  variant?: "primary" | "secondary" | "success" | "danger" | "default" | "outline";
   isLoading?: boolean;
 }
 
@@ -36,14 +36,13 @@ const Button: React.FC<ButtonProps> = ({
     <button
       type="button"
       onClick={disabled || isLoading ? undefined : onClick}
-      className={`${STYLES.baseStyle} ${STYLES[variant]} ${
-        disabled ? STYLES.disabledStyle : STYLES.enabledStyle
-      } ${isLoading ? STYLES.loadingStyle : ""} ${className}`}
+      className={`${STYLES.baseStyle} ${STYLES[variant]} ${disabled ? STYLES.disabledStyle : STYLES.enabledStyle
+        } ${isLoading ? STYLES.loadingStyle : ""} ${className}`}
       disabled={disabled || isLoading}
     >
       {isLoading ? (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-gray-900"></div>
+          <div className="w-4 h-4 border-t-2 border-b-2 border-gray-900 rounded-full animate-spin"></div>
         </div>
       ) : (
         children

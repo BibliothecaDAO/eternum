@@ -11,6 +11,7 @@ import { a } from "@react-spring/three"
 import { Sky, Environment, Lightformer, useHelper, PerspectiveCamera, MapControls, CameraShake, AdaptiveDpr, AdaptiveEvents } from '@react-three/drei'
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { EffectComposer, DepthOfField, Bloom, Noise, Vignette, Outline, EffectComposerContext, SMAA, Sepia } from '@react-three/postprocessing'
+// @ts-ignore
 import { Sobel } from '../../utils/effects.jsx'
 import { useControls, button } from 'leva';
 import * as THREE from 'three'
@@ -61,7 +62,7 @@ export const MainScene = () => {
 
 
     const [location] = useLocation()
-    // Animated shape props
+    // @ts-ignore
     const transition = useTransition(location, {
         from: { position: [0, 0, -20], rotation: [0, Math.PI, 0], scale: [0, 0, 0], opacity: 0 },
         enter: { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], opacity: 1 },
@@ -104,6 +105,7 @@ export const MainScene = () => {
             <CameraShake {...shakeConfig} />
             <Suspense fallback={null}>
                 {
+                    // @ts-ignore
                     transition(({ opacity, ...props }, location) => (
                         <a.group {...props}>
                             <Switch location={location}>

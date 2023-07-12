@@ -10,6 +10,7 @@ export const TabPanels = ({
   ...props
 }: TabPanelsProps) => {
   return (
+    // @ts-ignore
     <Tab.Panels as="article" className={clsx('flex flex-1', className)} {...props}>
       {children}
     </Tab.Panels>

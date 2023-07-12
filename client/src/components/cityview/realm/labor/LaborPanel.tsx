@@ -12,6 +12,7 @@ import { unpackResources } from '../../../../utils/packedData';
 import { LABOR_CONFIG_ID } from '../../../../constants/labor';
 import { ResourcesIds } from '../../../../constants/resources';
 import { LaborBuildPopup } from './LaborBuild';
+import { LaborConfig } from '../../../../types';
 
 type LaborPanelProps = {}
 
@@ -65,7 +66,7 @@ export const LaborPanel = ({ }: LaborPanelProps) => {
             </SortPanel>
             {buildResource && <LaborBuildPopup resourceId={buildResource} onClose={() => setBuildResource(null)} onBuild={() => { }} />}
             {realmResourceIds.map((resourceId) => <div className='flex flex-col p-2'>
-                <LaborComponent onBuild={() => { buildResource == resourceId ? setBuildResource(null) : setBuildResource(resourceId) }} resourceId={resourceId} realm={realm} laborConfig={laborConfig} />
+                <LaborComponent onBuild={() => { buildResource == resourceId ? setBuildResource(null) : setBuildResource(resourceId) }} resourceId={resourceId} realm={realm} laborConfig={laborConfig as LaborConfig} />
             </div>)}
         </div >
     );

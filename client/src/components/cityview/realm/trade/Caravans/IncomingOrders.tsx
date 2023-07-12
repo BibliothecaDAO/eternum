@@ -37,7 +37,7 @@ export const IncomingOrders = ({ orderId, tradeId, ...props }: CaravanProps) => 
         components: { ArrivalTime, FungibleEntities, Resource },
     } = useDojo();
 
-    const {nextBlockTimestamp} = useBlockchainStore();
+    const { nextBlockTimestamp } = useBlockchainStore();
 
     let arrivalTime = getComponentValue(ArrivalTime, Utils.getEntityIdFromKeys([BigInt(orderId)]));
 
@@ -45,7 +45,7 @@ export const IncomingOrders = ({ orderId, tradeId, ...props }: CaravanProps) => 
     let resourceEntityIdsGet = getResourceIdsFromFungibleEntities(orderId, fungibleEntitiesGet?.key || 0, fungibleEntitiesGet?.count || 0);
     let resourcesGet: Resource[] = [];
     for (let i = 0; i < resourceEntityIdsGet.length; i++) {
-        resourcesGet.push(getComponentValue(Resource, resourceEntityIdsGet[i]) ?? {resource_type: 0, balance: 0});
+        resourcesGet.push(getComponentValue(Resource, resourceEntityIdsGet[i]) ?? { resource_type: 0, balance: 0 });
     }
 
     const hasArrived = (arrivalTime !== undefined) && (nextBlockTimestamp !== undefined) && arrivalTime.arrives_at <= nextBlockTimestamp;
@@ -53,7 +53,7 @@ export const IncomingOrders = ({ orderId, tradeId, ...props }: CaravanProps) => 
     return (
         <div className={clsx('flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold', props.className)} onClick={props.onClick}>
             <div> {`orderId: ${orderId} and tradeId: ${tradeId}`}</div>
-            {<Button onClick={() => { claim_fungible_order({entity_id: realmEntityId, trade_id: tradeId}) }} disabled={!hasArrived} variant={'success'} className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{`Claim`}</Button>}
+            {<Button onClick={() => { claim_fungible_order({ entity_id: realmEntityId, trade_id: tradeId }) }} disabled={!hasArrived} variant={'success'} className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{`Claim`}</Button>}
         </div >
     );
 };

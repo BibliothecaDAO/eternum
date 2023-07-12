@@ -42,7 +42,7 @@ const RealmManagementComponent = () => {
         <>
             <Tabs
                 selectedIndex={selectedTab}
-                onChange={(index) => setSelectedTab(index as number)}
+                onChange={(index: any) => setSelectedTab(index as number)}
                 variant="primary"
                 className="flex-1 mt-[6px] overflow-hidden"
             >

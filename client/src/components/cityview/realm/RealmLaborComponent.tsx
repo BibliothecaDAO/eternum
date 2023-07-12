@@ -42,7 +42,7 @@ export const RealmLaborComponent = ({ }: RealmLaborComponentProps) => {
         <>
             <Tabs
                 selectedIndex={selectedTab}
-                onChange={(index) => setSelectedTab(index as number)}
+                onChange={(index: any) => setSelectedTab(index as number)}
                 variant="default"
                 className='h-full'
             >
