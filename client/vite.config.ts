@@ -8,7 +8,7 @@ export default defineConfig({
   build: {
     target: 'esnext',
     rollupOptions: {
-      external: ['proxy-deep', 'ethers', 'ethers/lib/utils', '@latticexyz/utils']
+      //external: ['proxy-deep', 'ethers', 'ethers/lib/utils', '@latticexyz/utils']
     }
   },
 })
