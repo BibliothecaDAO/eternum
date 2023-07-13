@@ -10,7 +10,7 @@
     "codegen": "graphql-codegen"
   },
   "dependencies": {
-    "@dojoengine/core": "^0.0.2",
+    "@dojoengine/core": "^0.0.4",
     "@dojoengine/react": "^0.0.3",
     "@graphql-codegen/cli": "^4.0.1",
     "@graphql-codegen/typescript": "^4.0.1",
