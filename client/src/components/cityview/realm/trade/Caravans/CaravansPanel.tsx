@@ -20,7 +20,7 @@ export const CaravansPanel = ({ }: CaravansPanelProps) => {
     const [showCaravanDetails, setShowCaravanDetails] = useState(false);
     const [selectedCaravanId, setSelectedCaravanId] = useState<number | null>(null);
 
-    const {components: { Position }} = useDojo();
+    const { components: { Position } } = useDojo();
 
     const { realmEntityId } = useRealmStore();
 
@@ -31,7 +31,7 @@ export const CaravansPanel = ({ }: CaravansPanelProps) => {
         setSelectedCaravanId(caravanId);
     }
 
-    const {data: caravanData, status} = useGetCaravans();
+    const { data: caravanData, status } = useGetCaravans();
     // TODO: find a better way to parse this
     let caravanIds: number[] = [];
     if (caravanData && status === FetchStatus.Success) {
@@ -42,7 +42,7 @@ export const CaravansPanel = ({ }: CaravansPanelProps) => {
         })
     }
 
-    const {data: orderData, status: orderStatus} = useGetOrders();
+    const { data: orderData, status: orderStatus } = useGetOrders();
     let orderIds: number[] = [];
     if (orderData && orderStatus === FetchStatus.Success) {
         orderData.entities?.forEach((entity) => {

@@ -37,7 +37,7 @@ export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopu
 
     useEffect(() => {
         setMultiplier(1); // Reset the multiplier to 1 when the resourceId changes
-      }, [resourceId]);
+    }, [resourceId]);
 
     let realmEntityId = useRealmStore((state) => state.realmEntityId);
     let realm = useComponentValue(Realm, Utils.getEntityIdFromKeys([BigInt(realmEntityId)]));
@@ -48,20 +48,20 @@ export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopu
     // TODO: find a more optimized way to do this
     let costResourcesPacked = getComponentValue(LaborCostResources, Utils.getEntityIdFromKeys([BigInt(resourceId)]))
     // calculate the costs of building/buying tools
-    let costResources: {resourceId: number, amount: number}[] = [];
+    let costResources: { resourceId: number, amount: number }[] = [];
     if (costResourcesPacked) {
-      const resourceIdsCost = unpackResources(
-        BigInt(costResourcesPacked.resource_types_packed),
-        costResourcesPacked.resource_types_count
-      );
-      for (const resourceIdCost of resourceIdsCost) {
-        const amount = getComponentValue(LaborCostAmount, Utils.getEntityIdFromKeys([BigInt(resourceId), BigInt(resourceIdCost)]))?.value || 0;
-        const totalAmount = amount * multiplier * (isFood? 12: laborAmount);
-        amount && costResources.push({resourceId: resourceIdCost, amount: totalAmount})
-      }
+        const resourceIdsCost = unpackResources(
+            BigInt(costResourcesPacked.resource_types_packed),
+            costResourcesPacked.resource_types_count
+        );
+        for (const resourceIdCost of resourceIdsCost) {
+            const amount = getComponentValue(LaborCostAmount, Utils.getEntityIdFromKeys([BigInt(resourceId), BigInt(resourceIdCost)]))?.value || 0;
+            const totalAmount = amount * multiplier * (isFood ? 12 : laborAmount);
+            amount && costResources.push({ resourceId: resourceIdCost, amount: totalAmount })
+        }
     }
 
-    useEffect(() => { 
+    useEffect(() => {
         setCanBuild(true)
         costResources.forEach(({ resourceId, amount }) => {
             const realmBalance = getComponentValue(Resource, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]))?.balance || 0;
@@ -77,10 +77,12 @@ export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopu
 
     // TODO: make sure you have enough resources before allowing to click
     const handleBuild = () => {
-        build_labor({realm_id: realmEntityId, 
-                    resource_type: resourceId, 
-                    labor_units: isFood? 12: laborAmount, 
-                    multiplier: multiplier})
+        build_labor({
+            realm_id: realmEntityId,
+            resource_type: resourceId,
+            labor_units: isFood ? 12 : laborAmount,
+            multiplier: multiplier
+        })
         onClose();
     }
 
@@ -119,12 +121,12 @@ export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopu
                             <div className='italic text-light-pink'>Harvested</div>
                         </div> */}
                         {laborConfig && <div className='flex items-center'>
-                            {`+${isFood? (laborConfig.base_food_per_cycle * multiplier / 2) : ''}${isFood? '' : laborConfig.base_resources_per_cycle / 2}`}
+                            {`+${isFood ? (laborConfig.base_food_per_cycle * multiplier / 2) : ''}${isFood ? '' : laborConfig.base_resources_per_cycle / 2}`}
                             <ResourceIcon containerClassName='mx-0.5' className='!w-[12px]' resource={findResourceById(resourceId)?.trait as any} size='xs' />
                             /h
                         </div>}
                     </div>
-                    {isFood && <BuildingsCount count={multiplier} maxCount={resourceId === 254? realm?.rivers || 0 : realm?.harbors || 0} className='mt-2' />}
+                    {isFood && <BuildingsCount count={multiplier} maxCount={resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0} className='mt-2' />}
                     <div className={clsx('relative w-full', isFood ? 'mt-2' : 'mt-3')}>
                         {resourceId === 254 && <img src={`/images/buildings/farm.png`} className='object-cover w-full h-full rounded-[10px]' />}
                         {resourceId === 255 && <img src={`/images/buildings/fishing_village.png`} className='object-cover w-full h-full rounded-[10px]' />}
@@ -132,9 +134,9 @@ export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopu
                         <div className='fle flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60'>
                             <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
                             <div className='grid grid-cols-4 gap-2'>
-                            {costResources.map(({ resourceId, amount }) => (
-                                <ResourceCost type='vertical' resourceId={resourceId} amount={amount} />
-                            ))}
+                                {costResources.map(({ resourceId, amount }) => (
+                                    <ResourceCost type='vertical' resourceId={resourceId} amount={amount} />
+                                ))}
                             </div>
                         </div>
 
@@ -143,20 +145,20 @@ export const LaborBuildPopup = ({ resourceId, onClose, onBuild }: LaborBuildPopu
                 <div className='flex justify-between m-2 text-xxs'>
                     {
                         !isFood && <div className='flex items-center'><div className='italic text-light-pink'>Amount</div>
-                            <NumberInput className='ml-2 mr-2' value={laborAmount} step={5} onChange={setLaborAmount} max={9999}/>
+                            <NumberInput className='ml-2 mr-2' value={laborAmount} step={5} onChange={setLaborAmount} max={9999} />
                             <div className='italic text-gold'>{formatSecondsLeftInDaysHours(laborAmount * (laborConfig?.base_labor_units || 0))}</div>
                         </div>
                     }
                     {
                         isFood && <div className='flex items-center'><div className='italic text-light-pink'>Amount</div>
-                            <NumberInput className='ml-2 mr-2' value={multiplier} onChange={setMultiplier} max={resourceId === 254? realm?.rivers || 0 : realm?.harbors || 0}/>
-                            <div className='italic text-gold'>Max {resourceId === 254? realm?.rivers || 0 : realm?.harbors || 0}</div>
+                            <NumberInput className='ml-2 mr-2' value={multiplier} onChange={setMultiplier} max={resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0} />
+                            <div className='italic text-gold'>Max {resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0}</div>
                         </div>
                     }
-                    <Button className='!px-[6px] !py-[2px] text-xxs' 
-                            disabled={!canBuild}        
-                            onClick={() => handleBuild()} 
-                            variant='outline'>{isFood? `Build`: `Buy Tools`}
+                    <Button className='!px-[6px] !py-[2px] text-xxs'
+                        disabled={!canBuild}
+                        onClick={() => handleBuild()}
+                        variant='outline'>{isFood ? `Build` : `Buy Tools`}
                     </Button>
                 </div>
             </SecondaryPopup.Body>

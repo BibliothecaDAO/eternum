@@ -1,4 +1,4 @@
-import React, { ComponentPropsWithRef, FormEventHandler, useEffect, useState } from 'react';
+import React from 'react';
 import { ReactComponent as CaretDown } from '../assets/icons/common/caret-down.svg';
 import { ReactComponent as CaretUp } from '../assets/icons/common/caret-up.svg';
 import clsx from 'clsx';
@@ -9,9 +9,10 @@ type SortButtonProps = {
     activeSort: {
         sortKey: string;
         sort: 'asc' | 'desc' | 'none';
-    }
+    };
     onChange: (_sortKey: string, _sort: 'asc' | 'desc' | 'none') => void;
-} & ComponentPropsWithRef<'button'>
+    className?: string;
+}
 
 export type SortInterface = {
     sortKey: string;

@@ -11,8 +11,8 @@ type RealmStatusComponentProps = {} & React.ComponentPropsWithRef<'div'>
 export const RealmStatusComponent = ({ className }: RealmStatusComponentProps) => {
 
     const realmStatus = {
-        defence: 'vulnerable',
-        happiness: 'happy'
+        defence: 'vulnerable' as keyof typeof defence,
+        happiness: 'happy' as keyof typeof hapiness,
     }
 
     const defence = {
@@ -20,8 +20,14 @@ export const RealmStatusComponent = ({ className }: RealmStatusComponentProps) =
             title: 'Vulnerable',
             icon: <ShieldIcon className="mr-2 fill-current" />
         },
-        weak: 'Weak',
-        strong: 'Strong',
+        weak: {
+            title: 'Weak',
+            icon: <></>
+        },
+        strong: {
+            title: 'Strong',
+            icon: <></>
+        }
     }
 
     const hapiness = {
@@ -29,7 +35,10 @@ export const RealmStatusComponent = ({ className }: RealmStatusComponentProps) =
             title: 'People are starving',
             icon: <SkullIcon className="mr-2 fill-current" />,
         },
-        unhappy: 'People are unhappy',
+        unhappy: {
+            title: 'People are unhappy',
+            icon: <></>,
+        },
         happy: {
             title: 'People are happy',
             icon: <HappyIcon className="mr-2 fill-current" />,

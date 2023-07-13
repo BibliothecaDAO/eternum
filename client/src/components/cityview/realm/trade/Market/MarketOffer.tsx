@@ -28,7 +28,7 @@ export const MarketOffer = ({ tradeId, ...props }: TradeOfferProps) => {
     const {
         systemCalls: { attach_caravan, take_fungible_order, create_free_transport_unit, create_caravan, change_order_status },
         components: { Trade, Status, FungibleEntities, Resource, Realm },
-      } = useDojo();
+    } = useDojo();
 
     const { realmEntityId } = useRealmStore();
 
@@ -40,20 +40,22 @@ export const MarketOffer = ({ tradeId, ...props }: TradeOfferProps) => {
         const isNewCaravan = true;
         if (isNewCaravan) {
             setIsLoading(true);
-            const transport_units_id = await create_free_transport_unit({realm_id: realmEntityId, quantity: 10});
-            const caravan_id = await create_caravan({entity_ids: [transport_units_id]});
-            await attach_caravan({realm_id: realmEntityId, trade_id: tradeId, caravan_id})
-            await take_fungible_order({taker_id: realmEntityId, 
+            const transport_units_id = await create_free_transport_unit({ realm_id: realmEntityId, quantity: 10 });
+            const caravan_id = await create_caravan({ entity_ids: [transport_units_id] });
+            await attach_caravan({ realm_id: realmEntityId, trade_id: tradeId, caravan_id })
+            await take_fungible_order({
+                taker_id: realmEntityId,
                 trade_id: tradeId
             })
         } else {
             setIsLoading(true);
-            await attach_caravan({realm_id: realmEntityId, trade_id: tradeId, caravan_id: 0});
-            await take_fungible_order({taker_id: realmEntityId, 
+            await attach_caravan({ realm_id: realmEntityId, trade_id: tradeId, caravan_id: 0 });
+            await take_fungible_order({
+                taker_id: realmEntityId,
                 trade_id: tradeId
             })
         }
-    } 
+    }
 
     // set maker order
     let makerRealm: Realm | undefined;
@@ -63,20 +65,20 @@ export const MarketOffer = ({ tradeId, ...props }: TradeOfferProps) => {
 
     const resourcesGet = trade && getResources(trade.maker_order_id);
     const resourcesGive = trade && getResources(trade.taker_order_id);
-    
+
     function getResources(orderId: number): ResourcesOffer[] {
         const resources: ResourcesOffer[] = [];
         const fungibleEntities = getComponentValue(FungibleEntities, Utils.getEntityIdFromKeys([BigInt(orderId)]));
         if (fungibleEntities) {
-          for (let i = 0; i < fungibleEntities.count; i++) {
-            const resource = getComponentValue(
-              Resource,
-              Utils.getEntityIdFromKeys([BigInt(orderId), BigInt(fungibleEntities.key), BigInt(i)])
-            );
-            if (resource) {
-              resources.push({ amount: resource.balance, resourceId: resource.resource_type });
+            for (let i = 0; i < fungibleEntities.count; i++) {
+                const resource = getComponentValue(
+                    Resource,
+                    Utils.getEntityIdFromKeys([BigInt(orderId), BigInt(fungibleEntities.key), BigInt(i)])
+                );
+                if (resource) {
+                    resources.push({ amount: resource.balance, resourceId: resource.resource_type });
+                }
             }
-          }
         }
         return resources;
     }
@@ -86,10 +88,10 @@ export const MarketOffer = ({ tradeId, ...props }: TradeOfferProps) => {
         function canAcceptOffer() {
             if (resourcesGive && resourcesGet) {
                 for (let i = 0; i < resourcesGive.length; i++) {
-                    const resourceBalance = getComponentValue(Resource, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourcesGive[i].resourceId)])) || {resource_type: 0, balance: 0};
+                    const resourceBalance = getComponentValue(Resource, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourcesGive[i].resourceId)])) || { resource_type: 0, balance: 0 };
                     if (resourceBalance.balance < resourcesGive[i].amount) {
                         setCanAccept(false);
-                    }; 
+                    };
                 }
             }
         }
@@ -99,7 +101,7 @@ export const MarketOffer = ({ tradeId, ...props }: TradeOfferProps) => {
 
     let timeLeft: string | undefined;
     if (trade) {
-        timeLeft = formatTimeLeft(trade.expires_at - Date.now()/1000);
+        timeLeft = formatTimeLeft(trade.expires_at - Date.now() / 1000);
     };
 
 
@@ -109,7 +111,7 @@ export const MarketOffer = ({ tradeId, ...props }: TradeOfferProps) => {
                 {makerRealm && <div className='flex items-center p-1 -mt-2 -ml-2 border border-t-0 border-l-0 rounded-br-md border-gray-gold'>
                     {/* // order of the order maker */}
                     {makerRealm.order && <OrderIcon order={orderNameDict[makerRealm.order]} size="xs" className='mr-1' />}
-                    {realmsData['features'][makerRealm.realm_id - 1].name }
+                    {realmsData['features'][makerRealm.realm_id - 1].name}
                 </div>}
                 <div className='-mt-2 text-gold'>
                     {timeLeft}
@@ -127,7 +129,7 @@ export const MarketOffer = ({ tradeId, ...props }: TradeOfferProps) => {
                     </div>
                     <div className='flex flex-col items-center text-white'>
                         <RatioIcon className="mb-1 fill-white" />
-                       {resourcesGive && resourcesGet && calculateRatio(resourcesGet, resourcesGive).toFixed(2)} 
+                        {resourcesGive && resourcesGet && calculateRatio(resourcesGet, resourcesGive).toFixed(2)}
                     </div>
                     <div className='grid w-1/3 grid-cols-3 gap-2 text-gold'>
                         {resourcesGive && resourcesGive.map(({ resourceId, amount }) => (
@@ -139,7 +141,7 @@ export const MarketOffer = ({ tradeId, ...props }: TradeOfferProps) => {
                     </div>
                 </div>
                 {!isLoading && <Button disabled={!canAccept} onClick={() => { acceptOffer() }} variant={'success'} className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{`Accept`}</Button>}
-                {isLoading && <Button isLoading={true} onClick={() => {}} variant="danger" className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{}</Button>}
+                {isLoading && <Button isLoading={true} onClick={() => { }} variant="danger" className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{ }</Button>}
             </div>
         </div >
     );
@@ -149,7 +151,7 @@ const formatTimeLeft = (seconds: number) => {
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-  
+
     return `${days} days ${hours}h:${minutes}m`;
 };
 
@@ -162,6 +164,5 @@ const calculateRatio = (resourcesGive: ResourcesOffer[], resourcesGet: Resources
     for (let i = 0; i < resourcesGet.length; i++) {
         quantityGet += resourcesGet[i].amount;
     }
-    return quantityGet / quantityGive; 
+    return quantityGet / quantityGive;
 }
-  

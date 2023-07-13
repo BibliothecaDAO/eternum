@@ -28,10 +28,10 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
     const {
         components: { Labor, Resource },
         systemCalls: { harvest_labor }
-      } = useDojo();
-    
-    const {nextBlockTimestamp} = useBlockchainStore();
-    
+    } = useDojo();
+
+    const { nextBlockTimestamp } = useBlockchainStore();
+
     let realmEntityId = useRealm((state) => state.realmEntityId);
     let labor = useComponentValue(Labor, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]))
     let resource = useComponentValue(Resource, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]))
@@ -40,34 +40,34 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
     // if labor balance is less than current time, then there is no time to next harvest
     const timeLeftToHarvest = useMemo(() => {
         if (nextBlockTimestamp && labor && laborConfig && labor.last_harvest > 0) {
-          if (labor.balance > nextBlockTimestamp) {
-            const timeSinceLastHarvest = nextBlockTimestamp - labor.last_harvest;
-            return laborConfig.base_labor_units - (timeSinceLastHarvest % laborConfig.base_labor_units);
-          }
+            if (labor.balance > nextBlockTimestamp) {
+                const timeSinceLastHarvest = nextBlockTimestamp - labor.last_harvest;
+                return laborConfig.base_labor_units - (timeSinceLastHarvest % laborConfig.base_labor_units);
+            }
         }
         return undefined;
-      }, [labor, laborConfig, nextBlockTimestamp]);
+    }, [labor, laborConfig, nextBlockTimestamp]);
 
     // if the labor balance does not exist or is lower than the current time, 
     // then there is no labor left
     const laborLeft = useMemo(() => {
         if (nextBlockTimestamp && labor && laborConfig && labor.balance > nextBlockTimestamp) {
-          let left = labor.balance - nextBlockTimestamp;
-          return left < laborConfig.base_labor_units? 0: left;
+            let left = labor.balance - nextBlockTimestamp;
+            return left < laborConfig.base_labor_units ? 0 : left;
         }
         return 0;
-      }, [nextBlockTimestamp, labor]);
+    }, [nextBlockTimestamp, labor]);
 
     const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
-    
+
     const nextHarvest = useMemo(() => {
         if (labor && laborConfig && nextBlockTimestamp) {
             return calculateNextHarvest(
                 labor.balance,
-                labor.last_harvest, 
-                labor.multiplier, 
+                labor.last_harvest,
+                labor.multiplier,
                 laborConfig.base_labor_units,
-                isFood? laborConfig.base_food_per_cycle : laborConfig.base_resources_per_cycle, 
+                isFood ? laborConfig.base_food_per_cycle : laborConfig.base_resources_per_cycle,
                 nextBlockTimestamp);
         } else {
             return 0;
@@ -91,7 +91,7 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
                             {resourceId == ResourcesIds['Wheat'] && <div className='px-2'>{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${realm?.rivers}`}</div>}
                             {resourceId == ResourcesIds['Fish'] && <div className='px-2'>{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${realm?.harbors}`}</div>}
                             {/* // TODO: show visual cue that it's disabled */}
-                            <Button variant='outline' className='px-2 py-1' onClick={onBuild} disabled={isFood && laborLeft > 0} >{isFood? `Build`: `Buy Tools`}</Button>
+                            <Button variant='outline' className='px-2 py-1' onClick={onBuild} disabled={isFood && laborLeft > 0} >{isFood ? `Build` : `Buy Tools`}</Button>
                         </div>
                     </div>
                     <ProgressBar rounded progress={laborConfig && timeLeftToHarvest ? 100 - timeLeftToHarvest / laborConfig.base_labor_units * 100 : 0} className='bg-white' />
@@ -100,7 +100,7 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
                             <div className='ml-1 italic text-white/70'>{laborLeft ? `${formatSecondsInHoursMinutes(laborLeft)} left` : 'No Labor'}</div></>
 
                         <div className='flex items-center mx-auto text-white/70'>
-                            {laborConfig && labor && laborLeft > 0? `+${calculateProductivity(isFood? laborConfig.base_food_per_cycle: laborConfig.base_resources_per_cycle, labor.multiplier, laborConfig.base_labor_units).toFixed(0)}` : '+0'}
+                            {laborConfig && labor && laborLeft > 0 ? `+${calculateProductivity(isFood ? laborConfig.base_food_per_cycle : laborConfig.base_resources_per_cycle, labor.multiplier, laborConfig.base_labor_units).toFixed(0)}` : '+0'}
                             <ResourceIcon containerClassName='mx-0.5' className='!w-[12px]' resource={findResourceById(resourceId)?.trait as any} size='xs' />
                             /h
                         </div>
@@ -114,4 +114,13 @@ export const LaborComponent = ({ resourceId, realm, laborConfig, onBuild, ...pro
             </div>
         </div >
     );
+};
+
+
+// TODO: move to utils
+const formatTimeLeft = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+
+    return `${hours}h:${minutes}m`;
 };
