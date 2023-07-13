@@ -12,27 +12,15 @@ import { Utils } from '@dojoengine/core';
 import useRealmStore from '../../../../../hooks/store/useRealmStore';
 import { useComponentValue } from '@dojoengine/react';
 import useBlockchainStore from '../../../../../hooks/store/useBlockchainStore';
-import { IncomingOrders } from './IncomingOrders';
+import { IncomingOrder } from './IncomingOrder';
+import { Order } from '../../RealmTradeComponent';
 
-type CaravansPanelProps = {
-    orders: { orderId: number, tradeId: number }[];
+type IncomingOrdersPanelProps = {
+    orders: Order[];
 }
 
-export const IncomingOrdersPanel = ({ orders }: CaravansPanelProps) => {
+export const IncomingOrdersPanel = ({ orders }: IncomingOrdersPanelProps) => {
     const [activeFilter, setActiveFilter] = useState(false);
-    const [showCaravanDetails, setShowCaravanDetails] = useState(false);
-    const [selectedCaravanId, setSelectedCaravanId] = useState<number | null>(null);
-
-    const { components: { Position } } = useDojo();
-
-    const { realmEntityId } = useRealmStore();
-
-    const realmPosition = getComponentValue(Position, Utils.getEntityIdFromKeys([BigInt(realmEntityId)]));
-
-    const onClick = (caravanId: number) => {
-        setShowCaravanDetails(true);
-        setSelectedCaravanId(caravanId);
-    }
 
     const sortingParams = useMemo(() => {
         return [
@@ -63,9 +51,8 @@ export const IncomingOrdersPanel = ({ orders }: CaravansPanelProps) => {
                     }} />
                 ))}
             </SortPanel>
-            {selectedCaravanId && showCaravanDetails && <CaravanDetails caravanId={selectedCaravanId} onClose={() => setShowCaravanDetails(false)} />}
-            {orders.map(({ orderId, tradeId }) => <div className='flex flex-col p-2'>
-                <IncomingOrders orderId={orderId} tradeId={tradeId} />
+            {orders.map((order) => <div className='flex flex-col p-2'>
+                <IncomingOrder order={order} />
             </div>)}
         </div >
     );
