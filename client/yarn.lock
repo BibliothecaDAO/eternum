@@ -548,10 +548,10 @@
   resolved "https://registry.yarnpkg.com/@chevrotain/utils/-/utils-10.5.0.tgz#0ee36f65b49b447fbac71b9e5af5c5c6c98ac057"
   integrity sha512-hBzuU5+JjB2cqNZyszkDHZgOSrUUT8V3dhgRl8Q9Gp6dAj/H5+KILGjbhDpc3Iy9qmqlm/akuOI2ut9VUtzJxQ==
 
-"@dojoengine/core@^0.0.2":
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/@dojoengine/core/-/core-0.0.2.tgz#6cd636b8524b4272dff830dc98d1a9b07eef171d"
-  integrity sha512-Tfm9DymUsh9K5XntCeZYWOW1iSn9XQe5G1CgR3dCxo5SjQZif9rjHSsyoL5LoMgPfGzKKdsmKNUlyv/7XoGcOA==
+"@dojoengine/core@^0.0.4":
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/@dojoengine/core/-/core-0.0.4.tgz#de66255940c413bf6bd6d3137fa352627f4c0266"
+  integrity sha512-7rboiVxhrW2toEoHixmuFHXzKHKpQR8Dvcaf5Dear7b0Oe7U4sxql4/E13W2OMX9pNWnIy6YW3Vzj0YrmR5J7g==
 
 "@dojoengine/react@^0.0.3":
   version "0.0.3"
