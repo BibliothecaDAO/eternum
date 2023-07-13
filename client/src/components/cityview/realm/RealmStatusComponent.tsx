@@ -5,6 +5,7 @@ import { ReactComponent as HappyIcon } from '../../../assets/icons/common/happy.
 
 import clsx from 'clsx';
 import { BaseStatus } from '../../../elements/BaseStatus';
+import SettleRealmComponent from './SettleRealmComponent';
 
 type RealmStatusComponentProps = {} & React.ComponentPropsWithRef<'div'>
 
@@ -56,6 +57,7 @@ export const RealmStatusComponent = ({ className }: RealmStatusComponentProps) =
                 {hapiness[realmStatus.happiness].icon}
                 {hapiness[realmStatus.happiness].title}
             </BaseStatus>
+            <SettleRealmComponent/>
         </div >
     );
 };

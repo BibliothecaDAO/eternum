@@ -1,0 +1,10 @@
+query getRealmIds {
+  entities(keys: ["%"], limit: 30, componentName: "Realm") {
+    components {
+      __typename
+      ... on Realm {
+        realm_id
+      }
+    }
+  }
+}
