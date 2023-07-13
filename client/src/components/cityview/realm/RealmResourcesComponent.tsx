@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ResourceIcon } from '../../../elements/ResourceIcon';
-import { ResourcesIds, findResourceById } from '../../../constants/resources';
+import { ResourcesIds, findResourceById, resources } from '../../../constants/resources';
 import { currencyFormat } from '../../../utils/utils.jsx';
 import { useComponentValue } from "@dojoengine/react";
 import clsx from 'clsx';
@@ -12,6 +12,8 @@ import useBlockchainStore from '../../../hooks/store/useBlockchainStore';
 import { LABOR_CONFIG_ID } from '../../../constants/labor';
 import { calculateProductivity } from './labor/laborUtils';
 import useRealmStore from '../../../hooks/store/useRealmStore';
+import { ReactComponent as MoreIcon } from '../../../assets/icons/common/more.svg';
+import Button from '../../../elements/Button';
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<'div'>
 
@@ -19,6 +21,8 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
   const {
     components: { Realm },
   } = useDojo();
+
+  const [showAllResources, setShowAllResources] = useState<boolean>(false);
 
   let { realmEntityId } = useRealmStore();
 
@@ -37,10 +41,31 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
   if (realmResourceIds.length > 2) {
     return (
       <div className={clsx('flex h-16 space-x-4', className)}>
-        <div className="flex mx-auto space-x-2">
+        <div className="relative flex mx-auto space-x-2 overflow-visible">
           {realmResourceIds.map((resourceId) => (
             <ResourceComponent key={resourceId} realmEntityId={realmEntityId} resourceId={resourceId} />
           ))}
+          <div className="absolute flex items-center p-3 text-xs font-bold text-white translate-x-full cursor-pointer -right-2 min-h-10 bg-black/60 rounded-xl">
+            {
+              showAllResources ?
+                <div className='flex flex-col'>
+                  <div className='grid grid-cols-4 gap-3'>
+                    {
+                      resources.map((resource) => (<div className='flex items-center'>
+                        <ResourceIcon resource={'Gold'} size="xs" className="mr-1" />
+                        <div className="text-xxs">{currencyFormat(1337)}</div>
+                      </div>))
+                    }
+                  </div>
+                  <Button variant='outline' className='mt-3 !px-3 !py-1 w-min text-xxs' onClick={() => setShowAllResources(false)}>Close</Button>
+                </div>
+                :
+                <div className='flex items-center' onClick={() => setShowAllResources(true)}>
+                  <MoreIcon className="mr-1" />
+                  <div className="text-xs">250.49k resourses</div>
+                </div>
+            }
+          </div>
         </div>
       </div>
     );
