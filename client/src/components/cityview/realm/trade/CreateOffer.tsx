@@ -35,29 +35,31 @@ export const CreateOfferPopup = ({ onClose, onCreate }: CreateOfferPopupProps) =
     const [donkeysCount, setDonkeysCount] = useState(0);
     const [resourceWeight, setResourceWeight] = useState(0);
 
-    const {systemCalls: { create_caravan, create_free_transport_unit, make_fungible_order, attach_caravan  }} = useDojo()
+    const { systemCalls: { create_caravan, create_free_transport_unit, make_fungible_order, attach_caravan } } = useDojo()
 
-    const {realmEntityId} = useRealmStore();
+    const { realmEntityId } = useRealmStore();
 
     const createOrder = async () => {
         if (isNewCaravan) {
-            const transport_units_id = await create_free_transport_unit({realm_id: realmEntityId, quantity: donkeysCount});
-            const caravan_id = await create_caravan({entity_ids: [transport_units_id]});
-            const trade_id = await make_fungible_order({maker_id: realmEntityId, 
+            const transport_units_id = await create_free_transport_unit({ realm_id: realmEntityId, quantity: donkeysCount });
+            const caravan_id = await create_caravan({ entity_ids: [transport_units_id] });
+            const trade_id = await make_fungible_order({
+                maker_id: realmEntityId,
                 maker_entity_types: selectedResourceIdsGive,
                 maker_quantities: Object.values(selectedResourcesGiveAmounts),
                 taker_entity_types: selectedResourceIdsGet,
-                taker_quantities: Object.values(selectedResourcesGetAmounts), 
+                taker_quantities: Object.values(selectedResourcesGetAmounts),
             })
-            await attach_caravan({realm_id: realmEntityId, trade_id, caravan_id})
+            await attach_caravan({ realm_id: realmEntityId, trade_id, caravan_id })
         } else {
-            const trade_id = await make_fungible_order({maker_id: realmEntityId, 
+            const trade_id = await make_fungible_order({
+                maker_id: realmEntityId,
                 maker_entity_types: selectedResourceIdsGive,
                 maker_quantities: Object.values(selectedResourcesGiveAmounts),
                 taker_entity_types: selectedResourceIdsGet,
-                taker_quantities: Object.values(selectedResourcesGetAmounts), 
+                taker_quantities: Object.values(selectedResourcesGetAmounts),
             })
-            await attach_caravan({realm_id: realmEntityId, trade_id, caravan_id: selectedCaravan})
+            await attach_caravan({ realm_id: realmEntityId, trade_id, caravan_id: selectedCaravan })
         }
     }
 
@@ -111,12 +113,14 @@ export const CreateOfferPopup = ({ onClose, onCreate }: CreateOfferPopupProps) =
                     />}
                 </div>
                 <div className='flex justify-between m-2 text-xxs'>
-                    <Button className='!px-[6px] !py-[2px] text-xxs' onClick={() => step === 1? onClose(): setStep(step - 1)} variant='outline'>{step === 1 ? 'Cancel' : 'Back'}</Button>
+                    <Button className='!px-[6px] !py-[2px] text-xxs' onClick={() => step === 1 ? onClose() : setStep(step - 1)} variant='outline'>{step === 1 ? 'Cancel' : 'Back'}</Button>
                     <Steps className='absolute -translate-x-1/2 left-1/2 bottom-4' step={step} maxStep={3} />
-                    <Button className='!px-[6px] !py-[2px] text-xxs' onClick={() => { if (step === 3) { 
-                        createOrder(); 
-                        onClose() 
-                    } else { setStep(step + 1) } }} variant='success'>{step == 3 ? 'Create Offer' : 'Next Step'}</Button>
+                    <Button className='!px-[6px] !py-[2px] text-xxs' onClick={() => {
+                        if (step === 3) {
+                            createOrder();
+                            onClose()
+                        } else { setStep(step + 1) }
+                    }} variant='success'>{step == 3 ? 'Create Offer' : 'Next Step'}</Button>
                 </div>
             </SecondaryPopup.Body>
         </SecondaryPopup >
@@ -130,31 +134,32 @@ const SelectResourcesPanel = ({ selectedResourceIdsGive, setSelectedResourceIdsG
     setSelectedResourceIdsGet: (selectedResourceIds: number[]) => void;
 }) => {
 
-    const {components: { Resource }} = useDojo();
+    const { components: { Resource } } = useDojo();
     const { realmEntityId } = useRealmStore();
-    
+
     return <div className="grid grid-cols-9 gap-2 p-2">
         <div className='flex flex-col items-center col-span-4'>
             <Headline className='mb-2'>You Give</Headline>
             <div className='grid grid-cols-4 gap-2'>
                 {resources.map(({ id, trait: name }) => {
-                    let resourceBalance = getComponentValue(Resource, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]))?.balance?? 0;
+                    let resourceBalance = getComponentValue(Resource, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]))?.balance ?? 0;
                     return (
-                    <SelectableResource
-                        key={id}
-                        resourceId={id}
-                        amount={100}
-                        disabled={resourceBalance === 0}
-                        selected={selectedResourceIdsGive.includes(id)}
-                        onClick={() => {
-                            if (selectedResourceIdsGive.includes(id)) {
-                                setSelectedResourceIdsGive(selectedResourceIdsGive.filter((_id) => _id !== id));
-                            } else {
-                                setSelectedResourceIdsGive([...selectedResourceIdsGive, id]);
-                            }
-                        }}
-                    />
-                )})}
+                        <SelectableResource
+                            key={id}
+                            resourceId={id}
+                            amount={100}
+                            disabled={resourceBalance === 0}
+                            selected={selectedResourceIdsGive.includes(id)}
+                            onClick={() => {
+                                if (selectedResourceIdsGive.includes(id)) {
+                                    setSelectedResourceIdsGive(selectedResourceIdsGive.filter((_id) => _id !== id));
+                                } else {
+                                    setSelectedResourceIdsGive([...selectedResourceIdsGive, id]);
+                                }
+                            }}
+                        />
+                    )
+                })}
             </div>
         </div>
         <div className='flex items-center justify-center'>
@@ -195,7 +200,7 @@ const SelectResourcesAmountPanel = ({ selectedResourceIdsGive, selectedResourceI
     setResourceWeight: (resourceWeight: number) => void;
 }) => {
 
-    const {components: { Resource }} = useDojo();
+    const { components: { Resource } } = useDojo();
     const { realmEntityId } = useRealmStore();
 
 
@@ -205,7 +210,7 @@ const SelectResourcesAmountPanel = ({ selectedResourceIdsGive, selectedResourceI
             weight += amount * 1;
         }
         setResourceWeight(weight);
-    },[selectedResourcesGiveAmounts])
+    }, [selectedResourcesGiveAmounts])
 
     return <>
         <div className='grid grid-cols-9 gap-2 p-2'>
@@ -213,21 +218,23 @@ const SelectResourcesAmountPanel = ({ selectedResourceIdsGive, selectedResourceI
                 <Headline className='mb-2'>You Give</Headline>
                 {
                     selectedResourceIdsGive.map((id) => {
-                        let resourceBalance = getComponentValue(Resource, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]))?.balance?? 0;
+                        let resourceBalance = getComponentValue(Resource, Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]))?.balance ?? 0;
                         return (
-                        <div key={id} className='flex items-center w-full'>
-                            <NumberInput max={resourceBalance} value={selectedResourcesGiveAmounts[id]} onChange={(value) => {
-                                setSelectedResourcesGiveAmounts({ ...selectedResourcesGiveAmounts, [id]: value });
-                            }} />
-                            <div className='ml-2'>
-                                <ResourceCost resourceId={id} amount={selectedResourcesGiveAmounts[id]} />
+                            <div key={id} className='flex items-center w-full'>
+                                <NumberInput max={resourceBalance} value={selectedResourcesGiveAmounts[id]} onChange={(value) => {
+                                    setSelectedResourcesGiveAmounts({ ...selectedResourcesGiveAmounts, [id]: value });
+                                }} />
+                                <div className='ml-2'>
+                                    <ResourceCost resourceId={id} amount={selectedResourcesGiveAmounts[id]} />
+                                </div>
+                                <div className={`ml-2 text-xs ${selectedResourcesGiveAmounts[id] <= resourceBalance ? "text-orange" : "text-red"} cursor-pointer`} onClick={() => {
+                                    setSelectedResourcesGiveAmounts({ ...selectedResourcesGiveAmounts, [id]: resourceBalance })
+                                }}>
+                                    {`Max ${resourceBalance}`}
+                                </div>
                             </div>
-                            <div className={`ml-2 text-xs ${selectedResourcesGiveAmounts[id] <= resourceBalance? "text-orange": "text-red"} cursor-pointer`} onClick={() => {
-                                setSelectedResourcesGiveAmounts({ ...selectedResourcesGiveAmounts, [id]: resourceBalance })}}>
-                                {`Max ${resourceBalance}`}
-                            </div>
-                        </div>
-                    )})
+                        )
+                    })
                 }
             </div>
             <div className='flex items-center justify-center'>
@@ -255,7 +262,7 @@ const SelectResourcesAmountPanel = ({ selectedResourceIdsGive, selectedResourceI
     </>
 }
 
-const SelectCaravanPanel = ({ donkeysCount, setDonkeysCount, isNewCaravan, setIsNewCaravan, selectedCaravan, setSelectedCaravan, selectedResourceIdsGet, selectedResourceIdsGive, selectedResourcesGetAmounts, selectedResourcesGiveAmounts, resourceWeight }: {
+export const SelectCaravanPanel = ({ donkeysCount, setDonkeysCount, isNewCaravan, setIsNewCaravan, selectedCaravan, setSelectedCaravan, selectedResourceIdsGet, selectedResourceIdsGive, selectedResourcesGetAmounts, selectedResourcesGiveAmounts, resourceWeight }: {
     donkeysCount: number,
     setDonkeysCount: (donkeysCount: number) => void,
     isNewCaravan: boolean,
@@ -272,12 +279,12 @@ const SelectCaravanPanel = ({ donkeysCount, setDonkeysCount, isNewCaravan, setIs
         components: { ArrivalTime, Position, Movable },
     } = useDojo();
 
-    const {realmEntityId} = useRealmStore();
+    const { realmEntityId } = useRealmStore();
     const realmPosition = getComponentValue(Position, Utils.getEntityIdFromKeys([BigInt(realmEntityId)]));
 
-    const {nextBlockTimestamp} = useBlockchainStore();
+    const { nextBlockTimestamp } = useBlockchainStore();
 
-    const {data: caravanData, status} = useGetCaravans();
+    const { data: caravanData, status } = useGetCaravans();
     let caravanIds: number[] = [];
     if (caravanData && status === FetchStatus.Success) {
         caravanData.entities?.forEach((entity) => {
@@ -365,7 +372,7 @@ const SelectCaravanPanel = ({ donkeysCount, setDonkeysCount, isNewCaravan, setIs
         </div>}
         {
             !isNewCaravan && <>
-                {myIdleCaravans.map((caravanId) => <Caravan caravanId={caravanId} idleOnly={true} onClick={() => setSelectedCaravan(caravanId)} className={`w-full mb-2 border rounded-md ${selectedCaravan === caravanId? 'border-yellow': ''}`} />)}
+                {myIdleCaravans.map((caravanId) => <Caravan caravanId={caravanId} idleOnly={true} onClick={() => setSelectedCaravan(caravanId)} className={`w-full mb-2 border rounded-md ${selectedCaravan === caravanId ? 'border-yellow' : ''}`} />)}
             </>
         }
     </div>
