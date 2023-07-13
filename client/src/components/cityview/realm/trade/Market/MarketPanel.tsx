@@ -12,6 +12,7 @@ import { useDojo } from '../../../../../DojoContext';
 import { Utils } from '@dojoengine/core';
 import useRealmStore from '../../../../../hooks/store/useRealmStore';
 import { MarketOffer } from './MarketOffer';
+import { AcceptOfferPopup } from '../AcceptOffer';
 
 type MarketPanelProps = {
     trades: number[];
@@ -69,6 +70,7 @@ export const MarketPanel = ({ trades }: MarketPanelProps) => {
             </SortPanel>
             {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
             {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => { }} />}
+            <AcceptOfferPopup onAccept={() => { }} onClose={() => { }} selectedResourceIdsGet={[]} selectedResourceIdsGive={[]} selectedResourcesGetAmounts={{}} selectedResourcesGiveAmounts={{}} resourceWeight={0} />
             {openTrades.map((tradeId) => <div className='flex flex-col p-2'>
                 <MarketOffer tradeId={tradeId} />
             </div>)}
