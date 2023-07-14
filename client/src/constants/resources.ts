@@ -12,6 +12,10 @@ export const findResourceById = (value: number) => {
   return resources.find((e) => e.id === value);
 };
 
+export const findResourceIdByTrait = (trait: string) => {
+  return resources.find((e) => e.trait === trait).id;
+}
+
 export const resources: Array<Resources> = [
   {
     trait: 'Wood',

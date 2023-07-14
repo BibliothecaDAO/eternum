@@ -6,18 +6,21 @@ export type SystemCalls = ReturnType<typeof createSystemCalls>;
 export function createSystemCalls(
     { execute, syncWorker, provider }: SetupNetworkResult,
 ) {
+    // TODO: this is entity id not realm id 
     const build_labor = async ({realm_id, resource_type, labor_units, multiplier}: {realm_id: number.BigNumberish, resource_type: number.BigNumberish, labor_units: number.BigNumberish, multiplier: number.BigNumberish}) => {
         const tx = await execute("BuildLabor", [realm_id, resource_type, labor_units, multiplier]);
         syncWorker.sync(tx.transaction_hash);
     }
 
+    // TODO: this is entity id not realm id 
     const harvest_labor = async ({realm_id, resource_type}: {realm_id: number.BigNumberish, resource_type: number.BigNumberish}) => {
         const tx = await execute("HarvestLabor", [realm_id, resource_type]);
         syncWorker.sync(tx.transaction_hash);
     }
 
-    const mint_resources = async ({realm_id, resource_type, amount}: {realm_id: number.BigNumberish, resource_type: number.BigNumberish, amount: number.BigNumberish}) => {
-        const tx = await execute("MintResources", [realm_id, resource_type, amount]);
+    // TODO: this is entity id not realm id 
+    const mint_resources = async ({entity_id, resource_type, amount}: {entity_id: number.BigNumberish, resource_type: number.BigNumberish, amount: number.BigNumberish}) => {
+        const tx = await execute("MintResources", [entity_id, resource_type, amount]);
         syncWorker.sync(tx.transaction_hash);
     }
 
@@ -85,6 +88,25 @@ export function createSystemCalls(
         syncWorker.sync(tx.transaction_hash);
     }
 
+    const create_realm = async({realm_id, owner, resource_types_packed, resource_types_count, cities, harbors, rivers, regions, wonder, order, position}: {realm_id: number.BigNumberish, owner: number.BigNumberish, resource_types_packed: number.BigNumberish, resource_types_count: number.BigNumberish, cities: number.BigNumberish, harbors: number.BigNumberish, rivers: number.BigNumberish, regions: number.BigNumberish, wonder: number.BigNumberish, order: number.BigNumberish, position: {x: number.BigNumberish, y: number.BigNumberish}}) => {
+        const tx = await execute("CreateRealm", [realm_id, owner, resource_types_packed, resource_types_count, cities, harbors, rivers, regions, wonder, order, position.x, position.y]);
+        await syncWorker.sync(tx.transaction_hash);
+        const events = await provider.provider.getTransactionReceipt(tx.transaction_hash).then((receipt) => {
+            return receipt.events.filter((event) => {
+                return event.keys.length === 1 &&
+                event.keys[0] === EVENT_KEY;
+            })
+        })
+        let realm_entity_id: number = 0;
+        for (const event of events) {
+            // if component change is Realm (hex), take entity_id
+            if (event.data[0] === '0x5265616c6d') {
+                realm_entity_id = parseInt(event.data[2]);
+            }
+        }
+        return realm_entity_id;
+    }
+
     return {
         build_labor,
         harvest_labor,
@@ -96,5 +118,6 @@ export function createSystemCalls(
         create_free_transport_unit,
         create_caravan,
         attach_caravan,
+        create_realm,
     };
 }

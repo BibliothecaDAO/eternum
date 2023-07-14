@@ -14,6 +14,7 @@ import { calculateProductivity } from './labor/laborUtils';
 import useRealmStore from '../../../hooks/store/useRealmStore';
 import { ReactComponent as MoreIcon } from '../../../assets/icons/common/more.svg';
 import Button from '../../../elements/Button';
+import { SmallResource } from './SmallResource';
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<'div'>
 
@@ -45,23 +46,21 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
           {realmResourceIds.map((resourceId) => (
             <ResourceComponent key={resourceId} realmEntityId={realmEntityId} resourceId={resourceId} />
           ))}
-          <div className="absolute flex items-center p-3 text-xs font-bold text-white translate-x-full cursor-pointer -right-2 min-h-10 bg-black/60 rounded-xl">
+          <div onClick={() => {!showAllResources && setShowAllResources(true)}} className="absolute flex items-center p-3 text-xs font-bold text-white translate-x-full cursor-pointer -right-2 min-h-10 bg-black/60 rounded-xl">
             {
               showAllResources ?
                 <div className='flex flex-col'>
                   <div className='grid grid-cols-4 gap-3'>
                     {
-                      resources.map((resource) => (<div className='flex items-center'>
-                        <ResourceIcon resource={'Gold'} size="xs" className="mr-1" />
-                        <div className="text-xxs">{currencyFormat(1337)}</div>
-                      </div>))
+                      resources.map((resource) => (<SmallResource resourceId={resource.id}></SmallResource>))
                     }
                   </div>
                   <Button variant='outline' className='mt-3 !px-3 !py-1 w-min text-xxs' onClick={() => setShowAllResources(false)}>Close</Button>
                 </div>
                 :
-                <div className='flex items-center' onClick={() => setShowAllResources(true)}>
+                <div className='flex items-center'>
                   <MoreIcon className="mr-1" />
+                  {/* // TODO: find a way to get total resource amount */}
                   <div className="text-xs">250.49k resourses</div>
                 </div>
             }

@@ -11,7 +11,7 @@ export const getRealmIdByPosition = (positionRaw: {x: number, y: number}): numbe
     let offset = 1800000;
     let position = {x: positionRaw.x - offset, y: positionRaw.y - offset};
     // TODO: find a better way to find position
-    for (let realm of realmsCoordsJson['features'].slice(0,10)) {
+    for (let realm of realmsCoordsJson['features']) {
         if (parseInt(realm['geometry']['coordinates'][0]) === position.x && parseInt(realm['geometry']['coordinates'][1]) === position.y) {
             return realm['properties']['tokenId'];
         }

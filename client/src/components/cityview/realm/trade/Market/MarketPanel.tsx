@@ -26,6 +26,7 @@ export const MarketPanel = ({ trades }: MarketPanelProps) => {
 
     const [activeFilter, setActiveFilter] = useState(false);
     const [showCreateOffer, setShowCreateOffer] = useState(false);
+    const [selectedTradeId, setSelectedTradeId] = useState<number | undefined>(undefined);
 
     const sortingParams = useMemo(() => {
         return [
@@ -70,9 +71,9 @@ export const MarketPanel = ({ trades }: MarketPanelProps) => {
             </SortPanel>
             {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
             {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => { }} />}
-            <AcceptOfferPopup onAccept={() => { }} onClose={() => { }} selectedResourceIdsGet={[]} selectedResourceIdsGive={[]} selectedResourcesGetAmounts={{}} selectedResourcesGiveAmounts={{}} resourceWeight={0} />
+            {selectedTradeId && <AcceptOfferPopup onAccept={() => { }} onClose={() => { setSelectedTradeId(undefined) }} selectedTradeId={selectedTradeId} />}
             {openTrades.map((tradeId) => <div className='flex flex-col p-2'>
-                <MarketOffer tradeId={tradeId} />
+                <MarketOffer tradeId={tradeId} onAccept={() => setSelectedTradeId(tradeId)}/>
             </div>)}
             <Button className='absolute -translate-x-1/2 bottom-3 left-1/2' onClick={() => setShowCreateOffer(true)} variant='primary'>+ Create new offer</Button>
         </div >

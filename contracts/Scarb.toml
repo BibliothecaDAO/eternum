@@ -8,12 +8,13 @@ version = "0.1.0"
 dojo = { git = "https://github.com/dojoengine/dojo" }
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "e1aa42853815f04ff00e4ed3507cfd74d7b0c644" }
 
-
-
 [[target.dojo]]
 
 [tool.dojo.env]
 rpc_url = "http://localhost:5050/"
+
+# remote katana
+#rpc_url = "https://katana.cartridge.gg/"
 
 # Default account for katana with seed == 0
 account_address = "0x03ee9e18edc71a6df30ac3aca2e0b02a198fbce19b7480a63a0d71cbd76652e0"

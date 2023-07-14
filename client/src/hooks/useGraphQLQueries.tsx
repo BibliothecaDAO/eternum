@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { GraphQLClient } from 'graphql-request';
-import { GetCaravansQuery, GetOrdersQuery, GetTradesQuery, getSdk } from '../generated/graphql';
+import { GetCaravansQuery, GetOrdersQuery, GetRealmsQuery, GetTradesQuery, getSdk } from '../generated/graphql';
 import { useDojo } from '../DojoContext';
 import { getComponentValue } from '@latticexyz/recs';
 import { Utils } from '@dojoengine/core';
@@ -11,6 +11,66 @@ export enum FetchStatus {
   Success = 'success',
   Error = 'error',
 }
+
+export const getLatestRealmId = async (): Promise<number> => {
+  const {data: realmData} = await fetchRealmIds();
+  const entities = realmData?.entities || [];
+  let highestRealmId: number | undefined;
+
+  entities.forEach((entity: any) => {
+    const realmComponent = entity.components.find(
+      (component: any) => component.__typename === 'Realm'
+    );
+    if (realmComponent) {
+      const realmId = parseInt(realmComponent.realm_id, 16);
+      if (highestRealmId === undefined || realmId > highestRealmId) {
+        highestRealmId = realmId;
+      }
+    }
+  });
+  return highestRealmId? highestRealmId: 0;
+}
+
+async function fetchRealmIds(): Promise<{data: GetRealmsQuery | null, status: FetchStatus, error: unknown}> {
+  try {
+    const client = new GraphQLClient('http://localhost:8080/');
+    const sdk = getSdk(client);
+    const { data } = await sdk.getRealmIds();
+    return {data, status: FetchStatus.Success, error: null}; 
+  } catch (error) {
+    return {data: null, status: FetchStatus.Error, error};
+  }
+}
+
+export function useGetRealmsIds() {
+  const [data, setData] = useState<GetRealmsQuery | null>(null);
+  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
+  const [error, setError] = useState<unknown>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      setStatus(FetchStatus.Loading);
+      try {
+        const client = new GraphQLClient('http://localhost:8080/');
+        const sdk = getSdk(client);
+        const { data } = await sdk.getRealmIds();
+        setData(data);
+        setStatus(FetchStatus.Success);
+      } catch (error) {
+        setError(error);
+        setStatus(FetchStatus.Error);
+      }
+    }
+    fetchData();
+  }, []);
+
+  return {
+    data,
+    status,
+    error,
+  };
+}
+
 
 export function useGetTrades() {
   const [data, setData] = useState<GetTradesQuery | null>(null);

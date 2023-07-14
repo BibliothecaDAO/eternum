@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FilterButton } from '../../elements/FilterButton';
 import { SecondaryPopup } from '../../elements/SecondaryPopup';
 import { resources } from '../../constants/resources';
@@ -29,7 +29,7 @@ export const CaravanDetails = ({ caravanId, onClose }: CaravanDetailsProps) => {
     const { realmEntityId } = useRealmStore();
 
     const {
-        components: { Caravan, Capacity, Trade, ArrivalTime, FungibleEntities, Resource, Position },
+        components: { Capacity, Trade, ArrivalTime, FungibleEntities, Resource, Position },
     } = useDojo();
 
     const { nextBlockTimestamp } = useBlockchainStore();
@@ -58,9 +58,11 @@ export const CaravanDetails = ({ caravanId, onClose }: CaravanDetailsProps) => {
     let resourceWeight = getTotalResourceWeight([...resourcesGive, ...resourcesGet]);
     let caravanCapacity = getComponentValue(Capacity, Utils.getEntityIdFromKeys([BigInt(caravanId)]))?.weight_gram || 0;
 
-    let position = useComponentValue(Position, Utils.getEntityIdFromKeys([BigInt(realmOrderId)]));
+    let position = getComponentValue(Position, Utils.getEntityIdFromKeys([BigInt(realmOrderId)]));
 
-    const realmId = position && getRealmIdByPosition(position);
+    const realmId = useMemo(() => {
+        return position && getRealmIdByPosition(position);
+    }, [position])
     const realmName = realmId && getRealmNameById(realmId);
 
     const isTravelling = nextBlockTimestamp && arrivalTime && (arrivalTime.arrives_at > nextBlockTimestamp);

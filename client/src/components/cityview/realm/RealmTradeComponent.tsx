@@ -8,8 +8,13 @@ import { getComponentValue } from '@latticexyz/recs';
 import { useDojo } from '../../../DojoContext';
 import { Utils } from '@dojoengine/core';
 import useRealmStore from '../../../hooks/store/useRealmStore';
-import { GetTradesQuery } from '../../../generated/graphql';
 import { IncomingOrdersPanel } from './trade/Caravans/IncomingCaravansPanel';
+
+export type Order = {
+    orderId: number,
+    counterpartyOrderId: number,
+    tradeId: number
+}
 
 type RealmTradeComponentProps = {}
 
@@ -20,7 +25,7 @@ export const RealmTradeComponent = ({ }: RealmTradeComponentProps) => {
     const [selectedTab, setSelectedTab] = useState(2);
     const [myTrades, setMyTrades] = useState<number[]>([]);
     const [counterpartyTrades, setCounterpartyTrades] = useState<number[]>([]);
-    const [incomingOrders, setIncomingOrders] = useState<{orderId: number, tradeId: number}[]>([]);
+    const [incomingOrders, setIncomingOrders] = useState<Order[]>([]);
     const {realmEntityId} = useRealmStore();
 
     const {data: tradeData, status: tradeStatus} = useGetTrades();
@@ -37,7 +42,7 @@ export const RealmTradeComponent = ({ }: RealmTradeComponentProps) => {
     useEffect(() => {
         let myTrades: number[] = [];
         let counterpartyTrades: number[] = [];
-        let incomingOrders: {orderId: number, tradeId: number}[] = [];
+        let incomingOrders: {orderId: number, counterpartyOrderId: number, tradeId: number}[] = [];
         // TODO: how to only update when tradeData actually changes?
         if (tradeData && tradeStatus === FetchStatus.Success) {
             tradeData.entities?.forEach((entity) => {
@@ -53,10 +58,10 @@ export const RealmTradeComponent = ({ }: RealmTradeComponentProps) => {
                     // status 1 = accepted
                     // if you are maker, then check if the order coming your way has been claimed yet
                     } else if ((trade?.maker_id === realmEntityId && Number(trade.claimed_by_maker) !== 1) && status?.value === 1) {
-                        incomingOrders.push({orderId: trade.taker_order_id, tradeId});
+                        incomingOrders.push({orderId: trade.taker_order_id, counterpartyOrderId: trade.maker_order_id, tradeId});
 
                     } else if (trade && (trade.taker_id === realmEntityId && Number(trade.claimed_by_taker) !== 1) && status?.value === 1) {
-                        incomingOrders.push({orderId: trade.maker_order_id, tradeId});
+                        incomingOrders.push({orderId: trade.maker_order_id, counterpartyOrderId: trade.taker_order_id, tradeId});
                     }
                 }
             })

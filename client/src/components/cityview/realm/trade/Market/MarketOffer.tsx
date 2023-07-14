@@ -15,9 +15,10 @@ import { getComponentValue } from '@latticexyz/recs';
 
 type TradeOfferProps = {
     tradeId: number;
+    onAccept: () => void;
 }
 
-export const MarketOffer = ({ tradeId, ...props }: TradeOfferProps) => {
+export const MarketOffer = ({ tradeId, onAccept, ...props }: TradeOfferProps) => {
     const [isLoading, setIsLoading] = useState(false);
     const [canAccept, setCanAccept] = useState(true);
 
@@ -140,7 +141,7 @@ export const MarketOffer = ({ tradeId, ...props }: TradeOfferProps) => {
                         ))}
                     </div>
                 </div>
-                {!isLoading && <Button disabled={!canAccept} onClick={() => { acceptOffer() }} variant={'success'} className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{`Accept`}</Button>}
+                {!isLoading && <Button disabled={!canAccept} onClick={() => { onAccept() }} variant={'success'} className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{`Accept`}</Button>}
                 {isLoading && <Button isLoading={true} onClick={() => { }} variant="danger" className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{ }</Button>}
             </div>
         </div >
