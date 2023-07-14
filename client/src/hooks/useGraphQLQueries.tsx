@@ -12,7 +12,7 @@ export enum FetchStatus {
   Error = 'error',
 }
 
-export const getLatestRealmId = async (): Promise<number | undefined> => {
+export const getLatestRealmId = async (): Promise<number> => {
   const {data: realmData} = await fetchRealmIds();
   const entities = realmData?.entities || [];
   let highestRealmId: number | undefined;
@@ -28,7 +28,7 @@ export const getLatestRealmId = async (): Promise<number | undefined> => {
       }
     }
   });
-  return highestRealmId;
+  return highestRealmId? highestRealmId: 0;
 }
 
 async function fetchRealmIds(): Promise<{data: GetRealmsQuery | null, status: FetchStatus, error: unknown}> {

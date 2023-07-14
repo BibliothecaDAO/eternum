@@ -23,7 +23,8 @@ export async function setupNetwork() {
 
     const signer = new Account(provider.sequencerProvider, KATANA_ACCOUNT_1_ADDRESS, ec.getKeyPair(KATANA_ACCOUNT_1_PRIVATEKEY))
 
-    const syncWorker = new SyncWorker(provider, contractComponents, EVENT_KEY, TORII_URL, IS_MADARA, IS_MADARA);
+    // const syncWorker = new SyncWorker(provider, contractComponents, EVENT_KEY, TORII_URL, IS_MADARA, IS_MADARA);
+    const syncWorker = new SyncWorker(provider, contractComponents, EVENT_KEY);
 
     return {
         contractComponents,

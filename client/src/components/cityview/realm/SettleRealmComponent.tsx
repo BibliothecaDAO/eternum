@@ -28,22 +28,22 @@ export const SettleRealmComponent = ({ className }: RealmStatusComponentProps) =
 
     const settleRealm = async () => {
         setIsLoading(true);
+        // if no realm id latest realm id is 0
         const realm_id = await getLatestRealmId();
-        if (realm_id) {
-            // take next realm id
-            let new_realm_id = realm_id + 1;
-            let realm = getRealm(new_realm_id);
-            let position = getPosition(new_realm_id);
-            let entity_id = await create_realm({owner: KATANA_ACCOUNT_1_ADDRESS, ...realm, position});
-            // mint basic resources to start
-            await mint_resources({entity_id, resource_type: 2, amount: 1000});
-            await mint_resources({entity_id, resource_type: 3, amount: 1000});
-            // add the new entity_id in the list of entityIds in my localStorage
-            const entityIds = localStorage.getItem('entityIds');
-            const updatedEntityIds = entityIds ? [...JSON.parse(entityIds), entity_id] : [entity_id];
-            localStorage.setItem('entityIds', JSON.stringify(updatedEntityIds));
-            setRealmEntityIds(updatedEntityIds);
-        }
+
+        // take next realm id
+        let new_realm_id = realm_id + 1;
+        let realm = getRealm(new_realm_id);
+        let position = getPosition(new_realm_id);
+        let entity_id = await create_realm({owner: KATANA_ACCOUNT_1_ADDRESS, ...realm, position});
+        // mint basic resources to start
+        await mint_resources({entity_id, resource_type: 2, amount: 1000});
+        await mint_resources({entity_id, resource_type: 3, amount: 1000});
+        // add the new entity_id in the list of entityIds in my localStorage
+        const entityIds = localStorage.getItem('entityIds');
+        const updatedEntityIds = entityIds ? [...JSON.parse(entityIds), entity_id] : [entity_id];
+        localStorage.setItem('entityIds', JSON.stringify(updatedEntityIds));
+        setRealmEntityIds(updatedEntityIds);
         setIsLoading(false);
     }
 

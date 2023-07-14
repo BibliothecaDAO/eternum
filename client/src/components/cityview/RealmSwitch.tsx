@@ -84,10 +84,9 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
         setYourRealms(realms);
     }, [realms]);
 
-    const [orderName, orderId] = useMemo(() => {
+    const orderName = useMemo(() => {
         let realmOrder = realm?.order || 1;
-        let orderName = orderNameDict[realmOrder];
-        return [orderName, realmOrder];
+        return orderNameDict[realmOrder];
     }, [realmEntityId, realm]);
 
     return (
@@ -95,7 +94,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
             { /* IDK why, but tailwind cant handle dynamic custom classes if they wasnt used before */}
             <div className='hidden bg-order-power bg-order-giants bg-order-titans bg-order-brilliance bg-order-skill bg-order-perfection bg-order-twins bg-order-reflection bg-order-detection bg-order-fox bg-order-vitriol bg-order-enlightenment bg-order-protection bg-order-fury bg-order-rage bg-order-anger fill-order-power fill-order-giants fill-order-titans fill-order-brilliance fill-order-skill fill-order-perfection fill-order-twins fill-order-reflection fill-order-detection fill-order-fox fill-order-vitriol fill-order-enlightenment fill-order-protection fill-order-fury fill-order-rage fill-order-anger stroke-order-power stroke-order-giants stroke-order-titans stroke-order-brilliance stroke-order-skill stroke-order-perfection stroke-order-twins stroke-order-reflection stroke-order-detection stroke-order-fox stroke-order-vitriol stroke-order-enlightenment stroke-order-protection stroke-order-fury stroke-order-rage stroke-order-anger'></div>
             <CircleButton className={`bg-order-${orderName} text-white`} size="md" onClick={() => setShowRealms(!showRealms)}>
-                <OrderIcon order={orderId.toString()} size="xs" color='white' />
+                <OrderIcon order={orderName.toString()} size="xs" color='white' />
             </CircleButton>
             <div className={clsx('flex items-center ml-2 space-x-2 w-auto transition-all duration-300 overflow-hidden rounded-xl',
                 showRealms ? 'max-w-[500px]' : 'max-w-0')
