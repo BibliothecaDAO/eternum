@@ -52,7 +52,7 @@ export const World = () => {
         <ChatModule />
       </BottomRightContainer>
       <EpochCountdown />
-      <Leva />
+      <Leva hidden />
       {/* <Redirect to="/realmView" /> */}
     </div>
   );

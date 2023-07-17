@@ -50,9 +50,9 @@ export const MainScene = () => {
     const [location] = useLocation()
     // @ts-ignore
     const transition = useTransition(location, {
-        from: { scale: [0, 0, 0] },
-        enter: { scale: [1, 1, 1] },
-        leave: { scale: [0, 0, 0] },
+        from: { position: [0, 0, -20], rotation: [0, Math.PI, 0], scale: [0, 0, 0], opacity: 0 },
+        enter: { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], opacity: 1 },
+        leave: { position: [0, 0, -10], rotation: [0, -Math.PI, 0], scale: [0, 0, 0], opacity: 0 },
         config: () => (n) => n === "opacity" && { friction: 60 },
     })
 
