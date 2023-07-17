@@ -26,20 +26,6 @@ export const Camera = () => {
     const cameraTarget = useUIStore((state) => state.cameraTarget);
     const setCameraTarget = useUIStore((state) => state.setCameraTarget);
 
-    useControls({
-        lookAt: button((id) => {
-            //randomize camera position
-            const randomRealmIndex = Math.floor(Math.random() * realmsJson.features.length);
-            const point = {
-                x: realmsJson.features[randomRealmIndex].xy[0],
-                y: -0.7,
-                z: realmsJson.features[randomRealmIndex].xy[1] * -1
-            }
-            setCameraTarget(new THREE.Vector3(point.x, point.y, point.z))
-            setCameraPosition(new THREE.Vector3(point.x + 25 * (Math.random() < 0.5 ? 1 : -1), 25, point.z + 25 * (Math.random() < 0.5 ? 1 : -1)))
-        })
-    })
-
     return <>
         <CameraControls
             position={cameraPosition}

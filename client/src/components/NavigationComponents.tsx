@@ -6,12 +6,15 @@ import { ReactComponent as ForwardBurgerIcon } from "../assets/icons/common/forw
 import clsx from "clsx"
 import { RealmSwitch } from "./cityview/RealmSwitch"
 import { Link } from "wouter"
+import useUIStore from "../hooks/store/useUIStore"
 
 const NavgationComponent = () => {
+    const moveCameraToWorldMapView = useUIStore((state) => state.moveCameraToWorldMapView);
+
     return (
         <div className="relative">
             <Avatar size="xl" className="relative z-10" src="/images/avatars/1.png" />
-            <Link href='/map'>
+            <Link href='/map' onClick={() => moveCameraToWorldMapView()}>
                 <CircleButton size="md" className={clsx("absolute z-0 text-[10px]",
                     "top-0 left-16 ml-2"
                 )}>
