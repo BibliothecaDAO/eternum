@@ -9,6 +9,7 @@ import { useDojo } from '../../../DojoContext';
 import { Utils } from '@dojoengine/core';
 import useRealmStore from '../../../hooks/store/useRealmStore';
 import { IncomingOrdersPanel } from './trade/Caravans/IncomingCaravansPanel';
+import useUIStore from '../../../hooks/store/useUIStore';
 
 export type Order = {
     orderId: number,
@@ -20,15 +21,29 @@ type RealmTradeComponentProps = {}
 
 export const RealmTradeComponent = ({ }: RealmTradeComponentProps) => {
 
-    const {components: { Trade, Status }} = useDojo();
+    const { components: { Trade, Status } } = useDojo();
 
-    const [selectedTab, setSelectedTab] = useState(2);
+    const [selectedTab, setSelectedTab] = useState(1);
     const [myTrades, setMyTrades] = useState<number[]>([]);
     const [counterpartyTrades, setCounterpartyTrades] = useState<number[]>([]);
     const [incomingOrders, setIncomingOrders] = useState<Order[]>([]);
-    const {realmEntityId} = useRealmStore();
+    const { realmEntityId } = useRealmStore();
 
-    const {data: tradeData, status: tradeStatus} = useGetTrades();
+    const moveCameraToRealmView = useUIStore((state) => state.moveCameraToRealmView);
+    const moveCameraToCaravansView = useUIStore((state) => state.moveCameraToCaravansView);
+
+
+    useEffect(() => {
+        if ([0, 1].includes(selectedTab)) {
+            moveCameraToRealmView();
+        }
+        else if ([2, 3].includes(selectedTab)) {
+            moveCameraToCaravansView();
+        }
+
+    }, [selectedTab])
+
+    const { data: tradeData, status: tradeStatus } = useGetTrades();
     // TODO: find a better way to parse this
     let trades: number[] = [];
     if (tradeData && tradeStatus === FetchStatus.Success) {
@@ -42,7 +57,7 @@ export const RealmTradeComponent = ({ }: RealmTradeComponentProps) => {
     useEffect(() => {
         let myTrades: number[] = [];
         let counterpartyTrades: number[] = [];
-        let incomingOrders: {orderId: number, counterpartyOrderId: number, tradeId: number}[] = [];
+        let incomingOrders: { orderId: number, counterpartyOrderId: number, tradeId: number }[] = [];
         // TODO: how to only update when tradeData actually changes?
         if (tradeData && tradeStatus === FetchStatus.Success) {
             tradeData.entities?.forEach((entity) => {
@@ -55,13 +70,13 @@ export const RealmTradeComponent = ({ }: RealmTradeComponentProps) => {
                     }
                     else if (trade?.maker_id !== realmEntityId && status?.value === 0) {
                         counterpartyTrades.push(tradeId)
-                    // status 1 = accepted
-                    // if you are maker, then check if the order coming your way has been claimed yet
+                        // status 1 = accepted
+                        // if you are maker, then check if the order coming your way has been claimed yet
                     } else if ((trade?.maker_id === realmEntityId && Number(trade.claimed_by_maker) !== 1) && status?.value === 1) {
-                        incomingOrders.push({orderId: trade.taker_order_id, counterpartyOrderId: trade.maker_order_id, tradeId});
+                        incomingOrders.push({ orderId: trade.taker_order_id, counterpartyOrderId: trade.maker_order_id, tradeId });
 
                     } else if (trade && (trade.taker_id === realmEntityId && Number(trade.claimed_by_taker) !== 1) && status?.value === 1) {
-                        incomingOrders.push({orderId: trade.maker_order_id, counterpartyOrderId: trade.taker_order_id, tradeId});
+                        incomingOrders.push({ orderId: trade.maker_order_id, counterpartyOrderId: trade.taker_order_id, tradeId });
                     }
                 }
             })
@@ -71,7 +86,7 @@ export const RealmTradeComponent = ({ }: RealmTradeComponentProps) => {
         setCounterpartyTrades(counterpartyTrades);
     }, [tradeData, realmEntityId]);
 
-    const {data: caravanData, status: caravanStatus} = useGetCaravans();
+    const { data: caravanData, status: caravanStatus } = useGetCaravans();
     // TODO: find a better way to parse this
     let caravans: number[] = [];
     if (caravanData && caravanStatus === FetchStatus.Success) {

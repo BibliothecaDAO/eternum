@@ -88,7 +88,7 @@ export const MainScene = () => {
             <ambientLight />
             <Camera />
             <directionalLight castShadow position={[lightPosition.x, lightPosition.y, lightPosition.z]} />
-            <CameraShake {...shakeConfig} />
+            {/* <CameraShake {...shakeConfig} /> */}
             <Suspense fallback={null}>
                 {
                     // @ts-ignore

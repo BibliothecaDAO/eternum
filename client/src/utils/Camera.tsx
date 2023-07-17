@@ -55,7 +55,7 @@ const CameraControls = ({ position, target }: Props) => {
             setCameraTarget(target)
         }),
         saveCameraPosition: button(() => {
-            console.log({ ...camera.position }, { ...(new THREE.Vector3(0, 0, -1)).applyQuaternion(camera.quaternion) })
+            console.log(camera, { x: camera.position.x, y: camera.position.y, z: camera.position.z }, { ...ref.current.target })
         })
     })
 
