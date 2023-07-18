@@ -13,7 +13,8 @@ export const findResourceById = (value: number) => {
 };
 
 export const findResourceIdByTrait = (trait: string) => {
-  return resources.find((e) => e.trait === trait).id;
+  // @ts-ignore
+  return resources.find((e) => e?.trait === trait).id;
 }
 
 export const resources: Array<Resources> = [

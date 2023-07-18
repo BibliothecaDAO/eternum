@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { ReactComponent as SkullIcon } from '../../../assets/icons/common/skull.svg';
 import { ReactComponent as ShieldIcon } from '../../../assets/icons/common/shield.svg';
@@ -14,7 +15,7 @@ import { findResourceIdByTrait } from '../../../constants/resources';
 import { packResources } from '../../../utils/packedData';
 import { orders } from '../../../constants/orders';
 import { KATANA_ACCOUNT_1_ADDRESS } from '../../../dojo/setupNetwork';
-import {  getLatestRealmId } from '../../../hooks/useGraphQLQueries';
+import { getLatestRealmId } from '../../../hooks/useGraphQLQueries';
 import useRealmStore from '../../../hooks/store/useRealmStore';
 
 type RealmStatusComponentProps = {} & React.ComponentPropsWithRef<'div'>
@@ -22,7 +23,7 @@ type RealmStatusComponentProps = {} & React.ComponentPropsWithRef<'div'>
 export const SettleRealmComponent = ({ className }: RealmStatusComponentProps) => {
     const [isLoading, setIsLoading] = useState(false);
 
-    const {systemCalls: { create_realm, mint_resources }} = useDojo();
+    const { systemCalls: { create_realm, mint_resources } } = useDojo();
 
     const { setRealmEntityIds } = useRealmStore();
 
@@ -35,10 +36,10 @@ export const SettleRealmComponent = ({ className }: RealmStatusComponentProps) =
         let new_realm_id = realm_id + 1;
         let realm = getRealm(new_realm_id);
         let position = getPosition(new_realm_id);
-        let entity_id = await create_realm({owner: KATANA_ACCOUNT_1_ADDRESS, ...realm, position});
+        let entity_id = await create_realm({ owner: KATANA_ACCOUNT_1_ADDRESS, ...realm, position });
         // mint basic resources to start
-        await mint_resources({entity_id, resource_type: 2, amount: 1000});
-        await mint_resources({entity_id, resource_type: 3, amount: 1000});
+        await mint_resources({ entity_id, resource_type: 2, amount: 1000 });
+        await mint_resources({ entity_id, resource_type: 3, amount: 1000 });
         // add the new entity_id in the list of entityIds in my localStorage
         const entityIds = localStorage.getItem('entityIds');
         const updatedEntityIds = entityIds ? [...JSON.parse(entityIds), entity_id] : [entity_id];
@@ -54,57 +55,57 @@ export const SettleRealmComponent = ({ className }: RealmStatusComponentProps) =
 
     return (
         <div className="flex space-x-4">
-          {!isLoading && (
-            <Button onClick={settleRealm} className="ml-auto p-2 !h-8 text-lg !rounded-md" variant="success">
-              Settle Realm
+            {!isLoading && (
+                <Button onClick={settleRealm} className="ml-auto p-2 !h-8 text-lg !rounded-md" variant="success">
+                    Settle Realm
+                </Button>
+            )}
+            {isLoading && (
+                <Button isLoading={true} onClick={() => { }} variant="danger" className="ml-auto p-2 !h-4 text-xxs !rounded-md">
+                    { }
+                </Button>
+            )}
+            <Button onClick={() => clearRealms()} variant="danger" className="ml-auto p-2 !h-8 text-lg !rounded-md">
+                Clear Realms
             </Button>
-          )}
-          {isLoading && (
-            <Button isLoading={true} onClick={() => {}} variant="danger" className="ml-auto p-2 !h-4 text-xxs !rounded-md">
-              { }
-            </Button>
-          )}
-          <Button onClick={() => clearRealms()} variant="danger" className="ml-auto p-2 !h-8 text-lg !rounded-md">
-            Clear Realms
-          </Button>
         </div>
-      );
+    );
 };
 
 
-function getPosition(realm_id: number): {x: number, y: number} {
+function getPosition(realm_id: number): { x: number, y: number } {
     const coords = realmCoords.features[realm_id - 1].geometry.coordinates.map((value) => parseInt(value));
-    return {x: coords[0] + 1800000, y: coords[1] + 1800000};
+    return { x: coords[0] + 1800000, y: coords[1] + 1800000 };
 
 }
 
 function getRealm(realm_id: number): Realm {
     const realmsData = realms as {
         [key: string]: any;
-      }
+    }
     const realm = realmsData[realm_id.toString()];
-    const resourceIds = realm.attributes.filter(({trait_type}) => trait_type === 'Resource').map(({value}) => findResourceIdByTrait(value));
+    const resourceIds = realm.attributes.filter(({ trait_type }) => trait_type === 'Resource').map(({ value }) => findResourceIdByTrait(value));
     const resource_types_packed = parseInt(packResources(resourceIds));
     let cities: number = 0;
-    realm.attributes.forEach(({trait_type, value}) => {
+    realm.attributes.forEach(({ trait_type, value }) => {
         if (trait_type === 'Cities') {
             cities = value;
         }
     });
     let harbors: number = 0;
-    realm.attributes.forEach(({trait_type, value}) => {
+    realm.attributes.forEach(({ trait_type, value }) => {
         if (trait_type === 'Harbors') {
             harbors = value;
         }
     });
     let rivers: number = 0;
-    realm.attributes.forEach(({trait_type, value}) => {
+    realm.attributes.forEach(({ trait_type, value }) => {
         if (trait_type === 'Rivers') {
             rivers = value;
         }
     });
     let regions: number = 0;
-    realm.attributes.forEach(({trait_type, value}) => {
+    realm.attributes.forEach(({ trait_type, value }) => {
         if (trait_type === 'Regions') {
             regions = value;
         }
@@ -114,14 +115,14 @@ function getRealm(realm_id: number): Realm {
 
     let order: number = 0;
     realm.attributes.forEach(({ trait_type, value }) => {
-    if (trait_type === 'Order') {
-        const name: string = value.split(' ').pop() || '';
-        orders.forEach(({ orderId, orderName }) => {
-        if (name === orderName) {
-            order = orderId;
+        if (trait_type === 'Order') {
+            const name: string = value.split(' ').pop() || '';
+            orders.forEach(({ orderId, orderName }) => {
+                if (name === orderName) {
+                    order = orderId;
+                }
+            });
         }
-        });
-    }
     });
 
 
