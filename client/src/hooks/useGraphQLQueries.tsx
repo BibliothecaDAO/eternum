@@ -122,6 +122,7 @@ export function useGetCaravans() {
       try {
         const client = new GraphQLClient('http://localhost:8080/');
         const sdk = getSdk(client);
+        // TODO: getCaravans and order ids
         const { data } = await sdk.getCaravans();
         setData(data);
         setStatus(FetchStatus.Success);

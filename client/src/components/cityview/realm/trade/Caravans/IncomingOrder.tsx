@@ -50,8 +50,12 @@ export const IncomingOrder = ({ order, ...props }: IncomingOrderProps) => {
 
     const { nextBlockTimestamp } = useBlockchainStore();
 
+    // total 3 calls
+
+    // 1 call
     let arrivalTime = getComponentValue(ArrivalTime, Utils.getEntityIdFromKeys([BigInt(order.orderId)]));
 
+    // 1 call
     const fungibleEntitiesGet = getComponentValue(FungibleEntities, Utils.getEntityIdFromKeys([BigInt(order.orderId)]));
     let resourceEntityIdsGet = getResourceIdsFromFungibleEntities(order.orderId, fungibleEntitiesGet?.key || 0, fungibleEntitiesGet?.count || 0);
     let resourcesGet: Resource[] = [];
@@ -59,6 +63,7 @@ export const IncomingOrder = ({ order, ...props }: IncomingOrderProps) => {
         resourcesGet.push(getComponentValue(Resource, resourceEntityIdsGet[i]) ?? { resource_type: 0, balance: 0 });
     }
 
+    // 1 call
     const startPosition = getComponentValue(Position, Utils.getEntityIdFromKeys([BigInt(order.counterpartyOrderId)]));
     const startRealmId = startPosition && getRealmIdByPosition({ x: startPosition.x, y: startPosition.y })
     const startRealmName = startRealmId && getRealmNameById(startRealmId);

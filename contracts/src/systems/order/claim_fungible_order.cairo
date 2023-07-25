@@ -56,6 +56,7 @@ mod ClaimFungibleOrder {
             ctx.world,
             trade_id.into(),
             (Trade {
+                trade_id,
                 maker_id: meta.maker_id,
                 taker_id: meta.taker_id,
                 maker_order_id: meta.maker_order_id,

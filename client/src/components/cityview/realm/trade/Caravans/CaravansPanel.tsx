@@ -32,7 +32,11 @@ export const CaravansPanel = ({ }: CaravansPanelProps) => {
     }
 
     const { data: caravanData, status } = useGetCaravans();
-    // TODO: find a better way to parse this
+
+    // TODO: query to get realms caravans
+    // const { data: caravanData, status } = useGetCaravans();
+
+    // TODO: do caravanIds and Orders
     let caravanIds: number[] = [];
     if (caravanData && status === FetchStatus.Success) {
         caravanData.entities?.forEach((entity) => {
@@ -42,15 +46,16 @@ export const CaravansPanel = ({ }: CaravansPanelProps) => {
         })
     }
 
-    const { data: orderData, status: orderStatus } = useGetOrders();
-    let orderIds: number[] = [];
-    if (orderData && orderStatus === FetchStatus.Success) {
-        orderData.entities?.forEach((entity) => {
-            if (entity) {
-                orderIds.push(parseInt(entity.keys))
-            }
-        })
-    }
+    // TODO: clean 
+    // const { data: orderData, status: orderStatus } = useGetOrders();
+    // let orderIds: number[] = [];
+    // if (orderData && orderStatus === FetchStatus.Success) {
+    //     orderData.entities?.forEach((entity) => {
+    //         if (entity) {
+    //             orderIds.push(parseInt(entity.keys))
+    //         }
+    //     })
+    // }
 
     let realmCaravanIds: number[] = [];
     for (const caravanId of caravanIds) {

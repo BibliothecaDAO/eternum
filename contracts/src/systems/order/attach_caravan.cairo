@@ -10,7 +10,7 @@ mod AttachCaravan {
     use eternum::components::position::Position;
     use eternum::components::resources::Resource;
     use eternum::components::caravan::Caravan;
-    use eternum::components::trade::{Trade, Status, TradeStatus};
+    use eternum::components::trade::{Trade, Status, OrderId, TradeStatus};
     use eternum::components::trade::FungibleEntities;
 
     use traits::Into;
@@ -130,7 +130,7 @@ mod AttachCaravan {
         set !(
             ctx.world,
             caravan_id.into(),
-            (Movable { sec_per_km: movable.sec_per_km, blocked: true })
+            (OrderId { id: order_id }, Movable { sec_per_km: movable.sec_per_km, blocked: true })
         );
     }
 }

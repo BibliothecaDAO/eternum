@@ -82,6 +82,7 @@ export const RealmTradeComponent = ({ }: RealmTradeComponentProps) => {
         })
     }
 
+    // TODO: get my trades + get market trades should be 2 queries
 
     const tabs = useMemo(
         () => [

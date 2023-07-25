@@ -34,7 +34,6 @@ export const MarketOffer = ({ tradeId, onAccept, ...props }: TradeOfferProps) =>
     const { realmEntityId } = useRealmStore();
 
     let trade = useComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
-    let status = useComponentValue(Status, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
 
     const acceptOffer = async () => {
         // TODO: need screen to select or create caravan

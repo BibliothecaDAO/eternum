@@ -25,6 +25,7 @@ import { getComponentValue } from '@latticexyz/recs';
 import { useGetTradeFromCaravanId } from '../../../../../hooks/useGraphQLQueries';
 
 type CaravanProps = {
+    // TODO: caravan = caravanId and orderId
     caravanId: number;
     idleOnly?: boolean;
     selectedCaravan?: number;
@@ -34,6 +35,7 @@ export const Caravan = ({ caravanId, ...props }: CaravanProps) => {
     const { realmEntityId } = useRealmStore();
 
     // find the order ids of the caravan
+    // TODO: remove that
     const { data: tradeId } = useGetTradeFromCaravanId(realmEntityId, caravanId);
 
     const {
@@ -44,9 +46,11 @@ export const Caravan = ({ caravanId, ...props }: CaravanProps) => {
 
     let trade = tradeId && getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
     const { realmOrderId, counterpartyOrderId } = (trade && realmEntityId !== undefined) && getOrderIdsFromTrade(trade, realmEntityId) || { realmOrderId: 0, counterpartyOrderId: 0 };
+    // TODO: get counterparty order id from graphql using the caravan orderid 
     let arrivalTime = getComponentValue(ArrivalTime, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
     let movable = getComponentValue(Movable, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
 
+    // TODO: Replace by getOrderInfo
     const fungibleEntitiesGive = getComponentValue(FungibleEntities, Utils.getEntityIdFromKeys([BigInt(realmOrderId)]));
     const fungibleEntitiesGet = getComponentValue(FungibleEntities, Utils.getEntityIdFromKeys([BigInt(counterpartyOrderId)]));
 
@@ -69,6 +73,7 @@ export const Caravan = ({ caravanId, ...props }: CaravanProps) => {
 
     let position = useComponentValue(Position, Utils.getEntityIdFromKeys([BigInt(realmOrderId)]));
 
+    // TODO: don't need to find realm id here, we know it's ours
     const realmId = position && getRealmIdByPosition(position);
     const realmName = realmId && getRealmNameById(realmId);
 

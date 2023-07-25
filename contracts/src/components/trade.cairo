@@ -2,6 +2,7 @@ use eternum::alias::ID;
 
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct Trade {
+    trade_id: u128,
     maker_id: u128,
     taker_id: u128,
     maker_order_id: u128,
@@ -18,6 +19,10 @@ struct Status {
     value: u128, 
 }
 
+#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+struct OrderId {
+    id: u128, 
+}
 
 // status of the trade
 #[derive(Copy, Drop, Serde)]

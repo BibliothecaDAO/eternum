@@ -31,6 +31,7 @@ export const MyOffer = ({ tradeId, ...props }: TradeOfferProps) => {
 
     const { realmEntityId } = useRealmStore();
 
+    // TODO: get all my offers, so need to add trade_id in the component for now because not available in torii
     let trade = useComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
     let status = useComponentValue(Status, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
 

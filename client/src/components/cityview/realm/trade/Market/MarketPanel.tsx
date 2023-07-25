@@ -41,6 +41,9 @@ export const MarketPanel = ({ trades }: MarketPanelProps) => {
     const openTrades: number[] = [];
     for (const tradeId of trades) {
         let trade = getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
+        // TODO: How to get status in same torii query as trade???
+        // TODO: add the trade_id in the trade component
+        // short-term query the status of that trade id
         let status = getComponentValue(Status, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
         // status 0 === open
         if (trade?.maker_id !== realmEntityId && status?.value === 0) {
