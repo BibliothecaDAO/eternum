@@ -12,12 +12,12 @@ import { useDojo } from '../../../../../DojoContext';
 import { Utils } from '@dojoengine/core';
 import useRealmStore from '../../../../../hooks/store/useRealmStore';
 import { MyOffer } from './MyOffer';
+import { useGetMyOffers } from '../../../../../hooks/useGraphQLQueries';
 
 type MarketPanelProps = {
-    trades: number[];
 }
 
-export const MyOffersPanel = ({ trades: myTrades }: MarketPanelProps) => {
+export const MyOffersPanel = ({}: MarketPanelProps) => {
 
     const { components: { Trade, Status }} = useDojo()
 
@@ -25,6 +25,8 @@ export const MyOffersPanel = ({ trades: myTrades }: MarketPanelProps) => {
 
     const [activeFilter, setActiveFilter] = useState(false);
     const [showCreateOffer, setShowCreateOffer] = useState(false);
+
+    const { myOffers } = useGetMyOffers({realmId: realmEntityId});
 
     const sortingParams = useMemo(() => {
         return [
@@ -59,8 +61,8 @@ export const MyOffersPanel = ({ trades: myTrades }: MarketPanelProps) => {
             </SortPanel>
             {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
             {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => { }} />}
-            {myTrades.map((tradeId) => <div className='flex flex-col p-2'>
-                <MyOffer tradeId={tradeId} />
+            {myOffers && myOffers.map((myOffer) => <div className='flex flex-col p-2'>
+                <MyOffer myOffer={myOffer} />
             </div>)}
             <Button className='absolute -translate-x-1/2 bottom-3 left-1/2' onClick={() => setShowCreateOffer(true)} variant='primary'>+ Create new offer</Button>
         </div >

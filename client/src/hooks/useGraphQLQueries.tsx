@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { GraphQLClient } from 'graphql-request';
-import { GetCaravansQuery, GetOrdersQuery, GetRealmsQuery, GetTradesQuery, getSdk } from '../generated/graphql';
+import { GetCaravansQuery, GetMyOffersQuery, GetOrdersQuery, GetRealmsQuery, GetTradesQuery, Resource, getSdk } from '../generated/graphql';
 import { useDojo } from '../DojoContext';
 import { getComponentValue } from '@latticexyz/recs';
 import { Utils } from '@dojoengine/core';
@@ -10,6 +10,198 @@ export enum FetchStatus {
   Loading = 'loading',
   Success = 'success',
   Error = 'error',
+}
+
+const client = new GraphQLClient('http://localhost:8080/');
+const sdk = getSdk(client);
+
+// TODO: add filter on trade status is open
+export const useGetMarket = ({
+  realmId,
+}: {
+  realmId: number;
+}): {myOffers: MyOfferInterface[] | undefined, status: FetchStatus, error: unknown} => {
+  const [myOffers, setMyOffers] = useState<MyOfferInterface[] | undefined>();
+  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
+  const [error, setError] = useState<unknown>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      setStatus(FetchStatus.Loading);
+      try {
+        const { data } = await sdk.getMyOffers({makerId: `0x${realmId.toString(16)}`});
+        const tradeComponents = data?.tradeComponents;
+        if (tradeComponents) {
+          const myOffers = tradeComponents.map((item) => {
+            return { tradeId: item?.trade_id, makerOrderId: item?.maker_order_id, takerOrderId: item?.taker_order_id };
+          });
+          setMyOffers(myOffers);
+          setStatus(FetchStatus.Success);
+        }
+      } catch (error) {
+        console.log({error})
+        setError(error);
+        setStatus(FetchStatus.Error);
+      }
+    }
+    fetchData();
+
+    const intervalId = setInterval(fetchData, 5000); // Fetch every 5 seconds
+
+    return () => {
+      clearInterval(intervalId); // Clear interval on component unmount
+    };
+  }, [realmId]);
+
+  return {
+    myOffers,
+    status,
+    error,
+  };
+};
+
+export interface MyOfferInterface {
+  tradeId: string; 
+  makerOrderId: string;
+  takerOrderId: string;
+}
+
+// TODO: add filter on trade status is open
+export const useGetMyOffers = ({
+  realmId,
+}: {
+  realmId: number;
+}): {myOffers: MyOfferInterface[] | undefined, status: FetchStatus, error: unknown} => {
+  const [myOffers, setMyOffers] = useState<MyOfferInterface[] | undefined>();
+  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
+  const [error, setError] = useState<unknown>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      setStatus(FetchStatus.Loading);
+      try {
+        const { data } = await sdk.getMyOffers({makerId: `0x${realmId.toString(16)}`});
+        const tradeComponents = data?.tradeComponents;
+        if (tradeComponents) {
+          const myOffers = tradeComponents.map((item) => {
+            return { tradeId: item?.trade_id, makerOrderId: item?.maker_order_id, takerOrderId: item?.taker_order_id };
+          });
+          setMyOffers(myOffers);
+          setStatus(FetchStatus.Success);
+        }
+      } catch (error) {
+        console.log({error})
+        setError(error);
+        setStatus(FetchStatus.Error);
+      }
+    }
+    fetchData();
+
+    const intervalId = setInterval(fetchData, 5000); // Fetch every 5 seconds
+
+    return () => {
+      clearInterval(intervalId); // Clear interval on component unmount
+    };
+  }, [realmId]);
+
+  return {
+    myOffers,
+    status,
+    error,
+  };
+};
+
+export const useGetTradeStatus = ({tradeId}: {tradeId: string}): {tradeStatus: number | undefined, status: FetchStatus, error: unknown} => {
+  const [tradeStatus, setTradeStatus] = useState<number | undefined>();
+  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
+  const [error, setError] = useState<unknown>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      setStatus(FetchStatus.Loading);
+      try {
+        const { data } = await sdk.getTradeStatus({tradeId});
+        const entities = data?.entities;
+        if (entities && entities.length === 1) {
+          entities[0]?.components?.forEach((component) => {
+            if (component?.__typename === 'Status' && component.value) {
+              setTradeStatus(component.value);
+            }
+          });
+        }
+      } catch (error) {
+        setError(error);
+        setStatus(FetchStatus.Error);
+      }
+  }
+  fetchData();
+  }, []);
+
+  return {
+    tradeStatus,
+    status,
+    error
+  }
+
+}
+
+export interface TradeResources {
+  resourcesGive: {resourceId: number, amount: number}[]
+  resourcesGet: {resourceId: number, amount: number}[]
+}
+
+export const useGetTradeResources = ({makerOrderId, takerOrderId}: {makerOrderId: string, takerOrderId: string}): {tradeResources: TradeResources, status: FetchStatus, error: unknown} => {
+  const [tradeResources, setTradeResources] = useState< TradeResources>({resourcesGive: [], resourcesGet: []});
+  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
+  const [error, setError] = useState<unknown>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setStatus(FetchStatus.Loading);
+      try {
+        const { data } = await sdk.getTradeResources({makerOrderId, takerOrderId});
+        console.log({data})
+        if (!data.resourcesGet || !data.resourcesGive) return undefined;
+        const resourcesGetEntities = data.resourcesGet.filter((entity) =>
+          entity?.components?.find(
+          (component) => component?.__typename === "Resource",
+          ),
+        );
+        let resourcesGet = resourcesGetEntities?.map((resourcesGetEntity) => {
+          let resource = resourcesGetEntity?.components?.find((component) => {
+          return component?.__typename === "Resource";
+        }) as Resource 
+        return {resourceId: parseInt(resource.resource_type), amount: parseInt(resource.balance)}
+          }
+        )
+        // console.log({resources: resourcesGet})
+        const resourcesGiveEntities = data.resourcesGet.filter((entity) =>
+        entity?.components?.find(
+        (component) => component?.__typename === "Resource",
+        ),
+      );
+      let resourcesGive = resourcesGiveEntities?.map((resourcesGiveEntity) => {
+      let resource = resourcesGiveEntity?.components?.find((component) => {
+                return component?.__typename === "Resource"
+              }) as Resource 
+          return {resourceId: parseInt(resource.resource_type), amount: parseInt(resource.balance)}
+            }
+      )
+          setTradeResources({resourcesGet, resourcesGive});
+          setStatus(FetchStatus.Success);
+      } catch (error) {
+        setError(error);
+        setStatus(FetchStatus.Error);
+      }
+    }
+    fetchData();
+  }, []);
+
+  return {
+    tradeResources,
+    status,
+    error,
+  }
 }
 
 export const getLatestRealmId = async (): Promise<number> => {
@@ -33,8 +225,6 @@ export const getLatestRealmId = async (): Promise<number> => {
 
 async function fetchRealmIds(): Promise<{data: GetRealmsQuery | null, status: FetchStatus, error: unknown}> {
   try {
-    const client = new GraphQLClient('http://localhost:8080/');
-    const sdk = getSdk(client);
     const { data } = await sdk.getRealmIds();
     return {data, status: FetchStatus.Success, error: null}; 
   } catch (error) {
@@ -51,8 +241,6 @@ export function useGetRealmsIds() {
     async function fetchData() {
       setStatus(FetchStatus.Loading);
       try {
-        const client = new GraphQLClient('http://localhost:8080/');
-        const sdk = getSdk(client);
         const { data } = await sdk.getRealmIds();
         setData(data);
         setStatus(FetchStatus.Success);
@@ -81,8 +269,6 @@ export function useGetTrades() {
     async function fetchData() {
       setStatus(FetchStatus.Loading);
       try {
-        const client = new GraphQLClient('http://localhost:8080/');
-        const sdk = getSdk(client);
         const { data } = await sdk.getTrades();
         setData(data);
         setStatus(FetchStatus.Success);
@@ -120,8 +306,6 @@ export function useGetCaravans() {
     async function fetchData() {
       setStatus(FetchStatus.Loading);
       try {
-        const client = new GraphQLClient('http://localhost:8080/');
-        const sdk = getSdk(client);
         // TODO: getCaravans and order ids
         const { data } = await sdk.getCaravans();
         setData(data);
@@ -154,8 +338,6 @@ export function useGetOrders() {
     async function fetchData() {
       setStatus(FetchStatus.Loading);
       try {
-        const client = new GraphQLClient('http://localhost:8080/');
-        const sdk = getSdk(client);
         const { data } = await sdk.getOrders();
         setData(data);
         setStatus(FetchStatus.Success);
@@ -188,8 +370,6 @@ export function useGetTradeFromCaravanId(realmEntityId: number, caravanId: numbe
     async function fetchData() {
       setStatus(FetchStatus.Loading);
       try {
-        const client = new GraphQLClient('http://localhost:8080/');
-        const sdk = getSdk(client);
         const {data: tradeData} = await sdk.getTrades();
         let tradeIds: number[] = [];
         if (tradeData) {

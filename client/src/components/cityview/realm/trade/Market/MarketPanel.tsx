@@ -15,10 +15,9 @@ import { MarketOffer } from './MarketOffer';
 import { AcceptOfferPopup } from '../AcceptOffer';
 
 type MarketPanelProps = {
-    trades: number[];
 }
 
-export const MarketPanel = ({ trades }: MarketPanelProps) => {
+export const MarketPanel = ({}: MarketPanelProps) => {
 
     const { components: { Trade, Status } } = useDojo()
 

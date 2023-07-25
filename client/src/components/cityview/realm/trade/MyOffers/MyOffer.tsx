@@ -12,17 +12,18 @@ import { orderNameDict } from '../../../../../constants/orders';
 import * as realmsData from '../../../../../geodata/realms.json';
 import useRealmStore from '../../../../../hooks/store/useRealmStore';
 import { getComponentValue } from '@latticexyz/recs';
+import { MyOfferInterface, useGetTradeResources } from '../../../../../hooks/useGraphQLQueries';
 
 type TradeOfferProps = {
-    tradeId: number;
+    myOffer: MyOfferInterface;
 }
 
-export const MyOffer = ({ tradeId, ...props }: TradeOfferProps) => {
+export const MyOffer = ({ myOffer, ...props }: TradeOfferProps) => {
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         setIsLoading(false);
-    }, [tradeId])
+    }, [myOffer])
 
     const {
         systemCalls: { change_order_status },
@@ -32,43 +33,22 @@ export const MyOffer = ({ tradeId, ...props }: TradeOfferProps) => {
     const { realmEntityId } = useRealmStore();
 
     // TODO: get all my offers, so need to add trade_id in the component for now because not available in torii
-    let trade = useComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
-    let status = useComponentValue(Status, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
+    let trade = useComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(myOffer.tradeId)]));
 
-    // status 0 = open
-    let isMyOffer = trade?.maker_id === realmEntityId && status?.value === 0;
 
     const cancelOffer = async () => {
         // status 2 = cancel
         setIsLoading(true);
-        change_order_status({ realm_id: realmEntityId, trade_id: tradeId, new_status: 2 })
+        change_order_status({ realm_id: realmEntityId, trade_id: myOffer.tradeId, new_status: 2 })
     }
 
-    // set maker order
+    // TODO: get the maker realm
     let makerRealm: Realm | undefined;
     if (trade) {
         makerRealm = getComponentValue(Realm, Utils.getEntityIdFromKeys([BigInt(trade.maker_id)]));
     }
 
-    const resourcesGet = trade && getResources(trade.maker_order_id);
-    const resourcesGive = trade && getResources(trade.taker_order_id);
-
-    function getResources(orderId: number): ResourcesOffer[] {
-        const resources: ResourcesOffer[] = [];
-        const fungibleEntities = getComponentValue(FungibleEntities, Utils.getEntityIdFromKeys([BigInt(orderId)]));
-        if (fungibleEntities) {
-            for (let i = 0; i < fungibleEntities.count; i++) {
-                const resource = getComponentValue(
-                    Resource,
-                    Utils.getEntityIdFromKeys([BigInt(orderId), BigInt(fungibleEntities.key), BigInt(i)])
-                );
-                if (resource) {
-                    resources.push({ amount: resource.balance, resourceId: resource.resource_type });
-                }
-            }
-        }
-        return resources;
-    }
+    const { tradeResources: { resourcesGet, resourcesGive } } = useGetTradeResources({ makerOrderId: myOffer.makerOrderId, takerOrderId: myOffer.takerOrderId });
 
     let timeLeft: string | undefined;
     if (trade) {
@@ -110,7 +90,7 @@ export const MyOffer = ({ tradeId, ...props }: TradeOfferProps) => {
                         ))}
                     </div>
                 </div>
-                {!isLoading && isMyOffer && <Button onClick={() => { cancelOffer() }} variant={'danger'} className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{`Cancel`}</Button>}
+                {!isLoading && <Button onClick={() => { cancelOffer() }} variant={'danger'} className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{`Cancel`}</Button>}
                 {isLoading && <Button isLoading={true} onClick={() => { }} variant="danger" className='ml-auto p-2 !h-4 text-xxs !rounded-md'>{ }</Button>}
             </div>
         </div >

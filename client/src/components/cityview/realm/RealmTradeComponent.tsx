@@ -92,7 +92,7 @@ export const RealmTradeComponent = ({ }: RealmTradeComponentProps) => {
                         <div>My Offers</div>
                     </div>
                 ),
-                component: <MyOffersPanel trades={myTrades} />,
+                component: <MyOffersPanel />,
             },
             {
                 label: (
@@ -100,7 +100,7 @@ export const RealmTradeComponent = ({ }: RealmTradeComponentProps) => {
                         <div>Market</div>
                     </div>
                 ),
-                component: <MarketPanel trades={counterpartyTrades} />,
+                component: <MarketPanel />,
             },
             {
                 label: (
