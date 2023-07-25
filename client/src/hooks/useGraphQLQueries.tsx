@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { GraphQLClient } from 'graphql-request';
-import { GetCaravansQuery, GetMyOffersQuery, GetOrdersQuery, GetRealmsQuery, GetTradesQuery, Resource, getSdk } from '../generated/graphql';
+import { GetCaravansQuery, GetMyOffersQuery, GetOrdersQuery, GetRealmsQuery, GetTradesQuery, Resource, Status, Trade, getSdk } from '../generated/graphql';
 import { useDojo } from '../DojoContext';
 import { getComponentValue } from '@latticexyz/recs';
 import { Utils } from '@dojoengine/core';
@@ -15,13 +15,19 @@ export enum FetchStatus {
 const client = new GraphQLClient('http://localhost:8080/');
 const sdk = getSdk(client);
 
+export interface MarketInterface {
+  tradeId: string;
+  makerOrderId: string;
+  takerOrderId: string;
+}
+
 // TODO: add filter on trade status is open
 export const useGetMarket = ({
   realmId,
 }: {
   realmId: number;
-}): {myOffers: MyOfferInterface[] | undefined, status: FetchStatus, error: unknown} => {
-  const [myOffers, setMyOffers] = useState<MyOfferInterface[] | undefined>();
+}): {market: MarketInterface[] | undefined, status: FetchStatus, error: unknown} => {
+  const [market, setMarket] = useState<MarketInterface[] | undefined>();
   const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
   const [error, setError] = useState<unknown>(null);
 
@@ -29,17 +35,28 @@ export const useGetMarket = ({
     async function fetchData() {
       setStatus(FetchStatus.Loading);
       try {
-        const { data } = await sdk.getMyOffers({makerId: `0x${realmId.toString(16)}`});
+        const { data } = await sdk.getMarket();
         const tradeComponents = data?.tradeComponents;
         if (tradeComponents) {
-          const myOffers = tradeComponents.map((item) => {
-            return { tradeId: item?.trade_id, makerOrderId: item?.maker_order_id, takerOrderId: item?.taker_order_id };
-          });
-          setMyOffers(myOffers);
+          const market = tradeComponents.map((item) => {
+            let trade = item?.entity?.components?.find((component) => {
+              return component?.__typename === "Trade"
+            }) as Trade;
+            let status = item?.entity?.components?.find((component) => {
+              return component?.__typename === "Status"
+            }
+            ) as Status;
+
+            if (status.value === "0x0" && trade.maker_id !== `0x${realmId.toString(16)}`) {
+              return {tradeId: trade.trade_id, makerOrderId: trade.maker_order_id, takerOrderId: trade.taker_order_id}
+            } else {
+              return undefined;
+            }
+          }).filter(Boolean) as MarketInterface[];
+          setMarket(market);
           setStatus(FetchStatus.Success);
         }
       } catch (error) {
-        console.log({error})
         setError(error);
         setStatus(FetchStatus.Error);
       }
@@ -54,7 +71,7 @@ export const useGetMarket = ({
   }, [realmId]);
 
   return {
-    myOffers,
+    market,
     status,
     error,
   };
@@ -90,7 +107,6 @@ export const useGetMyOffers = ({
           setStatus(FetchStatus.Success);
         }
       } catch (error) {
-        console.log({error})
         setError(error);
         setStatus(FetchStatus.Error);
       }
@@ -160,7 +176,6 @@ export const useGetTradeResources = ({makerOrderId, takerOrderId}: {makerOrderId
       setStatus(FetchStatus.Loading);
       try {
         const { data } = await sdk.getTradeResources({makerOrderId, takerOrderId});
-        console.log({data})
         if (!data.resourcesGet || !data.resourcesGive) return undefined;
         const resourcesGetEntities = data.resourcesGet.filter((entity) =>
           entity?.components?.find(
@@ -174,7 +189,6 @@ export const useGetTradeResources = ({makerOrderId, takerOrderId}: {makerOrderId
         return {resourceId: parseInt(resource.resource_type), amount: parseInt(resource.balance)}
           }
         )
-        // console.log({resources: resourcesGet})
         const resourcesGiveEntities = data.resourcesGet.filter((entity) =>
         entity?.components?.find(
         (component) => component?.__typename === "Resource",

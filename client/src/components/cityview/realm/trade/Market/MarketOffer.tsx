@@ -12,19 +12,20 @@ import { orderNameDict } from '../../../../../constants/orders';
 import * as realmsData from '../../../../../geodata/realms.json';
 import useRealmStore from '../../../../../hooks/store/useRealmStore';
 import { getComponentValue } from '@latticexyz/recs';
+import { MarketInterface, useGetTradeResources } from '../../../../../hooks/useGraphQLQueries';
 
 type TradeOfferProps = {
-    tradeId: number;
+    marketOffer: MarketInterface;
     onAccept: () => void;
 }
 
-export const MarketOffer = ({ tradeId, onAccept, ...props }: TradeOfferProps) => {
+export const MarketOffer = ({ marketOffer, onAccept, ...props }: TradeOfferProps) => {
     const [isLoading, setIsLoading] = useState(false);
     const [canAccept, setCanAccept] = useState(true);
 
     useEffect(() => {
         setIsLoading(false);
-    }, [tradeId])
+    }, [marketOffer])
 
     const {
         systemCalls: { attach_caravan, take_fungible_order, create_free_transport_unit, create_caravan, change_order_status },
@@ -33,29 +34,7 @@ export const MarketOffer = ({ tradeId, onAccept, ...props }: TradeOfferProps) =>
 
     const { realmEntityId } = useRealmStore();
 
-    let trade = useComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
-
-    const acceptOffer = async () => {
-        // TODO: need screen to select or create caravan
-        const isNewCaravan = true;
-        if (isNewCaravan) {
-            setIsLoading(true);
-            const transport_units_id = await create_free_transport_unit({ realm_id: realmEntityId, quantity: 10 });
-            const caravan_id = await create_caravan({ entity_ids: [transport_units_id] });
-            await attach_caravan({ realm_id: realmEntityId, trade_id: tradeId, caravan_id })
-            await take_fungible_order({
-                taker_id: realmEntityId,
-                trade_id: tradeId
-            })
-        } else {
-            setIsLoading(true);
-            await attach_caravan({ realm_id: realmEntityId, trade_id: tradeId, caravan_id: 0 });
-            await take_fungible_order({
-                taker_id: realmEntityId,
-                trade_id: tradeId
-            })
-        }
-    }
+    let trade = useComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(marketOffer.tradeId)]));
 
     // set maker order
     let makerRealm: Realm | undefined;
@@ -63,27 +42,9 @@ export const MarketOffer = ({ tradeId, onAccept, ...props }: TradeOfferProps) =>
         makerRealm = getComponentValue(Realm, Utils.getEntityIdFromKeys([BigInt(trade.maker_id)]));
     }
 
-    const resourcesGet = trade && getResources(trade.maker_order_id);
-    const resourcesGive = trade && getResources(trade.taker_order_id);
+    const { tradeResources: { resourcesGet, resourcesGive } } = useGetTradeResources({ makerOrderId: marketOffer.makerOrderId, takerOrderId: marketOffer.takerOrderId });
 
-    function getResources(orderId: number): ResourcesOffer[] {
-        const resources: ResourcesOffer[] = [];
-        const fungibleEntities = getComponentValue(FungibleEntities, Utils.getEntityIdFromKeys([BigInt(orderId)]));
-        if (fungibleEntities) {
-            for (let i = 0; i < fungibleEntities.count; i++) {
-                const resource = getComponentValue(
-                    Resource,
-                    Utils.getEntityIdFromKeys([BigInt(orderId), BigInt(fungibleEntities.key), BigInt(i)])
-                );
-                if (resource) {
-                    resources.push({ amount: resource.balance, resourceId: resource.resource_type });
-                }
-            }
-        }
-        return resources;
-    }
-
-    // TODO: check if this works
+    // TODO: use a graphql query to get the resource balance of the realm
     useEffect(() => {
         function canAcceptOffer() {
             if (resourcesGive && resourcesGet) {

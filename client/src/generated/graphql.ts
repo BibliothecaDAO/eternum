@@ -32,27 +32,37 @@ export type Scalars = {
 export type Age = {
   __typename?: 'Age';
   born_at: Scalars['u64']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
 };
 
 export type ArrivalTime = {
   __typename?: 'ArrivalTime';
   arrives_at: Scalars['u64']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
 };
 
 export type BuildingConfig = {
   __typename?: 'BuildingConfig';
   base_sqm: Scalars['u128']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   workhut_cost: Scalars['u128']['output'];
 };
 
 export type BuildingCost = {
   __typename?: 'BuildingCost';
   cost: Scalars['u128']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   resource_type: Scalars['felt252']['output'];
 };
 
 export type BuildingTypeConfig = {
   __typename?: 'BuildingTypeConfig';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   id: Scalars['felt252']['output'];
   resource_types_count: Scalars['u8']['output'];
   resource_types_packed: Scalars['u256']['output'];
@@ -61,11 +71,15 @@ export type BuildingTypeConfig = {
 
 export type Capacity = {
   __typename?: 'Capacity';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   weight_gram: Scalars['u128']['output'];
 };
 
 export type CapacityConfig = {
   __typename?: 'CapacityConfig';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   entity_type: Scalars['u128']['output'];
   weight_gram: Scalars['u128']['output'];
 };
@@ -73,11 +87,15 @@ export type CapacityConfig = {
 export type Caravan = {
   __typename?: 'Caravan';
   caravan_id: Scalars['u128']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
 };
 
 export type CaravanMembers = {
   __typename?: 'CaravanMembers';
   count: Scalars['usize']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   key: Scalars['u128']['output'];
 };
 
@@ -105,18 +123,23 @@ export type Event = {
 
 export type ForeignKey = {
   __typename?: 'ForeignKey';
+  entity?: Maybe<Entity>;
   entity_id: Scalars['u128']['output'];
 };
 
 export type FungibleEntities = {
   __typename?: 'FungibleEntities';
   count: Scalars['usize']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   key: Scalars['u128']['output'];
 };
 
 export type Labor = {
   __typename?: 'Labor';
   balance: Scalars['u64']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   last_harvest: Scalars['u64']['output'];
   multiplier: Scalars['u64']['output'];
 };
@@ -126,10 +149,14 @@ export type LaborConfig = {
   base_food_per_cycle: Scalars['u128']['output'];
   base_labor_units: Scalars['u64']['output'];
   base_resources_per_cycle: Scalars['u128']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
 };
 
 export type LaborCostAmount = {
   __typename?: 'LaborCostAmount';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   resource_type_cost: Scalars['felt252']['output'];
   resource_type_labor: Scalars['felt252']['output'];
   value: Scalars['u128']['output'];
@@ -137,6 +164,8 @@ export type LaborCostAmount = {
 
 export type LaborCostResources = {
   __typename?: 'LaborCostResources';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   resource_type_labor: Scalars['felt252']['output'];
   resource_types_count: Scalars['u8']['output'];
   resource_types_packed: Scalars['u128']['output'];
@@ -144,39 +173,53 @@ export type LaborCostResources = {
 
 export type MetaData = {
   __typename?: 'MetaData';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   entity_type: Scalars['u128']['output'];
 };
 
 export type Movable = {
   __typename?: 'Movable';
   blocked: Scalars['bool']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   sec_per_km: Scalars['u16']['output'];
 };
 
 export type OrderId = {
   __typename?: 'OrderId';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   id: Scalars['u128']['output'];
 };
 
 export type Owner = {
   __typename?: 'Owner';
   address: Scalars['ContractAddress']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
 };
 
 export type Position = {
   __typename?: 'Position';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   x: Scalars['u32']['output'];
   y: Scalars['u32']['output'];
 };
 
 export type Quantity = {
   __typename?: 'Quantity';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   value: Scalars['u128']['output'];
 };
 
 export type QuantityTracker = {
   __typename?: 'QuantityTracker';
   count: Scalars['u128']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
 };
 
 export type Query = {
@@ -307,7 +350,6 @@ export type QueryEventsArgs = {
 
 
 export type QueryForeignkeyComponentsArgs = {
-  entity_id?: InputMaybe<Scalars['u128']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
 };
 
@@ -485,6 +527,8 @@ export type QueryWorldconfigComponentsArgs = {
 export type Realm = {
   __typename?: 'Realm';
   cities: Scalars['u8']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   harbors: Scalars['u8']['output'];
   order: Scalars['u8']['output'];
   realm_id: Scalars['u128']['output'];
@@ -498,17 +542,23 @@ export type Realm = {
 export type Resource = {
   __typename?: 'Resource';
   balance: Scalars['u128']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   resource_type: Scalars['u8']['output'];
 };
 
 export type SpeedConfig = {
   __typename?: 'SpeedConfig';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   entity_type: Scalars['u128']['output'];
   sec_per_km: Scalars['u16']['output'];
 };
 
 export type Status = {
   __typename?: 'Status';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   value: Scalars['u128']['output'];
 };
 
@@ -537,6 +587,8 @@ export type Trade = {
   __typename?: 'Trade';
   claimed_by_maker: Scalars['bool']['output'];
   claimed_by_taker: Scalars['bool']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   expires_at: Scalars['u64']['output'];
   maker_id: Scalars['u128']['output'];
   maker_order_id: Scalars['u128']['output'];
@@ -548,22 +600,30 @@ export type Trade = {
 
 export type TravelConfig = {
   __typename?: 'TravelConfig';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   free_transport_per_city: Scalars['u128']['output'];
 };
 
 export type Vault = {
   __typename?: 'Vault';
   balance: Scalars['u128']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
 };
 
 export type WeightConfig = {
   __typename?: 'WeightConfig';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   entity_type: Scalars['u128']['output'];
   weight_gram: Scalars['u128']['output'];
 };
 
 export type WorldConfig = {
   __typename?: 'WorldConfig';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   realm_l2_contract: Scalars['ContractAddress']['output'];
 };
 
@@ -587,12 +647,17 @@ export type GetTradesQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type GetTradesQuery = { __typename?: 'Query', entities?: Array<{ __typename?: 'Entity', keys: string } | null> | null };
 
+export type GetMarketQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetMarketQuery = { __typename?: 'Query', tradeComponents?: Array<{ __typename?: 'Trade', entity?: { __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status', value: any } | { __typename: 'Trade', trade_id: any, maker_id: any, maker_order_id: any, taker_order_id: any } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null };
+
 export type GetMyOffersQueryVariables = Exact<{
   makerId: Scalars['u128']['input'];
 }>;
 
 
-export type GetMyOffersQuery = { __typename?: 'Query', tradeComponents?: Array<{ __typename?: 'Trade', trade_id: any, maker_order_id: any, taker_order_id: any, maker_id: any, taker_id: any, claimed_by_maker: any, claimed_by_taker: any } | null> | null };
+export type GetMyOffersQuery = { __typename?: 'Query', tradeComponents?: Array<{ __typename?: 'Trade', trade_id: any, maker_order_id: any, taker_order_id: any } | null> | null };
 
 export type GetTradeResourcesQueryVariables = Exact<{
   makerOrderId: Scalars['String']['input'];
@@ -643,16 +708,35 @@ export const GetTradesDocument = gql`
   }
 }
     `;
+export const GetMarketDocument = gql`
+    query getMarket {
+  tradeComponents(claimed_by_maker: 0, claimed_by_taker: 0) {
+    entity {
+      ... on Entity {
+        keys
+        components {
+          __typename
+          ... on Status {
+            value
+          }
+          ... on Trade {
+            trade_id
+            maker_id
+            maker_order_id
+            taker_order_id
+          }
+        }
+      }
+    }
+  }
+}
+    `;
 export const GetMyOffersDocument = gql`
     query getMyOffers($makerId: u128!) {
   tradeComponents(maker_id: $makerId, claimed_by_maker: 0, claimed_by_taker: 0) {
     trade_id
     maker_order_id
     taker_order_id
-    maker_id
-    taker_id
-    claimed_by_maker
-    claimed_by_taker
   }
 }
     `;
@@ -710,6 +794,7 @@ const GetCaravansDocumentString = print(GetCaravansDocument);
 const GetOrdersDocumentString = print(GetOrdersDocument);
 const GetRealmIdsDocumentString = print(GetRealmIdsDocument);
 const GetTradesDocumentString = print(GetTradesDocument);
+const GetMarketDocumentString = print(GetMarketDocument);
 const GetMyOffersDocumentString = print(GetMyOffersDocument);
 const GetTradeResourcesDocumentString = print(GetTradeResourcesDocument);
 const GetTradeStatusDocumentString = print(GetTradeStatusDocument);
@@ -726,6 +811,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     getTrades(variables?: GetTradesQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetTradesQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetTradesQuery>(GetTradesDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getTrades', 'query');
+    },
+    getMarket(variables?: GetMarketQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetMarketQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetMarketQuery>(GetMarketDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getMarket', 'query');
     },
     getMyOffers(variables: GetMyOffersQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetMyOffersQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetMyOffersQuery>(GetMyOffersDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getMyOffers', 'query');

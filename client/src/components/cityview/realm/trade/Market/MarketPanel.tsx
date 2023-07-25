@@ -13,6 +13,7 @@ import { Utils } from '@dojoengine/core';
 import useRealmStore from '../../../../../hooks/store/useRealmStore';
 import { MarketOffer } from './MarketOffer';
 import { AcceptOfferPopup } from '../AcceptOffer';
+import { useGetMarket } from '../../../../../hooks/useGraphQLQueries';
 
 type MarketPanelProps = {
 }
@@ -25,7 +26,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
 
     const [activeFilter, setActiveFilter] = useState(false);
     const [showCreateOffer, setShowCreateOffer] = useState(false);
-    const [selectedTradeId, setSelectedTradeId] = useState<number | undefined>(undefined);
+    const [selectedTradeId, setSelectedTradeId] = useState<string | undefined>(undefined);
 
     const sortingParams = useMemo(() => {
         return [
@@ -37,18 +38,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
         ]
     }, []);
 
-    const openTrades: number[] = [];
-    for (const tradeId of trades) {
-        let trade = getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
-        // TODO: How to get status in same torii query as trade???
-        // TODO: add the trade_id in the trade component
-        // short-term query the status of that trade id
-        let status = getComponentValue(Status, Utils.getEntityIdFromKeys([BigInt(tradeId)]));
-        // status 0 === open
-        if (trade?.maker_id !== realmEntityId && status?.value === 0) {
-            openTrades.push(tradeId);
-        }
-    }
+    const { market } = useGetMarket({ realmId: realmEntityId });
 
     const [activeSort, setActiveSort] = useState<SortInterface>({
         sortKey: 'number',
@@ -73,9 +63,9 @@ export const MarketPanel = ({}: MarketPanelProps) => {
             </SortPanel>
             {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
             {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => { }} />}
-            {selectedTradeId && <AcceptOfferPopup onAccept={() => { }} onClose={() => { setSelectedTradeId(undefined) }} selectedTradeId={selectedTradeId} />}
-            {openTrades.map((tradeId) => <div className='flex flex-col p-2'>
-                <MarketOffer tradeId={tradeId} onAccept={() => setSelectedTradeId(tradeId)}/>
+            {selectedTradeId && <AcceptOfferPopup onClose={() => { setSelectedTradeId(undefined) }} selectedTradeId={selectedTradeId} />}
+            {market && market.map((trade) => <div className='flex flex-col p-2'>
+                <MarketOffer marketOffer={trade} onAccept={() => setSelectedTradeId(trade.tradeId)}/>
             </div>)}
             <Button className='absolute -translate-x-1/2 bottom-3 left-1/2' onClick={() => setShowCreateOffer(true)} variant='primary'>+ Create new offer</Button>
         </div >

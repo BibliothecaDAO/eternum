@@ -12,7 +12,7 @@ import { Realm, ResourcesOffer } from '../../../../types';
 
 type AcceptOfferPopupProps = {
     onClose: () => void;
-    selectedTradeId: number;
+    selectedTradeId: string;
 }
 
 export const AcceptOfferPopup = ({ onClose, selectedTradeId }: AcceptOfferPopupProps) => {
