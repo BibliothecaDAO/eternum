@@ -5,7 +5,7 @@ import { SortPanel } from '../../../../../elements/SortPanel';
 import { SortButton, SortInterface } from '../../../../../elements/SortButton';
 import { Caravan } from './Caravan';
 import { CaravanDetails } from '../../../../caravans/CaravanDetailsComponent';
-import { FetchStatus, useGetCaravans, useGetOrders } from '../../../../../hooks/useGraphQLQueries';
+import { FetchStatus, useGetCaravans, useGetOrders, useGetRealm, useGetRealmCaravans } from '../../../../../hooks/useGraphQLQueries';
 import { getComponentValue } from '@latticexyz/recs';
 import { useDojo } from '../../../../../DojoContext';
 import { Utils } from '@dojoengine/core';
@@ -33,38 +33,10 @@ export const CaravansPanel = ({ }: CaravansPanelProps) => {
 
     const { data: caravanData, status } = useGetCaravans();
 
-    // TODO: query to get realms caravans
-    // const { data: caravanData, status } = useGetCaravans();
+    // get realm position
 
-    // TODO: do caravanIds and Orders
-    let caravanIds: number[] = [];
-    if (caravanData && status === FetchStatus.Success) {
-        caravanData.entities?.forEach((entity) => {
-            if (entity) {
-                caravanIds.push(parseInt(entity.keys))
-            }
-        })
-    }
-
-    // TODO: clean 
-    // const { data: orderData, status: orderStatus } = useGetOrders();
-    // let orderIds: number[] = [];
-    // if (orderData && orderStatus === FetchStatus.Success) {
-    //     orderData.entities?.forEach((entity) => {
-    //         if (entity) {
-    //             orderIds.push(parseInt(entity.keys))
-    //         }
-    //     })
-    // }
-
-    let realmCaravanIds: number[] = [];
-    for (const caravanId of caravanIds) {
-        let position = getComponentValue(Position, Utils.getEntityIdFromKeys([BigInt(caravanId)]));
-        const isSamePosition = position && realmPosition && position.x === realmPosition.x && position.y === realmPosition.y;
-        if (isSamePosition) {
-            realmCaravanIds.push(caravanId);
-        }
-    }
+    const { realm } = useGetRealm({entityId: realmEntityId});
+    const caravansData = useGetRealmCaravans(realm?.position.x || 0, realm?.position.y || 0 );
 
     const sortingParams = useMemo(() => {
         return [
@@ -96,8 +68,8 @@ export const CaravansPanel = ({ }: CaravansPanelProps) => {
                 ))}
             </SortPanel>
             {selectedCaravanId && showCaravanDetails && <CaravanDetails caravanId={selectedCaravanId} onClose={() => setShowCaravanDetails(false)} />}
-            {realmCaravanIds.map((caravanId) => <div className='flex flex-col p-2'>
-                <Caravan caravanId={caravanId} onClick={() => onClick(caravanId)} />
+            {caravansData && caravansData.caravans && caravansData.caravans.map((caravan) => <div className='flex flex-col p-2'>
+                <Caravan caravan={caravan} onClick={() => onClick(parseInt(caravan.caravanId))} />
             </div>)}
         </div >
     );

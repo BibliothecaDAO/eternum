@@ -57,7 +57,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
     const [showRealms, setShowRealms] = useState(false);
     const [yourRealms, setYourRealms] = useState<Realm[]>([]);
 
-    const {realmEntityId, setRealmEntityId, realmEntityIds} = useRealmStore();
+    const {realmEntityId, setRealmEntityId, realmEntityIds, setPosition} = useRealmStore();
 
     const { components: { Realm } } = useDojo();
 

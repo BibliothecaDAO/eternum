@@ -1,0 +1,20 @@
+query getCounterpartyOrderId($orderId: u128) {
+  makerTradeComponents: tradeComponents(maker_order_id: $orderId) {
+    __typename
+    ... on Trade {
+      maker_order_id
+      claimed_by_maker
+      taker_id
+      taker_order_id
+    }
+  }
+  takerTradeComponents: tradeComponents(taker_order_id: $orderId) {
+    __typename
+    ... on Trade {
+      maker_order_id
+      claimed_by_maker
+      maker_id
+      taker_order_id
+    }
+  }
+}
