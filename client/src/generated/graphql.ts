@@ -648,6 +648,21 @@ export type GetCounterpartyOrderIdQueryVariables = Exact<{
 
 export type GetCounterpartyOrderIdQuery = { __typename?: 'Query', makerTradeComponents?: Array<{ __typename: 'Trade', maker_order_id: any, claimed_by_maker: any, taker_id: any, taker_order_id: any } | null> | null, takerTradeComponents?: Array<{ __typename: 'Trade', maker_order_id: any, claimed_by_maker: any, maker_id: any, taker_order_id: any } | null> | null };
 
+export type GetIncomingOrderInfoQueryVariables = Exact<{
+  orderId: Scalars['String']['input'];
+  counterPartyOrderId: Scalars['String']['input'];
+}>;
+
+
+export type GetIncomingOrderInfoQuery = { __typename?: 'Query', resources?: Array<{ __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource', resource_type: any, balance: any } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null> | null, arrivalTime?: Array<{ __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime', arrives_at: any } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null> | null, origin?: Array<{ __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position', x: any, y: any } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null> | null };
+
+export type GetIncomingOrdersQueryVariables = Exact<{
+  realmEntityId?: InputMaybe<Scalars['u128']['input']>;
+}>;
+
+
+export type GetIncomingOrdersQuery = { __typename?: 'Query', makerTradeComponents?: Array<{ __typename: 'Trade', maker_order_id: any, claimed_by_maker: any, taker_id: any, taker_order_id: any, trade_id: any } | null> | null, takerTradeComponents?: Array<{ __typename: 'Trade', maker_order_id: any, claimed_by_maker: any, maker_id: any, taker_order_id: any, trade_id: any } | null> | null };
+
 export type GetMarketQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -788,6 +803,77 @@ export const GetCounterpartyOrderIdDocument = gql`
       claimed_by_maker
       maker_id
       taker_order_id
+    }
+  }
+}
+    `;
+export const GetIncomingOrderInfoDocument = gql`
+    query getIncomingOrderInfo($orderId: String!, $counterPartyOrderId: String!) {
+  resources: entities(
+    keys: [$counterPartyOrderId]
+    limit: 100
+    componentName: "Resource"
+  ) {
+    keys
+    components {
+      __typename
+      ... on Resource {
+        resource_type
+        balance
+      }
+    }
+  }
+  arrivalTime: entities(
+    keys: [$counterPartyOrderId]
+    limit: 100
+    componentName: "ArrivalTime"
+  ) {
+    keys
+    components {
+      __typename
+      ... on ArrivalTime {
+        arrives_at
+      }
+    }
+  }
+  origin: entities(keys: [$orderId], limit: 100, componentName: "Position") {
+    keys
+    components {
+      __typename
+      ... on Position {
+        x
+        y
+      }
+    }
+  }
+}
+    `;
+export const GetIncomingOrdersDocument = gql`
+    query getIncomingOrders($realmEntityId: u128) {
+  makerTradeComponents: tradeComponents(
+    maker_id: $realmEntityId
+    claimed_by_maker: 0
+  ) {
+    __typename
+    ... on Trade {
+      maker_order_id
+      claimed_by_maker
+      taker_id
+      taker_order_id
+      trade_id
+    }
+  }
+  takerTradeComponents: tradeComponents(
+    taker_id: $realmEntityId
+    claimed_by_taker: 0
+  ) {
+    __typename
+    ... on Trade {
+      maker_order_id
+      claimed_by_maker
+      maker_id
+      taker_order_id
+      trade_id
     }
   }
 }
@@ -947,6 +1033,8 @@ const defaultWrapper: SdkFunctionWrapper = (action, _operationName, _operationTy
 const GetCaravanInfoDocumentString = print(GetCaravanInfoDocument);
 const GetCaravansDocumentString = print(GetCaravansDocument);
 const GetCounterpartyOrderIdDocumentString = print(GetCounterpartyOrderIdDocument);
+const GetIncomingOrderInfoDocumentString = print(GetIncomingOrderInfoDocument);
+const GetIncomingOrdersDocumentString = print(GetIncomingOrdersDocument);
 const GetMarketDocumentString = print(GetMarketDocument);
 const GetMyOffersDocumentString = print(GetMyOffersDocument);
 const GetOrdersDocumentString = print(GetOrdersDocument);
@@ -966,6 +1054,12 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     getCounterpartyOrderId(variables?: GetCounterpartyOrderIdQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetCounterpartyOrderIdQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetCounterpartyOrderIdQuery>(GetCounterpartyOrderIdDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getCounterpartyOrderId', 'query');
+    },
+    getIncomingOrderInfo(variables: GetIncomingOrderInfoQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetIncomingOrderInfoQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetIncomingOrderInfoQuery>(GetIncomingOrderInfoDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getIncomingOrderInfo', 'query');
+    },
+    getIncomingOrders(variables?: GetIncomingOrdersQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetIncomingOrdersQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetIncomingOrdersQuery>(GetIncomingOrdersDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getIncomingOrders', 'query');
     },
     getMarket(variables?: GetMarketQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetMarketQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetMarketQuery>(GetMarketDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getMarket', 'query');

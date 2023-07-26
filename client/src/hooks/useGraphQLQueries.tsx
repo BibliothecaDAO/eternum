@@ -33,6 +33,165 @@ export enum FetchStatus {
 const client = new GraphQLClient("http://localhost:8080/");
 const sdk = getSdk(client);
 
+export interface IncomingOrderInterface {
+  orderId: number;
+  counterPartyOrderId: number;
+  claimed: boolean;
+  tradeId: number;
+}
+
+export interface IncomingOrdersInterface {
+  incomingOrders: IncomingOrderInterface[];
+}
+
+export const useGetIncomingOrders = (
+  realmEntityId: number,
+): {
+  incomingOrders: IncomingOrderInterface[];
+  status: FetchStatus;
+  error: unknown;
+} => {
+  const [incomingOrders, setIncomingOrders] = useState<
+    IncomingOrderInterface[]
+  >([]);
+  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
+  const [error, setError] = useState<unknown>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setStatus(FetchStatus.Loading);
+      try {
+        const { data } = await sdk.getIncomingOrders({
+          realmEntityId: `0x${realmEntityId.toString(16)}`,
+        });
+        const makerTradeComponents = data?.makerTradeComponents;
+        const takerTradeComponents = data?.takerTradeComponents;
+        if (makerTradeComponents && takerTradeComponents) {
+          const incomingMakerOrders = makerTradeComponents
+            .filter((component) => component?.__typename === "Trade")
+            .map((item) => {
+              let trade = item as Trade;
+              return {
+                orderId: trade.maker_order_id,
+                counterPartyOrderId: trade.taker_order_id,
+                claimed: trade.claimed_by_maker === "0x1",
+                tradeId: trade.trade_id,
+              };
+            });
+
+          const incomingTakerOrders = takerTradeComponents
+            .filter((component) => component?.__typename === "Trade")
+            .map((item) => {
+              let trade = item as Trade;
+              return {
+                orderId: trade.taker_order_id,
+                counterPartyOrderId: trade.maker_order_id,
+                claimed: trade.claimed_by_taker === "0x1",
+                tradeId: trade.trade_id,
+              };
+            });
+
+          setIncomingOrders(incomingMakerOrders.concat(incomingTakerOrders));
+          setStatus(FetchStatus.Success);
+        }
+      } catch (error) {
+        setStatus(FetchStatus.Error);
+        setError(error);
+      }
+    };
+    fetchData();
+    const intervalId = setInterval(fetchData, 5000); // Fetch every 5 seconds
+
+    return () => {
+      clearInterval(intervalId); // Clear interval on component unmount
+    };
+  }, [realmEntityId]);
+
+  return {
+    incomingOrders,
+    status,
+    error,
+  };
+};
+
+export interface IncomingOrderInfoInterface {
+  resourcesGet: ResourceInterface[];
+  arrivalTime: number;
+  origin: PositionInterface;
+}
+
+export const useGetIncomingOrderInfo = ({
+  orderId,
+  counterPartyOrderId,
+}: {
+  orderId: number;
+  counterPartyOrderId: number;
+}): {
+  incomingOrderInfo: IncomingOrderInfoInterface | undefined;
+  status: FetchStatus;
+  error: unknown;
+} => {
+  const [incomingOrderInfo, setIncomingOrderInfo] = useState<
+    IncomingOrderInfoInterface | undefined
+  >();
+  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
+  const [error, setError] = useState<unknown>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setStatus(FetchStatus.Loading);
+      try {
+        const { data } = await sdk.getIncomingOrderInfo({
+          orderId: orderId.toString(),
+          counterPartyOrderId: counterPartyOrderId.toString(),
+        });
+        const positionEntities = data?.origin;
+        const resourcesGetEntities = data?.resources;
+        const arrivalTimeEntities = data?.arrivalTime;
+        if (
+          positionEntities &&
+          positionEntities.length === 1 &&
+          resourcesGetEntities &&
+          arrivalTimeEntities
+        ) {
+          let position = positionEntities[0]?.components?.find(
+            (component) => component?.__typename === "Position",
+          ) as Position;
+          let resourcesGet = resourcesGetEntities.map((entity) => {
+            let resource = entity?.components?.find(
+              (component) => component?.__typename === "Resource",
+            ) as Resource;
+            return {
+              resourceId: parseInt(resource.resource_type),
+              amount: parseInt(resource.balance),
+            };
+          });
+          let arrivalTime = arrivalTimeEntities[0]?.components?.find(
+            (component) => component?.__typename === "ArrivalTime",
+          ) as ArrivalTime;
+
+          setIncomingOrderInfo({
+            resourcesGet,
+            arrivalTime: arrivalTime.arrives_at,
+            origin: { x: position.x, y: position.y },
+          });
+          setStatus(FetchStatus.Success);
+        }
+      } catch (error) {
+        setError(error);
+        setStatus(FetchStatus.Error);
+      }
+    };
+    fetchData();
+  }, [orderId]);
+
+  return {
+    incomingOrderInfo,
+    status,
+    error,
+  };
+};
+
 export interface RealmInterface {
   realmId: number;
   cities: number;
@@ -200,13 +359,11 @@ export const useGetCaravanInfo = (
     const fetchData = async () => {
       setStatus(FetchStatus.Loading);
       try {
-        console.log({ counterpartyOrderId });
         const { data } = await sdk.getCaravanInfo({
           caravanId: `0x${caravanId.toString(16)}`,
           counterpartyOrderId: `0x${counterpartyOrderId.toString(16)}`,
           orderId: `0x${orderId.toString(16)}`,
         });
-        console.log({ data });
         const caravanEntities = data?.caravan;
         const destinationEntities = data?.destination;
         if (
@@ -270,7 +427,6 @@ export const useGetCaravanInfo = (
           });
         }
       } catch (error) {
-        console.log(error);
         setError(error);
         setStatus(FetchStatus.Error);
       }
