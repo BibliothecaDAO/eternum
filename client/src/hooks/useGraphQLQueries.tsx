@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { GraphQLClient } from 'graphql-request';
-import { GetCaravansQuery, GetOrdersQuery, GetRealmsQuery, GetTradesQuery, getSdk } from '../generated/graphql';
+import { GetCaravansQuery, GetOrdersQuery, GetRealmIdsQuery, GetTradesQuery, getSdk } from '../generated/graphql';
 import { useDojo } from '../DojoContext';
 import { getComponentValue } from '@latticexyz/recs';
 import { Utils } from '@dojoengine/core';
@@ -13,7 +13,7 @@ export enum FetchStatus {
 }
 
 export const getLatestRealmId = async (): Promise<number> => {
-  const {data: realmData} = await fetchRealmIds();
+  const { data: realmData } = await fetchRealmIds();
   const entities = realmData?.entities || [];
   let highestRealmId: number | undefined;
 
@@ -28,22 +28,22 @@ export const getLatestRealmId = async (): Promise<number> => {
       }
     }
   });
-  return highestRealmId? highestRealmId: 0;
+  return highestRealmId ? highestRealmId : 0;
 }
 
-async function fetchRealmIds(): Promise<{data: GetRealmsQuery | null, status: FetchStatus, error: unknown}> {
+async function fetchRealmIds(): Promise<{ data: GetRealmIdsQuery | null, status: FetchStatus, error: unknown }> {
   try {
     const client = new GraphQLClient('http://localhost:8080/');
     const sdk = getSdk(client);
     const { data } = await sdk.getRealmIds();
-    return {data, status: FetchStatus.Success, error: null}; 
+    return { data, status: FetchStatus.Success, error: null };
   } catch (error) {
-    return {data: null, status: FetchStatus.Error, error};
+    return { data: null, status: FetchStatus.Error, error };
   }
 }
 
 export function useGetRealmsIds() {
-  const [data, setData] = useState<GetRealmsQuery | null>(null);
+  const [data, setData] = useState<GetRealmIdsQuery | null>(null);
   const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
   const [error, setError] = useState<unknown>(null);
 
@@ -189,16 +189,16 @@ export function useGetTradeFromCaravanId(realmEntityId: number, caravanId: numbe
       try {
         const client = new GraphQLClient('http://localhost:8080/');
         const sdk = getSdk(client);
-        const {data: tradeData} = await sdk.getTrades();
+        const { data: tradeData } = await sdk.getTrades();
         let tradeIds: number[] = [];
         if (tradeData) {
           tradeData.entities?.forEach((entity) => {
-                if (entity) {
-                  tradeIds.push(parseInt(entity.keys))
-                }
-            })
+            if (entity) {
+              tradeIds.push(parseInt(entity.keys))
+            }
+          })
         }
-        let mostRecentTradeId: number| null = null;
+        let mostRecentTradeId: number | null = null;
         const sortedTradeIds = tradeIds.sort((a, b) => b - a);
         for (const tradeId of sortedTradeIds) {
           let trade = getComponentValue(Trade, Utils.getEntityIdFromKeys([BigInt(tradeId)]));

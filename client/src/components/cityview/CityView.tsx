@@ -101,7 +101,7 @@ export function Model(props: JSX.IntrinsicElements['group']) {
   const [scene, setScene] = useState<any | null>(null)
 
   useEffect(() => {
-    gltfLoader.load('/models/realm-city-final-transformed.glb', function (gltf) {
+    gltfLoader.load('/models/realm-city_13.glb', function (gltf) {
 
       const scene = gltf.scene;
       setScene(scene)
@@ -117,4 +117,4 @@ export function Model(props: JSX.IntrinsicElements['group']) {
   )
 }
 
-useGLTF.preload('/models/realm-city-final-transformed.glb')
+useGLTF.preload('/models/realm-city_13.glb')

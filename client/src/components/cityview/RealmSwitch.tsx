@@ -13,6 +13,7 @@ import { orderNameDict } from '../../constants/orders';
 import realmsNames from '../../geodata/realms.json';
 import { LABOR_CONFIG_ID } from '../../constants/labor';
 import { useComponentValue } from '@dojoengine/react';
+import useUIStore from '../../hooks/store/useUIStore';
 
 type RealmSwitchProps = {
 
@@ -57,7 +58,9 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
     const [showRealms, setShowRealms] = useState(false);
     const [yourRealms, setYourRealms] = useState<Realm[]>([]);
 
-    const {realmEntityId, setRealmEntityId, realmEntityIds} = useRealmStore();
+    const { realmEntityId, setRealmEntityId, realmEntityIds } = useRealmStore();
+
+    const moveCameraToRealmView = useUIStore((state) => state.moveCameraToRealmView);
 
     const { components: { Realm } } = useDojo();
 
@@ -67,19 +70,19 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
     const realms = useMemo(() => {
         const fetchedYourRealms: Realm[] = [];
         realmEntityIds.forEach((realmEntityId) => {
-          const realm = getComponentValue(Realm, Utils.getEntityIdFromKeys([BigInt(realmEntityId)]));
-          if (realm) {
-            const name = realmsNames.features[realm.realm_id].name;
-            fetchedYourRealms.push({
-              id: realmEntityId,
-              name,
-              order: orderNameDict[realm.order]
-            });
-          }
+            const realm = getComponentValue(Realm, Utils.getEntityIdFromKeys([BigInt(realmEntityId)]));
+            if (realm) {
+                const name = realmsNames.features[realm.realm_id].name;
+                fetchedYourRealms.push({
+                    id: realmEntityId,
+                    name,
+                    order: orderNameDict[realm.order]
+                });
+            }
         });
         return fetchedYourRealms;
-      }, [realmEntityIds, realm]);
-    
+    }, [realmEntityIds, realm]);
+
     useEffect(() => {
         setYourRealms(realms);
     }, [realms]);
@@ -101,7 +104,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
             }>
                 {yourRealms.map((realm, index) => (
                     // TODO: could not click on realm switch with the link
-                    <Link href='/realmView' onClick={() => setRealmEntityId(realm.id)}>
+                    <Link href='/realmView' onClick={() => { setRealmEntityId(realm.id); moveCameraToRealmView(); }}>
                         <RealmBadge key={realm.id} realm={realm} active={realmEntityId === index} />
                     </Link>
                 ))}

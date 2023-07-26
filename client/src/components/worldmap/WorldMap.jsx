@@ -108,7 +108,7 @@ export function Model(props) {
 
   return (<>      
     <group {...props} dispose={null}>
-      <WaterModel />
+      {/* <WaterModel /> */}
       <mesh geometry={nodes2.ocean.geometry} material={materials2.Ocean} position={[0,-0.01,0]}  scale={[worldmapScale, worldmapScale, worldmapScale]} />
       <mesh ref={worldMapRef} matrixAutoUpdate={false} geometry={nodes.continents.geometry} scale={[worldmapScale, worldmapScale, worldmapScale]} position={[worldmapPosition.x, worldmapPosition.y, worldmapPosition.z]}>
         <meshStandardMaterial flatShading vertexColors metalness={metalness} roughness={roughness}>

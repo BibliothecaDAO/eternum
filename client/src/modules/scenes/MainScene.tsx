@@ -26,20 +26,6 @@ export const Camera = () => {
     const cameraTarget = useUIStore((state) => state.cameraTarget);
     const setCameraTarget = useUIStore((state) => state.setCameraTarget);
 
-    useControls({
-        lookAt: button((id) => {
-            //randomize camera position
-            const randomRealmIndex = Math.floor(Math.random() * realmsJson.features.length);
-            const point = {
-                x: realmsJson.features[randomRealmIndex].xy[0],
-                y: -0.7,
-                z: realmsJson.features[randomRealmIndex].xy[1] * -1
-            }
-            setCameraTarget(new THREE.Vector3(point.x, point.y, point.z))
-            setCameraPosition(new THREE.Vector3(point.x + 25 * (Math.random() < 0.5 ? 1 : -1), 25, point.z + 25 * (Math.random() < 0.5 ? 1 : -1)))
-        })
-    })
-
     return <>
         <CameraControls
             position={cameraPosition}
@@ -64,9 +50,9 @@ export const MainScene = () => {
     const [location] = useLocation()
     // @ts-ignore
     const transition = useTransition(location, {
-        from: { position: [0, 0, -20], rotation: [0, Math.PI, 0], scale: [0, 0, 0], opacity: 0 },
-        enter: { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], opacity: 1 },
-        leave: { position: [0, 0, -10], rotation: [0, -Math.PI, 0], scale: [0, 0, 0], opacity: 0 },
+        from: { scale: [0, 0, 0] },
+        enter: { scale: [1, 1, 1] },
+        leave: { scale: [0, 0, 0] },
         config: () => (n) => n === "opacity" && { friction: 60 },
     })
 
