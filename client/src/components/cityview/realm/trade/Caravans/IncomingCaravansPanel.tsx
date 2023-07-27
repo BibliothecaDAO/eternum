@@ -8,11 +8,9 @@ import { Order } from "../../RealmTradeComponent";
 import { useGetIncomingOrders } from "../../../../../hooks/graphql/useGraphQLQueries";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 
-type IncomingOrdersPanelProps = {
-  orders: Order[];
-};
+type IncomingOrdersPanelProps = {};
 
-export const IncomingOrdersPanel = ({ orders }: IncomingOrdersPanelProps) => {
+export const IncomingOrdersPanel = ({}: IncomingOrdersPanelProps) => {
   const [activeFilter, setActiveFilter] = useState(false);
   const { realmEntityId } = useRealmStore();
 

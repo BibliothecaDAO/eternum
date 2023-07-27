@@ -680,14 +680,14 @@ export type GetIncomingOrdersQuery = { __typename?: 'Query', makerTradeComponent
 export type GetMarketQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMarketQuery = { __typename?: 'Query', tradeComponents?: Array<{ __typename?: 'Trade', entity?: { __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status', value: any } | { __typename: 'Trade', trade_id: any, maker_id: any, maker_order_id: any, taker_order_id: any } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null };
+export type GetMarketQuery = { __typename?: 'Query', tradeComponents?: Array<{ __typename?: 'Trade', entity?: { __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status', value: any } | { __typename: 'Trade', trade_id: any, maker_id: any, maker_order_id: any, taker_order_id: any, expires_at: any } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null };
 
 export type GetMyOffersQueryVariables = Exact<{
   makerId: Scalars['u128']['input'];
 }>;
 
 
-export type GetMyOffersQuery = { __typename?: 'Query', tradeComponents?: Array<{ __typename?: 'Trade', trade_id: any, maker_order_id: any, taker_order_id: any } | null> | null };
+export type GetMyOffersQuery = { __typename?: 'Query', tradeComponents?: Array<{ __typename?: 'Trade', trade_id: any, maker_id: any, maker_order_id: any, taker_order_id: any, expires_at: any } | null> | null };
 
 export type GetOrdersQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -707,7 +707,7 @@ export type GetRealmsCaravansQueryVariables = Exact<{
 }>;
 
 
-export type GetRealmsCaravansQuery = { __typename?: 'Query', positionComponents?: Array<{ __typename?: 'Position', entity?: { __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId', id: any } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null };
+export type GetRealmsCaravansQuery = { __typename?: 'Query', positionComponents?: Array<{ __typename?: 'Position', entity?: { __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime', arrives_at: any } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable', blocked: any } | { __typename: 'OrderId', id: any } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null };
 
 export type GetRealmIdsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -937,6 +937,7 @@ export const GetMarketDocument = gql`
             maker_id
             maker_order_id
             taker_order_id
+            expires_at
           }
         }
       }
@@ -948,8 +949,10 @@ export const GetMyOffersDocument = gql`
     query getMyOffers($makerId: u128!) {
   tradeComponents(maker_id: $makerId, claimed_by_maker: 0, claimed_by_taker: 0) {
     trade_id
+    maker_id
     maker_order_id
     taker_order_id
+    expires_at
   }
 }
     `;
@@ -998,6 +1001,12 @@ export const GetRealmsCaravansDocument = gql`
         __typename
         ... on OrderId {
           id
+        }
+        ... on ArrivalTime {
+          arrives_at
+        }
+        ... on Movable {
+          blocked
         }
       }
     }

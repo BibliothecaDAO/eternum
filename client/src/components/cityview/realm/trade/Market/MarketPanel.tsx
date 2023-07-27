@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { FiltersPanel } from "../../../../../elements/FiltersPanel";
 import { FilterButton } from "../../../../../elements/FilterButton";
 import { SortPanel } from "../../../../../elements/SortPanel";
@@ -7,13 +7,14 @@ import { ResourceFilter } from "../../../../ResourceFilterComponent";
 import { OrdersFilter } from "../../../../OrdersFilterComponent";
 import { CreateOfferPopup } from "../CreateOffer";
 import Button from "../../../../../elements/Button";
-import { getComponentValue } from "@latticexyz/recs";
 import { useDojo } from "../../../../../DojoContext";
-import { Utils } from "@dojoengine/core";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { MarketOffer } from "./MarketOffer";
 import { AcceptOfferPopup } from "../AcceptOffer";
-import { useGetMarket } from "../../../../../hooks/graphql/useGraphQLQueries";
+import {
+  MarketInterface,
+  useGetMarket,
+} from "../../../../../hooks/graphql/useGraphQLQueries";
 
 type MarketPanelProps = {};
 
@@ -26,9 +27,9 @@ export const MarketPanel = ({}: MarketPanelProps) => {
 
   const [activeFilter, setActiveFilter] = useState(false);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
-  const [selectedTradeId, setSelectedTradeId] = useState<string | undefined>(
-    undefined,
-  );
+  const [selectedTrade, setSelectedTrade] = useState<
+    MarketInterface | undefined
+  >(undefined);
 
   const sortingParams = useMemo(() => {
     return [
@@ -82,12 +83,12 @@ export const MarketPanel = ({}: MarketPanelProps) => {
           onCreate={() => {}}
         />
       )}
-      {selectedTradeId && (
+      {selectedTrade && (
         <AcceptOfferPopup
           onClose={() => {
-            setSelectedTradeId(undefined);
+            setSelectedTrade(undefined);
           }}
-          selectedTradeId={selectedTradeId}
+          selectedTrade={selectedTrade}
         />
       )}
       {market &&
@@ -95,7 +96,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
           <div className="flex flex-col p-2">
             <MarketOffer
               marketOffer={trade}
-              onAccept={() => setSelectedTradeId(trade.tradeId)}
+              onAccept={() => setSelectedTrade(trade)}
             />
           </div>
         ))}

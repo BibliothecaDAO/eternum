@@ -50,7 +50,10 @@ export const SettleRealmComponent = ({
     // add the new entity_id in the list of entityIds in my localStorage
     const entityIds = localStorage.getItem("entityIds");
     const updatedEntityIds = entityIds
-      ? [...JSON.parse(entityIds), entity_id]
+      ? [
+          ...JSON.parse(entityIds),
+          { realmEntityId: entity_id, realmId: new_realm_id },
+        ]
       : [entity_id];
     localStorage.setItem("entityIds", JSON.stringify(updatedEntityIds));
     setRealmEntityIds(updatedEntityIds);
@@ -101,7 +104,7 @@ function getPosition(realm_id: number): { x: number; y: number } {
   return { x: coords[0] + 1800000, y: coords[1] + 1800000 };
 }
 
-function getRealm(realm_id: number): Realm {
+export function getRealm(realm_id: number): Realm {
   const realmsData = realms as {
     [key: string]: any;
   };

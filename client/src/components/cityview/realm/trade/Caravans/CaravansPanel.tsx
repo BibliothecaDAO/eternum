@@ -6,42 +6,27 @@ import { SortButton, SortInterface } from "../../../../../elements/SortButton";
 import { Caravan } from "./Caravan";
 import { CaravanDetails } from "../../../../caravans/CaravanDetailsComponent";
 import {
-  FetchStatus,
+  CaravanInterface,
   useGetCaravans,
-  useGetOrders,
   useGetRealm,
   useGetRealmCaravans,
 } from "../../../../../hooks/graphql/useGraphQLQueries";
-import { getComponentValue } from "@latticexyz/recs";
 import { useDojo } from "../../../../../DojoContext";
-import { Utils } from "@dojoengine/core";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import { useComponentValue } from "@dojoengine/react";
-import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 
 type CaravansPanelProps = {};
 
 export const CaravansPanel = ({}: CaravansPanelProps) => {
   const [activeFilter, setActiveFilter] = useState(false);
   const [showCaravanDetails, setShowCaravanDetails] = useState(false);
-  const [selectedCaravanId, setSelectedCaravanId] = useState<number | null>(
-    null,
-  );
-
-  const {
-    components: { Position },
-  } = useDojo();
+  const [selectedCaravan, setSelectedCaravan] =
+    useState<CaravanInterface | null>(null);
 
   const { realmEntityId } = useRealmStore();
 
-  const realmPosition = getComponentValue(
-    Position,
-    Utils.getEntityIdFromKeys([BigInt(realmEntityId)]),
-  );
-
-  const onClick = (caravanId: number) => {
+  const onClick = (caravan: CaravanInterface) => {
     setShowCaravanDetails(true);
-    setSelectedCaravanId(caravanId);
+    setSelectedCaravan(caravan);
   };
 
   const { data: caravanData, status } = useGetCaravans();
@@ -95,9 +80,9 @@ export const CaravansPanel = ({}: CaravansPanelProps) => {
           />
         ))}
       </SortPanel>
-      {selectedCaravanId && showCaravanDetails && (
+      {selectedCaravan && showCaravanDetails && (
         <CaravanDetails
-          caravanId={selectedCaravanId}
+          caravan={selectedCaravan}
           onClose={() => setShowCaravanDetails(false)}
         />
       )}
@@ -105,10 +90,7 @@ export const CaravansPanel = ({}: CaravansPanelProps) => {
         caravansData.caravans &&
         caravansData.caravans.map((caravan) => (
           <div className="flex flex-col p-2">
-            <Caravan
-              caravan={caravan}
-              onClick={() => onClick(parseInt(caravan.caravanId))}
-            />
+            <Caravan caravan={caravan} onClick={() => onClick(caravan)} />
           </div>
         ))}
     </div>

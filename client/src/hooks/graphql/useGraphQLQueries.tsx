@@ -20,9 +20,6 @@ import {
   Trade,
   getSdk,
 } from "../../generated/graphql";
-import { useDojo } from "../../DojoContext";
-import { getComponentValue } from "@latticexyz/recs";
-import { Utils } from "@dojoengine/core";
 
 export enum FetchStatus {
   Idle = "idle",
@@ -201,6 +198,8 @@ export const useGetIncomingOrders = (
         if (makerTradeComponents && takerTradeComponents) {
           const incomingMakerOrders = makerTradeComponents
             .filter((component) => component?.__typename === "Trade")
+            // if taker is null, then the trade is not accepted yet
+            .filter((item) => item?.taker_id !== "0x0")
             .map((item) => {
               let trade = item as Trade;
               return {
@@ -403,8 +402,9 @@ export interface CounterPartyOrderIdInterface {
   counterpartyOrderId: number;
 }
 
+// TODO: have all inputs and outputs be numbers
 export const useGetCounterPartyOrderId = (
-  orderId: number,
+  orderId: string,
 ): {
   counterPartyOrderId: number | undefined;
   status: FetchStatus;
@@ -423,19 +423,20 @@ export const useGetCounterPartyOrderId = (
         const { data } = await sdk.getCounterpartyOrderId({
           orderId: orderId,
         });
+
         const makerTradeComponets = data?.makerTradeComponents;
         const takerTradeComponents = data?.takerTradeComponents;
 
-        if (makerTradeComponets) {
+        if (makerTradeComponets && makerTradeComponets.length > 0) {
           let trade = makerTradeComponets.find(
             (component) => component?.__typename === "Trade",
           ) as Trade;
-          setCounterPartyOrderId(trade.taker_order_id);
-        } else if (takerTradeComponents) {
+          setCounterPartyOrderId(parseInt(trade.taker_order_id));
+        } else if (takerTradeComponents && takerTradeComponents.length > 0) {
           let trade = takerTradeComponents.find(
             (component) => component?.__typename === "Trade",
           ) as Trade;
-          setCounterPartyOrderId(trade.maker_order_id);
+          setCounterPartyOrderId(parseInt(trade.maker_order_id));
         }
         setStatus(FetchStatus.Success);
       } catch (error) {
@@ -444,7 +445,7 @@ export const useGetCounterPartyOrderId = (
       }
     };
     fetchData();
-  }, []);
+  }, [orderId]);
 
   return {
     counterPartyOrderId,
@@ -456,6 +457,8 @@ export const useGetCounterPartyOrderId = (
 export interface CaravanInterface {
   caravanId: string;
   orderId: string;
+  blocked: boolean;
+  arrivalTime: number;
 }
 
 export interface ResourceInterface {
@@ -496,6 +499,7 @@ export const useGetCaravanInfo = (
           counterpartyOrderId: `0x${counterpartyOrderId.toString(16)}`,
           orderId: `0x${orderId.toString(16)}`,
         });
+
         const caravanEntities = data?.caravan;
         const destinationEntities = data?.destination;
         if (
@@ -531,7 +535,7 @@ export const useGetCaravanInfo = (
               amount: parseInt(resource.balance),
             };
           });
-          const resourcesGiveEntities = data.resourcesGet.filter((entity) =>
+          const resourcesGiveEntities = data.resourcesGive.filter((entity) =>
             entity?.components?.find(
               (component) => component?.__typename === "Resource",
             ),
@@ -607,9 +611,20 @@ export const useGetRealmCaravans = (
               let orderId = item?.entity?.components?.find((component) => {
                 return component?.__typename === "OrderId";
               }) as OrderId;
+              let movable = item?.entity?.components?.find((component) => {
+                return component?.__typename === "Movable";
+              }) as Movable;
+              let arrivalTime = item?.entity?.components?.find((component) => {
+                return component?.__typename === "ArrivalTime";
+              }) as ArrivalTime;
               let keys = item?.entity?.keys;
               let caravanId = keys ? keys.split(",")[0] : "";
-              return { caravanId, orderId: orderId.id };
+              return {
+                caravanId,
+                orderId: orderId.id,
+                blocked: movable.blocked,
+                arrivalTime: arrivalTime.arrives_at,
+              };
             });
           setCaravans(caravans);
           setStatus(FetchStatus.Success);
@@ -637,8 +652,10 @@ export const useGetRealmCaravans = (
 
 export interface MarketInterface {
   tradeId: string;
+  makerId: string;
   makerOrderId: string;
   takerOrderId: string;
+  expiresAt: number;
 }
 
 // TODO: add filter on trade status is open
@@ -677,8 +694,10 @@ export const useGetMarket = ({
               ) {
                 return {
                   tradeId: trade.trade_id,
+                  makerId: trade.maker_id,
                   makerOrderId: trade.maker_order_id,
                   takerOrderId: trade.taker_order_id,
+                  expiresAt: trade.expires_at,
                 };
               } else {
                 return undefined;
@@ -713,6 +732,7 @@ export interface MyOfferInterface {
   tradeId: string;
   makerOrderId: string;
   takerOrderId: string;
+  expiresAt: number;
 }
 
 // TODO: add filter on trade status is open
@@ -743,6 +763,7 @@ export const useGetMyOffers = ({
               tradeId: item?.trade_id,
               makerOrderId: item?.maker_order_id,
               takerOrderId: item?.taker_order_id,
+              expiresAt: item?.expires_at,
             };
           });
           setMyOffers(myOffers);
@@ -1022,77 +1043,6 @@ export function useGetOrders() {
       try {
         const { data } = await sdk.getOrders();
         setData(data);
-        setStatus(FetchStatus.Success);
-      } catch (error) {
-        setError(error);
-        setStatus(FetchStatus.Error);
-      }
-    }
-    fetchData();
-  }, []);
-
-  // TODO: add polling
-
-  return {
-    data,
-    status,
-    error,
-  };
-}
-
-export function useGetTradeFromCaravanId(
-  realmEntityId: number,
-  caravanId: number,
-) {
-  const {
-    components: { Trade, Caravan },
-  } = useDojo();
-
-  const [data, setData] = useState<number | null>(null);
-  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
-  const [error, setError] = useState<unknown>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      setStatus(FetchStatus.Loading);
-      try {
-        const { data: tradeData } = await sdk.getTrades();
-        let tradeIds: number[] = [];
-        if (tradeData) {
-          tradeData.entities?.forEach((entity) => {
-            if (entity) {
-              tradeIds.push(parseInt(entity.keys));
-            }
-          });
-        }
-        let mostRecentTradeId: number | null = null;
-        const sortedTradeIds = tradeIds.sort((a, b) => b - a);
-        for (const tradeId of sortedTradeIds) {
-          let trade = getComponentValue(
-            Trade,
-            Utils.getEntityIdFromKeys([BigInt(tradeId)]),
-          );
-          let makerCaravan = getComponentValue(
-            Caravan,
-            Utils.getEntityIdFromKeys([
-              BigInt(trade?.maker_order_id || 0),
-              BigInt(realmEntityId),
-            ]),
-          );
-          let takerCaravan = getComponentValue(
-            Caravan,
-            Utils.getEntityIdFromKeys([
-              BigInt(trade?.taker_order_id || 0),
-              BigInt(realmEntityId),
-            ]),
-          );
-          if (makerCaravan?.caravan_id === caravanId) {
-            mostRecentTradeId = tradeId;
-          } else if (takerCaravan?.caravan_id === caravanId) {
-            mostRecentTradeId = tradeId;
-          }
-        }
-        setData(mostRecentTradeId);
         setStatus(FetchStatus.Success);
       } catch (error) {
         setError(error);

@@ -12,16 +12,14 @@ import { ReactComponent as Donkey } from "../../../../assets/icons/units/donkey.
 import { Caravan } from "./Caravans/Caravan";
 import { Steps } from "../../../../elements/Steps";
 import {
-  FetchStatus,
-  useGetCaravans,
-  useGetTrades,
+  CaravanInterface,
+  useGetRealm,
+  useGetRealmCaravans,
+  useGetRealmResources,
 } from "../../../../hooks/graphql/useGraphQLQueries";
-import { getComponentValue } from "@latticexyz/recs";
-import { Utils } from "@dojoengine/core";
 import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
-import { attach } from "@react-three/fiber/dist/declarations/src/core/utils";
 
 type CreateOfferPopupProps = {
   onClose: () => void;
@@ -198,17 +196,15 @@ const SelectResourcesPanel = ({
   } = useDojo();
   const { realmEntityId } = useRealmStore();
 
+  const { realmResources } = useGetRealmResources(realmEntityId);
+
   return (
     <div className="grid grid-cols-9 gap-2 p-2">
       <div className="flex flex-col items-center col-span-4">
         <Headline className="mb-2">You Give</Headline>
         <div className="grid grid-cols-4 gap-2">
           {resources.map(({ id, trait: name }) => {
-            let resourceBalance =
-              getComponentValue(
-                Resource,
-                Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]),
-              )?.balance ?? 0;
+            let resourceBalance = realmResources[id]?.amount ?? 0;
             return (
               <SelectableResource
                 key={id}
@@ -291,6 +287,8 @@ const SelectResourcesAmountPanel = ({
   } = useDojo();
   const { realmEntityId } = useRealmStore();
 
+  const { realmResources } = useGetRealmResources(realmEntityId);
+
   useEffect(() => {
     let weight = 0;
     for (const [resourceId, amount] of Object.entries(
@@ -307,11 +305,7 @@ const SelectResourcesAmountPanel = ({
         <div className="flex flex-col items-center col-span-4 space-y-2">
           <Headline className="mb-2">You Give</Headline>
           {selectedResourceIdsGive.map((id) => {
-            let resourceBalance =
-              getComponentValue(
-                Resource,
-                Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]),
-              )?.balance ?? 0;
+            let resourceBalance = realmResources[id]?.amount ?? 0;
             return (
               <div key={id} className="flex items-center w-full">
                 <NumberInput
@@ -414,55 +408,27 @@ export const SelectCaravanPanel = ({
   } = useDojo();
 
   const { realmEntityId } = useRealmStore();
-  const realmPosition = getComponentValue(
-    Position,
-    Utils.getEntityIdFromKeys([BigInt(realmEntityId)]),
-  );
 
   const { nextBlockTimestamp } = useBlockchainStore();
 
-  const { data: caravanData, status } = useGetCaravans();
-  let caravanIds: number[] = [];
-  if (caravanData && status === FetchStatus.Success) {
-    caravanData.entities?.forEach((entity) => {
-      if (entity) {
-        caravanIds.push(parseInt(entity.keys));
-      }
-    });
-  }
+  // const { data: caravanData, status } = useGetCaravans();
+  const { realm } = useGetRealm({ entityId: realmEntityId });
+  const { caravans } = useGetRealmCaravans(
+    realm?.position.x || 0,
+    realm?.position.y || 0,
+  );
 
-  let myIdleCaravans: number[] = [];
-  for (const caravanId of caravanIds) {
-    let position = getComponentValue(
-      Position,
-      Utils.getEntityIdFromKeys([BigInt(caravanId)]),
-    );
-    let arrivalTime = getComponentValue(
-      ArrivalTime,
-      Utils.getEntityIdFromKeys([BigInt(caravanId)]),
-    );
-    let movable = getComponentValue(
-      Movable,
-      Utils.getEntityIdFromKeys([BigInt(caravanId)]),
-    );
-
-    const isSamePosition =
-      position &&
-      realmPosition &&
-      position.x === realmPosition.x &&
-      position.y === realmPosition.y;
-
-    if (isSamePosition) {
+  let myIdleCaravans: CaravanInterface[] = [];
+  if (caravans) {
+    caravans.forEach((caravan) => {
       const isIdle =
         nextBlockTimestamp &&
-        ((arrivalTime && arrivalTime.arrives_at <= nextBlockTimestamp) ||
-          !arrivalTime) &&
-        movable &&
-        !movable.blocked;
+        caravan.arrivalTime <= nextBlockTimestamp &&
+        !caravan.blocked;
       if (isIdle) {
-        myIdleCaravans.push(caravanId);
+        myIdleCaravans.push(caravan);
       }
-    }
+    });
   }
 
   return (
@@ -562,13 +528,15 @@ export const SelectCaravanPanel = ({
       )}
       {!isNewCaravan && (
         <>
-          {myIdleCaravans.map((caravanId) => (
+          {myIdleCaravans.map((caravan) => (
             <Caravan
-              caravanId={caravanId}
+              caravan={caravan}
               idleOnly={true}
-              onClick={() => setSelectedCaravan(caravanId)}
+              onClick={() => setSelectedCaravan(parseInt(caravan.caravanId))}
               className={`w-full mb-2 border rounded-md ${
-                selectedCaravan === caravanId ? "border-yellow" : ""
+                selectedCaravan === parseInt(caravan.caravanId)
+                  ? "border-yellow"
+                  : ""
               }`}
             />
           ))}

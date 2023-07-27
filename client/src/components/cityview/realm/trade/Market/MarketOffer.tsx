@@ -1,21 +1,20 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
 import { findResourceById } from "../../../../../constants/resources";
 import { ReactComponent as RatioIcon } from "../../../../../assets/icons/common/ratio.svg";
-import { useComponentValue } from "@dojoengine/react";
-import { useDojo } from "../../../../../DojoContext";
-import { Utils } from "@dojoengine/core";
-import { Realm, ResourcesOffer } from "../../../../../types";
+import { ResourcesOffer } from "../../../../../types";
 import { orderNameDict } from "../../../../../constants/orders";
 import * as realmsData from "../../../../../geodata/realms.json";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import { getComponentValue } from "@latticexyz/recs";
 import {
   MarketInterface,
+  useGetRealm,
+  useGetRealmResources,
   useGetTradeResources,
 } from "../../../../../hooks/graphql/useGraphQLQueries";
+import { canAcceptOffer } from "../tradeUtils";
 
 type TradeOfferProps = {
   marketOffer: MarketInterface;
@@ -34,32 +33,13 @@ export const MarketOffer = ({
     setIsLoading(false);
   }, [marketOffer]);
 
-  const {
-    systemCalls: {
-      attach_caravan,
-      take_fungible_order,
-      create_free_transport_unit,
-      create_caravan,
-      change_order_status,
-    },
-    components: { Trade, Status, FungibleEntities, Resource, Realm },
-  } = useDojo();
-
   const { realmEntityId } = useRealmStore();
 
-  let trade = useComponentValue(
-    Trade,
-    Utils.getEntityIdFromKeys([BigInt(marketOffer.tradeId)]),
-  );
+  let { realm: makerRealm } = useGetRealm({
+    entityId: parseInt(marketOffer.makerId),
+  });
 
-  // set maker order
-  let makerRealm: Realm | undefined;
-  if (trade) {
-    makerRealm = getComponentValue(
-      Realm,
-      Utils.getEntityIdFromKeys([BigInt(trade.maker_id)]),
-    );
-  }
+  let { realmResources } = useGetRealmResources(realmEntityId);
 
   const {
     tradeResources: { resourcesGet, resourcesGive },
@@ -70,29 +50,12 @@ export const MarketOffer = ({
 
   // TODO: use a graphql query to get the resource balance of the realm
   useEffect(() => {
-    function canAcceptOffer() {
-      if (resourcesGive && resourcesGet) {
-        for (let i = 0; i < resourcesGive.length; i++) {
-          const resourceBalance = getComponentValue(
-            Resource,
-            Utils.getEntityIdFromKeys([
-              BigInt(realmEntityId),
-              BigInt(resourcesGive[i].resourceId),
-            ]),
-          ) || { resource_type: 0, balance: 0 };
-          if (resourceBalance.balance < resourcesGive[i].amount) {
-            setCanAccept(false);
-          }
-        }
-      }
-    }
-    canAcceptOffer();
+    canAcceptOffer(resourcesGive, realmResources)
+      ? setCanAccept(true)
+      : setCanAccept(false);
   }, []);
 
-  let timeLeft: string | undefined;
-  if (trade) {
-    timeLeft = formatTimeLeft(trade.expires_at - Date.now() / 1000);
-  }
+  let timeLeft = formatTimeLeft(marketOffer.expiresAt - Date.now() / 1000);
 
   return (
     <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold">
@@ -107,7 +70,7 @@ export const MarketOffer = ({
                 className="mr-1"
               />
             )}
-            {realmsData["features"][makerRealm.realm_id - 1].name}
+            {realmsData["features"][makerRealm.realmId - 1].name}
           </div>
         )}
         <div className="-mt-2 text-gold">{timeLeft}</div>

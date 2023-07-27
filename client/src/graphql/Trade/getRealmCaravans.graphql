@@ -7,6 +7,12 @@ query getRealmsCaravans($x: u32, $y: u32) {
         ... on OrderId {
           id
         }
+        ... on ArrivalTime {
+          arrives_at
+        }
+        ... on Movable {
+          blocked
+        }
       }
     }
   }

@@ -31,12 +31,11 @@ import {
   getRealmOrderNameById,
   getResourceIdsFromFungibleEntities,
   getTotalResourceWeight,
-} from "../TradeUtils";
+} from "../tradeUtils";
 import {
   CaravanInterface,
   useGetCaravanInfo,
   useGetCounterPartyOrderId,
-  useGetTradeFromCaravanId,
 } from "../../../../../hooks/graphql/useGraphQLQueries";
 
 type CaravanProps = {

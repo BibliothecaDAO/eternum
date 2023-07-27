@@ -13,6 +13,7 @@ query getMarket {
             maker_id
             maker_order_id
             taker_order_id
+            expires_at
           }
         }
       }

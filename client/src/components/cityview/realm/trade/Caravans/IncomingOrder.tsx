@@ -11,7 +11,7 @@ import {
   getRealmIdByPosition,
   getRealmNameById,
   getRealmOrderNameById,
-} from "../TradeUtils";
+} from "../tradeUtils";
 import {
   IncomingOrderInterface,
   useGetIncomingOrderInfo,

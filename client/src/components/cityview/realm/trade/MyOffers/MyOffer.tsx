@@ -1,21 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
 import { findResourceById } from "../../../../../constants/resources";
 import { ReactComponent as RatioIcon } from "../../../../../assets/icons/common/ratio.svg";
-import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../../../DojoContext";
 import { Utils } from "@dojoengine/core";
 import { Realm, ResourcesOffer } from "../../../../../types";
 import { orderNameDict } from "../../../../../constants/orders";
 import * as realmsData from "../../../../../geodata/realms.json";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import { getComponentValue } from "@latticexyz/recs";
 import {
   MyOfferInterface,
+  useGetRealm,
   useGetTradeResources,
 } from "../../../../../hooks/graphql/useGraphQLQueries";
+import { getRealm } from "../../SettleRealmComponent";
 
 type TradeOfferProps = {
   myOffer: MyOfferInterface;
@@ -30,16 +30,9 @@ export const MyOffer = ({ myOffer, ...props }: TradeOfferProps) => {
 
   const {
     systemCalls: { change_order_status },
-    components: { Trade, Status, FungibleEntities, Resource, Realm },
   } = useDojo();
 
-  const { realmEntityId } = useRealmStore();
-
-  // TODO: get all my offers, so need to add trade_id in the component for now because not available in torii
-  let trade = useComponentValue(
-    Trade,
-    Utils.getEntityIdFromKeys([BigInt(myOffer.tradeId)]),
-  );
+  const { realmEntityId, realmId } = useRealmStore();
 
   const cancelOffer = async () => {
     // status 2 = cancel
@@ -51,14 +44,10 @@ export const MyOffer = ({ myOffer, ...props }: TradeOfferProps) => {
     });
   };
 
-  // TODO: get the maker realm
-  let makerRealm: Realm | undefined;
-  if (trade) {
-    makerRealm = getComponentValue(
-      Realm,
-      Utils.getEntityIdFromKeys([BigInt(trade.maker_id)]),
-    );
-  }
+  let makerRealm = useMemo(
+    () => (realmId ? getRealm(realmId) : undefined),
+    [realmId],
+  );
 
   const {
     tradeResources: { resourcesGet, resourcesGive },
@@ -67,10 +56,7 @@ export const MyOffer = ({ myOffer, ...props }: TradeOfferProps) => {
     takerOrderId: myOffer.takerOrderId,
   });
 
-  let timeLeft: string | undefined;
-  if (trade) {
-    timeLeft = formatTimeLeft(trade.expires_at - Date.now() / 1000);
-  }
+  let timeLeft = formatTimeLeft(myOffer.expiresAt - Date.now() / 1000);
 
   return (
     <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold">

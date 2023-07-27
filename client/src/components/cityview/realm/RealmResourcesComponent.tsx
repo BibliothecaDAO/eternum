@@ -73,7 +73,10 @@ export const RealmResourcesComponent = ({
               <div className="flex flex-col">
                 <div className="grid grid-cols-4 gap-3">
                   {resources.map((resource) => (
-                    <SmallResource resourceId={resource.id}></SmallResource>
+                    <SmallResource
+                      resource={realmResources[resource.id]}
+                      resourceId={resource.id}
+                    ></SmallResource>
                   ))}
                 </div>
                 <Button

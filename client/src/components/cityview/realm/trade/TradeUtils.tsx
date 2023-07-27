@@ -6,7 +6,10 @@ import { Utils } from "@dojoengine/core";
 import { EntityIndex } from "@latticexyz/recs";
 import { Resource, Trade } from "../../../../types";
 import { useDojo } from "../../../../DojoContext";
-import { ResourceInterface } from "../../../../hooks/graphql/useGraphQLQueries";
+import {
+  RealmResourcesInterface,
+  ResourceInterface,
+} from "../../../../hooks/graphql/useGraphQLQueries";
 
 export const getRealmIdByPosition = (positionRaw: {
   x: number;
@@ -74,4 +77,17 @@ export const getTotalResourceWeight = (
     (total, resource) => total + (resource?.amount || 0) * 1,
     0,
   );
+};
+
+export const canAcceptOffer = (
+  resourcesGive: ResourceInterface[],
+  realmResources: RealmResourcesInterface,
+): boolean => {
+  let canAccept = true;
+  Object.values(resourcesGive).forEach((resource) => {
+    if (resource.amount > realmResources[resource.resourceId].amount) {
+      canAccept = false;
+    }
+  });
+  return canAccept;
 };
