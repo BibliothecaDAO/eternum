@@ -53,7 +53,7 @@ export const MarketPanel = ({ trades }: MarketPanelProps) => {
         sort: 'none'
     });
     return (
-        <div className='flex flex-col' >
+        <div className='flex flex-col min-h-[125px] relative pb-10' >
             <FiltersPanel className='px-3 py-2'>
                 <FilterButton active={activeFilter} onClick={() => setActiveFilter(!activeFilter)}>Filter</FilterButton>
                 <ResourceFilter />

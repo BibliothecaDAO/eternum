@@ -19,34 +19,6 @@ type RealmSwitchProps = {
 
 } & ComponentPropsWithRef<'div'>
 
-const yourRealms = [
-    {
-        id: 1,
-        name: 'Stolsli',
-        order: 'giants',
-    },
-    {
-        id: 2,
-        name: 'Ilgzhijajilg',
-        order: 'perfection',
-    },
-    {
-        id: 3,
-        name: 'Hetokamohuti',
-        order: 'rage',
-    },
-    {
-        id: 4,
-        name: 'Egonal',
-        order: 'fox',
-    },
-    {
-        id: 5,
-        name: '‘oak Leukue',
-        order: 'twins',
-    }
-]
-
 type Realm = {
     id: number,
     name: string,
@@ -104,8 +76,8 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
             }>
                 {yourRealms.map((realm, index) => (
                     // TODO: could not click on realm switch with the link
-                    <Link href='/realmView' onClick={() => { setRealmEntityId(realm.id); moveCameraToRealmView(); }}>
-                        <RealmBadge key={realm.id} realm={realm} active={realmEntityId === index} />
+                    <Link key={realm.id} href='/realmView' onClick={() => { setRealmEntityId(realm.id); moveCameraToRealmView(); }}>
+                        <RealmBadge key={realm.id} realm={realm} active={realmEntityId === realm.id} />
                     </Link>
                 ))}
             </div>
