@@ -85,6 +85,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
 
     useEffect(() => {
         setYourRealms(realms);
+        console.log('Realms', realms)
     }, [realms]);
 
     const orderName = useMemo(() => {
@@ -104,7 +105,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
             }>
                 {yourRealms.map((realm, index) => (
                     // TODO: could not click on realm switch with the link
-                    <Link href='/realmView' onClick={() => { setRealmEntityId(realm.id); moveCameraToRealmView(); }}>
+                    <Link key={index} href='/realmView' onClick={() => { setRealmEntityId(realm.id); moveCameraToRealmView(); }}>
                         <RealmBadge key={realm.id} realm={realm} active={realmEntityId === index} />
                     </Link>
                 ))}
