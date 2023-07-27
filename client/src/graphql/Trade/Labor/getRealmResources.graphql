@@ -1,0 +1,12 @@
+query getRealmResources($realmEntityId: String!) {
+  entities(keys: [$realmEntityId], limit: 30, componentName: "Resource") {
+    keys
+    components {
+      __typename
+      ... on Resource {
+        resource_type
+        balance
+      }
+    }
+  }
+}

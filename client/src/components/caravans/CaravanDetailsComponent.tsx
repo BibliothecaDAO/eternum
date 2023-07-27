@@ -26,13 +26,14 @@ import {
   getResourceIdsFromFungibleEntities,
 } from "../cityview/realm/trade/TradeUtils";
 import { Resource } from "../../types";
-import { useGetTradeFromCaravanId } from "../../hooks/useGraphQLQueries";
+import { useGetTradeFromCaravanId } from "../../hooks/graphql/useGraphQLQueries";
 
 type CaravanDetailsProps = {
   caravanId: number;
   onClose: () => void;
 };
 
+// TODO: use graphql here
 export const CaravanDetails = ({ caravanId, onClose }: CaravanDetailsProps) => {
   const { realmEntityId } = useRealmStore();
 

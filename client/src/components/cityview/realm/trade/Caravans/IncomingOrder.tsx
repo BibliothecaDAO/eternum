@@ -15,7 +15,7 @@ import {
 import {
   IncomingOrderInterface,
   useGetIncomingOrderInfo,
-} from "../../../../../hooks/useGraphQLQueries";
+} from "../../../../../hooks/graphql/useGraphQLQueries";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 
 type IncomingOrderProps = {

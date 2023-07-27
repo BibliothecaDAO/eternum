@@ -37,7 +37,7 @@ import {
   useGetCaravanInfo,
   useGetCounterPartyOrderId,
   useGetTradeFromCaravanId,
-} from "../../../../../hooks/useGraphQLQueries";
+} from "../../../../../hooks/graphql/useGraphQLQueries";
 
 type CaravanProps = {
   caravan: CaravanInterface;

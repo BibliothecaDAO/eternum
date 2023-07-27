@@ -5,7 +5,7 @@ import { SortPanel } from "../../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../../elements/SortButton";
 import { IncomingOrder } from "./IncomingOrder";
 import { Order } from "../../RealmTradeComponent";
-import { useGetIncomingOrders } from "../../../../../hooks/useGraphQLQueries";
+import { useGetIncomingOrders } from "../../../../../hooks/graphql/useGraphQLQueries";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 
 type IncomingOrdersPanelProps = {

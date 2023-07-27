@@ -6,7 +6,7 @@ import { Utils } from "@dojoengine/core";
 import { EntityIndex } from "@latticexyz/recs";
 import { Resource, Trade } from "../../../../types";
 import { useDojo } from "../../../../DojoContext";
-import { ResourceInterface } from "../../../../hooks/useGraphQLQueries";
+import { ResourceInterface } from "../../../../hooks/graphql/useGraphQLQueries";
 
 export const getRealmIdByPosition = (positionRaw: {
   x: number;

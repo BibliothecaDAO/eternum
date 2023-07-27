@@ -9,6 +9,7 @@ import {
   GetOrdersQuery,
   GetRealmsQuery,
   GetTradesQuery,
+  Labor,
   Movable,
   OrderId,
   Owner,
@@ -18,8 +19,8 @@ import {
   Status,
   Trade,
   getSdk,
-} from "../generated/graphql";
-import { useDojo } from "../DojoContext";
+} from "../../generated/graphql";
+import { useDojo } from "../../DojoContext";
 import { getComponentValue } from "@latticexyz/recs";
 import { Utils } from "@dojoengine/core";
 
@@ -32,6 +33,137 @@ export enum FetchStatus {
 
 const client = new GraphQLClient("http://localhost:8080/");
 const sdk = getSdk(client);
+
+export interface RealmLaborInterface {
+  [resourceId: number]: LaborInterface;
+}
+
+export interface LaborInterface {
+  lastHarvest: number;
+  balance: number;
+  multiplier: number;
+}
+
+export const useGetRealmLabor = (
+  realmEntityId: number,
+): {
+  realmLabor: RealmLaborInterface;
+  status: FetchStatus;
+  error: unknown;
+} => {
+  const [realmLabor, setRealmLabor] = useState<RealmLaborInterface>({});
+  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
+  const [error, setError] = useState<unknown>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setStatus(FetchStatus.Loading);
+      try {
+        const { data } = await sdk.getRealmLabor({
+          realmEntityId: `0x${realmEntityId.toString(16)}`,
+        });
+        const resourceLaborEntities = data?.entities;
+        if (resourceLaborEntities) {
+          let realmLabor: { [resourceId: number]: LaborInterface } = {};
+          resourceLaborEntities.map((entity) => {
+            let labor = entity?.components?.find((component) => {
+              return component?.__typename === "Labor";
+            }) as Labor;
+            let keys = entity?.keys;
+            if (keys) {
+              let resourceId = keys.split(",")[1];
+              realmLabor[parseInt(resourceId)] = {
+                balance: labor.balance,
+                lastHarvest: labor.last_harvest,
+                multiplier: labor.multiplier,
+              };
+            }
+          });
+          setRealmLabor(realmLabor);
+          setStatus(FetchStatus.Success);
+        }
+      } catch (error) {
+        setError(error);
+        setStatus(FetchStatus.Error);
+      }
+    };
+    fetchData();
+    const intervalId = setInterval(fetchData, 5000); // Fetch every 5 seconds
+
+    return () => {
+      clearInterval(intervalId); // Clear interval on component unmount
+    };
+  }, [realmEntityId]);
+
+  return {
+    realmLabor,
+    status,
+    error,
+  };
+};
+
+export interface RealmResourcesInterface {
+  [resourceId: number]: ResourceInterface;
+}
+
+export const useGetRealmResources = (
+  realmEntityId: number,
+): {
+  realmResources: RealmResourcesInterface;
+  status: FetchStatus;
+  error: unknown;
+} => {
+  const [realmResources, setRealmResources] = useState<RealmResourcesInterface>(
+    {},
+  );
+  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
+  const [error, setError] = useState<unknown>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setStatus(FetchStatus.Loading);
+      try {
+        const { data } = await sdk.getRealmResources({
+          realmEntityId: `0x${realmEntityId.toString(16)}`,
+        });
+        const resourceEntities = data?.entities;
+        if (resourceEntities) {
+          let realmResources: { [resourceId: number]: ResourceInterface } = {};
+          resourceEntities.map((entity) => {
+            let resource = entity?.components?.find((component) => {
+              return component?.__typename === "Resource";
+            }) as Resource;
+            let keys = entity?.keys;
+            if (keys) {
+              let resourceId = keys.split(",")[1];
+              realmResources[parseInt(resourceId)] = {
+                resourceId: parseInt(resourceId),
+                amount: parseInt(resource.balance),
+              };
+            }
+          });
+          setRealmResources(realmResources);
+          setStatus(FetchStatus.Success);
+        }
+      } catch (error) {
+        setError(error);
+        setStatus(FetchStatus.Error);
+      }
+    };
+    fetchData();
+    const intervalId = setInterval(fetchData, 5000); // Fetch every 5 seconds
+
+    return () => {
+      clearInterval(intervalId); // Clear interval on component unmount
+    };
+  }, [realmEntityId]);
+
+  return {
+    realmResources,
+    status,
+    error,
+  };
+};
 
 export interface IncomingOrderInterface {
   orderId: number;
