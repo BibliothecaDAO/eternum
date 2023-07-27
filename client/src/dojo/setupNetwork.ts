@@ -23,9 +23,6 @@ export async function setupNetwork() {
 
     const signer = new Account(provider.sequencerProvider, KATANA_ACCOUNT_1_ADDRESS, ec.getKeyPair(KATANA_ACCOUNT_1_PRIVATEKEY))
 
-    // const syncWorker = new SyncWorker(provider, contractComponents, EVENT_KEY, TORII_URL, IS_MADARA, IS_MADARA);
-    const syncWorker = new SyncWorker(provider, contractComponents, EVENT_KEY);
-
     return {
         contractComponents,
         provider,
@@ -34,6 +31,5 @@ export async function setupNetwork() {
         entity: async (component: string, query: Query) => provider.entity(component, query),
         entities: async (component: string, partition: string, length: number) => provider.entities(component, partition, length),
         world,
-        syncWorker
     };
 }
