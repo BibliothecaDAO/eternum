@@ -1,6 +1,5 @@
 {
-  "name": "my-react-app",
-  "private": true,
+  "name": "eternum-client",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
