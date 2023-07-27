@@ -46,7 +46,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
           {realmResourceIds.map((resourceId) => (
             <ResourceComponent key={resourceId} realmEntityId={realmEntityId} resourceId={resourceId} />
           ))}
-          <div onClick={() => {!showAllResources && setShowAllResources(true)}} className="absolute flex items-center p-3 text-xs font-bold text-white translate-x-full cursor-pointer -right-2 min-h-10 bg-black/60 rounded-xl">
+          <div onClick={() => { !showAllResources && setShowAllResources(true) }} className="absolute flex items-center p-3 text-xs font-bold text-white translate-x-full cursor-pointer -right-2 min-h-10 bg-black/60 rounded-xl">
             {
               showAllResources ?
                 <div className='flex flex-col'>
@@ -61,7 +61,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
                 <div className='flex items-center'>
                   <MoreIcon className="mr-1" />
                   {/* // TODO: find a way to get total resource amount */}
-                  <div className="text-xs">250.49k resourses</div>
+                  <div className="text-xs">Show all</div>
                 </div>
             }
           </div>
