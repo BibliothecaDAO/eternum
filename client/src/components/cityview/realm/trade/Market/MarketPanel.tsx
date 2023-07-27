@@ -7,7 +7,6 @@ import { ResourceFilter } from "../../../../ResourceFilterComponent";
 import { OrdersFilter } from "../../../../OrdersFilterComponent";
 import { CreateOfferPopup } from "../CreateOffer";
 import Button from "../../../../../elements/Button";
-import { useDojo } from "../../../../../DojoContext";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { MarketOffer } from "./MarketOffer";
 import { AcceptOfferPopup } from "../AcceptOffer";
@@ -19,10 +18,6 @@ import {
 type MarketPanelProps = {};
 
 export const MarketPanel = ({}: MarketPanelProps) => {
-  const {
-    components: { Trade, Status },
-  } = useDojo();
-
   const { realmEntityId } = useRealmStore();
 
   const [activeFilter, setActiveFilter] = useState(false);
@@ -48,7 +43,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
     sort: "none",
   });
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col min-h-[125px] relative pb-10">
       <FiltersPanel className="px-3 py-2">
         <FilterButton
           active={activeFilter}

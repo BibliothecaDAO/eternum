@@ -91,7 +91,7 @@ export const RealmResourcesComponent = ({
               <div className="flex items-center">
                 <MoreIcon className="mr-1" />
                 {/* // TODO: find a way to get total resource amount */}
-                <div className="text-xs">250.49k resourses</div>
+                <div className="text-xs">Show all</div>
               </div>
             )}
           </div>

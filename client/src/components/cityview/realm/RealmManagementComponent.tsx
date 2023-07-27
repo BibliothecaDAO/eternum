@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BaseContainer } from "../../../containers/BaseContainer"
 import { SecondaryContainer } from "../../../containers/SecondaryContainer"
 import { ReactComponent as CrossSwords } from '../../../assets/icons/common/cross-swords.svg';
@@ -10,10 +10,24 @@ import { ReactComponent as Map } from '../../../assets/icons/common/map.svg';
 import { Tabs } from "../../../elements/tab";
 import RealmTradeComponent from "./RealmTradeComponent";
 import RealmLaborComponent from "./RealmLaborComponent";
+import useUIStore from "../../../hooks/store/useUIStore";
 
 
 const RealmManagementComponent = () => {
     const [selectedTab, setSelectedTab] = useState(1);
+
+    const moveCameraToRealmView = useUIStore((state) => state.moveCameraToRealmView);
+    const moveCameraToLaborView = useUIStore((state) => state.moveCameraToLaborView);
+
+
+    useEffect(() => {
+        if (selectedTab == 0) {
+            moveCameraToLaborView();
+        }
+        else {
+            moveCameraToRealmView();
+        }
+    }, [selectedTab])
 
     const tabs = useMemo(
         () => [

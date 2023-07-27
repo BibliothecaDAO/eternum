@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Tabs } from "../../../elements/tab";
 import { CaravansPanel } from "./trade/Caravans/CaravansPanel";
 import { MarketPanel } from "./trade/Market/MarketPanel";
 import { MyOffersPanel } from "./trade/MyOffers/MyOffersPanel";
 import { IncomingOrdersPanel } from "./trade/Caravans/IncomingCaravansPanel";
+import useUIStore from "../../../hooks/store/useUIStore";
 
 export type Order = {
   orderId: number;
@@ -14,7 +15,22 @@ export type Order = {
 type RealmTradeComponentProps = {};
 
 export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
-  const [selectedTab, setSelectedTab] = useState(2);
+  const [selectedTab, setSelectedTab] = useState(1);
+
+  const moveCameraToRealmView = useUIStore(
+    (state) => state.moveCameraToRealmView,
+  );
+  const moveCameraToCaravansView = useUIStore(
+    (state) => state.moveCameraToCaravansView,
+  );
+
+  useEffect(() => {
+    if ([0, 1].includes(selectedTab)) {
+      moveCameraToRealmView();
+    } else if ([2, 3].includes(selectedTab)) {
+      moveCameraToCaravansView();
+    }
+  }, [selectedTab]);
 
   const tabs = useMemo(
     () => [

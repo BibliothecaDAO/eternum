@@ -7,7 +7,6 @@ import { ResourceFilter } from "../../../../ResourceFilterComponent";
 import { OrdersFilter } from "../../../../OrdersFilterComponent";
 import { CreateOfferPopup } from "../CreateOffer";
 import Button from "../../../../../elements/Button";
-import { useDojo } from "../../../../../DojoContext";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { MyOffer } from "./MyOffer";
 import { useGetMyOffers } from "../../../../../hooks/graphql/useGraphQLQueries";
@@ -15,10 +14,6 @@ import { useGetMyOffers } from "../../../../../hooks/graphql/useGraphQLQueries";
 type MarketPanelProps = {};
 
 export const MyOffersPanel = ({}: MarketPanelProps) => {
-  const {
-    components: { Trade, Status },
-  } = useDojo();
-
   const { realmEntityId } = useRealmStore();
 
   const [activeFilter, setActiveFilter] = useState(false);
@@ -41,7 +36,7 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
     sort: "none",
   });
   return (
-    <div className="flex flex-col">
+    <div className="relative flex flex-col pb-10 min-h-[120px]">
       <FiltersPanel className="px-3 py-2">
         <FilterButton
           active={activeFilter}

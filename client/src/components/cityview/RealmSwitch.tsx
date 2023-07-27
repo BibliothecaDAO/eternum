@@ -1,5 +1,10 @@
 import clsx from "clsx";
-import { ComponentPropsWithRef, useEffect, useMemo, useState } from "react";
+import React, {
+  ComponentPropsWithRef,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import CircleButton from "../../elements/CircleButton";
 import { OrderIcon } from "../../elements/OrderIcon";
 import { Badge } from "../../elements/Badge";
@@ -8,13 +13,14 @@ import { Link } from "wouter";
 import useRealmStore from "../../hooks/store/useRealmStore";
 import { orderNameDict } from "../../constants/orders";
 import realmsNames from "../../geodata/realms.json";
+import useUIStore from "../../hooks/store/useUIStore";
 import { getRealm } from "./realm/SettleRealmComponent";
-import { useGetRealm } from "../../hooks/graphql/useGraphQLQueries";
 
 type RealmSwitchProps = {} & ComponentPropsWithRef<"div">;
 
 type Realm = {
   id: number;
+  realmId: number;
   name: string;
   order: string;
 };
@@ -23,8 +29,17 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
   const [showRealms, setShowRealms] = useState(false);
   const [yourRealms, setYourRealms] = useState<Realm[]>([]);
 
-  const { realmEntityId, realmId, setRealmEntityId, realmEntityIds } =
-    useRealmStore();
+  const {
+    realmEntityId,
+    realmId,
+    setRealmId,
+    setRealmEntityId,
+    realmEntityIds,
+  } = useRealmStore();
+
+  const moveCameraToRealmView = useUIStore(
+    (state) => state.moveCameraToRealmView,
+  );
 
   const realm = useMemo(
     () => (realmId ? getRealm(realmId) : undefined),
@@ -38,6 +53,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
       const name = realmsNames.features[realm.realm_id].name;
       fetchedYourRealms.push({
         id: realmEntityId,
+        realmId: realm.realm_id,
         name,
         order: orderNameDict[realm.order],
       });
@@ -73,11 +89,19 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
       >
         {yourRealms.map((realm, index) => (
           // TODO: could not click on realm switch with the link
-          <Link href="/realmView" onClick={() => setRealmEntityId(realm.id)}>
+          <Link
+            key={realm.id}
+            href="/realmView"
+            onClick={() => {
+              setRealmEntityId(realm.id);
+              setRealmId(realm.realmId);
+              moveCameraToRealmView();
+            }}
+          >
             <RealmBadge
               key={realm.id}
               realm={realm}
-              active={realmEntityId === index}
+              active={realmEntityId === realm.id}
             />
           </Link>
         ))}

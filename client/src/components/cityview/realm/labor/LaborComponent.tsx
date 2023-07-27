@@ -48,7 +48,6 @@ export const LaborComponent = ({
   ...props
 }: LaborComponentProps) => {
   const {
-    components: { Labor, Resource },
     systemCalls: { harvest_labor },
   } = useDojo();
 
