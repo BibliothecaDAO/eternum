@@ -6,37 +6,34 @@ import {
   resources,
 } from "../../../constants/resources";
 import { currencyFormat } from "../../../utils/utils.jsx";
-import { useComponentValue } from "@dojoengine/react";
 import clsx from "clsx";
-import { Utils } from "@dojoengine/core";
-import { useDojo } from "../../../DojoContext";
 import { unpackResources } from "../../../utils/packedData";
-import { getComponentValue } from "@latticexyz/recs";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
-import { LABOR_CONFIG_ID } from "../../../constants/labor";
 import { calculateProductivity } from "./labor/laborUtils";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { ReactComponent as MoreIcon } from "../../../assets/icons/common/more.svg";
 import Button from "../../../elements/Button";
 import { SmallResource } from "./SmallResource";
+import {
+  LaborInterface,
+  ResourceInterface,
+  useGetRealm,
+  useGetRealmLabor,
+  useGetRealmResources,
+} from "../../../hooks/graphql/useGraphQLQueries";
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<"div">;
 
 export const RealmResourcesComponent = ({
   className,
 }: RealmResourcesComponentProps) => {
-  const {
-    components: { Realm },
-  } = useDojo();
-
   const [showAllResources, setShowAllResources] = useState<boolean>(false);
 
   let { realmEntityId } = useRealmStore();
 
-  let realm = getComponentValue(
-    Realm,
-    Utils.getEntityIdFromKeys([BigInt(realmEntityId)]),
-  );
+  const { realm } = useGetRealm({ entityId: realmEntityId });
+  const { realmLabor } = useGetRealmLabor(realmEntityId);
+  const { realmResources } = useGetRealmResources(realmEntityId);
 
   // unpack the resources
   let realmResourceIds: number[] = [
@@ -61,7 +58,8 @@ export const RealmResourcesComponent = ({
           {realmResourceIds.map((resourceId) => (
             <ResourceComponent
               key={resourceId}
-              realmEntityId={realmEntityId}
+              labor={realmLabor[resourceId]}
+              resource={realmResources[resourceId]}
               resourceId={resourceId}
             />
           ))}
@@ -103,29 +101,18 @@ export const RealmResourcesComponent = ({
 };
 
 interface ResourceComponentProps {
-  realmEntityId: number;
   resourceId: number;
+  labor: LaborInterface | undefined;
+  resource: ResourceInterface | undefined;
 }
 
 const ResourceComponent: React.FC<ResourceComponentProps> = ({
-  realmEntityId,
+  resource,
+  labor,
   resourceId,
 }) => {
-  const {
-    components: { Resource, Labor, LaborConfig },
-  } = useDojo();
-
   const { nextBlockTimestamp } = useBlockchainStore();
   const [productivity, setProductivity] = useState<number>(0);
-
-  let resource = useComponentValue(
-    Resource,
-    Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
-  );
-  let labor = useComponentValue(
-    Labor,
-    Utils.getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
-  );
 
   // TODO: use config file
   let laborConfig = {
@@ -170,7 +157,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({
             className="mr-1"
           />
           <div className="text-xs">
-            {currencyFormat(resource ? resource.balance : 0)}
+            {currencyFormat(resource ? resource.amount : 0)}
           </div>
         </div>
         <div
