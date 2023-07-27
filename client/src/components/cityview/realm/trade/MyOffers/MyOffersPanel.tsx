@@ -19,7 +19,7 @@ type MarketPanelProps = {
 
 export const MyOffersPanel = ({ trades: myTrades }: MarketPanelProps) => {
 
-    const { components: { Trade, Status }} = useDojo()
+    const { components: { Trade, Status } } = useDojo()
 
     const { realmEntityId } = useRealmStore();
 
@@ -41,7 +41,7 @@ export const MyOffersPanel = ({ trades: myTrades }: MarketPanelProps) => {
         sort: 'none'
     });
     return (
-        <div className='flex flex-col' >
+        <div className='relative flex flex-col pb-10 min-h-[120px]' >
             <FiltersPanel className='px-3 py-2'>
                 <FilterButton active={activeFilter} onClick={() => setActiveFilter(!activeFilter)}>Filter</FilterButton>
                 <ResourceFilter />

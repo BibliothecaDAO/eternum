@@ -19,34 +19,6 @@ type RealmSwitchProps = {
 
 } & ComponentPropsWithRef<'div'>
 
-const yourRealms = [
-    {
-        id: 1,
-        name: 'Stolsli',
-        order: 'giants',
-    },
-    {
-        id: 2,
-        name: 'Ilgzhijajilg',
-        order: 'perfection',
-    },
-    {
-        id: 3,
-        name: 'Hetokamohuti',
-        order: 'rage',
-    },
-    {
-        id: 4,
-        name: 'Egonal',
-        order: 'fox',
-    },
-    {
-        id: 5,
-        name: '‘oak Leukue',
-        order: 'twins',
-    }
-]
-
 type Realm = {
     id: number,
     name: string,
@@ -85,7 +57,6 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
 
     useEffect(() => {
         setYourRealms(realms);
-        console.log('Realms', realms)
     }, [realms]);
 
     const orderName = useMemo(() => {
