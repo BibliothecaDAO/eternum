@@ -14,7 +14,7 @@ import {
   useGetRealmResources,
   useGetTradeResources,
 } from "../../../../../hooks/graphql/useGraphQLQueries";
-import { canAcceptOffer } from "../tradeUtils";
+import { canAcceptOffer } from "../TradeUtils";
 
 type TradeOfferProps = {
   marketOffer: MarketInterface;

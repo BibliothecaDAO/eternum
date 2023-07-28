@@ -9,7 +9,7 @@ import {
   getRealmIdByPosition,
   getRealmNameById,
   getRealmOrderNameById,
-} from "../cityview/realm/trade/tradeUtils";
+} from "../cityview/realm/trade/TradeUtils";
 import { Resource } from "../../types";
 import {
   CaravanInterface,

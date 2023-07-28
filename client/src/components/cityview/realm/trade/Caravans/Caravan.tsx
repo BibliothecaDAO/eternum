@@ -24,7 +24,7 @@ import {
   getRealmNameById,
   getRealmOrderNameById,
   getTotalResourceWeight,
-} from "../tradeUtils";
+} from "../TradeUtils";
 
 type CaravanProps = {
   caravan: CaravanInterface;
