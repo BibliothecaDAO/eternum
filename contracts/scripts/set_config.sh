@@ -34,6 +34,7 @@ commands=(
 ### WEIGHT ###
 # Loop for resource types 1 to 28
 for resource_type in {1..28}
+# for resource_type in {1..2}
 do
     commands+=(
         # 1 g per resource
@@ -77,10 +78,25 @@ commands+=(
     "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 255,3,10"
 )
 
+prod=false  # Default value
+# Check if --prod option is present
+if [[ ! -z "$1" ]]; then
+    if [[ "$1" == "prod" ]]; then
+        echo "is prod"
+        prod=true
+    fi
+fi
+
 for cmd in "${commands[@]}"; do
     echo "Executing command: $cmd"
     output=$(eval "$cmd")
     echo "Output:"
     echo "$output"
     echo "--------------------------------------"
+
+    if [ "$prod" = true ]; then
+        echo "Sleeping for 3 second..."
+        sleep 3
+    fi
 done
+

@@ -1,4 +1,4 @@
-import { EVENT_KEY, SetupNetworkResult } from "./setupNetwork";
+import {SetupNetworkResult } from "./setupNetwork";
 import {number} from 'starknet';
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -25,7 +25,7 @@ export function createSystemCalls(
         const events = await provider.provider.getTransactionReceipt(tx.transaction_hash).then((receipt) => {
             return receipt.events.filter((event) => {
                 return event.keys.length === 1 &&
-                event.keys[0] === EVENT_KEY;
+                event.keys[0] === import.meta.env.VITE_EVENT_KEY;
             })
         })
         let trade_id: number = 0;
@@ -51,7 +51,7 @@ export function createSystemCalls(
         const events = await provider.provider.getTransactionReceipt(tx.transaction_hash).then((receipt) => {
             return receipt.events.filter((event) => {
                 return event.keys.length === 1 &&
-                event.keys[0] === EVENT_KEY;
+                event.keys[0] === import.meta.env.VITE_EVENT_KEY;
             })
         })
         return parseInt(events[1].data[2])
@@ -62,7 +62,7 @@ export function createSystemCalls(
         const events = await provider.provider.getTransactionReceipt(tx.transaction_hash).then((receipt) => {
             return receipt.events.filter((event) => {
                 return event.keys.length === 1 &&
-                event.keys[0] === EVENT_KEY;
+                event.keys[0] === import.meta.env.VITE_EVENT_KEY;
             })
         })
         const caravan_id = parseInt(events[2].data[2]);
@@ -82,7 +82,7 @@ export function createSystemCalls(
         const events = await provider.provider.getTransactionReceipt(tx.transaction_hash).then((receipt) => {
             return receipt.events.filter((event) => {
                 return event.keys.length === 1 &&
-                event.keys[0] === EVENT_KEY;
+                event.keys[0] === import.meta.env.VITE_EVENT_KEY;
             })
         })
         let realm_entity_id: number = 0;

@@ -13,7 +13,6 @@ import { Realm } from "../../../types";
 import { findResourceIdByTrait } from "../../../constants/resources";
 import { packResources } from "../../../utils/packedData";
 import { orders } from "../../../constants/orders";
-import { KATANA_ACCOUNT_1_ADDRESS } from "../../../dojo/setupNetwork";
 import { getLatestRealmId } from "../../../hooks/graphql/useGraphQLQueries";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 
@@ -40,7 +39,7 @@ export const SettleRealmComponent = ({
     let realm = getRealm(new_realm_id);
     let position = getPosition(new_realm_id);
     let entity_id = await create_realm({
-      owner: KATANA_ACCOUNT_1_ADDRESS,
+      owner: import.meta.env.VITE_KATANA_ACCOUNT_1_ADDRESS,
       ...realm,
       position,
     });
