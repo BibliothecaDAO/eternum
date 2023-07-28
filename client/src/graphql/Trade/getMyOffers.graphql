@@ -1,0 +1,13 @@
+query getMyOffers($makerId: u128!) {
+  tradeComponents(
+    maker_id: $makerId
+    claimed_by_maker: 0
+    claimed_by_taker: 0
+  ) {
+    trade_id
+    maker_id
+    maker_order_id
+    taker_order_id
+    expires_at
+  }
+}

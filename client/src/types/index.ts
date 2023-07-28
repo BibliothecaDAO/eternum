@@ -3,14 +3,6 @@ export enum Entity {
     Army = 'Army'
 }
 
-// export interface Realm {
-//     id: number;
-//     name: string;
-//     description: string;
-//     owner: number;
-//     armies: number[];
-// }
-
 export interface Realm {
     realm_id: number,
     resource_types_packed: number,

@@ -1,0 +1,13 @@
+query getRealmLabor($realmEntityId: String!) {
+  entities(keys: [$realmEntityId], limit: 30, componentName: "Labor") {
+    keys
+    components {
+      __typename
+      ... on Labor {
+        last_harvest
+        balance
+        multiplier
+      }
+    }
+  }
+}

@@ -144,6 +144,7 @@ mod MakeFungibleOrder {
             trade_id.into(),
             (
                 Trade {
+                    trade_id: trade_id.into(),
                     maker_id,
                     taker_id,
                     maker_order_id: maker_order_id.into(),

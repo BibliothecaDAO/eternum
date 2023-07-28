@@ -32,27 +32,37 @@ export type Scalars = {
 export type Age = {
   __typename?: 'Age';
   born_at: Scalars['u64']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
 };
 
 export type ArrivalTime = {
   __typename?: 'ArrivalTime';
   arrives_at: Scalars['u64']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
 };
 
 export type BuildingConfig = {
   __typename?: 'BuildingConfig';
   base_sqm: Scalars['u128']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   workhut_cost: Scalars['u128']['output'];
 };
 
 export type BuildingCost = {
   __typename?: 'BuildingCost';
   cost: Scalars['u128']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   resource_type: Scalars['felt252']['output'];
 };
 
 export type BuildingTypeConfig = {
   __typename?: 'BuildingTypeConfig';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   id: Scalars['felt252']['output'];
   resource_types_count: Scalars['u8']['output'];
   resource_types_packed: Scalars['u256']['output'];
@@ -61,11 +71,15 @@ export type BuildingTypeConfig = {
 
 export type Capacity = {
   __typename?: 'Capacity';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   weight_gram: Scalars['u128']['output'];
 };
 
 export type CapacityConfig = {
   __typename?: 'CapacityConfig';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   entity_type: Scalars['u128']['output'];
   weight_gram: Scalars['u128']['output'];
 };
@@ -73,15 +87,19 @@ export type CapacityConfig = {
 export type Caravan = {
   __typename?: 'Caravan';
   caravan_id: Scalars['u128']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
 };
 
 export type CaravanMembers = {
   __typename?: 'CaravanMembers';
   count: Scalars['usize']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   key: Scalars['u128']['output'];
 };
 
-export type ComponentUnion = Age | ArrivalTime | BuildingConfig | BuildingCost | BuildingTypeConfig | Capacity | CapacityConfig | Caravan | CaravanMembers | ForeignKey | FungibleEntities | Labor | LaborConfig | LaborCostAmount | LaborCostResources | MetaData | Movable | Owner | Position | Quantity | QuantityTracker | Realm | Resource | SpeedConfig | Status | Trade | TravelConfig | Vault | WeightConfig | WorldConfig;
+export type ComponentUnion = Age | ArrivalTime | BuildingConfig | BuildingCost | BuildingTypeConfig | Capacity | CapacityConfig | Caravan | CaravanMembers | ForeignKey | FungibleEntities | Labor | LaborConfig | LaborCostAmount | LaborCostResources | MetaData | Movable | OrderId | Owner | Position | Quantity | QuantityTracker | Realm | Resource | SpeedConfig | Status | Trade | TravelConfig | Vault | WeightConfig | WorldConfig;
 
 export type Entity = {
   __typename?: 'Entity';
@@ -105,18 +123,23 @@ export type Event = {
 
 export type ForeignKey = {
   __typename?: 'ForeignKey';
+  entity?: Maybe<Entity>;
   entity_id: Scalars['u128']['output'];
 };
 
 export type FungibleEntities = {
   __typename?: 'FungibleEntities';
   count: Scalars['usize']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   key: Scalars['u128']['output'];
 };
 
 export type Labor = {
   __typename?: 'Labor';
   balance: Scalars['u64']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   last_harvest: Scalars['u64']['output'];
   multiplier: Scalars['u64']['output'];
 };
@@ -126,10 +149,14 @@ export type LaborConfig = {
   base_food_per_cycle: Scalars['u128']['output'];
   base_labor_units: Scalars['u64']['output'];
   base_resources_per_cycle: Scalars['u128']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
 };
 
 export type LaborCostAmount = {
   __typename?: 'LaborCostAmount';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   resource_type_cost: Scalars['felt252']['output'];
   resource_type_labor: Scalars['felt252']['output'];
   value: Scalars['u128']['output'];
@@ -137,6 +164,8 @@ export type LaborCostAmount = {
 
 export type LaborCostResources = {
   __typename?: 'LaborCostResources';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   resource_type_labor: Scalars['felt252']['output'];
   resource_types_count: Scalars['u8']['output'];
   resource_types_packed: Scalars['u128']['output'];
@@ -144,34 +173,53 @@ export type LaborCostResources = {
 
 export type MetaData = {
   __typename?: 'MetaData';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   entity_type: Scalars['u128']['output'];
 };
 
 export type Movable = {
   __typename?: 'Movable';
   blocked: Scalars['bool']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   sec_per_km: Scalars['u16']['output'];
+};
+
+export type OrderId = {
+  __typename?: 'OrderId';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
+  id: Scalars['u128']['output'];
 };
 
 export type Owner = {
   __typename?: 'Owner';
   address: Scalars['ContractAddress']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
 };
 
 export type Position = {
   __typename?: 'Position';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   x: Scalars['u32']['output'];
   y: Scalars['u32']['output'];
 };
 
 export type Quantity = {
   __typename?: 'Quantity';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   value: Scalars['u128']['output'];
 };
 
 export type QuantityTracker = {
   __typename?: 'QuantityTracker';
   count: Scalars['u128']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
 };
 
 export type Query = {
@@ -197,6 +245,7 @@ export type Query = {
   laborcostresourcesComponents?: Maybe<Array<Maybe<LaborCostResources>>>;
   metadataComponents?: Maybe<Array<Maybe<MetaData>>>;
   movableComponents?: Maybe<Array<Maybe<Movable>>>;
+  orderidComponents?: Maybe<Array<Maybe<OrderId>>>;
   ownerComponents?: Maybe<Array<Maybe<Owner>>>;
   positionComponents?: Maybe<Array<Maybe<Position>>>;
   quantityComponents?: Maybe<Array<Maybe<Quantity>>>;
@@ -301,7 +350,6 @@ export type QueryEventsArgs = {
 
 
 export type QueryForeignkeyComponentsArgs = {
-  entity_id?: InputMaybe<Scalars['u128']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
 };
 
@@ -355,6 +403,12 @@ export type QueryMovableComponentsArgs = {
   blocked?: InputMaybe<Scalars['bool']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
   sec_per_km?: InputMaybe<Scalars['u16']['input']>;
+};
+
+
+export type QueryOrderidComponentsArgs = {
+  id?: InputMaybe<Scalars['u128']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -442,6 +496,7 @@ export type QueryTradeComponentsArgs = {
   taker_id?: InputMaybe<Scalars['u128']['input']>;
   taker_needs_caravan?: InputMaybe<Scalars['bool']['input']>;
   taker_order_id?: InputMaybe<Scalars['u128']['input']>;
+  trade_id?: InputMaybe<Scalars['u128']['input']>;
 };
 
 
@@ -472,6 +527,8 @@ export type QueryWorldconfigComponentsArgs = {
 export type Realm = {
   __typename?: 'Realm';
   cities: Scalars['u8']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   harbors: Scalars['u8']['output'];
   order: Scalars['u8']['output'];
   realm_id: Scalars['u128']['output'];
@@ -485,17 +542,23 @@ export type Realm = {
 export type Resource = {
   __typename?: 'Resource';
   balance: Scalars['u128']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   resource_type: Scalars['u8']['output'];
 };
 
 export type SpeedConfig = {
   __typename?: 'SpeedConfig';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   entity_type: Scalars['u128']['output'];
   sec_per_km: Scalars['u16']['output'];
 };
 
 export type Status = {
   __typename?: 'Status';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   value: Scalars['u128']['output'];
 };
 
@@ -524,49 +587,147 @@ export type Trade = {
   __typename?: 'Trade';
   claimed_by_maker: Scalars['bool']['output'];
   claimed_by_taker: Scalars['bool']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   expires_at: Scalars['u64']['output'];
   maker_id: Scalars['u128']['output'];
   maker_order_id: Scalars['u128']['output'];
   taker_id: Scalars['u128']['output'];
   taker_needs_caravan: Scalars['bool']['output'];
   taker_order_id: Scalars['u128']['output'];
+  trade_id: Scalars['u128']['output'];
 };
 
 export type TravelConfig = {
   __typename?: 'TravelConfig';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   free_transport_per_city: Scalars['u128']['output'];
 };
 
 export type Vault = {
   __typename?: 'Vault';
   balance: Scalars['u128']['output'];
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
 };
 
 export type WeightConfig = {
   __typename?: 'WeightConfig';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   entity_type: Scalars['u128']['output'];
   weight_gram: Scalars['u128']['output'];
 };
 
 export type WorldConfig = {
   __typename?: 'WorldConfig';
+  entity?: Maybe<Entity>;
+  entity_id: Scalars['ID']['output'];
   realm_l2_contract: Scalars['ContractAddress']['output'];
 };
+
+export type GetRealmLaborQueryVariables = Exact<{
+  realmEntityId: Scalars['String']['input'];
+}>;
+
+
+export type GetRealmLaborQuery = { __typename?: 'Query', entities?: Array<{ __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor', last_harvest: any, balance: any, multiplier: any } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null> | null };
+
+export type GetRealmResourcesQueryVariables = Exact<{
+  realmEntityId: Scalars['String']['input'];
+}>;
+
+
+export type GetRealmResourcesQuery = { __typename?: 'Query', entities?: Array<{ __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource', resource_type: any, balance: any } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null> | null };
+
+export type GetCaravanInfoQueryVariables = Exact<{
+  caravanId: Scalars['String']['input'];
+  orderId: Scalars['String']['input'];
+  counterpartyOrderId: Scalars['String']['input'];
+}>;
+
+
+export type GetCaravanInfoQuery = { __typename?: 'Query', caravan?: Array<{ __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime', arrives_at: any } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity', weight_gram: any } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable', blocked: any, sec_per_km: any } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null> | null, destination?: Array<{ __typename?: 'Entity', components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position', x: any, y: any } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null> | null, resourcesGive?: Array<{ __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource', resource_type: any, balance: any } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null> | null, resourcesGet?: Array<{ __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource', resource_type: any, balance: any } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null> | null };
 
 export type GetCaravansQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type GetCaravansQuery = { __typename?: 'Query', entities?: Array<{ __typename?: 'Entity', keys: string } | null> | null };
 
+export type GetCounterpartyOrderIdQueryVariables = Exact<{
+  orderId?: InputMaybe<Scalars['u128']['input']>;
+}>;
+
+
+export type GetCounterpartyOrderIdQuery = { __typename?: 'Query', makerTradeComponents?: Array<{ __typename: 'Trade', maker_order_id: any, claimed_by_maker: any, taker_id: any, taker_order_id: any } | null> | null, takerTradeComponents?: Array<{ __typename: 'Trade', maker_order_id: any, claimed_by_maker: any, maker_id: any, taker_order_id: any } | null> | null };
+
+export type GetIncomingOrderInfoQueryVariables = Exact<{
+  orderId: Scalars['String']['input'];
+  counterPartyOrderId: Scalars['String']['input'];
+}>;
+
+
+export type GetIncomingOrderInfoQuery = { __typename?: 'Query', resources?: Array<{ __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource', resource_type: any, balance: any } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null> | null, arrivalTime?: Array<{ __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime', arrives_at: any } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null> | null, origin?: Array<{ __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position', x: any, y: any } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null> | null };
+
+export type GetIncomingOrdersQueryVariables = Exact<{
+  realmEntityId?: InputMaybe<Scalars['u128']['input']>;
+}>;
+
+
+export type GetIncomingOrdersQuery = { __typename?: 'Query', makerTradeComponents?: Array<{ __typename: 'Trade', maker_order_id: any, claimed_by_maker: any, taker_id: any, taker_order_id: any, trade_id: any } | null> | null, takerTradeComponents?: Array<{ __typename: 'Trade', maker_order_id: any, claimed_by_maker: any, maker_id: any, taker_order_id: any, trade_id: any } | null> | null };
+
+export type GetMarketQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetMarketQuery = { __typename?: 'Query', tradeComponents?: Array<{ __typename?: 'Trade', entity?: { __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status', value: any } | { __typename: 'Trade', trade_id: any, maker_id: any, maker_order_id: any, taker_order_id: any, expires_at: any } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null };
+
+export type GetMyOffersQueryVariables = Exact<{
+  makerId: Scalars['u128']['input'];
+}>;
+
+
+export type GetMyOffersQuery = { __typename?: 'Query', tradeComponents?: Array<{ __typename?: 'Trade', trade_id: any, maker_id: any, maker_order_id: any, taker_order_id: any, expires_at: any } | null> | null };
+
 export type GetOrdersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type GetOrdersQuery = { __typename?: 'Query', entities?: Array<{ __typename?: 'Entity', keys: string } | null> | null };
 
+export type GetRealmQueryVariables = Exact<{
+  realmEntityId: Scalars['String']['input'];
+}>;
+
+
+export type GetRealmQuery = { __typename?: 'Query', entities?: Array<{ __typename?: 'Entity', keys: string, id: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner', address: any } | { __typename: 'Position', x: any, y: any } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm', realm_id: any, cities: any, rivers: any, wonder: any, harbors: any, regions: any, resource_types_count: any, resource_types_packed: any, order: any } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null> | null };
+
+export type GetRealmsCaravansQueryVariables = Exact<{
+  x?: InputMaybe<Scalars['u32']['input']>;
+  y?: InputMaybe<Scalars['u32']['input']>;
+}>;
+
+
+export type GetRealmsCaravansQuery = { __typename?: 'Query', positionComponents?: Array<{ __typename?: 'Position', entity?: { __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime', arrives_at: any } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable', blocked: any } | { __typename: 'OrderId', id: any } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null };
+
 export type GetRealmIdsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetRealmIdsQuery = { __typename?: 'Query', entities?: Array<{ __typename?: 'Entity', components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm', realm_id: any } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null> | null };
+export type GetRealmIdsQuery = { __typename?: 'Query', entities?: Array<{ __typename?: 'Entity', components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm', realm_id: any } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null> | null };
+
+export type GetTradeResourcesQueryVariables = Exact<{
+  makerOrderId: Scalars['String']['input'];
+  takerOrderId: Scalars['String']['input'];
+}>;
+
+
+export type GetTradeResourcesQuery = { __typename?: 'Query', resourcesGive?: Array<{ __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource', resource_type: any, balance: any } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null> | null, resourcesGet?: Array<{ __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource', resource_type: any, balance: any } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null> | null };
+
+export type GetTradeStatusQueryVariables = Exact<{
+  tradeId: Scalars['String']['input'];
+}>;
+
+
+export type GetTradeStatusQuery = { __typename?: 'Query', entities?: Array<{ __typename?: 'Entity', keys: string, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status', value: any } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null> | null };
 
 export type GetTradesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -574,10 +735,224 @@ export type GetTradesQueryVariables = Exact<{ [key: string]: never; }>;
 export type GetTradesQuery = { __typename?: 'Query', entities?: Array<{ __typename?: 'Entity', keys: string } | null> | null };
 
 
+export const GetRealmLaborDocument = gql`
+    query getRealmLabor($realmEntityId: String!) {
+  entities(keys: [$realmEntityId], limit: 30, componentName: "Labor") {
+    keys
+    components {
+      __typename
+      ... on Labor {
+        last_harvest
+        balance
+        multiplier
+      }
+    }
+  }
+}
+    `;
+export const GetRealmResourcesDocument = gql`
+    query getRealmResources($realmEntityId: String!) {
+  entities(keys: [$realmEntityId], limit: 30, componentName: "Resource") {
+    keys
+    components {
+      __typename
+      ... on Resource {
+        resource_type
+        balance
+      }
+    }
+  }
+}
+    `;
+export const GetCaravanInfoDocument = gql`
+    query getCaravanInfo($caravanId: String!, $orderId: String!, $counterpartyOrderId: String!) {
+  caravan: entities(keys: [$caravanId], componentName: "CaravanMembers") {
+    keys
+    components {
+      __typename
+      ... on ArrivalTime {
+        arrives_at
+      }
+      ... on Movable {
+        blocked
+        sec_per_km
+      }
+      ... on Capacity {
+        weight_gram
+      }
+    }
+  }
+  destination: entities(
+    keys: [$counterpartyOrderId]
+    limit: 1
+    componentName: "ArrivalTime"
+  ) {
+    components {
+      __typename
+      ... on Position {
+        x
+        y
+      }
+    }
+  }
+  resourcesGive: entities(keys: [$orderId], limit: 100, componentName: "Resource") {
+    keys
+    components {
+      __typename
+      ... on Resource {
+        resource_type
+        balance
+      }
+    }
+  }
+  resourcesGet: entities(
+    keys: [$counterpartyOrderId]
+    limit: 100
+    componentName: "Resource"
+  ) {
+    keys
+    components {
+      __typename
+      ... on Resource {
+        resource_type
+        balance
+      }
+    }
+  }
+}
+    `;
 export const GetCaravansDocument = gql`
     query getCaravans {
   entities(keys: ["%"], componentName: "CaravanMembers") {
     keys
+  }
+}
+    `;
+export const GetCounterpartyOrderIdDocument = gql`
+    query getCounterpartyOrderId($orderId: u128) {
+  makerTradeComponents: tradeComponents(maker_order_id: $orderId) {
+    __typename
+    ... on Trade {
+      maker_order_id
+      claimed_by_maker
+      taker_id
+      taker_order_id
+    }
+  }
+  takerTradeComponents: tradeComponents(taker_order_id: $orderId) {
+    __typename
+    ... on Trade {
+      maker_order_id
+      claimed_by_maker
+      maker_id
+      taker_order_id
+    }
+  }
+}
+    `;
+export const GetIncomingOrderInfoDocument = gql`
+    query getIncomingOrderInfo($orderId: String!, $counterPartyOrderId: String!) {
+  resources: entities(
+    keys: [$counterPartyOrderId]
+    limit: 100
+    componentName: "Resource"
+  ) {
+    keys
+    components {
+      __typename
+      ... on Resource {
+        resource_type
+        balance
+      }
+    }
+  }
+  arrivalTime: entities(
+    keys: [$counterPartyOrderId]
+    limit: 100
+    componentName: "ArrivalTime"
+  ) {
+    keys
+    components {
+      __typename
+      ... on ArrivalTime {
+        arrives_at
+      }
+    }
+  }
+  origin: entities(keys: [$orderId], limit: 100, componentName: "Position") {
+    keys
+    components {
+      __typename
+      ... on Position {
+        x
+        y
+      }
+    }
+  }
+}
+    `;
+export const GetIncomingOrdersDocument = gql`
+    query getIncomingOrders($realmEntityId: u128) {
+  makerTradeComponents: tradeComponents(
+    maker_id: $realmEntityId
+    claimed_by_maker: 0
+  ) {
+    __typename
+    ... on Trade {
+      maker_order_id
+      claimed_by_maker
+      taker_id
+      taker_order_id
+      trade_id
+    }
+  }
+  takerTradeComponents: tradeComponents(
+    taker_id: $realmEntityId
+    claimed_by_taker: 0
+  ) {
+    __typename
+    ... on Trade {
+      maker_order_id
+      claimed_by_maker
+      maker_id
+      taker_order_id
+      trade_id
+    }
+  }
+}
+    `;
+export const GetMarketDocument = gql`
+    query getMarket {
+  tradeComponents(claimed_by_maker: 0, claimed_by_taker: 0) {
+    entity {
+      ... on Entity {
+        keys
+        components {
+          __typename
+          ... on Status {
+            value
+          }
+          ... on Trade {
+            trade_id
+            maker_id
+            maker_order_id
+            taker_order_id
+            expires_at
+          }
+        }
+      }
+    }
+  }
+}
+    `;
+export const GetMyOffersDocument = gql`
+    query getMyOffers($makerId: u128!) {
+  tradeComponents(maker_id: $makerId, claimed_by_maker: 0, claimed_by_taker: 0) {
+    trade_id
+    maker_id
+    maker_order_id
+    taker_order_id
+    expires_at
   }
 }
     `;
@@ -588,6 +963,56 @@ export const GetOrdersDocument = gql`
   }
 }
     `;
+export const GetRealmDocument = gql`
+    query getRealm($realmEntityId: String!) {
+  entities(keys: [$realmEntityId], componentName: "Realm") {
+    keys
+    id
+    components {
+      __typename
+      ... on Realm {
+        realm_id
+        cities
+        rivers
+        wonder
+        harbors
+        regions
+        resource_types_count
+        resource_types_packed
+        order
+      }
+      ... on Position {
+        x
+        y
+      }
+      ... on Owner {
+        address
+      }
+    }
+  }
+}
+    `;
+export const GetRealmsCaravansDocument = gql`
+    query getRealmsCaravans($x: u32, $y: u32) {
+  positionComponents(x: $x, y: $y, limit: 100) {
+    entity {
+      keys
+      components {
+        __typename
+        ... on OrderId {
+          id
+        }
+        ... on ArrivalTime {
+          arrives_at
+        }
+        ... on Movable {
+          blocked
+        }
+      }
+    }
+  }
+}
+    `;
 export const GetRealmIdsDocument = gql`
     query getRealmIds {
   entities(keys: ["%"], limit: 30, componentName: "Realm") {
@@ -595,6 +1020,51 @@ export const GetRealmIdsDocument = gql`
       __typename
       ... on Realm {
         realm_id
+      }
+    }
+  }
+}
+    `;
+export const GetTradeResourcesDocument = gql`
+    query getTradeResources($makerOrderId: String!, $takerOrderId: String!) {
+  resourcesGive: entities(
+    keys: [$makerOrderId]
+    limit: 100
+    componentName: "Resource"
+  ) {
+    keys
+    components {
+      __typename
+      ... on Resource {
+        resource_type
+        balance
+      }
+    }
+  }
+  resourcesGet: entities(
+    keys: [$takerOrderId]
+    limit: 100
+    componentName: "Resource"
+  ) {
+    keys
+    components {
+      __typename
+      ... on Resource {
+        resource_type
+        balance
+      }
+    }
+  }
+}
+    `;
+export const GetTradeStatusDocument = gql`
+    query getTradeStatus($tradeId: String!) {
+  entities(keys: [$tradeId], componentName: "Status") {
+    keys
+    components {
+      __typename
+      ... on Status {
+        value
       }
     }
   }
@@ -612,20 +1082,68 @@ export type SdkFunctionWrapper = <T>(action: (requestHeaders?:Record<string, str
 
 
 const defaultWrapper: SdkFunctionWrapper = (action, _operationName, _operationType) => action();
+const GetRealmLaborDocumentString = print(GetRealmLaborDocument);
+const GetRealmResourcesDocumentString = print(GetRealmResourcesDocument);
+const GetCaravanInfoDocumentString = print(GetCaravanInfoDocument);
 const GetCaravansDocumentString = print(GetCaravansDocument);
+const GetCounterpartyOrderIdDocumentString = print(GetCounterpartyOrderIdDocument);
+const GetIncomingOrderInfoDocumentString = print(GetIncomingOrderInfoDocument);
+const GetIncomingOrdersDocumentString = print(GetIncomingOrdersDocument);
+const GetMarketDocumentString = print(GetMarketDocument);
+const GetMyOffersDocumentString = print(GetMyOffersDocument);
 const GetOrdersDocumentString = print(GetOrdersDocument);
+const GetRealmDocumentString = print(GetRealmDocument);
+const GetRealmsCaravansDocumentString = print(GetRealmsCaravansDocument);
 const GetRealmIdsDocumentString = print(GetRealmIdsDocument);
+const GetTradeResourcesDocumentString = print(GetTradeResourcesDocument);
+const GetTradeStatusDocumentString = print(GetTradeStatusDocument);
 const GetTradesDocumentString = print(GetTradesDocument);
 export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = defaultWrapper) {
   return {
+    getRealmLabor(variables: GetRealmLaborQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetRealmLaborQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmLaborQuery>(GetRealmLaborDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRealmLabor', 'query');
+    },
+    getRealmResources(variables: GetRealmResourcesQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetRealmResourcesQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmResourcesQuery>(GetRealmResourcesDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRealmResources', 'query');
+    },
+    getCaravanInfo(variables: GetCaravanInfoQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetCaravanInfoQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetCaravanInfoQuery>(GetCaravanInfoDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getCaravanInfo', 'query');
+    },
     getCaravans(variables?: GetCaravansQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetCaravansQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetCaravansQuery>(GetCaravansDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getCaravans', 'query');
+    },
+    getCounterpartyOrderId(variables?: GetCounterpartyOrderIdQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetCounterpartyOrderIdQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetCounterpartyOrderIdQuery>(GetCounterpartyOrderIdDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getCounterpartyOrderId', 'query');
+    },
+    getIncomingOrderInfo(variables: GetIncomingOrderInfoQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetIncomingOrderInfoQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetIncomingOrderInfoQuery>(GetIncomingOrderInfoDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getIncomingOrderInfo', 'query');
+    },
+    getIncomingOrders(variables?: GetIncomingOrdersQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetIncomingOrdersQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetIncomingOrdersQuery>(GetIncomingOrdersDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getIncomingOrders', 'query');
+    },
+    getMarket(variables?: GetMarketQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetMarketQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetMarketQuery>(GetMarketDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getMarket', 'query');
+    },
+    getMyOffers(variables: GetMyOffersQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetMyOffersQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetMyOffersQuery>(GetMyOffersDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getMyOffers', 'query');
     },
     getOrders(variables?: GetOrdersQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetOrdersQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetOrdersQuery>(GetOrdersDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getOrders', 'query');
     },
+    getRealm(variables: GetRealmQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetRealmQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmQuery>(GetRealmDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRealm', 'query');
+    },
+    getRealmsCaravans(variables?: GetRealmsCaravansQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetRealmsCaravansQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmsCaravansQuery>(GetRealmsCaravansDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRealmsCaravans', 'query');
+    },
     getRealmIds(variables?: GetRealmIdsQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetRealmIdsQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmIdsQuery>(GetRealmIdsDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRealmIds', 'query');
+    },
+    getTradeResources(variables: GetTradeResourcesQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetTradeResourcesQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetTradeResourcesQuery>(GetTradeResourcesDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getTradeResources', 'query');
+    },
+    getTradeStatus(variables: GetTradeStatusQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetTradeStatusQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetTradeStatusQuery>(GetTradeStatusDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getTradeStatus', 'query');
     },
     getTrades(variables?: GetTradesQueryVariables, requestHeaders?: Dom.RequestInit["headers"]): Promise<{ data: GetTradesQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetTradesQuery>(GetTradesDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getTrades', 'query');

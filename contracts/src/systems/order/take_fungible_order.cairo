@@ -53,6 +53,7 @@ mod TakeFungibleOrder {
                     Status {
                         value: 1
                         }, Trade {
+                        trade_id,
                         maker_id: meta.maker_id,
                         taker_id,
                         maker_order_id: meta.maker_order_id,

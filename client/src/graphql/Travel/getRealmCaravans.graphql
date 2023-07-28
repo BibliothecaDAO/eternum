@@ -1,0 +1,19 @@
+query getRealmsCaravans($x: u32, $y: u32) {
+  positionComponents(x: $x, y: $y, limit: 100) {
+    entity {
+      keys
+      components {
+        __typename
+        ... on OrderId {
+          id
+        }
+        ... on ArrivalTime {
+          arrives_at
+        }
+        ... on Movable {
+          blocked
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,63 @@
+query getCaravanInfo(
+  $caravanId: String!
+  $orderId: String!
+  $counterpartyOrderId: String!
+) {
+  caravan: entities(keys: [$caravanId], componentName: "CaravanMembers") {
+    keys
+    components {
+      __typename
+      ... on ArrivalTime {
+        arrives_at
+      }
+      ... on Movable {
+        blocked
+        sec_per_km
+      }
+      ... on Capacity {
+        weight_gram
+      }
+    }
+  }
+  destination: entities(
+    keys: [$counterpartyOrderId]
+    limit: 1
+    componentName: "ArrivalTime"
+  ) {
+    components {
+      __typename
+      ... on Position {
+        x
+        y
+      }
+    }
+  }
+  resourcesGive: entities(
+    keys: [$orderId]
+    limit: 100
+    componentName: "Resource"
+  ) {
+    keys
+    components {
+      __typename
+      ... on Resource {
+        resource_type
+        balance
+      }
+    }
+  }
+  resourcesGet: entities(
+    keys: [$counterpartyOrderId]
+    limit: 100
+    componentName: "Resource"
+  ) {
+    keys
+    components {
+      __typename
+      ... on Resource {
+        resource_type
+        balance
+      }
+    }
+  }
+}
