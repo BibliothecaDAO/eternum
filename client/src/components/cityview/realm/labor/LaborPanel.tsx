@@ -51,10 +51,7 @@ export const LaborPanel = ({}: LaborPanelProps) => {
   const { realm } = useGetRealm({ entityId: realmEntityId });
 
   // unpack the resources
-  let realmResourceIds: number[] = [
-    ResourcesIds["Wheat"],
-    ResourcesIds["Fish"],
-  ];
+  let realmResourceIds: number[] = [];
   let unpackedResources: number[] = [];
 
   if (realm) {
@@ -62,7 +59,9 @@ export const LaborPanel = ({}: LaborPanelProps) => {
       BigInt(realm.resource_types_packed),
       realm.resource_types_count,
     );
-    realmResourceIds = realmResourceIds.concat(unpackedResources);
+    realmResourceIds = [ResourcesIds["Wheat"], ResourcesIds["Fish"]].concat(
+      unpackedResources,
+    );
   }
 
   // TODO: use config file

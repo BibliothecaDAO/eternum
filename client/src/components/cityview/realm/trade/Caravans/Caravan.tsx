@@ -12,31 +12,19 @@ import { ReactComponent as PremiumIcon } from "../../../../../assets/icons/units
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { Dot } from "../../../../../elements/Dot";
 import clsx from "clsx";
-import { useDojo } from "../../../../../DojoContext";
-import {
-  CaravanMember,
-  Order,
-  Resource,
-  ResourcesOffer,
-  Trade,
-} from "../../../../../types";
-import { Utils } from "@dojoengine/core";
-import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
-import {
-  getOrderIdsFromTrade,
-  getRealmIdByPosition,
-  getRealmNameById,
-  getRealmOrderNameById,
-  getResourceIdsFromFungibleEntities,
-  getTotalResourceWeight,
-} from "../tradeUtils";
 import {
   CaravanInterface,
   useGetCaravanInfo,
   useGetCounterPartyOrderId,
 } from "../../../../../hooks/graphql/useGraphQLQueries";
+import {
+  getRealmIdByPosition,
+  getRealmNameById,
+  getRealmOrderNameById,
+  getTotalResourceWeight,
+} from "../tradeUtils";
 
 type CaravanProps = {
   caravan: CaravanInterface;
@@ -45,13 +33,9 @@ type CaravanProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Caravan = ({ caravan, ...props }: CaravanProps) => {
-  const { realmEntityId } = useRealmStore();
-
   const { nextBlockTimestamp } = useBlockchainStore();
 
-  const { counterPartyOrderId } = useGetCounterPartyOrderId(
-    parseInt(caravan.orderId),
-  );
+  const { counterPartyOrderId } = useGetCounterPartyOrderId(caravan.orderId);
 
   const { caravanInfo } = useGetCaravanInfo(
     parseInt(caravan.caravanId),
@@ -147,8 +131,6 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
         <div className="grid w-full grid-cols-2 gap-5">
           <div className="flex flex-col">
             <div className="grid grid-cols-12 gap-0.5">
-              {/* <ProgressBar className="bg-orange" containerClassName='col-span-1' rounded progress={0} /> */}
-              {/* <ProgressBar className='bg-red' containerClassName='col-span-3' rounded progress={0} /> */}
               <ProgressBar
                 containerClassName="col-span-12"
                 rounded

@@ -3,11 +3,9 @@ import { GraphQLClient } from "graphql-request";
 import {
   ArrivalTime,
   Capacity,
-  Caravan,
   GetCaravansQuery,
-  GetMyOffersQuery,
   GetOrdersQuery,
-  GetRealmsQuery,
+  GetRealmIdsQuery,
   GetTradesQuery,
   Labor,
   Movable,
@@ -928,7 +926,7 @@ export const getLatestRealmId = async (): Promise<number> => {
 };
 
 async function fetchRealmIds(): Promise<{
-  data: GetRealmsQuery | null;
+  data: GetRealmIdsQuery | null;
   status: FetchStatus;
   error: unknown;
 }> {
@@ -941,7 +939,7 @@ async function fetchRealmIds(): Promise<{
 }
 
 export function useGetRealmsIds() {
-  const [data, setData] = useState<GetRealmsQuery | null>(null);
+  const [data, setData] = useState<GetRealmIdsQuery | null>(null);
   const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
   const [error, setError] = useState<unknown>(null);
 

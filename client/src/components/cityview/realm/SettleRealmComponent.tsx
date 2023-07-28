@@ -104,35 +104,40 @@ function getPosition(realm_id: number): { x: number; y: number } {
   return { x: coords[0] + 1800000, y: coords[1] + 1800000 };
 }
 
+interface Attribute {
+  trait_type: string;
+  value: any;
+}
+
 export function getRealm(realm_id: number): Realm {
   const realmsData = realms as {
     [key: string]: any;
   };
   const realm = realmsData[realm_id.toString()];
   const resourceIds = realm.attributes
-    .filter(({ trait_type }) => trait_type === "Resource")
-    .map(({ value }) => findResourceIdByTrait(value));
+    .filter(({ trait_type }: Attribute) => trait_type === "Resource")
+    .map(({ value }: Attribute) => findResourceIdByTrait(value));
   const resource_types_packed = parseInt(packResources(resourceIds));
   let cities: number = 0;
-  realm.attributes.forEach(({ trait_type, value }) => {
+  realm.attributes.forEach(({ trait_type, value }: Attribute) => {
     if (trait_type === "Cities") {
       cities = value;
     }
   });
   let harbors: number = 0;
-  realm.attributes.forEach(({ trait_type, value }) => {
+  realm.attributes.forEach(({ trait_type, value }: Attribute) => {
     if (trait_type === "Harbors") {
       harbors = value;
     }
   });
   let rivers: number = 0;
-  realm.attributes.forEach(({ trait_type, value }) => {
+  realm.attributes.forEach(({ trait_type, value }: Attribute) => {
     if (trait_type === "Rivers") {
       rivers = value;
     }
   });
   let regions: number = 0;
-  realm.attributes.forEach(({ trait_type, value }) => {
+  realm.attributes.forEach(({ trait_type, value }: Attribute) => {
     if (trait_type === "Regions") {
       regions = value;
     }
@@ -141,7 +146,7 @@ export function getRealm(realm_id: number): Realm {
   const wonder: number = 1;
 
   let order: number = 0;
-  realm.attributes.forEach(({ trait_type, value }) => {
+  realm.attributes.forEach(({ trait_type, value }: Attribute) => {
     if (trait_type === "Order") {
       const name: string = value.split(" ").pop() || "";
       orders.forEach(({ orderId, orderName }) => {

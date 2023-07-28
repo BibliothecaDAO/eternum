@@ -1,11 +1,9 @@
 import realmsCoordsJson from "../../../../geodata/coords.json";
 import realmsJson from "../../../../geodata/realms.json";
 import realmsOrdersJson from "../../../../geodata/realms_raw.json";
-import { orderNameDict } from "../../../../constants/orders";
 import { Utils } from "@dojoengine/core";
 import { EntityIndex } from "@latticexyz/recs";
-import { Resource, Trade } from "../../../../types";
-import { useDojo } from "../../../../DojoContext";
+import { Trade } from "../../../../types";
 import {
   RealmResourcesInterface,
   ResourceInterface,
