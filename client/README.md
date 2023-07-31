@@ -1,6 +1,7 @@
 # Eternum Game Client
 
-This project is a client-side application written in React TypeScript and using the Vite bundler.
+This project is a client-side application written in React TypeScript and using
+the Vite bundler.
 
 ## Installation
 
@@ -10,15 +11,19 @@ This project is a client-side application written in React TypeScript and using 
 
 1. Run the dev server: `yarn dev`
 
-## Running the Testnet
+## Running locally on Katana
 
 0. Go to the `contracts` directory: `cd contracts`
 1. Build contracts: `sozo build`
 2. Run katana: `katana --allow-zero-max-fee`
-3. Apply migrations: `sozo migrate`
+3. Apply migrations: `sozo migrate --name eternum`
 4. Run indexer: `torii --manifest target/dev/manifest.json`
 5. Apply env variables: `source scripts/env_variables.sh`
 6. Set config: `./scripts/set_config.sh`
+
+## Running on Madara
+
+TBD
 
 ## Building the Project
 
