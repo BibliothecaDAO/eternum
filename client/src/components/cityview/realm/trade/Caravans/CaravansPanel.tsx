@@ -11,7 +11,6 @@ import {
   useGetRealm,
   useGetRealmCaravans,
 } from "../../../../../hooks/graphql/useGraphQLQueries";
-import { useDojo } from "../../../../../DojoContext";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 
 type CaravansPanelProps = {};
@@ -28,10 +27,6 @@ export const CaravansPanel = ({}: CaravansPanelProps) => {
     setShowCaravanDetails(true);
     setSelectedCaravan(caravan);
   };
-
-  const { data: caravanData, status } = useGetCaravans();
-
-  // get realm position
 
   const { realm } = useGetRealm({ entityId: realmEntityId });
   const caravansData = useGetRealmCaravans(

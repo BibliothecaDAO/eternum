@@ -5,10 +5,7 @@ import { SortPanel } from "../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../elements/SortButton";
 import { LaborComponent } from "./LaborComponent";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { useDojo } from "../../../../DojoContext";
-import { Utils } from "@dojoengine/core";
 import { unpackResources } from "../../../../utils/packedData";
-import { LABOR_CONFIG_ID } from "../../../../constants/labor";
 import { ResourcesIds } from "../../../../constants/resources";
 import { LaborBuildPopup } from "./LaborBuild";
 import { LaborConfig } from "../../../../types";
@@ -21,10 +18,6 @@ import {
 type LaborPanelProps = {};
 
 export const LaborPanel = ({}: LaborPanelProps) => {
-  const {
-    components: { Realm, LaborConfig },
-  } = useDojo();
-
   const [activeFilter, setActiveFilter] = useState(false);
   const [buildResource, setBuildResource] = useState<number | null>(null);
 

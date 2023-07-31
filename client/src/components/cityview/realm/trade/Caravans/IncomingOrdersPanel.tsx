@@ -15,6 +15,7 @@ export const IncomingOrdersPanel = ({}: IncomingOrdersPanelProps) => {
   const { realmEntityId } = useRealmStore();
 
   const { incomingOrders } = useGetIncomingOrders(realmEntityId);
+  console.log({ incomingOrders });
 
   const sortingParams = useMemo(() => {
     return [

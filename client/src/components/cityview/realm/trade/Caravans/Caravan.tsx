@@ -54,7 +54,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
     ]);
 
   const destinationRealmId =
-    caravanInfo && getRealmIdByPosition(caravanInfo.destination);
+    caravanInfo?.destination && getRealmIdByPosition(caravanInfo.destination);
   const destinationRealmName =
     destinationRealmId && getRealmNameById(destinationRealmId);
 
@@ -69,6 +69,8 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
     nextBlockTimestamp &&
     caravanInfo &&
     caravanInfo.arrivalTime <= nextBlockTimestamp;
+
+  console.log({ isTraveling, isWaitingForDeparture, isIdle });
 
   if (((caravanInfo && caravanInfo.blocked) || isTraveling) && props.idleOnly) {
     return null;

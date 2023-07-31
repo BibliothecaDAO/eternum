@@ -78,6 +78,13 @@ commands+=(
     "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 255,3,10"
 )
 
+commands+=(
+    # NOTE: mint a random realm so that no player has the 0x0 entity id as a realm
+    # because 0x0 is also used in make_fungible_order as taker_id to specify that any entity can take the order
+    # TODO: need to rethink make_fungible_order so that we don't rely on taker_id 0x0 to know who can take order
+    "sozo execute --world $world CreateRealm --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,$DOJO_ACCOUNT_ADDRESS,515,2,4,5,6,1,1,8,2087471,1610800"
+)
+
 prod=false  # Default value
 # Check if --prod option is present
 if [[ ! -z "$1" ]]; then
