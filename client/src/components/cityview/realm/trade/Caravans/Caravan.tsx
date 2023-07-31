@@ -70,8 +70,6 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
     caravanInfo &&
     caravanInfo.arrivalTime <= nextBlockTimestamp;
 
-  console.log({ isTraveling, isWaitingForDeparture, isIdle });
-
   if (((caravanInfo && caravanInfo.blocked) || isTraveling) && props.idleOnly) {
     return null;
   }
