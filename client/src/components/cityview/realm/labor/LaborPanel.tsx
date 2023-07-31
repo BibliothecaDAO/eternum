@@ -21,6 +21,9 @@ type LaborPanelProps = {};
 export const LaborPanel = ({}: LaborPanelProps) => {
   const [activeFilter, setActiveFilter] = useState(false);
   const [buildResource, setBuildResource] = useState<number | null>(null);
+  const [buildLoadingStates, setBuildLoadingStates] = useState<{
+    [key: number]: boolean;
+  }>({});
 
   const sortingParams = useMemo(() => {
     return [
@@ -91,7 +94,7 @@ export const LaborPanel = ({}: LaborPanelProps) => {
           resourceId={buildResource}
           resources={realmResources}
           onClose={() => setBuildResource(null)}
-          onBuild={() => {}}
+          setBuildLoadingStates={setBuildLoadingStates}
         />
       )}
       {realm &&
@@ -108,6 +111,8 @@ export const LaborPanel = ({}: LaborPanelProps) => {
               resource={realmResources[resourceId]}
               realm={realm}
               laborConfig={laborConfig as LaborConfig}
+              setBuildLoadingStates={setBuildLoadingStates}
+              buildLoadingStates={buildLoadingStates}
             />
           </div>
         ))}

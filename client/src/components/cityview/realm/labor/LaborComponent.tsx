@@ -22,7 +22,7 @@ import {
   calculateProductivity,
   formatSecondsInHoursMinutes,
 } from "./laborUtils";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   LaborInterface,
   RealmInterface,
@@ -35,6 +35,8 @@ type LaborComponentProps = {
   resource: ResourceInterface | undefined;
   labor: LaborInterface | undefined;
   laborConfig: LaborConfig | undefined;
+  buildLoadingStates: { [key: number]: boolean };
+  setBuildLoadingStates: (prevStates: any) => void;
   onBuild: () => void;
 };
 
@@ -45,6 +47,8 @@ export const LaborComponent = ({
   labor,
   laborConfig,
   onBuild,
+  setBuildLoadingStates,
+  buildLoadingStates,
   ...props
 }: LaborComponentProps) => {
   const {
@@ -52,6 +56,17 @@ export const LaborComponent = ({
   } = useDojo();
 
   const { nextBlockTimestamp } = useBlockchainStore();
+
+  const [isHarvestLoading, setIsHarvestLoading] = useState(false);
+
+  // loading
+  useEffect(() => {
+    setIsHarvestLoading(false);
+    setBuildLoadingStates((prevStates: { [key: number]: boolean }) => ({
+      ...prevStates,
+      [resourceId!]: false,
+    }));
+  }, [labor]);
 
   let realmEntityId = useRealm((state) => state.realmEntityId);
   // time until the next possible harvest (that happens every 7200 seconds (2hrs))
@@ -68,6 +83,14 @@ export const LaborComponent = ({
     }
     return undefined;
   }, [labor, laborConfig, nextBlockTimestamp]);
+
+  const onHarvest = () => {
+    setIsHarvestLoading(true);
+    harvest_labor({
+      realm_id: realmEntityId,
+      resource_type: resourceId,
+    });
+  };
 
   // if the labor balance does not exist or is lower than the current time,
   // then there is no labor left
@@ -136,14 +159,26 @@ export const LaborComponent = ({
                 }/${realm?.harbors}`}</div>
               )}
               {/* // TODO: show visual cue that it's disabled */}
-              <Button
-                variant="outline"
-                className="px-2 py-1"
-                onClick={onBuild}
-                disabled={isFood && laborLeft > 0}
-              >
-                {isFood ? `Build` : `Buy Tools`}
-              </Button>
+              {!buildLoadingStates[resourceId] && (
+                <Button
+                  variant="outline"
+                  className="px-2 py-1"
+                  onClick={onBuild}
+                  disabled={isFood && laborLeft > 0}
+                >
+                  {isFood ? `Build` : `Buy Tools`}
+                </Button>
+              )}
+              {buildLoadingStates[resourceId] && (
+                <Button
+                  isLoading={true}
+                  onClick={() => {}}
+                  variant="danger"
+                  className="ml-auto p-2 !h-4 text-xxs !rounded-md"
+                >
+                  {}
+                </Button>
+              )}
             </div>
           </div>
           <ProgressBar
@@ -183,7 +218,6 @@ export const LaborComponent = ({
               />
               /h
             </div>
-
             <>
               <ResourceIcon
                 resource={findResourceById(resourceId)?.trait as any}
@@ -193,19 +227,26 @@ export const LaborComponent = ({
               <div className="mx-1 text-brilliance">{`+${nextHarvest}`}</div>
             </>
             {/* // TODO: visual cue to show disabled? */}
-            <Button
-              className="!px-[6px] !py-[2px] text-xxs"
-              variant="success"
-              disabled={nextHarvest === 0}
-              onClick={() => {
-                harvest_labor({
-                  realm_id: realmEntityId,
-                  resource_type: resourceId,
-                });
-              }}
-            >
-              Harvest
-            </Button>
+            {!isHarvestLoading && (
+              <Button
+                className="!px-[6px] !py-[2px] text-xxs"
+                variant="success"
+                disabled={nextHarvest === 0}
+                onClick={onHarvest}
+              >
+                Harvest
+              </Button>
+            )}
+            {isHarvestLoading && (
+              <Button
+                isLoading={true}
+                onClick={() => {}}
+                variant="danger"
+                className="ml-auto p-2 !h-4 text-xxs !rounded-md"
+              >
+                {}
+              </Button>
+            )}
           </div>
         </div>
       </div>
