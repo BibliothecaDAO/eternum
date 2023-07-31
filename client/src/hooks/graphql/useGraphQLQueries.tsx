@@ -26,7 +26,7 @@ export enum FetchStatus {
   Error = "error",
 }
 
-const client = new GraphQLClient("http://localhost:8080/");
+const client = new GraphQLClient(import.meta.env.VITE_TORII_URL!);
 const sdk = getSdk(client);
 
 export interface RealmLaborInterface {

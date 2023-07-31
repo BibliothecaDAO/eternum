@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { useEffect } from 'react';
+import { create } from "zustand";
+import { useEffect } from "react";
 
 interface BlockchainState {
   nextBlockTimestamp: number | undefined;
@@ -37,28 +37,27 @@ export const useFetchBlockchainData = () => {
 };
 
 const fetchBlockTimestamp = async (): Promise<number | undefined> => {
-    try {
-      // TODO: create config file for endpoints
-      const response = await fetch('http://127.0.0.1:5050/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'katana_nextBlockTimestamp',
-          params: {},
-          id: 1,
-        }),
-      });
-  
-      const data = await response.json();
-  
-      return data.result;
-    } catch (error) {
-      console.error('Error fetching block timestamp:', error);
-      return undefined;
-    }
+  try {
+    const response = await fetch(import.meta.env.VITE_KATANA_URL!, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "katana_nextBlockTimestamp",
+        params: {},
+        id: 1,
+      }),
+    });
+
+    const data = await response.json();
+
+    return data.result;
+  } catch (error) {
+    console.error("Error fetching block timestamp:", error);
+    return undefined;
+  }
 };
 
 export default useBlockchainStore;
