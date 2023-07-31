@@ -60,7 +60,7 @@ export const useGetRealmLabor = (
         const resourceLaborEntities = data?.entities;
         if (resourceLaborEntities) {
           let realmLabor: { [resourceId: number]: LaborInterface } = {};
-          resourceLaborEntities.map((entity) => {
+          resourceLaborEntities.forEach((entity) => {
             let labor = entity?.components?.find((component) => {
               return component?.__typename === "Labor";
             }) as Labor;

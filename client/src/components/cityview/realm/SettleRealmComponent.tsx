@@ -53,7 +53,7 @@ export const SettleRealmComponent = ({
           ...JSON.parse(entityIds),
           { realmEntityId: entity_id, realmId: new_realm_id },
         ]
-      : [entity_id];
+      : [{ realmEntityId: entity_id, realmId: new_realm_id }];
     localStorage.setItem("entityIds", JSON.stringify(updatedEntityIds));
     setRealmEntityIds(updatedEntityIds);
     setIsLoading(false);

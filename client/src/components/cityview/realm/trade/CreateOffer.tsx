@@ -401,7 +401,6 @@ export const SelectCaravanPanel = ({
 
   const { nextBlockTimestamp } = useBlockchainStore();
 
-  // const { data: caravanData, status } = useGetCaravans();
   const { realm } = useGetRealm({ entityId: realmEntityId });
   const { caravans } = useGetRealmCaravans(
     realm?.position.x || 0,

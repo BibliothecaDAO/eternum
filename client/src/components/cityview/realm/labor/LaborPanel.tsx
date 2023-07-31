@@ -14,6 +14,7 @@ import {
   useGetRealmLabor,
   useGetRealmResources,
 } from "../../../../hooks/graphql/useGraphQLQueries";
+import { getRealm } from "../SettleRealmComponent";
 
 type LaborPanelProps = {};
 
@@ -35,27 +36,29 @@ export const LaborPanel = ({}: LaborPanelProps) => {
     sort: "none",
   });
 
-  let realmEntityId = useRealmStore((state) => state.realmEntityId);
+  let { realmEntityId, realmId } = useRealmStore();
 
   const { realmLabor } = useGetRealmLabor(realmEntityId);
-
   const { realmResources } = useGetRealmResources(realmEntityId);
 
-  const { realm } = useGetRealm({ entityId: realmEntityId });
+  const realm = useMemo(() => {
+    return realmId ? getRealm(realmId) : undefined;
+  }, [realmId]);
 
   // unpack the resources
-  let realmResourceIds: number[] = [];
-  let unpackedResources: number[] = [];
-
-  if (realm) {
-    unpackedResources = unpackResources(
-      BigInt(realm.resource_types_packed),
-      realm.resource_types_count,
-    );
-    realmResourceIds = [ResourcesIds["Wheat"], ResourcesIds["Fish"]].concat(
-      unpackedResources,
-    );
-  }
+  let realmResourceIds = useMemo(() => {
+    if (realm) {
+      let unpackedResources = unpackResources(
+        BigInt(realm.resource_types_packed),
+        realm.resource_types_count,
+      );
+      return [ResourcesIds["Wheat"], ResourcesIds["Fish"]].concat(
+        unpackedResources,
+      );
+    } else {
+      return [];
+    }
+  }, [realm]);
 
   // TODO: use config file
   let laborConfig = {
@@ -91,22 +94,23 @@ export const LaborPanel = ({}: LaborPanelProps) => {
           onBuild={() => {}}
         />
       )}
-      {realmResourceIds.map((resourceId) => (
-        <div className="flex flex-col p-2">
-          <LaborComponent
-            onBuild={() => {
-              buildResource == resourceId
-                ? setBuildResource(null)
-                : setBuildResource(resourceId);
-            }}
-            resourceId={resourceId}
-            labor={realmLabor[resourceId]}
-            resource={realmResources[resourceId]}
-            realm={realm}
-            laborConfig={laborConfig as LaborConfig}
-          />
-        </div>
-      ))}
+      {realm &&
+        realmResourceIds.map((resourceId) => (
+          <div className="flex flex-col p-2">
+            <LaborComponent
+              onBuild={() => {
+                buildResource == resourceId
+                  ? setBuildResource(null)
+                  : setBuildResource(resourceId);
+              }}
+              resourceId={resourceId}
+              labor={realmLabor[resourceId]}
+              resource={realmResources[resourceId]}
+              realm={realm}
+              laborConfig={laborConfig as LaborConfig}
+            />
+          </div>
+        ))}
     </div>
   );
 };

@@ -31,7 +31,7 @@ import {
 
 type LaborComponentProps = {
   resourceId: number;
-  realm: RealmInterface | undefined;
+  realm: Realm;
   resource: ResourceInterface | undefined;
   labor: LaborInterface | undefined;
   laborConfig: LaborConfig | undefined;
