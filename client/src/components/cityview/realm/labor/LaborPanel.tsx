@@ -5,10 +5,7 @@ import { SortPanel } from "../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../elements/SortButton";
 import { LaborComponent } from "./LaborComponent";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { useDojo } from "../../../../DojoContext";
-import { Utils } from "@dojoengine/core";
 import { unpackResources } from "../../../../utils/packedData";
-import { LABOR_CONFIG_ID } from "../../../../constants/labor";
 import { ResourcesIds } from "../../../../constants/resources";
 import { LaborBuildPopup } from "./LaborBuild";
 import { LaborConfig } from "../../../../types";
@@ -17,16 +14,16 @@ import {
   useGetRealmLabor,
   useGetRealmResources,
 } from "../../../../hooks/graphql/useGraphQLQueries";
+import { getRealm } from "../SettleRealmComponent";
 
 type LaborPanelProps = {};
 
 export const LaborPanel = ({}: LaborPanelProps) => {
-  const {
-    components: { Realm, LaborConfig },
-  } = useDojo();
-
   const [activeFilter, setActiveFilter] = useState(false);
   const [buildResource, setBuildResource] = useState<number | null>(null);
+  const [buildLoadingStates, setBuildLoadingStates] = useState<{
+    [key: number]: boolean;
+  }>({});
 
   const sortingParams = useMemo(() => {
     return [
@@ -42,27 +39,29 @@ export const LaborPanel = ({}: LaborPanelProps) => {
     sort: "none",
   });
 
-  let realmEntityId = useRealmStore((state) => state.realmEntityId);
+  let { realmEntityId, realmId } = useRealmStore();
 
   const { realmLabor } = useGetRealmLabor(realmEntityId);
-
   const { realmResources } = useGetRealmResources(realmEntityId);
 
-  const { realm } = useGetRealm({ entityId: realmEntityId });
+  const realm = useMemo(() => {
+    return realmId ? getRealm(realmId) : undefined;
+  }, [realmId]);
 
   // unpack the resources
-  let realmResourceIds: number[] = [];
-  let unpackedResources: number[] = [];
-
-  if (realm) {
-    unpackedResources = unpackResources(
-      BigInt(realm.resource_types_packed),
-      realm.resource_types_count,
-    );
-    realmResourceIds = [ResourcesIds["Wheat"], ResourcesIds["Fish"]].concat(
-      unpackedResources,
-    );
-  }
+  let realmResourceIds = useMemo(() => {
+    if (realm) {
+      let unpackedResources = unpackResources(
+        BigInt(realm.resource_types_packed),
+        realm.resource_types_count,
+      );
+      return [ResourcesIds["Wheat"], ResourcesIds["Fish"]].concat(
+        unpackedResources,
+      );
+    } else {
+      return [];
+    }
+  }, [realm]);
 
   // TODO: use config file
   let laborConfig = {
@@ -95,25 +94,28 @@ export const LaborPanel = ({}: LaborPanelProps) => {
           resourceId={buildResource}
           resources={realmResources}
           onClose={() => setBuildResource(null)}
-          onBuild={() => {}}
+          setBuildLoadingStates={setBuildLoadingStates}
         />
       )}
-      {realmResourceIds.map((resourceId) => (
-        <div className="flex flex-col p-2">
-          <LaborComponent
-            onBuild={() => {
-              buildResource == resourceId
-                ? setBuildResource(null)
-                : setBuildResource(resourceId);
-            }}
-            resourceId={resourceId}
-            labor={realmLabor[resourceId]}
-            resource={realmResources[resourceId]}
-            realm={realm}
-            laborConfig={laborConfig as LaborConfig}
-          />
-        </div>
-      ))}
+      {realm &&
+        realmResourceIds.map((resourceId) => (
+          <div className="flex flex-col p-2">
+            <LaborComponent
+              onBuild={() => {
+                buildResource == resourceId
+                  ? setBuildResource(null)
+                  : setBuildResource(resourceId);
+              }}
+              resourceId={resourceId}
+              labor={realmLabor[resourceId]}
+              resource={realmResources[resourceId]}
+              realm={realm}
+              laborConfig={laborConfig as LaborConfig}
+              setBuildLoadingStates={setBuildLoadingStates}
+              buildLoadingStates={buildLoadingStates}
+            />
+          </div>
+        ))}
     </div>
   );
 };

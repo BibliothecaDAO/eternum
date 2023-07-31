@@ -54,7 +54,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
     ]);
 
   const destinationRealmId =
-    caravanInfo && getRealmIdByPosition(caravanInfo.destination);
+    caravanInfo?.destination && getRealmIdByPosition(caravanInfo.destination);
   const destinationRealmName =
     destinationRealmId && getRealmNameById(destinationRealmId);
 

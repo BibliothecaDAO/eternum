@@ -50,7 +50,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
     const fetchedYourRealms: Realm[] = [];
     realmEntityIds.forEach(({ realmEntityId, realmId }) => {
       const realm = getRealm(realmId);
-      const name = realmsNames.features[realm.realm_id].name;
+      const name = realmsNames.features[realm.realm_id - 1].name;
       fetchedYourRealms.push({
         id: realmEntityId,
         realmId: realm.realm_id,

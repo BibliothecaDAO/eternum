@@ -31,7 +31,6 @@ export const IncomingOrder = ({
 
   const {
     systemCalls: { claim_fungible_order },
-    components: { ArrivalTime, FungibleEntities, Resource, Position },
   } = useDojo();
 
   useEffect(() => {

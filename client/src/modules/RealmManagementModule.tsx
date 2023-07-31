@@ -3,16 +3,12 @@ import RealmManagementComponent from "../components/cityview/realm/RealmManageme
 import { BaseContainer } from "../containers/BaseContainer";
 import { Utils } from "@dojoengine/core";
 import useRealmStore from "../hooks/store/useRealmStore";
-import { useDojo } from "../DojoContext";
 import { Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import { useGetRealm } from "../hooks/graphql/useGraphQLQueries";
 
 const RealmManagementModule = () => {
   const { realmEntityId } = useRealmStore();
-  const {
-    components: { Realm },
-  } = useDojo();
 
   const { realm } = useGetRealm({ entityId: realmEntityId });
   return (

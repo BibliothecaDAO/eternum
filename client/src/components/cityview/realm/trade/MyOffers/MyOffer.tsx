@@ -56,6 +56,16 @@ export const MyOffer = ({ myOffer, ...props }: TradeOfferProps) => {
     takerOrderId: myOffer.takerOrderId,
   });
 
+  const getResourceTrait = useMemo(() => {
+    return (resourceId: number) => findResourceById(resourceId)?.trait as any;
+  }, []);
+
+  const ratio = useMemo(() => {
+    return resourcesGive.length > 0 && resourcesGet.length > 0
+      ? calculateRatio(resourcesGive, resourcesGet)
+      : undefined;
+  }, [resourcesGive, resourcesGet]);
+
   let timeLeft = formatTimeLeft(myOffer.expiresAt - Date.now() / 1000);
 
   return (
@@ -84,7 +94,7 @@ export const MyOffer = ({ myOffer, ...props }: TradeOfferProps) => {
                 <div className="flex flex-col items-center">
                   <ResourceIcon
                     key={resourceId}
-                    resource={findResourceById(resourceId)?.trait as any}
+                    resource={getResourceTrait(resourceId)}
                     size="xs"
                     className="mb-1"
                   />
@@ -94,9 +104,7 @@ export const MyOffer = ({ myOffer, ...props }: TradeOfferProps) => {
           </div>
           <div className="flex flex-col items-center text-white">
             <RatioIcon className="mb-1 fill-white" />
-            {resourcesGive &&
-              resourcesGet &&
-              calculateRatio(resourcesGive, resourcesGet).toFixed(2)}
+            {ratio?.toFixed(2) || 0}
           </div>
           <div className="grid w-1/3 grid-cols-3 gap-2 text-gold">
             {resourcesGet &&
@@ -104,7 +112,7 @@ export const MyOffer = ({ myOffer, ...props }: TradeOfferProps) => {
                 <div className="flex flex-col items-center">
                   <ResourceIcon
                     key={resourceId}
-                    resource={findResourceById(resourceId)?.trait as any}
+                    resource={getResourceTrait(resourceId)}
                     size="xs"
                   />
                   {amount}

@@ -38,22 +38,41 @@ export const useFetchBlockchainData = () => {
 
 const fetchBlockTimestamp = async (): Promise<number | undefined> => {
   try {
-    const response = await fetch(import.meta.env.VITE_KATANA_URL!, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        method: "katana_nextBlockTimestamp",
-        params: {},
-        id: 1,
-      }),
-    });
-
-    const data = await response.json();
-
-    return data.result;
+    // NOTE: if we are using Katana in dev, we should use next block timestmamp because of
+    // the advance_time functionality
+    // TODO: make sure this is still the case
+    if (import.meta.env.DEV) {
+      // if (false) {
+      const response = await fetch(import.meta.env.VITE_KATANA_URL!, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "katana_nextBlockTimestamp",
+          params: {},
+          id: 1,
+        }),
+      });
+      const data = await response.json();
+      return data.result;
+    } else {
+      const reponse = await fetch(import.meta.env.VITE_KATANA_URL!, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "starknet_getBlockWithTxs",
+          params: { blockId: "latest" },
+          id: 1,
+        }),
+      });
+      const data = await reponse.json();
+      return data.result.timestamp;
+    }
   } catch (error) {
     console.error("Error fetching block timestamp:", error);
     return undefined;

@@ -23,7 +23,7 @@
     "ethers": "5.7.2",
     "events": "^3.3.0",
     "graphql": "16.6.0",
-    "graphql-request": "5.1.0",
+    "graphql-request": "6.0.0",
     "gsap": "^3.11.5",
     "micro-starknet": "^0.2.3",
     "mobx": "^6.9.0",

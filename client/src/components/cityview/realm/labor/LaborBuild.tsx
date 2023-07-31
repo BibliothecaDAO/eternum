@@ -24,15 +24,15 @@ import {
 type LaborBuildPopupProps = {
   resourceId: number;
   resources: RealmResourcesInterface | undefined;
+  setBuildLoadingStates: (prevStates: any) => void;
   onClose: () => void;
-  onBuild: () => void;
 };
 
 export const LaborBuildPopup = ({
   resourceId,
   resources,
+  setBuildLoadingStates,
   onClose,
-  onBuild,
 }: LaborBuildPopupProps) => {
   const {
     systemCalls: { build_labor },
@@ -81,6 +81,10 @@ export const LaborBuildPopup = ({
   };
 
   const handleBuild = () => {
+    setBuildLoadingStates((prevStates: any) => ({
+      ...prevStates,
+      [resourceId]: true,
+    }));
     build_labor({
       realm_id: realmEntityId,
       resource_type: resourceId,

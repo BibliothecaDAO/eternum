@@ -60,7 +60,7 @@ export const useGetRealmLabor = (
         const resourceLaborEntities = data?.entities;
         if (resourceLaborEntities) {
           let realmLabor: { [resourceId: number]: LaborInterface } = {};
-          resourceLaborEntities.map((entity) => {
+          resourceLaborEntities.forEach((entity) => {
             let labor = entity?.components?.find((component) => {
               return component?.__typename === "Labor";
             }) as Labor;
@@ -468,7 +468,7 @@ export interface CaravanInfoInterface {
   arrivalTime: number;
   blocked: boolean;
   capacity: number;
-  destination: PositionInterface;
+  destination: PositionInterface | undefined;
   resourcesGive: ResourceInterface[];
   resourcesGet: ResourceInterface[];
 }
@@ -503,8 +503,8 @@ export const useGetCaravanInfo = (
         if (
           caravanEntities &&
           caravanEntities.length === 1 &&
-          destinationEntities &&
-          destinationEntities.length === 1
+          destinationEntities //&&
+          // destinationEntities.length === 1
         ) {
           let movable = caravanEntities[0]?.components?.find(
             (component) => component?.__typename === "Movable",
@@ -514,10 +514,10 @@ export const useGetCaravanInfo = (
           ) as Capacity;
           let arrival = caravanEntities[0]?.components?.find(
             (component) => component?.__typename === "ArrivalTime",
-          ) as ArrivalTime;
+          ) as ArrivalTime | undefined;
           let destination = destinationEntities[0]?.components?.find(
             (component) => component?.__typename === "Position",
-          ) as Position;
+          ) as Position | undefined;
           if (!data.resourcesGet || !data.resourcesGive) return undefined;
           const resourcesGetEntities = data.resourcesGet.filter((entity) =>
             entity?.components?.find(
@@ -552,7 +552,7 @@ export const useGetCaravanInfo = (
             },
           );
           setCaravanInfo({
-            arrivalTime: arrival.arrives_at,
+            arrivalTime: arrival?.arrives_at,
             blocked: movable.blocked,
             capacity: parseInt(capacity.weight_gram),
             destination,
@@ -614,14 +614,14 @@ export const useGetRealmCaravans = (
               }) as Movable;
               let arrivalTime = item?.entity?.components?.find((component) => {
                 return component?.__typename === "ArrivalTime";
-              }) as ArrivalTime;
+              }) as ArrivalTime | undefined;
               let keys = item?.entity?.keys;
               let caravanId = keys ? keys.split(",")[0] : "";
               return {
                 caravanId,
                 orderId: orderId.id,
                 blocked: movable.blocked,
-                arrivalTime: arrivalTime.arrives_at,
+                arrivalTime: arrivalTime?.arrives_at,
               };
             });
           setCaravans(caravans);
@@ -731,6 +731,7 @@ export interface MyOfferInterface {
   makerOrderId: string;
   takerOrderId: string;
   expiresAt: number;
+  status: string;
 }
 
 // TODO: add filter on trade status is open
@@ -756,14 +757,25 @@ export const useGetMyOffers = ({
         });
         const tradeComponents = data?.tradeComponents;
         if (tradeComponents) {
-          const myOffers = tradeComponents.map((item) => {
-            return {
-              tradeId: item?.trade_id,
-              makerOrderId: item?.maker_order_id,
-              takerOrderId: item?.taker_order_id,
-              expiresAt: item?.expires_at,
-            };
-          });
+          const myOffers = tradeComponents
+            .map((item) => {
+              const trade = item?.entity?.components?.find((component) => {
+                return component?.__typename === "Trade";
+              }) as Trade;
+
+              const status = item?.entity?.components?.find((component) => {
+                return component?.__typename === "Status";
+              }) as Status;
+
+              return {
+                tradeId: trade.trade_id,
+                makerOrderId: trade.maker_order_id,
+                takerOrderId: trade.taker_order_id,
+                expiresAt: trade.expires_at,
+                status: status.value,
+              };
+            })
+            .filter((trade) => trade?.status === "0x0");
           setMyOffers(myOffers);
           setStatus(FetchStatus.Success);
         }
@@ -871,7 +883,7 @@ export const useGetTradeResources = ({
             amount: parseInt(resource.balance),
           };
         });
-        const resourcesGiveEntities = data.resourcesGet.filter((entity) =>
+        const resourcesGiveEntities = data.resourcesGive.filter((entity) =>
           entity?.components?.find(
             (component) => component?.__typename === "Resource",
           ),

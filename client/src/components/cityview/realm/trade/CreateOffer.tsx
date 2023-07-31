@@ -191,9 +191,6 @@ const SelectResourcesPanel = ({
   selectedResourceIdsGet: number[];
   setSelectedResourceIdsGet: (selectedResourceIds: number[]) => void;
 }) => {
-  const {
-    components: { Resource },
-  } = useDojo();
   const { realmEntityId } = useRealmStore();
 
   const { realmResources } = useGetRealmResources(realmEntityId);
@@ -282,9 +279,6 @@ const SelectResourcesAmountPanel = ({
   }) => void;
   setResourceWeight: (resourceWeight: number) => void;
 }) => {
-  const {
-    components: { Resource },
-  } = useDojo();
   const { realmEntityId } = useRealmStore();
 
   const { realmResources } = useGetRealmResources(realmEntityId);
@@ -403,15 +397,10 @@ export const SelectCaravanPanel = ({
   selectedResourcesGiveAmounts: { [key: number]: number };
   resourceWeight: number;
 }) => {
-  const {
-    components: { ArrivalTime, Position, Movable },
-  } = useDojo();
-
   const { realmEntityId } = useRealmStore();
 
   const { nextBlockTimestamp } = useBlockchainStore();
 
-  // const { data: caravanData, status } = useGetCaravans();
   const { realm } = useGetRealm({ entityId: realmEntityId });
   const { caravans } = useGetRealmCaravans(
     realm?.position.x || 0,

@@ -38,7 +38,9 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
   let resourceWeight = 0;
 
   const destinationRealmId = useMemo(() => {
-    return caravanInfo && getRealmIdByPosition(caravanInfo.destination);
+    return (
+      caravanInfo?.destination && getRealmIdByPosition(caravanInfo.destination)
+    );
   }, [caravanInfo]);
   const destinationRealmName =
     destinationRealmId && getRealmNameById(destinationRealmId);
