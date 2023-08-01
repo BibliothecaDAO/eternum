@@ -846,6 +846,7 @@ export interface TradeResources {
   resourcesGet: { resourceId: number; amount: number }[];
 }
 
+// TODO: change resourcesGet/Give into resourcesMaker/Taker
 export const useGetTradeResources = ({
   makerOrderId,
   takerOrderId,
@@ -909,7 +910,7 @@ export const useGetTradeResources = ({
       }
     };
     fetchData();
-  }, []);
+  }, [makerOrderId]);
 
   return {
     tradeResources,

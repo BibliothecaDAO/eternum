@@ -35,7 +35,6 @@ export const AcceptOfferPopup = ({
       create_free_transport_unit,
       create_caravan,
     },
-    components: { Trade, Status, FungibleEntities, Resource, Realm },
   } = useDojo();
 
   const { realmEntityId } = useRealmStore();
