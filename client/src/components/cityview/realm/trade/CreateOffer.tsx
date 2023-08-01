@@ -93,7 +93,7 @@ export const CreateOfferPopup = ({
 
   const canGoToNextStep = useMemo(
     () => step !== 3 || selectedCaravan !== 0 || hasEnoughDonkeys,
-    [step, selectedCaravan, donkeysCount],
+    [step, selectedCaravan, hasEnoughDonkeys],
   );
 
   useEffect(() => {
