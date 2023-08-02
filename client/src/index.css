@@ -27,3 +27,7 @@ html, body {
       -moz-appearance: textfield !important;
     }
  }
+
+ * {
+    user-select: none;
+ }
