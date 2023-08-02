@@ -61,12 +61,15 @@ export const LaborComponent = ({
 
   // loading
   useEffect(() => {
-    setIsHarvestLoading(false);
     setBuildLoadingStates((prevStates: { [key: number]: boolean }) => ({
       ...prevStates,
       [resourceId!]: false,
     }));
   }, [labor]);
+
+  useEffect(() => {
+    setIsHarvestLoading(false);
+  }, [resource]);
 
   let realmEntityId = useRealm((state) => state.realmEntityId);
   // time until the next possible harvest (that happens every 7200 seconds (2hrs))

@@ -46,6 +46,7 @@ export const CreateOfferPopup = ({
   const [donkeysCount, setDonkeysCount] = useState(0);
   const [resourceWeight, setResourceWeight] = useState(0);
   const [hasEnoughDonkeys, setHasEnoughDonkeys] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const {
     systemCalls: {
@@ -59,6 +60,7 @@ export const CreateOfferPopup = ({
   const { realmEntityId } = useRealmStore();
 
   const createOrder = async () => {
+    setIsLoading(true);
     if (isNewCaravan) {
       const transport_units_id = await create_free_transport_unit({
         realm_id: realmEntityId,
@@ -89,6 +91,7 @@ export const CreateOfferPopup = ({
         caravan_id: selectedCaravan,
       });
     }
+    onClose();
   };
 
   const canGoToNextStep = useMemo(
@@ -169,21 +172,33 @@ export const CreateOfferPopup = ({
             step={step}
             maxStep={3}
           />
-          <Button
-            className="!px-[6px] !py-[2px] text-xxs"
-            disabled={!canGoToNextStep}
-            onClick={() => {
-              if (step === 3) {
-                createOrder();
-                onClose();
-              } else {
-                setStep(step + 1);
-              }
-            }}
-            variant={canGoToNextStep ? "success" : "danger"}
-          >
-            {step == 3 ? "Create Offer" : "Next Step"}
-          </Button>
+          {!isLoading && (
+            <Button
+              className="!px-[6px] !py-[2px] text-xxs"
+              disabled={!canGoToNextStep}
+              onClick={() => {
+                if (step === 3) {
+                  createOrder();
+                } else {
+                  setStep(step + 1);
+                }
+              }}
+              variant={canGoToNextStep ? "success" : "danger"}
+            >
+              {step == 3 ? "Create Offer" : "Next Step"}
+            </Button>
+          )}
+          {isLoading && (
+            <Button
+              isLoading={true}
+              onClick={() => {}}
+              variant="danger"
+              className="ml-auto p-2 !h-4 text-xxs !rounded-md"
+            >
+              {" "}
+              {}{" "}
+            </Button>
+          )}
         </div>
       </SecondaryPopup.Body>
     </SecondaryPopup>
