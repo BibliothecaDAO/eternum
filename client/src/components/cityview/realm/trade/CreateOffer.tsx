@@ -43,7 +43,7 @@ export const CreateOfferPopup = ({
     useState<{ [key: number]: number }>({});
   const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
   const [isNewCaravan, setIsNewCaravan] = useState(false);
-  const [donkeysCount, setDonkeysCount] = useState(0);
+  const [donkeysCount, setDonkeysCount] = useState(1);
   const [resourceWeight, setResourceWeight] = useState(0);
   const [hasEnoughDonkeys, setHasEnoughDonkeys] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

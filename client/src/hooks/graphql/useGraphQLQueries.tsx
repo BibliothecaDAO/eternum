@@ -503,8 +503,7 @@ export const useGetCaravanInfo = (
         if (
           caravanEntities &&
           caravanEntities.length === 1 &&
-          destinationEntities //&&
-          // destinationEntities.length === 1
+          destinationEntities
         ) {
           let movable = caravanEntities[0]?.components?.find(
             (component) => component?.__typename === "Movable",

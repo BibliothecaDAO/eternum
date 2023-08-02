@@ -21,7 +21,7 @@ export const AcceptOfferPopup = ({
 }: AcceptOfferPopupProps) => {
   const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
   const [isNewCaravan, setIsNewCaravan] = useState(false);
-  const [donkeysCount, setDonkeysCount] = useState(0);
+  const [donkeysCount, setDonkeysCount] = useState(1);
   const [hasEnoughDonkeys, setHasEnoughDonkeys] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
