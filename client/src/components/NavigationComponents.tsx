@@ -19,7 +19,7 @@ const NavgationComponent = () => {
       <Link href="/map" onClick={() => moveCameraToWorldMapView()}>
         <CircleButton
           size="md"
-          className={clsx("absolute z-0 text-[10px]", "top-0 left-16 ml-2")}
+          className={clsx("absolute z-0 text-[10px]", "top-0 left-16 ml-3")}
         >
           <WorldIcon className="fill-current" />
         </CircleButton>
@@ -27,14 +27,14 @@ const NavgationComponent = () => {
 
       <CircleButton
         size="md"
-        className={clsx("absolute z-0 text-[10px]", "top-16 mt-2")}
+        className={clsx("absolute z-0 text-[10px]", "top-16 mt-3")}
       >
         <ForwardBurgerIcon className="fill-current" />
       </CircleButton>
       <RealmSwitch
         className={clsx(
           "absolute z-0 text-[10px]",
-          "top-20 left-16 -ml-2 -mt-4",
+          "top-20 left-16 -ml-2 -mt-5",
         )}
       />
     </div>
