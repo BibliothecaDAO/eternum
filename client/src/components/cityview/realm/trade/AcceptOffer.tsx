@@ -82,7 +82,7 @@ export const AcceptOfferPopup = ({
 
   let resourceWeight = 0;
   for (const [_, amount] of Object.entries(
-    tradeResources.resourcesGive.map((resource) => resource.amount) || {},
+    tradeResources.resourcesGet.map((resource) => resource.amount) || {},
   )) {
     resourceWeight += amount * 1;
   }
@@ -101,7 +101,7 @@ export const AcceptOfferPopup = ({
 
   const selectedResourcesGetAmounts = useMemo(() => {
     let selectedResourcesGetAmounts: { [resourceId: number]: number } = {};
-    tradeResources.resourcesGet.forEach((resource) => {
+    tradeResources.resourcesGive.forEach((resource) => {
       selectedResourcesGetAmounts[resource.resourceId] = resource.amount;
     });
     return selectedResourcesGetAmounts;
@@ -109,7 +109,7 @@ export const AcceptOfferPopup = ({
 
   const selectedResourcesGiveAmounts = useMemo(() => {
     let selectedResourcesGiveAmounts: { [resourceId: number]: number } = {};
-    tradeResources.resourcesGive.forEach((resource) => {
+    tradeResources.resourcesGet.forEach((resource) => {
       selectedResourcesGiveAmounts[resource.resourceId] = resource.amount;
     });
     return selectedResourcesGiveAmounts;
@@ -132,13 +132,13 @@ export const AcceptOfferPopup = ({
             selectedCaravan={selectedCaravan}
             setSelectedCaravan={setSelectedCaravan}
             selectedResourceIdsGet={
-              tradeResources.resourcesGet.map(
+              tradeResources.resourcesGive.map(
                 (resource) => resource.resourceId,
               ) || []
             }
             selectedResourcesGetAmounts={selectedResourcesGetAmounts}
             selectedResourceIdsGive={
-              tradeResources.resourcesGive.map(
+              tradeResources.resourcesGet.map(
                 (resource) => resource.resourceId,
               ) || []
             }
