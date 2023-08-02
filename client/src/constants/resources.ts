@@ -19,6 +19,15 @@ export const findResourceIdByTrait = (trait: string) => {
 
 export const resources: Array<Resources> = [
   {
+    trait: 'Shekels',
+    value: 253,
+    colour: '#ec4899',
+    colourClass: '',
+    id: 253,
+    description: 'Shekels.',
+    img: '',
+  },
+  {
     trait: 'Wood',
     value: 5015,
     colour: '#78350f',
@@ -250,7 +259,6 @@ export const resources: Array<Resources> = [
       'Dragons are the hidden guardians of our reality. No mortal can witness their work, lest they be purged by dragonfire. If you find one of these scales, flee. Only death can be found in their presence or by the forces they fight in secret.',
     img: 'https://github.com/BibliothecaForAdventurers/voxel-resources/blob/main/compressed/dragonhide.gif?raw=true',
   },
-
   {
     trait: 'Wheat',
     value: 254,
@@ -297,6 +305,7 @@ export enum ResourcesIds {
   Adamantine = 20,
   Mithral = 21,
   Dragonhide = 22,
+  Shekels = 253,
   Wheat = 254,
   Fish = 255,
 }

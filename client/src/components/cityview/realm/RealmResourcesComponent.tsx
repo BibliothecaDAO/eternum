@@ -37,6 +37,7 @@ export const RealmResourcesComponent = ({
 
   // unpack the resources
   let realmResourceIds: number[] = [
+    ResourcesIds["Shekels"],
     ResourcesIds["Wheat"],
     ResourcesIds["Fish"],
   ];
@@ -90,7 +91,6 @@ export const RealmResourcesComponent = ({
             ) : (
               <div className="flex items-center">
                 <MoreIcon className="mr-1" />
-                {/* // TODO: find a way to get total resource amount */}
                 <div className="text-xs">Show all</div>
               </div>
             )}

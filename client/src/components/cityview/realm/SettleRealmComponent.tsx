@@ -46,6 +46,7 @@ export const SettleRealmComponent = ({
     // mint basic resources to start
     await mint_resources({ entity_id, resource_type: 2, amount: 1000 });
     await mint_resources({ entity_id, resource_type: 3, amount: 1000 });
+    await mint_resources({ entity_id, resource_type: 253, amount: 1000 });
     // add the new entity_id in the list of entityIds in my localStorage
     const entityIds = localStorage.getItem("entityIds");
     const updatedEntityIds = entityIds
