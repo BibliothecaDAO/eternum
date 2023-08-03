@@ -100,7 +100,6 @@ export const CreateOfferPopup = ({
         selectedResourceIdsGive.length > 0 && selectedResourceIdsGet.length > 0
       );
     } else if (step === 3) {
-      console.log({ selectedCaravan, hasEnoughDonkeys });
       return selectedCaravan !== 0 || (hasEnoughDonkeys && isNewCaravan);
     } else {
       return true;
