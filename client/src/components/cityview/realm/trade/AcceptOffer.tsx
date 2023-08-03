@@ -88,8 +88,8 @@ export const AcceptOfferPopup = ({
   }
 
   const canAcceptOffer = useMemo(() => {
-    return selectedCaravan !== 0 || hasEnoughDonkeys;
-  }, [selectedCaravan, hasEnoughDonkeys]);
+    return selectedCaravan !== 0 || (isNewCaravan && hasEnoughDonkeys);
+  }, [selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
 
   useEffect(() => {
     if (donkeysCount * 100 >= resourceWeight) {

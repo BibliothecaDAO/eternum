@@ -94,10 +94,25 @@ export const CreateOfferPopup = ({
     onClose();
   };
 
-  const canGoToNextStep = useMemo(
-    () => step !== 3 || selectedCaravan !== 0 || hasEnoughDonkeys,
-    [step, selectedCaravan, hasEnoughDonkeys],
-  );
+  const canGoToNextStep = useMemo(() => {
+    if (step === 1) {
+      return (
+        selectedResourceIdsGive.length > 0 && selectedResourceIdsGet.length > 0
+      );
+    } else if (step === 3) {
+      console.log({ selectedCaravan, hasEnoughDonkeys });
+      return selectedCaravan !== 0 || (hasEnoughDonkeys && isNewCaravan);
+    } else {
+      return true;
+    }
+  }, [
+    step,
+    selectedCaravan,
+    hasEnoughDonkeys,
+    selectedResourceIdsGet,
+    selectedResourceIdsGive,
+    isNewCaravan,
+  ]);
 
   useEffect(() => {
     setHasEnoughDonkeys(donkeysCount * 100 >= resourceWeight);
