@@ -457,6 +457,7 @@ export interface CaravanInterface {
   orderId: string;
   blocked: boolean;
   arrivalTime: number;
+  capacity: number;
 }
 
 export interface ResourceInterface {
@@ -614,6 +615,9 @@ export const useGetRealmCaravans = (
               let arrivalTime = item?.entity?.components?.find((component) => {
                 return component?.__typename === "ArrivalTime";
               }) as ArrivalTime | undefined;
+              let capacity = item?.entity?.components?.find((component) => {
+                return component?.__typename === "Capacity";
+              }) as Capacity;
               let keys = item?.entity?.keys;
               let caravanId = keys ? keys.split(",")[0] : "";
               return {
@@ -621,6 +625,7 @@ export const useGetRealmCaravans = (
                 orderId: orderId.id,
                 blocked: movable.blocked,
                 arrivalTime: arrivalTime?.arrives_at,
+                capacity: capacity.weight_gram,
               };
             });
           setCaravans(caravans);

@@ -309,6 +309,7 @@ const SelectResourcesAmountPanel = ({
   const { realmResources } = useGetRealmResources(realmEntityId);
 
   useEffect(() => {
+    // set resource weight in kg
     let weight = 0;
     for (const [resourceId, amount] of Object.entries(
       selectedResourcesGiveAmounts,
@@ -435,18 +436,25 @@ export const SelectCaravanPanel = ({
     realm?.position.y || 0,
   );
 
-  let myIdleCaravans: CaravanInterface[] = [];
-  if (caravans) {
-    caravans.forEach((caravan) => {
-      const isIdle =
-        nextBlockTimestamp &&
-        caravan.arrivalTime <= nextBlockTimestamp &&
-        !caravan.blocked;
-      if (isIdle) {
-        myIdleCaravans.push(caravan);
-      }
-    });
-  }
+  let myAvailableCaravans = useMemo(
+    () =>
+      caravans
+        ? (caravans
+            .map((caravan) => {
+              const isIdle =
+                nextBlockTimestamp &&
+                caravan.arrivalTime <= nextBlockTimestamp &&
+                !caravan.blocked;
+              // capacity in gr (1kg = 1000gr)
+              const canCarry = caravan.capacity / 1000 >= resourceWeight;
+              if (isIdle && canCarry) {
+                return caravan;
+              }
+            })
+            .filter(Boolean) as CaravanInterface[])
+        : [],
+    [caravans],
+  );
 
   return (
     <div className="flex flex-col items-center w-full p-2">
@@ -534,22 +542,22 @@ export const SelectCaravanPanel = ({
           <div className="text-xs text-center text-gold">+ New Caravan</div>
         </div>
       )}
-      {isNewCaravan && myIdleCaravans.length > 0 && (
+      {isNewCaravan && myAvailableCaravans.length > 0 && (
         <div className="flex flex-col w-full mt-2">
           <Headline className="mb-2">Or choose from existing Caravans</Headline>
         </div>
       )}
-      {isNewCaravan && myIdleCaravans.length > 0 && (
+      {isNewCaravan && myAvailableCaravans.length > 0 && (
         <div
           onClick={() => setIsNewCaravan(false)}
           className="w-full mx-4 h-8 py-[7px] bg-dark-brown cursor-pointer rounded justify-center items-center"
         >
-          <div className="text-xs text-center text-gold">{`Show ${myIdleCaravans.length} idle Caravans`}</div>
+          <div className="text-xs text-center text-gold">{`Show ${myAvailableCaravans.length} idle Caravans`}</div>
         </div>
       )}
       {!isNewCaravan && (
         <>
-          {myIdleCaravans.map((caravan) => (
+          {myAvailableCaravans.map((caravan) => (
             <Caravan
               caravan={caravan}
               idleOnly={true}

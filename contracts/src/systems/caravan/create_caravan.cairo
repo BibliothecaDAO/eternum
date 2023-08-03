@@ -107,7 +107,7 @@ mod CreateCaravan {
             // so that when we know it's in a caravan
             total_speed += movable.sec_per_km.into() * quantity;
             total_quantity += quantity;
-            total_capacity += capacity.weight_gram;
+            total_capacity += capacity.weight_gram * quantity;
             index += 1;
         };
         // DISCUSS: i created a getAverageSpeed system but
