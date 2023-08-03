@@ -91,7 +91,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
           // TODO: could not click on realm switch with the link
           <Link
             key={realm.id}
-            href="/realmView"
+            href={`/realm/${realm.id}`}
             onClick={() => {
               setRealmEntityId(realm.id);
               setRealmId(realm.realmId);

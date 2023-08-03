@@ -2,11 +2,12 @@
 import { MapControls } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import gsap from "gsap";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import { Vector3 } from "three";
 import useUIStore from "../hooks/store/useUIStore";
 import { useControls, button } from 'leva';
 import * as THREE from 'three'
+import { useRoute } from "wouter";
 
 interface Point {
     x: number;
@@ -28,6 +29,13 @@ const CameraControls = ({ position, target }: Props) => {
 
     const setCameraPosition = useUIStore((state) => state.setCameraPosition);
     const setCameraTarget = useUIStore((state) => state.setCameraTarget);
+
+    const [isRealmView, realmId] = useRoute("/realm/:realmId")
+
+    const maxDistance = useMemo(() => {
+        return isRealmView ? 2800 : 1400
+    }, [isRealmView])
+
 
     useControls({
         mapView: button(() => {
@@ -94,7 +102,7 @@ const CameraControls = ({ position, target }: Props) => {
             ref={ref}
             args={[camera, domElement]}
             panSpeed={2}
-            maxDistance={1400}
+            maxDistance={maxDistance}
             minDistance={25}
             maxPolarAngle={Math.PI / 3}
             makeDefault

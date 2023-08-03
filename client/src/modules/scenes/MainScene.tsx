@@ -46,7 +46,6 @@ export const MainScene = () => {
         },
     })
 
-
     const [location] = useLocation()
     // @ts-ignore
     const transition = useTransition(location, {
@@ -71,7 +70,7 @@ export const MainScene = () => {
         <Canvas
             raycaster={{ params: { Points: { threshold: 0.2 } } }}
             className='rounded-xl'
-            camera={{ fov: 15, position: [0, 700, 0], far: 2000 }}
+            camera={{ fov: 15, position: [0, 700, 0], far: 3500 }}
             dpr={[1, 2]}
             gl={
                 {
@@ -101,7 +100,7 @@ export const MainScene = () => {
                                 <Route path="/bastion">
                                     <BastionScene />
                                 </Route>
-                                <Route path="/realmView">
+                                <Route path="/realm/:realm_id">
                                     <RealmCityViewScene />
                                 </Route>
                             </Switch>

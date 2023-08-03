@@ -36,8 +36,8 @@ const useUIStore = create<UIStore & PopupsStore>((set) => ({
         set({ cameraPosition: pos, cameraTarget: target })
     },
     moveCameraToRealmView: () => {
-        const pos = { x: 617.4138155171775, y: 700.1390819999998, z: 1055.0299115304658 }
-        const target = { x: 61.3221210638067, y: 0.1390819999999989, z: -22.35675413789002 }
+        const pos = { x: 520.4138155171775, y: 1962.1390819999998, z: 1976.0299115304658 }
+        const target = { x: 188.3221210638067, y: 0.1390819999999989, z: 6.35675413789002 }
         set({ cameraPosition: pos, cameraTarget: target })
     },
     moveCameraToCaravansView: () => {
