@@ -86,7 +86,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
         </div>
         <div className="flex items-center ml-1 -mt-2">
           {isTraveling && destinationRealmName && (
-            <div>
+            <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Traveling to</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
                 <OrderIcon
@@ -95,7 +95,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
                   size="xs"
                 />
                 {destinationRealmName}
-                <span className="italic text-light-pink">with</span>
+                <span className="italic text-light-pink ml-1">with</span>
               </div>
             </div>
           )}
