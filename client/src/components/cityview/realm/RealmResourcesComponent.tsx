@@ -37,6 +37,7 @@ export const RealmResourcesComponent = ({
 
   // unpack the resources
   let realmResourceIds: number[] = [
+    ResourcesIds["Shekels"],
     ResourcesIds["Wheat"],
     ResourcesIds["Fish"],
   ];
@@ -90,7 +91,6 @@ export const RealmResourcesComponent = ({
             ) : (
               <div className="flex items-center">
                 <MoreIcon className="mr-1" />
-                {/* // TODO: find a way to get total resource amount */}
                 <div className="text-xs">Show all</div>
               </div>
             )}
@@ -163,18 +163,20 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({
             {currencyFormat(resource ? resource.amount : 0)}
           </div>
         </div>
-        <div
-          className={clsx(
-            "text-xxs mt-2 rounded-[5px] px-2 h-4 w-min",
-            productivity > 0 && "text-order-vitriol bg-dark-green",
-            (productivity === 0 || productivity === undefined) &&
-              "text-gold bg-brown",
-          )}
-        >
-          {productivity === 0 || productivity === undefined
-            ? "IDLE"
-            : `${productivity}/h`}
-        </div>
+        {resourceId !== 253 && (
+          <div
+            className={clsx(
+              "text-xxs mt-2 rounded-[5px] px-2 h-4 w-min",
+              productivity > 0 && "text-order-vitriol bg-dark-green",
+              (productivity === 0 || productivity === undefined) &&
+                "text-gold bg-brown",
+            )}
+          >
+            {productivity === 0 || productivity === undefined
+              ? "IDLE"
+              : `${productivity}/h`}
+          </div>
+        )}
       </div>
       {resourceId === ResourcesIds["Fish"] && (
         <div className="flex items-center mx-3 -translate-y-2">|</div>

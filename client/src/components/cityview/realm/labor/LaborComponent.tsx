@@ -58,15 +58,28 @@ export const LaborComponent = ({
   const { nextBlockTimestamp } = useBlockchainStore();
 
   const [isHarvestLoading, setIsHarvestLoading] = useState(false);
+  const [prevResource, setPrevResource] = useState<
+    ResourceInterface | undefined
+  >(resource);
+  const [prevLabor, setPrevLabor] = useState<LaborInterface | undefined>(labor);
 
-  // loading
+  // NOTE: using prev resource and prev labor to make sure there's a change in value before stopping loading
   useEffect(() => {
-    setIsHarvestLoading(false);
-    setBuildLoadingStates((prevStates: { [key: number]: boolean }) => ({
-      ...prevStates,
-      [resourceId!]: false,
-    }));
+    if (labor && prevLabor?.balance !== labor.balance) {
+      setBuildLoadingStates((prevStates: { [key: number]: boolean }) => ({
+        ...prevStates,
+        [resourceId!]: false,
+      }));
+    }
+    setPrevLabor(labor);
   }, [labor]);
+
+  useEffect(() => {
+    if (resource && prevResource?.amount !== resource.amount) {
+      setIsHarvestLoading(false);
+    }
+    setPrevResource(resource);
+  }, [resource]);
 
   let realmEntityId = useRealm((state) => state.realmEntityId);
   // time until the next possible harvest (that happens every 7200 seconds (2hrs))

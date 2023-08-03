@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
@@ -25,6 +25,7 @@ import {
   getRealmOrderNameById,
   getTotalResourceWeight,
 } from "../TradeUtils";
+import { CAPACITY_PER_DONKEY } from "../../../../../constants/travel";
 
 type CaravanProps = {
   caravan: CaravanInterface;
@@ -39,19 +40,16 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
 
   const { caravanInfo } = useGetCaravanInfo(
     parseInt(caravan.caravanId),
-    counterPartyOrderId || 0,
     parseInt(caravan.orderId),
+    counterPartyOrderId || 0,
   );
 
-  // TODO: get the number of donkeys travelling
-
   // capacity
-  let resourceWeight =
-    caravanInfo &&
-    getTotalResourceWeight([
-      ...caravanInfo.resourcesGive,
-      ...caravanInfo.resourcesGet,
-    ]);
+  let resourceWeight = useMemo(() => {
+    return caravanInfo
+      ? getTotalResourceWeight([...caravanInfo.resourcesGive])
+      : undefined;
+  }, [caravanInfo]);
 
   const destinationRealmId =
     caravanInfo?.destination && getRealmIdByPosition(caravanInfo.destination);
@@ -63,12 +61,12 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
     !caravanInfo.blocked &&
     nextBlockTimestamp &&
     caravanInfo.arrivalTime > nextBlockTimestamp;
-  const isWaitingForDeparture =
-    caravanInfo && Number(caravanInfo.blocked) === 1;
+  const isWaitingForDeparture = caravanInfo && caravanInfo.blocked;
   const isIdle =
     nextBlockTimestamp &&
     caravanInfo &&
-    caravanInfo.arrivalTime <= nextBlockTimestamp;
+    caravanInfo.arrivalTime <= nextBlockTimestamp &&
+    !caravanInfo.blocked;
 
   if (((caravanInfo && caravanInfo.blocked) || isTraveling) && props.idleOnly) {
     return null;
@@ -86,28 +84,32 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
         <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
           #{parseInt(caravan.caravanId)}
         </div>
-        {isTraveling && destinationRealmName && (
-          <div className="flex items-center ml-1 -mt-2">
-            <span className="italic text-light-pink">Traveling to</span>
-            <div className="flex items-center ml-1 mr-1 text-gold">
-              <OrderIcon
-                order={getRealmOrderNameById(destinationRealmId)}
-                className="mr-1"
-                size="xs"
-              />
-              {destinationRealmName}
+        <div className="flex items-center ml-1 -mt-2">
+          {isTraveling && destinationRealmName && (
+            <div className="flex items-center ml-1">
+              <span className="italic text-light-pink">Traveling to</span>
+              <div className="flex items-center ml-1 mr-1 text-gold">
+                <OrderIcon
+                  order={getRealmOrderNameById(destinationRealmId)}
+                  className="mr-1"
+                  size="xs"
+                />
+                {destinationRealmName}
+                <span className="italic text-light-pink ml-1">with</span>
+              </div>
             </div>
-            <span className="italic text-light-pink">with</span>
-            {resourceWeight && caravanInfo.capacity && (
+          )}
+          {caravanInfo &&
+            resourceWeight !== undefined &&
+            caravanInfo.capacity && (
               <div className="flex items-center ml-1 text-gold">
-                {resourceWeight}
+                {isTraveling || isWaitingForDeparture ? resourceWeight : 0}
                 <div className="mx-0.5 italic text-light-pink">/</div>
-                {caravanInfo.capacity}
+                {`${caravanInfo.capacity / 1000} kg`}
                 <CaretDownFill className="ml-1 fill-current" />
               </div>
             )}
-          </div>
-        )}
+        </div>
         {isWaitingForDeparture && (
           <div className="flex ml-auto -mt-2 italic text-gold">
             Waiting departure <Pen className="ml-1 fill-gold" />
@@ -142,8 +144,9 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
               <div className="flex items-center space-x-[6px]">
                 <div className="flex flex-col items-center">
                   <Dot colorClass="bg-green" />
-                  {/* // TODO: get number in the caravan */}
-                  <div className="mt-1 text-green">{30}</div>
+                  <div className="mt-1 text-green">
+                    {(caravanInfo?.capacity || 0) / CAPACITY_PER_DONKEY}
+                  </div>
                 </div>
                 <div className="flex flex-col items-center">
                   <Dot colorClass="bg-yellow" />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../elements/SecondaryPopup";
 import Button from "../../../../elements/Button";
 import { SelectCaravanPanel } from "./CreateOffer";
@@ -8,6 +8,7 @@ import {
   MarketInterface,
   useGetTradeResources,
 } from "../../../../hooks/graphql/useGraphQLQueries";
+import { number } from "starknet";
 
 type AcceptOfferPopupProps = {
   onClose: () => void;
@@ -20,7 +21,8 @@ export const AcceptOfferPopup = ({
 }: AcceptOfferPopupProps) => {
   const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
   const [isNewCaravan, setIsNewCaravan] = useState(false);
-  const [donkeysCount, setDonkeysCount] = useState(0);
+  const [donkeysCount, setDonkeysCount] = useState(1);
+  const [hasEnoughDonkeys, setHasEnoughDonkeys] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -35,7 +37,6 @@ export const AcceptOfferPopup = ({
       create_free_transport_unit,
       create_caravan,
     },
-    components: { Trade, Status, FungibleEntities, Resource, Realm },
   } = useDojo();
 
   const { realmEntityId } = useRealmStore();
@@ -81,10 +82,38 @@ export const AcceptOfferPopup = ({
 
   let resourceWeight = 0;
   for (const [_, amount] of Object.entries(
-    tradeResources.resourcesGive.map((resource) => resource.amount) || {},
+    tradeResources.resourcesGet.map((resource) => resource.amount) || {},
   )) {
     resourceWeight += amount * 1;
   }
+
+  const canAcceptOffer = useMemo(() => {
+    return selectedCaravan !== 0 || (isNewCaravan && hasEnoughDonkeys);
+  }, [selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
+
+  useEffect(() => {
+    if (donkeysCount * 100 >= resourceWeight) {
+      setHasEnoughDonkeys(true);
+    } else {
+      setHasEnoughDonkeys(false);
+    }
+  }, [donkeysCount, resourceWeight]);
+
+  const selectedResourcesGetAmounts = useMemo(() => {
+    let selectedResourcesGetAmounts: { [resourceId: number]: number } = {};
+    tradeResources.resourcesGive.forEach((resource) => {
+      selectedResourcesGetAmounts[resource.resourceId] = resource.amount;
+    });
+    return selectedResourcesGetAmounts;
+  }, [tradeResources]);
+
+  const selectedResourcesGiveAmounts = useMemo(() => {
+    let selectedResourcesGiveAmounts: { [resourceId: number]: number } = {};
+    tradeResources.resourcesGet.forEach((resource) => {
+      selectedResourcesGiveAmounts[resource.resourceId] = resource.amount;
+    });
+    return selectedResourcesGiveAmounts;
+  }, [tradeResources]);
 
   return (
     <SecondaryPopup>
@@ -103,24 +132,19 @@ export const AcceptOfferPopup = ({
             selectedCaravan={selectedCaravan}
             setSelectedCaravan={setSelectedCaravan}
             selectedResourceIdsGet={
-              tradeResources.resourcesGet.map(
-                (resource) => resource.resourceId,
-              ) || []
-            }
-            selectedResourcesGetAmounts={
-              tradeResources.resourcesGet.map((resource) => resource.amount) ||
-              []
-            }
-            selectedResourceIdsGive={
               tradeResources.resourcesGive.map(
                 (resource) => resource.resourceId,
               ) || []
             }
-            selectedResourcesGiveAmounts={
-              tradeResources.resourcesGive.map((resource) => resource.amount) ||
-              []
+            selectedResourcesGetAmounts={selectedResourcesGetAmounts}
+            selectedResourceIdsGive={
+              tradeResources.resourcesGet.map(
+                (resource) => resource.resourceId,
+              ) || []
             }
+            selectedResourcesGiveAmounts={selectedResourcesGiveAmounts}
             resourceWeight={resourceWeight}
+            hasEnoughDonkeys={hasEnoughDonkeys}
           />
         </div>
         <div className="flex justify-between m-2 text-xxs">
@@ -134,9 +158,10 @@ export const AcceptOfferPopup = ({
           <div>
             {!isLoading && (
               <Button
+                disabled={!canAcceptOffer}
                 className="!px-[6px] !py-[2px] text-xxs"
                 onClick={acceptOffer}
-                variant="success"
+                variant={canAcceptOffer ? "success" : "danger"}
               >
                 Accept Offer
               </Button>

@@ -13,6 +13,9 @@ query getRealmsCaravans($x: u32, $y: u32) {
         ... on Movable {
           blocked
         }
+        ... on Capacity {
+          weight_gram
+        }
       }
     }
   }

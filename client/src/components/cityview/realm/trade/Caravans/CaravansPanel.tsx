@@ -12,6 +12,7 @@ import {
   useGetRealmCaravans,
 } from "../../../../../hooks/graphql/useGraphQLQueries";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
+import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 
 type CaravansPanelProps = {};
 
@@ -22,9 +23,17 @@ export const CaravansPanel = ({}: CaravansPanelProps) => {
     useState<CaravanInterface | null>(null);
 
   const { realmEntityId } = useRealmStore();
+  const { nextBlockTimestamp } = useBlockchainStore();
 
   const onClick = (caravan: CaravanInterface) => {
-    setShowCaravanDetails(true);
+    // way to find if caravan has currently resources inside
+    if (
+      (nextBlockTimestamp && caravan.arrivalTime > nextBlockTimestamp) ||
+      caravan.blocked
+    ) {
+      setShowCaravanDetails(true);
+    } else {
+    }
     setSelectedCaravan(caravan);
   };
 

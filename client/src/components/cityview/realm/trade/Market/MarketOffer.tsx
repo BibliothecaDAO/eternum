@@ -42,18 +42,22 @@ export const MarketOffer = ({
   let { realmResources } = useGetRealmResources(realmEntityId);
 
   const {
-    tradeResources: { resourcesGet, resourcesGive },
+    tradeResources: {
+      resourcesGet: resourcesGive,
+      resourcesGive: resourcesGet,
+    },
   } = useGetTradeResources({
     makerOrderId: marketOffer.makerOrderId,
     takerOrderId: marketOffer.takerOrderId,
   });
 
-  // TODO: use a graphql query to get the resource balance of the realm
   useEffect(() => {
-    canAcceptOffer(resourcesGive, realmResources)
-      ? setCanAccept(true)
-      : setCanAccept(false);
-  }, []);
+    if (resourcesGive.length > 0) {
+      canAcceptOffer(resourcesGive, realmResources)
+        ? setCanAccept(true)
+        : setCanAccept(false);
+    }
+  }, [resourcesGive]);
 
   let timeLeft = formatTimeLeft(marketOffer.expiresAt - Date.now() / 1000);
 
@@ -78,8 +82,8 @@ export const MarketOffer = ({
       <div className="flex items-end mt-2">
         <div className="flex items-center justify-around flex-1">
           <div className="grid w-1/3 grid-cols-3 gap-2 text-gold">
-            {resourcesGet &&
-              resourcesGet.map(({ resourceId, amount }) => (
+            {resourcesGive &&
+              resourcesGive.map(({ resourceId, amount }) => (
                 <div className="flex flex-col items-center">
                   <ResourceIcon
                     key={resourceId}
@@ -95,11 +99,11 @@ export const MarketOffer = ({
             <RatioIcon className="mb-1 fill-white" />
             {resourcesGive &&
               resourcesGet &&
-              calculateRatio(resourcesGet, resourcesGive).toFixed(2)}
+              calculateRatio(resourcesGive, resourcesGet).toFixed(2)}
           </div>
           <div className="grid w-1/3 grid-cols-3 gap-2 text-gold">
-            {resourcesGive &&
-              resourcesGive.map(({ resourceId, amount }) => (
+            {resourcesGet &&
+              resourcesGet.map(({ resourceId, amount }) => (
                 <div className="flex flex-col items-center">
                   <ResourceIcon
                     key={resourceId}
@@ -117,7 +121,7 @@ export const MarketOffer = ({
             onClick={() => {
               onAccept();
             }}
-            variant={"success"}
+            variant={canAccept ? "success" : "danger"}
             className="ml-auto p-2 !h-4 text-xxs !rounded-md"
           >{`Accept`}</Button>
         )}
