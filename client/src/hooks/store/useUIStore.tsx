@@ -5,6 +5,8 @@ export type Background = 'map' | 'realmView' | 'combat' | 'bastion';
 interface UIStore {
     theme: string;
     setTheme: (theme: string) => void;
+    isSoundOn: boolean;
+    toggleSound: () => void;
     cameraPosition: any,
     setCameraPosition: (position: any) => void,
     cameraTarget: any,
@@ -20,6 +22,8 @@ interface UIStore {
 const useUIStore = create<UIStore & PopupsStore>((set) => ({
     theme: 'light',
     setTheme: (theme) => set({ theme }),
+    isSoundOn: true,
+    toggleSound: () => set((state) => ({ isSoundOn: !state.isSoundOn })),
     cameraPosition: { x: 0, y: 700, z: 0 },
     setCameraPosition: (position) => set({ cameraPosition: position }),
     cameraTarget: { x: 0, y: 0, z: 0 },

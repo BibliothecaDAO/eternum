@@ -1,6 +1,6 @@
 import { Background as BackgroundContainer } from "../containers/Background";
 import { MainScene } from "../modules/scenes/MainScene";
-import { Background } from "../hooks/store/useUIStore";
+import useUIStore, { Background } from "../hooks/store/useUIStore";
 import ActiveLink from "../elements/ActiveLink";
 import { Leva } from "leva";
 import { BottomRightContainer } from "../containers/BottomRightContainer";
@@ -18,12 +18,21 @@ import RealmStatusComponent from "../components/cityview/realm/RealmStatusCompon
 import { Redirect } from "wouter";
 import RealmResourcesComponent from "../components/cityview/realm/RealmResourcesComponent";
 import { useFetchBlockchainData } from "../hooks/store/useBlockchainStore";
+import { useMemo } from "react";
 
 
 export const World = () => {
   useFetchBlockchainData()
 
+  const isSoundOn = useUIStore(
+    (state) => state.isSoundOn,
+  );
 
+  useMemo(() => {
+    if (isSoundOn) {
+
+    }
+  }, [isSoundOn]);
 
   return (
     <div className="fixed top-0 left-0 z-0 w-screen h-screen p-2">
