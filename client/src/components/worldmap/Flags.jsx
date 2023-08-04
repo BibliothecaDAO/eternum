@@ -79,7 +79,7 @@ export function Flags(props) {
     matrix.decompose(
       tempObject.position,
       tempObject.quaternion,
-      tempObject.scale
+      tempObject.scale,
     );
     tempObject.scale.copy(scale);
     tempObject.updateMatrix();
@@ -157,16 +157,16 @@ export function Flags(props) {
         new THREE.InstancedMesh(
           woodGeometry,
           woodMaterial,
-          ordersRealms[i].length
-        )
+          ordersRealms[i].length,
+        ),
     );
     flagMeshes = orders.map(
       (order, i) =>
         new THREE.InstancedMesh(
           flagGeometry,
           materials[order],
-          ordersRealms[i].length
-        )
+          ordersRealms[i].length,
+        ),
     );
 
     woodMeshes.forEach((woodMesh) => {
@@ -185,7 +185,7 @@ export function Flags(props) {
         dummy.position.copy(_position);
         dummy.rotateZ(
           //random
-          Math.random() * Math.PI * 2
+          Math.random() * Math.PI * 2,
         );
         dummy.updateMatrix();
 
@@ -210,7 +210,7 @@ export function Flags(props) {
       const cameraPos = new THREE.Vector3(
         point.x + 25 * (Math.random() < 0.5 ? 1 : -1),
         25,
-        point.z + 25 * (Math.random() < 0.5 ? 1 : -1)
+        point.z + 25 * (Math.random() < 0.5 ? 1 : -1),
       );
       setCameraTarget(targetPos);
       setCameraPosition(cameraPos);
@@ -231,7 +231,7 @@ export function Flags(props) {
   return (
     <>
       <Html position={tooltipPosition} distanceFactor={10}>
-        <div class="bg-black rounded-lg p-2 text-white -translate-x-1/2 whitespace-nowrap">
+        <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
           {hoveredRealmId && realmsJson.features[hoveredRealmId].name}
         </div>
       </Html>

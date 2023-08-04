@@ -61,8 +61,8 @@ export const World = () => {
         <ChatModule />
       </BottomRightContainer>
       <EpochCountdown />
-      <Leva />
-      <Redirect to="/map" />
+      <Leva hidden />
+      {/* <Redirect to="/map" /> */}
     </div>
   );
 };
