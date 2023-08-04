@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../elements/SecondaryPopup";
 import Button from "../../../../elements/Button";
 import { Headline } from "../../../../elements/Headline";
@@ -43,8 +43,10 @@ export const CreateOfferPopup = ({
     useState<{ [key: number]: number }>({});
   const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
   const [isNewCaravan, setIsNewCaravan] = useState(false);
-  const [donkeysCount, setDonkeysCount] = useState(0);
+  const [donkeysCount, setDonkeysCount] = useState(1);
   const [resourceWeight, setResourceWeight] = useState(0);
+  const [hasEnoughDonkeys, setHasEnoughDonkeys] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const {
     systemCalls: {
@@ -58,6 +60,7 @@ export const CreateOfferPopup = ({
   const { realmEntityId } = useRealmStore();
 
   const createOrder = async () => {
+    setIsLoading(true);
     if (isNewCaravan) {
       const transport_units_id = await create_free_transport_unit({
         realm_id: realmEntityId,
@@ -88,9 +91,31 @@ export const CreateOfferPopup = ({
         caravan_id: selectedCaravan,
       });
     }
+    onClose();
   };
 
-  useEffect(() => {}, []);
+  const canGoToNextStep = useMemo(() => {
+    if (step === 1) {
+      return (
+        selectedResourceIdsGive.length > 0 && selectedResourceIdsGet.length > 0
+      );
+    } else if (step === 3) {
+      return selectedCaravan !== 0 || (hasEnoughDonkeys && isNewCaravan);
+    } else {
+      return true;
+    }
+  }, [
+    step,
+    selectedCaravan,
+    hasEnoughDonkeys,
+    selectedResourceIdsGet,
+    selectedResourceIdsGive,
+    isNewCaravan,
+  ]);
+
+  useEffect(() => {
+    setHasEnoughDonkeys(donkeysCount * 100 >= resourceWeight);
+  }, [donkeysCount, resourceWeight]);
 
   return (
     <SecondaryPopup>
@@ -107,14 +132,14 @@ export const CreateOfferPopup = ({
               setSelectedResourceIdsGive={(e) => {
                 setSelectedResourceIdsGive(e);
                 setSelectedResourcesGiveAmounts(
-                  Object.fromEntries(e.map((id) => [id, 0])),
+                  Object.fromEntries(e.map((id) => [id, 1])),
                 );
               }}
               selectedResourceIdsGet={selectedResourceIdsGet}
               setSelectedResourceIdsGet={(e) => {
                 setSelectedResourceIdsGet(e);
                 setSelectedResourcesGetAmounts(
-                  Object.fromEntries(e.map((id) => [id, 0])),
+                  Object.fromEntries(e.map((id) => [id, 1])),
                 );
               }}
             />
@@ -144,6 +169,7 @@ export const CreateOfferPopup = ({
               selectedResourceIdsGive={selectedResourceIdsGive}
               selectedResourcesGiveAmounts={selectedResourcesGiveAmounts}
               resourceWeight={resourceWeight}
+              hasEnoughDonkeys={hasEnoughDonkeys}
             />
           )}
         </div>
@@ -160,20 +186,33 @@ export const CreateOfferPopup = ({
             step={step}
             maxStep={3}
           />
-          <Button
-            className="!px-[6px] !py-[2px] text-xxs"
-            onClick={() => {
-              if (step === 3) {
-                createOrder();
-                onClose();
-              } else {
-                setStep(step + 1);
-              }
-            }}
-            variant="success"
-          >
-            {step == 3 ? "Create Offer" : "Next Step"}
-          </Button>
+          {!isLoading && (
+            <Button
+              className="!px-[6px] !py-[2px] text-xxs"
+              disabled={!canGoToNextStep}
+              onClick={() => {
+                if (step === 3) {
+                  createOrder();
+                } else {
+                  setStep(step + 1);
+                }
+              }}
+              variant={canGoToNextStep ? "success" : "danger"}
+            >
+              {step == 3 ? "Create Offer" : "Next Step"}
+            </Button>
+          )}
+          {isLoading && (
+            <Button
+              isLoading={true}
+              onClick={() => {}}
+              variant="danger"
+              className="ml-auto p-2 !h-4 text-xxs !rounded-md"
+            >
+              {" "}
+              {}{" "}
+            </Button>
+          )}
         </div>
       </SecondaryPopup.Body>
     </SecondaryPopup>
@@ -284,6 +323,7 @@ const SelectResourcesAmountPanel = ({
   const { realmResources } = useGetRealmResources(realmEntityId);
 
   useEffect(() => {
+    // set resource weight in kg
     let weight = 0;
     for (const [resourceId, amount] of Object.entries(
       selectedResourcesGiveAmounts,
@@ -308,7 +348,7 @@ const SelectResourcesAmountPanel = ({
                   onChange={(value) => {
                     setSelectedResourcesGiveAmounts({
                       ...selectedResourcesGiveAmounts,
-                      [id]: value,
+                      [id]: Math.min(resourceBalance, value),
                     });
                   }}
                 />
@@ -346,6 +386,7 @@ const SelectResourcesAmountPanel = ({
             <div key={id} className="flex items-center w-full">
               <NumberInput
                 max={100000}
+                min={1}
                 value={selectedResourcesGetAmounts[id]}
                 onChange={(value) => {
                   setSelectedResourcesGetAmounts({
@@ -384,6 +425,7 @@ export const SelectCaravanPanel = ({
   selectedResourcesGetAmounts,
   selectedResourcesGiveAmounts,
   resourceWeight,
+  hasEnoughDonkeys,
 }: {
   donkeysCount: number;
   setDonkeysCount: (donkeysCount: number) => void;
@@ -396,6 +438,7 @@ export const SelectCaravanPanel = ({
   selectedResourcesGetAmounts: { [key: number]: number };
   selectedResourcesGiveAmounts: { [key: number]: number };
   resourceWeight: number;
+  hasEnoughDonkeys: boolean;
 }) => {
   const { realmEntityId } = useRealmStore();
 
@@ -407,18 +450,25 @@ export const SelectCaravanPanel = ({
     realm?.position.y || 0,
   );
 
-  let myIdleCaravans: CaravanInterface[] = [];
-  if (caravans) {
-    caravans.forEach((caravan) => {
-      const isIdle =
-        nextBlockTimestamp &&
-        caravan.arrivalTime <= nextBlockTimestamp &&
-        !caravan.blocked;
-      if (isIdle) {
-        myIdleCaravans.push(caravan);
-      }
-    });
-  }
+  let myAvailableCaravans = useMemo(
+    () =>
+      caravans
+        ? (caravans
+            .map((caravan) => {
+              const isIdle =
+                nextBlockTimestamp &&
+                caravan.arrivalTime <= nextBlockTimestamp &&
+                !caravan.blocked;
+              // capacity in gr (1kg = 1000gr)
+              const canCarry = caravan.capacity / 1000 >= resourceWeight;
+              if (isIdle && canCarry) {
+                return caravan;
+              }
+            })
+            .filter(Boolean) as CaravanInterface[])
+        : [],
+    [caravans],
+  );
 
   return (
     <div className="flex flex-col items-center w-full p-2">
@@ -433,7 +483,7 @@ export const SelectCaravanPanel = ({
                 resourceId={id}
                 color="text-gold"
                 type="vertical"
-                amount={selectedResourcesGiveAmounts[id]}
+                amount={-selectedResourcesGiveAmounts[id]}
               />
             ))}
           </div>
@@ -449,7 +499,7 @@ export const SelectCaravanPanel = ({
                 key={id}
                 className="!w-min mx-2"
                 type="vertical"
-                color="text-gold"
+                color="text-brilliance"
                 resourceId={id}
                 amount={selectedResourcesGetAmounts[id]}
               />
@@ -484,14 +534,18 @@ export const SelectCaravanPanel = ({
           </div>
           <div className="flex mb-1 text-xs text-center text-white">
             Caravan Capacity{" "}
-            <div className="ml-1 text-danger">{`${donkeysCount * 100}kg`}</div>
+            <div
+              className={`ml-1 text-${hasEnoughDonkeys ? "success" : "danger"}`}
+            >{`${donkeysCount * 100}kg`}</div>
           </div>
-          <div className="flex items-center mb-1 text-xs text-center text-white">
-            <Danger />
-            <div className="ml-1 uppercase text-danger">
-              Increase the amount of units
+          {!hasEnoughDonkeys && (
+            <div className="flex items-center mb-1 text-xs text-center text-white">
+              <Danger />
+              <div className="ml-1 uppercase text-danger">
+                Increase the amount of units
+              </div>
             </div>
-          </div>
+          )}
         </>
       )}
       {!isNewCaravan && (
@@ -502,22 +556,22 @@ export const SelectCaravanPanel = ({
           <div className="text-xs text-center text-gold">+ New Caravan</div>
         </div>
       )}
-      {isNewCaravan && myIdleCaravans.length > 0 && (
+      {isNewCaravan && myAvailableCaravans.length > 0 && (
         <div className="flex flex-col w-full mt-2">
           <Headline className="mb-2">Or choose from existing Caravans</Headline>
         </div>
       )}
-      {isNewCaravan && myIdleCaravans.length > 0 && (
+      {isNewCaravan && myAvailableCaravans.length > 0 && (
         <div
           onClick={() => setIsNewCaravan(false)}
           className="w-full mx-4 h-8 py-[7px] bg-dark-brown cursor-pointer rounded justify-center items-center"
         >
-          <div className="text-xs text-center text-gold">{`Show ${myIdleCaravans.length} idle Caravans`}</div>
+          <div className="text-xs text-center text-gold">{`Show ${myAvailableCaravans.length} idle Caravans`}</div>
         </div>
       )}
       {!isNewCaravan && (
         <>
-          {myIdleCaravans.map((caravan) => (
+          {myAvailableCaravans.map((caravan) => (
             <Caravan
               caravan={caravan}
               idleOnly={true}

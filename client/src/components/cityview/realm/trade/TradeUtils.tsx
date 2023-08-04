@@ -83,7 +83,8 @@ export const canAcceptOffer = (
 ): boolean => {
   let canAccept = true;
   Object.values(resourcesGive).forEach((resource) => {
-    if (resource.amount > realmResources[resource.resourceId].amount) {
+    const realmResource = realmResources[resource.resourceId]?.amount || 0;
+    if (resource.amount > realmResource) {
       canAccept = false;
     }
   });

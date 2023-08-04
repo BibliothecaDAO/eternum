@@ -44,6 +44,8 @@ done
 
 ### WEIGHT ###
 commands+=(
+    # Resource type 253
+    "sozo execute --world $world SetWeightConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 253,1"
     # Resource type 254
     "sozo execute --world $world SetWeightConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 254,1"
     # Resource type 255
