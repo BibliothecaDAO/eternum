@@ -101,7 +101,7 @@ export const IncomingOrder = ({
         <span className="italic text-light-pink">You will get</span>
       </div>
       {resourcesGet && (
-        <div className="grid grid-cols-3 gap-2 px-2 py-1">
+        <div className="grid grid-cols-[repeat(3 ,auto)] gap-2 px-2 py-1">
           {resourcesGet.map(
             (resource) =>
               resource && (

@@ -78,7 +78,7 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
           </div>
         )}
         {caravanInfo && (
-          <div className="grid grid-cols-3 gap-2 px-2 py-1 mt-1">
+          <div className="grid grid-cols-[repeat(3 ,auto)] gap-2 px-2 py-1 mt-1">
             {caravanInfo.resourcesGive.map(
               (resource) =>
                 resource && (
@@ -94,7 +94,7 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
           <span className="italic text-light-pink">You will get</span>
         </div>
         {caravanInfo && (
-          <div className="grid grid-cols-3 gap-2 px-2 py-1">
+          <div className="grid grid-cols-[repeat(3 ,auto)] gap-2 px-2 py-1">
             {caravanInfo.resourcesGet.map(
               (resource) =>
                 resource && (
