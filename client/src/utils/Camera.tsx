@@ -33,7 +33,7 @@ const CameraControls = ({ position, target }: Props) => {
     const [isRealmView, realmId] = useRoute("/realm/:realmId")
 
     const maxDistance = useMemo(() => {
-        return isRealmView ? 2800 : 1400
+        return isRealmView ? 3000 : 1400
     }, [isRealmView])
 
 
