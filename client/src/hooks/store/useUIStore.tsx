@@ -18,8 +18,11 @@ interface UIStore {
   setShowRealmsFlags: (show: boolean) => void;
   moveCameraToWorldMapView: () => void;
   moveCameraToRealmView: () => void;
+  moveCameraToMarketView: () => void;
   moveCameraToCaravansView: () => void;
   moveCameraToLaborView: () => void;
+  isLoadingScreenEnabled: boolean;
+  setIsLoadingScreenEnabled: (enabled: boolean) => void;
 }
 
 const useUIStore = create<UIStore & PopupsStore>((set) => ({
@@ -27,7 +30,11 @@ const useUIStore = create<UIStore & PopupsStore>((set) => ({
   setTheme: (theme) => set({ theme }),
   isSoundOn: true,
   toggleSound: () => set((state) => ({ isSoundOn: !state.isSoundOn })),
-  cameraPosition: { x: 0, y: 700, z: 0 },
+  cameraPosition: {
+    x: -17.044911069418,
+    y: 118.38408187955699,
+    z: 204.31967964950695,
+  },
   setCameraPosition: (position) => set({ cameraPosition: position }),
   cameraTarget: { x: 0, y: 0, z: 0 },
   setCameraTarget: (target) => set({ cameraTarget: target }),
@@ -50,15 +57,32 @@ const useUIStore = create<UIStore & PopupsStore>((set) => ({
       x: -17.044911069418,
       y: 118.38408187955699,
       z: 204.31967964950695,
+      transitionDuration: 0.01,
     };
     const target = {
       x: -0.26346999995776943,
       y: 0.027105,
       z: 0.007405999987503547,
+      transitionDuration: 0.01,
     };
     set({ cameraPosition: pos, cameraTarget: target });
   },
   moveCameraToRealmView: () => {
+    const pos = {
+      x: 520.4138155171775,
+      y: 1962.1390819999998,
+      z: 1976.0299115304658,
+      transitionDuration: 0.01,
+    };
+    const target = {
+      x: 188.3221210638067,
+      y: 0.1390819999999989,
+      z: 6.35675413789002,
+      transitionDuration: 0.01,
+    };
+    set({ cameraPosition: pos, cameraTarget: target });
+  },
+  moveCameraToMarketView: () => {
     const pos = {
       x: 520.4138155171775,
       y: 1962.1390819999998,
@@ -97,6 +121,9 @@ const useUIStore = create<UIStore & PopupsStore>((set) => ({
     };
     set({ cameraPosition: pos, cameraTarget: target });
   },
+  isLoadingScreenEnabled: true,
+  setIsLoadingScreenEnabled: (enabled) =>
+    set({ isLoadingScreenEnabled: enabled }),
   ...createPopupsSlice(set),
 }));
 

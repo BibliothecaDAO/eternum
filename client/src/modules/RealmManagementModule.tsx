@@ -6,16 +6,19 @@ import useRealmStore from "../hooks/store/useRealmStore";
 import { Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import { useGetRealm } from "../hooks/graphql/useGraphQLQueries";
+import { useLocation } from "wouter";
 
 const RealmManagementModule = () => {
   const { realmEntityId } = useRealmStore();
 
   const { realm } = useGetRealm({ entityId: realmEntityId });
+  const [location] = useLocation();
+
   return (
     <>
       {
         <Transition
-          show={realm ? true : false}
+          show={realm && location !== "/map" ? true : false}
           as={Fragment}
           enter="transition-opacity duration-300"
           enterFrom="opacity-0"

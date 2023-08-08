@@ -5,142 +5,146 @@ Files: public/models/realm-city_15.glb [1.7MB] > realm-city_15-transformed.glb [
 */
 
 // @ts-nocheck
-import * as THREE from 'three'
-import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { useGLTF, Html } from '@react-three/drei'
-import { GLTF } from 'three-stdlib'
-import { Sparkles, Shadow, ContactShadows, Billboard, Environment, BakeShadows, OrbitControls } from '@react-three/drei'
-import { LayerMaterial, Depth } from 'lamina'
+import * as THREE from "three";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useGLTF, Html } from "@react-three/drei";
+import { GLTF } from "three-stdlib";
+import {
+  Sparkles,
+  Shadow,
+  ContactShadows,
+  Billboard,
+  Environment,
+  BakeShadows,
+  OrbitControls,
+} from "@react-three/drei";
+import { LayerMaterial, Depth } from "lamina";
 
 type GLTFResult = GLTF & {
   nodes: {
-    archer_tower: THREE.Mesh
-    barracks: THREE.Mesh
-    mage_tower: THREE.Mesh
-    castle: THREE.Mesh
-    crops: THREE.Mesh
-    ocean: THREE.Mesh
-    rivers: THREE.Mesh
-    ocean_small: THREE.Mesh
-    forest: THREE.Mesh
-    ['deciduous-tree001']: THREE.Mesh
-    ['deciduous-tree001_1']: THREE.Mesh
-    ['deciduous-tree001']: THREE.Mesh
-    ['deciduous-tree001_1']: THREE.Mesh
-    terrain_1: THREE.Mesh
-    terrain_2: THREE.Mesh
-    terrain_3: THREE.Mesh
-    terrain_4: THREE.Mesh
-    terrain_5: THREE.Mesh
-    terrain_6: THREE.Mesh
-    floor_market_1: THREE.Mesh
-    floor_market_2: THREE.Mesh
-    floor_market_3: THREE.Mesh
-    floor_ranch_1: THREE.Mesh
-    floor_ranch_2: THREE.Mesh
-    floor_ranch_3: THREE.Mesh
-    floor_labor_1: THREE.Mesh
-    floor_labor_2: THREE.Mesh
-    floor_labor_3: THREE.Mesh
-    tower: THREE.Mesh
-    tower_1: THREE.Mesh
-    ['wall-straight']: THREE.Mesh
-    ['wall-straight_1']: THREE.Mesh
-    ['wall-straight_2']: THREE.Mesh
-    bridge: THREE.Mesh
-    bridge_1: THREE.Mesh
-    ['timber-wall']: THREE.Mesh
-    ['timber-wall_1']: THREE.Mesh
-    ['timber-wall_2']: THREE.Mesh
-    granary: THREE.Mesh
-    granary_1: THREE.Mesh
-    granary_2: THREE.Mesh
-    granary_3: THREE.Mesh
-    ['covered-boxes']: THREE.Mesh
-    ['covered-boxes_1']: THREE.Mesh
-    ['box-pile']: THREE.Mesh
-    ['market-stall']: THREE.Mesh
-    ['market-stall_1']: THREE.Mesh
-    ['store-square']: THREE.Mesh
-    ['store-square_1']: THREE.Mesh
-    ['store-square_2']: THREE.Mesh
-    ['roofed-market']: THREE.Mesh
-    ['roofed-market_1']: THREE.Mesh
-    ['triangular-market']: THREE.Mesh
-    ['triangular-market_1']: THREE.Mesh
-    ['triangular-market_2']: THREE.Mesh
-    stable: THREE.Mesh
-    ['mount-rest']: THREE.Mesh
-    fence: THREE.Mesh
-    ['hay-stack']: THREE.Mesh
-    ['hay-stack_1']: THREE.Mesh
-    crop: THREE.Mesh
-    ['house-1']: THREE.Mesh
-    ['house-1_1']: THREE.Mesh
-    ['house-1_2']: THREE.Mesh
-    ['house-2']: THREE.Mesh
-    ['house-2_1']: THREE.Mesh
-    ['house-2_2']: THREE.Mesh
-    ['house-3']: THREE.Mesh
-    ['house-3_1']: THREE.Mesh
-    ['house-3_2']: THREE.Mesh
-    ['house-4']: THREE.Mesh
-    ['house-4_1']: THREE.Mesh
-    ['house-5']: THREE.Mesh
-    ['house-5_1']: THREE.Mesh
-    pier: THREE.Mesh
-    pier_1: THREE.Mesh
-    ['pier-small']: THREE.Mesh
-    boat: THREE.Mesh
-    boat_1: THREE.Mesh
-    mine: THREE.Mesh
-    mine_1: THREE.Mesh
-    mine_2: THREE.Mesh
-    deposit: THREE.Mesh
-    ['mining-hut']: THREE.Mesh
-    ['mining-hut_1']: THREE.Mesh
-    ['mine-smoke']: THREE.Mesh
-    ['water-fall']: THREE.Mesh
-    ['deciduous-tree']: THREE.Mesh
-    ['deciduous-tree_1']: THREE.Mesh
-    ['evergreen-tree']: THREE.Mesh
-    ['evergreen-tree_1']: THREE.Mesh
-    rock: THREE.Mesh
-    rock_1: THREE.Mesh
-  }
+    archer_tower: THREE.Mesh;
+    barracks: THREE.Mesh;
+    mage_tower: THREE.Mesh;
+    castle: THREE.Mesh;
+    crops: THREE.Mesh;
+    ocean: THREE.Mesh;
+    rivers: THREE.Mesh;
+    ocean_small: THREE.Mesh;
+    forest: THREE.Mesh;
+    ["deciduous-tree001"]: THREE.Mesh;
+    ["deciduous-tree001_1"]: THREE.Mesh;
+    ["deciduous-tree001"]: THREE.Mesh;
+    ["deciduous-tree001_1"]: THREE.Mesh;
+    terrain_1: THREE.Mesh;
+    terrain_2: THREE.Mesh;
+    terrain_3: THREE.Mesh;
+    terrain_4: THREE.Mesh;
+    terrain_5: THREE.Mesh;
+    terrain_6: THREE.Mesh;
+    floor_market_1: THREE.Mesh;
+    floor_market_2: THREE.Mesh;
+    floor_market_3: THREE.Mesh;
+    floor_ranch_1: THREE.Mesh;
+    floor_ranch_2: THREE.Mesh;
+    floor_ranch_3: THREE.Mesh;
+    floor_labor_1: THREE.Mesh;
+    floor_labor_2: THREE.Mesh;
+    floor_labor_3: THREE.Mesh;
+    tower: THREE.Mesh;
+    tower_1: THREE.Mesh;
+    ["wall-straight"]: THREE.Mesh;
+    ["wall-straight_1"]: THREE.Mesh;
+    ["wall-straight_2"]: THREE.Mesh;
+    bridge: THREE.Mesh;
+    bridge_1: THREE.Mesh;
+    ["timber-wall"]: THREE.Mesh;
+    ["timber-wall_1"]: THREE.Mesh;
+    ["timber-wall_2"]: THREE.Mesh;
+    granary: THREE.Mesh;
+    granary_1: THREE.Mesh;
+    granary_2: THREE.Mesh;
+    granary_3: THREE.Mesh;
+    ["covered-boxes"]: THREE.Mesh;
+    ["covered-boxes_1"]: THREE.Mesh;
+    ["box-pile"]: THREE.Mesh;
+    ["market-stall"]: THREE.Mesh;
+    ["market-stall_1"]: THREE.Mesh;
+    ["store-square"]: THREE.Mesh;
+    ["store-square_1"]: THREE.Mesh;
+    ["store-square_2"]: THREE.Mesh;
+    ["roofed-market"]: THREE.Mesh;
+    ["roofed-market_1"]: THREE.Mesh;
+    ["triangular-market"]: THREE.Mesh;
+    ["triangular-market_1"]: THREE.Mesh;
+    ["triangular-market_2"]: THREE.Mesh;
+    stable: THREE.Mesh;
+    ["mount-rest"]: THREE.Mesh;
+    fence: THREE.Mesh;
+    ["hay-stack"]: THREE.Mesh;
+    ["hay-stack_1"]: THREE.Mesh;
+    crop: THREE.Mesh;
+    ["house-1"]: THREE.Mesh;
+    ["house-1_1"]: THREE.Mesh;
+    ["house-1_2"]: THREE.Mesh;
+    ["house-2"]: THREE.Mesh;
+    ["house-2_1"]: THREE.Mesh;
+    ["house-2_2"]: THREE.Mesh;
+    ["house-3"]: THREE.Mesh;
+    ["house-3_1"]: THREE.Mesh;
+    ["house-3_2"]: THREE.Mesh;
+    ["house-4"]: THREE.Mesh;
+    ["house-4_1"]: THREE.Mesh;
+    ["house-5"]: THREE.Mesh;
+    ["house-5_1"]: THREE.Mesh;
+    pier: THREE.Mesh;
+    pier_1: THREE.Mesh;
+    ["pier-small"]: THREE.Mesh;
+    boat: THREE.Mesh;
+    boat_1: THREE.Mesh;
+    mine: THREE.Mesh;
+    mine_1: THREE.Mesh;
+    mine_2: THREE.Mesh;
+    deposit: THREE.Mesh;
+    ["mining-hut"]: THREE.Mesh;
+    ["mining-hut_1"]: THREE.Mesh;
+    ["mine-smoke"]: THREE.Mesh;
+    ["water-fall"]: THREE.Mesh;
+    ["deciduous-tree"]: THREE.Mesh;
+    ["deciduous-tree_1"]: THREE.Mesh;
+    ["evergreen-tree"]: THREE.Mesh;
+    ["evergreen-tree_1"]: THREE.Mesh;
+    rock: THREE.Mesh;
+    rock_1: THREE.Mesh;
+  };
   materials: {
-    PaletteMaterial004: THREE.MeshStandardMaterial
-    PaletteMaterial013: THREE.MeshStandardMaterial
-    PaletteMaterial015: THREE.MeshPhysicalMaterial
-    PaletteMaterial016: THREE.MeshStandardMaterial
-    PaletteMaterial018: THREE.MeshStandardMaterial
-    PaletteMaterial006: THREE.MeshStandardMaterial
-    PaletteMaterial017: THREE.MeshStandardMaterial
-    PaletteMaterial005: THREE.MeshStandardMaterial
-    PaletteMaterial019: THREE.MeshStandardMaterial
-    PaletteMaterial001: THREE.MeshStandardMaterial
-    PaletteMaterial003: THREE.MeshStandardMaterial
-    PaletteMaterial002: THREE.MeshStandardMaterial
-    PaletteMaterial007: THREE.MeshStandardMaterial
-    PaletteMaterial008: THREE.MeshStandardMaterial
-    PaletteMaterial009: THREE.MeshStandardMaterial
-    PaletteMaterial010: THREE.MeshStandardMaterial
-    PaletteMaterial011: THREE.MeshStandardMaterial
-    PaletteMaterial012: THREE.MeshStandardMaterial
-    PaletteMaterial014: THREE.MeshPhysicalMaterial
-  }
-}
+    PaletteMaterial004: THREE.MeshStandardMaterial;
+    PaletteMaterial013: THREE.MeshStandardMaterial;
+    PaletteMaterial015: THREE.MeshPhysicalMaterial;
+    PaletteMaterial016: THREE.MeshStandardMaterial;
+    PaletteMaterial018: THREE.MeshStandardMaterial;
+    PaletteMaterial006: THREE.MeshStandardMaterial;
+    PaletteMaterial017: THREE.MeshStandardMaterial;
+    PaletteMaterial005: THREE.MeshStandardMaterial;
+    PaletteMaterial019: THREE.MeshStandardMaterial;
+    PaletteMaterial001: THREE.MeshStandardMaterial;
+    PaletteMaterial003: THREE.MeshStandardMaterial;
+    PaletteMaterial002: THREE.MeshStandardMaterial;
+    PaletteMaterial007: THREE.MeshStandardMaterial;
+    PaletteMaterial008: THREE.MeshStandardMaterial;
+    PaletteMaterial009: THREE.MeshStandardMaterial;
+    PaletteMaterial010: THREE.MeshStandardMaterial;
+    PaletteMaterial011: THREE.MeshStandardMaterial;
+    PaletteMaterial012: THREE.MeshStandardMaterial;
+    PaletteMaterial014: THREE.MeshPhysicalMaterial;
+  };
+};
 
+export function Model(props: JSX.IntrinsicElements["group"]) {
+  const [hoveredArea, setHoveredArea] = useState<string | null>(null);
 
-export function Model(props: JSX.IntrinsicElements['group']) {
-
-  const [hoveredArea, setHoveredArea] = useState<string | null>(null)
-
-  const { nodes, materials } = useGLTF('/models/realm-city_15-transformed.glb') as GLTFResult
-
-  useEffect(() => {
-    console.log(materials.PaletteMaterial019)
-  }, [materials.PaletteMaterial019])
+  const { nodes, materials } = useGLTF(
+    "/models/realm-city_15-transformed.glb",
+  ) as GLTFResult;
 
   // const ranchMaterial = useMemo(() => {
   //   const material = Object.assign({}, materials.PaletteMaterial019)
@@ -188,202 +192,769 @@ export function Model(props: JSX.IntrinsicElements['group']) {
   return (
     <group {...props} dispose={null}>
       <group name="Scene">
-        <mesh name="archer_tower" geometry={nodes.archer_tower.geometry} material={materials.PaletteMaterial004} position={[-62.469486, 39.621521, -24.215282]} rotation={[0.011296, 0.828387, -0.004794]} scale={[35.000004, 35, 35]} />
-        <mesh name="barracks" geometry={nodes.barracks.geometry} material={materials.PaletteMaterial004} />
-        <mesh name="mage_tower" geometry={nodes.mage_tower.geometry} material={materials.PaletteMaterial004} position={[-8.498649, 27.847218, -229.488235]} scale={31.884161} />
-        <mesh name="castle" geometry={nodes.castle.geometry} material={materials.PaletteMaterial004} position={[-25.330475, 32.69627, -113.067566]} />
-        <mesh name="crops" geometry={nodes.crops.geometry} material={materials.PaletteMaterial013} position={[-209.282944, 0, -42.59145]} />
-        <mesh name="ocean" geometry={nodes.ocean.geometry} material={materials.PaletteMaterial015} scale={[100, 1, 100]} />
-        <mesh name="rivers" geometry={nodes.rivers.geometry} material={materials.PaletteMaterial016} position={[2.455429, 1.826893, -3.053192]} scale={35} />
-        <mesh name="ocean_small" geometry={nodes.ocean_small.geometry} material={materials.PaletteMaterial015} scale={[1, 0.01, 1]} />
-        <mesh name="forest" geometry={nodes.forest.geometry} material={materials.PaletteMaterial018} />
-        <group name="deciduous-tree189" position={[494.866547, 4.604025, 284.570831]} rotation={[0, -0.79251, 0]} scale={[0.602762, 0.776755, 0.602762]}>
-          <mesh name="deciduous-tree001" geometry={nodes['deciduous-tree001'].geometry} material={materials.PaletteMaterial018} />
-          <mesh name="deciduous-tree001_1" geometry={nodes['deciduous-tree001_1'].geometry} material={materials.PaletteMaterial006} />
+        <mesh
+          name="archer_tower"
+          geometry={nodes.archer_tower.geometry}
+          material={materials.PaletteMaterial004}
+          position={[-62.469486, 39.621521, -24.215282]}
+          rotation={[0.011296, 0.828387, -0.004794]}
+          scale={[35.000004, 35, 35]}
+        />
+        <mesh
+          name="barracks"
+          geometry={nodes.barracks.geometry}
+          material={materials.PaletteMaterial004}
+        />
+        <mesh
+          name="mage_tower"
+          geometry={nodes.mage_tower.geometry}
+          material={materials.PaletteMaterial004}
+          position={[-8.498649, 27.847218, -229.488235]}
+          scale={31.884161}
+        />
+        <mesh
+          name="castle"
+          geometry={nodes.castle.geometry}
+          material={materials.PaletteMaterial004}
+          position={[-25.330475, 32.69627, -113.067566]}
+        />
+        <mesh
+          name="crops"
+          geometry={nodes.crops.geometry}
+          material={materials.PaletteMaterial013}
+          position={[-209.282944, 0, -42.59145]}
+        />
+        <mesh
+          name="ocean"
+          geometry={nodes.ocean.geometry}
+          material={materials.PaletteMaterial015}
+          scale={[100, 1, 100]}
+        />
+        <mesh
+          name="rivers"
+          geometry={nodes.rivers.geometry}
+          material={materials.PaletteMaterial016}
+          position={[2.455429, 1.826893, -3.053192]}
+          scale={35}
+        />
+        <mesh
+          name="ocean_small"
+          geometry={nodes.ocean_small.geometry}
+          material={materials.PaletteMaterial015}
+          scale={[1, 0.01, 1]}
+        />
+        <mesh
+          name="forest"
+          geometry={nodes.forest.geometry}
+          material={materials.PaletteMaterial018}
+        />
+        <group
+          name="deciduous-tree189"
+          position={[494.866547, 4.604025, 284.570831]}
+          rotation={[0, -0.79251, 0]}
+          scale={[0.602762, 0.776755, 0.602762]}
+        >
+          <mesh
+            name="deciduous-tree001"
+            geometry={nodes["deciduous-tree001"].geometry}
+            material={materials.PaletteMaterial018}
+          />
+          <mesh
+            name="deciduous-tree001_1"
+            geometry={nodes["deciduous-tree001_1"].geometry}
+            material={materials.PaletteMaterial006}
+          />
         </group>
-        <group name="deciduous-tree190" position={[497.886841, 4.604025, 285.281494]} rotation={[Math.PI, -1.275876, Math.PI]} scale={[0.602762, 0.776755, 0.602762]}>
-          <mesh name="deciduous-tree001" geometry={nodes['deciduous-tree001'].geometry} material={materials.PaletteMaterial018} />
-          <mesh name="deciduous-tree001_1" geometry={nodes['deciduous-tree001_1'].geometry} material={materials.PaletteMaterial006} />
+        <group
+          name="deciduous-tree190"
+          position={[497.886841, 4.604025, 285.281494]}
+          rotation={[Math.PI, -1.275876, Math.PI]}
+          scale={[0.602762, 0.776755, 0.602762]}
+        >
+          <mesh
+            name="deciduous-tree001"
+            geometry={nodes["deciduous-tree001"].geometry}
+            material={materials.PaletteMaterial018}
+          />
+          <mesh
+            name="deciduous-tree001_1"
+            geometry={nodes["deciduous-tree001_1"].geometry}
+            material={materials.PaletteMaterial006}
+          />
         </group>
         <group name="terrain" position={[0, -0.002192, 0]}>
-          <mesh name="terrain_1" geometry={nodes.terrain_1.geometry} material={materials.PaletteMaterial017} />
-          <mesh name="terrain_2" geometry={nodes.terrain_2.geometry} material={materials.PaletteMaterial005} />
-          <mesh name="terrain_3" geometry={nodes.terrain_3.geometry} material={materials.PaletteMaterial019} />
-          <mesh name="terrain_4" geometry={nodes.terrain_4.geometry} material={materials.PaletteMaterial001} />
-          <mesh name="terrain_5" geometry={nodes.terrain_5.geometry} material={materials.PaletteMaterial003} />
-          <mesh name="terrain_6" geometry={nodes.terrain_6.geometry} material={materials.PaletteMaterial004} />
-        </group>
-        <group
-          onPointerEnter={() => setHoveredArea('market')}
-          onPointerLeave={() => setHoveredArea(null)}
-          name="floor_market" position={[0, -0.002192, 0]}>
-          {hoveredArea === 'market' && <Html position={[125, 75, 75]} distanceFactor={400}>
-            <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
-              Market
-            </div>
-          </Html>}
-          <mesh name="floor_market_1" geometry={nodes.floor_market_1.geometry} material={materials.PaletteMaterial017}>
-          </mesh>
-          <mesh name="floor_market_2" geometry={nodes.floor_market_2.geometry} material={materials.PaletteMaterial001} />
-          <mesh name="floor_market_3" geometry={nodes.floor_market_3.geometry} material={materials.PaletteMaterial003} />
-          <mesh geometry={nodes.floor_market_3.geometry}>
-            <meshStandardMaterial transparent={true} color="#806a53" toneMapped={false} opacity={hoveredArea === 'market' ? 0.5 : 0} emissive="orange" emissiveIntensity={25} />
-          </mesh>
-        </group>
-        <group
-          onPointerEnter={() => setHoveredArea('ranch')}
-          onPointerLeave={() => setHoveredArea(null)}
-          name="floor_ranch" position={[0, -0.002192, 0]}>
-          {hoveredArea === 'ranch' && <Html position={[450, 75, 100]} distanceFactor={400}>
-            <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
-              Ranch
-            </div>
-          </Html>}
-          <mesh name="floor_ranch_1" geometry={nodes.floor_ranch_1.geometry} material={materials.PaletteMaterial005}>
-          </mesh>
-          <mesh name="floor_ranch_2" geometry={nodes.floor_ranch_2.geometry}
-            material={materials.PaletteMaterial001}
-          >
-          </mesh>
-          <mesh name="floor_ranch_3" geometry={nodes.floor_ranch_3.geometry}
+          <mesh
+            name="terrain_1"
+            geometry={nodes.terrain_1.geometry}
+            material={materials.PaletteMaterial017}
+          />
+          <mesh
+            name="terrain_2"
+            geometry={nodes.terrain_2.geometry}
+            material={materials.PaletteMaterial005}
+          />
+          <mesh
+            name="terrain_3"
+            geometry={nodes.terrain_3.geometry}
             material={materials.PaletteMaterial019}
-          >
-          </mesh>
-          <mesh geometry={nodes.floor_ranch_3.geometry}>
-            <meshStandardMaterial transparent={true} color="#806a53" toneMapped={false} opacity={hoveredArea === 'ranch' ? 0.5 : 0} emissive="orange" emissiveIntensity={25} />
+          />
+          <mesh
+            name="terrain_4"
+            geometry={nodes.terrain_4.geometry}
+            material={materials.PaletteMaterial001}
+          />
+          <mesh
+            name="terrain_5"
+            geometry={nodes.terrain_5.geometry}
+            material={materials.PaletteMaterial003}
+          />
+          <mesh
+            name="terrain_6"
+            geometry={nodes.terrain_6.geometry}
+            material={materials.PaletteMaterial004}
+          />
+        </group>
+        <group
+          onPointerEnter={() => setHoveredArea("market")}
+          onPointerLeave={() => setHoveredArea(null)}
+          name="floor_market"
+          position={[0, -0.002192, 0]}
+        >
+          {hoveredArea === "market" && (
+            <Html position={[125, 75, 75]} distanceFactor={400}>
+              <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
+                Market
+              </div>
+            </Html>
+          )}
+          <mesh
+            name="floor_market_1"
+            geometry={nodes.floor_market_1.geometry}
+            material={materials.PaletteMaterial017}
+          ></mesh>
+          <mesh
+            name="floor_market_2"
+            geometry={nodes.floor_market_2.geometry}
+            material={materials.PaletteMaterial001}
+          />
+          <mesh
+            name="floor_market_3"
+            geometry={nodes.floor_market_3.geometry}
+            material={materials.PaletteMaterial003}
+          />
+          <mesh geometry={nodes.floor_market_3.geometry}>
+            <meshStandardMaterial
+              transparent={true}
+              color="#806a53"
+              toneMapped={false}
+              opacity={hoveredArea === "market" ? 0.5 : 0}
+              emissive="orange"
+              emissiveIntensity={25}
+            />
           </mesh>
         </group>
         <group
-          onPointerEnter={() => setHoveredArea('labor')}
+          onPointerEnter={() => setHoveredArea("ranch")}
           onPointerLeave={() => setHoveredArea(null)}
-          name="floor_labor" position={[0, -0.002192, 0]}>
-          {hoveredArea === 'labor' && <Html position={[350, 75, -200]} distanceFactor={400}>
-            <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
-              Labor
-            </div>
-          </Html>}
-          <mesh name="floor_labor_1" geometry={nodes.floor_labor_1.geometry} material={materials.PaletteMaterial005} />
-          <mesh name="floor_labor_2" geometry={nodes.floor_labor_2.geometry} material={materials.PaletteMaterial019}>
+          name="floor_ranch"
+          position={[0, -0.002192, 0]}
+        >
+          {hoveredArea === "ranch" && (
+            <Html position={[450, 75, 100]} distanceFactor={400}>
+              <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
+                Ranch
+              </div>
+            </Html>
+          )}
+          <mesh
+            name="floor_ranch_1"
+            geometry={nodes.floor_ranch_1.geometry}
+            material={materials.PaletteMaterial005}
+          ></mesh>
+          <mesh
+            name="floor_ranch_2"
+            geometry={nodes.floor_ranch_2.geometry}
+            material={materials.PaletteMaterial001}
+          ></mesh>
+          <mesh
+            name="floor_ranch_3"
+            geometry={nodes.floor_ranch_3.geometry}
+            material={materials.PaletteMaterial019}
+          ></mesh>
+          <mesh geometry={nodes.floor_ranch_3.geometry}>
+            <meshStandardMaterial
+              transparent={true}
+              color="#806a53"
+              toneMapped={false}
+              opacity={hoveredArea === "ranch" ? 0.5 : 0}
+              emissive="orange"
+              emissiveIntensity={25}
+            />
           </mesh>
-          <mesh name="floor_labor_3" geometry={nodes.floor_labor_3.geometry} material={materials.PaletteMaterial001} />
+        </group>
+        <group
+          onPointerEnter={() => setHoveredArea("labor")}
+          onPointerLeave={() => setHoveredArea(null)}
+          name="floor_labor"
+          position={[0, -0.002192, 0]}
+        >
+          {hoveredArea === "labor" && (
+            <Html position={[350, 75, -200]} distanceFactor={400}>
+              <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
+                Labor
+              </div>
+            </Html>
+          )}
+          <mesh
+            name="floor_labor_1"
+            geometry={nodes.floor_labor_1.geometry}
+            material={materials.PaletteMaterial005}
+          />
+          <mesh
+            name="floor_labor_2"
+            geometry={nodes.floor_labor_2.geometry}
+            material={materials.PaletteMaterial019}
+          ></mesh>
+          <mesh
+            name="floor_labor_3"
+            geometry={nodes.floor_labor_3.geometry}
+            material={materials.PaletteMaterial001}
+          />
           <mesh geometry={nodes.floor_labor_2.geometry}>
-            <meshStandardMaterial transparent={true} color="#806a53" toneMapped={false} opacity={hoveredArea === 'labor' ? 0.5 : 0} emissive="orange" emissiveIntensity={25} />
+            <meshStandardMaterial
+              transparent={true}
+              color="#806a53"
+              toneMapped={false}
+              opacity={hoveredArea === "labor" ? 0.5 : 0}
+              emissive="orange"
+              emissiveIntensity={25}
+            />
           </mesh>
         </group>
         <group>
-          <instancedMesh args={[nodes.tower.geometry, materials.PaletteMaterial001, 27]} name="tower" instanceMatrix={nodes.tower.instanceMatrix} />
-          <instancedMesh args={[nodes.tower_1.geometry, materials.PaletteMaterial002, 27]} name="tower_1" instanceMatrix={nodes.tower_1.instanceMatrix} />
+          <instancedMesh
+            args={[nodes.tower.geometry, materials.PaletteMaterial001, 27]}
+            name="tower"
+            instanceMatrix={nodes.tower.instanceMatrix}
+          />
+          <instancedMesh
+            args={[nodes.tower_1.geometry, materials.PaletteMaterial002, 27]}
+            name="tower_1"
+            instanceMatrix={nodes.tower_1.instanceMatrix}
+          />
         </group>
         <group>
-          <instancedMesh args={[nodes['wall-straight'].geometry, materials.PaletteMaterial001, 134]} name="wall-straight" instanceMatrix={nodes['wall-straight'].instanceMatrix} />
-          <instancedMesh args={[nodes['wall-straight_1'].geometry, materials.PaletteMaterial002, 134]} name="wall-straight_1" instanceMatrix={nodes['wall-straight_1'].instanceMatrix} />
-          <instancedMesh args={[nodes['wall-straight_2'].geometry, materials.PaletteMaterial003, 134]} name="wall-straight_2" instanceMatrix={nodes['wall-straight_2'].instanceMatrix} />
+          <instancedMesh
+            args={[
+              nodes["wall-straight"].geometry,
+              materials.PaletteMaterial001,
+              134,
+            ]}
+            name="wall-straight"
+            instanceMatrix={nodes["wall-straight"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["wall-straight_1"].geometry,
+              materials.PaletteMaterial002,
+              134,
+            ]}
+            name="wall-straight_1"
+            instanceMatrix={nodes["wall-straight_1"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["wall-straight_2"].geometry,
+              materials.PaletteMaterial003,
+              134,
+            ]}
+            name="wall-straight_2"
+            instanceMatrix={nodes["wall-straight_2"].instanceMatrix}
+          />
         </group>
         <group>
-          <instancedMesh args={[nodes.bridge.geometry, materials.PaletteMaterial004, 6]} name="bridge" instanceMatrix={nodes.bridge.instanceMatrix} />
-          <instancedMesh args={[nodes.bridge_1.geometry, materials.PaletteMaterial005, 6]} name="bridge_1" instanceMatrix={nodes.bridge_1.instanceMatrix} />
+          <instancedMesh
+            args={[nodes.bridge.geometry, materials.PaletteMaterial004, 6]}
+            name="bridge"
+            instanceMatrix={nodes.bridge.instanceMatrix}
+          />
+          <instancedMesh
+            args={[nodes.bridge_1.geometry, materials.PaletteMaterial005, 6]}
+            name="bridge_1"
+            instanceMatrix={nodes.bridge_1.instanceMatrix}
+          />
         </group>
         <group>
-          <instancedMesh args={[nodes['timber-wall'].geometry, materials.PaletteMaterial006, 50]} name="timber-wall" instanceMatrix={nodes['timber-wall'].instanceMatrix} />
-          <instancedMesh args={[nodes['timber-wall_1'].geometry, materials.PaletteMaterial007, 50]} name="timber-wall_1" instanceMatrix={nodes['timber-wall_1'].instanceMatrix} />
-          <instancedMesh args={[nodes['timber-wall_2'].geometry, materials.PaletteMaterial002, 50]} name="timber-wall_2" instanceMatrix={nodes['timber-wall_2'].instanceMatrix} />
+          <instancedMesh
+            args={[
+              nodes["timber-wall"].geometry,
+              materials.PaletteMaterial006,
+              50,
+            ]}
+            name="timber-wall"
+            instanceMatrix={nodes["timber-wall"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["timber-wall_1"].geometry,
+              materials.PaletteMaterial007,
+              50,
+            ]}
+            name="timber-wall_1"
+            instanceMatrix={nodes["timber-wall_1"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["timber-wall_2"].geometry,
+              materials.PaletteMaterial002,
+              50,
+            ]}
+            name="timber-wall_2"
+            instanceMatrix={nodes["timber-wall_2"].instanceMatrix}
+          />
         </group>
         <group>
-          <instancedMesh args={[nodes.granary.geometry, materials.PaletteMaterial002, 6]} name="granary" instanceMatrix={nodes.granary.instanceMatrix} />
-          <instancedMesh args={[nodes.granary_1.geometry, materials.PaletteMaterial008, 6]} name="granary_1" instanceMatrix={nodes.granary_1.instanceMatrix} />
-          <instancedMesh args={[nodes.granary_2.geometry, materials.PaletteMaterial009, 6]} name="granary_2" instanceMatrix={nodes.granary_2.instanceMatrix} />
-          <instancedMesh args={[nodes.granary_3.geometry, materials.PaletteMaterial006, 6]} name="granary_3" instanceMatrix={nodes.granary_3.instanceMatrix} />
+          <instancedMesh
+            args={[nodes.granary.geometry, materials.PaletteMaterial002, 6]}
+            name="granary"
+            instanceMatrix={nodes.granary.instanceMatrix}
+          />
+          <instancedMesh
+            args={[nodes.granary_1.geometry, materials.PaletteMaterial008, 6]}
+            name="granary_1"
+            instanceMatrix={nodes.granary_1.instanceMatrix}
+          />
+          <instancedMesh
+            args={[nodes.granary_2.geometry, materials.PaletteMaterial009, 6]}
+            name="granary_2"
+            instanceMatrix={nodes.granary_2.instanceMatrix}
+          />
+          <instancedMesh
+            args={[nodes.granary_3.geometry, materials.PaletteMaterial006, 6]}
+            name="granary_3"
+            instanceMatrix={nodes.granary_3.instanceMatrix}
+          />
         </group>
         <group>
-          <instancedMesh args={[nodes['covered-boxes'].geometry, materials.PaletteMaterial001, 9]} name="covered-boxes" instanceMatrix={nodes['covered-boxes'].instanceMatrix} />
-          <instancedMesh args={[nodes['covered-boxes_1'].geometry, materials.PaletteMaterial006, 9]} name="covered-boxes_1" instanceMatrix={nodes['covered-boxes_1'].instanceMatrix} />
+          <instancedMesh
+            args={[
+              nodes["covered-boxes"].geometry,
+              materials.PaletteMaterial001,
+              9,
+            ]}
+            name="covered-boxes"
+            instanceMatrix={nodes["covered-boxes"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["covered-boxes_1"].geometry,
+              materials.PaletteMaterial006,
+              9,
+            ]}
+            name="covered-boxes_1"
+            instanceMatrix={nodes["covered-boxes_1"].instanceMatrix}
+          />
         </group>
-        <instancedMesh args={[nodes['box-pile'].geometry, materials.PaletteMaterial007, 10]} name="box-pile" instanceMatrix={nodes['box-pile'].instanceMatrix} />
+        <instancedMesh
+          args={[nodes["box-pile"].geometry, materials.PaletteMaterial007, 10]}
+          name="box-pile"
+          instanceMatrix={nodes["box-pile"].instanceMatrix}
+        />
         <group>
-          <instancedMesh args={[nodes['market-stall'].geometry, materials.PaletteMaterial006, 96]} name="market-stall" instanceMatrix={nodes['market-stall'].instanceMatrix} />
-          <instancedMesh args={[nodes['market-stall_1'].geometry, materials.PaletteMaterial001, 96]} name="market-stall_1" instanceMatrix={nodes['market-stall_1'].instanceMatrix} />
-        </group>
-        <group>
-          <instancedMesh args={[nodes['store-square'].geometry, materials.PaletteMaterial009, 21]} name="store-square" instanceMatrix={nodes['store-square'].instanceMatrix} />
-          <instancedMesh args={[nodes['store-square_1'].geometry, materials.PaletteMaterial010, 21]} name="store-square_1" instanceMatrix={nodes['store-square_1'].instanceMatrix} />
-          <instancedMesh args={[nodes['store-square_2'].geometry, materials.PaletteMaterial006, 21]} name="store-square_2" instanceMatrix={nodes['store-square_2'].instanceMatrix} />
-        </group>
-        <group>
-          <instancedMesh args={[nodes['roofed-market'].geometry, materials.PaletteMaterial009, 25]} name="roofed-market" instanceMatrix={nodes['roofed-market'].instanceMatrix} />
-          <instancedMesh args={[nodes['roofed-market_1'].geometry, materials.PaletteMaterial006, 25]} name="roofed-market_1" instanceMatrix={nodes['roofed-market_1'].instanceMatrix} />
-        </group>
-        <group>
-          <instancedMesh args={[nodes['triangular-market'].geometry, materials.PaletteMaterial009, 11]} name="triangular-market" instanceMatrix={nodes['triangular-market'].instanceMatrix} />
-          <instancedMesh args={[nodes['triangular-market_1'].geometry, materials.PaletteMaterial006, 11]} name="triangular-market_1" instanceMatrix={nodes['triangular-market_1'].instanceMatrix} />
-          <instancedMesh args={[nodes['triangular-market_2'].geometry, materials.PaletteMaterial010, 11]} name="triangular-market_2" instanceMatrix={nodes['triangular-market_2'].instanceMatrix} />
-        </group>
-        <instancedMesh args={[nodes.stable.geometry, materials.PaletteMaterial006, 22]} name="stable" instanceMatrix={nodes.stable.instanceMatrix} />
-        <instancedMesh args={[nodes['mount-rest'].geometry, materials.PaletteMaterial006, 36]} name="mount-rest" instanceMatrix={nodes['mount-rest'].instanceMatrix} />
-        <instancedMesh args={[nodes.fence.geometry, materials.PaletteMaterial006, 700]} name="fence" instanceMatrix={nodes.fence.instanceMatrix} />
-        <group>
-          <instancedMesh args={[nodes['hay-stack'].geometry, materials.PaletteMaterial011, 37]} name="hay-stack" instanceMatrix={nodes['hay-stack'].instanceMatrix} />
-          <instancedMesh args={[nodes['hay-stack_1'].geometry, materials.PaletteMaterial012, 37]} name="hay-stack_1" instanceMatrix={nodes['hay-stack_1'].instanceMatrix} />
-        </group>
-        <instancedMesh args={[nodes.crop.geometry, materials.PaletteMaterial013, 54]} name="crop" instanceMatrix={nodes.crop.instanceMatrix} />
-        <group>
-          <instancedMesh args={[nodes['house-1'].geometry, materials.PaletteMaterial009, 44]} name="house-1" instanceMatrix={nodes['house-1'].instanceMatrix} />
-          <instancedMesh args={[nodes['house-1_1'].geometry, materials.PaletteMaterial010, 44]} name="house-1_1" instanceMatrix={nodes['house-1_1'].instanceMatrix} />
-          <instancedMesh args={[nodes['house-1_2'].geometry, materials.PaletteMaterial006, 44]} name="house-1_2" instanceMatrix={nodes['house-1_2'].instanceMatrix} />
-        </group>
-        <group>
-          <instancedMesh args={[nodes['house-2'].geometry, materials.PaletteMaterial009, 14]} name="house-2" instanceMatrix={nodes['house-2'].instanceMatrix} />
-          <instancedMesh args={[nodes['house-2_1'].geometry, materials.PaletteMaterial010, 14]} name="house-2_1" instanceMatrix={nodes['house-2_1'].instanceMatrix} />
-          <instancedMesh args={[nodes['house-2_2'].geometry, materials.PaletteMaterial006, 14]} name="house-2_2" instanceMatrix={nodes['house-2_2'].instanceMatrix} />
-        </group>
-        <group>
-          <instancedMesh args={[nodes['house-3'].geometry, materials.PaletteMaterial009, 10]} name="house-3" instanceMatrix={nodes['house-3'].instanceMatrix} />
-          <instancedMesh args={[nodes['house-3_1'].geometry, materials.PaletteMaterial010, 10]} name="house-3_1" instanceMatrix={nodes['house-3_1'].instanceMatrix} />
-          <instancedMesh args={[nodes['house-3_2'].geometry, materials.PaletteMaterial006, 10]} name="house-3_2" instanceMatrix={nodes['house-3_2'].instanceMatrix} />
-        </group>
-        <group>
-          <instancedMesh args={[nodes['house-4'].geometry, materials.PaletteMaterial009, 22]} name="house-4" instanceMatrix={nodes['house-4'].instanceMatrix} />
-          <instancedMesh args={[nodes['house-4_1'].geometry, materials.PaletteMaterial010, 22]} name="house-4_1" instanceMatrix={nodes['house-4_1'].instanceMatrix} />
+          <instancedMesh
+            args={[
+              nodes["market-stall"].geometry,
+              materials.PaletteMaterial006,
+              96,
+            ]}
+            name="market-stall"
+            instanceMatrix={nodes["market-stall"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["market-stall_1"].geometry,
+              materials.PaletteMaterial001,
+              96,
+            ]}
+            name="market-stall_1"
+            instanceMatrix={nodes["market-stall_1"].instanceMatrix}
+          />
         </group>
         <group>
-          <instancedMesh args={[nodes['house-5'].geometry, materials.PaletteMaterial009, 44]} name="house-5" instanceMatrix={nodes['house-5'].instanceMatrix} />
-          <instancedMesh args={[nodes['house-5_1'].geometry, materials.PaletteMaterial006, 44]} name="house-5_1" instanceMatrix={nodes['house-5_1'].instanceMatrix} />
+          <instancedMesh
+            args={[
+              nodes["store-square"].geometry,
+              materials.PaletteMaterial009,
+              21,
+            ]}
+            name="store-square"
+            instanceMatrix={nodes["store-square"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["store-square_1"].geometry,
+              materials.PaletteMaterial010,
+              21,
+            ]}
+            name="store-square_1"
+            instanceMatrix={nodes["store-square_1"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["store-square_2"].geometry,
+              materials.PaletteMaterial006,
+              21,
+            ]}
+            name="store-square_2"
+            instanceMatrix={nodes["store-square_2"].instanceMatrix}
+          />
         </group>
         <group>
-          <instancedMesh args={[nodes.pier.geometry, materials.PaletteMaterial006, 17]} name="pier" instanceMatrix={nodes.pier.instanceMatrix} />
-          <instancedMesh args={[nodes.pier_1.geometry, materials.PaletteMaterial002, 17]} name="pier_1" instanceMatrix={nodes.pier_1.instanceMatrix} />
-        </group>
-        <instancedMesh args={[nodes['pier-small'].geometry, materials.PaletteMaterial006, 22]} name="pier-small" instanceMatrix={nodes['pier-small'].instanceMatrix} />
-        <group>
-          <instancedMesh args={[nodes.boat.geometry, materials.PaletteMaterial006, 27]} name="boat" instanceMatrix={nodes.boat.instanceMatrix} />
-          <instancedMesh args={[nodes.boat_1.geometry, materials.PaletteMaterial001, 27]} name="boat_1" instanceMatrix={nodes.boat_1.instanceMatrix} />
-        </group>
-        <group>
-          <instancedMesh args={[nodes.mine.geometry, materials.PaletteMaterial004, 7]} name="mine" instanceMatrix={nodes.mine.instanceMatrix} />
-          <instancedMesh args={[nodes.mine_1.geometry, materials.PaletteMaterial005, 7]} name="mine_1" instanceMatrix={nodes.mine_1.instanceMatrix} />
-          <instancedMesh args={[nodes.mine_2.geometry, materials.PaletteMaterial006, 7]} name="mine_2" instanceMatrix={nodes.mine_2.instanceMatrix} />
-        </group>
-        <instancedMesh args={[nodes.deposit.geometry, materials.PaletteMaterial004, 15]} name="deposit" instanceMatrix={nodes.deposit.instanceMatrix} />
-        <group>
-          <instancedMesh args={[nodes['mining-hut'].geometry, materials.PaletteMaterial009, 18]} name="mining-hut" instanceMatrix={nodes['mining-hut'].instanceMatrix} />
-          <instancedMesh args={[nodes['mining-hut_1'].geometry, materials.PaletteMaterial006, 18]} name="mining-hut_1" instanceMatrix={nodes['mining-hut_1'].instanceMatrix} />
-        </group>
-        <instancedMesh args={[nodes['mine-smoke'].geometry, materials.PaletteMaterial014, 18]} name="mine-smoke" instanceMatrix={nodes['mine-smoke'].instanceMatrix} />
-        <instancedMesh args={[nodes['water-fall'].geometry, materials.PaletteMaterial017, 35]} name="water-fall" instanceMatrix={nodes['water-fall'].instanceMatrix} />
-        <group>
-          <instancedMesh args={[nodes['deciduous-tree'].geometry, materials.PaletteMaterial018, 262]} name="deciduous-tree" instanceMatrix={nodes['deciduous-tree'].instanceMatrix} />
-          <instancedMesh args={[nodes['deciduous-tree_1'].geometry, materials.PaletteMaterial006, 262]} name="deciduous-tree_1" instanceMatrix={nodes['deciduous-tree_1'].instanceMatrix} />
+          <instancedMesh
+            args={[
+              nodes["roofed-market"].geometry,
+              materials.PaletteMaterial009,
+              25,
+            ]}
+            name="roofed-market"
+            instanceMatrix={nodes["roofed-market"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["roofed-market_1"].geometry,
+              materials.PaletteMaterial006,
+              25,
+            ]}
+            name="roofed-market_1"
+            instanceMatrix={nodes["roofed-market_1"].instanceMatrix}
+          />
         </group>
         <group>
-          <instancedMesh args={[nodes['evergreen-tree'].geometry, materials.PaletteMaterial001, 81]} name="evergreen-tree" instanceMatrix={nodes['evergreen-tree'].instanceMatrix} />
-          <instancedMesh args={[nodes['evergreen-tree_1'].geometry, materials.PaletteMaterial006, 81]} name="evergreen-tree_1" instanceMatrix={nodes['evergreen-tree_1'].instanceMatrix} />
+          <instancedMesh
+            args={[
+              nodes["triangular-market"].geometry,
+              materials.PaletteMaterial009,
+              11,
+            ]}
+            name="triangular-market"
+            instanceMatrix={nodes["triangular-market"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["triangular-market_1"].geometry,
+              materials.PaletteMaterial006,
+              11,
+            ]}
+            name="triangular-market_1"
+            instanceMatrix={nodes["triangular-market_1"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["triangular-market_2"].geometry,
+              materials.PaletteMaterial010,
+              11,
+            ]}
+            name="triangular-market_2"
+            instanceMatrix={nodes["triangular-market_2"].instanceMatrix}
+          />
+        </group>
+        <instancedMesh
+          args={[nodes.stable.geometry, materials.PaletteMaterial006, 22]}
+          name="stable"
+          instanceMatrix={nodes.stable.instanceMatrix}
+        />
+        <instancedMesh
+          args={[
+            nodes["mount-rest"].geometry,
+            materials.PaletteMaterial006,
+            36,
+          ]}
+          name="mount-rest"
+          instanceMatrix={nodes["mount-rest"].instanceMatrix}
+        />
+        <instancedMesh
+          args={[nodes.fence.geometry, materials.PaletteMaterial006, 700]}
+          name="fence"
+          instanceMatrix={nodes.fence.instanceMatrix}
+        />
+        <group>
+          <instancedMesh
+            args={[
+              nodes["hay-stack"].geometry,
+              materials.PaletteMaterial011,
+              37,
+            ]}
+            name="hay-stack"
+            instanceMatrix={nodes["hay-stack"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["hay-stack_1"].geometry,
+              materials.PaletteMaterial012,
+              37,
+            ]}
+            name="hay-stack_1"
+            instanceMatrix={nodes["hay-stack_1"].instanceMatrix}
+          />
+        </group>
+        <instancedMesh
+          args={[nodes.crop.geometry, materials.PaletteMaterial013, 54]}
+          name="crop"
+          instanceMatrix={nodes.crop.instanceMatrix}
+        />
+        <group>
+          <instancedMesh
+            args={[nodes["house-1"].geometry, materials.PaletteMaterial009, 44]}
+            name="house-1"
+            instanceMatrix={nodes["house-1"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["house-1_1"].geometry,
+              materials.PaletteMaterial010,
+              44,
+            ]}
+            name="house-1_1"
+            instanceMatrix={nodes["house-1_1"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["house-1_2"].geometry,
+              materials.PaletteMaterial006,
+              44,
+            ]}
+            name="house-1_2"
+            instanceMatrix={nodes["house-1_2"].instanceMatrix}
+          />
         </group>
         <group>
-          <instancedMesh args={[nodes.rock.geometry, materials.PaletteMaterial004, 181]} name="rock" instanceMatrix={nodes.rock.instanceMatrix} />
-          <instancedMesh args={[nodes.rock_1.geometry, materials.PaletteMaterial019, 181]} name="rock_1" instanceMatrix={nodes.rock_1.instanceMatrix} />
+          <instancedMesh
+            args={[nodes["house-2"].geometry, materials.PaletteMaterial009, 14]}
+            name="house-2"
+            instanceMatrix={nodes["house-2"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["house-2_1"].geometry,
+              materials.PaletteMaterial010,
+              14,
+            ]}
+            name="house-2_1"
+            instanceMatrix={nodes["house-2_1"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["house-2_2"].geometry,
+              materials.PaletteMaterial006,
+              14,
+            ]}
+            name="house-2_2"
+            instanceMatrix={nodes["house-2_2"].instanceMatrix}
+          />
+        </group>
+        <group>
+          <instancedMesh
+            args={[nodes["house-3"].geometry, materials.PaletteMaterial009, 10]}
+            name="house-3"
+            instanceMatrix={nodes["house-3"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["house-3_1"].geometry,
+              materials.PaletteMaterial010,
+              10,
+            ]}
+            name="house-3_1"
+            instanceMatrix={nodes["house-3_1"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["house-3_2"].geometry,
+              materials.PaletteMaterial006,
+              10,
+            ]}
+            name="house-3_2"
+            instanceMatrix={nodes["house-3_2"].instanceMatrix}
+          />
+        </group>
+        <group>
+          <instancedMesh
+            args={[nodes["house-4"].geometry, materials.PaletteMaterial009, 22]}
+            name="house-4"
+            instanceMatrix={nodes["house-4"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["house-4_1"].geometry,
+              materials.PaletteMaterial010,
+              22,
+            ]}
+            name="house-4_1"
+            instanceMatrix={nodes["house-4_1"].instanceMatrix}
+          />
+        </group>
+        <group>
+          <instancedMesh
+            args={[nodes["house-5"].geometry, materials.PaletteMaterial009, 44]}
+            name="house-5"
+            instanceMatrix={nodes["house-5"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["house-5_1"].geometry,
+              materials.PaletteMaterial006,
+              44,
+            ]}
+            name="house-5_1"
+            instanceMatrix={nodes["house-5_1"].instanceMatrix}
+          />
+        </group>
+        <group>
+          <instancedMesh
+            args={[nodes.pier.geometry, materials.PaletteMaterial006, 17]}
+            name="pier"
+            instanceMatrix={nodes.pier.instanceMatrix}
+          />
+          <instancedMesh
+            args={[nodes.pier_1.geometry, materials.PaletteMaterial002, 17]}
+            name="pier_1"
+            instanceMatrix={nodes.pier_1.instanceMatrix}
+          />
+        </group>
+        <instancedMesh
+          args={[
+            nodes["pier-small"].geometry,
+            materials.PaletteMaterial006,
+            22,
+          ]}
+          name="pier-small"
+          instanceMatrix={nodes["pier-small"].instanceMatrix}
+        />
+        <group>
+          <instancedMesh
+            args={[nodes.boat.geometry, materials.PaletteMaterial006, 27]}
+            name="boat"
+            instanceMatrix={nodes.boat.instanceMatrix}
+          />
+          <instancedMesh
+            args={[nodes.boat_1.geometry, materials.PaletteMaterial001, 27]}
+            name="boat_1"
+            instanceMatrix={nodes.boat_1.instanceMatrix}
+          />
+        </group>
+        <group>
+          <instancedMesh
+            args={[nodes.mine.geometry, materials.PaletteMaterial004, 7]}
+            name="mine"
+            instanceMatrix={nodes.mine.instanceMatrix}
+          />
+          <instancedMesh
+            args={[nodes.mine_1.geometry, materials.PaletteMaterial005, 7]}
+            name="mine_1"
+            instanceMatrix={nodes.mine_1.instanceMatrix}
+          />
+          <instancedMesh
+            args={[nodes.mine_2.geometry, materials.PaletteMaterial006, 7]}
+            name="mine_2"
+            instanceMatrix={nodes.mine_2.instanceMatrix}
+          />
+        </group>
+        <instancedMesh
+          args={[nodes.deposit.geometry, materials.PaletteMaterial004, 15]}
+          name="deposit"
+          instanceMatrix={nodes.deposit.instanceMatrix}
+        />
+        <group>
+          <instancedMesh
+            args={[
+              nodes["mining-hut"].geometry,
+              materials.PaletteMaterial009,
+              18,
+            ]}
+            name="mining-hut"
+            instanceMatrix={nodes["mining-hut"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["mining-hut_1"].geometry,
+              materials.PaletteMaterial006,
+              18,
+            ]}
+            name="mining-hut_1"
+            instanceMatrix={nodes["mining-hut_1"].instanceMatrix}
+          />
+        </group>
+        <instancedMesh
+          args={[
+            nodes["mine-smoke"].geometry,
+            materials.PaletteMaterial014,
+            18,
+          ]}
+          name="mine-smoke"
+          instanceMatrix={nodes["mine-smoke"].instanceMatrix}
+        />
+        <instancedMesh
+          args={[
+            nodes["water-fall"].geometry,
+            materials.PaletteMaterial017,
+            35,
+          ]}
+          name="water-fall"
+          instanceMatrix={nodes["water-fall"].instanceMatrix}
+        />
+        <group>
+          <instancedMesh
+            args={[
+              nodes["deciduous-tree"].geometry,
+              materials.PaletteMaterial018,
+              262,
+            ]}
+            name="deciduous-tree"
+            instanceMatrix={nodes["deciduous-tree"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["deciduous-tree_1"].geometry,
+              materials.PaletteMaterial006,
+              262,
+            ]}
+            name="deciduous-tree_1"
+            instanceMatrix={nodes["deciduous-tree_1"].instanceMatrix}
+          />
+        </group>
+        <group>
+          <instancedMesh
+            args={[
+              nodes["evergreen-tree"].geometry,
+              materials.PaletteMaterial001,
+              81,
+            ]}
+            name="evergreen-tree"
+            instanceMatrix={nodes["evergreen-tree"].instanceMatrix}
+          />
+          <instancedMesh
+            args={[
+              nodes["evergreen-tree_1"].geometry,
+              materials.PaletteMaterial006,
+              81,
+            ]}
+            name="evergreen-tree_1"
+            instanceMatrix={nodes["evergreen-tree_1"].instanceMatrix}
+          />
+        </group>
+        <group>
+          <instancedMesh
+            args={[nodes.rock.geometry, materials.PaletteMaterial004, 181]}
+            name="rock"
+            instanceMatrix={nodes.rock.instanceMatrix}
+          />
+          <instancedMesh
+            args={[nodes.rock_1.geometry, materials.PaletteMaterial019, 181]}
+            name="rock_1"
+            instanceMatrix={nodes.rock_1.instanceMatrix}
+          />
         </group>
       </group>
-    </group >
-  )
+    </group>
+  );
 }
-
-

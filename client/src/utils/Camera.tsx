@@ -17,8 +17,18 @@ interface Point {
 }
 
 interface Props {
-  position: Point;
-  target: Point;
+  position: {
+    x: number;
+    y: number;
+    z: number;
+    transitionDuration?: number;
+  };
+  target: {
+    x: number;
+    y: number;
+    z: number;
+    transitionDuration?: number;
+  };
 }
 const CameraControls = ({ position, target }: Props) => {
   const {
@@ -89,8 +99,9 @@ const CameraControls = ({ position, target }: Props) => {
   camera.up = new Vector3(0, 1, 0);
   function cameraAnimate(): void {
     if (ref.current) {
+      const duration = position.transitionDuration || 2;
       gsap.timeline().to(camera.position, {
-        duration: 2,
+        duration,
         repeat: 0,
         x: position.x,
         y: position.y,
@@ -101,7 +112,7 @@ const CameraControls = ({ position, target }: Props) => {
       gsap.timeline().to(
         ref.current.target,
         {
-          duration: 2,
+          duration,
           repeat: 0,
           x: target.x,
           y: target.y,
@@ -116,6 +127,7 @@ const CameraControls = ({ position, target }: Props) => {
   useEffect(() => {
     cameraAnimate();
   }, [target, position]);
+
   return (
     <MapControls
       ref={ref}

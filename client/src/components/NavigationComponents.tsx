@@ -13,10 +13,23 @@ const NavgationComponent = () => {
     (state) => state.moveCameraToWorldMapView,
   );
 
+  const setIsLoadingScreenEnabled = useUIStore(
+    (state) => state.setIsLoadingScreenEnabled,
+  );
+
   return (
     <div className="relative">
       <Avatar size="xl" className="relative z-10" src="/images/avatars/1.png" />
-      <Link href="/map" onClick={() => moveCameraToWorldMapView()}>
+      <Link
+        href="/map"
+        onClick={() => {
+          setIsLoadingScreenEnabled(true);
+          moveCameraToWorldMapView();
+          setTimeout(() => {
+            setIsLoadingScreenEnabled(false);
+          }, 500);
+        }}
+      >
         <CircleButton
           size="md"
           className={clsx("absolute z-0 text-[10px]", "top-0 left-16 ml-3")}

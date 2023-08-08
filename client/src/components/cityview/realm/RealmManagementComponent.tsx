@@ -23,8 +23,8 @@ const RealmManagementComponent = () => {
 
   const [location, setLocation] = useLocation();
 
-  const moveCameraToRealmView = useUIStore(
-    (state) => state.moveCameraToRealmView,
+  const moveCameraToMarketView = useUIStore(
+    (state) => state.moveCameraToMarketView,
   );
   const moveCameraToLaborView = useUIStore(
     (state) => state.moveCameraToLaborView,
@@ -36,7 +36,7 @@ const RealmManagementComponent = () => {
     if (selectedTab == 0) {
       moveCameraToLaborView();
     } else {
-      moveCameraToRealmView();
+      moveCameraToMarketView();
     }
   }, [selectedTab]);
 

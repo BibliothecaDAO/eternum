@@ -178,9 +178,6 @@ export function Flags(props) {
 
     ordersRealms.forEach((orderRealms, index) => {
       orderRealms.forEach((realm, i) => {
-        if (realm.id === 2443) {
-          console.log("realm", realm, index);
-        }
         const x = realm.xy[0];
         const y = realm.xy[1];
         const z = -0.7;

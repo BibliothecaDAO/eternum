@@ -15,20 +15,39 @@ import ContentContainer from "../containers/ContentContainer";
 import RealmManagementModule from "../modules/RealmManagementModule";
 import EpochCountdown from "../components/network/EpochCountdown";
 import RealmStatusComponent from "../components/cityview/realm/RealmStatusComponent";
-import { Redirect } from "wouter";
 import RealmResourcesComponent from "../components/cityview/realm/RealmResourcesComponent";
 import { useFetchBlockchainData } from "../hooks/store/useBlockchainStore";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { set } from "mobx";
+import clsx from "clsx";
+import { Redirect } from "wouter";
+import { useProgress } from "@react-three/drei";
 
 export const World = () => {
   useFetchBlockchainData();
-
+  const { progress } = useProgress();
   const isSoundOn = useUIStore((state) => state.isSoundOn);
+
+  const isLoadingScreenEnabled = useUIStore(
+    (state) => state.isLoadingScreenEnabled,
+  );
+
+  const setIsLoadingScreenEnabled = useUIStore(
+    (state) => state.setIsLoadingScreenEnabled,
+  );
 
   useMemo(() => {
     if (isSoundOn) {
     }
   }, [isSoundOn]);
+
+  useEffect(() => {
+    if (progress === 100) {
+      setIsLoadingScreenEnabled(false);
+    } else {
+      setIsLoadingScreenEnabled(true);
+    }
+  }, [progress]);
 
   return (
     <div className="fixed top-0 left-0 z-0 w-screen h-screen p-2">
@@ -36,6 +55,17 @@ export const World = () => {
         <div className="absolute top-0 left-0 z-10 w-full pointer-events-none rounded-xl h-44 bg-gradient-to-b from-black to-transparent opacity-90" />
         <MainScene />
         <div className="absolute bottom-0 left-0 z-10 w-full pointer-events-none rounded-xl h-44 bg-gradient-to-t from-black to-transparent opacity-90" />
+        <div
+          className={clsx(
+            "absolute bottom-0 left-0 z-20 w-full pointer-events-none flex items-center text-white justify-center text-3xl rounded-xl h-full bg-black duration-500 transition-opacity",
+            isLoadingScreenEnabled ? "opacity-100" : "opacity-0",
+          )}
+        >
+          <img
+            src="/images/eternum-logo_animated.png"
+            className=" invert scale-50"
+          />
+        </div>
       </BackgroundContainer>
       <TopContainer>
         <NetworkModule />
@@ -58,7 +88,7 @@ export const World = () => {
       </BottomRightContainer>
       <EpochCountdown />
       <Leva hidden={import.meta.env.PROD} />
-      {/* <Redirect to="/map" /> */}
+      <Redirect to="/map" />
     </div>
   );
 };

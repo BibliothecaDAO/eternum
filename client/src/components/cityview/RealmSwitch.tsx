@@ -9,7 +9,7 @@ import CircleButton from "../../elements/CircleButton";
 import { OrderIcon } from "../../elements/OrderIcon";
 import { Badge } from "../../elements/Badge";
 import { RealmBadge } from "../../elements/RealmBadge";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import useRealmStore from "../../hooks/store/useRealmStore";
 import { orderNameDict } from "../../constants/orders";
 import realmsNames from "../../geodata/realms.json";
@@ -40,6 +40,12 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
   const moveCameraToRealmView = useUIStore(
     (state) => state.moveCameraToRealmView,
   );
+
+  const setIsLoadingScreenEnabled = useUIStore(
+    (state) => state.setIsLoadingScreenEnabled,
+  );
+
+  const [location, setLocation] = useLocation();
 
   const realm = useMemo(
     () => (realmId ? getRealm(realmId) : undefined),
@@ -89,13 +95,17 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
       >
         {yourRealms.map((realm, index) => (
           // TODO: could not click on realm switch with the link
-          <Link
+          <div
             key={realm.id}
-            href={`/realm/${realm.id}`}
             onClick={() => {
-              setRealmEntityId(realm.id);
-              setRealmId(realm.realmId);
-              moveCameraToRealmView();
+              setIsLoadingScreenEnabled(true);
+              setTimeout(() => {
+                setLocation(`/realm/${realm.id}`);
+                setRealmEntityId(realm.id);
+                setRealmId(realm.realmId);
+                moveCameraToRealmView();
+                setIsLoadingScreenEnabled(false);
+              }, 500);
             }}
           >
             <RealmBadge
@@ -103,7 +113,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
               realm={realm}
               active={realmEntityId === realm.id}
             />
-          </Link>
+          </div>
         ))}
       </div>
       {!showRealms && (
