@@ -51,7 +51,7 @@ export function Flags(props) {
   const setShowRealmsFlags = useUIStore((state) => state.setShowRealmsFlags);
 
   const [tooltipPosition, setTooltipPosition] = useState([0, 0, 0]);
-  const [hoveredRealmId, setHoveredRealmId] = useState(null);
+  const [hoveredRealm, setHoveredRealm] = useState(null);
 
   const [woodInstances, setWoodInstances] = useState([]);
   const [flagInstances, setFlagInstances] = useState([]);
@@ -178,6 +178,9 @@ export function Flags(props) {
 
     ordersRealms.forEach((orderRealms, index) => {
       orderRealms.forEach((realm, i) => {
+        if (realm.id === 2443) {
+          console.log("realm", realm, index);
+        }
         const x = realm.xy[0];
         const y = realm.xy[1];
         const z = -0.7;
@@ -199,7 +202,6 @@ export function Flags(props) {
 
   const clickHandler = (e, index) => {
     e.stopPropagation();
-    console.log(e.intersections);
     if (e.intersections.length > 0) {
       const instanceId = e.intersections[0].instanceId;
       const point = e.intersections[0].point;
@@ -218,13 +220,17 @@ export function Flags(props) {
   };
 
   const hoverHandler = (e, index) => {
-    console.log(e.intersections);
     if (e.intersections.length > 0) {
       const instanceId = e.intersections[0].instanceId;
       const point = e.intersections[0].point;
+      // const tooltipPos = new THREE.Vector3(
+      //   ordersRealms[index][instanceId].xy[0] * -1,
+      //   2,
+      //   ordersRealms[index][instanceId].xy[1] * -1,
+      // );
       const tooltipPos = new THREE.Vector3(point.x, 2, point.z);
       setTooltipPosition(tooltipPos);
-      setHoveredRealmId(instanceId + index * 500);
+      setHoveredRealm(ordersRealms[index][instanceId]);
     }
   };
 
@@ -232,7 +238,7 @@ export function Flags(props) {
     <>
       <Html position={tooltipPosition} distanceFactor={10}>
         <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
-          {hoveredRealmId && realmsJson.features[hoveredRealmId].name}
+          {hoveredRealm && hoveredRealm.name}
         </div>
       </Html>
       <group
