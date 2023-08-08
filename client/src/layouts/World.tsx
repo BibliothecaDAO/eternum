@@ -88,7 +88,7 @@ export const World = () => {
       </BottomRightContainer>
       <EpochCountdown />
       <Leva hidden={import.meta.env.PROD} />
-      <Redirect to="/map" />
+      {import.meta.env.PROD && <Redirect to="/map" />}
     </div>
   );
 };
