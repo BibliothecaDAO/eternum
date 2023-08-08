@@ -20,17 +20,13 @@ import RealmResourcesComponent from "../components/cityview/realm/RealmResources
 import { useFetchBlockchainData } from "../hooks/store/useBlockchainStore";
 import { useMemo } from "react";
 
-
 export const World = () => {
-  useFetchBlockchainData()
+  useFetchBlockchainData();
 
-  const isSoundOn = useUIStore(
-    (state) => state.isSoundOn,
-  );
+  const isSoundOn = useUIStore((state) => state.isSoundOn);
 
   useMemo(() => {
     if (isSoundOn) {
-
     }
   }, [isSoundOn]);
 
@@ -61,7 +57,7 @@ export const World = () => {
         <ChatModule />
       </BottomRightContainer>
       <EpochCountdown />
-      <Leva hidden />
+      <Leva hidden={import.meta.env.PROD} />
       {/* <Redirect to="/map" /> */}
     </div>
   );
