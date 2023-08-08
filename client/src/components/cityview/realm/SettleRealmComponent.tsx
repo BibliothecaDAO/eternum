@@ -66,7 +66,7 @@ export const SettleRealmComponent = ({
   };
 
   return (
-    <div className="flex space-x-4">
+    <div className="flex items-center h-min">
       {!isLoading && (
         <Button
           onClick={settleRealm}
@@ -81,7 +81,7 @@ export const SettleRealmComponent = ({
           isLoading={true}
           onClick={() => {}}
           variant="danger"
-          className="ml-auto p-2 !h-4 text-xxs !rounded-md"
+          className="ml-2 p-2 !h-4 text-xxs !rounded-md"
         >
           {}
         </Button>
@@ -89,7 +89,7 @@ export const SettleRealmComponent = ({
       <Button
         onClick={() => clearRealms()}
         variant="danger"
-        className="ml-auto p-2 !h-8 text-lg !rounded-md"
+        className="ml-2 p-2 !h-8 text-lg !rounded-md"
       >
         Clear Realms
       </Button>
