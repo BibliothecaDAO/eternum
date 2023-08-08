@@ -88,7 +88,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
       )}
       {market &&
         market.map((trade) => (
-          <div className="flex flex-col p-2">
+          <div className="flex flex-col p-2" key={trade.tradeId}>
             <MarketOffer
               marketOffer={trade}
               onAccept={() => setSelectedTrade(trade)}
