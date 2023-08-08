@@ -31,6 +31,12 @@ const RealmManagementComponent = () => {
   );
 
   const moveCameraToRealm = useUIStore((state) => state.moveCameraToRealm);
+  const moveCameraToWorldMapView = useUIStore(
+    (state) => state.moveCameraToWorldMapView,
+  );
+  const setIsLoadingScreenEnabled = useUIStore(
+    (state) => state.setIsLoadingScreenEnabled,
+  );
 
   useEffect(() => {
     if (selectedTab == 0) {
@@ -42,7 +48,12 @@ const RealmManagementComponent = () => {
 
   const showOnMap = () => {
     setLocation("/map");
-    moveCameraToRealm(realm?.realmId as number);
+    setIsLoadingScreenEnabled(true);
+    moveCameraToWorldMapView();
+    setTimeout(() => {
+      moveCameraToRealm(realm?.realmId as number);
+      setIsLoadingScreenEnabled(false);
+    }, 300);
   };
 
   const tabs = useMemo(
