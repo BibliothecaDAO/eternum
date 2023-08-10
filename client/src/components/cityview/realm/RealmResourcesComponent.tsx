@@ -178,8 +178,11 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({
           </div>
         )}
       </div>
-      {resourceId === ResourcesIds["Fish"] && (
-        <div className="flex items-center mx-3 -translate-y-2">|</div>
+      {(resourceId === ResourcesIds["Fish"] ||
+        resourceId === ResourcesIds["Shekels"]) && (
+        <div className="flex items-center mx-3 -translate-y-2 scale-y-[2]">
+          |
+        </div>
       )}
     </>
   );
