@@ -102,7 +102,7 @@ export const World = () => {
         <SignUpComponent />
       </BlurOverlayContainer>
       <Leva hidden={import.meta.env.PROD} />
-      {import.meta.env.PROD && <Redirect to="/map" />}
+      <Redirect to="/map" />
     </div>
   );
 };
