@@ -69,9 +69,6 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
                 value={effectsLevel}
                 fromTitle="Mute"
                 onChange={setEffectsLevel}
-                min={0}
-                max={1}
-                step={0.1}
                 title="Effects"
               />
               <Headline size="big">Settling</Headline>

@@ -9,9 +9,12 @@ type SignUpComponentProps = {};
 export const SignUpComponent = ({}: SignUpComponentProps) => {
   const [showSignupPopup, setShowSignupPopup] = useState(true);
   const setShowBlurOverlay = useUIStore((state) => state.setShowBlurOverlay);
-
+  const toggleSound = useUIStore((state) => state.toggleSound);
   useEffect(() => {
     setShowBlurOverlay(showSignupPopup);
+    if (!showSignupPopup) {
+      toggleSound();
+    }
   }, [showSignupPopup]);
 
   return (
@@ -33,10 +36,7 @@ export const SignUpComponent = ({}: SignUpComponentProps) => {
           />
           <Headline size="big">Sign Up</Headline>
           <div className="flex flex-col w-full text-center text-xs text-white">
-            <div
-              onClick={() => setShowSignupPopup(false)}
-              className=" border border-gold my-3 w-full rounded-lg bg-black p-2 flex justify-between"
-            >
+            <div className=" border border-gold my-3 w-full rounded-lg bg-black p-2 flex justify-between">
               <img
                 src="/images/argent-x.svg"
                 className="h-8"
@@ -45,16 +45,13 @@ export const SignUpComponent = ({}: SignUpComponentProps) => {
               <Button
                 className=" !rounded text-brown"
                 variant="primary"
-                onClick={() => {}}
+                onClick={() => setShowSignupPopup(false)}
               >
                 Log in with Argent X
               </Button>
             </div>
             Or
-            <div
-              onClick={() => setShowSignupPopup(false)}
-              className=" border border-gold my-3 w-full rounded-lg bg-black p-2 flex justify-between"
-            >
+            <div className=" border border-gold my-3 w-full rounded-lg bg-black p-2 flex justify-between">
               <img
                 src="/images/braavos.svg"
                 className="h-8"
@@ -63,7 +60,7 @@ export const SignUpComponent = ({}: SignUpComponentProps) => {
               <Button
                 className=" !rounded text-brown"
                 variant="primary"
-                onClick={() => {}}
+                onClick={() => setShowSignupPopup(false)}
               >
                 Log in with Braavos
               </Button>

@@ -16,18 +16,20 @@ import RealmManagementModule from "../modules/RealmManagementModule";
 import EpochCountdown from "../components/network/EpochCountdown";
 import RealmResourcesComponent from "../components/cityview/realm/RealmResourcesComponent";
 import { useFetchBlockchainData } from "../hooks/store/useBlockchainStore";
-import { useEffect, useMemo, useState } from "react";
-import { set } from "mobx";
+import { useEffect } from "react";
 import clsx from "clsx";
 import { Redirect } from "wouter";
 import { useProgress } from "@react-three/drei";
 import { BlurOverlayContainer } from "../containers/BlurOverlayContainer";
 import { SignUpComponent } from "../components/SignUpComponent";
+import useSound from "use-sound";
 
 export const World = () => {
   useFetchBlockchainData();
   const { progress } = useProgress();
+
   const isSoundOn = useUIStore((state) => state.isSoundOn);
+  const musicLevel = useUIStore((state) => state.musicLevel);
 
   const isLoadingScreenEnabled = useUIStore(
     (state) => state.isLoadingScreenEnabled,
@@ -37,8 +39,17 @@ export const World = () => {
     (state) => state.setIsLoadingScreenEnabled,
   );
 
-  useMemo(() => {
+  const [playBackground, { stop }] = useSound("/sound/music/happy_realm.mp3", {
+    soundEnabled: isSoundOn,
+    volume: musicLevel / 100,
+    loop: true,
+  });
+
+  useEffect(() => {
     if (isSoundOn) {
+      playBackground();
+    } else {
+      stop();
     }
   }, [isSoundOn]);
 

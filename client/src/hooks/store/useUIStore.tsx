@@ -38,10 +38,20 @@ const useUIStore = create<UIStore & PopupsStore>((set) => ({
   setShowBlurOverlay: (show) => set({ showBlurOverlay: show }),
   isSoundOn: false,
   toggleSound: () => set((state) => ({ isSoundOn: !state.isSoundOn })),
-  musicLevel: 50,
-  setMusicLevel: (level) => set({ musicLevel: level }),
-  effectsLevel: 0.5,
-  setEffectsLevel: (level) => set({ effectsLevel: level }),
+  musicLevel: localStorage.getItem("musicLevel")
+    ? parseInt(localStorage.getItem("musicLevel") as string)
+    : 50,
+  setMusicLevel: (level) => {
+    set({ musicLevel: level });
+    localStorage.setItem("musicLevel", level.toString());
+  },
+  effectsLevel: localStorage.getItem("effectsLevel")
+    ? parseInt(localStorage.getItem("effectsLevel") as string)
+    : 50,
+  setEffectsLevel: (level) => {
+    set({ effectsLevel: level });
+    localStorage.setItem("effectsLevel", level.toString());
+  },
   cameraPosition: {
     x: -17.044911069418,
     y: 118.38408187955699,
