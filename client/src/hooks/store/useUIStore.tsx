@@ -11,6 +11,10 @@ interface UIStore {
   setShowBlurOverlay: (show: boolean) => void;
   isSoundOn: boolean;
   toggleSound: () => void;
+  musicLevel: number;
+  setMusicLevel: (level: number) => void;
+  effectsLevel: number;
+  setEffectsLevel: (level: number) => void;
   cameraPosition: any;
   setCameraPosition: (position: any) => void;
   cameraTarget: any;
@@ -32,8 +36,12 @@ const useUIStore = create<UIStore & PopupsStore>((set) => ({
   setTheme: (theme) => set({ theme }),
   showBlurOverlay: true,
   setShowBlurOverlay: (show) => set({ showBlurOverlay: show }),
-  isSoundOn: true,
+  isSoundOn: false,
   toggleSound: () => set((state) => ({ isSoundOn: !state.isSoundOn })),
+  musicLevel: 50,
+  setMusicLevel: (level) => set({ musicLevel: level }),
+  effectsLevel: 0.5,
+  setEffectsLevel: (level) => set({ effectsLevel: level }),
   cameraPosition: {
     x: -17.044911069418,
     y: 118.38408187955699,

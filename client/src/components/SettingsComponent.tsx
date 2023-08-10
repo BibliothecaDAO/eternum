@@ -8,14 +8,24 @@ import SettleRealmComponent from "./cityview/realm/SettleRealmComponent";
 import Button from "../elements/Button";
 import { Checkbox } from "../elements/Checkbox";
 import { RangeInput } from "../elements/RangeInput";
+import useUIStore from "../hooks/store/useUIStore";
+import useScreenOrientation from "../hooks/useScreenOrientation";
 type SettingsComponentProps = {};
 
 export const SettingsComponent = ({}: SettingsComponentProps) => {
   const [showSettings, setShowSettings] = useState(false);
-  const [musicLevel, setMusicLevel] = useState(50);
-  const [effectsLevel, setEffectsLevel] = useState(50);
+  const musicLevel = useUIStore((state) => state.musicLevel);
+  const effectsLevel = useUIStore((state) => state.effectsLevel);
+  const setMusicLevel = useUIStore((state) => state.setMusicLevel);
+  const setEffectsLevel = useUIStore((state) => state.setEffectsLevel);
 
-  useEffect(() => {}, []);
+  const { toggleFullScreen, isFullScreen } = useScreenOrientation();
+  const [fullScreen, setFullScreen] = useState<boolean>(isFullScreen());
+
+  const clickFullScreen = () => {
+    setFullScreen(!fullScreen);
+    toggleFullScreen();
+  };
 
   return (
     <div className="flex items-center text-white">
@@ -41,8 +51,11 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
           <SecondaryPopup.Body width="400px">
             <div className="flex flex-col  space-y-2 p-3">
               <Headline size="big">Video</Headline>
-              <div className="flex text-xs text-gray-gold space-x-2 items-center">
-                <Checkbox enabled={true} />
+              <div
+                className="flex text-xs text-gray-gold space-x-2 items-center cursor-pointer"
+                onClick={clickFullScreen}
+              >
+                <Checkbox enabled={fullScreen} />
                 <div>Fullscreen</div>
               </div>
               <Headline size="big">Sound</Headline>
@@ -56,6 +69,9 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
                 value={effectsLevel}
                 fromTitle="Mute"
                 onChange={setEffectsLevel}
+                min={0}
+                max={1}
+                step={0.1}
                 title="Effects"
               />
               <Headline size="big">Settling</Headline>

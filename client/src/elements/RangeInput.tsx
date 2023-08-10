@@ -30,6 +30,8 @@ export const RangeInput = ({
       min={min}
       className="w-full accent-gold"
       value={value}
+      step={step}
+      max={max}
       onChange={(e) => onChange(parseInt(e.target.value))}
     />
     <div className="flex justify-between text-xxs text-gold mt-0.5">
