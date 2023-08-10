@@ -109,7 +109,7 @@ export const MyOffer = ({ myOffer, ...props }: TradeOfferProps) => {
           <div className="grid w-1/3 grid-cols-[repeat(3 ,auto)] gap-2 text-gold">
             {resourcesGet &&
               resourcesGet.map(({ resourceId, amount }) => (
-                <div className="flex flex-col items-center">
+                <div className="flex flex-col items-center" key={resourceId}>
                   <ResourceIcon
                     key={resourceId}
                     resource={getResourceTrait(resourceId)}

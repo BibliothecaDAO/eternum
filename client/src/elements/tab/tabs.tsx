@@ -6,6 +6,7 @@ import { TabList } from "./TabList";
 import { TabPanel } from "./TabPanel";
 import { TabPanels } from "./TabPanels";
 import { TabProvider } from "./TabProvider";
+import { soundSelector, useUiSounds } from "../../hooks/useUISound";
 
 export const VARIANTS: any = {
   default: {
@@ -52,6 +53,8 @@ export const Tabs = ({
   selectedIndex = 0,
   onChange,
 }: TabsProps) => {
+  const { play: playClick } = useUiSounds(soundSelector.click);
+
   return (
     <TabProvider variant={variant}>
       {onChange ? (
@@ -59,7 +62,10 @@ export const Tabs = ({
           as="div"
           className={clsx("flex  flex-col ", className)}
           selectedIndex={selectedIndex}
-          onChange={onChange}
+          onChange={(e) => {
+            onChange(e);
+            playClick();
+          }}
         >
           {children}
         </HeadlessTab.Group>

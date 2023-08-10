@@ -9,6 +9,7 @@ import { useControls, button } from "leva";
 import * as THREE from "three";
 import { useRoute } from "wouter";
 import realmsJson from "../geodata/realms.json";
+import { soundSelector, useUiSounds } from "../hooks/useUISound";
 
 interface Point {
   x: number;
@@ -96,6 +97,8 @@ const CameraControls = ({ position, target }: Props) => {
     }),
   });
 
+  const { play: playFly } = useUiSounds(soundSelector.fly);
+
   camera.up = new Vector3(0, 1, 0);
   function cameraAnimate(): void {
     if (ref.current) {
@@ -126,6 +129,7 @@ const CameraControls = ({ position, target }: Props) => {
 
   useEffect(() => {
     cameraAnimate();
+    playFly();
   }, [target, position]);
 
   return (

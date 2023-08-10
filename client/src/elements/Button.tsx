@@ -1,4 +1,5 @@
 import React from "react";
+import { soundSelector, useUiSounds } from "../hooks/useUISound";
 
 interface ButtonProps {
   onClick: () => void;
@@ -13,6 +14,7 @@ interface ButtonProps {
     | "default"
     | "outline";
   isLoading?: boolean;
+  withoutSound?: boolean;
 }
 
 const STYLES = {
@@ -37,11 +39,19 @@ const Button: React.FC<ButtonProps> = ({
   disabled = false,
   variant = "default",
   isLoading = false,
+  withoutSound = false,
 }) => {
+  const { play: playClick } = useUiSounds(soundSelector.click);
+
   return (
     <button
       type="button"
-      onClick={disabled || isLoading ? undefined : onClick}
+      onClick={() => {
+        if (!disabled && !isLoading) {
+          onClick();
+          !withoutSound && playClick();
+        }
+      }}
       className={`${STYLES.baseStyle} ${STYLES[variant]} ${
         disabled ? STYLES.disabledStyle : STYLES.enabledStyle
       } ${isLoading ? STYLES.loadingStyle : ""} ${className}`}

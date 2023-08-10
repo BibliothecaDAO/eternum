@@ -5,8 +5,9 @@ import { ReactComponent as WorldIcon } from "../assets/icons/common/world.svg";
 import { ReactComponent as ForwardBurgerIcon } from "../assets/icons/common/forward-burger.svg";
 import clsx from "clsx";
 import { RealmSwitch } from "./cityview/RealmSwitch";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import useUIStore from "../hooks/store/useUIStore";
+import { soundSelector, useUiSounds } from "../hooks/useUISound";
 
 const NavgationComponent = () => {
   const moveCameraToWorldMapView = useUIStore(
@@ -17,13 +18,15 @@ const NavgationComponent = () => {
     (state) => state.setIsLoadingScreenEnabled,
   );
 
+  const [location] = useLocation();
+
   return (
     <div className="relative">
       <Avatar size="xl" className="relative z-10" src="/images/avatars/1.png" />
       <Link
         href="/map"
         onClick={() => {
-          setIsLoadingScreenEnabled(true);
+          if (location !== "/map") setIsLoadingScreenEnabled(true);
           moveCameraToWorldMapView();
         }}
       >

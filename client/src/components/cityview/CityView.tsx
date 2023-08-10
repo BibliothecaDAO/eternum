@@ -152,7 +152,9 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
   );
 
   useEffect(() => {
-    setIsLoadingScreenEnabled(false);
+    setTimeout(() => {
+      setIsLoadingScreenEnabled(false);
+    }, 300);
   }, []);
 
   // const ranchMaterial = useMemo(() => {

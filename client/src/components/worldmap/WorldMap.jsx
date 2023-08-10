@@ -74,7 +74,9 @@ export function Model(props) {
   );
 
   useEffect(() => {
-    setIsLoadingScreenEnabled(false);
+    setTimeout(() => {
+      setIsLoadingScreenEnabled(false);
+    }, 300);
   }, []);
 
   const color = new THREE.Color(0xffffff);

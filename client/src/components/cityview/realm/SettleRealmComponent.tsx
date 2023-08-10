@@ -15,6 +15,7 @@ import { packResources } from "../../../utils/packedData";
 import { orders } from "../../../constants/orders";
 import { getLatestRealmId } from "../../../hooks/graphql/useGraphQLQueries";
 import useRealmStore from "../../../hooks/store/useRealmStore";
+import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 
 type RealmStatusComponentProps = {} & React.ComponentPropsWithRef<"div">;
 
@@ -28,6 +29,8 @@ export const SettleRealmComponent = ({
   } = useDojo();
 
   const { setRealmEntityIds } = useRealmStore();
+
+  const { play: playSign } = useUiSounds(soundSelector.sign);
 
   const settleRealm = async () => {
     setIsLoading(true);
@@ -58,6 +61,7 @@ export const SettleRealmComponent = ({
     localStorage.setItem("entityIds", JSON.stringify(updatedEntityIds));
     setRealmEntityIds(updatedEntityIds);
     setIsLoading(false);
+    playSign();
   };
 
   const clearRealms = () => {
