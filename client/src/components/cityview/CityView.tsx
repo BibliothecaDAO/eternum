@@ -19,6 +19,7 @@ import {
   OrbitControls,
 } from "@react-three/drei";
 import { LayerMaterial, Depth } from "lamina";
+import useUIStore from "../../hooks/store/useUIStore";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -145,6 +146,14 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
   const { nodes, materials } = useGLTF(
     "/models/realm-city_15-transformed.glb",
   ) as GLTFResult;
+
+  const setIsLoadingScreenEnabled = useUIStore(
+    (state) => state.setIsLoadingScreenEnabled,
+  );
+
+  useEffect(() => {
+    setIsLoadingScreenEnabled(false);
+  }, []);
 
   // const ranchMaterial = useMemo(() => {
   //   const material = Object.assign({}, materials.PaletteMaterial019)

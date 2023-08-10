@@ -69,13 +69,6 @@ export const MainScene = () => {
       return "realm";
     }
   }, [location]);
-  // @ts-ignore
-  const transition = useTransition(locationType, {
-    from: { opacity: 0 },
-    enter: { opacity: 1 },
-    leave: { opacity: 0 },
-    config: () => (n) => n === "opacity" && { friction: 60 },
-  });
 
   const shakeConfig = useMemo(
     () => ({
@@ -115,21 +108,16 @@ export const MainScene = () => {
       />
       <CameraShake {...shakeConfig} />
       <Suspense fallback={null}>
-        {
-          // @ts-ignore
-          transition(({ opacity, ...props }, location) => (
-            <a.group {...props}>
-              <Switch location={location}>
-                <Route path="map">
-                  <WorldMapScene />
-                </Route>
-                <Route path="realm">
-                  <RealmCityViewScene />
-                </Route>
-              </Switch>
-            </a.group>
-          ))
-        }
+        <a.group>
+          <Switch location={locationType}>
+            <Route path="map">
+              <WorldMapScene />
+            </Route>
+            <Route path="realm">
+              <RealmCityViewScene />
+            </Route>
+          </Switch>
+        </a.group>
       </Suspense>
       <EffectComposer multisampling={0}>
         <Bloom luminanceThreshold={0} intensity={0.1} mipmapBlur />

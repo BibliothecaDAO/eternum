@@ -25,9 +25,6 @@ const NavgationComponent = () => {
         onClick={() => {
           setIsLoadingScreenEnabled(true);
           moveCameraToWorldMapView();
-          setTimeout(() => {
-            setIsLoadingScreenEnabled(false);
-          }, 500);
         }}
       >
         <CircleButton

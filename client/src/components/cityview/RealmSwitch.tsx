@@ -104,7 +104,6 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
                 setRealmEntityId(realm.id);
                 setRealmId(realm.realmId);
                 moveCameraToRealmView();
-                setIsLoadingScreenEnabled(false);
               }, 500);
             }}
           >

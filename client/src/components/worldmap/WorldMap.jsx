@@ -8,6 +8,7 @@ import { useGLTF } from "@react-three/drei";
 import { useControls, button } from "leva";
 import { Water } from "three/addons/objects/Water2.js";
 import * as THREE from "three";
+import useUIStore from "../../hooks/store/useUIStore";
 
 const WaterModel = () => {
   const params = {
@@ -39,7 +40,7 @@ const WaterModel = () => {
 export function Model(props) {
   const { nodes, materials } = useGLTF("/models/world_map_13-transformed.glb");
   const { nodes: nodes2, materials: materials2 } = useGLTF(
-    "/models/world_map_8-transformed.glb"
+    "/models/world_map_8-transformed.glb",
   );
   const worldMapRef = useRef();
 
@@ -65,8 +66,16 @@ export function Model(props) {
         max: 1,
         min: 0,
       },
-    }
+    },
   );
+
+  const setIsLoadingScreenEnabled = useUIStore(
+    (state) => state.setIsLoadingScreenEnabled,
+  );
+
+  useEffect(() => {
+    setIsLoadingScreenEnabled(false);
+  }, []);
 
   const color = new THREE.Color(0xffffff);
 
@@ -81,7 +90,7 @@ export function Model(props) {
     "#fafafa",
   ];
   const geometryColors = new Float32Array(
-    targetGeometry.attributes.position.count * 3
+    targetGeometry.attributes.position.count * 3,
   );
 
   useEffect(() => {
@@ -101,7 +110,7 @@ export function Model(props) {
       const yPosition = targetGeometry.attributes.position.array[i + 1];
       const colorIndex = Math.floor(
         ((yPosition - minYPosition) / (maxYPosition - minYPosition)) *
-          (gradient.length - 1)
+          (gradient.length - 1),
       );
       color.set(gradient[colorIndex]);
       geometryColors[i] = color.r;
@@ -110,7 +119,7 @@ export function Model(props) {
     }
     targetGeometry.setAttribute(
       "color",
-      new THREE.BufferAttribute(geometryColors, 3)
+      new THREE.BufferAttribute(geometryColors, 3),
     );
     worldMapRef.current.updateMatrix();
   }, []);
