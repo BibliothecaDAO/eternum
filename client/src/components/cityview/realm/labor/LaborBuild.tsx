@@ -224,7 +224,7 @@ export const LaborBuildPopup = ({
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"376px"}>
         <div className="flex flex-col items-center p-2">
-          <Headline>Produce More {resourceInfo?.trait}</Headline>
+          <Headline size="big">Produce More {resourceInfo?.trait}</Headline>
           <div className="relative flex justify-between w-full mt-2 text-xxs text-lightest">
             <div className="flex items-center">
               {!isFood && (
