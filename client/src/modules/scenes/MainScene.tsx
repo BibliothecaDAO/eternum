@@ -71,6 +71,9 @@ export const MainScene = () => {
   }, [location]);
   // @ts-ignore
   const transition = useTransition(locationType, {
+    from: { opacity: 0 },
+    enter: { opacity: 1 },
+    leave: { opacity: 0 },
     config: () => (n) => n === "opacity" && { friction: 60 },
   });
 
