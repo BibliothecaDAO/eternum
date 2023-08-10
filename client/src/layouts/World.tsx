@@ -22,6 +22,8 @@ import { set } from "mobx";
 import clsx from "clsx";
 import { Redirect } from "wouter";
 import { useProgress } from "@react-three/drei";
+import { BlurOverlayContainer } from "../containers/BlurOverlayContainer";
+import { SignUpComponent } from "../components/SignUpComponent";
 
 export const World = () => {
   useFetchBlockchainData();
@@ -87,6 +89,9 @@ export const World = () => {
         <ChatModule />
       </BottomRightContainer>
       <EpochCountdown />
+      <BlurOverlayContainer>
+        <SignUpComponent />
+      </BlurOverlayContainer>
       <Leva hidden={import.meta.env.PROD} />
       {import.meta.env.PROD && <Redirect to="/map" />}
     </div>
