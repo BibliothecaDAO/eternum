@@ -63,7 +63,7 @@ export const MainScene = () => {
   const [location] = useLocation();
   // location type
   const locationType = useMemo(() => {
-    if (location === "/map") {
+    if (location === "/map" || location === "/") {
       return "map";
     } else {
       return "realm";
