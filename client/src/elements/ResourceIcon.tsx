@@ -121,7 +121,7 @@ export const ResourceIcon = (props: Props) => {
       placement="top"
       className="flex"
       tooltipText={
-        <div className="p-1 text-sm rounded bg-gray-1000 whitespace-nowrap">
+        <div className="p-1 text-xs rounded bg-black rounded whitespace-nowrap">
           {props.resource}
         </div>
       }

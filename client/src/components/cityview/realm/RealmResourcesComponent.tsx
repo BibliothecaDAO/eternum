@@ -157,7 +157,8 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({
           <ResourceIcon
             resource={findResourceById(resourceId)?.trait as string}
             size="xs"
-            className="mr-1"
+            className="mr-2"
+            withTooltip
           />
           <div className="text-xs">
             {currencyFormat(resource ? resource.amount : 0)}
