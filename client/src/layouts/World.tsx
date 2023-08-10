@@ -14,7 +14,6 @@ import NavigationModule from "../modules/NavigationModule";
 import ContentContainer from "../containers/ContentContainer";
 import RealmManagementModule from "../modules/RealmManagementModule";
 import EpochCountdown from "../components/network/EpochCountdown";
-import RealmStatusComponent from "../components/cityview/realm/RealmStatusComponent";
 import RealmResourcesComponent from "../components/cityview/realm/RealmResourcesComponent";
 import { useFetchBlockchainData } from "../hooks/store/useBlockchainStore";
 import { useEffect, useMemo, useState } from "react";
@@ -74,7 +73,6 @@ export const World = () => {
         <div className="flex">
           <NavigationModule />
           <RealmResourcesComponent className="ml-20 -mt-1" />
-          <RealmStatusComponent className="ml-auto -translate-y-1/2" />
         </div>
 
         {/* <ContextsModule /> */}

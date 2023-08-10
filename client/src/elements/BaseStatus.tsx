@@ -1,23 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 
 type BaseStatusProps = {
-    state: 'bad' | 'neutral' | 'good'
-    children?: React.ReactNode
-}
+  state: "bad" | "neutral" | "good";
+  children?: React.ReactNode;
+};
 
 const STYLES = {
-    base: 'flex items-center justify-center px-3 py-2 ml-auto text-xs text-white rounded-full cursor-default h-7',
-    bad: ' bg-light-red',
-    neutral: 'bg-yellow-500',
-    good: 'bg-order-vitriol',
-}
+  base: "flex items-center justify-center ml-auto text-xs rounded-full cursor-default h-7",
+  bad: " text-anger-light",
+  neutral: "text-gold",
+  good: "text-order-vitriol",
+};
 export const BaseStatus = ({ state, children }: BaseStatusProps) => {
+  useEffect(() => {}, []);
 
-    useEffect(() => { }, []);
-
-    return (
-        <div className={`${STYLES.base} ${STYLES[state]}`}>
-            {children}
-        </div>
-    );
+  return <div className={`${STYLES.base} ${STYLES[state]}`}>{children}</div>;
 };

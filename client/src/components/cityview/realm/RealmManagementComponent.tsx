@@ -14,6 +14,7 @@ import RealmLaborComponent from "./RealmLaborComponent";
 import useUIStore from "../../../hooks/store/useUIStore";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useGetRealm } from "../../../hooks/graphql/useGraphQLQueries";
+import RealmStatusComponent from "./RealmStatusComponent";
 
 const RealmManagementComponent = () => {
   const { realmEntityId } = useRealmStore();
@@ -78,11 +79,21 @@ const RealmManagementComponent = () => {
   );
   return (
     <>
+      <div className="flex justify-between items-center p-2">
+        <RealmStatusComponent />
+        <button
+          onClick={showOnMap}
+          className="flex items-center hover:bg-gold/20 transition-bg duration-200 z-10 px-2 py-1 ml-auto text-xxs border rounded-md text-gold border-gold"
+        >
+          <Map className="mr-1 fill-current" />
+          Show on map
+        </button>
+      </div>
       <Tabs
         selectedIndex={selectedTab}
         onChange={(index: any) => setSelectedTab(index as number)}
         variant="primary"
-        className="flex-1 mt-[6px] overflow-hidden"
+        className="flex-1 mt-4 overflow-hidden"
       >
         <Tabs.List>
           {tabs.map((tab, index) => (
@@ -95,13 +106,6 @@ const RealmManagementComponent = () => {
           ))}
         </Tabs.Panels>
       </Tabs>
-      <button
-        onClick={showOnMap}
-        className="absolute flex items-center hover:bg-gold/20 transition-bg duration-200 z-10 px-2 py-1 ml-auto text-xxs border rounded-md right-3 top-[3.9rem] text-gold border-gold"
-      >
-        <Map className="mr-1 fill-current" />
-        Show on map
-      </button>
     </>
   );
 };
