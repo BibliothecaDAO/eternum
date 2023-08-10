@@ -60,19 +60,41 @@ const RealmManagementComponent = () => {
     () => [
       {
         label: (
-          <div className="flex items-center">
-            <PickAxeSecond className="mr-2 fill-current" /> <div>Labor</div>
+          <div className="flex flex-col items-center">
+            <PickAxeSecond className="mb-2 fill-gold" /> <div>Labor</div>
           </div>
         ),
         component: <RealmLaborComponent />,
       },
       {
         label: (
-          <div className="flex items-center">
-            <Coin className="mr-2 fill-current" /> <div>Trade</div>
+          <div className="flex flex-col items-center">
+            <Coin className="mb-2 fill-gold" /> <div>Trade</div>
           </div>
         ),
         component: <RealmTradeComponent />,
+      },
+      {
+        label: (
+          <div
+            className="flex flex-col items-center blur-sm cursor-not-allowed"
+            title="Not implemented"
+          >
+            <City className="mb-2 fill-gold" /> <div>Civilians</div>
+          </div>
+        ),
+        component: <div></div>,
+      },
+      {
+        label: (
+          <div
+            className="flex flex-col items-center blur-sm cursor-not-allowed"
+            title="Not implemented"
+          >
+            <CrossSwords className="mb-2 fill-gold" /> <div>Military</div>
+          </div>
+        ),
+        component: <div></div>,
       },
     ],
     [selectedTab],
@@ -91,7 +113,9 @@ const RealmManagementComponent = () => {
       </div>
       <Tabs
         selectedIndex={selectedTab}
-        onChange={(index: any) => setSelectedTab(index as number)}
+        onChange={(index: any) =>
+          index < 2 ? setSelectedTab(index as number) : null
+        }
         variant="primary"
         className="flex-1 mt-4 overflow-hidden"
       >
