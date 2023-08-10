@@ -10,7 +10,7 @@ export const SecondaryPopup = ({ children, className }: FilterPopupProps) => {
   return (
     <div
       className={clsx(
-        "fixed flex flex-col translate-x-6 -translate-y-4 left-[420px]",
+        "fixed flex flex-col translate-x-6 -translate-y-4 left-[432px]",
         className,
       )}
     >
