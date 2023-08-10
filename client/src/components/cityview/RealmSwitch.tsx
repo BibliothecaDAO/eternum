@@ -100,6 +100,9 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
             onClick={() => {
               setIsLoadingScreenEnabled(true);
               setTimeout(() => {
+                if (location.includes(`/realm`)) {
+                  setIsLoadingScreenEnabled(false);
+                }
                 setLocation(`/realm/${realm.id}`);
                 setRealmEntityId(realm.id);
                 setRealmId(realm.realmId);
