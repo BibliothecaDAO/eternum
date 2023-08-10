@@ -1,83 +1,138 @@
 import { useEffect, useMemo, useState } from "react";
-import { BaseContainer } from "../../../containers/BaseContainer"
-import { SecondaryContainer } from "../../../containers/SecondaryContainer"
-import { ReactComponent as CrossSwords } from '../../../assets/icons/common/cross-swords.svg';
-import { ReactComponent as PickAxeSecond } from '../../../assets/icons/common/pick-axe-second.svg';
-import { ReactComponent as Coin } from '../../../assets/icons/common/coin.svg';
-import { ReactComponent as City } from '../../../assets/icons/common/city.svg';
-import { ReactComponent as Map } from '../../../assets/icons/common/map.svg';
+import { BaseContainer } from "../../../containers/BaseContainer";
+import { SecondaryContainer } from "../../../containers/SecondaryContainer";
+import { ReactComponent as CrossSwords } from "../../../assets/icons/common/cross-swords.svg";
+import { ReactComponent as PickAxeSecond } from "../../../assets/icons/common/pick-axe-second.svg";
+import { ReactComponent as Coin } from "../../../assets/icons/common/coin.svg";
+import { ReactComponent as City } from "../../../assets/icons/common/city.svg";
+import { ReactComponent as Map } from "../../../assets/icons/common/map.svg";
+import { useLocation } from "wouter";
 
 import { Tabs } from "../../../elements/tab";
 import RealmTradeComponent from "./RealmTradeComponent";
 import RealmLaborComponent from "./RealmLaborComponent";
 import useUIStore from "../../../hooks/store/useUIStore";
-
+import useRealmStore from "../../../hooks/store/useRealmStore";
+import { useGetRealm } from "../../../hooks/graphql/useGraphQLQueries";
+import RealmStatusComponent from "./RealmStatusComponent";
+import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 
 const RealmManagementComponent = () => {
-    const [selectedTab, setSelectedTab] = useState(1);
+  const { realmEntityId } = useRealmStore();
+  const { realm } = useGetRealm({ entityId: realmEntityId });
 
-    const moveCameraToRealmView = useUIStore((state) => state.moveCameraToRealmView);
-    const moveCameraToLaborView = useUIStore((state) => state.moveCameraToLaborView);
+  const [selectedTab, setSelectedTab] = useState(1);
 
+  const [location, setLocation] = useLocation();
 
-    useEffect(() => {
-        if (selectedTab == 0) {
-            moveCameraToLaborView();
+  const moveCameraToMarketView = useUIStore(
+    (state) => state.moveCameraToMarketView,
+  );
+  const moveCameraToLaborView = useUIStore(
+    (state) => state.moveCameraToLaborView,
+  );
+
+  const moveCameraToRealm = useUIStore((state) => state.moveCameraToRealm);
+  const moveCameraToWorldMapView = useUIStore(
+    (state) => state.moveCameraToWorldMapView,
+  );
+  const setIsLoadingScreenEnabled = useUIStore(
+    (state) => state.setIsLoadingScreenEnabled,
+  );
+
+  useEffect(() => {
+    if (selectedTab == 0) {
+      moveCameraToLaborView();
+    } else {
+      moveCameraToMarketView();
+    }
+  }, [selectedTab]);
+
+  const showOnMap = () => {
+    setLocation("/map");
+    setIsLoadingScreenEnabled(true);
+    moveCameraToWorldMapView();
+    setTimeout(() => {
+      moveCameraToRealm(realm?.realmId as number);
+    }, 300);
+  };
+
+  const tabs = useMemo(
+    () => [
+      {
+        label: (
+          <div className="flex flex-col items-center">
+            <PickAxeSecond className="mb-2 fill-gold" /> <div>Labor</div>
+          </div>
+        ),
+        component: <RealmLaborComponent />,
+      },
+      {
+        label: (
+          <div className="flex flex-col items-center">
+            <Coin className="mb-2 fill-gold" /> <div>Trade</div>
+          </div>
+        ),
+        component: <RealmTradeComponent />,
+      },
+      {
+        label: (
+          <div
+            className="flex flex-col items-center blur-sm cursor-not-allowed"
+            title="Not implemented"
+          >
+            <City className="mb-2 fill-gold" /> <div>Civilians</div>
+          </div>
+        ),
+        component: <div></div>,
+      },
+      {
+        label: (
+          <div
+            className="flex flex-col items-center blur-sm cursor-not-allowed"
+            title="Not implemented"
+          >
+            <CrossSwords className="mb-2 fill-gold" /> <div>Military</div>
+          </div>
+        ),
+        component: <div></div>,
+      },
+    ],
+    [selectedTab],
+  );
+  return (
+    <>
+      <div className="flex justify-between items-center p-2">
+        <RealmStatusComponent />
+        <button
+          onClick={showOnMap}
+          className="flex items-center hover:bg-gold/20 transition-bg duration-200 z-10 px-2 py-1 ml-auto text-xxs border rounded-md text-gold border-gold"
+        >
+          <Map className="mr-1 fill-current" />
+          Show on map
+        </button>
+      </div>
+      <Tabs
+        selectedIndex={selectedTab}
+        onChange={(index: any) =>
+          index < 2 ? setSelectedTab(index as number) : null
         }
-        else {
-            moveCameraToRealmView();
-        }
-    }, [selectedTab])
+        variant="primary"
+        className="flex-1 mt-4 overflow-hidden"
+      >
+        <Tabs.List>
+          {tabs.map((tab, index) => (
+            <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+          ))}
+        </Tabs.List>
+        <Tabs.Panels className="overflow-hidden">
+          {tabs.map((tab, index) => (
+            <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+          ))}
+        </Tabs.Panels>
+      </Tabs>
+    </>
+  );
+};
 
-    const tabs = useMemo(
-        () => [
-            {
-                label: (
-                    <div className="flex items-center">
-                        <PickAxeSecond className="mr-2 fill-current" />{' '}
-                        <div>Labor</div>
-                    </div>
-                ),
-                component: <RealmLaborComponent />,
-            },
-            {
-                label: (
-                    <div className="flex items-center">
-                        <Coin className="mr-2 fill-current" />{' '}
-                        <div>Trade</div>
-                    </div>
-                ),
-                component: <RealmTradeComponent />,
-            }
-        ],
-        [selectedTab]
-    );
-    return (
-        <>
-            <Tabs
-                selectedIndex={selectedTab}
-                onChange={(index: any) => setSelectedTab(index as number)}
-                variant="primary"
-                className="flex-1 mt-[6px] overflow-hidden"
-            >
-                <Tabs.List>
-                    {tabs.map((tab, index) => (
-                        <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-                    ))}
-                </Tabs.List>
-                <Tabs.Panels className="overflow-hidden">
-                    {tabs.map((tab, index) => (
-                        <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
-                    ))}
-                </Tabs.Panels>
-            </Tabs>
-            <button className="absolute flex items-center hover:bg-gold/20 transition-bg duration-200 z-10 px-2 py-1 ml-auto text-xxs border rounded-md right-3 top-[3.9rem] text-gold border-gold">
-                <Map className='mr-1 fill-current' />
-                Show on map
-            </button>
-        </>
-
-    )
-}
-
-export default RealmManagementComponent
+export default RealmManagementComponent;

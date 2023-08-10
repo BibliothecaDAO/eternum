@@ -2,6 +2,7 @@ import React from "react";
 import { ReactComponent as ArrowLeft } from "../assets/icons/common/arrow-left.svg";
 import { ReactComponent as ArrowRight } from "../assets/icons/common/arrow-right.svg";
 import clsx from "clsx";
+import { soundSelector, useUiSounds } from "../hooks/useUISound";
 
 type NumberInputProps = {
   value: number;
@@ -19,33 +20,43 @@ export const NumberInput = ({
   step = 1,
   max,
   min = 0,
-}: NumberInputProps) => (
-  <div
-    className={clsx(
-      "flex items-center border rounded-lg w-22 h-7 border-gold",
-      className,
-    )}
-  >
-    <div
-      className="flex items-center justify-center h-full px-1 border-r cursor-pointer border-gold"
-      onClick={() => onChange(Math.max(value - step, min))}
-    >
-      <ArrowLeft />
-    </div>
+}: NumberInputProps) => {
+  const { play: playClick } = useUiSounds(soundSelector.click);
 
-    <input
-      type="number"
-      min={min}
-      className=" w-14 text-xs appearance-none !outline-none h-full text-center bg-transparent text-light-pink"
-      value={value}
-      onChange={(e) => onChange(parseInt(e.target.value))}
-    />
-
+  return (
     <div
-      className="flex items-center justify-center h-full px-1 border-l cursor-pointer border-gold"
-      onClick={() => onChange(Math.min(value + step, max))}
+      className={clsx(
+        "flex items-center border rounded-lg w-22 h-7 border-gold",
+        className,
+      )}
     >
-      <ArrowRight />
+      <div
+        className="flex items-center justify-center h-full px-1 border-r cursor-pointer border-gold"
+        onClick={() => {
+          onChange(Math.max(value - step, min));
+          playClick();
+        }}
+      >
+        <ArrowLeft />
+      </div>
+
+      <input
+        type="number"
+        min={min}
+        className=" w-14 text-xs appearance-none !outline-none h-full text-center bg-transparent text-light-pink"
+        value={value}
+        onChange={(e) => onChange(parseInt(e.target.value))}
+      />
+
+      <div
+        className="flex items-center justify-center h-full px-1 border-l cursor-pointer border-gold"
+        onClick={() => {
+          onChange(Math.min(value + step, max));
+          playClick();
+        }}
+      >
+        <ArrowRight />
+      </div>
     </div>
-  </div>
-);
+  );
+};

@@ -15,6 +15,7 @@ import { packResources } from "../../../utils/packedData";
 import { orders } from "../../../constants/orders";
 import { getLatestRealmId } from "../../../hooks/graphql/useGraphQLQueries";
 import useRealmStore from "../../../hooks/store/useRealmStore";
+import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 
 type RealmStatusComponentProps = {} & React.ComponentPropsWithRef<"div">;
 
@@ -28,6 +29,8 @@ export const SettleRealmComponent = ({
   } = useDojo();
 
   const { setRealmEntityIds } = useRealmStore();
+
+  const { play: playSign } = useUiSounds(soundSelector.sign);
 
   const settleRealm = async () => {
     setIsLoading(true);
@@ -58,6 +61,7 @@ export const SettleRealmComponent = ({
     localStorage.setItem("entityIds", JSON.stringify(updatedEntityIds));
     setRealmEntityIds(updatedEntityIds);
     setIsLoading(false);
+    playSign();
   };
 
   const clearRealms = () => {
@@ -66,7 +70,7 @@ export const SettleRealmComponent = ({
   };
 
   return (
-    <div className="flex space-x-4">
+    <div className="flex items-center h-min">
       {!isLoading && (
         <Button
           onClick={settleRealm}
@@ -81,7 +85,7 @@ export const SettleRealmComponent = ({
           isLoading={true}
           onClick={() => {}}
           variant="danger"
-          className="ml-auto p-2 !h-4 text-xxs !rounded-md"
+          className="ml-2 p-2 !h-4 text-xxs !rounded-md"
         >
           {}
         </Button>
@@ -89,7 +93,7 @@ export const SettleRealmComponent = ({
       <Button
         onClick={() => clearRealms()}
         variant="danger"
-        className="ml-auto p-2 !h-8 text-lg !rounded-md"
+        className="ml-2 p-2 !h-8 text-lg !rounded-md"
       >
         Clear Realms
       </Button>

@@ -17,8 +17,8 @@ type RealmTradeComponentProps = {};
 export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
   const [selectedTab, setSelectedTab] = useState(1);
 
-  const moveCameraToRealmView = useUIStore(
-    (state) => state.moveCameraToRealmView,
+  const moveCameraToMarketView = useUIStore(
+    (state) => state.moveCameraToMarketView,
   );
   const moveCameraToCaravansView = useUIStore(
     (state) => state.moveCameraToCaravansView,
@@ -26,7 +26,7 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
 
   useEffect(() => {
     if ([0, 1].includes(selectedTab)) {
-      moveCameraToRealmView();
+      moveCameraToMarketView();
     } else if ([2, 3].includes(selectedTab)) {
       moveCameraToCaravansView();
     }

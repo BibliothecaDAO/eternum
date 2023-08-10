@@ -28,6 +28,7 @@ import {
   RealmInterface,
   ResourceInterface,
 } from "../../../../hooks/graphql/useGraphQLQueries";
+import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 
 type LaborComponentProps = {
   resourceId: number;
@@ -97,8 +98,11 @@ export const LaborComponent = ({
     return undefined;
   }, [labor, laborConfig, nextBlockTimestamp]);
 
+  const { play: playHarvest } = useUiSounds(soundSelector.harvest);
+
   const onHarvest = () => {
     setIsHarvestLoading(true);
+    playHarvest();
     harvest_labor({
       realm_id: realmEntityId,
       resource_type: resourceId,

@@ -1,29 +1,58 @@
-@import url('https://fonts.googleapis.com/css2?family=Aleo:wght@300;400;700&family=Merriweather:wght@300;400;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Aleo:wght@300;400;700&family=Merriweather:wght@300;400;700&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-html, body {
-    overflow: hidden;
-    font-family: 'Merriweather', serif;
-    touch-action: none;
+html,
+body {
+  overflow: hidden;
+  font-family: "Merriweather", serif;
+  touch-action: none;
 }
 
 .container-bg-gradient {
-    background: linear-gradient(180deg, #1B1B1B 0%, rgba(24, 24, 24, 0.95) 100%);
+  background: linear-gradient(180deg, #1b1b1b 0%, rgba(24, 24, 24, 0.95) 100%);
 }
 
 .container-bg-gradient-secondary {
-    background: linear-gradient(180deg, #B0B8AE 3.09%, rgba(72, 53, 47, 0.6) 100%);
+  background: linear-gradient(
+    180deg,
+    #b0b8ae 3.09%,
+    rgba(72, 53, 47, 0.6) 100%
+  );
 }
 
 @layer base {
-    input[type='number']::-webkit-outer-spin-button,
-    input[type='number']::-webkit-inner-spin-button,
-    input[type='number'] {
-      -webkit-appearance: none;
-      margin: 0;
-      -moz-appearance: textfield !important;
-    }
- }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"] {
+    -webkit-appearance: none;
+    margin: 0;
+    -moz-appearance: textfield !important;
+  }
+}
+
+* {
+  user-select: none;
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar-track {
+  background-color: #1b1b1b;
+  border-radius: 8px;
+  border: 1px solid var(--gray-gold, #776756);
+  margin-bottom: 2px;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  background-color: #1b1b1b;
+  border-radius: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #e0af65;
+  border-radius: 8px;
+  border: 1px solid var(--gray-gold, #776756);
+}

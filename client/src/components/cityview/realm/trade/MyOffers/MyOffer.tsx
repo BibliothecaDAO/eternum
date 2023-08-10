@@ -88,7 +88,7 @@ export const MyOffer = ({ myOffer, ...props }: TradeOfferProps) => {
       </div>
       <div className="flex items-end mt-2">
         <div className="flex items-center justify-around flex-1">
-          <div className="grid w-1/3 grid-cols-3 gap-2 text-gold">
+          <div className="grid w-1/3 grid-cols-[repeat(3 ,auto)] gap-2 text-gold">
             {resourcesGive &&
               resourcesGive.map(({ resourceId, amount }) => (
                 <div className="flex flex-col items-center">
@@ -106,10 +106,10 @@ export const MyOffer = ({ myOffer, ...props }: TradeOfferProps) => {
             <RatioIcon className="mb-1 fill-white" />
             {ratio?.toFixed(2) || 0}
           </div>
-          <div className="grid w-1/3 grid-cols-3 gap-2 text-gold">
+          <div className="grid w-1/3 grid-cols-[repeat(3 ,auto)] gap-2 text-gold">
             {resourcesGet &&
               resourcesGet.map(({ resourceId, amount }) => (
-                <div className="flex flex-col items-center">
+                <div className="flex flex-col items-center" key={resourceId}>
                   <ResourceIcon
                     key={resourceId}
                     resource={getResourceTrait(resourceId)}

@@ -4,7 +4,10 @@ import Button from "../../../../elements/Button";
 import { Headline } from "../../../../elements/Headline";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../elements/NumberInput";
-import { findResourceById } from "../../../../constants/resources";
+import {
+  ResourcesIds,
+  findResourceById,
+} from "../../../../constants/resources";
 import { ReactComponent as FishingVillages } from "../../../../assets/icons/resources/FishingVillages.svg";
 import { ReactComponent as Farms } from "../../../../assets/icons/resources/Farms.svg";
 import { ResourceIcon } from "../../../../elements/ResourceIcon";
@@ -20,6 +23,7 @@ import {
   RealmResourcesInterface,
   useGetRealm,
 } from "../../../../hooks/graphql/useGraphQLQueries";
+import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 
 type LaborBuildPopupProps = {
   resourceId: number;
@@ -91,7 +95,124 @@ export const LaborBuildPopup = ({
       labor_units: isFood ? 12 : laborAmount,
       multiplier: multiplier,
     });
+    playLaborSound(resourceId);
     onClose();
+  };
+
+  const { play: playFarm } = useUiSounds(soundSelector.buildFarm);
+  const { play: playFishingVillage } = useUiSounds(
+    soundSelector.buildFishingVillage,
+  );
+  const { play: playAddWood } = useUiSounds(soundSelector.addWood);
+  const { play: playAddStone } = useUiSounds(soundSelector.addStone);
+  const { play: playAddCoal } = useUiSounds(soundSelector.addCoal);
+  const { play: playAddCopper } = useUiSounds(soundSelector.addCopper);
+  const { play: playAddObsidian } = useUiSounds(soundSelector.addObsidian);
+  const { play: playAddSilver } = useUiSounds(soundSelector.addSilver);
+  const { play: playAddIronwood } = useUiSounds(soundSelector.addIronwood);
+  const { play: playAddColdIron } = useUiSounds(soundSelector.addColdIron);
+  const { play: playAddGold } = useUiSounds(soundSelector.addGold);
+  const { play: playAddHartwood } = useUiSounds(soundSelector.addHartwood);
+  const { play: playAddDiamonds } = useUiSounds(soundSelector.addDiamonds);
+  const { play: playAddSapphire } = useUiSounds(soundSelector.addSapphire);
+  const { play: playAddRuby } = useUiSounds(soundSelector.addRuby);
+  const { play: playAddDeepCrystal } = useUiSounds(
+    soundSelector.addDeepCrystal,
+  );
+  const { play: playAddIgnium } = useUiSounds(soundSelector.addIgnium);
+  const { play: playAddEtherealSilica } = useUiSounds(
+    soundSelector.addEtherealSilica,
+  );
+
+  const { play: playAddTrueIce } = useUiSounds(soundSelector.addTrueIce);
+  const { play: playAddTwilightQuartz } = useUiSounds(
+    soundSelector.addTwilightQuartz,
+  );
+  const { play: playAddAlchemicalSilver } = useUiSounds(
+    soundSelector.addAlchemicalSilver,
+  );
+  const { play: playAddAdamantine } = useUiSounds(soundSelector.addAdamantine);
+  const { play: playAddMithral } = useUiSounds(soundSelector.addMithral);
+  const { play: playAddDragonhide } = useUiSounds(soundSelector.addDragonhide);
+
+  const playLaborSound = (resourceId: ResourcesIds) => {
+    // eslint-disable-next-line sonarjs/no-small-switch
+    switch (resourceId) {
+      case ResourcesIds.Fish:
+        playFishingVillage();
+        break;
+      case ResourcesIds.Wheat:
+        playFarm();
+        break;
+      case ResourcesIds.Wood:
+        playAddWood();
+        break;
+      case ResourcesIds.Stone:
+        playAddStone();
+        break;
+      case ResourcesIds.Coal:
+        playAddCoal();
+        break;
+      case ResourcesIds.Copper:
+        playAddCopper();
+        break;
+      case ResourcesIds.Obsidian:
+        playAddObsidian();
+        break;
+      case ResourcesIds.Silver:
+        playAddSilver();
+        break;
+      case ResourcesIds.Ironwood:
+        playAddIronwood();
+        break;
+      case ResourcesIds.ColdIron:
+        playAddColdIron();
+        break;
+      case ResourcesIds.Gold:
+        playAddGold();
+        break;
+      case ResourcesIds.Hartwood:
+        playAddHartwood();
+        break;
+      case ResourcesIds.Diamonds:
+        playAddDiamonds();
+        break;
+      case ResourcesIds.Sapphire:
+        playAddSapphire();
+        break;
+      case ResourcesIds.Ruby:
+        playAddRuby();
+        break;
+      case ResourcesIds.DeepCrystal:
+        playAddDeepCrystal();
+        break;
+      case ResourcesIds.Ignium:
+        playAddIgnium();
+        break;
+      case ResourcesIds.EtherealSilica:
+        playAddEtherealSilica();
+        break;
+      case ResourcesIds.TrueIce:
+        playAddTrueIce();
+        break;
+      case ResourcesIds.TwilightQuartz:
+        playAddTwilightQuartz();
+        break;
+      case ResourcesIds.AlchemicalSilver:
+        playAddAlchemicalSilver();
+        break;
+      case ResourcesIds.Adamantine:
+        playAddAdamantine();
+        break;
+      case ResourcesIds.Mithral:
+        playAddMithral();
+        break;
+      case ResourcesIds.Dragonhide:
+        playAddDragonhide();
+        break;
+      default:
+        break;
+    }
   };
 
   return (
@@ -103,7 +224,7 @@ export const LaborBuildPopup = ({
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"376px"}>
         <div className="flex flex-col items-center p-2">
-          <Headline>Produce More {resourceInfo?.trait}</Headline>
+          <Headline size="big">Produce More {resourceInfo?.trait}</Headline>
           <div className="relative flex justify-between w-full mt-2 text-xxs text-lightest">
             <div className="flex items-center">
               {!isFood && (
@@ -196,6 +317,7 @@ export const LaborBuildPopup = ({
               <div className="grid grid-cols-4 gap-2">
                 {costResources.map(({ resourceId, amount }) => (
                   <ResourceCost
+                    key={resourceId}
                     type="vertical"
                     resourceId={resourceId}
                     amount={amount}
@@ -245,6 +367,7 @@ export const LaborBuildPopup = ({
             disabled={!canBuild}
             onClick={() => handleBuild()}
             variant="outline"
+            withoutSound
           >
             {isFood ? `Build` : `Buy Tools`}
           </Button>

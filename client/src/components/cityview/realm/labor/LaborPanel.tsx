@@ -18,7 +18,7 @@ import { getRealm } from "../SettleRealmComponent";
 
 type LaborPanelProps = {};
 
-export const LaborPanel = ({}: LaborPanelProps) => {
+export const LaborPanel = ({ }: LaborPanelProps) => {
   const [activeFilter, setActiveFilter] = useState(false);
   const [buildResource, setBuildResource] = useState<number | null>(null);
   const [buildLoadingStates, setBuildLoadingStates] = useState<{
@@ -99,7 +99,7 @@ export const LaborPanel = ({}: LaborPanelProps) => {
       )}
       {realm &&
         realmResourceIds.map((resourceId) => (
-          <div className="flex flex-col p-2">
+          <div className="flex flex-col p-2" key={resourceId}>
             <LaborComponent
               onBuild={() => {
                 buildResource == resourceId
