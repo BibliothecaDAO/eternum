@@ -11,7 +11,7 @@ export const VARIANTS: any = {
   default: {
     tab: {
       base: "text-xxs px-3 !outline-none border border-transparent transition-color duration-200",
-      active: "border !border-gold rounded-md text-gold",
+      active: "border !border-white rounded-md text-white",
       inactive: "text-gray-gold",
     },
     tabList:

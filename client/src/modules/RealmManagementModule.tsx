@@ -27,7 +27,7 @@ const RealmManagementModule = () => {
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <BaseContainer className="max-h-full h-min !p-0">
+          <BaseContainer className="max-h-full h-min !p-0 mt-2">
             <RealmInfoComponent />
             <RealmManagementComponent />
           </BaseContainer>
