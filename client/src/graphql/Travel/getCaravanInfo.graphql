@@ -24,6 +24,7 @@ query getCaravanInfo(
     limit: 1
     componentName: "ArrivalTime"
   ) {
+    keys
     components {
       __typename
       ... on Position {

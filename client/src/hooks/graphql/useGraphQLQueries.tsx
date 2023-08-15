@@ -1,23 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { GraphQLClient } from "graphql-request";
 import {
   ArrivalTime,
-  Capacity,
-  GetCaravansQuery,
-  GetOrdersQuery,
   GetRealmIdsQuery,
-  GetTradesQuery,
   Labor,
-  Movable,
-  OrderId,
   Owner,
   Position,
   Realm,
   Resource,
-  Status,
   Trade,
   getSdk,
 } from "../../generated/graphql";
+import { useDojo } from "../../DojoContext";
+import { numberToHex, setComponentFromEntity } from "../../utils/utils";
 
 export enum FetchStatus {
   Idle = "idle",
@@ -39,6 +34,7 @@ export interface LaborInterface {
   multiplier: number;
 }
 
+// TODO: change that to sync
 export const useGetRealmLabor = (
   realmEntityId: number,
 ): {
@@ -55,7 +51,7 @@ export const useGetRealmLabor = (
       setStatus(FetchStatus.Loading);
       try {
         const { data } = await sdk.getRealmLabor({
-          realmEntityId: `0x${realmEntityId.toString(16)}`,
+          realmEntityId: numberToHex(realmEntityId),
         });
         const resourceLaborEntities = data?.entities;
         if (resourceLaborEntities) {
@@ -101,6 +97,7 @@ export interface RealmResourcesInterface {
   [resourceId: number]: ResourceInterface;
 }
 
+// TODO: change that to sync
 export const useGetRealmResources = (
   realmEntityId: number,
 ): {
@@ -171,154 +168,69 @@ export interface IncomingOrdersInterface {
   incomingOrders: IncomingOrderInterface[];
 }
 
-export const useGetIncomingOrders = (
-  realmEntityId: number,
-): {
-  incomingOrders: IncomingOrderInterface[];
-  status: FetchStatus;
-  error: unknown;
-} => {
-  const [incomingOrders, setIncomingOrders] = useState<
-    IncomingOrderInterface[]
-  >([]);
-  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
-  const [error, setError] = useState<unknown>(null);
-
+// TODO: when going from Caravan Panel to IncomingOrders panel, there is no loading, data is shown directly
+// but when going from IncomingOrders to Market, and back to IncomingOrders, it gets reloaded (2 sec time delay), need to investigate, might be because the same trades are queried for
+// incoming orders and market in the syncing hooks
+export const useSyncIncomingOrders = (realmEntityId: number) => {
+  const { components } = useDojo();
   useEffect(() => {
     const fetchData = async () => {
-      setStatus(FetchStatus.Loading);
       try {
         const { data } = await sdk.getIncomingOrders({
-          realmEntityId: `0x${realmEntityId.toString(16)}`,
+          realmEntityId: numberToHex(realmEntityId),
         });
-        const makerTradeComponents = data?.makerTradeComponents;
-        const takerTradeComponents = data?.takerTradeComponents;
-        if (makerTradeComponents && takerTradeComponents) {
-          const incomingMakerOrders = makerTradeComponents
-            .filter((component) => component?.__typename === "Trade")
-            // if taker is null, then the trade is not accepted yet
-            .filter((item) => item?.taker_id !== "0x0")
-            .map((item) => {
-              let trade = item as Trade;
-              return {
-                orderId: trade.maker_order_id,
-                counterPartyOrderId: trade.taker_order_id,
-                claimed: trade.claimed_by_maker === "0x1",
-                tradeId: trade.trade_id,
-              };
-            });
-
-          const incomingTakerOrders = takerTradeComponents
-            .filter((component) => component?.__typename === "Trade")
-            .map((item) => {
-              let trade = item as Trade;
-              return {
-                orderId: trade.taker_order_id,
-                counterPartyOrderId: trade.maker_order_id,
-                claimed: trade.claimed_by_taker === "0x1",
-                tradeId: trade.trade_id,
-              };
-            });
-
-          setIncomingOrders(incomingMakerOrders.concat(incomingTakerOrders));
-          setStatus(FetchStatus.Success);
-        }
-      } catch (error) {
-        setStatus(FetchStatus.Error);
-        setError(error);
-      }
+        data?.makerTradeComponents?.forEach((component) => {
+          if (component?.entity) {
+            let { entity } = component;
+            setComponentFromEntity(entity, "Trade", components);
+          }
+        });
+        data?.takerTradeComponents?.forEach((component) => {
+          if (component?.entity) {
+            let { entity } = component;
+            setComponentFromEntity(entity, "Trade", components);
+          }
+        });
+      } catch (error) {}
     };
     fetchData();
-    const intervalId = setInterval(fetchData, 5000); // Fetch every 5 seconds
-
-    return () => {
-      clearInterval(intervalId); // Clear interval on component unmount
-    };
   }, [realmEntityId]);
-
-  return {
-    incomingOrders,
-    status,
-    error,
-  };
 };
 
 export interface IncomingOrderInfoInterface {
-  resourcesGet: ResourceInterface[];
   arrivalTime: number;
   origin: PositionInterface;
 }
 
-export const useGetIncomingOrderInfo = ({
+export const useSyncIncomingOrderInfo = ({
   orderId,
   counterPartyOrderId,
 }: {
   orderId: number;
   counterPartyOrderId: number;
-}): {
-  incomingOrderInfo: IncomingOrderInfoInterface | undefined;
-  status: FetchStatus;
-  error: unknown;
-} => {
-  const [incomingOrderInfo, setIncomingOrderInfo] = useState<
-    IncomingOrderInfoInterface | undefined
-  >();
-  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
-  const [error, setError] = useState<unknown>(null);
-
-  useEffect(() => {
+}) => {
+  const { components } = useDojo();
+  useMemo(() => {
     const fetchData = async () => {
-      setStatus(FetchStatus.Loading);
       try {
         const { data } = await sdk.getIncomingOrderInfo({
-          orderId: orderId.toString(),
-          counterPartyOrderId: counterPartyOrderId.toString(),
+          orderId: numberToHex(orderId),
+          counterPartyOrderId: numberToHex(counterPartyOrderId),
         });
-        const positionEntities = data?.origin;
-        const resourcesGetEntities = data?.resources;
-        const arrivalTimeEntities = data?.arrivalTime;
-        if (
-          positionEntities &&
-          positionEntities.length === 1 &&
-          resourcesGetEntities &&
-          arrivalTimeEntities
-        ) {
-          let position = positionEntities[0]?.components?.find(
-            (component) => component?.__typename === "Position",
-          ) as Position;
-          let resourcesGet = resourcesGetEntities.map((entity) => {
-            let resource = entity?.components?.find(
-              (component) => component?.__typename === "Resource",
-            ) as Resource;
-            return {
-              resourceId: parseInt(resource.resource_type),
-              amount: parseInt(resource.balance),
-            };
-          });
-          let arrivalTime = arrivalTimeEntities[0]?.components?.find(
-            (component) => component?.__typename === "ArrivalTime",
-          ) as ArrivalTime;
-
-          setIncomingOrderInfo({
-            resourcesGet,
-            arrivalTime: arrivalTime.arrives_at,
-            origin: { x: position.x, y: position.y },
-          });
-          setStatus(FetchStatus.Success);
-        }
-      } catch (error) {
-        setError(error);
-        setStatus(FetchStatus.Error);
-      }
+        data?.origin?.forEach((entity) => {
+          setComponentFromEntity(entity, "Position", components);
+        });
+        data?.arrivalTime?.forEach((entity) => {
+          setComponentFromEntity(entity, "ArrivalTime", components);
+        });
+        data?.resources?.forEach((entity) => {
+          setComponentFromEntity(entity, "Resource", components);
+          setComponentFromEntity(entity, "FungibleEntities", components);
+        });
+      } catch (error) {}
     };
     fetchData();
   }, [orderId]);
-
-  return {
-    incomingOrderInfo,
-    status,
-    error,
-  };
 };
 
 export interface RealmInterface {
@@ -335,6 +247,7 @@ export interface RealmInterface {
   owner: string;
 }
 
+// TODO: change that to sync
 export const useGetRealm = ({
   entityId,
 }: {
@@ -400,17 +313,14 @@ export interface CounterPartyOrderIdInterface {
   counterpartyOrderId: number;
 }
 
-// TODO: have all inputs and outputs be numbers
 export const useGetCounterPartyOrderId = (
-  orderId: string,
+  orderId: number,
 ): {
-  counterPartyOrderId: number | undefined;
+  counterPartyOrderId: number;
   status: FetchStatus;
   error: unknown;
 } => {
-  const [counterPartyOrderId, setCounterPartyOrderId] = useState<
-    number | undefined
-  >();
+  const [counterPartyOrderId, setCounterPartyOrderId] = useState<number>(0);
   const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
   const [error, setError] = useState<unknown>(null);
 
@@ -419,7 +329,7 @@ export const useGetCounterPartyOrderId = (
       setStatus(FetchStatus.Loading);
       try {
         const { data } = await sdk.getCounterpartyOrderId({
-          orderId: orderId,
+          orderId: numberToHex(orderId),
         });
 
         const makerTradeComponets = data?.makerTradeComponents;
@@ -453,8 +363,8 @@ export const useGetCounterPartyOrderId = (
 };
 
 export interface CaravanInterface {
-  caravanId: string;
-  orderId: string;
+  caravanId: number;
+  orderId: number;
   blocked: boolean;
   arrivalTime: number;
   capacity: number;
@@ -466,113 +376,40 @@ export interface ResourceInterface {
 }
 
 export interface CaravanInfoInterface {
-  arrivalTime: number;
+  arrivalTime: number | undefined;
   blocked: boolean;
   capacity: number;
   destination: PositionInterface | undefined;
-  resourcesGive: ResourceInterface[];
-  resourcesGet: ResourceInterface[];
 }
 
-export const useGetCaravanInfo = (
+export const useSyncCaravanInfo = (
   caravanId: number,
   orderId: number,
   counterpartyOrderId: number,
-): {
-  caravanInfo: CaravanInfoInterface | undefined;
-  status: FetchStatus;
-  error: unknown;
-} => {
-  const [caravanInfo, setCaravanInfo] = useState<
-    CaravanInfoInterface | undefined
-  >();
-  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
-  const [error, setError] = useState<unknown>(null);
-
+) => {
+  const { components } = useDojo();
   useEffect(() => {
     const fetchData = async () => {
-      setStatus(FetchStatus.Loading);
       try {
         const { data } = await sdk.getCaravanInfo({
-          caravanId: `0x${caravanId.toString(16)}`,
-          counterpartyOrderId: `0x${counterpartyOrderId.toString(16)}`,
-          orderId: `0x${orderId.toString(16)}`,
+          caravanId: numberToHex(caravanId),
+          counterpartyOrderId: numberToHex(counterpartyOrderId),
+          orderId: numberToHex(orderId),
         });
 
-        const caravanEntities = data?.caravan;
-        const destinationEntities = data?.destination;
-        if (
-          caravanEntities &&
-          caravanEntities.length === 1 &&
-          destinationEntities
-        ) {
-          let movable = caravanEntities[0]?.components?.find(
-            (component) => component?.__typename === "Movable",
-          ) as Movable;
-          let capacity = caravanEntities[0]?.components?.find(
-            (component) => component?.__typename === "Capacity",
-          ) as Capacity;
-          let arrival = caravanEntities[0]?.components?.find(
-            (component) => component?.__typename === "ArrivalTime",
-          ) as ArrivalTime | undefined;
-          let destination = destinationEntities[0]?.components?.find(
-            (component) => component?.__typename === "Position",
-          ) as Position | undefined;
-          if (!data.resourcesGet || !data.resourcesGive) return undefined;
-          const resourcesGetEntities = data.resourcesGet.filter((entity) =>
-            entity?.components?.find(
-              (component) => component?.__typename === "Resource",
-            ),
-          );
-          let resourcesGet = resourcesGetEntities?.map((resourcesGetEntity) => {
-            let resource = resourcesGetEntity?.components?.find((component) => {
-              return component?.__typename === "Resource";
-            }) as Resource;
-            return {
-              resourceId: parseInt(resource.resource_type),
-              amount: parseInt(resource.balance),
-            };
-          });
-          const resourcesGiveEntities = data.resourcesGive.filter((entity) =>
-            entity?.components?.find(
-              (component) => component?.__typename === "Resource",
-            ),
-          );
-          let resourcesGive = resourcesGiveEntities?.map(
-            (resourcesGiveEntity) => {
-              let resource = resourcesGiveEntity?.components?.find(
-                (component) => {
-                  return component?.__typename === "Resource";
-                },
-              ) as Resource;
-              return {
-                resourceId: parseInt(resource.resource_type),
-                amount: parseInt(resource.balance),
-              };
-            },
-          );
-          setCaravanInfo({
-            arrivalTime: arrival?.arrives_at,
-            blocked: movable.blocked,
-            capacity: parseInt(capacity.weight_gram),
-            destination,
-            resourcesGive,
-            resourcesGet,
-          });
-        }
-      } catch (error) {
-        setError(error);
-        setStatus(FetchStatus.Error);
-      }
+        data?.destination?.forEach((entity) => {
+          setComponentFromEntity(entity, "Position", components);
+        });
+        data?.resourcesGet?.map((entity) => {
+          setComponentFromEntity(entity, "Resource", components);
+        });
+        data?.resourcesGive?.map((entity) => {
+          setComponentFromEntity(entity, "Resource", components);
+        });
+      } catch (error) {}
     };
     fetchData();
   }, [counterpartyOrderId]);
-
-  return {
-    caravanInfo,
-    status,
-    error,
-  };
 };
 
 export interface PositionInterface {
@@ -580,154 +417,55 @@ export interface PositionInterface {
   y: number;
 }
 
-export const useGetRealmCaravans = (
-  x: number,
-  y: number,
-): {
-  caravans: CaravanInterface[] | undefined;
-  status: FetchStatus;
-  error: unknown;
-} => {
-  const [caravans, setCaravans] = useState<CaravanInterface[] | undefined>();
-  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
-  const [error, setError] = useState<unknown>(null);
-
+export const useSyncRealmCaravans = (x: number, y: number) => {
+  const { components } = useDojo();
   useEffect(() => {
     async function fetchData() {
-      setStatus(FetchStatus.Loading);
       try {
         const { data } = await sdk.getRealmsCaravans({ x: x, y: y });
-        const positionEntities = data?.positionComponents;
-        if (positionEntities) {
-          const caravans = positionEntities
-            .filter((entity) =>
-              entity?.entity?.components?.find(
-                (component) => component?.__typename === "CaravanMembers",
-              ),
-            )
-            .map((item) => {
-              let orderId = item?.entity?.components?.find((component) => {
-                return component?.__typename === "OrderId";
-              }) as OrderId;
-              let movable = item?.entity?.components?.find((component) => {
-                return component?.__typename === "Movable";
-              }) as Movable;
-              let arrivalTime = item?.entity?.components?.find((component) => {
-                return component?.__typename === "ArrivalTime";
-              }) as ArrivalTime | undefined;
-              let capacity = item?.entity?.components?.find((component) => {
-                return component?.__typename === "Capacity";
-              }) as Capacity;
-              let keys = item?.entity?.keys;
-              let caravanId = keys ? keys.split(",")[0] : "";
-              return {
-                caravanId,
-                orderId: orderId.id,
-                blocked: movable.blocked,
-                arrivalTime: arrivalTime?.arrives_at,
-                capacity: capacity.weight_gram,
-              };
-            });
-          setCaravans(caravans);
-          setStatus(FetchStatus.Success);
-        }
-      } catch (error) {
-        setError(error);
-        setStatus(FetchStatus.Error);
-      }
+        data?.positionComponents?.forEach((component) => {
+          if (component?.entity) {
+            let { entity } = component;
+            setComponentFromEntity(entity, "OrderId", components);
+            setComponentFromEntity(entity, "Movable", components);
+            setComponentFromEntity(entity, "ArrivalTime", components);
+            setComponentFromEntity(entity, "Capacity", components);
+            setComponentFromEntity(entity, "Position", components);
+            setComponentFromEntity(entity, "CaravanMembers", components);
+          }
+        });
+      } catch (error) {}
     }
     fetchData();
-
-    const intervalId = setInterval(fetchData, 5000); // Fetch every 5 seconds
-
-    return () => {
-      clearInterval(intervalId); // Clear interval on component unmount
-    };
   }, [x, y]);
-
-  return {
-    caravans,
-    status,
-    error,
-  };
 };
 
 export interface MarketInterface {
-  tradeId: string;
-  makerId: string;
-  makerOrderId: string;
-  takerOrderId: string;
+  tradeId: number;
+  makerId: number;
+  makerOrderId: number;
+  takerOrderId: number;
   expiresAt: number;
 }
 
 // TODO: add filter on trade status is open
-export const useGetMarket = ({
-  realmId,
-}: {
-  realmId: number;
-}): {
-  market: MarketInterface[] | undefined;
-  status: FetchStatus;
-  error: unknown;
-} => {
-  const [market, setMarket] = useState<MarketInterface[] | undefined>();
-  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
-  const [error, setError] = useState<unknown>(null);
-
-  useEffect(() => {
+export const useSyncMarket = ({ realmId }: { realmId: number }) => {
+  const { components } = useDojo();
+  useMemo(() => {
     async function fetchData() {
-      setStatus(FetchStatus.Loading);
       try {
         const { data } = await sdk.getMarket();
-        const tradeComponents = data?.tradeComponents;
-        if (tradeComponents) {
-          const market = tradeComponents
-            .map((item) => {
-              let trade = item?.entity?.components?.find((component) => {
-                return component?.__typename === "Trade";
-              }) as Trade;
-              let status = item?.entity?.components?.find((component) => {
-                return component?.__typename === "Status";
-              }) as Status;
-
-              if (
-                status.value === "0x0" &&
-                trade.maker_id !== `0x${realmId.toString(16)}`
-              ) {
-                return {
-                  tradeId: trade.trade_id,
-                  makerId: trade.maker_id,
-                  makerOrderId: trade.maker_order_id,
-                  takerOrderId: trade.taker_order_id,
-                  expiresAt: trade.expires_at,
-                };
-              } else {
-                return undefined;
-              }
-            })
-            .filter(Boolean) as MarketInterface[];
-          setMarket(market);
-          setStatus(FetchStatus.Success);
-        }
-      } catch (error) {
-        setError(error);
-        setStatus(FetchStatus.Error);
-      }
+        data?.tradeComponents?.map((component) => {
+          if (component?.entity) {
+            let { entity } = component;
+            setComponentFromEntity(entity, "Trade", components);
+            setComponentFromEntity(entity, "Status", components);
+          }
+        });
+      } catch (error) {}
     }
     fetchData();
-
-    const intervalId = setInterval(fetchData, 5000); // Fetch every 5 seconds
-
-    return () => {
-      clearInterval(intervalId); // Clear interval on component unmount
-    };
   }, [realmId]);
-
-  return {
-    market,
-    status,
-    error,
-  };
 };
 
 export interface MyOfferInterface {
@@ -738,189 +476,60 @@ export interface MyOfferInterface {
   status: string;
 }
 
-// TODO: add filter on trade status is open
-export const useGetMyOffers = ({
-  realmId,
-}: {
-  realmId: number;
-}): {
-  myOffers: MyOfferInterface[] | undefined;
-  status: FetchStatus;
-  error: unknown;
-} => {
-  const [myOffers, setMyOffers] = useState<MyOfferInterface[] | undefined>();
-  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
-  const [error, setError] = useState<unknown>(null);
+export const useSyncMyOffers = ({ realmId }: { realmId: number }) => {
+  const { components } = useDojo();
 
-  useEffect(() => {
+  useMemo(() => {
     async function fetchData() {
-      setStatus(FetchStatus.Loading);
       try {
         const { data } = await sdk.getMyOffers({
-          makerId: `0x${realmId.toString(16)}`,
+          makerId: numberToHex(realmId),
         });
-        const tradeComponents = data?.tradeComponents;
-        if (tradeComponents) {
-          const myOffers = tradeComponents
-            .map((item) => {
-              const trade = item?.entity?.components?.find((component) => {
-                return component?.__typename === "Trade";
-              }) as Trade;
-
-              const status = item?.entity?.components?.find((component) => {
-                return component?.__typename === "Status";
-              }) as Status;
-
-              return {
-                tradeId: trade.trade_id,
-                makerOrderId: trade.maker_order_id,
-                takerOrderId: trade.taker_order_id,
-                expiresAt: trade.expires_at,
-                status: status.value,
-              };
-            })
-            .filter((trade) => trade?.status === "0x0");
-          setMyOffers(myOffers);
-          setStatus(FetchStatus.Success);
-        }
-      } catch (error) {
-        setError(error);
-        setStatus(FetchStatus.Error);
-      }
+        data.tradeComponents?.map((component) => {
+          if (component?.entity) {
+            let { entity } = component;
+            setComponentFromEntity(entity, "Trade", components);
+            setComponentFromEntity(entity, "Status", components);
+          }
+        });
+      } catch (error) {}
     }
     fetchData();
-
-    const intervalId = setInterval(fetchData, 5000); // Fetch every 5 seconds
-
-    return () => {
-      clearInterval(intervalId); // Clear interval on component unmount
-    };
   }, [realmId]);
-
-  return {
-    myOffers,
-    status,
-    error,
-  };
 };
 
-export const useGetTradeStatus = ({
-  tradeId,
-}: {
-  tradeId: string;
-}): {
-  tradeStatus: number | undefined;
-  status: FetchStatus;
-  error: unknown;
-} => {
-  const [tradeStatus, setTradeStatus] = useState<number | undefined>();
-  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
-  const [error, setError] = useState<unknown>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      setStatus(FetchStatus.Loading);
-      try {
-        const { data } = await sdk.getTradeStatus({ tradeId });
-        const entities = data?.entities;
-        if (entities && entities.length === 1) {
-          entities[0]?.components?.forEach((component) => {
-            if (component?.__typename === "Status" && component.value) {
-              setTradeStatus(component.value);
-            }
-          });
-        }
-      } catch (error) {
-        setError(error);
-        setStatus(FetchStatus.Error);
-      }
-    }
-    fetchData();
-  }, []);
-
-  return {
-    tradeStatus,
-    status,
-    error,
-  };
-};
-
-export interface TradeResources {
-  resourcesGive: { resourceId: number; amount: number }[];
-  resourcesGet: { resourceId: number; amount: number }[];
-}
-
-// TODO: change resourcesGet/Give into resourcesMaker/Taker
-export const useGetTradeResources = ({
+export const useSyncTradeResources = ({
   makerOrderId,
   takerOrderId,
 }: {
   makerOrderId: string;
   takerOrderId: string;
-}): { tradeResources: TradeResources; status: FetchStatus; error: unknown } => {
-  const [tradeResources, setTradeResources] = useState<TradeResources>({
-    resourcesGive: [],
-    resourcesGet: [],
-  });
-  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
-  const [error, setError] = useState<unknown>(null);
+}) => {
+  const { components } = useDojo();
 
-  useEffect(() => {
+  useMemo(() => {
     const fetchData = async () => {
-      setStatus(FetchStatus.Loading);
       try {
         const { data } = await sdk.getTradeResources({
           makerOrderId,
           takerOrderId,
         });
-        if (!data.resourcesGet || !data.resourcesGive) return undefined;
-        const resourcesGetEntities = data.resourcesGet.filter((entity) =>
-          entity?.components?.find(
-            (component) => component?.__typename === "Resource",
-          ),
-        );
-        let resourcesGet = resourcesGetEntities?.map((resourcesGetEntity) => {
-          let resource = resourcesGetEntity?.components?.find((component) => {
-            return component?.__typename === "Resource";
-          }) as Resource;
-          return {
-            resourceId: parseInt(resource.resource_type),
-            amount: parseInt(resource.balance),
-          };
+        data.makerFungibleEntities?.map((entity) => {
+          setComponentFromEntity(entity, "FungibleEntities", components);
         });
-        const resourcesGiveEntities = data.resourcesGive.filter((entity) =>
-          entity?.components?.find(
-            (component) => component?.__typename === "Resource",
-          ),
-        );
-        let resourcesGive = resourcesGiveEntities?.map(
-          (resourcesGiveEntity) => {
-            let resource = resourcesGiveEntity?.components?.find(
-              (component) => {
-                return component?.__typename === "Resource";
-              },
-            ) as Resource;
-            return {
-              resourceId: parseInt(resource.resource_type),
-              amount: parseInt(resource.balance),
-            };
-          },
-        );
-        setTradeResources({ resourcesGet, resourcesGive });
-        setStatus(FetchStatus.Success);
-      } catch (error) {
-        setError(error);
-        setStatus(FetchStatus.Error);
-      }
+        data.takerFungibleEntities?.map((entity) => {
+          setComponentFromEntity(entity, "FungibleEntities", components);
+        });
+        data.resourcesGet?.map((entity) => {
+          setComponentFromEntity(entity, "Resource", components);
+        });
+        data.resourcesGive?.map((entity) => {
+          setComponentFromEntity(entity, "Resource", components);
+        });
+      } catch (error) {}
     };
     fetchData();
-  }, [makerOrderId]);
-
-  return {
-    tradeResources,
-    status,
-    error,
-  };
+  }, [makerOrderId, takerOrderId]);
 };
 
 export const getLatestRealmId = async (): Promise<number> => {
@@ -953,125 +562,4 @@ async function fetchRealmIds(): Promise<{
   } catch (error) {
     return { data: null, status: FetchStatus.Error, error };
   }
-}
-
-export function useGetRealmsIds() {
-  const [data, setData] = useState<GetRealmIdsQuery | null>(null);
-  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
-  const [error, setError] = useState<unknown>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      setStatus(FetchStatus.Loading);
-      try {
-        const { data } = await sdk.getRealmIds();
-        setData(data);
-        setStatus(FetchStatus.Success);
-      } catch (error) {
-        setError(error);
-        setStatus(FetchStatus.Error);
-      }
-    }
-    fetchData();
-  }, []);
-
-  return {
-    data,
-    status,
-    error,
-  };
-}
-
-export function useGetTrades() {
-  const [data, setData] = useState<GetTradesQuery | null>(null);
-  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
-  const [error, setError] = useState<unknown>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      setStatus(FetchStatus.Loading);
-      try {
-        const { data } = await sdk.getTrades();
-        setData(data);
-        setStatus(FetchStatus.Success);
-      } catch (error) {
-        setError(error);
-        setStatus(FetchStatus.Error);
-      }
-    }
-    fetchData(); // Initial fetch
-
-    const intervalId = setInterval(fetchData, 5000); // Fetch every 5 seconds
-
-    return () => {
-      clearInterval(intervalId); // Clear interval on component unmount
-    };
-  }, []);
-
-  // TODO: add polling
-
-  return {
-    data,
-    status,
-    error,
-  };
-}
-
-export function useGetCaravans() {
-  const [data, setData] = useState<GetCaravansQuery | null>(null);
-  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
-  const [error, setError] = useState<unknown>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      setStatus(FetchStatus.Loading);
-      try {
-        // TODO: getCaravans and order ids
-        const { data } = await sdk.getCaravans();
-        setData(data);
-        setStatus(FetchStatus.Success);
-      } catch (error) {
-        setError(error);
-        setStatus(FetchStatus.Error);
-      }
-    }
-    fetchData();
-  }, []);
-
-  // TODO: add polling
-
-  return {
-    data,
-    status,
-    error,
-  };
-}
-
-export function useGetOrders() {
-  const [data, setData] = useState<GetOrdersQuery | null>(null);
-  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
-  const [error, setError] = useState<unknown>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      setStatus(FetchStatus.Loading);
-      try {
-        const { data } = await sdk.getOrders();
-        setData(data);
-        setStatus(FetchStatus.Success);
-      } catch (error) {
-        setError(error);
-        setStatus(FetchStatus.Error);
-      }
-    }
-    fetchData();
-  }, []);
-
-  // TODO: add polling
-
-  return {
-    data,
-    status,
-    error,
-  };
 }

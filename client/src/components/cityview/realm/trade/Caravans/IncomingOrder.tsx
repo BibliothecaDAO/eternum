@@ -14,9 +14,11 @@ import {
 } from "../TradeUtils";
 import {
   IncomingOrderInterface,
-  useGetIncomingOrderInfo,
+  useSyncIncomingOrderInfo,
 } from "../../../../../hooks/graphql/useGraphQLQueries";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
+import { useIncomingOrders } from "../../../../../hooks/helpers/useIncomingOrders";
+import { useTrade } from "../../../../../hooks/helpers/useTrade";
 
 type IncomingOrderProps = {
   incomingOrder: IncomingOrderInterface;
@@ -45,17 +47,24 @@ export const IncomingOrder = ({
     });
   };
 
-  const { incomingOrderInfo } = useGetIncomingOrderInfo({
+  useSyncIncomingOrderInfo({
     orderId: incomingOrder.orderId,
     counterPartyOrderId: incomingOrder.counterPartyOrderId,
   });
 
   const { nextBlockTimestamp } = useBlockchainStore();
 
+  const { getIncomingOrderInfo } = useIncomingOrders();
+  let incomingOrderInfo = getIncomingOrderInfo(
+    incomingOrder.orderId,
+    incomingOrder.counterPartyOrderId,
+  );
   let arrivalTime = incomingOrderInfo && incomingOrderInfo.arrivalTime;
+  let originPosition = incomingOrderInfo && incomingOrderInfo.origin;
 
-  const resourcesGet = incomingOrderInfo && incomingOrderInfo.resourcesGet;
-  const originPosition = incomingOrderInfo && incomingOrderInfo.origin;
+  const { getTradeResources } = useTrade();
+  const resourcesGet = getTradeResources(incomingOrder.counterPartyOrderId);
+
   const startRealmId =
     originPosition &&
     getRealmIdByPosition({ x: originPosition.x, y: originPosition.y });

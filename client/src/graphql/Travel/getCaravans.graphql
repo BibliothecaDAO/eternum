@@ -1,5 +1,0 @@
-query getCaravans {
-  entities(keys: ["%"], componentName: "CaravanMembers") {
-    keys
-  }
-}

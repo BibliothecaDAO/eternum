@@ -16,6 +16,14 @@ query getRealmsCaravans($x: u32, $y: u32) {
         ... on Capacity {
           weight_gram
         }
+        ... on Position {
+          x
+          y
+        }
+        ... on CaravanMembers {
+          key
+          count
+        }
       }
     }
   }

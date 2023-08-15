@@ -10,12 +10,12 @@ import {
   getRealmNameById,
   getRealmOrderNameById,
 } from "../cityview/realm/trade/TradeUtils";
-import { Resource } from "../../types";
 import {
   CaravanInterface,
-  useGetCaravanInfo,
   useGetCounterPartyOrderId,
 } from "../../hooks/graphql/useGraphQLQueries";
+import { useCaravan } from "../../hooks/helpers/useCaravans";
+import { useTrade } from "../../hooks/helpers/useTrade";
 
 type CaravanDetailsProps = {
   caravan: CaravanInterface;
@@ -28,11 +28,12 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
 
   const { counterPartyOrderId } = useGetCounterPartyOrderId(caravan.orderId);
 
-  const { caravanInfo } = useGetCaravanInfo(
-    parseInt(caravan.caravanId),
-    parseInt(caravan.orderId),
-    counterPartyOrderId || 0,
-  );
+  const { getCaravanInfo } = useCaravan();
+  const caravanInfo = getCaravanInfo(caravan.caravanId, counterPartyOrderId);
+
+  const { getTradeResources } = useTrade();
+  let resourcesGive = getTradeResources(caravan.orderId);
+  let resourcesGet = getTradeResources(counterPartyOrderId);
 
   // TODO: change that
   let resourceWeight = 0;
@@ -48,6 +49,7 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
   const isTravelling =
     nextBlockTimestamp &&
     caravanInfo &&
+    caravanInfo.arrivalTime &&
     caravanInfo.arrivalTime > nextBlockTimestamp;
   return (
     <SecondaryPopup>
@@ -79,7 +81,7 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
         )}
         {caravanInfo && (
           <div className="grid grid-cols-[repeat(3 ,auto)] gap-2 px-2 py-1 mt-1">
-            {caravanInfo.resourcesGive.map(
+            {resourcesGive.map(
               (resource) =>
                 resource && (
                   <ResourceCost
@@ -95,7 +97,7 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
         </div>
         {caravanInfo && (
           <div className="grid grid-cols-[repeat(3 ,auto)] gap-2 px-2 py-1">
-            {caravanInfo.resourcesGet.map(
+            {resourcesGet.map(
               (resource) =>
                 resource && (
                   <ResourceCost

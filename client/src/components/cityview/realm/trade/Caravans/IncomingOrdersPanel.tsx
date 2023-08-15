@@ -4,9 +4,9 @@ import { FilterButton } from "../../../../../elements/FilterButton";
 import { SortPanel } from "../../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../../elements/SortButton";
 import { IncomingOrder } from "./IncomingOrder";
-import { Order } from "../../RealmTradeComponent";
-import { useGetIncomingOrders } from "../../../../../hooks/graphql/useGraphQLQueries";
+import { useSyncIncomingOrders } from "../../../../../hooks/graphql/useGraphQLQueries";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
+import { useGetIncomingOrders } from "../../../../../hooks/helpers/useIncomingOrders";
 
 type IncomingOrdersPanelProps = {};
 
@@ -14,7 +14,8 @@ export const IncomingOrdersPanel = ({}: IncomingOrdersPanelProps) => {
   const [activeFilter, setActiveFilter] = useState(false);
   const { realmEntityId } = useRealmStore();
 
-  const { incomingOrders } = useGetIncomingOrders(realmEntityId);
+  useSyncIncomingOrders(realmEntityId);
+  const { incomingOrders } = useGetIncomingOrders();
 
   const sortingParams = useMemo(() => {
     return [

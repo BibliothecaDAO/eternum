@@ -1,0 +1,11 @@
+fragment TradeFragment on Trade {
+  trade_id
+  maker_id
+  taker_id
+  maker_order_id
+  taker_order_id
+  expires_at
+  claimed_by_maker
+  claimed_by_taker
+  taker_needs_caravan
+}

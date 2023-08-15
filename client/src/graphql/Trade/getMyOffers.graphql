@@ -11,13 +11,7 @@ query getMyOffers($makerId: u128!) {
         ... on Status {
           value
         }
-        ... on Trade {
-          trade_id
-          maker_id
-          maker_order_id
-          taker_order_id
-          expires_at
-        }
+        ...TradeFragment
       }
     }
   }

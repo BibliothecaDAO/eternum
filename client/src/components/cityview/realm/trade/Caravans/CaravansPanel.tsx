@@ -7,12 +7,12 @@ import { Caravan } from "./Caravan";
 import { CaravanDetails } from "../../../../caravans/CaravanDetailsComponent";
 import {
   CaravanInterface,
-  useGetCaravans,
   useGetRealm,
-  useGetRealmCaravans,
+  useSyncRealmCaravans,
 } from "../../../../../hooks/graphql/useGraphQLQueries";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
+import { useGetRealmCaravans } from "../../../../../hooks/helpers/useCaravans";
 
 type CaravansPanelProps = {};
 
@@ -38,7 +38,8 @@ export const CaravansPanel = ({}: CaravansPanelProps) => {
   };
 
   const { realm } = useGetRealm({ entityId: realmEntityId });
-  const caravansData = useGetRealmCaravans(
+  useSyncRealmCaravans(realm?.position.x || 0, realm?.position.y || 0);
+  const { realmCaravans } = useGetRealmCaravans(
     realm?.position.x || 0,
     realm?.position.y || 0,
   );
@@ -90,9 +91,8 @@ export const CaravansPanel = ({}: CaravansPanelProps) => {
           onClose={() => setShowCaravanDetails(false)}
         />
       )}
-      {caravansData &&
-        caravansData.caravans &&
-        caravansData.caravans.map((caravan) => (
+      {realmCaravans &&
+        realmCaravans.map((caravan) => (
           <div className="flex flex-col p-2">
             <Caravan caravan={caravan} onClick={() => onClick(caravan)} />
           </div>

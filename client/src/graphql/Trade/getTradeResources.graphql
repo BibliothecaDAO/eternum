@@ -1,4 +1,24 @@
 query getTradeResources($makerOrderId: String!, $takerOrderId: String!) {
+  makerFungibleEntities: entities(keys: [$makerOrderId], limit: 100) {
+    keys
+    components {
+      __typename
+      ... on FungibleEntities {
+        key
+        count
+      }
+    }
+  }
+  takerFungibleEntities: entities(keys: [$takerOrderId], limit: 100) {
+    keys
+    components {
+      __typename
+      ... on FungibleEntities {
+        key
+        count
+      }
+    }
+  }
   resourcesGive: entities(
     keys: [$makerOrderId]
     limit: 100

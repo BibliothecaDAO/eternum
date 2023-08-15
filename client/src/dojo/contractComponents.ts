@@ -461,5 +461,19 @@ export function defineContractComponents(world: World) {
         }
       );
     })(),
+    OrderId: (() => {
+      const name = "OrderId";
+      return defineComponent(
+        world,
+        {
+          id: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        }
+      );
+    })(),
   };
 }
