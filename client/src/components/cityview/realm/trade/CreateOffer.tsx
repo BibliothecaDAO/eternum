@@ -62,19 +62,19 @@ export const CreateOfferPopup = ({
   const createOrder = async () => {
     setIsLoading(true);
     if (isNewCaravan) {
-      const transport_units_id = await create_free_transport_unit({
-        realm_id: realmEntityId,
-        quantity: donkeysCount,
-      });
-      const caravan_id = await create_caravan({
-        entity_ids: [transport_units_id],
-      });
       const trade_id = await make_fungible_order({
         maker_id: realmEntityId,
         maker_entity_types: selectedResourceIdsGive,
         maker_quantities: Object.values(selectedResourcesGiveAmounts),
         taker_entity_types: selectedResourceIdsGet,
         taker_quantities: Object.values(selectedResourcesGetAmounts),
+      });
+      const transport_units_id = await create_free_transport_unit({
+        realm_id: realmEntityId,
+        quantity: donkeysCount,
+      });
+      const caravan_id = await create_caravan({
+        entity_ids: [transport_units_id],
       });
       await attach_caravan({ realm_id: realmEntityId, trade_id, caravan_id });
     } else {
