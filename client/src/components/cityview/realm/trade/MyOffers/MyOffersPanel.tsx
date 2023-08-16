@@ -20,7 +20,7 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
   const [activeFilter, setActiveFilter] = useState(false);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
 
-  // TODO: why is it getting called at each render ?
+  // TODO: why is it getting called at each render ? (even useMemo not work)
   useSyncMyOffers({ realmId: realmEntityId });
 
   const { myOffers } = useGetMyOffers();
