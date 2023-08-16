@@ -12,8 +12,9 @@ import { MarketOffer } from "./MarketOffer";
 import { AcceptOfferPopup } from "../AcceptOffer";
 import {
   MarketInterface,
-  useGetMarket,
+  useSyncMarket,
 } from "../../../../../hooks/graphql/useGraphQLQueries";
+import { useGetMarket } from "../../../../../hooks/helpers/useTrade";
 
 type MarketPanelProps = {};
 
@@ -36,7 +37,9 @@ export const MarketPanel = ({}: MarketPanelProps) => {
     ];
   }, []);
 
-  const { market } = useGetMarket({ realmId: realmEntityId });
+  useSyncMarket({ realmId: realmEntityId });
+
+  const { market } = useGetMarket();
 
   const [activeSort, setActiveSort] = useState<SortInterface>({
     sortKey: "number",

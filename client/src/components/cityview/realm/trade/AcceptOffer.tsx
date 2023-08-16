@@ -6,9 +6,10 @@ import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import {
   MarketInterface,
-  useGetTradeResources,
+  useSyncTradeResources,
 } from "../../../../hooks/graphql/useGraphQLQueries";
 import { number } from "starknet";
+import { useTrade } from "../../../../hooks/helpers/useTrade";
 
 type AcceptOfferPopupProps = {
   onClose: () => void;
@@ -75,14 +76,15 @@ export const AcceptOfferPopup = ({
     onClose();
   };
 
-  const { tradeResources } = useGetTradeResources({
-    makerOrderId: selectedTrade.makerOrderId,
-    takerOrderId: selectedTrade.takerOrderId,
-  });
+  const { getTradeResources } = useTrade();
+
+  // TODO: how to avoid getting at every render but also getting after data sync is done
+  let resourcesGet = getTradeResources(selectedTrade.takerOrderId);
+  let resourcesGive = getTradeResources(selectedTrade.makerOrderId);
 
   let resourceWeight = 0;
   for (const [_, amount] of Object.entries(
-    tradeResources.resourcesGet.map((resource) => resource.amount) || {},
+    resourcesGet.map((resource) => resource.amount) || {},
   )) {
     resourceWeight += amount * 1;
   }
@@ -101,19 +103,19 @@ export const AcceptOfferPopup = ({
 
   const selectedResourcesGetAmounts = useMemo(() => {
     let selectedResourcesGetAmounts: { [resourceId: number]: number } = {};
-    tradeResources.resourcesGive.forEach((resource) => {
+    resourcesGive.forEach((resource) => {
       selectedResourcesGetAmounts[resource.resourceId] = resource.amount;
     });
     return selectedResourcesGetAmounts;
-  }, [tradeResources]);
+  }, [selectedTrade]);
 
   const selectedResourcesGiveAmounts = useMemo(() => {
     let selectedResourcesGiveAmounts: { [resourceId: number]: number } = {};
-    tradeResources.resourcesGet.forEach((resource) => {
+    resourcesGet.forEach((resource) => {
       selectedResourcesGiveAmounts[resource.resourceId] = resource.amount;
     });
     return selectedResourcesGiveAmounts;
-  }, [tradeResources]);
+  }, [selectedTrade]);
 
   return (
     <SecondaryPopup>
@@ -132,15 +134,11 @@ export const AcceptOfferPopup = ({
             selectedCaravan={selectedCaravan}
             setSelectedCaravan={setSelectedCaravan}
             selectedResourceIdsGet={
-              tradeResources.resourcesGive.map(
-                (resource) => resource.resourceId,
-              ) || []
+              resourcesGive.map((resource) => resource.resourceId) || []
             }
             selectedResourcesGetAmounts={selectedResourcesGetAmounts}
             selectedResourceIdsGive={
-              tradeResources.resourcesGet.map(
-                (resource) => resource.resourceId,
-              ) || []
+              resourcesGet.map((resource) => resource.resourceId) || []
             }
             selectedResourcesGiveAmounts={selectedResourcesGiveAmounts}
             resourceWeight={resourceWeight}

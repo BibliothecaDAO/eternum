@@ -5,20 +5,20 @@ import { ResourceIcon } from "../../../../../elements/ResourceIcon";
 import { findResourceById } from "../../../../../constants/resources";
 import { ReactComponent as RatioIcon } from "../../../../../assets/icons/common/ratio.svg";
 import { useDojo } from "../../../../../DojoContext";
-import { Utils } from "@dojoengine/core";
-import { Realm, ResourcesOffer } from "../../../../../types";
+import { ResourcesOffer } from "../../../../../types";
 import { orderNameDict } from "../../../../../constants/orders";
 import * as realmsData from "../../../../../geodata/realms.json";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import {
-  MyOfferInterface,
-  useGetRealm,
-  useGetTradeResources,
+  MarketInterface,
+  useSyncTradeResources,
 } from "../../../../../hooks/graphql/useGraphQLQueries";
 import { getRealm } from "../../SettleRealmComponent";
+import { useTrade } from "../../../../../hooks/helpers/useTrade";
+import { numberToHex } from "../../../../../utils/utils";
 
 type TradeOfferProps = {
-  myOffer: MyOfferInterface;
+  myOffer: MarketInterface;
 };
 
 export const MyOffer = ({ myOffer, ...props }: TradeOfferProps) => {
@@ -33,6 +33,13 @@ export const MyOffer = ({ myOffer, ...props }: TradeOfferProps) => {
   } = useDojo();
 
   const { realmEntityId, realmId } = useRealmStore();
+
+  useSyncTradeResources({
+    makerOrderId: numberToHex(myOffer.takerOrderId),
+    takerOrderId: numberToHex(myOffer.makerOrderId),
+  });
+
+  const { getTradeResources } = useTrade();
 
   const cancelOffer = async () => {
     // status 2 = cancel
@@ -49,12 +56,9 @@ export const MyOffer = ({ myOffer, ...props }: TradeOfferProps) => {
     [realmId],
   );
 
-  const {
-    tradeResources: { resourcesGet, resourcesGive },
-  } = useGetTradeResources({
-    makerOrderId: myOffer.makerOrderId,
-    takerOrderId: myOffer.takerOrderId,
-  });
+  // TODO: how to only call once when useSyncTradeResources has finished syncincg ?
+  let resourcesGet = getTradeResources(myOffer.makerOrderId);
+  let resourcesGive = getTradeResources(myOffer.takerOrderId);
 
   const getResourceTrait = useMemo(() => {
     return (resourceId: number) => findResourceById(resourceId)?.trait as any;

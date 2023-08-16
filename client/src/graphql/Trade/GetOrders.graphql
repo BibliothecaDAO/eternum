@@ -1,5 +1,0 @@
-query getOrders {
-  entities(keys: ["%"], componentName: "Caravan") {
-    keys
-  }
-}

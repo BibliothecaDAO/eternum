@@ -1,10 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
-import Button from "../../../../../elements/Button";
-import { ResourceIcon } from "../../../../../elements/ResourceIcon";
-import { findResourceById } from "../../../../../constants/resources";
 import { ReactComponent as Pen } from "../../../../../assets/icons/common/pen.svg";
-import { ReactComponent as Clock } from "../../../../../assets/icons/common/clock.svg";
 import { ReactComponent as CaretDownFill } from "../../../../../assets/icons/common/caret-down-fill.svg";
 import { ReactComponent as DonkeyIcon } from "../../../../../assets/icons/units/donkey.svg";
 import { ReactComponent as PremiumIcon } from "../../../../../assets/icons/units/premium.svg";
@@ -16,8 +12,8 @@ import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import {
   CaravanInterface,
-  useGetCaravanInfo,
   useGetCounterPartyOrderId,
+  useSyncCaravanInfo,
 } from "../../../../../hooks/graphql/useGraphQLQueries";
 import {
   getRealmIdByPosition,
@@ -26,6 +22,8 @@ import {
   getTotalResourceWeight,
 } from "../TradeUtils";
 import { CAPACITY_PER_DONKEY } from "../../../../../constants/travel";
+import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
+import { useTrade } from "../../../../../hooks/helpers/useTrade";
 
 type CaravanProps = {
   caravan: CaravanInterface;
@@ -38,18 +36,18 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
 
   const { counterPartyOrderId } = useGetCounterPartyOrderId(caravan.orderId);
 
-  const { caravanInfo } = useGetCaravanInfo(
-    parseInt(caravan.caravanId),
-    parseInt(caravan.orderId),
-    counterPartyOrderId || 0,
-  );
+  useSyncCaravanInfo(caravan.caravanId, caravan.orderId, counterPartyOrderId);
+
+  const { getCaravanInfo } = useCaravan();
+  const caravanInfo = getCaravanInfo(caravan.caravanId, counterPartyOrderId);
+
+  const { getTradeResources } = useTrade();
+  let resourcesGive = getTradeResources(caravan.orderId);
 
   // capacity
   let resourceWeight = useMemo(() => {
-    return caravanInfo
-      ? getTotalResourceWeight([...caravanInfo.resourcesGive])
-      : undefined;
-  }, [caravanInfo]);
+    return getTotalResourceWeight([...resourcesGive]);
+  }, [resourcesGive]);
 
   const destinationRealmId =
     caravanInfo?.destination && getRealmIdByPosition(caravanInfo.destination);
@@ -60,11 +58,13 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
     caravanInfo &&
     !caravanInfo.blocked &&
     nextBlockTimestamp &&
+    caravanInfo.arrivalTime &&
     caravanInfo.arrivalTime > nextBlockTimestamp;
   const isWaitingForDeparture = caravanInfo && caravanInfo.blocked;
   const isIdle =
     nextBlockTimestamp &&
     caravanInfo &&
+    caravanInfo.arrivalTime &&
     caravanInfo.arrivalTime <= nextBlockTimestamp &&
     !caravanInfo.blocked;
 
@@ -82,7 +82,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
     >
       <div className="flex items-center text-xxs">
         <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
-          #{parseInt(caravan.caravanId)}
+          #{caravan.caravanId}
         </div>
         <div className="flex items-center ml-1 -mt-2">
           {isTraveling && destinationRealmName && (

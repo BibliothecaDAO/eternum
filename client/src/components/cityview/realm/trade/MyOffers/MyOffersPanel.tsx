@@ -9,7 +9,8 @@ import { CreateOfferPopup } from "../CreateOffer";
 import Button from "../../../../../elements/Button";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { MyOffer } from "./MyOffer";
-import { useGetMyOffers } from "../../../../../hooks/graphql/useGraphQLQueries";
+import { useSyncMyOffers } from "../../../../../hooks/graphql/useGraphQLQueries";
+import { useGetMyOffers } from "../../../../../hooks/helpers/useTrade";
 
 type MarketPanelProps = {};
 
@@ -19,7 +20,10 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
   const [activeFilter, setActiveFilter] = useState(false);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
 
-  const { myOffers } = useGetMyOffers({ realmId: realmEntityId });
+  // TODO: why is it getting called at each render ?
+  useSyncMyOffers({ realmId: realmEntityId });
+
+  const { myOffers } = useGetMyOffers();
 
   const sortingParams = useMemo(() => {
     return [
@@ -71,7 +75,7 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
           onCreate={() => {}}
         />
       )}
-      {myOffers &&
+      {myOffers.length &&
         myOffers.map((myOffer) => (
           <div className="flex flex-col p-2">
             <MyOffer myOffer={myOffer} />

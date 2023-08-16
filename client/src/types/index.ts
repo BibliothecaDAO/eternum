@@ -52,8 +52,8 @@ export interface Trade {
 }
 
 export interface Resource {
-    resource_type: number;
-    balance: number;
+    resourceId: number;
+    amount: number;
 }
 
 export interface Order {

@@ -14,12 +14,12 @@ import { Steps } from "../../../../elements/Steps";
 import {
   CaravanInterface,
   useGetRealm,
-  useGetRealmCaravans,
   useGetRealmResources,
 } from "../../../../hooks/graphql/useGraphQLQueries";
 import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
+import { useGetRealmCaravans } from "../../../../hooks/helpers/useCaravans";
 
 type CreateOfferPopupProps = {
   onClose: () => void;
@@ -445,15 +445,15 @@ export const SelectCaravanPanel = ({
   const { nextBlockTimestamp } = useBlockchainStore();
 
   const { realm } = useGetRealm({ entityId: realmEntityId });
-  const { caravans } = useGetRealmCaravans(
+  const { realmCaravans } = useGetRealmCaravans(
     realm?.position.x || 0,
     realm?.position.y || 0,
   );
 
   let myAvailableCaravans = useMemo(
     () =>
-      caravans
-        ? (caravans
+      realmCaravans
+        ? (realmCaravans
             .map((caravan) => {
               const isIdle =
                 nextBlockTimestamp &&
@@ -467,7 +467,7 @@ export const SelectCaravanPanel = ({
             })
             .filter(Boolean) as CaravanInterface[])
         : [],
-    [caravans],
+    [realmCaravans],
   );
 
   return (
@@ -575,11 +575,9 @@ export const SelectCaravanPanel = ({
             <Caravan
               caravan={caravan}
               idleOnly={true}
-              onClick={() => setSelectedCaravan(parseInt(caravan.caravanId))}
+              onClick={() => setSelectedCaravan(caravan.caravanId)}
               className={`w-full mb-2 border rounded-md ${
-                selectedCaravan === parseInt(caravan.caravanId)
-                  ? "border-yellow"
-                  : ""
+                selectedCaravan === caravan.caravanId ? "border-yellow" : ""
               }`}
             />
           ))}

@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
 import { findResourceById } from "../../../../../constants/resources";
 import { ReactComponent as RatioIcon } from "../../../../../assets/icons/common/ratio.svg";
-import { ResourcesOffer } from "../../../../../types";
+import { Resource, ResourcesOffer } from "../../../../../types";
 import { orderNameDict } from "../../../../../constants/orders";
 import * as realmsData from "../../../../../geodata/realms.json";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
@@ -12,9 +12,11 @@ import {
   MarketInterface,
   useGetRealm,
   useGetRealmResources,
-  useGetTradeResources,
+  useSyncTradeResources,
 } from "../../../../../hooks/graphql/useGraphQLQueries";
 import { canAcceptOffer } from "../TradeUtils";
+import { useTrade } from "../../../../../hooks/helpers/useTrade";
+import { numberToHex } from "../../../../../utils/utils";
 
 type TradeOfferProps = {
   marketOffer: MarketInterface;
@@ -34,22 +36,22 @@ export const MarketOffer = ({
   }, [marketOffer]);
 
   const { realmEntityId } = useRealmStore();
+  const { getTradeResources } = useTrade();
 
+  // TODO: avoid fetching the realm every time
   let { realm: makerRealm } = useGetRealm({
-    entityId: parseInt(marketOffer.makerId),
+    entityId: marketOffer.makerId,
   });
 
   let { realmResources } = useGetRealmResources(realmEntityId);
 
-  const {
-    tradeResources: {
-      resourcesGet: resourcesGive,
-      resourcesGive: resourcesGet,
-    },
-  } = useGetTradeResources({
-    makerOrderId: marketOffer.makerOrderId,
-    takerOrderId: marketOffer.takerOrderId,
+  useSyncTradeResources({
+    makerOrderId: numberToHex(marketOffer.makerOrderId),
+    takerOrderId: numberToHex(marketOffer.takerOrderId),
   });
+
+  let resourcesGet = getTradeResources(marketOffer.makerOrderId);
+  let resourcesGive = getTradeResources(marketOffer.takerOrderId);
 
   useEffect(() => {
     if (resourcesGive.length > 0) {
@@ -59,7 +61,10 @@ export const MarketOffer = ({
     }
   }, [resourcesGive]);
 
-  let timeLeft = formatTimeLeft(marketOffer.expiresAt - Date.now() / 1000);
+  let timeLeft = useMemo(
+    () => formatTimeLeft(marketOffer.expiresAt - Date.now() / 1000),
+    [marketOffer.expiresAt],
+  );
 
   return (
     <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold">

@@ -3,26 +3,24 @@ query getIncomingOrders($realmEntityId: u128) {
     maker_id: $realmEntityId
     claimed_by_maker: 0
   ) {
-    __typename
-    ... on Trade {
-      maker_order_id
-      claimed_by_maker
-      taker_id
-      taker_order_id
-      trade_id
+    entity {
+      keys
+      components {
+        __typename
+        ...TradeFragment
+      }
     }
   }
   takerTradeComponents: tradeComponents(
     taker_id: $realmEntityId
     claimed_by_taker: 0
   ) {
-    __typename
-    ... on Trade {
-      maker_order_id
-      claimed_by_maker
-      maker_id
-      taker_order_id
-      trade_id
+    entity {
+      keys
+      components {
+        __typename
+        ...TradeFragment
+      }
     }
   }
 }
