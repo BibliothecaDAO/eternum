@@ -126,7 +126,7 @@ export function createSystemCalls(
             taker_entity_types, taker_quantities, signer
         } = props;
 
-        const expires_at = Date.now() / 1000 + 2628000;
+        const expires_at = Math.floor(Date.now() / 1000 + 2628000);
 
         // optimisitc rendering of trade
         const overrideId = uuid();
