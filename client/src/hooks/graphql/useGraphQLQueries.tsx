@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { GraphQLClient } from "graphql-request";
 import {
   GetRealmIdsQuery,
-  Labor,
   Owner,
   Position,
   Realm,
@@ -34,62 +33,23 @@ export interface LaborInterface {
 }
 
 // TODO: change that to sync
-export const useGetRealmLabor = (
-  realmEntityId: number,
-): {
-  realmLabor: RealmLaborInterface;
-  status: FetchStatus;
-  error: unknown;
-} => {
-  const [realmLabor, setRealmLabor] = useState<RealmLaborInterface>({});
-  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
-  const [error, setError] = useState<unknown>(null);
-
+export const useSyncRealmLabor = (realmEntityId: number) => {
+  const {
+    setup: { components },
+  } = useDojo();
   useEffect(() => {
     const fetchData = async () => {
-      setStatus(FetchStatus.Loading);
       try {
         const { data } = await sdk.getRealmLabor({
           realmEntityId: numberToHex(realmEntityId),
         });
-        const resourceLaborEntities = data?.entities;
-        if (resourceLaborEntities) {
-          let realmLabor: { [resourceId: number]: LaborInterface } = {};
-          resourceLaborEntities.forEach((entity) => {
-            let labor = entity?.components?.find((component) => {
-              return component?.__typename === "Labor";
-            }) as Labor;
-            let keys = entity?.keys;
-            if (keys) {
-              let resourceId = keys.split(",")[1];
-              realmLabor[parseInt(resourceId)] = {
-                balance: labor.balance,
-                lastHarvest: labor.last_harvest,
-                multiplier: labor.multiplier,
-              };
-            }
-          });
-          setRealmLabor(realmLabor);
-          setStatus(FetchStatus.Success);
-        }
-      } catch (error) {
-        setError(error);
-        setStatus(FetchStatus.Error);
-      }
+        data?.entities?.forEach((entity) => {
+          setComponentFromEntity(entity, "Trade", components);
+        });
+      } catch (error) {}
     };
     fetchData();
-    const intervalId = setInterval(fetchData, 5000); // Fetch every 5 seconds
-
-    return () => {
-      clearInterval(intervalId); // Clear interval on component unmount
-    };
   }, [realmEntityId]);
-
-  return {
-    realmLabor,
-    status,
-    error,
-  };
 };
 
 export interface RealmResourcesInterface {
@@ -171,7 +131,9 @@ export interface IncomingOrdersInterface {
 // but when going from IncomingOrders to Market, and back to IncomingOrders, it gets reloaded (2 sec time delay), need to investigate, might be because the same trades are queried for
 // incoming orders and market in the syncing hooks
 export const useSyncIncomingOrders = (realmEntityId: number) => {
-  const { setup: { components } } = useDojo();
+  const {
+    setup: { components },
+  } = useDojo();
   useMemo(() => {
     const fetchData = async () => {
       try {
@@ -190,7 +152,7 @@ export const useSyncIncomingOrders = (realmEntityId: number) => {
             setComponentFromEntity(entity, "Trade", components);
           }
         });
-      } catch (error) { }
+      } catch (error) {}
     };
     fetchData();
   }, [realmEntityId]);
@@ -208,7 +170,9 @@ export const useSyncIncomingOrderInfo = ({
   orderId: number;
   counterPartyOrderId: number;
 }) => {
-  const { setup: { components } } = useDojo();
+  const {
+    setup: { components },
+  } = useDojo();
   useMemo(() => {
     const fetchData = async () => {
       try {
@@ -226,7 +190,7 @@ export const useSyncIncomingOrderInfo = ({
           setComponentFromEntity(entity, "Resource", components);
           setComponentFromEntity(entity, "FungibleEntities", components);
         });
-      } catch (error) { }
+      } catch (error) {}
     };
     fetchData();
   }, [orderId]);
@@ -386,7 +350,9 @@ export const useSyncCaravanInfo = (
   orderId: number,
   counterpartyOrderId: number,
 ) => {
-  const { setup: { components } } = useDojo();
+  const {
+    setup: { components },
+  } = useDojo();
   useMemo(() => {
     const fetchData = async () => {
       try {
@@ -405,7 +371,7 @@ export const useSyncCaravanInfo = (
         data?.resourcesGive?.map((entity) => {
           setComponentFromEntity(entity, "Resource", components);
         });
-      } catch (error) { }
+      } catch (error) {}
     };
     fetchData();
   }, [counterpartyOrderId]);
@@ -417,7 +383,9 @@ export interface PositionInterface {
 }
 
 export const useSyncRealmCaravans = (x: number, y: number) => {
-  const { setup: { components } } = useDojo();
+  const {
+    setup: { components },
+  } = useDojo();
   useMemo(() => {
     async function fetchData() {
       try {
@@ -433,7 +401,7 @@ export const useSyncRealmCaravans = (x: number, y: number) => {
             setComponentFromEntity(entity, "CaravanMembers", components);
           }
         });
-      } catch (error) { }
+      } catch (error) {}
     }
     fetchData();
   }, [x, y]);
@@ -449,7 +417,9 @@ export interface MarketInterface {
 
 // TODO: add filter on trade status is open
 export const useSyncMarket = ({ realmId }: { realmId: number }) => {
-  const { setup: { components } } = useDojo();
+  const {
+    setup: { components },
+  } = useDojo();
   useMemo(() => {
     async function fetchData() {
       try {
@@ -461,7 +431,7 @@ export const useSyncMarket = ({ realmId }: { realmId: number }) => {
             setComponentFromEntity(entity, "Status", components);
           }
         });
-      } catch (error) { }
+      } catch (error) {}
     }
     fetchData();
   }, [realmId]);
@@ -476,7 +446,9 @@ export interface MyOfferInterface {
 }
 
 export const useSyncMyOffers = ({ realmId }: { realmId: number }) => {
-  const { setup: { components } } = useDojo();
+  const {
+    setup: { components },
+  } = useDojo();
 
   useMemo(() => {
     async function fetchData() {
@@ -491,7 +463,7 @@ export const useSyncMyOffers = ({ realmId }: { realmId: number }) => {
             setComponentFromEntity(entity, "Status", components);
           }
         });
-      } catch (error) { }
+      } catch (error) {}
     }
     fetchData();
   }, [realmId]);
@@ -504,7 +476,9 @@ export const useSyncTradeResources = ({
   makerOrderId: string;
   takerOrderId: string;
 }) => {
-  const { setup: { components } } = useDojo();
+  const {
+    setup: { components },
+  } = useDojo();
 
   useMemo(() => {
     const fetchData = async () => {
@@ -525,7 +499,7 @@ export const useSyncTradeResources = ({
         data.resourcesGive?.map((entity) => {
           setComponentFromEntity(entity, "Resource", components);
         });
-      } catch (error) { }
+      } catch (error) {}
     };
     fetchData();
   }, [makerOrderId, takerOrderId]);

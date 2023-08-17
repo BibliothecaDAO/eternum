@@ -5,7 +5,7 @@ import {
   findResourceById,
   resources,
 } from "../../../constants/resources";
-import { currencyFormat } from "../../../utils/utils.jsx";
+import { currencyFormat, getEntityIdFromKeys } from "../../../utils/utils.jsx";
 import clsx from "clsx";
 import { unpackResources } from "../../../utils/packedData";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
@@ -15,12 +15,12 @@ import { ReactComponent as MoreIcon } from "../../../assets/icons/common/more.sv
 import Button from "../../../elements/Button";
 import { SmallResource } from "./SmallResource";
 import {
-  LaborInterface,
   ResourceInterface,
   useGetRealm,
-  useGetRealmLabor,
   useGetRealmResources,
 } from "../../../hooks/graphql/useGraphQLQueries";
+import { useComponentValue } from "@dojoengine/react";
+import { useDojo } from "../../../DojoContext";
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<"div">;
 
@@ -32,7 +32,7 @@ export const RealmResourcesComponent = ({
   let { realmEntityId } = useRealmStore();
 
   const { realm } = useGetRealm({ entityId: realmEntityId });
-  const { realmLabor } = useGetRealmLabor(realmEntityId);
+
   const { realmResources } = useGetRealmResources(realmEntityId);
 
   // unpack the resources
@@ -59,7 +59,6 @@ export const RealmResourcesComponent = ({
           {realmResourceIds.map((resourceId) => (
             <ResourceComponent
               key={resourceId}
-              labor={realmLabor[resourceId]}
               resource={realmResources[resourceId]}
               resourceId={resourceId}
             />
@@ -105,15 +104,21 @@ export const RealmResourcesComponent = ({
 
 interface ResourceComponentProps {
   resourceId: number;
-  labor: LaborInterface | undefined;
   resource: ResourceInterface | undefined;
 }
 
 const ResourceComponent: React.FC<ResourceComponentProps> = ({
   resource,
-  labor,
   resourceId,
 }) => {
+  const {
+    setup: {
+      components: { Labor },
+    },
+  } = useDojo();
+
+  let { realmId } = useRealmStore();
+
   const { nextBlockTimestamp } = useBlockchainStore();
   const [productivity, setProductivity] = useState<number>(0);
 
@@ -125,6 +130,11 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({
   };
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
+
+  const labor = useComponentValue(
+    Labor,
+    getEntityIdFromKeys([BigInt(realmId ?? 0), BigInt(resourceId)]),
+  );
 
   useEffect(() => {
     let laborLeft: number = 0;

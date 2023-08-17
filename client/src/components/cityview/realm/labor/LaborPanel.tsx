@@ -8,14 +8,14 @@ import { ResourcesIds } from "../../../../constants/resources";
 import { LaborBuildPopup } from "./LaborBuild";
 import { LaborConfig } from "../../../../types";
 import {
-  useGetRealmLabor,
   useGetRealmResources,
+  useSyncRealmLabor,
 } from "../../../../hooks/graphql/useGraphQLQueries";
 import { getRealm } from "../SettleRealmComponent";
 
 type LaborPanelProps = {};
 
-export const LaborPanel = ({ }: LaborPanelProps) => {
+export const LaborPanel = ({}: LaborPanelProps) => {
   const [buildResource, setBuildResource] = useState<number | null>(null);
   const [buildLoadingStates, setBuildLoadingStates] = useState<{
     [key: number]: boolean;
@@ -37,7 +37,7 @@ export const LaborPanel = ({ }: LaborPanelProps) => {
 
   let { realmEntityId, realmId } = useRealmStore();
 
-  const { realmLabor } = useGetRealmLabor(realmEntityId);
+  useSyncRealmLabor(realmEntityId);
   const { realmResources } = useGetRealmResources(realmEntityId);
 
   const realm = useMemo(() => {
@@ -103,7 +103,7 @@ export const LaborPanel = ({ }: LaborPanelProps) => {
                   : setBuildResource(resourceId);
               }}
               resourceId={resourceId}
-              labor={realmLabor[resourceId]}
+              // labor={realmLabor[resourceId]}
               resource={realmResources[resourceId]}
               realm={realm}
               laborConfig={laborConfig as LaborConfig}
