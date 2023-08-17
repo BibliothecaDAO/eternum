@@ -1,9 +1,9 @@
 import { Components, Schema, setComponent } from "@latticexyz/recs";
 import {SetupNetworkResult } from "./setupNetwork";
 import {Event, number} from 'starknet';
-import { getEntityIdFromKeys } from "@dojoengine/core/dist/utils";
 import { uuid } from "@latticexyz/utils";
 import { ClientComponents } from "./createClientComponents";
+import { getEntityIdFromKeys } from "../utils/utils";
 
 // @note: trying to get a high enough number so that it won't be an existing entity id
 // TODO: if you call multiple systems at the same time it might be a problem

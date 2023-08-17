@@ -1,6 +1,6 @@
 import { uuid } from "@latticexyz/utils";
 import { ClientComponents } from "./createClientComponents";
-import { getEntityIdFromKeys } from "@dojoengine/core/dist/utils";
+import { getEntityIdFromKeys } from "../utils/utils";
 
 export function createOptimisticSystemCalls( 
     { Trade, Status }: ClientComponents
