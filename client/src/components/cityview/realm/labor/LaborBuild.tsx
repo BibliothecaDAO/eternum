@@ -36,7 +36,8 @@ export const LaborBuildPopup = ({
   onClose,
 }: LaborBuildPopupProps) => {
   const {
-    systemCalls: { build_labor },
+    setup: { systemCalls: { build_labor } },
+    account: { account }
   } = useDojo();
 
   const [canBuild, setCanBuild] = useState(true);
@@ -87,6 +88,7 @@ export const LaborBuildPopup = ({
       [resourceId]: true,
     }));
     build_labor({
+      signer: account,
       realm_id: realmEntityId,
       resource_type: resourceId,
       labor_units: isFood ? 12 : laborAmount,

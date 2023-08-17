@@ -1,4 +1,4 @@
-import { Components, Schema, setComponent } from "@latticexyz/recs";
+import { Components, Schema, Type, setComponent } from "@latticexyz/recs";
 import { SetupNetworkResult } from "./setupNetwork";
 import { Account, Event, num } from 'starknet';
 import { uuid } from "@latticexyz/utils";
@@ -98,27 +98,26 @@ export function createSystemCalls(
 ) {
     // Refactor the functions using the interfaces
     const build_labor = async (props: BuildLaborProps) => {
-        const { realm_id, resource_type, labor_units, multiplier } = props;
-        const tx = await execute(props.signer, "BuildLabor", [realm_id, resource_type, labor_units, multiplier]);
+        const { realm_id, resource_type, labor_units, multiplier, signer } = props;
+        const tx = await execute(signer, "BuildLabor", [realm_id, resource_type, labor_units, multiplier]);
         const receipt = await provider.provider.waitForTransaction(tx.transaction_hash);
-        const events = getEvents(receipt);
-        setComponentsFromEvents(contractComponents, events);
+        setComponentsFromEvents(contractComponents, getEvents(receipt));
     }
 
     const harvest_labor = async (props: HarvestLaborProps) => {
-        const { realm_id, resource_type } = props;
-        const tx = await execute(props.signer, "HarvestLabor", [realm_id, resource_type]);
+        const { realm_id, resource_type, signer } = props;
+        const tx = await execute(signer, "HarvestLabor", [realm_id, resource_type]);
         const receipt = await provider.provider.waitForTransaction(tx.transaction_hash);
-        const events = getEvents(receipt);
-        setComponentsFromEvents(contractComponents, events);
+
+        setComponentsFromEvents(contractComponents, getEvents(receipt));
     }
 
     const mint_resources = async (props: MintResourcesProps) => {
-        const { entity_id, resource_type, amount } = props;
-        const tx = await execute(props.signer, "MintResources", [entity_id, resource_type, amount]);
+        const { entity_id, resource_type, amount, signer } = props;
+        const tx = await execute(signer, "MintResources", [entity_id, resource_type, amount]);
         const receipt = await provider.provider.waitForTransaction(tx.transaction_hash);
-        const events = getEvents(receipt);
-        setComponentsFromEvents(contractComponents, events);
+
+        setComponentsFromEvents(contractComponents, getEvents(receipt));
     }
 
     const make_fungible_order = async (props: MakeFungibleOrderProps): Promise<num.BigNumberish> => {
@@ -135,10 +134,13 @@ export function createSystemCalls(
         const maker_order_id = getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 1)]);
         const taker_order_id = getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 2)]);
         const key = getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 3)]);
+
+        const numberMakerId = maker_id as Type.Number;
+
         Trade.addOverride(
             overrideId, {
             entity: trade_id,
-            value: { trade_id, maker_id, taker_id: 0, maker_order_id, taker_order_id, expires_at, claimed_by_maker: false, claimed_by_taker: false, taker_needs_caravan: true },
+            value: { trade_id, maker_id: numberMakerId, taker_id: 0, maker_order_id, taker_order_id, expires_at, claimed_by_maker: false, claimed_by_taker: false, taker_needs_caravan: true },
         });
         Status.addOverride(
             overrideId, {
@@ -163,8 +165,8 @@ export function createSystemCalls(
                 overrideId, {
                 entity: getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 1), BigInt(LOW_ENTITY_ID + 3), BigInt(i)]),
                 value: {
-                    resource_type: maker_entity_types[i],
-                    balance: maker_quantities[i]
+                    resource_type: maker_entity_types[i] as Type.Number,
+                    balance: maker_quantities[i] as Type.Number
                 }
             }
             )
@@ -174,8 +176,8 @@ export function createSystemCalls(
                 overrideId, {
                 entity: getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 2), BigInt(LOW_ENTITY_ID + 3), BigInt(i)]),
                 value: {
-                    resource_type: taker_entity_types[i],
-                    balance: taker_quantities[i]
+                    resource_type: taker_entity_types[i] as Type.Number,
+                    balance: taker_quantities[i] as Type.Number
                 }
             }
             )
@@ -200,8 +202,8 @@ export function createSystemCalls(
         const { taker_id, trade_id, signer } = props;
         const tx = await execute(signer, "TakeFungibleOrder", [taker_id, trade_id]);
         const receipt = await provider.provider.waitForTransaction(tx.transaction_hash);
-        const events = getEvents(receipt);
-        setComponentsFromEvents(contractComponents, events);
+
+        setComponentsFromEvents(contractComponents, getEvents(receipt));
     }
 
     const change_order_status = async (props: ChangeOrderStatusProps) => {

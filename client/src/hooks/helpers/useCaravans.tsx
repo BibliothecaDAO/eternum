@@ -13,7 +13,7 @@ import { getEntityIdFromKeys } from "../../utils/utils";
 
 export function useCaravan() {
   const {
-    components: { ArrivalTime, Movable, Capacity, Position },
+    setup: { components: { ArrivalTime, Movable, Capacity, Position } }
   } = useDojo();
 
   const getCaravanInfo = (
@@ -54,14 +54,14 @@ export function useCaravan() {
 
 export function useGetRealmCaravans(x: number, y: number) {
   const {
-    components: {
+    setup: { components: {
       Position,
       CaravanMembers,
       OrderId,
       ArrivalTime,
       Movable,
       Capacity,
-    },
+    } },
   } = useDojo();
 
   const [realmCaravans, setRealmCaravans] = useState<CaravanInterface[]>([]);

@@ -46,7 +46,8 @@ export const LaborComponent = ({
   buildLoadingStates,
 }: LaborComponentProps) => {
   const {
-    systemCalls: { harvest_labor },
+    setup: { systemCalls: { harvest_labor } },
+    account: { account }
   } = useDojo();
 
   const { nextBlockTimestamp } = useBlockchainStore();
@@ -97,6 +98,7 @@ export const LaborComponent = ({
     setIsHarvestLoading(true);
     playHarvest();
     harvest_labor({
+      signer: account,
       realm_id: realmEntityId,
       resource_type: resourceId,
     });
