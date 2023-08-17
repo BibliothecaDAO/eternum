@@ -19,7 +19,7 @@ mod BuildLabor {
     fn execute(ctx: Context, realm_id: u128, resource_type: u8, labor_units: u64, multiplier: u64) {
         // assert owner of realm
         let player_id: ContractAddress = starknet::get_tx_info().unbox().account_contract_address;
-        let (realm, owner) = get !(ctx.world, realm_id.into(), (Realm, Owner));
+        let (realm, owner) = get!(ctx.world, realm_id.into(), (Realm, Owner));
         assert(owner.address == player_id, 'Realm does not belong to player');
 
         // check that resource is on realm
@@ -31,13 +31,13 @@ mod BuildLabor {
         }
 
         // Get Config
-        let labor_config: LaborConfig = get !(ctx.world, LABOR_CONFIG_ID.into(), LaborConfig);
+        let labor_config: LaborConfig = get!(ctx.world, LABOR_CONFIG_ID.into(), LaborConfig);
 
         let ts = starknet::get_block_timestamp();
 
         // get labor
-        let resource_query: Query = (realm_id, resource_type).into();
-        let maybe_labor = try_get !(ctx.world, resource_query, Labor);
+        let resource_query = (realm_id, resource_type);
+        let maybe_labor = try_get!(ctx.world, resource_query, Labor);
         let labor = match maybe_labor {
             Option::Some(labor) => labor,
             Option::None(_) => Labor { balance: ts, last_harvest: ts, multiplier: 1,  },
@@ -68,7 +68,7 @@ mod BuildLabor {
             }
         }
 
-        let maybe_current_resource = try_get !(ctx.world, resource_query, Resource);
+        let maybe_current_resource = try_get!(ctx.world, resource_query, Resource);
 
         // since we might harvest, check current resources
         let mut current_resource = match maybe_current_resource {
@@ -92,10 +92,10 @@ mod BuildLabor {
             let total_harvest_units = total_harvest
                 / labor_config.base_labor_units; // get current resource
             // add these resources to balance
-            set !(
+            set!(
                 ctx.world,
-                resource_query,
                 (Resource {
+                    entity_id: realm_id,
                     resource_type: current_resource.resource_type,
                     balance: current_resource.balance
                         + (total_harvest_units.into()
@@ -111,14 +111,19 @@ mod BuildLabor {
         }
 
         // update the labor
-        set !(
+        set!(
             ctx.world,
-            resource_query,
-            (Labor { balance: new_labor_balance, last_harvest: new_last_harvest, multiplier,  }),
+            (Labor {
+                entity_id: realm_id,
+                resource_type: current_resource.resource_type,
+                balance: new_labor_balance,
+                last_harvest: new_last_harvest,
+                multiplier,
+            }),
         );
 
         // pay for labor 
-        let labor_cost_resources = get !(ctx.world, resource_type.into(), LaborCostResources);
+        let labor_cost_resources = get!(ctx.world, resource_type.into(), LaborCostResources);
         let labor_cost_resource_types: Span<u8> = unpack_resource_types(
             labor_cost_resources.resource_types_packed, labor_cost_resources.resource_types_count
         );
@@ -129,18 +134,18 @@ mod BuildLabor {
                 break ();
             }
             let labor_cost_resource_type = *labor_cost_resource_types[index];
-            let labor_cost_per_unit = get !(
+            let labor_cost_per_unit = get!(
                 ctx.world, (resource_type, labor_cost_resource_type).into(), LaborCostAmount
             );
-            let current_resource: Resource = get !(
+            let current_resource: Resource = get!(
                 ctx.world, (realm_id, labor_cost_resource_type).into(), Resource
             );
             let total_cost = labor_cost_per_unit.value * labor_units.into() * multiplier.into();
             assert(current_resource.balance >= total_cost, 'Not enough resources');
-            set !(
+            set!(
                 ctx.world,
-                (realm_id, labor_cost_resource_type).into(),
                 (Resource {
+                    entity_id: realm_id,
                     resource_type: current_resource.resource_type,
                     balance: current_resource.balance - total_cost
                 })

@@ -1,5 +1,3 @@
-use eternum::alias::ID;
-
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct Caravan {
     #[key]

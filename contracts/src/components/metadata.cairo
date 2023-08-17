@@ -18,6 +18,7 @@ struct MetaData {
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct ForeignKey {
     #[key]
+    foreign_key: u128,
     entity_id: u128,
 }
 
