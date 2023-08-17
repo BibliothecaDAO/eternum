@@ -1,5 +1,4 @@
-import clsx from "clsx";
-import React, { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Tabs } from "../../elements/tab";
 import { ChatMessageProps } from "../../elements/ChatMessage";
 import ChatHistory from "./ChatHistory";
@@ -100,8 +99,7 @@ const dummyMessages: ChatMessageProps[] = [
   },
 ];
 
-const TABS = ["Global Chat", "Guild Chat", "PM"];
-export const ChatTabs = ({}: ChatTabsProps) => {
+export const ChatTabs = ({ }: ChatTabsProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
 
   const tabs = useMemo(

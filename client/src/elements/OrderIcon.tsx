@@ -1,6 +1,4 @@
 import clsx from 'clsx';
-import type { ReactElement } from 'react';
-import { useState } from 'react';
 import { ReactComponent as Anger } from '../assets/icons/orders/anger.svg'
 import { ReactComponent as Brilliance } from '../assets/icons/orders/brilliance.svg';
 import { ReactComponent as Detection } from '../assets/icons/orders/detection.svg';
@@ -26,25 +24,6 @@ export type Props = {
   withTooltip?: boolean;
   color?: string;
 };
-
-const Components: { [key: string]: ReactElement } = Object.freeze({
-  power: <Power className="stroke-8 stroke-order-power" />,
-  anger: <Anger />,
-  brilliance: <Brilliance />,
-  detection: <Detection />,
-  enlightenment: <Enlightenment />,
-  'the fox': <Fox className="stroke-8 stroke-order-fox" />,
-  fury: <Fury />,
-  giants: <Giants />,
-  perfection: <Perfection className=" fill-order-perfection" />,
-  reflection: <Reflection />,
-  skill: <Skill />,
-  titans: <Titans />,
-  'the twins': <Twins />,
-  vitriol: <Vitriol />,
-  rage: <Rage />,
-  protection: <Protection />,
-});
 
 const getIcon = (order: string, color: string) => {
   switch (order) {

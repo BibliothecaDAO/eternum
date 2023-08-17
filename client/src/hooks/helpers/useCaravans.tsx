@@ -1,7 +1,5 @@
-import { getEntityIdFromKeys } from "@dojoengine/core/dist/utils";
 import {
   EntityIndex,
-  getComponentEntities,
   getComponentValue,
   getEntitiesWithValue,
 } from "@latticexyz/recs";
@@ -9,15 +7,13 @@ import { useDojo } from "../../DojoContext";
 import {
   CaravanInfoInterface,
   CaravanInterface,
-  MarketInterface,
 } from "../graphql/useGraphQLQueries";
 import { useEffect, useMemo, useState } from "react";
-import useRealmStore from "../store/useRealmStore";
-import { getEntitiesWithoutValue } from "../../utils/mud";
+import { getEntityIdFromKeys } from "../../utils/utils";
 
 export function useCaravan() {
   const {
-    components: { Resource, ArrivalTime, Movable, Capacity, Position },
+    components: { ArrivalTime, Movable, Capacity, Position },
   } = useDojo();
 
   const getCaravanInfo = (

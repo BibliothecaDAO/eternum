@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { GraphQLClient } from "graphql-request";
 import {
-  ArrivalTime,
   GetRealmIdsQuery,
   Labor,
   Owner,
@@ -191,7 +190,7 @@ export const useSyncIncomingOrders = (realmEntityId: number) => {
             setComponentFromEntity(entity, "Trade", components);
           }
         });
-      } catch (error) {}
+      } catch (error) { }
     };
     fetchData();
   }, [realmEntityId]);
@@ -227,7 +226,7 @@ export const useSyncIncomingOrderInfo = ({
           setComponentFromEntity(entity, "Resource", components);
           setComponentFromEntity(entity, "FungibleEntities", components);
         });
-      } catch (error) {}
+      } catch (error) { }
     };
     fetchData();
   }, [orderId]);
@@ -406,7 +405,7 @@ export const useSyncCaravanInfo = (
         data?.resourcesGive?.map((entity) => {
           setComponentFromEntity(entity, "Resource", components);
         });
-      } catch (error) {}
+      } catch (error) { }
     };
     fetchData();
   }, [counterpartyOrderId]);
@@ -434,7 +433,7 @@ export const useSyncRealmCaravans = (x: number, y: number) => {
             setComponentFromEntity(entity, "CaravanMembers", components);
           }
         });
-      } catch (error) {}
+      } catch (error) { }
     }
     fetchData();
   }, [x, y]);
@@ -462,7 +461,7 @@ export const useSyncMarket = ({ realmId }: { realmId: number }) => {
             setComponentFromEntity(entity, "Status", components);
           }
         });
-      } catch (error) {}
+      } catch (error) { }
     }
     fetchData();
   }, [realmId]);
@@ -492,7 +491,7 @@ export const useSyncMyOffers = ({ realmId }: { realmId: number }) => {
             setComponentFromEntity(entity, "Status", components);
           }
         });
-      } catch (error) {}
+      } catch (error) { }
     }
     fetchData();
   }, [realmId]);
@@ -526,7 +525,7 @@ export const useSyncTradeResources = ({
         data.resourcesGive?.map((entity) => {
           setComponentFromEntity(entity, "Resource", components);
         });
-      } catch (error) {}
+      } catch (error) { }
     };
     fetchData();
   }, [makerOrderId, takerOrderId]);

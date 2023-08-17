@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Tabs } from '../../../elements/tab';
 import { LaborPanel } from './labor/LaborPanel';
 

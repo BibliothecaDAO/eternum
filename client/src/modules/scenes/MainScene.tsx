@@ -1,50 +1,31 @@
 import { Canvas } from "@react-three/fiber";
-import { Perf } from "r3f-perf";
 import { WorldMapScene } from "./WorldMapScene";
 import { RealmCityViewScene } from "./RealmCityViewScene";
-import { CombatScene } from "./CombatScene";
-import { BastionScene } from "./BastionScene";
 import useUIStore from "../../hooks/store/useUIStore";
 import { useLocation, Switch, Route } from "wouter";
-import { useTransition } from "@react-spring/core";
 import { a } from "@react-spring/three";
 import {
   Sky,
-  Environment,
-  Lightformer,
-  useHelper,
-  PerspectiveCamera,
-  MapControls,
   CameraShake,
   AdaptiveDpr,
   AdaptiveEvents,
 } from "@react-three/drei";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useMemo } from "react";
 import {
   EffectComposer,
-  DepthOfField,
   Bloom,
   Noise,
-  Vignette,
-  Outline,
-  EffectComposerContext,
   SMAA,
-  Sepia,
 } from "@react-three/postprocessing";
 // @ts-ignore
 import { Sobel } from "../../utils/effects.jsx";
-import { useControls, button } from "leva";
-import * as THREE from "three";
-import realmsJson from "../../geodata/realms.json";
+import { useControls } from "leva";
 import { CameraControls } from "../../utils/Camera";
 import { BlendFunction } from "postprocessing";
-import { SoftShadows } from "@react-three/drei";
 
 export const Camera = () => {
   const cameraPosition = useUIStore((state) => state.cameraPosition);
-  const setCameraPosition = useUIStore((state) => state.setCameraPosition);
   const cameraTarget = useUIStore((state) => state.cameraTarget);
-  const setCameraTarget = useUIStore((state) => state.setCameraTarget);
 
   return (
     <>

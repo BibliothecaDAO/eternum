@@ -1,8 +1,6 @@
 import realmsCoordsJson from "../../../../geodata/coords.json";
 import realmsJson from "../../../../geodata/realms.json";
 import realmsOrdersJson from "../../../../geodata/realms_raw.json";
-import { Utils } from "@dojoengine/core";
-import { EntityIndex } from "@latticexyz/recs";
 import { Trade } from "../../../../types";
 import {
   RealmResourcesInterface,
@@ -41,15 +39,15 @@ export const getRealmOrderNameById = (realmId: number): string => {
   return orderName.toLowerCase().replace("the ", "");
 };
 
-export const getResourceIdsFromFungibleEntities = (
-  orderId: number,
-  key: number,
-  count: number,
-): EntityIndex[] => {
-  return Array.from({ length: count }, (_, i) => {
-    return Utils.getEntityIdFromKeys([BigInt(orderId), BigInt(key), BigInt(i)]);
-  });
-};
+// export const getResourceIdsFromFungibleEntities = (
+//   orderId: number,
+//   key: number,
+//   count: number,
+// ): EntityIndex[] => {
+//   return Array.from({ length: count }, (_, i) => {
+//     return Utils.getEntityIdFromKeys([BigInt(orderId), BigInt(key), BigInt(i)]);
+//   });
+// };
 
 export const getOrderIdsFromTrade = (
   trade: Trade,
@@ -57,15 +55,15 @@ export const getOrderIdsFromTrade = (
 ): { realmOrderId: number; counterpartyOrderId: number } | undefined => {
   return trade.maker_id === realmEntityId
     ? {
-        realmOrderId: trade.maker_order_id,
-        counterpartyOrderId: trade.taker_order_id,
-      }
+      realmOrderId: trade.maker_order_id,
+      counterpartyOrderId: trade.taker_order_id,
+    }
     : trade.taker_id === realmEntityId
-    ? {
+      ? {
         realmOrderId: trade.taker_order_id,
         counterpartyOrderId: trade.maker_order_id,
       }
-    : undefined;
+      : undefined;
 };
 
 export const getTotalResourceWeight = (

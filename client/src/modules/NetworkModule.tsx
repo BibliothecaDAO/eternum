@@ -1,6 +1,4 @@
 import { SettingsComponent } from "../components/SettingsComponent"
-import EpochCountdown from "../components/network/EpochCountdown"
-import NodeStatus from "../components/network/NodeStatus"
 
 const NetworkModule = () => {
     return (

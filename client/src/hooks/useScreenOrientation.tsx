@@ -20,7 +20,7 @@ const getOrientation = () => window.screen?.orientation?.type;
 const useScreenOrientation = () => {
   const [orientation, setOrientation] = useState<OrientationType>();
 
-  const updateOrientation = (event: any) => {
+  const updateOrientation = (_event: any) => {
     setOrientation(getOrientation());
   };
   const isFullScreen = () => {

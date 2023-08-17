@@ -2,7 +2,7 @@
 import { Tab as HeadlessTab } from '@headlessui/react';
 import clsx from 'clsx';
 import type { ComponentProps } from 'react';
-import { Fragment, useContext } from 'react';
+import { useContext } from 'react';
 import { TabContext } from './TabProvider';
 import { VARIANTS } from './tabs';
 
@@ -10,8 +10,6 @@ type TabProps = ComponentProps<'button'> & { noText?: boolean };
 
 export const Tab = ({ className, children, noText, ...props }: TabProps) => {
   const { variant } = useContext(TabContext)!;
-
-  const isPrimary = variant === 'primary';
 
   return (
     // @ts-ignore
@@ -27,7 +25,7 @@ export const Tab = ({ className, children, noText, ...props }: TabProps) => {
       }
       {...props}
     >
-      {(props) => {
+      {() => {
         return (
           <>
             {children}

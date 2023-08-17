@@ -1,20 +1,15 @@
-import { OrderIcon } from "../../../../elements/OrderIcon";
 import Button from "../../../../elements/Button";
 import { ResourceIcon } from "../../../../elements/ResourceIcon";
 import {
   ResourcesIds,
   findResourceById,
-  resources,
 } from "../../../../constants/resources";
 import { currencyFormat } from "../../../../utils/utils.jsx";
 import { ReactComponent as Clock } from "../../../../assets/icons/common/clock.svg";
-import { ReactComponent as Farm } from "../../../../assets/icons/common/farm.svg";
 import { ReactComponent as Village } from "../../../../assets/icons/common/village.svg";
-
 import ProgressBar from "../../../../elements/ProgressBar";
 import { useDojo } from "../../../../DojoContext";
 import useRealm from "../../../../hooks/store/useRealmStore";
-import { Utils } from "@dojoengine/core";
 import { LaborConfig, Realm } from "../../../../types";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import {
@@ -25,7 +20,6 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import {
   LaborInterface,
-  RealmInterface,
   ResourceInterface,
 } from "../../../../hooks/graphql/useGraphQLQueries";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
@@ -50,7 +44,6 @@ export const LaborComponent = ({
   onBuild,
   setBuildLoadingStates,
   buildLoadingStates,
-  ...props
 }: LaborComponentProps) => {
   const {
     systemCalls: { harvest_labor },
@@ -166,14 +159,12 @@ export const LaborComponent = ({
               {isFood && <Village />}
               {/* // DISCUSS: when there is no labor anymore, it means full decay of the buildings, so it should be multiplier 0 */}
               {resourceId == ResourcesIds["Wheat"] && (
-                <div className="px-2">{`${
-                  laborLeft > 0 && labor ? labor.multiplier : 0
-                }/${realm?.rivers}`}</div>
+                <div className="px-2">{`${laborLeft > 0 && labor ? labor.multiplier : 0
+                  }/${realm?.rivers}`}</div>
               )}
               {resourceId == ResourcesIds["Fish"] && (
-                <div className="px-2">{`${
-                  laborLeft > 0 && labor ? labor.multiplier : 0
-                }/${realm?.harbors}`}</div>
+                <div className="px-2">{`${laborLeft > 0 && labor ? labor.multiplier : 0
+                  }/${realm?.harbors}`}</div>
               )}
               {/* // TODO: show visual cue that it's disabled */}
               {!buildLoadingStates[resourceId] && (
@@ -189,11 +180,11 @@ export const LaborComponent = ({
               {buildLoadingStates[resourceId] && (
                 <Button
                   isLoading={true}
-                  onClick={() => {}}
+                  onClick={() => { }}
                   variant="danger"
                   className="ml-auto p-2 !h-4 text-xxs !rounded-md"
                 >
-                  {}
+                  { }
                 </Button>
               )}
             </div>
@@ -220,12 +211,12 @@ export const LaborComponent = ({
             <div className="flex items-center mx-auto text-white/70">
               {laborConfig && labor && laborLeft > 0
                 ? `+${calculateProductivity(
-                    isFood
-                      ? laborConfig.base_food_per_cycle
-                      : laborConfig.base_resources_per_cycle,
-                    labor.multiplier,
-                    laborConfig.base_labor_units,
-                  ).toFixed(0)}`
+                  isFood
+                    ? laborConfig.base_food_per_cycle
+                    : laborConfig.base_resources_per_cycle,
+                  labor.multiplier,
+                  laborConfig.base_labor_units,
+                ).toFixed(0)}`
                 : "+0"}
               <ResourceIcon
                 containerClassName="mx-0.5"
@@ -257,11 +248,11 @@ export const LaborComponent = ({
             {isHarvestLoading && (
               <Button
                 isLoading={true}
-                onClick={() => {}}
+                onClick={() => { }}
                 variant="danger"
                 className="ml-auto p-2 !h-4 text-xxs !rounded-md"
               >
-                {}
+                { }
               </Button>
             )}
           </div>
@@ -269,12 +260,4 @@ export const LaborComponent = ({
       </div>
     </div>
   );
-};
-
-// TODO: move to utils
-const formatTimeLeft = (seconds: number) => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-
-  return `${hours}h:${minutes}m`;
 };

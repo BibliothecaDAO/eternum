@@ -1,13 +1,9 @@
-import React, { useEffect, useState } from "react";
-import { ResourceIcon } from "../../../elements/ResourceIcon";
-import { findResourceById } from "../../../constants/resources";
 import { OrderIcon } from "../../../elements/OrderIcon";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import realmsNames from "../../../geodata/realms.json";
 import { orderNameDict } from "../../../constants/orders";
 import clsx from "clsx";
 import { useGetRealm } from "../../../hooks/graphql/useGraphQLQueries";
-import { getRealm } from "./SettleRealmComponent";
 
 type RealmInfoComponentProps = {};
 
@@ -30,8 +26,8 @@ const bgColorsByOrder = {
   protection: "#0E543F",
 };
 
-export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
-  const { realmEntityId, realmId } = useRealmStore();
+export const RealmInfoComponent = ({ }: RealmInfoComponentProps) => {
+  const { realmEntityId } = useRealmStore();
 
   const { realm } = useGetRealm({ entityId: realmEntityId });
 
@@ -45,7 +41,7 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
           style={{
             backgroundColor:
               bgColorsByOrder[
-                orderNameDict[realm?.order] as keyof typeof bgColorsByOrder
+              orderNameDict[realm?.order] as keyof typeof bgColorsByOrder
               ],
           }}
         >

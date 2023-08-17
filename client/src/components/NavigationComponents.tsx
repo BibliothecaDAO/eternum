@@ -1,4 +1,3 @@
-import { useState } from "react";
 import Avatar from "../elements/Avatar";
 import CircleButton from "../elements/CircleButton";
 import { ReactComponent as WorldIcon } from "../assets/icons/common/world.svg";
@@ -7,7 +6,6 @@ import clsx from "clsx";
 import { RealmSwitch } from "./cityview/RealmSwitch";
 import { Link, useLocation } from "wouter";
 import useUIStore from "../hooks/store/useUIStore";
-import { soundSelector, useUiSounds } from "../hooks/useUISound";
 
 const NavgationComponent = () => {
   const moveCameraToWorldMapView = useUIStore(

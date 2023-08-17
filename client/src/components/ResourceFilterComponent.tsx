@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { FilterButton } from '../elements/FilterButton';
 import { SecondaryPopup } from '../elements/SecondaryPopup';
 import { resources } from '../constants/resources';
@@ -31,7 +31,7 @@ export const ResourceFilter = ({ }: ResourceFilterProps) => {
                     <div className='flex items-center space-x-1'>
                         <div className='mr-0.5'>Resources:</div>
                         {selectedResources.map((resource, index) => (
-                            <ResourceIcon size='xs' resource={resource} />
+                            <ResourceIcon key={index} size='xs' resource={resource} />
 
                         ))}
                         <CloseIcon className="w-3 h-3 cursor-pointer fill-white" onClick={() => setSelectedResources([])} />
