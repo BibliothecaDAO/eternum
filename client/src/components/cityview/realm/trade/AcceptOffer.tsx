@@ -30,13 +30,14 @@ export const AcceptOfferPopup = ({
   }, [selectedTrade]);
 
   const {
-    optimisticSystemCalls: { optimisticAcceptOffer },
-    systemCalls: {
-      attach_caravan,
-      take_fungible_order,
-      create_free_transport_unit,
-      create_caravan,
-    },
+    account: { account },
+    setup: { optimisticSystemCalls: { optimisticAcceptOffer },
+      systemCalls: {
+        attach_caravan,
+        take_fungible_order,
+        create_free_transport_unit,
+        create_caravan,
+      } },
   } = useDojo();
 
   const { realmEntityId } = useRealmStore();
@@ -45,29 +46,35 @@ export const AcceptOfferPopup = ({
     if (isNewCaravan) {
       setIsLoading(true);
       const transport_units_id = await create_free_transport_unit({
+        signer: account,
         realm_id: realmEntityId,
         quantity: donkeysCount,
       });
       const caravan_id = await create_caravan({
+        signer: account,
         entity_ids: [transport_units_id],
       });
       await attach_caravan({
+        signer: account,
         realm_id: realmEntityId,
         trade_id: selectedTrade.tradeId,
         caravan_id,
       });
       await take_fungible_order({
+        signer: account,
         taker_id: realmEntityId,
         trade_id: selectedTrade.tradeId,
       });
     } else {
       setIsLoading(true);
       await attach_caravan({
+        signer: account,
         realm_id: realmEntityId,
         trade_id: selectedTrade.tradeId,
         caravan_id: selectedCaravan,
       });
       await take_fungible_order({
+        signer: account,
         taker_id: realmEntityId,
         trade_id: selectedTrade.tradeId,
       });

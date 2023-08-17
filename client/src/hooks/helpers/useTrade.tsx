@@ -13,7 +13,7 @@ import { getEntityIdFromKeys } from "../../utils/utils";
 
 export function useTrade() {
   const {
-    components: { Resource, FungibleEntities },
+    setup: { components: { Resource, FungibleEntities } },
   } = useDojo();
 
   const getTradeResources = (orderId: number): Resource[] => {
@@ -45,7 +45,7 @@ export function useTrade() {
 
 export function useGetMyOffers() {
   const {
-    components: { Status, Trade },
+    setup: { components: { Status, Trade } },
   } = useDojo();
 
   const { realmEntityId } = useRealmStore();
@@ -106,7 +106,7 @@ export function useGetMyOffers() {
 
 export function useGetMarket() {
   const {
-    components: { Status, Trade },
+    setup: { components: { Status, Trade } },
   } = useDojo();
 
   const { realmEntityId } = useRealmStore();

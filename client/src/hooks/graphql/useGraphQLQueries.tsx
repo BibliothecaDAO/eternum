@@ -171,7 +171,7 @@ export interface IncomingOrdersInterface {
 // but when going from IncomingOrders to Market, and back to IncomingOrders, it gets reloaded (2 sec time delay), need to investigate, might be because the same trades are queried for
 // incoming orders and market in the syncing hooks
 export const useSyncIncomingOrders = (realmEntityId: number) => {
-  const { components } = useDojo();
+  const { setup: { components } } = useDojo();
   useMemo(() => {
     const fetchData = async () => {
       try {
@@ -208,7 +208,7 @@ export const useSyncIncomingOrderInfo = ({
   orderId: number;
   counterPartyOrderId: number;
 }) => {
-  const { components } = useDojo();
+  const { setup: { components } } = useDojo();
   useMemo(() => {
     const fetchData = async () => {
       try {
@@ -386,7 +386,7 @@ export const useSyncCaravanInfo = (
   orderId: number,
   counterpartyOrderId: number,
 ) => {
-  const { components } = useDojo();
+  const { setup: { components } } = useDojo();
   useMemo(() => {
     const fetchData = async () => {
       try {
@@ -417,7 +417,7 @@ export interface PositionInterface {
 }
 
 export const useSyncRealmCaravans = (x: number, y: number) => {
-  const { components } = useDojo();
+  const { setup: { components } } = useDojo();
   useMemo(() => {
     async function fetchData() {
       try {
@@ -449,7 +449,7 @@ export interface MarketInterface {
 
 // TODO: add filter on trade status is open
 export const useSyncMarket = ({ realmId }: { realmId: number }) => {
-  const { components } = useDojo();
+  const { setup: { components } } = useDojo();
   useMemo(() => {
     async function fetchData() {
       try {
@@ -476,7 +476,7 @@ export interface MyOfferInterface {
 }
 
 export const useSyncMyOffers = ({ realmId }: { realmId: number }) => {
-  const { components } = useDojo();
+  const { setup: { components } } = useDojo();
 
   useMemo(() => {
     async function fetchData() {
@@ -504,7 +504,7 @@ export const useSyncTradeResources = ({
   makerOrderId: string;
   takerOrderId: string;
 }) => {
-  const { components } = useDojo();
+  const { setup: { components } } = useDojo();
 
   useMemo(() => {
     const fetchData = async () => {

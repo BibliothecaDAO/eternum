@@ -29,8 +29,9 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
   }, [myOffer]);
 
   const {
-    systemCalls: { change_order_status },
-    optimisticSystemCalls: { optimisticCancelOffer },
+    setup: { systemCalls: { change_order_status },
+      optimisticSystemCalls: { optimisticCancelOffer } },
+    account: { account },
   } = useDojo();
 
   const { realmEntityId, realmId } = useRealmStore();
@@ -46,6 +47,7 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
     // status 2 = cancel
     setIsLoading(true);
     change_order_status({
+      signer: account,
       realm_id: realmEntityId,
       trade_id: myOffer.tradeId,
       new_status: 2,

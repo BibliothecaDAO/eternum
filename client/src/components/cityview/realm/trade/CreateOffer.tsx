@@ -48,12 +48,13 @@ export const CreateOfferPopup = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const {
-    systemCalls: {
+    account: { account },
+    setup: { systemCalls: {
       create_caravan,
       create_free_transport_unit,
       make_fungible_order,
       attach_caravan,
-    },
+    } },
   } = useDojo();
 
   const { realmEntityId } = useRealmStore();
@@ -62,6 +63,7 @@ export const CreateOfferPopup = ({
     setIsLoading(true);
     if (isNewCaravan) {
       const trade_id = await make_fungible_order({
+        signer: account,
         maker_id: realmEntityId,
         maker_entity_types: selectedResourceIdsGive,
         maker_quantities: Object.values(selectedResourcesGiveAmounts),
@@ -69,15 +71,18 @@ export const CreateOfferPopup = ({
         taker_quantities: Object.values(selectedResourcesGetAmounts),
       });
       const transport_units_id = await create_free_transport_unit({
+        signer: account,
         realm_id: realmEntityId,
         quantity: donkeysCount,
       });
       const caravan_id = await create_caravan({
+        signer: account,
         entity_ids: [transport_units_id],
       });
-      await attach_caravan({ realm_id: realmEntityId, trade_id, caravan_id });
+      await attach_caravan({ signer: account, realm_id: realmEntityId, trade_id, caravan_id });
     } else {
       const trade_id = await make_fungible_order({
+        signer: account,
         maker_id: realmEntityId,
         maker_entity_types: selectedResourceIdsGive,
         maker_quantities: Object.values(selectedResourcesGiveAmounts),
@@ -85,6 +90,7 @@ export const CreateOfferPopup = ({
         taker_quantities: Object.values(selectedResourcesGetAmounts),
       });
       await attach_caravan({
+        signer: account,
         realm_id: realmEntityId,
         trade_id,
         caravan_id: selectedCaravan,

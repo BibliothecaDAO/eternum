@@ -1,6 +1,6 @@
-import { Components, Schema, setComponent } from "@latticexyz/recs";
-import {SetupNetworkResult } from "./setupNetwork";
-import {Event, number} from 'starknet';
+import { Components, Schema, Type, setComponent } from "@latticexyz/recs";
+import { SetupNetworkResult } from "./setupNetwork";
+import { Account, Event, num } from 'starknet';
 import { uuid } from "@latticexyz/utils";
 import { ClientComponents } from "./createClientComponents";
 import { getEntityIdFromKeys } from "../utils/utils";
@@ -9,6 +9,86 @@ import { getEntityIdFromKeys } from "../utils/utils";
 // TODO: if you call multiple systems at the same time it might be a problem
 const LOW_ENTITY_ID = 9999999999;
 
+interface SystemSigner {
+    signer: Account
+}
+
+interface BuildLaborProps extends SystemSigner {
+    realm_id: num.BigNumberish;
+    resource_type: num.BigNumberish;
+    labor_units: num.BigNumberish;
+    multiplier: num.BigNumberish;
+}
+
+interface HarvestLaborProps extends SystemSigner {
+    realm_id: num.BigNumberish;  // TODO: this is entity id not realm id
+    resource_type: num.BigNumberish;
+}
+
+interface MintResourcesProps extends SystemSigner {
+    entity_id: num.BigNumberish;
+    resource_type: num.BigNumberish;
+    amount: num.BigNumberish;
+}
+
+interface TakeFungibleOrderProps extends SystemSigner {
+    taker_id: num.BigNumberish;
+    trade_id: num.BigNumberish;
+}
+
+interface ChangeOrderStatusProps extends SystemSigner {
+    realm_id: num.BigNumberish;
+    trade_id: num.BigNumberish;
+    new_status: num.BigNumberish;
+}
+
+interface CreateFreeTransportUnitProps extends SystemSigner {
+    realm_id: num.BigNumberish;
+    quantity: num.BigNumberish;
+}
+
+interface CreateCaravanProps extends SystemSigner {
+    entity_ids: num.BigNumberish[];
+}
+
+interface AttachCaravanProps extends SystemSigner {
+    realm_id: num.BigNumberish;
+    trade_id: num.BigNumberish;
+    caravan_id: num.BigNumberish;
+}
+
+interface ClaimFungibleOrderProps extends SystemSigner {
+    entity_id: num.BigNumberish;
+    trade_id: num.BigNumberish;
+}
+
+// Interface definition
+interface CreateRealmProps extends SystemSigner {
+    realm_id: num.BigNumberish;
+    owner: num.BigNumberish;
+    resource_types_packed: num.BigNumberish;
+    resource_types_count: num.BigNumberish;
+    cities: num.BigNumberish;
+    harbors: num.BigNumberish;
+    rivers: num.BigNumberish;
+    regions: num.BigNumberish;
+    wonder: num.BigNumberish;
+    order: num.BigNumberish;
+    position: {
+        x: num.BigNumberish;
+        y: num.BigNumberish;
+    };
+}
+
+interface MakeFungibleOrderProps extends SystemSigner {
+    maker_id: num.BigNumberish;
+    maker_entity_types: num.BigNumberish[];
+    maker_quantities: num.BigNumberish[];
+    taker_entity_types: num.BigNumberish[];
+    taker_quantities: num.BigNumberish[];
+}
+
+
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
 
 // NOTE: need to add waitForTransaction when connected to rinnigan
@@ -16,31 +96,37 @@ export function createSystemCalls(
     { execute, provider, contractComponents }: SetupNetworkResult,
     { Trade, Status, FungibleEntities, Resource }: ClientComponents,
 ) {
-    // TODO: this is entity id not realm id 
-    const build_labor = async ({ realm_id, resource_type, labor_units, multiplier }: { realm_id: number.BigNumberish, resource_type: number.BigNumberish, labor_units: number.BigNumberish, multiplier: number.BigNumberish }) => {
-        const tx = await execute("BuildLabor", [realm_id, resource_type, labor_units, multiplier]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
-        const events = getEvents(receipt);
-        setComponentsFromEvents(contractComponents, events);
+    // Refactor the functions using the interfaces
+    const build_labor = async (props: BuildLaborProps) => {
+        const { realm_id, resource_type, labor_units, multiplier, signer } = props;
+        const tx = await execute(signer, "BuildLabor", [realm_id, resource_type, labor_units, multiplier]);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, {retryInterval: 500});
+        setComponentsFromEvents(contractComponents, getEvents(receipt));
     }
 
-    // TODO: this is entity id not realm id 
-    const harvest_labor = async ({ realm_id, resource_type }: { realm_id: number.BigNumberish, resource_type: number.BigNumberish }) => {
-        const tx = await execute("HarvestLabor", [realm_id, resource_type]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
-        const events = getEvents(receipt);
-        setComponentsFromEvents(contractComponents, events);
+    const harvest_labor = async (props: HarvestLaborProps) => {
+        const { realm_id, resource_type, signer } = props;
+        const tx = await execute(signer, "HarvestLabor", [realm_id, resource_type]);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, {retryInterval: 500});
+
+        setComponentsFromEvents(contractComponents, getEvents(receipt));
     }
 
-    const mint_resources = async ({ entity_id, resource_type, amount }: { entity_id: number.BigNumberish, resource_type: number.BigNumberish, amount: number.BigNumberish }) => {
-        const tx = await execute("MintResources", [entity_id, resource_type, amount]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
-        const events = getEvents(receipt);
-        setComponentsFromEvents(contractComponents, events);
+    const mint_resources = async (props: MintResourcesProps) => {
+        const { entity_id, resource_type, amount, signer } = props;
+        const tx = await execute(signer, "MintResources", [entity_id, resource_type, amount]);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, {retryInterval: 500});
+
+        setComponentsFromEvents(contractComponents, getEvents(receipt));
     }
 
-    const make_fungible_order = async ({maker_id, maker_entity_types, maker_quantities, taker_entity_types, taker_quantities}: {maker_id: number.BigNumberish, maker_entity_types: number.BigNumberish[], maker_quantities: number.BigNumberish[], taker_entity_types: number.BigNumberish[], taker_quantities: number.BigNumberish[]}) => {
-        const expires_at = Date.now()/1000 + 2628000;
+    const make_fungible_order = async (props: MakeFungibleOrderProps): Promise<num.BigNumberish> => {
+        const {
+            maker_id, maker_entity_types, maker_quantities,
+            taker_entity_types, taker_quantities, signer
+        } = props;
+
+        const expires_at = Math.floor(Date.now() / 1000 + 2628000);
 
         // optimisitc rendering of trade
         const overrideId = uuid();
@@ -48,55 +134,58 @@ export function createSystemCalls(
         const maker_order_id = getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 1)]);
         const taker_order_id = getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 2)]);
         const key = getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 3)]);
+
+        const numberMakerId = maker_id as Type.Number;
+
         Trade.addOverride(
             overrideId, {
             entity: trade_id,
-            value: { trade_id, maker_id, taker_id: 0, maker_order_id, taker_order_id, expires_at, claimed_by_maker: false, claimed_by_taker: false, taker_needs_caravan: true },
+            value: { trade_id, maker_id: numberMakerId, taker_id: 0, maker_order_id, taker_order_id, expires_at, claimed_by_maker: false, claimed_by_taker: false, taker_needs_caravan: true },
         });
         Status.addOverride(
             overrideId, {
-                entity: trade_id,
-                value: {value: 0}
-            }
+            entity: trade_id,
+            value: { value: 0 }
+        }
         );
         FungibleEntities.addOverride(
             overrideId, {
-                entity: maker_order_id,
-                value: {key, count: maker_quantities.length}
-            }
+            entity: maker_order_id,
+            value: { key, count: maker_quantities.length }
+        }
         )
         FungibleEntities.addOverride(
             overrideId, {
-                entity: taker_order_id,
-                value: {key, count: taker_quantities.length}
-            }
+            entity: taker_order_id,
+            value: { key, count: taker_quantities.length }
+        }
         )
         for (let i = 0; i < maker_quantities.length; i++) {
             Resource.addOverride(
                 overrideId, {
-                    entity: getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 1), BigInt(LOW_ENTITY_ID + 3), BigInt(i)]), 
-                    value: {
-                        resource_type: maker_entity_types[i],
-                        balance: maker_quantities[i]
-                    }
+                entity: getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 1), BigInt(LOW_ENTITY_ID + 3), BigInt(i)]),
+                value: {
+                    resource_type: maker_entity_types[i] as Type.Number,
+                    balance: maker_quantities[i] as Type.Number
                 }
+            }
             )
         }
         for (let i = 0; i < taker_quantities.length; i++) {
             Resource.addOverride(
                 overrideId, {
-                    entity: getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 2), BigInt(LOW_ENTITY_ID + 3), BigInt(i)]), 
-                    value: {
-                        resource_type: taker_entity_types[i],
-                        balance: taker_quantities[i]
-                    }
+                entity: getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 2), BigInt(LOW_ENTITY_ID + 3), BigInt(i)]),
+                value: {
+                    resource_type: taker_entity_types[i] as Type.Number,
+                    balance: taker_quantities[i] as Type.Number
                 }
+            }
             )
         }
 
         try {
-            const tx = await execute("MakeFungibleOrder", [maker_id, maker_entity_types.length, ...maker_entity_types, maker_quantities.length, ...maker_quantities, 0, taker_entity_types.length, ...taker_entity_types, taker_quantities.length, ...taker_quantities, 1, expires_at]);
-            const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
+            const tx = await execute(signer, "MakeFungibleOrder", [maker_id, maker_entity_types.length, ...maker_entity_types, maker_quantities.length, ...maker_quantities, 0, taker_entity_types.length, ...taker_entity_types, taker_quantities.length, ...taker_quantities, 1, expires_at]);
+            const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, {retryInterval: 500});
             const events = getEvents(receipt);
             setComponentsFromEvents(contractComponents, events);
             // DISCUSS: trade_id NEEDED to continue to next step
@@ -109,32 +198,37 @@ export function createSystemCalls(
         }
     }
 
-    const take_fungible_order = async ({ taker_id, trade_id }: { taker_id: number.BigNumberish, trade_id: number.BigNumberish }) => {
-        const tx = await execute("TakeFungibleOrder", [taker_id, trade_id]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
+    const take_fungible_order = async (props: TakeFungibleOrderProps) => {
+        const { taker_id, trade_id, signer } = props;
+        const tx = await execute(signer, "TakeFungibleOrder", [taker_id, trade_id]);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, {retryInterval: 500});
+
+        setComponentsFromEvents(contractComponents, getEvents(receipt));
+    }
+
+    const change_order_status = async (props: ChangeOrderStatusProps) => {
+        const { realm_id, trade_id, new_status, signer } = props;
+        const tx = await execute(signer, "ChangeOrderStatus", [realm_id, trade_id, new_status]);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, {retryInterval: 500});
         const events = getEvents(receipt);
         setComponentsFromEvents(contractComponents, events);
     }
 
-    const change_order_status = async ({ realm_id, trade_id, new_status }: { realm_id: number.BigNumberish, trade_id: number.BigNumberish, new_status: number.BigNumberish }) => {
-        const tx = await execute("ChangeOrderStatus", [realm_id, trade_id, new_status]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
-        const events = getEvents(receipt);
-        setComponentsFromEvents(contractComponents, events);
-    }
+    const create_free_transport_unit = async (props: CreateFreeTransportUnitProps): Promise<number> => {
+        const { realm_id, quantity, signer } = props;
 
-    const create_free_transport_unit = async ({ realm_id, quantity }: { realm_id: number.BigNumberish, quantity: number.BigNumberish }): Promise<number> => {
-        const tx = await execute("CreateFreeTransportUnit", [realm_id, quantity]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
+        const tx = await execute(signer, "CreateFreeTransportUnit", [realm_id, quantity]);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, {retryInterval: 500});
         const events = getEvents(receipt);
         setComponentsFromEvents(contractComponents, events);
         // TODO: use getEntityIdFromEvents
         return parseInt(events[1].data[2])
     }
 
-    const create_caravan = async ({ entity_ids }: { entity_ids: number.BigNumberish[] }): Promise<number> => {
-        const tx = await execute("CreateCaravan", [entity_ids.length, ...entity_ids]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
+    const create_caravan = async (props: CreateCaravanProps): Promise<number> => {
+        const { entity_ids, signer } = props;
+        const tx = await execute(signer, "CreateCaravan", [entity_ids.length, ...entity_ids]);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, {retryInterval: 500});
         const events = getEvents(receipt);
         setComponentsFromEvents(contractComponents, events);
         // TODO: use getEntityIdFromEvents
@@ -142,25 +236,37 @@ export function createSystemCalls(
         return caravan_id;
     }
 
-    const attach_caravan = async ({ realm_id, trade_id, caravan_id }: { realm_id: number.BigNumberish, trade_id: number.BigNumberish, caravan_id: number.BigNumberish }) => {
-        const tx = await execute("AttachCaravan", [realm_id, trade_id, caravan_id]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
+    const attach_caravan = async (props: AttachCaravanProps) => {
+        const { realm_id, trade_id, caravan_id, signer } = props;
+        const tx = await execute(signer, "AttachCaravan", [realm_id, trade_id, caravan_id]);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, {retryInterval: 500});
         const events = getEvents(receipt);
         setComponentsFromEvents(contractComponents, events);
     }
 
-    const claim_fungible_order = async ({ entity_id, trade_id }: { entity_id: number.BigNumberish, trade_id: number.BigNumberish }) => {
-        const tx = await execute("ClaimFungibleOrder", [entity_id, trade_id]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
+    const claim_fungible_order = async (props: ClaimFungibleOrderProps) => {
+        const { entity_id, trade_id, signer } = props;
+        const tx = await execute(signer, "ClaimFungibleOrder", [entity_id, trade_id]);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, {retryInterval: 500});
         const events = getEvents(receipt);
         setComponentsFromEvents(contractComponents, events);
     }
 
-    const create_realm = async ({ realm_id, owner, resource_types_packed, resource_types_count, cities, harbors, rivers, regions, wonder, order, position }: { realm_id: number.BigNumberish, owner: number.BigNumberish, resource_types_packed: number.BigNumberish, resource_types_count: number.BigNumberish, cities: number.BigNumberish, harbors: number.BigNumberish, rivers: number.BigNumberish, regions: number.BigNumberish, wonder: number.BigNumberish, order: number.BigNumberish, position: { x: number.BigNumberish, y: number.BigNumberish } }) => {
-        const tx = await execute("CreateRealm", [realm_id, owner, resource_types_packed, resource_types_count, cities, harbors, rivers, regions, wonder, order, position.x, position.y]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
+    const create_realm = async (props: CreateRealmProps): Promise<number> => {
+        const {
+            realm_id, owner, resource_types_packed, resource_types_count,
+            cities, harbors, rivers, regions, wonder, order, position, signer
+        } = props;
+
+        const tx = await execute(signer, "CreateRealm", [
+            realm_id, owner, resource_types_packed, resource_types_count,
+            cities, harbors, rivers, regions, wonder, order, position.x, position.y
+        ]);
+
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, {retryInterval: 500});
         const events = getEvents(receipt);
         setComponentsFromEvents(contractComponents, events);
+
         let realm_entity_id: number = 0;
         // TODO: use getEntityIdFromEvents
         for (const event of events) {
@@ -171,7 +277,6 @@ export function createSystemCalls(
         }
         return realm_entity_id;
     }
-
     return {
         build_labor,
         harvest_labor,
