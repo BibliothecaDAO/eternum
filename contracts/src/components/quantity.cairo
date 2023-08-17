@@ -5,7 +5,9 @@ use eternum::alias::ID;
 // a quantity component to show how many there are.
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct Quantity {
-    value: u128, 
+    #[key]
+    entity_id: u128,
+    value: u128,
 }
 
 
@@ -16,6 +18,8 @@ struct Quantity {
 // we need to update it everytime a free transport unit is created of destroyed.
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct QuantityTracker {
-    count: u128, 
+    #[key]
+    entity_id: u128,
+    count: u128,
 }
 

@@ -7,6 +7,8 @@ use alexandria_math::math::pow;
 
 #[derive(Component, PartialEq, Copy, Drop, Serde, SerdeLen)]
 struct Position {
+    #[key]
+    entity_id: u128,
     x: u32,
     y: u32
 }

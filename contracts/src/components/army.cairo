@@ -6,6 +6,8 @@
 
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct Army {
+    #[key]
+    realm_id: u32,
     // TODO: Why not use the ID alias? I know it's a different type, but does it have to be?
     light_cavalry_qty: u32,
     light_cavalry_health: u32,
@@ -28,6 +30,8 @@ struct Army {
 // Holds statistics for Army used in calculations
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct ArmyStatistics {
+    #[key]
+    entity_id: u128,
     cavalry_attack: u32,
     archery_attack: u32,
     magic_attack: u32,

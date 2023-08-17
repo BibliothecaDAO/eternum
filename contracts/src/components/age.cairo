@@ -1,6 +1,8 @@
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct Age {
-    born_at: u64, 
+    #[key]
+    entity_id: u128,
+    born_at: u64,
 }
 
 trait AgeTrait {

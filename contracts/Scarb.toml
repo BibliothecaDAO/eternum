@@ -1,4 +1,5 @@
 [package]
+cairo-version = "2.1.1"
 name = "eternum"
 version = "0.1.0"
 
@@ -11,7 +12,6 @@ alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.g
 [[target.dojo]]
 
 [tool.dojo.env]
-
 ## dev
 rpc_url = "http://localhost:5050/"
 account_address = "0x03ee9e18edc71a6df30ac3aca2e0b02a198fbce19b7480a63a0d71cbd76652e0"

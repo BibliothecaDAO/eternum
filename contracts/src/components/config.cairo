@@ -70,6 +70,8 @@ struct LaborCostAmount {
 // e.g. EntityTypeCapacityConfig?
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct CapacityConfig {
+    #[key]
+    capacity_config: u32,
     entity_type: u128,
     weight_gram: u128,
 }
@@ -77,6 +79,8 @@ struct CapacityConfig {
 // speed
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct SpeedConfig {
+    #[key]
+    speed_config: u32,
     entity_type: u128,
     sec_per_km: u16,
 }
@@ -84,6 +88,8 @@ struct SpeedConfig {
 // weight
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct WeightConfig {
+    #[key]
+    weight_config: u32,
     entity_type: u128,
     weight_gram: u128,
 }
