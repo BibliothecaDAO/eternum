@@ -1,6 +1,6 @@
 import { Components, Schema, setComponent } from "@latticexyz/recs";
 import { SetupNetworkResult } from "./setupNetwork";
-import { Event, number } from 'starknet';
+import { Event, num } from 'starknet';
 import { getEntityIdFromKeys } from "../utils/utils";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -10,31 +10,31 @@ export function createSystemCalls(
     { execute, provider, contractComponents }: SetupNetworkResult,
 ) {
     // TODO: this is entity id not realm id 
-    const build_labor = async ({ realm_id, resource_type, labor_units, multiplier }: { realm_id: number.BigNumberish, resource_type: number.BigNumberish, labor_units: number.BigNumberish, multiplier: number.BigNumberish }) => {
+    const build_labor = async ({ realm_id, resource_type, labor_units, multiplier }: { realm_id: num.BigNumberish, resource_type: num.BigNumberish, labor_units: num.BigNumberish, multiplier: num.BigNumberish }) => {
         const tx = await execute("BuildLabor", [realm_id, resource_type, labor_units, multiplier]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash);
         const events = getEvents(receipt);
         setComponentsFromEvents(contractComponents, events);
     }
 
     // TODO: this is entity id not realm id 
-    const harvest_labor = async ({ realm_id, resource_type }: { realm_id: number.BigNumberish, resource_type: number.BigNumberish }) => {
+    const harvest_labor = async ({ realm_id, resource_type }: { realm_id: num.BigNumberish, resource_type: num.BigNumberish }) => {
         const tx = await execute("HarvestLabor", [realm_id, resource_type]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash);
         const events = getEvents(receipt);
         setComponentsFromEvents(contractComponents, events);
     }
 
-    const mint_resources = async ({ entity_id, resource_type, amount }: { entity_id: number.BigNumberish, resource_type: number.BigNumberish, amount: number.BigNumberish }) => {
+    const mint_resources = async ({ entity_id, resource_type, amount }: { entity_id: num.BigNumberish, resource_type: num.BigNumberish, amount: num.BigNumberish }) => {
         const tx = await execute("MintResources", [entity_id, resource_type, amount]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash);
         const events = getEvents(receipt);
         setComponentsFromEvents(contractComponents, events);
     }
 
-    const make_fungible_order = async ({ maker_id, maker_entity_types, maker_quantities, taker_entity_types, taker_quantities }: { maker_id: number.BigNumberish, maker_entity_types: number.BigNumberish[], maker_quantities: number.BigNumberish[], taker_entity_types: number.BigNumberish[], taker_quantities: number.BigNumberish[] }) => {
+    const make_fungible_order = async ({ maker_id, maker_entity_types, maker_quantities, taker_entity_types, taker_quantities }: { maker_id: num.BigNumberish, maker_entity_types: num.BigNumberish[], maker_quantities: num.BigNumberish[], taker_entity_types: num.BigNumberish[], taker_quantities: num.BigNumberish[] }) => {
         const tx = await execute("MakeFungibleOrder", [maker_id, maker_entity_types.length, ...maker_entity_types, maker_quantities.length, ...maker_quantities, 0, taker_entity_types.length, ...taker_entity_types, taker_quantities.length, ...taker_quantities, 1, Date.now() / 1000 + 2628000]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash);
         const events = getEvents(receipt);
         setComponentsFromEvents(contractComponents, events);
         // DISCUSS: trade_id NEEDED to continue to next step
@@ -43,32 +43,32 @@ export function createSystemCalls(
         return trade_id;
     }
 
-    const take_fungible_order = async ({ taker_id, trade_id }: { taker_id: number.BigNumberish, trade_id: number.BigNumberish }) => {
+    const take_fungible_order = async ({ taker_id, trade_id }: { taker_id: num.BigNumberish, trade_id: num.BigNumberish }) => {
         const tx = await execute("TakeFungibleOrder", [taker_id, trade_id]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash);
         const events = getEvents(receipt);
         setComponentsFromEvents(contractComponents, events);
     }
 
-    const change_order_status = async ({ realm_id, trade_id, new_status }: { realm_id: number.BigNumberish, trade_id: number.BigNumberish, new_status: number.BigNumberish }) => {
+    const change_order_status = async ({ realm_id, trade_id, new_status }: { realm_id: num.BigNumberish, trade_id: num.BigNumberish, new_status: num.BigNumberish }) => {
         const tx = await execute("ChangeOrderStatus", [realm_id, trade_id, new_status]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash);
         const events = getEvents(receipt);
         setComponentsFromEvents(contractComponents, events);
     }
 
-    const create_free_transport_unit = async ({ realm_id, quantity }: { realm_id: number.BigNumberish, quantity: number.BigNumberish }): Promise<number> => {
+    const create_free_transport_unit = async ({ realm_id, quantity }: { realm_id: num.BigNumberish, quantity: num.BigNumberish }): Promise<number> => {
         const tx = await execute("CreateFreeTransportUnit", [realm_id, quantity]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash);
         const events = getEvents(receipt);
         setComponentsFromEvents(contractComponents, events);
         // TODO: use getEntityIdFromEvents
         return parseInt(events[1].data[2])
     }
 
-    const create_caravan = async ({ entity_ids }: { entity_ids: number.BigNumberish[] }): Promise<number> => {
+    const create_caravan = async ({ entity_ids }: { entity_ids: num.BigNumberish[] }): Promise<number> => {
         const tx = await execute("CreateCaravan", [entity_ids.length, ...entity_ids]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash);
         const events = getEvents(receipt);
         setComponentsFromEvents(contractComponents, events);
         // TODO: use getEntityIdFromEvents
@@ -76,23 +76,23 @@ export function createSystemCalls(
         return caravan_id;
     }
 
-    const attach_caravan = async ({ realm_id, trade_id, caravan_id }: { realm_id: number.BigNumberish, trade_id: number.BigNumberish, caravan_id: number.BigNumberish }) => {
+    const attach_caravan = async ({ realm_id, trade_id, caravan_id }: { realm_id: num.BigNumberish, trade_id: num.BigNumberish, caravan_id: num.BigNumberish }) => {
         const tx = await execute("AttachCaravan", [realm_id, trade_id, caravan_id]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash);
         const events = getEvents(receipt);
         setComponentsFromEvents(contractComponents, events);
     }
 
-    const claim_fungible_order = async ({ entity_id, trade_id }: { entity_id: number.BigNumberish, trade_id: number.BigNumberish }) => {
+    const claim_fungible_order = async ({ entity_id, trade_id }: { entity_id: num.BigNumberish, trade_id: num.BigNumberish }) => {
         const tx = await execute("ClaimFungibleOrder", [entity_id, trade_id]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash);
         const events = getEvents(receipt);
         setComponentsFromEvents(contractComponents, events);
     }
 
-    const create_realm = async ({ realm_id, owner, resource_types_packed, resource_types_count, cities, harbors, rivers, regions, wonder, order, position }: { realm_id: number.BigNumberish, owner: number.BigNumberish, resource_types_packed: number.BigNumberish, resource_types_count: number.BigNumberish, cities: number.BigNumberish, harbors: number.BigNumberish, rivers: number.BigNumberish, regions: number.BigNumberish, wonder: number.BigNumberish, order: number.BigNumberish, position: { x: number.BigNumberish, y: number.BigNumberish } }) => {
+    const create_realm = async ({ realm_id, owner, resource_types_packed, resource_types_count, cities, harbors, rivers, regions, wonder, order, position }: { realm_id: num.BigNumberish, owner: num.BigNumberish, resource_types_packed: num.BigNumberish, resource_types_count: num.BigNumberish, cities: num.BigNumberish, harbors: num.BigNumberish, rivers: num.BigNumberish, regions: num.BigNumberish, wonder: num.BigNumberish, order: num.BigNumberish, position: { x: num.BigNumberish, y: num.BigNumberish } }) => {
         const tx = await execute("CreateRealm", [realm_id, owner, resource_types_packed, resource_types_count, cities, harbors, rivers, regions, wonder, order, position.x, position.y]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash);
         const events = getEvents(receipt);
         setComponentsFromEvents(contractComponents, events);
         let realm_entity_id: number = 0;
