@@ -30,6 +30,7 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
 
   const {
     systemCalls: { change_order_status },
+    optimisticSystemCalls: { optimisticCancelOffer },
   } = useDojo();
 
   const { realmEntityId, realmId } = useRealmStore();
@@ -57,8 +58,8 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
   );
 
   // TODO: how to only call once when useSyncTradeResources has finished syncincg ?
-  let resourcesGet = getTradeResources(myOffer.makerOrderId);
-  let resourcesGive = getTradeResources(myOffer.takerOrderId);
+  let resourcesGet = getTradeResources(myOffer.takerOrderId);
+  let resourcesGive = getTradeResources(myOffer.makerOrderId);
 
   const getResourceTrait = useMemo(() => {
     return (resourceId: number) => findResourceById(resourceId)?.trait as any;
@@ -126,9 +127,7 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
         </div>
         {!isLoading && (
           <Button
-            onClick={() => {
-              cancelOffer();
-            }}
+            onClick={optimisticCancelOffer(myOffer.tradeId, cancelOffer)}
             variant={"danger"}
             className="ml-auto p-2 !h-4 text-xxs !rounded-md"
           >{`Cancel`}</Button>

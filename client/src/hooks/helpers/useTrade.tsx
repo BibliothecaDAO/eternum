@@ -6,7 +6,7 @@ import {
 import { useDojo } from "../../DojoContext";
 import { Resource } from "../../types";
 import { MarketInterface } from "../graphql/useGraphQLQueries";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useRealmStore from "../store/useRealmStore";
 import { getEntitiesWithoutValue } from "../../utils/mud";
 import { getEntityIdFromKeys } from "../../utils/utils";
@@ -52,6 +52,11 @@ export function useGetMyOffers() {
 
   const [myOffers, setMyOffers] = useState<MarketInterface[]>([]);
   const [entityIds, setEntityIds] = useState<EntityIndex[]>([]);
+  const previousEntityIds = useRef(entityIds);
+
+  useEffect(() => {
+    previousEntityIds.current = entityIds;
+  });
 
   useEffect(() => {
     const getEntities = () => {
@@ -61,7 +66,12 @@ export function useGetMyOffers() {
       const set2 = getEntitiesWithValue(Trade, { maker_id: realmEntityId });
       // only keep trades that are in both sets
       const entityIds = Array.from(set1).filter((value) => set2.has(value));
-      setEntityIds(entityIds);
+      entityIds.sort((a, b) => b - a);
+      if (
+        JSON.stringify(previousEntityIds.current) !== JSON.stringify(entityIds)
+      ) {
+        setEntityIds(entityIds);
+      }
     };
     getEntities();
     const intervalId = setInterval(getEntities, 1000); // run every second
@@ -87,7 +97,7 @@ export function useGetMyOffers() {
       .filter(Boolean) as MarketInterface[];
     setMyOffers(trades);
     // only recompute when different number of orders
-  }, [entityIds.length]);
+  }, [entityIds]);
 
   return {
     myOffers,
@@ -104,12 +114,23 @@ export function useGetMarket() {
   const [market, setMarket] = useState<MarketInterface[]>([]);
   const [entityIds, setEntityIds] = useState<EntityIndex[]>([]);
 
+  const previousEntityIds = useRef(entityIds);
+
+  useEffect(() => {
+    previousEntityIds.current = entityIds;
+  });
+
   useEffect(() => {
     const getEntities = () => {
       const set1 = getEntitiesWithValue(Status, { value: 0 });
       const set2 = getEntitiesWithoutValue(Trade, { maker_id: realmEntityId });
       const entityIds = Array.from(set1).filter((value) => set2.has(value));
-      setEntityIds(entityIds);
+      entityIds.sort((a, b) => b - a);
+      if (
+        JSON.stringify(previousEntityIds.current) !== JSON.stringify(entityIds)
+      ) {
+        setEntityIds(entityIds);
+      }
     };
     getEntities();
     const intervalId = setInterval(getEntities, 1000); // Fetch every second
@@ -135,7 +156,7 @@ export function useGetMarket() {
       .filter(Boolean) as MarketInterface[];
     setMarket(trades);
     // only recompute when different number of entities
-  }, [entityIds.length]);
+  }, [entityIds]);
 
   return {
     market,

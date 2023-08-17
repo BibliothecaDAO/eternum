@@ -172,7 +172,7 @@ export interface IncomingOrdersInterface {
 // incoming orders and market in the syncing hooks
 export const useSyncIncomingOrders = (realmEntityId: number) => {
   const { components } = useDojo();
-  useEffect(() => {
+  useMemo(() => {
     const fetchData = async () => {
       try {
         const { data } = await sdk.getIncomingOrders({
@@ -260,7 +260,7 @@ export const useGetRealm = ({
   const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
   const [error, setError] = useState<unknown>(null);
 
-  useEffect(() => {
+  useMemo(() => {
     const fetchData = async () => {
       setStatus(FetchStatus.Loading);
       try {
@@ -387,7 +387,7 @@ export const useSyncCaravanInfo = (
   counterpartyOrderId: number,
 ) => {
   const { components } = useDojo();
-  useEffect(() => {
+  useMemo(() => {
     const fetchData = async () => {
       try {
         const { data } = await sdk.getCaravanInfo({
@@ -418,7 +418,7 @@ export interface PositionInterface {
 
 export const useSyncRealmCaravans = (x: number, y: number) => {
   const { components } = useDojo();
-  useEffect(() => {
+  useMemo(() => {
     async function fetchData() {
       try {
         const { data } = await sdk.getRealmsCaravans({ x: x, y: y });
