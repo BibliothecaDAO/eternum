@@ -64,6 +64,7 @@ export const LaborComponent = ({
     getEntityIdFromKeys([BigInt(realm.realm_id), BigInt(resourceId)]),
   );
 
+  // TODO: better way to stop loading, because this will stop it directly with optimistic rendering
   useEffect(() => {
     setBuildLoadingStates((prevStates: { [key: number]: boolean }) => ({
       ...prevStates,
