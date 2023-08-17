@@ -1,9 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { FilterButton } from '../elements/FilterButton';
 import { SecondaryPopup } from '../elements/SecondaryPopup';
 import { orders } from '../constants/orders';
-import { SelectBox } from '../elements/SelectBox';
-import { ResourceIcon } from '../elements/ResourceIcon';
 import { ReactComponent as CloseIcon } from '../assets/icons/common/cross.svg';
 import Button from '../elements/Button';
 import { OrderIcon } from '../elements/OrderIcon';
@@ -33,7 +31,7 @@ export const OrdersFilter = ({ }: OrdersFilterProps) => {
                     <div className='flex items-center space-x-1'>
                         <div className='mr-0.5'>Orders:</div>
                         {selectedOrders.map((order, index) => (
-                            <OrderIcon order={order} size='xs' />
+                            <OrderIcon key={index} order={order} size='xs' />
                         ))}
                         <CloseIcon className="w-3 h-3 cursor-pointer fill-white" onClick={() => setSelectedOrders([])} />
                     </div>
@@ -41,7 +39,7 @@ export const OrdersFilter = ({ }: OrdersFilterProps) => {
                 <SecondaryPopup.Body width={'w-[284px]'}>
                     <div className='grid grid-cols-4 gap-2 p-2'>
                         {orders.map((order, index) => (
-                            <div className={clsx('flex cursor-pointer flex-col items-center py-2 hover:bg-dark rounded-xl text-gold text-xxs',
+                            <div key={index} className={clsx('flex cursor-pointer flex-col items-center py-2 hover:bg-dark rounded-xl text-gold text-xxs',
                                 selectedOrders.includes(order.orderName) && `bg-order-${order.orderName.toLowerCase()} !text-white`
                             )} onClick={() => selectOrder(order.orderName)}>
                                 <OrderIcon color={selectedOrders.includes(order.orderName) ? 'white' : undefined} order={order.orderName} size='xs' className='mb-2' />

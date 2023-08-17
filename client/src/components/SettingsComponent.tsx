@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import { ReactComponent as Crown } from "../assets/icons/common/crown-circle-outline.svg";
 import { ReactComponent as Settings } from "../assets/icons/common/settings.svg";
 import { ReactComponent as CloseIcon } from "../assets/icons/common/cross.svg";
@@ -12,7 +12,7 @@ import useUIStore from "../hooks/store/useUIStore";
 import useScreenOrientation from "../hooks/useScreenOrientation";
 type SettingsComponentProps = {};
 
-export const SettingsComponent = ({}: SettingsComponentProps) => {
+export const SettingsComponent = ({ }: SettingsComponentProps) => {
   const [showSettings, setShowSettings] = useState(false);
   const musicLevel = useUIStore((state) => state.musicLevel);
   const effectsLevel = useUIStore((state) => state.effectsLevel);
@@ -44,7 +44,7 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
               <div className="mr-0.5">Settings</div>
               <CloseIcon
                 className="w-3 h-3 cursor-pointer fill-white"
-                onClick={() => {}}
+                onClick={() => { }}
               />
             </div>
           </SecondaryPopup.Head>

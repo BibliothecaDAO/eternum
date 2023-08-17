@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../elements/SecondaryPopup";
 import Button from "../../../../elements/Button";
 import { Headline } from "../../../../elements/Headline";
@@ -28,7 +28,6 @@ type CreateOfferPopupProps = {
 
 export const CreateOfferPopup = ({
   onClose,
-  onCreate,
 }: CreateOfferPopupProps) => {
   const [step, setStep] = useState<number>(1);
   const [selectedResourceIdsGive, setSelectedResourceIdsGive] = useState<
@@ -205,12 +204,12 @@ export const CreateOfferPopup = ({
           {isLoading && (
             <Button
               isLoading={true}
-              onClick={() => {}}
+              onClick={() => { }}
               variant="danger"
               className="ml-auto p-2 !h-4 text-xxs !rounded-md"
             >
               {" "}
-              {}{" "}
+              { }{" "}
             </Button>
           )}
         </div>
@@ -239,7 +238,7 @@ const SelectResourcesPanel = ({
       <div className="flex flex-col items-center col-span-4">
         <Headline className="mb-2">You Give</Headline>
         <div className="grid grid-cols-4 gap-2">
-          {resources.map(({ id, trait: name }) => {
+          {resources.map(({ id, trait: _name }) => {
             let resourceBalance = realmResources[id]?.amount ?? 0;
             return (
               <SelectableResource
@@ -271,7 +270,7 @@ const SelectResourcesPanel = ({
       <div className="flex flex-col items-center col-span-4">
         <Headline className="mb-2">You Get</Headline>
         <div className="grid grid-cols-4 gap-2">
-          {resources.map(({ id, trait: name }) => (
+          {resources.map(({ id, trait: _name }) => (
             <SelectableResource
               key={id}
               resourceId={id}
@@ -325,7 +324,7 @@ const SelectResourcesAmountPanel = ({
   useEffect(() => {
     // set resource weight in kg
     let weight = 0;
-    for (const [resourceId, amount] of Object.entries(
+    for (const [_resourceId, amount] of Object.entries(
       selectedResourcesGiveAmounts,
     )) {
       weight += amount * 1;
@@ -359,11 +358,10 @@ const SelectResourcesAmountPanel = ({
                   />
                 </div>
                 <div
-                  className={`ml-2 text-xs ${
-                    selectedResourcesGiveAmounts[id] <= resourceBalance
-                      ? "text-orange"
-                      : "text-red"
-                  } cursor-pointer`}
+                  className={`ml-2 text-xs ${selectedResourcesGiveAmounts[id] <= resourceBalance
+                    ? "text-orange"
+                    : "text-red"
+                    } cursor-pointer`}
                   onClick={() => {
                     setSelectedResourcesGiveAmounts({
                       ...selectedResourcesGiveAmounts,
@@ -454,18 +452,18 @@ export const SelectCaravanPanel = ({
     () =>
       realmCaravans
         ? (realmCaravans
-            .map((caravan) => {
-              const isIdle =
-                nextBlockTimestamp &&
-                caravan.arrivalTime <= nextBlockTimestamp &&
-                !caravan.blocked;
-              // capacity in gr (1kg = 1000gr)
-              const canCarry = caravan.capacity / 1000 >= resourceWeight;
-              if (isIdle && canCarry) {
-                return caravan;
-              }
-            })
-            .filter(Boolean) as CaravanInterface[])
+          .map((caravan) => {
+            const isIdle =
+              nextBlockTimestamp &&
+              caravan.arrivalTime <= nextBlockTimestamp &&
+              !caravan.blocked;
+            // capacity in gr (1kg = 1000gr)
+            const canCarry = caravan.capacity / 1000 >= resourceWeight;
+            if (isIdle && canCarry) {
+              return caravan;
+            }
+          })
+          .filter(Boolean) as CaravanInterface[])
         : [],
     [realmCaravans],
   );
@@ -576,9 +574,8 @@ export const SelectCaravanPanel = ({
               caravan={caravan}
               idleOnly={true}
               onClick={() => setSelectedCaravan(caravan.caravanId)}
-              className={`w-full mb-2 border rounded-md ${
-                selectedCaravan === caravan.caravanId ? "border-yellow" : ""
-              }`}
+              className={`w-full mb-2 border rounded-md ${selectedCaravan === caravan.caravanId ? "border-yellow" : ""
+                }`}
             />
           ))}
         </>

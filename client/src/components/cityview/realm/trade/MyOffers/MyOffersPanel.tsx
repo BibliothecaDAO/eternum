@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { FiltersPanel } from "../../../../../elements/FiltersPanel";
 import { FilterButton } from "../../../../../elements/FilterButton";
 import { SortPanel } from "../../../../../elements/SortPanel";
@@ -14,7 +14,7 @@ import { useGetMyOffers } from "../../../../../hooks/helpers/useTrade";
 
 type MarketPanelProps = {};
 
-export const MyOffersPanel = ({}: MarketPanelProps) => {
+export const MyOffersPanel = ({ }: MarketPanelProps) => {
   const { realmEntityId } = useRealmStore();
 
   const [activeFilter, setActiveFilter] = useState(false);
@@ -72,7 +72,7 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
       {showCreateOffer && (
         <CreateOfferPopup
           onClose={() => setShowCreateOffer(false)}
-          onCreate={() => {}}
+          onCreate={() => { }}
         />
       )}
       {myOffers.length &&

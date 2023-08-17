@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../elements/SecondaryPopup";
 import Button from "../../../../elements/Button";
 import { Headline } from "../../../../elements/Headline";
@@ -15,9 +15,6 @@ import { BuildingsCount } from "../../../../elements/BuildingsCount";
 import clsx from "clsx";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../DojoContext";
-import { Utils } from "@dojoengine/core";
-import { LABOR_CONFIG_ID } from "../../../../constants/labor";
-import { unpackResources } from "../../../../utils/packedData";
 import { formatSecondsLeftInDaysHours } from "./laborUtils";
 import {
   RealmResourcesInterface,
@@ -240,9 +237,8 @@ export const LaborBuildPopup = ({
               {resourceId === 254 && (
                 <div className="flex items-center">
                   <Farms className="mr-1" />
-                  <span className="mr-1 font-bold">{`${multiplier}/${
-                    realm?.rivers || 0
-                  }`}</span>{" "}
+                  <span className="mr-1 font-bold">{`${multiplier}/${realm?.rivers || 0
+                    }`}</span>{" "}
                   Farms
                 </div>
               )}
@@ -250,9 +246,8 @@ export const LaborBuildPopup = ({
                 <div className="flex items-center">
                   {/* // DISCUSS: can only be 0, because that is when you can build */}
                   <FishingVillages className="mr-1" />
-                  <span className="mr-1 font-bold">{`${multiplier}/${
-                    realm?.harbors || 0
-                  }`}</span>{" "}
+                  <span className="mr-1 font-bold">{`${multiplier}/${realm?.harbors || 0
+                    }`}</span>{" "}
                   Fishing Villages
                 </div>
               )}
@@ -267,11 +262,10 @@ export const LaborBuildPopup = ({
                         </div> */}
             {laborConfig && (
               <div className="flex items-center">
-                {`+${
-                  isFood
-                    ? (laborConfig.base_food_per_cycle * multiplier) / 2
-                    : ""
-                }${isFood ? "" : laborConfig.base_resources_per_cycle / 2}`}
+                {`+${isFood
+                  ? (laborConfig.base_food_per_cycle * multiplier) / 2
+                  : ""
+                  }${isFood ? "" : laborConfig.base_resources_per_cycle / 2}`}
                 <ResourceIcon
                   containerClassName="mx-0.5"
                   className="!w-[12px]"

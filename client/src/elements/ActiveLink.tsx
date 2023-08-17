@@ -1,4 +1,4 @@
-import { Switch, Route, Link, useRoute } from "wouter";
+import { Link, useRoute } from "wouter";
 
 const ActiveLink = (props: any) => {
     const [isActive] = useRoute(props.href);

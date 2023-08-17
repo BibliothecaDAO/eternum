@@ -1,7 +1,6 @@
 import RealmInfoComponent from "../components/cityview/realm/RealmInfoComponent";
 import RealmManagementComponent from "../components/cityview/realm/RealmManagementComponent";
 import { BaseContainer } from "../containers/BaseContainer";
-import { Utils } from "@dojoengine/core";
 import useRealmStore from "../hooks/store/useRealmStore";
 import { Transition } from "@headlessui/react";
 import { Fragment } from "react";

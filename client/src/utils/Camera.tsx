@@ -11,12 +11,6 @@ import { useRoute } from "wouter";
 import realmsJson from "../geodata/realms.json";
 import { soundSelector, useUiSounds } from "../hooks/useUISound";
 
-interface Point {
-  x: number;
-  y: number;
-  z: number;
-}
-
 interface Props {
   position: {
     x: number;
@@ -41,7 +35,7 @@ const CameraControls = ({ position, target }: Props) => {
   const setCameraPosition = useUIStore((state) => state.setCameraPosition);
   const setCameraTarget = useUIStore((state) => state.setCameraTarget);
 
-  const [isRealmView, realmId] = useRoute("/realm/:realmId");
+  const [isRealmView, _realmId] = useRoute("/realm/:realmId");
 
   const maxDistance = useMemo(() => {
     return isRealmView ? 3000 : 1400;

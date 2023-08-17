@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { FiltersPanel } from "../../../../../elements/FiltersPanel";
 import { FilterButton } from "../../../../../elements/FilterButton";
 import { SortPanel } from "../../../../../elements/SortPanel";
@@ -16,7 +16,7 @@ import { useGetRealmCaravans } from "../../../../../hooks/helpers/useCaravans";
 
 type CaravansPanelProps = {};
 
-export const CaravansPanel = ({}: CaravansPanelProps) => {
+export const CaravansPanel = ({ }: CaravansPanelProps) => {
   const [activeFilter, setActiveFilter] = useState(false);
   const [showCaravanDetails, setShowCaravanDetails] = useState(false);
   const [selectedCaravan, setSelectedCaravan] =

@@ -46,7 +46,7 @@ export const soundSelector = {
 export const useUiSounds = (selector: string) => {
   const effectsLevel = useUIStore((state) => state.effectsLevel);
 
-  const [play, { stop }] = useSound(dir + selector, {
+  const [play] = useSound(dir + selector, {
     volume: effectsLevel / 100,
   });
 

@@ -1,4 +1,3 @@
-import { BaseContainer } from "../../containers/BaseContainer"
 import ProgressBar from "../../elements/ProgressBar"
 
 const EpochCountdown = () => {

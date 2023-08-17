@@ -4,7 +4,7 @@ import Button from "../../../../../elements/Button";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
 import { findResourceById } from "../../../../../constants/resources";
 import { ReactComponent as RatioIcon } from "../../../../../assets/icons/common/ratio.svg";
-import { Resource, ResourcesOffer } from "../../../../../types";
+import { ResourcesOffer } from "../../../../../types";
 import { orderNameDict } from "../../../../../constants/orders";
 import * as realmsData from "../../../../../geodata/realms.json";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
@@ -26,7 +26,6 @@ type TradeOfferProps = {
 export const MarketOffer = ({
   marketOffer,
   onAccept,
-  ...props
 }: TradeOfferProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [canAccept, setCanAccept] = useState(true);
@@ -131,11 +130,11 @@ export const MarketOffer = ({
         {isLoading && (
           <Button
             isLoading={true}
-            onClick={() => {}}
+            onClick={() => { }}
             variant="danger"
             className="ml-auto p-2 !h-4 text-xxs !rounded-md"
           >
-            {}
+            { }
           </Button>
         )}
       </div>

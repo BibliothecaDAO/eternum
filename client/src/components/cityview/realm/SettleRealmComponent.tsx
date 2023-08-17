@@ -1,13 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { ReactComponent as SkullIcon } from "../../../assets/icons/common/skull.svg";
-import { ReactComponent as ShieldIcon } from "../../../assets/icons/common/shield.svg";
-import { ReactComponent as HappyIcon } from "../../../assets/icons/common/happy.svg";
+import { useState } from "react";
 import Button from "../../../elements/Button";
 import realms from "../../../data/realms.json";
 import realmCoords from "../../../geodata/coords.json";
-
-import clsx from "clsx";
-import { BaseStatus } from "../../../elements/BaseStatus";
 import { useDojo } from "../../../DojoContext";
 import { Realm } from "../../../types";
 import { findResourceIdByTrait } from "../../../constants/resources";
@@ -17,11 +11,7 @@ import { getLatestRealmId } from "../../../hooks/graphql/useGraphQLQueries";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 
-type RealmStatusComponentProps = {} & React.ComponentPropsWithRef<"div">;
-
-export const SettleRealmComponent = ({
-  className,
-}: RealmStatusComponentProps) => {
+export const SettleRealmComponent = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -54,9 +44,9 @@ export const SettleRealmComponent = ({
     const entityIds = localStorage.getItem("entityIds");
     const updatedEntityIds = entityIds
       ? [
-          ...JSON.parse(entityIds),
-          { realmEntityId: entity_id, realmId: new_realm_id },
-        ]
+        ...JSON.parse(entityIds),
+        { realmEntityId: entity_id, realmId: new_realm_id },
+      ]
       : [{ realmEntityId: entity_id, realmId: new_realm_id }];
     localStorage.setItem("entityIds", JSON.stringify(updatedEntityIds));
     setRealmEntityIds(updatedEntityIds);
@@ -83,11 +73,11 @@ export const SettleRealmComponent = ({
       {isLoading && (
         <Button
           isLoading={true}
-          onClick={() => {}}
+          onClick={() => { }}
           variant="danger"
           className="ml-2 p-2 !h-4 text-xxs !rounded-md"
         >
-          {}
+          { }
         </Button>
       )}
       <Button

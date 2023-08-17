@@ -1,5 +1,4 @@
 import clsx from "clsx";
-import { useMemo } from "react";
 
 type CircleButtonProps = {
   children?: React.ReactNode;

@@ -11,7 +11,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import useRealmStore from "../store/useRealmStore";
 import { getEntitiesWithoutValue } from "../../utils/mud";
-import { getEntityIdFromKeys } from "@dojoengine/core/dist/utils";
+import { getEntityIdFromKeys } from "../../utils/utils";
 
 export function useIncomingOrders() {
   const {
