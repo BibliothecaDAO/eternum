@@ -6,9 +6,7 @@ import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import {
   MarketInterface,
-  useSyncTradeResources,
 } from "../../../../hooks/graphql/useGraphQLQueries";
-import { number } from "starknet";
 import { useTrade } from "../../../../hooks/helpers/useTrade";
 
 type AcceptOfferPopupProps = {
@@ -172,12 +170,12 @@ export const AcceptOfferPopup = ({
             {isLoading && (
               <Button
                 isLoading={true}
-                onClick={() => {}}
+                onClick={() => { }}
                 variant="danger"
                 className="ml-auto p-2 !h-4 text-xxs !rounded-md"
               >
                 {" "}
-                {}{" "}
+                { }{" "}
               </Button>
             )}
           </div>

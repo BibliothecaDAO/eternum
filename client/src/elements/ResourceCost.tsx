@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { findResourceById } from "../constants/resources";
 import { ResourceIcon } from "./ResourceIcon";
 import clsx from "clsx";

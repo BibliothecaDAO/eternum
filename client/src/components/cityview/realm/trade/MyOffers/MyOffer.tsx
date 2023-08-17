@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
@@ -21,7 +21,7 @@ type TradeOfferProps = {
   myOffer: MarketInterface;
 };
 
-export const MyOffer = ({ myOffer, ...props }: TradeOfferProps) => {
+export const MyOffer = ({ myOffer }: TradeOfferProps) => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -135,11 +135,11 @@ export const MyOffer = ({ myOffer, ...props }: TradeOfferProps) => {
         {isLoading && (
           <Button
             isLoading={true}
-            onClick={() => {}}
+            onClick={() => { }}
             variant="danger"
             className="ml-auto p-2 !h-4 text-xxs !rounded-md"
           >
-            {}
+            { }
           </Button>
         )}
       </div>

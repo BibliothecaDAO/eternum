@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { BaseContainer } from "../../../containers/BaseContainer";
-import { SecondaryContainer } from "../../../containers/SecondaryContainer";
 import { ReactComponent as CrossSwords } from "../../../assets/icons/common/cross-swords.svg";
 import { ReactComponent as PickAxeSecond } from "../../../assets/icons/common/pick-axe-second.svg";
 import { ReactComponent as Coin } from "../../../assets/icons/common/coin.svg";
@@ -15,7 +13,6 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useGetRealm } from "../../../hooks/graphql/useGraphQLQueries";
 import RealmStatusComponent from "./RealmStatusComponent";
-import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 
 const RealmManagementComponent = () => {
   const { realmEntityId } = useRealmStore();
@@ -23,7 +20,7 @@ const RealmManagementComponent = () => {
 
   const [selectedTab, setSelectedTab] = useState(1);
 
-  const [location, setLocation] = useLocation();
+  const [_location, setLocation] = useLocation();
 
   const moveCameraToMarketView = useUIStore(
     (state) => state.moveCameraToMarketView,

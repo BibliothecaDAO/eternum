@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { ReactComponent as SkullIcon } from "../../../assets/icons/common/skull.svg";
 import { ReactComponent as ShieldIcon } from "../../../assets/icons/common/shield.svg";
 import { ReactComponent as HappyIcon } from "../../../assets/icons/common/happy.svg";

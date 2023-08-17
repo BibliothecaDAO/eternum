@@ -1,5 +1,4 @@
 export function unpackResources(packedValue: bigint, valueCount: number): number[] {
-  const MAX_BITS = 128;
   const MAX_NUMBER_SIZE = 8;
 
   const unpackedNumbers = [];

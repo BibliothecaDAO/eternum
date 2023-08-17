@@ -1,4 +1,4 @@
-import React, { ComponentPropsWithRef, useState } from 'react';
+import { ComponentPropsWithRef, useState } from 'react';
 import { OrderIcon } from './OrderIcon';
 import clsx from 'clsx';
 

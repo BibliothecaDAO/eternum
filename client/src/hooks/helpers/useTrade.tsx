@@ -1,4 +1,3 @@
-import { getEntityIdFromKeys } from "@dojoengine/core/dist/utils";
 import {
   EntityIndex,
   getComponentValue,
@@ -10,6 +9,7 @@ import { MarketInterface } from "../graphql/useGraphQLQueries";
 import { useEffect, useMemo, useRef, useState } from "react";
 import useRealmStore from "../store/useRealmStore";
 import { getEntitiesWithoutValue } from "../../utils/mud";
+import { getEntityIdFromKeys } from "../../utils/utils";
 
 export function useTrade() {
   const {

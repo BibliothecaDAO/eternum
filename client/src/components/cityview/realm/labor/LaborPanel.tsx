@@ -1,6 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { FiltersPanel } from "../../../../elements/FiltersPanel";
-import { FilterButton } from "../../../../elements/FilterButton";
+import { useMemo, useState } from "react";
 import { SortPanel } from "../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../elements/SortButton";
 import { LaborComponent } from "./LaborComponent";
@@ -10,7 +8,6 @@ import { ResourcesIds } from "../../../../constants/resources";
 import { LaborBuildPopup } from "./LaborBuild";
 import { LaborConfig } from "../../../../types";
 import {
-  useGetRealm,
   useGetRealmLabor,
   useGetRealmResources,
 } from "../../../../hooks/graphql/useGraphQLQueries";
@@ -19,7 +16,6 @@ import { getRealm } from "../SettleRealmComponent";
 type LaborPanelProps = {};
 
 export const LaborPanel = ({ }: LaborPanelProps) => {
-  const [activeFilter, setActiveFilter] = useState(false);
   const [buildResource, setBuildResource] = useState<number | null>(null);
   const [buildLoadingStates, setBuildLoadingStates] = useState<{
     [key: number]: boolean;

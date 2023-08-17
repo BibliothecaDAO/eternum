@@ -1,7 +1,6 @@
 import { findResourceById } from "../../../constants/resources";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
 import { currencyFormat } from "../../../utils/utils";
-import useRealmStore from "../../../hooks/store/useRealmStore";
 import { ResourceInterface } from "../../../hooks/graphql/useGraphQLQueries";
 
 export const SmallResource = ({
@@ -11,7 +10,6 @@ export const SmallResource = ({
   resourceId: number;
   resource: ResourceInterface | undefined;
 }) => {
-  const { realmEntityId } = useRealmStore();
   return (
     <div className="flex items-center">
       <ResourceIcon

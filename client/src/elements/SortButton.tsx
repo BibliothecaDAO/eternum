@@ -1,4 +1,3 @@
-import React from 'react';
 import { ReactComponent as CaretDown } from '../assets/icons/common/caret-down.svg';
 import { ReactComponent as CaretUp } from '../assets/icons/common/caret-up.svg';
 import clsx from 'clsx';

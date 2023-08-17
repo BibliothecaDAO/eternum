@@ -1,5 +1,3 @@
-import React from "react";
-
 type RangeInputProps = {
   title: string;
   fromTitle?: string;
@@ -18,7 +16,6 @@ export const RangeInput = ({
   toTitle = "Max.",
   value,
   onChange,
-  className,
   step = 1,
   max = 100,
   min = 0,

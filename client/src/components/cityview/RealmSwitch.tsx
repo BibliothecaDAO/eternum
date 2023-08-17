@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import React, {
+import {
   ComponentPropsWithRef,
   useEffect,
   useMemo,
@@ -9,13 +9,12 @@ import CircleButton from "../../elements/CircleButton";
 import { OrderIcon } from "../../elements/OrderIcon";
 import { Badge } from "../../elements/Badge";
 import { RealmBadge } from "../../elements/RealmBadge";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import useRealmStore from "../../hooks/store/useRealmStore";
 import { orderNameDict } from "../../constants/orders";
 import realmsNames from "../../geodata/realms.json";
 import useUIStore from "../../hooks/store/useUIStore";
 import { getRealm } from "./realm/SettleRealmComponent";
-import { soundSelector, useUiSounds } from "../../hooks/useUISound";
 
 type RealmSwitchProps = {} & ComponentPropsWithRef<"div">;
 
@@ -94,7 +93,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
           showRealms ? "max-w-[500px]" : "max-w-0",
         )}
       >
-        {yourRealms.map((realm, index) => (
+        {yourRealms.map((realm) => (
           // TODO: could not click on realm switch with the link
           <div
             key={realm.id}

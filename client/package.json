@@ -9,7 +9,7 @@
     "codegen": "graphql-codegen"
   },
   "dependencies": {
-    "@dojoengine/core": "^0.0.4",
+    "@dojoengine/core": "^0.0.15",
     "@dojoengine/react": "^0.0.3",
     "@headlessui/react": "^1.7.14",
     "@latticexyz/recs": "^1.43.0",
