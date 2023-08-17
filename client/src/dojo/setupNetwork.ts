@@ -12,7 +12,6 @@ export async function setupNetwork() {
 
     const provider = new RPCProvider(import.meta.env.VITE_WORLD_ADDRESS!, import.meta.env.VITE_KATANA_URL);
 
-
     return {
         contractComponents,
         provider,

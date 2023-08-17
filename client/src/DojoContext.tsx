@@ -23,7 +23,7 @@ export const useDojo = () => {
         nodeUrl: "http://localhost:5050",
     });
 
-    const masterAccount = new Account(provider, import.meta.env.VITE_PUBLIC_MASTER_ADDRESS!, import.meta.env.VITE_PUBLIC_MASTER_PRIVATE_KEY!)
+    const masterAccount = new Account(provider, import.meta.env.VITE_KATANA_ACCOUNT_1_ADDRESS!, import.meta.env.VITE_KATANA_ACCOUNT_1_PRIVATE_KEY!)
 
     const { create, list, get, account, select, isDeploying } = useBurner(
         {
