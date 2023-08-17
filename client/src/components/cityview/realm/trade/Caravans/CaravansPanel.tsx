@@ -37,6 +37,7 @@ export const CaravansPanel = ({ }: CaravansPanelProps) => {
     setSelectedCaravan(caravan);
   };
 
+  // TODO: find a way to avoid calling useGetRealm and useSyncRealmsCaravan at each render
   const { realm } = useGetRealm({ entityId: realmEntityId });
   useSyncRealmCaravans(realm?.position.x || 0, realm?.position.y || 0);
   const { realmCaravans } = useGetRealmCaravans(

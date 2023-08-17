@@ -30,6 +30,7 @@ export const AcceptOfferPopup = ({
   }, [selectedTrade]);
 
   const {
+    optimisticSystemCalls: { optimisticAcceptOffer },
     systemCalls: {
       attach_caravan,
       take_fungible_order,
@@ -156,7 +157,11 @@ export const AcceptOfferPopup = ({
               <Button
                 disabled={!canAcceptOffer}
                 className="!px-[6px] !py-[2px] text-xxs"
-                onClick={acceptOffer}
+                onClick={optimisticAcceptOffer(
+                  selectedTrade.tradeId,
+                  realmEntityId,
+                  acceptOffer,
+                )}
                 variant={canAcceptOffer ? "success" : "danger"}
               >
                 Accept Offer

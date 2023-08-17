@@ -1,13 +1,20 @@
 import { Components, Schema, setComponent } from "@latticexyz/recs";
-import { SetupNetworkResult } from "./setupNetwork";
-import { Event, number } from 'starknet';
+import {SetupNetworkResult } from "./setupNetwork";
+import {Event, number} from 'starknet';
+import { uuid } from "@latticexyz/utils";
+import { ClientComponents } from "./createClientComponents";
 import { getEntityIdFromKeys } from "../utils/utils";
+
+// @note: trying to get a high enough number so that it won't be an existing entity id
+// TODO: if you call multiple systems at the same time it might be a problem
+const LOW_ENTITY_ID = 9999999999;
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
 
 // NOTE: need to add waitForTransaction when connected to rinnigan
 export function createSystemCalls(
     { execute, provider, contractComponents }: SetupNetworkResult,
+    { Trade, Status, FungibleEntities, Resource }: ClientComponents,
 ) {
     // TODO: this is entity id not realm id 
     const build_labor = async ({ realm_id, resource_type, labor_units, multiplier }: { realm_id: number.BigNumberish, resource_type: number.BigNumberish, labor_units: number.BigNumberish, multiplier: number.BigNumberish }) => {
@@ -32,15 +39,74 @@ export function createSystemCalls(
         setComponentsFromEvents(contractComponents, events);
     }
 
-    const make_fungible_order = async ({ maker_id, maker_entity_types, maker_quantities, taker_entity_types, taker_quantities }: { maker_id: number.BigNumberish, maker_entity_types: number.BigNumberish[], maker_quantities: number.BigNumberish[], taker_entity_types: number.BigNumberish[], taker_quantities: number.BigNumberish[] }) => {
-        const tx = await execute("MakeFungibleOrder", [maker_id, maker_entity_types.length, ...maker_entity_types, maker_quantities.length, ...maker_quantities, 0, taker_entity_types.length, ...taker_entity_types, taker_quantities.length, ...taker_quantities, 1, Date.now() / 1000 + 2628000]);
-        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
-        const events = getEvents(receipt);
-        setComponentsFromEvents(contractComponents, events);
-        // DISCUSS: trade_id NEEDED to continue to next step
-        // DISCUSS: but for optimistic rendering just create a new uuid ? 
-        let trade_id = getEntityIdFromEvents(events, "Trade");
-        return trade_id;
+    const make_fungible_order = async ({maker_id, maker_entity_types, maker_quantities, taker_entity_types, taker_quantities}: {maker_id: number.BigNumberish, maker_entity_types: number.BigNumberish[], maker_quantities: number.BigNumberish[], taker_entity_types: number.BigNumberish[], taker_quantities: number.BigNumberish[]}) => {
+        const expires_at = Date.now()/1000 + 2628000;
+
+        // optimisitc rendering of trade
+        const overrideId = uuid();
+        const trade_id = getEntityIdFromKeys([BigInt(LOW_ENTITY_ID)]);
+        const maker_order_id = getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 1)]);
+        const taker_order_id = getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 2)]);
+        const key = getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 3)]);
+        Trade.addOverride(
+            overrideId, {
+            entity: trade_id,
+            value: { trade_id, maker_id, taker_id: 0, maker_order_id, taker_order_id, expires_at, claimed_by_maker: false, claimed_by_taker: false, taker_needs_caravan: true },
+        });
+        Status.addOverride(
+            overrideId, {
+                entity: trade_id,
+                value: {value: 0}
+            }
+        );
+        FungibleEntities.addOverride(
+            overrideId, {
+                entity: maker_order_id,
+                value: {key, count: maker_quantities.length}
+            }
+        )
+        FungibleEntities.addOverride(
+            overrideId, {
+                entity: taker_order_id,
+                value: {key, count: taker_quantities.length}
+            }
+        )
+        for (let i = 0; i < maker_quantities.length; i++) {
+            Resource.addOverride(
+                overrideId, {
+                    entity: getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 1), BigInt(LOW_ENTITY_ID + 3), BigInt(i)]), 
+                    value: {
+                        resource_type: maker_entity_types[i],
+                        balance: maker_quantities[i]
+                    }
+                }
+            )
+        }
+        for (let i = 0; i < taker_quantities.length; i++) {
+            Resource.addOverride(
+                overrideId, {
+                    entity: getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 2), BigInt(LOW_ENTITY_ID + 3), BigInt(i)]), 
+                    value: {
+                        resource_type: taker_entity_types[i],
+                        balance: taker_quantities[i]
+                    }
+                }
+            )
+        }
+
+        try {
+            const tx = await execute("MakeFungibleOrder", [maker_id, maker_entity_types.length, ...maker_entity_types, maker_quantities.length, ...maker_quantities, 0, taker_entity_types.length, ...taker_entity_types, taker_quantities.length, ...taker_quantities, 1, expires_at]);
+            const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, 500);
+            const events = getEvents(receipt);
+            setComponentsFromEvents(contractComponents, events);
+            // DISCUSS: trade_id NEEDED to continue to next step
+            // DISCUSS: but for optimistic rendering just create a new uuid ? 
+            let trade_id = getEntityIdFromEvents(events, "Trade");
+            return trade_id;
+        } finally {
+            Trade.removeOverride(overrideId);
+            Status.removeOverride(overrideId);
+        }
     }
 
     const take_fungible_order = async ({ taker_id, trade_id }: { taker_id: number.BigNumberish, trade_id: number.BigNumberish }) => {

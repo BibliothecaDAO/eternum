@@ -14,6 +14,7 @@ export const IncomingOrdersPanel = ({}: IncomingOrdersPanelProps) => {
   const [activeFilter, setActiveFilter] = useState(false);
   const { realmEntityId } = useRealmStore();
 
+  // TODO: find a way to avoid calling useSyncIncomingOrders at every render
   useSyncIncomingOrders(realmEntityId);
   const { incomingOrders } = useGetIncomingOrders();
 
