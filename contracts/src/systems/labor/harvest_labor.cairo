@@ -44,6 +44,7 @@ mod HarvestLabor {
         // if no labor, panic
         let labor = get!(ctx.world, resource_query, Labor);
 
+        // TODO: Discuss
         let maybe_resource = get!(ctx.world, resource_query, Resource);
         let mut resource = match maybe_resource.balance.into() {
             0 => Resource { entity_id: realm_id, resource_type, balance: 0 },
@@ -70,7 +71,7 @@ mod HarvestLabor {
         let remainder = labor_generated % labor_config.base_labor_units;
 
         // update resources with multiplier
-        set!(
+        let _ = set!(
             ctx.world, Resource {
                 entity_id: realm_id,
                 resource_type: resource_type,
@@ -84,7 +85,7 @@ mod HarvestLabor {
         // if is complete, balance should be set to current ts
         // remove the 
         if (is_complete) {
-            set!(
+            let _ = set!(
                 ctx.world, Labor {
                     entity_id: realm_id,
                     resource_type: resource_type,
@@ -96,7 +97,7 @@ mod HarvestLabor {
         } else {
             // if not complete, then remove what was not harvested (unharvested + remainder) 
             // from last harvest
-            set!(
+            let _ = set!(
                 ctx.world, Labor {
                     entity_id: realm_id,
                     resource_type: resource_type,
