@@ -16,7 +16,7 @@ mod GetAverageSpeed {
 
     // create an execute function that takes a list of entity ids as input and
     // returns the average speed of the entities 
-    fn execute(ctx: Context, entity_ids: Span<ID>) -> u128 {
+    fn execute(ctx: Context, entity_ids: Array<ID>) -> u128 {
         let mut total_speed: u128 = 0_u128;
         let mut total_quantity: u128 = 0_u128;
         let caller = starknet::get_tx_info().unbox().account_contract_address;
@@ -27,10 +27,10 @@ mod GetAverageSpeed {
                 break ();
             }
             // assert that they are movable
-            let movable = get !(ctx.world, (*entity_ids[index]).into(), Movable);
+            let movable = get!(ctx.world, (*entity_ids[index]).into(), Movable);
 
             // try to retrieve the Quantity component of the entity
-            let maybe_quantity = try_get !(ctx.world, (*entity_ids[index]).into(), Quantity);
+            let maybe_quantity = try_get!(ctx.world, (*entity_ids[index]).into(), Quantity);
 
             let quantity = match maybe_quantity {
                 Option::Some(res) => {
@@ -65,7 +65,7 @@ mod GetQuantity {
 
     fn execute(ctx: Context, entity_id: u128) -> u128 {
         // try to retrieve the Quantity component of the entity
-        let maybe_quantity = try_get !(ctx.world, entity_id.into(), Quantity);
+        let maybe_quantity = try_get!(ctx.world, entity_id.into(), Quantity);
 
         match maybe_quantity {
             Option::Some(res) => {

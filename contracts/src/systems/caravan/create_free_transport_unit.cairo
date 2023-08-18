@@ -19,6 +19,8 @@ mod CreateFreeTransportUnit {
     use traits::Into;
     use traits::TryInto;
     use box::BoxTrait;
+    use array::ArrayTrait;
+    use poseidon::poseidon_hash_span;
 
     use dojo::world::Context;
 
@@ -36,25 +38,29 @@ mod CreateFreeTransportUnit {
         // nb cities for the realm
         let max_free_transport = realm.cities.into() * travel_config.free_transport_per_city;
 
+        // TODO: Move to utils
+        // make compound key for quantity tracker
+        let quantity_tracker_arr = array![entity_id.into(), FREE_TRANSPORT_ENTITY_TYPE.into()];
+        let quantity_tracker_key = poseidon_hash_span(quantity_tracker_arr.span());
+
         // check the quantity_tracker for free transport unit
-        let maybe_quantity_tracker = try_get!(
-            ctx.world, (entity_id, FREE_TRANSPORT_ENTITY_TYPE), QuantityTracker
-        );
-        let count = match maybe_quantity_tracker {
-            Option::Some(quantity_tracker) => (quantity_tracker.count),
-            Option::None(_) => {
-                0
-            }
-        };
+        let maybe_quantity_tracker = get!(ctx.world, quantity_tracker_key, QuantityTracker);
+
+        let count = 0;
+        // let count = match maybe_quantity_tracker {
+        //     Option::Some(quantity_tracker) => (quantity_tracker.count),
+        //     Option::None(_) => {
+        //         0
+        //     }
+        // };
+
         assert(count + quantity <= max_free_transport, 'not enough free transport unit');
 
         // increment count when create new units
         // TODO: need to decrease count when transport unit is destroyed
-        set!(
+        let _ = set!(
             ctx.world,
-            (QuantityTracker {
-                entity_id: (entity_id, FREE_TRANSPORT_ENTITY_TYPE), count: count + quantity
-            })
+            (QuantityTracker { entity_id: quantity_tracker_key.into(), count: count + quantity })
         );
 
         // get the speed and capacity of the free transport unit from the config entity
@@ -63,7 +69,7 @@ mod CreateFreeTransportUnit {
         );
         // create the transport unit
         let id = ctx.world.uuid();
-        set!(
+        let _ = set!(
             ctx.world,
             (
                 Position {
