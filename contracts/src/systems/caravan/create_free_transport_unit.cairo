@@ -1,6 +1,7 @@
 // need store the number of free transport unit per realm
 // need to get the maximum number of free transport unit per realm from the transport config
 
+// Module for creating a free transport unit
 #[system]
 mod CreateFreeTransportUnit {
     use eternum::alias::ID;
@@ -18,56 +19,56 @@ mod CreateFreeTransportUnit {
 
     use traits::Into;
     use traits::TryInto;
-    use box::BoxTrait;
     use array::ArrayTrait;
+    use option::OptionTrait;
+    use box::BoxTrait;
     use poseidon::poseidon_hash_span;
 
     use dojo::world::Context;
 
     fn execute(ctx: Context, entity_id: u128, quantity: u128) -> ID {
-        // assert that the entity is a realm by querying the entity type
+        // Ensure that the entity is a realm
         let (owner, realm, position) = get!(ctx.world, entity_id, (Owner, Realm, Position));
 
-        // assert that entity is owned by caller
+        // Ensure the entity is owned by the caller
         let caller = starknet::get_tx_info().unbox().account_contract_address;
         assert(caller == owner.address, 'entity is not owned by caller');
 
-        // check how many free transport units you can still build
+        // Determine the max number of free transport units available for creation
         let travel_config = get!(ctx.world, TRANSPORT_CONFIG_ID, TravelConfig);
-
-        // nb cities for the realm
         let max_free_transport = realm.cities.into() * travel_config.free_transport_per_city;
 
         // TODO: Move to utils
-        // make compound key for quantity tracker
+        // Create a key for the quantity tracker
         let quantity_tracker_arr = array![entity_id.into(), FREE_TRANSPORT_ENTITY_TYPE.into()];
-        let quantity_tracker_key = poseidon_hash_span(quantity_tracker_arr.span());
+        let quantity_tracker_key: u128 = poseidon_hash_span(quantity_tracker_arr.span())
+            .try_into()
+            .unwrap();
 
-        // check the quantity_tracker for free transport unit
+        // Check the existing count of free transport units
         let maybe_quantity_tracker = get!(ctx.world, quantity_tracker_key, QuantityTracker);
+        let mut count = if maybe_quantity_tracker.count != 0 {
+            maybe_quantity_tracker.count
+        } else {
+            0
+        };
 
-        let count = 0;
-        // let count = match maybe_quantity_tracker {
-        //     Option::Some(quantity_tracker) => (quantity_tracker.count),
-        //     Option::None(_) => {
-        //         0
-        //     }
-        // };
-
+        // Ensure we're not exceeding the max free transport units allowed
         assert(count + quantity <= max_free_transport, 'not enough free transport unit');
 
-        // increment count when create new units
-        // TODO: need to decrease count when transport unit is destroyed
+        // Update count of free transport units
+        // Note: Consider decrementing when a transport unit is destroyed
         let _ = set!(
             ctx.world,
-            (QuantityTracker { entity_id: quantity_tracker_key.into(), count: count + quantity })
+            (QuantityTracker { entity_id: quantity_tracker_key, count: count + quantity })
         );
 
-        // get the speed and capacity of the free transport unit from the config entity
+        // Fetch configuration values for the new transport unit
         let (speed, capacity) = get!(
             ctx.world, (WORLD_CONFIG_ID, FREE_TRANSPORT_ENTITY_TYPE), (SpeedConfig, CapacityConfig)
         );
-        // create the transport unit
+
+        // Instantiate the new transport unit
         let id = ctx.world.uuid();
         let _ = set!(
             ctx.world,
