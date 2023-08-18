@@ -19,7 +19,7 @@ mod HarvestLabor {
 
     fn execute(ctx: Context, realm_id: u128, resource_type: u8) {
         let player_id: ContractAddress = starknet::get_tx_info().unbox().account_contract_address;
-        let (realm, owner) = get !(ctx.world, realm_id.into(), (Realm, Owner));
+        let (realm, owner) = get!(ctx.world, realm_id, (Realm, Owner));
 
         assert(owner.address == player_id, 'Realm does not belong to player');
 
@@ -32,7 +32,7 @@ mod HarvestLabor {
         }
 
         // Get Config
-        let labor_config: LaborConfig = get !(ctx.world, LABOR_CONFIG_ID.into(), LaborConfig);
+        let labor_config: LaborConfig = get!(ctx.world, LABOR_CONFIG_ID, LaborConfig);
 
         // get production per cycle
         let mut base_production_per_cycle: u128 = labor_config.base_resources_per_cycle;
@@ -40,10 +40,10 @@ mod HarvestLabor {
             base_production_per_cycle = labor_config.base_food_per_cycle;
         }
 
-        let resource_query: Query = (realm_id, resource_type).into();
+        let resource_query = (realm_id, resource_type);
         // if no labor, panic
-        let labor = get !(ctx.world, resource_query, Labor);
-        let maybe_resource = try_get !(ctx.world, resource_query, Resource);
+        let labor = get!(ctx.world, resource_query, Labor);
+        let maybe_resource = try_get!(ctx.world, resource_query, Resource);
         let resource = match maybe_resource {
             Option::Some(resource) => resource,
             Option::None(_) => Resource { resource_type, balance: 0,  }
@@ -61,6 +61,7 @@ mod HarvestLabor {
 
         // labor units and part units
         let labor_units_generated = labor_generated / labor_config.base_labor_units;
+
         // assert that at least some labor has been generated
         assert(labor_units_generated != 0, 'Wait end of harvest cycle');
 
@@ -68,11 +69,11 @@ mod HarvestLabor {
         let remainder = labor_generated % labor_config.base_labor_units;
 
         // update resources with multiplier
-        set !(
+        set!(
             ctx.world,
-            resource_query,
             (Resource {
-                resource_type,
+                entity_id: realm_id,
+                resource_type: resource_type,
                 balance: resource.balance
                     + (labor_units_generated.into()
                         * base_production_per_cycle
@@ -83,20 +84,24 @@ mod HarvestLabor {
         // if is complete, balance should be set to current ts
         // remove the 
         if (is_complete) {
-            set !(
+            set!(
                 ctx.world,
-                resource_query,
                 (Labor {
-                    balance: ts + remainder, last_harvest: ts, multiplier: labor.multiplier, 
+                    entity_id: realm_id,
+                    resource_type: resource_type,
+                    balance: ts + remainder,
+                    last_harvest: ts,
+                    multiplier: labor.multiplier,
                 })
             );
         } else {
             // if not complete, then remove what was not harvested (unharvested + remainder) 
             // from last harvest
-            set !(
+            set!(
                 ctx.world,
-                resource_query,
                 (Labor {
+                    entity_id: realm_id,
+                    resource_type: resource_type,
                     balance: labor.balance + remainder,
                     last_harvest: ts,
                     multiplier: labor.multiplier,
