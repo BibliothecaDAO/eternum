@@ -2,12 +2,13 @@
 mod BuildLabor {
     use traits::Into;
     use box::BoxTrait;
+    use eternum::components::labor::{Labor, LaborTrait};
 
     use eternum::alias::ID;
     use eternum::components::owner::Owner;
     use eternum::components::realm::{Realm, RealmTrait};
     use eternum::components::resources::Resource;
-    use eternum::components::labor::{Labor, LaborTrait};
+
     use eternum::components::config::{LaborConfig, LaborCostResources, LaborCostAmount};
     use starknet::ContractAddress;
     use eternum::constants::{LABOR_CONFIG_ID, ResourceTypes};
@@ -95,7 +96,7 @@ mod BuildLabor {
             let total_harvest_units = total_harvest
                 / labor_config.base_labor_units; // get current resource
             // add these resources to balance
-            set!(
+            let _ = set!(
                 ctx.world, Resource {
                     entity_id: realm_id,
                     resource_type: current_resource.resource_type,
@@ -113,7 +114,7 @@ mod BuildLabor {
         }
 
         // update the labor
-        set!(
+        let _ = set!(
             ctx.world, Labor {
                 entity_id: realm_id,
                 resource_type: current_resource.resource_type,
