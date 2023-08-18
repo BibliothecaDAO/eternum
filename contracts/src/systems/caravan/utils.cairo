@@ -11,6 +11,7 @@ mod GetAverageSpeed {
 
     use traits::Into;
     use box::BoxTrait;
+    use array::ArrayTrait;
 
     use dojo::world::Context;
 
@@ -19,35 +20,35 @@ mod GetAverageSpeed {
     fn execute(ctx: Context, entity_ids: Array<ID>) -> u128 {
         let mut total_speed: u128 = 0_u128;
         let mut total_quantity: u128 = 0_u128;
+
+        // Get the caller's address
         let caller = starknet::get_tx_info().unbox().account_contract_address;
         let mut index = 0;
+
         // loop over the entities
         loop {
             if index == entity_ids.len() {
                 break ();
             }
-            // assert that they are movable
-            let movable = get!(ctx.world, (*entity_ids[index]).into(), Movable);
+
+            // Ensure the entity is movable
+            let movable = get!(ctx.world, (*entity_ids[index]), Movable);
 
             // try to retrieve the Quantity component of the entity
-            let maybe_quantity = try_get!(ctx.world, (*entity_ids[index]).into(), Quantity);
-
-            let quantity = match maybe_quantity {
-                Option::Some(res) => {
-                    res.value
-                },
-                Option::None(_) => { // if not present quantity = 1
-                    1_u128
-                }
+            let maybe_quantity = get!(ctx.world, (*entity_ids[index]), Quantity);
+            let mut quantity = if maybe_quantity.value != 0 {
+                maybe_quantity.value
+            } else {
+                0
             };
 
             total_speed += movable.sec_per_km.into() * quantity;
             total_quantity += quantity;
             index += 1;
-        }
+        };
 
-        let average_speed = total_speed / total_quantity;
-        average_speed
+        // Calculate and return average speed
+        total_speed / total_quantity
     }
 }
 
@@ -65,15 +66,12 @@ mod GetQuantity {
 
     fn execute(ctx: Context, entity_id: u128) -> u128 {
         // try to retrieve the Quantity component of the entity
-        let maybe_quantity = try_get!(ctx.world, entity_id.into(), Quantity);
+        let maybe_quantity = get!(ctx.world, entity_id, Quantity);
 
-        match maybe_quantity {
-            Option::Some(res) => {
-                res.value
-            },
-            Option::None(_) => { // if not present quantity = 1
-                1_u128
-            }
+        if maybe_quantity.value != 0 {
+            maybe_quantity.value
+        } else {
+            0
         }
     }
 }
