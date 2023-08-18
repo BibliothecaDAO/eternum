@@ -9,6 +9,6 @@ mod SetWorldConfig {
 
     fn execute(ctx: Context, realm_l2_contract: starknet::ContractAddress, ) {
         // TODO: can only be executed by Governance Vote
-        set!(ctx.world, (WorldConfig { config_id: WORLD_CONFIG_ID, realm_l2_contract }));
+        let _ = set!(ctx.world, (WorldConfig { config_id: WORLD_CONFIG_ID, realm_l2_contract }));
     }
 }

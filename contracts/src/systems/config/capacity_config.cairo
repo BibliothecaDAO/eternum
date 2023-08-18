@@ -8,7 +8,7 @@ mod SetCapacityConfig {
 
     fn execute(ctx: Context, entity_type: u128, weight_gram: u128) {
         // set cost of creating labor for resource id 1 to only resource id 1 cost
-        set!(
+        let _ = set!(
             ctx.world,
             (CapacityConfig {
                 config_id: WORLD_CONFIG_ID,

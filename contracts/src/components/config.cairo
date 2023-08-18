@@ -67,7 +67,6 @@ struct BuildingTypeConfig {
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct LaborCostResources {
     #[key]
-    config_id: u128,
     resource_type_labor: felt252,
     resource_types_packed: u128,
     resource_types_count: u8,
@@ -78,10 +77,8 @@ struct LaborCostResources {
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct LaborCostAmount {
     #[key]
-    config_id: u128,
-    #[key]
-    resource_cost_amount_config_id: felt252,
     resource_type_labor: felt252,
+    #[key]
     resource_type_cost: felt252,
     value: u128,
 }
