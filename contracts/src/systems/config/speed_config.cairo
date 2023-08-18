@@ -7,9 +7,11 @@ mod SetSpeedConfig {
     use dojo::world::Context;
 
     fn execute(ctx: Context, entity_type: u128, sec_per_km: u16) {
-        set !(
+        set!(
             ctx.world,
-            (WORLD_CONFIG_ID, entity_type).into(), (SpeedConfig { entity_type, sec_per_km,  })
+            (SpeedConfig {
+                config_id: WORLD_CONFIG_ID, speed_config_id: entity_type, entity_type, sec_per_km, 
+            })
         );
     }
 }

@@ -31,10 +31,10 @@ mod AttachCaravan {
         let caller = starknet::get_tx_info().unbox().account_contract_address;
 
         // get trade info
-        let (meta, trade_status) = get !(ctx.world, trade_id.into(), (Trade, Status));
+        let (meta, trade_status) = get!(ctx.world, trade_id.into(), (Trade, Status));
 
         // assert that caller is the owner of entity_id
-        let (owner, position) = get !(ctx.world, entity_id.into(), (Owner, Position));
+        let (owner, position) = get!(ctx.world, entity_id.into(), (Owner, Position));
         assert(owner.address == caller, 'Caller not owner of entity_id');
 
         // assert that the status is open
@@ -61,7 +61,7 @@ mod AttachCaravan {
         };
 
         // get the fungible entities from the order
-        let fungible_entities = get !(ctx.world, order_id.into(), FungibleEntities);
+        let fungible_entities = get!(ctx.world, order_id.into(), FungibleEntities);
 
         let mut total_weight = 0;
         let mut index = 0;
@@ -72,11 +72,11 @@ mod AttachCaravan {
             }
 
             // get quantity and entity_type from fungible_entities
-            let resource = get !(
+            let resource = get!(
                 ctx.world, (order_id, fungible_entities.key, index).into(), Resource
             );
 
-            let entity_type_weight = get !(
+            let entity_type_weight = get!(
                 ctx.world, (WORLD_CONFIG_ID, resource.resource_type).into(), WeightConfig
             );
 
@@ -87,11 +87,11 @@ mod AttachCaravan {
 
         // get the caravan capacity, movable and owner
         // get quantity as well, if quantity not present then it's 1
-        let (capacity, movable, caravan_owner, caravan_position) = get !(
+        let (capacity, movable, caravan_owner, caravan_position) = get!(
             ctx.world, caravan_id.into(), (Capacity, Movable, Owner, Position)
         );
 
-        let maybe_quantity = try_get !(ctx.world, caravan_id.into(), Quantity);
+        let maybe_quantity = try_get!(ctx.world, caravan_id.into(), Quantity);
         let quantity = match maybe_quantity {
             Option::Some(quantity) => {
                 quantity.value
@@ -111,7 +111,7 @@ mod AttachCaravan {
         assert(capacity.weight_gram * quantity >= total_weight, 'Caravan capacity is not enough');
 
         // assert that there is not already another caravan
-        let maybe_carvan = try_get !(ctx.world, (order_id, entity_id).into(), Caravan);
+        let maybe_carvan = try_get!(ctx.world, (order_id, entity_id).into(), Caravan);
         match maybe_carvan {
             Option::Some(_) => {
                 assert(false, 'Caravan already attached');
@@ -121,13 +121,13 @@ mod AttachCaravan {
         };
 
         // attach the caravan to the order + entity so that multiple different takers can attach caravans
-        set !(ctx.world, (order_id, entity_id).into(), (Caravan { caravan_id }))
+        set!(ctx.world, (order_id, entity_id).into(), (Caravan { caravan_id }));
 
         // assert that the caravan is not already blocked by a system
         assert(!movable.blocked, 'Caravan is already blocked');
 
         // set the caravan to blocked
-        set !(
+        set!(
             ctx.world,
             caravan_id.into(),
             (OrderId { id: order_id }, Movable { sec_per_km: movable.sec_per_km, blocked: true })
