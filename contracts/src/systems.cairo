@@ -6,6 +6,6 @@ mod labor;
 mod config;
 mod test;
 mod order;
-// mod caravan;
+mod caravan;
 
 
