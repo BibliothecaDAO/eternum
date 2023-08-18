@@ -24,21 +24,21 @@ mod CreateFreeTransportUnit {
 
     fn execute(ctx: Context, entity_id: u128, quantity: u128) -> ID {
         // assert that the entity is a realm by querying the entity type
-        let (owner, realm, position) = get !(ctx.world, entity_id.into(), (Owner, Realm, Position));
+        let (owner, realm, position) = get!(ctx.world, entity_id, (Owner, Realm, Position));
 
         // assert that entity is owned by caller
         let caller = starknet::get_tx_info().unbox().account_contract_address;
         assert(caller == owner.address, 'entity is not owned by caller');
 
         // check how many free transport units you can still build
-        let travel_config = get !(ctx.world, TRANSPORT_CONFIG_ID.into(), TravelConfig);
+        let travel_config = get!(ctx.world, TRANSPORT_CONFIG_ID, TravelConfig);
 
         // nb cities for the realm
         let max_free_transport = realm.cities.into() * travel_config.free_transport_per_city;
 
         // check the quantity_tracker for free transport unit
-        let maybe_quantity_tracker = try_get !(
-            ctx.world, (entity_id, FREE_TRANSPORT_ENTITY_TYPE).into(), QuantityTracker
+        let maybe_quantity_tracker = try_get!(
+            ctx.world, (entity_id, FREE_TRANSPORT_ENTITY_TYPE), QuantityTracker
         );
         let count = match maybe_quantity_tracker {
             Option::Some(quantity_tracker) => (quantity_tracker.count),
@@ -50,38 +50,36 @@ mod CreateFreeTransportUnit {
 
         // increment count when create new units
         // TODO: need to decrease count when transport unit is destroyed
-        set !(
+        set!(
             ctx.world,
-            (entity_id, FREE_TRANSPORT_ENTITY_TYPE).into(),
-            (QuantityTracker { count: count + quantity })
+            (QuantityTracker {
+                entity_id: (entity_id, FREE_TRANSPORT_ENTITY_TYPE), count: count + quantity
+            })
         );
 
         // get the speed and capacity of the free transport unit from the config entity
-        let (speed, capacity) = get !(
-            ctx.world,
-            (WORLD_CONFIG_ID, FREE_TRANSPORT_ENTITY_TYPE).into(),
-            (SpeedConfig, CapacityConfig)
+        let (speed, capacity) = get!(
+            ctx.world, (WORLD_CONFIG_ID, FREE_TRANSPORT_ENTITY_TYPE), (SpeedConfig, CapacityConfig)
         );
         // create the transport unit
         let id = ctx.world.uuid();
-        set !(
+        set!(
             ctx.world,
-            id.into(),
             (
                 Position {
-                    x: position.x, y: position.y
+                    entity_id: id.into(), x: position.x, y: position.y
                     }, MetaData {
-                    entity_type: FREE_TRANSPORT_ENTITY_TYPE
+                    entity_id: id.into(), entity_type: FREE_TRANSPORT_ENTITY_TYPE
                     }, Owner {
-                    address: caller
+                    entity_id: id.into(), address: caller
                     }, Quantity {
-                    value: quantity
+                    entity_id: id.into(), value: quantity
                     }, Movable {
-                    sec_per_km: speed.sec_per_km, blocked: false, 
+                    entity_id: id.into(), sec_per_km: speed.sec_per_km, blocked: false, 
                     }, ArrivalTime {
-                    arrives_at: 0, 
+                    entity_id: id.into(), arrives_at: 0, 
                     }, Capacity {
-                    weight_gram: capacity.weight_gram
+                    entity_id: id.into(), weight_gram: capacity.weight_gram
                 }
             )
         );

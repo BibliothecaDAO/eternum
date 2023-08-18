@@ -51,8 +51,8 @@ mod CreateCaravan {
             }
             // assert that they are movable
             // assert that they have a capacity component
-            let (movable, capacity, position) = get !(
-                ctx.world, (*entity_ids[index]).into(), (Movable, Capacity, Position)
+            let (movable, capacity, position) = get!(
+                ctx.world, (*entity_ids[index]), (Movable, Capacity, Position)
             );
 
             // assert that they are all at the same position when index > 0
@@ -64,7 +64,7 @@ mod CreateCaravan {
             }
 
             // assert that caller is the owner of the entities
-            let owner = get !(ctx.world, (*entity_ids[index]).into(), Owner);
+            let owner = get!(ctx.world, (*entity_ids[index]), Owner);
             assert(caller == owner.address, 'entity is not owned by caller');
 
             // assert that they are not blocked
@@ -90,17 +90,22 @@ mod CreateCaravan {
             // };
 
             // set entity in the caravan
-            set !(
+            set!(
                 ctx.world,
-                (caravan_id, entities_key, index).into(),
-                (ForeignKey { entity_id: (*entity_ids[index]).try_into().unwrap(),  })
+                (ForeignKey {
+                    foreign_key: (caravan_id, entities_key, index).into(),
+                    entity_id: (*entity_ids[index]).try_into().unwrap(),
+                })
             );
 
             // set the entity as blocked so that it cannot be used in another caravan
-            set !(
+            set!(
                 ctx.world,
-                (*entity_ids[index]).into(),
-                (Movable { sec_per_km: movable.sec_per_km, blocked: true,  })
+                (Movable {
+                    entity_id: (*entity_ids[index]).into(),
+                    sec_per_km: movable.sec_per_km,
+                    blocked: true,
+                })
             );
 
             // TODO: add the Caravan component to each entity
@@ -120,20 +125,19 @@ mod CreateCaravan {
         let average_speed: u16 = average_speed.try_into().unwrap();
 
         // set the caravan entity
-        set !(
+        set!(
             ctx.world,
-            caravan_id.into(),
             (
                 Owner {
-                    address: caller, 
+                    entity_id: caravan_id.into(), address: caller, 
                     }, Movable {
-                    sec_per_km: average_speed, blocked: false, 
+                    entity_id: caravan_id.into(), sec_per_km: average_speed, blocked: false, 
                     }, Capacity {
-                    weight_gram: total_capacity, 
+                    entity_id: caravan_id.into(), weight_gram: total_capacity, 
                     }, CaravanMembers {
-                    key: entities_key.into(), count: entity_ids.len()
+                    entity_id: caravan_id.into(), key: entities_key.into(), count: entity_ids.len()
                     }, Position {
-                    x: entity_position.x, y: entity_position.y
+                    entity_id: caravan_id.into(), x: entity_position.x, y: entity_position.y
                 }
             )
         );
