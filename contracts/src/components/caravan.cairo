@@ -1,7 +1,7 @@
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct Caravan {
     #[key]
-    entity_id: u128,
+    entity_id: felt252,
     caravan_id: u128,
 }
 

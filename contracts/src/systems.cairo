@@ -4,7 +4,8 @@ mod labor;
 // mod resources;
 // mod payment;
 mod config;
-// mod test;
-// mod order;
-mod caravan;
+mod test;
+mod order;
+// mod caravan;
+
 

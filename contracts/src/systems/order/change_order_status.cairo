@@ -16,18 +16,18 @@ mod ChangeOrderStatus {
         let (meta, current_status) = get!(ctx.world, trade_id, (Trade, Status));
         // TODO: how to compare enum?
         // assert(current_status.value == TradeStatus::Open, 'Order already executed');
+        // assert that status is not the same
+        // assert(current_status.value != new_status, 'status is the same');
 
         // assert that caller is owner of the maker_id
         let caller = starknet::get_tx_info().unbox().account_contract_address;
         let owner = get!(ctx.world, meta.maker_id, Owner);
         assert(owner.address == caller, 'not owned by caller');
 
-        // assert that status is not the same
-        // TODO: how to compare enum?
-        // assert(current_status.value != new_status, 'status is the same');
-
-        // set new status
-        set!(ctx.world, (Status { entity_id: trade_id, value: new_status }));
+        set!(
+            // set new status
+            ctx.world, (Status { trade_id, value: new_status })
+        );
         return ();
     }
 }

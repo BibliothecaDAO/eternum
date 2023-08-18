@@ -10,7 +10,7 @@ mod MakeFungibleOrder {
     use eternum::components::owner::Owner;
     use eternum::components::position::Position;
     use eternum::components::realm::Realm;
-    use eternum::components::trade::{Trade, Status, TradeStatus};
+    use eternum::components::trade::{Trade, Status, TradeStatus, OrderResource};
     use eternum::components::capacity::Capacity;
     use eternum::components::metadata::MetaData;
     use eternum::components::movable::{Movable, ArrivalTime};
@@ -22,6 +22,7 @@ mod MakeFungibleOrder {
     use traits::TryInto;
     use box::BoxTrait;
     use array::ArrayTrait;
+    use array::SpanTrait;
 
     use dojo::world::Context;
 
@@ -50,11 +51,11 @@ mod MakeFungibleOrder {
         taker_quantities: Span<u128>,
         taker_needs_caravan: bool,
         expires_at: u64
-    ) -> ID {
+    ) {
         let caller = starknet::get_tx_info().unbox().account_contract_address;
 
         // assert that maker entity is owned by caller
-        let maker_owner = get !(ctx.world, maker_id.into(), Owner);
+        let maker_owner = get !(ctx.world, maker_id, Owner);
         assert(maker_owner.address == caller, 'Only owner can create order');
 
         // assert that length of maker_entity_types is equal to length of maker_quantities
@@ -68,10 +69,9 @@ mod MakeFungibleOrder {
         let fungible_entities_id = ctx.world.uuid();
         set !(
             ctx.world,
-            maker_order_id.into(),
             (
                 FungibleEntities {
-                    key: fungible_entities_id.into(), count: maker_entity_types.len(), 
+                    entity_id: maker_order_id.into(), key: fungible_entities_id.into(), count: maker_entity_types.len(), 
                 },
             )
         );
@@ -84,23 +84,21 @@ mod MakeFungibleOrder {
 
             set !(
                 ctx.world,
-                (maker_order_id, fungible_entities_id, index).into(),
-                (Resource {
-                    resource_type: *maker_entity_types[index], balance: *maker_quantities[index]
+                (OrderResource {
+                    order_id: maker_order_id.into(), fungible_entities_id: fungible_entities_id.into(), index, resource_type: *maker_entity_types[index], balance: *maker_quantities[index]
                 })
             );
 
             // decrease balance of maker
-            let query = (maker_id, *maker_entity_types[index]).into();
-            let resource = get !(ctx.world, query, Resource);
+            let resource = get !(ctx.world, (maker_id, *maker_entity_types[index]), Resource);
             assert(resource.balance >= *maker_quantities[index], 'Balance too small');
             set !(
                 ctx.world,
-                query,
                 (Resource {
+                    entity_id: maker_id,
                     resource_type: *maker_entity_types[index],
                     balance: resource.balance - *maker_quantities[index]
-                })
+                },)
             );
 
             index += 1;
@@ -110,9 +108,9 @@ mod MakeFungibleOrder {
         let taker_order_id = ctx.world.uuid();
         set !(
             ctx.world,
-            taker_order_id.into(),
             (
                 FungibleEntities {
+                    entity_id: taker_order_id.into(),
                     key: fungible_entities_id.into(), count: taker_entity_types.len(), 
                 },
             )
@@ -125,13 +123,11 @@ mod MakeFungibleOrder {
             if index == taker_entity_types.len() {
                 break ();
             }
-
             set !(
                 ctx.world,
-                (taker_order_id, fungible_entities_id, index).into(),
-                (Resource {
-                    balance: *taker_quantities[index], resource_type: *taker_entity_types[index]
-                })
+                (OrderResource {
+                    order_id: taker_order_id.into(), fungible_entities_id: fungible_entities_id.into(), index, resource_type: *taker_entity_types[index], balance: *taker_quantities[index] 
+                },)
             );
 
             index += 1;
@@ -141,7 +137,6 @@ mod MakeFungibleOrder {
         let trade_id = ctx.world.uuid();
         set !(
             ctx.world,
-            trade_id.into(),
             (
                 Trade {
                     trade_id: trade_id.into(),
@@ -155,11 +150,11 @@ mod MakeFungibleOrder {
                     taker_needs_caravan: taker_needs_caravan,
                     }, Status {
                     // TODO: change back to enum when works with torii
+                    trade_id: trade_id.into(),
                     value: 0,
-                }
+                },
             ),
         );
-        trade_id.into()
     }
 }
 // TODO: need to test it when withdraw gas is working

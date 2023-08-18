@@ -7,7 +7,7 @@ mod TakeFungibleOrder {
     use eternum::alias::ID;
     use eternum::components::owner::Owner;
     use eternum::components::position::{Position, PositionTrait};
-    use eternum::components::trade::{Trade, Status, TradeStatus};
+    use eternum::components::trade::{Trade, Status, TradeStatus, OrderResource};
     use eternum::components::caravan::Caravan;
     use eternum::components::movable::{Movable, ArrivalTime};
 
@@ -21,7 +21,7 @@ mod TakeFungibleOrder {
 
     fn execute(ctx: Context, taker_id: u128, trade_id: u128) {
         // get the trade 
-        let (meta, trade_status) = get !(ctx.world, trade_id.into(), (Trade, Status));
+        let (meta, trade_status) = get !(ctx.world, trade_id, (Trade, Status));
 
         // verify expiration date
         let ts = starknet::get_block_timestamp();
@@ -40,17 +40,16 @@ mod TakeFungibleOrder {
 
         // assert that taker entity is owned by caller
         let caller = starknet::get_tx_info().unbox().account_contract_address;
-        let owner = get !(ctx.world, taker_id.into(), Owner);
+        let owner = get !(ctx.world, taker_id, Owner);
         assert(owner.address == caller, 'not owned by caller');
 
         // if taker_entity in meta is 0, then set the taker_id
         if meta.taker_id == 0 {
             set !(
                 ctx.world,
-                trade_id.into(),
                 (
-                    // TODO: change back to enum when works with torii
                     Status {
+                        trade_id,
                         value: 1
                         }, Trade {
                         trade_id,
@@ -62,89 +61,90 @@ mod TakeFungibleOrder {
                         claimed_by_maker: meta.claimed_by_maker,
                         claimed_by_taker: meta.claimed_by_taker,
                         taker_needs_caravan: meta.taker_needs_caravan,
-                    }
+                    },
                 )
             );
         } else {
             // if not 0, then verify if the taker_id is the one specified
+            // then set the status as accepted
             assert(meta.taker_id == taker_id, 'not the taker');
-            // TODO: change back to enum when works with torii
-            set !(ctx.world, trade_id.into(), (Status { value: 1 }, ));
+            set !(ctx.world, (Status { trade_id, value: 1 }, ));
         };
 
         // caravan only needed if both are not on the same position
         // get the maker position
-        let maker_position = get !(ctx.world, meta.maker_id.into(), Position);
-        let taker_position = get !(ctx.world, taker_id.into(), Position);
+        let maker_position = get !(ctx.world, meta.maker_id, Position);
+        let taker_position = get !(ctx.world, taker_id, Position);
 
         // check if there is a caravan attached to the maker
-        let maybe_caravan = try_get !(
-            ctx.world, (meta.maker_order_id, meta.maker_id).into(), Caravan
+        let caravan = get !(
+            ctx.world, (meta.maker_order_id, meta.maker_id), Caravan
         );
-        match maybe_caravan {
-            // travel
-            Option::Some(caravan) => {
-                let (movable, caravan_position) = get !(
-                    ctx.world, caravan.caravan_id.into(), (Movable, Position)
-                );
-                let travel_time = caravan_position
-                    .calculate_travel_time(taker_position, movable.sec_per_km);
 
+        // if caravan id is not 0, it means there is a caravan
+        if (caravan.caravan_id != 0) {
+            let (movable, caravan_position) = get !(
+                ctx.world, caravan.caravan_id, (Movable, Position)
+            );
+            let travel_time = caravan_position
+                .calculate_travel_time(taker_position, movable.sec_per_km);
+
+            set !(
                 // SET ORDER
-                set !(
-                    ctx.world,
-                    meta.maker_order_id.into(),
-                    (
-                        ArrivalTime {
-                            arrives_at: ts + travel_time
-                            }, Position {
-                            x: taker_position.x, y: taker_position.y
-                        }
-                    )
-                );
+                ctx.world,
+                (
+                    ArrivalTime {
+                        entity_id: meta.maker_order_id,
+                        arrives_at: ts + travel_time
+                        }, Position {
+                        entity_id: meta.maker_order_id,
+                        x: taker_position.x, y: taker_position.y
+                    },
+                )
+            );
 
+            set !(
                 // SET CARAVAN
                 // round trip with the caravan
                 // set arrival time * 2
                 // dont change position because round trip
                 // set back blocked to false
-                set !(
-                    ctx.world,
-                    caravan.caravan_id.into(),
-                    (
-                        ArrivalTime {
-                            arrives_at: ts + travel_time * 2
-                            }, Movable {
-                            sec_per_km: movable.sec_per_km, blocked: false, 
-                        }
-                    )
-                );
-            },
-            // dont travel
-            Option::None(_) => {
+                ctx.world,
+                (
+                    ArrivalTime {
+                        entity_id: caravan.caravan_id,
+                        arrives_at: ts + travel_time * 2
+                        }, Movable {
+                        entity_id: caravan.caravan_id,
+                        sec_per_km: movable.sec_per_km, blocked: false, 
+                    },
+                )
+            );
+        // no caravan = no travel
+        } else {
+            set !(
                 // SET ORDER
-                set !(
-                    ctx.world,
-                    meta.maker_order_id.into(),
-                    (
-                        ArrivalTime {
-                            arrives_at: ts
-                            }, Position {
-                            x: maker_position.x, y: maker_position.y
-                        }
-                    )
-                );
-            },
-        };
+                ctx.world,
+                (
+                    ArrivalTime {
+                        entity_id: meta.maker_order_id,
+                        arrives_at: ts
+                        }, Position {
+                        entity_id: meta.maker_order_id,
+                        x: maker_position.x, y: maker_position.y
+                    },
+                )
+            );
+        }
 
         // check if there is a caravan attached to the taker if needed
         // taker caravan is not directly attached to the taker_order_id, but to the
         // (taker_order_id, taker_id), this is because more than one taker can attach a caravan to the same order
         // before one of them accepts it
         if meta.taker_needs_caravan == true {
-            let caravan = get !(ctx.world, (meta.taker_order_id, taker_id).into(), Caravan);
+            let caravan = get !(ctx.world, (meta.taker_order_id, taker_id), Caravan);
             let (movable, caravan_position, owner) = get !(
-                ctx.world, caravan.caravan_id.into(), (Movable, Position, Owner)
+                ctx.world, caravan.caravan_id, (Movable, Position, Owner)
             );
             // if caravan, starts from the caravan position (not taker position)
             let travel_time = caravan_position
@@ -153,74 +153,75 @@ mod TakeFungibleOrder {
             // assert that the owner of the caravan is the caller
             assert(owner.address == caller, 'not owned by caller');
 
-            // SET ORDER
             set !(
+                // SET ORDER
                 ctx.world,
-                meta.taker_order_id.into(),
                 (
                     ArrivalTime {
+                        entity_id: meta.taker_order_id,
                         arrives_at: ts + travel_time
                         }, Position {
+                        entity_id: meta.taker_order_id,
                         x: maker_position.x, y: maker_position.y
-                    }
+                    },
                 )
             );
-            // SET CARAVAN
-            // set arrival time * 2
-            // dont change position because round trip
-            // set back blocked to false
             set !(
+                // SET CARAVAN
+                // set arrival time * 2
+                // dont change position because round trip
+                // set back blocked to false
                 ctx.world,
-                caravan.caravan_id.into(),
                 (
                     ArrivalTime {
+                        entity_id: caravan.caravan_id,
                         arrives_at: ts + travel_time * 2
                         }, Movable {
+                        entity_id: caravan.caravan_id,
                         sec_per_km: movable.sec_per_km, blocked: false, 
-                    }
+                    },
                 )
             );
         } else {
-            // dont travel
             set !(
+                // dont travel
                 ctx.world,
-                meta.taker_order_id.into(),
                 (
                     ArrivalTime {
+                        entity_id: meta.taker_order_id,
                         arrives_at: ts
                         }, Position {
+                        entity_id: meta.taker_order_id,
                         x: taker_position.x, y: taker_position.y
                     }
-                )
+                ),
             );
         };
 
         // remove fungible entities from the taker balance
         let mut index = 0;
-        let fungible_entities = get !(ctx.world, meta.taker_order_id.into(), FungibleEntities);
+        let fungible_entities = get !(ctx.world, meta.taker_order_id, FungibleEntities);
         loop {
             if index == fungible_entities.count {
                 break ();
             };
-            let resource = get !(
-                ctx.world, (meta.taker_order_id, fungible_entities.key, index).into(), Resource
+            let order_resource = get !(
+                ctx.world, (meta.taker_order_id, fungible_entities.key, index), OrderResource
             );
 
             // remove the quantity from the taker balance
             let taker_resource = get !(
-                ctx.world, (taker_id, resource.resource_type).into(), Resource
+                ctx.world, (taker_id, order_resource.resource_type), Resource
             );
 
             // assert has enough
-            assert(taker_resource.balance >= resource.balance, 'not enough balance');
+            assert(taker_resource.balance >= order_resource.balance, 'not enough balance');
 
-            // remove the quantity from the taker balance
             set !(
+                // remove the quantity from the taker balance
                 ctx.world,
-                (taker_id, resource.resource_type).into(),
                 (Resource {
-                    resource_type: resource.resource_type,
-                    balance: taker_resource.balance - resource.balance
+                    entity_id: taker_id, resource_type: order_resource.resource_type, balance: taker_resource.balance - order_resource.balance
                 })
             );
             index += 1;

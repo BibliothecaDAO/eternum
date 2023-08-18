@@ -25,7 +25,7 @@ struct Status {
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct OrderId {
     #[key]
-    trade_id: u128,
+    entity_id: u128,
     id: u128,
 }
 
@@ -53,4 +53,16 @@ struct FungibleEntities {
     entity_id: u128,
     key: u128,
     count: usize,
+}
+
+#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+struct OrderResource {
+    #[key]
+    order_id: u128,
+    #[key]
+    fungible_entities_id: u128,
+    #[key]
+    index: usize,
+    resource_type: u8,
+    balance: u128,
 }

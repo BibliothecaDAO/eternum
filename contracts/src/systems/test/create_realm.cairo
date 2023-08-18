@@ -30,11 +30,11 @@ mod CreateRealm {
         let entity_id = ctx.world.uuid();
         set !(
             ctx.world,
-            entity_id.into(),
             (
                 Owner {
-                    address: owner
+                    entity_id: entity_id.into(), address: owner
                     }, Realm {
+                    entity_id: entity_id.into(),
                     realm_id,
                     resource_types_packed,
                     resource_types_count,
@@ -45,9 +45,9 @@ mod CreateRealm {
                     wonder,
                     order,
                     }, Position {
-                    x: position.x, y: position.y, 
+                    entity_id: entity_id.into(), x: position.x, y: position.y, 
                     }, MetaData {
-                    entity_type: REALM_ENTITY_TYPE, 
+                    entity_id: entity_id.into(), entity_type: REALM_ENTITY_TYPE, 
                 },
             )
         );
