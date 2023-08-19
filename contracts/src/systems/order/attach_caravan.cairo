@@ -102,7 +102,8 @@ mod AttachCaravan {
         }; 
 
         // assert that the caravan position is the same as the entity
-        assert(caravan_position == position, 'Not same position');
+        assert(caravan_position.x == position.x, 'Not same position');
+        assert(caravan_position.y == position.y, 'Not same position');
 
         // assert that the owner if the caller
         assert(caravan_owner.address == caller, 'Caller not owner of caravan');
@@ -117,7 +118,11 @@ mod AttachCaravan {
         // attach the caravan to the order + entity so that multiple different takers can attach caravans
         let caravan_key_arr = array![order_id.into(), entity_id.into()];
         let caravan_key = poseidon_hash_span(caravan_key_arr.span());
+        let caravan = get!(ctx.world, caravan_key, Caravan);
+        assert(caravan.caravan_id == 0, 'Caravan already attached');
+
         set!(
+            // attach the caravan to the order + entity so that multiple different takers can attach caravans
             ctx.world, (Caravan { entity_id: caravan_key, caravan_id })
         );
 

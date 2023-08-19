@@ -65,7 +65,8 @@ mod CreateCaravan {
             // assert that they are all at the same position when index > 0
             // if index == 0, then initialize position as the first entity position
             if index != 0 {
-                assert(entity_position == position, 'entities not same position');
+                assert(entity_position.x == position.x, 'entities not same position');
+                assert(entity_position.y == position.y, 'entities not same position');
             } else {
                 entity_position = position;
             }

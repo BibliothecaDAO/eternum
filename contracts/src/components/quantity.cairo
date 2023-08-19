@@ -19,7 +19,7 @@ struct Quantity {
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct QuantityTracker {
     #[key]
-    entity_id: u128,
+    entity_id: felt252,
     count: u128,
 }
 

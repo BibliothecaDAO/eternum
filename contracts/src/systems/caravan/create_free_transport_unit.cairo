@@ -41,9 +41,7 @@ mod CreateFreeTransportUnit {
         // TODO: Move to utils
         // Create a key for the quantity tracker
         let quantity_tracker_arr = array![entity_id.into(), FREE_TRANSPORT_ENTITY_TYPE.into()];
-        let quantity_tracker_key: u128 = poseidon_hash_span(quantity_tracker_arr.span())
-            .try_into()
-            .unwrap();
+        let quantity_tracker_key = poseidon_hash_span(quantity_tracker_arr.span());
 
         // Check the existing count of free transport units
         let maybe_quantity_tracker = get!(ctx.world, quantity_tracker_key, QuantityTracker);
