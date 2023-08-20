@@ -1,6 +1,8 @@
 import clsx from "clsx";
-import React, { ComponentPropsWithRef } from "react";
+import React, { ComponentPropsWithRef, useEffect, useState } from "react";
+import { Transition } from "@headlessui/react";
 import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
+import { Fragment } from "ethers/lib/utils";
 
 type NotificationProps = {
   children?: React.ReactNode;
@@ -10,7 +12,7 @@ type NotificationProps = {
 } & ComponentPropsWithRef<"div">;
 
 const STYLES = {
-  base: "flex flex-col w-[330px] min-h-[50px] rounded-xl relative p-2 text-light-pink bg-black border-2 text-xxs",
+  base: "z-50 flex flex-col w-[330px] min-h-[50px] rounded-xl relative p-2 text-light-pink bg-black border-2 text-xxs",
   danger: "border-order-giants",
   success: "border-order-brilliance",
   primary: "border-gold",
@@ -21,19 +23,42 @@ export const Notification = ({
   onClose,
   time,
   type = "primary",
-}: NotificationProps) => (
-  <div className={clsx(" p-", STYLES.base, STYLES[type], className)}>
-    {onClose && (
-      <CloseIcon
-        className="w-4 h-4 absolute top-2 right-2 cursor-pointer fill-white opacity-30"
-        onClick={onClose}
-      />
-    )}
-    {time && (
-      <div className="absolute bottom-2 right-2 fill-white opacity-30">
-        {time}
+}: NotificationProps) => {
+  const [isShown, setIsShown] = useState(false);
+
+  useEffect(() => {
+    setIsShown(true);
+  }, []);
+
+  const handleClose = () => {
+    setIsShown(false);
+    onClose && setTimeout(onClose, 300);
+  };
+  return (
+    <Transition
+      show={isShown}
+      appear={true}
+      enter="transition-all duration-300"
+      enterFrom="opacity-0 -translate-y-full"
+      enterTo="opacity-100 translate-y-0"
+      leave="transition-all duration-300"
+      leaveFrom="opacity-100 translate-y-0"
+      leaveTo="opacity-0 translate-y-full"
+    >
+      <div className={clsx(" p-", STYLES.base, STYLES[type], className)}>
+        {onClose && (
+          <CloseIcon
+            className="w-4 h-4 absolute top-2 right-2 cursor-pointer fill-white opacity-30"
+            onClick={handleClose}
+          />
+        )}
+        {time && (
+          <div className="absolute bottom-2 right-2 fill-white opacity-30">
+            {time}
+          </div>
+        )}
+        {children}
       </div>
-    )}
-    {children}
-  </div>
-);
+    </Transition>
+  );
+};
