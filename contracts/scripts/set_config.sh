@@ -84,6 +84,17 @@ commands+=(
     # NOTE: mint a random realm so that no player has the 0x0 entity id as a realm
     # because 0x0 is also used in make_fungible_order as taker_id to specify that any entity can take the order
     # TODO: need to rethink make_fungible_order so that we don't rely on taker_id 0x0 to know who can take order
+    ## realm 1:
+    ## name: Stolsli
+    ## resources_ids_packed = 4328719365 (1,2,3,4,5)
+    ## cities = 4
+    ## harbors = 5
+    ## rivers = 6
+    ## coordinates with offset of + 1800000
+    ## position = ["287471", "-189200"]
+    ## "Stone", "Coal"]
+    ## [2, 3]
+    ## order = giants = 8
     "sozo execute --world $world CreateRealm --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,$DOJO_ACCOUNT_ADDRESS,515,2,4,5,6,1,1,8,2,2087471,1610800"
 )
 

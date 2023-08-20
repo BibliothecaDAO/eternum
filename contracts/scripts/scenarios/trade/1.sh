@@ -55,12 +55,12 @@ commands=(
     #attach caravan to order
     #realm 1
     # carvan id = 5
-    "sozo execute --world $world AttachCaravan --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,13,5" 
+    "sozo execute --world $world AttachCaravan --account-address $DOJO_ACCOUNT_ADDRESS --calldata 0,16,8" 
     #realm 2
-    "sozo execute --world $world AttachCaravan --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,13,9"
+    "sozo execute --world $world AttachCaravan --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,16,12"
 
     #take order
-    "sozo execute --world $world TakeFungibleOrder --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,13"
+    "sozo execute --world $world TakeFungibleOrder --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,16"
 
 )
 
