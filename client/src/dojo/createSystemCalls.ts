@@ -94,7 +94,7 @@ export type SystemCalls = ReturnType<typeof createSystemCalls>;
 // NOTE: need to add waitForTransaction when connected to rinnigan
 export function createSystemCalls(
     { execute, provider, contractComponents }: SetupNetworkResult,
-    { Trade, Status, FungibleEntities, Resource }: ClientComponents,
+    { Trade, Status, FungibleEntities, OrderResource }: ClientComponents,
 ) {
     // Refactor the functions using the interfaces
     const build_labor = async (props: BuildLaborProps) => {
@@ -161,7 +161,7 @@ export function createSystemCalls(
         }
         )
         for (let i = 0; i < maker_quantities.length; i++) {
-            Resource.addOverride(
+            OrderResource.addOverride(
                 overrideId, {
                 entity: getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 1), BigInt(LOW_ENTITY_ID + 3), BigInt(i)]),
                 value: {
@@ -172,7 +172,7 @@ export function createSystemCalls(
             )
         }
         for (let i = 0; i < taker_quantities.length; i++) {
-            Resource.addOverride(
+            OrderResource.addOverride(
                 overrideId, {
                 entity: getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 2), BigInt(LOW_ENTITY_ID + 3), BigInt(i)]),
                 value: {

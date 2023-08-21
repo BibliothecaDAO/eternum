@@ -2071,40 +2071,40 @@ const GetCaravanInfoDocumentString = print(GetCaravanInfoDocument);
 const GetRealmsCaravansDocumentString = print(GetRealmsCaravansDocument);
 export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = defaultWrapper) {
   return {
-    getRealmLabor(variables: GetRealmLaborQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetRealmLaborQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+    getRealmLabor(variables: GetRealmLaborQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetRealmLaborQuery; extensions?: any; headers: Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmLaborQuery>(GetRealmLaborDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRealmLabor', 'query');
     },
-    getRealmResources(variables: GetRealmResourcesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetRealmResourcesQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+    getRealmResources(variables: GetRealmResourcesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetRealmResourcesQuery; extensions?: any; headers: Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmResourcesQuery>(GetRealmResourcesDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRealmResources', 'query');
     },
-    getRealm(variables: GetRealmQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetRealmQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+    getRealm(variables: GetRealmQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetRealmQuery; extensions?: any; headers: Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmQuery>(GetRealmDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRealm', 'query');
     },
-    getRealmIds(variables?: GetRealmIdsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetRealmIdsQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+    getRealmIds(variables?: GetRealmIdsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetRealmIdsQuery; extensions?: any; headers: Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmIdsQuery>(GetRealmIdsDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRealmIds', 'query');
     },
-    getCounterpartyOrderId(variables: GetCounterpartyOrderIdQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetCounterpartyOrderIdQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+    getCounterpartyOrderId(variables: GetCounterpartyOrderIdQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetCounterpartyOrderIdQuery; extensions?: any; headers: Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetCounterpartyOrderIdQuery>(GetCounterpartyOrderIdDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getCounterpartyOrderId', 'query');
     },
-    getIncomingOrderInfo(variables: GetIncomingOrderInfoQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetIncomingOrderInfoQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+    getIncomingOrderInfo(variables: GetIncomingOrderInfoQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetIncomingOrderInfoQuery; extensions?: any; headers: Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetIncomingOrderInfoQuery>(GetIncomingOrderInfoDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getIncomingOrderInfo', 'query');
     },
-    getIncomingOrders(variables: GetIncomingOrdersQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetIncomingOrdersQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+    getIncomingOrders(variables: GetIncomingOrdersQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetIncomingOrdersQuery; extensions?: any; headers: Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetIncomingOrdersQuery>(GetIncomingOrdersDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getIncomingOrders', 'query');
     },
-    getMarket(variables?: GetMarketQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetMarketQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+    getMarket(variables?: GetMarketQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetMarketQuery; extensions?: any; headers: Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetMarketQuery>(GetMarketDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getMarket', 'query');
     },
-    getMyOffers(variables: GetMyOffersQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetMyOffersQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+    getMyOffers(variables: GetMyOffersQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetMyOffersQuery; extensions?: any; headers: Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetMyOffersQuery>(GetMyOffersDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getMyOffers', 'query');
     },
-    getTradeResources(variables: GetTradeResourcesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetTradeResourcesQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+    getTradeResources(variables: GetTradeResourcesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetTradeResourcesQuery; extensions?: any; headers: Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetTradeResourcesQuery>(GetTradeResourcesDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getTradeResources', 'query');
     },
-    getCaravanInfo(variables: GetCaravanInfoQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetCaravanInfoQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+    getCaravanInfo(variables: GetCaravanInfoQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetCaravanInfoQuery; extensions?: any; headers: Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetCaravanInfoQuery>(GetCaravanInfoDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getCaravanInfo', 'query');
     },
-    getRealmsCaravans(variables: GetRealmsCaravansQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetRealmsCaravansQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+    getRealmsCaravans(variables: GetRealmsCaravansQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetRealmsCaravansQuery; extensions?: any; headers: Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmsCaravansQuery>(GetRealmsCaravansDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRealmsCaravans', 'query');
     }
   };

@@ -200,8 +200,9 @@ export function setComponentFromEntitiesGraphqlQuery(
   entities: Entity[],
 ) {
   entities.forEach((entity) => {
-    const keys = entity.keys.split(",").map((key) => BigInt(key));
-    keys.pop();
+    const keys = entity?.keys
+      ?.filter((key) => key !== null)
+      .map((key) => BigInt(key as string)) as bigint[];
     const entityIndex = getEntityIdFromKeys(keys);
     entity.components.forEach((comp: any) => {
       if (comp.__typename === component.metadata?.name) {

@@ -13,7 +13,9 @@ import { getEntityIdFromKeys } from "../../utils/utils";
 
 export function useTrade() {
   const {
-    setup: { components: { Resource, FungibleEntities } },
+    setup: {
+      components: { OrderResource, FungibleEntities },
+    },
   } = useDojo();
 
   const getTradeResources = (orderId: number): Resource[] => {
@@ -29,7 +31,7 @@ export function useTrade() {
         BigInt(fungibleEntities.key),
         BigInt(i),
       ]);
-      const resource = getComponentValue(Resource, entityId);
+      const resource = getComponentValue(OrderResource, entityId);
       if (resource) {
         resources.push({
           resourceId: resource.resource_type,
@@ -45,7 +47,9 @@ export function useTrade() {
 
 export function useGetMyOffers() {
   const {
-    setup: { components: { Status, Trade } },
+    setup: {
+      components: { Status, Trade },
+    },
   } = useDojo();
 
   const { realmEntityId } = useRealmStore();
@@ -106,7 +110,9 @@ export function useGetMyOffers() {
 
 export function useGetMarket() {
   const {
-    setup: { components: { Status, Trade } },
+    setup: {
+      components: { Status, Trade },
+    },
   } = useDojo();
 
   const { realmEntityId } = useRealmStore();
