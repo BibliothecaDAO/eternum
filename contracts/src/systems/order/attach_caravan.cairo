@@ -111,10 +111,6 @@ mod AttachCaravan {
         // assert that the caravan can move the total weight
         assert(capacity.weight_gram * quantity >= total_weight, 'Caravan capacity is not enough');
 
-        // assert that there is not already another caravan
-        let caravan = get!(ctx.world, (order_id, entity_id), Caravan);
-        assert(caravan.caravan_id == 0, 'Caravan already attached');
-
         // attach the caravan to the order + entity so that multiple different takers can attach caravans
         let caravan_key_arr = array![order_id.into(), entity_id.into()];
         let caravan_key = poseidon_hash_span(caravan_key_arr.span());
