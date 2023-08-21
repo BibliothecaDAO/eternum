@@ -15,7 +15,7 @@ import { getEntityIdFromKeys } from "../../utils/utils";
 
 export function useIncomingOrders() {
   const {
-    components: { ArrivalTime, Position },
+    setup: { components: { ArrivalTime, Position } },
   } = useDojo();
 
   const getIncomingOrderInfo = (
@@ -43,7 +43,7 @@ export function useIncomingOrders() {
 
 export function useGetIncomingOrders() {
   const {
-    components: { Trade },
+    setup: { components: { Trade } },
   } = useDojo();
 
   const { realmEntityId } = useRealmStore();

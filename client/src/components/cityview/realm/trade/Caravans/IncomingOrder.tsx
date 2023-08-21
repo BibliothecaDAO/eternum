@@ -32,7 +32,8 @@ export const IncomingOrder = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const {
-    systemCalls: { claim_fungible_order },
+    setup: { systemCalls: { claim_fungible_order } },
+    account: { account },
   } = useDojo();
 
   useEffect(() => {
@@ -42,6 +43,7 @@ export const IncomingOrder = ({
   const claimOrder = async () => {
     setIsLoading(true);
     claim_fungible_order({
+      signer: account,
       entity_id: realmEntityId,
       trade_id: incomingOrder.tradeId,
     });
@@ -135,11 +137,11 @@ export const IncomingOrder = ({
       {isLoading && (
         <Button
           isLoading={true}
-          onClick={() => {}}
+          onClick={() => { }}
           variant="danger"
           className="ml-auto p-2 !h-4 text-xxs !rounded-md"
         >
-          {}
+          { }
         </Button>
       )}
     </div>
