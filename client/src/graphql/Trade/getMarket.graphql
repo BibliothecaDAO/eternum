@@ -1,19 +1,15 @@
 query getMarket {
-  tradeComponents(claimed_by_maker: 0, claimed_by_taker: 0) {
-    entity {
-      ... on Entity {
-        keys
-        components {
-          __typename
-          ... on Status {
-            value
-          }
-          ... on Trade {
-            trade_id
-            maker_id
-            maker_order_id
-            taker_order_id
-            expires_at
+  tradeComponents(where: { claimed_by_maker: 0, claimed_by_taker: 0 }) {
+    edges {
+      node {
+        entity {
+          keys
+          components {
+            __typename
+            ... on Status {
+              value
+            }
+            ...TradeFragment
           }
         }
       }

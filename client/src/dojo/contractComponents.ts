@@ -228,6 +228,20 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
+          balance: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        }
+      );
+    })(),
+    OrderResource: (() => {
+      const name = "OrderResource";
+      return defineComponent(
+        world,
+        {
           resource_type: RecsType.Number,
           balance: RecsType.Number,
         },

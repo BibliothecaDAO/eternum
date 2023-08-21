@@ -3,61 +3,65 @@ query getCaravanInfo(
   $orderId: String!
   $counterpartyOrderId: String!
 ) {
-  caravan: entities(keys: [$caravanId], componentName: "CaravanMembers") {
-    keys
-    components {
-      __typename
-      ... on ArrivalTime {
-        arrives_at
-      }
-      ... on Movable {
-        blocked
-        sec_per_km
-      }
-      ... on Capacity {
-        weight_gram
-      }
-    }
-  }
-  destination: entities(
-    keys: [$counterpartyOrderId]
-    limit: 1
-    componentName: "ArrivalTime"
-  ) {
-    keys
-    components {
-      __typename
-      ... on Position {
-        x
-        y
+  caravan: entities(keys: [$caravanId]) {
+    edges {
+      node {
+        keys
+        components {
+          __typename
+          ... on ArrivalTime {
+            arrives_at
+          }
+          ... on Movable {
+            blocked
+            sec_per_km
+          }
+          ... on Capacity {
+            weight_gram
+          }
+        }
       }
     }
   }
-  resourcesGive: entities(
-    keys: [$orderId]
-    limit: 100
-    componentName: "Resource"
-  ) {
-    keys
-    components {
-      __typename
-      ... on Resource {
-        resource_type
-        balance
+  destination: entities(keys: [$counterpartyOrderId]) {
+    edges {
+      node {
+        keys
+        components {
+          __typename
+          ... on Position {
+            x
+            y
+          }
+        }
       }
     }
   }
-  resourcesGet: entities(
-    keys: [$counterpartyOrderId]
-    limit: 100
-    componentName: "Resource"
-  ) {
-    keys
-    components {
-      __typename
-      ... on Resource {
-        resource_type
-        balance
+  resourcesGive: entities(keys: [$orderId]) {
+    edges {
+      node {
+        keys
+        components {
+          __typename
+          ... on OrderResource {
+            resource_type
+            balance
+          }
+        }
+      }
+    }
+  }
+  resourcesGet: entities(keys: [$counterpartyOrderId]) {
+    edges {
+      node {
+        keys
+        components {
+          __typename
+          ... on OrderResource {
+            resource_type
+            balance
+          }
+        }
       }
     }
   }
