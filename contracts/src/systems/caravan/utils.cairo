@@ -22,7 +22,7 @@ mod GetAverageSpeed {
         let mut total_quantity: u128 = 0_u128;
 
         // Get the caller's address
-        let caller = starknet::get_tx_info().unbox().account_contract_address;
+        let caller = ctx.origin;
         let mut index = 0;
 
         // loop over the entities

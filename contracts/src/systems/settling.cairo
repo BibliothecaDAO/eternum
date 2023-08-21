@@ -21,7 +21,7 @@ mod Settle {
         let config = get!(ctx.world, WORLD_CONFIG_ID, WorldConfig);
         let laborConfig = get!(ctx.world, LABOR_CONFIG_ID, LaborConfig);
         let token: felt252 = config.realm_l2_contract.into();
-        let caller = starknet::get_tx_info().unbox().account_contract_address;
+        let caller = ctx.origin;
         // get the metadata
         let erc721 = IERC721Dispatcher { contract_address: config.realm_l2_contract };
         // verify owner
@@ -111,7 +111,7 @@ mod Unsettle {
 
         // get the owner
         let owner = get!(ctx.world, realm_id.into(), Owner);
-        let caller = starknet::get_tx_info().unbox().account_contract_address;
+        let caller = ctx.origin;
         // assert caller is owner
         assert(owner.address == caller, 'Only owner can unsettle');
 

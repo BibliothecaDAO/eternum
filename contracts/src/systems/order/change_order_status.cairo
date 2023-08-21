@@ -20,7 +20,7 @@ mod ChangeOrderStatus {
         // assert(current_status.value != new_status, 'status is the same');
 
         // assert that caller is owner of the maker_id
-        let caller = starknet::get_tx_info().unbox().account_contract_address;
+        let caller = ctx.origin;
         let owner = get!(ctx.world, meta.maker_id, Owner);
         assert(owner.address == caller, 'not owned by caller');
 

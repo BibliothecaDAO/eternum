@@ -25,7 +25,7 @@ mod ClaimFungibleOrder {
 
     fn execute(ctx: Context, entity_id: u128, trade_id: u128) {
         // assert caller is owner of the entity_id
-        let caller = starknet::get_tx_info().unbox().account_contract_address;
+        let caller = ctx.origin;
         let owner = get !(ctx.world, entity_id, Owner);
         assert(owner.address == caller, 'not owned by caller');
 

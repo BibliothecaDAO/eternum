@@ -31,7 +31,7 @@ mod CreateFreeTransportUnit {
         let (owner, realm, position) = get!(ctx.world, entity_id, (Owner, Realm, Position));
 
         // Ensure the entity is owned by the caller
-        let caller = starknet::get_tx_info().unbox().account_contract_address;
+        let caller = ctx.origin;
         assert(caller == owner.address, 'entity is not owned by caller');
 
         // Determine the max number of free transport units available for creation

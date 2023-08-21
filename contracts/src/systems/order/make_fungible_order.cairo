@@ -52,7 +52,7 @@ mod MakeFungibleOrder {
         taker_needs_caravan: bool,
         expires_at: u64
     ) {
-        let caller = starknet::get_tx_info().unbox().account_contract_address;
+        let caller = ctx.origin;
 
         // assert that maker entity is owned by caller
         let maker_owner = get !(ctx.world, maker_id, Owner);
