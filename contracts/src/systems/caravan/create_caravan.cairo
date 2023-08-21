@@ -15,6 +15,10 @@ mod CreateCaravan {
     use eternum::components::movable::Movable;
     use eternum::components::capacity::Capacity;
     use eternum::components::owner::Owner;
+    use eternum::components::ComponentManagerTrait;
+    use eternum::entities::transport::caravan::{
+        Caravan, CaravanImpl
+    };
 
     use traits::Into;
     use traits::TryInto;
@@ -27,20 +31,21 @@ mod CreateCaravan {
 
 
     fn execute(ctx: Context, entity_ids: Array<felt252>) -> ID {
-        // speed
         let mut total_speed: u128 = 0_u128;
         let mut total_quantity: u128 = 0_u128;
-        // capacity
         let mut total_capacity: u128 = 0_u128;
 
         // get key to write each entity of the caravan
         let entities_key = ctx.world.uuid();
-        // get caravan id
-        let caravan_id = ctx.world.uuid();
 
-        let mut entity_position: Position = Position { entity_id: caravan_id.into(), x: 0, y: 0 };
+        let mut caravan = CaravanImpl::new(ctx);
+        caravan.position = Position {
+            entity_id: caravan.id, 
+            x: 0, 
+            y: 0
+        };
 
-        let caller = starknet::get_tx_info().unbox().account_contract_address;
+        let caller = ctx.origin;
 
         let mut index = 0;
         // loop over the entities to
@@ -65,10 +70,10 @@ mod CreateCaravan {
             // assert that they are all at the same position when index > 0
             // if index == 0, then initialize position as the first entity position
             if index != 0 {
-                assert(entity_position.x == position.x, 'entities not same position');
-                assert(entity_position.y == position.y, 'entities not same position');
+                assert(caravan.position.x == position.x, 'entities not same position');
+                assert(caravan.position.y == position.y, 'entities not same position');
             } else {
-                entity_position = position;
+                caravan.position = position;
             }
 
             // assert that caller is the owner of the entities
@@ -99,7 +104,7 @@ mod CreateCaravan {
             // };
 
             // set entity in the caravan
-            let foreign_key_arr = array![caravan_id.into(), entities_key.into(), index.into()];
+            let foreign_key_arr = array![caravan.id.into(), entities_key.into(), index.into()];
             let foreign_key = poseidon_hash_span(foreign_key_arr.span());
             let _ = set!(ctx.world, (ForeignKey { foreign_key, entity_id }));
 
@@ -125,23 +130,31 @@ mod CreateCaravan {
         let average_speed: u16 = average_speed.try_into().unwrap();
 
         // set the caravan entity
-        let _ = set!(
-            ctx.world,
-            (
-                Owner {
-                    entity_id: caravan_id.into(), address: caller, 
-                    }, Movable {
-                    entity_id: caravan_id.into(), sec_per_km: average_speed, blocked: false, 
-                    }, Capacity {
-                    entity_id: caravan_id.into(), weight_gram: total_capacity, 
-                    }, CaravanMembers {
-                    entity_id: caravan_id.into(), key: entities_key.into(), count: length
-                    }, Position {
-                    entity_id: caravan_id.into(), x: entity_position.x, y: entity_position.y
-                }
-            )
-        );
-        caravan_id.into()
+        caravan.owner.entity_id = caravan.id;
+        caravan.owner.address = caller;
+        caravan.set(caravan.owner);
+
+
+        caravan.movable.entity_id = caravan.id;
+        caravan.movable.sec_per_km = average_speed;
+        caravan.movable.blocked = false;
+        caravan.set(caravan.movable);
+
+        caravan.capacity.entity_id = caravan.id;
+        caravan.capacity.weight_gram = total_capacity;
+        caravan.set(caravan.capacity);
+
+        caravan.members.entity_id = caravan.id;
+        caravan.members.key = entities_key.into();
+        caravan.members.count = length;
+        caravan.set(caravan.members);
+
+        caravan.position.entity_id = caravan.id;
+        caravan.position.x = caravan.position.x;
+        caravan.position.y = caravan.position.y;
+        caravan.set(caravan.position);
+
+        caravan.id
     }
 }
 // mod tests {

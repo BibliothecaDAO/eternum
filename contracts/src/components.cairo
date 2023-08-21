@@ -11,3 +11,14 @@ mod quantity;
 mod metadata;
 mod caravan;
 mod trade;
+
+
+trait ComponentManagerTrait<T,U> {
+    fn get(self: T) -> U;
+    fn set(self: T, value: U);
+}
+
+trait ComponentExistsTrait<T> {
+    fn exists(self: T) -> bool;
+}
+
