@@ -2,7 +2,6 @@ import clsx from "clsx";
 import React, { ComponentPropsWithRef, useEffect, useState } from "react";
 import { Transition } from "@headlessui/react";
 import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
-import { Fragment } from "ethers/lib/utils";
 
 type NotificationProps = {
   children?: React.ReactNode;
@@ -48,7 +47,7 @@ export const Notification = ({
       <div className={clsx(" p-", STYLES.base, STYLES[type], className)}>
         {onClose && (
           <CloseIcon
-            className="w-4 h-4 absolute top-2 right-2 cursor-pointer fill-white opacity-30"
+            className="absolute w-4 h-4 cursor-pointer top-2 right-2 fill-white opacity-30"
             onClick={handleClose}
           />
         )}
