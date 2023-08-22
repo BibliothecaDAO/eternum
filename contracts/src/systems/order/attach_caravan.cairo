@@ -30,7 +30,7 @@ mod AttachCaravan {
     // set !(ctx.world, (order_id, entity_id), (Caravan { caravan_id }));
 
     fn execute(ctx: Context, entity_id: u128, trade_id: u128, caravan_id: u128) {
-        let caller = starknet::get_tx_info().unbox().account_contract_address;
+        let caller = ctx.origin;
 
         // get trade info
         let (meta, trade_status) = get!(ctx.world, trade_id, (Trade, Status));

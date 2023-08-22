@@ -40,7 +40,7 @@ mod TakeFungibleOrder {
         assert(is_open, 'Trade is not open');
 
         // assert that taker entity is owned by caller
-        let caller = starknet::get_tx_info().unbox().account_contract_address;
+        let caller = ctx.origin;
         let owner = get !(ctx.world, taker_id, Owner);
         assert(owner.address == caller, 'not owned by caller');
 
