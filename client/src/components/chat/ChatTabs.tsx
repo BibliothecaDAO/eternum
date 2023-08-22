@@ -99,7 +99,7 @@ const dummyMessages: ChatMessageProps[] = [
   },
 ];
 
-export const ChatTabs = ({ }: ChatTabsProps) => {
+export const ChatTabs = ({}: ChatTabsProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
 
   const tabs = useMemo(
@@ -138,7 +138,7 @@ export const ChatTabs = ({ }: ChatTabsProps) => {
       selectedIndex={selectedTab}
       onChange={(index: any) => setSelectedTab(index as number)}
       variant="primary"
-      className="flex-1 overflow-hidden"
+      className="flex-1 overflow-hidden z-0"
     >
       <Tabs.List className="!justify-start relative !pointer-events-autopx-0">
         {tabs.map((tab, index) => (
