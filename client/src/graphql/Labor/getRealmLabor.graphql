@@ -1,5 +1,5 @@
 query getRealmLabor($realmEntityId: String!) {
-  entities(keys: [$realmEntityId]) {
+  entities(keys: [$realmEntityId], first: 100) {
     edges {
       node {
         keys

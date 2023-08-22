@@ -15,7 +15,7 @@ import { getRealm } from "../SettleRealmComponent";
 
 type LaborPanelProps = {};
 
-export const LaborPanel = ({ }: LaborPanelProps) => {
+export const LaborPanel = ({}: LaborPanelProps) => {
   const [buildResource, setBuildResource] = useState<number | null>(null);
   const [buildLoadingStates, setBuildLoadingStates] = useState<{
     [key: number]: boolean;

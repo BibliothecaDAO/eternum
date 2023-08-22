@@ -15,7 +15,9 @@ import { getEntityIdFromKeys } from "../../utils/utils";
 
 export function useIncomingOrders() {
   const {
-    setup: { components: { ArrivalTime, Position } },
+    setup: {
+      components: { ArrivalTime, Position },
+    },
   } = useDojo();
 
   const getIncomingOrderInfo = (
@@ -43,7 +45,9 @@ export function useIncomingOrders() {
 
 export function useGetIncomingOrders() {
   const {
-    setup: { components: { Trade } },
+    setup: {
+      components: { Trade },
+    },
   } = useDojo();
 
   const { realmEntityId } = useRealmStore();
@@ -86,6 +90,7 @@ export function useGetIncomingOrders() {
   useMemo(() => {
     const incomingOrders = entityIds
       .map((id) => {
+        // TODO: different order id depending on if is maker or not
         let entity = getComponentValue(Trade, id);
         if (entity) {
           return {

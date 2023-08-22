@@ -140,7 +140,7 @@ export function createSystemCalls(
         Trade.addOverride(
             overrideId, {
             entity: trade_id,
-            value: { trade_id, maker_id: numberMakerId, taker_id: 0, maker_order_id, taker_order_id, expires_at, claimed_by_maker: false, claimed_by_taker: false, taker_needs_caravan: true },
+            value: { maker_id: numberMakerId, taker_id: 0, maker_order_id, taker_order_id, expires_at, claimed_by_maker: false, claimed_by_taker: false, taker_needs_caravan: true },
         });
         Status.addOverride(
             overrideId, {
@@ -260,7 +260,7 @@ export function createSystemCalls(
 
         const tx = await execute(signer, "CreateRealm", [
             realm_id, owner, resource_types_packed, resource_types_count,
-            cities, harbors, rivers, regions, wonder, order, position.x, position.y
+            cities, harbors, rivers, regions, wonder, order, 2, position.x, position.y
         ]);
 
         const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, {retryInterval: 500});

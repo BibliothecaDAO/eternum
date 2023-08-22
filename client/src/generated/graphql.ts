@@ -1677,7 +1677,7 @@ export const TradeFragmentFragmentDoc = gql`
     `;
 export const GetRealmLaborDocument = gql`
     query getRealmLabor($realmEntityId: String!) {
-  entities(keys: [$realmEntityId]) {
+  entities(keys: [$realmEntityId], first: 100) {
     edges {
       node {
         keys
@@ -1952,7 +1952,7 @@ export const GetTradeResourcesDocument = gql`
     `;
 export const GetCaravanInfoDocument = gql`
     query getCaravanInfo($caravanId: String!, $orderId: String!, $counterpartyOrderId: String!) {
-  caravan: entities(keys: [$caravanId]) {
+  caravan: entities(keys: [$caravanId], first: 100) {
     edges {
       node {
         keys

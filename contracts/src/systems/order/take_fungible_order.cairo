@@ -15,6 +15,7 @@ mod TakeFungibleOrder {
     use traits::TryInto;
     use box::BoxTrait;
     use array::ArrayTrait;
+    use poseidon::poseidon_hash_span;
 
     use dojo::world::Context;
     // you can attach a caravan only if it's needed
@@ -77,9 +78,9 @@ mod TakeFungibleOrder {
         let taker_position = get !(ctx.world, taker_id, Position);
 
         // check if there is a caravan attached to the maker
-        let caravan = get !(
-            ctx.world, (meta.maker_order_id, meta.maker_id), Caravan
-        );
+        let caravan_key_arr = array![meta.maker_order_id.into(), meta.maker_id.into()];
+        let caravan_key = poseidon_hash_span(caravan_key_arr.span());
+        let caravan = get!(ctx.world, caravan_key, Caravan);
 
         // if caravan id is not 0, it means there is a caravan
         if (caravan.caravan_id != 0) {
@@ -142,7 +143,10 @@ mod TakeFungibleOrder {
         // (taker_order_id, taker_id), this is because more than one taker can attach a caravan to the same order
         // before one of them accepts it
         if meta.taker_needs_caravan == true {
-            let caravan = get !(ctx.world, (meta.taker_order_id, taker_id), Caravan);
+            let caravan_key_arr = array![meta.taker_order_id.into(), taker_id.into()];
+            let caravan_key = poseidon_hash_span(caravan_key_arr.span());
+            let caravan = get!(ctx.world, caravan_key, Caravan);
+
             let (movable, caravan_position, owner) = get !(
                 ctx.world, caravan.caravan_id, (Movable, Position, Owner)
             );

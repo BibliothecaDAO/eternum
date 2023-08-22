@@ -3,7 +3,7 @@ query getCaravanInfo(
   $orderId: String!
   $counterpartyOrderId: String!
 ) {
-  caravan: entities(keys: [$caravanId]) {
+  caravan: entities(keys: [$caravanId], first: 100) {
     edges {
       node {
         keys

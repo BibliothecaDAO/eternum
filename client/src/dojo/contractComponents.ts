@@ -429,7 +429,6 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
-          trade_id: RecsType.Number,
           maker_id: RecsType.Number,
           taker_id: RecsType.Number,
           maker_order_id: RecsType.Number,

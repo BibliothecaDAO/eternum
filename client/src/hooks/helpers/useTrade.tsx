@@ -86,11 +86,11 @@ export function useGetMyOffers() {
 
   useMemo(() => {
     const trades = entityIds
-      .map((id) => {
-        let trade = getComponentValue(Trade, id);
+      .map((tradeId) => {
+        let trade = getComponentValue(Trade, tradeId);
         if (trade) {
           return {
-            tradeId: trade.trade_id,
+            tradeId,
             makerId: trade.maker_id,
             makerOrderId: trade.maker_order_id,
             takerOrderId: trade.taker_order_id,
@@ -151,7 +151,7 @@ export function useGetMarket() {
         let trade = getComponentValue(Trade, tradeId);
         if (trade) {
           return {
-            tradeId: trade.trade_id,
+            tradeId,
             makerId: trade.maker_id,
             makerOrderId: trade.maker_order_id,
             takerOrderId: trade.taker_order_id,
