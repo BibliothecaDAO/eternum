@@ -1,26 +1,30 @@
 query getRealm($realmEntityId: String!) {
-  entities(keys: [$realmEntityId], componentName: "Realm") {
-    keys
-    id
-    components {
-      __typename
-      ... on Realm {
-        realm_id
-        cities
-        rivers
-        wonder
-        harbors
-        regions
-        resource_types_count
-        resource_types_packed
-        order
-      }
-      ... on Position {
-        x
-        y
-      }
-      ... on Owner {
-        address
+  entities(keys: [$realmEntityId]) {
+    edges {
+      node {
+        keys
+        id
+        components {
+          __typename
+          ... on Realm {
+            realm_id
+            cities
+            rivers
+            wonder
+            harbors
+            regions
+            resource_types_count
+            resource_types_packed
+            order
+          }
+          ... on Position {
+            x
+            y
+          }
+          ... on Owner {
+            address
+          }
+        }
       }
     }
   }

@@ -1,5 +1,9 @@
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct Labor {
+    #[key]
+    entity_id: u128,
+    #[key]
+    resource_type: u8,
     balance: u64,
     last_harvest: u64,
     multiplier: u64,

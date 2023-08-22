@@ -12,5 +12,6 @@ export function createClientComponents({ contractComponents }: SetupNetworkResul
         Status: overridableComponent(contractComponents.Status),
         FungibleEntities: overridableComponent(contractComponents.FungibleEntities),
         Resource: overridableComponent(contractComponents.Resource),
+        OrderResource: overridableComponent(contractComponents.OrderResource),
     };
 }

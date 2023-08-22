@@ -2,6 +2,7 @@ use eternum::alias::ID;
 
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct Trade {
+    #[key]
     trade_id: u128,
     maker_id: u128,
     taker_id: u128,
@@ -16,12 +17,16 @@ struct Trade {
 
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct Status {
-    value: u128, 
+    #[key]
+    trade_id: u128,
+    value: u128,
 }
 
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct OrderId {
-    id: u128, 
+    #[key]
+    entity_id: u128,
+    id: u128,
 }
 
 // status of the trade
@@ -44,6 +49,20 @@ impl TradeStatusSerdeLen of dojo::SerdeLen<TradeStatus> {
 // that will be traded through the orderbook
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct FungibleEntities {
+    #[key]
+    entity_id: u128,
     key: u128,
     count: usize,
+}
+
+#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+struct OrderResource {
+    #[key]
+    order_id: u128,
+    #[key]
+    fungible_entities_id: u128,
+    #[key]
+    index: usize,
+    resource_type: u8,
+    balance: u128,
 }

@@ -94,7 +94,7 @@ export type SystemCalls = ReturnType<typeof createSystemCalls>;
 // NOTE: need to add waitForTransaction when connected to rinnigan
 export function createSystemCalls(
     { execute, provider, contractComponents }: SetupNetworkResult,
-    { Trade, Status, FungibleEntities, Resource }: ClientComponents,
+    { Trade, Status, FungibleEntities, OrderResource }: ClientComponents,
 ) {
     // Refactor the functions using the interfaces
     const build_labor = async (props: BuildLaborProps) => {
@@ -140,7 +140,7 @@ export function createSystemCalls(
         Trade.addOverride(
             overrideId, {
             entity: trade_id,
-            value: { trade_id, maker_id: numberMakerId, taker_id: 0, maker_order_id, taker_order_id, expires_at, claimed_by_maker: false, claimed_by_taker: false, taker_needs_caravan: true },
+            value: { maker_id: numberMakerId, taker_id: 0, maker_order_id, taker_order_id, expires_at, claimed_by_maker: false, claimed_by_taker: false, taker_needs_caravan: true },
         });
         Status.addOverride(
             overrideId, {
@@ -161,7 +161,7 @@ export function createSystemCalls(
         }
         )
         for (let i = 0; i < maker_quantities.length; i++) {
-            Resource.addOverride(
+            OrderResource.addOverride(
                 overrideId, {
                 entity: getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 1), BigInt(LOW_ENTITY_ID + 3), BigInt(i)]),
                 value: {
@@ -172,7 +172,7 @@ export function createSystemCalls(
             )
         }
         for (let i = 0; i < taker_quantities.length; i++) {
-            Resource.addOverride(
+            OrderResource.addOverride(
                 overrideId, {
                 entity: getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 2), BigInt(LOW_ENTITY_ID + 3), BigInt(i)]),
                 value: {
@@ -260,7 +260,7 @@ export function createSystemCalls(
 
         const tx = await execute(signer, "CreateRealm", [
             realm_id, owner, resource_types_packed, resource_types_count,
-            cities, harbors, rivers, regions, wonder, order, position.x, position.y
+            cities, harbors, rivers, regions, wonder, order, 2, position.x, position.y
         ]);
 
         const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, {retryInterval: 500});

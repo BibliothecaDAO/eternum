@@ -15,8 +15,10 @@ export const SettleRealmComponent = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const {
-    setup: { systemCalls: { create_realm, mint_resources } },
-    account: { account }
+    setup: {
+      systemCalls: { create_realm, mint_resources },
+    },
+    account: { account },
   } = useDojo();
 
   const { setRealmEntityIds } = useRealmStore();
@@ -39,16 +41,31 @@ export const SettleRealmComponent = () => {
       position,
     });
     // mint basic resources to start
-    await mint_resources({ signer: account, entity_id, resource_type: 2, amount: 1000 });
-    await mint_resources({ signer: account, entity_id, resource_type: 3, amount: 1000 });
-    await mint_resources({ signer: account, entity_id, resource_type: 253, amount: 1000 });
+    await mint_resources({
+      signer: account,
+      entity_id,
+      resource_type: 2,
+      amount: 1000,
+    });
+    await mint_resources({
+      signer: account,
+      entity_id,
+      resource_type: 3,
+      amount: 1000,
+    });
+    await mint_resources({
+      signer: account,
+      entity_id,
+      resource_type: 253,
+      amount: 1000,
+    });
     // add the new entity_id in the list of entityIds in my localStorage
     const entityIds = localStorage.getItem("entityIds");
     const updatedEntityIds = entityIds
       ? [
-        ...JSON.parse(entityIds),
-        { realmEntityId: entity_id, realmId: new_realm_id },
-      ]
+          ...JSON.parse(entityIds),
+          { realmEntityId: entity_id, realmId: new_realm_id },
+        ]
       : [{ realmEntityId: entity_id, realmId: new_realm_id }];
     localStorage.setItem("entityIds", JSON.stringify(updatedEntityIds));
     setRealmEntityIds(updatedEntityIds);
@@ -75,11 +92,11 @@ export const SettleRealmComponent = () => {
       {isLoading && (
         <Button
           isLoading={true}
-          onClick={() => { }}
+          onClick={() => {}}
           variant="danger"
           className="ml-2 p-2 !h-4 text-xxs !rounded-md"
         >
-          { }
+          {}
         </Button>
       )}
       <Button

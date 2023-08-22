@@ -14,7 +14,7 @@ use eternum::components::capacity::CapacityComponent;
 use eternum::components::movable::{MovableComponent, ArrivalTimeComponent};
 use eternum::components::caravan::{CaravanMembersComponent, CaravanComponent};
 use eternum::components::metadata::ForeignKeyComponent;
-use eternum::components::trade::{StatusComponent, TradeComponent};
+use eternum::components::trade::{StatusComponent, TradeComponent, OrderResourceComponent};
 use eternum::components::trade::FungibleEntitiesComponent;
 use eternum::erc721::components::{TokenApprovalComponent, BalanceComponent};
 use eternum::components::age::AgeComponent;
@@ -81,6 +81,7 @@ fn retrieve_list_of_world_components_and_systems() -> (Array<felt252>, Array<fel
     components.append(ForeignKeyComponent::TEST_CLASS_HASH);
     components.append(TradeComponent::TEST_CLASS_HASH);
     components.append(FungibleEntitiesComponent::TEST_CLASS_HASH);
+    components.append(OrderResourceComponent::TEST_CLASS_HASH);
     components.append(ResourceComponent::TEST_CLASS_HASH);
     components.append(StatusComponent::TEST_CLASS_HASH);
     components.append(AuthRoleComponent::TEST_CLASS_HASH);

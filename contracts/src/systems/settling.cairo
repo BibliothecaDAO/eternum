@@ -18,8 +18,8 @@ mod Settle {
 
     fn execute(ctx: Context, realm_id: u128) { // get the ERC721 contract
         // get the owner
-        let config = get !(ctx.world, WORLD_CONFIG_ID.into(), WorldConfig);
-        let laborConfig = get !(ctx.world, LABOR_CONFIG_ID.into(), LaborConfig);
+        let config = get!(ctx.world, WORLD_CONFIG_ID, WorldConfig);
+        let laborConfig = get!(ctx.world, LABOR_CONFIG_ID, LaborConfig);
         let token: felt252 = config.realm_l2_contract.into();
         let caller = starknet::get_tx_info().unbox().account_contract_address;
         // get the metadata
@@ -31,7 +31,7 @@ mod Settle {
         let position: Position = erc721.realm_position(realm_id);
         // create Realm Metadata
         let realm_entity_id = ctx.world.uuid();
-        set !(
+        set!(
             ctx.world,
             realm_entity_id.into(),
             (
@@ -73,7 +73,7 @@ mod Settle {
             };
             let resource_type: u8 = *resource_types[index];
             let resource_query: Query = (realm_id, resource_type).into();
-            set !(
+            set!(
                 ctx.world,
                 resource_query,
                 (Resource { resource_type, balance: daily_resource_production,  })
@@ -105,12 +105,12 @@ mod Unsettle {
 
     fn execute(ctx: Context, realm_id: u128) {
         // get the ERC721 contract
-        let config = get !(ctx.world, WORLD_CONFIG_ID.into(), WorldConfig);
-        let laborConfig = get !(ctx.world, LABOR_CONFIG_ID.into(), LaborConfig);
+        let config = get!(ctx.world, WORLD_CONFIG_ID, WorldConfig);
+        let laborConfig = get!(ctx.world, LABOR_CONFIG_ID, LaborConfig);
         let token = config.realm_l2_contract;
 
         // get the owner
-        let owner = get !(ctx.world, realm_id.into(), Owner);
+        let owner = get!(ctx.world, realm_id.into(), Owner);
         let caller = starknet::get_tx_info().unbox().account_contract_address;
         // assert caller is owner
         assert(owner.address == caller, 'Only owner can unsettle');
