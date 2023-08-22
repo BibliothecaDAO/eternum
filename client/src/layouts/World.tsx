@@ -20,6 +20,7 @@ import { useProgress } from "@react-three/drei";
 import { BlurOverlayContainer } from "../containers/BlurOverlayContainer";
 import { SignUpComponent } from "../components/SignUpComponent";
 import useSound from "use-sound";
+import { NotificationsComponent } from "../components/NotificationsComponent";
 
 export const World = () => {
   useFetchBlockchainData();
@@ -81,6 +82,7 @@ export const World = () => {
         <div className="flex">
           <NavigationModule />
           <RealmResourcesComponent className="ml-20 -mt-1" />
+          <NotificationsComponent className="ml-auto" />
         </div>
 
         {/* <ContextsModule /> */}
