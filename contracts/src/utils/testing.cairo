@@ -80,59 +80,61 @@ use option::OptionTrait;
 // used to spawn a test world with all the components and systems registered
 fn spawn_eternum() -> IWorldDispatcher {
 
-    // components
-    let mut components = array::ArrayTrait::<felt252>::new();
-    components.append(owner::TEST_CLASS_HASH);
-    components.append(movable::TEST_CLASS_HASH);
-    components.append(quantity::TEST_CLASS_HASH);
-    components.append(realm::TEST_CLASS_HASH);
-    components.append(speed_config::TEST_CLASS_HASH);
-    components.append(capacity_config::TEST_CLASS_HASH);
-    components.append(world_config::TEST_CLASS_HASH);
-    components.append(meta_data::TEST_CLASS_HASH);
-    components.append(quantity_tracker::TEST_CLASS_HASH);
-    components.append(position::TEST_CLASS_HASH);
-    components.append(capacity::TEST_CLASS_HASH);
-    components.append(arrival_time::TEST_CLASS_HASH);
-    components.append(caravan_members::TEST_CLASS_HASH);
-    components.append(caravan::TEST_CLASS_HASH);
-    components.append(foreign_key::TEST_CLASS_HASH);
-    components.append(trade::TEST_CLASS_HASH);
-    components.append(fungible_entities::TEST_CLASS_HASH);
-    components.append(order_resource::TEST_CLASS_HASH);
-    components.append(resource::TEST_CLASS_HASH);
-    components.append(status::TEST_CLASS_HASH);
-    components.append(age::TEST_CLASS_HASH);
-    components.append(travel_config::TEST_CLASS_HASH);
-    components.append(labor::TEST_CLASS_HASH);
-    components.append(labor_config::TEST_CLASS_HASH);
-    components.append(labor_cost_amount::TEST_CLASS_HASH);
-    components.append(labor_cost_resources::TEST_CLASS_HASH);
-    components.append(vault::TEST_CLASS_HASH);
-    components.append(weight_config::TEST_CLASS_HASH);
+    let mut components = array![
+        owner::TEST_CLASS_HASH,
+        movable::TEST_CLASS_HASH,
+        quantity::TEST_CLASS_HASH,
+        realm::TEST_CLASS_HASH,
+        speed_config::TEST_CLASS_HASH,
+        capacity_config::TEST_CLASS_HASH,
+        world_config::TEST_CLASS_HASH,
+        meta_data::TEST_CLASS_HASH,
+        quantity_tracker::TEST_CLASS_HASH,
+        position::TEST_CLASS_HASH,
+        capacity::TEST_CLASS_HASH,
+        arrival_time::TEST_CLASS_HASH,
+        caravan_members::TEST_CLASS_HASH,
+        caravan::TEST_CLASS_HASH,
+        foreign_key::TEST_CLASS_HASH,
+        trade::TEST_CLASS_HASH,
+        fungible_entities::TEST_CLASS_HASH,
+        order_resource::TEST_CLASS_HASH,
+        resource::TEST_CLASS_HASH,
+        status::TEST_CLASS_HASH,
+        age::TEST_CLASS_HASH,
+        travel_config::TEST_CLASS_HASH,
+        labor::TEST_CLASS_HASH,
+        labor_config::TEST_CLASS_HASH,
+        labor_cost_amount::TEST_CLASS_HASH,
+        labor_cost_resources::TEST_CLASS_HASH,
+        vault::TEST_CLASS_HASH,
+        weight_config::TEST_CLASS_HASH
+    ];
+
     
-    // systems
-    let mut systems = array::ArrayTrait::<felt252>::new();
-    systems.append(GetAverageSpeed::TEST_CLASS_HASH);
-    systems.append(CreateFreeTransportUnit::TEST_CLASS_HASH);
-    systems.append(CreateCaravan::TEST_CLASS_HASH);
-    systems.append(SetSpeedConfig::TEST_CLASS_HASH);
-    systems.append(SetCapacityConfig::TEST_CLASS_HASH);
-    systems.append(SetWorldConfig::TEST_CLASS_HASH);
-    systems.append(CreateRealm::TEST_CLASS_HASH);
-    systems.append(GetQuantity::TEST_CLASS_HASH);
-    systems.append(MakeFungibleOrder::TEST_CLASS_HASH);
-    systems.append(TakeFungibleOrder::TEST_CLASS_HASH);
-    systems.append(AttachCaravan::TEST_CLASS_HASH);
-    systems.append(ClaimFungibleOrder::TEST_CLASS_HASH);
-    systems.append(SetTravelConfig::TEST_CLASS_HASH);
-    systems.append(BuildLabor::TEST_CLASS_HASH);
-    systems.append(SetLaborConfig::TEST_CLASS_HASH);
-    systems.append(SetLaborCostResources::TEST_CLASS_HASH);
-    systems.append(SetLaborCostAmount::TEST_CLASS_HASH);
-    systems.append(MintResources::TEST_CLASS_HASH);
-    systems.append(HarvestLabor::TEST_CLASS_HASH);
-    systems.append(SetWeightConfig::TEST_CLASS_HASH);
+    let mut systems = array![
+        GetAverageSpeed::TEST_CLASS_HASH,
+        CreateFreeTransportUnit::TEST_CLASS_HASH,
+        CreateCaravan::TEST_CLASS_HASH,
+        SetSpeedConfig::TEST_CLASS_HASH,
+        SetCapacityConfig::TEST_CLASS_HASH,
+        SetWorldConfig::TEST_CLASS_HASH,
+        CreateRealm::TEST_CLASS_HASH,
+        GetQuantity::TEST_CLASS_HASH,
+        MakeFungibleOrder::TEST_CLASS_HASH,
+        TakeFungibleOrder::TEST_CLASS_HASH,
+        AttachCaravan::TEST_CLASS_HASH,
+        ClaimFungibleOrder::TEST_CLASS_HASH,
+        SetTravelConfig::TEST_CLASS_HASH,
+        BuildLabor::TEST_CLASS_HASH,
+        SetLaborConfig::TEST_CLASS_HASH,
+        SetLaborCostResources::TEST_CLASS_HASH,
+        SetLaborCostAmount::TEST_CLASS_HASH,
+        MintResources::TEST_CLASS_HASH,
+        HarvestLabor::TEST_CLASS_HASH,
+        SetWeightConfig::TEST_CLASS_HASH
+    ];
+    
 
     spawn_test_world(components, systems)
 
