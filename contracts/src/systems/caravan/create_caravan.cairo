@@ -40,7 +40,7 @@ mod CreateCaravan {
 
         let mut entity_position: Position = Position { entity_id: caravan_id.into(), x: 0, y: 0 };
 
-        let caller = starknet::get_tx_info().unbox().account_contract_address;
+        let caller = ctx.origin;
 
         let mut index = 0;
         // loop over the entities to
