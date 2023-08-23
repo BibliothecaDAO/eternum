@@ -1,30 +1,47 @@
 // components
-use eternum::components::owner::OwnerComponent;
-use eternum::components::realm::RealmComponent;
+use eternum::components::owner::{owner, Owner};
+use eternum::components::realm::{realm, Realm};
+use eternum::components::resources::{resource, Resource};
+use eternum::components::position::{position, Position};
+use eternum::components::capacity::{capacity, Capacity};
+use eternum::components::metadata::{meta_data, MetaData};
+use eternum::components::age::{age, Age};
+use eternum::components::labor::{labor, Labor};
+use eternum::components::resources::{vault, Vault};
+use eternum::components::metadata::{foreign_key, ForeignKey};
+use eternum::components::trade::{fungible_entities, FungibleEntities};
 use eternum::components::config::{
-    WorldConfigComponent, SpeedConfigComponent, CapacityConfigComponent, TravelConfigComponent,
-    LaborConfigComponent, LaborCostAmountComponent, LaborCostResourcesComponent,
-    WeightConfigComponent
+    world_config, WorldConfig,
+    speed_config, SpeedConfig,
+    capacity_config, CapacityConfig,
+    travel_config, TravelConfig,
+    labor_config, LaborConfig,
+    labor_cost_amount, LaborCostAmount,
+    labor_cost_resources, LaborCostResources,
+    weight_config, WeightConfig 
 };
-use eternum::components::metadata::MetaDataComponent;
-use eternum::components::quantity::{QuantityComponent, QuantityTrackerComponent};
-use eternum::components::resources::ResourceComponent;
-use eternum::components::position::PositionComponent;
-use eternum::components::capacity::CapacityComponent;
-use eternum::components::movable::{MovableComponent, ArrivalTimeComponent};
-use eternum::components::caravan::{CaravanMembersComponent, CaravanComponent};
-use eternum::components::metadata::ForeignKeyComponent;
-use eternum::components::trade::{StatusComponent, TradeComponent, OrderResourceComponent};
-use eternum::components::trade::FungibleEntitiesComponent;
-use eternum::erc721::components::{TokenApprovalComponent, BalanceComponent};
-use eternum::components::age::AgeComponent;
-use eternum::components::labor::LaborComponent;
-use eternum::components::resources::VaultComponent;
+use eternum::components::quantity::{
+    quantity, Quantity, 
+    quantity_tracker, QuantityTracker
+};
+use eternum::components::movable::{
+    movable, Movable, 
+    arrival_time, ArrivalTime
+};
+use eternum::components::caravan::{
+    caravan, Caravan,
+    caravan_members, CaravanMembers,
+};
+use eternum::components::trade::{
+    status, Status, 
+    trade, Trade,
+    order_resource, OrderResource,
+};
+
+
 
 // systems
-use eternum::erc721::systems::{ERC721Approve, ERC721TransferFrom, ERC721Mint};
-use eternum::systems::settling::{Settle, Unsettle};
-use eternum::systems::test::CreateRealm;
+use eternum::systems::test::create_realm::CreateRealm;
 use eternum::systems::caravan::create_free_transport_unit::CreateFreeTransportUnit;
 use eternum::systems::caravan::create_caravan::CreateCaravan;
 use eternum::systems::config::speed_config::SetSpeedConfig;
@@ -41,162 +58,84 @@ use eternum::systems::config::labor_config::SetLaborConfig;
 use eternum::systems::config::labor_config::SetLaborCostResources;
 use eternum::systems::config::labor_config::SetLaborCostAmount;
 use eternum::systems::config::weight_config::SetWeightConfig;
-use eternum::systems::test::MintResources;
+use eternum::systems::test::mint_resources::MintResources;
 use eternum::systems::labor::harvest_labor::HarvestLabor;
 
-use core::traits::Into;
-use core::result::ResultTrait;
-use array::ArrayTrait;
-use option::OptionTrait;
-use traits::TryInto;
+use dojo::{executor::executor, world::{world, IWorldDispatcher, IWorldDispatcherTrait}};
+use dojo::test_utils::spawn_test_world;
 
 use starknet::{
-    ClassHash, syscalls::deploy_syscall, class_hash::Felt252TryIntoClassHash, get_caller_address
+    syscalls::deploy_syscall,
+    class_hash::Felt252TryIntoClassHash, 
+    get_caller_address, ClassHash
 };
 
-use dojo::storage::query::Query;
-use dojo::test_utils::spawn_test_world;
-use dojo::auth::systems::{GrantAuthRole, Route, RouteTrait};
-use dojo::auth::components::{AuthRoleComponent, AuthStatusComponent};
-use dojo::test_utils::mock_auth_components_systems;
-use dojo::{executor::Executor, world::World, interfaces::{IWorldDispatcher, IWorldDispatcherTrait}};
+use traits::{Into, TryInto};
+use result::ResultTrait;
+use array::ArrayTrait;
+use option::OptionTrait;
 
-fn retrieve_list_of_world_components_and_systems() -> (Array<felt252>, Array<felt252>) {
-    // components
-    let mut components = array::ArrayTrait::<felt252>::new();
-    components.append(OwnerComponent::TEST_CLASS_HASH);
-    components.append(MovableComponent::TEST_CLASS_HASH);
-    components.append(QuantityComponent::TEST_CLASS_HASH);
-    components.append(RealmComponent::TEST_CLASS_HASH);
-    components.append(SpeedConfigComponent::TEST_CLASS_HASH);
-    components.append(CapacityConfigComponent::TEST_CLASS_HASH);
-    components.append(WorldConfigComponent::TEST_CLASS_HASH);
-    components.append(MetaDataComponent::TEST_CLASS_HASH);
-    components.append(QuantityTrackerComponent::TEST_CLASS_HASH);
-    components.append(PositionComponent::TEST_CLASS_HASH);
-    components.append(CapacityComponent::TEST_CLASS_HASH);
-    components.append(ArrivalTimeComponent::TEST_CLASS_HASH);
-    components.append(CaravanMembersComponent::TEST_CLASS_HASH);
-    components.append(CaravanComponent::TEST_CLASS_HASH);
-    components.append(ForeignKeyComponent::TEST_CLASS_HASH);
-    components.append(TradeComponent::TEST_CLASS_HASH);
-    components.append(FungibleEntitiesComponent::TEST_CLASS_HASH);
-    components.append(OrderResourceComponent::TEST_CLASS_HASH);
-    components.append(ResourceComponent::TEST_CLASS_HASH);
-    components.append(StatusComponent::TEST_CLASS_HASH);
-    components.append(AuthRoleComponent::TEST_CLASS_HASH);
-    components.append(AuthStatusComponent::TEST_CLASS_HASH);
-    components.append(TokenApprovalComponent::TEST_CLASS_HASH);
-    components.append(BalanceComponent::TEST_CLASS_HASH);
-    components.append(AgeComponent::TEST_CLASS_HASH);
-    components.append(TravelConfigComponent::TEST_CLASS_HASH);
-    components.append(LaborComponent::TEST_CLASS_HASH);
-    components.append(LaborConfigComponent::TEST_CLASS_HASH);
-    components.append(LaborCostAmountComponent::TEST_CLASS_HASH);
-    components.append(LaborCostResourcesComponent::TEST_CLASS_HASH);
-    components.append(VaultComponent::TEST_CLASS_HASH);
-    components.append(WeightConfigComponent::TEST_CLASS_HASH);
-    // systems
-    let mut systems = array::ArrayTrait::<felt252>::new();
-    systems.append(GetAverageSpeed::TEST_CLASS_HASH);
-    systems.append(CreateFreeTransportUnit::TEST_CLASS_HASH);
-    systems.append(CreateCaravan::TEST_CLASS_HASH);
-    systems.append(SetSpeedConfig::TEST_CLASS_HASH);
-    systems.append(SetCapacityConfig::TEST_CLASS_HASH);
-    systems.append(SetWorldConfig::TEST_CLASS_HASH);
-    systems.append(CreateRealm::TEST_CLASS_HASH);
-    systems.append(GetQuantity::TEST_CLASS_HASH);
-    systems.append(MakeFungibleOrder::TEST_CLASS_HASH);
-    systems.append(TakeFungibleOrder::TEST_CLASS_HASH);
-    systems.append(GrantAuthRole::TEST_CLASS_HASH);
-    systems.append(AttachCaravan::TEST_CLASS_HASH);
-    systems.append(ClaimFungibleOrder::TEST_CLASS_HASH);
-    systems.append(ERC721Approve::TEST_CLASS_HASH);
-    systems.append(ERC721TransferFrom::TEST_CLASS_HASH);
-    systems.append(ERC721Mint::TEST_CLASS_HASH);
-    systems.append(Settle::TEST_CLASS_HASH);
-    systems.append(Unsettle::TEST_CLASS_HASH);
-    systems.append(SetTravelConfig::TEST_CLASS_HASH);
-    systems.append(BuildLabor::TEST_CLASS_HASH);
-    systems.append(SetLaborConfig::TEST_CLASS_HASH);
-    systems.append(SetLaborCostResources::TEST_CLASS_HASH);
-    systems.append(SetLaborCostAmount::TEST_CLASS_HASH);
-    systems.append(MintResources::TEST_CLASS_HASH);
-    systems.append(HarvestLabor::TEST_CLASS_HASH);
-    systems.append(SetWeightConfig::TEST_CLASS_HASH);
 
-    (components, systems)
-}
 
 // used to spawn a test world with all the components and systems registered
-// but without initialization which means that there is no need to handle authorization
-fn spawn_test_world_without_init() -> IWorldDispatcher {
-    // deploy executor
-    let constructor_calldata = array::ArrayTrait::new();
-    let (executor_address, _) = deploy_syscall(
-        Executor::TEST_CLASS_HASH.try_into().unwrap(), 0, constructor_calldata.span(), false
-    )
-        .unwrap();
+fn spawn_eternum() -> IWorldDispatcher {
 
-    // deploy world
-    let mut world_constructor_calldata = array::ArrayTrait::new();
-    world_constructor_calldata.append(executor_address.into());
-    let (world_address, _) = deploy_syscall(
-        World::TEST_CLASS_HASH.try_into().unwrap(), 0, world_constructor_calldata.span(), false
-    )
-        .unwrap();
-    let world = IWorldDispatcher { contract_address: world_address };
+    let mut components = array![
+        owner::TEST_CLASS_HASH,
+        movable::TEST_CLASS_HASH,
+        quantity::TEST_CLASS_HASH,
+        realm::TEST_CLASS_HASH,
+        speed_config::TEST_CLASS_HASH,
+        capacity_config::TEST_CLASS_HASH,
+        world_config::TEST_CLASS_HASH,
+        meta_data::TEST_CLASS_HASH,
+        quantity_tracker::TEST_CLASS_HASH,
+        position::TEST_CLASS_HASH,
+        capacity::TEST_CLASS_HASH,
+        arrival_time::TEST_CLASS_HASH,
+        caravan_members::TEST_CLASS_HASH,
+        caravan::TEST_CLASS_HASH,
+        foreign_key::TEST_CLASS_HASH,
+        trade::TEST_CLASS_HASH,
+        fungible_entities::TEST_CLASS_HASH,
+        order_resource::TEST_CLASS_HASH,
+        resource::TEST_CLASS_HASH,
+        status::TEST_CLASS_HASH,
+        age::TEST_CLASS_HASH,
+        travel_config::TEST_CLASS_HASH,
+        labor::TEST_CLASS_HASH,
+        labor_config::TEST_CLASS_HASH,
+        labor_cost_amount::TEST_CLASS_HASH,
+        labor_cost_resources::TEST_CLASS_HASH,
+        vault::TEST_CLASS_HASH,
+        weight_config::TEST_CLASS_HASH
+    ];
 
-    // register auth components and systems
-    let (auth_components, auth_systems) = mock_auth_components_systems();
-    let mut index = 0;
-    loop {
-        if index == auth_components.len() {
-            break ();
-        }
-        world.register_component(*auth_components.at(index));
-        index += 1;
-    };
+    
+    let mut systems = array![
+        GetAverageSpeed::TEST_CLASS_HASH,
+        CreateFreeTransportUnit::TEST_CLASS_HASH,
+        CreateCaravan::TEST_CLASS_HASH,
+        SetSpeedConfig::TEST_CLASS_HASH,
+        SetCapacityConfig::TEST_CLASS_HASH,
+        SetWorldConfig::TEST_CLASS_HASH,
+        CreateRealm::TEST_CLASS_HASH,
+        GetQuantity::TEST_CLASS_HASH,
+        MakeFungibleOrder::TEST_CLASS_HASH,
+        TakeFungibleOrder::TEST_CLASS_HASH,
+        AttachCaravan::TEST_CLASS_HASH,
+        ClaimFungibleOrder::TEST_CLASS_HASH,
+        SetTravelConfig::TEST_CLASS_HASH,
+        BuildLabor::TEST_CLASS_HASH,
+        SetLaborConfig::TEST_CLASS_HASH,
+        SetLaborCostResources::TEST_CLASS_HASH,
+        SetLaborCostAmount::TEST_CLASS_HASH,
+        MintResources::TEST_CLASS_HASH,
+        HarvestLabor::TEST_CLASS_HASH,
+        SetWeightConfig::TEST_CLASS_HASH
+    ];
+    
 
-    let mut index = 0;
-    loop {
-        if index == auth_systems.len() {
-            break ();
-        }
-        world.register_system(*auth_systems.at(index));
-        index += 1;
-    };
+    spawn_test_world(components, systems)
 
-    // Grant Admin role to the spawner
-    let caller = get_caller_address();
-    let mut grant_role_calldata: Array<felt252> = ArrayTrait::new();
-
-    grant_role_calldata.append(caller.into()); // target_id
-    grant_role_calldata.append(World::ADMIN); // role_id
-    world.execute('GrantAuthRole'.into(), grant_role_calldata.span());
-
-    // register all systems and components in the world
-    let (components, systems) = retrieve_list_of_world_components_and_systems();
-
-    // register components
-    let mut index = 0;
-    loop {
-        if index == components.len() {
-            break ();
-        }
-        world.register_component((*components[index]).try_into().unwrap());
-        index += 1;
-    };
-
-    // register systems
-    let mut index = 0;
-    loop {
-        if index == systems.len() {
-            break ();
-        }
-        world.register_system((*systems[index]).try_into().unwrap());
-        index += 1;
-    };
-
-    world
 }
