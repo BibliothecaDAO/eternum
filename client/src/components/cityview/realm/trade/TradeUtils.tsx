@@ -2,10 +2,7 @@ import realmsCoordsJson from "../../../../geodata/coords.json";
 import realmsJson from "../../../../geodata/realms.json";
 import realmsOrdersJson from "../../../../geodata/realms_raw.json";
 import { Trade } from "../../../../types";
-import {
-  RealmResourcesInterface,
-  ResourceInterface,
-} from "../../../../hooks/graphql/useGraphQLQueries";
+import { ResourceInterface } from "../../../../hooks/graphql/useGraphQLQueries";
 
 export const getRealmIdByPosition = (positionRaw: {
   x: number;
@@ -55,15 +52,15 @@ export const getOrderIdsFromTrade = (
 ): { realmOrderId: number; counterpartyOrderId: number } | undefined => {
   return trade.maker_id === realmEntityId
     ? {
-      realmOrderId: trade.maker_order_id,
-      counterpartyOrderId: trade.taker_order_id,
-    }
+        realmOrderId: trade.maker_order_id,
+        counterpartyOrderId: trade.taker_order_id,
+      }
     : trade.taker_id === realmEntityId
-      ? {
+    ? {
         realmOrderId: trade.taker_order_id,
         counterpartyOrderId: trade.maker_order_id,
       }
-      : undefined;
+    : undefined;
 };
 
 export const getTotalResourceWeight = (
@@ -73,18 +70,4 @@ export const getTotalResourceWeight = (
     (total, resource) => total + (resource?.amount || 0) * 1,
     0,
   );
-};
-
-export const canAcceptOffer = (
-  resourcesGive: ResourceInterface[],
-  realmResources: RealmResourcesInterface,
-): boolean => {
-  let canAccept = true;
-  Object.values(resourcesGive).forEach((resource) => {
-    const realmResource = realmResources[resource.resourceId]?.amount || 0;
-    if (resource.amount > realmResource) {
-      canAccept = false;
-    }
-  });
-  return canAccept;
 };

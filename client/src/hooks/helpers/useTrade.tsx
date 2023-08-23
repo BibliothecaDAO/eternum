@@ -5,7 +5,10 @@ import {
 } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import { Resource } from "../../types";
-import { MarketInterface } from "../graphql/useGraphQLQueries";
+import {
+  MarketInterface,
+  ResourceInterface,
+} from "../graphql/useGraphQLQueries";
 import { useEffect, useMemo, useRef, useState } from "react";
 import useRealmStore from "../store/useRealmStore";
 import { getEntitiesWithoutValue } from "../../utils/mud";
@@ -168,3 +171,36 @@ export function useGetMarket() {
     market,
   };
 }
+
+export const useCanAcceptOffer = ({
+  resourcesGive,
+  realmEntityId,
+}: {
+  realmEntityId: number;
+  resourcesGive: ResourceInterface[];
+}) => {
+  const {
+    setup: {
+      components: { Resource },
+    },
+  } = useDojo();
+
+  const [canAccept, setCanAccept] = useState<boolean>(false);
+
+  useEffect(() => {
+    Object.values(resourcesGive).forEach((resource) => {
+      const realmResource = getComponentValue(
+        Resource,
+        getEntityIdFromKeys([
+          BigInt(realmEntityId),
+          BigInt(resource.resourceId),
+        ]),
+      );
+      if (realmResource?.balance && realmResource.balance >= resource.amount) {
+        setCanAccept(true);
+      }
+    });
+  }, [resourcesGive]);
+
+  return canAccept;
+};

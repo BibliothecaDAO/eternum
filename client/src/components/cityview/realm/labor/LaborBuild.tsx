@@ -16,27 +16,25 @@ import clsx from "clsx";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../DojoContext";
 import { formatSecondsLeftInDaysHours } from "./laborUtils";
-import {
-  RealmResourcesInterface,
-  useGetRealm,
-} from "../../../../hooks/graphql/useGraphQLQueries";
+import { useGetRealm } from "../../../../hooks/graphql/useGraphQLQueries";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
+import { getComponentValue } from "@latticexyz/recs";
+import { getEntityIdFromKeys } from "../../../../utils/utils";
 
 type LaborBuildPopupProps = {
   resourceId: number;
-  resources: RealmResourcesInterface | undefined;
   setBuildLoadingStates: (prevStates: any) => void;
   onClose: () => void;
 };
 
 export const LaborBuildPopup = ({
   resourceId,
-  resources,
   setBuildLoadingStates,
   onClose,
 }: LaborBuildPopupProps) => {
   const {
     setup: {
+      components: { Resource },
       systemCalls: { build_labor },
       optimisticSystemCalls: { optimisticBuildLabor },
     },
@@ -72,10 +70,14 @@ export const LaborBuildPopup = ({
   }
 
   useEffect(() => {
-    setCanBuild(true);
+    setCanBuild(false);
     costResources.forEach(({ resourceId, amount }) => {
-      if (resources && resources[resourceId].amount < amount) {
-        setCanBuild(false);
+      const realmResource = getComponentValue(
+        Resource,
+        getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
+      );
+      if (realmResource && realmResource.balance >= amount) {
+        setCanBuild(true);
       }
     });
   }, [laborAmount, multiplier]);
@@ -375,7 +377,7 @@ export const LaborBuildPopup = ({
               multiplier,
               handleBuild,
             )}
-            variant="outline"
+            variant={canBuild ? "success" : "danger"}
             withoutSound
           >
             {isFood ? `Build` : `Buy Tools`}

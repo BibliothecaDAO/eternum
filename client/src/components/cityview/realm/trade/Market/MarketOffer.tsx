@@ -11,11 +11,12 @@ import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import {
   MarketInterface,
   useGetRealm,
-  useGetRealmResources,
   useSyncTradeResources,
 } from "../../../../../hooks/graphql/useGraphQLQueries";
-import { canAcceptOffer } from "../TradeUtils";
-import { useTrade } from "../../../../../hooks/helpers/useTrade";
+import {
+  useCanAcceptOffer,
+  useTrade,
+} from "../../../../../hooks/helpers/useTrade";
 import { numberToHex } from "../../../../../utils/utils";
 
 type TradeOfferProps = {
@@ -23,12 +24,8 @@ type TradeOfferProps = {
   onAccept: () => void;
 };
 
-export const MarketOffer = ({
-  marketOffer,
-  onAccept,
-}: TradeOfferProps) => {
+export const MarketOffer = ({ marketOffer, onAccept }: TradeOfferProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [canAccept, setCanAccept] = useState(true);
 
   useEffect(() => {
     setIsLoading(false);
@@ -42,8 +39,6 @@ export const MarketOffer = ({
     entityId: marketOffer.makerId,
   });
 
-  let { realmResources } = useGetRealmResources(realmEntityId);
-
   useSyncTradeResources({
     makerOrderId: numberToHex(marketOffer.makerOrderId),
     takerOrderId: numberToHex(marketOffer.takerOrderId),
@@ -52,13 +47,7 @@ export const MarketOffer = ({
   let resourcesGet = getTradeResources(marketOffer.makerOrderId);
   let resourcesGive = getTradeResources(marketOffer.takerOrderId);
 
-  useEffect(() => {
-    if (resourcesGive.length > 0) {
-      canAcceptOffer(resourcesGive, realmResources)
-        ? setCanAccept(true)
-        : setCanAccept(false);
-    }
-  }, [resourcesGive]);
+  const canAccept = useCanAcceptOffer({ realmEntityId, resourcesGive });
 
   let timeLeft = useMemo(
     () => formatTimeLeft(marketOffer.expiresAt - Date.now() / 1000),
@@ -130,11 +119,11 @@ export const MarketOffer = ({
         {isLoading && (
           <Button
             isLoading={true}
-            onClick={() => { }}
+            onClick={() => {}}
             variant="danger"
             className="ml-auto p-2 !h-4 text-xxs !rounded-md"
           >
-            { }
+            {}
           </Button>
         )}
       </div>

@@ -21,14 +21,13 @@ import {
   formatSecondsInHoursMinutes,
 } from "./laborUtils";
 import { useEffect, useMemo, useState } from "react";
-import { ResourceInterface } from "../../../../hooks/graphql/useGraphQLQueries";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useComponentValue } from "@dojoengine/react";
+import useRealmStore from "../../../../hooks/store/useRealmStore";
 
 type LaborComponentProps = {
   resourceId: number;
   realm: Realm;
-  resource: ResourceInterface | undefined;
   laborConfig: LaborConfig | undefined;
   buildLoadingStates: { [key: number]: boolean };
   setBuildLoadingStates: (prevStates: any) => void;
@@ -38,7 +37,6 @@ type LaborComponentProps = {
 export const LaborComponent = ({
   resourceId,
   realm,
-  resource,
   laborConfig,
   onBuild,
   setBuildLoadingStates,
@@ -46,7 +44,7 @@ export const LaborComponent = ({
 }: LaborComponentProps) => {
   const {
     setup: {
-      components: { Labor },
+      components: { Labor, Resource },
       systemCalls: { harvest_labor },
     },
     account: { account },
@@ -54,14 +52,18 @@ export const LaborComponent = ({
 
   const { nextBlockTimestamp } = useBlockchainStore();
 
+  const { realmEntityId } = useRealmStore();
+
   const [isHarvestLoading, setIsHarvestLoading] = useState(false);
-  const [prevResource, setPrevResource] = useState<
-    ResourceInterface | undefined
-  >(resource);
 
   const labor = useComponentValue(
     Labor,
-    getEntityIdFromKeys([BigInt(realm.realm_id), BigInt(resourceId)]),
+    getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
+  );
+
+  const resource = useComponentValue(
+    Resource,
+    getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
   );
 
   // TODO: better way to stop loading, because this will stop it directly with optimistic rendering
@@ -73,13 +75,9 @@ export const LaborComponent = ({
   }, [labor]);
 
   useEffect(() => {
-    if (resource && prevResource?.amount !== resource.amount) {
-      setIsHarvestLoading(false);
-    }
-    setPrevResource(resource);
+    setIsHarvestLoading(false);
   }, [resource]);
 
-  let realmEntityId = useRealm((state) => state.realmEntityId);
   // time until the next possible harvest (that happens every 7200 seconds (2hrs))
   // if labor balance is less than current time, then there is no time to next harvest
   const timeLeftToHarvest = useMemo(() => {
@@ -158,7 +156,7 @@ export const LaborComponent = ({
               size="sm"
             />
             <div className="ml-2 text-xs font-bold text-white">
-              {currencyFormat(resource ? resource.amount : 0)}
+              {currencyFormat(resource ? resource.balance : 0)}
             </div>
             <div className="flex items-center ml-auto">
               {isFood && <Village />}

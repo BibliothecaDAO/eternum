@@ -72,7 +72,9 @@ mod ClaimFungibleOrder {
         );
         // assert that position is same as entity
         let entity_position = get !(ctx.world, entity_id, Position);
-        assert(position == entity_position, 'position mismatch');
+        // TODO: test out position equality
+        assert(position.x == entity_position.x, 'position mismatch');
+        assert(position.y == entity_position.y, 'position mismatch');
 
         let ts = starknet::get_block_timestamp();
 

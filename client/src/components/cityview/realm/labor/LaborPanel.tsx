@@ -7,10 +7,7 @@ import { unpackResources } from "../../../../utils/packedData";
 import { ResourcesIds } from "../../../../constants/resources";
 import { LaborBuildPopup } from "./LaborBuild";
 import { LaborConfig } from "../../../../types";
-import {
-  useGetRealmResources,
-  useSyncRealmLabor,
-} from "../../../../hooks/graphql/useGraphQLQueries";
+import { useSyncRealmLabor } from "../../../../hooks/graphql/useGraphQLQueries";
 import { getRealm } from "../SettleRealmComponent";
 
 type LaborPanelProps = {};
@@ -38,7 +35,6 @@ export const LaborPanel = ({}: LaborPanelProps) => {
   let { realmEntityId, realmId } = useRealmStore();
 
   useSyncRealmLabor(realmEntityId);
-  const { realmResources } = useGetRealmResources(realmEntityId);
 
   const realm = useMemo(() => {
     return realmId ? getRealm(realmId) : undefined;
@@ -88,7 +84,6 @@ export const LaborPanel = ({}: LaborPanelProps) => {
       {buildResource && (
         <LaborBuildPopup
           resourceId={buildResource}
-          resources={realmResources}
           onClose={() => setBuildResource(null)}
           setBuildLoadingStates={setBuildLoadingStates}
         />
@@ -104,7 +99,6 @@ export const LaborPanel = ({}: LaborPanelProps) => {
               }}
               resourceId={resourceId}
               // labor={realmLabor[resourceId]}
-              resource={realmResources[resourceId]}
               realm={realm}
               laborConfig={laborConfig as LaborConfig}
               setBuildLoadingStates={setBuildLoadingStates}

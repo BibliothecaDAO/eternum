@@ -31,7 +31,6 @@ export interface LaborInterface {
   multiplier: number;
 }
 
-// TODO: change that to sync
 export const useSyncRealmLabor = (realmEntityId: number) => {
   const {
     setup: { components },
@@ -51,70 +50,24 @@ export const useSyncRealmLabor = (realmEntityId: number) => {
   }, [realmEntityId]);
 };
 
-export interface RealmResourcesInterface {
-  [resourceId: number]: ResourceInterface;
-}
-
-// TODO: change that to sync
-export const useGetRealmResources = (
-  realmEntityId: number,
-): {
-  realmResources: RealmResourcesInterface;
-  status: FetchStatus;
-  error: unknown;
-} => {
-  const [realmResources, setRealmResources] = useState<RealmResourcesInterface>(
-    {},
-  );
-  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
-  const [error, setError] = useState<unknown>(null);
-
+export const useSyncRealmResources = (realmEntityId: number) => {
+  const {
+    setup: { components },
+  } = useDojo();
   useEffect(() => {
     const fetchData = async () => {
-      setStatus(FetchStatus.Loading);
       try {
         const { data } = await sdk.getRealmResources({
           realmEntityId: numberToHex(realmEntityId),
         });
-        const resourceEntities = data.entities?.edges;
-        if (resourceEntities) {
-          let realmResources: { [resourceId: number]: ResourceInterface } = {};
-          resourceEntities.forEach((edge) => {
-            let resource = edge?.node?.components?.find((component) => {
-              return component?.__typename === "Resource";
-            }) as Resource | undefined;
-            let keys = edge?.node?.keys;
-            if (resource && keys) {
-              let resourceId = keys[1];
-              if (resourceId) {
-                realmResources[parseInt(resourceId)] = {
-                  resourceId: parseInt(resourceId),
-                  amount: parseInt(resource.balance),
-                };
-              }
-            }
-          });
-          setRealmResources(realmResources);
-          setStatus(FetchStatus.Success);
-        }
-      } catch (error) {
-        setError(error);
-        setStatus(FetchStatus.Error);
-      }
+        data?.entities?.edges?.forEach((edge) => {
+          edge?.node &&
+            setComponentFromEntity(edge.node, "Resource", components);
+        });
+      } catch (error) {}
     };
     fetchData();
-    const intervalId = setInterval(fetchData, 5000); // Fetch every 5 seconds
-
-    return () => {
-      clearInterval(intervalId); // Clear interval on component unmount
-    };
   }, [realmEntityId]);
-
-  return {
-    realmResources,
-    status,
-    error,
-  };
 };
 
 export interface IncomingOrderInterface {

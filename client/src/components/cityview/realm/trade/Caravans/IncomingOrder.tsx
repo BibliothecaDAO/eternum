@@ -32,7 +32,9 @@ export const IncomingOrder = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const {
-    setup: { systemCalls: { claim_fungible_order } },
+    setup: {
+      systemCalls: { claim_fungible_order },
+    },
     account: { account },
   } = useDojo();
 
@@ -130,18 +132,18 @@ export const IncomingOrder = ({
             claimOrder();
           }}
           disabled={!hasArrived}
-          variant={"success"}
+          variant={hasArrived ? "success" : "danger"}
           className="ml-auto p-2 !h-4 text-xxs !rounded-md"
         >{`Claim`}</Button>
       )}
       {isLoading && (
         <Button
           isLoading={true}
-          onClick={() => { }}
+          onClick={() => {}}
           variant="danger"
           className="ml-auto p-2 !h-4 text-xxs !rounded-md"
         >
-          { }
+          {}
         </Button>
       )}
     </div>

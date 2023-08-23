@@ -15,9 +15,8 @@ import { ReactComponent as MoreIcon } from "../../../assets/icons/common/more.sv
 import Button from "../../../elements/Button";
 import { SmallResource } from "./SmallResource";
 import {
-  ResourceInterface,
   useGetRealm,
-  useGetRealmResources,
+  useSyncRealmResources,
 } from "../../../hooks/graphql/useGraphQLQueries";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../DojoContext";
@@ -33,7 +32,7 @@ export const RealmResourcesComponent = ({
 
   const { realm } = useGetRealm({ entityId: realmEntityId });
 
-  const { realmResources } = useGetRealmResources(realmEntityId);
+  useSyncRealmResources(realmEntityId);
 
   // unpack the resources
   let realmResourceIds: number[] = [
@@ -57,11 +56,7 @@ export const RealmResourcesComponent = ({
       <div className={clsx("flex h-16 space-x-4", className)}>
         <div className="relative flex mx-auto space-x-2 overflow-visible">
           {realmResourceIds.map((resourceId) => (
-            <ResourceComponent
-              key={resourceId}
-              resource={realmResources[resourceId]}
-              resourceId={resourceId}
-            />
+            <ResourceComponent key={resourceId} resourceId={resourceId} />
           ))}
           <div
             onClick={() => {
@@ -73,10 +68,7 @@ export const RealmResourcesComponent = ({
               <div className="flex flex-col">
                 <div className="grid grid-cols-4 gap-3">
                   {resources.map((resource) => (
-                    <SmallResource
-                      resource={realmResources[resource.id]}
-                      resourceId={resource.id}
-                    ></SmallResource>
+                    <SmallResource resourceId={resource.id}></SmallResource>
                   ))}
                 </div>
                 <Button
@@ -104,20 +96,18 @@ export const RealmResourcesComponent = ({
 
 interface ResourceComponentProps {
   resourceId: number;
-  resource: ResourceInterface | undefined;
 }
 
 const ResourceComponent: React.FC<ResourceComponentProps> = ({
-  resource,
   resourceId,
 }) => {
   const {
     setup: {
-      components: { Labor },
+      components: { Labor, Resource },
     },
   } = useDojo();
 
-  let { realmId } = useRealmStore();
+  let { realmEntityId } = useRealmStore();
 
   const { nextBlockTimestamp } = useBlockchainStore();
   const [productivity, setProductivity] = useState<number>(0);
@@ -133,7 +123,12 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({
 
   const labor = useComponentValue(
     Labor,
-    getEntityIdFromKeys([BigInt(realmId ?? 0), BigInt(resourceId)]),
+    getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]),
+  );
+
+  const resource = useComponentValue(
+    Resource,
+    getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]),
   );
 
   useEffect(() => {
@@ -171,7 +166,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({
             withTooltip
           />
           <div className="text-xs">
-            {currencyFormat(resource ? resource.amount : 0)}
+            {currencyFormat(resource ? resource.balance : 0)}
           </div>
         </div>
         {resourceId !== 253 && (
