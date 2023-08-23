@@ -1,25 +1,31 @@
-query getIncomingOrders($realmEntityId: u128) {
+query getIncomingOrders($realmEntityId: String!) {
   makerTradeComponents: tradeComponents(
-    maker_id: $realmEntityId
-    claimed_by_maker: 0
+    where: { maker_id: $realmEntityId, claimed_by_maker: 0 }
   ) {
-    entity {
-      keys
-      components {
-        __typename
-        ...TradeFragment
+    edges {
+      node {
+        entity {
+          keys
+          components {
+            __typename
+            ...TradeFragment
+          }
+        }
       }
     }
   }
   takerTradeComponents: tradeComponents(
-    taker_id: $realmEntityId
-    claimed_by_taker: 0
+    where: { taker_id: $realmEntityId, claimed_by_taker: 0 }
   ) {
-    entity {
-      keys
-      components {
-        __typename
-        ...TradeFragment
+    edges {
+      node {
+        entity {
+          keys
+          components {
+            __typename
+            ...TradeFragment
+          }
+        }
       }
     }
   }

@@ -1,10 +1,18 @@
-query getCounterpartyOrderId($orderId: u128) {
-  makerTradeComponents: tradeComponents(maker_order_id: $orderId) {
-    __typename
-    ...TradeFragment
+query getCounterpartyOrderId($orderId: String!) {
+  makerTradeComponents: tradeComponents(where: { maker_order_id: $orderId }) {
+    edges {
+      node {
+        __typename
+        ...TradeFragment
+      }
+    }
   }
-  takerTradeComponents: tradeComponents(taker_order_id: $orderId) {
-    __typename
-    ...TradeFragment
+  takerTradeComponents: tradeComponents(where: { taker_order_id: $orderId }) {
+    edges {
+      node {
+        __typename
+        ...TradeFragment
+      }
+    }
   }
 }

@@ -1,5 +1,5 @@
 // claim either maker or taker order
-// TODO: to finish + testing
+// TODO: testing
 #[system]
 mod ClaimFungibleOrder {
     use eternum::alias::ID;
@@ -13,7 +13,7 @@ mod ClaimFungibleOrder {
     use eternum::components::position::Position;
     use eternum::components::resources::Resource;
     use eternum::components::caravan::Caravan;
-    use eternum::components::trade::{Trade, Status, TradeStatus};
+    use eternum::components::trade::{Trade, Status, TradeStatus, OrderResource};
     use eternum::components::trade::FungibleEntities;
 
     use traits::Into;
@@ -25,11 +25,11 @@ mod ClaimFungibleOrder {
 
     fn execute(ctx: Context, entity_id: u128, trade_id: u128) {
         // assert caller is owner of the entity_id
-        let caller = starknet::get_tx_info().unbox().account_contract_address;
-        let owner = get !(ctx.world, entity_id.into(), Owner);
+        let caller = ctx.origin;
+        let owner = get !(ctx.world, entity_id, Owner);
         assert(owner.address == caller, 'not owned by caller');
 
-        let meta = get !(ctx.world, trade_id.into(), Trade);
+        let meta = get !(ctx.world, trade_id, Trade);
 
         // check if entity is maker or taker
         // if taker then query maker order id
@@ -51,10 +51,8 @@ mod ClaimFungibleOrder {
             meta.maker_order_id
         };
 
-        // set status to claimed
-        set !(
+        set!(
             ctx.world,
-            trade_id.into(),
             (Trade {
                 trade_id,
                 maker_id: meta.maker_id,
@@ -65,15 +63,15 @@ mod ClaimFungibleOrder {
                 claimed_by_maker,
                 claimed_by_taker,
                 taker_needs_caravan: meta.taker_needs_caravan,
-            })
+            },)
         );
 
         // check position and arrival time
         let (position, arrival_time, fungible_entities) = get !(
-            ctx.world, order_id.into(), (Position, ArrivalTime, FungibleEntities)
+            ctx.world, order_id, (Position, ArrivalTime, FungibleEntities)
         );
         // assert that position is same as entity
-        let entity_position = get !(ctx.world, entity_id.into(), Position);
+        let entity_position = get !(ctx.world, entity_id, Position);
         assert(position == entity_position, 'position mismatch');
 
         let ts = starknet::get_block_timestamp();
@@ -89,40 +87,23 @@ mod ClaimFungibleOrder {
             }
 
             let order_resource = get !(
-                ctx.world, (order_id, fungible_entities.key, index).into(), Resource
+                ctx.world, (order_id, fungible_entities.key, index), OrderResource
             );
 
             // add quantity to balance of entity
-            let maybe_current_resource = try_get !(
-                ctx.world, (entity_id, order_resource.resource_type).into(), Resource
+            let current_resource = get !(
+                ctx.world, (entity_id, order_resource.resource_type), Resource
             );
-            match maybe_current_resource {
-                Option::Some(current_resource) => {
-                    // set new balance 
-                    set !(
-                        ctx.world,
-                        (entity_id, order_resource.resource_type).into(),
-                        (Resource {
-                            resource_type: order_resource.resource_type,
-                            balance: current_resource.balance + order_resource.balance,
-                        })
-                    );
-                },
-                Option::None(_) => {
-                    // create new resource
-                    set !(
-                        ctx.world,
-                        (entity_id, order_resource.resource_type).into(),
-                        (Resource {
-                            balance: order_resource.balance,
-                            resource_type: order_resource.resource_type
-                        })
-                    );
-                }
-            }
+            set!(
+                ctx.world,
+                (Resource {
+                    entity_id, resource_type: order_resource.resource_type,
+                    balance: current_resource.balance + order_resource.balance,
+                },)
+            );
             index += 1;
-        };
-    }
+            }
+        }
 }
 // TODO: need to test it when withdraw gas is working
 // mod tests {

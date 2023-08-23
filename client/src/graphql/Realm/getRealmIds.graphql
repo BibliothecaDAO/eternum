@@ -1,8 +1,7 @@
 query getRealmIds {
-  entities(keys: ["%"], limit: 30, componentName: "Realm") {
-    components {
-      __typename
-      ... on Realm {
+  realmComponents {
+    edges {
+      node {
         realm_id
       }
     }

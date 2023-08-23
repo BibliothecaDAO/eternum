@@ -1,17 +1,19 @@
 [package]
+cairo-version = "2.1.1"
 name = "eternum"
 version = "0.1.0"
 
-[scripts]
+[cairo]
+sierra-replace-ids = true
 
 [dependencies]
 dojo = { git = "https://github.com/dojoengine/dojo" }
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "e1aa42853815f04ff00e4ed3507cfd74d7b0c644" }
 
 [[target.dojo]]
+initializer_class_hash = "0xbeef"
 
 [tool.dojo.env]
-
 ## dev
 rpc_url = "http://localhost:5050/"
 account_address = "0x03ee9e18edc71a6df30ac3aca2e0b02a198fbce19b7480a63a0d71cbd76652e0"

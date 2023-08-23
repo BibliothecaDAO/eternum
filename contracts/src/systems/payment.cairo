@@ -16,13 +16,12 @@ mod SpendResources {
         assert(amount > 0, 'amount must be positive');
 
         // verify owner
-        let query: Query = entity_id.into();
-        let (resource, owner) = get !(ctx.world, query, (Resource, Owner));
+        let (resource, owner) = get!(ctx.world, entity_id, (Resource, Owner));
         assert(owner.address == caller, 'Only owner can spend resources');
 
         // assert balance is enough
         let final_balance = resource.balance - amount;
         assert(final_balance >= 0, 'Not enough balance');
-        set !(ctx.world, query, (Resource { resource_type, balance: final_balance,  }));
+        set!(ctx.world, (Resource { entity_id, resource_type, balance: final_balance,  }));
     }
 }

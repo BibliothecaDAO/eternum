@@ -13,7 +13,9 @@ import { getEntityIdFromKeys } from "../../utils/utils";
 
 export function useTrade() {
   const {
-    setup: { components: { Resource, FungibleEntities } },
+    setup: {
+      components: { OrderResource, FungibleEntities },
+    },
   } = useDojo();
 
   const getTradeResources = (orderId: number): Resource[] => {
@@ -29,7 +31,7 @@ export function useTrade() {
         BigInt(fungibleEntities.key),
         BigInt(i),
       ]);
-      const resource = getComponentValue(Resource, entityId);
+      const resource = getComponentValue(OrderResource, entityId);
       if (resource) {
         resources.push({
           resourceId: resource.resource_type,
@@ -45,7 +47,9 @@ export function useTrade() {
 
 export function useGetMyOffers() {
   const {
-    setup: { components: { Status, Trade } },
+    setup: {
+      components: { Status, Trade },
+    },
   } = useDojo();
 
   const { realmEntityId } = useRealmStore();
@@ -82,11 +86,11 @@ export function useGetMyOffers() {
 
   useMemo(() => {
     const trades = entityIds
-      .map((id) => {
-        let trade = getComponentValue(Trade, id);
+      .map((tradeId) => {
+        let trade = getComponentValue(Trade, tradeId);
         if (trade) {
           return {
-            tradeId: trade.trade_id,
+            tradeId,
             makerId: trade.maker_id,
             makerOrderId: trade.maker_order_id,
             takerOrderId: trade.taker_order_id,
@@ -106,7 +110,9 @@ export function useGetMyOffers() {
 
 export function useGetMarket() {
   const {
-    setup: { components: { Status, Trade } },
+    setup: {
+      components: { Status, Trade },
+    },
   } = useDojo();
 
   const { realmEntityId } = useRealmStore();
@@ -145,7 +151,7 @@ export function useGetMarket() {
         let trade = getComponentValue(Trade, tradeId);
         if (trade) {
           return {
-            tradeId: trade.trade_id,
+            tradeId,
             makerId: trade.maker_id,
             makerOrderId: trade.maker_order_id,
             takerOrderId: trade.taker_order_id,

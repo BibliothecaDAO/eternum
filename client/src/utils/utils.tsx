@@ -2,8 +2,14 @@ import { forwardRef, useMemo, useLayoutEffect } from "react";
 import { Vector2 } from "three";
 import { useThree } from "@react-three/fiber";
 import { BlendFunction } from "postprocessing";
-import { EntityIndex, setComponent, Component, Schema, Components } from "@latticexyz/recs";
-import { poseidonHashMany } from 'micro-starknet';
+import {
+  EntityIndex,
+  setComponent,
+  Component,
+  Schema,
+  Components,
+} from "@latticexyz/recs";
+import { poseidonHashMany } from "micro-starknet";
 
 const isRef = (ref: any) => !!ref.current;
 
@@ -48,16 +54,15 @@ export function isValidArray(input: any): input is any[] {
   return Array.isArray(input) && input != null;
 }
 
-export function extractAndCleanKey(keys: string): bigint[] {
+export function extractAndCleanKey(keys: (string | null)[]): bigint[] {
   return keys
-    .split(/,/g)
-    .filter((value) => value !== "")
-    .map((key) => BigInt(key));
+    .filter((value) => value !== null && value !== "")
+    .map((key) => BigInt(key as string));
 }
 
 export type Entity = {
   __typename?: "Entity";
-  keys: string;
+  keys?: (string | null)[] | null | undefined;
   components?: any | null[];
 };
 
@@ -73,7 +78,7 @@ export function setComponentFromEntity(
     });
     if (rawComponentValues) {
       // setting the component values
-      let keys = extractAndCleanKey(entity?.keys);
+      let keys = entity?.keys ? extractAndCleanKey(entity.keys) : [];
       let entityId = getEntityIdFromKeys(keys);
       // TODO: issue is that torii returns all numbers as strings, need to fix in torii
       // so here i am transforming to a number each time (but it will cause problem for fields that are not numbers)
@@ -112,16 +117,15 @@ export function getFirstComponentByType(
   return null;
 }
 
-
 export function strTofelt252Felt(str: string): string {
   const encoder = new TextEncoder();
   const strB = encoder.encode(str);
   return BigInt(
     strB.reduce((memo, byte) => {
-      memo += byte.toString(16)
-      return memo
-    }, '0x'),
-  ).toString()
+      memo += byte.toString(16);
+      return memo;
+    }, "0x"),
+  ).toString();
 }
 
 export function getAllComponentNames(manifest: any): any {
@@ -129,7 +133,9 @@ export function getAllComponentNames(manifest: any): any {
 }
 
 export function getAllComponentNamesAsFelt(manifest: any): any {
-  return manifest.components.map((component: any) => strTofelt252Felt(component.name));
+  return manifest.components.map((component: any) =>
+    strTofelt252Felt(component.name),
+  );
 }
 
 export function getAllSystemNames(manifest: any): any {
@@ -151,7 +157,10 @@ export function getEntityIdFromKeys(keys: bigint[]): EntityIndex {
   return parseInt(poseidon.toString()) as EntityIndex;
 }
 
-export function setComponentFromEntitiesQuery(component: Component, entities: bigint[]) {
+export function setComponentFromEntitiesQuery(
+  component: Component,
+  entities: bigint[],
+) {
   let index = 0;
 
   // Retrieve the number of entityIds
@@ -169,39 +178,52 @@ export function setComponentFromEntitiesQuery(component: Component, entities: bi
     const numValues = Number(entities[index++]);
 
     // Retrieve entity's component values
-    const valueArray = entities.slice(index, index + numValues)
-    const componentValues = Object.keys(component.schema).reduce((acc: Schema, key, index) => {
-      const value = valueArray[index];
-      acc[key] = Number(value);
-      return acc;
-    }, {});
+    const valueArray = entities.slice(index, index + numValues);
+    const componentValues = Object.keys(component.schema).reduce(
+      (acc: Schema, key, index) => {
+        const value = valueArray[index];
+        acc[key] = Number(value);
+        return acc;
+      },
+      {},
+    );
 
     const entityIndex = parseInt(entityIds[i].toString()) as EntityIndex;
-    setComponent(component, entityIndex, componentValues)
+    setComponent(component, entityIndex, componentValues);
 
     index += numValues;
   }
 }
 
-export function setComponentFromEntitiesGraphqlQuery(component: Component, entities: Entity[]) {
+export function setComponentFromEntitiesGraphqlQuery(
+  component: Component,
+  entities: Entity[],
+) {
   entities.forEach((entity) => {
-    const keys = entity.keys.split(',').map((key) => BigInt(key));
-    keys.pop();
+    const keys = entity?.keys
+      ?.filter((key) => key !== null)
+      .map((key) => BigInt(key as string)) as bigint[];
     const entityIndex = getEntityIdFromKeys(keys);
     entity.components.forEach((comp: any) => {
       if (comp.__typename === component.metadata?.name) {
-        const componentValues = Object.keys(component.schema).reduce((acc: Schema, key) => {
-          const value = comp[key];
-          acc[key] = Number(value);
-          return acc;
-        }, {});
+        const componentValues = Object.keys(component.schema).reduce(
+          (acc: Schema, key) => {
+            const value = comp[key];
+            acc[key] = Number(value);
+            return acc;
+          },
+          {},
+        );
         setComponent(component, entityIndex, componentValues);
       }
     });
   });
 }
 
-export function setComponentFromEvent(components: Components, eventData: string[]) {
+export function setComponentFromEvent(
+  components: Components,
+  eventData: string[],
+) {
   // retrieve the component name
   const componentName = hex_to_ascii(eventData[0]);
 
@@ -224,19 +246,21 @@ export function setComponentFromEvent(components: Components, eventData: string[
   const values = eventData.slice(index, index + numberOfValues);
 
   // create component object from values with schema
-  const componentValues = Object.keys(component.schema).reduce((acc: Schema, key, index) => {
-    const value = values[index];
-    acc[key] = Number(value);
-    return acc;
-  }, {});
+  const componentValues = Object.keys(component.schema).reduce(
+    (acc: Schema, key, index) => {
+      const value = values[index];
+      acc[key] = Number(value);
+      return acc;
+    },
+    {},
+  );
 
   // set component
   setComponent(component, entityIndex, componentValues);
-
 }
 
 function hex_to_ascii(hex: string) {
-  var str = '';
+  var str = "";
   for (var n = 2; n < hex.length; n += 2) {
     str += String.fromCharCode(parseInt(hex.substr(n, 2), 16));
   }

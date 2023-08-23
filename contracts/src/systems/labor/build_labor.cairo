@@ -2,12 +2,13 @@
 mod BuildLabor {
     use traits::Into;
     use box::BoxTrait;
+    use eternum::components::labor::{Labor, LaborTrait};
 
     use eternum::alias::ID;
     use eternum::components::owner::Owner;
     use eternum::components::realm::{Realm, RealmTrait};
     use eternum::components::resources::Resource;
-    use eternum::components::labor::{Labor, LaborTrait};
+
     use eternum::components::config::{LaborConfig, LaborCostResources, LaborCostAmount};
     use starknet::ContractAddress;
     use eternum::constants::{LABOR_CONFIG_ID, ResourceTypes};
@@ -15,11 +16,10 @@ mod BuildLabor {
 
     use dojo::world::Context;
 
-    #[external]
     fn execute(ctx: Context, realm_id: u128, resource_type: u8, labor_units: u64, multiplier: u64) {
         // assert owner of realm
-        let player_id: ContractAddress = starknet::get_tx_info().unbox().account_contract_address;
-        let (realm, owner) = get !(ctx.world, realm_id.into(), (Realm, Owner));
+        let player_id: ContractAddress = ctx.origin;
+        let (realm, owner) = get!(ctx.world, realm_id, (Realm, Owner));
         assert(owner.address == player_id, 'Realm does not belong to player');
 
         // check that resource is on realm
@@ -31,16 +31,24 @@ mod BuildLabor {
         }
 
         // Get Config
-        let labor_config: LaborConfig = get !(ctx.world, LABOR_CONFIG_ID.into(), LaborConfig);
+        let labor_config: LaborConfig = get!(ctx.world, LABOR_CONFIG_ID, LaborConfig);
 
         let ts = starknet::get_block_timestamp();
 
         // get labor
-        let resource_query: Query = (realm_id, resource_type).into();
-        let maybe_labor = try_get !(ctx.world, resource_query, Labor);
-        let labor = match maybe_labor {
-            Option::Some(labor) => labor,
-            Option::None(_) => Labor { balance: ts, last_harvest: ts, multiplier: 1,  },
+        let resource_query = (realm_id, resource_type);
+
+        // TODO: Discuss
+        let maybe_labor = get!(ctx.world, resource_query, Labor);
+        let labor = match maybe_labor.balance.into() {
+            0 => Labor {
+                entity_id: realm_id,
+                resource_type: resource_type,
+                balance: ts,
+                last_harvest: ts,
+                multiplier: 1,
+            },
+            _ => maybe_labor,
         };
 
         // config
@@ -68,17 +76,13 @@ mod BuildLabor {
             }
         }
 
-        let maybe_current_resource = try_get !(ctx.world, resource_query, Resource);
+        let maybe_current_resource = get!(ctx.world, resource_query, Resource);
 
-        // since we might harvest, check current resources
-        let mut current_resource = match maybe_current_resource {
-            Option::Some(current_resource) => {
-                current_resource
-            },
-            Option::None(_) => {
-                Resource { resource_type, balance: 0 }
-            },
+        let mut current_resource = match maybe_current_resource.balance.into() {
+            0 => Resource { entity_id: realm_id, resource_type, balance: 0 },
+            _ => maybe_current_resource,
         };
+
         // if multiplier is different than previous multiplier, you need to harvest unharvested
         if multiplier != labor.multiplier {
             // get what has not been harvested and what will be harvested in the future
@@ -92,16 +96,15 @@ mod BuildLabor {
             let total_harvest_units = total_harvest
                 / labor_config.base_labor_units; // get current resource
             // add these resources to balance
-            set !(
-                ctx.world,
-                resource_query,
-                (Resource {
+            let _ = set!(
+                ctx.world, Resource {
+                    entity_id: realm_id,
                     resource_type: current_resource.resource_type,
                     balance: current_resource.balance
                         + (total_harvest_units.into()
                             * labor.multiplier.into()
                             * labor_config.base_food_per_cycle)
-                })
+                }
             );
 
             // if unharvested has been harvested, remove it from the labor balance
@@ -111,14 +114,18 @@ mod BuildLabor {
         }
 
         // update the labor
-        set !(
-            ctx.world,
-            resource_query,
-            (Labor { balance: new_labor_balance, last_harvest: new_last_harvest, multiplier,  }),
+        let _ = set!(
+            ctx.world, Labor {
+                entity_id: realm_id,
+                resource_type: current_resource.resource_type,
+                balance: new_labor_balance,
+                last_harvest: new_last_harvest,
+                multiplier: multiplier
+            }
         );
 
         // pay for labor 
-        let labor_cost_resources = get !(ctx.world, resource_type.into(), LaborCostResources);
+        let labor_cost_resources = get!(ctx.world, resource_type, LaborCostResources);
         let labor_cost_resource_types: Span<u8> = unpack_resource_types(
             labor_cost_resources.resource_types_packed, labor_cost_resources.resource_types_count
         );
@@ -129,24 +136,24 @@ mod BuildLabor {
                 break ();
             }
             let labor_cost_resource_type = *labor_cost_resource_types[index];
-            let labor_cost_per_unit = get !(
+            let labor_cost_per_unit = get!(
                 ctx.world, (resource_type, labor_cost_resource_type).into(), LaborCostAmount
             );
-            let current_resource: Resource = get !(
+            let current_resource: Resource = get!(
                 ctx.world, (realm_id, labor_cost_resource_type).into(), Resource
             );
             let total_cost = labor_cost_per_unit.value * labor_units.into() * multiplier.into();
             assert(current_resource.balance >= total_cost, 'Not enough resources');
-            set !(
-                ctx.world,
-                (realm_id, labor_cost_resource_type).into(),
-                (Resource {
+            set!(
+                ctx.world, Resource {
+                    entity_id: realm_id,
                     resource_type: current_resource.resource_type,
                     balance: current_resource.balance - total_cost
-                })
+                }
             );
             index += 1;
         };
+        return ();
     }
 }
 // TODO: test when withdraw gas is solved

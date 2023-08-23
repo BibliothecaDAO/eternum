@@ -1,6 +1,8 @@
 // speed seconds per km
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct Movable {
+    #[key]
+    entity_id: u128,
     sec_per_km: u16,
     blocked: bool,
 }
@@ -10,5 +12,7 @@ struct Movable {
 // without having to attach a Movable component to the order
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct ArrivalTime {
-    arrives_at: u64, 
+    #[key]
+    entity_id: u128,
+    arrives_at: u64,
 }

@@ -1,4 +1,6 @@
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct Capacity {
-    weight_gram: u128, 
+    #[key]
+    entity_id: u128,
+    weight_gram: u128,
 }

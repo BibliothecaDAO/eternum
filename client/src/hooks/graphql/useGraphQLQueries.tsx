@@ -6,7 +6,6 @@ import {
   Position,
   Realm,
   Resource,
-  Trade,
   getSdk,
 } from "../../generated/graphql";
 import { useDojo } from "../../DojoContext";
@@ -43,8 +42,8 @@ export const useSyncRealmLabor = (realmEntityId: number) => {
         const { data } = await sdk.getRealmLabor({
           realmEntityId: numberToHex(realmEntityId),
         });
-        data?.entities?.forEach((entity) => {
-          setComponentFromEntity(entity, "Trade", components);
+        data?.entities?.edges?.forEach((edge) => {
+          edge?.node && setComponentFromEntity(edge.node, "Labor", components);
         });
       } catch (error) {}
     };
@@ -75,22 +74,24 @@ export const useGetRealmResources = (
       setStatus(FetchStatus.Loading);
       try {
         const { data } = await sdk.getRealmResources({
-          realmEntityId: `0x${realmEntityId.toString(16)}`,
+          realmEntityId: numberToHex(realmEntityId),
         });
-        const resourceEntities = data?.entities;
+        const resourceEntities = data.entities?.edges;
         if (resourceEntities) {
           let realmResources: { [resourceId: number]: ResourceInterface } = {};
-          resourceEntities.map((entity) => {
-            let resource = entity?.components?.find((component) => {
+          resourceEntities.forEach((edge) => {
+            let resource = edge?.node?.components?.find((component) => {
               return component?.__typename === "Resource";
-            }) as Resource;
-            let keys = entity?.keys;
-            if (keys) {
-              let resourceId = keys.split(",")[1];
-              realmResources[parseInt(resourceId)] = {
-                resourceId: parseInt(resourceId),
-                amount: parseInt(resource.balance),
-              };
+            }) as Resource | undefined;
+            let keys = edge?.node?.keys;
+            if (resource && keys) {
+              let resourceId = keys[1];
+              if (resourceId) {
+                realmResources[parseInt(resourceId)] = {
+                  resourceId: parseInt(resourceId),
+                  amount: parseInt(resource.balance),
+                };
+              }
             }
           });
           setRealmResources(realmResources);
@@ -140,17 +141,13 @@ export const useSyncIncomingOrders = (realmEntityId: number) => {
         const { data } = await sdk.getIncomingOrders({
           realmEntityId: numberToHex(realmEntityId),
         });
-        data?.makerTradeComponents?.forEach((component) => {
-          if (component?.entity) {
-            let { entity } = component;
-            setComponentFromEntity(entity, "Trade", components);
-          }
+        data?.makerTradeComponents?.edges?.forEach((edge) => {
+          edge?.node?.entity &&
+            setComponentFromEntity(edge.node.entity, "Trade", components);
         });
-        data?.takerTradeComponents?.forEach((component) => {
-          if (component?.entity) {
-            let { entity } = component;
-            setComponentFromEntity(entity, "Trade", components);
-          }
+        data?.takerTradeComponents?.edges?.forEach((edge) => {
+          edge?.node?.entity &&
+            setComponentFromEntity(edge.node.entity, "Trade", components);
         });
       } catch (error) {}
     };
@@ -180,15 +177,16 @@ export const useSyncIncomingOrderInfo = ({
           orderId: numberToHex(orderId),
           counterPartyOrderId: numberToHex(counterPartyOrderId),
         });
-        data?.origin?.forEach((entity) => {
-          setComponentFromEntity(entity, "Position", components);
+        data?.origin?.edges?.forEach((edge) => {
+          edge?.node &&
+            setComponentFromEntity(edge.node, "Position", components);
         });
-        data?.arrivalTime?.forEach((entity) => {
-          setComponentFromEntity(entity, "ArrivalTime", components);
-        });
-        data?.resources?.forEach((entity) => {
-          setComponentFromEntity(entity, "Resource", components);
-          setComponentFromEntity(entity, "FungibleEntities", components);
+        data?.resources?.edges?.forEach((edge) => {
+          if (edge?.node) {
+            setComponentFromEntity(edge.node, "Resource", components);
+            setComponentFromEntity(edge.node, "FungibleEntities", components);
+            setComponentFromEntity(edge.node, "ArrivalTime", components);
+          }
         });
       } catch (error) {}
     };
@@ -229,34 +227,36 @@ export const useGetRealm = ({
       setStatus(FetchStatus.Loading);
       try {
         const { data } = await sdk.getRealm({
-          realmEntityId: `0x${entityId.toString(16)}`,
+          realmEntityId: numberToHex(entityId),
         });
-        const entities = data?.entities;
-        if (entities && entities.length === 1) {
-          let realm = entities[0]?.components?.find(
+        let entity = data?.entities?.edges?.find((edge) => {
+          return edge?.node?.components?.find(
             (component) => component?.__typename === "Realm",
-          ) as Realm;
-          let position = entities[0]?.components?.find(
-            (component) => component?.__typename === "Position",
-          ) as Position;
-          let owner = entities[0]?.components?.find(
-            (component) => component?.__typename === "Owner",
-          ) as Owner;
+          );
+        });
+        let realm = entity?.node?.components?.find(
+          (component) => component?.__typename === "Realm",
+        ) as Realm;
+        let position = entity?.node?.components?.find(
+          (component) => component?.__typename === "Position",
+        ) as Position;
+        let owner = entity?.node?.components?.find(
+          (component) => component?.__typename === "Owner",
+        ) as Owner;
 
-          setRealm({
-            realmId: realm.realm_id,
-            cities: realm.cities,
-            rivers: realm.rivers,
-            wonder: realm.wonder,
-            harbors: realm.harbors,
-            regions: realm.regions,
-            resource_types_count: realm.resource_types_count,
-            resource_types_packed: realm.resource_types_packed,
-            order: realm.order,
-            position: { x: position.x, y: position.y },
-            owner: owner.address,
-          });
-        }
+        setRealm({
+          realmId: realm.realm_id,
+          cities: realm.cities,
+          rivers: realm.rivers,
+          wonder: realm.wonder,
+          harbors: realm.harbors,
+          regions: realm.regions,
+          resource_types_count: realm.resource_types_count,
+          resource_types_packed: realm.resource_types_packed,
+          order: realm.order,
+          position: { x: position.x, y: position.y },
+          owner: owner.address,
+        });
       } catch (error) {
         setError(error);
         setStatus(FetchStatus.Error);
@@ -298,16 +298,23 @@ export const useGetCounterPartyOrderId = (
         const makerTradeComponets = data?.makerTradeComponents;
         const takerTradeComponents = data?.takerTradeComponents;
 
-        if (makerTradeComponets && makerTradeComponets.length > 0) {
-          let trade = makerTradeComponets.find(
-            (component) => component?.__typename === "Trade",
-          ) as Trade;
-          setCounterPartyOrderId(parseInt(trade.taker_order_id));
-        } else if (takerTradeComponents && takerTradeComponents.length > 0) {
-          let trade = takerTradeComponents.find(
-            (component) => component?.__typename === "Trade",
-          ) as Trade;
-          setCounterPartyOrderId(parseInt(trade.maker_order_id));
+        if (
+          makerTradeComponets?.edges &&
+          makerTradeComponets.edges.length > 0
+        ) {
+          let trade: any = makerTradeComponets.edges.find(
+            (edge) => edge?.node?.__typename === "Trade",
+          );
+          // let trade = node?.trade as Trade;
+          setCounterPartyOrderId(parseInt(trade?.node?.taker_order_id));
+        } else if (
+          takerTradeComponents?.edges &&
+          takerTradeComponents.edges.length > 0
+        ) {
+          let trade: any = takerTradeComponents.edges.find(
+            (edge) => edge?.node?.__typename === "Trade",
+          );
+          setCounterPartyOrderId(parseInt(trade?.node.maker_order_id));
         }
         setStatus(FetchStatus.Success);
       } catch (error) {
@@ -361,15 +368,24 @@ export const useSyncCaravanInfo = (
           counterpartyOrderId: numberToHex(counterpartyOrderId),
           orderId: numberToHex(orderId),
         });
-
-        data?.destination?.forEach((entity) => {
-          setComponentFromEntity(entity, "Position", components);
+        data?.caravan?.edges?.forEach((edge) => {
+          if (edge?.node) {
+            setComponentFromEntity(edge.node, "ArrivalTime", components);
+            setComponentFromEntity(edge.node, "Movable", components);
+            setComponentFromEntity(edge.node, "Capacity", components);
+          }
         });
-        data?.resourcesGet?.map((entity) => {
-          setComponentFromEntity(entity, "Resource", components);
+        data?.destination?.edges?.forEach((edge) => {
+          edge?.node &&
+            setComponentFromEntity(edge.node, "Position", components);
         });
-        data?.resourcesGive?.map((entity) => {
-          setComponentFromEntity(entity, "Resource", components);
+        data?.resourcesGet?.edges?.forEach((edge) => {
+          edge?.node &&
+            setComponentFromEntity(edge.node, "OrderResource", components);
+        });
+        data?.resourcesGive?.edges?.forEach((edge) => {
+          edge?.node &&
+            setComponentFromEntity(edge.node, "OrderResource", components);
         });
       } catch (error) {}
     };
@@ -390,9 +406,11 @@ export const useSyncRealmCaravans = (x: number, y: number) => {
     async function fetchData() {
       try {
         const { data } = await sdk.getRealmsCaravans({ x: x, y: y });
-        data?.positionComponents?.forEach((component) => {
-          if (component?.entity) {
-            let { entity } = component;
+        data?.positionComponents?.edges?.forEach((edge) => {
+          if (edge?.node?.entity) {
+            let {
+              node: { entity },
+            } = edge;
             setComponentFromEntity(entity, "OrderId", components);
             setComponentFromEntity(entity, "Movable", components);
             setComponentFromEntity(entity, "ArrivalTime", components);
@@ -424,9 +442,11 @@ export const useSyncMarket = ({ realmId }: { realmId: number }) => {
     async function fetchData() {
       try {
         const { data } = await sdk.getMarket();
-        data?.tradeComponents?.map((component) => {
-          if (component?.entity) {
-            let { entity } = component;
+        data?.tradeComponents?.edges?.forEach((edge) => {
+          if (edge?.node?.entity) {
+            let {
+              node: { entity },
+            } = edge;
             setComponentFromEntity(entity, "Trade", components);
             setComponentFromEntity(entity, "Status", components);
           }
@@ -456,9 +476,11 @@ export const useSyncMyOffers = ({ realmId }: { realmId: number }) => {
         const { data } = await sdk.getMyOffers({
           makerId: numberToHex(realmId),
         });
-        data.tradeComponents?.map((component) => {
-          if (component?.entity) {
-            let { entity } = component;
+        data.tradeComponents?.edges?.forEach((edge) => {
+          if (edge?.node?.entity) {
+            let {
+              node: { entity },
+            } = edge;
             setComponentFromEntity(entity, "Trade", components);
             setComponentFromEntity(entity, "Status", components);
           }
@@ -487,17 +509,21 @@ export const useSyncTradeResources = ({
           makerOrderId,
           takerOrderId,
         });
-        data.makerFungibleEntities?.map((entity) => {
-          setComponentFromEntity(entity, "FungibleEntities", components);
+        data.makerFungibleEntities?.edges?.forEach((edge) => {
+          edge?.node &&
+            setComponentFromEntity(edge.node, "FungibleEntities", components);
         });
-        data.takerFungibleEntities?.map((entity) => {
-          setComponentFromEntity(entity, "FungibleEntities", components);
+        data.takerFungibleEntities?.edges?.map((edge) => {
+          edge?.node &&
+            setComponentFromEntity(edge.node, "FungibleEntities", components);
         });
-        data.resourcesGet?.map((entity) => {
-          setComponentFromEntity(entity, "Resource", components);
+        data.resourcesGet?.edges?.map((edge) => {
+          edge?.node &&
+            setComponentFromEntity(edge.node, "OrderResource", components);
         });
-        data.resourcesGive?.map((entity) => {
-          setComponentFromEntity(entity, "Resource", components);
+        data.resourcesGive?.edges?.map((edge) => {
+          edge?.node &&
+            setComponentFromEntity(edge.node, "OrderResource", components);
         });
       } catch (error) {}
     };
@@ -506,19 +532,13 @@ export const useSyncTradeResources = ({
 };
 
 export const getLatestRealmId = async (): Promise<number> => {
-  const { data: realmData } = await fetchRealmIds();
-  const entities = realmData?.entities || [];
-  let highestRealmId: number | undefined;
+  const { data } = await fetchRealmIds();
 
-  entities.forEach((entity: any) => {
-    const realmComponent = entity.components.find(
-      (component: any) => component.__typename === "Realm",
-    );
-    if (realmComponent) {
-      const realmId = parseInt(realmComponent.realm_id, 16);
-      if (highestRealmId === undefined || realmId > highestRealmId) {
-        highestRealmId = realmId;
-      }
+  let highestRealmId: number | undefined;
+  data?.realmComponents?.edges?.forEach((edge) => {
+    const realmId = parseInt(edge?.node?.realm_id);
+    if (highestRealmId === undefined || realmId > highestRealmId) {
+      highestRealmId = realmId;
     }
   });
   return highestRealmId ? highestRealmId : 0;

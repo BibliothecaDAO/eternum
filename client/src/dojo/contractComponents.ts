@@ -228,6 +228,20 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
+          balance: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        }
+      );
+    })(),
+    OrderResource: (() => {
+      const name = "OrderResource";
+      return defineComponent(
+        world,
+        {
           resource_type: RecsType.Number,
           balance: RecsType.Number,
         },
@@ -415,7 +429,6 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
-          trade_id: RecsType.Number,
           maker_id: RecsType.Number,
           taker_id: RecsType.Number,
           maker_order_id: RecsType.Number,

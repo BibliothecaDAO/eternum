@@ -4,7 +4,9 @@ use eternum::alias::ID;
 // to the list of components which we already have
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct MetaData {
-    entity_type: u128, 
+    #[key]
+    entity_id: u128,
+    entity_type: u128,
 }
 
 
@@ -15,6 +17,8 @@ struct MetaData {
 // TODO: change ForeignKey to CaravanMember and stop using general purpose components 
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct ForeignKey {
-    entity_id: u128, 
+    #[key]
+    foreign_key: felt252,
+    entity_id: u128,
 }
 

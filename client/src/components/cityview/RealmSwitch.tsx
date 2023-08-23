@@ -1,10 +1,5 @@
 import clsx from "clsx";
-import {
-  ComponentPropsWithRef,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { ComponentPropsWithRef, useEffect, useMemo, useState } from "react";
 import CircleButton from "../../elements/CircleButton";
 import { OrderIcon } from "../../elements/OrderIcon";
 import { Badge } from "../../elements/Badge";
@@ -121,6 +116,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
       {!showRealms && (
         <Badge
           size="lg"
+          bordered
           className="absolute top-0 right-0 translate-x-1 -translate-y-2 text-xxs text-brown"
         >
           {yourRealms.length}

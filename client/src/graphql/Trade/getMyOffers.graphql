@@ -1,17 +1,19 @@
-query getMyOffers($makerId: u128!) {
+query getMyOffers($makerId: String!) {
   tradeComponents(
-    maker_id: $makerId
-    claimed_by_maker: 0
-    claimed_by_taker: 0
+    where: { maker_id: $makerId, claimed_by_maker: 0, claimed_by_taker: 0 }
   ) {
-    entity {
-      keys
-      components {
-        __typename
-        ... on Status {
-          value
+    edges {
+      node {
+        entity {
+          keys
+          components {
+            __typename
+            ... on Status {
+              value
+            }
+            ...TradeFragment
+          }
         }
-        ...TradeFragment
       }
     }
   }

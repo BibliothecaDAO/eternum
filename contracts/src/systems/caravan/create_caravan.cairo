@@ -19,11 +19,14 @@ mod CreateCaravan {
     use traits::Into;
     use traits::TryInto;
     use array::ArrayTrait;
+    use option::OptionTrait;
     use box::BoxTrait;
+    use poseidon::poseidon_hash_span;
 
     use dojo::world::Context;
 
-    fn execute(ctx: Context, entity_ids: Span<felt252>) -> ID {
+
+    fn execute(ctx: Context, entity_ids: Array<felt252>) -> ID {
         // speed
         let mut total_speed: u128 = 0_u128;
         let mut total_quantity: u128 = 0_u128;
@@ -35,9 +38,9 @@ mod CreateCaravan {
         // get caravan id
         let caravan_id = ctx.world.uuid();
 
-        let mut entity_position: Position = Position { x: 0, y: 0 };
+        let mut entity_position: Position = Position { entity_id: caravan_id.into(), x: 0, y: 0 };
 
-        let caller = starknet::get_tx_info().unbox().account_contract_address;
+        let caller = ctx.origin;
 
         let mut index = 0;
         // loop over the entities to
@@ -45,26 +48,31 @@ mod CreateCaravan {
         // - check that all positions are identical
         // - assert owner is caller
         // - assert entity is not already blocked (e.g. by another caravan)
+
+        let length = entity_ids.len();
         loop {
-            if index == entity_ids.len() {
+            if index == length {
                 break ();
             }
+            let entity_id: u128 = (*entity_ids[index]).try_into().unwrap();
+
             // assert that they are movable
             // assert that they have a capacity component
-            let (movable, capacity, position) = get !(
-                ctx.world, (*entity_ids[index]).into(), (Movable, Capacity, Position)
+            let (movable, capacity, position) = get!(
+                ctx.world, (entity_id), (Movable, Capacity, Position)
             );
 
             // assert that they are all at the same position when index > 0
             // if index == 0, then initialize position as the first entity position
             if index != 0 {
-                assert(entity_position == position, 'entities not same position');
+                assert(entity_position.x == position.x, 'entities not same position');
+                assert(entity_position.y == position.y, 'entities not same position');
             } else {
                 entity_position = position;
             }
 
             // assert that caller is the owner of the entities
-            let owner = get !(ctx.world, (*entity_ids[index]).into(), Owner);
+            let owner = get!(ctx.world, (entity_id), Owner);
             assert(caller == owner.address, 'entity is not owned by caller');
 
             // assert that they are not blocked
@@ -73,8 +81,9 @@ mod CreateCaravan {
             // DISUCSS: is that more cumbersome than just getting the quantity?
             // like below
             let mut calldata = array::ArrayTrait::<felt252>::new();
-            calldata.append((*entity_ids[index]).into());
-            let result = ctx.world.execute('GetQuantity'.into(), calldata.span());
+            calldata.append(entity_id.into());
+
+            let result = ctx.world.execute('GetQuantity'.into(), calldata);
             let quantity: u128 = (*result[0]).try_into().unwrap();
 
             // // try to retrieve the Quantity component of the entity
@@ -90,17 +99,13 @@ mod CreateCaravan {
             // };
 
             // set entity in the caravan
-            set !(
-                ctx.world,
-                (caravan_id, entities_key, index).into(),
-                (ForeignKey { entity_id: (*entity_ids[index]).try_into().unwrap(),  })
-            );
+            let foreign_key_arr = array![caravan_id.into(), entities_key.into(), index.into()];
+            let foreign_key = poseidon_hash_span(foreign_key_arr.span());
+            let _ = set!(ctx.world, (ForeignKey { foreign_key, entity_id }));
 
             // set the entity as blocked so that it cannot be used in another caravan
-            set !(
-                ctx.world,
-                (*entity_ids[index]).into(),
-                (Movable { sec_per_km: movable.sec_per_km, blocked: true,  })
+            let _ = set!(
+                ctx.world, (Movable { entity_id, sec_per_km: movable.sec_per_km, blocked: true,  })
             );
 
             // TODO: add the Caravan component to each entity
@@ -120,20 +125,19 @@ mod CreateCaravan {
         let average_speed: u16 = average_speed.try_into().unwrap();
 
         // set the caravan entity
-        set !(
+        let _ = set!(
             ctx.world,
-            caravan_id.into(),
             (
                 Owner {
-                    address: caller, 
+                    entity_id: caravan_id.into(), address: caller, 
                     }, Movable {
-                    sec_per_km: average_speed, blocked: false, 
+                    entity_id: caravan_id.into(), sec_per_km: average_speed, blocked: false, 
                     }, Capacity {
-                    weight_gram: total_capacity, 
+                    entity_id: caravan_id.into(), weight_gram: total_capacity, 
                     }, CaravanMembers {
-                    key: entities_key.into(), count: entity_ids.len()
+                    entity_id: caravan_id.into(), key: entities_key.into(), count: length
                     }, Position {
-                    x: entity_position.x, y: entity_position.y
+                    entity_id: caravan_id.into(), x: entity_position.x, y: entity_position.y
                 }
             )
         );

@@ -1,6 +1,7 @@
 // need store the number of free transport unit per realm
 // need to get the maximum number of free transport unit per realm from the transport config
 
+// Module for creating a free transport unit
 #[system]
 mod CreateFreeTransportUnit {
     use eternum::alias::ID;
@@ -18,70 +19,72 @@ mod CreateFreeTransportUnit {
 
     use traits::Into;
     use traits::TryInto;
+    use array::ArrayTrait;
+    use option::OptionTrait;
     use box::BoxTrait;
+    use poseidon::poseidon_hash_span;
 
     use dojo::world::Context;
 
     fn execute(ctx: Context, entity_id: u128, quantity: u128) -> ID {
-        // assert that the entity is a realm by querying the entity type
-        let (owner, realm, position) = get !(ctx.world, entity_id.into(), (Owner, Realm, Position));
+        // Ensure that the entity is a realm
+        let (owner, realm, position) = get!(ctx.world, entity_id, (Owner, Realm, Position));
 
-        // assert that entity is owned by caller
-        let caller = starknet::get_tx_info().unbox().account_contract_address;
+        // Ensure the entity is owned by the caller
+        let caller = ctx.origin;
         assert(caller == owner.address, 'entity is not owned by caller');
 
-        // check how many free transport units you can still build
-        let travel_config = get !(ctx.world, TRANSPORT_CONFIG_ID.into(), TravelConfig);
-
-        // nb cities for the realm
+        // Determine the max number of free transport units available for creation
+        let travel_config = get!(ctx.world, TRANSPORT_CONFIG_ID, TravelConfig);
         let max_free_transport = realm.cities.into() * travel_config.free_transport_per_city;
 
-        // check the quantity_tracker for free transport unit
-        let maybe_quantity_tracker = try_get !(
-            ctx.world, (entity_id, FREE_TRANSPORT_ENTITY_TYPE).into(), QuantityTracker
-        );
-        let count = match maybe_quantity_tracker {
-            Option::Some(quantity_tracker) => (quantity_tracker.count),
-            Option::None(_) => {
-                0
-            }
+        // TODO: Move to utils
+        // Create a key for the quantity tracker
+        let quantity_tracker_arr = array![entity_id.into(), FREE_TRANSPORT_ENTITY_TYPE.into()];
+        let quantity_tracker_key = poseidon_hash_span(quantity_tracker_arr.span());
+
+        // Check the existing count of free transport units
+        let maybe_quantity_tracker = get!(ctx.world, quantity_tracker_key, QuantityTracker);
+        let mut count = if maybe_quantity_tracker.count != 0 {
+            maybe_quantity_tracker.count
+        } else {
+            0
         };
+
+        // Ensure we're not exceeding the max free transport units allowed
         assert(count + quantity <= max_free_transport, 'not enough free transport unit');
 
-        // increment count when create new units
-        // TODO: need to decrease count when transport unit is destroyed
-        set !(
+        // Update count of free transport units
+        // Note: Consider decrementing when a transport unit is destroyed
+        let _ = set!(
             ctx.world,
-            (entity_id, FREE_TRANSPORT_ENTITY_TYPE).into(),
-            (QuantityTracker { count: count + quantity })
+            (QuantityTracker { entity_id: quantity_tracker_key, count: count + quantity })
         );
 
-        // get the speed and capacity of the free transport unit from the config entity
-        let (speed, capacity) = get !(
-            ctx.world,
-            (WORLD_CONFIG_ID, FREE_TRANSPORT_ENTITY_TYPE).into(),
-            (SpeedConfig, CapacityConfig)
+        // Fetch configuration values for the new transport unit
+        let (speed, capacity) = get!(
+            ctx.world, (WORLD_CONFIG_ID, FREE_TRANSPORT_ENTITY_TYPE), (SpeedConfig, CapacityConfig)
         );
-        // create the transport unit
+
+        // Instantiate the new transport unit
         let id = ctx.world.uuid();
-        set !(
+        let _ = set!(
             ctx.world,
-            id.into(),
             (
                 Position {
-                    x: position.x, y: position.y
+                    entity_id: id.into(), x: position.x, y: position.y
                     }, MetaData {
-                    entity_type: FREE_TRANSPORT_ENTITY_TYPE
+                    entity_id: id.into(), entity_type: FREE_TRANSPORT_ENTITY_TYPE
                     }, Owner {
-                    address: caller
+                    entity_id: id.into(), address: caller
                     }, Quantity {
-                    value: quantity
+                    entity_id: id.into(), value: quantity
                     }, Movable {
-                    sec_per_km: speed.sec_per_km, blocked: false, 
+                    entity_id: id.into(), sec_per_km: speed.sec_per_km, blocked: false, 
                     }, ArrivalTime {
-                    arrives_at: 0, 
+                    entity_id: id.into(), arrives_at: 0, 
                     }, Capacity {
-                    weight_gram: capacity.weight_gram
+                    entity_id: id.into(), weight_gram: capacity.weight_gram
                 }
             )
         );

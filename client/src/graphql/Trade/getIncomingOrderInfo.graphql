@@ -1,41 +1,38 @@
 query getIncomingOrderInfo($orderId: String!, $counterPartyOrderId: String!) {
   ## counterparty
-  resources: entities(keys: [$counterPartyOrderId], limit: 100) {
-    keys
-    components {
-      __typename
-      ... on Resource {
-        resource_type
-        balance
-      }
-      ... on FungibleEntities {
-        key
-        count
-      }
-    }
-  }
-  ## counterparty
-  arrivalTime: entities(
-    keys: [$counterPartyOrderId]
-    limit: 100
-    componentName: "ArrivalTime"
-  ) {
-    keys
-    components {
-      __typename
-      ... on ArrivalTime {
-        arrives_at
+  resources: entities(keys: [$counterPartyOrderId]) {
+    edges {
+      node {
+        keys
+        components {
+          __typename
+          ... on OrderResource {
+            resource_type
+            balance
+          }
+          ... on FungibleEntities {
+            key
+            count
+          }
+          ... on ArrivalTime {
+            arrives_at
+          }
+        }
       }
     }
   }
   # my offer
-  origin: entities(keys: [$orderId], limit: 100, componentName: "Position") {
-    keys
-    components {
-      __typename
-      ... on Position {
-        x
-        y
+  origin: entities(keys: [$orderId]) {
+    edges {
+      node {
+        keys
+        components {
+          __typename
+          ... on Position {
+            x
+            y
+          }
+        }
       }
     }
   }
