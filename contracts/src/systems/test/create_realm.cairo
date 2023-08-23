@@ -26,7 +26,7 @@ mod CreateRealm {
         wonder: u8,
         order: u8,
         position: Position
-    ) {
+    ) -> ID {
         let entity_id = ctx.world.uuid();
         set !(
             ctx.world,
@@ -51,5 +51,6 @@ mod CreateRealm {
                 },
             )
         );
+        entity_id.into()
     }
 }
