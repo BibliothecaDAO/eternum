@@ -80,11 +80,12 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
           </div>
         )}
         {caravanInfo && (
-          <div className="grid grid-cols-[repeat(3 ,auto)] gap-2 px-2 py-1 mt-1">
+          <div className="flex justify-center items-center flex-wrap space-x-2 px-2 py-1 mt-1">
             {resourcesGive.map(
               (resource) =>
                 resource && (
                   <ResourceCost
+                    key={resource.resourceId}
                     resourceId={resource.resourceId}
                     amount={resource.amount}
                   />
@@ -96,11 +97,12 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
           <span className="italic text-light-pink">You will get</span>
         </div>
         {caravanInfo && (
-          <div className="grid grid-cols-[repeat(3 ,auto)] gap-2 px-2 py-1">
+          <div className="flex justify-center items-center flex-wrap space-x-2 px-2 py-1">
             {resourcesGet.map(
               (resource) =>
                 resource && (
                   <ResourceCost
+                    key={resource.resourceId}
                     resourceId={resource.resourceId}
                     amount={resource.amount}
                   />

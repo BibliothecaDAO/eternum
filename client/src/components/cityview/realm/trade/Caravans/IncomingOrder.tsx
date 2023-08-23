@@ -32,7 +32,9 @@ export const IncomingOrder = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const {
-    setup: { systemCalls: { claim_fungible_order } },
+    setup: {
+      systemCalls: { claim_fungible_order },
+    },
     account: { account },
   } = useDojo();
 
@@ -112,7 +114,7 @@ export const IncomingOrder = ({
         <span className="italic text-light-pink">You will get</span>
       </div>
       {resourcesGet && (
-        <div className="grid grid-cols-[repeat(3 ,auto)] gap-2 px-2 py-1">
+        <div className="flex justify-center items-center space-x-2 flex-wrap px-2 py-1">
           {resourcesGet.map(
             (resource) =>
               resource && (
@@ -137,11 +139,11 @@ export const IncomingOrder = ({
       {isLoading && (
         <Button
           isLoading={true}
-          onClick={() => { }}
+          onClick={() => {}}
           variant="danger"
           className="ml-auto p-2 !h-4 text-xxs !rounded-md"
         >
-          { }
+          {}
         </Button>
       )}
     </div>

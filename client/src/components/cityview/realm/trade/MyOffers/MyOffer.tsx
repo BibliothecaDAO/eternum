@@ -29,8 +29,10 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
   }, [myOffer]);
 
   const {
-    setup: { systemCalls: { change_order_status },
-      optimisticSystemCalls: { optimisticCancelOffer } },
+    setup: {
+      systemCalls: { change_order_status },
+      optimisticSystemCalls: { optimisticCancelOffer },
+    },
     account: { account },
   } = useDojo();
 
@@ -95,10 +97,10 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
       </div>
       <div className="flex items-end mt-2">
         <div className="flex items-center justify-around flex-1">
-          <div className="grid w-1/3 grid-cols-[repeat(3 ,auto)] gap-2 text-gold">
+          <div className="w-1/3 text-gold flex justify-center items-center flex-wrap">
             {resourcesGive &&
               resourcesGive.map(({ resourceId, amount }) => (
-                <div className="flex flex-col items-center">
+                <div className="flex flex-col items-center mx-2 my-1">
                   <ResourceIcon
                     key={resourceId}
                     resource={getResourceTrait(resourceId)}
@@ -113,10 +115,13 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
             <RatioIcon className="mb-1 fill-white" />
             {ratio?.toFixed(2) || 0}
           </div>
-          <div className="grid w-1/3 grid-cols-[repeat(3 ,auto)] gap-2 text-gold">
+          <div className="w-1/3 text-gold flex justify-center items-center flex-wrap">
             {resourcesGet &&
               resourcesGet.map(({ resourceId, amount }) => (
-                <div className="flex flex-col items-center" key={resourceId}>
+                <div
+                  className="flex flex-col items-center mx-2 my-1"
+                  key={resourceId}
+                >
                   <ResourceIcon
                     key={resourceId}
                     resource={getResourceTrait(resourceId)}
@@ -137,11 +142,11 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
         {isLoading && (
           <Button
             isLoading={true}
-            onClick={() => { }}
+            onClick={() => {}}
             variant="danger"
             className="ml-auto p-2 !h-4 text-xxs !rounded-md"
           >
-            { }
+            {}
           </Button>
         )}
       </div>
