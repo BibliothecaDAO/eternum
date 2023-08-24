@@ -110,14 +110,21 @@ export const MarketOffer = ({ marketOffer, onAccept }: TradeOfferProps) => {
           </div>
         </div>
         {!isLoading && (
-          <Button
-            disabled={!canAccept}
-            onClick={() => {
-              onAccept();
-            }}
-            variant={canAccept ? "success" : "danger"}
-            className="ml-auto p-2 !h-4 text-xxs !rounded-md"
-          >{`Accept`}</Button>
+          <div className="flex flex-col justify-center">
+            <Button
+              disabled={!canAccept}
+              onClick={() => {
+                onAccept();
+              }}
+              variant={canAccept ? "success" : "danger"}
+              className="ml-auto p-2 !h-4 text-xxs !rounded-md"
+            >{`Accept`}</Button>
+            {!canAccept && (
+              <div className="text-xxs text-order-giants/70">
+                Insufficient resources
+              </div>
+            )}
+          </div>
         )}
         {isLoading && (
           <Button
