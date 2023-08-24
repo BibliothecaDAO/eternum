@@ -15,6 +15,7 @@ interface ButtonProps {
     | "outline";
   isLoading?: boolean;
   withoutSound?: boolean;
+  size?: "xs" | "md";
 }
 
 const STYLES = {
@@ -32,6 +33,12 @@ const STYLES = {
     "border border-orange !text-orange bg-transparent hover:bg-orange/10",
   loadingStyle: "relative",
 };
+
+const SIZES = {
+  xs: "text-xxs h-4",
+  md: "",
+};
+
 const Button: React.FC<ButtonProps> = ({
   onClick,
   children,
@@ -40,6 +47,7 @@ const Button: React.FC<ButtonProps> = ({
   variant = "default",
   isLoading = false,
   withoutSound = false,
+  size = "md",
 }) => {
   const { play: playClick } = useUiSounds(soundSelector.click);
 
@@ -54,7 +62,7 @@ const Button: React.FC<ButtonProps> = ({
       }}
       className={`${STYLES.baseStyle} ${STYLES[variant]} ${
         disabled ? STYLES.disabledStyle : STYLES.enabledStyle
-      } ${isLoading ? STYLES.loadingStyle : ""} ${className}`}
+      } ${isLoading ? STYLES.loadingStyle : ""} ${className} ${SIZES[size]}`}
       disabled={disabled || isLoading}
     >
       {isLoading ? (

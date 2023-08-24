@@ -37,10 +37,15 @@ export const OrdersFilter = ({}: OrdersFilterProps) => {
               {selectedOrders.map((order, index) => (
                 <OrderIcon key={index} order={order} size="xs" />
               ))}
-              <CloseIcon
-                className="w-3 h-3 cursor-pointer fill-white"
-                onClick={() => setSelectedOrders([])}
-              />
+              {selectedOrders.length > 0 && (
+                <Button
+                  onClick={() => setSelectedOrders([])}
+                  variant="outline"
+                  size="xs"
+                >
+                  Clear all
+                </Button>
+              )}
             </div>
           </SecondaryPopup.Head>
           <SecondaryPopup.Body width={"w-[284px]"}>

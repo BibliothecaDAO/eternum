@@ -61,7 +61,10 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
               {caravanInfo.capacity}
             </div>
           )}
-          <CloseIcon className="w-3 h-3 cursor-pointer fill-white" />
+          <CloseIcon
+            onClick={onClose}
+            className="w-3 h-3 cursor-pointer fill-white"
+          />
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body>

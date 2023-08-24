@@ -44,7 +44,7 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
               <div className="mr-0.5">Settings</div>
               <CloseIcon
                 className="w-3 h-3 cursor-pointer fill-white"
-                onClick={() => {}}
+                onClick={() => setShowSettings(!showSettings)}
               />
             </div>
           </SecondaryPopup.Head>
