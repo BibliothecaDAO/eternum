@@ -91,112 +91,159 @@ mod CreateFreeTransportUnit {
         id.into()
     }
 }
-// mod tests {
-// // consts
-// use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
 
-// use core::traits::Into;
-// use core::result::ResultTrait;
-// use array::ArrayTrait;
-// use option::OptionTrait;
-// use debug::PrintTrait;
+mod tests {
 
-// use starknet::syscalls::deploy_syscall;
+    use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
+    use eternum::components::position::Position;
+    use eternum::components::movable::{Movable, ArrivalTime};
+    use eternum::components::capacity::Capacity;
+    use eternum::components::owner::Owner;
+    use eternum::components::metadata::MetaData;
+    use eternum::components::quantity::{Quantity, QuantityTracker};
 
-// use eternum::utils::testing::spawn_test_world_without_init;
+    // testing
+    use eternum::utils::testing::spawn_eternum;
 
-// use dojo::interfaces::IWorldDispatcherTrait;
-// use dojo::storage::query::{Query, TupleSize2IntoQuery, LiteralIntoQuery, TupleSize3IntoQuery};
-//     #[test]
-//     #[available_gas(300000000000)]
-//     fn test_create_free_transport_unit() {
-//         let world = spawn_test_world_without_init();
+    use poseidon::poseidon_hash_span;
+    use traits::Into;
+    use result::ResultTrait;
+    use array::ArrayTrait;
+    use option::OptionTrait;
+    use serde::Serde;
+    use clone::Clone;
+    
+    use starknet::syscalls::deploy_syscall;
+    use starknet::contract_address::contract_address_const;
+    use dojo::world::{IWorldDispatcher,IWorldDispatcherTrait};
 
-//         /// CREATE ENTITIES ///
-//         // set realm entity
-//         let mut create_realm_calldata = array::ArrayTrait::<felt252>::new();
-//         create_realm_calldata.append(1);
-//         create_realm_calldata.append(starknet::get_caller_address().into());
-//         create_realm_calldata.append(1);
-//         create_realm_calldata.append(1);
-//         // cities = 6
-//         create_realm_calldata.append(6);
-//         create_realm_calldata.append(5);
-//         create_realm_calldata.append(5);
-//         create_realm_calldata.append(5);
-//         create_realm_calldata.append(1);
-//         create_realm_calldata.append(1);
-//         // position
-//         create_realm_calldata.append(20);
-//         create_realm_calldata.append(30);
-//         world.execute('CreateRealm'.into(), create_realm_calldata.span());
+    fn setup() -> (IWorldDispatcher, felt252) {
+        let world = spawn_eternum();
 
-//         // set speed configuration entity
-//         let mut set_speed_conf_calldata = array::ArrayTrait::<felt252>::new();
-//         set_speed_conf_calldata.append(FREE_TRANSPORT_ENTITY_TYPE.into());
-//         // speed of 10 km per hr for free transport unit
-//         set_speed_conf_calldata.append(10);
-//         world.execute('SetSpeedConfig'.into(), set_speed_conf_calldata.span());
+        // set realm entity
+        let position = Position { x: 20, y: 30, entity_id: 1_u128};
+        let mut create_realm_calldata = Default::default();
 
-//         // set travel config
-//         let mut travel_config_call_data = array::ArrayTrait::<felt252>::new();
-//         travel_config_call_data.append(10);
-//         world.execute('SetTravelConfig'.into(), travel_config_call_data.span());
+        Serde::serialize(@1, ref create_realm_calldata); // realm id
+        Serde::serialize(@starknet::get_caller_address(), ref create_realm_calldata); // owner
+        Serde::serialize(@1, ref create_realm_calldata); // resource_types_packed
+        Serde::serialize(@1, ref create_realm_calldata); // resource_types_count
+        Serde::serialize(@6, ref create_realm_calldata); // cities
+        Serde::serialize(@5, ref create_realm_calldata); // harbors
+        Serde::serialize(@5, ref create_realm_calldata); // rivers
+        Serde::serialize(@5, ref create_realm_calldata); // regions
+        Serde::serialize(@1, ref create_realm_calldata); // wonder
+        Serde::serialize(@1, ref create_realm_calldata); // order
+        Serde::serialize(@position, ref create_realm_calldata); // position
 
-//         // set capacity configuration entity
-//         let mut set_capacity_conf_calldata = array::ArrayTrait::<felt252>::new();
-//         set_capacity_conf_calldata.append(FREE_TRANSPORT_ENTITY_TYPE.into());
-//         // free transport unit can carry 200_000 grams (200 kg)
-//         set_capacity_conf_calldata.append(200000);
-//         world.execute('SetCapacityConfig'.into(), set_capacity_conf_calldata.span());
+        let create_realm_result = world.execute('CreateRealm', create_realm_calldata);
+        let realm_entity_id = *create_realm_result[0];
 
-//         // create free transport unit
-//         let mut create_free_transport_unit_calldata = array::ArrayTrait::<felt252>::new();
-//         create_free_transport_unit_calldata.append(1);
-//         create_free_transport_unit_calldata.append(10);
-//         let result = world
-//             .execute('CreateFreeTransportUnit'.into(), create_free_transport_unit_calldata.span());
-//         let new_entity_id = *result[0];
 
-//         // check that the free transport unit has been created
-//         let quantity = world.entity('Quantity'.into(), new_entity_id.into(), 0_u8, 0_usize);
-//         assert(*quantity[0] == 10, 'free transport unit not created');
-//         // verify that quantity tracker has been updated
-//         let quantity_tracker = world
-//             .entity(
-//                 'QuantityTracker'.into(), (1, FREE_TRANSPORT_ENTITY_TYPE).into(), 0_u8, 0_usize
-//             );
-//         assert(*quantity_tracker[0] == 10, 'quantity tracker not updated');
+        // set speed configuration 
+        let mut set_speed_conf_calldata =  Default::default();
+        Serde::serialize(@FREE_TRANSPORT_ENTITY_TYPE, ref set_speed_conf_calldata);
+        Serde::serialize(@10, ref set_speed_conf_calldata); // 10km per sec
+        world.execute('SetSpeedConfig', set_speed_conf_calldata);
 
-//         // verify the position
-//         let position = world.entity('Position'.into(), new_entity_id.into(), 0_u8, 0_usize);
-//         assert(*position[0] == 20, 'position not set');
-//         assert(*position[1] == 30, 'position not set');
+        // set travel configuration
+        let mut set_travel_conf_calldata = Default::default();
+        Serde::serialize(@10, ref set_travel_conf_calldata); // free transport per city
+        world.execute('SetTravelConfig', set_travel_conf_calldata);
 
-//         // verify the entity type
-//         let entity_type = world.entity('MetaData'.into(), new_entity_id.into(), 0_u8, 0_usize);
-//         assert(*entity_type[0] == FREE_TRANSPORT_ENTITY_TYPE.into(), 'entity type not set');
+        // set capacity configuration
+        let mut set_capacity_conf_calldata = Default::default();
+        Serde::serialize(@FREE_TRANSPORT_ENTITY_TYPE, ref set_capacity_conf_calldata);
+        Serde::serialize(@200_000, ref set_capacity_conf_calldata); // 200_000 grams ==  200 kg
+        world.execute('SetCapacityConfig', set_capacity_conf_calldata);
 
-//         // verify the owner
-//         let owner = world.entity('Owner'.into(), new_entity_id.into(), 0_u8, 0_usize);
-//         assert(*owner[0] == starknet::get_caller_address().into(), 'owner not set');
+        (world, realm_entity_id)
+    }
 
-//         // verify the capacity
-//         let capacity = world.entity('Capacity'.into(), new_entity_id.into(), 0_u8, 0_usize);
-//         assert(*capacity[0] == 200000, 'capacity not set');
 
-//         // verify the speed
-//         let speed = world.entity('Movable'.into(), new_entity_id.into(), 0_u8, 0_usize);
-//         assert(*speed[0] == 10, 'speed not set');
-//         // verify that the free transport unit is not blocked
-//         assert(*speed[1] == 0, 'entity is blocked');
+    #[test]
+    #[available_gas(300000000000)]
+    fn test_create_free_transport_unit() {
 
-//         // verify the arrival time
-//         let arrival_time = world.entity('ArrivalTime'.into(), new_entity_id.into(), 0_u8, 0_usize);
-//         assert(*arrival_time[0] == 0, 'arrival time not set');
-//     }
-// // TODO: #[should_panic(expected: ('not enough free transport unit', ))]
-// // not working atm 
-// }
+        let (world, realm_entity_id) = setup();
+
+        // create free transport unit
+        let mut create_free_transport_unit_calldata = Default::default();
+        Serde::serialize(@realm_entity_id, ref create_free_transport_unit_calldata);
+        Serde::serialize(@10, ref create_free_transport_unit_calldata); // quantity
+        let free_transport_unit_result = world
+            .execute('CreateFreeTransportUnit', create_free_transport_unit_calldata.clone());
+        let free_transport_unit_id = *free_transport_unit_result[0];
+        
+
+        // check that the free transport unit has been created
+        let (quantity, position, metadata, owner, capacity, movable, arrival_time) 
+        = get!(world, free_transport_unit_id, (Quantity, Position, MetaData, Owner, Capacity, Movable, ArrivalTime));
+
+        assert(quantity.value == 10_u128, 'free transport unit not created');
+
+        assert(position.x == 20, 'position not set');
+        assert(position.y == 30, 'position not set');
+
+        assert(metadata.entity_type == FREE_TRANSPORT_ENTITY_TYPE.into(), 'entity type not set');
+
+        assert(owner.address == starknet::get_caller_address(), 'owner not set');
+
+        assert(capacity.weight_gram == 200_000, 'capacity not set');
+
+        assert(movable.sec_per_km == 10, 'sec_per_km not set');
+        assert(movable.blocked == false, 'entity is blocked');
+
+        assert(arrival_time.arrives_at == 0, 'arrival time should be 0');
+
+        // check that the quantity tracker has been updated
+        let quantity_tracker_arr = array![realm_entity_id.into(), FREE_TRANSPORT_ENTITY_TYPE.into()];
+        let quantity_tracker_key = poseidon_hash_span(quantity_tracker_arr.span());
+        let quantity_tracker = get!(world, quantity_tracker_key, QuantityTracker);
+        assert(quantity_tracker.count == 10, 'quantity tracker not updated');
+
+
+        // create another free transport unit and confirm 
+        // that the quantity tracker has been updated
+        world.execute('CreateFreeTransportUnit', create_free_transport_unit_calldata.clone());       
+        let quantity_tracker = get!(world, quantity_tracker_key, QuantityTracker);
+        assert(quantity_tracker.count == 20, 'quantity tracker not updated'); 
+    }
+
+
+
+    #[test]
+    #[available_gas(300000000000)]
+    #[should_panic(expected: ('entity is not owned by caller','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED' ))]
+    fn test_not_owner() {
+
+        let (world, realm_entity_id) = setup();
+
+        // create free transport unit
+        let mut create_free_transport_unit_calldata = Default::default();
+        Serde::serialize(@realm_entity_id, ref create_free_transport_unit_calldata);
+        Serde::serialize(@10, ref create_free_transport_unit_calldata); // quantity
+
+        starknet::testing::set_contract_address(contract_address_const::<0x99>());
+        world.execute('CreateFreeTransportUnit', create_free_transport_unit_calldata);
+    }
+
+
+
+    #[test]
+    #[available_gas(300000000000)]
+    #[should_panic(expected: ('not enough free transport unit','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED' ))]
+    fn test_not_enough_free_transport_unit() {
+
+        let (world, realm_entity_id) = setup();
+
+        // create free transport unit
+        let mut create_free_transport_unit_calldata = Default::default();
+        Serde::serialize(@realm_entity_id, ref create_free_transport_unit_calldata);
+        Serde::serialize(@70, ref create_free_transport_unit_calldata); // quantity
+        world.execute('CreateFreeTransportUnit', create_free_transport_unit_calldata);
+    }
+
+}
 
 
