@@ -23,10 +23,10 @@ jobs:
 
       - name: Download Dojo release artifact
         run: |
-          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/v0.1.0-alpha.3/dojo-linux-x86_64.tar.gz
+          curl -L -o dojo-linux-x86_64.tar.gz https://github.com/dojoengine/dojo/releases/download/nightly/dojo_nightly_linux_amd64.tar.gz
           tar -xzf dojo-linux-x86_64.tar.gz
-          sudo mv dojo-test /usr/local/bin/
+          sudo mv sozo /usr/local/bin/
 
       - name: Run Dojo Test
         run: |
-          dojo-test .
+          sozo test -f eternum
