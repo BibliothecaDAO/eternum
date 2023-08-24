@@ -38,6 +38,8 @@ use eternum::components::trade::{
     order_resource, OrderResource,
 };
 
+// constants
+use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
 
 
 // systems
@@ -74,6 +76,7 @@ use traits::{Into, TryInto};
 use result::ResultTrait;
 use array::ArrayTrait;
 use option::OptionTrait;
+use serde::Serde;
 
 
 
@@ -139,3 +142,48 @@ fn spawn_eternum() -> IWorldDispatcher {
     spawn_test_world(components, systems)
 
 }
+
+
+fn setup_eternum() -> (IWorldDispatcher, felt252) {
+
+        let world = spawn_eternum();
+
+        // set realm entity
+        let position = Position { x: 20, y: 30, entity_id: 1_u128};
+        let mut create_realm_calldata = Default::default();
+
+        Serde::serialize(@1, ref create_realm_calldata); // realm id
+        Serde::serialize(@starknet::get_caller_address(), ref create_realm_calldata); // owner
+        Serde::serialize(@1, ref create_realm_calldata); // resource_types_packed
+        Serde::serialize(@1, ref create_realm_calldata); // resource_types_count
+        Serde::serialize(@6, ref create_realm_calldata); // cities
+        Serde::serialize(@5, ref create_realm_calldata); // harbors
+        Serde::serialize(@5, ref create_realm_calldata); // rivers
+        Serde::serialize(@5, ref create_realm_calldata); // regions
+        Serde::serialize(@1, ref create_realm_calldata); // wonder
+        Serde::serialize(@1, ref create_realm_calldata); // order
+        Serde::serialize(@position, ref create_realm_calldata); // position
+
+        let create_realm_result = world.execute('CreateRealm', create_realm_calldata);
+        let realm_entity_id = *create_realm_result[0];
+
+
+        // set speed configuration 
+        let mut set_speed_conf_calldata =  Default::default();
+        Serde::serialize(@FREE_TRANSPORT_ENTITY_TYPE, ref set_speed_conf_calldata);
+        Serde::serialize(@10, ref set_speed_conf_calldata); // 10km per sec
+        world.execute('SetSpeedConfig', set_speed_conf_calldata);
+
+        // set travel configuration
+        let mut set_travel_conf_calldata = Default::default();
+        Serde::serialize(@10, ref set_travel_conf_calldata); // free transport per city
+        world.execute('SetTravelConfig', set_travel_conf_calldata);
+
+        // set capacity configuration
+        let mut set_capacity_conf_calldata = Default::default();
+        Serde::serialize(@FREE_TRANSPORT_ENTITY_TYPE, ref set_capacity_conf_calldata);
+        Serde::serialize(@200_000, ref set_capacity_conf_calldata); // 200_000 grams ==  200 kg
+        world.execute('SetCapacityConfig', set_capacity_conf_calldata);
+
+        (world, realm_entity_id)
+    }
