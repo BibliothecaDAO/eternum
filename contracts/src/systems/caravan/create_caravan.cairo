@@ -168,23 +168,18 @@ mod tests {
     use clone::Clone;
     
     use starknet::syscalls::deploy_syscall;
-    use dojo::world::IWorldDispatcherTrait;
+    use starknet::contract_address::contract_address_const;
 
-    #[test]
-    #[available_gas(300000000000)]
-    fn test_create_caravan() {
+    use dojo::world::{ IWorldDispatcher, IWorldDispatcherTrait};
+
+    fn setup() -> (IWorldDispatcher, felt252, Array<felt252>) {
         let world = spawn_eternum();
 
         // set realm entity
-        let position = Position { 
-            x: 20, 
-            y: 30, 
-            entity_id: 1_u128 // immaterial // will be set to realm id
-        };
-
+        let position = Position { x: 20, y: 30, entity_id: 1_u128};
         let mut create_realm_calldata = Default::default();
 
-        Serde::serialize(@1, ref create_realm_calldata); // dormant realm id
+        Serde::serialize(@1, ref create_realm_calldata); // realm id
         Serde::serialize(@starknet::get_caller_address(), ref create_realm_calldata); // owner
         Serde::serialize(@1, ref create_realm_calldata); // resource_types_packed
         Serde::serialize(@1, ref create_realm_calldata); // resource_types_count
@@ -197,7 +192,7 @@ mod tests {
         Serde::serialize(@position, ref create_realm_calldata); // position
 
         let create_realm_result = world.execute('CreateRealm', create_realm_calldata);
-        let realm_id = *create_realm_result[0];
+        let realm_entity_id = *create_realm_result[0];
 
         // set speed configuration 
         let mut set_speed_conf_calldata =  Default::default();
@@ -229,7 +224,7 @@ mod tests {
         // create two free transport unit for the realm
         let mut transport_units: Array<felt252> = array![];
         let mut create_free_transport_unit_calldata = Default::default();
-        Serde::serialize(@realm_id, ref create_free_transport_unit_calldata);
+        Serde::serialize(@realm_entity_id, ref create_free_transport_unit_calldata);
         Serde::serialize(@10, ref create_free_transport_unit_calldata); // quantity
         let first_free_transport_unit_result = world
             .execute('CreateFreeTransportUnit', create_free_transport_unit_calldata.clone());
@@ -241,7 +236,15 @@ mod tests {
         
         transport_units.append(*second_free_transport_unit_result[0]);
 
+        (world, realm_entity_id, transport_units)
+    }
 
+    #[test]
+    #[available_gas(300000000000)]
+    fn test_create_caravan() {
+
+        let (world, realm_entity_id, transport_units) = setup();
+        
         // create caravan
         let mut create_caravan_calldata = Default::default();
         Serde::serialize(@transport_units, ref create_caravan_calldata);
@@ -275,6 +278,41 @@ mod tests {
         assert(second_transport.entity_id.into() == *transport_units.at(1), 'foreign key not set');
 
     }
+
+    
+    #[test]
+    #[available_gas(300000000000)]
+    #[should_panic(expected: ('entity is not owned by caller','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED' ))]
+    fn test_not_owner() {
+
+        let (world, realm_entity_id, transport_units) = setup();
+
+        // create caravan
+        let mut create_caravan_calldata = Default::default();
+        Serde::serialize(@transport_units, ref create_caravan_calldata);
+
+        starknet::testing::set_contract_address(contract_address_const::<0x99>());
+        world.execute('CreateCaravan', create_caravan_calldata);   
+    }
+
+
+    #[test]
+    #[available_gas(300000000000)]
+    #[should_panic(expected: ('entity is blocked','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED' ))]
+    fn test_blocked_entity() {
+
+        let (world, realm_entity_id, mut transport_units) = setup();
+
+        // duplicate the first transport unit
+        transport_units.append(*transport_units.at(0));
+
+        // create caravan
+        let mut create_caravan_calldata = Default::default();
+        Serde::serialize(@transport_units, ref create_caravan_calldata);
+        world.execute('CreateCaravan', create_caravan_calldata);   
+    }
+
+
 }
 
 
