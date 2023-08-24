@@ -1,7 +1,8 @@
 import {
   EntityIndex,
+  HasValue,
   getComponentValue,
-  getEntitiesWithValue,
+  runQuery,
 } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import {
@@ -10,7 +11,6 @@ import {
 } from "../graphql/useGraphQLQueries";
 import { useEffect, useMemo, useState } from "react";
 import useRealmStore from "../store/useRealmStore";
-import { getEntitiesWithoutValue } from "../../utils/mud";
 import { getEntityIdFromKeys } from "../../utils/utils";
 
 export function useIncomingOrders() {
@@ -46,7 +46,7 @@ export function useIncomingOrders() {
 export function useGetIncomingOrders() {
   const {
     setup: {
-      components: { Trade },
+      components: { Trade, Status },
     },
   } = useDojo();
 
@@ -59,25 +59,25 @@ export function useGetIncomingOrders() {
 
   useEffect(() => {
     const getEntities = () => {
-      // get trades that have status 0 (open)
-      const set1 = getEntitiesWithValue(Trade, {
-        taker_id: realmEntityId,
-        claimed_by_taker: 0 as any,
-      });
-      // get trades that have maker_id equal to realmEntityId
-      const set2 = getEntitiesWithValue(Trade, {
-        maker_id: realmEntityId,
-        claimed_by_maker: 0 as any,
-      });
-      const set3 = getEntitiesWithoutValue(Trade, {
-        maker_id: realmEntityId,
-        taker_id: 0,
-      });
+      const set1 = runQuery([
+        HasValue(Trade, {
+          taker_id: realmEntityId,
+          claimed_by_taker: 0 as any,
+        }),
+        // accepted
+        HasValue(Status, { value: 1 }),
+      ]);
 
-      // only keep trades that are in both sets and that have not a taker_id null (not taken yet)
-      const entityIds = Array.from(set1)
-        .concat(Array.from(set2))
-        .filter((value) => set3.has(value));
+      const set2 = runQuery([
+        HasValue(Trade, {
+          maker_id: realmEntityId,
+          claimed_by_maker: 0 as any,
+        }),
+        // accepted
+        HasValue(Status, { value: 1 }),
+      ]);
+
+      const entityIds = Array.from(set1).concat(Array.from(set2));
       setEntityIds(entityIds);
     };
     getEntities();

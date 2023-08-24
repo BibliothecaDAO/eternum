@@ -1,7 +1,9 @@
 import {
   EntityIndex,
+  HasValue,
+  NotValue,
   getComponentValue,
-  getEntitiesWithValue,
+  runQuery,
 } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import { Resource } from "../../types";
@@ -11,7 +13,6 @@ import {
 } from "../graphql/useGraphQLQueries";
 import { useEffect, useMemo, useRef, useState } from "react";
 import useRealmStore from "../store/useRealmStore";
-import { getEntitiesWithoutValue } from "../../utils/mud";
 import { getEntityIdFromKeys } from "../../utils/utils";
 
 export function useTrade() {
@@ -68,11 +69,12 @@ export function useGetMyOffers() {
   useEffect(() => {
     const getEntities = () => {
       // get trades that have status 0 (open)
-      const set1 = getEntitiesWithValue(Status, { value: 0 });
-      // get trades that have maker_id equal to realmEntityId
-      const set2 = getEntitiesWithValue(Trade, { maker_id: realmEntityId });
-      // only keep trades that are in both sets
-      const entityIds = Array.from(set1).filter((value) => set2.has(value));
+      const entityIds = Array.from(
+        runQuery([
+          HasValue(Status, { value: 0 }),
+          HasValue(Trade, { maker_id: realmEntityId }),
+        ]),
+      );
       entityIds.sort((a, b) => b - a);
       if (
         JSON.stringify(previousEntityIds.current) !== JSON.stringify(entityIds)
@@ -131,9 +133,12 @@ export function useGetMarket() {
 
   useEffect(() => {
     const getEntities = () => {
-      const set1 = getEntitiesWithValue(Status, { value: 0 });
-      const set2 = getEntitiesWithoutValue(Trade, { maker_id: realmEntityId });
-      const entityIds = Array.from(set1).filter((value) => set2.has(value));
+      const entityIds = Array.from(
+        runQuery([
+          HasValue(Status, { value: 0 }),
+          NotValue(Trade, { maker_id: realmEntityId }),
+        ]),
+      );
       entityIds.sort((a, b) => b - a);
       if (
         JSON.stringify(previousEntityIds.current) !== JSON.stringify(entityIds)

@@ -1,7 +1,9 @@
 import {
   EntityIndex,
+  Has,
+  HasValue,
   getComponentValue,
-  getEntitiesWithValue,
+  runQuery,
 } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import {
@@ -71,12 +73,11 @@ export function useGetRealmCaravans(x: number, y: number) {
   const [realmCaravans, setRealmCaravans] = useState<CaravanInterface[]>([]);
   const [entityIds, setEntityIds] = useState<EntityIndex[]>([]);
 
-  // TODO: replace that by getting entities with a certain maker Id
   useEffect(() => {
     const getEntities = () => {
-      const set1 = getEntitiesWithValue(Position, { x, y });
-      const set2 = getEntitiesWithValue(CaravanMembers, {});
-      const entityIds = Array.from(set1).filter((value) => set2.has(value));
+      const entityIds = Array.from(
+        runQuery([HasValue(Position, { x, y }), Has(CaravanMembers)]),
+      );
       setEntityIds(entityIds);
     };
     getEntities();
@@ -104,6 +105,7 @@ export function useGetRealmCaravans(x: number, y: number) {
         }
       })
       .filter(Boolean) as CaravanInterface[];
+    // DISCUSS: can add sorting logic here
     setRealmCaravans(caravans);
     // only recompute when different number of orders
   }, [entityIds.length]);
