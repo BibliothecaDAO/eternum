@@ -75,133 +75,99 @@ mod GetQuantity {
         }
     }
 }
-// mod tests {
-//     // consts
-//     use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
 
-//     // utils
-//     use eternum::utils::testing::spawn_test_world_without_init;
 
-//     use core::traits::Into;
-//     use core::result::ResultTrait;
-//     use array::ArrayTrait;
-//     use option::OptionTrait;
-//     use debug::PrintTrait;
+mod tests {
+    use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
+    use eternum::components::position::Position;
 
-//     use starknet::syscalls::deploy_syscall;
+    // testing
+    use eternum::utils::testing::spawn_eternum;
 
-//     use dojo::interfaces::{IWorldDispatcherTrait, IWorldDispatcherImpl};
-//     use dojo::storage::query::Query;
-//     use dojo::execution_context::Context;
-//     use dojo::auth::components::AuthRole;
+    use traits::{Into, TryInto};
+    use result::ResultTrait;
+    use array::{ArrayTrait, SpanTrait};
+    use option::OptionTrait;
+    use serde::Serde;
+    use clone::Clone;
+    
+    use dojo::world::{ IWorldDispatcher, IWorldDispatcherTrait};
 
-//     // test that the average speed is correct
-//     #[test]
-//     #[available_gas(300000000000)]
-//     fn test_get_average_speed() {
-//         let world = spawn_test_world_without_init();
 
-//         // create realm
-//         let mut create_realm_calldata = array::ArrayTrait::<felt252>::new();
-//         create_realm_calldata.append(1);
-//         create_realm_calldata.append(starknet::get_caller_address().into());
-//         create_realm_calldata.append(1);
-//         create_realm_calldata.append(1);
-//         // cities = 6
-//         create_realm_calldata.append(6);
-//         create_realm_calldata.append(5);
-//         create_realm_calldata.append(5);
-//         create_realm_calldata.append(5);
-//         create_realm_calldata.append(1);
-//         create_realm_calldata.append(1);
-//         // position
-//         create_realm_calldata.append(20);
-//         create_realm_calldata.append(30);
-//         world.execute('CreateRealm'.into(), create_realm_calldata.span());
+    #[test]
+    #[available_gas(300000000000)]
+    fn test_get_average_speed() {
+        let world = spawn_eternum();
 
-//         // set world config
-//         let mut travel_config_call_data = array::ArrayTrait::<felt252>::new();
-//         travel_config_call_data.append(10);
-//         world.execute('SetTravelConfig'.into(), travel_config_call_data.span());
+        // set realm entity
+        let position = Position { x: 20, y: 30, entity_id: 1_u128};
+        let mut create_realm_calldata = Default::default();
 
-//         // set speed configuration entity
-//         let mut set_speed_conf_calldata = array::ArrayTrait::<felt252>::new();
-//         set_speed_conf_calldata.append(FREE_TRANSPORT_ENTITY_TYPE.into());
-//         // speed of 10 km per hr for free transport unit
-//         set_speed_conf_calldata.append(10);
-//         world.execute('SetSpeedConfig'.into(), set_speed_conf_calldata.span());
+        Serde::serialize(@1, ref create_realm_calldata); // realm id
+        Serde::serialize(@starknet::get_caller_address(), ref create_realm_calldata); // owner
+        Serde::serialize(@1, ref create_realm_calldata); // resource_types_packed
+        Serde::serialize(@1, ref create_realm_calldata); // resource_types_count
+        Serde::serialize(@6, ref create_realm_calldata); // cities
+        Serde::serialize(@5, ref create_realm_calldata); // harbors
+        Serde::serialize(@5, ref create_realm_calldata); // rivers
+        Serde::serialize(@5, ref create_realm_calldata); // regions
+        Serde::serialize(@1, ref create_realm_calldata); // wonder
+        Serde::serialize(@1, ref create_realm_calldata); // order
+        Serde::serialize(@position, ref create_realm_calldata); // position
 
-//         // set capacity configuration entity
-//         let mut set_capacity_conf_calldata = array::ArrayTrait::<felt252>::new();
-//         set_capacity_conf_calldata.append(FREE_TRANSPORT_ENTITY_TYPE.into());
-//         // free transport unit can carry 200_000 grams (200 kg)
-//         set_capacity_conf_calldata.append(200000);
-//         world.execute('SetCapacityConfig'.into(), set_capacity_conf_calldata.span());
+        let create_realm_result = world.execute('CreateRealm', create_realm_calldata);
+        let realm_entity_id = *create_realm_result[0];
 
-//         // create free transport unit
-//         let mut create_free_transport_unit_calldata = array::ArrayTrait::<felt252>::new();
-//         create_free_transport_unit_calldata.append(1);
+        // set speed configuration 
+        let mut set_speed_conf_calldata =  Default::default();
+        Serde::serialize(@FREE_TRANSPORT_ENTITY_TYPE, ref set_speed_conf_calldata);
+        Serde::serialize(@10, ref set_speed_conf_calldata); // 10km per sec
 
-//         create_free_transport_unit_calldata.append(10);
-//         let result = world
-//             .execute('CreateFreeTransportUnit'.into(), create_free_transport_unit_calldata.span());
-//         let units_1_id: felt252 = *result[0];
-//         // create free transport unit
-//         let mut create_free_transport_unit_calldata = array::ArrayTrait::<felt252>::new();
-//         create_free_transport_unit_calldata.append(1);
-//         create_free_transport_unit_calldata.append(10);
-//         let result = world
-//             .execute('CreateFreeTransportUnit'.into(), create_free_transport_unit_calldata.span());
-//         let units_2_id: felt252 = *result[0];
+        world.execute('SetSpeedConfig', set_speed_conf_calldata);
 
-//         // get average speed
-//         let mut get_average_speed_calldata = array::ArrayTrait::<felt252>::new();
-//         get_average_speed_calldata.append(2);
-//         get_average_speed_calldata.append(units_1_id);
-//         get_average_speed_calldata.append(units_2_id);
-//         let result = world.execute('GetAverageSpeed'.into(), get_average_speed_calldata.span());
-//         let average_speed = *result[0];
-//         assert(average_speed == 10, 'average speed not correct');
-//     }
+        // set world config
+        let mut world_config_calldata = Default::default(); 
+        Serde::serialize(@world.contract_address, ref world_config_calldata); // realm l2 contract address
+    
+        world.execute('SetWorldConfig', world_config_calldata);
 
-//     #[test]
-//     #[available_gas(300000000000)]
-//     fn test_get_quantity_with_quantity_component() {
-//         let world = spawn_test_world_without_init();
-//         // random, does not matter since world is not init yet
-//         let ctx = Context {
-//             world,
-//             caller_account: starknet::contract_address_const::<0x1337>(),
-//             caller_system: 'Tester'.into(),
-//             execution_role: AuthRole {
-//                 id: 'FooWriter'.into()
-//             },
-//         };
-//         // set caller as executor 
-//         starknet::testing::set_contract_address(starknet::contract_address_const::<1>());
-//         let mut value = array::ArrayTrait::<felt252>::new();
-//         value.append(10);
-//         let entity_id = 1;
-//         world.set_entity(ctx, 'Quantity'.into(), entity_id.into(), 0_u8, value.span());
 
-//         let mut calldata = array::ArrayTrait::<felt252>::new();
-//         calldata.append(entity_id);
-//         let quantity = world.execute('GetQuantity'.into(), calldata.span());
-//         assert(*quantity[0] == 10, 'quantity not correct');
-//     }
+        // set capacity configuration
+        let mut set_capacity_conf_calldata = Default::default();
+        Serde::serialize(@FREE_TRANSPORT_ENTITY_TYPE, ref set_capacity_conf_calldata);
+        Serde::serialize(@200_000, ref set_capacity_conf_calldata); // 200_000 grams ==  200 kg
+        world.execute('SetCapacityConfig', set_capacity_conf_calldata);
 
-//     #[test]
-//     #[available_gas(300000000000)]
-//     fn test_get_quantity_without_quantity_component() {
-//         let world = spawn_test_world_without_init();
-//         // set caller as executor 
-//         starknet::testing::set_contract_address(starknet::contract_address_const::<1>());
-//         let entity_id = 1;
-//         let mut calldata = array::ArrayTrait::<felt252>::new();
-//         calldata.append(entity_id);
-//         let quantity = world.execute('GetQuantity'.into(), calldata.span());
-//         assert(*quantity[0] == 1, 'quantity not correct');
-//     }
-// }
+
+        // set travel configuration
+        let mut set_travel_conf_calldata = Default::default();
+        Serde::serialize(@5, ref set_travel_conf_calldata); // free transport per city
+        world.execute('SetTravelConfig', set_travel_conf_calldata);
+
+
+
+        // create two free transport unit for the realm
+        let mut transport_units: Array<u128> = array![];
+        let mut create_free_transport_unit_calldata = Default::default();
+        Serde::serialize(@realm_entity_id, ref create_free_transport_unit_calldata);
+        Serde::serialize(@10, ref create_free_transport_unit_calldata); // quantity
+        let first_free_transport_unit_result = world
+            .execute('CreateFreeTransportUnit', create_free_transport_unit_calldata.clone());
+        
+        transport_units.append((*first_free_transport_unit_result[0]).try_into().unwrap());
+
+        let second_free_transport_unit_result = world
+            .execute('CreateFreeTransportUnit', create_free_transport_unit_calldata.clone());
+        
+        transport_units.append((*second_free_transport_unit_result[0]).try_into().unwrap());
+
+        // get average speed
+        let mut get_average_speed_calldata = Default::default();
+        Serde::serialize(@transport_units, ref get_average_speed_calldata);
+        let result = world.execute('GetAverageSpeed', get_average_speed_calldata);
+        let average_speed = *result[0];
+        assert(average_speed == 10, 'average speed not correct');
+    }
+}
 
 
