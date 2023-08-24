@@ -49,6 +49,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   const {
     account: { account },
     setup: {
+      optimisticSystemCalls: { optimisticMakeFungibleOrder },
       systemCalls: {
         create_caravan,
         create_free_transport_unit,
@@ -63,7 +64,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   const createOrder = async () => {
     setIsLoading(true);
     if (isNewCaravan) {
-      const trade_id = await make_fungible_order({
+      const trade_id = await optimisticMakeFungibleOrder(make_fungible_order)({
         signer: account,
         maker_id: realmEntityId,
         maker_entity_types: selectedResourceIdsGive,
@@ -259,7 +260,6 @@ const SelectResourcesPanel = ({
               Resource,
               getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]),
             );
-            console.log({ resource, id });
             return (
               <SelectableResource
                 key={id}

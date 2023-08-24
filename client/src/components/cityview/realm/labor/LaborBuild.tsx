@@ -20,6 +20,7 @@ import { useGetRealm } from "../../../../hooks/graphql/useGraphQLQueries";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { getComponentValue } from "@latticexyz/recs";
 import { getEntityIdFromKeys } from "../../../../utils/utils";
+import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 
 type LaborBuildPopupProps = {
   resourceId: number;
@@ -49,8 +50,10 @@ export const LaborBuildPopup = ({
     setMultiplier(1); // Reset the multiplier to 1 when the resourceId changes
   }, [resourceId]);
 
-  let { realmEntityId, realmId } = useRealmStore();
+  let { realmEntityId } = useRealmStore();
   const { realm } = useGetRealm({ entityId: realmEntityId });
+
+  const { nextBlockTimestamp } = useBlockchainStore();
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
   const laborUnits = useMemo(() => (isFood ? 12 : laborAmount), [laborAmount]);
@@ -88,19 +91,22 @@ export const LaborBuildPopup = ({
     base_resources_per_cycle: 21,
   };
 
-  const handleBuild = () => {
+  const onBuild = () => {
     setBuildLoadingStates((prevStates: any) => ({
       ...prevStates,
       [resourceId]: true,
     }));
-    build_labor({
+    optimisticBuildLabor(
+      nextBlockTimestamp || 0,
+      build_labor,
+    )({
       signer: account,
       realm_id: realmEntityId,
       resource_type: resourceId,
       labor_units: laborUnits,
       multiplier: multiplier,
-    });
-    playLaborSound(resourceId);
+    }),
+      playLaborSound(resourceId);
     onClose();
   };
 
@@ -370,13 +376,7 @@ export const LaborBuildPopup = ({
           <Button
             className="!px-[6px] !py-[2px] text-xxs"
             disabled={!canBuild}
-            onClick={optimisticBuildLabor(
-              realmId ?? 0,
-              resourceId,
-              laborUnits,
-              multiplier,
-              handleBuild,
-            )}
+            onClick={onBuild}
             variant={canBuild ? "success" : "danger"}
             withoutSound
           >

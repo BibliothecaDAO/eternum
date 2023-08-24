@@ -12,7 +12,6 @@ import { ReactComponent as Clock } from "../../../../assets/icons/common/clock.s
 import { ReactComponent as Village } from "../../../../assets/icons/common/village.svg";
 import ProgressBar from "../../../../elements/ProgressBar";
 import { useDojo } from "../../../../DojoContext";
-import useRealm from "../../../../hooks/store/useRealmStore";
 import { LaborConfig, Realm } from "../../../../types";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import {
@@ -46,6 +45,7 @@ export const LaborComponent = ({
     setup: {
       components: { Labor, Resource },
       systemCalls: { harvest_labor },
+      optimisticSystemCalls: { optimisticHarvestLabor },
     },
     account: { account },
   } = useDojo();
@@ -98,7 +98,10 @@ export const LaborComponent = ({
   const onHarvest = () => {
     setIsHarvestLoading(true);
     playHarvest();
-    harvest_labor({
+    optimisticHarvestLabor(
+      nextBlockTimestamp || 0,
+      harvest_labor,
+    )({
       signer: account,
       realm_id: realmEntityId,
       resource_type: resourceId,

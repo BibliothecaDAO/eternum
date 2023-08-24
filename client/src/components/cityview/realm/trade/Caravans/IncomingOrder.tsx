@@ -33,10 +33,14 @@ export const IncomingOrder = ({
 
   const {
     setup: {
+      optimisticSystemCalls: { optimisticClaimFungibleOrder },
       systemCalls: { claim_fungible_order },
     },
     account: { account },
   } = useDojo();
+
+  const { getTradeResources } = useTrade();
+  const resourcesGet = getTradeResources(incomingOrder.counterPartyOrderId);
 
   useEffect(() => {
     setIsLoading(false);
@@ -44,7 +48,10 @@ export const IncomingOrder = ({
 
   const claimOrder = async () => {
     setIsLoading(true);
-    claim_fungible_order({
+    optimisticClaimFungibleOrder(
+      resourcesGet,
+      claim_fungible_order,
+    )({
       signer: account,
       entity_id: realmEntityId,
       trade_id: incomingOrder.tradeId,
@@ -65,9 +72,6 @@ export const IncomingOrder = ({
   );
   let arrivalTime = incomingOrderInfo && incomingOrderInfo.arrivalTime;
   let originPosition = incomingOrderInfo && incomingOrderInfo.origin;
-
-  const { getTradeResources } = useTrade();
-  const resourcesGet = getTradeResources(incomingOrder.counterPartyOrderId);
 
   const startRealmId =
     originPosition &&

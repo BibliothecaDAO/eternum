@@ -90,12 +90,14 @@ export function useGetIncomingOrders() {
   useMemo(() => {
     const incomingOrders = entityIds
       .map((id) => {
-        // TODO: different order id depending on if is maker or not
         let entity = getComponentValue(Trade, id);
         if (entity) {
+          let isMaker = entity.maker_id === realmEntityId;
           return {
-            orderId: entity.taker_order_id,
-            counterPartyOrderId: entity.maker_order_id,
+            orderId: isMaker ? entity.maker_order_id : entity.taker_order_id,
+            counterPartyOrderId: isMaker
+              ? entity.taker_order_id
+              : entity.maker_order_id,
             claimed: false,
             tradeId: id,
           } as IncomingOrderInterface;

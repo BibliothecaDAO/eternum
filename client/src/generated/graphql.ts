@@ -48,6 +48,15 @@ export type AgeEdge = {
   node?: Maybe<Age>;
 };
 
+export type AgeOrder = {
+  direction: Direction;
+  field: AgeOrderOrderField;
+};
+
+export enum AgeOrderOrderField {
+  BornAt = 'BORN_AT'
+}
+
 export type AgeWhereInput = {
   born_at?: InputMaybe<Scalars['Int']['input']>;
   born_atGT?: InputMaybe<Scalars['Int']['input']>;
@@ -74,6 +83,15 @@ export type ArrivalTimeEdge = {
   cursor: Scalars['Cursor']['output'];
   node?: Maybe<ArrivalTime>;
 };
+
+export type ArrivalTimeOrder = {
+  direction: Direction;
+  field: ArrivalTimeOrderOrderField;
+};
+
+export enum ArrivalTimeOrderOrderField {
+  ArrivesAt = 'ARRIVES_AT'
+}
 
 export type ArrivalTimeWhereInput = {
   arrives_at?: InputMaybe<Scalars['Int']['input']>;
@@ -102,6 +120,16 @@ export type BuildingConfigEdge = {
   cursor: Scalars['Cursor']['output'];
   node?: Maybe<BuildingConfig>;
 };
+
+export type BuildingConfigOrder = {
+  direction: Direction;
+  field: BuildingConfigOrderOrderField;
+};
+
+export enum BuildingConfigOrderOrderField {
+  BaseSqm = 'BASE_SQM',
+  WorkhutCost = 'WORKHUT_COST'
+}
 
 export type BuildingConfigWhereInput = {
   base_sqm?: InputMaybe<Scalars['String']['input']>;
@@ -136,6 +164,16 @@ export type BuildingCostEdge = {
   cursor: Scalars['Cursor']['output'];
   node?: Maybe<BuildingCost>;
 };
+
+export type BuildingCostOrder = {
+  direction: Direction;
+  field: BuildingCostOrderOrderField;
+};
+
+export enum BuildingCostOrderOrderField {
+  Cost = 'COST',
+  ResourceType = 'RESOURCE_TYPE'
+}
 
 export type BuildingCostWhereInput = {
   cost?: InputMaybe<Scalars['String']['input']>;
@@ -172,6 +210,18 @@ export type BuildingTypeConfigEdge = {
   cursor: Scalars['Cursor']['output'];
   node?: Maybe<BuildingTypeConfig>;
 };
+
+export type BuildingTypeConfigOrder = {
+  direction: Direction;
+  field: BuildingTypeConfigOrderOrderField;
+};
+
+export enum BuildingTypeConfigOrderOrderField {
+  Id = 'ID',
+  ResourceTypesCount = 'RESOURCE_TYPES_COUNT',
+  ResourceTypesPacked = 'RESOURCE_TYPES_PACKED',
+  Sqm = 'SQM'
+}
 
 export type BuildingTypeConfigWhereInput = {
   id?: InputMaybe<Scalars['String']['input']>;
@@ -225,6 +275,16 @@ export type CapacityConfigEdge = {
   node?: Maybe<CapacityConfig>;
 };
 
+export type CapacityConfigOrder = {
+  direction: Direction;
+  field: CapacityConfigOrderOrderField;
+};
+
+export enum CapacityConfigOrderOrderField {
+  EntityType = 'ENTITY_TYPE',
+  WeightGram = 'WEIGHT_GRAM'
+}
+
 export type CapacityConfigWhereInput = {
   entity_type?: InputMaybe<Scalars['String']['input']>;
   entity_typeGT?: InputMaybe<Scalars['String']['input']>;
@@ -251,6 +311,15 @@ export type CapacityEdge = {
   cursor: Scalars['Cursor']['output'];
   node?: Maybe<Capacity>;
 };
+
+export type CapacityOrder = {
+  direction: Direction;
+  field: CapacityOrderOrderField;
+};
+
+export enum CapacityOrderOrderField {
+  WeightGram = 'WEIGHT_GRAM'
+}
 
 export type CapacityWhereInput = {
   weight_gram?: InputMaybe<Scalars['String']['input']>;
@@ -298,6 +367,16 @@ export type CaravanMembersEdge = {
   node?: Maybe<CaravanMembers>;
 };
 
+export type CaravanMembersOrder = {
+  direction: Direction;
+  field: CaravanMembersOrderOrderField;
+};
+
+export enum CaravanMembersOrderOrderField {
+  Count = 'COUNT',
+  Key = 'KEY'
+}
+
 export type CaravanMembersWhereInput = {
   count?: InputMaybe<Scalars['Int']['input']>;
   countGT?: InputMaybe<Scalars['Int']['input']>;
@@ -313,6 +392,15 @@ export type CaravanMembersWhereInput = {
   keyNEQ?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type CaravanOrder = {
+  direction: Direction;
+  field: CaravanOrderOrderField;
+};
+
+export enum CaravanOrderOrderField {
+  CaravanId = 'CARAVAN_ID'
+}
+
 export type CaravanWhereInput = {
   caravan_id?: InputMaybe<Scalars['String']['input']>;
   caravan_idGT?: InputMaybe<Scalars['String']['input']>;
@@ -323,6 +411,11 @@ export type CaravanWhereInput = {
 };
 
 export type ComponentUnion = Age | ArrivalTime | BuildingConfig | BuildingCost | BuildingTypeConfig | Capacity | CapacityConfig | Caravan | CaravanMembers | ForeignKey | FungibleEntities | Labor | LaborConfig | LaborCostAmount | LaborCostResources | MetaData | Movable | OrderId | OrderResource | Owner | Position | Quantity | QuantityTracker | Realm | Resource | SpeedConfig | Status | Trade | TravelConfig | Vault | WeightConfig | WorldConfig;
+
+export enum Direction {
+  Asc = 'ASC',
+  Desc = 'DESC'
+}
 
 export type Entity = {
   __typename?: 'Entity';
@@ -386,6 +479,15 @@ export type ForeignKeyEdge = {
   node?: Maybe<ForeignKey>;
 };
 
+export type ForeignKeyOrder = {
+  direction: Direction;
+  field: ForeignKeyOrderOrderField;
+};
+
+export enum ForeignKeyOrderOrderField {
+  EntityId = 'ENTITY_ID'
+}
+
 export type ForeignKeyWhereInput = {
   entity_id?: InputMaybe<Scalars['String']['input']>;
   entity_idGT?: InputMaybe<Scalars['String']['input']>;
@@ -413,6 +515,16 @@ export type FungibleEntitiesEdge = {
   cursor: Scalars['Cursor']['output'];
   node?: Maybe<FungibleEntities>;
 };
+
+export type FungibleEntitiesOrder = {
+  direction: Direction;
+  field: FungibleEntitiesOrderOrderField;
+};
+
+export enum FungibleEntitiesOrderOrderField {
+  Count = 'COUNT',
+  Key = 'KEY'
+}
 
 export type FungibleEntitiesWhereInput = {
   count?: InputMaybe<Scalars['Int']['input']>;
@@ -456,6 +568,17 @@ export type LaborConfigEdge = {
   cursor: Scalars['Cursor']['output'];
   node?: Maybe<LaborConfig>;
 };
+
+export type LaborConfigOrder = {
+  direction: Direction;
+  field: LaborConfigOrderOrderField;
+};
+
+export enum LaborConfigOrderOrderField {
+  BaseFoodPerCycle = 'BASE_FOOD_PER_CYCLE',
+  BaseLaborUnits = 'BASE_LABOR_UNITS',
+  BaseResourcesPerCycle = 'BASE_RESOURCES_PER_CYCLE'
+}
 
 export type LaborConfigWhereInput = {
   base_food_per_cycle?: InputMaybe<Scalars['String']['input']>;
@@ -502,6 +625,15 @@ export type LaborCostAmountEdge = {
   node?: Maybe<LaborCostAmount>;
 };
 
+export type LaborCostAmountOrder = {
+  direction: Direction;
+  field: LaborCostAmountOrderOrderField;
+};
+
+export enum LaborCostAmountOrderOrderField {
+  Value = 'VALUE'
+}
+
 export type LaborCostAmountWhereInput = {
   value?: InputMaybe<Scalars['String']['input']>;
   valueGT?: InputMaybe<Scalars['String']['input']>;
@@ -530,6 +662,16 @@ export type LaborCostResourcesEdge = {
   node?: Maybe<LaborCostResources>;
 };
 
+export type LaborCostResourcesOrder = {
+  direction: Direction;
+  field: LaborCostResourcesOrderOrderField;
+};
+
+export enum LaborCostResourcesOrderOrderField {
+  ResourceTypesCount = 'RESOURCE_TYPES_COUNT',
+  ResourceTypesPacked = 'RESOURCE_TYPES_PACKED'
+}
+
 export type LaborCostResourcesWhereInput = {
   resource_types_count?: InputMaybe<Scalars['Int']['input']>;
   resource_types_countGT?: InputMaybe<Scalars['Int']['input']>;
@@ -550,6 +692,17 @@ export type LaborEdge = {
   cursor: Scalars['Cursor']['output'];
   node?: Maybe<Labor>;
 };
+
+export type LaborOrder = {
+  direction: Direction;
+  field: LaborOrderOrderField;
+};
+
+export enum LaborOrderOrderField {
+  Balance = 'BALANCE',
+  LastHarvest = 'LAST_HARVEST',
+  Multiplier = 'MULTIPLIER'
+}
 
 export type LaborWhereInput = {
   balance?: InputMaybe<Scalars['Int']['input']>;
@@ -590,6 +743,15 @@ export type MetaDataEdge = {
   node?: Maybe<MetaData>;
 };
 
+export type MetaDataOrder = {
+  direction: Direction;
+  field: MetaDataOrderOrderField;
+};
+
+export enum MetaDataOrderOrderField {
+  EntityType = 'ENTITY_TYPE'
+}
+
 export type MetaDataWhereInput = {
   entity_type?: InputMaybe<Scalars['String']['input']>;
   entity_typeGT?: InputMaybe<Scalars['String']['input']>;
@@ -617,6 +779,16 @@ export type MovableEdge = {
   cursor: Scalars['Cursor']['output'];
   node?: Maybe<Movable>;
 };
+
+export type MovableOrder = {
+  direction: Direction;
+  field: MovableOrderOrderField;
+};
+
+export enum MovableOrderOrderField {
+  Blocked = 'BLOCKED',
+  SecPerKm = 'SEC_PER_KM'
+}
 
 export type MovableWhereInput = {
   blocked?: InputMaybe<Scalars['Int']['input']>;
@@ -651,6 +823,15 @@ export type OrderIdEdge = {
   node?: Maybe<OrderId>;
 };
 
+export type OrderIdOrder = {
+  direction: Direction;
+  field: OrderIdOrderOrderField;
+};
+
+export enum OrderIdOrderOrderField {
+  Id = 'ID'
+}
+
 export type OrderIdWhereInput = {
   id?: InputMaybe<Scalars['String']['input']>;
   idGT?: InputMaybe<Scalars['String']['input']>;
@@ -678,6 +859,16 @@ export type OrderResourceEdge = {
   cursor: Scalars['Cursor']['output'];
   node?: Maybe<OrderResource>;
 };
+
+export type OrderResourceOrder = {
+  direction: Direction;
+  field: OrderResourceOrderOrderField;
+};
+
+export enum OrderResourceOrderOrderField {
+  Balance = 'BALANCE',
+  ResourceType = 'RESOURCE_TYPE'
+}
 
 export type OrderResourceWhereInput = {
   balance?: InputMaybe<Scalars['String']['input']>;
@@ -712,6 +903,15 @@ export type OwnerEdge = {
   node?: Maybe<Owner>;
 };
 
+export type OwnerOrder = {
+  direction: Direction;
+  field: OwnerOrderOrderField;
+};
+
+export enum OwnerOrderOrderField {
+  Address = 'ADDRESS'
+}
+
 export type OwnerWhereInput = {
   address?: InputMaybe<Scalars['String']['input']>;
   addressGT?: InputMaybe<Scalars['String']['input']>;
@@ -739,6 +939,16 @@ export type PositionEdge = {
   cursor: Scalars['Cursor']['output'];
   node?: Maybe<Position>;
 };
+
+export type PositionOrder = {
+  direction: Direction;
+  field: PositionOrderOrderField;
+};
+
+export enum PositionOrderOrderField {
+  X = 'X',
+  Y = 'Y'
+}
 
 export type PositionWhereInput = {
   x?: InputMaybe<Scalars['Int']['input']>;
@@ -773,6 +983,15 @@ export type QuantityEdge = {
   node?: Maybe<Quantity>;
 };
 
+export type QuantityOrder = {
+  direction: Direction;
+  field: QuantityOrderOrderField;
+};
+
+export enum QuantityOrderOrderField {
+  Value = 'VALUE'
+}
+
 export type QuantityTracker = {
   __typename?: 'QuantityTracker';
   count?: Maybe<Scalars['u128']['output']>;
@@ -790,6 +1009,15 @@ export type QuantityTrackerEdge = {
   cursor: Scalars['Cursor']['output'];
   node?: Maybe<QuantityTracker>;
 };
+
+export type QuantityTrackerOrder = {
+  direction: Direction;
+  field: QuantityTrackerOrderOrderField;
+};
+
+export enum QuantityTrackerOrderOrderField {
+  Count = 'COUNT'
+}
 
 export type QuantityTrackerWhereInput = {
   count?: InputMaybe<Scalars['String']['input']>;
@@ -859,6 +1087,7 @@ export type QueryAgeComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<AgeOrder>;
   where?: InputMaybe<AgeWhereInput>;
 };
 
@@ -868,6 +1097,7 @@ export type QueryArrivaltimeComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<ArrivalTimeOrder>;
   where?: InputMaybe<ArrivalTimeWhereInput>;
 };
 
@@ -877,6 +1107,7 @@ export type QueryBuildingconfigComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<BuildingConfigOrder>;
   where?: InputMaybe<BuildingConfigWhereInput>;
 };
 
@@ -886,6 +1117,7 @@ export type QueryBuildingcostComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<BuildingCostOrder>;
   where?: InputMaybe<BuildingCostWhereInput>;
 };
 
@@ -895,6 +1127,7 @@ export type QueryBuildingtypeconfigComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<BuildingTypeConfigOrder>;
   where?: InputMaybe<BuildingTypeConfigWhereInput>;
 };
 
@@ -904,6 +1137,7 @@ export type QueryCapacityComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<CapacityOrder>;
   where?: InputMaybe<CapacityWhereInput>;
 };
 
@@ -913,6 +1147,7 @@ export type QueryCapacityconfigComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<CapacityConfigOrder>;
   where?: InputMaybe<CapacityConfigWhereInput>;
 };
 
@@ -922,6 +1157,7 @@ export type QueryCaravanComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<CaravanOrder>;
   where?: InputMaybe<CaravanWhereInput>;
 };
 
@@ -931,6 +1167,7 @@ export type QueryCaravanmembersComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<CaravanMembersOrder>;
   where?: InputMaybe<CaravanMembersWhereInput>;
 };
 
@@ -959,6 +1196,7 @@ export type QueryForeignkeyComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<ForeignKeyOrder>;
   where?: InputMaybe<ForeignKeyWhereInput>;
 };
 
@@ -968,6 +1206,7 @@ export type QueryFungibleentitiesComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<FungibleEntitiesOrder>;
   where?: InputMaybe<FungibleEntitiesWhereInput>;
 };
 
@@ -977,6 +1216,7 @@ export type QueryLaborComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<LaborOrder>;
   where?: InputMaybe<LaborWhereInput>;
 };
 
@@ -986,6 +1226,7 @@ export type QueryLaborconfigComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<LaborConfigOrder>;
   where?: InputMaybe<LaborConfigWhereInput>;
 };
 
@@ -995,6 +1236,7 @@ export type QueryLaborcostamountComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<LaborCostAmountOrder>;
   where?: InputMaybe<LaborCostAmountWhereInput>;
 };
 
@@ -1004,6 +1246,7 @@ export type QueryLaborcostresourcesComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<LaborCostResourcesOrder>;
   where?: InputMaybe<LaborCostResourcesWhereInput>;
 };
 
@@ -1013,6 +1256,7 @@ export type QueryMetadataComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<MetaDataOrder>;
   where?: InputMaybe<MetaDataWhereInput>;
 };
 
@@ -1022,6 +1266,7 @@ export type QueryMovableComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<MovableOrder>;
   where?: InputMaybe<MovableWhereInput>;
 };
 
@@ -1031,6 +1276,7 @@ export type QueryOrderidComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<OrderIdOrder>;
   where?: InputMaybe<OrderIdWhereInput>;
 };
 
@@ -1040,6 +1286,7 @@ export type QueryOrderresourceComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<OrderResourceOrder>;
   where?: InputMaybe<OrderResourceWhereInput>;
 };
 
@@ -1049,6 +1296,7 @@ export type QueryOwnerComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<OwnerOrder>;
   where?: InputMaybe<OwnerWhereInput>;
 };
 
@@ -1058,6 +1306,7 @@ export type QueryPositionComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<PositionOrder>;
   where?: InputMaybe<PositionWhereInput>;
 };
 
@@ -1067,6 +1316,7 @@ export type QueryQuantityComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<QuantityOrder>;
   where?: InputMaybe<QuantityWhereInput>;
 };
 
@@ -1076,6 +1326,7 @@ export type QueryQuantitytrackerComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<QuantityTrackerOrder>;
   where?: InputMaybe<QuantityTrackerWhereInput>;
 };
 
@@ -1085,6 +1336,7 @@ export type QueryRealmComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<RealmOrder>;
   where?: InputMaybe<RealmWhereInput>;
 };
 
@@ -1094,6 +1346,7 @@ export type QueryResourceComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<ResourceOrder>;
   where?: InputMaybe<ResourceWhereInput>;
 };
 
@@ -1103,6 +1356,7 @@ export type QuerySpeedconfigComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<SpeedConfigOrder>;
   where?: InputMaybe<SpeedConfigWhereInput>;
 };
 
@@ -1112,6 +1366,7 @@ export type QueryStatusComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<StatusOrder>;
   where?: InputMaybe<StatusWhereInput>;
 };
 
@@ -1131,6 +1386,7 @@ export type QueryTradeComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<TradeOrder>;
   where?: InputMaybe<TradeWhereInput>;
 };
 
@@ -1140,6 +1396,7 @@ export type QueryTravelconfigComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<TravelConfigOrder>;
   where?: InputMaybe<TravelConfigWhereInput>;
 };
 
@@ -1149,6 +1406,7 @@ export type QueryVaultComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<VaultOrder>;
   where?: InputMaybe<VaultWhereInput>;
 };
 
@@ -1158,6 +1416,7 @@ export type QueryWeightconfigComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<WeightConfigOrder>;
   where?: InputMaybe<WeightConfigWhereInput>;
 };
 
@@ -1167,6 +1426,7 @@ export type QueryWorldconfigComponentsArgs = {
   before?: InputMaybe<Scalars['Cursor']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+  order?: InputMaybe<WorldConfigOrder>;
   where?: InputMaybe<WorldConfigWhereInput>;
 };
 
@@ -1195,6 +1455,23 @@ export type RealmEdge = {
   cursor: Scalars['Cursor']['output'];
   node?: Maybe<Realm>;
 };
+
+export type RealmOrder = {
+  direction: Direction;
+  field: RealmOrderOrderField;
+};
+
+export enum RealmOrderOrderField {
+  Cities = 'CITIES',
+  Harbors = 'HARBORS',
+  Order = 'ORDER',
+  RealmId = 'REALM_ID',
+  Regions = 'REGIONS',
+  ResourceTypesCount = 'RESOURCE_TYPES_COUNT',
+  ResourceTypesPacked = 'RESOURCE_TYPES_PACKED',
+  Rivers = 'RIVERS',
+  Wonder = 'WONDER'
+}
 
 export type RealmWhereInput = {
   cities?: InputMaybe<Scalars['Int']['input']>;
@@ -1271,6 +1548,15 @@ export type ResourceEdge = {
   node?: Maybe<Resource>;
 };
 
+export type ResourceOrder = {
+  direction: Direction;
+  field: ResourceOrderOrderField;
+};
+
+export enum ResourceOrderOrderField {
+  Balance = 'BALANCE'
+}
+
 export type ResourceWhereInput = {
   balance?: InputMaybe<Scalars['String']['input']>;
   balanceGT?: InputMaybe<Scalars['String']['input']>;
@@ -1298,6 +1584,16 @@ export type SpeedConfigEdge = {
   cursor: Scalars['Cursor']['output'];
   node?: Maybe<SpeedConfig>;
 };
+
+export type SpeedConfigOrder = {
+  direction: Direction;
+  field: SpeedConfigOrderOrderField;
+};
+
+export enum SpeedConfigOrderOrderField {
+  EntityType = 'ENTITY_TYPE',
+  SecPerKm = 'SEC_PER_KM'
+}
 
 export type SpeedConfigWhereInput = {
   entity_type?: InputMaybe<Scalars['String']['input']>;
@@ -1331,6 +1627,15 @@ export type StatusEdge = {
   cursor: Scalars['Cursor']['output'];
   node?: Maybe<Status>;
 };
+
+export type StatusOrder = {
+  direction: Direction;
+  field: StatusOrderOrderField;
+};
+
+export enum StatusOrderOrderField {
+  Value = 'VALUE'
+}
 
 export type StatusWhereInput = {
   value?: InputMaybe<Scalars['String']['input']>;
@@ -1410,6 +1715,22 @@ export type TradeEdge = {
   node?: Maybe<Trade>;
 };
 
+export type TradeOrder = {
+  direction: Direction;
+  field: TradeOrderOrderField;
+};
+
+export enum TradeOrderOrderField {
+  ClaimedByMaker = 'CLAIMED_BY_MAKER',
+  ClaimedByTaker = 'CLAIMED_BY_TAKER',
+  ExpiresAt = 'EXPIRES_AT',
+  MakerId = 'MAKER_ID',
+  MakerOrderId = 'MAKER_ORDER_ID',
+  TakerId = 'TAKER_ID',
+  TakerNeedsCaravan = 'TAKER_NEEDS_CARAVAN',
+  TakerOrderId = 'TAKER_ORDER_ID'
+}
+
 export type TradeWhereInput = {
   claimed_by_maker?: InputMaybe<Scalars['Int']['input']>;
   claimed_by_makerGT?: InputMaybe<Scalars['Int']['input']>;
@@ -1479,6 +1800,15 @@ export type TravelConfigEdge = {
   node?: Maybe<TravelConfig>;
 };
 
+export type TravelConfigOrder = {
+  direction: Direction;
+  field: TravelConfigOrderOrderField;
+};
+
+export enum TravelConfigOrderOrderField {
+  FreeTransportPerCity = 'FREE_TRANSPORT_PER_CITY'
+}
+
 export type TravelConfigWhereInput = {
   free_transport_per_city?: InputMaybe<Scalars['String']['input']>;
   free_transport_per_cityGT?: InputMaybe<Scalars['String']['input']>;
@@ -1505,6 +1835,15 @@ export type VaultEdge = {
   cursor: Scalars['Cursor']['output'];
   node?: Maybe<Vault>;
 };
+
+export type VaultOrder = {
+  direction: Direction;
+  field: VaultOrderOrderField;
+};
+
+export enum VaultOrderOrderField {
+  Balance = 'BALANCE'
+}
 
 export type VaultWhereInput = {
   balance?: InputMaybe<Scalars['String']['input']>;
@@ -1533,6 +1872,16 @@ export type WeightConfigEdge = {
   cursor: Scalars['Cursor']['output'];
   node?: Maybe<WeightConfig>;
 };
+
+export type WeightConfigOrder = {
+  direction: Direction;
+  field: WeightConfigOrderOrderField;
+};
+
+export enum WeightConfigOrderOrderField {
+  EntityType = 'ENTITY_TYPE',
+  WeightGram = 'WEIGHT_GRAM'
+}
 
 export type WeightConfigWhereInput = {
   entity_type?: InputMaybe<Scalars['String']['input']>;
@@ -1566,6 +1915,15 @@ export type WorldConfigEdge = {
   cursor: Scalars['Cursor']['output'];
   node?: Maybe<WorldConfig>;
 };
+
+export type WorldConfigOrder = {
+  direction: Direction;
+  field: WorldConfigOrderOrderField;
+};
+
+export enum WorldConfigOrderOrderField {
+  RealmL2Contract = 'REALM_L2_CONTRACT'
+}
 
 export type WorldConfigWhereInput = {
   realm_l2_contract?: InputMaybe<Scalars['String']['input']>;
@@ -1644,7 +2002,7 @@ export type GetTradeResourcesQueryVariables = Exact<{
 }>;
 
 
-export type GetTradeResourcesQuery = { __typename?: 'Query', makerFungibleEntities?: { __typename?: 'EntityConnection', edges?: Array<{ __typename?: 'EntityEdge', node?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities', key?: any | null, count?: any | null } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'OrderResource' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null } | null, takerFungibleEntities?: { __typename?: 'EntityConnection', edges?: Array<{ __typename?: 'EntityEdge', node?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities', key?: any | null, count?: any | null } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'OrderResource' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null } | null, resourcesGive?: { __typename?: 'EntityConnection', edges?: Array<{ __typename?: 'EntityEdge', node?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'OrderResource', resource_type?: any | null, balance?: any | null } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null } | null, resourcesGet?: { __typename?: 'EntityConnection', edges?: Array<{ __typename?: 'EntityEdge', node?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'OrderResource', resource_type?: any | null, balance?: any | null } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null } | null };
+export type GetTradeResourcesQuery = { __typename?: 'Query', resourcesGive?: { __typename?: 'EntityConnection', edges?: Array<{ __typename?: 'EntityEdge', node?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities', key?: any | null, count?: any | null } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'OrderResource', resource_type?: any | null, balance?: any | null } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null } | null, resourcesGet?: { __typename?: 'EntityConnection', edges?: Array<{ __typename?: 'EntityEdge', node?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities', key?: any | null, count?: any | null } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'OrderResource', resource_type?: any | null, balance?: any | null } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null } | null };
 
 export type GetCaravanInfoQueryVariables = Exact<{
   caravanId: Scalars['String']['input'];
@@ -1653,7 +2011,7 @@ export type GetCaravanInfoQueryVariables = Exact<{
 }>;
 
 
-export type GetCaravanInfoQuery = { __typename?: 'Query', caravan?: { __typename?: 'EntityConnection', edges?: Array<{ __typename?: 'EntityEdge', node?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime', arrives_at?: any | null } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity', weight_gram?: any | null } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable', blocked?: any | null, sec_per_km?: any | null } | { __typename: 'OrderId' } | { __typename: 'OrderResource' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null } | null, destination?: { __typename?: 'EntityConnection', edges?: Array<{ __typename?: 'EntityEdge', node?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'OrderResource' } | { __typename: 'Owner' } | { __typename: 'Position', x?: any | null, y?: any | null } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null } | null, resourcesGive?: { __typename?: 'EntityConnection', edges?: Array<{ __typename?: 'EntityEdge', node?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'OrderResource', resource_type?: any | null, balance?: any | null } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null } | null, resourcesGet?: { __typename?: 'EntityConnection', edges?: Array<{ __typename?: 'EntityEdge', node?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'OrderResource', resource_type?: any | null, balance?: any | null } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null } | null };
+export type GetCaravanInfoQuery = { __typename?: 'Query', caravan?: { __typename?: 'EntityConnection', edges?: Array<{ __typename?: 'EntityEdge', node?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime', arrives_at?: any | null } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity', weight_gram?: any | null } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable', blocked?: any | null, sec_per_km?: any | null } | { __typename: 'OrderId' } | { __typename: 'OrderResource' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null } | null, destination?: { __typename?: 'EntityConnection', edges?: Array<{ __typename?: 'EntityEdge', node?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'OrderResource' } | { __typename: 'Owner' } | { __typename: 'Position', x?: any | null, y?: any | null } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null } | null, resourcesGive?: { __typename?: 'EntityConnection', edges?: Array<{ __typename?: 'EntityEdge', node?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities', key?: any | null, count?: any | null } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'OrderResource', resource_type?: any | null, balance?: any | null } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null } | null, resourcesGet?: { __typename?: 'EntityConnection', edges?: Array<{ __typename?: 'EntityEdge', node?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities', key?: any | null, count?: any | null } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'OrderResource', resource_type?: any | null, balance?: any | null } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null } | null };
 
 export type GetRealmsCaravansQueryVariables = Exact<{
   x: Scalars['Int']['input'];
@@ -1892,34 +2250,6 @@ export const GetMyOffersDocument = gql`
     ${TradeFragmentFragmentDoc}`;
 export const GetTradeResourcesDocument = gql`
     query getTradeResources($makerOrderId: String!, $takerOrderId: String!) {
-  makerFungibleEntities: entities(keys: [$makerOrderId]) {
-    edges {
-      node {
-        keys
-        components {
-          __typename
-          ... on FungibleEntities {
-            key
-            count
-          }
-        }
-      }
-    }
-  }
-  takerFungibleEntities: entities(keys: [$takerOrderId]) {
-    edges {
-      node {
-        keys
-        components {
-          __typename
-          ... on FungibleEntities {
-            key
-            count
-          }
-        }
-      }
-    }
-  }
   resourcesGive: entities(keys: [$makerOrderId]) {
     edges {
       node {
@@ -1929,6 +2259,10 @@ export const GetTradeResourcesDocument = gql`
           ... on OrderResource {
             resource_type
             balance
+          }
+          ... on FungibleEntities {
+            key
+            count
           }
         }
       }
@@ -1943,6 +2277,10 @@ export const GetTradeResourcesDocument = gql`
           ... on OrderResource {
             resource_type
             balance
+          }
+          ... on FungibleEntities {
+            key
+            count
           }
         }
       }
@@ -1972,7 +2310,7 @@ export const GetCaravanInfoDocument = gql`
       }
     }
   }
-  destination: entities(keys: [$counterpartyOrderId]) {
+  destination: entities(keys: [$orderId]) {
     edges {
       node {
         keys
@@ -1996,6 +2334,10 @@ export const GetCaravanInfoDocument = gql`
             resource_type
             balance
           }
+          ... on FungibleEntities {
+            key
+            count
+          }
         }
       }
     }
@@ -2009,6 +2351,10 @@ export const GetCaravanInfoDocument = gql`
           ... on OrderResource {
             resource_type
             balance
+          }
+          ... on FungibleEntities {
+            key
+            count
           }
         }
       }

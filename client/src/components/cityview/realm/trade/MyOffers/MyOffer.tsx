@@ -29,8 +29,10 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
   }, [myOffer]);
 
   const {
-    setup: { systemCalls: { change_order_status },
-      optimisticSystemCalls: { optimisticCancelOffer } },
+    setup: {
+      systemCalls: { change_order_status },
+      optimisticSystemCalls: { optimisticCancelOffer },
+    },
     account: { account },
   } = useDojo();
 
@@ -43,10 +45,10 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
 
   const { getTradeResources } = useTrade();
 
-  const cancelOffer = async () => {
+  const onCancel = async () => {
     // status 2 = cancel
     setIsLoading(true);
-    change_order_status({
+    optimisticCancelOffer(change_order_status)({
       signer: account,
       realm_id: realmEntityId,
       trade_id: myOffer.tradeId,
@@ -129,7 +131,7 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
         </div>
         {!isLoading && (
           <Button
-            onClick={optimisticCancelOffer(myOffer.tradeId, cancelOffer)}
+            onClick={onCancel}
             variant={"danger"}
             className="ml-auto p-2 !h-4 text-xxs !rounded-md"
           >{`Cancel`}</Button>
@@ -137,11 +139,11 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
         {isLoading && (
           <Button
             isLoading={true}
-            onClick={() => { }}
+            onClick={() => {}}
             variant="danger"
             className="ml-auto p-2 !h-4 text-xxs !rounded-md"
           >
-            { }
+            {}
           </Button>
         )}
       </div>

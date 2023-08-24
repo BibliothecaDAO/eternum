@@ -5,7 +5,6 @@ import {
   Owner,
   Position,
   Realm,
-  Resource,
   getSdk,
 } from "../../generated/graphql";
 import { useDojo } from "../../DojoContext";
@@ -335,10 +334,14 @@ export const useSyncCaravanInfo = (
         data?.resourcesGet?.edges?.forEach((edge) => {
           edge?.node &&
             setComponentFromEntity(edge.node, "OrderResource", components);
+          edge?.node &&
+            setComponentFromEntity(edge.node, "FungibleEntities", components);
         });
         data?.resourcesGive?.edges?.forEach((edge) => {
           edge?.node &&
             setComponentFromEntity(edge.node, "OrderResource", components);
+          edge?.node &&
+            setComponentFromEntity(edge.node, "FungibleEntities", components);
         });
       } catch (error) {}
     };
@@ -462,19 +465,15 @@ export const useSyncTradeResources = ({
           makerOrderId,
           takerOrderId,
         });
-        data.makerFungibleEntities?.edges?.forEach((edge) => {
-          edge?.node &&
-            setComponentFromEntity(edge.node, "FungibleEntities", components);
-        });
-        data.takerFungibleEntities?.edges?.map((edge) => {
-          edge?.node &&
-            setComponentFromEntity(edge.node, "FungibleEntities", components);
-        });
         data.resourcesGet?.edges?.map((edge) => {
+          edge?.node &&
+            setComponentFromEntity(edge.node, "FungibleEntities", components);
           edge?.node &&
             setComponentFromEntity(edge.node, "OrderResource", components);
         });
         data.resourcesGive?.edges?.map((edge) => {
+          edge?.node &&
+            setComponentFromEntity(edge.node, "FungibleEntities", components);
           edge?.node &&
             setComponentFromEntity(edge.node, "OrderResource", components);
         });

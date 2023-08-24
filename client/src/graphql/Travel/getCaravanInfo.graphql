@@ -23,7 +23,7 @@ query getCaravanInfo(
       }
     }
   }
-  destination: entities(keys: [$counterpartyOrderId]) {
+  destination: entities(keys: [$orderId]) {
     edges {
       node {
         keys
@@ -47,6 +47,10 @@ query getCaravanInfo(
             resource_type
             balance
           }
+          ... on FungibleEntities {
+            key
+            count
+          }
         }
       }
     }
@@ -60,6 +64,10 @@ query getCaravanInfo(
           ... on OrderResource {
             resource_type
             balance
+          }
+          ... on FungibleEntities {
+            key
+            count
           }
         }
       }
