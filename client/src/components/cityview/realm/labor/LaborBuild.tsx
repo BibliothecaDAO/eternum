@@ -36,8 +36,10 @@ export const LaborBuildPopup = ({
   onClose,
 }: LaborBuildPopupProps) => {
   const {
-    setup: { systemCalls: { build_labor } },
-    account: { account }
+    setup: {
+      systemCalls: { build_labor },
+    },
+    account: { account },
   } = useDojo();
 
   const [canBuild, setCanBuild] = useState(true);
@@ -239,8 +241,9 @@ export const LaborBuildPopup = ({
               {resourceId === 254 && (
                 <div className="flex items-center">
                   <Farms className="mr-1" />
-                  <span className="mr-1 font-bold">{`${multiplier}/${realm?.rivers || 0
-                    }`}</span>{" "}
+                  <span className="mr-1 font-bold">{`${multiplier}/${
+                    realm?.rivers || 0
+                  }`}</span>{" "}
                   Farms
                 </div>
               )}
@@ -248,8 +251,9 @@ export const LaborBuildPopup = ({
                 <div className="flex items-center">
                   {/* // DISCUSS: can only be 0, because that is when you can build */}
                   <FishingVillages className="mr-1" />
-                  <span className="mr-1 font-bold">{`${multiplier}/${realm?.harbors || 0
-                    }`}</span>{" "}
+                  <span className="mr-1 font-bold">{`${multiplier}/${
+                    realm?.harbors || 0
+                  }`}</span>{" "}
                   Fishing Villages
                 </div>
               )}
@@ -264,10 +268,11 @@ export const LaborBuildPopup = ({
                         </div> */}
             {laborConfig && (
               <div className="flex items-center">
-                {`+${isFood
-                  ? (laborConfig.base_food_per_cycle * multiplier) / 2
-                  : ""
-                  }${isFood ? "" : laborConfig.base_resources_per_cycle / 2}`}
+                {`+${
+                  isFood
+                    ? (laborConfig.base_food_per_cycle * multiplier) / 2
+                    : ""
+                }${isFood ? "" : laborConfig.base_resources_per_cycle / 2}`}
                 <ResourceIcon
                   containerClassName="mx-0.5"
                   className="!w-[12px]"
@@ -358,15 +363,22 @@ export const LaborBuildPopup = ({
               </div>
             </div>
           )}
-          <Button
-            className="!px-[6px] !py-[2px] text-xxs"
-            disabled={!canBuild}
-            onClick={() => handleBuild()}
-            variant="outline"
-            withoutSound
-          >
-            {isFood ? `Build` : `Buy Tools`}
-          </Button>
+          <div className="flex flex-col items-center justify-center">
+            <Button
+              className="!px-[6px] !py-[2px] text-xxs ml-auto"
+              disabled={!canBuild}
+              onClick={() => handleBuild()}
+              variant="outline"
+              withoutSound
+            >
+              {isFood ? `Build` : `Buy Tools`}
+            </Button>
+            {!canBuild && (
+              <div className="text-xxs text-order-giants/70">
+                Insufficient resources
+              </div>
+            )}
+          </div>
         </div>
       </SecondaryPopup.Body>
     </SecondaryPopup>
