@@ -3,7 +3,6 @@ import {
   HasValue,
   NotValue,
   getComponentValue,
-  runQuery,
 } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import { Resource } from "../../types";
@@ -11,9 +10,10 @@ import {
   MarketInterface,
   ResourceInterface,
 } from "../graphql/useGraphQLQueries";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys } from "../../utils/utils";
+import { useEntityQuery } from "@dojoengine/react";
 
 export function useTrade() {
   const {
@@ -49,6 +49,7 @@ export function useTrade() {
   return { getTradeResources };
 }
 
+// TODO: sorting here
 export function useGetMyOffers() {
   const {
     setup: {
@@ -59,35 +60,11 @@ export function useGetMyOffers() {
   const { realmEntityId } = useRealmStore();
 
   const [myOffers, setMyOffers] = useState<MarketInterface[]>([]);
-  const [entityIds, setEntityIds] = useState<EntityIndex[]>([]);
-  const previousEntityIds = useRef(entityIds);
 
-  useEffect(() => {
-    previousEntityIds.current = entityIds;
-  });
-
-  useEffect(() => {
-    const getEntities = () => {
-      // get trades that have status 0 (open)
-      const entityIds = Array.from(
-        runQuery([
-          HasValue(Status, { value: 0 }),
-          HasValue(Trade, { maker_id: realmEntityId }),
-        ]),
-      );
-      entityIds.sort((a, b) => b - a);
-      if (
-        JSON.stringify(previousEntityIds.current) !== JSON.stringify(entityIds)
-      ) {
-        setEntityIds(entityIds);
-      }
-    };
-    getEntities();
-    const intervalId = setInterval(getEntities, 1000); // run every second
-    return () => {
-      clearInterval(intervalId); // Clear interval on component unmount
-    };
-  }, [realmEntityId]);
+  const entityIds = useEntityQuery([
+    HasValue(Status, { value: 0 }),
+    HasValue(Trade, { maker_id: realmEntityId }),
+  ]);
 
   useMemo(() => {
     const trades = entityIds
@@ -103,7 +80,9 @@ export function useGetMyOffers() {
           } as MarketInterface;
         }
       })
-      .filter(Boolean) as MarketInterface[];
+      .filter(Boolean)
+      // TODO: change the sorting here
+      .sort((a, b) => b!.tradeId - a!.tradeId) as MarketInterface[];
     setMyOffers(trades);
     // only recompute when different number of orders
   }, [entityIds]);
@@ -123,35 +102,11 @@ export function useGetMarket() {
   const { realmEntityId } = useRealmStore();
 
   const [market, setMarket] = useState<MarketInterface[]>([]);
-  const [entityIds, setEntityIds] = useState<EntityIndex[]>([]);
 
-  const previousEntityIds = useRef(entityIds);
-
-  useEffect(() => {
-    previousEntityIds.current = entityIds;
-  });
-
-  useEffect(() => {
-    const getEntities = () => {
-      const entityIds = Array.from(
-        runQuery([
-          HasValue(Status, { value: 0 }),
-          NotValue(Trade, { maker_id: realmEntityId }),
-        ]),
-      );
-      entityIds.sort((a, b) => b - a);
-      if (
-        JSON.stringify(previousEntityIds.current) !== JSON.stringify(entityIds)
-      ) {
-        setEntityIds(entityIds);
-      }
-    };
-    getEntities();
-    const intervalId = setInterval(getEntities, 1000); // Fetch every second
-    return () => {
-      clearInterval(intervalId); // Clear interval on component unmount
-    };
-  }, [realmEntityId]);
+  const entityIds = useEntityQuery([
+    HasValue(Status, { value: 0 }),
+    NotValue(Trade, { maker_id: realmEntityId }),
+  ]);
 
   useMemo(() => {
     const trades = entityIds
@@ -167,7 +122,9 @@ export function useGetMarket() {
           } as MarketInterface;
         }
       })
-      .filter(Boolean) as MarketInterface[];
+      .filter(Boolean)
+      // TODO: change the sorting here
+      .sort((a, b) => b!.tradeId - a!.tradeId) as MarketInterface[];
     setMarket(trades);
     // only recompute when different number of entities
   }, [entityIds]);

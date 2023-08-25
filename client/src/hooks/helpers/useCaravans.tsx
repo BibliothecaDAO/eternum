@@ -1,17 +1,12 @@
-import {
-  EntityIndex,
-  Has,
-  HasValue,
-  getComponentValue,
-  runQuery,
-} from "@latticexyz/recs";
+import { Has, HasValue, getComponentValue } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import {
   CaravanInfoInterface,
   CaravanInterface,
 } from "../graphql/useGraphQLQueries";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { getEntityIdFromKeys } from "../../utils/utils";
+import { useEntityQuery } from "@dojoengine/react";
 
 export function useCaravan() {
   const {
@@ -71,21 +66,11 @@ export function useGetRealmCaravans(x: number, y: number) {
   } = useDojo();
 
   const [realmCaravans, setRealmCaravans] = useState<CaravanInterface[]>([]);
-  const [entityIds, setEntityIds] = useState<EntityIndex[]>([]);
 
-  useEffect(() => {
-    const getEntities = () => {
-      const entityIds = Array.from(
-        runQuery([HasValue(Position, { x, y }), Has(CaravanMembers)]),
-      );
-      setEntityIds(entityIds);
-    };
-    getEntities();
-    const intervalId = setInterval(getEntities, 1000); // Fetch every second
-    return () => {
-      clearInterval(intervalId); // Clear interval on component unmount
-    };
-  }, [x, y]);
+  const entityIds = useEntityQuery([
+    HasValue(Position, { x, y }),
+    Has(CaravanMembers),
+  ]);
 
   useMemo(() => {
     const caravans = entityIds
@@ -104,7 +89,8 @@ export function useGetRealmCaravans(x: number, y: number) {
           } as CaravanInterface;
         }
       })
-      .filter(Boolean) as CaravanInterface[];
+      .filter(Boolean)
+      .sort((a, b) => b!.caravanId - a!.caravanId) as CaravanInterface[];
     // DISCUSS: can add sorting logic here
     setRealmCaravans(caravans);
     // only recompute when different number of orders
