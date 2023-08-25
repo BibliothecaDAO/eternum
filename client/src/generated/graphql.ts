@@ -2059,7 +2059,7 @@ export const GetRealmLaborDocument = gql`
     `;
 export const GetRealmResourcesDocument = gql`
     query getRealmResources($realmEntityId: String!) {
-  entities(keys: [$realmEntityId]) {
+  entities(keys: [$realmEntityId], first: 50) {
     edges {
       node {
         keys
@@ -2247,7 +2247,7 @@ export const GetIncomingOrdersDocument = gql`
     ${TradeFragmentFragmentDoc}`;
 export const GetMarketDocument = gql`
     query getMarket {
-  tradeComponents(where: {claimed_by_maker: 0, claimed_by_taker: 0}) {
+  tradeComponents(where: {claimed_by_maker: 0, claimed_by_taker: 0}, last: 30) {
     edges {
       node {
         entity {
@@ -2269,6 +2269,7 @@ export const GetMyOffersDocument = gql`
     query getMyOffers($makerId: String!) {
   tradeComponents(
     where: {maker_id: $makerId, claimed_by_maker: 0, claimed_by_taker: 0}
+    last: 30
   ) {
     edges {
       node {
@@ -2289,7 +2290,7 @@ export const GetMyOffersDocument = gql`
     ${TradeFragmentFragmentDoc}`;
 export const GetTradeResourcesDocument = gql`
     query getTradeResources($makerOrderId: String!, $takerOrderId: String!) {
-  resourcesGive: entities(keys: [$makerOrderId]) {
+  resourcesGive: entities(keys: [$makerOrderId], last: 100) {
     edges {
       node {
         keys
@@ -2307,7 +2308,7 @@ export const GetTradeResourcesDocument = gql`
       }
     }
   }
-  resourcesGet: entities(keys: [$takerOrderId]) {
+  resourcesGet: entities(keys: [$takerOrderId], last: 100) {
     edges {
       node {
         keys
