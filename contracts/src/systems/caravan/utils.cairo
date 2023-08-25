@@ -53,29 +53,6 @@ mod GetAverageSpeed {
 }
 
 
-// GetQuantity: either return 1 if no quantity component or the value of the 
-// quantity component.
-#[system]
-mod GetQuantity {
-    use eternum::alias::ID;
-    use eternum::components::quantity::Quantity;
-
-    use traits::Into;
-
-    use dojo::world::Context;
-
-    fn execute(ctx: Context, entity_id: u128) -> u128 {
-        // try to retrieve the Quantity component of the entity
-        let maybe_quantity = get!(ctx.world, entity_id, Quantity);
-
-        if maybe_quantity.value != 0 {
-            maybe_quantity.value
-        } else {
-            0
-        }
-    }
-}
-
 
 mod tests {
     use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
@@ -169,5 +146,3 @@ mod tests {
         assert(average_speed == 10, 'average speed not correct');
     }
 }
-
-

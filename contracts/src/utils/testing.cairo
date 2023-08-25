@@ -48,7 +48,7 @@ use eternum::systems::config::speed_config::SetSpeedConfig;
 use eternum::systems::config::travel_config::SetTravelConfig;
 use eternum::systems::config::capacity_config::SetCapacityConfig;
 use eternum::systems::config::world_config::SetWorldConfig;
-use eternum::systems::caravan::utils::{GetAverageSpeed, GetQuantity};
+use eternum::systems::caravan::utils::GetAverageSpeed;
 use eternum::systems::order::make_fungible_order::MakeFungibleOrder;
 use eternum::systems::order::take_fungible_order::TakeFungibleOrder;
 use eternum::systems::order::attach_caravan::AttachCaravan;
@@ -120,7 +120,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         SetCapacityConfig::TEST_CLASS_HASH,
         SetWorldConfig::TEST_CLASS_HASH,
         CreateRealm::TEST_CLASS_HASH,
-        GetQuantity::TEST_CLASS_HASH,
         MakeFungibleOrder::TEST_CLASS_HASH,
         TakeFungibleOrder::TEST_CLASS_HASH,
         AttachCaravan::TEST_CLASS_HASH,
