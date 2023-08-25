@@ -14,12 +14,10 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import { ReactComponent as MoreIcon } from "../../../assets/icons/common/more.svg";
 import Button from "../../../elements/Button";
 import { SmallResource } from "./SmallResource";
-import {
-  useGetRealm,
-  useSyncRealmResources,
-} from "../../../hooks/graphql/useGraphQLQueries";
+import { useSyncRealmResources } from "../../../hooks/graphql/useGraphQLQueries";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../DojoContext";
+import { useGetRealm } from "../../../hooks/helpers/useRealm";
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<"div">;
 
@@ -30,7 +28,7 @@ export const RealmResourcesComponent = ({
 
   let { realmEntityId } = useRealmStore();
 
-  const { realm } = useGetRealm({ entityId: realmEntityId });
+  const { realm } = useGetRealm(realmEntityId);
 
   useSyncRealmResources(realmEntityId);
 

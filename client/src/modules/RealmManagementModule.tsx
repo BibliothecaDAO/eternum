@@ -1,16 +1,17 @@
 import RealmInfoComponent from "../components/cityview/realm/RealmInfoComponent";
 import RealmManagementComponent from "../components/cityview/realm/RealmManagementComponent";
 import { BaseContainer } from "../containers/BaseContainer";
+import { useGetRealm } from "../hooks/helpers/useRealm";
 import useRealmStore from "../hooks/store/useRealmStore";
 import { Transition } from "@headlessui/react";
 import { Fragment } from "react";
-import { useGetRealm } from "../hooks/graphql/useGraphQLQueries";
 import { useLocation } from "wouter";
 
 const RealmManagementModule = () => {
   const { realmEntityId } = useRealmStore();
 
-  const { realm } = useGetRealm({ entityId: realmEntityId });
+  const realm = useGetRealm(realmEntityId);
+
   const [location] = useLocation();
 
   return (

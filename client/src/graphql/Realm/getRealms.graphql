@@ -1,0 +1,32 @@
+query getRealms {
+  realmComponents(first: 100) {
+    edges {
+      node {
+        entity {
+          keys
+          components {
+            __typename
+            ... on Realm {
+              realm_id
+              cities
+              rivers
+              wonder
+              harbors
+              regions
+              resource_types_count
+              resource_types_packed
+              order
+            }
+            ... on Position {
+              x
+              y
+            }
+            ... on Owner {
+              address
+            }
+          }
+        }
+      }
+    }
+  }
+}

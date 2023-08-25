@@ -11,16 +11,14 @@ import { ReactComponent as Danger } from "../../../../assets/icons/common/danger
 import { ReactComponent as Donkey } from "../../../../assets/icons/units/donkey.svg";
 import { Caravan } from "./Caravans/Caravan";
 import { Steps } from "../../../../elements/Steps";
-import {
-  CaravanInterface,
-  useGetRealm,
-} from "../../../../hooks/graphql/useGraphQLQueries";
+import { CaravanInterface } from "../../../../hooks/graphql/useGraphQLQueries";
 import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useGetRealmCaravans } from "../../../../hooks/helpers/useCaravans";
 import { getEntityIdFromKeys } from "../../../../utils/utils";
 import { getComponentValue } from "@latticexyz/recs";
+import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 
 type CreateOfferPopupProps = {
   onClose: () => void;
@@ -470,7 +468,7 @@ export const SelectCaravanPanel = ({
 
   const { nextBlockTimestamp } = useBlockchainStore();
 
-  const { realm } = useGetRealm({ entityId: realmEntityId });
+  const { realm } = useGetRealm(realmEntityId);
   const { realmCaravans } = useGetRealmCaravans(
     realm?.position.x || 0,
     realm?.position.y || 0,

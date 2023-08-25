@@ -1,12 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { GraphQLClient } from "graphql-request";
-import {
-  GetRealmIdsQuery,
-  Owner,
-  Position,
-  Realm,
-  getSdk,
-} from "../../generated/graphql";
+import { GetRealmIdsQuery, getSdk } from "../../generated/graphql";
 import { useDojo } from "../../DojoContext";
 import { numberToHex, setComponentFromEntity } from "../../utils/utils";
 
@@ -157,71 +151,54 @@ export interface RealmInterface {
   resource_types_packed: number;
   order: number;
   position: PositionInterface;
-  owner: string;
+  owner: number;
 }
 
-// TODO: change that to sync
-export const useGetRealm = ({
-  entityId,
-}: {
-  entityId: number;
-}): {
-  realm: RealmInterface | undefined;
-  status: FetchStatus;
-  error: unknown;
-} => {
-  const [realm, setRealm] = useState<RealmInterface | undefined>();
-  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
-  const [error, setError] = useState<unknown>(null);
+export const useSyncRealm = ({ entityId }: { entityId: number }) => {
+  const {
+    setup: { components },
+  } = useDojo();
 
   useMemo(() => {
     const fetchData = async () => {
-      setStatus(FetchStatus.Loading);
       try {
         const { data } = await sdk.getRealm({
           realmEntityId: numberToHex(entityId),
         });
-        let entity = data?.entities?.edges?.find((edge) => {
-          return edge?.node?.components?.find(
-            (component) => component?.__typename === "Realm",
-          );
+        data?.entities?.edges?.forEach((edge) => {
+          if (edge?.node) {
+            setComponentFromEntity(edge.node, "Realm", components);
+            setComponentFromEntity(edge.node, "Position", components);
+            setComponentFromEntity(edge.node, "Owner", components);
+          }
         });
-        let realm = entity?.node?.components?.find(
-          (component) => component?.__typename === "Realm",
-        ) as Realm;
-        let position = entity?.node?.components?.find(
-          (component) => component?.__typename === "Position",
-        ) as Position;
-        let owner = entity?.node?.components?.find(
-          (component) => component?.__typename === "Owner",
-        ) as Owner;
-
-        setRealm({
-          realmId: realm.realm_id,
-          cities: realm.cities,
-          rivers: realm.rivers,
-          wonder: realm.wonder,
-          harbors: realm.harbors,
-          regions: realm.regions,
-          resource_types_count: realm.resource_types_count,
-          resource_types_packed: realm.resource_types_packed,
-          order: realm.order,
-          position: { x: position.x, y: position.y },
-          owner: owner.address,
-        });
-      } catch (error) {
-        setError(error);
-        setStatus(FetchStatus.Error);
-      }
+      } catch (error) {}
     };
     fetchData();
   }, [entityId]);
+};
 
-  return {
-    realm,
-    status,
-    error,
-  };
+export const useSyncRealms = () => {
+  const {
+    setup: { components },
+  } = useDojo();
+
+  useMemo(() => {
+    const fetchData = async () => {
+      try {
+        const { data } = await sdk.getRealms();
+        console.log({ data });
+        data?.realmComponents?.edges?.forEach((edge) => {
+          if (edge?.node?.entity) {
+            setComponentFromEntity(edge.node.entity, "Realm", components);
+            setComponentFromEntity(edge.node.entity, "Position", components);
+            setComponentFromEntity(edge.node.entity, "Owner", components);
+          }
+        });
+      } catch (error) {}
+    };
+    fetchData();
+  }, []);
 };
 
 export interface CounterPartyOrderIdInterface {

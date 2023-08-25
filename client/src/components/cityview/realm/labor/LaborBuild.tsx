@@ -16,11 +16,11 @@ import clsx from "clsx";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../DojoContext";
 import { formatSecondsLeftInDaysHours } from "./laborUtils";
-import { useGetRealm } from "../../../../hooks/graphql/useGraphQLQueries";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { getComponentValue } from "@latticexyz/recs";
 import { getEntityIdFromKeys } from "../../../../utils/utils";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
+import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 
 type LaborBuildPopupProps = {
   resourceId: number;
@@ -51,7 +51,7 @@ export const LaborBuildPopup = ({
   }, [resourceId]);
 
   let { realmEntityId } = useRealmStore();
-  const { realm } = useGetRealm({ entityId: realmEntityId });
+  const { realm } = useGetRealm(realmEntityId);
 
   const { nextBlockTimestamp } = useBlockchainStore();
 

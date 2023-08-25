@@ -1960,6 +1960,11 @@ export type GetRealmIdsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type GetRealmIdsQuery = { __typename?: 'Query', realmComponents?: { __typename?: 'RealmConnection', edges?: Array<{ __typename?: 'RealmEdge', node?: { __typename?: 'Realm', realm_id?: any | null } | null } | null> | null } | null };
 
+export type GetRealmsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetRealmsQuery = { __typename?: 'Query', realmComponents?: { __typename?: 'RealmConnection', edges?: Array<{ __typename?: 'RealmEdge', node?: { __typename?: 'Realm', entity?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'OrderResource' } | { __typename: 'Owner', address?: any | null } | { __typename: 'Position', x?: any | null, y?: any | null } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm', realm_id?: any | null, cities?: any | null, rivers?: any | null, wonder?: any | null, harbors?: any | null, regions?: any | null, resource_types_count?: any | null, resource_types_packed?: any | null, order?: any | null } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null } | null> | null } | null };
+
 export type TradeFragmentFragment = { __typename?: 'Trade', maker_id?: any | null, taker_id?: any | null, maker_order_id?: any | null, taker_order_id?: any | null, expires_at?: any | null, claimed_by_maker?: any | null, claimed_by_taker?: any | null, taker_needs_caravan?: any | null };
 
 export type GetCounterpartyOrderIdQueryVariables = Exact<{
@@ -2071,7 +2076,7 @@ export const GetRealmResourcesDocument = gql`
     `;
 export const GetRealmDocument = gql`
     query getRealm($realmEntityId: String!) {
-  entities(keys: [$realmEntityId]) {
+  entities(keys: [$realmEntityId], first: 100) {
     edges {
       node {
         keys
@@ -2108,6 +2113,40 @@ export const GetRealmIdsDocument = gql`
     edges {
       node {
         realm_id
+      }
+    }
+  }
+}
+    `;
+export const GetRealmsDocument = gql`
+    query getRealms {
+  realmComponents(first: 100) {
+    edges {
+      node {
+        entity {
+          keys
+          components {
+            __typename
+            ... on Realm {
+              realm_id
+              cities
+              rivers
+              wonder
+              harbors
+              regions
+              resource_types_count
+              resource_types_packed
+              order
+            }
+            ... on Position {
+              x
+              y
+            }
+            ... on Owner {
+              address
+            }
+          }
+        }
       }
     }
   }
@@ -2407,6 +2446,7 @@ const GetRealmLaborDocumentString = print(GetRealmLaborDocument);
 const GetRealmResourcesDocumentString = print(GetRealmResourcesDocument);
 const GetRealmDocumentString = print(GetRealmDocument);
 const GetRealmIdsDocumentString = print(GetRealmIdsDocument);
+const GetRealmsDocumentString = print(GetRealmsDocument);
 const GetCounterpartyOrderIdDocumentString = print(GetCounterpartyOrderIdDocument);
 const GetIncomingOrderInfoDocumentString = print(GetIncomingOrderInfoDocument);
 const GetIncomingOrdersDocumentString = print(GetIncomingOrdersDocument);
@@ -2428,6 +2468,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     getRealmIds(variables?: GetRealmIdsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetRealmIdsQuery; extensions?: any; headers: Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmIdsQuery>(GetRealmIdsDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRealmIds', 'query');
+    },
+    getRealms(variables?: GetRealmsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetRealmsQuery; extensions?: any; headers: Headers; status: number; }> {
+        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmsQuery>(GetRealmsDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRealms', 'query');
     },
     getCounterpartyOrderId(variables: GetCounterpartyOrderIdQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetCounterpartyOrderIdQuery; extensions?: any; headers: Headers; status: number; }> {
         return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetCounterpartyOrderIdQuery>(GetCounterpartyOrderIdDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getCounterpartyOrderId', 'query');

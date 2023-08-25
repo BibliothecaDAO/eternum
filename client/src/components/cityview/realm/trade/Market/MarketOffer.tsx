@@ -10,7 +10,6 @@ import * as realmsData from "../../../../../geodata/realms.json";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import {
   MarketInterface,
-  useGetRealm,
   useSyncTradeResources,
 } from "../../../../../hooks/graphql/useGraphQLQueries";
 import {
@@ -18,6 +17,7 @@ import {
   useTrade,
 } from "../../../../../hooks/helpers/useTrade";
 import { numberToHex } from "../../../../../utils/utils";
+import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 
 type TradeOfferProps = {
   marketOffer: MarketInterface;
@@ -34,10 +34,7 @@ export const MarketOffer = ({ marketOffer, onAccept }: TradeOfferProps) => {
   const { realmEntityId } = useRealmStore();
   const { getTradeResources } = useTrade();
 
-  // TODO: avoid fetching the realm every time
-  let { realm: makerRealm } = useGetRealm({
-    entityId: marketOffer.makerId,
-  });
+  let { realm: makerRealm } = useGetRealm(marketOffer.makerId);
 
   useSyncTradeResources({
     makerOrderId: numberToHex(marketOffer.makerOrderId),
