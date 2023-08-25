@@ -10,7 +10,7 @@ mod CreateCaravan {
     use eternum::alias::ID;
     use eternum::components::metadata::ForeignKey;
     use eternum::components::caravan::CaravanMembers;
-    use eternum::components::quantity::Quantity;
+    use eternum::components::quantity::{Quantity, QuantityTrait};
     use eternum::components::position::Position;
     use eternum::components::movable::Movable;
     use eternum::components::capacity::Capacity;
@@ -58,8 +58,8 @@ mod CreateCaravan {
 
             // assert that they are movable
             // assert that they have a capacity component
-            let (movable, capacity, position) = get!(
-                ctx.world, (entity_id), (Movable, Capacity, Position)
+            let (movable, capacity, position, quantity) = get!(
+                ctx.world, (entity_id), (Movable, Capacity, Position, Quantity)
             );
 
             // assert that they are all at the same position when index > 0
@@ -78,26 +78,6 @@ mod CreateCaravan {
             // assert that they are not blocked
             assert(movable.blocked == false, 'entity is blocked');
 
-            // DISUCSS: is that more cumbersome than just getting the quantity?
-            // like below
-            let mut calldata = array::ArrayTrait::<felt252>::new();
-            calldata.append(entity_id.into());
-
-            let result = ctx.world.execute('GetQuantity'.into(), calldata);
-            let quantity: u128 = (*result[0]).try_into().unwrap();
-
-            // // try to retrieve the Quantity component of the entity
-            // let maybe_quantity = commands::<Quantity>::try_entity((*entity_ids[index]).into());
-            // // TODO: match inside a loop does not work yet on dojo
-            // let quantity = match maybe_quantity {
-            //     Option::Some(res) => {
-            //         res.value
-            //     },
-            //     Option::None(_) => { // if not present quantity = 1
-            //         1_u128
-            //     }
-            // };
-
             // set entity in the caravan
             let foreign_key_arr = array![caravan_id.into(), entities_key.into(), index.into()];
             let foreign_key = poseidon_hash_span(foreign_key_arr.span());
@@ -110,6 +90,7 @@ mod CreateCaravan {
 
             // TODO: add the Caravan component to each entity
             // so that when we know it's in a caravan
+            let quantity: u128 = quantity.get_value();
             total_speed += movable.sec_per_km.into() * quantity;
             total_quantity += quantity;
             total_capacity += capacity.weight_gram * quantity;
