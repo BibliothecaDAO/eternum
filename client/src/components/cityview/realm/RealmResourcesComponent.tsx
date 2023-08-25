@@ -5,7 +5,7 @@ import {
   findResourceById,
   resources,
 } from "../../../constants/resources";
-import { currencyFormat } from "../../../utils/utils.jsx";
+import { currencyFormat, getEntityIdFromKeys } from "../../../utils/utils.jsx";
 import clsx from "clsx";
 import { unpackResources } from "../../../utils/packedData";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
@@ -14,13 +14,10 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import { ReactComponent as MoreIcon } from "../../../assets/icons/common/more.svg";
 import Button from "../../../elements/Button";
 import { SmallResource } from "./SmallResource";
-import {
-  LaborInterface,
-  ResourceInterface,
-  useGetRealm,
-  useGetRealmLabor,
-  useGetRealmResources,
-} from "../../../hooks/graphql/useGraphQLQueries";
+import { useSyncRealmResources } from "../../../hooks/graphql/useGraphQLQueries";
+import { useComponentValue } from "@dojoengine/react";
+import { useDojo } from "../../../DojoContext";
+import { useGetRealm } from "../../../hooks/helpers/useRealm";
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<"div">;
 
@@ -31,9 +28,9 @@ export const RealmResourcesComponent = ({
 
   let { realmEntityId } = useRealmStore();
 
-  const { realm } = useGetRealm({ entityId: realmEntityId });
-  const { realmLabor } = useGetRealmLabor(realmEntityId);
-  const { realmResources } = useGetRealmResources(realmEntityId);
+  const { realm } = useGetRealm(realmEntityId);
+
+  useSyncRealmResources(realmEntityId);
 
   // unpack the resources
   let realmResourceIds: number[] = [
@@ -57,12 +54,7 @@ export const RealmResourcesComponent = ({
       <div className={clsx("flex h-16 space-x-4", className)}>
         <div className="relative flex mx-auto space-x-2 overflow-visible">
           {realmResourceIds.map((resourceId) => (
-            <ResourceComponent
-              key={resourceId}
-              labor={realmLabor[resourceId]}
-              resource={realmResources[resourceId]}
-              resourceId={resourceId}
-            />
+            <ResourceComponent key={resourceId} resourceId={resourceId} />
           ))}
           <div
             onClick={() => {
@@ -74,10 +66,7 @@ export const RealmResourcesComponent = ({
               <div className="flex flex-col">
                 <div className="grid grid-cols-4 gap-3">
                   {resources.map((resource) => (
-                    <SmallResource
-                      resource={realmResources[resource.id]}
-                      resourceId={resource.id}
-                    ></SmallResource>
+                    <SmallResource resourceId={resource.id}></SmallResource>
                   ))}
                 </div>
                 <Button
@@ -105,15 +94,19 @@ export const RealmResourcesComponent = ({
 
 interface ResourceComponentProps {
   resourceId: number;
-  labor: LaborInterface | undefined;
-  resource: ResourceInterface | undefined;
 }
 
 const ResourceComponent: React.FC<ResourceComponentProps> = ({
-  resource,
-  labor,
   resourceId,
 }) => {
+  const {
+    setup: {
+      components: { Labor, Resource },
+    },
+  } = useDojo();
+
+  let { realmEntityId } = useRealmStore();
+
   const { nextBlockTimestamp } = useBlockchainStore();
   const [productivity, setProductivity] = useState<number>(0);
 
@@ -125,6 +118,16 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({
   };
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
+
+  const labor = useComponentValue(
+    Labor,
+    getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]),
+  );
+
+  const resource = useComponentValue(
+    Resource,
+    getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]),
+  );
 
   useEffect(() => {
     let laborLeft: number = 0;
@@ -161,7 +164,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({
             withTooltip
           />
           <div className="text-xs">
-            {currencyFormat(resource ? resource.amount : 0)}
+            {currencyFormat(resource ? resource.balance : 0)}
           </div>
         </div>
         {resourceId !== 253 && (

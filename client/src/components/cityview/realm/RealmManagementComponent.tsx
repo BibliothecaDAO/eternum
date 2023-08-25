@@ -11,12 +11,12 @@ import RealmTradeComponent from "./RealmTradeComponent";
 import RealmLaborComponent from "./RealmLaborComponent";
 import useUIStore from "../../../hooks/store/useUIStore";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { useGetRealm } from "../../../hooks/graphql/useGraphQLQueries";
 import RealmStatusComponent from "./RealmStatusComponent";
+import { useGetRealm } from "../../../hooks/helpers/useRealm";
 
 const RealmManagementComponent = () => {
   const { realmEntityId } = useRealmStore();
-  const { realm } = useGetRealm({ entityId: realmEntityId });
+  const { realm } = useGetRealm(realmEntityId);
 
   const [selectedTab, setSelectedTab] = useState(1);
 

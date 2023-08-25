@@ -10,25 +10,22 @@ import * as realmsData from "../../../../../geodata/realms.json";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import {
   MarketInterface,
-  useGetRealm,
-  useGetRealmResources,
   useSyncTradeResources,
 } from "../../../../../hooks/graphql/useGraphQLQueries";
-import { canAcceptOffer } from "../TradeUtils";
-import { useTrade } from "../../../../../hooks/helpers/useTrade";
+import {
+  useCanAcceptOffer,
+  useTrade,
+} from "../../../../../hooks/helpers/useTrade";
 import { numberToHex } from "../../../../../utils/utils";
+import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 
 type TradeOfferProps = {
   marketOffer: MarketInterface;
   onAccept: () => void;
 };
 
-export const MarketOffer = ({
-  marketOffer,
-  onAccept,
-}: TradeOfferProps) => {
+export const MarketOffer = ({ marketOffer, onAccept }: TradeOfferProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [canAccept, setCanAccept] = useState(true);
 
   useEffect(() => {
     setIsLoading(false);
@@ -37,12 +34,7 @@ export const MarketOffer = ({
   const { realmEntityId } = useRealmStore();
   const { getTradeResources } = useTrade();
 
-  // TODO: avoid fetching the realm every time
-  let { realm: makerRealm } = useGetRealm({
-    entityId: marketOffer.makerId,
-  });
-
-  let { realmResources } = useGetRealmResources(realmEntityId);
+  let { realm: makerRealm } = useGetRealm(marketOffer.makerId);
 
   useSyncTradeResources({
     makerOrderId: numberToHex(marketOffer.makerOrderId),
@@ -52,13 +44,7 @@ export const MarketOffer = ({
   let resourcesGet = getTradeResources(marketOffer.makerOrderId);
   let resourcesGive = getTradeResources(marketOffer.takerOrderId);
 
-  useEffect(() => {
-    if (resourcesGive.length > 0) {
-      canAcceptOffer(resourcesGive, realmResources)
-        ? setCanAccept(true)
-        : setCanAccept(false);
-    }
-  }, [resourcesGive]);
+  const canAccept = useCanAcceptOffer({ realmEntityId, resourcesGive });
 
   let timeLeft = useMemo(
     () => formatTimeLeft(marketOffer.expiresAt - Date.now() / 1000),
@@ -130,11 +116,11 @@ export const MarketOffer = ({
         {isLoading && (
           <Button
             isLoading={true}
-            onClick={() => { }}
+            onClick={() => {}}
             variant="danger"
             className="ml-auto p-2 !h-4 text-xxs !rounded-md"
           >
-            { }
+            {}
           </Button>
         )}
       </div>

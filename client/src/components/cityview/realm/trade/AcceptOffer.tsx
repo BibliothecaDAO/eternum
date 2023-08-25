@@ -4,9 +4,7 @@ import Button from "../../../../elements/Button";
 import { SelectCaravanPanel } from "./CreateOffer";
 import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
-import {
-  MarketInterface,
-} from "../../../../hooks/graphql/useGraphQLQueries";
+import { MarketInterface } from "../../../../hooks/graphql/useGraphQLQueries";
 import { useTrade } from "../../../../hooks/helpers/useTrade";
 
 type AcceptOfferPopupProps = {
@@ -31,20 +29,22 @@ export const AcceptOfferPopup = ({
 
   const {
     account: { account },
-    setup: { optimisticSystemCalls: { optimisticAcceptOffer },
+    setup: {
+      optimisticSystemCalls: { optimisticAcceptOffer },
       systemCalls: {
         attach_caravan,
         take_fungible_order,
         create_free_transport_unit,
         create_caravan,
-      } },
+      },
+    },
   } = useDojo();
 
   const { realmEntityId } = useRealmStore();
 
+  // DISCUSS: put all tx in one system call?
   const acceptOffer = async () => {
     if (isNewCaravan) {
-      setIsLoading(true);
       const transport_units_id = await create_free_transport_unit({
         signer: account,
         realm_id: realmEntityId,
@@ -66,7 +66,6 @@ export const AcceptOfferPopup = ({
         trade_id: selectedTrade.tradeId,
       });
     } else {
-      setIsLoading(true);
       await attach_caravan({
         signer: account,
         realm_id: realmEntityId,
@@ -79,6 +78,11 @@ export const AcceptOfferPopup = ({
         trade_id: selectedTrade.tradeId,
       });
     }
+  };
+
+  const onAccept = () => {
+    setIsLoading(true);
+    optimisticAcceptOffer(selectedTrade.tradeId, realmEntityId, acceptOffer)();
     onClose();
   };
 
@@ -164,11 +168,7 @@ export const AcceptOfferPopup = ({
               <Button
                 disabled={!canAcceptOffer}
                 className="!px-[6px] !py-[2px] text-xxs"
-                onClick={optimisticAcceptOffer(
-                  selectedTrade.tradeId,
-                  realmEntityId,
-                  acceptOffer,
-                )}
+                onClick={onAccept}
                 variant={canAcceptOffer ? "success" : "danger"}
               >
                 Accept Offer
@@ -177,12 +177,12 @@ export const AcceptOfferPopup = ({
             {isLoading && (
               <Button
                 isLoading={true}
-                onClick={() => { }}
+                onClick={() => {}}
                 variant="danger"
                 className="ml-auto p-2 !h-4 text-xxs !rounded-md"
               >
                 {" "}
-                { }{" "}
+                {}{" "}
               </Button>
             )}
           </div>

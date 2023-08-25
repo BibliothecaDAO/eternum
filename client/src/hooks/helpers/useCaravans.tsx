@@ -1,24 +1,23 @@
-import {
-  EntityIndex,
-  getComponentValue,
-  getEntitiesWithValue,
-} from "@latticexyz/recs";
+import { Has, HasValue, getComponentValue } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import {
   CaravanInfoInterface,
   CaravanInterface,
 } from "../graphql/useGraphQLQueries";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { getEntityIdFromKeys } from "../../utils/utils";
+import { useEntityQuery } from "@dojoengine/react";
 
 export function useCaravan() {
   const {
-    setup: { components: { ArrivalTime, Movable, Capacity, Position } }
+    setup: {
+      components: { ArrivalTime, Movable, Capacity, Position },
+    },
   } = useDojo();
 
   const getCaravanInfo = (
     caravanId: number,
-    counterPartyOrderId: number,
+    orderId: number,
   ): CaravanInfoInterface | undefined => {
     const arrivalTime = getComponentValue(
       ArrivalTime,
@@ -34,7 +33,7 @@ export function useCaravan() {
     );
     const rawDestination = getComponentValue(
       Position,
-      getEntityIdFromKeys([BigInt(counterPartyOrderId)]),
+      getEntityIdFromKeys([BigInt(orderId)]),
     );
     let destination = rawDestination
       ? { x: rawDestination.x, y: rawDestination.y }
@@ -54,33 +53,24 @@ export function useCaravan() {
 
 export function useGetRealmCaravans(x: number, y: number) {
   const {
-    setup: { components: {
-      Position,
-      CaravanMembers,
-      OrderId,
-      ArrivalTime,
-      Movable,
-      Capacity,
-    } },
+    setup: {
+      components: {
+        Position,
+        CaravanMembers,
+        OrderId,
+        ArrivalTime,
+        Movable,
+        Capacity,
+      },
+    },
   } = useDojo();
 
   const [realmCaravans, setRealmCaravans] = useState<CaravanInterface[]>([]);
-  const [entityIds, setEntityIds] = useState<EntityIndex[]>([]);
 
-  // TODO: replace that by getting entities with a certain maker Id
-  useEffect(() => {
-    const getEntities = () => {
-      const set1 = getEntitiesWithValue(Position, { x, y });
-      const set2 = getEntitiesWithValue(CaravanMembers, {});
-      const entityIds = Array.from(set1).filter((value) => set2.has(value));
-      setEntityIds(entityIds);
-    };
-    getEntities();
-    const intervalId = setInterval(getEntities, 1000); // Fetch every second
-    return () => {
-      clearInterval(intervalId); // Clear interval on component unmount
-    };
-  }, [x, y]);
+  const entityIds = useEntityQuery([
+    HasValue(Position, { x, y }),
+    Has(CaravanMembers),
+  ]);
 
   useMemo(() => {
     const caravans = entityIds
@@ -99,7 +89,9 @@ export function useGetRealmCaravans(x: number, y: number) {
           } as CaravanInterface;
         }
       })
-      .filter(Boolean) as CaravanInterface[];
+      .filter(Boolean)
+      .sort((a, b) => b!.caravanId - a!.caravanId) as CaravanInterface[];
+    // DISCUSS: can add sorting logic here
     setRealmCaravans(caravans);
     // only recompute when different number of orders
   }, [entityIds.length]);

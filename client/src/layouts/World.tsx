@@ -21,8 +21,11 @@ import { BlurOverlayContainer } from "../containers/BlurOverlayContainer";
 import { SignUpComponent } from "../components/SignUpComponent";
 import useSound from "use-sound";
 import { NotificationsComponent } from "../components/NotificationsComponent";
+import { useSyncRealms } from "../hooks/graphql/useGraphQLQueries";
 
 export const World = () => {
+  useSyncRealms();
+
   useFetchBlockchainData();
   const { progress } = useProgress();
 

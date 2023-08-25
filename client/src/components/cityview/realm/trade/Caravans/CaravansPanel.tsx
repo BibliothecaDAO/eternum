@@ -7,16 +7,16 @@ import { Caravan } from "./Caravan";
 import { CaravanDetails } from "../../../../caravans/CaravanDetailsComponent";
 import {
   CaravanInterface,
-  useGetRealm,
   useSyncRealmCaravans,
 } from "../../../../../hooks/graphql/useGraphQLQueries";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { useGetRealmCaravans } from "../../../../../hooks/helpers/useCaravans";
+import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 
 type CaravansPanelProps = {};
 
-export const CaravansPanel = ({ }: CaravansPanelProps) => {
+export const CaravansPanel = ({}: CaravansPanelProps) => {
   const [activeFilter, setActiveFilter] = useState(false);
   const [showCaravanDetails, setShowCaravanDetails] = useState(false);
   const [selectedCaravan, setSelectedCaravan] =
@@ -38,7 +38,7 @@ export const CaravansPanel = ({ }: CaravansPanelProps) => {
   };
 
   // TODO: find a way to avoid calling useGetRealm and useSyncRealmsCaravan at each render
-  const { realm } = useGetRealm({ entityId: realmEntityId });
+  const { realm } = useGetRealm(realmEntityId);
   useSyncRealmCaravans(realm?.position.x || 0, realm?.position.y || 0);
   const { realmCaravans } = useGetRealmCaravans(
     realm?.position.x || 0,

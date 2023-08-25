@@ -11,24 +11,21 @@ import { ReactComponent as Danger } from "../../../../assets/icons/common/danger
 import { ReactComponent as Donkey } from "../../../../assets/icons/units/donkey.svg";
 import { Caravan } from "./Caravans/Caravan";
 import { Steps } from "../../../../elements/Steps";
-import {
-  CaravanInterface,
-  useGetRealm,
-  useGetRealmResources,
-} from "../../../../hooks/graphql/useGraphQLQueries";
+import { CaravanInterface } from "../../../../hooks/graphql/useGraphQLQueries";
 import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useGetRealmCaravans } from "../../../../hooks/helpers/useCaravans";
+import { getEntityIdFromKeys } from "../../../../utils/utils";
+import { getComponentValue } from "@latticexyz/recs";
+import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 
 type CreateOfferPopupProps = {
   onClose: () => void;
   onCreate: () => void;
 };
 
-export const CreateOfferPopup = ({
-  onClose,
-}: CreateOfferPopupProps) => {
+export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   const [step, setStep] = useState<number>(1);
   const [selectedResourceIdsGive, setSelectedResourceIdsGive] = useState<
     number[]
@@ -49,12 +46,15 @@ export const CreateOfferPopup = ({
 
   const {
     account: { account },
-    setup: { systemCalls: {
-      create_caravan,
-      create_free_transport_unit,
-      make_fungible_order,
-      attach_caravan,
-    } },
+    setup: {
+      optimisticSystemCalls: { optimisticMakeFungibleOrder },
+      systemCalls: {
+        create_caravan,
+        create_free_transport_unit,
+        make_fungible_order,
+        attach_caravan,
+      },
+    },
   } = useDojo();
 
   const { realmEntityId } = useRealmStore();
@@ -62,7 +62,7 @@ export const CreateOfferPopup = ({
   const createOrder = async () => {
     setIsLoading(true);
     if (isNewCaravan) {
-      const trade_id = await make_fungible_order({
+      const trade_id = await optimisticMakeFungibleOrder(make_fungible_order)({
         signer: account,
         maker_id: realmEntityId,
         maker_entity_types: selectedResourceIdsGive,
@@ -79,7 +79,12 @@ export const CreateOfferPopup = ({
         signer: account,
         entity_ids: [transport_units_id],
       });
-      await attach_caravan({ signer: account, realm_id: realmEntityId, trade_id, caravan_id });
+      await attach_caravan({
+        signer: account,
+        realm_id: realmEntityId,
+        trade_id,
+        caravan_id,
+      });
     } else {
       const trade_id = await make_fungible_order({
         signer: account,
@@ -210,12 +215,12 @@ export const CreateOfferPopup = ({
           {isLoading && (
             <Button
               isLoading={true}
-              onClick={() => { }}
+              onClick={() => {}}
               variant="danger"
               className="ml-auto p-2 !h-4 text-xxs !rounded-md"
             >
               {" "}
-              { }{" "}
+              {}{" "}
             </Button>
           )}
         </div>
@@ -235,9 +240,13 @@ const SelectResourcesPanel = ({
   selectedResourceIdsGet: number[];
   setSelectedResourceIdsGet: (selectedResourceIds: number[]) => void;
 }) => {
-  const { realmEntityId } = useRealmStore();
+  const {
+    setup: {
+      components: { Resource },
+    },
+  } = useDojo();
 
-  const { realmResources } = useGetRealmResources(realmEntityId);
+  const { realmEntityId } = useRealmStore();
 
   return (
     <div className="grid grid-cols-9 gap-2 p-2">
@@ -245,13 +254,16 @@ const SelectResourcesPanel = ({
         <Headline className="mb-2">You Give</Headline>
         <div className="grid grid-cols-4 gap-2">
           {resources.map(({ id, trait: _name }) => {
-            let resourceBalance = realmResources[id]?.amount ?? 0;
+            let resource = getComponentValue(
+              Resource,
+              getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]),
+            );
             return (
               <SelectableResource
                 key={id}
                 resourceId={id}
                 amount={100}
-                disabled={resourceBalance === 0}
+                disabled={(resource?.balance || 0) === 0}
                 selected={selectedResourceIdsGive.includes(id)}
                 onClick={() => {
                   if (selectedResourceIdsGive.includes(id)) {
@@ -323,9 +335,13 @@ const SelectResourcesAmountPanel = ({
   }) => void;
   setResourceWeight: (resourceWeight: number) => void;
 }) => {
-  const { realmEntityId } = useRealmStore();
+  const {
+    setup: {
+      components: { Resource },
+    },
+  } = useDojo();
 
-  const { realmResources } = useGetRealmResources(realmEntityId);
+  const { realmEntityId } = useRealmStore();
 
   useEffect(() => {
     // set resource weight in kg
@@ -344,16 +360,19 @@ const SelectResourcesAmountPanel = ({
         <div className="flex flex-col items-center col-span-4 space-y-2">
           <Headline className="mb-2">You Give</Headline>
           {selectedResourceIdsGive.map((id) => {
-            let resourceBalance = realmResources[id]?.amount ?? 0;
+            let resource = getComponentValue(
+              Resource,
+              getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]),
+            );
             return (
               <div key={id} className="flex items-center w-full">
                 <NumberInput
-                  max={resourceBalance}
+                  max={resource?.balance || 0}
                   value={selectedResourcesGiveAmounts[id]}
                   onChange={(value) => {
                     setSelectedResourcesGiveAmounts({
                       ...selectedResourcesGiveAmounts,
-                      [id]: Math.min(resourceBalance, value),
+                      [id]: Math.min(resource?.balance || 0, value),
                     });
                   }}
                 />
@@ -364,18 +383,19 @@ const SelectResourcesAmountPanel = ({
                   />
                 </div>
                 <div
-                  className={`ml-2 text-xs ${selectedResourcesGiveAmounts[id] <= resourceBalance
-                    ? "text-orange"
-                    : "text-red"
-                    } cursor-pointer`}
+                  className={`ml-2 text-xs ${
+                    selectedResourcesGiveAmounts[id] <= (resource?.balance || 0)
+                      ? "text-orange"
+                      : "text-red"
+                  } cursor-pointer`}
                   onClick={() => {
                     setSelectedResourcesGiveAmounts({
                       ...selectedResourcesGiveAmounts,
-                      [id]: resourceBalance,
+                      [id]: resource?.balance || 0,
                     });
                   }}
                 >
-                  {`Max ${resourceBalance}`}
+                  {`Max ${resource?.balance || 0}`}
                 </div>
               </div>
             );
@@ -448,7 +468,7 @@ export const SelectCaravanPanel = ({
 
   const { nextBlockTimestamp } = useBlockchainStore();
 
-  const { realm } = useGetRealm({ entityId: realmEntityId });
+  const { realm } = useGetRealm(realmEntityId);
   const { realmCaravans } = useGetRealmCaravans(
     realm?.position.x || 0,
     realm?.position.y || 0,
@@ -458,18 +478,18 @@ export const SelectCaravanPanel = ({
     () =>
       realmCaravans
         ? (realmCaravans
-          .map((caravan) => {
-            const isIdle =
-              nextBlockTimestamp &&
-              caravan.arrivalTime <= nextBlockTimestamp &&
-              !caravan.blocked;
-            // capacity in gr (1kg = 1000gr)
-            const canCarry = caravan.capacity / 1000 >= resourceWeight;
-            if (isIdle && canCarry) {
-              return caravan;
-            }
-          })
-          .filter(Boolean) as CaravanInterface[])
+            .map((caravan) => {
+              const isIdle =
+                nextBlockTimestamp &&
+                caravan.arrivalTime <= nextBlockTimestamp &&
+                !caravan.blocked;
+              // capacity in gr (1kg = 1000gr)
+              const canCarry = caravan.capacity / 1000 >= resourceWeight;
+              if (isIdle && canCarry) {
+                return caravan;
+              }
+            })
+            .filter(Boolean) as CaravanInterface[])
         : [],
     [realmCaravans],
   );
@@ -580,8 +600,9 @@ export const SelectCaravanPanel = ({
               caravan={caravan}
               idleOnly={true}
               onClick={() => setSelectedCaravan(caravan.caravanId)}
-              className={`w-full mb-2 border rounded-md ${selectedCaravan === caravan.caravanId ? "border-yellow" : ""
-                }`}
+              className={`w-full mb-2 border rounded-md ${
+                selectedCaravan === caravan.caravanId ? "border-yellow" : ""
+              }`}
             />
           ))}
         </>

@@ -29,7 +29,7 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
   const { counterPartyOrderId } = useGetCounterPartyOrderId(caravan.orderId);
 
   const { getCaravanInfo } = useCaravan();
-  const caravanInfo = getCaravanInfo(caravan.caravanId, counterPartyOrderId);
+  const caravanInfo = getCaravanInfo(caravan.caravanId, caravan.orderId);
 
   const { getTradeResources } = useTrade();
   let resourcesGive = getTradeResources(caravan.orderId);

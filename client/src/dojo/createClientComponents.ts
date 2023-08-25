@@ -12,6 +12,7 @@ export function createClientComponents({ contractComponents }: SetupNetworkResul
         Status: overridableComponent(contractComponents.Status),
         FungibleEntities: overridableComponent(contractComponents.FungibleEntities),
         Resource: overridableComponent(contractComponents.Resource),
+        Labor: overridableComponent(contractComponents.Labor),
         OrderResource: overridableComponent(contractComponents.OrderResource),
     };
 }

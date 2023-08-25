@@ -1,14 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { GraphQLClient } from "graphql-request";
-import {
-  GetRealmIdsQuery,
-  Labor,
-  Owner,
-  Position,
-  Realm,
-  Resource,
-  getSdk,
-} from "../../generated/graphql";
+import { GetRealmIdsQuery, getSdk } from "../../generated/graphql";
 import { useDojo } from "../../DojoContext";
 import { numberToHex, setComponentFromEntity } from "../../utils/utils";
 
@@ -32,131 +24,43 @@ export interface LaborInterface {
   multiplier: number;
 }
 
-// TODO: change that to sync
-export const useGetRealmLabor = (
-  realmEntityId: number,
-): {
-  realmLabor: RealmLaborInterface;
-  status: FetchStatus;
-  error: unknown;
-} => {
-  const [realmLabor, setRealmLabor] = useState<RealmLaborInterface>({});
-  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
-  const [error, setError] = useState<unknown>(null);
-
+export const useSyncRealmLabor = (realmEntityId: number) => {
+  const {
+    setup: { components },
+  } = useDojo();
   useEffect(() => {
     const fetchData = async () => {
-      setStatus(FetchStatus.Loading);
       try {
         const { data } = await sdk.getRealmLabor({
           realmEntityId: numberToHex(realmEntityId),
         });
-        const resourceLaborEntities = data?.entities?.edges;
-        if (resourceLaborEntities) {
-          let realmLabor: { [resourceId: number]: LaborInterface } = {};
-          resourceLaborEntities.forEach((entity) => {
-            let labor = entity?.node?.components?.find((component) => {
-              return component?.__typename === "Labor";
-            }) as Labor;
-            if (labor) {
-              let keys = entity?.node?.keys;
-              if (keys && keys[1]) {
-                let resourceId = keys[1];
-                realmLabor[parseInt(resourceId)] = {
-                  balance: labor.balance,
-                  lastHarvest: labor.last_harvest,
-                  multiplier: labor.multiplier,
-                };
-              }
-            }
-          });
-          setRealmLabor(realmLabor);
-          setStatus(FetchStatus.Success);
-        }
-      } catch (error) {
-        setError(error);
-        setStatus(FetchStatus.Error);
-      }
+        data?.entities?.edges?.forEach((edge) => {
+          edge?.node && setComponentFromEntity(edge.node, "Labor", components);
+        });
+      } catch (error) {}
     };
     fetchData();
-    const intervalId = setInterval(fetchData, 5000); // Fetch every 5 seconds
-
-    return () => {
-      clearInterval(intervalId); // Clear interval on component unmount
-    };
   }, [realmEntityId]);
-
-  return {
-    realmLabor,
-    status,
-    error,
-  };
 };
 
-export interface RealmResourcesInterface {
-  [resourceId: number]: ResourceInterface;
-}
-
-// TODO: change that to sync
-export const useGetRealmResources = (
-  realmEntityId: number,
-): {
-  realmResources: RealmResourcesInterface;
-  status: FetchStatus;
-  error: unknown;
-} => {
-  const [realmResources, setRealmResources] = useState<RealmResourcesInterface>(
-    {},
-  );
-  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
-  const [error, setError] = useState<unknown>(null);
-
+export const useSyncRealmResources = (realmEntityId: number) => {
+  const {
+    setup: { components },
+  } = useDojo();
   useEffect(() => {
     const fetchData = async () => {
-      setStatus(FetchStatus.Loading);
       try {
         const { data } = await sdk.getRealmResources({
           realmEntityId: numberToHex(realmEntityId),
         });
-        const resourceEntities = data.entities?.edges;
-        if (resourceEntities) {
-          let realmResources: { [resourceId: number]: ResourceInterface } = {};
-          resourceEntities.forEach((edge) => {
-            let resource = edge?.node?.components?.find((component) => {
-              return component?.__typename === "Resource";
-            }) as Resource | undefined;
-            let keys = edge?.node?.keys;
-            if (resource && keys) {
-              let resourceId = keys[1];
-              if (resourceId) {
-                realmResources[parseInt(resourceId)] = {
-                  resourceId: parseInt(resourceId),
-                  amount: parseInt(resource.balance),
-                };
-              }
-            }
-          });
-          setRealmResources(realmResources);
-          setStatus(FetchStatus.Success);
-        }
-      } catch (error) {
-        setError(error);
-        setStatus(FetchStatus.Error);
-      }
+        data?.entities?.edges?.forEach((edge) => {
+          edge?.node &&
+            setComponentFromEntity(edge.node, "Resource", components);
+        });
+      } catch (error) {}
     };
     fetchData();
-    const intervalId = setInterval(fetchData, 5000); // Fetch every 5 seconds
-
-    return () => {
-      clearInterval(intervalId); // Clear interval on component unmount
-    };
   }, [realmEntityId]);
-
-  return {
-    realmResources,
-    status,
-    error,
-  };
 };
 
 export interface IncomingOrderInterface {
@@ -247,71 +151,54 @@ export interface RealmInterface {
   resource_types_packed: number;
   order: number;
   position: PositionInterface;
-  owner: string;
+  owner: number;
 }
 
-// TODO: change that to sync
-export const useGetRealm = ({
-  entityId,
-}: {
-  entityId: number;
-}): {
-  realm: RealmInterface | undefined;
-  status: FetchStatus;
-  error: unknown;
-} => {
-  const [realm, setRealm] = useState<RealmInterface | undefined>();
-  const [status, setStatus] = useState<FetchStatus>(FetchStatus.Idle);
-  const [error, setError] = useState<unknown>(null);
+export const useSyncRealm = ({ entityId }: { entityId: number }) => {
+  const {
+    setup: { components },
+  } = useDojo();
 
   useMemo(() => {
     const fetchData = async () => {
-      setStatus(FetchStatus.Loading);
       try {
         const { data } = await sdk.getRealm({
           realmEntityId: numberToHex(entityId),
         });
-        let entity = data?.entities?.edges?.find((edge) => {
-          return edge?.node?.components?.find(
-            (component) => component?.__typename === "Realm",
-          );
+        data?.entities?.edges?.forEach((edge) => {
+          if (edge?.node) {
+            setComponentFromEntity(edge.node, "Realm", components);
+            setComponentFromEntity(edge.node, "Position", components);
+            setComponentFromEntity(edge.node, "Owner", components);
+          }
         });
-        let realm = entity?.node?.components?.find(
-          (component) => component?.__typename === "Realm",
-        ) as Realm;
-        let position = entity?.node?.components?.find(
-          (component) => component?.__typename === "Position",
-        ) as Position;
-        let owner = entity?.node?.components?.find(
-          (component) => component?.__typename === "Owner",
-        ) as Owner;
-
-        setRealm({
-          realmId: realm.realm_id,
-          cities: realm.cities,
-          rivers: realm.rivers,
-          wonder: realm.wonder,
-          harbors: realm.harbors,
-          regions: realm.regions,
-          resource_types_count: realm.resource_types_count,
-          resource_types_packed: realm.resource_types_packed,
-          order: realm.order,
-          position: { x: position.x, y: position.y },
-          owner: owner.address,
-        });
-      } catch (error) {
-        setError(error);
-        setStatus(FetchStatus.Error);
-      }
+      } catch (error) {}
     };
     fetchData();
   }, [entityId]);
+};
 
-  return {
-    realm,
-    status,
-    error,
-  };
+export const useSyncRealms = () => {
+  const {
+    setup: { components },
+  } = useDojo();
+
+  useMemo(() => {
+    const fetchData = async () => {
+      try {
+        const { data } = await sdk.getRealms();
+        console.log({ data });
+        data?.realmComponents?.edges?.forEach((edge) => {
+          if (edge?.node?.entity) {
+            setComponentFromEntity(edge.node.entity, "Realm", components);
+            setComponentFromEntity(edge.node.entity, "Position", components);
+            setComponentFromEntity(edge.node.entity, "Owner", components);
+          }
+        });
+      } catch (error) {}
+    };
+    fetchData();
+  }, []);
 };
 
 export interface CounterPartyOrderIdInterface {
@@ -424,10 +311,14 @@ export const useSyncCaravanInfo = (
         data?.resourcesGet?.edges?.forEach((edge) => {
           edge?.node &&
             setComponentFromEntity(edge.node, "OrderResource", components);
+          edge?.node &&
+            setComponentFromEntity(edge.node, "FungibleEntities", components);
         });
         data?.resourcesGive?.edges?.forEach((edge) => {
           edge?.node &&
             setComponentFromEntity(edge.node, "OrderResource", components);
+          edge?.node &&
+            setComponentFromEntity(edge.node, "FungibleEntities", components);
         });
       } catch (error) {}
     };
@@ -551,19 +442,15 @@ export const useSyncTradeResources = ({
           makerOrderId,
           takerOrderId,
         });
-        data.makerFungibleEntities?.edges?.forEach((edge) => {
-          edge?.node &&
-            setComponentFromEntity(edge.node, "FungibleEntities", components);
-        });
-        data.takerFungibleEntities?.edges?.map((edge) => {
-          edge?.node &&
-            setComponentFromEntity(edge.node, "FungibleEntities", components);
-        });
         data.resourcesGet?.edges?.map((edge) => {
+          edge?.node &&
+            setComponentFromEntity(edge.node, "FungibleEntities", components);
           edge?.node &&
             setComponentFromEntity(edge.node, "OrderResource", components);
         });
         data.resourcesGive?.edges?.map((edge) => {
+          edge?.node &&
+            setComponentFromEntity(edge.node, "FungibleEntities", components);
           edge?.node &&
             setComponentFromEntity(edge.node, "OrderResource", components);
         });

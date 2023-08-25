@@ -4,12 +4,14 @@ import {
   ResourcesIds,
   findResourceById,
 } from "../../../../constants/resources";
-import { currencyFormat } from "../../../../utils/utils.jsx";
+import {
+  currencyFormat,
+  getEntityIdFromKeys,
+} from "../../../../utils/utils.jsx";
 import { ReactComponent as Clock } from "../../../../assets/icons/common/clock.svg";
 import { ReactComponent as Village } from "../../../../assets/icons/common/village.svg";
 import ProgressBar from "../../../../elements/ProgressBar";
 import { useDojo } from "../../../../DojoContext";
-import useRealm from "../../../../hooks/store/useRealmStore";
 import { LaborConfig, Realm } from "../../../../types";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import {
@@ -18,17 +20,13 @@ import {
   formatSecondsInHoursMinutes,
 } from "./laborUtils";
 import { useEffect, useMemo, useState } from "react";
-import {
-  LaborInterface,
-  ResourceInterface,
-} from "../../../../hooks/graphql/useGraphQLQueries";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
+import { useComponentValue } from "@dojoengine/react";
+import useRealmStore from "../../../../hooks/store/useRealmStore";
 
 type LaborComponentProps = {
   resourceId: number;
   realm: Realm;
-  resource: ResourceInterface | undefined;
-  labor: LaborInterface | undefined;
   laborConfig: LaborConfig | undefined;
   buildLoadingStates: { [key: number]: boolean };
   setBuildLoadingStates: (prevStates: any) => void;
@@ -38,51 +36,54 @@ type LaborComponentProps = {
 export const LaborComponent = ({
   resourceId,
   realm,
-  resource,
-  labor,
   laborConfig,
   onBuild,
   setBuildLoadingStates,
   buildLoadingStates,
 }: LaborComponentProps) => {
   const {
-    setup: { systemCalls: { harvest_labor } },
-    account: { account }
+    setup: {
+      components: { Labor, Resource },
+      systemCalls: { harvest_labor },
+      optimisticSystemCalls: { optimisticHarvestLabor },
+    },
+    account: { account },
   } = useDojo();
 
   const { nextBlockTimestamp } = useBlockchainStore();
 
-  const [isHarvestLoading, setIsHarvestLoading] = useState(false);
-  const [prevResource, setPrevResource] = useState<
-    ResourceInterface | undefined
-  >(resource);
-  const [prevLabor, setPrevLabor] = useState<LaborInterface | undefined>(labor);
+  const { realmEntityId } = useRealmStore();
 
-  // NOTE: using prev resource and prev labor to make sure there's a change in value before stopping loading
+  const [isHarvestLoading, setIsHarvestLoading] = useState(false);
+
+  const labor = useComponentValue(
+    Labor,
+    getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
+  );
+
+  const resource = useComponentValue(
+    Resource,
+    getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
+  );
+
+  // TODO: better way to stop loading, because this will stop it directly with optimistic rendering
   useEffect(() => {
-    if (labor && prevLabor?.balance !== labor.balance) {
-      setBuildLoadingStates((prevStates: { [key: number]: boolean }) => ({
-        ...prevStates,
-        [resourceId!]: false,
-      }));
-    }
-    setPrevLabor(labor);
+    setBuildLoadingStates((prevStates: { [key: number]: boolean }) => ({
+      ...prevStates,
+      [resourceId!]: false,
+    }));
   }, [labor]);
 
   useEffect(() => {
-    if (resource && prevResource?.amount !== resource.amount) {
-      setIsHarvestLoading(false);
-    }
-    setPrevResource(resource);
+    setIsHarvestLoading(false);
   }, [resource]);
 
-  let realmEntityId = useRealm((state) => state.realmEntityId);
   // time until the next possible harvest (that happens every 7200 seconds (2hrs))
   // if labor balance is less than current time, then there is no time to next harvest
   const timeLeftToHarvest = useMemo(() => {
-    if (nextBlockTimestamp && labor && laborConfig && labor.lastHarvest > 0) {
+    if (nextBlockTimestamp && labor && laborConfig && labor.last_harvest > 0) {
       if (labor.balance > nextBlockTimestamp) {
-        const timeSinceLastHarvest = nextBlockTimestamp - labor.lastHarvest;
+        const timeSinceLastHarvest = nextBlockTimestamp - labor.last_harvest;
         return (
           laborConfig.base_labor_units -
           (timeSinceLastHarvest % laborConfig.base_labor_units)
@@ -97,7 +98,10 @@ export const LaborComponent = ({
   const onHarvest = () => {
     setIsHarvestLoading(true);
     playHarvest();
-    harvest_labor({
+    optimisticHarvestLabor(
+      nextBlockTimestamp || 0,
+      harvest_labor,
+    )({
       signer: account,
       realm_id: realmEntityId,
       resource_type: resourceId,
@@ -125,7 +129,7 @@ export const LaborComponent = ({
     if (labor && laborConfig && nextBlockTimestamp) {
       return calculateNextHarvest(
         labor.balance,
-        labor.lastHarvest,
+        labor.last_harvest,
         labor.multiplier,
         laborConfig.base_labor_units,
         isFood
@@ -155,18 +159,20 @@ export const LaborComponent = ({
               size="sm"
             />
             <div className="ml-2 text-xs font-bold text-white">
-              {currencyFormat(resource ? resource.amount : 0)}
+              {currencyFormat(resource ? resource.balance : 0)}
             </div>
             <div className="flex items-center ml-auto">
               {isFood && <Village />}
               {/* // DISCUSS: when there is no labor anymore, it means full decay of the buildings, so it should be multiplier 0 */}
               {resourceId == ResourcesIds["Wheat"] && (
-                <div className="px-2">{`${laborLeft > 0 && labor ? labor.multiplier : 0
-                  }/${realm?.rivers}`}</div>
+                <div className="px-2">{`${
+                  laborLeft > 0 && labor ? labor.multiplier : 0
+                }/${realm?.rivers}`}</div>
               )}
               {resourceId == ResourcesIds["Fish"] && (
-                <div className="px-2">{`${laborLeft > 0 && labor ? labor.multiplier : 0
-                  }/${realm?.harbors}`}</div>
+                <div className="px-2">{`${
+                  laborLeft > 0 && labor ? labor.multiplier : 0
+                }/${realm?.harbors}`}</div>
               )}
               {/* // TODO: show visual cue that it's disabled */}
               {!buildLoadingStates[resourceId] && (
@@ -182,11 +188,11 @@ export const LaborComponent = ({
               {buildLoadingStates[resourceId] && (
                 <Button
                   isLoading={true}
-                  onClick={() => { }}
+                  onClick={() => {}}
                   variant="danger"
                   className="ml-auto p-2 !h-4 text-xxs !rounded-md"
                 >
-                  { }
+                  {}
                 </Button>
               )}
             </div>
@@ -213,12 +219,12 @@ export const LaborComponent = ({
             <div className="flex items-center mx-auto text-white/70">
               {laborConfig && labor && laborLeft > 0
                 ? `+${calculateProductivity(
-                  isFood
-                    ? laborConfig.base_food_per_cycle
-                    : laborConfig.base_resources_per_cycle,
-                  labor.multiplier,
-                  laborConfig.base_labor_units,
-                ).toFixed(0)}`
+                    isFood
+                      ? laborConfig.base_food_per_cycle
+                      : laborConfig.base_resources_per_cycle,
+                    labor.multiplier,
+                    laborConfig.base_labor_units,
+                  ).toFixed(0)}`
                 : "+0"}
               <ResourceIcon
                 containerClassName="mx-0.5"
@@ -250,11 +256,11 @@ export const LaborComponent = ({
             {isHarvestLoading && (
               <Button
                 isLoading={true}
-                onClick={() => { }}
+                onClick={() => {}}
                 variant="danger"
                 className="ml-auto p-2 !h-4 text-xxs !rounded-md"
               >
-                { }
+                {}
               </Button>
             )}
           </div>

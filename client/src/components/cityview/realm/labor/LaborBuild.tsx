@@ -16,28 +16,30 @@ import clsx from "clsx";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../DojoContext";
 import { formatSecondsLeftInDaysHours } from "./laborUtils";
-import {
-  RealmResourcesInterface,
-  useGetRealm,
-} from "../../../../hooks/graphql/useGraphQLQueries";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
+import { getComponentValue } from "@latticexyz/recs";
+import { getEntityIdFromKeys } from "../../../../utils/utils";
+import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
+import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 
 type LaborBuildPopupProps = {
   resourceId: number;
-  resources: RealmResourcesInterface | undefined;
   setBuildLoadingStates: (prevStates: any) => void;
   onClose: () => void;
 };
 
 export const LaborBuildPopup = ({
   resourceId,
-  resources,
   setBuildLoadingStates,
   onClose,
 }: LaborBuildPopupProps) => {
   const {
-    setup: { systemCalls: { build_labor } },
-    account: { account }
+    setup: {
+      components: { Resource },
+      systemCalls: { build_labor },
+      optimisticSystemCalls: { optimisticBuildLabor },
+    },
+    account: { account },
   } = useDojo();
 
   const [canBuild, setCanBuild] = useState(true);
@@ -48,10 +50,13 @@ export const LaborBuildPopup = ({
     setMultiplier(1); // Reset the multiplier to 1 when the resourceId changes
   }, [resourceId]);
 
-  let realmEntityId = useRealmStore((state) => state.realmEntityId);
-  const { realm } = useGetRealm({ entityId: realmEntityId });
+  let { realmEntityId } = useRealmStore();
+  const { realm } = useGetRealm(realmEntityId);
+
+  const { nextBlockTimestamp } = useBlockchainStore();
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
+  const laborUnits = useMemo(() => (isFood ? 12 : laborAmount), [laborAmount]);
   const resourceInfo = useMemo(
     () => findResourceById(resourceId),
     [resourceId],
@@ -68,10 +73,14 @@ export const LaborBuildPopup = ({
   }
 
   useEffect(() => {
-    setCanBuild(true);
+    setCanBuild(false);
     costResources.forEach(({ resourceId, amount }) => {
-      if (resources && resources[resourceId].amount < amount) {
-        setCanBuild(false);
+      const realmResource = getComponentValue(
+        Resource,
+        getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
+      );
+      if (realmResource && realmResource.balance >= amount) {
+        setCanBuild(true);
       }
     });
   }, [laborAmount, multiplier]);
@@ -82,19 +91,22 @@ export const LaborBuildPopup = ({
     base_resources_per_cycle: 21,
   };
 
-  const handleBuild = () => {
+  const onBuild = () => {
     setBuildLoadingStates((prevStates: any) => ({
       ...prevStates,
       [resourceId]: true,
     }));
-    build_labor({
+    optimisticBuildLabor(
+      nextBlockTimestamp || 0,
+      build_labor,
+    )({
       signer: account,
       realm_id: realmEntityId,
       resource_type: resourceId,
-      labor_units: isFood ? 12 : laborAmount,
+      labor_units: laborUnits,
       multiplier: multiplier,
-    });
-    playLaborSound(resourceId);
+    }),
+      playLaborSound(resourceId);
     onClose();
   };
 
@@ -239,8 +251,9 @@ export const LaborBuildPopup = ({
               {resourceId === 254 && (
                 <div className="flex items-center">
                   <Farms className="mr-1" />
-                  <span className="mr-1 font-bold">{`${multiplier}/${realm?.rivers || 0
-                    }`}</span>{" "}
+                  <span className="mr-1 font-bold">{`${multiplier}/${
+                    realm?.rivers || 0
+                  }`}</span>{" "}
                   Farms
                 </div>
               )}
@@ -248,8 +261,9 @@ export const LaborBuildPopup = ({
                 <div className="flex items-center">
                   {/* // DISCUSS: can only be 0, because that is when you can build */}
                   <FishingVillages className="mr-1" />
-                  <span className="mr-1 font-bold">{`${multiplier}/${realm?.harbors || 0
-                    }`}</span>{" "}
+                  <span className="mr-1 font-bold">{`${multiplier}/${
+                    realm?.harbors || 0
+                  }`}</span>{" "}
                   Fishing Villages
                 </div>
               )}
@@ -264,10 +278,11 @@ export const LaborBuildPopup = ({
                         </div> */}
             {laborConfig && (
               <div className="flex items-center">
-                {`+${isFood
-                  ? (laborConfig.base_food_per_cycle * multiplier) / 2
-                  : ""
-                  }${isFood ? "" : laborConfig.base_resources_per_cycle / 2}`}
+                {`+${
+                  isFood
+                    ? (laborConfig.base_food_per_cycle * multiplier) / 2
+                    : ""
+                }${isFood ? "" : laborConfig.base_resources_per_cycle / 2}`}
                 <ResourceIcon
                   containerClassName="mx-0.5"
                   className="!w-[12px]"
@@ -361,8 +376,8 @@ export const LaborBuildPopup = ({
           <Button
             className="!px-[6px] !py-[2px] text-xxs"
             disabled={!canBuild}
-            onClick={() => handleBuild()}
-            variant="outline"
+            onClick={onBuild}
+            variant={canBuild ? "success" : "danger"}
             withoutSound
           >
             {isFood ? `Build` : `Buy Tools`}

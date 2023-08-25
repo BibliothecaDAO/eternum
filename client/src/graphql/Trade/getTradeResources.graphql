@@ -1,32 +1,4 @@
 query getTradeResources($makerOrderId: String!, $takerOrderId: String!) {
-  makerFungibleEntities: entities(keys: [$makerOrderId]) {
-    edges {
-      node {
-        keys
-        components {
-          __typename
-          ... on FungibleEntities {
-            key
-            count
-          }
-        }
-      }
-    }
-  }
-  takerFungibleEntities: entities(keys: [$takerOrderId]) {
-    edges {
-      node {
-        keys
-        components {
-          __typename
-          ... on FungibleEntities {
-            key
-            count
-          }
-        }
-      }
-    }
-  }
   resourcesGive: entities(keys: [$makerOrderId]) {
     edges {
       node {
@@ -36,6 +8,10 @@ query getTradeResources($makerOrderId: String!, $takerOrderId: String!) {
           ... on OrderResource {
             resource_type
             balance
+          }
+          ... on FungibleEntities {
+            key
+            count
           }
         }
       }
@@ -50,6 +26,10 @@ query getTradeResources($makerOrderId: String!, $takerOrderId: String!) {
           ... on OrderResource {
             resource_type
             balance
+          }
+          ... on FungibleEntities {
+            key
+            count
           }
         }
       }

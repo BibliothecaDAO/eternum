@@ -1,69 +1,64 @@
-import { Components, Schema, Type, setComponent } from "@latticexyz/recs";
+import { Components, Schema, setComponent } from "@latticexyz/recs";
 import { SetupNetworkResult } from "./setupNetwork";
 import { Account, Event, num } from 'starknet';
-import { uuid } from "@latticexyz/utils";
-import { ClientComponents } from "./createClientComponents";
 import { getEntityIdFromKeys } from "../utils/utils";
 
-// @note: trying to get a high enough number so that it won't be an existing entity id
-// TODO: if you call multiple systems at the same time it might be a problem
-const LOW_ENTITY_ID = 9999999999;
 
 interface SystemSigner {
     signer: Account
 }
 
-interface BuildLaborProps extends SystemSigner {
+export interface BuildLaborProps extends SystemSigner {
     realm_id: num.BigNumberish;
     resource_type: num.BigNumberish;
     labor_units: num.BigNumberish;
     multiplier: num.BigNumberish;
 }
 
-interface HarvestLaborProps extends SystemSigner {
+export interface HarvestLaborProps extends SystemSigner {
     realm_id: num.BigNumberish;  // TODO: this is entity id not realm id
     resource_type: num.BigNumberish;
 }
 
-interface MintResourcesProps extends SystemSigner {
+export interface MintResourcesProps extends SystemSigner {
     entity_id: num.BigNumberish;
     resource_type: num.BigNumberish;
     amount: num.BigNumberish;
 }
 
-interface TakeFungibleOrderProps extends SystemSigner {
+export interface TakeFungibleOrderProps extends SystemSigner {
     taker_id: num.BigNumberish;
     trade_id: num.BigNumberish;
 }
 
-interface ChangeOrderStatusProps extends SystemSigner {
+export interface ChangeOrderStatusProps extends SystemSigner {
     realm_id: num.BigNumberish;
     trade_id: num.BigNumberish;
     new_status: num.BigNumberish;
 }
 
-interface CreateFreeTransportUnitProps extends SystemSigner {
+export interface CreateFreeTransportUnitProps extends SystemSigner {
     realm_id: num.BigNumberish;
     quantity: num.BigNumberish;
 }
 
-interface CreateCaravanProps extends SystemSigner {
+export interface CreateCaravanProps extends SystemSigner {
     entity_ids: num.BigNumberish[];
 }
 
-interface AttachCaravanProps extends SystemSigner {
+export interface AttachCaravanProps extends SystemSigner {
     realm_id: num.BigNumberish;
     trade_id: num.BigNumberish;
     caravan_id: num.BigNumberish;
 }
 
-interface ClaimFungibleOrderProps extends SystemSigner {
+export interface ClaimFungibleOrderProps extends SystemSigner {
     entity_id: num.BigNumberish;
     trade_id: num.BigNumberish;
 }
 
 // Interface definition
-interface CreateRealmProps extends SystemSigner {
+export interface CreateRealmProps extends SystemSigner {
     realm_id: num.BigNumberish;
     owner: num.BigNumberish;
     resource_types_packed: num.BigNumberish;
@@ -80,7 +75,7 @@ interface CreateRealmProps extends SystemSigner {
     };
 }
 
-interface MakeFungibleOrderProps extends SystemSigner {
+export interface MakeFungibleOrderProps extends SystemSigner {
     maker_id: num.BigNumberish;
     maker_entity_types: num.BigNumberish[];
     maker_quantities: num.BigNumberish[];
@@ -94,7 +89,6 @@ export type SystemCalls = ReturnType<typeof createSystemCalls>;
 // NOTE: need to add waitForTransaction when connected to rinnigan
 export function createSystemCalls(
     { execute, provider, contractComponents }: SetupNetworkResult,
-    { Trade, Status, FungibleEntities, OrderResource }: ClientComponents,
 ) {
     // Refactor the functions using the interfaces
     const build_labor = async (props: BuildLaborProps) => {
@@ -120,82 +114,20 @@ export function createSystemCalls(
         setComponentsFromEvents(contractComponents, getEvents(receipt));
     }
 
-    const make_fungible_order = async (props: MakeFungibleOrderProps): Promise<num.BigNumberish> => {
+    const make_fungible_order = async (props: MakeFungibleOrderProps): Promise<number> => {
         const {
             maker_id, maker_entity_types, maker_quantities,
             taker_entity_types, taker_quantities, signer
         } = props;
-
+        
         const expires_at = Math.floor(Date.now() / 1000 + 2628000);
 
-        // optimisitc rendering of trade
-        const overrideId = uuid();
-        const trade_id = getEntityIdFromKeys([BigInt(LOW_ENTITY_ID)]);
-        const maker_order_id = getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 1)]);
-        const taker_order_id = getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 2)]);
-        const key = getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 3)]);
-
-        const numberMakerId = maker_id as Type.Number;
-
-        Trade.addOverride(
-            overrideId, {
-            entity: trade_id,
-            value: { maker_id: numberMakerId, taker_id: 0, maker_order_id, taker_order_id, expires_at, claimed_by_maker: false, claimed_by_taker: false, taker_needs_caravan: true },
-        });
-        Status.addOverride(
-            overrideId, {
-            entity: trade_id,
-            value: { value: 0 }
-        }
-        );
-        FungibleEntities.addOverride(
-            overrideId, {
-            entity: maker_order_id,
-            value: { key, count: maker_quantities.length }
-        }
-        )
-        FungibleEntities.addOverride(
-            overrideId, {
-            entity: taker_order_id,
-            value: { key, count: taker_quantities.length }
-        }
-        )
-        for (let i = 0; i < maker_quantities.length; i++) {
-            OrderResource.addOverride(
-                overrideId, {
-                entity: getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 1), BigInt(LOW_ENTITY_ID + 3), BigInt(i)]),
-                value: {
-                    resource_type: maker_entity_types[i] as Type.Number,
-                    balance: maker_quantities[i] as Type.Number
-                }
-            }
-            )
-        }
-        for (let i = 0; i < taker_quantities.length; i++) {
-            OrderResource.addOverride(
-                overrideId, {
-                entity: getEntityIdFromKeys([BigInt(LOW_ENTITY_ID + 2), BigInt(LOW_ENTITY_ID + 3), BigInt(i)]),
-                value: {
-                    resource_type: taker_entity_types[i] as Type.Number,
-                    balance: taker_quantities[i] as Type.Number
-                }
-            }
-            )
-        }
-
-        try {
-            const tx = await execute(signer, "MakeFungibleOrder", [maker_id, maker_entity_types.length, ...maker_entity_types, maker_quantities.length, ...maker_quantities, 0, taker_entity_types.length, ...taker_entity_types, taker_quantities.length, ...taker_quantities, 1, expires_at]);
-            const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, {retryInterval: 500});
-            const events = getEvents(receipt);
-            setComponentsFromEvents(contractComponents, events);
-            // DISCUSS: trade_id NEEDED to continue to next step
-            // DISCUSS: but for optimistic rendering just create a new uuid ? 
-            let trade_id = getEntityIdFromEvents(events, "Trade");
-            return trade_id;
-        } finally {
-            Trade.removeOverride(overrideId);
-            Status.removeOverride(overrideId);
-        }
+        const tx = await execute(signer, "MakeFungibleOrder", [maker_id, maker_entity_types.length, ...maker_entity_types, maker_quantities.length, ...maker_quantities, 0, taker_entity_types.length, ...taker_entity_types, taker_quantities.length, ...taker_quantities, 1, expires_at]);
+        const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, {retryInterval: 500});
+        const events = getEvents(receipt);
+        setComponentsFromEvents(contractComponents, events);
+        let trade_id = getEntityIdFromEvents(events, "Trade");
+        return trade_id;
     }
 
     const take_fungible_order = async (props: TakeFungibleOrderProps) => {
