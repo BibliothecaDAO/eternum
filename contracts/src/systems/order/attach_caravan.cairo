@@ -132,162 +132,285 @@ mod AttachCaravan {
         );
     }
 }
-// TODO: need to test it when withdraw gas is working
-// mod tests {
-//     // utils
-//     use eternum::utils::testing::spawn_test_world_without_init;
-//     use eternum::constants::WORLD_CONFIG_ID;
 
-//     use core::traits::Into;
-//     use array::ArrayTrait;
-//     use option::OptionTrait;
-//     use debug::PrintTrait;
 
-//     use dojo::interfaces::IWorldDispatcherTrait;
-//     use dojo::storage::query::{Query, TupleSize3IntoQuery};
-//     use dojo::storage::query::TupleSize2IntoQuery;
-//     use dojo::execution_context::Context;
-//     use dojo::auth::components::AuthRole;
 
-//     #[test]
-//     #[available_gas(30000000000000)]
-//     // 1. attach for the maker
-//     // 2. attach for the taker
-//     fn test_attach_caravan() {
-//         let world = spawn_test_world_without_init();
+#[cfg(test)]
+mod tests {   
+    use eternum::components::resources::Resource;
+    use eternum::components::trade::FungibleEntities;
+    use eternum::components::owner::Owner;
+    use eternum::components::position::Position;
+    use eternum::components::capacity::Capacity;
+    use eternum::components::movable::Movable;
+    use eternum::components::caravan::Caravan;
+    use eternum::components::config::WeightConfig;
+    
+    use eternum::components::trade::{Trade,Status, OrderId, OrderResource};
 
-//         // set as executor
-//         starknet::testing::set_contract_address(starknet::contract_address_const::<1>());
+    use eternum::constants::ResourceTypes;
+    use eternum::constants::WORLD_CONFIG_ID;
 
-//         // context (can be any value since world not init)
-//         let ctx = Context {
-//             world,
-//             caller_account: starknet::contract_address_const::<0x1337>(),
-//             caller_system: 'Tester'.into(),
-//             execution_role: AuthRole {
-//                 id: 'FooWriter'.into()
-//             },
-//         };
+    use eternum::utils::testing::spawn_eternum;
 
-//         // create entity 1
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(45);
-//         values.append(50);
-//         // maker_id = 11
-//         world.set_entity(ctx, 'Position'.into(), 11.into(), 0_u8, values.span());
-//         // set owner
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(0);
-//         world.set_entity(ctx, 'Owner'.into(), 11.into(), 0_u8, values.span());
+    use dojo::world::{ IWorldDispatcher, IWorldDispatcherTrait};
+    use starknet::contract_address_const;
 
-//         // create entity 2
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(60);
-//         values.append(70);
-//         // taker_id = 12
-//         world.set_entity(ctx, 'Position'.into(), 12.into(), 0_u8, values.span());
 
-//         // create a trade
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // maker_id
-//         values.append(11);
-//         // taker_id
-//         values.append(12);
-//         // maker_order_id
-//         values.append(13);
-//         // taker_order_id
-//         values.append(14);
-//         // expires_at 
-//         values.append(100);
-//         // claimed_by_maker
-//         values.append(0);
-//         // claimed_by_taker
-//         values.append(0);
-//         // taker_needs_caravan
-//         values.append(0);
+    use poseidon::poseidon_hash_span;
+    use traits::Into;
+    use result::ResultTrait;
+    use array::ArrayTrait;
+    use option::OptionTrait;
+    use serde::Serde;
 
-//         // trade_id
-//         let trade_id = 10;
-//         world.set_entity(ctx, 'Trade'.into(), trade_id.into(), 0_u8, values.span());
 
-//         // set status of trade
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(0);
-//         world.set_entity(ctx, 'Status'.into(), trade_id.into(), 0_u8, values.span());
+    #[test]
+    #[available_gas(30000000000000)]
+    fn test_maker_attach_caravan() {
+        let world = spawn_eternum();
 
-//         // set fungible entities in the maker order
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // key = 33
-//         values.append(33);
-//         values.append(2);
-//         world.set_entity(ctx, 'FungibleEntities'.into(), 13.into(), 0_u8, values.span());
-//         // set resource
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(1);
-//         values.append(100);
-//         world.set_entity(ctx, 'Resource'.into(), (13, 33, 0).into(), 0_u8, values.span());
-//         // set resource
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(2);
-//         values.append(200);
-//         world.set_entity(ctx, 'Resource'.into(), (13, 33, 1).into(), 0_u8, values.span());
+        // set as executor
+        starknet::testing::set_contract_address(world.executor());
 
-//         // set weight of resources
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(1);
-//         values.append(10);
-//         world
-//             .set_entity(
-//                 ctx, 'WeightConfig'.into(), (WORLD_CONFIG_ID, 1).into(), 0_u8, values.span()
-//             );
-//         // set weight of resources
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(2);
-//         values.append(20);
-//         world
-//             .set_entity(
-//                 ctx, 'WeightConfig'.into(), (WORLD_CONFIG_ID, 2).into(), 0_u8, values.span()
-//             );
+        let maker_id = 11_u64;
+        let taker_id = 12_u64;
 
-//         // caravan_id = 20;
-//         // create a caravan owned by the maker
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(11);
-//         world.set_entity(ctx, 'Owner'.into(), 20.into(), 0_u8, values.span());
-//         // capacity
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(10000);
-//         world.set_entity(ctx, 'Capacity'.into(), 20.into(), 0_u8, values.span());
-//         // movable
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(10);
-//         values.append(0);
-//         world.set_entity(ctx, 'Movable'.into(), 20.into(), 0_u8, values.span());
-//         // position
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(45);
-//         values.append(50);
-//         world.set_entity(ctx, 'Position'.into(), 20.into(), 0_u8, values.span());
+        set!(world, (Position { x: 45, y: 50, entity_id: maker_id.into()}));
+        set!(world, (Owner { address: contract_address_const::<'maker'>(), entity_id: maker_id.into()}));
 
-//         // attach caravan to maker
-//         let mut calldata = array::ArrayTrait::<felt252>::new();
-//         // maker_id
-//         calldata.append(11);
-//         // trade_id
-//         calldata.append(10);
-//         // caravan_id
-//         calldata.append(20);
-//         // execute
-//         world.execute('AttachCaravan'.into(), calldata.span());
+        set!(world, (Position { x: 60, y: 70, entity_id: taker_id.into()}));
+        set!(world, (Owner { address: contract_address_const::<'taker'>(), entity_id: taker_id.into()}));
 
-//         // assert that caravan is non movable
-//         let caravan_movable = world.entity('Movable'.into(), 20.into(), 0_u8, 0_usize);
-//         assert(*caravan_movable[1] == 1, 'caravan is not blocked');
+        // create a trade  
+        let trade_id = 10_u128;
+        let maker_order_id = 13_u128;
+        let taker_order_id = 14_u128;
+        set!(world, (Trade {
+                trade_id,
+                maker_id: maker_id.into(),
+                taker_id: taker_id.into(),
+                maker_order_id: maker_order_id,
+                taker_order_id: taker_order_id,
+                expires_at: 100,
+                claimed_by_maker: false,
+                claimed_by_taker: false,
+                taker_needs_caravan: false
+        }));
 
-//         // assert that caravan is attached to the trade for that entity
-//         let caravan = world.entity('Caravan'.into(), (10, 11).into(), 0_u8, 0_usize);
-//         assert(*caravan[0] == 20, 'caravan not attached to trade');
-//     }
-// }
+        // set trade status to open
+        set!(world, (Status { value: 0, trade_id }));
+
+        set!(world, (FungibleEntities { entity_id: maker_order_id, count: 2, key: 33}));
+        set!(world, (
+            OrderResource { 
+                order_id: maker_order_id,
+                fungible_entities_id: 33,
+                index: 0,
+                resource_type: ResourceTypes::WOOD,
+                balance: 100
+            }
+        ));
+        set!(world, (
+            OrderResource { 
+                order_id: maker_order_id,
+                fungible_entities_id: 33,
+                index: 1,
+                resource_type: ResourceTypes::STONE,
+                balance: 200
+            }
+        ))
+
+
+        set!(world, (
+            WeightConfig {
+                config_id: WORLD_CONFIG_ID,
+                weight_config_id: ResourceTypes::WOOD.into(),
+                entity_type: ResourceTypes::WOOD.into(),
+                weight_gram: 10
+            }
+        ));
+
+        set!(world, (
+            WeightConfig {
+                config_id: WORLD_CONFIG_ID,
+                weight_config_id: ResourceTypes::STONE.into(),
+                entity_type: ResourceTypes::STONE.into(),
+                weight_gram: 20
+            }
+        ));
+
+
+        // create a caravan owned by the maker
+        let caravan_id = 20_u64;
+        let caravan_id_felt: felt252 = caravan_id.into();
+        set!(world, (Owner { address: contract_address_const::<'maker'>(), entity_id: caravan_id.into()}));
+        set!(world, (Position { x: 45, y: 50, entity_id: caravan_id.into()}));
+        set!(world, (Capacity { weight_gram: 10_000, entity_id: caravan_id.into()}));
+        set!(world, (Movable { sec_per_km: 10, blocked: false, entity_id: caravan_id.into()}));
+
+
+        // attach caravan to maker
+        starknet::testing::set_contract_address(contract_address_const::<'maker'>());
+        let mut calldata = array![];
+        Serde::serialize(@maker_id, ref calldata);
+        Serde::serialize(@trade_id, ref calldata);
+        Serde::serialize(@caravan_id, ref calldata);
+        world.execute('AttachCaravan', calldata);
+
+
+        // check caravan 
+        let (caravan_movable, caravan_orderid) = get!(world, caravan_id_felt, (Movable, OrderId));
+        assert(caravan_movable.blocked, 'caravan is not blocked');
+        assert(caravan_orderid.id == maker_order_id.into(), 'caravan order id is not correct');
+
+        
+        let caravan_key_arr = array![maker_order_id.into(), maker_id.into()];
+        let caravan_key = poseidon_hash_span(caravan_key_arr.span());
+        let caravan = get!(world, caravan_key, Caravan);
+
+        assert(caravan.caravan_id == caravan_id.into(), 'incorrect caravan id');
+    }
+
+
+
+
+
+
+
+    #[test]
+    #[available_gas(30000000000000)]
+    fn test_taker_attach_caravan() {
+        let world = spawn_eternum();
+
+        // set as executor
+        starknet::testing::set_contract_address(world.executor());
+
+        let maker_id = 11_u64;
+        let taker_id = 12_u64;
+
+        set!(world, (Position { x: 45, y: 50, entity_id: maker_id.into()}));
+        set!(world, (Owner { address: contract_address_const::<'maker'>(), entity_id: maker_id.into()}));
+
+        set!(world, (Position { x: 60, y: 70, entity_id: taker_id.into()}));
+        set!(world, (Owner { address: contract_address_const::<'taker'>(), entity_id: taker_id.into()}));
+
+        // create a trade  
+        let trade_id = 10_u128;
+        let maker_order_id = 13_u128;
+        let taker_order_id = 14_u128;
+        set!(world, (Trade {
+                trade_id,
+                maker_id: maker_id.into(),
+                taker_id: taker_id.into(),
+                maker_order_id: maker_order_id,
+                taker_order_id: taker_order_id,
+                expires_at: 100,
+                claimed_by_maker: false,
+                claimed_by_taker: false,
+                taker_needs_caravan: false
+        }));
+
+        // set trade status to open
+        set!(world, (Status { value: 0, trade_id }));
+
+        set!(world, (FungibleEntities { entity_id: taker_order_id, count: 2, key: 33}));
+        set!(world, (
+            OrderResource { 
+                order_id: taker_order_id,
+                fungible_entities_id: 33,
+                index: 0,
+                resource_type: ResourceTypes::WOOD,
+                balance: 100
+            }
+        ));
+        set!(world, (
+            OrderResource { 
+                order_id: taker_order_id,
+                fungible_entities_id: 33,
+                index: 1,
+                resource_type: ResourceTypes::STONE,
+                balance: 200
+            }
+        ))
+
+
+        set!(world, (
+            WeightConfig {
+                config_id: WORLD_CONFIG_ID,
+                weight_config_id: ResourceTypes::WOOD.into(),
+                entity_type: ResourceTypes::WOOD.into(),
+                weight_gram: 10
+            }
+        ));
+
+        set!(world, (
+            WeightConfig {
+                config_id: WORLD_CONFIG_ID,
+                weight_config_id: ResourceTypes::STONE.into(),
+                entity_type: ResourceTypes::STONE.into(),
+                weight_gram: 20
+            }
+        ));
+
+
+        // create a caravan owned by the taker
+        let caravan_id = 20_u64;
+        let caravan_id_felt: felt252 = caravan_id.into();
+        set!(world, (Owner { address: contract_address_const::<'taker'>(), entity_id: caravan_id.into()}));
+        set!(world, (Position { x: 60, y: 70, entity_id: caravan_id.into()}));
+        set!(world, (Capacity { weight_gram: 10_000, entity_id: caravan_id.into()}));
+        set!(world, (Movable { sec_per_km: 10, blocked: false, entity_id: caravan_id.into()}));
+
+    
+        // attach caravan to taker
+        starknet::testing::set_contract_address(contract_address_const::<'taker'>());
+        let mut calldata = array![];
+        Serde::serialize(@taker_id, ref calldata);
+        Serde::serialize(@trade_id, ref calldata);
+        Serde::serialize(@caravan_id, ref calldata);
+        world.execute('AttachCaravan', calldata);
+
+
+        // check caravan
+        let (caravan_movable, caravan_orderid) = get!(world, caravan_id_felt, (Movable, OrderId));
+        assert(caravan_movable.blocked, 'caravan is not blocked');
+        assert(caravan_orderid.id == taker_order_id.into(), 'caravan order id is not correct');
+
+        let caravan_key_arr = array![taker_order_id.into(), taker_id.into()];
+        let caravan_key = poseidon_hash_span(caravan_key_arr.span());
+        let caravan = get!(world, caravan_key, Caravan);
+
+        assert(caravan.caravan_id == caravan_id.into(), 'incorrect caravan id');
+    }
+
+
+
+
+
+
+    #[test]
+    #[available_gas(30000000000000)]
+    #[should_panic(expected: ('Caller not owner of entity_id','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED' ))]
+    fn test_not_owner() {
+        let world = spawn_eternum();
+
+        let taker_id = 12_u64;
+        let trade_id = 10_u128;
+        let caravan_id = 20_u64;
+    
+        starknet::testing::set_contract_address(
+            contract_address_const::<'unknown'>()
+        );
+
+        let mut calldata = array![];
+        Serde::serialize(@taker_id, ref calldata);
+        Serde::serialize(@trade_id, ref calldata);
+        Serde::serialize(@caravan_id, ref calldata);
+        world.execute('AttachCaravan', calldata);
+
+    }
+
+}
 
 
