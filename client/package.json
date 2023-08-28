@@ -39,7 +39,7 @@
     "three": "^0.148.0",
     "three-stdlib": "^2.21.8",
     "use-sound": "^4.0.1",
-    "wouter": "^2.10.1",
+    "wouter": "^2.11.0",
     "zustand": "^4.3.7"
   },
   "devDependencies": {
