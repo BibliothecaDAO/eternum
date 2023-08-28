@@ -100,9 +100,11 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
           <div className="w-1/3 text-gold flex justify-center items-center flex-wrap">
             {resourcesGive &&
               resourcesGive.map(({ resourceId, amount }) => (
-                <div className="flex flex-col items-center mx-2 my-1">
+                <div
+                  className="flex flex-col items-center mx-2 my-1"
+                  key={resourceId}
+                >
                   <ResourceIcon
-                    key={resourceId}
                     resource={getResourceTrait(resourceId)}
                     size="xs"
                     className="mb-1"
