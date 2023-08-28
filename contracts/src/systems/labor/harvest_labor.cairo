@@ -110,232 +110,230 @@ mod HarvestLabor {
         return ();
     }
 }
-// // TODO: test when withdraw gas is solved
-// // TODO: remove everything related to vault
-// mod tests {
-//     // constants
-//     use eternum::constants::ResourceTypes;
 
-//     use core::traits::Into;
-//     use core::result::ResultTrait;
-//     use array::ArrayTrait;
-//     use option::OptionTrait;
 
-//     use starknet::syscalls::deploy_syscall;
+#[cfg(test)]
+mod tests {
+    use eternum::constants::ResourceTypes;
+    use eternum::components::resources::Resource;
+    use eternum::components::labor::Labor;
+    use eternum::components::position::Position;
 
-//     // testing utils
-//     use eternum::utils::testing::spawn_test_world_without_init;
+    use eternum::utils::testing::spawn_eternum;
 
-//     use dojo::interfaces::IWorldDispatcherTrait;
-//     use dojo::auth::systems::{Route, RouteTrait};
-//     use dojo::storage::query::{
-//         Query, TupleSize2IntoQuery, LiteralIntoQuery, TupleSize3IntoQuery
-//     };
+    use traits::{Into, TryInto};
+    use result::ResultTrait;
+    use array::ArrayTrait;
+    use option::OptionTrait;
+    use serde::Serde;
+    
+    use dojo::world::{ IWorldDispatcher, IWorldDispatcherTrait};
 
-//     // #[test]
-//     // // need higher gas limit because of new auth system
-//     // #[available_gas(3000000000)]
-//     // fn test_harvest_labor_non_food() {
-//     //     let world = spawn_test_world_without_init();
 
-//     //     /// CREATE ENTITIES ///
-//     //     // set realm entity
-//     //     let mut create_realm_calldata = array::ArrayTrait::<felt252>::new();
-//     //     create_realm_calldata.append(1);
-//     //     create_realm_calldata.append(starknet::get_caller_address().into());
-//     //     create_realm_calldata.append(1);
-//     //     create_realm_calldata.append(1);
-//     //     create_realm_calldata.append(5);
-//     //     create_realm_calldata.append(5);
-//     //     create_realm_calldata.append(5);
-//     //     create_realm_calldata.append(5);
-//     //     create_realm_calldata.append(1);
-//     //     create_realm_calldata.append(1);
-//     //     world.execute('CreateRealm'.into(), create_realm_calldata.span());
+    #[test]
+    #[available_gas(3000000000)]
+    fn test_harvest_labor_non_food() {
+        let world = spawn_eternum();
 
-//     //     // set labor configuration entity
-//     //     let mut create_labor_conf_calldata = array::ArrayTrait::<felt252>::new();
-//     //     create_labor_conf_calldata.append(7200);
-//     //     create_labor_conf_calldata.append(250);
-//     //     create_labor_conf_calldata.append(21000000000000000000);
-//     //     world.execute('SetLaborConfig'.into(), create_labor_conf_calldata.span());
+        // set realm entity
+        let position = Position { x: 1, y: 1, entity_id: 1_u128};
+        let mut create_realm_calldata = Default::default();
 
-//     //     let mut create_labor_cr_calldata = array::ArrayTrait::<felt252>::new();
-//     //     create_labor_cr_calldata.append(1);
-//     //     create_labor_cr_calldata.append(1);
-//     //     create_labor_cr_calldata.append(1);
-//     //     world.execute('SetLaborCostResources'.into(), create_labor_cr_calldata.span());
+        Serde::serialize(@1, ref create_realm_calldata); // realm id
+        Serde::serialize(@starknet::get_caller_address(), ref create_realm_calldata); // owner
+        Serde::serialize(@0x209, ref create_realm_calldata); // resource_types_packed // 2,9 // stone and gold
+        Serde::serialize(@3, ref create_realm_calldata); // resource_types_count
+        Serde::serialize(@5, ref create_realm_calldata); // cities
+        Serde::serialize(@5, ref create_realm_calldata); // harbors
+        Serde::serialize(@5, ref create_realm_calldata); // rivers
+        Serde::serialize(@5, ref create_realm_calldata); // regions
+        Serde::serialize(@1, ref create_realm_calldata); // wonder
+        Serde::serialize(@1, ref create_realm_calldata); // order
+        Serde::serialize(@position, ref create_realm_calldata); // position
+       let result = world.execute('CreateRealm', create_realm_calldata);
+       let realm_entity_id = *result[0];
 
-//     //     let mut create_labor_cv_calldata = array::ArrayTrait::<felt252>::new();
-//     //     create_labor_cv_calldata.append(1);
-//     //     create_labor_cv_calldata.append(1);
-//     //     create_labor_cv_calldata.append(1000);
-//     //     world.execute('SetLaborCostAmount'.into(), create_labor_cv_calldata.span());
+        // set labor configuration entity
+        let mut create_labor_conf_calldata = array![];
+        let base_labor_units = 7200;
+        let base_resources_per_cycle = 250;
+        let base_food_per_cycle = 21_000_000_000_000_000_000;
+        Serde::serialize(@base_labor_units, ref create_labor_conf_calldata); 
+        Serde::serialize(@base_resources_per_cycle, ref create_labor_conf_calldata);
+        Serde::serialize(@base_food_per_cycle, ref create_labor_conf_calldata);
+        world.execute('SetLaborConfig', create_labor_conf_calldata); 
 
-//     //     // mint 100000 resource id 1 for realm id 1;
-//     //     let mut mint_resources_calldata = array::ArrayTrait::<felt252>::new();
-//     //     mint_resources_calldata.append(1);
-//     //     mint_resources_calldata.append(1);
-//     //     mint_resources_calldata.append(100000);
-//     //     world.execute('MintResources'.into(), mint_resources_calldata.span());
+        let mut create_labor_cr_calldata = array![];
+        Serde::serialize(@ResourceTypes::GOLD, ref create_labor_cr_calldata); // resource_type_labor
+        Serde::serialize(@0x2, ref create_labor_cr_calldata); // resource_types_packed // stone 
+        Serde::serialize(@1, ref create_labor_cr_calldata); // resource_types_count // 1 // stone
+        world.execute('SetLaborCostResources', create_labor_cr_calldata);
 
-//     //     // set block timestamp in order to harvest labor
-//     //     // initial ts = 0
-//     //     starknet::testing::set_block_timestamp(1000);
 
-//     //     // call build labor system
-//     //     let mut build_labor_calldata = array::ArrayTrait::<felt252>::new();
-//     //     build_labor_calldata.append(1);
-//     //     build_labor_calldata.append(1);
-//     //     build_labor_calldata.append(20);
-//     //     // multiplier
-//     //     build_labor_calldata.append(1);
-//     //     world.execute('BuildLabor'.into(), build_labor_calldata.span());
+        // cost for gold in stone
+        let mut create_labor_cv_calldata = array![];
+        Serde::serialize(@ResourceTypes::GOLD, ref create_labor_cv_calldata); // resource_type_labor
+        Serde::serialize(@ResourceTypes::STONE, ref create_labor_cv_calldata); // resource_type_cost
+        Serde::serialize(@1_000, ref create_labor_cv_calldata); // resource_type_value
+        world.execute('SetLaborCostAmount', create_labor_cv_calldata);
 
-//     //     // set block timestamp in order to harvest labor
-//     //     // initial ts = 0
-//     //     starknet::testing::set_block_timestamp(40000);
 
-//     //     // call build labor system
-//     //     let mut harvest_labor_calldata = array::ArrayTrait::<felt252>::new();
-//     //     // realm_id
-//     //     harvest_labor_calldata.append(1);
-//     //     // resource_type
-//     //     harvest_labor_calldata.append(1);
-//     //     world.execute('HarvestLabor'.into(), harvest_labor_calldata.span());
+        // mint 100_000 stone for the realm;
+        let mut mint_stone_calldata = array![];
+        Serde::serialize(@realm_entity_id, ref mint_stone_calldata); // realm entity id
+        Serde::serialize(@ResourceTypes::STONE, ref mint_stone_calldata); // resource_type
+        Serde::serialize(@100_000, ref mint_stone_calldata); // amount
+        world.execute('MintResources', mint_stone_calldata);
 
-//     //     // get labor after harvest 
-//     //     let labor_after_harvest = world.entity('Labor'.into(), (1, (1)).into(), 0_u8, 0_usize);
-//     //     // labor after harvest = current labor balance + rest from division by 72000
-//     //     assert(*labor_after_harvest[0] == 145000 + 3000, 'wrong labor balance');
-//     //     assert(*labor_after_harvest[1] == 40000, 'wrong last harvest');
+        // set initial block timestamp
+        let last_harvest_ts = 1000;
+        starknet::testing::set_block_timestamp(last_harvest_ts);
 
-//     //     let last_harvest = 1000_u128;
-//     //     let current_ts = 40000_u128;
-//     //     let labor_per_unit = 7200_u128;
-//     //     let base_resources_per_cycle = 21000000000000000000_u128;
-//     //     let vault_percentage = 250; // on base 1000
-//     //     let resource_balance_before_harvest = 80000_u128;
+        // build labor for gold
+        let mut build_labor_calldata = array![];
+        Serde::serialize(@realm_entity_id, ref build_labor_calldata); // realm_id
+        Serde::serialize(@ResourceTypes::GOLD, ref build_labor_calldata); // resource_type
+        Serde::serialize(@20, ref build_labor_calldata); // labor_units
+        Serde::serialize(@1, ref build_labor_calldata); // multiplier
+        world.execute('BuildLabor', build_labor_calldata);
 
-//     //     // because current_ts < balance
-//     //     let generated_labor = current_ts - last_harvest;
 
-//     //     // generated units
-//     //     let mut generated_units = generated_labor / labor_per_unit;
-//     //     // vault units
-//     //     let vault_units = generated_units * vault_percentage / 1000;
-//     //     generated_units -= vault_units;
+        // update block timestamp to harvest labor
+        let current_harvest_ts = 40_000;
+        starknet::testing::set_block_timestamp(current_harvest_ts);
 
-//     //     let generated_resources = generated_units * base_resources_per_cycle;
+        // call build labor system
+        let mut harvest_labor_calldata = array![];
+        Serde::serialize(@realm_entity_id, ref harvest_labor_calldata); // realm_id
+        Serde::serialize(@ResourceTypes::GOLD, ref harvest_labor_calldata); // resource_type
+        world.execute('HarvestLabor', harvest_labor_calldata);
 
-//     //     // verify resource is right amount
-//     //     let resource = world.entity('Resource'.into(), (1, (1)).into(), 0_u8, 0_usize);
-//     //     assert(
-//     //         *resource[1] == (resource_balance_before_harvest + generated_resources).into(),
-//     //         'failed resource amount'
-//     //     );
+        let (gold_labor_after_harvest, gold_resource_after_harvest) 
+            = get!(world, (realm_entity_id, ResourceTypes::GOLD), (Labor, Resource));
+        // get labor after harvest = current labor balance + remainder from division by 7200
+        assert(gold_labor_after_harvest.balance == 145000 + 3000, 'wrong labor balance');
+        assert(gold_labor_after_harvest.last_harvest == current_harvest_ts, 'wrong last harvest');
 
-//     //     // verify vault balance 
-//     //     let vault = world.entity('Vault'.into(), (1, (1)).into(), 0_u8, 0_usize);
-//     //     assert(*vault[0] == 1, 'failed vault balance');
-//     // }
+        let last_harvest_ts: u128 = last_harvest_ts.into();
+        let current_harvest_ts: u128 = current_harvest_ts.into();
+        let labor_per_unit: u128 = base_labor_units.try_into().unwrap();
+        let base_resources_per_cycle: u128 = base_resources_per_cycle.try_into().unwrap();
 
-//     #[test]
-//     #[available_gas(3000000000)]
-//     fn test_harvest_labor_food() {
-//         let world = spawn_test_world_without_init();
+        
+        let generated_labor = current_harvest_ts - last_harvest_ts; // because current_harvest_ts < balance
+        let mut generated_units = generated_labor / labor_per_unit;
+        let generated_resources = generated_units * base_resources_per_cycle;
 
-//         /// CREATE ENTITIES ///
-//         // set realm entity
-//         let mut create_realm_calldata = array::ArrayTrait::<felt252>::new();
-//         create_realm_calldata.append(1);
-//         create_realm_calldata.append(starknet::get_caller_address().into());
-//         create_realm_calldata.append(1);
-//         create_realm_calldata.append(1);
-//         create_realm_calldata.append(5);
-//         create_realm_calldata.append(5);
-//         create_realm_calldata.append(5);
-//         create_realm_calldata.append(5);
-//         create_realm_calldata.append(1);
-//         create_realm_calldata.append(1);
-//         world.execute('CreateRealm'.into(), create_realm_calldata.span());
+        // verify resource is right amount
+        assert(
+            gold_resource_after_harvest.balance == generated_resources,
+            'failed resource amount'
+        );
 
-//         // set labor configuration entity
-//         let mut create_labor_conf_calldata = array::ArrayTrait::<felt252>::new();
-//         create_labor_conf_calldata.append(7200);
-//         create_labor_conf_calldata.append(250);
-//         create_labor_conf_calldata.append(21000000000000000000);
-//         world.execute('SetLaborConfig'.into(), create_labor_conf_calldata.span());
+    }
 
-//         let mut create_labor_cr_calldata = array::ArrayTrait::<felt252>::new();
-//         create_labor_cr_calldata.append(ResourceTypes::WHEAT.into());
-//         create_labor_cr_calldata.append(1);
-//         create_labor_cr_calldata.append(1);
-//         world.execute('SetLaborCostResources'.into(), create_labor_cr_calldata.span());
 
-//         let mut create_labor_cv_calldata = array::ArrayTrait::<felt252>::new();
-//         create_labor_cv_calldata.append(ResourceTypes::WHEAT.into());
-//         create_labor_cv_calldata.append(1);
-//         create_labor_cv_calldata.append(1000);
-//         world.execute('SetLaborCostAmount'.into(), create_labor_cv_calldata.span());
 
-//         // mint 100000 resource id 1 for realm id 1;
-//         let mut mint_resources_calldata = array::ArrayTrait::<felt252>::new();
-//         mint_resources_calldata.append(1);
-//         mint_resources_calldata.append(1);
-//         mint_resources_calldata.append(100000);
-//         world.execute('MintResources'.into(), mint_resources_calldata.span());
+    #[test]
+    #[available_gas(3000000000)]
+    fn test_harvest_labor_food() {
+        let world = spawn_eternum();
 
-//         // set block timestamp in order to harvest labor
-//         // initial ts = 0
-//         starknet::testing::set_block_timestamp(1000);
+        // set realm entity
+        let position = Position { x: 1, y: 1, entity_id: 1_u128};
+        let mut create_realm_calldata = Default::default();
 
-//         // call build labor system
-//         let mut build_labor_calldata = array::ArrayTrait::<felt252>::new();
-//         build_labor_calldata.append(1);
-//         build_labor_calldata.append(ResourceTypes::WHEAT.into());
-//         build_labor_calldata.append(20);
-//         // multiplier
-//         build_labor_calldata.append(1);
-//         world.execute('BuildLabor'.into(), build_labor_calldata.span());
+        Serde::serialize(@1, ref create_realm_calldata); // realm id
+        Serde::serialize(@starknet::get_caller_address(), ref create_realm_calldata); // owner
+        Serde::serialize(@1, ref create_realm_calldata); // resource_types_packed // immaterial since wheat is food
+        Serde::serialize(@3, ref create_realm_calldata); // resource_types_count
+        Serde::serialize(@5, ref create_realm_calldata); // cities
+        Serde::serialize(@5, ref create_realm_calldata); // harbors
+        Serde::serialize(@5, ref create_realm_calldata); // rivers
+        Serde::serialize(@5, ref create_realm_calldata); // regions
+        Serde::serialize(@1, ref create_realm_calldata); // wonder
+        Serde::serialize(@1, ref create_realm_calldata); // order
+        Serde::serialize(@position, ref create_realm_calldata); // position
+       let result = world.execute('CreateRealm', create_realm_calldata);
+       let realm_entity_id = *result[0];
 
-//         // set block timestamp in order to harvest labor
-//         // initial ts = 0
-//         starknet::testing::set_block_timestamp(40000);
+        // set labor configuration entity
+        let mut create_labor_conf_calldata = array![];
+        let base_labor_units = 7200;
+        let base_resources_per_cycle = 250;
+        let base_food_per_cycle = 21_000_000_000_000_000_000;
+        Serde::serialize(@base_labor_units, ref create_labor_conf_calldata); 
+        Serde::serialize(@base_resources_per_cycle, ref create_labor_conf_calldata);
+        Serde::serialize(@base_food_per_cycle, ref create_labor_conf_calldata);
+        world.execute('SetLaborConfig', create_labor_conf_calldata); 
 
-//         // call build labor system
-//         let mut harvest_labor_calldata = array::ArrayTrait::<felt252>::new();
-//         // realm_id
-//         harvest_labor_calldata.append(1);
-//         // resource_type
-//         harvest_labor_calldata.append(ResourceTypes::WHEAT.into());
-//         world.execute('HarvestLabor'.into(), harvest_labor_calldata.span());
+        let mut create_labor_cr_calldata = array![];
+        Serde::serialize(@ResourceTypes::WHEAT, ref create_labor_cr_calldata); // resource_type_labor
+        Serde::serialize(@0x2, ref create_labor_cr_calldata); // resource_types_packed // stone 
+        Serde::serialize(@1, ref create_labor_cr_calldata); // resource_types_count // 1 // stone
+        world.execute('SetLaborCostResources', create_labor_cr_calldata);
 
-//         let wheat_felt: felt252 = ResourceTypes::WHEAT.into();
-//         let wheat_query: Query = (1, wheat_felt).into();
-//         // get labor after harvest 
-//         let labor_after_harvest = world.entity('Labor'.into(), wheat_query, 0_u8, 0_usize);
-//         // labor after harvest = current labor balance + rest from division by 72000
-//         assert(*labor_after_harvest[0] == 145000 + 3000, 'wrong labor balance');
-//         assert(*labor_after_harvest[1] == 40000, 'wrong last harvest');
 
-//         let last_harvest = 1000_u128;
-//         let current_ts = 40000_u128;
-//         let labor_per_unit = 7200_u128;
-//         let base_resources_per_cycle = 21000000000000000000_u128;
+        // cost for wheat in stone
+        let mut create_labor_cv_calldata = array![];
+        Serde::serialize(@ResourceTypes::WHEAT, ref create_labor_cv_calldata); // resource_type_labor
+        Serde::serialize(@ResourceTypes::STONE, ref create_labor_cv_calldata); // resource_type_cost
+        Serde::serialize(@1_000, ref create_labor_cv_calldata); // resource_type_value
+        world.execute('SetLaborCostAmount', create_labor_cv_calldata);
 
-//         // because current_ts < balance
-//         let generated_labor = current_ts - last_harvest;
 
-//         // generated units
-//         let mut generated_units = generated_labor / labor_per_unit;
+        // mint 100_000 stone for the realm;
+        let mut mint_stone_calldata = array![];
+        Serde::serialize(@realm_entity_id, ref mint_stone_calldata); // realm entity id
+        Serde::serialize(@ResourceTypes::STONE, ref mint_stone_calldata); // resource_type
+        Serde::serialize(@100_000, ref mint_stone_calldata); // amount
+        world.execute('MintResources', mint_stone_calldata);
 
-//         let generated_resources = generated_units * base_resources_per_cycle;
+        // set initial block timestamp
+        let last_harvest_ts = 1000;
+        starknet::testing::set_block_timestamp(last_harvest_ts);
 
-//         // verify resource is right amount
-//         let resource = world.entity('Resource'.into(), wheat_query, 0_u8, 0_usize);
-//         assert(*resource[1] == generated_resources.into(), 'failed resource amount');
-//     }
-// }
+        // build labor for wheat
+        let mut build_labor_calldata = array![];
+        Serde::serialize(@realm_entity_id, ref build_labor_calldata); // realm_id
+        Serde::serialize(@ResourceTypes::WHEAT, ref build_labor_calldata); // resource_type
+        Serde::serialize(@20, ref build_labor_calldata); // labor_units
+        Serde::serialize(@1, ref build_labor_calldata); // multiplier
+        world.execute('BuildLabor', build_labor_calldata);
+
+
+        // update block timestamp to harvest labor
+        let current_harvest_ts = 40_000;
+        starknet::testing::set_block_timestamp(current_harvest_ts);
+
+        // call build labor system
+        let mut harvest_labor_calldata = array![];
+        Serde::serialize(@realm_entity_id, ref harvest_labor_calldata); // realm_id
+        Serde::serialize(@ResourceTypes::WHEAT, ref harvest_labor_calldata); // resource_type
+        world.execute('HarvestLabor', harvest_labor_calldata);
+
+        let (wheat_labor_after_harvest, wheat_resource_after_harvest) 
+            = get!(world, (realm_entity_id, ResourceTypes::WHEAT), (Labor, Resource));
+        // get labor after harvest = current labor balance + remainder from division by 7200
+        assert(wheat_labor_after_harvest.balance == 145000 + 3000, 'wrong labor balance');
+        assert(wheat_labor_after_harvest.last_harvest == current_harvest_ts, 'wrong last harvest');
+
+        let last_harvest_ts: u128 = last_harvest_ts.into();
+        let current_harvest_ts: u128 = current_harvest_ts.into();
+        let labor_per_unit: u128 = base_labor_units.try_into().unwrap();
+        let base_food_per_cycle: u128 = base_food_per_cycle.try_into().unwrap();
+
+        
+        let generated_labor = current_harvest_ts - last_harvest_ts; // because current_harvest_ts < balance
+        let mut generated_units = generated_labor / labor_per_unit;
+        let generated_resources = generated_units * base_food_per_cycle;
+
+        // verify resource is right amount
+        assert(
+            wheat_resource_after_harvest.balance == generated_resources,
+            'failed resource amount'
+        );
+    }
+}
 
 

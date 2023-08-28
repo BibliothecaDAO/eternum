@@ -234,7 +234,7 @@ export function createOptimisticSystemCalls(
             // compute new values
             let labor = getComponentValue(Labor, resource_id) || {balance: ts, last_harvest: ts, multiplier: 1};
             // TODO: use block timestamp 
-            const balance = labor.balance + (laborUnits as number) * laborConfig.base_labor_units * (multiplier as number);
+            const balance = labor.balance + (laborUnits as number) * laborConfig.base_labor_units;
             // change status from open to accepted
             Labor.addOverride(
                 overrideId, {
@@ -294,7 +294,7 @@ export function createOptimisticSystemCalls(
             )
             
             let currentResource = getComponentValue(Resource, resource_id) || {balance: 0};
-            let resourceBalance = isFood? laborUnitsGenerated * laborConfig.base_food_per_cycle : laborUnitsGenerated * laborConfig.base_resources_per_cycle;
+            let resourceBalance = isFood? laborUnitsGenerated * laborConfig.base_food_per_cycle * labor.multiplier : laborUnitsGenerated * laborConfig.base_resources_per_cycle;
             Resource.addOverride(
                 overrideId, {
                     entity: resource_id,

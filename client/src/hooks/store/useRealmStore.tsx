@@ -19,11 +19,9 @@ const useRealmStore = create<Realm>((set) => {
     ? [...JSON.parse(realmEntityIdsStorage)]
     : [];
 
-  // Set realmEntityId as the first element of realmEntityIds or default to 9999
-  const realmEntityId =
-    realmEntityIds.length > 0 ? realmEntityIds[0].realmEntityId : 9999;
-  const realmId =
-    realmEntityIds.length > 0 ? realmEntityIds[0].realmId : undefined;
+  // TODO: put this as undefined first
+  const realmEntityId = 9999;
+  const realmId = undefined;
 
   return {
     realmEntityId,

@@ -53,7 +53,7 @@ mod GetAverageSpeed {
 }
 
 
-
+#[cfg(test)]
 mod tests {
     use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
     use eternum::components::position::Position;

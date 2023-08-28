@@ -1,5 +1,5 @@
 query getTradeResources($makerOrderId: String!, $takerOrderId: String!) {
-  resourcesGive: entities(keys: [$makerOrderId]) {
+  resourcesGive: entities(keys: [$makerOrderId], last: 100) {
     edges {
       node {
         keys
@@ -17,7 +17,7 @@ query getTradeResources($makerOrderId: String!, $takerOrderId: String!) {
       }
     }
   }
-  resourcesGet: entities(keys: [$takerOrderId]) {
+  resourcesGet: entities(keys: [$takerOrderId], last: 100) {
     edges {
       node {
         keys
