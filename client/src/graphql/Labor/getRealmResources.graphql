@@ -1,5 +1,5 @@
 query getRealmResources($realmEntityId: String!) {
-  entities(keys: [$realmEntityId]) {
+  entities(keys: [$realmEntityId], first: 50) {
     edges {
       node {
         keys

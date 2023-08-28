@@ -25,6 +25,7 @@ export const RealmResourcesComponent = ({
   className,
 }: RealmResourcesComponentProps) => {
   const [showAllResources, setShowAllResources] = useState<boolean>(false);
+  const [realmResourceIds, setRealmResourceIds] = useState<number[]>([]);
 
   let { realmEntityId } = useRealmStore();
 
@@ -33,23 +34,25 @@ export const RealmResourcesComponent = ({
   useSyncRealmResources(realmEntityId);
 
   // unpack the resources
-  let realmResourceIds: number[] = [
-    ResourcesIds["Shekels"],
-    ResourcesIds["Wheat"],
-    ResourcesIds["Fish"],
-  ];
-  let unpackedResources: number[] = [];
+  useMemo(() => {
+    let realmResourceIds: number[] = [
+      ResourcesIds["Shekels"],
+      ResourcesIds["Wheat"],
+      ResourcesIds["Fish"],
+    ];
+    let unpackedResources: number[] = [];
 
-  // TODO: don't do unpacking at each render but rather in useRealmStore at beginning and store result
-  if (realm) {
-    unpackedResources = unpackResources(
-      BigInt(realm.resource_types_packed),
-      realm.resource_types_count,
-    );
-    realmResourceIds = realmResourceIds.concat(unpackedResources);
-  }
+    if (realm) {
+      unpackedResources = unpackResources(
+        BigInt(realm.resource_types_packed),
+        realm.resource_types_count,
+      );
+      realmResourceIds = realmResourceIds.concat(unpackedResources);
+      setRealmResourceIds(realmResourceIds);
+    }
+  }, [realm]);
 
-  if (realmResourceIds.length > 2) {
+  if (realmResourceIds.length > 3) {
     return (
       <div className={clsx("flex h-16 space-x-4", className)}>
         <div className="relative flex mx-auto space-x-2 overflow-visible">

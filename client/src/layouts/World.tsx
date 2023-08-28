@@ -26,6 +26,7 @@ import { useSyncRealms } from "../hooks/graphql/useGraphQLQueries";
 export const World = () => {
   useSyncRealms();
 
+  //TODO: figure out why component getting rerendered everytime nextBlockTimestamp get's rerendered
   useFetchBlockchainData();
   const { progress } = useProgress();
 
