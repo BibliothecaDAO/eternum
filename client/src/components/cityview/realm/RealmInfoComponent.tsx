@@ -36,7 +36,7 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
       {realm && (
         <div
           className={clsx(
-            "relative transition-colors duration-300 text-sm shadow-lg shadow-black/25 flex items-center px-4 py-2 text-white h-[50px]",
+            "relative rounded-t-xl transition-colors duration-300 text-sm shadow-lg shadow-black/25 flex items-center px-4 py-2 text-white h-[50px]",
           )}
           style={{
             backgroundColor:
