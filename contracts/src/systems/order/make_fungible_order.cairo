@@ -51,7 +51,7 @@ mod MakeFungibleOrder {
         taker_quantities: Span<u128>,
         taker_needs_caravan: bool,
         expires_at: u64
-    ) {
+    ) -> ID {
         let caller = ctx.origin;
 
         // assert that maker entity is owned by caller
@@ -155,161 +155,147 @@ mod MakeFungibleOrder {
                 },
             ),
         );
+
+        trade_id.into()
     }
 }
-// TODO: need to test it when withdraw gas is working
-// TODO: same auth system as for attach_caravan
-// mod tests {
-//     // consts
-//     use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
 
-//     // utils
-//     use eternum::utils::testing::spawn_test_world_without_init;
+#[cfg(test)]
+mod tests {
+    use eternum::components::resources::Resource;
+    use eternum::components::trade::FungibleEntities;
+    use eternum::components::owner::Owner;
+    use eternum::components::trade::{Trade, OrderResource};
 
-//     use core::traits::Into;
-//     use core::result::ResultTrait;
-//     use array::ArrayTrait;
-//     use option::OptionTrait;
-//     use debug::PrintTrait;
+    use eternum::constants::ResourceTypes;
 
-//     use starknet::syscalls::deploy_syscall;
+    use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
+    use eternum::utils::testing::spawn_eternum;
 
-//     use dojo::interfaces::IWorldDispatcherTrait;
-//     use dojo::auth::systems::{Route, RouteTrait};
-//     use dojo::storage::query::{
-//         Query, TupleSize2IntoQuery, LiteralIntoQuery, TupleSize3IntoQuery
-//     };
-//     use dojo::execution_context::Context;
-//     use dojo::auth::components::AuthRole;
+    use traits::Into;
+    use result::ResultTrait;
+    use array::ArrayTrait;
+    use option::OptionTrait;
+    use serde::Serde;
+    use clone::Clone;
+    
+    use starknet::contract_address_const;
 
-//     // test that the average speed is correct
-//     #[test]
-//     #[available_gas(3000000000000)]
-//     fn test_make_fungible_order() {
-//         let world = spawn_test_world_without_init();
-//         // set as executor
-//         starknet::testing::set_contract_address(starknet::contract_address_const::<1>());
-//         // ap change issue
-//         // let maker_id = 11;
-//         // let taker_id = 12;
-//         let ctx = Context {
-//             world,
-//             caller_account: starknet::contract_address_const::<0x1337>(),
-//             caller_system: 'Tester'.into(),
-//             execution_role: AuthRole {
-//                 id: 'FooWriter'.into()
-//             },
-//         };
-//         // create entity 1
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(11);
-//         world.set_entity(ctx, 'Owner'.into(), 11.into(), 0_u8, values.span());
+    use dojo::world::{ IWorldDispatcher, IWorldDispatcherTrait};
 
-//         // entity 2
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(12);
-//         world.set_entity(ctx, 'Owner'.into(), 12.into(), 0_u8, values.span());
 
-//         // add resources to entity 1 and 2
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // resource_type
-//         values.append(1);
-//         // balance
-//         values.append(100);
-//         world.set_entity(ctx, 'Resource'.into(), (11, 1).into(), 0_u8, values.span());
-//         world.set_entity(ctx, 'Resource'.into(), (12, 1).into(), 0_u8, values.span());
-//         let mut resources_2 = array::ArrayTrait::<felt252>::new();
-//         // resource_type
-//         resources_2.append(2);
-//         // balance
-//         resources_2.append(100);
-//         world.set_entity(ctx, 'Resource'.into(), (11, 2).into(), 0_u8, values.span());
-//         world.set_entity(ctx, 'Resource'.into(), (12, 2).into(), 0_u8, values.span());
+    #[test]
+    #[available_gas(3000000000000)]
+    fn test_make_fungible_order() {
 
-//         // create order
-//         starknet::testing::set_account_contract_address(starknet::contract_address_const::<11>());
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // maker_id
-//         values.append(11);
-//         // len
-//         values.append(2);
-//         // types
-//         values.append(1);
-//         values.append(2);
-//         // len
-//         values.append(2);
-//         // quantities
-//         values.append(100);
-//         values.append(100);
-//         // taker_id
-//         values.append(12);
-//         // len
-//         values.append(2);
-//         // types
-//         values.append(1);
-//         values.append(2);
-//         // len
-//         values.append(2);
-//         // quantities
-//         values.append(100);
-//         values.append(100);
-//         // taker_needs_caravan
-//         values.append(0);
-//         // expires_at
-//         values.append(100);
-//         let result = world.execute('MakeFungibleOrder'.into(), values.span());
-//         let trade_id = *result[0];
+        let world = spawn_eternum();
 
-//         // check balances
-//         let resource = world.entity('Resource'.into(), (11, 1).into(), 0_u8, 0_usize);
-//         assert(*resource[1] == 0, 'Balance should be 0');
-//         let resource = world.entity('Resource'.into(), (11, 2).into(), 0_u8, 0_usize);
-//         assert(*resource[1] == 0, 'Balance should be 0');
+        starknet::testing::set_contract_address(world.executor());
 
-//         let resource = world.entity('Resource'.into(), (12, 1).into(), 0_u8, 0_usize);
-//         assert(*resource[1] == 100, 'Balance should be 100');
-//         let resource = world.entity('Resource'.into(), (12, 2).into(), 0_u8, 0_usize);
-//         assert(*resource[1] == 100, 'Balance should be 100');
+        let maker_id = 11_u64;
+        let taker_id = 12_u64;
+        
+        set!(world, (Owner { entity_id: maker_id.into(), address: contract_address_const::<'maker'>()}));
 
-//         // check that the trade was created
-//         let trade = world.entity('Trade'.into(), trade_id.into(), 0_u8, 0_usize);
-//         assert(*trade[0] == 11, 'Maker id should be 11');
-//         assert(*trade[1] == 12, 'Taker id should be 12');
-//         let maker_order_id = *trade[2];
-//         let taker_order_id = *trade[3];
-//         assert(*trade[4] == 100, 'Expires at should be 100');
-//         assert(*trade[5] == 0, 'Claimed should be false');
-//         assert(*trade[6] == 0, 'Claimed should be false');
-//         assert(*trade[7] == 0, 'Need caravan should be false');
+        set!(world, (Resource { entity_id: maker_id.into(), resource_type: ResourceTypes::STONE, balance: 100 }));
+        set!(world, (Resource { entity_id: taker_id.into(), resource_type: ResourceTypes::STONE, balance: 100 }));
 
-//         // check that the maker order was created
-//         let maker_order = world
-//             .entity('FungibleEntities'.into(), maker_order_id.into(), 0_u8, 0_usize);
-//         assert(*maker_order[1] == 2, 'Count should be 2');
-//         let key = *maker_order[0];
-//         let resource = world
-//             .entity('Resource'.into(), (maker_order_id, key, 0).into(), 0_u8, 0_usize);
-//         assert(*resource[0] == 1, 'Resource type should be 1');
-//         assert(*resource[1] == 100, 'Balance should be 100');
-//         let resource = world
-//             .entity('Resource'.into(), (maker_order_id, key, 1).into(), 0_u8, 0_usize);
-//         assert(*resource[0] == 2, 'Resource type should be 2');
-//         assert(*resource[1] == 100, 'Balance should be 100');
+        set!(world, (Resource { entity_id: maker_id.into(), resource_type: ResourceTypes::GOLD, balance: 100 }));
+        set!(world, (Resource { entity_id: taker_id.into(), resource_type: ResourceTypes::GOLD, balance: 100 }));
 
-//         // check that taker order was created
-//         let taker_order = world
-//             .entity('FungibleEntities'.into(), taker_order_id.into(), 0_u8, 0_usize);
-//         assert(*taker_order[1] == 2, 'Count should be 2');
-//         let key = *taker_order[0];
-//         let resource = world
-//             .entity('Resource'.into(), (taker_order_id, key, 0).into(), 0_u8, 0_usize);
-//         assert(*resource[0] == 1, 'Resource type should be 1');
-//         assert(*resource[1] == 100, 'Balance should be 100');
-//         let resource = world
-//             .entity('Resource'.into(), (taker_order_id, key, 1).into(), 0_u8, 0_usize);
-//         assert(*resource[0] == 2, 'Resource type should be 2');
-//         assert(*resource[1] == 100, 'Balance should be 100');
-//     }
-// }
+        // create order
+        starknet::testing::set_contract_address(contract_address_const::<'maker'>());
+
+        let mut make_order_calldata = Default::default();
+        Serde::serialize(@maker_id, ref make_order_calldata);
+        Serde::serialize(@array![ResourceTypes::STONE, ResourceTypes::GOLD], ref make_order_calldata);
+        Serde::serialize(@array![100, 100], ref make_order_calldata);
+        Serde::serialize(@taker_id, ref make_order_calldata);
+        Serde::serialize(@array![ResourceTypes::STONE, ResourceTypes::GOLD], ref make_order_calldata);
+        Serde::serialize(@array![100, 100], ref make_order_calldata);
+        Serde::serialize(@false, ref make_order_calldata);
+        Serde::serialize(@100, ref make_order_calldata);
+
+        let result = world.execute('MakeFungibleOrder', make_order_calldata);
+        let trade_id = *result[0];
+
+        // check maker balances
+        let resource = get!(world, (maker_id, ResourceTypes::STONE), Resource);
+        assert(resource.balance == 0, 'Balance should be 0');
+
+        let resource = get!(world, (maker_id, ResourceTypes::GOLD), Resource);
+        assert(resource.balance == 0, 'Balance should be 0');
+
+        // check taker balances
+        let resource = get!(world, (taker_id, ResourceTypes::STONE), Resource);
+        assert(resource.balance == 100, 'Balance should be 100');
+
+        let resource = get!(world, (taker_id, ResourceTypes::GOLD), Resource);
+        assert(resource.balance == 100, 'Balance should be 100');
+
+
+        let trade = get!(world, trade_id, Trade);
+        assert(trade.maker_id == maker_id.into(), 'Maker id should be 11');
+        assert(trade.taker_id == taker_id.into(), 'Taker id should be 12');
+        assert(trade.expires_at == 100, 'Expires at should be 100');
+        assert(trade.claimed_by_maker == false, 'Claimed should be false');
+        assert(trade.claimed_by_taker == false, 'Claimed should be false');
+        assert(trade.taker_needs_caravan == false, 'needs caravan should be false');
+
+        // check that the maker order was created
+        let maker_order = get!(world, trade.maker_order_id, FungibleEntities);
+        assert(maker_order.count == 2, 'Count should be 2');
+
+        let maker_stone_resource = get!(world, (trade.maker_order_id, maker_order.key, 0), OrderResource);
+        assert(maker_stone_resource.resource_type == ResourceTypes::STONE, 'Resource should be stone');
+        assert(maker_stone_resource.balance == 100, 'Balance should be 100');
+
+        let maker_gold_resource = get!(world, (trade.maker_order_id, maker_order.key, 1), OrderResource);
+        assert(maker_gold_resource.resource_type == ResourceTypes::GOLD, 'Resource should be gold');
+        assert(maker_gold_resource.balance == 100, 'Balance should be 100');
+
+
+        // check that taker order was created
+        let taker_order = get!(world, trade.taker_order_id, FungibleEntities);
+        assert(taker_order.count == 2, 'Count should be 2');
+
+        let taker_stone_resource = get!(world, (trade.taker_order_id, taker_order.key, 0), OrderResource);
+        assert(taker_stone_resource.resource_type == ResourceTypes::STONE, 'Resource should be stone');
+        assert(taker_stone_resource.balance == 100, 'Balance should be 100');
+
+        let taker_gold_resource = get!(world, (trade.taker_order_id, taker_order.key, 1), OrderResource);
+        assert(taker_gold_resource.resource_type == ResourceTypes::GOLD, 'Resource should be gold');
+        assert(taker_gold_resource.balance == 100, 'Balance should be 100');
+
+    }
+
+    #[test]
+    #[available_gas(3000000000000)]
+    #[should_panic(expected: ('Only owner can create order','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED' ))]
+    fn test_not_owner() {
+        let world = spawn_eternum();
+
+        let maker_id = 11_u64;
+        let taker_id = 12_u64;
+        
+        starknet::testing::set_contract_address(world.executor());
+        set!(world, (Owner { entity_id: maker_id.into(), address: contract_address_const::<'maker'>()}));
+
+        // set ctx.origin to be some other address
+        starknet::testing::set_contract_address(contract_address_const::<'some_unknown'>());
+
+        let mut make_order_calldata = Default::default();
+        Serde::serialize(@maker_id, ref make_order_calldata);
+        Serde::serialize(@array![ResourceTypes::STONE, ResourceTypes::GOLD], ref make_order_calldata);
+        Serde::serialize(@array![100, 100], ref make_order_calldata);
+        Serde::serialize(@taker_id, ref make_order_calldata);
+        Serde::serialize(@array![ResourceTypes::STONE, ResourceTypes::GOLD], ref make_order_calldata);
+        Serde::serialize(@array![100, 100], ref make_order_calldata);
+        Serde::serialize(@false, ref make_order_calldata);
+        Serde::serialize(@100, ref make_order_calldata);
+
+        world.execute('MakeFungibleOrder', make_order_calldata);
+    }
+}
 
 
