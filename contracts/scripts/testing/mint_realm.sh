@@ -61,7 +61,7 @@ if [ -z "$position_y" ]; then
 fi
 
 commands=(
-    "sozo execute --world $world CreateRealm --account-address $DOJO_ACCOUNT_ADDRESS --calldata $realm_id,$owner,$packed_resources,$packed_resources_len,$cities,$harbors,$rivers,$regions,$wonder,$order,$position_x,$position_y"
+    "sozo execute --world $world CreateRealm --account-address $DOJO_ACCOUNT_ADDRESS --calldata $realm_id,$owner,$packed_resources,$packed_resources_len,$cities,$harbors,$rivers,$regions,$wonder,$order,2,$position_x,$position_y"
 )
 
 for cmd in "${commands[@]}"; do

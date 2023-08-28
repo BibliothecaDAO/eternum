@@ -7,6 +7,7 @@ import { OrderIcon } from "../elements/OrderIcon";
 import clsx from "clsx";
 import { Badge } from "../elements/Badge";
 import Button from "../elements/Button";
+import { useNotifications } from "../hooks/useNotifications";
 
 type NotificationsComponentProps = {
   className?: string;
@@ -16,6 +17,9 @@ export const NotificationsComponent = ({
   className,
 }: NotificationsComponentProps) => {
   const [notifications, setNotifications] = useState<any>([]);
+
+  // TODO: use real notifications
+  const { realNotifications } = useNotifications();
 
   const dummyNotifications = [
     {
