@@ -2,7 +2,6 @@ import { useState } from "react";
 import { FilterButton } from "../elements/FilterButton";
 import { SecondaryPopup } from "../elements/SecondaryPopup";
 import { orders } from "../constants/orders";
-import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
 import Button from "../elements/Button";
 import { OrderIcon } from "../elements/OrderIcon";
 import clsx from "clsx";
@@ -37,10 +36,15 @@ export const OrdersFilter = ({}: OrdersFilterProps) => {
               {selectedOrders.map((order, index) => (
                 <OrderIcon key={index} order={order} size="xs" />
               ))}
-              <CloseIcon
-                className="w-3 h-3 cursor-pointer fill-white"
-                onClick={() => setSelectedOrders([])}
-              />
+              {selectedOrders.length > 0 && (
+                <Button
+                  onClick={() => setSelectedOrders([])}
+                  variant="outline"
+                  size="xs"
+                >
+                  Clear all
+                </Button>
+              )}
             </div>
           </SecondaryPopup.Head>
           <SecondaryPopup.Body width={"w-[284px]"}>

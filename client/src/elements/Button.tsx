@@ -15,6 +15,7 @@ interface ButtonProps {
     | "outline";
   isLoading?: boolean;
   withoutSound?: boolean;
+  size?: "xs" | "md";
 }
 
 const STYLES = {
@@ -23,7 +24,8 @@ const STYLES = {
   primary: "rounded-full py-1 bg-gold hover:bg-gold/50 focus:outline-none",
   default: "text-white/90 border border-transparent shadow-sm",
   enabledStyle: "bg-black/10 hover:bg-black/30 focus:outline-none",
-  disabledStyle: "bg-gray-300 cursor-not-allowed",
+  disabledStyle:
+    "bg-gray-300 cursor-not-allowed !border-gray-gold !text-gray-gold",
   success:
     "border border-brilliance !text-brilliance bg-transparent hover:bg-brilliance/10",
   outline: "border border-gold !text-gold bg-transparent hover:bg-gold/10",
@@ -32,6 +34,12 @@ const STYLES = {
     "border border-orange !text-orange bg-transparent hover:bg-orange/10",
   loadingStyle: "relative",
 };
+
+const SIZES = {
+  xs: "text-xxs h-4",
+  md: "",
+};
+
 const Button: React.FC<ButtonProps> = ({
   onClick,
   children,
@@ -40,6 +48,7 @@ const Button: React.FC<ButtonProps> = ({
   variant = "default",
   isLoading = false,
   withoutSound = false,
+  size = "md",
 }) => {
   const { play: playClick } = useUiSounds(soundSelector.click);
 
@@ -54,7 +63,7 @@ const Button: React.FC<ButtonProps> = ({
       }}
       className={`${STYLES.baseStyle} ${STYLES[variant]} ${
         disabled ? STYLES.disabledStyle : STYLES.enabledStyle
-      } ${isLoading ? STYLES.loadingStyle : ""} ${className}`}
+      } ${isLoading ? STYLES.loadingStyle : ""} ${className} ${SIZES[size]}`}
       disabled={disabled || isLoading}
     >
       {isLoading ? (

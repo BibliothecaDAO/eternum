@@ -373,15 +373,22 @@ export const LaborBuildPopup = ({
               </div>
             </div>
           )}
-          <Button
-            className="!px-[6px] !py-[2px] text-xxs"
-            disabled={!canBuild}
-            onClick={onBuild}
-            variant={canBuild ? "success" : "danger"}
-            withoutSound
-          >
-            {isFood ? `Build` : `Buy Tools`}
-          </Button>
+          <div className="flex flex-col items-center justify-center">
+            <Button
+              className="!px-[6px] !py-[2px] text-xxs ml-auto"
+              disabled={!canBuild}
+              onClick={() => onBuild()}
+              variant="outline"
+              withoutSound
+            >
+              {isFood ? `Build` : `Buy Tools`}
+            </Button>
+            {!canBuild && (
+              <div className="text-xxs text-order-giants/70">
+                Insufficient resources
+              </div>
+            )}
+          </div>
         </div>
       </SecondaryPopup.Body>
     </SecondaryPopup>

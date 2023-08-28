@@ -118,7 +118,7 @@ export const IncomingOrder = ({
         <span className="italic text-light-pink">You will get</span>
       </div>
       {resourcesGet && (
-        <div className="grid grid-cols-[repeat(3 ,auto)] gap-2 px-2 py-1">
+        <div className="flex justify-center items-center space-x-2 flex-wrap px-2 py-1">
           {resourcesGet.map(
             (resource) =>
               resource && (
