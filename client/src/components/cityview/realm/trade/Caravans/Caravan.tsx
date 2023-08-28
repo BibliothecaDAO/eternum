@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import { ReactComponent as Pen } from "../../../../../assets/icons/common/pen.svg";
 import { ReactComponent as CaretDownFill } from "../../../../../assets/icons/common/caret-down-fill.svg";
-import { ReactComponent as DonkeyIcon } from "../../../../../assets/icons/units/donkey.svg";
+import { ReactComponent as DonkeyIcon } from "../../../../../assets/icons/units/donkey-circle.svg";
 import { ReactComponent as PremiumIcon } from "../../../../../assets/icons/units/premium.svg";
 
 import ProgressBar from "../../../../../elements/ProgressBar";
