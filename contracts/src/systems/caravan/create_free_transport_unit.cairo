@@ -92,6 +92,7 @@ mod CreateFreeTransportUnit {
     }
 }
 
+#[cfg(test)]
 mod tests {
 
     use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;

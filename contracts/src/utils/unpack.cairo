@@ -30,6 +30,8 @@ fn unpack_resource_types(resource_types_packed: u128, resource_types_count: u8) 
 
     resource_types.span()
 }
+
+// #[cfg(test)]
 // mod tests {
 //     use super::unpack_resource_types;
 //     use traits::BitAnd;
