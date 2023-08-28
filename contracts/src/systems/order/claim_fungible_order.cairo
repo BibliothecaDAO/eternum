@@ -107,143 +107,248 @@ mod ClaimFungibleOrder {
             }
         }
 }
-// TODO: need to test it when withdraw gas is working
-// mod tests {
-//     // utils
-//     use eternum::utils::testing::spawn_test_world_without_init;
-//     use eternum::constants::WORLD_CONFIG_ID;
 
-//     use core::traits::Into;
-//     use array::ArrayTrait;
-//     use option::OptionTrait;
-//     use debug::PrintTrait;
 
-//     use dojo::interfaces::IWorldDispatcherTrait;
-//     use dojo::storage::query::{Query, TupleSize3IntoQuery};
-//     use dojo::storage::query::TupleSize2IntoQuery;
-//     use dojo::execution_context::Context;
-//     use dojo::auth::components::AuthRole;
 
-//     #[test]
-//     #[available_gas(30000000000000)]
-//     // 1. attach for the maker
-//     // 2. attach for the taker
-//     fn test_claim_order() {
-//         let world = spawn_test_world_without_init();
 
-//         // set as executor
-//         starknet::testing::set_contract_address(starknet::contract_address_const::<1>());
+#[cfg(test)]
+mod tests {
+   
+    use eternum::components::resources::Resource;
+    use eternum::components::trade::FungibleEntities;
+    use eternum::components::owner::Owner;
+    use eternum::components::position::Position;
+    use eternum::components::movable::ArrivalTime;
+    use eternum::components::trade::{Trade, OrderResource};
 
-//         // context to set entity
-//         // only caller_system is used here
-//         let ctx = Context {
-//             world,
-//             caller_account: starknet::contract_address_const::<0x1337>(),
-//             caller_system: 'Tester'.into(),
-//             execution_role: AuthRole {
-//                 id: 'FooWriter'.into()
-//             },
-//         };
+    use eternum::constants::ResourceTypes;
 
-//         // create entity 1
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(45);
-//         values.append(50);
-//         // maker_id = 11
-//         world.set_entity(ctx, 'Position'.into(), 11.into(), 0_u8, values.span());
-//         // set owner as caller
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(0);
-//         world.set_entity(ctx, 'Owner'.into(), 11.into(), 0_u8, values.span());
+    use eternum::utils::testing::spawn_eternum;
 
-//         // create entity 2
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(60);
-//         values.append(70);
-//         // taker_id = 12
-//         world.set_entity(ctx, 'Position'.into(), 12.into(), 0_u8, values.span());
+    use traits::Into;
+    use result::ResultTrait;
+    use array::ArrayTrait;
+    use option::OptionTrait;
+    use serde::Serde;
+    
+    use starknet::contract_address_const;
 
-//         // create a trade
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // maker_id
-//         values.append(11);
-//         // taker_id
-//         values.append(12);
-//         // maker_order_id
-//         values.append(13);
-//         // taker_order_id
-//         values.append(14);
-//         // expires_at 
-//         values.append(100);
-//         // claimed_by_maker
-//         values.append(0);
-//         // claimed_by_taker
-//         values.append(0);
-//         // taker_needs_caravan
-//         values.append(0);
+    use dojo::world::{ IWorldDispatcher, IWorldDispatcherTrait};
 
-//         // trade_id
-//         let trade_id = 10;
-//         world.set_entity(ctx, 'Trade'.into(), trade_id.into(), 0_u8, values.span());
+   
+    #[test]
+    #[available_gas(30000000000000)]
+    fn test_claim_by_maker() {
+        let world = spawn_eternum();
 
-//         // set arrival of the taker order in the future
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(100);
-//         world.set_entity(ctx, 'ArrivalTime'.into(), 14.into(), 0_u8, values.span());
+        // set as executor
+        starknet::testing::set_contract_address(world.executor());
 
-//         // set block_timestamp to 100
-//         starknet::testing::set_block_timestamp(100);
+        let maker_id = 11_u64;
+        let taker_id = 12_u64;
 
-//         // set fungible entities in the taker order
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // key = 33
-//         values.append(33);
-//         values.append(2);
-//         world.set_entity(ctx, 'FungibleEntities'.into(), 14.into(), 0_u8, values.span());
-//         // set resource
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(1);
-//         values.append(100);
-//         world.set_entity(ctx, 'Resource'.into(), (14, 33, 0).into(), 0_u8, values.span());
-//         // set resource
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(2);
-//         values.append(200);
-//         world.set_entity(ctx, 'Resource'.into(), (14, 33, 1).into(), 0_u8, values.span());
+        set!(world, (Position { x: 45, y: 50, entity_id: maker_id.into()}));
+        set!(world, (Owner { address: contract_address_const::<'maker'>(), entity_id: maker_id.into()}));
 
-//         // set position of the taker order at the same position as the maker
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(45);
-//         values.append(50);
-//         world.set_entity(ctx, 'Position'.into(), 14.into(), 0_u8, values.span());
+        set!(world, (Position { x: 60, y: 70, entity_id: taker_id.into()}));
+        set!(world, (Owner { address: contract_address_const::<'taker'>(), entity_id: taker_id.into()}));
 
-//         // call ClaimFungibleOrder
-//         let mut calldata = array::ArrayTrait::<felt252>::new();
-//         // maker_id
-//         calldata.append(11);
-//         // trade_id
-//         calldata.append(10);
-//         // execute
-//         world.execute('ClaimFungibleOrder'.into(), calldata.span());
+        // create a trade  
+        let trade_id = 10_u128;
+        let maker_order_id = 13_u128;
+        let taker_order_id = 14_u128;
+        set!(world, (Trade {
+                trade_id,
+                maker_id: maker_id.into(),
+                taker_id: taker_id.into(),
+                maker_order_id: maker_order_id,
+                taker_order_id: taker_order_id,
+                expires_at: 100,
+                claimed_by_maker: false,
+                claimed_by_taker: false,
+                taker_needs_caravan: false
+        }));
 
-//         // assert that trade has been claimed by the maker
-//         let trade_meta = world.entity('Trade'.into(), 10.into(), 0_u8, 0_usize);
-//         assert(*trade_meta[5] == 1, 'trade not claimed by maker');
-//         // assert that trade has not been claimed by the taker
-//         assert(*trade_meta[6] == 0, 'trade claimed by taker');
+        // set arrival of the taker order in the future
+        set!(world, (ArrivalTime { arrives_at: 100, entity_id: taker_order_id}));
 
-//         // assert that the balance of the maker has been updated
-//         let resource = world.entity('Resource'.into(), (11, 1).into(), 0_u8, 0_usize);
-//         assert(*resource[1] == 100, 'balance not updated');
-//         let resource = world.entity('Resource'.into(), (11, 2).into(), 0_u8, 0_usize);
-//         assert(*resource[1] == 200, 'balance not updated');
+        // set block_timestamp to 100
+        starknet::testing::set_block_timestamp(100);
 
-//         // assert that the balance of the taker has not been updated
-//         let resource = world.entity('Resource'.into(), (12, 1).into(), 0_u8, 0_usize);
-//         assert(*resource[1] == 0, 'balance updated');
-//         let resource = world.entity('Resource'.into(), (12, 2).into(), 0_u8, 0_usize);
-//         assert(*resource[1] == 0, 'balance updated');
-//     }
-// }
+        set!(world, (FungibleEntities { entity_id: taker_order_id, count: 2, key: 33}));
+        set!(world, (
+            OrderResource { 
+                order_id: taker_order_id,
+                fungible_entities_id: 33,
+                index: 0,
+                resource_type: ResourceTypes::WOOD,
+                balance: 100
+            }
+        ));
+
+        set!(world, (
+            OrderResource { 
+                order_id: taker_order_id,
+                fungible_entities_id: 33,
+                index: 1,
+                resource_type: ResourceTypes::STONE,
+                balance: 200
+            }
+        ));
+
+
+        // set position of the taker order at the same position as the maker
+        set!(world, (
+            Position { 
+                x: 45, 
+                y: 50,
+                entity_id: taker_order_id
+            }
+        ));
+    
+        // claim the order
+        starknet::testing::set_contract_address(contract_address_const::<'maker'>());
+
+        let mut calldata = array![];
+        Serde::serialize(@maker_id, ref calldata);
+        Serde::serialize(@trade_id, ref calldata);
+        world.execute('ClaimFungibleOrder', calldata);
+
+        // assert that trade has been claimed by the maker
+        let trade = get!(world, trade_id, Trade);
+        assert(trade.claimed_by_maker == true, 'trade not claimed by maker');
+        assert(trade.claimed_by_taker == false, 'trade claimed by taker');
+
+        let maker_wood_resource = get!(world, (maker_id, ResourceTypes::WOOD), Resource);
+        let maker_stone_resource = get!(world, (maker_id, ResourceTypes::STONE), Resource);
+        assert(maker_wood_resource.balance == 100, 'balance not updated');
+        assert(maker_stone_resource.balance == 200, 'balance not updated');
+
+        let taker_wood_resource = get!(world, (taker_id, ResourceTypes::WOOD), Resource);
+        let taker_stone_resource = get!(world, (taker_id, ResourceTypes::STONE), Resource);
+        assert(taker_wood_resource.balance == 0, 'balance updated');
+        assert(taker_stone_resource.balance == 0, 'balance updated');
+
+    }
+
+
+
+    #[test]
+    #[available_gas(30000000000000)]
+    fn test_claim_by_taker() {
+        let world = spawn_eternum();
+
+        // set as executor
+        starknet::testing::set_contract_address(world.executor());
+
+        let maker_id = 11_u64;
+        let taker_id = 12_u64;
+
+        set!(world, (Position { x: 45, y: 50, entity_id: maker_id.into()}));
+        set!(world, (Owner { address: contract_address_const::<'maker'>(), entity_id: maker_id.into()}));
+
+        set!(world, (Position { x: 60, y: 70, entity_id: taker_id.into()}));
+        set!(world, (Owner { address: contract_address_const::<'taker'>(), entity_id: taker_id.into()}));
+
+        // create a trade  
+        let trade_id = 10_u128;
+        let maker_order_id = 13_u128;
+        let taker_order_id = 14_u128;
+        set!(world, (Trade {
+                trade_id,
+                maker_id: maker_id.into(),
+                taker_id: taker_id.into(),
+                maker_order_id: maker_order_id,
+                taker_order_id: taker_order_id,
+                expires_at: 100,
+                claimed_by_maker: false,
+                claimed_by_taker: false,
+                taker_needs_caravan: false
+        }));
+
+        // set arrival of the maker order in the future
+        set!(world, (ArrivalTime { arrives_at: 100, entity_id: maker_order_id}));
+
+        // set block_timestamp to 100
+        starknet::testing::set_block_timestamp(100);
+
+        set!(world, (FungibleEntities { entity_id: maker_order_id, count: 2, key: 33}));
+        set!(world, (
+            OrderResource { 
+                order_id: maker_order_id,
+                fungible_entities_id: 33,
+                index: 0,
+                resource_type: ResourceTypes::WOOD,
+                balance: 100
+            }
+        ));
+
+        set!(world, (
+            OrderResource { 
+                order_id: maker_order_id,
+                fungible_entities_id: 33,
+                index: 1,
+                resource_type: ResourceTypes::STONE,
+                balance: 200
+            }
+        ));
+
+
+        // set position of the taker order at the same position as the maker
+        set!(world, (
+            Position { 
+                x: 60, 
+                y: 70,
+                entity_id: maker_order_id
+            }
+        ));
+    
+        // claim the order
+        starknet::testing::set_contract_address(contract_address_const::<'taker'>());
+
+        let mut calldata = array![];
+        Serde::serialize(@taker_id, ref calldata);
+        Serde::serialize(@trade_id, ref calldata);
+        world.execute('ClaimFungibleOrder', calldata);
+
+        // assert that trade has been claimed by the maker
+        let trade = get!(world, trade_id, Trade);
+        assert(trade.claimed_by_maker == false, 'trade claimed by maker');
+        assert(trade.claimed_by_taker == true, 'trade not claimed by taker');
+
+        let maker_wood_resource = get!(world, (maker_id, ResourceTypes::WOOD), Resource);
+        let maker_stone_resource = get!(world, (maker_id, ResourceTypes::STONE), Resource);
+        assert(maker_wood_resource.balance == 0, 'balance updated');
+        assert(maker_stone_resource.balance == 0, 'balance updated');
+
+        let taker_wood_resource = get!(world, (taker_id, ResourceTypes::WOOD), Resource);
+        let taker_stone_resource = get!(world, (taker_id, ResourceTypes::STONE), Resource);
+        assert(taker_wood_resource.balance == 100, 'balance not updated');
+        assert(taker_stone_resource.balance == 200, 'balance not updated');
+
+    }
+
+
+
+
+    #[test]
+    #[available_gas(30000000000000)]
+    #[should_panic(expected: ('not owned by caller','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED' ))]
+    fn test_not_owner() {
+        let world = spawn_eternum();
+    
+        starknet::testing::set_contract_address(contract_address_const::<'unknown'>());
+
+        let maker_id = 11_u64;
+        let trade_id = 10_u64;
+        let mut calldata = array![];
+        Serde::serialize(@maker_id, ref calldata);
+        Serde::serialize(@trade_id, ref calldata);
+        world.execute('ClaimFungibleOrder', calldata);
+
+    }
+
+
+}
 
 
