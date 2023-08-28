@@ -94,7 +94,7 @@ export const CaravansPanel = ({}: CaravansPanelProps) => {
       )}
       {realmCaravans &&
         realmCaravans.map((caravan) => (
-          <div className="flex flex-col p-2">
+          <div className="flex flex-col p-2" key={caravan.caravanId}>
             <Caravan caravan={caravan} onClick={() => onClick(caravan)} />
           </div>
         ))}
