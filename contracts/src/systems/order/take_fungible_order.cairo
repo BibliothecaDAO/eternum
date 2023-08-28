@@ -451,24 +451,31 @@ mod tests {
             taker_order_id
         ) = setup(true);
 
-        // create a caravan owned by the taker
-        let caravan_id = 20_u64;
-        let caravan_id_felt: felt252 = caravan_id.into();
-        set!(world, (Owner { address: contract_address_const::<'taker'>(), entity_id: caravan_id.into()}));
-        set!(world, (Position { x: 45, y: 50, entity_id: caravan_id.into()}));
-        set!(world, (Capacity { weight_gram: 10_000, entity_id: caravan_id.into()}));
-        set!(world, (Movable { sec_per_km: 10, blocked: false, entity_id: caravan_id.into()}));
+        // create a caravan owned by the maker
+        let maker_caravan_id = 20_u64;
+        let maker_caravan_id_felt: felt252 = maker_caravan_id.into();
 
+        set!(world, (Owner { address: contract_address_const::<'maker'>(), entity_id: maker_caravan_id.into()}));
+        set!(world, (Position { x: 100_000, y: 200_000, entity_id: maker_caravan_id.into()}));
+        set!(world, (Capacity { weight_gram: 10_000, entity_id: maker_caravan_id.into()}));
+        set!(world, (Movable { sec_per_km: 10, blocked: false, entity_id: maker_caravan_id.into()}));
         // attach caravan to the maker order
-        let caravan_key_arr = array![maker_order_id.into(), maker_id.into()];
-        let caravan_key = poseidon_hash_span(caravan_key_arr.span());
-        set!(world, (Caravan { caravan_id: caravan_id.into(), entity_id: caravan_key }));
+        let maker_caravan_key_arr = array![maker_order_id.into(), maker_id.into()];
+        let maker_caravan_key = poseidon_hash_span(maker_caravan_key_arr.span());
+        set!(world, (Caravan { caravan_id: maker_caravan_id.into(), entity_id: maker_caravan_key }));
 
 
+        // create a caravan owned by the taker
+        let taker_caravan_id = 30_u64;
+        let taker_caravan_id_felt: felt252 = taker_caravan_id.into();
+        set!(world, (Owner { address: contract_address_const::<'taker'>(), entity_id: taker_caravan_id.into()}));
+        set!(world, (Position { x: 900_000, y: 100_000, entity_id: taker_caravan_id.into()}));
+        set!(world, (Capacity { weight_gram: 10_000, entity_id: taker_caravan_id.into()}));
+        set!(world, (Movable { sec_per_km: 10, blocked: false, entity_id: taker_caravan_id.into()}));
         // attach caravan to the taker order
-        let caravan_key_arr = array![taker_order_id.into(), taker_id.into()];
-        let caravan_key = poseidon_hash_span(caravan_key_arr.span());
-        set!(world, (Caravan { caravan_id: caravan_id.into(), entity_id: caravan_key }));
+        let taker_caravan_key_arr = array![taker_order_id.into(), taker_id.into()];
+        let taker_caravan_key = poseidon_hash_span(taker_caravan_key_arr.span());
+        set!(world, (Caravan { caravan_id: taker_caravan_id.into(), entity_id: taker_caravan_key }));
 
 
 
@@ -497,26 +504,28 @@ mod tests {
         assert(status.value == 1, 'status should be accepted');
 
         
-        // verify arrival time of maker order
-        let maker_arrival_time = get!(world, maker_order_id, ArrivalTime);
-        assert(maker_arrival_time.arrives_at == 0, 'arrival time should be 0');
- 
-
-        // verify arrival time of taker order
-        let taker_arrival_time = get!(world, taker_order_id, ArrivalTime);
-        assert(taker_arrival_time.arrives_at == 0, 'arrival time should be 0');
-       
-
-        // verify position of maker order
+        // verify arrival time and position of maker order
+        let maker_order_arrival_time = get!(world, maker_order_id, ArrivalTime);
         let maker_order_position = get!(world, maker_order_id, Position);
+        assert(maker_order_arrival_time.arrives_at == 220, 'arrival time should be 220');
         assert(maker_order_position.x == 60, 'position x should be 60');
         assert(maker_order_position.y == 70, 'position y should be 70');
+        // verify arrival time of maker caravan
+        let maker_caravan_arrival_time = get!(world, maker_caravan_id, ArrivalTime);
+        assert(maker_caravan_arrival_time.arrives_at == (220 * 2), 'arrival time should be 440');
 
+ 
 
-        // verify position of taker order
+        // verify arrival time and position of taker order
+        let taker_order_arrival_time = get!(world, taker_order_id, ArrivalTime);
         let taker_order_position = get!(world, taker_order_id, Position);
+        assert(taker_order_arrival_time.arrives_at == 900, 'arrival time should be 900');
         assert(taker_order_position.x == 45, 'position x should be 45');
         assert(taker_order_position.y == 50, 'position y should be 50');
+        // verify arrival time of taker caravan
+        let taker_caravan_arrival_time = get!(world, taker_caravan_id, ArrivalTime);
+        assert(taker_caravan_arrival_time.arrives_at == (900 * 2), 'arrival time should be 1800');
+
 
     }
 }
