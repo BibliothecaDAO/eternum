@@ -20,6 +20,7 @@ const RealmManagementComponent = () => {
   const [selectedTab, setSelectedTab] = useState(1);
 
   const [_location, setLocation] = useLocation();
+  // @ts-ignore
   const [match, params] = useRoute("/realm/:id/:tab");
 
   const moveCameraToMarketView = useUIStore(

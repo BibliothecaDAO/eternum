@@ -27,7 +27,9 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
     (state) => state.moveCameraToCaravansView,
   );
 
+  // @ts-ignore
   const [location, setLocation] = useLocation();
+  // @ts-ignore
   const [match, params] = useRoute("/realm/:id/:tab");
 
   useEffect(() => {
