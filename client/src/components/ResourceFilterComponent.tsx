@@ -4,7 +4,6 @@ import { SecondaryPopup } from "../elements/SecondaryPopup";
 import { resources } from "../constants/resources";
 import { SelectBox } from "../elements/SelectBox";
 import { ResourceIcon } from "../elements/ResourceIcon";
-import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
 import Button from "../elements/Button";
 
 type ResourceFilterProps = {};

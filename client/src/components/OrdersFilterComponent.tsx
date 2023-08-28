@@ -2,7 +2,6 @@ import { useState } from "react";
 import { FilterButton } from "../elements/FilterButton";
 import { SecondaryPopup } from "../elements/SecondaryPopup";
 import { orders } from "../constants/orders";
-import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
 import Button from "../elements/Button";
 import { OrderIcon } from "../elements/OrderIcon";
 import clsx from "clsx";
