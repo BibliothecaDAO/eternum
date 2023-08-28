@@ -459,6 +459,11 @@ mod tests {
         set!(world, (Capacity { weight_gram: 10_000, entity_id: caravan_id.into()}));
         set!(world, (Movable { sec_per_km: 10, blocked: false, entity_id: caravan_id.into()}));
 
+        // attach caravan to the maker order
+        let caravan_key_arr = array![maker_order_id.into(), maker_id.into()];
+        let caravan_key = poseidon_hash_span(caravan_key_arr.span());
+        set!(world, (Caravan { caravan_id: caravan_id.into(), entity_id: caravan_key }));
+
 
         // attach caravan to the taker order
         let caravan_key_arr = array![taker_order_id.into(), taker_id.into()];
@@ -504,8 +509,8 @@ mod tests {
 
         // verify position of maker order
         let maker_order_position = get!(world, maker_order_id, Position);
-        assert(maker_order_position.x == 45, 'position x should be 45');
-        assert(maker_order_position.y == 50, 'position y should be 50');
+        assert(maker_order_position.x == 60, 'position x should be 60');
+        assert(maker_order_position.y == 70, 'position y should be 70');
 
 
         // verify position of taker order
