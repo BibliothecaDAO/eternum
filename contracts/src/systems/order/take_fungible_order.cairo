@@ -139,6 +139,7 @@ mod TakeFungibleOrder {
         }
 
         // check if there is a caravan attached to the taker if needed
+        //
         // taker caravan is not directly attached to the taker_order_id, but to the
         // (taker_order_id, taker_id), this is because more than one taker can attach a caravan to the same order
         // before one of them accepts it
@@ -259,14 +260,14 @@ mod tests {
 
 
     use poseidon::poseidon_hash_span;
-    use traits::Into;
+    use traits::{TryInto, Into};
     use result::ResultTrait;
     use array::ArrayTrait;
     use option::OptionTrait;
     use serde::Serde;
 
 
-    fn setup() -> (IWorldDispatcher, u64, u64, u128, u128, u128) {
+    fn setup(taker_needs_caravan: bool) -> (IWorldDispatcher, u64, u64, u128, u128, u128) {
         let world = spawn_eternum();
         
         // set as executor
@@ -313,7 +314,7 @@ mod tests {
                 expires_at: 100,
                 claimed_by_maker: false,
                 claimed_by_taker: false,
-                taker_needs_caravan: false
+                taker_needs_caravan
         }));
 
 
@@ -382,7 +383,7 @@ mod tests {
             trade_id, 
             maker_order_id, 
             taker_order_id
-        ) = setup();
+        ) = setup(false);
 
 
         // taker takes trade
@@ -448,19 +449,19 @@ mod tests {
             trade_id, 
             maker_order_id, 
             taker_order_id
-        ) = setup();
+        ) = setup(true);
 
-        // create a caravan owned by the maker
+        // create a caravan owned by the taker
         let caravan_id = 20_u64;
         let caravan_id_felt: felt252 = caravan_id.into();
-        set!(world, (Owner { address: contract_address_const::<'maker'>(), entity_id: caravan_id.into()}));
+        set!(world, (Owner { address: contract_address_const::<'taker'>(), entity_id: caravan_id.into()}));
         set!(world, (Position { x: 45, y: 50, entity_id: caravan_id.into()}));
         set!(world, (Capacity { weight_gram: 10_000, entity_id: caravan_id.into()}));
         set!(world, (Movable { sec_per_km: 10, blocked: false, entity_id: caravan_id.into()}));
 
 
-        // attach caravan to the maker order
-        let caravan_key_arr = array![maker_order_id.into(), maker_id.into()];
+        // attach caravan to the taker order
+        let caravan_key_arr = array![taker_order_id.into(), taker_id.into()];
         let caravan_key = poseidon_hash_span(caravan_key_arr.span());
         set!(world, (Caravan { caravan_id: caravan_id.into(), entity_id: caravan_key }));
 
@@ -503,14 +504,14 @@ mod tests {
 
         // verify position of maker order
         let maker_order_position = get!(world, maker_order_id, Position);
-        assert(maker_order_position.x == 60, 'position x should be 60');
-        assert(maker_order_position.y == 70, 'position y should be 70');
+        assert(maker_order_position.x == 45, 'position x should be 45');
+        assert(maker_order_position.y == 50, 'position y should be 50');
 
 
         // verify position of taker order
         let taker_order_position = get!(world, taker_order_id, Position);
-        assert(taker_order_position.x == 60, 'position x should be 60');
-        assert(taker_order_position.y == 70, 'position y should be 70');
+        assert(taker_order_position.x == 45, 'position x should be 45');
+        assert(taker_order_position.y == 50, 'position y should be 50');
 
     }
 }
