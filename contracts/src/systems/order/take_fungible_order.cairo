@@ -266,6 +266,8 @@ mod tests {
     use option::OptionTrait;
     use serde::Serde;
 
+    use debug::PrintTrait;
+
 
     fn setup(taker_needs_caravan: bool) -> (IWorldDispatcher, u64, u64, u128, u128, u128) {
         let world = spawn_eternum();
@@ -276,10 +278,10 @@ mod tests {
         let maker_id = 11_u64;
         let taker_id = 12_u64;
 
-        set!(world, (Position { x: 45, y: 50, entity_id: maker_id.into()}));
+        set!(world, (Position { x: 100_000, y: 200_000, entity_id: maker_id.into()}));
         set!(world, (Owner { address: contract_address_const::<'maker'>(), entity_id: maker_id.into()}));
 
-        set!(world, (Position { x: 60, y: 70, entity_id: taker_id.into()}));
+        set!(world, (Position { x: 900_000, y: 100_000, entity_id: taker_id.into()}));
         set!(world, (Owner { address: contract_address_const::<'taker'>(), entity_id: taker_id.into()}));
 
 
@@ -423,14 +425,14 @@ mod tests {
 
         // verify position of maker order
         let maker_order_position = get!(world, maker_order_id, Position);
-        assert(maker_order_position.x == 45, 'position x should be 45');
-        assert(maker_order_position.y == 50, 'position y should be 50');
+        assert(maker_order_position.x == 100_000, 'position x should be 100,000');
+        assert(maker_order_position.y == 200_000, 'position y should be 200,000');
 
 
         // verify position of taker order
         let taker_order_position = get!(world, taker_order_id, Position);
-        assert(taker_order_position.x == 60, 'position x should be 60');
-        assert(taker_order_position.y == 70, 'position y should be 70');
+        assert(taker_order_position.x == 900_000, 'position x should be 900,000');
+        assert(taker_order_position.y == 100_000, 'position y should be 100,000');
     }
 
 
@@ -507,24 +509,24 @@ mod tests {
         // verify arrival time and position of maker order
         let maker_order_arrival_time = get!(world, maker_order_id, ArrivalTime);
         let maker_order_position = get!(world, maker_order_id, Position);
-        assert(maker_order_arrival_time.arrives_at == 220, 'arrival time should be 220');
-        assert(maker_order_position.x == 60, 'position x should be 60');
-        assert(maker_order_position.y == 70, 'position y should be 70');
+        assert(maker_order_arrival_time.arrives_at == 800, 'arrival time should be 800');
+        assert(maker_order_position.x == 900_000, 'position x should be 900,000');
+        assert(maker_order_position.y == 100_000, 'position y should be 100,000');
         // verify arrival time of maker caravan
         let maker_caravan_arrival_time = get!(world, maker_caravan_id, ArrivalTime);
-        assert(maker_caravan_arrival_time.arrives_at == (220 * 2), 'arrival time should be 440');
+        assert(maker_caravan_arrival_time.arrives_at == (800 * 2), 'arrival time should be 1600');
 
  
 
         // verify arrival time and position of taker order
         let taker_order_arrival_time = get!(world, taker_order_id, ArrivalTime);
         let taker_order_position = get!(world, taker_order_id, Position);
-        assert(taker_order_arrival_time.arrives_at == 900, 'arrival time should be 900');
-        assert(taker_order_position.x == 45, 'position x should be 45');
-        assert(taker_order_position.y == 50, 'position y should be 50');
+        assert(taker_order_arrival_time.arrives_at == 800, 'arrival time should be 800');
+        assert(taker_order_position.x == 100_000, 'position x should be 100,000');
+        assert(taker_order_position.y == 200_000, 'position y should be 200,000');
         // verify arrival time of taker caravan
         let taker_caravan_arrival_time = get!(world, taker_caravan_id, ArrivalTime);
-        assert(taker_caravan_arrival_time.arrives_at == (900 * 2), 'arrival time should be 1800');
+        assert(taker_caravan_arrival_time.arrives_at == (800 * 2), 'arrival time should be 1600');
 
 
     }
