@@ -98,7 +98,9 @@ export const NotificationsComponent = ({
   }, []);
 
   return (
-    <div className={clsx("flex flex-col space-y-2", className)}>
+    <div
+      className={clsx("flex flex-col space-y-2 absolute right-0", className)}
+    >
       <Button
         variant="primary"
         onClick={() =>

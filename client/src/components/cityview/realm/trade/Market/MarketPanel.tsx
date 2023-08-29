@@ -37,7 +37,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
     ];
   }, []);
 
-  // TODO: find a way to only call this once the first render and not after every render
+  // TODO: find a way to only call this once the first render and not after every render and have a loading when it's querying
   useSyncMarket({ realmId: realmEntityId });
 
   const { market } = useGetMarket();

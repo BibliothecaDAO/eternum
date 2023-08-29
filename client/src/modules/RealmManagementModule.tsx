@@ -10,7 +10,7 @@ import { useLocation } from "wouter";
 const RealmManagementModule = () => {
   const { realmEntityId } = useRealmStore();
 
-  const realm = useGetRealm(realmEntityId);
+  const { realm } = useGetRealm(realmEntityId);
 
   const [location] = useLocation();
 

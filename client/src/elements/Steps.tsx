@@ -14,7 +14,7 @@ export const Steps = ({ step, maxStep, className }: StepsProps) => {
       {Array.from(Array(maxStep).keys()).map((i, index) => (
         <>
           <div
-            key={index}
+            key={`dot-${index}`}
             className={clsx(
               "w-2 h-2 rounded-full",
               i == _step ? "bg-gold" : "bg-dark-brown",
@@ -23,7 +23,7 @@ export const Steps = ({ step, maxStep, className }: StepsProps) => {
           />
           {i < maxStep - 1 && (
             <div
-              key={index + 100}
+              key={`delimeter-${index}`}
               className={clsx(
                 "w-6 h-[1px] mx-1",
                 i < _step ? "bg-gold" : "bg-dark-brown",

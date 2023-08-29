@@ -45,9 +45,10 @@ export const soundSelector = {
 
 export const useUiSounds = (selector: string) => {
   const effectsLevel = useUIStore((state) => state.effectsLevel);
+  const isSoundOn = useUIStore((state) => state.isSoundOn);
 
   const [play] = useSound(dir + selector, {
-    volume: effectsLevel / 100,
+    volume: isSoundOn ? effectsLevel / 100 : 0,
   });
 
   return {

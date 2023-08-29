@@ -158,7 +158,7 @@ mod BuildLabor {
 }
 
 
-
+#[cfg(test)]
 mod tests {
     use eternum::constants::ResourceTypes;
     use eternum::components::resources::Resource;

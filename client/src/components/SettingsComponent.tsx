@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { ReactComponent as Crown } from "../assets/icons/common/crown-circle-outline.svg";
 import { ReactComponent as Settings } from "../assets/icons/common/settings.svg";
+import { ReactComponent as Muted } from "../assets/icons/common/muted.svg";
+import { ReactComponent as Unmuted } from "../assets/icons/common/unmuted.svg";
 import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
 import { SecondaryPopup } from "../elements/SecondaryPopup";
 import { Headline } from "../elements/Headline";
@@ -18,6 +20,8 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
   const effectsLevel = useUIStore((state) => state.effectsLevel);
   const setMusicLevel = useUIStore((state) => state.setMusicLevel);
   const setEffectsLevel = useUIStore((state) => state.setEffectsLevel);
+  const isSoundOn = useUIStore((state) => state.isSoundOn);
+  const toggleSound = useUIStore((state) => state.toggleSound);
 
   const { toggleFullScreen, isFullScreen } = useScreenOrientation();
   const [fullScreen, setFullScreen] = useState<boolean>(isFullScreen());
@@ -37,6 +41,17 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
         onClick={() => setShowSettings(!showSettings)}
         className="ml-[6px] cursor-pointer fill-gold translate-y-1"
       />
+      {isSoundOn ? (
+        <Unmuted
+          onClick={() => toggleSound()}
+          className="ml-[6px] cursor-pointer fill-gold"
+        />
+      ) : (
+        <Muted
+          onClick={() => toggleSound()}
+          className="ml-[6px] cursor-pointer fill-gold"
+        />
+      )}
       {showSettings && (
         <SecondaryPopup className="top-1/3">
           <SecondaryPopup.Head>
@@ -44,7 +59,7 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
               <div className="mr-0.5">Settings</div>
               <CloseIcon
                 className="w-3 h-3 cursor-pointer fill-white"
-                onClick={() => {}}
+                onClick={() => setShowSettings(!showSettings)}
               />
             </div>
           </SecondaryPopup.Head>

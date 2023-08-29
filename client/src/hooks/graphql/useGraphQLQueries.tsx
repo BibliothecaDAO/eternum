@@ -187,7 +187,6 @@ export const useSyncRealms = () => {
     const fetchData = async () => {
       try {
         const { data } = await sdk.getRealms();
-        console.log({ data });
         data?.realmComponents?.edges?.forEach((edge) => {
           if (edge?.node?.entity) {
             setComponentFromEntity(edge.node.entity, "Realm", components);

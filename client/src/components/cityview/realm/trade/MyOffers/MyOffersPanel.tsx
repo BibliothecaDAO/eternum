@@ -14,7 +14,7 @@ import { useGetMyOffers } from "../../../../../hooks/helpers/useTrade";
 
 type MarketPanelProps = {};
 
-export const MyOffersPanel = ({ }: MarketPanelProps) => {
+export const MyOffersPanel = ({}: MarketPanelProps) => {
   const { realmEntityId } = useRealmStore();
 
   const [activeFilter, setActiveFilter] = useState(false);
@@ -72,12 +72,12 @@ export const MyOffersPanel = ({ }: MarketPanelProps) => {
       {showCreateOffer && (
         <CreateOfferPopup
           onClose={() => setShowCreateOffer(false)}
-          onCreate={() => { }}
+          onCreate={() => {}}
         />
       )}
       {myOffers.length &&
         myOffers.map((myOffer) => (
-          <div className="flex flex-col p-2">
+          <div className="flex flex-col p-2" key={myOffer.tradeId}>
             <MyOffer myOffer={myOffer} />
           </div>
         ))}

@@ -129,6 +129,7 @@ mod Unsettle {
         }.transfer_from(ctx.world.contract_address, owner.address, realm_id, );
     }
 }
+// #[cfg(test)]
 // mod tests {
 //     use starknet::syscalls::deploy_syscall;
 //     use starknet::testing::set_caller_address;

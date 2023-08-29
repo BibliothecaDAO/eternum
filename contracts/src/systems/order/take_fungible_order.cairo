@@ -139,6 +139,7 @@ mod TakeFungibleOrder {
         }
 
         // check if there is a caravan attached to the taker if needed
+        //
         // taker caravan is not directly attached to the taker_order_id, but to the
         // (taker_order_id, taker_id), this is because more than one taker can attach a caravan to the same order
         // before one of them accepts it
@@ -232,361 +233,301 @@ mod TakeFungibleOrder {
         };
     }
 }
-// TODO: need to test it when withdraw gas is working
-// mod tests {
-//     // utils
-//     use eternum::utils::testing::spawn_test_world_without_init;
 
-//     use core::traits::Into;
-//     use core::result::ResultTrait;
-//     use array::ArrayTrait;
-//     use option::OptionTrait;
-//     use debug::PrintTrait;
 
-//     use starknet::syscalls::deploy_syscall;
 
-//     use dojo::interfaces::IWorldDispatcherTrait;
-//     use dojo::storage::query::{
-//         Query, TupleSize2IntoQuery, LiteralIntoQuery, TupleSize3IntoQuery
-//     };
-//     use dojo::auth::components::AuthRole;
-//     use dojo::execution_context::Context;
-//     use dojo::auth::systems::{Route, RouteTrait};
 
-//     #[test]
-//     #[available_gas(30000000000000)]
-//     fn test_take_trade_without_caravan() {
-//         let world = spawn_test_world_without_init();
+#[cfg(test)]
+mod tests {
+    use eternum::components::resources::Resource;
+    use eternum::components::trade::FungibleEntities;
+    use eternum::components::owner::Owner;
+    use eternum::components::position::Position;
+    use eternum::components::capacity::Capacity;
+    use eternum::components::movable::{Movable, ArrivalTime};
+    use eternum::components::caravan::Caravan;
+    use eternum::components::config::WeightConfig;
+    
+    use eternum::components::trade::{Trade,Status, OrderId, OrderResource};
 
-//         // set as executor
-//         starknet::testing::set_contract_address(starknet::contract_address_const::<1>());
+    use eternum::constants::ResourceTypes;
+    use eternum::constants::WORLD_CONFIG_ID;
 
-//         // context to set entity
-//         // only caller_system is used here
-//         let ctx = Context {
-//             world,
-//             caller_account: starknet::contract_address_const::<0x1337>(),
-//             caller_system: 'Tester'.into(),
-//             execution_role: AuthRole {
-//                 id: 'FooWriter'.into()
-//             },
-//         };
+    use eternum::utils::testing::spawn_eternum;
 
-//         // create entity 1
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(45);
-//         values.append(50);
-//         // maker_id = 11
-//         world.set_entity(ctx, 'Position'.into(), 11.into(), 0_u8, values.span());
+    use dojo::world::{ IWorldDispatcher, IWorldDispatcherTrait};
+    use starknet::contract_address_const;
 
-//         // create entity 2
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(60);
-//         values.append(70);
-//         // taker_id = 12
-//         world.set_entity(ctx, 'Position'.into(), 12.into(), 0_u8, values.span());
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(15);
-//         world.set_entity(ctx, 'Owner'.into(), 12.into(), 0_u8, values.span());
 
-//         // give resources to entity 2
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(3);
-//         values.append(600);
-//         world.set_entity(ctx, 'Resource'.into(), (12, 3).into(), 0_u8, values.span());
+    use poseidon::poseidon_hash_span;
+    use traits::{TryInto, Into};
+    use result::ResultTrait;
+    use array::ArrayTrait;
+    use option::OptionTrait;
+    use serde::Serde;
 
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(4);
-//         values.append(600);
-//         world.set_entity(ctx, 'Resource'.into(), (12, 4).into(), 0_u8, values.span());
 
-//         // create a trade
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // maker_id
-//         values.append(11);
-//         // taker_id
-//         values.append(12);
-//         // maker_order_id
-//         values.append(13);
-//         // taker_order_id
-//         values.append(14);
-//         // expires_at 
-//         values.append(100);
-//         // claimed_by_maker
-//         values.append(0);
-//         // claimed_by_taker
-//         values.append(0);
-//         // taker_needs_caravan
-//         values.append(0);
+    fn setup(taker_needs_caravan: bool) -> (IWorldDispatcher, u64, u64, u128, u128, u128) {
+        let world = spawn_eternum();
+        
+        // set as executor
+        starknet::testing::set_contract_address(world.executor());
 
-//         // trade_id
-//         let trade_id = 10;
-//         world.set_entity(ctx, 'Trade'.into(), trade_id.into(), 0_u8, values.span());
+        let maker_id = 11_u64;
+        let taker_id = 12_u64;
 
-//         // set fungible entities for maker
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // key
-//         values.append(1323);
-//         // count
-//         values.append(2);
-//         world.set_entity(ctx, 'FungibleEntities'.into(), 13.into(), 0_u8, values.span());
-//         // set resource for maker
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // resource_type
-//         values.append(1);
-//         // balance
-//         values.append(100);
-//         world.set_entity(ctx, 'Resource'.into(), (13, 1323, 0).into(), 0_u8, values.span());
-//         // set resource for maker
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // resource_type
-//         values.append(2);
-//         // balance
-//         values.append(200);
-//         world.set_entity(ctx, 'Resource'.into(), (13, 1323, 1).into(), 0_u8, values.span());
+        set!(world, (Position { x: 100_000, y: 200_000, entity_id: maker_id.into()}));
+        set!(world, (Owner { address: contract_address_const::<'maker'>(), entity_id: maker_id.into()}));
 
-//         // set fungible entities for taker
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // key
-//         values.append(1324);
-//         // count
-//         values.append(2);
-//         world.set_entity(ctx, 'FungibleEntities'.into(), 14.into(), 0_u8, values.span());
-//         // set resource for taker
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // resource_type
-//         values.append(3);
-//         // balance
-//         values.append(100);
-//         world.set_entity(ctx, 'Resource'.into(), (14, 1324, 0).into(), 0_u8, values.span());
-//         // set resource for taker
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // resource_type
-//         values.append(4);
-//         // balance
-//         values.append(200);
-//         world.set_entity(ctx, 'Resource'.into(), (14, 1324, 1).into(), 0_u8, values.span());
+        set!(world, (Position { x: 900_000, y: 100_000, entity_id: taker_id.into()}));
+        set!(world, (Owner { address: contract_address_const::<'taker'>(), entity_id: taker_id.into()}));
 
-//         // taker takes trade
-//         starknet::testing::set_account_contract_address(starknet::contract_address_const::<15>());
-//         let mut calldata = array::ArrayTrait::<felt252>::new();
-//         // taker_id
-//         calldata.append(12);
-//         // trade_id
-//         calldata.append(10);
-//         world.execute('TakeFungibleOrder'.into(), calldata.span());
 
-//         // taker balance resource_type 3 should be 500
-//         let entity_2_resource = world.entity('Resource'.into(), (12, 3).into(), 0_u8, 0_usize);
-//         assert(*entity_2_resource[0] == 3, 'should be resource type 3');
-//         assert(*entity_2_resource[1] == 500, 'resource balance should be 500');
 
-//         // taker balance resource_type 4 should be 400
-//         let entity_2_resource = world.entity('Resource'.into(), (12, 4).into(), 0_u8, 0_usize);
-//         assert(*entity_2_resource[0] == 4, 'should be resource type 4');
-//         assert(*entity_2_resource[1] == 400, 'resource balance should be 400');
+        // give wood and stone resources to taker
+        set!(world, (
+            Resource { 
+                entity_id: taker_id.into(), 
+                resource_type: ResourceTypes::WOOD, 
+                balance: 600
+            }
+        ));
 
-//         // status should be accepted
-//         let status = world.entity('Status'.into(), 10.into(), 0_u8, 0_usize);
-//         assert(*status[0] == 1, 'status should be accepted');
+        set!(world, (
+            Resource { 
+                entity_id: taker_id.into(), 
+                resource_type: ResourceTypes::STONE, 
+                balance: 600
+            }
+        ));
 
-//         // verify arrival time of maker order
-//         let arrival_time = world.entity('ArrivalTime'.into(), 13.into(), 0_u8, 0_usize);
-//         assert(*arrival_time[0] == 0, 'arrival time should be 0');
+        // create a trade  
+        let trade_id = 10_u128;
+        let maker_order_id = 13_u128;
+        let taker_order_id = 14_u128;
+        set!(world, (Trade {
+                trade_id,
+                maker_id: maker_id.into(),
+                taker_id: taker_id.into(),
+                maker_order_id: maker_order_id,
+                taker_order_id: taker_order_id,
+                expires_at: 100,
+                claimed_by_maker: false,
+                claimed_by_taker: false,
+                taker_needs_caravan
+        }));
 
-//         // verify arrival time of taker order
-//         let arrival_time = world.entity('ArrivalTime'.into(), 14.into(), 0_u8, 0_usize);
-//         assert(*arrival_time[0] == 0, 'arrival time should be 0');
 
-//         // verify position of maker order
-//         let position = world.entity('Position'.into(), 13.into(), 0_u8, 0_usize);
-//         assert(*position[0] == 45, 'position x should be 45');
-//         assert(*position[1] == 50, 'position y should be 50');
 
-//         // verify position of taker order
-//         let position = world.entity('Position'.into(), 14.into(), 0_u8, 0_usize);
-//         assert(*position[0] == 60, 'position x should be 60');
-//         assert(*position[1] == 70, 'position y should be 70');
-//     }
-//     #[test]
-//     #[available_gas(30000000000000)]
-//     fn test_take_trade_with_caravan() {
-//         let world = spawn_test_world_without_init();
+        // set fungible entities for maker
+        set!(world, (FungibleEntities { entity_id: maker_order_id, count: 2, key: 33}));
+        set!(world, (
+            OrderResource { 
+                order_id: maker_order_id,
+                fungible_entities_id: 33,
+                index: 0,
+                resource_type: ResourceTypes::GOLD,
+                balance: 100
+            }
+        ));
+        set!(world, (
+            OrderResource { 
+                order_id: maker_order_id,
+                fungible_entities_id: 33,
+                index: 1,
+                resource_type: ResourceTypes::SILVER,
+                balance: 200
+            }
+        ))
 
-//         // set as executor
-//         starknet::testing::set_contract_address(starknet::contract_address_const::<1>());
 
-//         // context to set entity
-//         // only caller_system is used here
-//         let ctx = Context {
-//             world,
-//             caller_account: starknet::contract_address_const::<0x1337>(),
-//             caller_system: 'Tester'.into(),
-//             execution_role: AuthRole {
-//                 id: 'FooWriter'.into()
-//             },
-//         };
 
-//         // create entity 1
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(45);
-//         values.append(50);
-//         // maker_id = 11
-//         world.set_entity(ctx, 'Position'.into(), 11.into(), 0_u8, values.span());
+        
+        // set fungible entities for taker
+        set!(world, (FungibleEntities { entity_id: taker_order_id, count: 2, key: 34}));
+        set!(world, (
+            OrderResource { 
+                order_id: taker_order_id,
+                fungible_entities_id: 34,
+                index: 0,
+                resource_type: ResourceTypes::WOOD,
+                balance: 100
+            }
+        ));
 
-//         // create entity 2
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(60);
-//         values.append(70);
-//         // taker_id = 12
-//         world.set_entity(ctx, 'Position'.into(), 12.into(), 0_u8, values.span());
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(15);
-//         world.set_entity(ctx, 'Owner'.into(), 12.into(), 0_u8, values.span());
+        set!(world, (
+            OrderResource { 
+                order_id: taker_order_id,
+                fungible_entities_id: 34,
+                index: 1,
+                resource_type: ResourceTypes::STONE,
+                balance: 200
+            }
+        ));
 
-//         // give resources to entity 2
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(3);
-//         values.append(600);
-//         world.set_entity(ctx, 'Resource'.into(), (12, 3).into(), 0_u8, values.span());
+        (world, maker_id, taker_id, trade_id, maker_order_id, taker_order_id)
+    }
 
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(4);
-//         values.append(600);
-//         world.set_entity(ctx, 'Resource'.into(), (12, 4).into(), 0_u8, values.span());
 
-//         // create a trade
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // maker_id
-//         values.append(11);
-//         // taker_id
-//         values.append(12);
-//         // maker_order_id
-//         values.append(13);
-//         // taker_order_id
-//         values.append(14);
-//         // expires_at 
-//         values.append(100);
-//         // claimed_by_maker
-//         values.append(0);
-//         // claimed_by_taker
-//         values.append(0);
-//         // taker_needs_caravan
-//         values.append(0);
 
-//         // trade_id
-//         let trade_id = 10;
-//         world.set_entity(ctx, 'Trade'.into(), trade_id.into(), 0_u8, values.span());
 
-//         // set fungible entities for maker
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // key
-//         values.append(1323);
-//         // count
-//         values.append(2);
-//         world.set_entity(ctx, 'FungibleEntities'.into(), 13.into(), 0_u8, values.span());
-//         // set resource for maker
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // resource_type
-//         values.append(1);
-//         // balance
-//         values.append(100);
-//         world.set_entity(ctx, 'Resource'.into(), (13, 1323, 0).into(), 0_u8, values.span());
-//         // set resource for maker
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // resource_type
-//         values.append(2);
-//         // balance
-//         values.append(200);
-//         world.set_entity(ctx, 'Resource'.into(), (13, 1323, 1).into(), 0_u8, values.span());
 
-//         // set fungible entities for taker
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // key
-//         values.append(1324);
-//         // count
-//         values.append(2);
-//         world.set_entity(ctx, 'FungibleEntities'.into(), 14.into(), 0_u8, values.span());
-//         // set resource for taker
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // resource_type
-//         values.append(3);
-//         // balance
-//         values.append(100);
-//         world.set_entity(ctx, 'Resource'.into(), (14, 1324, 0).into(), 0_u8, values.span());
-//         // set resource for taker
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         // resource_type
-//         values.append(4);
-//         // balance
-//         values.append(200);
-//         world.set_entity(ctx, 'Resource'.into(), (14, 1324, 1).into(), 0_u8, values.span());
+    #[test]
+    #[available_gas(30000000000000)]
+    fn test_take_trade_without_caravan() {
 
-//         // create a caravan owned by the maker
-//         // caravan_id = 20;
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(11);
-//         world.set_entity(ctx, 'Owner'.into(), 20.into(), 0_u8, values.span());
-//         // capacity
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(10000);
-//         world.set_entity(ctx, 'Capacity'.into(), 20.into(), 0_u8, values.span());
-//         // movable
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(10);
-//         values.append(0);
-//         world.set_entity(ctx, 'Movable'.into(), 20.into(), 0_u8, values.span());
-//         // position
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(45);
-//         values.append(50);
-//         world.set_entity(ctx, 'Position'.into(), 20.into(), 0_u8, values.span());
-//         // attach caravan to the maker order
-//         let mut values = array::ArrayTrait::<felt252>::new();
-//         values.append(20);
-//         world.set_entity(ctx, 'Caravan'.into(), 13.into(), 0_u8, values.span());
+        let (
+            world,
+            maker_id,
+            taker_id, 
+            trade_id, 
+            maker_order_id, 
+            taker_order_id
+        ) = setup(false);
 
-//         // taker takes trade
-//         starknet::testing::set_account_contract_address(starknet::contract_address_const::<15>());
-//         let mut calldata = array::ArrayTrait::<felt252>::new();
-//         // taker_id
-//         calldata.append(12);
-//         // trade_id
-//         calldata.append(10);
-//         world.execute('TakeFungibleOrder'.into(), calldata.span());
 
-//         // taker balance resource_type 3 should be 500
-//         let entity_2_resource = world.entity('Resource'.into(), (12, 3).into(), 0_u8, 0_usize);
-//         assert(*entity_2_resource[0] == 3, 'should be resource type 3');
-//         assert(*entity_2_resource[1] == 500, 'resource balance should be 500');
+        // taker takes trade
+        starknet::testing::set_contract_address(
+            contract_address_const::<'taker'>()
+        );
+        let mut calldata = array![];
+        Serde::serialize(@taker_id, ref calldata);
+        Serde::serialize(@trade_id, ref calldata);
+        world.execute('TakeFungibleOrder', calldata);
 
-//         // taker balance resource_type 4 should be 400
-//         let entity_2_resource = world.entity('Resource'.into(), (12, 4).into(), 0_u8, 0_usize);
-//         assert(*entity_2_resource[0] == 4, 'should be resource type 4');
-//         assert(*entity_2_resource[1] == 400, 'resource balance should be 400');
 
-//         // status should be accepted
-//         let status = world.entity('Status'.into(), 10.into(), 0_u8, 0_usize);
-//         assert(*status[0] == 1, 'status should be accepted');
 
-//         // verify arrival time of maker order
-//         let arrival_time = world.entity('ArrivalTime'.into(), 13.into(), 0_u8, 0_usize);
-//         assert(*arrival_time[0] == 0, 'arrival time should be 0');
+        // taker wood balance should be 500
+        let taker_wood_resource = get!(world, (taker_id, ResourceTypes::WOOD), Resource);
+        assert(taker_wood_resource.balance == 500, 'resource balance should be 500'); // 600 - 100
 
-//         // verify arrival time of taker order
-//         let arrival_time = world.entity('ArrivalTime'.into(), 14.into(), 0_u8, 0_usize);
-//         assert(*arrival_time[0] == 0, 'arrival time should be 0');
+        // taker stone balance should be 400
+        let taker_stone_resource = get!(world, (taker_id, ResourceTypes::STONE), Resource);
+        assert(taker_stone_resource.balance == 400, 'resource balance should be 400'); // 600 - 200
 
-//         // verify position of maker order
-//         let position = world.entity('Position'.into(), 13.into(), 0_u8, 0_usize);
-//         assert(*position[0] == 45, 'position x should be 45');
-//         assert(*position[1] == 50, 'position y should be 50');
 
-//         // verify position of taker order
-//         let position = world.entity('Position'.into(), 14.into(), 0_u8, 0_usize);
-//         assert(*position[0] == 60, 'position x should be 60');
-//         assert(*position[1] == 70, 'position y should be 70');
-//     }
-// }
+        // status should be accepted
+        let status = get!(world, trade_id, Status);
+        assert(status.value == 1, 'status should be accepted');
+
+
+        // verify arrival time of maker order
+        let maker_arrival_time = get!(world, maker_order_id, ArrivalTime);
+        assert(maker_arrival_time.arrives_at == 0, 'arrival time should be 0');
+ 
+
+        // verify arrival time of taker order
+        let taker_arrival_time = get!(world, taker_order_id, ArrivalTime);
+        assert(taker_arrival_time.arrives_at == 0, 'arrival time should be 0');
+       
+
+        // verify position of maker order
+        let maker_order_position = get!(world, maker_order_id, Position);
+        assert(maker_order_position.x == 100_000, 'position x should be 100,000');
+        assert(maker_order_position.y == 200_000, 'position y should be 200,000');
+
+
+        // verify position of taker order
+        let taker_order_position = get!(world, taker_order_id, Position);
+        assert(taker_order_position.x == 900_000, 'position x should be 900,000');
+        assert(taker_order_position.y == 100_000, 'position y should be 100,000');
+    }
+
+
+
+
+
+
+    #[test]
+    #[available_gas(30000000000000)]
+    fn test_take_trade_with_caravan() {
+        
+        let (
+            world,
+            maker_id,
+            taker_id, 
+            trade_id, 
+            maker_order_id, 
+            taker_order_id
+        ) = setup(true);
+
+        // create a caravan owned by the maker
+        let maker_caravan_id = 20_u64;
+        let maker_caravan_id_felt: felt252 = maker_caravan_id.into();
+
+        set!(world, (Owner { address: contract_address_const::<'maker'>(), entity_id: maker_caravan_id.into()}));
+        set!(world, (Position { x: 100_000, y: 200_000, entity_id: maker_caravan_id.into()}));
+        set!(world, (Capacity { weight_gram: 10_000, entity_id: maker_caravan_id.into()}));
+        set!(world, (Movable { sec_per_km: 10, blocked: false, entity_id: maker_caravan_id.into()}));
+        // attach caravan to the maker order
+        let maker_caravan_key_arr = array![maker_order_id.into(), maker_id.into()];
+        let maker_caravan_key = poseidon_hash_span(maker_caravan_key_arr.span());
+        set!(world, (Caravan { caravan_id: maker_caravan_id.into(), entity_id: maker_caravan_key }));
+
+
+        // create a caravan owned by the taker
+        let taker_caravan_id = 30_u64;
+        let taker_caravan_id_felt: felt252 = taker_caravan_id.into();
+        set!(world, (Owner { address: contract_address_const::<'taker'>(), entity_id: taker_caravan_id.into()}));
+        set!(world, (Position { x: 900_000, y: 100_000, entity_id: taker_caravan_id.into()}));
+        set!(world, (Capacity { weight_gram: 10_000, entity_id: taker_caravan_id.into()}));
+        set!(world, (Movable { sec_per_km: 10, blocked: false, entity_id: taker_caravan_id.into()}));
+        // attach caravan to the taker order
+        let taker_caravan_key_arr = array![taker_order_id.into(), taker_id.into()];
+        let taker_caravan_key = poseidon_hash_span(taker_caravan_key_arr.span());
+        set!(world, (Caravan { caravan_id: taker_caravan_id.into(), entity_id: taker_caravan_key }));
+
+
+
+        // taker takes trade
+        starknet::testing::set_contract_address(
+            contract_address_const::<'taker'>()
+        );
+        let mut calldata = array![];
+        Serde::serialize(@taker_id, ref calldata);
+        Serde::serialize(@trade_id, ref calldata);
+        world.execute('TakeFungibleOrder', calldata);
+
+
+
+        // taker wood balance should be 500
+        let taker_wood_resource = get!(world, (taker_id, ResourceTypes::WOOD), Resource);
+        assert(taker_wood_resource.balance == 500, 'resource balance should be 500'); // 600 - 100
+
+        // taker stone balance should be 400
+        let taker_stone_resource = get!(world, (taker_id, ResourceTypes::STONE), Resource);
+        assert(taker_stone_resource.balance == 400, 'resource balance should be 400'); // 600 - 200
+
+
+        // status should be accepted
+        let status = get!(world, trade_id, Status);
+        assert(status.value == 1, 'status should be accepted');
+
+        
+        // verify arrival time and position of maker order
+        let maker_order_arrival_time = get!(world, maker_order_id, ArrivalTime);
+        let maker_order_position = get!(world, maker_order_id, Position);
+        assert(maker_order_arrival_time.arrives_at == 800, 'arrival time should be 800');
+        assert(maker_order_position.x == 900_000, 'position x should be 900,000');
+        assert(maker_order_position.y == 100_000, 'position y should be 100,000');
+        // verify arrival time of maker caravan
+        let maker_caravan_arrival_time = get!(world, maker_caravan_id, ArrivalTime);
+        assert(maker_caravan_arrival_time.arrives_at == (800 * 2), 'arrival time should be 1600');
+
+ 
+
+        // verify arrival time and position of taker order
+        let taker_order_arrival_time = get!(world, taker_order_id, ArrivalTime);
+        let taker_order_position = get!(world, taker_order_id, Position);
+        assert(taker_order_arrival_time.arrives_at == 800, 'arrival time should be 800');
+        assert(taker_order_position.x == 100_000, 'position x should be 100,000');
+        assert(taker_order_position.y == 200_000, 'position y should be 200,000');
+        // verify arrival time of taker caravan
+        let taker_caravan_arrival_time = get!(world, taker_caravan_id, ArrivalTime);
+        assert(taker_caravan_arrival_time.arrives_at == (800 * 2), 'arrival time should be 1600');
+
+
+    }
+}
 
 
