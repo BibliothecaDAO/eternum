@@ -35,11 +35,11 @@ const CameraControls = ({ position, target }: Props) => {
   const setCameraPosition = useUIStore((state) => state.setCameraPosition);
   const setCameraTarget = useUIStore((state) => state.setCameraTarget);
 
-  const [isRealmView, _realmId] = useRoute("/realm/:realmId");
+  const [isMapView] = useRoute("/map");
 
   const maxDistance = useMemo(() => {
-    return isRealmView ? 3000 : 1400;
-  }, [isRealmView]);
+    return isMapView ? 500 : 3000;
+  }, [isMapView]);
 
   useControls({
     mapView: button(() => {

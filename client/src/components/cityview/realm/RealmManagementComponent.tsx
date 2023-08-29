@@ -4,8 +4,7 @@ import { ReactComponent as PickAxeSecond } from "../../../assets/icons/common/pi
 import { ReactComponent as Coin } from "../../../assets/icons/common/coin.svg";
 import { ReactComponent as City } from "../../../assets/icons/common/city.svg";
 import { ReactComponent as Map } from "../../../assets/icons/common/map.svg";
-import { useLocation } from "wouter";
-
+import { useLocation, useRoute } from "wouter";
 import { Tabs } from "../../../elements/tab";
 import RealmTradeComponent from "./RealmTradeComponent";
 import RealmLaborComponent from "./RealmLaborComponent";
@@ -21,6 +20,8 @@ const RealmManagementComponent = () => {
   const [selectedTab, setSelectedTab] = useState(1);
 
   const [_location, setLocation] = useLocation();
+  // @ts-ignore
+  const [match, params] = useRoute("/realm/:id/:tab");
 
   const moveCameraToMarketView = useUIStore(
     (state) => state.moveCameraToMarketView,
@@ -57,6 +58,7 @@ const RealmManagementComponent = () => {
   const tabs = useMemo(
     () => [
       {
+        key: "labor",
         label: (
           <div className="flex flex-col items-center">
             <PickAxeSecond className="mb-2 fill-gold" /> <div>Labor</div>
@@ -65,6 +67,7 @@ const RealmManagementComponent = () => {
         component: <RealmLaborComponent />,
       },
       {
+        key: "market",
         label: (
           <div className="flex flex-col items-center">
             <Coin className="mb-2 fill-gold" /> <div>Trade</div>
@@ -73,6 +76,7 @@ const RealmManagementComponent = () => {
         component: <RealmTradeComponent />,
       },
       {
+        key: "civilians",
         label: (
           <div
             className="flex flex-col items-center blur-sm cursor-not-allowed"
@@ -84,6 +88,7 @@ const RealmManagementComponent = () => {
         component: <div></div>,
       },
       {
+        key: "military",
         label: (
           <div
             className="flex flex-col items-center blur-sm cursor-not-allowed"
@@ -97,6 +102,17 @@ const RealmManagementComponent = () => {
     ],
     [selectedTab],
   );
+
+  useEffect(() => {
+    const _tab = ["caravans", "market"].includes(params?.tab as string)
+      ? "market"
+      : params?.tab;
+    const tabIndex = tabs.findIndex((tab) => tab.key === _tab);
+    if (tabIndex >= 0) {
+      setSelectedTab(tabIndex);
+    }
+  }, [params]);
+
   return (
     <>
       <div className="flex justify-between items-center p-2">
@@ -112,7 +128,7 @@ const RealmManagementComponent = () => {
       <Tabs
         selectedIndex={selectedTab}
         onChange={(index: any) =>
-          index < 2 ? setSelectedTab(index as number) : null
+          setLocation(`/realm/${realmEntityId}/${tabs[index].key}`)
         }
         variant="primary"
         className="flex-1 mt-4 overflow-hidden"

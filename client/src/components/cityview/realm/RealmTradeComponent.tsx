@@ -5,6 +5,8 @@ import { MarketPanel } from "./trade/Market/MarketPanel";
 import { MyOffersPanel } from "./trade/MyOffers/MyOffersPanel";
 import { IncomingOrdersPanel } from "./trade/Caravans/IncomingOrdersPanel";
 import useUIStore from "../../../hooks/store/useUIStore";
+import { useRoute, useLocation } from "wouter";
+import useRealmStore from "../../../hooks/store/useRealmStore";
 
 export type Order = {
   orderId: number;
@@ -16,6 +18,7 @@ type RealmTradeComponentProps = {};
 
 export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
   const [selectedTab, setSelectedTab] = useState(1);
+  const { realmEntityId } = useRealmStore();
 
   const moveCameraToMarketView = useUIStore(
     (state) => state.moveCameraToMarketView,
@@ -23,6 +26,11 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
   const moveCameraToCaravansView = useUIStore(
     (state) => state.moveCameraToCaravansView,
   );
+
+  // @ts-ignore
+  const [location, setLocation] = useLocation();
+  // @ts-ignore
+  const [match, params] = useRoute("/realm/:id/:tab");
 
   useEffect(() => {
     if ([0, 1].includes(selectedTab)) {
@@ -32,9 +40,17 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
     }
   }, [selectedTab]);
 
+  useEffect(() => {
+    const tabIndex = tabs.findIndex((tab) => tab.key === params?.tab);
+    if (tabIndex >= 0) {
+      setSelectedTab(tabIndex);
+    }
+  }, [params]);
+
   const tabs = useMemo(
     () => [
       {
+        key: "my-offers",
         label: (
           <div className="flex flex-col items-center">
             <div>My Offers</div>
@@ -43,6 +59,7 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
         component: <MyOffersPanel />,
       },
       {
+        key: "market",
         label: (
           <div className="flex flex-col items-center">
             <div>Market</div>
@@ -51,6 +68,7 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
         component: <MarketPanel />,
       },
       {
+        key: "caravans",
         label: (
           <div className="flex flex-col items-center">
             <div>Caravans</div>
@@ -59,6 +77,7 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
         component: <CaravansPanel />,
       },
       {
+        key: "incoming-caravans",
         label: (
           <div className="flex flex-col items-center">
             <div> Incoming Caravans </div>
@@ -74,7 +93,9 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
     <>
       <Tabs
         selectedIndex={selectedTab}
-        onChange={(index) => setSelectedTab(index as number)}
+        onChange={(index: any) =>
+          setLocation(`/realm/${realmEntityId}/${tabs[index].key}`)
+        }
         variant="default"
         className="h-full"
       >

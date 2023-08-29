@@ -19,7 +19,9 @@ import {
   OrbitControls,
 } from "@react-three/drei";
 import { LayerMaterial, Depth } from "lamina";
+import { useLocation } from "wouter";
 import useUIStore from "../../hooks/store/useUIStore";
+import useRealmStore from "../../hooks/store/useRealmStore";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -143,6 +145,8 @@ type GLTFResult = GLTF & {
 export function Model(props: JSX.IntrinsicElements["group"]) {
   const [hoveredArea, setHoveredArea] = useState<string | null>(null);
 
+  const { realmEntityId } = useRealmStore();
+
   const { nodes, materials } = useGLTF(
     "/models/realm-city_15-transformed.glb",
   ) as GLTFResult;
@@ -150,6 +154,8 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
   const setIsLoadingScreenEnabled = useUIStore(
     (state) => state.setIsLoadingScreenEnabled,
   );
+
+  const [location, setLocation] = useLocation();
 
   useEffect(() => {
     setTimeout(() => {
@@ -330,6 +336,7 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
           onPointerLeave={() => setHoveredArea(null)}
           name="floor_market"
           position={[0, -0.002192, 0]}
+          onClick={() => setLocation(`/realm/${realmEntityId}/market`)}
         >
           {hoveredArea === "market" && (
             <Html position={[125, 75, 75]} distanceFactor={400}>
@@ -369,6 +376,7 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
           onPointerLeave={() => setHoveredArea(null)}
           name="floor_ranch"
           position={[0, -0.002192, 0]}
+          onClick={() => setLocation(`/realm/${realmEntityId}/caravans`)}
         >
           {hoveredArea === "ranch" && (
             <Html position={[450, 75, 100]} distanceFactor={400}>
@@ -406,6 +414,7 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         <group
           onPointerEnter={() => setHoveredArea("labor")}
           onPointerLeave={() => setHoveredArea(null)}
+          onClick={() => setLocation(`/realm/${realmEntityId}/labor`)}
           name="floor_labor"
           position={[0, -0.002192, 0]}
         >
