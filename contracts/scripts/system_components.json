@@ -1,0 +1,64 @@
+{ 
+    "CreateCaravan": [
+        "Movable",
+        "Capacity",
+        "CaravanMembers",
+        "Position",
+        "Owner",
+        "ForeignKey"
+    ],
+    "CreateFreeTransportUnit": [
+        "Owner",
+        "Position",
+        "MetaData",
+        "Quantity",
+        "Movable",
+        "ArrivalTime",
+        "Capacity",
+        "QuantityTracker"
+    ],
+    "BuildLabor": [
+        "Labor",
+        "Resource"
+    ],
+    "HarvestLabor": [
+        "Labor",
+        "Resource"
+    ],
+    "AttachCaravan": [
+        "Caravan",
+        "Movable",
+        "OrderId"
+    ],
+    "ClaimFungibleOrder": [
+        "Trade",
+        "Resource"
+    ],
+    "MakeFungibleOrder": [
+        "Resource",
+        "FungibleEntities",
+        "OrderResource",
+        "Trade"
+    ],
+    "TakeFungibleOrder": [
+        "Resource",
+        "Status",
+        "ArrivalTime",
+        "Position",
+        "Movable",
+        "Trade"
+    ],
+    "Settle": [
+        "Resource",
+        "Owner",
+        "Realm",
+        "Position",
+        "Age"
+    ],
+    "Unsettle": [
+        "Owner",
+        "Realm",
+        "Position",
+        "Age"
+    ]
+}
