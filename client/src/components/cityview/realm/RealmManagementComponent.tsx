@@ -23,20 +23,12 @@ const RealmManagementComponent = () => {
   // @ts-ignore
   const [match, params] = useRoute("/realm/:id/:tab");
 
-  const moveCameraToMarketView = useUIStore(
-    (state) => state.moveCameraToMarketView,
-  );
-  const moveCameraToLaborView = useUIStore(
-    (state) => state.moveCameraToLaborView,
-  );
+  const moveCameraToMarketView = useUIStore((state) => state.moveCameraToMarketView);
+  const moveCameraToLaborView = useUIStore((state) => state.moveCameraToLaborView);
 
   const moveCameraToRealm = useUIStore((state) => state.moveCameraToRealm);
-  const moveCameraToWorldMapView = useUIStore(
-    (state) => state.moveCameraToWorldMapView,
-  );
-  const setIsLoadingScreenEnabled = useUIStore(
-    (state) => state.setIsLoadingScreenEnabled,
-  );
+  const moveCameraToWorldMapView = useUIStore((state) => state.moveCameraToWorldMapView);
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
   useEffect(() => {
     if (selectedTab == 0) {
@@ -78,10 +70,7 @@ const RealmManagementComponent = () => {
       {
         key: "civilians",
         label: (
-          <div
-            className="flex flex-col items-center blur-sm cursor-not-allowed"
-            title="Not implemented"
-          >
+          <div className="flex flex-col items-center blur-sm cursor-not-allowed" title="Not implemented">
             <City className="mb-2 fill-gold" /> <div>Civilians</div>
           </div>
         ),
@@ -90,10 +79,7 @@ const RealmManagementComponent = () => {
       {
         key: "military",
         label: (
-          <div
-            className="flex flex-col items-center blur-sm cursor-not-allowed"
-            title="Not implemented"
-          >
+          <div className="flex flex-col items-center blur-sm cursor-not-allowed" title="Not implemented">
             <CrossSwords className="mb-2 fill-gold" /> <div>Military</div>
           </div>
         ),
@@ -104,9 +90,12 @@ const RealmManagementComponent = () => {
   );
 
   useEffect(() => {
-    const _tab = ["caravans", "market"].includes(params?.tab as string)
-      ? "market"
-      : params?.tab;
+    let _tab: string = "";
+    if (["caravans", "market"].includes(params?.tab as string)) {
+      _tab = "market";
+    } else if (["labor", "food", "mines"].includes(params?.tab as string)) {
+      _tab = "labor";
+    }
     const tabIndex = tabs.findIndex((tab) => tab.key === _tab);
     if (tabIndex >= 0) {
       setSelectedTab(tabIndex);
@@ -127,9 +116,7 @@ const RealmManagementComponent = () => {
       </div>
       <Tabs
         selectedIndex={selectedTab}
-        onChange={(index: any) =>
-          setLocation(`/realm/${realmEntityId}/${tabs[index].key}`)
-        }
+        onChange={(index: any) => setLocation(`/realm/${realmEntityId}/${tabs[index].key}`)}
         variant="primary"
         className="flex-1 mt-4 overflow-hidden"
       >

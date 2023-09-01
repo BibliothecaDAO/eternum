@@ -10,9 +10,11 @@ import { LaborConfig } from "../../../../types";
 import { useSyncRealmLabor } from "../../../../hooks/graphql/useGraphQLQueries";
 import { getRealm } from "../SettleRealmComponent";
 
-type LaborPanelProps = {};
+type LaborPanelProps = {
+  type?: "all" | "food" | "mines";
+};
 
-export const LaborPanel = ({}: LaborPanelProps) => {
+export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
   const [buildResource, setBuildResource] = useState<number | null>(null);
   const [buildLoadingStates, setBuildLoadingStates] = useState<{
     [key: number]: boolean;
@@ -43,13 +45,15 @@ export const LaborPanel = ({}: LaborPanelProps) => {
   // unpack the resources
   let realmResourceIds = useMemo(() => {
     if (realm) {
-      let unpackedResources = unpackResources(
-        BigInt(realm.resource_types_packed),
-        realm.resource_types_count,
-      );
-      return [ResourcesIds["Wheat"], ResourcesIds["Fish"]].concat(
-        unpackedResources,
-      );
+      let unpackedResources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
+      const foodResources = [ResourcesIds["Wheat"], ResourcesIds["Fish"]];
+      if (type == "food") {
+        return foodResources;
+      }
+      if (type == "mines") {
+        return unpackedResources;
+      }
+      return foodResources.concat(unpackedResources);
     } else {
       return [];
     }
@@ -93,9 +97,7 @@ export const LaborPanel = ({}: LaborPanelProps) => {
           <div className="flex flex-col p-2" key={resourceId}>
             <LaborComponent
               onBuild={() => {
-                buildResource == resourceId
-                  ? setBuildResource(null)
-                  : setBuildResource(resourceId);
+                buildResource == resourceId ? setBuildResource(null) : setBuildResource(resourceId);
               }}
               resourceId={resourceId}
               // labor={realmLabor[resourceId]}
