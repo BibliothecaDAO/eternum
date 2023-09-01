@@ -22,6 +22,12 @@ import { getEntityIdFromKeys } from "../../../../utils/utils";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 
+let LABOR_CONFIG = {
+  base_food_per_cycle: 14000,
+  base_labor_units: 7200,
+  base_resources_per_cycle: 21,
+};
+
 type LaborBuildPopupProps = {
   resourceId: number;
   setBuildLoadingStates: (prevStates: any) => void;
@@ -84,12 +90,6 @@ export const LaborBuildPopup = ({
       }
     });
   }, [laborAmount, multiplier]);
-
-  let laborConfig = {
-    base_food_per_cycle: 14000,
-    base_labor_units: 7200,
-    base_resources_per_cycle: 21,
-  };
 
   const onBuild = () => {
     setBuildLoadingStates((prevStates: any) => ({
@@ -276,22 +276,20 @@ export const LaborBuildPopup = ({
                             </div>
                             <div className='italic text-light-pink'>Harvested</div>
                         </div> */}
-            {laborConfig && (
-              <div className="flex items-center">
-                {`+${
-                  isFood
-                    ? (laborConfig.base_food_per_cycle * multiplier) / 2
-                    : ""
-                }${isFood ? "" : laborConfig.base_resources_per_cycle / 2}`}
-                <ResourceIcon
-                  containerClassName="mx-0.5"
-                  className="!w-[12px]"
-                  resource={findResourceById(resourceId)?.trait as any}
-                  size="xs"
-                />
-                /h
-              </div>
-            )}
+            <div className="flex items-center">
+              {`+${
+                isFood
+                  ? (LABOR_CONFIG.base_food_per_cycle * multiplier) / 2
+                  : ""
+              }${isFood ? "" : LABOR_CONFIG.base_resources_per_cycle / 2}`}
+              <ResourceIcon
+                containerClassName="mx-0.5"
+                className="!w-[12px]"
+                resource={findResourceById(resourceId)?.trait as any}
+                size="xs"
+              />
+              /h
+            </div>
           </div>
           {isFood && (
             <BuildingsCount
@@ -351,7 +349,7 @@ export const LaborBuildPopup = ({
               />
               <div className="italic text-gold">
                 {formatSecondsLeftInDaysHours(
-                  laborAmount * (laborConfig?.base_labor_units || 0),
+                  laborAmount * (LABOR_CONFIG?.base_labor_units || 0),
                 )}
               </div>
             </div>

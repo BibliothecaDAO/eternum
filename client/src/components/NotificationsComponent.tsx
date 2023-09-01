@@ -28,6 +28,21 @@ export const NotificationsComponent = ({
     return `${notification.eventType}_${notification.keys.join("_")}`;
   };
 
+  // Helper function to filter unique notifications based on their keys.
+  const getUniqueNotifications = (
+    notifications: NotificationType[],
+  ): NotificationType[] => {
+    const uniqueKeys = new Set<string>();
+    return notifications.filter((notification) => {
+      const id = generateUniqueId(notification);
+      if (!uniqueKeys.has(id)) {
+        uniqueKeys.add(id);
+        return true;
+      }
+      return false;
+    });
+  };
+
   const { notifications } = useNotifications();
 
   return (
@@ -41,18 +56,20 @@ export const NotificationsComponent = ({
         {showNotifications ? "Hide notifications" : "Show notifications"}
       </Button>
       {showNotifications &&
-        notifications.map((notification: NotificationType) => {
-          const id = generateUniqueId(notification);
-          return (
-            <Notification
-              closedNotifications={closedNotifications}
-              notification={notification}
-              key={id}
-              id={id}
-              onClose={() => handleCloseNotification(id)}
-            ></Notification>
-          );
-        })}
+        getUniqueNotifications(notifications).map(
+          (notification: NotificationType) => {
+            const id = generateUniqueId(notification);
+            return (
+              <Notification
+                closedNotifications={closedNotifications}
+                notification={notification}
+                key={id}
+                id={id}
+                onClose={() => handleCloseNotification(id)}
+              ></Notification>
+            );
+          },
+        )}
     </div>
   );
 };

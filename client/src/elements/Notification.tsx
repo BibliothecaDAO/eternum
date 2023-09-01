@@ -2,8 +2,12 @@ import clsx from "clsx";
 import React, { ComponentPropsWithRef, useEffect, useState } from "react";
 import { Transition } from "@headlessui/react";
 import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
-import { NotificationType } from "../hooks/notifications/useNotifications";
+import {
+  EventType,
+  NotificationType,
+} from "../hooks/notifications/useNotifications";
 import { useTradeNotification } from "../hooks/notifications/useTradeNotifications";
+import { useHarvestNotifiation } from "../hooks/notifications/useHarvestNotifications";
 
 type NotificationProps = {
   notification: NotificationType;
@@ -39,7 +43,16 @@ export const Notification = ({
     }
   }, [closedNotifications, id]);
 
-  const { content, time, title } = useTradeNotification(notification);
+  let content, time, title;
+  if (
+    notification.eventType === EventType.AcceptOffer ||
+    notification.eventType === EventType.MakeOffer ||
+    notification.eventType === EventType.CancelOffer
+  ) {
+    ({ content, time, title } = useTradeNotification(notification));
+  } else if (notification.eventType === EventType.Harvest) {
+    ({ content, time, title } = useHarvestNotifiation(notification)); // Using Harvest Notification
+  }
 
   return (
     <Transition

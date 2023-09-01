@@ -2,13 +2,10 @@ import { GraphQLClient, gql } from "graphql-request";
 import { createClient } from "graphql-ws";
 import { Components } from "@latticexyz/recs";
 import { setComponentFromEntity } from "../utils/utils";
-import { BehaviorSubject, Observable, distinctUntilChanged } from "rxjs";
-
-// DISCUSS: what is best number?
-// const MAX_ENTITIES = 100;
+import { BehaviorSubject, Observable } from "rxjs";
 
 type EntityUpdated = {
-  id: string;
+  id: string[];
   keys: string[];
   componentNames: string;
 };
@@ -23,18 +20,18 @@ type Entity = {
   components?: any | null[];
 };
 
-type UpdatedEntity = {
-  entityKeys: (string | null)[] | null | undefined;
+export type UpdatedEntity = {
+  entityKeys: string[];
   componentNames: string[];
 };
 
-// type GetLatestEntitiesQuery = {
-//   entities: {
-//     edges: {
-//       node: Entity & { componentNames: string };
-//     }[];
-//   };
-// };
+type GetLatestEntitiesQuery = {
+  entities: {
+    edges: {
+      node: Entity & { componentNames: string };
+    }[];
+  };
+};
 
 export async function createEntitySubscription(
   contractComponents: Components,
@@ -47,54 +44,9 @@ export async function createEntitySubscription(
    * Current issue is => you can get latest trade entities but you won't have necessarily the OrderResources entities synced, so it looks like the resources are missing
    */
 
-  // const componentNames = Object.keys(contractComponents);
+  // const initialData = getInitialData(contractComponents, client);
 
-  // const componentQueries = createComponentQueries(
-  //   contractComponents,
-  //   componentNames,
-  // );
-
-  // const rawIntitialData: GetLatestEntitiesQuery = await client.request(gql`
-  //     query latestEntities {
-  //       entities(first: ${MAX_ENTITIES}) {
-  //         edges {
-  //           node {
-  //             __typename
-  //             keys
-  //             componentNames
-  //             components {
-  //               __typename
-  //               ${componentQueries}
-  //             }
-  //           }
-  //         }
-  //       }
-  //     }
-  //   `);
-
-  // const initialData = rawIntitialData.entities.edges
-  //   .map((edge) => {
-  //     let componentNames = edge.node.componentNames.split(",");
-  //     for (const component of componentNames) {
-  //       setComponentFromEntity(
-  //         edge.node.components,
-  //         component,
-  //         contractComponents,
-  //       );
-  //     }
-  //     if (isEntityUpdate(componentNames)) {
-  //       return {
-  //         entityKeys: edge.node.keys,
-  //         componentNames: edge.node.componentNames.split(","),
-  //       };
-  //     }
-  //   })
-  //   .filter(Boolean) as UpdatedEntity[];
-
-  // const lastUpdate$ = new BehaviorSubject<UpdatedEntity[]>(initialData);
   const lastUpdate$ = new BehaviorSubject<UpdatedEntity[]>([]);
-  // only allow for distinct updates
-  // const distinctUpdate$ = lastUpdate$.pipe(distinctUntilChanged());
 
   wsClient.subscribe(
     {
@@ -113,44 +65,24 @@ export async function createEntitySubscription(
         try {
           const entityUpdated = data?.entityUpdated as EntityUpdated;
           const componentNames = entityUpdated.componentNames.split(",");
-          // make query to fetch component values (temporary, will be fixed soon in torii)
-          const componentQueries = createComponentQueries(
-            contractComponents,
+          queryEntityInfoById(
+            entityUpdated.id,
             componentNames,
-          );
-          const query = gql`
-                query {
-                  entity(id: "${entityUpdated.id}") {
-                    id
-                    keys
-                    __typename
-                    components {
-                    __typename
-                    ${componentQueries}
-                    }
-                  }
-                }
-              `;
-          client.request(query).then((data) => {
-            let entity = data as EntityQuery;
+            client,
+            contractComponents,
+          ).then((entityInfo) => {
+            let { entity } = entityInfo as EntityQuery;
             componentNames.forEach((componentName: string) => {
-              setComponentFromEntity(
-                entity.entity,
-                componentName,
-                contractComponents,
-              );
+              setComponentFromEntity(entity, componentName, contractComponents);
             });
-            // get last 10 updates
+
+            // update the observable
             const previousUpdate = lastUpdate$.getValue().slice(0, 15);
             if (isEntityUpdate(componentNames)) {
               lastUpdate$.next([
-                { entityKeys: entity.entity.keys as string[], componentNames },
+                { entityKeys: entity.keys as string[], componentNames },
                 ...previousUpdate,
               ]);
-              // lastUpdate$.next({
-              //   entityKeys: entity.entity.keys as string[],
-              //   componentNames,
-              // });
             }
           });
         } catch (error) {
@@ -209,4 +141,95 @@ const isEntityUpdate = (componentNames: string[]) => {
   )
     return true;
   else return false;
+};
+
+/**
+ * Fetches initial data from the graphql endpoint in order to have a history of events when the UI is loaded
+ * @param contractComponents components from the contract
+ * @param client graphql client
+ * @param max max number of entities to fetch
+ * @returns a list of entities with their keys and component names
+ */
+
+export const getInitialData = async (
+  contractComponents: Components,
+  client: GraphQLClient,
+  max?: number,
+): Promise<UpdatedEntity[]> => {
+  const componentNames = Object.keys(contractComponents);
+
+  const componentQueries = createComponentQueries(
+    contractComponents,
+    componentNames,
+  );
+
+  const rawIntitialData: GetLatestEntitiesQuery = await client.request(gql`
+      query latestEntities {
+        entities(first: ${max || 100}) {
+          edges {
+            node {
+              __typename
+              keys
+              componentNames
+              components {
+                __typename
+                ${componentQueries}
+              }
+            }
+          }
+        }
+      }
+    `);
+
+  const initialData = rawIntitialData.entities.edges
+    .map((edge) => {
+      let componentNames = edge.node.componentNames.split(",");
+      for (const component of componentNames) {
+        setComponentFromEntity(
+          edge.node.components,
+          component,
+          contractComponents,
+        );
+      }
+      if (isEntityUpdate(componentNames)) {
+        return {
+          entityKeys: edge.node.keys,
+          componentNames: edge.node.componentNames.split(","),
+        };
+      }
+    })
+    .filter(Boolean) as UpdatedEntity[];
+
+  return initialData;
+};
+
+// make query to fetch component values (temporary, will be fixed soon in torii)
+const queryEntityInfoById = async (
+  id: string[],
+  componentNames: string[],
+  client: GraphQLClient,
+  contractComponents: Components,
+): Promise<any> => {
+  const componentQueries = createComponentQueries(
+    contractComponents,
+    componentNames,
+  );
+
+  // Construct the query with the GraphQL variables syntax
+  const query = gql`
+      query EntityQuery($id: [String!]!) {
+          entity(id: $id) {
+              id
+              keys
+              __typename
+              components {
+                  __typename
+                  ${componentQueries}
+              }
+          }
+      }
+  `;
+
+  // Return the result of the query. Note that we're passing the variables in a separate object.
+  return client.request(query, { id });
 };
