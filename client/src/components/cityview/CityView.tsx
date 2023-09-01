@@ -132,7 +132,7 @@ type GLTFResult = GLTF & {
     deposit: THREE.InstancedMesh;
     ["mining-hut"]: THREE.Mesh;
     ["mining-hut_1"]: THREE.Mesh;
-    ["mine-smoke"]: THREE.Mesh;
+    ["mine-smoke"]: THREE.InstancedMesh;
     ["water-fall"]: THREE.Mesh;
     ["deciduous-tree"]: THREE.Mesh;
     ["deciduous-tree_1"]: THREE.Mesh;
@@ -168,84 +168,27 @@ type GLTFResult = GLTF & {
 type ContextType = Record<string, React.ForwardRefExoticComponent<JSX.IntrinsicElements["mesh"]>>;
 
 const defaultDepositScales = [
-  {
-    x: 1.2352931311176092,
-    y: 1.2352930181867008,
-    z: 1.2352932540312287,
-  },
-  {
-    x: 1,
-    y: 1,
-    z: 1,
-  },
-  {
-    x: 1.0479205817124106,
-    y: 1.0479206428088226,
-    z: 1.0479206127268077,
-  },
-  {
-    x: 0.7063635143266438,
-    y: 0.7063635120170542,
-    z: 0.706363618840766,
-  },
-  {
-    x: 0.6027512832797368,
-    y: 0.6027512428618683,
-    z: 0.602751375714824,
-  },
-  {
-    x: 0.706363541587667,
-    y: 0.7063634917449598,
-    z: 0.7063637098279648,
-  },
-  {
-    x: 1,
-    y: 1,
-    z: 1,
-  },
-  {
-    x: 0.7904654145240784,
-    y: 0.7904654145240784,
-    z: 0.7904654145240784,
-  },
-  {
-    x: 1.0163131012457123,
-    y: 1.0163129950694028,
-    z: 1.0163132328270765,
-  },
-  {
-    x: 0.8672361321459853,
-    y: 0.8672361554191438,
-    z: 0.8672362264459852,
-  },
-  {
-    x: 1,
-    y: 1,
-    z: 1,
-  },
-  {
-    x: 0.7904654145240784,
-    y: 0.7904654145240784,
-    z: 0.7904654145240784,
-  },
-  {
-    x: 0.8248795568337531,
-    y: 0.8248794573705571,
-    z: 0.8248795623050139,
-  },
-  {
-    x: 0.7038828930948088,
-    y: 0.7038828565245523,
-    z: 0.7038830576189977,
-  },
-  {
-    x: 0.8248796100941466,
-    y: 0.8248795320274585,
-    z: 0.8248797184925947,
-  },
+  1.2352931311176092, 1, 1.0479205817124106, 0.7063635143266438, 0.6027512832797368, 0.706363541587667, 1,
+  0.7904654145240784, 1.0163131012457123, 0.8672361321459853, 1, 0.7904654145240784, 0.8248795568337531,
+  0.7038828930948088, 0.8248796100941466,
+];
+const defaultSmokeScales = [
+  0.9764708630725908, 0.9764709990491794, 0.9999999812060965, 0.7836309585302489, 1.0000001124736881,
+  0.9999999818348843, 0.8081183891787105, 1.295847996648098, 1.2757331132083767, 1.0509585564759265, 0.6686555302578977,
+  0.8889416593001317, 0.709281156175978, 0.7092811685289583, 1.0509584273694603, 1.0509585007747364, 0.8889417074807053,
+  0.8889417066664951,
 ];
 
 const minesDepositsIndexes = [[0], [1, 2], [3, 4, 5], [6, 7], [8, 9], [10, 11], [12, 13, 14]];
+const minesSmokeIndexes = [
+  [0, 1],
+  [2, 3],
+  [4, 5],
+  [6, 7, 8],
+  [9, 10, 11],
+  [12, 13, 14],
+  [15, 16, 17],
+];
 
 export function Model(props: JSX.IntrinsicElements["group"]) {
   const { nodes, materials } = useGLTF("/models/realm-city_20-transformed.glb") as GLTFResult;
@@ -266,6 +209,8 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
   mine_2.instanceMatrix = nodes.mine_2.instanceMatrix;
   const deposit = new THREE.InstancedMesh(nodes.deposit.geometry, materials.PaletteMaterial004, 15);
   deposit.instanceMatrix = nodes.deposit.instanceMatrix;
+  const smoke = new THREE.InstancedMesh(nodes["mine-smoke"].geometry, materials.Smoke, 18);
+  smoke.instanceMatrix = nodes["mine-smoke"].instanceMatrix;
 
   const updateInstanceScale = (instance: THREE.InstancedMesh, id: number, _scale: number) => {
     scale.set(_scale, _scale, _scale);
@@ -275,7 +220,6 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
     tempObject.scale.copy(scale);
     tempObject.updateMatrix();
     instance.setMatrixAt(id, tempObject.matrix);
-    instance.instanceMatrix.needsUpdate = true;
   };
 
   const [enabledMines, setEnabledMines] = useState<any>({
@@ -311,16 +255,22 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
     setEnabledMines(statuses);
     setTimeout(() => {
       setIsLoadingScreenEnabled(false);
-    }, 300);
+    }, 500);
   }, [realmId]);
 
   useEffect(() => {
     for (let id = 0; id < 7; id++) {
       updateInstanceScale(mine_2, id, enabledMines[id] ? 1 : 0.01);
       minesDepositsIndexes[id].forEach((depositId) => {
-        updateInstanceScale(deposit, depositId, enabledMines[id] ? defaultDepositScales[depositId].x : 0.01);
+        updateInstanceScale(deposit, depositId, enabledMines[id] ? defaultDepositScales[depositId] : 0.01);
+      });
+      minesSmokeIndexes[id].forEach((smokeId) => {
+        updateInstanceScale(smoke, smokeId, enabledMines[id] ? defaultSmokeScales[smokeId] : 0.01);
       });
     }
+    deposit.instanceMatrix.needsUpdate = true;
+    mine_2.instanceMatrix.needsUpdate = true;
+    smoke.instanceMatrix.needsUpdate = true;
   }, [enabledMines]);
 
   useControls(() => ({
@@ -1065,11 +1015,7 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
             instanceMatrix={nodes["mining-hut_1"].instanceMatrix}
           />
         </group>
-        {/* <instancedMesh
-          args={[nodes["mine-smoke"].geometry, materials.Smoke, 18]}
-          name="mine-smoke"
-          instanceMatrix={nodes["mine-smoke"].instanceMatrix}
-        /> */}
+        <primitive object={smoke} />
         <instancedMesh
           args={[nodes["water-fall"].geometry, materials.PaletteMaterial017, 35]}
           name="water-fall"
