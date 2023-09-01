@@ -149,7 +149,7 @@ const formatTimeLeft = (seconds: number) => {
   return `${days} days ${hours}h:${minutes}m`;
 };
 
-const calculateRatio = (
+export const calculateRatio = (
   resourcesGive: ResourcesOffer[],
   resourcesGet: ResourcesOffer[],
 ) => {

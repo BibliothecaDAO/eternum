@@ -7,16 +7,16 @@ import { createEntitySubscription } from "./createEntitySubscription";
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
 
 export async function setup() {
-    const network = await setupNetwork();
-    const components = createClientComponents(network);
-    const systemCalls = createSystemCalls(network);
-    const optimisticSystemCalls = createOptimisticSystemCalls(components);
-    const entityUpdates = createEntitySubscription(components);
-    return {
-        network,
-        components,
-        systemCalls,
-        optimisticSystemCalls,
-        entityUpdates,
-    };
+  const network = await setupNetwork();
+  const components = createClientComponents(network);
+  const systemCalls = createSystemCalls(network);
+  const optimisticSystemCalls = createOptimisticSystemCalls(components);
+  const entityUpdates = await createEntitySubscription(components);
+  return {
+    network,
+    components,
+    systemCalls,
+    optimisticSystemCalls,
+    entityUpdates,
+  };
 }
