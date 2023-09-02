@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SortPanel } from "../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../elements/SortButton";
 import { LaborComponent } from "./LaborComponent";
@@ -9,6 +9,7 @@ import { LaborBuildPopup } from "./LaborBuild";
 import { LaborConfig } from "../../../../types";
 import { useSyncRealmLabor } from "../../../../hooks/graphql/useGraphQLQueries";
 import { getRealm } from "../SettleRealmComponent";
+import { useRoute } from "wouter";
 
 type LaborPanelProps = {
   type?: "all" | "food" | "mines";
@@ -19,6 +20,17 @@ export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
   const [buildLoadingStates, setBuildLoadingStates] = useState<{
     [key: number]: boolean;
   }>({});
+
+  const [match, params] = useRoute("/realm/:id/:tab");
+
+  useEffect(() => {
+    if (params?.tab == "fish" && buildResource != ResourcesIds["Fish"]) {
+      setBuildResource(ResourcesIds["Fish"]);
+    }
+    if (params?.tab == "farm" && buildResource != ResourcesIds["Wheat"]) {
+      setBuildResource(ResourcesIds["Wheat"]);
+    }
+  }, [params]);
 
   const sortingParams = useMemo(() => {
     return [

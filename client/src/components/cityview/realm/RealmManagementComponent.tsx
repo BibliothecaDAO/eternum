@@ -93,7 +93,7 @@ const RealmManagementComponent = () => {
     let _tab: string = "";
     if (["caravans", "market"].includes(params?.tab as string)) {
       _tab = "market";
-    } else if (["labor", "food", "mines"].includes(params?.tab as string)) {
+    } else if (["labor", "food", "mines", "farm", "fish"].includes(params?.tab as string)) {
       _tab = "labor";
     }
     const tabIndex = tabs.findIndex((tab) => tab.key === _tab);

@@ -603,7 +603,9 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         <group
           onPointerEnter={() => setHoveredArea("farm")}
           onPointerLeave={() => setHoveredArea(null)}
-          onClick={() => setLocation(`/realm/${realmEntityId}/food`)}
+          onClick={() => {
+            setLocation(`/realm/${realmEntityId}/farm`);
+          }}
           name="floor_farm"
           position={[0, -0.002192, 0]}
         >
@@ -629,7 +631,9 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         <group
           onPointerEnter={() => setHoveredArea("fishery")}
           onPointerLeave={() => setHoveredArea(null)}
-          onClick={() => setLocation(`/realm/${realmEntityId}/food`)}
+          onClick={() => {
+            setLocation(`/realm/${realmEntityId}/fish`);
+          }}
           name="floor_fishery"
           position={[0, -0.002192, 0]}
         >

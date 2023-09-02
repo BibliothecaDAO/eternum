@@ -20,16 +20,15 @@ export const RealmLaborComponent = ({}: RealmLaborComponentProps) => {
   const [match, params] = useRoute("/realm/:id/:tab");
 
   useEffect(() => {
-    if ([0, 2].includes(selectedTab)) {
-      moveCameraToLaborView();
-    } else {
+    let _tab: string = "";
+    if (["food", "farm", "fish"].includes(params?.tab as string)) {
+      _tab = "food";
       moveCameraToFoodView();
+    } else {
+      _tab = params?.tab as any;
+      moveCameraToLaborView();
     }
-  }, [selectedTab]);
-
-  useEffect(() => {
-    console.log(params);
-    const tabIndex = tabs.findIndex((tab) => tab.key === params?.tab);
+    const tabIndex = tabs.findIndex((tab) => tab.key === _tab);
     if (tabIndex >= 0) {
       setSelectedTab(tabIndex);
     }
