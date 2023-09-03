@@ -42,7 +42,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
     sort: "none",
   });
   return (
-    <div className="flex flex-col min-h-[125px] relative pb-10">
+    <div className="flex flex-col min-h-[125px] relative pb-3">
       <FiltersPanel className="px-3 py-2">
         <FilterButton active={activeFilter} onClick={() => setActiveFilter(!activeFilter)}>
           Filter
@@ -84,7 +84,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
           </div>
         ))}
       <Button
-        className="absolute -translate-x-1/2 bottom-3 left-1/2 !rounded-full"
+        className="sticky w-32 -translate-x-1/2 bottom-2 left-1/2 !rounded-full"
         onClick={() => setShowCreateOffer(true)}
         variant="primary"
       >

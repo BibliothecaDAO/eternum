@@ -20,12 +20,8 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
   const [selectedTab, setSelectedTab] = useState(1);
   const { realmEntityId } = useRealmStore();
 
-  const moveCameraToMarketView = useUIStore(
-    (state) => state.moveCameraToMarketView,
-  );
-  const moveCameraToCaravansView = useUIStore(
-    (state) => state.moveCameraToCaravansView,
-  );
+  const moveCameraToMarketView = useUIStore((state) => state.moveCameraToMarketView);
+  const moveCameraToCaravansView = useUIStore((state) => state.moveCameraToCaravansView);
 
   // @ts-ignore
   const [location, setLocation] = useLocation();
@@ -93,9 +89,7 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
     <>
       <Tabs
         selectedIndex={selectedTab}
-        onChange={(index: any) =>
-          setLocation(`/realm/${realmEntityId}/${tabs[index].key}`)
-        }
+        onChange={(index: any) => setLocation(`/realm/${realmEntityId}/${tabs[index].key}`)}
         variant="default"
         className="h-full"
       >
@@ -104,7 +98,7 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
             <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
           ))}
         </Tabs.List>
-        <Tabs.Panels>
+        <Tabs.Panels className="overflow-hidden">
           {tabs.map((tab, index) => (
             <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
           ))}

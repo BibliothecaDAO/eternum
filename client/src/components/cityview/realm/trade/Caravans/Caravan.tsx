@@ -19,6 +19,7 @@ import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById, getTotal
 import { CAPACITY_PER_DONKEY } from "../../../../../constants/travel";
 import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
 import { useTrade } from "../../../../../hooks/helpers/useTrade";
+import { ResourceCost } from "../../../../../elements/ResourceCost";
 
 type CaravanProps = {
   caravan: CaravanInterface;
@@ -111,8 +112,23 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
           </div>
         )}
       </div>
+      <div className="flex justify-center items-center space-x-2 flex-wrap mt-2">
+        {resourcesGive &&
+          resourcesGive.map(
+            (resource) =>
+              resource && (
+                <ResourceCost
+                  key={resource.resourceId}
+                  className="!text-gold !w-5 mt-0.5"
+                  type="vertical"
+                  resourceId={resource.resourceId}
+                  amount={resource.amount}
+                />
+              ),
+          )}
+      </div>
       <div className="flex mt-2">
-        <div className="grid w-full grid-cols-2 gap-5">
+        <div className="grid w-full grid-cols-1 gap-5">
           <div className="flex flex-col">
             <div className="grid grid-cols-12 gap-0.5">
               <ProgressBar containerClassName="col-span-12" rounded progress={100} />
@@ -135,38 +151,6 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
                 <div className="flex flex-col items-center">
                   <Dot colorClass="bg-red" />
                   <div className="mt-1 text-red">{0}</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <Dot colorClass="bg-light-pink" />
-                  <div className="mt-1 text-dark">{0}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <div className="grid grid-cols-12 gap-0.5">
-              <ProgressBar className="bg-orange" containerClassName="col-span-1" rounded progress={100} />
-              <ProgressBar className="bg-red" containerClassName="col-span-3" rounded progress={100} />
-              <ProgressBar containerClassName="col-span-8" rounded progress={100} />
-            </div>
-            <div className="flex items-center justify-between mt-[6px] text-xxs">
-              <PremiumIcon />
-              <div className="flex items-center space-x-[6px]">
-                <div className="flex flex-col items-center">
-                  <Dot colorClass="bg-green" />
-                  <div className="mt-1 text-green">{30}</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <Dot colorClass="bg-yellow" />
-                  <div className="mt-1 text-dark">{0}</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <Dot colorClass="bg-orange" />
-                  <div className="mt-1 text-orange">{5}</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <Dot colorClass="bg-red" />
-                  <div className="mt-1 text-red">{10}</div>
                 </div>
                 <div className="flex flex-col items-center">
                   <Dot colorClass="bg-light-pink" />

@@ -90,15 +90,16 @@ export const IncomingOrder = ({ incomingOrder, ...props }: IncomingOrderProps) =
         )}
         {hasArrived && <div className="flex ml-auto -mt-2 italic text-order-brilliance">Arrived!</div>}
       </div>
-      <div className="flex">
+      <div className="flex mt-1">
         {resourcesGet && (
-          <div className="flex justify-center items-center space-x-2 flex-wrap px-2 py-1">
+          <div className="flex justify-center items-center space-x-2 flex-wrap mt-2">
             {resourcesGet.map(
               (resource) =>
                 resource && (
                   <ResourceCost
                     type="vertical"
                     color="text-order-brilliance"
+                    className="!w-5 mt-0.5"
                     resourceId={resource.resourceId}
                     amount={resource.amount}
                   />
