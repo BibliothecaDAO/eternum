@@ -114,7 +114,9 @@ export const IncomingOrder = ({ incomingOrder, ...props }: IncomingOrderProps) =
             disabled={!hasArrived}
             variant={hasArrived ? "success" : "danger"}
             className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
-          >{`Claim`}</Button>
+          >
+            {hasArrived ? `Claim` : "On the way"}
+          </Button>
         )}
         {isLoading && (
           <Button
