@@ -5,7 +5,7 @@ type TooltipProps = {
 };
 
 export const Tooltip = ({ children }: TooltipProps) => (
-  <div className="w-[52px] absolute top-0 -translate-y-full left-1/2 -translate-x-1/2 p-2 bg-dark-brown rounded-md flex-col justify-start items-center gap-2 inline-flex">
+  <div className="absolute top-0 -translate-y-full left-1/2 -translate-x-1/2 p-2 bg-dark-brown rounded-md flex-col justify-start items-center gap-2 inline-flex">
     {children}
     <svg
       className="absolute bottom-0 z-0 -translate-x-1/2 translate-y-1/2 left-1/2"

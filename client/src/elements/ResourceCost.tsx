@@ -9,6 +9,7 @@ type ResourceCostProps = {
   color?: string;
   type?: "horizontal" | "vertical";
   className?: string;
+  withTooltip?: boolean;
 };
 
 export const ResourceCost = ({ type = "horizontal", className, ...props }: ResourceCostProps) => {
@@ -21,7 +22,7 @@ export const ResourceCost = ({ type = "horizontal", className, ...props }: Resou
         className,
       )}
     >
-      <ResourceIcon withTooltip resource={trait || ""} size="xs" />
+      <ResourceIcon withTooltip={false} resource={trait || ""} size="xs" />
       <div
         className={clsx("relative flex flex-col shrink-0", type === "horizontal" ? "ml-1 font-bold" : "items-center")}
       >
