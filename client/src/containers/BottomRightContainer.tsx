@@ -1,5 +1,4 @@
 import { ReactNode } from "react";
-import { BaseContainer } from "./BaseContainer";
 
 interface BottomRightContainerProps {
   children?: ReactNode;

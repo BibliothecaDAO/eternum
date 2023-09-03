@@ -30,7 +30,6 @@ import { ReactComponent as TrueIce } from "../assets/icons/resources/TrueIce.svg
 import { ReactComponent as TwilightQuartz } from "../assets/icons/resources/TwilightQuartz.svg";
 import { ReactComponent as Wheat } from "../assets/icons/resources/wheat.svg";
 import { ReactComponent as Wood } from "../assets/icons/resources/Wood.svg";
-import { Tooltip } from "../utils/tooltip";
 
 export type Props = {
   resource: string;

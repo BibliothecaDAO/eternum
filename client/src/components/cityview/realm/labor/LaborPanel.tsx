@@ -21,6 +21,7 @@ export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
     [key: number]: boolean;
   }>({});
 
+  // @ts-ignore
   const [match, params] = useRoute("/realm/:id/:tab");
 
   useEffect(() => {
