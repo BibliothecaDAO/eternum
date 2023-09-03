@@ -12,6 +12,7 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import RealmStatusComponent from "./RealmStatusComponent";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
+import { Tooltip } from "../../../elements/Tooltip";
 
 const RealmManagementComponent = () => {
   const { realmEntityId } = useRealmStore();
@@ -52,8 +53,13 @@ const RealmManagementComponent = () => {
       {
         key: "labor",
         label: (
-          <div className="flex flex-col items-center">
-            <PickAxeSecond className="mb-2 fill-gold" /> <div>Labor</div>
+          <div className="flex relative group flex-col items-center">
+            <PickAxeSecond className="mb-2 fill-gold" />
+            <div>Labor</div>
+            <Tooltip position="bottom">
+              <p className=" whitespace-nowrap">Manage all of your Realm</p>
+              <p className=" whitespace-nowrap"> resource production here.</p>
+            </Tooltip>
           </div>
         ),
         component: <RealmLaborComponent />,
@@ -61,8 +67,13 @@ const RealmManagementComponent = () => {
       {
         key: "market",
         label: (
-          <div className="flex flex-col items-center">
+          <div className="flex relative group flex-col items-center">
             <Coin className="mb-2 fill-gold" /> <div>Trade</div>
+            <Tooltip position="bottom">
+              <p className="whitespace-nowrap">No Realm is self-sufficient.</p>
+              <p className="whitespace-nowrap">Trade with other Lords</p>
+              <p className="whitespace-nowrap">to get the resources you need.</p>
+            </Tooltip>
           </div>
         ),
         component: <RealmTradeComponent />,

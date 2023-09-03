@@ -133,7 +133,7 @@ export const SelectableResource = ({ resourceId, amount, selected, disabled, onC
         }
       }}
       className={clsx(
-        "p-3 relative cursor-pointer border border-transparent transition-colors duration-200 rounded-xl bg-black/60 hover:border-lightest",
+        "p-3 relative cursor-pointer group border border-transparent transition-colors duration-200 rounded-xl bg-black/60 hover:border-lightest",
         selected && "!border-gold",
         disabled && "opacity-30 cursor-not-allowed pointer-events-none",
       )}

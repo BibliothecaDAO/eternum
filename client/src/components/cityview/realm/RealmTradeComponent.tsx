@@ -7,6 +7,7 @@ import { IncomingOrdersPanel } from "./trade/Caravans/IncomingOrdersPanel";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useRoute, useLocation } from "wouter";
 import useRealmStore from "../../../hooks/store/useRealmStore";
+import { Tooltip } from "../../../elements/Tooltip";
 
 export type Order = {
   orderId: number;
@@ -48,8 +49,12 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
       {
         key: "my-offers",
         label: (
-          <div className="flex flex-col items-center">
+          <div className="flex relative group flex-col items-center">
             <div>My Offers</div>
+            <Tooltip position="bottom">
+              <p className="whitespace-nowrap">Check offers made by you</p>
+              <p className="whitespace-nowrap">or create new one.</p>
+            </Tooltip>
           </div>
         ),
         component: <MyOffersPanel />,
@@ -57,8 +62,12 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
       {
         key: "market",
         label: (
-          <div className="flex flex-col items-center">
+          <div className="flex relative group flex-col items-center">
             <div>Market</div>
+            <Tooltip position="bottom">
+              <p className="whitespace-nowrap">Offers from all over the world are found here.</p>
+              <p className="whitespace-nowrap">Trade with your fellow Lords</p>
+            </Tooltip>
           </div>
         ),
         component: <MarketPanel />,
@@ -66,8 +75,12 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
       {
         key: "caravans",
         label: (
-          <div className="flex flex-col items-center">
+          <div className="flex relative group flex-col items-center">
             <div>Caravans</div>
+            <Tooltip position="bottom">
+              <p className="whitespace-nowrap">You can only trade resources if there are Caravans to carry them.</p>
+              <p className="whitespace-nowrap">Manage your Caravans here</p>
+            </Tooltip>
           </div>
         ),
         component: <CaravansPanel />,
@@ -75,8 +88,13 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
       {
         key: "incoming-caravans",
         label: (
-          <div className="flex flex-col items-center">
-            <div> Incoming Caravans </div>
+          <div className="flex relative group flex-col items-center">
+            <div>Incoming Caravans </div>
+            <Tooltip position="bottom">
+              <p className="whitespace-nowrap">Watch caravans that on the way</p>
+              <p className="whitespace-nowrap">to your realm, and claim your resources</p>
+              <p className="whitespace-nowrap">when they arrive.</p>
+            </Tooltip>
           </div>
         ),
         component: <IncomingOrdersPanel />,

@@ -1,14 +1,26 @@
+import clsx from "clsx";
 import React from "react";
 
 type TooltipProps = {
   children: React.ReactNode;
+  position?: "top" | "bottom";
 };
 
-export const Tooltip = ({ children }: TooltipProps) => (
-  <div className="absolute top-0 -translate-y-full left-1/2 -translate-x-1/2 p-2 bg-dark-brown rounded-md flex-col justify-start items-center gap-2 inline-flex">
+export const Tooltip = ({ position = "top", children }: TooltipProps) => (
+  <div
+    className={clsx(
+      "absolute z-[100] hidden left-1/2 -translate-x-1/2 p-2 bg-dark-brown rounded-md flex-col justify-start items-center text-white group-hover:inline-flex",
+      position == "top" && "top-0 -translate-y-full",
+      position == "bottom" && "bottom-0 translate-y-[120%]",
+    )}
+  >
     {children}
     <svg
-      className="absolute bottom-0 z-0 -translate-x-1/2 translate-y-1/2 left-1/2"
+      className={clsx(
+        "absolute bottom-0 z-0 -translate-x-1/2 left-1/2",
+        position == "top" && "bottom-0 translate-y-1/2",
+        position == "bottom" && "top-0 -translate-y-1/2 rotate-180",
+      )}
       width="26"
       height="18"
       viewBox="0 0 26 18"

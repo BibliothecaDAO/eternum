@@ -4,6 +4,7 @@ import { LaborPanel } from "./labor/LaborPanel";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useRoute, useLocation } from "wouter";
+import { Tooltip } from "../../../elements/Tooltip";
 
 type RealmLaborComponentProps = {};
 
@@ -39,8 +40,13 @@ export const RealmLaborComponent = ({}: RealmLaborComponentProps) => {
       {
         key: "labor",
         label: (
-          <div className="flex flex-col items-center">
+          <div className="flex relative group flex-col items-center">
             <div>All</div>
+            <Tooltip position="bottom">
+              <p className="whitespace-nowrap">Look at your current production,</p>
+              <p className="whitespace-nowrap">or increase it by buying labour or buildings.</p>
+              <p className="whitespace-nowrap">Don't forget to harvest your resources.</p>
+            </Tooltip>
           </div>
         ),
         component: <LaborPanel />,
