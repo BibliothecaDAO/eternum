@@ -129,9 +129,10 @@ export const useSyncIncomingOrderInfo = ({
         });
         data?.resources?.edges?.forEach((edge) => {
           if (edge?.node) {
-            setComponentFromEntity(edge.node, "Resource", components);
+            setComponentFromEntity(edge.node, "OrderResource", components);
             setComponentFromEntity(edge.node, "FungibleEntities", components);
             setComponentFromEntity(edge.node, "ArrivalTime", components);
+            setComponentFromEntity(edge.node, "Position", components);
           }
         });
       } catch (error) {}

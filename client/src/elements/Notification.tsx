@@ -1,20 +1,27 @@
 import clsx from "clsx";
-import React, { ComponentPropsWithRef, useEffect, useState } from "react";
+import { ComponentPropsWithRef, useEffect, useState } from "react";
 import { Transition } from "@headlessui/react";
 import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
 import {
   EventType,
   NotificationType,
 } from "../hooks/notifications/useNotifications";
-import { useTradeNotification } from "../hooks/notifications/useTradeNotifications";
-import { useHarvestNotifiation } from "../hooks/notifications/useHarvestNotifications";
+import { useTradeNotification } from "../hooks/notifications/useTradeNotification";
+import { useHarvestNotification } from "../hooks/notifications/useHarvestNotification";
+import { useClaimOrderNotification } from "../hooks/notifications/useClaimOrderNotification";
+
+const notificationHandlers = {
+  [EventType.AcceptOffer]: useTradeNotification,
+  [EventType.MakeOffer]: useTradeNotification,
+  [EventType.CancelOffer]: useTradeNotification,
+  [EventType.Harvest]: useHarvestNotification,
+  [EventType.OrderClaimable]: useClaimOrderNotification,
+};
 
 type NotificationProps = {
   notification: NotificationType;
   closedNotifications: Record<string, boolean>;
   id: string;
-  children?: React.ReactNode;
-  time?: string;
   type?: "danger" | "success" | "primary";
   onClose?: () => void;
 } & ComponentPropsWithRef<"div">;
@@ -43,16 +50,9 @@ export const Notification = ({
     }
   }, [closedNotifications, id]);
 
-  let content, time, title;
-  if (
-    notification.eventType === EventType.AcceptOffer ||
-    notification.eventType === EventType.MakeOffer ||
-    notification.eventType === EventType.CancelOffer
-  ) {
-    ({ content, time, title } = useTradeNotification(notification));
-  } else if (notification.eventType === EventType.Harvest) {
-    ({ content, time, title } = useHarvestNotifiation(notification)); // Using Harvest Notification
-  }
+  const handleNotification = notificationHandlers[notification.eventType];
+
+  const { title, content, time } = handleNotification(notification);
 
   return (
     <Transition

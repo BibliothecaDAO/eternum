@@ -12,7 +12,7 @@ import {
 import { NotificationType } from "./useNotifications";
 import { findResourceById } from "../../constants/resources";
 
-export const useHarvestNotifiation = (
+export const useHarvestNotification = (
   notification: NotificationType,
 ): {
   type: string;
@@ -39,6 +39,11 @@ export const useHarvestNotifiation = (
   const resource =
     findResourceById(parseInt(notification.keys[1]))?.trait || "";
 
+  const harvestAmount =
+    notification.data && "harvestAmount" in notification.data
+      ? notification.data.harvestAmount
+      : 0;
+
   return {
     type: "success",
     time: "13:37",
@@ -64,7 +69,7 @@ export const useHarvestNotifiation = (
             resource={resource}
             size="xs"
           />
-          {`+${10000} `}
+          {`+${harvestAmount} `}
         </div>
       </div>
     ),

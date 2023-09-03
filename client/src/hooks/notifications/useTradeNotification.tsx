@@ -13,7 +13,7 @@ import { useTrade } from "../helpers/useTrade";
 import { ResourceIcon } from "../../elements/ResourceIcon";
 import { findResourceById } from "../../constants/resources";
 import { calculateRatio } from "../../components/cityview/realm/trade/Market/MarketOffer";
-import { NotificationType } from "./useNotifications";
+import { EventType, NotificationType } from "./useNotifications";
 
 export const useTradeNotification = (
   notification: NotificationType,
@@ -25,7 +25,7 @@ export const useTradeNotification = (
 } => {
   const {
     setup: {
-      components: { Trade, Realm, Status },
+      components: { Trade, Realm },
     },
   } = useDojo();
 
@@ -35,15 +35,6 @@ export const useTradeNotification = (
     Trade,
     getEntityIdFromKeys(notification.keys.map((str) => BigInt(str))),
   );
-
-  let status = getComponentValue(
-    Status,
-    getEntityIdFromKeys(notification.keys.map((str) => BigInt(str))),
-  );
-
-  let orderCreated = status ? status.value === 0 : false;
-  let orderAccepted = status ? status.value === 1 : false;
-  let orderCancelled = status ? status.value === 2 : false;
 
   let makerId = trade ? trade.maker_id : undefined;
   let takerId = trade ? trade.taker_id : undefined;
@@ -75,13 +66,25 @@ export const useTradeNotification = (
   let orderResources1 = getTradeResources(trade?.maker_order_id || 0);
   let orderResources2 = getTradeResources(trade?.taker_order_id || 0);
 
-  const type = orderCreated
-    ? "primary"
-    : orderAccepted
-    ? "success"
-    : orderCancelled
-    ? "danger"
-    : "primary";
+  let type: "primary" | "success" | "danger";
+  let msg: string;
+  switch (notification.eventType) {
+    case EventType.MakeOffer:
+      type = "primary";
+      msg = "Order Created";
+      break;
+    case EventType.AcceptOffer:
+      type = "success";
+      msg = "Order Accepted";
+      break;
+    case EventType.CancelOffer:
+      type = "danger";
+      msg = "Order Cancelled";
+      break;
+    default:
+      type = "primary";
+      msg = "";
+  }
 
   return {
     type,
@@ -90,15 +93,7 @@ export const useTradeNotification = (
       <div className="flex items-center">
         <Badge size="lg" type={type} className="mr-2">
           <Checkmark className="fill-current mr-1" />
-          {`Order ${
-            orderCreated
-              ? "Created"
-              : orderAccepted
-              ? "Accepted"
-              : orderCancelled
-              ? "Cancelled"
-              : ""
-          }`}
+          {msg}
         </Badge>
 
         <div className="flex items-center">
@@ -106,10 +101,16 @@ export const useTradeNotification = (
           <OrderIcon
             size="xs"
             className="mx-2"
-            order={orderAccepted ? takerOrderName : makerOrderName}
+            order={
+              notification.eventType === EventType.AcceptOffer
+                ? takerOrderName
+                : makerOrderName
+            }
           />{" "}
           <div className="inline-block text-gold">
-            {orderAccepted ? takerRealmName : makerRealmName}
+            {notification.eventType === EventType.AcceptOffer
+              ? takerRealmName
+              : makerRealmName}
           </div>
         </div>
       </div>

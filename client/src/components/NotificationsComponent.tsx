@@ -4,6 +4,7 @@ import clsx from "clsx";
 import Button from "../elements/Button";
 import {
   NotificationType,
+  generateUniqueId,
   useNotifications,
 } from "../hooks/notifications/useNotifications";
 
@@ -24,10 +25,6 @@ export const NotificationsComponent = ({
     setClosedNotifications((prev) => ({ ...prev, [notificationId]: true }));
   };
 
-  const generateUniqueId = (notification: NotificationType): string => {
-    return `${notification.eventType}_${notification.keys.join("_")}`;
-  };
-
   // Helper function to filter unique notifications based on their keys.
   const getUniqueNotifications = (
     notifications: NotificationType[],
@@ -46,6 +43,7 @@ export const NotificationsComponent = ({
   const { notifications } = useNotifications();
 
   return (
+    // TODO: handle overflow of the notifications
     <div
       className={clsx("flex flex-col space-y-2 absolute right-0", className)}
     >

@@ -1,14 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDojo } from "../../DojoContext";
-import { Component, getComponentValue } from "@latticexyz/recs";
+import {
+  Component,
+  Has,
+  HasValue,
+  getComponentValue,
+  runQuery,
+} from "@latticexyz/recs";
 import { getEntityIdFromKeys } from "../../utils/utils";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { calculateNextHarvest } from "../../components/cityview/realm/labor/laborUtils";
-import { getRealm } from "../../components/cityview/realm/SettleRealmComponent";
+import {
+  getPosition,
+  getRealm,
+} from "../../components/cityview/realm/SettleRealmComponent";
 import useRealmStore from "../store/useRealmStore";
 import { unpackResources } from "../../utils/packedData";
 import { ResourcesIds } from "../../constants/resources";
 import { UpdatedEntity } from "../../dojo/createEntitySubscription";
+import { Position } from "../../types";
 
 const LABOR_CONFIG = {
   base_food_per_cycle: 14000,
@@ -20,33 +30,52 @@ export enum EventType {
   MakeOffer,
   AcceptOffer,
   CancelOffer,
-  ReceiveResources,
-  CreateRealm,
-  Trade,
   Harvest,
+  OrderClaimable,
 }
 
 type realmsResources = { realmEntityId: number; resourceIds: number[] }[];
+type realmsPosition = { realmId: number; position: Position }[];
 
 export type NotificationType = {
   eventType: EventType;
   keys: string[];
+  data?: HarvestData | ClaimOrderData;
+};
+
+type HarvestData = {
+  harvestAmount: number;
+};
+
+type ClaimOrderData = {
+  destinationRealmId: number;
 };
 
 export const useNotifications = () => {
   const {
     setup: {
       entityUpdates,
-      components: { Status, Labor },
+      components: {
+        Status,
+        Labor,
+        ArrivalTime,
+        Position,
+        Trade,
+        FungibleEntities,
+      },
     },
   } = useDojo();
 
   const { nextBlockTimestamp } = useBlockchainStore();
   const { realmEntityIds } = useRealmStore();
   const realmsResources = useRealmsResource(realmEntityIds);
+  const realmPositions = useRealmsPosition(realmEntityIds);
+
+  console.log({ aymericRealmPositions: realmPositions });
 
   // const [notifications, setNotifications] = useState<NotificationType[]>([]);
   const [notifications, setNotifications] = useState<NotificationType[]>([]);
+  console.log({ notifications });
 
   /**
    * Trade notifications
@@ -54,17 +83,7 @@ export const useNotifications = () => {
   useEffect(() => {
     const subscription = entityUpdates.subscribe((updates) => {
       const notifications = generateTradeNotifications(updates, Status);
-      // console.log({ notifications });
-      // TODO: need to solve this because it keeps growing with duplicate for some reason
-      setNotifications((prev) => {
-        const newKeys = new Set(
-          notifications.map((n) => JSON.stringify(n.keys)),
-        );
-        const filteredPrev = prev.filter(
-          (notification) => !newKeys.has(JSON.stringify(notification.keys)),
-        );
-        return [...notifications, ...filteredPrev];
-      });
+      addUniqueNotifications(notifications, setNotifications);
     });
 
     return () => {
@@ -80,13 +99,48 @@ export const useNotifications = () => {
       const notifications = nextBlockTimestamp
         ? generateLaborNotifications(realmsResources, nextBlockTimestamp, Labor)
         : [];
-      // TODO: need to only add if not already in there
-      setNotifications((prev) => [...new Set([...notifications, ...prev])]);
+      // add only add if not already in there
+      addUniqueNotifications(notifications, setNotifications);
     };
+
     // Call it once initially
     updateNotifications();
 
     // Set up interval to check for labor notifications every 10 seconds
+    // because with katana nextBlockTimestamp does not update until a new transaction is done
+    const intervalId = setInterval(updateNotifications, 10000);
+
+    // Clear interval on component unmount
+    return () => clearInterval(intervalId);
+  }, [nextBlockTimestamp]);
+
+  /**
+   * Claimable orders notifications
+   */
+
+  useEffect(() => {
+    const updateNotifications = () => {
+      const notifications = nextBlockTimestamp
+        ? generateClaimableOrdersNotifications(
+            realmPositions,
+            FungibleEntities,
+            Position,
+            ArrivalTime,
+            Trade,
+            nextBlockTimestamp,
+          )
+        : [];
+
+      console.log({ aymericNotifications: notifications });
+
+      // add only add if not already in there
+      addUniqueNotifications(notifications, setNotifications);
+    };
+
+    // Call it once initially
+    updateNotifications();
+
+    // Set up interval to check for caravan notifications every 10 seconds
     // because with katana nextBlockTimestamp does not update until a new transaction is done
     const intervalId = setInterval(updateNotifications, 10000);
 
@@ -100,12 +154,39 @@ export const useNotifications = () => {
 };
 
 /**
+ * Add unique notifications to the list of notifications
+ * @param notifications list of notifications
+ * @param setNotifications setter for notifications
+ */
+const addUniqueNotifications = (
+  notifications: NotificationType[],
+  setNotifications: React.Dispatch<React.SetStateAction<NotificationType[]>>,
+) => {
+  setNotifications((prev) => {
+    // Extract keys from previous notifications
+    const prevIds = new Set(prev.map((n) => generateUniqueId(n)));
+
+    // Filter out notifications that are already in the prev list
+    const newNotifications = notifications.filter(
+      (notification) => !prevIds.has(generateUniqueId(notification)),
+    );
+
+    // If there are no new notifications, return the previous state to avoid re-render
+    if (newNotifications.length === 0) {
+      return prev;
+    }
+
+    // Otherwise, return the combined list
+    return [...newNotifications, ...prev];
+  });
+};
+
+/**
  * Generate trade notifications from entity updates from graphql subscription
  * @param entityUpdates list of updated entities with keys and componentNames
  * @param Status Component
  * @returns
  */
-
 const generateTradeNotifications = (
   entityUpdates: UpdatedEntity[],
   Status: Component,
@@ -189,6 +270,9 @@ const generateLaborNotifications = (
         notifications.push({
           eventType: EventType.Harvest,
           keys: [realmEntityId.toString(), resourceId.toString()],
+          data: {
+            harvestAmount: harvest,
+          },
         });
       }
     });
@@ -198,7 +282,84 @@ const generateLaborNotifications = (
 };
 
 /**
- * Get all resources for each realm
+ * Generate claimable orders notifications from realm positions by checking if any order has arrived on that position
+ * @param realmPositions
+ * @param FungibleEntities
+ * @param Position
+ * @param ArrivalTime
+ * @param Trade
+ * @param nextBlockTimestamp
+ * @returns
+ */
+const generateClaimableOrdersNotifications = (
+  realmPositions: realmsPosition,
+  FungibleEntities: Component,
+  Position: Component,
+  ArrivalTime: Component,
+  Trade: Component,
+  nextBlockTimestamp: number,
+) => {
+  let notifications: NotificationType[] = [];
+  for (const { realmId, position: realmPosition } of realmPositions) {
+    let orderIds = runQuery([
+      Has(FungibleEntities),
+      Has(ArrivalTime),
+      HasValue(Position, { x: realmPosition.x, y: realmPosition.y }),
+    ]);
+
+    console.log({ aymericOrderIds: orderIds });
+
+    for (const orderId of orderIds) {
+      console.log({ aymericOrderId: orderId });
+      let claimed =
+        runQuery([
+          HasValue(Trade, { maker_order_id: orderId, claimed_by_maker: 0 }),
+        ]).size === 0 &&
+        runQuery([
+          HasValue(Trade, { taker_order_id: orderId, claimed_by_taker: 0 }),
+        ]).size === 0;
+
+      let trades1 = runQuery([
+        HasValue(Trade, { maker_order_id: orderId, claimed_by_maker: 0 }),
+      ]);
+
+      let trades2 = runQuery([
+        HasValue(Trade, { taker_order_id: orderId, claimed_by_taker: 0 }),
+      ]);
+      console.log({
+        aymericTrades1: trades1,
+        aymericTrades2: trades2,
+        claimed,
+      });
+
+      // console.log({ aymericClaimed: claimed });
+
+      if (!claimed) {
+        const arrivalTime = getComponentValue(
+          ArrivalTime,
+          getEntityIdFromKeys([BigInt(orderId)]),
+        ) as { arrives_at: number } | undefined;
+
+        if (
+          arrivalTime?.arrives_at &&
+          arrivalTime.arrives_at <= nextBlockTimestamp
+        ) {
+          notifications.push({
+            eventType: EventType.OrderClaimable,
+            keys: [orderId.toString()],
+            data: {
+              destinationRealmId: realmId,
+            },
+          });
+        }
+      }
+    }
+  }
+  return notifications;
+};
+
+/**
+ * Get all resources present on each realm
  * @param realms
  * @returns
  */
@@ -234,70 +395,28 @@ const useRealmsResource = (
 };
 
 /**
- * Cannot use defineQuery atm because it we don't setComponentValue in the true order of the events. If you click
- * on the Market tab, then we load all the trades, which will trigger these notifications, even if the trades were
- * done a long time ago.
+ * Gets all positions of each realm
+ * @param realms
+ * @returns
  */
-// const { update$: realmUpdate$ } = useMemo(
-//   () => defineQuery([Has(Realm)]),
-//   [],
-// );
+const useRealmsPosition = (
+  realms: {
+    realmEntityId: number;
+    realmId: number;
+  }[],
+): realmsPosition => {
+  return useMemo(() => {
+    return realms.map(({ realmId }) => {
+      return { realmId, position: getPosition(realmId) };
+    });
+  }, [realms]);
+};
 
-// useMemo(() => {
-//   realmUpdate$
-//     .pipe(
-//       distinctUntilChanged((a, b) => isEqual(a, b)),
-//       filter((update) => !isEqual(update.value[0], update.value[1])),
-//     )
-//     .subscribe((update) => {
-//       console.log("RealmMUDentityUpdates", update);
-//     });
-// }, []);
-
-// const { update$: resourceUpdate$ } = useMemo(
-//   () => defineQuery([Has(Resource)]),
-//   [],
-// );
-
-// useMemo(() => {
-//   resourceUpdate$
-//     .pipe(
-//       distinctUntilChanged((a, b) => isEqual(a, b)),
-//       filter((update) => {
-//         return !isEqual(update.value[0], update.value[1]);
-//       }),
-//     )
-//     .subscribe((update) => {
-//       console.log("ResourceMUDentityUpdates", update);
-//     });
-// }, []);
-
-// const { update$: tradeUpdate$ } = useMemo(
-//   () =>
-//     defineQuery([
-//       Has(Trade),
-//       HasValue(Trade, {
-//         taker_id: 0,
-//         claimed_by_maker: 0,
-//         claimed_by_taker: 0,
-//       }),
-//     ]),
-//   [],
-// );
-
-// useMemo(() => {
-//   tradeUpdate$
-//     .pipe(
-//       distinctUntilChanged((a, b) => isEqual(a, b)),
-//       filter((update) => {
-//         return !isEqual(update.value[0], update.value[1]);
-//       }),
-//     )
-//     .subscribe((update) => {
-//       console.log("TradeMUDentityUpdates", update);
-//       setNotifications((notifications) => [
-//         { eventType: EventType.Trade, update },
-//         ...notifications,
-//       ]);
-//     });
-// }, []);
+/**
+ *  Generate unique id for each notification based on keys and eventType
+ * @param notification
+ * @returns
+ */
+export const generateUniqueId = (notification: NotificationType): string => {
+  return `${notification.eventType}_${notification.keys.join("_")}`;
+};
