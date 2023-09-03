@@ -35,10 +35,7 @@ export const IncomingOrdersPanel = ({}: IncomingOrdersPanelProps) => {
   return (
     <div className="flex flex-col">
       <FiltersPanel className="px-3 py-2">
-        <FilterButton
-          active={activeFilter}
-          onClick={() => setActiveFilter(!activeFilter)}
-        >
+        <FilterButton active={activeFilter} onClick={() => setActiveFilter(!activeFilter)}>
           Filter
         </FilterButton>
       </FiltersPanel>
@@ -59,11 +56,11 @@ export const IncomingOrdersPanel = ({}: IncomingOrdersPanelProps) => {
           />
         ))}
       </SortPanel>
-      {incomingOrders.map((incomingOrder) => (
-        <div className="flex flex-col p-2">
-          <IncomingOrder incomingOrder={incomingOrder} />
-        </div>
-      ))}
+      <div className="flex flex-col p-2 space-y-2">
+        {incomingOrders.map((incomingOrder) => (
+          <IncomingOrder key={incomingOrder.tradeId} incomingOrder={incomingOrder} />
+        ))}
+      </div>
     </div>
   );
 };

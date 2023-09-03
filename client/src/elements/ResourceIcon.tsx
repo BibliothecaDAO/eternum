@@ -92,21 +92,13 @@ const STYLES = {
   },
 } as const;
 
-export const ResourceIcon = (props: Props) => {
+export const ResourceIcon = ({ withTooltip = true, ...props }: Props) => {
   const Icon = (
     <div
       className={`flex self-center w-min paper relative rounded-xl justify-center w-full ${props.containerClassName}`}
     >
-      <span
-        className={` mx-auto ${clsx(
-          STYLES.size[props.size],
-          props.className,
-        )} `}
-      >
-        {
-          Components[props.resource.replace(" ", "").replace("'", "")]
-            ?.component
-        }
+      <span className={` mx-auto ${clsx(STYLES.size[props.size], props.className)} `}>
+        {Components[props.resource.replace(" ", "").replace("'", "")]?.component}
       </span>
 
       {props.label && (
@@ -116,14 +108,12 @@ export const ResourceIcon = (props: Props) => {
       )}
     </div>
   );
-  return props.withTooltip ? (
+  return withTooltip ? (
     <Tooltip
       placement="top"
       className="flex"
       tooltipText={
-        <div className="p-1 text-xs rounded bg-black rounded whitespace-nowrap">
-          {props.resource}
-        </div>
+        <div className="p-1 text-xs rounded bg-black rounded whitespace-nowrap text-white">{props.resource}</div>
       }
     >
       {Icon}

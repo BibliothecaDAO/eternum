@@ -7,15 +7,8 @@ import { useDojo } from "../../../../../DojoContext";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
-import {
-  getRealmIdByPosition,
-  getRealmNameById,
-  getRealmOrderNameById,
-} from "../TradeUtils";
-import {
-  IncomingOrderInterface,
-  useSyncIncomingOrderInfo,
-} from "../../../../../hooks/graphql/useGraphQLQueries";
+import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../TradeUtils";
+import { IncomingOrderInterface, useSyncIncomingOrderInfo } from "../../../../../hooks/graphql/useGraphQLQueries";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { useIncomingOrders } from "../../../../../hooks/helpers/useIncomingOrders";
 import { useTrade } from "../../../../../hooks/helpers/useTrade";
@@ -24,10 +17,7 @@ type IncomingOrderProps = {
   incomingOrder: IncomingOrderInterface;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const IncomingOrder = ({
-  incomingOrder,
-  ...props
-}: IncomingOrderProps) => {
+export const IncomingOrder = ({ incomingOrder, ...props }: IncomingOrderProps) => {
   const { realmEntityId } = useRealmStore();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -66,90 +56,77 @@ export const IncomingOrder = ({
   const { nextBlockTimestamp } = useBlockchainStore();
 
   const { getIncomingOrderInfo } = useIncomingOrders();
-  let incomingOrderInfo = getIncomingOrderInfo(
-    incomingOrder.orderId,
-    incomingOrder.counterPartyOrderId,
-  );
+  let incomingOrderInfo = getIncomingOrderInfo(incomingOrder.orderId, incomingOrder.counterPartyOrderId);
   let arrivalTime = incomingOrderInfo && incomingOrderInfo.arrivalTime;
   let originPosition = incomingOrderInfo && incomingOrderInfo.origin;
 
-  const startRealmId =
-    originPosition &&
-    getRealmIdByPosition({ x: originPosition.x, y: originPosition.y });
+  const startRealmId = originPosition && getRealmIdByPosition({ x: originPosition.x, y: originPosition.y });
   const startRealmName = startRealmId && getRealmNameById(startRealmId);
-  const hasArrived =
-    arrivalTime !== undefined &&
-    nextBlockTimestamp !== undefined &&
-    arrivalTime <= nextBlockTimestamp;
+  const hasArrived = arrivalTime !== undefined && nextBlockTimestamp !== undefined && arrivalTime <= nextBlockTimestamp;
 
   return (
     <div
-      className={clsx(
-        "flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold",
-        props.className,
-      )}
+      className={clsx("flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold", props.className)}
       onClick={props.onClick}
     >
-      {!hasArrived && startRealmName && (
-        <div className="flex items-center ml-1 -mt-2">
-          <span className="italic text-light-pink">Traveling from</span>
-          <div className="flex items-center ml-1 mr-1 text-gold">
-            <OrderIcon
-              order={getRealmOrderNameById(startRealmId)}
-              className="mr-1"
-              size="xs"
-            />
-            {startRealmName}
+      <div className="flex items-center text-xxs">
+        <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
+          #{incomingOrder.orderId}
+        </div>
+        {!hasArrived && startRealmName && (
+          <div className="flex items-center ml-1 -mt-2">
+            <span className="italic text-light-pink">Traveling from</span>
+            <div className="flex items-center ml-1 mr-1 text-gold">
+              <OrderIcon order={getRealmOrderNameById(startRealmId)} className="mr-1" size="xxs" />
+              {startRealmName}
+            </div>
+            <span className="italic text-light-pink"></span>
           </div>
-          <span className="italic text-light-pink"></span>
-        </div>
-      )}
-      {!hasArrived && nextBlockTimestamp && arrivalTime && (
-        <div className="flex ml-auto -mt-2 italic text-light-pink">
-          {formatSecondsLeftInDaysHours(arrivalTime - nextBlockTimestamp)}
-        </div>
-      )}
-      {hasArrived && (
-        <div className="flex ml-auto -mt-2 italic text-light-pink">
-          {"Has Arrived"}
-        </div>
-      )}
-      <div className="flex items-center mt-3 ml-2 text-xxs">
-        <span className="italic text-light-pink">You will get</span>
+        )}
+        {!hasArrived && nextBlockTimestamp && arrivalTime && (
+          <div className="flex ml-auto -mt-2 italic text-light-pink">
+            {formatSecondsLeftInDaysHours(arrivalTime - nextBlockTimestamp)}
+          </div>
+        )}
+        {hasArrived && <div className="flex ml-auto -mt-2 italic text-order-brilliance">Arrived!</div>}
       </div>
-      {resourcesGet && (
-        <div className="flex justify-center items-center space-x-2 flex-wrap px-2 py-1">
-          {resourcesGet.map(
-            (resource) =>
-              resource && (
-                <ResourceCost
-                  resourceId={resource.resourceId}
-                  amount={resource.amount}
-                />
-              ),
-          )}
-        </div>
-      )}
-      {!isLoading && (
-        <Button
-          onClick={() => {
-            claimOrder();
-          }}
-          disabled={!hasArrived}
-          variant={hasArrived ? "success" : "danger"}
-          className="ml-auto p-2 !h-4 text-xxs !rounded-md"
-        >{`Claim`}</Button>
-      )}
-      {isLoading && (
-        <Button
-          isLoading={true}
-          onClick={() => {}}
-          variant="danger"
-          className="ml-auto p-2 !h-4 text-xxs !rounded-md"
-        >
-          {}
-        </Button>
-      )}
+      <div className="flex">
+        {resourcesGet && (
+          <div className="flex justify-center items-center space-x-2 flex-wrap px-2 py-1">
+            {resourcesGet.map(
+              (resource) =>
+                resource && (
+                  <ResourceCost
+                    type="vertical"
+                    color="text-order-brilliance"
+                    resourceId={resource.resourceId}
+                    amount={resource.amount}
+                  />
+                ),
+            )}
+          </div>
+        )}
+        {!isLoading && (
+          <Button
+            onClick={() => {
+              claimOrder();
+            }}
+            disabled={!hasArrived}
+            variant={hasArrived ? "success" : "danger"}
+            className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
+          >{`Claim`}</Button>
+        )}
+        {isLoading && (
+          <Button
+            isLoading={true}
+            onClick={() => {}}
+            variant="danger"
+            className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
+          >
+            {}
+          </Button>
+        )}
+      </div>
     </div>
   );
 };

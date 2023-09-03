@@ -10,10 +10,7 @@ import Button from "../../../../../elements/Button";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { MarketOffer } from "./MarketOffer";
 import { AcceptOfferPopup } from "../AcceptOffer";
-import {
-  MarketInterface,
-  useSyncMarket,
-} from "../../../../../hooks/graphql/useGraphQLQueries";
+import { MarketInterface, useSyncMarket } from "../../../../../hooks/graphql/useGraphQLQueries";
 import { useGetMarket } from "../../../../../hooks/helpers/useTrade";
 
 type MarketPanelProps = {};
@@ -23,9 +20,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
 
   const [activeFilter, setActiveFilter] = useState(false);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
-  const [selectedTrade, setSelectedTrade] = useState<
-    MarketInterface | undefined
-  >(undefined);
+  const [selectedTrade, setSelectedTrade] = useState<MarketInterface | undefined>(undefined);
 
   const sortingParams = useMemo(() => {
     return [
@@ -49,10 +44,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
   return (
     <div className="flex flex-col min-h-[125px] relative pb-10">
       <FiltersPanel className="px-3 py-2">
-        <FilterButton
-          active={activeFilter}
-          onClick={() => setActiveFilter(!activeFilter)}
-        >
+        <FilterButton active={activeFilter} onClick={() => setActiveFilter(!activeFilter)}>
           Filter
         </FilterButton>
         <ResourceFilter />
@@ -76,12 +68,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
         ))}
       </SortPanel>
       {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
-      {showCreateOffer && (
-        <CreateOfferPopup
-          onClose={() => setShowCreateOffer(false)}
-          onCreate={() => {}}
-        />
-      )}
+      {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
       {selectedTrade && (
         <AcceptOfferPopup
           onClose={() => {
@@ -93,10 +80,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
       {market &&
         market.map((trade) => (
           <div className="flex flex-col p-2" key={trade.tradeId}>
-            <MarketOffer
-              marketOffer={trade}
-              onAccept={() => setSelectedTrade(trade)}
-            />
+            <MarketOffer marketOffer={trade} onAccept={() => setSelectedTrade(trade)} />
           </div>
         ))}
       <Button
