@@ -13,16 +13,21 @@ struct Position {
     y: u32
 }
 
-// impl PositionPartialEq of PartialEq<Position> {
-//     #[inline(always)]
-//     fn eq(lhs: Position, rhs: Position) -> bool {
-//         lhs.x == rhs.x & lhs.y == rhs.y
-//     }
-//     #[inline(always)]
-//     fn ne(lhs: Position, rhs: Position) -> bool {
-//         !(lhs.x == rhs.x & lhs.y == rhs.y)
-//     }
-// }
+#[derive(Copy, Drop, PartialEq, Serde)]
+struct Coord {
+    x: u32,
+    y: u32
+}
+
+impl PositionIntoCoord of Into<Position, Coord> {
+    fn into(self: Position) -> Coord {
+        return Coord {
+            x: self.x,
+            y: self.y
+        };
+    }
+}
+
 trait PositionTrait {
     fn calculate_distance(self: Position, destination: Position) -> u32;
     fn calculate_travel_time(self: Position, destination: Position, sec_per_km: u16) -> u64;
