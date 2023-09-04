@@ -38,7 +38,8 @@
         "Resource",
         "FungibleEntities",
         "OrderResource",
-        "Trade"
+        "Trade",
+        "Status"
     ],
     "TakeFungibleOrder": [
         "Resource",
