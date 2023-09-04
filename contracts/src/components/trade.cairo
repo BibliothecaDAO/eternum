@@ -29,19 +29,26 @@ struct OrderId {
     id: u128,
 }
 
-// status of the trade
-#[derive(Copy, Drop, Serde)]
-enum TradeStatus {
-    Open: (),
-    Accepted: (),
-    Cancelled: (),
-}
+// // status of the trade
+// #[derive(Copy, Drop, Serde)]
+// enum TradeStatus {
+//     Open: (),
+//     Accepted: (),
+//     Cancelled: (),
+// }
 
-impl TradeStatusSerdeLen of dojo::SerdeLen<TradeStatus> {
-    #[inline(always)]
-    fn len() -> usize {
-        1
-    }
+
+// impl TradeStatusSerdeLen of dojo::SerdeLen<TradeStatus> {
+//     #[inline(always)]
+//     fn len() -> usize {
+//         1
+//     }
+// }
+
+mod TradeStatus {
+    const OPEN: u128 = 0;
+    const ACCEPTED: u128 = 1;
+    const CANCELLED: u128 = 2;
 }
 
 // DISCUSS: rename this to avoid using Entities?
