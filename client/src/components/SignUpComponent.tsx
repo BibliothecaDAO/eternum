@@ -3,10 +3,14 @@ import { Headline } from "../elements/Headline";
 import Button from "../elements/Button";
 import { useEffect, useState } from "react";
 import useUIStore from "../hooks/store/useUIStore";
+import { useDojo } from "../DojoContext";
 
 type SignUpComponentProps = {};
 
-export const SignUpComponent = ({}: SignUpComponentProps) => {
+export const SignUpComponent = ({ }: SignUpComponentProps) => {
+
+  const { account: { create, isDeploying, list, select, accountDisplay } } = useDojo();
+
   const [showSignupPopup, setShowSignupPopup] = useState(true);
   const setShowBlurOverlay = useUIStore((state) => state.setShowBlurOverlay);
   const toggleSound = useUIStore((state) => state.toggleSound);
@@ -34,6 +38,18 @@ export const SignUpComponent = ({}: SignUpComponentProps) => {
             className="w-full my-3"
             alt="Eternum Logo"
           />
+          <Button variant={'primary'} onClick={create}>{isDeploying ? "deploying burner" : "create burner"}</Button>
+          <div className="border border-gold my-3 w-full rounded-lg bg-black  flex p-2 text-white">
+            <div className="px-2">
+              signer:{" "}
+            </div>
+
+            <select className={'w-full bg-black'} onChange={e => select(e.target.value)}>
+              {list().map((account, index) => {
+                return <option value={account.address} key={index}>{accountDisplay}</option>
+              })}
+            </select>
+          </div>
           <Headline size="big">Sign Up</Headline>
           <div className="flex flex-col w-full text-center text-xs text-white">
             <div className=" border border-gold my-3 w-full rounded-lg bg-black p-2 flex justify-between">

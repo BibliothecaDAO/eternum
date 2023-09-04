@@ -12,9 +12,11 @@ import { Checkbox } from "../elements/Checkbox";
 import { RangeInput } from "../elements/RangeInput";
 import useUIStore from "../hooks/store/useUIStore";
 import useScreenOrientation from "../hooks/useScreenOrientation";
+import { useDojo } from "../DojoContext";
 type SettingsComponentProps = {};
 
-export const SettingsComponent = ({}: SettingsComponentProps) => {
+export const SettingsComponent = ({ }: SettingsComponentProps) => {
+  const { account: { accountDisplay } } = useDojo();
   const [showSettings, setShowSettings] = useState(false);
   const musicLevel = useUIStore((state) => state.musicLevel);
   const effectsLevel = useUIStore((state) => state.effectsLevel);
@@ -35,7 +37,7 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
     <div className="flex items-center text-white">
       <Crown className="mr-[6px] fill-current" />
       <div className="text-xs font-bold">
-        DeadlyCrow<span className="text-gold">.stark</span>
+        {accountDisplay}
       </div>
       <Settings
         onClick={() => setShowSettings(!showSettings)}

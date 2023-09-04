@@ -553,15 +553,15 @@
   resolved "https://registry.yarnpkg.com/@chevrotain/utils/-/utils-10.5.0.tgz#0ee36f65b49b447fbac71b9e5af5c5c6c98ac057"
   integrity sha512-hBzuU5+JjB2cqNZyszkDHZgOSrUUT8V3dhgRl8Q9Gp6dAj/H5+KILGjbhDpc3Iy9qmqlm/akuOI2ut9VUtzJxQ==
 
-"@dojoengine/core@^0.0.15":
-  version "0.0.15"
-  resolved "https://registry.yarnpkg.com/@dojoengine/core/-/core-0.0.15.tgz#d8fa1875af2c79e3d85d3df68007ff01d47a2581"
-  integrity sha512-P4Qf7tKvleSW2FX2eatmicJr3RC+lot+S4BFthDmGsx+F2ou2W9IYaa0p5jVb+e1FpXk3uAMDwuUhKngAtczPw==
+"@dojoengine/core@^0.0.17":
+  version "0.0.17"
+  resolved "https://registry.yarnpkg.com/@dojoengine/core/-/core-0.0.17.tgz#f47b1e50d6e76bd52714edb4fbfe4fdfc5351ddd"
+  integrity sha512-e2p+UQ6lRIS9YJOQa1D0vlydtwKA9w4g+bzWisj4Q2K9hTy5Rq9E6JeNCsPGRigWQYTFszisVYwt/LU89ZCObA==
 
-"@dojoengine/create-burner@^0.0.3":
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/@dojoengine/create-burner/-/create-burner-0.0.3.tgz#322fff7cc3ee654b6908fe295389c047d092b9f1"
-  integrity sha512-ZgoErPpmfRfE08/ixjM7BHlMTZecFVDzRHEBFWBwNJejxZ0RDBjVUy+XFNUPPkxUzFGSQAicHZNnfJscWUIYjQ==
+"@dojoengine/create-burner@^0.0.17":
+  version "0.0.17"
+  resolved "https://registry.yarnpkg.com/@dojoengine/create-burner/-/create-burner-0.0.17.tgz#1213a6a0f4228610fe7fc00716cfd6da98f80d58"
+  integrity sha512-7BJeiImJ9a1hJfjvePmvJWcYvP4KokZydbrLYls/P+X7Q92iy5s+MzquJ04Dg3ycVundsf9H5cDOqLzaaA9BQw==
   dependencies:
     "@starknet-react/core" "^1.0.3"
     get-starknet-core "^3.2.0"
@@ -6559,7 +6559,7 @@ wordwrap@^1.0.0:
   resolved "https://registry.yarnpkg.com/wordwrap/-/wordwrap-1.0.0.tgz#27584810891456a4171c8d0226441ade90cbcaeb"
   integrity sha512-gvVzJFlPycKc5dZN4yPkP8w7Dc37BtP1yczEneOb4uq34pXZcvrtRTmWV8W+Ume+XCxKgbjM+nevkyFPMybd4Q==
 
-wouter@^2.10.1:
+wouter@^2.11.0:
   version "2.11.0"
   resolved "https://registry.yarnpkg.com/wouter/-/wouter-2.11.0.tgz#3db485dec158115b67330821e7673bf3e2f78678"
   integrity sha512-Y2CzNCwIN8kHjR2Q10D+UAgQND6TvBNmwXxgYw5ltXjjTlL7cLDUDpCip3a927Svxrmxr6vJMcPUysFxSvriCw==
