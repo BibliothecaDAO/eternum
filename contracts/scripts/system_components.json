@@ -49,6 +49,13 @@
         "Movable",
         "Trade"
     ],
+    "CancelFungibleOrder": [
+        "Resource",
+        "Caravan",
+        "Movable",
+        "OrderId",
+        "Status"
+    ],
     "Settle": [
         "Resource",
         "Owner",
