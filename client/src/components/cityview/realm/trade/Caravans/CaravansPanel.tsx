@@ -5,10 +5,7 @@ import { SortPanel } from "../../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../../elements/SortButton";
 import { Caravan } from "./Caravan";
 import { CaravanDetails } from "../../../../caravans/CaravanDetailsComponent";
-import {
-  CaravanInterface,
-  useSyncRealmCaravans,
-} from "../../../../../hooks/graphql/useGraphQLQueries";
+import { CaravanInterface, useSyncRealmCaravans } from "../../../../../hooks/graphql/useGraphQLQueries";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { useGetRealmCaravans } from "../../../../../hooks/helpers/useCaravans";
@@ -19,18 +16,14 @@ type CaravansPanelProps = {};
 export const CaravansPanel = ({}: CaravansPanelProps) => {
   const [activeFilter, setActiveFilter] = useState(false);
   const [showCaravanDetails, setShowCaravanDetails] = useState(false);
-  const [selectedCaravan, setSelectedCaravan] =
-    useState<CaravanInterface | null>(null);
+  const [selectedCaravan, setSelectedCaravan] = useState<CaravanInterface | null>(null);
 
   const { realmEntityId } = useRealmStore();
   const { nextBlockTimestamp } = useBlockchainStore();
 
   const onClick = (caravan: CaravanInterface) => {
     // way to find if caravan has currently resources inside
-    if (
-      (nextBlockTimestamp && caravan.arrivalTime > nextBlockTimestamp) ||
-      caravan.blocked
-    ) {
+    if ((nextBlockTimestamp && caravan.arrivalTime > nextBlockTimestamp) || caravan.blocked) {
       setShowCaravanDetails(true);
     } else {
     }
@@ -40,10 +33,7 @@ export const CaravansPanel = ({}: CaravansPanelProps) => {
   // TODO: find a way to avoid calling useGetRealm and useSyncRealmsCaravan at each render
   const { realm } = useGetRealm(realmEntityId);
   useSyncRealmCaravans(realm?.position.x || 0, realm?.position.y || 0);
-  const { realmCaravans } = useGetRealmCaravans(
-    realm?.position.x || 0,
-    realm?.position.y || 0,
-  );
+  const { realmCaravans } = useGetRealmCaravans(realm?.position.x || 0, realm?.position.y || 0);
 
   const sortingParams = useMemo(() => {
     return [
@@ -62,10 +52,7 @@ export const CaravansPanel = ({}: CaravansPanelProps) => {
   return (
     <div className="flex flex-col">
       <FiltersPanel className="px-3 py-2">
-        <FilterButton
-          active={activeFilter}
-          onClick={() => setActiveFilter(!activeFilter)}
-        >
+        <FilterButton active={activeFilter} onClick={() => setActiveFilter(!activeFilter)}>
           Filter
         </FilterButton>
       </FiltersPanel>
@@ -87,17 +74,15 @@ export const CaravansPanel = ({}: CaravansPanelProps) => {
         ))}
       </SortPanel>
       {selectedCaravan && showCaravanDetails && (
-        <CaravanDetails
-          caravan={selectedCaravan}
-          onClose={() => setShowCaravanDetails(false)}
-        />
+        <CaravanDetails caravan={selectedCaravan} onClose={() => setShowCaravanDetails(false)} />
       )}
-      {realmCaravans &&
-        realmCaravans.map((caravan) => (
-          <div className="flex flex-col p-2" key={caravan.caravanId}>
-            <Caravan caravan={caravan} onClick={() => onClick(caravan)} />
-          </div>
-        ))}
+      {realmCaravans && (
+        <div className="flex flex-col p-2 space-y-2">
+          {realmCaravans.map((caravan) => (
+            <Caravan key={caravan.caravanId} caravan={caravan} onClick={() => onClick(caravan)} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

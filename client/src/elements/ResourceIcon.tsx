@@ -30,7 +30,6 @@ import { ReactComponent as TrueIce } from "../assets/icons/resources/TrueIce.svg
 import { ReactComponent as TwilightQuartz } from "../assets/icons/resources/TwilightQuartz.svg";
 import { ReactComponent as Wheat } from "../assets/icons/resources/wheat.svg";
 import { ReactComponent as Wood } from "../assets/icons/resources/Wood.svg";
-import { Tooltip } from "../utils/tooltip";
 
 export type Props = {
   resource: string;
@@ -92,21 +91,13 @@ const STYLES = {
   },
 } as const;
 
-export const ResourceIcon = (props: Props) => {
+export const ResourceIcon = ({ withTooltip = true, ...props }: Props) => {
   const Icon = (
     <div
-      className={`flex self-center w-min paper relative rounded-xl justify-center w-full ${props.containerClassName}`}
+      className={`flex self-center w-min paper relative group rounded-xl justify-center w-full ${props.containerClassName}`}
     >
-      <span
-        className={` mx-auto ${clsx(
-          STYLES.size[props.size],
-          props.className,
-        )} `}
-      >
-        {
-          Components[props.resource.replace(" ", "").replace("'", "")]
-            ?.component
-        }
+      <span className={` mx-auto ${clsx(STYLES.size[props.size], props.className)} `}>
+        {Components[props.resource.replace(" ", "").replace("'", "")]?.component}
       </span>
 
       {props.label && (
@@ -114,21 +105,15 @@ export const ResourceIcon = (props: Props) => {
           {Components[props.resource.replace(" ", "").replace("'", "")]?.name}
         </span>
       )}
+      {withTooltip && (
+        <div className="absolute flex -top-2 flex-col items-center hidden -translate-y-full left-1/2 -translate-x-1/2 bg-black rounded-lg w-max group-hover:flex">
+          <span className="relative z-10 p-2 text-xs leading-none text-white whitespace-no-wrap rounded shadow-lg bg-gray-1000">
+            {props.resource}
+          </span>
+          <div className="z-[100] w-3 h-3 bottom-0 left-1/2 translate-y-1/2 -translate-x-1/2 absolute rotate-45 bg-black"></div>
+        </div>
+      )}
     </div>
   );
-  return props.withTooltip ? (
-    <Tooltip
-      placement="top"
-      className="flex"
-      tooltipText={
-        <div className="p-1 text-xs rounded bg-black rounded whitespace-nowrap">
-          {props.resource}
-        </div>
-      }
-    >
-      {Icon}
-    </Tooltip>
-  ) : (
-    Icon
-  );
+  return Icon;
 };

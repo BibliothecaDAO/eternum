@@ -410,6 +410,27 @@ export type CaravanWhereInput = {
   caravan_idNEQ?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type Component = {
+  __typename?: 'Component';
+  classHash?: Maybe<Scalars['felt252']['output']>;
+  createdAt?: Maybe<Scalars['DateTime']['output']>;
+  id?: Maybe<Scalars['ID']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  transactionHash?: Maybe<Scalars['felt252']['output']>;
+};
+
+export type ComponentConnection = {
+  __typename?: 'ComponentConnection';
+  edges?: Maybe<Array<Maybe<ComponentEdge>>>;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type ComponentEdge = {
+  __typename?: 'ComponentEdge';
+  cursor: Scalars['Cursor']['output'];
+  node?: Maybe<Component>;
+};
+
 export type ComponentUnion = Age | ArrivalTime | BuildingConfig | BuildingCost | BuildingTypeConfig | Capacity | CapacityConfig | Caravan | CaravanMembers | ForeignKey | FungibleEntities | Labor | LaborConfig | LaborCostAmount | LaborCostResources | MetaData | Movable | OrderId | OrderResource | Owner | Position | Quantity | QuantityTracker | Realm | Resource | SpeedConfig | Status | Trade | TravelConfig | Vault | WeightConfig | WorldConfig;
 
 export enum Direction {
@@ -1048,6 +1069,8 @@ export type Query = {
   capacityconfigComponents?: Maybe<CapacityConfigConnection>;
   caravanComponents?: Maybe<CaravanConnection>;
   caravanmembersComponents?: Maybe<CaravanMembersConnection>;
+  component: Component;
+  components?: Maybe<ComponentConnection>;
   entities?: Maybe<EntityConnection>;
   entity: Entity;
   event: Event;
@@ -1169,6 +1192,11 @@ export type QueryCaravanmembersComponentsArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
   order?: InputMaybe<CaravanMembersOrder>;
   where?: InputMaybe<CaravanMembersWhereInput>;
+};
+
+
+export type QueryComponentArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1646,6 +1674,12 @@ export type StatusWhereInput = {
   valueNEQ?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type Subscription = {
+  __typename?: 'Subscription';
+  componentRegistered: Component;
+  entityUpdated: Entity;
+};
+
 export type System = {
   __typename?: 'System';
   classHash?: Maybe<Scalars['felt252']['output']>;
@@ -1980,7 +2014,7 @@ export type GetIncomingOrderInfoQueryVariables = Exact<{
 }>;
 
 
-export type GetIncomingOrderInfoQuery = { __typename?: 'Query', resources?: { __typename?: 'EntityConnection', edges?: Array<{ __typename?: 'EntityEdge', node?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime', arrives_at?: any | null } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities', key?: any | null, count?: any | null } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'OrderResource', resource_type?: any | null, balance?: any | null } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null } | null, origin?: { __typename?: 'EntityConnection', edges?: Array<{ __typename?: 'EntityEdge', node?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'OrderResource' } | { __typename: 'Owner' } | { __typename: 'Position', x?: any | null, y?: any | null } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null } | null };
+export type GetIncomingOrderInfoQuery = { __typename?: 'Query', resources?: { __typename?: 'EntityConnection', edges?: Array<{ __typename?: 'EntityEdge', node?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime', arrives_at?: any | null } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities', key?: any | null, count?: any | null } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'OrderResource', resource_type?: any | null, balance?: any | null } | { __typename: 'Owner' } | { __typename: 'Position', x?: any | null, y?: any | null } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null } | null, origin?: { __typename?: 'EntityConnection', edges?: Array<{ __typename?: 'EntityEdge', node?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'OrderResource' } | { __typename: 'Owner' } | { __typename: 'Position', x?: any | null, y?: any | null } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null } | null };
 
 export type GetIncomingOrdersQueryVariables = Exact<{
   realmEntityId: Scalars['String']['input'];
@@ -2109,7 +2143,7 @@ export const GetRealmDocument = gql`
     `;
 export const GetRealmIdsDocument = gql`
     query getRealmIds {
-  realmComponents {
+  realmComponents(first: 100) {
     edges {
       node {
         realm_id
@@ -2190,6 +2224,10 @@ export const GetIncomingOrderInfoDocument = gql`
           }
           ... on ArrivalTime {
             arrives_at
+          }
+          ... on Position {
+            x
+            y
           }
         }
       }

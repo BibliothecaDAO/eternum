@@ -100,7 +100,6 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
-          resource_type_labor: RecsType.Number,
           resource_types_packed: RecsType.Number,
           resource_types_count: RecsType.Number,
         },
@@ -116,8 +115,6 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
-          resource_type_labor: RecsType.Number,
-          resource_type_cost: RecsType.Number,
           value: RecsType.Number,
         },
         {
