@@ -9,6 +9,7 @@ mod TakeFungibleOrder {
     use eternum::components::position::{Position, PositionTrait};
     use eternum::components::trade::{Trade, Status, TradeStatus, OrderResource};
     use eternum::components::caravan::Caravan;
+    use eternum::components::road::{Road, RoadTrait, RoadImpl};
     use eternum::components::movable::{Movable, ArrivalTime};
 
     use traits::Into;
@@ -90,13 +91,25 @@ mod TakeFungibleOrder {
             let travel_time = caravan_position
                 .calculate_travel_time(taker_position, movable.sec_per_km);
 
+            let mut taker_receives_order_after: u64 = travel_time;  
+            let mut maker_caravan_returns_after: u64 = 2 * travel_time; // 2x because of round trip (to taker and back)
+                
+            // if a road exists, use it and get new travel time 
+            let road: Road = RoadImpl::get(ctx, caravan_position.into(), taker_position.into());
+            if road.usage_count > 0 {
+                road.travel(ctx);
+
+                taker_receives_order_after = road.travel_time(taker_receives_order_after);
+                maker_caravan_returns_after = road.travel_time(maker_caravan_returns_after); 
+            }
+
             set !(
                 // SET ORDER
                 ctx.world,
                 (
                     ArrivalTime {
                         entity_id: meta.maker_order_id,
-                        arrives_at: ts + travel_time
+                        arrives_at: ts + taker_receives_order_after
                         }, Position {
                         entity_id: meta.maker_order_id,
                         x: taker_position.x, y: taker_position.y
@@ -107,14 +120,13 @@ mod TakeFungibleOrder {
             set !(
                 // SET CARAVAN
                 // round trip with the caravan
-                // set arrival time * 2
                 // dont change position because round trip
                 // set back blocked to false
                 ctx.world,
                 (
                     ArrivalTime {
                         entity_id: caravan.caravan_id,
-                        arrives_at: ts + travel_time * 2
+                        arrives_at: ts + maker_caravan_returns_after
                         }, Movable {
                         entity_id: caravan.caravan_id,
                         sec_per_km: movable.sec_per_km, blocked: false, 
@@ -151,12 +163,26 @@ mod TakeFungibleOrder {
             let (movable, caravan_position, owner) = get !(
                 ctx.world, caravan.caravan_id, (Movable, Position, Owner)
             );
+            
+            // assert that the owner of the caravan is the caller
+            assert(owner.address == caller, 'not owned by caller');
+
             // if caravan, starts from the caravan position (not taker position)
             let travel_time = caravan_position
                 .calculate_travel_time(maker_position, movable.sec_per_km);
 
-            // assert that the owner of the caravan is the caller
-            assert(owner.address == caller, 'not owned by caller');
+            let mut maker_receives_order_after: u64 = travel_time;  
+            let mut taker_caravan_returns_after: u64= 2 * travel_time; // 2x because of round trip (to maker and back)
+                
+            // if a road exists, use it and get new travel time 
+            let road: Road = RoadImpl::get(ctx, caravan_position.into(), taker_position.into());
+            if road.usage_count > 0 {
+                road.travel(ctx);
+
+                maker_receives_order_after = road.travel_time(maker_receives_order_after);
+                taker_caravan_returns_after = road.travel_time(taker_caravan_returns_after); 
+            }
+
 
             set !(
                 // SET ORDER
@@ -164,7 +190,7 @@ mod TakeFungibleOrder {
                 (
                     ArrivalTime {
                         entity_id: meta.taker_order_id,
-                        arrives_at: ts + travel_time
+                        arrives_at: ts + maker_receives_order_after
                         }, Position {
                         entity_id: meta.taker_order_id,
                         x: maker_position.x, y: maker_position.y
@@ -180,7 +206,7 @@ mod TakeFungibleOrder {
                 (
                     ArrivalTime {
                         entity_id: caravan.caravan_id,
-                        arrives_at: ts + travel_time * 2
+                        arrives_at: ts + taker_caravan_returns_after
                         }, Movable {
                         entity_id: caravan.caravan_id,
                         sec_per_km: movable.sec_per_km, blocked: false, 

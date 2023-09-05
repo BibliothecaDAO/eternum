@@ -73,12 +73,3 @@ struct OrderResource {
     resource_type: u8,
     balance: u128,
 }
-
-
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
-struct TradeRoute {
-    #[key]
-    entity_id: ID,
-    from_position_id: ID,
-    to_position_id: ID
-}
