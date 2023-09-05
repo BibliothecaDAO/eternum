@@ -8,16 +8,11 @@ import { ResourcesOffer } from "../../../../../types";
 import { orderNameDict } from "../../../../../constants/orders";
 import * as realmsData from "../../../../../geodata/realms.json";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import {
-  MarketInterface,
-  useSyncTradeResources,
-} from "../../../../../hooks/graphql/useGraphQLQueries";
-import {
-  useCanAcceptOffer,
-  useTrade,
-} from "../../../../../hooks/helpers/useTrade";
+import { MarketInterface, useSyncTradeResources } from "../../../../../hooks/graphql/useGraphQLQueries";
+import { useCanAcceptOffer, useTrade } from "../../../../../hooks/helpers/useTrade";
 import { numberToHex } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
+import clsx from "clsx";
 
 type TradeOfferProps = {
   marketOffer: MarketInterface;
@@ -46,10 +41,7 @@ export const MarketOffer = ({ marketOffer, onAccept }: TradeOfferProps) => {
 
   const canAccept = useCanAcceptOffer({ realmEntityId, resourcesGive });
 
-  let timeLeft = useMemo(
-    () => formatTimeLeft(marketOffer.expiresAt - Date.now() / 1000),
-    [marketOffer.expiresAt],
-  );
+  let timeLeft = useMemo(() => formatTimeLeft(marketOffer.expiresAt - Date.now() / 1000), [marketOffer.expiresAt]);
 
   return (
     <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold">
@@ -57,13 +49,7 @@ export const MarketOffer = ({ marketOffer, onAccept }: TradeOfferProps) => {
         {makerRealm && (
           <div className="flex items-center p-1 -mt-2 -ml-2 border border-t-0 border-l-0 rounded-br-md border-gray-gold">
             {/* // order of the order maker */}
-            {makerRealm.order && (
-              <OrderIcon
-                order={orderNameDict[makerRealm.order]}
-                size="xs"
-                className="mr-1"
-              />
-            )}
+            {makerRealm.order && <OrderIcon order={orderNameDict[makerRealm.order]} size="xs" className="mr-1" />}
             {realmsData["features"][makerRealm.realmId - 1].name}
           </div>
         )}
@@ -71,56 +57,41 @@ export const MarketOffer = ({ marketOffer, onAccept }: TradeOfferProps) => {
       </div>
       <div className="flex items-end mt-2">
         <div className="flex items-center justify-around flex-1">
-          <div className="w-1/3 text-gold flex justify-center items-center flex-wrap">
+          <div className="flex-1 text-gold flex justify-center items-center flex-wrap">
             {resourcesGive &&
               resourcesGive.map(({ resourceId, amount }) => (
-                <div
-                  className="flex flex-col items-center mx-2 my-1"
-                  key={resourceId}
-                >
-                  <ResourceIcon
-                    resource={findResourceById(resourceId)?.trait as any}
-                    size="xs"
-                    className="mb-1"
-                  />
+                <div className="flex flex-col items-center mx-2 my-0.5" key={resourceId}>
+                  <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="xs" className="mb-1" />
                   {amount}
                 </div>
               ))}
           </div>
           <div className="flex flex-col items-center text-white">
             <RatioIcon className="mb-1 fill-white" />
-            {resourcesGive &&
-              resourcesGet &&
-              calculateRatio(resourcesGive, resourcesGet).toFixed(2)}
+            {resourcesGive && resourcesGet && calculateRatio(resourcesGive, resourcesGet).toFixed(2)}
           </div>
-          <div className="w-1/3 text-gold flex justify-center items-center flex-wrap">
+          <div className="flex-1 text-gold flex justify-center items-center flex-wrap">
             {resourcesGet &&
               resourcesGet.map(({ resourceId, amount }) => (
-                <div
-                  className="flex flex-col items-center mx-2 my-1"
-                  key={resourceId}
-                >
-                  <ResourceIcon
-                    resource={findResourceById(resourceId)?.trait as any}
-                    size="xs"
-                  />
+                <div className="flex flex-col items-center mx-2 my-0.5" key={resourceId}>
+                  <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="xs" />
                   {amount}
                 </div>
               ))}
           </div>
         </div>
         {!isLoading && (
-          <div className="flex flex-col justify-center">
+          <div className="flex flex-col justify-center relative">
             <Button
               disabled={!canAccept}
               onClick={() => {
                 onAccept();
               }}
               variant={canAccept ? "success" : "danger"}
-              className="ml-auto p-2 !h-4 text-xxs !rounded-md"
+              className={clsx("ml-auto p-2 !h-4 text-xxs !rounded-md", !canAccept && "mb-4")}
             >{`Accept`}</Button>
             {!canAccept && (
-              <div className="text-xxs text-order-giants/70">
+              <div className="text-xxs text-order-giants/70 w-min absolute whitespace-nowrap right-0 bottom-0">
                 Insufficient resources
               </div>
             )}

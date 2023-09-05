@@ -98,6 +98,20 @@ commands+=(
     "sozo execute --world $world CreateRealm --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,$DOJO_ACCOUNT_ADDRESS,515,2,4,5,6,1,1,8,2,2087471,1610800"
 )
 
+
+# Read the System to Components JSON file
+system_components_json=$(cat ./scripts/system_components.json)
+
+# Loop through each system
+for system in $(echo $system_components_json | jq -r 'keys[]'); do
+    # Loop through each component that the system writes to
+    for component in $(echo $system_components_json | jq -r ".$system[]"); do
+        # make the system a writer of the component
+        commands+=("sozo auth writer --world "$world" $component $system")
+    done
+done
+
+
 prod=false  # Default value
 # Check if --prod option is present
 if [[ ! -z "$1" ]]; then

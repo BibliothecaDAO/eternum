@@ -1,10 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
-import {
-  ResourcesIds,
-  findResourceById,
-  resources,
-} from "../../../constants/resources";
+import { ResourcesIds, findResourceById, resources } from "../../../constants/resources";
 import { currencyFormat, getEntityIdFromKeys } from "../../../utils/utils.jsx";
 import clsx from "clsx";
 import { unpackResources } from "../../../utils/packedData";
@@ -18,12 +14,11 @@ import { useSyncRealmResources } from "../../../hooks/graphql/useGraphQLQueries"
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../DojoContext";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
+import { Tooltip } from "../../../elements/Tooltip";
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<"div">;
 
-export const RealmResourcesComponent = ({
-  className,
-}: RealmResourcesComponentProps) => {
+export const RealmResourcesComponent = ({ className }: RealmResourcesComponentProps) => {
   const [showAllResources, setShowAllResources] = useState<boolean>(false);
   const [realmResourceIds, setRealmResourceIds] = useState<number[]>([]);
 
@@ -35,18 +30,11 @@ export const RealmResourcesComponent = ({
 
   // unpack the resources
   useMemo(() => {
-    let realmResourceIds: number[] = [
-      ResourcesIds["Shekels"],
-      ResourcesIds["Wheat"],
-      ResourcesIds["Fish"],
-    ];
+    let realmResourceIds: number[] = [ResourcesIds["Shekels"], ResourcesIds["Wheat"], ResourcesIds["Fish"]];
     let unpackedResources: number[] = [];
 
     if (realm) {
-      unpackedResources = unpackResources(
-        BigInt(realm.resource_types_packed),
-        realm.resource_types_count,
-      );
+      unpackedResources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
       realmResourceIds = realmResourceIds.concat(unpackedResources);
       setRealmResourceIds(realmResourceIds);
     }
@@ -99,9 +87,7 @@ interface ResourceComponentProps {
   resourceId: number;
 }
 
-const ResourceComponent: React.FC<ResourceComponentProps> = ({
-  resourceId,
-}) => {
+const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => {
   const {
     setup: {
       components: { Labor, Resource },
@@ -122,33 +108,20 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 
-  const labor = useComponentValue(
-    Labor,
-    getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]),
-  );
+  const labor = useComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]));
 
-  const resource = useComponentValue(
-    Resource,
-    getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]),
-  );
+  const resource = useComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]));
 
   useEffect(() => {
     let laborLeft: number = 0;
-    if (
-      nextBlockTimestamp &&
-      labor &&
-      laborConfig &&
-      labor.balance > nextBlockTimestamp
-    ) {
+    if (nextBlockTimestamp && labor && laborConfig && labor.balance > nextBlockTimestamp) {
       let left = labor.balance - nextBlockTimestamp;
       laborLeft = left < laborConfig.base_labor_units ? 0 : left;
     }
     const productivity =
       labor && laborLeft && laborConfig
         ? calculateProductivity(
-            isFood
-              ? laborConfig.base_food_per_cycle
-              : laborConfig.base_resources_per_cycle,
+            isFood ? laborConfig.base_food_per_cycle : laborConfig.base_resources_per_cycle,
             labor.multiplier,
             laborConfig.base_labor_units,
           )
@@ -159,37 +132,30 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({
   return (
     <>
       <div className="flex flex-col">
-        <div className="flex items-center p-3 text-xs font-bold text-white bg-black/60 rounded-xl h-11">
+        <div className="flex relative group items-center p-3 text-xs font-bold text-white bg-black/60 rounded-xl h-11">
           <ResourceIcon
+            withTooltip={false}
             resource={findResourceById(resourceId)?.trait as string}
             size="xs"
             className="mr-2"
-            withTooltip
           />
-          <div className="text-xs">
-            {currencyFormat(resource ? resource.balance : 0)}
-          </div>
+          <div className="text-xs">{currencyFormat(resource ? resource.balance : 0)}</div>
+          <Tooltip>{findResourceById(resourceId)?.trait}</Tooltip>
         </div>
         {resourceId !== 253 && (
           <div
             className={clsx(
               "text-xxs mt-2 rounded-[5px] px-2 h-4 w-min",
               productivity > 0 && "text-order-vitriol bg-dark-green",
-              (productivity === 0 || productivity === undefined) &&
-                "text-gold bg-brown",
+              (productivity === 0 || productivity === undefined) && "text-gold bg-brown",
             )}
           >
-            {productivity === 0 || productivity === undefined
-              ? "IDLE"
-              : `${productivity}/h`}
+            {productivity === 0 || productivity === undefined ? "IDLE" : `${productivity}/h`}
           </div>
         )}
       </div>
-      {(resourceId === ResourcesIds["Fish"] ||
-        resourceId === ResourcesIds["Shekels"]) && (
-        <div className="flex items-center mx-3 -translate-y-2 scale-y-[2]">
-          |
-        </div>
+      {(resourceId === ResourcesIds["Fish"] || resourceId === ResourcesIds["Shekels"]) && (
+        <div className="flex items-center mx-3 -translate-y-2 scale-y-[2]">|</div>
       )}
     </>
   );

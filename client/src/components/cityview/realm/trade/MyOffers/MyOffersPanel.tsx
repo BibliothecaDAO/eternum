@@ -40,12 +40,9 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
     sort: "none",
   });
   return (
-    <div className="relative flex flex-col pb-10 min-h-[120px]">
+    <div className="relative flex flex-col pb-3 min-h-[120px]">
       <FiltersPanel className="px-3 py-2">
-        <FilterButton
-          active={activeFilter}
-          onClick={() => setActiveFilter(!activeFilter)}
-        >
+        <FilterButton active={activeFilter} onClick={() => setActiveFilter(!activeFilter)}>
           Filter
         </FilterButton>
         <ResourceFilter />
@@ -69,12 +66,7 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
         ))}
       </SortPanel>
       {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
-      {showCreateOffer && (
-        <CreateOfferPopup
-          onClose={() => setShowCreateOffer(false)}
-          onCreate={() => {}}
-        />
-      )}
+      {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
       {myOffers.length &&
         myOffers.map((myOffer) => (
           <div className="flex flex-col p-2" key={myOffer.tradeId}>
@@ -82,7 +74,7 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
           </div>
         ))}
       <Button
-        className="absolute -translate-x-1/2 bottom-3 left-1/2 !rounded-full"
+        className="sticky w-32 -translate-x-1/2 bottom-2 left-1/2 !rounded-full"
         onClick={() => setShowCreateOffer(true)}
         variant="primary"
       >
