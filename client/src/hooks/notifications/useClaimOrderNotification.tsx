@@ -30,8 +30,6 @@ export const useClaimOrderNotification = (
   const realmName = realmId ? getRealmNameById(realmId) : "";
   const realmOrderName = realmId ? getRealmOrderNameById(realmId) : "";
 
-  console.log({ realmId });
-
   let claimableResources = orderId
     ? getTradeResources(parseInt(orderId))
     : undefined;
