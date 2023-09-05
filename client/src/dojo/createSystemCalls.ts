@@ -30,7 +30,7 @@ export interface TakeFungibleOrderProps extends SystemSigner {
   trade_id: num.BigNumberish;
 }
 
-export interface CancelOrderStatusProps extends SystemSigner {
+export interface CancelFungibleOrderProps extends SystemSigner {
   trade_id: num.BigNumberish;
 }
 
@@ -83,64 +83,33 @@ export interface MakeFungibleOrderProps extends SystemSigner {
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
 
 // NOTE: need to add waitForTransaction when connected to rinnigan
-export function createSystemCalls({
-  execute,
-  provider,
-  contractComponents,
-}: SetupNetworkResult) {
+export function createSystemCalls({ execute, provider, contractComponents }: SetupNetworkResult) {
   // Refactor the functions using the interfaces
   const build_labor = async (props: BuildLaborProps) => {
     const { realm_id, resource_type, labor_units, multiplier, signer } = props;
-    const tx = await execute(signer, "BuildLabor", [
-      realm_id,
-      resource_type,
-      labor_units,
-      multiplier,
-    ]);
-    const receipt = await provider.provider.waitForTransaction(
-      tx.transaction_hash,
-      { retryInterval: 500 },
-    );
+    const tx = await execute(signer, "BuildLabor", [realm_id, resource_type, labor_units, multiplier]);
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     setComponentsFromEvents(contractComponents, getEvents(receipt));
   };
 
   const harvest_labor = async (props: HarvestLaborProps) => {
     const { realm_id, resource_type, signer } = props;
     const tx = await execute(signer, "HarvestLabor", [realm_id, resource_type]);
-    const receipt = await provider.provider.waitForTransaction(
-      tx.transaction_hash,
-      { retryInterval: 500 },
-    );
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
 
     setComponentsFromEvents(contractComponents, getEvents(receipt));
   };
 
   const mint_resources = async (props: MintResourcesProps) => {
     const { entity_id, resource_type, amount, signer } = props;
-    const tx = await execute(signer, "MintResources", [
-      entity_id,
-      resource_type,
-      amount,
-    ]);
-    const receipt = await provider.provider.waitForTransaction(
-      tx.transaction_hash,
-      { retryInterval: 500 },
-    );
+    const tx = await execute(signer, "MintResources", [entity_id, resource_type, amount]);
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
 
     setComponentsFromEvents(contractComponents, getEvents(receipt));
   };
 
-  const make_fungible_order = async (
-    props: MakeFungibleOrderProps,
-  ): Promise<number> => {
-    const {
-      maker_id,
-      maker_entity_types,
-      maker_quantities,
-      taker_entity_types,
-      taker_quantities,
-      signer,
-    } = props;
+  const make_fungible_order = async (props: MakeFungibleOrderProps): Promise<number> => {
+    const { maker_id, maker_entity_types, maker_quantities, taker_entity_types, taker_quantities, signer } = props;
 
     const expires_at = Math.floor(Date.now() / 1000 + 2628000);
 
@@ -158,10 +127,7 @@ export function createSystemCalls({
       1,
       expires_at,
     ]);
-    const receipt = await provider.provider.waitForTransaction(
-      tx.transaction_hash,
-      { retryInterval: 500 },
-    );
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
     setComponentsFromEvents(contractComponents, events);
     let trade_id = getEntityIdFromEvents(events, "Trade");
@@ -171,38 +137,24 @@ export function createSystemCalls({
   const take_fungible_order = async (props: TakeFungibleOrderProps) => {
     const { taker_id, trade_id, signer } = props;
     const tx = await execute(signer, "TakeFungibleOrder", [taker_id, trade_id]);
-    const receipt = await provider.provider.waitForTransaction(
-      tx.transaction_hash,
-      { retryInterval: 500 },
-    );
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
 
     setComponentsFromEvents(contractComponents, getEvents(receipt));
   };
 
-  const cancel_fungible_order = async (props: CancelOrderStatusProps) => {
+  const cancel_fungible_order = async (props: CancelFungibleOrderProps) => {
     const { trade_id, signer } = props;
     const tx = await execute(signer, "CancelFungibleOrder", [trade_id]);
-    const receipt = await provider.provider.waitForTransaction(
-      tx.transaction_hash,
-      { retryInterval: 500 },
-    );
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
     setComponentsFromEvents(contractComponents, events);
   };
 
-  const create_free_transport_unit = async (
-    props: CreateFreeTransportUnitProps,
-  ): Promise<number> => {
+  const create_free_transport_unit = async (props: CreateFreeTransportUnitProps): Promise<number> => {
     const { realm_id, quantity, signer } = props;
 
-    const tx = await execute(signer, "CreateFreeTransportUnit", [
-      realm_id,
-      quantity,
-    ]);
-    const receipt = await provider.provider.waitForTransaction(
-      tx.transaction_hash,
-      { retryInterval: 500 },
-    );
+    const tx = await execute(signer, "CreateFreeTransportUnit", [realm_id, quantity]);
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
     setComponentsFromEvents(contractComponents, events);
     // TODO: use getEntityIdFromEvents
@@ -211,14 +163,8 @@ export function createSystemCalls({
 
   const create_caravan = async (props: CreateCaravanProps): Promise<number> => {
     const { entity_ids, signer } = props;
-    const tx = await execute(signer, "CreateCaravan", [
-      entity_ids.length,
-      ...entity_ids,
-    ]);
-    const receipt = await provider.provider.waitForTransaction(
-      tx.transaction_hash,
-      { retryInterval: 500 },
-    );
+    const tx = await execute(signer, "CreateCaravan", [entity_ids.length, ...entity_ids]);
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
     setComponentsFromEvents(contractComponents, events);
     // TODO: use getEntityIdFromEvents
@@ -228,29 +174,16 @@ export function createSystemCalls({
 
   const attach_caravan = async (props: AttachCaravanProps) => {
     const { realm_id, trade_id, caravan_id, signer } = props;
-    const tx = await execute(signer, "AttachCaravan", [
-      realm_id,
-      trade_id,
-      caravan_id,
-    ]);
-    const receipt = await provider.provider.waitForTransaction(
-      tx.transaction_hash,
-      { retryInterval: 500 },
-    );
+    const tx = await execute(signer, "AttachCaravan", [realm_id, trade_id, caravan_id]);
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
     setComponentsFromEvents(contractComponents, events);
   };
 
   const claim_fungible_order = async (props: ClaimFungibleOrderProps) => {
     const { entity_id, trade_id, signer } = props;
-    const tx = await execute(signer, "ClaimFungibleOrder", [
-      entity_id,
-      trade_id,
-    ]);
-    const receipt = await provider.provider.waitForTransaction(
-      tx.transaction_hash,
-      { retryInterval: 500 },
-    );
+    const tx = await execute(signer, "ClaimFungibleOrder", [entity_id, trade_id]);
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
     setComponentsFromEvents(contractComponents, events);
   };
@@ -287,10 +220,7 @@ export function createSystemCalls({
       position.y,
     ]);
 
-    const receipt = await provider.provider.waitForTransaction(
-      tx.transaction_hash,
-      { retryInterval: 500 },
-    );
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
     setComponentsFromEvents(contractComponents, events);
 
@@ -321,24 +251,15 @@ export function createSystemCalls({
 
 export function getEvents(receipt: any): any[] {
   return receipt.events.filter((event: any) => {
-    return (
-      event.keys.length === 1 &&
-      event.keys[0] === import.meta.env.VITE_EVENT_KEY
-    );
+    return event.keys.length === 1 && event.keys[0] === import.meta.env.VITE_EVENT_KEY;
   });
 }
 
-export function setComponentsFromEvents(
-  components: Components,
-  events: Event[],
-) {
+export function setComponentsFromEvents(components: Components, events: Event[]) {
   events.forEach((event) => setComponentFromEvent(components, event.data));
 }
 
-export function setComponentFromEvent(
-  components: Components,
-  eventData: string[],
-) {
+export function setComponentFromEvent(components: Components, eventData: string[]) {
   // retrieve the component name
   const componentName = hexToAscii(eventData[0]);
 
@@ -361,14 +282,11 @@ export function setComponentFromEvent(
   const values = eventData.slice(index, index + numberOfValues);
 
   // create component object from values with schema
-  const componentValues = Object.keys(component.schema).reduce(
-    (acc: Schema, key, index) => {
-      const value = values[index];
-      acc[key] = Number(value);
-      return acc;
-    },
-    {},
-  );
+  const componentValues = Object.keys(component.schema).reduce((acc: Schema, key, index) => {
+    const value = values[index];
+    acc[key] = Number(value);
+    return acc;
+  }, {});
 
   // set component
   setComponent(component, entityIndex, componentValues);
