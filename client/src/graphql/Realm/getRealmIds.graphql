@@ -1,5 +1,5 @@
 query getRealmIds {
-  realmComponents {
+  realmComponents(first: 100) {
     edges {
       node {
         realm_id

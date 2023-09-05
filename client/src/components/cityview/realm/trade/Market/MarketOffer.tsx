@@ -120,7 +120,10 @@ const formatTimeLeft = (seconds: number) => {
   return `${days} days ${hours}h:${minutes}m`;
 };
 
-const calculateRatio = (resourcesGive: ResourcesOffer[], resourcesGet: ResourcesOffer[]) => {
+export const calculateRatio = (
+  resourcesGive: ResourcesOffer[],
+  resourcesGet: ResourcesOffer[],
+) => {
   let quantityGive = 0;
   for (let i = 0; i < resourcesGive.length; i++) {
     quantityGive += resourcesGive[i].amount;

@@ -17,6 +17,10 @@ query getIncomingOrderInfo($orderId: String!, $counterPartyOrderId: String!) {
           ... on ArrivalTime {
             arrives_at
           }
+          ... on Position {
+            x
+            y
+          }
         }
       }
     }
