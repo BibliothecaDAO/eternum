@@ -1,7 +1,7 @@
-import type * as PopperJS from '@popperjs/core';
-import React, { useCallback, useRef, useState } from 'react';
-import { usePopper } from 'react-popper';
-import clsx from 'clsx';
+import type * as PopperJS from "@popperjs/core";
+import React, { useCallback, useRef, useState } from "react";
+import { usePopper } from "react-popper";
+import clsx from "clsx";
 
 type TooltipProps = {
   tooltipText: React.ReactElement;
@@ -11,24 +11,14 @@ type TooltipProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Tooltip: React.FC<TooltipProps> = (props) => {
-  const {
-    children,
-    tooltipText,
-    enterDelay = 250,
-    leaveDelay = 150,
-    placement = 'bottom',
-    className,
-  } = props;
+  const { children, tooltipText, enterDelay = 250, leaveDelay = 150, placement = "bottom", className } = props;
 
   const [isOpen, setIsOpen] = useState(false);
-  const [referenceElement, setReferenceElement] =
-    useState<HTMLDivElement | null>(null);
-  const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(
-    null
-  );
+  const [referenceElement, setReferenceElement] = useState<HTMLDivElement | null>(null);
+  const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
     placement,
-    modifiers: [{ name: 'offset', options: { offset: [0, 4] } }],
+    modifiers: [{ name: "offset", options: { offset: [0, 4] } }],
   });
 
   const enterTimeout = useRef<NodeJS.Timeout>();
@@ -43,7 +33,7 @@ export const Tooltip: React.FC<TooltipProps> = (props) => {
   }, [leaveDelay]);
 
   return (
-    <div className={clsx('relative w-full', className)}>
+    <div className={clsx("relative", className)}>
       <div
         ref={setReferenceElement}
         onMouseEnter={handleMouseEnter}
@@ -57,10 +47,10 @@ export const Tooltip: React.FC<TooltipProps> = (props) => {
         ref={setPopperElement}
         style={{
           ...styles.popper,
-          visibility: isOpen ? 'visible' : 'hidden',
+          visibility: isOpen ? "visible" : "hidden",
         }}
         {...attributes.popper}
-        className={`transition-opacity ${isOpen ? 'opacity-100' : 'opacity-0'}`}
+        className={`transition-opacity ${isOpen ? "opacity-100" : "opacity-0"}`}
       >
         {tooltipText}
       </div>

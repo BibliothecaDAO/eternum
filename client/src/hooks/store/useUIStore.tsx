@@ -27,6 +27,7 @@ interface UIStore {
   moveCameraToMarketView: () => void;
   moveCameraToCaravansView: () => void;
   moveCameraToLaborView: () => void;
+  moveCameraToFoodView: () => void;
   isLoadingScreenEnabled: boolean;
   setIsLoadingScreenEnabled: (enabled: boolean) => void;
 }
@@ -38,16 +39,12 @@ const useUIStore = create<UIStore & PopupsStore>((set) => ({
   setShowBlurOverlay: (show) => set({ showBlurOverlay: show }),
   isSoundOn: false,
   toggleSound: () => set((state) => ({ isSoundOn: !state.isSoundOn })),
-  musicLevel: localStorage.getItem("musicLevel")
-    ? parseInt(localStorage.getItem("musicLevel") as string)
-    : 50,
+  musicLevel: localStorage.getItem("musicLevel") ? parseInt(localStorage.getItem("musicLevel") as string) : 50,
   setMusicLevel: (level) => {
     set({ musicLevel: level });
     localStorage.setItem("musicLevel", level.toString());
   },
-  effectsLevel: localStorage.getItem("effectsLevel")
-    ? parseInt(localStorage.getItem("effectsLevel") as string)
-    : 50,
+  effectsLevel: localStorage.getItem("effectsLevel") ? parseInt(localStorage.getItem("effectsLevel") as string) : 50,
   setEffectsLevel: (level) => {
     set({ effectsLevel: level });
     localStorage.setItem("effectsLevel", level.toString());
@@ -64,11 +61,7 @@ const useUIStore = create<UIStore & PopupsStore>((set) => ({
     const x = realmsJson.features[realmId - 1].xy[0] * -1;
     const y = realmsJson.features[realmId - 1].xy[1] * -1;
     const targetPos = new Vector3(x, 0.7, y);
-    const cameraPos = new Vector3(
-      x + 25 * (Math.random() < 0.5 ? 1 : -1),
-      25,
-      y + 25 * (Math.random() < 0.5 ? 1 : -1),
-    );
+    const cameraPos = new Vector3(x + 25 * (Math.random() < 0.5 ? 1 : -1), 25, y + 25 * (Math.random() < 0.5 ? 1 : -1));
     set({ cameraPosition: cameraPos });
     set({ cameraTarget: targetPos });
   },
@@ -143,9 +136,21 @@ const useUIStore = create<UIStore & PopupsStore>((set) => ({
     };
     set({ cameraPosition: pos, cameraTarget: target });
   },
+  moveCameraToFoodView: () => {
+    const target = {
+      x: -217.30692290462147,
+      y: 0.3248529978567156,
+      z: 49.85080979845691,
+    };
+    const pos = {
+      x: 360.9134360872948,
+      y: 1394.9879684979787,
+      z: 1346.6607529192597,
+    };
+    set({ cameraPosition: pos, cameraTarget: target });
+  },
   isLoadingScreenEnabled: true,
-  setIsLoadingScreenEnabled: (enabled) =>
-    set({ isLoadingScreenEnabled: enabled }),
+  setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
   ...createPopupsSlice(set),
 }));
 

@@ -1,64 +1,99 @@
-import { useMemo, useState } from 'react';
-import { Tabs } from '../../../elements/tab';
-import { LaborPanel } from './labor/LaborPanel';
+import { useEffect, useMemo, useState } from "react";
+import { Tabs } from "../../../elements/tab";
+import { LaborPanel } from "./labor/LaborPanel";
+import useRealmStore from "../../../hooks/store/useRealmStore";
+import useUIStore from "../../../hooks/store/useUIStore";
+import { useRoute, useLocation } from "wouter";
+import { Tooltip } from "../../../elements/Tooltip";
 
-type RealmLaborComponentProps = {}
+type RealmLaborComponentProps = {};
 
-export const RealmLaborComponent = ({ }: RealmLaborComponentProps) => {
+export const RealmLaborComponent = ({}: RealmLaborComponentProps) => {
+  const [selectedTab, setSelectedTab] = useState(0);
+  const { realmEntityId } = useRealmStore();
 
-    const [selectedTab, setSelectedTab] = useState(0);
+  const moveCameraToLaborView = useUIStore((state) => state.moveCameraToLaborView);
+  const moveCameraToFoodView = useUIStore((state) => state.moveCameraToFoodView);
 
-    const tabs = useMemo(
-        () => [
-            {
-                label: (
-                    <div className="flex flex-col items-center">
-                        <div>Resources</div>
-                    </div>
-                ),
-                component: <LaborPanel />,
-            },
-            {
-                label: (
-                    <div className="flex flex-col items-center">
-                        <div>Buildings</div>
-                    </div>
-                ),
-                component: <div />,
-            },
-            {
-                label: (
-                    <div className="flex flex-col items-center">
-                        <div>Tools</div>
-                    </div>
-                ),
-                component: <div />,
-            }
-        ],
-        [selectedTab]
-    );
+  // @ts-ignore
+  const [location, setLocation] = useLocation();
+  // @ts-ignore
+  const [match, params] = useRoute("/realm/:id/:tab");
 
-    return (
-        <>
-            <Tabs
-                selectedIndex={selectedTab}
-                onChange={(index: any) => setSelectedTab(index as number)}
-                variant="default"
-                className='h-full'
-            >
-                <Tabs.List>
-                    {tabs.map((tab, index) => (
-                        <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-                    ))}
-                </Tabs.List>
-                <Tabs.Panels className='overflow-hidden'>
-                    {tabs.map((tab, index) => (
-                        <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
-                    ))}
-                </Tabs.Panels>
-            </Tabs>
-        </>
-    );
+  useEffect(() => {
+    let _tab: string = "";
+    if (["food", "farm", "fish"].includes(params?.tab as string)) {
+      _tab = "food";
+      moveCameraToFoodView();
+    } else {
+      _tab = params?.tab as any;
+      moveCameraToLaborView();
+    }
+    const tabIndex = tabs.findIndex((tab) => tab.key === _tab);
+    if (tabIndex >= 0) {
+      setSelectedTab(tabIndex);
+    }
+  }, [params]);
+
+  const tabs = useMemo(
+    () => [
+      {
+        key: "labor",
+        label: (
+          <div className="flex relative group flex-col items-center">
+            <div>All</div>
+            <Tooltip position="bottom">
+              <p className="whitespace-nowrap">Look at your current production,</p>
+              <p className="whitespace-nowrap">or increase it by buying labour or buildings.</p>
+              <p className="whitespace-nowrap">Don't forget to harvest your resources.</p>
+            </Tooltip>
+          </div>
+        ),
+        component: <LaborPanel />,
+      },
+      {
+        key: "food",
+        label: (
+          <div className="flex flex-col items-center">
+            <div>Food</div>
+          </div>
+        ),
+        component: <LaborPanel type="food" />,
+      },
+      {
+        key: "mines",
+        label: (
+          <div className="flex flex-col items-center">
+            <div>Mines</div>
+          </div>
+        ),
+        component: <LaborPanel type="mines" />,
+      },
+    ],
+    [selectedTab],
+  );
+
+  return (
+    <>
+      <Tabs
+        selectedIndex={selectedTab}
+        onChange={(index: any) => setLocation(`/realm/${realmEntityId}/${tabs[index].key}`)}
+        variant="default"
+        className="h-full"
+      >
+        <Tabs.List>
+          {tabs.map((tab, index) => (
+            <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+          ))}
+        </Tabs.List>
+        <Tabs.Panels className="overflow-hidden">
+          {tabs.map((tab, index) => (
+            <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+          ))}
+        </Tabs.Panels>
+      </Tabs>
+    </>
+  );
 };
 
 export default RealmLaborComponent;

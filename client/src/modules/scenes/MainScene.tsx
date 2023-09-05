@@ -2,6 +2,7 @@ import { Canvas } from "@react-three/fiber";
 import { WorldMapScene } from "./WorldMapScene";
 import { RealmCityViewScene } from "./RealmCityViewScene";
 import useUIStore from "../../hooks/store/useUIStore";
+import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
 import { a } from "@react-spring/three";
 import {
@@ -79,7 +80,7 @@ export const MainScene = () => {
         logarithmicDepthBuffer: true,
       }}
     >
-      {/* <Perf position="top-left" /> */}
+      {import.meta.env.DEV && <Perf position="bottom-left" />}
       <Sky azimuth={0.1} inclination={0.6} distance={1000} />
       <ambientLight />
       <Camera />
