@@ -51,6 +51,7 @@ use eternum::systems::config::world_config::SetWorldConfig;
 use eternum::systems::caravan::utils::GetAverageSpeed;
 use eternum::systems::order::make_fungible_order::MakeFungibleOrder;
 use eternum::systems::order::take_fungible_order::TakeFungibleOrder;
+use eternum::systems::order::cancel_fungible_order::CancelFungibleOrder;
 use eternum::systems::order::attach_caravan::AttachCaravan;
 use eternum::systems::order::claim_fungible_order::ClaimFungibleOrder;
 use eternum::systems::labor::build_labor::BuildLabor;
@@ -122,6 +123,7 @@ fn spawn_eternum() -> IWorldDispatcher {
         CreateRealm::TEST_CLASS_HASH,
         MakeFungibleOrder::TEST_CLASS_HASH,
         TakeFungibleOrder::TEST_CLASS_HASH,
+        CancelFungibleOrder::TEST_CLASS_HASH,
         AttachCaravan::TEST_CLASS_HASH,
         ClaimFungibleOrder::TEST_CLASS_HASH,
         SetTravelConfig::TEST_CLASS_HASH,
