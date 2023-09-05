@@ -1,7 +1,7 @@
 use eternum::alias::ID;
 use eternum::components::position::Coord;
 
-use dojo::world::{Context, IWorldDispatcher, IWorldDispatcherTrait};
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
@@ -17,11 +17,11 @@ struct Road {
 
 trait RoadTrait {
     /// Get Road component using set of coordinates
-    fn get(ctx: Context, start_coord: Coord, end_coord: Coord) -> Road;
-    /// Calculate travel time when using road
-    fn travel_time(self:Road, travel_time: u64) -> u64;
+    fn get(world: IWorldDispatcher, start_coord: Coord, end_coord: Coord) -> Road;
+    /// Returns speed boost for road
+    fn speed_boost(self: Road) -> u64;
     /// Reduce road usage count by 1
-    fn travel(self: Road, ctx: Context);
+    fn travel(ref self: Road, world: IWorldDispatcher);
 }
 
 
@@ -29,30 +29,89 @@ trait RoadTrait {
 impl RoadImpl of RoadTrait {
 
     #[inline(always)]
-    fn get(ctx: Context, start_coord: Coord, end_coord: Coord) -> Road {
-        let mut road = get!(ctx.world, (start_coord, end_coord), Road);
+    fn get(world: IWorldDispatcher, start_coord: Coord, end_coord: Coord) -> Road {
+        let mut road = get!(world, (start_coord, end_coord), Road);
         if road.usage_count == 0 {
-            road = get!(ctx.world, (end_coord, start_coord), Road);
+            road = get!(world, (end_coord, start_coord), Road);
         }
         road
     }
 
 
     #[inline(always)]
-    fn travel_time(self: Road, travel_time: u64) -> u64 {
-        travel_time / 2
+    fn speed_boost(self: Road) -> u64 {
+        2   
     }
 
 
     #[inline(always)]
-    fn travel(self: Road, ctx: Context) {
-        let usage_count = self.usage_count - 1;
-        set!(ctx.world, 
+    fn travel(ref self: Road, world: IWorldDispatcher) {
+        self.usage_count -= 1;
+        set!(world, (self));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use eternum::components::position::{Coord};
+    use eternum::components::road::{Road, RoadImpl, RoadTrait};
+    
+    use eternum::utils::testing::spawn_eternum;
+
+    use dojo::world::IWorldDispatcherTrait;
+
+    use core::array::ArrayTrait;
+    use core::serde::Serde;
+
+    #[test]
+    #[available_gas(3000000000000)]  
+    fn test_get_road() {
+        let world = spawn_eternum();
+
+        starknet::testing::set_contract_address(world.executor());
+        let start_coord = Coord { x: 20, y: 30};
+        let end_coord = Coord { x: 40, y: 50};
+        let usage_count = 44;
+    
+        set!(world, ( 
             Road {
-               start_coord: self.start_coord,
-               end_coord: self.end_coord,
-               usage_count: usage_count
-            }
-        )
+                start_coord,
+                end_coord,
+                usage_count
+            })
+        );
+
+
+        let road = RoadImpl::get(world, start_coord, end_coord);
+        assert(road.usage_count == usage_count, 'usage count should be 33');
+
+        let road = RoadImpl::get(world, end_coord, start_coord); // reverse order
+        assert(road.usage_count == usage_count, 'usage count should be 33');
+    }
+
+
+    #[test]
+    #[available_gas(3000000000000)]  
+    fn test_travel(){
+        let world = spawn_eternum();
+
+        starknet::testing::set_contract_address(world.executor());
+        let start_coord = Coord { x: 20, y: 30};
+        let end_coord = Coord { x: 40, y: 50};
+        let usage_count = 44;
+        let mut road = Road {
+            start_coord,
+            end_coord,
+            usage_count
+        };
+        set!(world, ( road ));
+
+        
+        road.travel(world);
+        road.travel(world);
+        road.travel(world);
+
+        let road = RoadImpl::get(world, start_coord, end_coord);
+        assert(road.usage_count == usage_count - 3, 'usage count isnt correct');
     }
 }

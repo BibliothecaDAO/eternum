@@ -1,22 +1,21 @@
 use traits::Into;
 use traits::TryInto;
 use option::OptionTrait;
+use debug::PrintTrait;
 
 use alexandria_math::math::pow;
-
-
-#[derive(Component, PartialEq, Copy, Drop, Serde, SerdeLen)]
-struct Position {
-    #[key]
-    entity_id: u128,
-    x: u32,
-    y: u32
-}
 
 #[derive(Copy, Drop, PartialEq, Serde)]
 struct Coord {
     x: u32,
     y: u32
+}
+
+impl CoordPrint of PrintTrait<Coord> {
+    fn print(self: Coord) {
+        self.x.print();
+        self.y.print();
+    }
 }
 
 impl PositionIntoCoord of Into<Position, Coord> {
@@ -26,6 +25,14 @@ impl PositionIntoCoord of Into<Position, Coord> {
             y: self.y
         };
     }
+}
+
+#[derive(Component, PartialEq, Copy, Drop, Serde, SerdeLen)]
+struct Position {
+    #[key]
+    entity_id: u128,
+    x: u32,
+    y: u32
 }
 
 trait PositionTrait {

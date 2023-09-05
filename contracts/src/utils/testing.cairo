@@ -10,6 +10,7 @@ use eternum::components::labor::{labor, Labor};
 use eternum::components::resources::{vault, Vault};
 use eternum::components::metadata::{foreign_key, ForeignKey};
 use eternum::components::trade::{fungible_entities, FungibleEntities};
+use eternum::components::road::{road, Road};
 use eternum::components::config::{
     world_config, WorldConfig,
     speed_config, SpeedConfig,
@@ -61,6 +62,7 @@ use eternum::systems::config::labor_config::SetLaborCostAmount;
 use eternum::systems::config::weight_config::SetWeightConfig;
 use eternum::systems::test::mint_resources::MintResources;
 use eternum::systems::labor::harvest_labor::HarvestLabor;
+use eternum::systems::road::create_road::CreateRoad;
 
 use dojo::{executor::executor, world::{world, IWorldDispatcher, IWorldDispatcherTrait}};
 use dojo::test_utils::spawn_test_world;
@@ -109,7 +111,8 @@ fn spawn_eternum() -> IWorldDispatcher {
         labor_cost_amount::TEST_CLASS_HASH,
         labor_cost_resources::TEST_CLASS_HASH,
         vault::TEST_CLASS_HASH,
-        weight_config::TEST_CLASS_HASH
+        weight_config::TEST_CLASS_HASH,
+        road::TEST_CLASS_HASH
     ];
 
     
@@ -133,7 +136,8 @@ fn spawn_eternum() -> IWorldDispatcher {
         SetLaborCostAmount::TEST_CLASS_HASH,
         MintResources::TEST_CLASS_HASH,
         HarvestLabor::TEST_CLASS_HASH,
-        SetWeightConfig::TEST_CLASS_HASH
+        SetWeightConfig::TEST_CLASS_HASH,
+        CreateRoad::TEST_CLASS_HASH
     ];
     
 
