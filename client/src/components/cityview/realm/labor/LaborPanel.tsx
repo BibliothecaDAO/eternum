@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SortPanel } from "../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../elements/SortButton";
 import { LaborComponent } from "./LaborComponent";
@@ -9,14 +9,29 @@ import { LaborBuildPopup } from "./LaborBuild";
 import { LaborConfig } from "../../../../types";
 import { useSyncRealmLabor } from "../../../../hooks/graphql/useGraphQLQueries";
 import { getRealm } from "../SettleRealmComponent";
+import { useRoute } from "wouter";
 
-type LaborPanelProps = {};
+type LaborPanelProps = {
+  type?: "all" | "food" | "mines";
+};
 
-export const LaborPanel = ({}: LaborPanelProps) => {
+export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
   const [buildResource, setBuildResource] = useState<number | null>(null);
   const [buildLoadingStates, setBuildLoadingStates] = useState<{
     [key: number]: boolean;
   }>({});
+
+  // @ts-ignore
+  const [match, params] = useRoute("/realm/:id/:tab");
+
+  useEffect(() => {
+    if (params?.tab == "fish" && buildResource != ResourcesIds["Fish"]) {
+      setBuildResource(ResourcesIds["Fish"]);
+    }
+    if (params?.tab == "farm" && buildResource != ResourcesIds["Wheat"]) {
+      setBuildResource(ResourcesIds["Wheat"]);
+    }
+  }, [params]);
 
   const sortingParams = useMemo(() => {
     return [
@@ -43,13 +58,15 @@ export const LaborPanel = ({}: LaborPanelProps) => {
   // unpack the resources
   let realmResourceIds = useMemo(() => {
     if (realm) {
-      let unpackedResources = unpackResources(
-        BigInt(realm.resource_types_packed),
-        realm.resource_types_count,
-      );
-      return [ResourcesIds["Wheat"], ResourcesIds["Fish"]].concat(
-        unpackedResources,
-      );
+      let unpackedResources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
+      const foodResources = [ResourcesIds["Wheat"], ResourcesIds["Fish"]];
+      if (type == "food") {
+        return foodResources;
+      }
+      if (type == "mines") {
+        return unpackedResources;
+      }
+      return foodResources.concat(unpackedResources);
     } else {
       return [];
     }
@@ -93,9 +110,7 @@ export const LaborPanel = ({}: LaborPanelProps) => {
           <div className="flex flex-col p-2" key={resourceId}>
             <LaborComponent
               onBuild={() => {
-                buildResource == resourceId
-                  ? setBuildResource(null)
-                  : setBuildResource(resourceId);
+                buildResource == resourceId ? setBuildResource(null) : setBuildResource(resourceId);
               }}
               resourceId={resourceId}
               // labor={realmLabor[resourceId]}

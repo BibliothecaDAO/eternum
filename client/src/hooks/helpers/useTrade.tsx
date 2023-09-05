@@ -14,6 +14,7 @@ import { useEffect, useMemo, useState } from "react";
 import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys } from "../../utils/utils";
 import { useEntityQuery } from "@dojoengine/react";
+import { HIGH_ENTITY_ID } from "../../dojo/createOptimisticSystemCalls";
 
 export function useTrade() {
   const {
@@ -67,7 +68,13 @@ export function useGetMyOffers() {
   ]);
 
   useMemo(() => {
+    const optimisticTradeId = entityIds.indexOf(HIGH_ENTITY_ID as EntityIndex);
     const trades = entityIds
+      // avoid having optimistic and real trade at the same time
+      .slice(
+        0,
+        optimisticTradeId === -1 ? entityIds.length + 1 : optimisticTradeId + 1,
+      )
       .map((tradeId) => {
         let trade = getComponentValue(Trade, tradeId);
         if (trade) {

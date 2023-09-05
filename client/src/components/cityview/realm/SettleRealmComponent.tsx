@@ -110,7 +110,7 @@ export const SettleRealmComponent = () => {
   );
 };
 
-function getPosition(realm_id: number): { x: number; y: number } {
+export function getPosition(realm_id: number): { x: number; y: number } {
   const coords = realmCoords.features[realm_id - 1].geometry.coordinates.map(
     (value) => parseInt(value),
   );

@@ -138,7 +138,7 @@ export const ChatTabs = ({}: ChatTabsProps) => {
       selectedIndex={selectedTab}
       onChange={(index: any) => setSelectedTab(index as number)}
       variant="primary"
-      className="flex-1 overflow-hidden z-0"
+      className="flex-1 -mx-2 overflow-hidden relative z-0"
     >
       <Tabs.List className="!justify-start relative !pointer-events-autopx-0">
         {tabs.map((tab, index) => (
@@ -149,7 +149,7 @@ export const ChatTabs = ({}: ChatTabsProps) => {
         {tabs.map((tab, index) => (
           <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
         ))}
-        <div className="border-t border-gray-gold bg-gradient-to-b from-[#151515] to-transparent absolute w-full h-16 top-[46px] left-0" />
+        <div className="border-t -mx-2 border-gray-gold bg-gradient-to-b from-[#151515] to-transparent absolute w-full h-16 top-[39px] left-0" />
       </Tabs.Panels>
     </Tabs>
   );

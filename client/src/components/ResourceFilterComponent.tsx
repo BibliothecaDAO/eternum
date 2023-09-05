@@ -22,10 +22,7 @@ export const ResourceFilter = ({}: ResourceFilterProps) => {
 
   return (
     <>
-      <FilterButton
-        active={popupOpened}
-        onClick={() => setPopupOpened(!popupOpened)}
-      >
+      <FilterButton active={popupOpened} onClick={() => setPopupOpened(!popupOpened)}>
         Resources
       </FilterButton>
       {popupOpened && (
@@ -37,11 +34,7 @@ export const ResourceFilter = ({}: ResourceFilterProps) => {
                 <ResourceIcon key={index} size="xs" resource={resource} />
               ))}
               {selectedResources.length > 0 && (
-                <Button
-                  onClick={() => setSelectedResources([])}
-                  variant="outline"
-                  size="xs"
-                >
+                <Button onClick={() => setSelectedResources([])} variant="outline" size="xs">
                   Clear all
                 </Button>
               )}
@@ -56,11 +49,7 @@ export const ResourceFilter = ({}: ResourceFilterProps) => {
                   onClick={() => selectResource(resource.trait)}
                 >
                   <div className="flex items-center">
-                    <ResourceIcon
-                      className="mr-1"
-                      size="xs"
-                      resource={resource.trait}
-                    />
+                    <ResourceIcon containerClassName="mr-1" size="xs" resource={resource.trait} />
                     {resource.trait}
                   </div>
                 </SelectBox>
