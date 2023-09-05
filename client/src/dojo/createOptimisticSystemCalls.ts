@@ -2,7 +2,7 @@ import { uuid } from "@latticexyz/utils";
 import { ClientComponents } from "./createClientComponents";
 import { getEntityIdFromKeys } from "../utils/utils";
 import { Type, getComponentValue } from "@latticexyz/recs";
-import { BuildLaborProps, ChangeOrderStatusProps, ClaimFungibleOrderProps, HarvestLaborProps, MakeFungibleOrderProps } from "./createSystemCalls";
+import { BuildLaborProps, CancelOrderStatusProps, ClaimFungibleOrderProps, HarvestLaborProps, MakeFungibleOrderProps } from "./createSystemCalls";
 import { Resource } from "../types";
 
 const HIGH_ENTITY_ID = 9999999999;
@@ -177,8 +177,8 @@ export function createOptimisticSystemCalls(
         };
     }
 
-    function optimisticCancelOffer(systemCall: (args: ChangeOrderStatusProps) => Promise<void>) {
-        return async function (this: any, args: ChangeOrderStatusProps) {
+    function optimisticCancelOffer(systemCall: (args: CancelOrderStatusProps) => Promise<void>) {
+        return async function (this: any, args: CancelOrderStatusProps) {
 
             const { trade_id: tradeId } = args;
 

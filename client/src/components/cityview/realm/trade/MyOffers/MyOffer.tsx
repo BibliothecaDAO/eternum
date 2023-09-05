@@ -27,13 +27,13 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
 
   const {
     setup: {
-      systemCalls: { change_order_status },
+      systemCalls: { cancel_fungible_order },
       optimisticSystemCalls: { optimisticCancelOffer },
     },
     account: { account },
   } = useDojo();
 
-  const { realmEntityId, realmId } = useRealmStore();
+  const { realmId } = useRealmStore();
 
   useSyncTradeResources({
     makerOrderId: numberToHex(myOffer.takerOrderId),
@@ -45,11 +45,9 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
   const onCancel = async () => {
     // status 2 = cancel
     setIsLoading(true);
-    optimisticCancelOffer(change_order_status)({
+    optimisticCancelOffer(cancel_fungible_order)({
       signer: account,
-      realm_id: realmEntityId,
       trade_id: myOffer.tradeId,
-      new_status: 2,
     });
   };
 

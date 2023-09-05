@@ -423,7 +423,12 @@ export const SelectCaravanPanel = ({
       realmCaravans
         ? (realmCaravans
             .map((caravan) => {
-              const isIdle = nextBlockTimestamp && caravan.arrivalTime <= nextBlockTimestamp && !caravan.blocked;
+              const isIdle =
+                caravan &&
+                nextBlockTimestamp &&
+                !caravan.blocked &&
+                (!caravan.arrivalTime ||
+                  caravan.arrivalTime <= nextBlockTimestamp);
               // capacity in gr (1kg = 1000gr)
               const canCarry = caravan.capacity / 1000 >= resourceWeight;
               if (isIdle && canCarry) {
