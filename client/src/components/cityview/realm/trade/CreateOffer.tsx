@@ -530,8 +530,8 @@ export const SelectCaravanPanel = ({
               caravan={caravan}
               idleOnly={true}
               onClick={() => setSelectedCaravan(caravan.caravanId)}
-              className={`w-full mb-2 border rounded-md ${
-                selectedCaravan === caravan.caravanId ? "border-yellow" : ""
+              className={`w-full mt-2 border rounded-md ${
+                selectedCaravan === caravan.caravanId ? "border-order-brilliance" : ""
               }`}
             />
           ))}

@@ -111,7 +111,8 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
         )}
       </div>
       <div className="flex justify-center items-center space-x-2 flex-wrap mt-2">
-        {resourcesGive &&
+        {!isIdle &&
+          resourcesGive &&
           resourcesGive.map(
             (resource) =>
               resource && (
