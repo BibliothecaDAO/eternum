@@ -27,16 +27,10 @@ type CreateOfferPopupProps = {
 
 export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   const [step, setStep] = useState<number>(1);
-  const [selectedResourceIdsGive, setSelectedResourceIdsGive] = useState<
-    number[]
-  >([]);
-  const [selectedResourceIdsGet, setSelectedResourceIdsGet] = useState<
-    number[]
-  >([]);
-  const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] =
-    useState<{ [key: number]: number }>({});
-  const [selectedResourcesGetAmounts, setSelectedResourcesGetAmounts] =
-    useState<{ [key: number]: number }>({});
+  const [selectedResourceIdsGive, setSelectedResourceIdsGive] = useState<number[]>([]);
+  const [selectedResourceIdsGet, setSelectedResourceIdsGet] = useState<number[]>([]);
+  const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] = useState<{ [key: number]: number }>({});
+  const [selectedResourcesGetAmounts, setSelectedResourcesGetAmounts] = useState<{ [key: number]: number }>({});
   const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
   const [isNewCaravan, setIsNewCaravan] = useState(false);
   const [donkeysCount, setDonkeysCount] = useState(1);
@@ -48,12 +42,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
     account: { account },
     setup: {
       optimisticSystemCalls: { optimisticMakeFungibleOrder },
-      systemCalls: {
-        create_caravan,
-        create_free_transport_unit,
-        make_fungible_order,
-        attach_caravan,
-      },
+      systemCalls: { create_caravan, create_free_transport_unit, make_fungible_order, attach_caravan },
     },
   } = useDojo();
 
@@ -106,22 +95,13 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
 
   const canGoToNextStep = useMemo(() => {
     if (step === 1) {
-      return (
-        selectedResourceIdsGive.length > 0 && selectedResourceIdsGet.length > 0
-      );
+      return selectedResourceIdsGive.length > 0 && selectedResourceIdsGet.length > 0;
     } else if (step === 3) {
       return selectedCaravan !== 0 || (hasEnoughDonkeys && isNewCaravan);
     } else {
       return true;
     }
-  }, [
-    step,
-    selectedCaravan,
-    hasEnoughDonkeys,
-    selectedResourceIdsGet,
-    selectedResourceIdsGive,
-    isNewCaravan,
-  ]);
+  }, [step, selectedCaravan, hasEnoughDonkeys, selectedResourceIdsGet, selectedResourceIdsGive, isNewCaravan]);
 
   useEffect(() => {
     setHasEnoughDonkeys(donkeysCount * 100 >= resourceWeight);
@@ -141,16 +121,12 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
               selectedResourceIdsGive={selectedResourceIdsGive}
               setSelectedResourceIdsGive={(e) => {
                 setSelectedResourceIdsGive(e);
-                setSelectedResourcesGiveAmounts(
-                  Object.fromEntries(e.map((id) => [id, 1])),
-                );
+                setSelectedResourcesGiveAmounts(Object.fromEntries(e.map((id) => [id, 1])));
               }}
               selectedResourceIdsGet={selectedResourceIdsGet}
               setSelectedResourceIdsGet={(e) => {
                 setSelectedResourceIdsGet(e);
-                setSelectedResourcesGetAmounts(
-                  Object.fromEntries(e.map((id) => [id, 1])),
-                );
+                setSelectedResourcesGetAmounts(Object.fromEntries(e.map((id) => [id, 1])));
               }}
             />
           )}
@@ -191,11 +167,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
           >
             {step === 1 ? "Cancel" : "Back"}
           </Button>
-          <Steps
-            className="absolute -translate-x-1/2 left-1/2 bottom-4"
-            step={step}
-            maxStep={3}
-          />
+          <Steps className="absolute -translate-x-1/2 left-1/2 bottom-4" step={step} maxStep={3} />
           {!isLoading && (
             <Button
               className="!px-[6px] !py-[2px] text-xxs"
@@ -254,27 +226,19 @@ const SelectResourcesPanel = ({
         <Headline className="mb-2">You Give</Headline>
         <div className="grid grid-cols-4 gap-2">
           {resources.map(({ id, trait: _name }) => {
-            let resource = getComponentValue(
-              Resource,
-              getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]),
-            );
+            let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
             return (
               <SelectableResource
                 key={id}
                 resourceId={id}
-                amount={100}
+                amount={resource?.balance || 0}
                 disabled={(resource?.balance || 0) === 0}
                 selected={selectedResourceIdsGive.includes(id)}
                 onClick={() => {
                   if (selectedResourceIdsGive.includes(id)) {
-                    setSelectedResourceIdsGive(
-                      selectedResourceIdsGive.filter((_id) => _id !== id),
-                    );
+                    setSelectedResourceIdsGive(selectedResourceIdsGive.filter((_id) => _id !== id));
                   } else {
-                    setSelectedResourceIdsGive([
-                      ...selectedResourceIdsGive,
-                      id,
-                    ]);
+                    setSelectedResourceIdsGive([...selectedResourceIdsGive, id]);
                   }
                 }}
               />
@@ -288,24 +252,25 @@ const SelectResourcesPanel = ({
       <div className="flex flex-col items-center col-span-4">
         <Headline className="mb-2">You Get</Headline>
         <div className="grid grid-cols-4 gap-2">
-          {resources.map(({ id, trait: _name }) => (
-            <SelectableResource
-              key={id}
-              resourceId={id}
-              amount={100}
-              selected={selectedResourceIdsGet.includes(id)}
-              disabled={selectedResourceIdsGive.includes(id)}
-              onClick={() => {
-                if (selectedResourceIdsGet.includes(id)) {
-                  setSelectedResourceIdsGet(
-                    selectedResourceIdsGet.filter((_id) => _id !== id),
-                  );
-                } else {
-                  setSelectedResourceIdsGet([...selectedResourceIdsGet, id]);
-                }
-              }}
-            />
-          ))}
+          {resources.map(({ id, trait: _name }) => {
+            let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
+            return (
+              <SelectableResource
+                key={id}
+                resourceId={id}
+                amount={resource?.balance || 0}
+                selected={selectedResourceIdsGet.includes(id)}
+                disabled={selectedResourceIdsGive.includes(id)}
+                onClick={() => {
+                  if (selectedResourceIdsGet.includes(id)) {
+                    setSelectedResourceIdsGet(selectedResourceIdsGet.filter((_id) => _id !== id));
+                  } else {
+                    setSelectedResourceIdsGet([...selectedResourceIdsGet, id]);
+                  }
+                }}
+              />
+            );
+          })}
         </div>
       </div>
     </div>
@@ -327,12 +292,8 @@ const SelectResourcesAmountPanel = ({
   selectedResourcesGiveAmounts: { [key: number]: number };
   selectedResourcesGetAmounts: { [key: number]: number };
   resourceWeight: number;
-  setSelectedResourcesGiveAmounts: (selectedResourcesGiveAmounts: {
-    [key: number]: number;
-  }) => void;
-  setSelectedResourcesGetAmounts: (selectedResourcesGetAmounts: {
-    [key: number]: number;
-  }) => void;
+  setSelectedResourcesGiveAmounts: (selectedResourcesGiveAmounts: { [key: number]: number }) => void;
+  setSelectedResourcesGetAmounts: (selectedResourcesGetAmounts: { [key: number]: number }) => void;
   setResourceWeight: (resourceWeight: number) => void;
 }) => {
   const {
@@ -346,9 +307,7 @@ const SelectResourcesAmountPanel = ({
   useEffect(() => {
     // set resource weight in kg
     let weight = 0;
-    for (const [_resourceId, amount] of Object.entries(
-      selectedResourcesGiveAmounts,
-    )) {
+    for (const [_resourceId, amount] of Object.entries(selectedResourcesGiveAmounts)) {
       weight += amount * 1;
     }
     setResourceWeight(weight);
@@ -360,10 +319,7 @@ const SelectResourcesAmountPanel = ({
         <div className="flex flex-col items-center col-span-4 space-y-2">
           <Headline className="mb-2">You Give</Headline>
           {selectedResourceIdsGive.map((id) => {
-            let resource = getComponentValue(
-              Resource,
-              getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]),
-            );
+            let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
             return (
               <div key={id} className="flex items-center w-full">
                 <NumberInput
@@ -377,16 +333,11 @@ const SelectResourcesAmountPanel = ({
                   }}
                 />
                 <div className="ml-2">
-                  <ResourceCost
-                    resourceId={id}
-                    amount={selectedResourcesGiveAmounts[id]}
-                  />
+                  <ResourceCost resourceId={id} amount={selectedResourcesGiveAmounts[id]} />
                 </div>
                 <div
                   className={`ml-2 text-xs ${
-                    selectedResourcesGiveAmounts[id] <= (resource?.balance || 0)
-                      ? "text-orange"
-                      : "text-red"
+                    selectedResourcesGiveAmounts[id] <= (resource?.balance || 0) ? "text-orange" : "text-red"
                   } cursor-pointer`}
                   onClick={() => {
                     setSelectedResourcesGiveAmounts({
@@ -420,18 +371,14 @@ const SelectResourcesAmountPanel = ({
                 }}
               />
               <div className="ml-2">
-                <ResourceCost
-                  resourceId={id}
-                  amount={selectedResourcesGetAmounts[id]}
-                />
+                <ResourceCost resourceId={id} amount={selectedResourcesGetAmounts[id]} />
               </div>
             </div>
           ))}
         </div>
       </div>
       <div className="flex text-xs text-center text-white">
-        Items Weight{" "}
-        <div className="ml-1 text-gold">{`${resourceWeight}kg`}</div>
+        Items Weight <div className="ml-1 text-gold">{`${resourceWeight}kg`}</div>
       </div>
     </>
   );
@@ -469,10 +416,7 @@ export const SelectCaravanPanel = ({
   const { nextBlockTimestamp } = useBlockchainStore();
 
   const { realm } = useGetRealm(realmEntityId);
-  const { realmCaravans } = useGetRealmCaravans(
-    realm?.position.x || 0,
-    realm?.position.y || 0,
-  );
+  const { realmCaravans } = useGetRealmCaravans(realm?.position.x || 0, realm?.position.y || 0);
 
   let myAvailableCaravans = useMemo(
     () =>
@@ -480,9 +424,11 @@ export const SelectCaravanPanel = ({
         ? (realmCaravans
             .map((caravan) => {
               const isIdle =
+                caravan &&
                 nextBlockTimestamp &&
-                caravan.arrivalTime <= nextBlockTimestamp &&
-                !caravan.blocked;
+                !caravan.blocked &&
+                (!caravan.arrivalTime ||
+                  caravan.arrivalTime <= nextBlockTimestamp);
               // capacity in gr (1kg = 1000gr)
               const canCarry = caravan.capacity / 1000 >= resourceWeight;
               if (isIdle && canCarry) {
@@ -532,8 +478,7 @@ export const SelectCaravanPanel = ({
         </div>
       </div>
       <div className="flex mb-3 text-xs text-center text-white">
-        Items Weight{" "}
-        <div className="ml-1 text-gold">{`${resourceWeight}kg`}</div>
+        Items Weight <div className="ml-1 text-gold">{`${resourceWeight}kg`}</div>
       </div>
       {isNewCaravan && (
         <>
@@ -541,16 +486,10 @@ export const SelectCaravanPanel = ({
             <Headline className="mb-2">Summon a New Caravan</Headline>
             <div className="grid grid-cols-9 gap-2 p-2">
               <div className="flex items-center col-span-3">
-                <NumberInput
-                  value={donkeysCount}
-                  onChange={setDonkeysCount}
-                  max={1000}
-                />
+                <NumberInput value={donkeysCount} onChange={setDonkeysCount} max={1000} />
                 <Donkey className="ml-2" />
                 <div className="flex flex-col justify-center ml-2">
-                  <div className="text-xs font-bold text-white">
-                    {donkeysCount}
-                  </div>
+                  <div className="text-xs font-bold text-white">{donkeysCount}</div>
                   <div className="text-xs text-center text-white">Donkeys</div>
                 </div>
               </div>
@@ -558,16 +497,12 @@ export const SelectCaravanPanel = ({
           </div>
           <div className="flex mb-1 text-xs text-center text-white">
             Caravan Capacity{" "}
-            <div
-              className={`ml-1 text-${hasEnoughDonkeys ? "success" : "danger"}`}
-            >{`${donkeysCount * 100}kg`}</div>
+            <div className={`ml-1 text-${hasEnoughDonkeys ? "success" : "danger"}`}>{`${donkeysCount * 100}kg`}</div>
           </div>
           {!hasEnoughDonkeys && (
             <div className="flex items-center mb-1 text-xs text-center text-white">
               <Danger />
-              <div className="ml-1 uppercase text-danger">
-                Increase the amount of units
-              </div>
+              <div className="ml-1 uppercase text-danger">Increase the amount of units</div>
             </div>
           )}
         </>
@@ -600,8 +535,8 @@ export const SelectCaravanPanel = ({
               caravan={caravan}
               idleOnly={true}
               onClick={() => setSelectedCaravan(caravan.caravanId)}
-              className={`w-full mb-2 border rounded-md ${
-                selectedCaravan === caravan.caravanId ? "border-yellow" : ""
+              className={`w-full mt-2 border rounded-md ${
+                selectedCaravan === caravan.caravanId ? "border-order-brilliance" : ""
               }`}
             />
           ))}

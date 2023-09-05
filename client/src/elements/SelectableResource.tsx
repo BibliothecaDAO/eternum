@@ -7,18 +7,12 @@ import { soundSelector, useUiSounds } from "../hooks/useUISound";
 
 type SelectableResourceProps = {
   resourceId: number;
-  amount: number;
+  amount?: number;
   selected?: boolean;
   disabled?: boolean;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const SelectableResource = ({
-  resourceId,
-  amount,
-  selected,
-  disabled,
-  onClick,
-}: SelectableResourceProps) => {
+export const SelectableResource = ({ resourceId, amount, selected, disabled, onClick }: SelectableResourceProps) => {
   const [showTooltip, setShowTooltip] = React.useState(false);
   const resource = findResourceById(resourceId);
 
@@ -35,21 +29,13 @@ export const SelectableResource = ({
   const { play: playAddDiamonds } = useUiSounds(soundSelector.addDiamonds);
   const { play: playAddSapphire } = useUiSounds(soundSelector.addSapphire);
   const { play: playAddRuby } = useUiSounds(soundSelector.addRuby);
-  const { play: playAddDeepCrystal } = useUiSounds(
-    soundSelector.addDeepCrystal,
-  );
+  const { play: playAddDeepCrystal } = useUiSounds(soundSelector.addDeepCrystal);
   const { play: playAddIgnium } = useUiSounds(soundSelector.addIgnium);
-  const { play: playAddEtherealSilica } = useUiSounds(
-    soundSelector.addEtherealSilica,
-  );
+  const { play: playAddEtherealSilica } = useUiSounds(soundSelector.addEtherealSilica);
 
   const { play: playAddTrueIce } = useUiSounds(soundSelector.addTrueIce);
-  const { play: playAddTwilightQuartz } = useUiSounds(
-    soundSelector.addTwilightQuartz,
-  );
-  const { play: playAddAlchemicalSilver } = useUiSounds(
-    soundSelector.addAlchemicalSilver,
-  );
+  const { play: playAddTwilightQuartz } = useUiSounds(soundSelector.addTwilightQuartz);
+  const { play: playAddAlchemicalSilver } = useUiSounds(soundSelector.addAlchemicalSilver);
   const { play: playAddAdamantine } = useUiSounds(soundSelector.addAdamantine);
   const { play: playAddMithral } = useUiSounds(soundSelector.addMithral);
   const { play: playAddDragonhide } = useUiSounds(soundSelector.addDragonhide);
@@ -147,12 +133,12 @@ export const SelectableResource = ({
         }
       }}
       className={clsx(
-        "p-3 relative cursor-pointer border border-transparent transition-colors duration-200 rounded-xl bg-black/60 hover:border-lightest",
+        "p-3 relative cursor-pointer group border border-transparent transition-colors duration-200 rounded-xl bg-black/60 hover:border-lightest",
         selected && "!border-gold",
         disabled && "opacity-30 cursor-not-allowed pointer-events-none",
       )}
     >
-      <ResourceIcon resource={resource?.trait || ""} size="xs" />
+      <ResourceIcon withTooltip={false} resource={resource?.trait || ""} size="xs" />
       {showTooltip && (
         <Tooltip>
           <div className="relative z-50 flex flex-col items-center justify-center mb-1 text-xs text-center text-lightest">

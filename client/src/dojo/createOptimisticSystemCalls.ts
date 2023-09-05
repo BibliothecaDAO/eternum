@@ -4,7 +4,7 @@ import { getEntityIdFromKeys } from "../utils/utils";
 import { Type, getComponentValue } from "@latticexyz/recs";
 import {
   BuildLaborProps,
-  ChangeOrderStatusProps,
+  CancelFungibleOrderProps,
   ClaimFungibleOrderProps,
   HarvestLaborProps,
   MakeFungibleOrderProps,
@@ -21,20 +21,9 @@ export function createOptimisticSystemCalls({
   FungibleEntities,
   OrderResource,
 }: ClientComponents) {
-  function optimisticMakeFungibleOrder(
-    systemCall: (args: MakeFungibleOrderProps) => Promise<number>,
-  ) {
-    return async function (
-      this: any,
-      args: MakeFungibleOrderProps,
-    ): Promise<number> {
-      const {
-        maker_id,
-        maker_entity_types,
-        maker_quantities,
-        taker_entity_types,
-        taker_quantities,
-      } = args;
+  function optimisticMakeFungibleOrder(systemCall: (args: MakeFungibleOrderProps) => Promise<number>) {
+    return async function (this: any, args: MakeFungibleOrderProps): Promise<number> {
+      const { maker_id, maker_entity_types, maker_quantities, taker_entity_types, taker_quantities } = args;
 
       const expires_at = Math.floor(Date.now() / 1000 + 2628000);
 
@@ -74,11 +63,7 @@ export function createOptimisticSystemCalls({
       });
       for (let i = 0; i < maker_quantities.length; i++) {
         OrderResource.addOverride(overrideId, {
-          entity: getEntityIdFromKeys([
-            BigInt(HIGH_ENTITY_ID + 1),
-            BigInt(HIGH_ENTITY_ID + 3),
-            BigInt(i),
-          ]),
+          entity: getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 1), BigInt(HIGH_ENTITY_ID + 3), BigInt(i)]),
           value: {
             resource_type: maker_entity_types[i] as Type.Number,
             balance: maker_quantities[i] as Type.Number,
@@ -87,11 +72,7 @@ export function createOptimisticSystemCalls({
       }
       for (let i = 0; i < taker_quantities.length; i++) {
         OrderResource.addOverride(overrideId, {
-          entity: getEntityIdFromKeys([
-            BigInt(HIGH_ENTITY_ID + 2),
-            BigInt(HIGH_ENTITY_ID + 3),
-            BigInt(i),
-          ]),
+          entity: getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 2), BigInt(HIGH_ENTITY_ID + 3), BigInt(i)]),
           value: {
             resource_type: taker_entity_types[i] as Type.Number,
             balance: taker_quantities[i] as Type.Number,
@@ -143,10 +124,7 @@ export function createOptimisticSystemCalls({
 
       // add resources to balance
       for (let resource of resourcesGet) {
-        let resource_id = getEntityIdFromKeys([
-          BigInt(realmEntityId),
-          BigInt(resource.resourceId),
-        ]);
+        let resource_id = getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resource.resourceId)]);
         let currentResource = getComponentValue(Resource, resource_id) || {
           balance: 0,
         };
@@ -168,11 +146,7 @@ export function createOptimisticSystemCalls({
     };
   }
 
-  function optimisticAcceptOffer(
-    tradeId: number,
-    takerId: number,
-    systemCall: () => Promise<void>,
-  ) {
+  function optimisticAcceptOffer(tradeId: number, takerId: number, systemCall: () => Promise<void>) {
     return async function (this: any) {
       const overrideId = uuid();
       let trade_id = getEntityIdFromKeys([BigInt(tradeId)]);
@@ -200,10 +174,8 @@ export function createOptimisticSystemCalls({
     };
   }
 
-  function optimisticCancelOffer(
-    systemCall: (args: ChangeOrderStatusProps) => Promise<void>,
-  ) {
-    return async function (this: any, args: ChangeOrderStatusProps) {
+  function optimisticCancelOffer(systemCall: (args: CancelFungibleOrderProps) => Promise<void>) {
+    return async function (this: any, args: CancelFungibleOrderProps) {
       const { trade_id: tradeId } = args;
 
       const overrideId = uuid();
@@ -223,23 +195,12 @@ export function createOptimisticSystemCalls({
     };
   }
 
-  function optimisticBuildLabor(
-    ts: number,
-    systemCall: (args: BuildLaborProps) => Promise<void>,
-  ) {
+  function optimisticBuildLabor(ts: number, systemCall: (args: BuildLaborProps) => Promise<void>) {
     return async function (this: any, args: BuildLaborProps) {
-      const {
-        realm_id: realmEntityId,
-        resource_type: resourceId,
-        labor_units: laborUnits,
-        multiplier,
-      } = args;
+      const { realm_id: realmEntityId, resource_type: resourceId, labor_units: laborUnits, multiplier } = args;
 
       const overrideId = uuid();
-      const resource_id = getEntityIdFromKeys([
-        BigInt(realmEntityId),
-        BigInt(resourceId),
-      ]);
+      const resource_id = getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]);
 
       // TODO: put in config file
       let laborConfig = {
@@ -253,18 +214,12 @@ export function createOptimisticSystemCalls({
         { resourceId: 3, balance: 10 },
       ];
       for (let i = 0; i < costResources.length; i++) {
-        let costId = getEntityIdFromKeys([
-          BigInt(realmEntityId),
-          BigInt(costResources[i].resourceId),
-        ]);
+        let costId = getEntityIdFromKeys([BigInt(realmEntityId), BigInt(costResources[i].resourceId)]);
         let currentResource = getComponentValue(Resource, costId) || {
           balance: 0,
         };
         let balance =
-          currentResource.balance -
-          (laborUnits as number) *
-            (multiplier as number) *
-            costResources[i].balance;
+          currentResource.balance - (laborUnits as number) * (multiplier as number) * costResources[i].balance;
         Resource.addOverride(overrideId, {
           entity: costId,
           value: {
@@ -280,8 +235,7 @@ export function createOptimisticSystemCalls({
         multiplier: 1,
       };
       // TODO: use block timestamp
-      const balance =
-        labor.balance + (laborUnits as number) * laborConfig.base_labor_units;
+      const balance = labor.balance + (laborUnits as number) * laborConfig.base_labor_units;
       // change status from open to accepted
       Labor.addOverride(overrideId, {
         entity: resource_id,
@@ -303,18 +257,12 @@ export function createOptimisticSystemCalls({
     };
   }
 
-  function optimisticHarvestLabor(
-    ts: number,
-    systemCall: (args: HarvestLaborProps) => Promise<void>,
-  ) {
+  function optimisticHarvestLabor(ts: number, systemCall: (args: HarvestLaborProps) => Promise<void>) {
     return async function (this: any, args: HarvestLaborProps) {
       const { realm_id, resource_type } = args;
 
       const overrideId = uuid();
-      const resource_id = getEntityIdFromKeys([
-        BigInt(realm_id),
-        BigInt(resource_type),
-      ]);
+      const resource_id = getEntityIdFromKeys([BigInt(realm_id), BigInt(resource_type)]);
 
       // TODO: put in config file
       let laborConfig = {
@@ -329,19 +277,12 @@ export function createOptimisticSystemCalls({
         last_harvest: ts,
         multiplier: 1,
       };
-      let laborGenerated =
-        labor.balance <= ts
-          ? labor.balance - labor.last_harvest
-          : ts - labor.last_harvest;
+      let laborGenerated = labor.balance <= ts ? labor.balance - labor.last_harvest : ts - labor.last_harvest;
       let laborUnharvested = labor.balance <= ts ? 0 : labor.balance - ts;
-      let laborUnitsGenerated = Math.floor(
-        laborGenerated / laborConfig.base_labor_units,
-      );
-      let remainder =
-        laborGenerated - laborUnitsGenerated * laborConfig.base_labor_units;
+      let laborUnitsGenerated = Math.floor(laborGenerated / laborConfig.base_labor_units);
+      let remainder = laborGenerated - laborUnitsGenerated * laborConfig.base_labor_units;
       const balance = ts + remainder + laborUnharvested;
-      const isFood =
-        resource_type === 255 || resource_type === 254 ? true : false;
+      const isFood = resource_type === 255 || resource_type === 254 ? true : false;
 
       Labor.addOverride(overrideId, {
         entity: resource_id,
@@ -356,9 +297,7 @@ export function createOptimisticSystemCalls({
         balance: 0,
       };
       let resourceBalance = isFood
-        ? laborUnitsGenerated *
-          laborConfig.base_food_per_cycle *
-          labor.multiplier
+        ? laborUnitsGenerated * laborConfig.base_food_per_cycle * labor.multiplier
         : laborUnitsGenerated * laborConfig.base_resources_per_cycle;
       Resource.addOverride(overrideId, {
         entity: resource_id,
