@@ -10,7 +10,12 @@ type SignUpComponentProps = {};
 
 export const SignUpComponent = ({ }: SignUpComponentProps) => {
 
-  const { account: { create, isDeploying, list, select, accountDisplay } } = useDojo();
+  const { account: { create, isDeploying, list, select } } = useDojo();
+
+
+  const onReset = () => {
+    localStorage.removeItem("burners");
+  }
 
   const [showSignupPopup, setShowSignupPopup] = useState(true);
   const setShowBlurOverlay = useUIStore((state) => state.setShowBlurOverlay);
@@ -39,7 +44,10 @@ export const SignUpComponent = ({ }: SignUpComponentProps) => {
             className="w-full my-3"
             alt="Eternum Logo"
           />
-          <Button variant={'primary'} onClick={create}>{isDeploying ? "deploying burner" : "create burner"}</Button>
+          <div className="flex mx-2">
+            <Button variant={'primary'} onClick={create}>{isDeploying ? "deploying burner" : "create burner"}</Button>
+            <Button variant={'danger'} onClick={onReset}>{"reset burners"}</Button>
+          </div>
           <div className="border border-gold my-3 w-full rounded-lg bg-black  flex p-2 text-white">
             <div className="px-2">
               signer:{" "}
