@@ -8,12 +8,11 @@ interface BlockchainState {
 
 const useBlockchainStore = create<BlockchainState>((set) => ({
   nextBlockTimestamp: undefined,
-  setNextBlockTimestamp: (nextBlockTimestamp: number) =>
-    set({ nextBlockTimestamp }),
+  setNextBlockTimestamp: (nextBlockTimestamp: number) => set({ nextBlockTimestamp }),
 }));
 
 export const useFetchBlockchainData = () => {
-  const { setNextBlockTimestamp } = useBlockchainStore();
+  const setNextBlockTimestamp = useBlockchainStore((state) => state.setNextBlockTimestamp);
 
   useEffect(() => {
     const fetchBlockchainTimestamp = async () => {
