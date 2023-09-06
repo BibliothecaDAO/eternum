@@ -13,6 +13,7 @@ const useBlockchainStore = create<BlockchainState>((set) => ({
 
 export const useFetchBlockchainData = () => {
   const setNextBlockTimestamp = useBlockchainStore((state) => state.setNextBlockTimestamp);
+  const currentTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp); // Get the current nextBlockTimestamp from the store
 
   useEffect(() => {
     const fetchBlockchainTimestamp = async () => {
@@ -20,7 +21,8 @@ export const useFetchBlockchainData = () => {
       const timestamp = await fetchBlockTimestamp(); // Example: getBlockchainTimestamp is a placeholder for your blockchain timestamp retrieval logic
 
       // Update the state with the fetched timestamp
-      if (timestamp) {
+      if (timestamp && timestamp !== currentTimestamp) {
+        // Check if fetched timestamp is different from current state
         setNextBlockTimestamp(timestamp);
       }
     };
