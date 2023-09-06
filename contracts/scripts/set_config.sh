@@ -131,6 +131,9 @@ for cmd in "${commands[@]}"; do
     if [ "$prod" = true ]; then
         echo "Sleeping for 3 second..."
         sleep 3
+    else 
+        echo "Sleeping for 0.5 second..."
+        sleep 0.5
     fi
 done
 
