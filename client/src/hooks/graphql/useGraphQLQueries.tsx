@@ -3,6 +3,7 @@ import { GraphQLClient } from "graphql-request";
 import { GetRealmIdsQuery, getSdk } from "../../generated/graphql";
 import { useDojo } from "../../DojoContext";
 import { numberToHex, setComponentFromEntity } from "../../utils/utils";
+import { Components } from "@latticexyz/recs";
 
 export enum FetchStatus {
   Idle = "idle",
@@ -14,14 +15,85 @@ export enum FetchStatus {
 const client = new GraphQLClient(import.meta.env.VITE_TORII_URL!);
 const sdk = getSdk(client);
 
+type Entity = {
+  __typename?: "Entity";
+  keys?: (string | null)[] | null | undefined;
+  components?: any | null[];
+};
+
+type getEntitiesQuery = {
+  entities: {
+    edges: {
+      cursor: string;
+      node: {
+        entity: Entity;
+      };
+    }[];
+  };
+};
+
+export interface MarketInterface {
+  tradeId: number;
+  makerId: number;
+  makerOrderId: number;
+  takerOrderId: number;
+  expiresAt: number;
+}
+
+export interface PositionInterface {
+  x: number;
+  y: number;
+}
+
+export interface MyOfferInterface {
+  tradeId: string;
+  makerOrderId: string;
+  takerOrderId: string;
+  expiresAt: number;
+  status: string;
+}
+
+export interface CounterPartyOrderIdInterface {
+  counterpartyOrderId: number;
+}
+
+export interface RealmInterface {
+  realmId: number;
+  cities: number;
+  rivers: number;
+  wonder: number;
+  harbors: number;
+  regions: number;
+  resource_types_count: number;
+  resource_types_packed: number;
+  order: number;
+  position: PositionInterface;
+  owner: number;
+}
+
 export interface RealmLaborInterface {
   [resourceId: number]: LaborInterface;
+}
+
+export interface IncomingOrderInfoInterface {
+  arrivalTime: number;
+  origin: PositionInterface;
 }
 
 export interface LaborInterface {
   lastHarvest: number;
   balance: number;
   multiplier: number;
+}
+export interface IncomingOrderInterface {
+  orderId: number;
+  counterPartyOrderId: number;
+  claimed: boolean;
+  tradeId: number;
+}
+
+export interface IncomingOrdersInterface {
+  incomingOrders: IncomingOrderInterface[];
 }
 
 export const useSyncRealmLabor = (realmEntityId: number) => {
@@ -54,25 +126,13 @@ export const useSyncRealmResources = (realmEntityId: number) => {
           realmEntityId: numberToHex(realmEntityId),
         });
         data?.entities?.edges?.forEach((edge) => {
-          edge?.node &&
-            setComponentFromEntity(edge.node, "Resource", components);
+          edge?.node && setComponentFromEntity(edge.node, "Resource", components);
         });
       } catch (error) {}
     };
     fetchData();
   }, [realmEntityId]);
 };
-
-export interface IncomingOrderInterface {
-  orderId: number;
-  counterPartyOrderId: number;
-  claimed: boolean;
-  tradeId: number;
-}
-
-export interface IncomingOrdersInterface {
-  incomingOrders: IncomingOrderInterface[];
-}
 
 // TODO: when going from Caravan Panel to IncomingOrders panel, there is no loading, data is shown directly
 // but when going from IncomingOrders to Market, and back to IncomingOrders, it gets reloaded (2 sec time delay), need to investigate, might be because the same trades are queried for
@@ -88,23 +148,16 @@ export const useSyncIncomingOrders = (realmEntityId: number) => {
           realmEntityId: numberToHex(realmEntityId),
         });
         data?.makerTradeComponents?.edges?.forEach((edge) => {
-          edge?.node?.entity &&
-            setComponentFromEntity(edge.node.entity, "Trade", components);
+          edge?.node?.entity && setComponentFromEntity(edge.node.entity, "Trade", components);
         });
         data?.takerTradeComponents?.edges?.forEach((edge) => {
-          edge?.node?.entity &&
-            setComponentFromEntity(edge.node.entity, "Trade", components);
+          edge?.node?.entity && setComponentFromEntity(edge.node.entity, "Trade", components);
         });
       } catch (error) {}
     };
     fetchData();
   }, [realmEntityId]);
 };
-
-export interface IncomingOrderInfoInterface {
-  arrivalTime: number;
-  origin: PositionInterface;
-}
 
 export const useSyncIncomingOrderInfo = ({
   orderId,
@@ -124,8 +177,7 @@ export const useSyncIncomingOrderInfo = ({
           counterPartyOrderId: numberToHex(counterPartyOrderId),
         });
         data?.origin?.edges?.forEach((edge) => {
-          edge?.node &&
-            setComponentFromEntity(edge.node, "Position", components);
+          edge?.node && setComponentFromEntity(edge.node, "Position", components);
         });
         data?.resources?.edges?.forEach((edge) => {
           if (edge?.node) {
@@ -140,20 +192,6 @@ export const useSyncIncomingOrderInfo = ({
     fetchData();
   }, [orderId]);
 };
-
-export interface RealmInterface {
-  realmId: number;
-  cities: number;
-  rivers: number;
-  wonder: number;
-  harbors: number;
-  regions: number;
-  resource_types_count: number;
-  resource_types_packed: number;
-  order: number;
-  position: PositionInterface;
-  owner: number;
-}
 
 export const useSyncRealm = ({ entityId }: { entityId: number }) => {
   const {
@@ -201,10 +239,6 @@ export const useSyncRealms = () => {
   }, []);
 };
 
-export interface CounterPartyOrderIdInterface {
-  counterpartyOrderId: number;
-}
-
 export const useGetCounterPartyOrderId = (
   orderId: number,
 ): {
@@ -227,22 +261,12 @@ export const useGetCounterPartyOrderId = (
         const makerTradeComponets = data?.makerTradeComponents;
         const takerTradeComponents = data?.takerTradeComponents;
 
-        if (
-          makerTradeComponets?.edges &&
-          makerTradeComponets.edges.length > 0
-        ) {
-          let trade: any = makerTradeComponets.edges.find(
-            (edge) => edge?.node?.__typename === "Trade",
-          );
+        if (makerTradeComponets?.edges && makerTradeComponets.edges.length > 0) {
+          let trade: any = makerTradeComponets.edges.find((edge) => edge?.node?.__typename === "Trade");
           // let trade = node?.trade as Trade;
           setCounterPartyOrderId(parseInt(trade?.node?.taker_order_id));
-        } else if (
-          takerTradeComponents?.edges &&
-          takerTradeComponents.edges.length > 0
-        ) {
-          let trade: any = takerTradeComponents.edges.find(
-            (edge) => edge?.node?.__typename === "Trade",
-          );
+        } else if (takerTradeComponents?.edges && takerTradeComponents.edges.length > 0) {
+          let trade: any = takerTradeComponents.edges.find((edge) => edge?.node?.__typename === "Trade");
           setCounterPartyOrderId(parseInt(trade?.node.maker_order_id));
         }
         setStatus(FetchStatus.Success);
@@ -281,11 +305,7 @@ export interface CaravanInfoInterface {
   destination: PositionInterface | undefined;
 }
 
-export const useSyncCaravanInfo = (
-  caravanId: number,
-  orderId: number,
-  counterpartyOrderId: number,
-) => {
+export const useSyncCaravanInfo = (caravanId: number, orderId: number, counterpartyOrderId: number) => {
   const {
     setup: { components },
   } = useDojo();
@@ -305,31 +325,21 @@ export const useSyncCaravanInfo = (
           }
         });
         data?.destination?.edges?.forEach((edge) => {
-          edge?.node &&
-            setComponentFromEntity(edge.node, "Position", components);
+          edge?.node && setComponentFromEntity(edge.node, "Position", components);
         });
         data?.resourcesGet?.edges?.forEach((edge) => {
-          edge?.node &&
-            setComponentFromEntity(edge.node, "OrderResource", components);
-          edge?.node &&
-            setComponentFromEntity(edge.node, "FungibleEntities", components);
+          edge?.node && setComponentFromEntity(edge.node, "OrderResource", components);
+          edge?.node && setComponentFromEntity(edge.node, "FungibleEntities", components);
         });
         data?.resourcesGive?.edges?.forEach((edge) => {
-          edge?.node &&
-            setComponentFromEntity(edge.node, "OrderResource", components);
-          edge?.node &&
-            setComponentFromEntity(edge.node, "FungibleEntities", components);
+          edge?.node && setComponentFromEntity(edge.node, "OrderResource", components);
+          edge?.node && setComponentFromEntity(edge.node, "FungibleEntities", components);
         });
       } catch (error) {}
     };
     fetchData();
   }, [counterpartyOrderId]);
 };
-
-export interface PositionInterface {
-  x: number;
-  y: number;
-}
 
 export const useSyncRealmCaravans = (x: number, y: number) => {
   const {
@@ -358,14 +368,6 @@ export const useSyncRealmCaravans = (x: number, y: number) => {
   }, [x, y]);
 };
 
-export interface MarketInterface {
-  tradeId: number;
-  makerId: number;
-  makerOrderId: number;
-  takerOrderId: number;
-  expiresAt: number;
-}
-
 // TODO: add filter on trade status is open
 export const useSyncMarket = ({ realmId }: { realmId: number }) => {
   const {
@@ -389,14 +391,6 @@ export const useSyncMarket = ({ realmId }: { realmId: number }) => {
     fetchData();
   }, [realmId]);
 };
-
-export interface MyOfferInterface {
-  tradeId: string;
-  makerOrderId: string;
-  takerOrderId: string;
-  expiresAt: number;
-  status: string;
-}
 
 export const useSyncMyOffers = ({ realmId }: { realmId: number }) => {
   const {
@@ -424,6 +418,65 @@ export const useSyncMyOffers = ({ realmId }: { realmId: number }) => {
   }, [realmId]);
 };
 
+export const useSyncWorld = async () => {
+  // Added async since await is used inside
+  const {
+    setup: { components },
+  } = useDojo();
+
+  // TODO: add loading bar
+  useMemo(() => {
+    const syncData = async () => {
+      try {
+        for (const componentName of Object.keys(components)) {
+          let shouldContinue = true; // Renamed from continue to avoid reserved keyword
+          let component = (components as Components)[componentName];
+          let fields = Object.keys(component.schema).join(",");
+          let cursor: string | undefined;
+          while (shouldContinue) {
+            // Fixed the template literal syntax here
+            const queryBuilder = `
+              query SyncWorld {
+                entities: ${componentName.toLowerCase()}Components(${cursor ? `after: "${cursor}"` : ""} first: 100) {
+                  edges {
+                    cursor
+                    node {
+                      entity {
+                        keys
+                        id
+                        components {
+                          ... on ${componentName} {
+                            __typename
+                            ${fields}
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }`;
+
+            const { entities }: getEntitiesQuery = await client.request(queryBuilder); // Assumed queryBuilder should be passed here
+
+            if (entities.edges.length === 100) {
+              cursor = entities.edges[entities.edges.length - 1].cursor;
+            } else {
+              shouldContinue = false;
+            }
+
+            entities.edges.forEach((edge) => {
+              setComponentFromEntity(edge.node.entity, componentName, components);
+            });
+          }
+        }
+      } catch (error) {
+        console.log({ syncError: error });
+      }
+    };
+    syncData();
+  }, []);
+};
+
 export const useSyncTradeResources = ({
   makerOrderId,
   takerOrderId,
@@ -443,16 +496,12 @@ export const useSyncTradeResources = ({
           takerOrderId,
         });
         data.resourcesGet?.edges?.map((edge) => {
-          edge?.node &&
-            setComponentFromEntity(edge.node, "FungibleEntities", components);
-          edge?.node &&
-            setComponentFromEntity(edge.node, "OrderResource", components);
+          edge?.node && setComponentFromEntity(edge.node, "FungibleEntities", components);
+          edge?.node && setComponentFromEntity(edge.node, "OrderResource", components);
         });
         data.resourcesGive?.edges?.map((edge) => {
-          edge?.node &&
-            setComponentFromEntity(edge.node, "FungibleEntities", components);
-          edge?.node &&
-            setComponentFromEntity(edge.node, "OrderResource", components);
+          edge?.node && setComponentFromEntity(edge.node, "FungibleEntities", components);
+          edge?.node && setComponentFromEntity(edge.node, "OrderResource", components);
         });
       } catch (error) {}
     };
