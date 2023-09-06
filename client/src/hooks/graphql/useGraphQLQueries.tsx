@@ -54,8 +54,7 @@ export const useSyncRealmResources = (realmEntityId: number) => {
           realmEntityId: numberToHex(realmEntityId),
         });
         data?.entities?.edges?.forEach((edge) => {
-          edge?.node &&
-            setComponentFromEntity(edge.node, "Resource", components);
+          edge?.node && setComponentFromEntity(edge.node, "Resource", components);
         });
       } catch (error) {}
     };
@@ -88,12 +87,10 @@ export const useSyncIncomingOrders = (realmEntityId: number) => {
           realmEntityId: numberToHex(realmEntityId),
         });
         data?.makerTradeComponents?.edges?.forEach((edge) => {
-          edge?.node?.entity &&
-            setComponentFromEntity(edge.node.entity, "Trade", components);
+          edge?.node?.entity && setComponentFromEntity(edge.node.entity, "Trade", components);
         });
         data?.takerTradeComponents?.edges?.forEach((edge) => {
-          edge?.node?.entity &&
-            setComponentFromEntity(edge.node.entity, "Trade", components);
+          edge?.node?.entity && setComponentFromEntity(edge.node.entity, "Trade", components);
         });
       } catch (error) {}
     };
@@ -124,8 +121,7 @@ export const useSyncIncomingOrderInfo = ({
           counterPartyOrderId: numberToHex(counterPartyOrderId),
         });
         data?.origin?.edges?.forEach((edge) => {
-          edge?.node &&
-            setComponentFromEntity(edge.node, "Position", components);
+          edge?.node && setComponentFromEntity(edge.node, "Position", components);
         });
         data?.resources?.edges?.forEach((edge) => {
           if (edge?.node) {
@@ -227,22 +223,12 @@ export const useGetCounterPartyOrderId = (
         const makerTradeComponets = data?.makerTradeComponents;
         const takerTradeComponents = data?.takerTradeComponents;
 
-        if (
-          makerTradeComponets?.edges &&
-          makerTradeComponets.edges.length > 0
-        ) {
-          let trade: any = makerTradeComponets.edges.find(
-            (edge) => edge?.node?.__typename === "Trade",
-          );
+        if (makerTradeComponets?.edges && makerTradeComponets.edges.length > 0) {
+          let trade: any = makerTradeComponets.edges.find((edge) => edge?.node?.__typename === "Trade");
           // let trade = node?.trade as Trade;
           setCounterPartyOrderId(parseInt(trade?.node?.taker_order_id));
-        } else if (
-          takerTradeComponents?.edges &&
-          takerTradeComponents.edges.length > 0
-        ) {
-          let trade: any = takerTradeComponents.edges.find(
-            (edge) => edge?.node?.__typename === "Trade",
-          );
+        } else if (takerTradeComponents?.edges && takerTradeComponents.edges.length > 0) {
+          let trade: any = takerTradeComponents.edges.find((edge) => edge?.node?.__typename === "Trade");
           setCounterPartyOrderId(parseInt(trade?.node.maker_order_id));
         }
         setStatus(FetchStatus.Success);
@@ -281,11 +267,7 @@ export interface CaravanInfoInterface {
   destination: PositionInterface | undefined;
 }
 
-export const useSyncCaravanInfo = (
-  caravanId: number,
-  orderId: number,
-  counterpartyOrderId: number,
-) => {
+export const useSyncCaravanInfo = (caravanId: number, orderId: number, counterpartyOrderId: number) => {
   const {
     setup: { components },
   } = useDojo();
@@ -305,20 +287,15 @@ export const useSyncCaravanInfo = (
           }
         });
         data?.destination?.edges?.forEach((edge) => {
-          edge?.node &&
-            setComponentFromEntity(edge.node, "Position", components);
+          edge?.node && setComponentFromEntity(edge.node, "Position", components);
         });
         data?.resourcesGet?.edges?.forEach((edge) => {
-          edge?.node &&
-            setComponentFromEntity(edge.node, "OrderResource", components);
-          edge?.node &&
-            setComponentFromEntity(edge.node, "FungibleEntities", components);
+          edge?.node && setComponentFromEntity(edge.node, "OrderResource", components);
+          edge?.node && setComponentFromEntity(edge.node, "FungibleEntities", components);
         });
         data?.resourcesGive?.edges?.forEach((edge) => {
-          edge?.node &&
-            setComponentFromEntity(edge.node, "OrderResource", components);
-          edge?.node &&
-            setComponentFromEntity(edge.node, "FungibleEntities", components);
+          edge?.node && setComponentFromEntity(edge.node, "OrderResource", components);
+          edge?.node && setComponentFromEntity(edge.node, "FungibleEntities", components);
         });
       } catch (error) {}
     };
@@ -443,16 +420,12 @@ export const useSyncTradeResources = ({
           takerOrderId,
         });
         data.resourcesGet?.edges?.map((edge) => {
-          edge?.node &&
-            setComponentFromEntity(edge.node, "FungibleEntities", components);
-          edge?.node &&
-            setComponentFromEntity(edge.node, "OrderResource", components);
+          edge?.node && setComponentFromEntity(edge.node, "FungibleEntities", components);
+          edge?.node && setComponentFromEntity(edge.node, "OrderResource", components);
         });
         data.resourcesGive?.edges?.map((edge) => {
-          edge?.node &&
-            setComponentFromEntity(edge.node, "FungibleEntities", components);
-          edge?.node &&
-            setComponentFromEntity(edge.node, "OrderResource", components);
+          edge?.node && setComponentFromEntity(edge.node, "FungibleEntities", components);
+          edge?.node && setComponentFromEntity(edge.node, "OrderResource", components);
         });
       } catch (error) {}
     };
