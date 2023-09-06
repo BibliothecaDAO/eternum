@@ -366,7 +366,7 @@ mod tests {
                 resource_type: ResourceTypes::SILVER,
                 balance: 200
             }
-        ))
+        ));
 
 
 
