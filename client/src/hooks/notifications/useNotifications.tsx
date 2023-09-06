@@ -71,11 +71,8 @@ export const useNotifications = () => {
   const realmsResources = useRealmsResource(realmEntityIds);
   const realmPositions = useRealmsPosition(realmEntityIds);
 
-  console.log({ aymericRealmPositions: realmPositions });
-
   // const [notifications, setNotifications] = useState<NotificationType[]>([]);
   const [notifications, setNotifications] = useState<NotificationType[]>([]);
-  console.log({ notifications });
 
   /**
    * Trade notifications
@@ -130,8 +127,6 @@ export const useNotifications = () => {
             nextBlockTimestamp,
           )
         : [];
-
-      console.log({ aymericNotifications: notifications });
 
       // add only add if not already in there
       addUniqueNotifications(notifications, setNotifications);
@@ -307,10 +302,7 @@ const generateClaimableOrdersNotifications = (
       HasValue(Position, { x: realmPosition.x, y: realmPosition.y }),
     ]);
 
-    console.log({ aymericOrderIds: orderIds });
-
     for (const orderId of orderIds) {
-      console.log({ aymericOrderId: orderId });
       let claimed =
         runQuery([
           HasValue(Trade, { maker_order_id: orderId, claimed_by_maker: 0 }),
@@ -318,21 +310,6 @@ const generateClaimableOrdersNotifications = (
         runQuery([
           HasValue(Trade, { taker_order_id: orderId, claimed_by_taker: 0 }),
         ]).size === 0;
-
-      let trades1 = runQuery([
-        HasValue(Trade, { maker_order_id: orderId, claimed_by_maker: 0 }),
-      ]);
-
-      let trades2 = runQuery([
-        HasValue(Trade, { taker_order_id: orderId, claimed_by_taker: 0 }),
-      ]);
-      console.log({
-        aymericTrades1: trades1,
-        aymericTrades2: trades2,
-        claimed,
-      });
-
-      // console.log({ aymericClaimed: claimed });
 
       if (!claimed) {
         const arrivalTime = getComponentValue(
