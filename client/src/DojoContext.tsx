@@ -40,6 +40,11 @@ export const useDojo = () => {
     accountClassHash: import.meta.env.VITE_PUBLIC_ACCOUNT_CLASS_HASH!,
   });
 
+  const accountDisplay = useMemo(() => {
+    return displayAddress(account?.address || masterAccount.address);
+  }, [account]);
+
+
   if (!value) throw new Error("Must be used within a DojoProvider");
   return {
     setup: value,
@@ -51,7 +56,7 @@ export const useDojo = () => {
       account: account ? account : masterAccount,
       masterAccount,
       isDeploying,
-      accountDisplay: displayAddress(account?.address!),
+      accountDisplay,
     },
   };
 };

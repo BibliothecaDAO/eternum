@@ -4,6 +4,7 @@ import Button from "../elements/Button";
 import { useEffect, useState } from "react";
 import useUIStore from "../hooks/store/useUIStore";
 import { useDojo } from "../DojoContext";
+import { displayAddress } from "../utils/utils";
 
 type SignUpComponentProps = {};
 
@@ -46,7 +47,7 @@ export const SignUpComponent = ({ }: SignUpComponentProps) => {
 
             <select className={'w-full bg-black'} onChange={e => select(e.target.value)}>
               {list().map((account, index) => {
-                return <option value={account.address} key={index}>{accountDisplay}</option>
+                return <option value={account.address} key={index}>{displayAddress(account.address)}</option>
               })}
             </select>
           </div>
