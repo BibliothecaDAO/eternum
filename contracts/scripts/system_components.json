@@ -70,6 +70,7 @@
         "Age"
     ],
     "CreateRoad": [
-        "Road"
+        "Road",
+        "Resource"
     ]
 }
