@@ -7,10 +7,7 @@ import { ReactComponent as RatioIcon } from "../../../../../assets/icons/common/
 import { ResourcesOffer } from "../../../../../types";
 import { orderNameDict } from "../../../../../constants/orders";
 import * as realmsData from "../../../../../geodata/realms.json";
-import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import { MarketInterface, useSyncTradeResources } from "../../../../../hooks/graphql/useGraphQLQueries";
-import { useCanAcceptOffer, useTrade } from "../../../../../hooks/helpers/useTrade";
-import { numberToHex } from "../../../../../utils/utils";
+import { MarketInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 
@@ -20,26 +17,15 @@ type TradeOfferProps = {
 };
 
 export const MarketOffer = ({ marketOffer, onAccept }: TradeOfferProps) => {
+  const { resourcesGet, resourcesGive, canAccept, ratio } = marketOffer;
+
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     setIsLoading(false);
   }, [marketOffer]);
 
-  const { realmEntityId } = useRealmStore();
-  const { getTradeResources } = useTrade();
-
   let { realm: makerRealm } = useGetRealm(marketOffer.makerId);
-
-  useSyncTradeResources({
-    makerOrderId: numberToHex(marketOffer.makerOrderId),
-    takerOrderId: numberToHex(marketOffer.takerOrderId),
-  });
-
-  let resourcesGet = getTradeResources(marketOffer.makerOrderId);
-  let resourcesGive = getTradeResources(marketOffer.takerOrderId);
-
-  const canAccept = useCanAcceptOffer({ realmEntityId, resourcesGive });
 
   let timeLeft = useMemo(() => formatTimeLeft(marketOffer.expiresAt - Date.now() / 1000), [marketOffer.expiresAt]);
 
@@ -68,7 +54,7 @@ export const MarketOffer = ({ marketOffer, onAccept }: TradeOfferProps) => {
           </div>
           <div className="flex flex-col items-center text-white">
             <RatioIcon className="mb-1 fill-white" />
-            {resourcesGive && resourcesGet && calculateRatio(resourcesGive, resourcesGet).toFixed(2)}
+            {resourcesGive && resourcesGet && ratio.toFixed(2)}
           </div>
           <div className="flex-1 text-gold flex justify-center items-center flex-wrap">
             {resourcesGet &&
@@ -120,10 +106,7 @@ const formatTimeLeft = (seconds: number) => {
   return `${days} days ${hours}h:${minutes}m`;
 };
 
-export const calculateRatio = (
-  resourcesGive: ResourcesOffer[],
-  resourcesGet: ResourcesOffer[],
-) => {
+export const calculateRatio = (resourcesGive: ResourcesOffer[], resourcesGet: ResourcesOffer[]) => {
   let quantityGive = 0;
   for (let i = 0; i < resourcesGive.length; i++) {
     quantityGive += resourcesGive[i].amount;

@@ -4,6 +4,7 @@ import { GetRealmIdsQuery, getSdk } from "../../generated/graphql";
 import { useDojo } from "../../DojoContext";
 import { numberToHex, setComponentFromEntity } from "../../utils/utils";
 import { Components } from "@latticexyz/recs";
+import { Resource } from "../../types";
 
 export enum FetchStatus {
   Idle = "idle",
@@ -35,9 +36,15 @@ type getEntitiesQuery = {
 export interface MarketInterface {
   tradeId: number;
   makerId: number;
+  // brillance, reflection, ...
+  makerOrder: number;
   makerOrderId: number;
   takerOrderId: number;
   expiresAt: number;
+  resourcesGet: Resource[];
+  resourcesGive: Resource[];
+  canAccept?: boolean;
+  ratio: number;
 }
 
 export interface PositionInterface {
@@ -369,7 +376,7 @@ export const useSyncRealmCaravans = (x: number, y: number) => {
 };
 
 // TODO: add filter on trade status is open
-export const useSyncMarket = ({ realmId }: { realmId: number }) => {
+export const useSyncMarket = (realmEntityId: number) => {
   const {
     setup: { components },
   } = useDojo();
@@ -389,7 +396,7 @@ export const useSyncMarket = ({ realmId }: { realmId: number }) => {
       } catch (error) {}
     }
     fetchData();
-  }, [realmId]);
+  }, [realmEntityId]);
 };
 
 export const useSyncMyOffers = ({ realmId }: { realmId: number }) => {
@@ -418,11 +425,13 @@ export const useSyncMyOffers = ({ realmId }: { realmId: number }) => {
   }, [realmId]);
 };
 
-export const useSyncWorld = async () => {
+export const useSyncWorld = (): { loading: boolean } => {
   // Added async since await is used inside
   const {
     setup: { components },
   } = useDojo();
+
+  const [loading, setLoading] = useState(true);
 
   // TODO: add loading bar
   useMemo(() => {
@@ -471,10 +480,16 @@ export const useSyncWorld = async () => {
         }
       } catch (error) {
         console.log({ syncError: error });
+      } finally {
+        setLoading(false);
       }
     };
     syncData();
   }, []);
+
+  return {
+    loading,
+  };
 };
 
 export const useSyncTradeResources = ({
