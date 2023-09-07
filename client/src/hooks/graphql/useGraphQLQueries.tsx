@@ -82,21 +82,18 @@ export interface RealmLaborInterface {
   [resourceId: number]: LaborInterface;
 }
 
-export interface IncomingOrderInfoInterface {
-  arrivalTime: number;
-  origin: PositionInterface;
-}
-
 export interface LaborInterface {
   lastHarvest: number;
   balance: number;
   multiplier: number;
 }
 export interface IncomingOrderInterface {
-  orderId: number;
-  counterPartyOrderId: number;
-  claimed: boolean;
   tradeId: number;
+  orderId?: number | undefined;
+  counterPartyOrderId: number | undefined;
+  claimed: boolean | undefined;
+  arrivalTime: number | undefined;
+  origin: PositionInterface | undefined;
 }
 
 export interface IncomingOrdersInterface {
@@ -294,22 +291,16 @@ export const useGetCounterPartyOrderId = (
 
 export interface CaravanInterface {
   caravanId: number;
-  orderId: number;
-  blocked: boolean;
-  arrivalTime: number;
-  capacity: number;
+  orderId: number | undefined;
+  blocked: boolean | undefined;
+  arrivalTime: number | undefined;
+  capacity: number | undefined;
+  destination: PositionInterface | undefined;
 }
 
 export interface ResourceInterface {
   resourceId: number;
   amount: number;
-}
-
-export interface CaravanInfoInterface {
-  arrivalTime: number | undefined;
-  blocked: boolean;
-  capacity: number;
-  destination: PositionInterface | undefined;
 }
 
 export const useSyncCaravanInfo = (caravanId: number, orderId: number, counterpartyOrderId: number) => {

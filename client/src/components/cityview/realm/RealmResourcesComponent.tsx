@@ -10,7 +10,6 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import { ReactComponent as MoreIcon } from "../../../assets/icons/common/more.svg";
 import Button from "../../../elements/Button";
 import { SmallResource } from "./SmallResource";
-import { useSyncRealmResources } from "../../../hooks/graphql/useGraphQLQueries";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../DojoContext";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
@@ -25,8 +24,6 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
   let { realmEntityId } = useRealmStore();
 
   const { realm } = useGetRealm(realmEntityId);
-
-  useSyncRealmResources(realmEntityId);
 
   // unpack the resources
   useMemo(() => {
@@ -96,7 +93,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
 
   let { realmEntityId } = useRealmStore();
 
-  const { nextBlockTimestamp } = useBlockchainStore();
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const [productivity, setProductivity] = useState<number>(0);
 
   // TODO: use config file

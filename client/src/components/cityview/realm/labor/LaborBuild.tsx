@@ -4,10 +4,7 @@ import Button from "../../../../elements/Button";
 import { Headline } from "../../../../elements/Headline";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../elements/NumberInput";
-import {
-  ResourcesIds,
-  findResourceById,
-} from "../../../../constants/resources";
+import { ResourcesIds, findResourceById } from "../../../../constants/resources";
 import { ReactComponent as FishingVillages } from "../../../../assets/icons/resources/FishingVillages.svg";
 import { ReactComponent as Farms } from "../../../../assets/icons/resources/Farms.svg";
 import { ResourceIcon } from "../../../../elements/ResourceIcon";
@@ -34,11 +31,7 @@ type LaborBuildPopupProps = {
   onClose: () => void;
 };
 
-export const LaborBuildPopup = ({
-  resourceId,
-  setBuildLoadingStates,
-  onClose,
-}: LaborBuildPopupProps) => {
+export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: LaborBuildPopupProps) => {
   const {
     setup: {
       components: { Resource },
@@ -59,14 +52,11 @@ export const LaborBuildPopup = ({
   let { realmEntityId } = useRealmStore();
   const { realm } = useGetRealm(realmEntityId);
 
-  const { nextBlockTimestamp } = useBlockchainStore();
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
   const laborUnits = useMemo(() => (isFood ? 12 : laborAmount), [laborAmount]);
-  const resourceInfo = useMemo(
-    () => findResourceById(resourceId),
-    [resourceId],
-  );
+  const resourceInfo = useMemo(() => findResourceById(resourceId), [resourceId]);
 
   // TODO: get info from contract config file
   // calculate the costs of building/buying tools
@@ -74,8 +64,7 @@ export const LaborBuildPopup = ({
   for (const resourceIdCost of [2, 3]) {
     const amount = 10;
     const totalAmount = amount * multiplier * (isFood ? 12 : laborAmount);
-    amount &&
-      costResources.push({ resourceId: resourceIdCost, amount: totalAmount });
+    amount && costResources.push({ resourceId: resourceIdCost, amount: totalAmount });
   }
 
   useEffect(() => {
@@ -111,9 +100,7 @@ export const LaborBuildPopup = ({
   };
 
   const { play: playFarm } = useUiSounds(soundSelector.buildFarm);
-  const { play: playFishingVillage } = useUiSounds(
-    soundSelector.buildFishingVillage,
-  );
+  const { play: playFishingVillage } = useUiSounds(soundSelector.buildFishingVillage);
   const { play: playAddWood } = useUiSounds(soundSelector.addWood);
   const { play: playAddStone } = useUiSounds(soundSelector.addStone);
   const { play: playAddCoal } = useUiSounds(soundSelector.addCoal);
@@ -127,21 +114,13 @@ export const LaborBuildPopup = ({
   const { play: playAddDiamonds } = useUiSounds(soundSelector.addDiamonds);
   const { play: playAddSapphire } = useUiSounds(soundSelector.addSapphire);
   const { play: playAddRuby } = useUiSounds(soundSelector.addRuby);
-  const { play: playAddDeepCrystal } = useUiSounds(
-    soundSelector.addDeepCrystal,
-  );
+  const { play: playAddDeepCrystal } = useUiSounds(soundSelector.addDeepCrystal);
   const { play: playAddIgnium } = useUiSounds(soundSelector.addIgnium);
-  const { play: playAddEtherealSilica } = useUiSounds(
-    soundSelector.addEtherealSilica,
-  );
+  const { play: playAddEtherealSilica } = useUiSounds(soundSelector.addEtherealSilica);
 
   const { play: playAddTrueIce } = useUiSounds(soundSelector.addTrueIce);
-  const { play: playAddTwilightQuartz } = useUiSounds(
-    soundSelector.addTwilightQuartz,
-  );
-  const { play: playAddAlchemicalSilver } = useUiSounds(
-    soundSelector.addAlchemicalSilver,
-  );
+  const { play: playAddTwilightQuartz } = useUiSounds(soundSelector.addTwilightQuartz);
+  const { play: playAddAlchemicalSilver } = useUiSounds(soundSelector.addAlchemicalSilver);
   const { play: playAddAdamantine } = useUiSounds(soundSelector.addAdamantine);
   const { play: playAddMithral } = useUiSounds(soundSelector.addMithral);
   const { play: playAddDragonhide } = useUiSounds(soundSelector.addDragonhide);
@@ -240,31 +219,20 @@ export const LaborBuildPopup = ({
             <div className="flex items-center">
               {!isFood && (
                 <>
-                  <ResourceIcon
-                    className="mr-1"
-                    resource={resourceInfo?.trait || ""}
-                    size="xs"
-                  />{" "}
-                  {resourceInfo?.trait}
+                  <ResourceIcon className="mr-1" resource={resourceInfo?.trait || ""} size="xs" /> {resourceInfo?.trait}
                 </>
               )}
               {resourceId === 254 && (
                 <div className="flex items-center">
                   <Farms className="mr-1" />
-                  <span className="mr-1 font-bold">{`${multiplier}/${
-                    realm?.rivers || 0
-                  }`}</span>{" "}
-                  Farms
+                  <span className="mr-1 font-bold">{`${multiplier}/${realm?.rivers || 0}`}</span> Farms
                 </div>
               )}
               {resourceId === 255 && (
                 <div className="flex items-center">
                   {/* // DISCUSS: can only be 0, because that is when you can build */}
                   <FishingVillages className="mr-1" />
-                  <span className="mr-1 font-bold">{`${multiplier}/${
-                    realm?.harbors || 0
-                  }`}</span>{" "}
-                  Fishing Villages
+                  <span className="mr-1 font-bold">{`${multiplier}/${realm?.harbors || 0}`}</span> Fishing Villages
                 </div>
               )}
             </div>
@@ -277,11 +245,9 @@ export const LaborBuildPopup = ({
                             <div className='italic text-light-pink'>Harvested</div>
                         </div> */}
             <div className="flex items-center">
-              {`+${
-                isFood
-                  ? (LABOR_CONFIG.base_food_per_cycle * multiplier) / 2
-                  : ""
-              }${isFood ? "" : LABOR_CONFIG.base_resources_per_cycle / 2}`}
+              {`+${isFood ? (LABOR_CONFIG.base_food_per_cycle * multiplier) / 2 : ""}${
+                isFood ? "" : LABOR_CONFIG.base_resources_per_cycle / 2
+              }`}
               <ResourceIcon
                 containerClassName="mx-0.5"
                 className="!w-[12px]"
@@ -294,18 +260,13 @@ export const LaborBuildPopup = ({
           {isFood && (
             <BuildingsCount
               count={multiplier}
-              maxCount={
-                resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0
-              }
+              maxCount={resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0}
               className="mt-2"
             />
           )}
           <div className={clsx("relative w-full", isFood ? "mt-2" : "mt-3")}>
             {resourceId === 254 && (
-              <img
-                src={`/images/buildings/farm.png`}
-                className="object-cover w-full h-full rounded-[10px]"
-              />
+              <img src={`/images/buildings/farm.png`} className="object-cover w-full h-full rounded-[10px]" />
             )}
             {resourceId === 255 && (
               <img
@@ -314,23 +275,13 @@ export const LaborBuildPopup = ({
               />
             )}
             {!isFood && (
-              <img
-                src={`/images/resources/${resourceId}.jpg`}
-                className="object-cover w-full h-full rounded-[10px]"
-              />
+              <img src={`/images/resources/${resourceId}.jpg`} className="object-cover w-full h-full rounded-[10px]" />
             )}
             <div className="fle flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
-              <div className="mb-1 ml-1 italic text-light-pink text-xxs">
-                Price:
-              </div>
+              <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
               <div className="grid grid-cols-4 gap-2">
                 {costResources.map(({ resourceId, amount }) => (
-                  <ResourceCost
-                    key={resourceId}
-                    type="vertical"
-                    resourceId={resourceId}
-                    amount={amount}
-                  />
+                  <ResourceCost key={resourceId} type="vertical" resourceId={resourceId} amount={amount} />
                 ))}
               </div>
             </div>
@@ -340,17 +291,9 @@ export const LaborBuildPopup = ({
           {!isFood && (
             <div className="flex items-center">
               <div className="italic text-light-pink">Amount</div>
-              <NumberInput
-                className="ml-2 mr-2"
-                value={laborAmount}
-                step={5}
-                onChange={setLaborAmount}
-                max={9999}
-              />
+              <NumberInput className="ml-2 mr-2" value={laborAmount} step={5} onChange={setLaborAmount} max={9999} />
               <div className="italic text-gold">
-                {formatSecondsLeftInDaysHours(
-                  laborAmount * (LABOR_CONFIG?.base_labor_units || 0),
-                )}
+                {formatSecondsLeftInDaysHours(laborAmount * (LABOR_CONFIG?.base_labor_units || 0))}
               </div>
             </div>
           )}
@@ -361,13 +304,10 @@ export const LaborBuildPopup = ({
                 className="ml-2 mr-2"
                 value={multiplier}
                 onChange={setMultiplier}
-                max={
-                  resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0
-                }
+                max={resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0}
               />
               <div className="italic text-gold">
-                Max{" "}
-                {resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0}
+                Max {resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0}
               </div>
             </div>
           )}
@@ -381,11 +321,7 @@ export const LaborBuildPopup = ({
             >
               {isFood ? `Build` : `Buy Tools`}
             </Button>
-            {!canBuild && (
-              <div className="text-xxs text-order-giants/70">
-                Insufficient resources
-              </div>
-            )}
+            {!canBuild && <div className="text-xxs text-order-giants/70">Insufficient resources</div>}
           </div>
         </div>
       </SecondaryPopup.Body>

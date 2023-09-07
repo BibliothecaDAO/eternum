@@ -24,8 +24,6 @@ import { NotificationsComponent } from "../components/NotificationsComponent";
 import { useSyncWorld } from "../hooks/graphql/useGraphQLQueries";
 
 export const World = () => {
-  // useSyncRealms();
-
   const { loading } = useSyncWorld();
 
   //TODO: figure out why component getting rerendered everytime nextBlockTimestamp get's rerendered

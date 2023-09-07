@@ -1,4 +1,4 @@
-import { EntityIndex, HasValue, NotValue, getComponentValue } from "@latticexyz/recs";
+import { EntityIndex, HasValue, NotValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import { Resource } from "../../types";
 import { MarketInterface, ResourceInterface } from "../graphql/useGraphQLQueries";
@@ -13,7 +13,7 @@ import { calculateRatio } from "../../components/cityview/realm/trade/Market/Mar
 export function useTrade() {
   const {
     setup: {
-      components: { OrderResource, FungibleEntities, Resource },
+      components: { OrderResource, FungibleEntities, Resource, Trade },
     },
   } = useDojo();
 
@@ -32,6 +32,20 @@ export function useTrade() {
       }
     }
     return resources;
+  };
+
+  const getCounterpartyOrderId = (orderId: number): number | undefined => {
+    const tradeIfMaker = Array.from(runQuery([HasValue(Trade, { maker_order_id: orderId })]));
+    const tradeIfTaker = Array.from(runQuery([HasValue(Trade, { taker_order_id: orderId })]));
+    if (tradeIfMaker.length > 0) {
+      let trade = getComponentValue(Trade, tradeIfMaker[0]);
+      return trade?.taker_order_id;
+    } else if (tradeIfTaker.length > 0) {
+      let trade = getComponentValue(Trade, tradeIfTaker[0]);
+      return trade?.maker_order_id;
+    } else {
+      return undefined;
+    }
   };
 
   const canAcceptOffer = ({
@@ -54,7 +68,7 @@ export function useTrade() {
     return canAccept;
   };
 
-  return { getTradeResources, canAcceptOffer };
+  return { getTradeResources, getCounterpartyOrderId, canAcceptOffer };
 }
 
 // TODO: sorting here
