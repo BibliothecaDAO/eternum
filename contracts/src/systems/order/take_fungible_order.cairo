@@ -9,6 +9,7 @@ mod TakeFungibleOrder {
     use eternum::components::position::{Position, PositionTrait};
     use eternum::components::trade::{Trade, Status, TradeStatus, OrderResource};
     use eternum::components::caravan::Caravan;
+    use eternum::components::road::{Road, RoadTrait, RoadImpl};
     use eternum::components::movable::{Movable, ArrivalTime};
 
     use traits::Into;
@@ -90,13 +91,25 @@ mod TakeFungibleOrder {
             let travel_time = caravan_position
                 .calculate_travel_time(taker_position, movable.sec_per_km);
 
+            let mut taker_order_travel_time: u64 = travel_time;  
+            let mut maker_caravan_travel_time: u64 = 2 * travel_time; // 2x because of round trip (to taker and back)
+                
+            // if a road exists, use it and get new travel time 
+            let mut road: Road = RoadImpl::get(ctx.world, caravan_position.into(), taker_position.into());
+            if road.usage_count > 0 {
+                road.travel(ctx.world);
+
+                taker_order_travel_time /= road.speed_boost();
+                maker_caravan_travel_time /= road.speed_boost(); 
+            }
+
             set !(
                 // SET ORDER
                 ctx.world,
                 (
                     ArrivalTime {
                         entity_id: meta.maker_order_id,
-                        arrives_at: ts + travel_time
+                        arrives_at: ts + taker_order_travel_time
                         }, Position {
                         entity_id: meta.maker_order_id,
                         x: taker_position.x, y: taker_position.y
@@ -107,14 +120,13 @@ mod TakeFungibleOrder {
             set !(
                 // SET CARAVAN
                 // round trip with the caravan
-                // set arrival time * 2
                 // dont change position because round trip
                 // set back blocked to false
                 ctx.world,
                 (
                     ArrivalTime {
                         entity_id: caravan.caravan_id,
-                        arrives_at: ts + travel_time * 2
+                        arrives_at: ts + maker_caravan_travel_time
                         }, Movable {
                         entity_id: caravan.caravan_id,
                         sec_per_km: movable.sec_per_km, blocked: false, 
@@ -151,12 +163,26 @@ mod TakeFungibleOrder {
             let (movable, caravan_position, owner) = get !(
                 ctx.world, caravan.caravan_id, (Movable, Position, Owner)
             );
+            
+            // assert that the owner of the caravan is the caller
+            assert(owner.address == caller, 'not owned by caller');
+
             // if caravan, starts from the caravan position (not taker position)
             let travel_time = caravan_position
                 .calculate_travel_time(maker_position, movable.sec_per_km);
 
-            // assert that the owner of the caravan is the caller
-            assert(owner.address == caller, 'not owned by caller');
+            let mut maker_order_travel_time: u64 = travel_time;  
+            let mut taker_caravan_travel_time: u64= 2 * travel_time; // 2x because of round trip (to maker and back)
+                
+            // if a road exists, use it and get new travel time 
+            let mut road: Road = RoadImpl::get(ctx.world, caravan_position.into(), maker_position.into());
+            if road.usage_count > 0 {
+                road.travel(ctx.world);
+
+                maker_order_travel_time /= road.speed_boost();
+                taker_caravan_travel_time /= road.speed_boost(); 
+            }
+
 
             set !(
                 // SET ORDER
@@ -164,7 +190,7 @@ mod TakeFungibleOrder {
                 (
                     ArrivalTime {
                         entity_id: meta.taker_order_id,
-                        arrives_at: ts + travel_time
+                        arrives_at: ts + maker_order_travel_time
                         }, Position {
                         entity_id: meta.taker_order_id,
                         x: maker_position.x, y: maker_position.y
@@ -180,7 +206,7 @@ mod TakeFungibleOrder {
                 (
                     ArrivalTime {
                         entity_id: caravan.caravan_id,
-                        arrives_at: ts + travel_time * 2
+                        arrives_at: ts + taker_caravan_travel_time
                         }, Movable {
                         entity_id: caravan.caravan_id,
                         sec_per_km: movable.sec_per_km, blocked: false, 
@@ -242,11 +268,13 @@ mod tests {
     use eternum::components::resources::Resource;
     use eternum::components::trade::FungibleEntities;
     use eternum::components::owner::Owner;
-    use eternum::components::position::Position;
+    use eternum::components::position::{Position, Coord};
     use eternum::components::capacity::Capacity;
     use eternum::components::movable::{Movable, ArrivalTime};
     use eternum::components::caravan::Caravan;
     use eternum::components::config::WeightConfig;
+    use eternum::components::road::Road;
+
     
     use eternum::components::trade::{Trade,Status, OrderId, OrderResource};
 
@@ -338,7 +366,7 @@ mod tests {
                 resource_type: ResourceTypes::SILVER,
                 balance: 200
             }
-        ))
+        ));
 
 
 
@@ -527,6 +555,113 @@ mod tests {
         assert(taker_caravan_arrival_time.arrives_at == (800 * 2), 'arrival time should be 1600');
 
 
+    }
+
+
+    #[test]
+    #[available_gas(30000000000000)]
+    fn test_take_trade_with_caravan_by_road() {
+        
+        let (
+            world,
+            maker_id,
+            taker_id, 
+            trade_id, 
+            maker_order_id, 
+            taker_order_id
+        ) = setup(true);
+
+        // create a caravan owned by the maker
+        let maker_caravan_id = 20_u64;
+        let maker_caravan_id_felt: felt252 = maker_caravan_id.into();
+
+        set!(world, (Owner { address: contract_address_const::<'maker'>(), entity_id: maker_caravan_id.into()}));
+        set!(world, (Position { x: 100_000, y: 200_000, entity_id: maker_caravan_id.into()}));
+        set!(world, (Capacity { weight_gram: 10_000, entity_id: maker_caravan_id.into()}));
+        set!(world, (Movable { sec_per_km: 10, blocked: false, entity_id: maker_caravan_id.into()}));
+        // attach caravan to the maker order
+        let maker_caravan_key_arr = array![maker_order_id.into(), maker_id.into()];
+        let maker_caravan_key = poseidon_hash_span(maker_caravan_key_arr.span());
+        set!(world, (Caravan { caravan_id: maker_caravan_id.into(), entity_id: maker_caravan_key }));
+
+
+        // create a caravan owned by the taker
+        let taker_caravan_id = 30_u64;
+        let taker_caravan_id_felt: felt252 = taker_caravan_id.into();
+
+        set!(world, (Owner { address: contract_address_const::<'taker'>(), entity_id: taker_caravan_id.into()}));
+        set!(world, (Position { x: 900_000, y: 100_000, entity_id: taker_caravan_id.into()}));
+        set!(world, (Capacity { weight_gram: 10_000, entity_id: taker_caravan_id.into()}));
+        set!(world, (Movable { sec_per_km: 10, blocked: false, entity_id: taker_caravan_id.into()}));
+        // attach caravan to the taker order
+        let taker_caravan_key_arr = array![taker_order_id.into(), taker_id.into()];
+        let taker_caravan_key = poseidon_hash_span(taker_caravan_key_arr.span());
+        set!(world, (Caravan { caravan_id: taker_caravan_id.into(), entity_id: taker_caravan_key }));
+
+        // create road from maker to taker
+        // maker location == maker caravan location, same for taker
+        let maker_coord: Coord = get!(world, maker_id, Position).into();
+        let taker_coord: Coord = get!(world, taker_id, Position).into();
+        set!(world, ( 
+            Road {
+                start_coord: maker_coord,
+                end_coord: taker_coord,
+                usage_count: 2
+            }
+        ));
+
+
+        // taker takes trade
+        starknet::testing::set_contract_address(
+            contract_address_const::<'taker'>()
+        );
+        let mut calldata = array![];
+        Serde::serialize(@taker_id, ref calldata);
+        Serde::serialize(@trade_id, ref calldata);
+        world.execute('TakeFungibleOrder', calldata);
+
+
+        // taker wood balance should be 500
+        let taker_wood_resource = get!(world, (taker_id, ResourceTypes::WOOD), Resource);
+        assert(taker_wood_resource.balance == 500, 'resource balance should be 500'); // 600 - 100
+
+        // taker stone balance should be 400
+        let taker_stone_resource = get!(world, (taker_id, ResourceTypes::STONE), Resource);
+        assert(taker_stone_resource.balance == 400, 'resource balance should be 400'); // 600 - 200
+
+
+        // status should be accepted
+        let status = get!(world, trade_id, Status);
+        assert(status.value == 1, 'status should be accepted');
+
+        
+        // verify arrival time and position of maker order
+        let maker_order_arrival_time = get!(world, maker_order_id, ArrivalTime);
+        let maker_order_position = get!(world, maker_order_id, Position);
+        assert(maker_order_arrival_time.arrives_at == 800 / 2 , 'arrival time should be 400 a');
+        assert(maker_order_position.x == 900_000, 'position x should be 900,000');
+        assert(maker_order_position.y == 100_000, 'position y should be 100,000');
+        // verify arrival time of maker caravan
+        let maker_caravan_arrival_time = get!(world, maker_caravan_id, ArrivalTime);
+        assert(maker_caravan_arrival_time.arrives_at == (800 * 2) / 2, 'arrival time should be 800');
+
+ 
+
+        // verify arrival time and position of taker order
+        let taker_order_arrival_time = get!(world, taker_order_id, ArrivalTime);
+        let taker_order_position = get!(world, taker_order_id, Position);
+        assert(taker_order_arrival_time.arrives_at == 800 / 2 , 'arrival time should be 400 b');
+        assert(taker_order_position.x == 100_000, 'position x should be 100,000');
+        assert(taker_order_position.y == 200_000, 'position y should be 200,000');
+        // verify arrival time of taker caravan
+        let taker_caravan_arrival_time = get!(world, taker_caravan_id, ArrivalTime);
+        assert(taker_caravan_arrival_time.arrives_at == (800 * 2) / 2, 'arrival time should be 800');
+
+
+
+        // verify that road usage count was updated
+        let road = get!(world, (maker_coord, taker_coord), Road);
+        assert(road.usage_count == 0, 'incorrect road usage count');
     }
 }
 
