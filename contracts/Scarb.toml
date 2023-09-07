@@ -1,5 +1,5 @@
 [package]
-cairo-version = "2.1.1"
+cairo-version = "2.2.0"
 name = "eternum"
 version = "0.1.0"
 

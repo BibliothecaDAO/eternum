@@ -1,9 +1,31 @@
 use traits::Into;
 use traits::TryInto;
 use option::OptionTrait;
+use debug::PrintTrait;
 
 use alexandria_math::math::pow;
 
+#[derive(Copy, Drop, PartialEq, Serde)]
+struct Coord {
+    x: u32,
+    y: u32
+}
+
+impl CoordPrint of PrintTrait<Coord> {
+    fn print(self: Coord) {
+        self.x.print();
+        self.y.print();
+    }
+}
+
+impl PositionIntoCoord of Into<Position, Coord> {
+    fn into(self: Position) -> Coord {
+        return Coord {
+            x: self.x,
+            y: self.y
+        };
+    }
+}
 
 #[derive(Component, PartialEq, Copy, Drop, Serde, SerdeLen)]
 struct Position {
@@ -13,16 +35,6 @@ struct Position {
     y: u32
 }
 
-// impl PositionPartialEq of PartialEq<Position> {
-//     #[inline(always)]
-//     fn eq(lhs: Position, rhs: Position) -> bool {
-//         lhs.x == rhs.x & lhs.y == rhs.y
-//     }
-//     #[inline(always)]
-//     fn ne(lhs: Position, rhs: Position) -> bool {
-//         !(lhs.x == rhs.x & lhs.y == rhs.y)
-//     }
-// }
 trait PositionTrait {
     fn calculate_distance(self: Position, destination: Position) -> u32;
     fn calculate_travel_time(self: Position, destination: Position, sec_per_km: u16) -> u64;

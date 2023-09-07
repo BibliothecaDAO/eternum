@@ -219,7 +219,7 @@ mod tests {
                 resource_type: ResourceTypes::STONE,
                 balance: 200
             }
-        ))
+        ));
 
 
         set!(world, (
@@ -332,7 +332,7 @@ mod tests {
                 resource_type: ResourceTypes::STONE,
                 balance: 200
             }
-        ))
+        ));
 
 
         set!(world, (
