@@ -31,8 +31,10 @@ mod CreateRoad {
         
         set!(ctx.world, (
             Road {
-                start_coord,
-                end_coord,
+                start_coord_x: start_coord.x,
+                start_coord_y: start_coord.y,
+                end_coord_x: end_coord.x,
+                end_coord_y: end_coord.y,
                 usage_count
             },
             Resource {
@@ -48,7 +50,7 @@ mod CreateRoad {
 
 #[cfg(test)]
 mod tests {
-    use eternum::components::position::{Coord};
+    use eternum::components::position::{Coord };
     use eternum::components::resources::Resource;
     use eternum::components::road::{Road, RoadImpl};
     use eternum::components::owner::Owner;
@@ -115,8 +117,10 @@ mod tests {
         set!(world, ( 
             Owner { entity_id: creator_id, address: contract_address_const::<'creator'>()},
             Road {
-                start_coord,
-                end_coord,
+                start_coord_x: start_coord.x,
+                start_coord_y: start_coord.y,
+                end_coord_x: end_coord.x,
+                end_coord_y: end_coord.y,
                 usage_count: 44
             })
         );
@@ -186,8 +190,10 @@ mod tests {
         set!(world, ( 
             Owner { entity_id: creator_id, address: contract_address_const::<'creator'>()},
             Road {
-                start_coord,
-                end_coord,
+                start_coord_x: start_coord.x,
+                start_coord_y: start_coord.y,
+                end_coord_x: end_coord.x,
+                end_coord_y: end_coord.y,
                 usage_count: 44
             })
         );

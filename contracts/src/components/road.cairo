@@ -7,9 +7,13 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct Road {
     #[key]
-    start_coord: Coord,
+    start_coord_x: u32,
     #[key]
-    end_coord: Coord,
+    start_coord_y: u32,
+    #[key]
+    end_coord_x: u32,
+    #[key]
+    end_coord_y: u32,
     usage_count: u32
 }
 
@@ -30,9 +34,10 @@ impl RoadImpl of RoadTrait {
 
     #[inline(always)]
     fn get(world: IWorldDispatcher, start_coord: Coord, end_coord: Coord) -> Road {
-        let mut road = get!(world, (start_coord, end_coord), Road);
+
+        let mut road = get!(world, (start_coord.x, start_coord.y, end_coord.x, end_coord.y), Road);
         if road.usage_count == 0 {
-            road = get!(world, (end_coord, start_coord), Road);
+            road = get!(world, ( end_coord.x, end_coord.y, start_coord.x, start_coord.y,), Road);
         }
         road
     }
@@ -75,8 +80,10 @@ mod tests {
     
         set!(world, ( 
             Road {
-                start_coord,
-                end_coord,
+                start_coord_x: start_coord.x,
+                start_coord_y: start_coord.y,
+                end_coord_x: end_coord.x,
+                end_coord_y: end_coord.y,
                 usage_count
             })
         );
@@ -100,8 +107,10 @@ mod tests {
         let end_coord = Coord { x: 40, y: 50};
         let usage_count = 44;
         let mut road = Road {
-            start_coord,
-            end_coord,
+            start_coord_x: start_coord.x,
+            start_coord_y: start_coord.y,
+            end_coord_x: end_coord.x,
+            end_coord_y: end_coord.y,
             usage_count
         };
         set!(world, ( road ));
