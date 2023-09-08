@@ -264,39 +264,34 @@ function passesQueryFragment<T extends Schema>(entity: EntityIndex, fragment: En
 
 function hasTradeResources(fragment: HasResourcesQueryFragment, entity: EntityIndex): boolean {
   const trade = getComponentValue(fragment.component, entity) as Trade | undefined;
-  if (!trade) {
-    // skip to next one
-    return false;
-  }
+
+  if (!trade) return false;
+
+  const hasMakerResources = checkResourcesForOrder(trade.maker_order_id, fragment);
+  const hasTakerResources = checkResourcesForOrder(trade.taker_order_id, fragment);
+
+  return hasMakerResources || hasTakerResources;
+}
+
+function checkResourcesForOrder(order_id: number, fragment: HasResourcesQueryFragment): boolean {
   const fungibleEntities = getComponentValue(
     fragment.fungibleEntitiesComponent,
-    getEntityIdFromKeys([BigInt(trade.maker_order_id)]),
+    getEntityIdFromKeys([BigInt(order_id)]),
   ) as FungibleEntities | undefined;
-  if (!fungibleEntities) {
-    // throw new Error("Entity does not have fungible entities component");
-    return false;
-    // skip to next one
-  }
+
+  if (!fungibleEntities) return false;
+
   let resourcesLeftSet = new Set(fragment.resources);
   for (let i = 0; i < fungibleEntities.count && resourcesLeftSet.size > 0; i++) {
-    // Check if the entity has the required resources
     let orderResource = getComponentValue(
       fragment.resourceComponent,
-      getEntityIdFromKeys([BigInt(trade.maker_order_id), BigInt(fungibleEntities.key), BigInt(i)]),
+      getEntityIdFromKeys([BigInt(order_id), BigInt(fungibleEntities.key), BigInt(i)]),
     ) as OrderResource | undefined;
 
-    if (!orderResource) {
-      // throw new Error("Entity does not have fungible entities component");
-      break;
-    } else {
-      resourcesLeftSet.delete(orderResource.resource_type);
-    }
+    if (orderResource) resourcesLeftSet.delete(orderResource.resource_type);
   }
-  if (resourcesLeftSet.size !== 0) {
-    return false;
-  } else {
-    return true;
-  }
+
+  return resourcesLeftSet.size === 0;
 }
 
 export function runQuery(fragments: QueryFragment[], initialSet?: Set<EntityIndex>): Set<EntityIndex> {
