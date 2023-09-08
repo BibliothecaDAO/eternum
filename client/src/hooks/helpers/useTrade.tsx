@@ -8,15 +8,19 @@ import { getEntityIdFromKeys } from "../../utils/utils";
 import { HIGH_ENTITY_ID } from "../../dojo/createOptimisticSystemCalls";
 import { getRealm } from "../../components/cityview/realm/SettleRealmComponent";
 import { calculateRatio } from "../../components/cityview/realm/trade/Market/MarketOffer";
-import { HasResources, QueryFragment, useTradeQuery } from "./useTradeQueries";
+import { HasOrders, HasResources, QueryFragment, useTradeQuery } from "./useTradeQueries";
 import { resources } from "../../constants/resources";
+import { orders } from "../../constants/orders";
+import { SortInterface } from "../../elements/SortButton";
 
 type useGetMarketProps = {
   selectedResources: string[];
+  selectedOrders: string[];
 };
 
 type useGetMyOffersProps = {
   selectedResources: string[];
+  selectedOrders: string[];
 };
 
 export function useTrade() {
@@ -80,8 +84,7 @@ export function useTrade() {
   return { getTradeResources, getCounterpartyOrderId, canAcceptOffer };
 }
 
-// TODO: sorting here
-export function useGetMyOffers({ selectedResources }: useGetMyOffersProps) {
+export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): MarketInterface[] {
   const {
     setup: {
       components: { Status, Trade, FungibleEntities, OrderResource },
@@ -92,19 +95,26 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps) {
 
   const [myOffers, setMyOffers] = useState<MarketInterface[]>([]);
 
-  const fragments: QueryFragment[] = [HasValue(Status, { value: 0 }), HasValue(Trade, { maker_id: realmEntityId })];
+  const fragments = useMemo(() => {
+    const baseFragments: QueryFragment[] = [
+      HasValue(Status, { value: 0 }),
+      HasValue(Trade, { maker_id: realmEntityId }),
+    ];
 
-  if (selectedResources.length > 0)
-    fragments.push(
-      HasResources(
-        Trade,
-        FungibleEntities,
-        OrderResource,
-        selectedResources
-          .map((resource) => resources.find((r) => r.trait === resource)?.id)
-          .filter(Boolean) as number[],
-      ),
-    );
+    if (selectedResources.length > 0)
+      baseFragments.push(
+        HasResources(
+          Trade,
+          FungibleEntities,
+          OrderResource,
+          selectedResources
+            .map((resource) => resources.find((r) => r.trait === resource)?.id)
+            .filter(Boolean) as number[],
+        ),
+      );
+
+    return baseFragments;
+  }, [selectedResources, realmEntityId]);
 
   const entityIds = useTradeQuery(fragments);
 
@@ -134,22 +144,18 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps) {
           } as MarketInterface;
         }
       })
-      .filter(Boolean)
-      // TODO: change the sorting here
-      .sort((a, b) => b!.tradeId - a!.tradeId) as MarketInterface[];
+      .filter(Boolean) as MarketInterface[];
     setMyOffers(trades);
     // only recompute when different number of orders
   }, [entityIds]);
 
-  return {
-    myOffers,
-  };
+  return myOffers;
 }
 
-export function useGetMarket({ selectedResources }: useGetMarketProps): MarketInterface[] {
+export function useGetMarket({ selectedResources, selectedOrders }: useGetMarketProps): MarketInterface[] {
   const {
     setup: {
-      components: { Status, Trade, FungibleEntities, OrderResource },
+      components: { Status, Trade, FungibleEntities, OrderResource, Realm },
     },
   } = useDojo();
 
@@ -157,19 +163,37 @@ export function useGetMarket({ selectedResources }: useGetMarketProps): MarketIn
 
   const [market, setMarket] = useState<MarketInterface[]>([]);
 
-  const fragments: QueryFragment[] = [HasValue(Status, { value: 0 }), NotValue(Trade, { maker_id: realmEntityId })];
+  const fragments = useMemo(() => {
+    const baseFragments: QueryFragment[] = [
+      HasValue(Status, { value: 0 }),
+      NotValue(Trade, { maker_id: realmEntityId }),
+    ];
 
-  if (selectedResources.length > 0)
-    fragments.push(
-      HasResources(
-        Trade,
-        FungibleEntities,
-        OrderResource,
-        selectedResources
-          .map((resource) => resources.find((r) => r.trait === resource)?.id)
-          .filter(Boolean) as number[],
-      ),
-    );
+    if (selectedOrders.length > 0) {
+      baseFragments.push(
+        HasOrders(
+          Trade,
+          Realm,
+          selectedOrders.map((order) => orders.find((o) => o.orderName === order)?.orderId) as number[],
+        ),
+      );
+    }
+
+    if (selectedResources.length > 0) {
+      baseFragments.push(
+        HasResources(
+          Trade,
+          FungibleEntities,
+          OrderResource,
+          selectedResources
+            .map((resource) => resources.find((r) => r.trait === resource)?.id)
+            .filter(Boolean) as number[],
+        ),
+      );
+    }
+
+    return baseFragments;
+  }, [selectedOrders, selectedResources, realmEntityId]);
 
   const entityIds = useTradeQuery(fragments);
 
@@ -196,11 +220,43 @@ export function useGetMarket({ selectedResources }: useGetMarketProps): MarketIn
           } as MarketInterface;
         }
       })
-      .filter(Boolean)
-      // TODO: change the sorting here
-      .sort((a, b) => b!.tradeId - a!.tradeId) as MarketInterface[];
+      .filter(Boolean) as MarketInterface[];
     setMarket(trades);
   }, [entityIds]);
 
   return market;
+}
+
+export function sortTrades(trades: MarketInterface[], activeSort: SortInterface): MarketInterface[] {
+  if (activeSort.sort !== "none") {
+    if (activeSort.sortKey === "ratio") {
+      return trades.sort((a, b) => {
+        if (activeSort.sort === "asc") {
+          return a.ratio - b.ratio;
+        } else {
+          return b.ratio - a.ratio;
+        }
+      });
+    } else if (activeSort.sortKey === "time") {
+      return trades.sort((a, b) => {
+        if (activeSort.sort === "asc") {
+          return a.expiresAt - b.expiresAt;
+        } else {
+          return b.expiresAt - a.expiresAt;
+        }
+      });
+    } else if (activeSort.sortKey === "realm") {
+      return trades.sort((a, b) => {
+        if (activeSort.sort === "asc") {
+          return a.makerId - b.makerId;
+        } else {
+          return b.makerId - a.makerId;
+        }
+      });
+    } else {
+      return trades;
+    }
+  } else {
+    return trades.sort((a, b) => b!.tradeId - a!.tradeId);
+  }
 }

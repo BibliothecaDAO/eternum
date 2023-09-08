@@ -6,10 +6,12 @@ import Button from "../elements/Button";
 import { OrderIcon } from "../elements/OrderIcon";
 import clsx from "clsx";
 
-type OrdersFilterProps = {};
+type OrdersFilterProps = {
+  selectedOrders: string[];
+  setSelectedOrders: (orders: string[]) => void;
+};
 
-export const OrdersFilter = ({}: OrdersFilterProps) => {
-  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+export const OrdersFilter = ({ selectedOrders, setSelectedOrders }: OrdersFilterProps) => {
   const [popupOpened, setPopupOpened] = useState<boolean>(false);
 
   const selectOrder = (resource: string) => {
@@ -22,10 +24,7 @@ export const OrdersFilter = ({}: OrdersFilterProps) => {
 
   return (
     <>
-      <FilterButton
-        active={popupOpened}
-        onClick={() => setPopupOpened(!popupOpened)}
-      >
+      <FilterButton active={popupOpened} onClick={() => setPopupOpened(!popupOpened)}>
         Orders
       </FilterButton>
       {popupOpened && (
@@ -37,11 +36,7 @@ export const OrdersFilter = ({}: OrdersFilterProps) => {
                 <OrderIcon key={index} order={order} size="xs" />
               ))}
               {selectedOrders.length > 0 && (
-                <Button
-                  onClick={() => setSelectedOrders([])}
-                  variant="outline"
-                  size="xs"
-                >
+                <Button onClick={() => setSelectedOrders([])} variant="outline" size="xs">
                   Clear all
                 </Button>
               )}
@@ -54,17 +49,12 @@ export const OrdersFilter = ({}: OrdersFilterProps) => {
                   key={index}
                   className={clsx(
                     "flex cursor-pointer flex-col items-center py-2 hover:bg-dark rounded-xl text-gold text-xxs",
-                    selectedOrders.includes(order.orderName) &&
-                      `bg-order-${order.orderName.toLowerCase()} !text-white`,
+                    selectedOrders.includes(order.orderName) && `bg-order-${order.orderName.toLowerCase()} !text-white`,
                   )}
                   onClick={() => selectOrder(order.orderName)}
                 >
                   <OrderIcon
-                    color={
-                      selectedOrders.includes(order.orderName)
-                        ? "white"
-                        : undefined
-                    }
+                    color={selectedOrders.includes(order.orderName) ? "white" : undefined}
                     order={order.orderName}
                     size="xs"
                     className="mb-2"

@@ -32,6 +32,7 @@ enum QueryFragmentType {
   ProxyRead = 4,
   ProxyExpand = 5,
   HasResources = 6,
+  HasOrders = 7,
 }
 
 type HasResourcesQueryFragment = {
@@ -42,9 +43,22 @@ type HasResourcesQueryFragment = {
   resources: number[];
 };
 
+type HasOrdersQueryFragment = {
+  type: QueryFragmentType.HasOrders;
+  component: Component;
+  realmComponent: Component;
+  orders: number[];
+};
+
 type Trade = {
   maker_order_id: number;
   taker_order_id: number;
+  maker_id: number;
+  taker_id: number;
+};
+
+type Realm = {
+  order: number;
 };
 
 type FungibleEntities = {
@@ -64,14 +78,16 @@ export declare type QueryFragment<T extends Schema = Schema> =
   | NotValueQueryFragment<T>
   | ProxyReadQueryFragment
   | ProxyExpandQueryFragment
-  | HasResourcesQueryFragment;
+  | HasResourcesQueryFragment
+  | HasOrdersQueryFragment;
 
 export declare type EntityQueryFragment<T extends Schema = Schema> =
   | HasQueryFragment<T>
   | HasValueQueryFragment<T>
   | NotQueryFragment<T>
   | NotValueQueryFragment<T>
-  | HasResourcesQueryFragment;
+  | HasResourcesQueryFragment
+  | HasOrdersQueryFragment;
 
 // new
 import isEqual from "fast-deep-equal";
@@ -81,17 +97,30 @@ import { filterNullish } from "@latticexyz/utils";
 import { getEntityIdFromKeys } from "../../utils/utils";
 
 export function HasResources(
-  component: Component,
+  tradeComponent: Component,
   fungibleEntitiesComponent: Component,
   resourceComponent: Component,
   resources: number[],
 ): HasResourcesQueryFragment {
   return {
     type: QueryFragmentType.HasResources,
-    component,
+    component: tradeComponent,
     fungibleEntitiesComponent,
     resourceComponent,
     resources,
+  };
+}
+
+export function HasOrders(
+  tradeComponent: Component,
+  realmComponent: Component,
+  orders: number[],
+): HasOrdersQueryFragment {
+  return {
+    type: QueryFragmentType.HasOrders,
+    component: tradeComponent,
+    realmComponent,
+    orders,
   };
 }
 
@@ -255,11 +284,29 @@ function passesQueryFragment<T extends Schema>(entity: EntityIndex, fragment: En
     return !componentValueEquals(fragment.value, getComponentValue(fragment.component, entity));
   }
 
+  if (fragment.type === QueryFragmentType.HasOrders) {
+    return hasOrders(fragment, entity);
+  }
+
   if (fragment.type === QueryFragmentType.HasResources) {
     return hasTradeResources(fragment, entity);
   }
 
   throw new Error("Unknown query fragment");
+}
+
+function hasOrders(fragment: HasOrdersQueryFragment, entity: EntityIndex): boolean {
+  const trade = getComponentValue(fragment.component, entity) as Trade | undefined;
+
+  if (!trade?.maker_order_id) return false;
+
+  const realm = getComponentValue(fragment.realmComponent, getEntityIdFromKeys([BigInt(trade.maker_id)])) as
+    | Realm
+    | undefined;
+
+  if (!realm?.order) return false;
+
+  return fragment.orders.includes(realm.order);
 }
 
 function hasTradeResources(fragment: HasResourcesQueryFragment, entity: EntityIndex): boolean {

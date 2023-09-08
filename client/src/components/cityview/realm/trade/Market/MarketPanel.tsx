@@ -10,7 +10,7 @@ import Button from "../../../../../elements/Button";
 import { MarketOffer } from "./MarketOffer";
 import { AcceptOfferPopup } from "../AcceptOffer";
 import { MarketInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
-import { useGetMarket } from "../../../../../hooks/helpers/useTrade";
+import { sortTrades, useGetMarket } from "../../../../../hooks/helpers/useTrade";
 
 type MarketPanelProps = {};
 
@@ -19,6 +19,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
   const [showCreateOffer, setShowCreateOffer] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<MarketInterface | undefined>(undefined);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
+  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
 
   const sortingParams = useMemo(() => {
     return [
@@ -30,22 +31,23 @@ export const MarketPanel = ({}: MarketPanelProps) => {
     ];
   }, []);
 
-  const market = useGetMarket({ selectedResources });
-
-  const renderedMarketOffers = useMemo(() => {
-    if (!market) return null;
-
-    return market.map((trade) => (
-      <div className="flex flex-col p-2" key={trade.tradeId}>
-        <MarketOffer marketOffer={trade} onAccept={() => setSelectedTrade(trade)} />
-      </div>
-    ));
-  }, [market]);
-
   const [activeSort, setActiveSort] = useState<SortInterface>({
     sortKey: "number",
     sort: "none",
   });
+
+  const market = useGetMarket({ selectedResources, selectedOrders });
+
+  const renderedMarketOffers = useMemo(() => {
+    if (!market) return null;
+
+    return sortTrades(market, activeSort).map((trade) => (
+      <div className="flex flex-col p-2" key={trade.tradeId}>
+        <MarketOffer marketOffer={trade} onAccept={() => setSelectedTrade(trade)} />
+      </div>
+    ));
+  }, [market, activeSort]);
+
   return (
     <div className="flex flex-col min-h-[125px] relative pb-3">
       <FiltersPanel className="px-3 py-2">
@@ -53,7 +55,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
           Filter
         </FilterButton>
         <ResourceFilter selectedResources={selectedResources} setSelectedResources={setSelectedResources} />
-        <OrdersFilter />
+        <OrdersFilter selectedOrders={selectedOrders} setSelectedOrders={setSelectedOrders} />
       </FiltersPanel>
       <SortPanel className="px-3 py-2">
         {sortingParams.map(({ label, sortKey, className }) => (
@@ -72,7 +74,6 @@ export const MarketPanel = ({}: MarketPanelProps) => {
           />
         ))}
       </SortPanel>
-      {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
       {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
       {selectedTrade && (
         <AcceptOfferPopup
