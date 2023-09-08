@@ -273,7 +273,7 @@ mod tests {
     use eternum::components::movable::{Movable, ArrivalTime};
     use eternum::components::caravan::Caravan;
     use eternum::components::config::WeightConfig;
-    use eternum::components::road::Road;
+    use eternum::components::road::{Road, RoadImpl};
 
     
     use eternum::components::trade::{Trade,Status, OrderId, OrderResource};
@@ -604,8 +604,10 @@ mod tests {
         let taker_coord: Coord = get!(world, taker_id, Position).into();
         set!(world, ( 
             Road {
-                start_coord: maker_coord,
-                end_coord: taker_coord,
+                start_coord_x: maker_coord.x,
+                start_coord_y: maker_coord.y,
+                end_coord_x: taker_coord.x,
+                end_coord_y: taker_coord.y,
                 usage_count: 2
             }
         ));
@@ -660,7 +662,7 @@ mod tests {
 
 
         // verify that road usage count was updated
-        let road = get!(world, (maker_coord, taker_coord), Road);
+        let road = RoadImpl::get(world, maker_coord, taker_coord);
         assert(road.usage_count == 0, 'incorrect road usage count');
     }
 }
