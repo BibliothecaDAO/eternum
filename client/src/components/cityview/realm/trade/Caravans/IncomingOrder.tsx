@@ -8,9 +8,8 @@ import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../TradeUtils";
-import { IncomingOrderInterface, useSyncIncomingOrderInfo } from "../../../../../hooks/graphql/useGraphQLQueries";
+import { IncomingOrderInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
-import { useIncomingOrders } from "../../../../../hooks/helpers/useIncomingOrders";
 import { useTrade } from "../../../../../hooks/helpers/useTrade";
 
 type IncomingOrderProps = {
@@ -18,6 +17,8 @@ type IncomingOrderProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const IncomingOrder = ({ incomingOrder, ...props }: IncomingOrderProps) => {
+  const { counterPartyOrderId, arrivalTime, origin: originPosition } = incomingOrder;
+
   const { realmEntityId } = useRealmStore();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -30,7 +31,7 @@ export const IncomingOrder = ({ incomingOrder, ...props }: IncomingOrderProps) =
   } = useDojo();
 
   const { getTradeResources } = useTrade();
-  const resourcesGet = getTradeResources(incomingOrder.counterPartyOrderId);
+  const resourcesGet = counterPartyOrderId ? getTradeResources(counterPartyOrderId) : [];
 
   useEffect(() => {
     setIsLoading(false);
@@ -48,17 +49,7 @@ export const IncomingOrder = ({ incomingOrder, ...props }: IncomingOrderProps) =
     });
   };
 
-  useSyncIncomingOrderInfo({
-    orderId: incomingOrder.orderId,
-    counterPartyOrderId: incomingOrder.counterPartyOrderId,
-  });
-
-  const { nextBlockTimestamp } = useBlockchainStore();
-
-  const { getIncomingOrderInfo } = useIncomingOrders();
-  let incomingOrderInfo = getIncomingOrderInfo(incomingOrder.orderId, incomingOrder.counterPartyOrderId);
-  let arrivalTime = incomingOrderInfo && incomingOrderInfo.arrivalTime;
-  let originPosition = incomingOrderInfo && incomingOrderInfo.origin;
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const startRealmId = originPosition && getRealmIdByPosition({ x: originPosition.x, y: originPosition.y });
   const startRealmName = startRealmId && getRealmNameById(startRealmId);

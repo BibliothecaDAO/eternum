@@ -7,7 +7,6 @@ import { unpackResources } from "../../../../utils/packedData";
 import { ResourcesIds } from "../../../../constants/resources";
 import { LaborBuildPopup } from "./LaborBuild";
 import { LaborConfig } from "../../../../types";
-import { useSyncRealmLabor } from "../../../../hooks/graphql/useGraphQLQueries";
 import { getRealm } from "../SettleRealmComponent";
 import { useRoute } from "wouter";
 
@@ -47,9 +46,7 @@ export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
     sort: "none",
   });
 
-  let { realmEntityId, realmId } = useRealmStore();
-
-  useSyncRealmLabor(realmEntityId);
+  let realmId = useRealmStore((state) => state.realmId);
 
   const realm = useMemo(() => {
     return realmId ? getRealm(realmId) : undefined;

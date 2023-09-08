@@ -21,10 +21,10 @@ import { BlurOverlayContainer } from "../containers/BlurOverlayContainer";
 import { SignUpComponent } from "../components/SignUpComponent";
 import useSound from "use-sound";
 import { NotificationsComponent } from "../components/NotificationsComponent";
-import { useSyncRealms } from "../hooks/graphql/useGraphQLQueries";
+import { useSyncWorld } from "../hooks/graphql/useGraphQLQueries";
 
 export const World = () => {
-  useSyncRealms();
+  const { loading } = useSyncWorld();
 
   //TODO: figure out why component getting rerendered everytime nextBlockTimestamp get's rerendered
   useFetchBlockchainData();
@@ -33,13 +33,9 @@ export const World = () => {
   const isSoundOn = useUIStore((state) => state.isSoundOn);
   const musicLevel = useUIStore((state) => state.musicLevel);
 
-  const isLoadingScreenEnabled = useUIStore(
-    (state) => state.isLoadingScreenEnabled,
-  );
+  const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
 
-  const setIsLoadingScreenEnabled = useUIStore(
-    (state) => state.setIsLoadingScreenEnabled,
-  );
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
   const [playBackground, { stop }] = useSound("/sound/music/happy_realm.mp3", {
     soundEnabled: isSoundOn,
@@ -56,7 +52,7 @@ export const World = () => {
   }, [isSoundOn]);
 
   useEffect(() => {
-    if (progress === 100) {
+    if (progress === 100 && !loading) {
       setIsLoadingScreenEnabled(false);
     } else {
       setIsLoadingScreenEnabled(true);
@@ -75,10 +71,7 @@ export const World = () => {
             isLoadingScreenEnabled ? "opacity-100" : "opacity-0",
           )}
         >
-          <img
-            src="/images/eternum-logo_animated.png"
-            className=" invert scale-50"
-          />
+          <img src="/images/eternum-logo_animated.png" className=" invert scale-50" />
         </div>
       </BackgroundContainer>
       <TopContainer>
@@ -94,9 +87,7 @@ export const World = () => {
       <ContentContainer>
         <RealmManagementModule />
       </ContentContainer>
-      <BottomMiddleContainer>
-        {/* <WolrdMapLayersModule /> */}
-      </BottomMiddleContainer>
+      <BottomMiddleContainer>{/* <WolrdMapLayersModule /> */}</BottomMiddleContainer>
       <BottomRightContainer>
         <ChatModule />
       </BottomRightContainer>

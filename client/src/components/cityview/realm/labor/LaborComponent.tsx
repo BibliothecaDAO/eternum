@@ -1,24 +1,14 @@
 import Button from "../../../../elements/Button";
 import { ResourceIcon } from "../../../../elements/ResourceIcon";
-import {
-  ResourcesIds,
-  findResourceById,
-} from "../../../../constants/resources";
-import {
-  currencyFormat,
-  getEntityIdFromKeys,
-} from "../../../../utils/utils.jsx";
+import { ResourcesIds, findResourceById } from "../../../../constants/resources";
+import { currencyFormat, getEntityIdFromKeys } from "../../../../utils/utils.jsx";
 import { ReactComponent as Clock } from "../../../../assets/icons/common/clock.svg";
 import { ReactComponent as Village } from "../../../../assets/icons/common/village.svg";
 import ProgressBar from "../../../../elements/ProgressBar";
 import { useDojo } from "../../../../DojoContext";
 import { LaborConfig, Realm } from "../../../../types";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
-import {
-  calculateNextHarvest,
-  calculateProductivity,
-  formatSecondsInHoursMinutes,
-} from "./laborUtils";
+import { calculateNextHarvest, calculateProductivity, formatSecondsInHoursMinutes } from "./laborUtils";
 import { useEffect, useMemo, useState } from "react";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useComponentValue } from "@dojoengine/react";
@@ -50,21 +40,15 @@ export const LaborComponent = ({
     account: { account },
   } = useDojo();
 
-  const { nextBlockTimestamp } = useBlockchainStore();
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const { realmEntityId } = useRealmStore();
 
   const [isHarvestLoading, setIsHarvestLoading] = useState(false);
 
-  const labor = useComponentValue(
-    Labor,
-    getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
-  );
+  const labor = useComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
 
-  const resource = useComponentValue(
-    Resource,
-    getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
-  );
+  const resource = useComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
 
   // TODO: better way to stop loading, because this will stop it directly with optimistic rendering
   useEffect(() => {
@@ -84,10 +68,7 @@ export const LaborComponent = ({
     if (nextBlockTimestamp && labor && laborConfig && labor.last_harvest > 0) {
       if (labor.balance > nextBlockTimestamp) {
         const timeSinceLastHarvest = nextBlockTimestamp - labor.last_harvest;
-        return (
-          laborConfig.base_labor_units -
-          (timeSinceLastHarvest % laborConfig.base_labor_units)
-        );
+        return laborConfig.base_labor_units - (timeSinceLastHarvest % laborConfig.base_labor_units);
       }
     }
     return undefined;
@@ -111,12 +92,7 @@ export const LaborComponent = ({
   // if the labor balance does not exist or is lower than the current time,
   // then there is no labor left
   const laborLeft = useMemo(() => {
-    if (
-      nextBlockTimestamp &&
-      labor &&
-      laborConfig &&
-      labor.balance > nextBlockTimestamp
-    ) {
+    if (nextBlockTimestamp && labor && laborConfig && labor.balance > nextBlockTimestamp) {
       let left = labor.balance - nextBlockTimestamp;
       return left < laborConfig.base_labor_units ? 0 : left;
     }
@@ -132,9 +108,7 @@ export const LaborComponent = ({
         labor.last_harvest,
         labor.multiplier,
         laborConfig.base_labor_units,
-        isFood
-          ? laborConfig.base_food_per_cycle
-          : laborConfig.base_resources_per_cycle,
+        isFood ? laborConfig.base_food_per_cycle : laborConfig.base_resources_per_cycle,
         nextBlockTimestamp,
       );
     } else {
@@ -148,40 +122,23 @@ export const LaborComponent = ({
         {findResourceById(resourceId)?.trait}
       </div>
       <div className="grid grid-cols-6">
-        <img
-          src={`/images/resources/${resourceId}.jpg`}
-          className="object-cover w-full h-full rounded-md"
-        />
+        <img src={`/images/resources/${resourceId}.jpg`} className="object-cover w-full h-full rounded-md" />
         <div className="flex flex-col w-full h-full col-span-5 p-2 text-white/70">
           <div className="flex items-center mb-2">
-            <ResourceIcon
-              resource={findResourceById(resourceId)?.trait as any}
-              size="sm"
-            />
-            <div className="ml-2 text-xs font-bold text-white">
-              {currencyFormat(resource ? resource.balance : 0)}
-            </div>
+            <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="sm" />
+            <div className="ml-2 text-xs font-bold text-white">{currencyFormat(resource ? resource.balance : 0)}</div>
             <div className="flex items-center ml-auto">
               {isFood && <Village />}
               {/* // DISCUSS: when there is no labor anymore, it means full decay of the buildings, so it should be multiplier 0 */}
               {resourceId == ResourcesIds["Wheat"] && (
-                <div className="px-2">{`${
-                  laborLeft > 0 && labor ? labor.multiplier : 0
-                }/${realm?.rivers}`}</div>
+                <div className="px-2">{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${realm?.rivers}`}</div>
               )}
               {resourceId == ResourcesIds["Fish"] && (
-                <div className="px-2">{`${
-                  laborLeft > 0 && labor ? labor.multiplier : 0
-                }/${realm?.harbors}`}</div>
+                <div className="px-2">{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${realm?.harbors}`}</div>
               )}
               {/* // TODO: show visual cue that it's disabled */}
               {!buildLoadingStates[resourceId] && (
-                <Button
-                  variant="outline"
-                  className="px-2 py-1"
-                  onClick={onBuild}
-                  disabled={isFood && laborLeft > 0}
-                >
+                <Button variant="outline" className="px-2 py-1" onClick={onBuild} disabled={isFood && laborLeft > 0}>
                   {isFood ? `Build` : `Buy Tools`}
                 </Button>
               )}
@@ -200,9 +157,7 @@ export const LaborComponent = ({
           <ProgressBar
             rounded
             progress={
-              laborConfig && timeLeftToHarvest
-                ? 100 - (timeLeftToHarvest / laborConfig.base_labor_units) * 100
-                : 0
+              laborConfig && timeLeftToHarvest ? 100 - (timeLeftToHarvest / laborConfig.base_labor_units) * 100 : 0
             }
             className="bg-white"
           />
@@ -210,18 +165,14 @@ export const LaborComponent = ({
             <>
               <Clock />
               <div className="ml-1 italic text-white/70">
-                {laborLeft
-                  ? `${formatSecondsInHoursMinutes(laborLeft)} left`
-                  : "No Labor"}
+                {laborLeft ? `${formatSecondsInHoursMinutes(laborLeft)} left` : "No Labor"}
               </div>
             </>
 
             <div className="flex items-center mx-auto text-white/70">
               {laborConfig && labor && laborLeft > 0
                 ? `+${calculateProductivity(
-                    isFood
-                      ? laborConfig.base_food_per_cycle
-                      : laborConfig.base_resources_per_cycle,
+                    isFood ? laborConfig.base_food_per_cycle : laborConfig.base_resources_per_cycle,
                     labor.multiplier,
                     laborConfig.base_labor_units,
                   ).toFixed(0)}`
@@ -235,11 +186,7 @@ export const LaborComponent = ({
               /h
             </div>
             <>
-              <ResourceIcon
-                resource={findResourceById(resourceId)?.trait as any}
-                size="xs"
-                className="!w-[12px]"
-              />
+              <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="xs" className="!w-[12px]" />
               <div className="mx-1 text-brilliance">{`+${nextHarvest}`}</div>
             </>
             {/* // TODO: visual cue to show disabled? */}

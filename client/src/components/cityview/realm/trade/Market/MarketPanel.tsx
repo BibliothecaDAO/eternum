@@ -7,17 +7,14 @@ import { ResourceFilter } from "../../../../ResourceFilterComponent";
 import { OrdersFilter } from "../../../../OrdersFilterComponent";
 import { CreateOfferPopup } from "../CreateOffer";
 import Button from "../../../../../elements/Button";
-import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { MarketOffer } from "./MarketOffer";
 import { AcceptOfferPopup } from "../AcceptOffer";
-import { MarketInterface, useSyncMarket } from "../../../../../hooks/graphql/useGraphQLQueries";
+import { MarketInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
 import { useGetMarket } from "../../../../../hooks/helpers/useTrade";
 
 type MarketPanelProps = {};
 
 export const MarketPanel = ({}: MarketPanelProps) => {
-  const { realmEntityId } = useRealmStore();
-
   const [activeFilter, setActiveFilter] = useState(false);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<MarketInterface | undefined>(undefined);
@@ -32,10 +29,17 @@ export const MarketPanel = ({}: MarketPanelProps) => {
     ];
   }, []);
 
-  // TODO: find a way to only call this once the first render and not after every render and have a loading when it's querying
-  useSyncMarket({ realmId: realmEntityId });
-
   const { market } = useGetMarket();
+
+  const renderedMarketOffers = useMemo(() => {
+    if (!market) return null;
+
+    return market.map((trade) => (
+      <div className="flex flex-col p-2" key={trade.tradeId}>
+        <MarketOffer marketOffer={trade} onAccept={() => setSelectedTrade(trade)} />
+      </div>
+    ));
+  }, [market]);
 
   const [activeSort, setActiveSort] = useState<SortInterface>({
     sortKey: "number",
@@ -77,12 +81,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
           selectedTrade={selectedTrade}
         />
       )}
-      {market &&
-        market.map((trade) => (
-          <div className="flex flex-col p-2" key={trade.tradeId}>
-            <MarketOffer marketOffer={trade} onAccept={() => setSelectedTrade(trade)} />
-          </div>
-        ))}
+      {renderedMarketOffers}
       <Button
         className="sticky w-32 -translate-x-1/2 bottom-2 left-1/2 !rounded-full"
         onClick={() => setShowCreateOffer(true)}

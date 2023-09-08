@@ -8,14 +8,9 @@ import { Dot } from "../../../../../elements/Dot";
 import clsx from "clsx";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
-import {
-  CaravanInterface,
-  useGetCounterPartyOrderId,
-  useSyncCaravanInfo,
-} from "../../../../../hooks/graphql/useGraphQLQueries";
+import { CaravanInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById, getTotalResourceWeight } from "../TradeUtils";
 import { CAPACITY_PER_DONKEY } from "../../../../../constants/travel";
-import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
 import { useTrade } from "../../../../../hooks/helpers/useTrade";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 
@@ -26,36 +21,25 @@ type CaravanProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Caravan = ({ caravan, ...props }: CaravanProps) => {
-  const { nextBlockTimestamp } = useBlockchainStore();
-
-  const { counterPartyOrderId } = useGetCounterPartyOrderId(caravan.orderId);
-
-  useSyncCaravanInfo(caravan.caravanId, caravan.orderId, counterPartyOrderId);
-
-  const { getCaravanInfo } = useCaravan();
-  const caravanInfo = getCaravanInfo(caravan.caravanId, caravan.orderId);
+  const { orderId, arrivalTime, destination, blocked, capacity } = caravan;
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const { getTradeResources } = useTrade();
-  let resourcesGive = getTradeResources(caravan.orderId);
+  let resourcesGive = orderId ? getTradeResources(orderId) : [];
 
   // capacity
   let resourceWeight = useMemo(() => {
     return getTotalResourceWeight([...resourcesGive]);
   }, [resourcesGive]);
 
-  const destinationRealmId = caravanInfo?.destination && getRealmIdByPosition(caravanInfo.destination);
+  const destinationRealmId = destination && getRealmIdByPosition(destination);
   const destinationRealmName = destinationRealmId && getRealmNameById(destinationRealmId);
 
-  const isTraveling =
-    caravanInfo &&
-    !caravanInfo.blocked &&
-    nextBlockTimestamp &&
-    caravanInfo.arrivalTime &&
-    caravanInfo.arrivalTime > nextBlockTimestamp;
-  const isWaitingForDeparture = caravanInfo && caravanInfo.blocked;
+  const isTraveling = !blocked && nextBlockTimestamp && arrivalTime && arrivalTime > nextBlockTimestamp;
+  const isWaitingForDeparture = blocked;
   const isIdle = !isTraveling && !isWaitingForDeparture;
 
-  if (((caravanInfo && caravanInfo.blocked) || isTraveling) && props.idleOnly) {
+  if ((blocked || isTraveling) && props.idleOnly) {
     return null;
   }
 
@@ -79,11 +63,11 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
               </div>
             </div>
           )}
-          {caravanInfo && resourceWeight !== undefined && caravanInfo.capacity && (
+          {capacity && resourceWeight !== undefined && capacity && (
             <div className="flex items-center ml-1 text-gold">
               {isTraveling || isWaitingForDeparture ? resourceWeight : 0}
               <div className="mx-0.5 italic text-light-pink">/</div>
-              {`${caravanInfo.capacity / 1000} kg`}
+              {`${capacity / 1000} kg`}
               <CaretDownFill className="ml-1 fill-current" />
             </div>
           )}
@@ -99,9 +83,9 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
             <Pen className="ml-1 fill-gold" />
           </div>
         )}
-        {isTraveling && nextBlockTimestamp && caravanInfo.arrivalTime && (
+        {arrivalTime && isTraveling && nextBlockTimestamp && (
           <div className="flex ml-auto -mt-2 italic text-light-pink">
-            {formatSecondsLeftInDaysHours(caravanInfo.arrivalTime - nextBlockTimestamp)}
+            {formatSecondsLeftInDaysHours(arrivalTime - nextBlockTimestamp)}
           </div>
         )}
       </div>
@@ -132,7 +116,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
               <div className="flex items-center space-x-[6px]">
                 <div className="flex flex-col items-center">
                   <Dot colorClass="bg-green" />
-                  <div className="mt-1 text-green">{(caravanInfo?.capacity || 0) / CAPACITY_PER_DONKEY}</div>
+                  <div className="mt-1 text-green">{(capacity || 0) / CAPACITY_PER_DONKEY}</div>
                 </div>
                 <div className="flex flex-col items-center">
                   <Dot colorClass="bg-yellow" />

@@ -7,21 +7,14 @@ import { ResourceFilter } from "../../../../ResourceFilterComponent";
 import { OrdersFilter } from "../../../../OrdersFilterComponent";
 import { CreateOfferPopup } from "../CreateOffer";
 import Button from "../../../../../elements/Button";
-import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { MyOffer } from "./MyOffer";
-import { useSyncMyOffers } from "../../../../../hooks/graphql/useGraphQLQueries";
 import { useGetMyOffers } from "../../../../../hooks/helpers/useTrade";
 
 type MarketPanelProps = {};
 
 export const MyOffersPanel = ({}: MarketPanelProps) => {
-  const { realmEntityId } = useRealmStore();
-
   const [activeFilter, setActiveFilter] = useState(false);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
-
-  // TODO: why is it getting called at each render ? (even useMemo not work)
-  useSyncMyOffers({ realmId: realmEntityId });
 
   const { myOffers } = useGetMyOffers();
 
