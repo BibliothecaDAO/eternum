@@ -5,10 +5,19 @@ import { MarketInterface, ResourceInterface } from "../graphql/useGraphQLQueries
 import { useEffect, useMemo, useState } from "react";
 import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys } from "../../utils/utils";
-import { useEntityQuery } from "@dojoengine/react";
 import { HIGH_ENTITY_ID } from "../../dojo/createOptimisticSystemCalls";
 import { getRealm } from "../../components/cityview/realm/SettleRealmComponent";
 import { calculateRatio } from "../../components/cityview/realm/trade/Market/MarketOffer";
+import { HasResources, QueryFragment, useTradeQuery } from "./useTradeQueries";
+import { resources } from "../../constants/resources";
+
+type useGetMarketProps = {
+  selectedResources: string[];
+};
+
+type useGetMyOffersProps = {
+  selectedResources: string[];
+};
 
 export function useTrade() {
   const {
@@ -72,10 +81,10 @@ export function useTrade() {
 }
 
 // TODO: sorting here
-export function useGetMyOffers() {
+export function useGetMyOffers({ selectedResources }: useGetMyOffersProps) {
   const {
     setup: {
-      components: { Status, Trade },
+      components: { Status, Trade, FungibleEntities, OrderResource },
     },
   } = useDojo();
 
@@ -83,7 +92,21 @@ export function useGetMyOffers() {
 
   const [myOffers, setMyOffers] = useState<MarketInterface[]>([]);
 
-  const entityIds = useEntityQuery([HasValue(Status, { value: 0 }), HasValue(Trade, { maker_id: realmEntityId })]);
+  const fragments: QueryFragment[] = [HasValue(Status, { value: 0 }), HasValue(Trade, { maker_id: realmEntityId })];
+
+  if (selectedResources.length > 0)
+    fragments.push(
+      HasResources(
+        Trade,
+        FungibleEntities,
+        OrderResource,
+        selectedResources
+          .map((resource) => resources.find((r) => r.trait === resource)?.id)
+          .filter(Boolean) as number[],
+      ),
+    );
+
+  const entityIds = useTradeQuery(fragments);
 
   const { getTradeResources } = useTrade();
 
@@ -123,10 +146,10 @@ export function useGetMyOffers() {
   };
 }
 
-export function useGetMarket() {
+export function useGetMarket({ selectedResources }: useGetMarketProps): MarketInterface[] {
   const {
     setup: {
-      components: { Status, Trade },
+      components: { Status, Trade, FungibleEntities, OrderResource },
     },
   } = useDojo();
 
@@ -134,7 +157,21 @@ export function useGetMarket() {
 
   const [market, setMarket] = useState<MarketInterface[]>([]);
 
-  const entityIds = useEntityQuery([HasValue(Status, { value: 0 }), NotValue(Trade, { maker_id: realmEntityId })]);
+  const fragments: QueryFragment[] = [HasValue(Status, { value: 0 }), NotValue(Trade, { maker_id: realmEntityId })];
+
+  if (selectedResources.length > 0)
+    fragments.push(
+      HasResources(
+        Trade,
+        FungibleEntities,
+        OrderResource,
+        selectedResources
+          .map((resource) => resources.find((r) => r.trait === resource)?.id)
+          .filter(Boolean) as number[],
+      ),
+    );
+
+  const entityIds = useTradeQuery(fragments);
 
   const { getTradeResources, canAcceptOffer } = useTrade();
 
@@ -165,7 +202,5 @@ export function useGetMarket() {
     setMarket(trades);
   }, [entityIds]);
 
-  return {
-    market,
-  };
+  return market;
 }

@@ -424,7 +424,6 @@ export const useSyncWorld = (): { loading: boolean } => {
 
   const [loading, setLoading] = useState(true);
 
-  // TODO: add loading bar
   useMemo(() => {
     const syncData = async () => {
       try {

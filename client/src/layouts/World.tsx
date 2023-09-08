@@ -26,8 +26,8 @@ import { useSyncWorld } from "../hooks/graphql/useGraphQLQueries";
 export const World = () => {
   const { loading } = useSyncWorld();
 
-  //TODO: figure out why component getting rerendered everytime nextBlockTimestamp get's rerendered
   useFetchBlockchainData();
+
   const { progress } = useProgress();
 
   const isSoundOn = useUIStore((state) => state.isSoundOn);
@@ -99,4 +99,5 @@ export const World = () => {
       <Redirect to="/map" />
     </div>
   );
+  return <div></div>;
 };

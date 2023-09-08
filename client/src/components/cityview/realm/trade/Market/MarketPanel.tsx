@@ -18,6 +18,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
   const [activeFilter, setActiveFilter] = useState(false);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<MarketInterface | undefined>(undefined);
+  const [selectedResources, setSelectedResources] = useState<string[]>([]);
 
   const sortingParams = useMemo(() => {
     return [
@@ -29,7 +30,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
     ];
   }, []);
 
-  const { market } = useGetMarket();
+  const market = useGetMarket({ selectedResources });
 
   const renderedMarketOffers = useMemo(() => {
     if (!market) return null;
@@ -51,7 +52,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
         <FilterButton active={activeFilter} onClick={() => setActiveFilter(!activeFilter)}>
           Filter
         </FilterButton>
-        <ResourceFilter />
+        <ResourceFilter selectedResources={selectedResources} setSelectedResources={setSelectedResources} />
         <OrdersFilter />
       </FiltersPanel>
       <SortPanel className="px-3 py-2">

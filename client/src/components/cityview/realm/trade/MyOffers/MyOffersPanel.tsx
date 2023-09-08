@@ -15,8 +15,9 @@ type MarketPanelProps = {};
 export const MyOffersPanel = ({}: MarketPanelProps) => {
   const [activeFilter, setActiveFilter] = useState(false);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
+  const [selectedResources, setSelectedResources] = useState<string[]>([]);
 
-  const { myOffers } = useGetMyOffers();
+  const { myOffers } = useGetMyOffers({ selectedResources });
 
   const sortingParams = useMemo(() => {
     return [
@@ -38,7 +39,7 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
         <FilterButton active={activeFilter} onClick={() => setActiveFilter(!activeFilter)}>
           Filter
         </FilterButton>
-        <ResourceFilter />
+        <ResourceFilter selectedResources={selectedResources} setSelectedResources={setSelectedResources} />
         <OrdersFilter />
       </FiltersPanel>
       <SortPanel className="px-3 py-2">

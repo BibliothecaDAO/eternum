@@ -6,10 +6,12 @@ import { SelectBox } from "../elements/SelectBox";
 import { ResourceIcon } from "../elements/ResourceIcon";
 import Button from "../elements/Button";
 
-type ResourceFilterProps = {};
+type ResourceFilterProps = {
+  selectedResources: string[];
+  setSelectedResources: (resources: string[]) => void;
+};
 
-export const ResourceFilter = ({}: ResourceFilterProps) => {
-  const [selectedResources, setSelectedResources] = useState<string[]>([]);
+export const ResourceFilter = ({ selectedResources, setSelectedResources }: ResourceFilterProps) => {
   const [popupOpened, setPopupOpened] = useState<boolean>(false);
 
   const selectResource = (resource: string) => {
