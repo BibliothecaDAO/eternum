@@ -27,7 +27,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
       { label: "Give", sortKey: "give", className: "ml-4" },
       { label: "Exchange rate", sortKey: "ratio", className: "ml-auto mr-4" },
       { label: "Get", sortKey: "get", className: "ml-auto mr-4" },
-      { label: "Travel time", sortKey: "time", className: "ml-auto mr-4" },
+      { label: "Travel distance", sortKey: "distance", className: "ml-auto mr-4" },
     ];
   }, []);
 

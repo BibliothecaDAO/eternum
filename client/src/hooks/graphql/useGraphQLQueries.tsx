@@ -45,6 +45,7 @@ export interface MarketInterface {
   resourcesGive: Resource[];
   canAccept?: boolean;
   ratio: number;
+  distance: number;
 }
 
 export interface PositionInterface {

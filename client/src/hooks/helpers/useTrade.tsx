@@ -12,6 +12,7 @@ import { HasOrders, HasResources, QueryFragment, useTradeQuery } from "./useTrad
 import { resources } from "../../constants/resources";
 import { orders } from "../../constants/orders";
 import { SortInterface } from "../../elements/SortButton";
+import { useCaravan } from "./useCaravans";
 
 type useGetMarketProps = {
   selectedResources: string[];
@@ -141,6 +142,7 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
             resourcesGive,
             canAccept: false,
             ratio: calculateRatio(resourcesGive, resourcesGet),
+            distance: 0,
           } as MarketInterface;
         }
       })
@@ -198,6 +200,7 @@ export function useGetMarket({ selectedResources, selectedOrders }: useGetMarket
   const entityIds = useTradeQuery(fragments);
 
   const { getTradeResources, canAcceptOffer } = useTrade();
+  const { calculateDistance } = useCaravan();
 
   useEffect(() => {
     const trades = entityIds
@@ -206,6 +209,7 @@ export function useGetMarket({ selectedResources, selectedOrders }: useGetMarket
         if (trade) {
           const resourcesGet = getTradeResources(trade.maker_order_id);
           const resourcesGive = getTradeResources(trade.taker_order_id);
+          const distance = calculateDistance(trade.maker_id, realmEntityId);
           return {
             tradeId,
             makerId: trade.maker_id,
@@ -217,6 +221,7 @@ export function useGetMarket({ selectedResources, selectedOrders }: useGetMarket
             resourcesGive,
             canAccept: canAcceptOffer({ realmEntityId, resourcesGive }),
             ratio: calculateRatio(resourcesGive, resourcesGet),
+            distance: distance || 0,
           } as MarketInterface;
         }
       })
@@ -227,6 +232,9 @@ export function useGetMarket({ selectedResources, selectedOrders }: useGetMarket
   return market;
 }
 
+/**
+ * sort trades based on active filters
+ */
 export function sortTrades(trades: MarketInterface[], activeSort: SortInterface): MarketInterface[] {
   if (activeSort.sort !== "none") {
     if (activeSort.sortKey === "ratio") {
@@ -243,6 +251,14 @@ export function sortTrades(trades: MarketInterface[], activeSort: SortInterface)
           return a.expiresAt - b.expiresAt;
         } else {
           return b.expiresAt - a.expiresAt;
+        }
+      });
+    } else if (activeSort.sortKey === "distance") {
+      return trades.sort((a, b) => {
+        if (activeSort.sort === "asc") {
+          return a.distance - b.distance;
+        } else {
+          return b.distance - a.distance;
         }
       });
     } else if (activeSort.sortKey === "realm") {
