@@ -4,3 +4,4 @@ mod capacity_config;
 mod speed_config;
 mod travel_config;
 mod weight_config;
+mod structure_config;

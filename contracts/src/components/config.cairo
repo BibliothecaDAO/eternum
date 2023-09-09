@@ -119,3 +119,10 @@ struct WeightConfig {
     entity_type: u128,
     weight_gram: u128,
 }
+
+#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+struct StructureConfig {
+    #[key]
+    structure_composition_hash: felt252,
+    structure_type: u8
+}
