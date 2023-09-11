@@ -29,7 +29,26 @@ export function useCaravan() {
     };
   };
 
-  return { getCaravanInfo };
+  function calculateDistance(startId: number, destinationId: number): number | undefined {
+    // d = √((x2-x1)² + (y2-y1)²)
+    let start = getComponentValue(Position, getEntityIdFromKeys([BigInt(startId)]));
+    let destination = getComponentValue(Position, getEntityIdFromKeys([BigInt(destinationId)]));
+    if (start && destination) {
+      const x: number =
+        start.x > destination.x ? Math.pow(start.x - destination.x, 2) : Math.pow(destination.x - start.x, 2);
+
+      const y: number =
+        start.y > destination.y ? Math.pow(start.y - destination.y, 2) : Math.pow(destination.y - start.y, 2);
+
+      // Using bitwise shift for the square root approximation for BigInt.
+      // we store coords in x * 10000 to get precise distance
+      const distance = (x + y) ** 0.5 / 10000;
+
+      return distance;
+    }
+  }
+
+  return { getCaravanInfo, calculateDistance };
 }
 
 export function useGetRealmCaravans(x: number, y: number) {

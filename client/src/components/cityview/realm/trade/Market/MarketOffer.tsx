@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
 import { findResourceById } from "../../../../../constants/resources";
 import { ReactComponent as RatioIcon } from "../../../../../assets/icons/common/ratio.svg";
-import { ResourcesOffer } from "../../../../../types";
 import { orderNameDict } from "../../../../../constants/orders";
 import * as realmsData from "../../../../../geodata/realms.json";
 import { MarketInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
+import { ResourcesOffer } from "../../../../../types";
 
 type TradeOfferProps = {
   marketOffer: MarketInterface;
@@ -17,7 +17,7 @@ type TradeOfferProps = {
 };
 
 export const MarketOffer = ({ marketOffer, onAccept }: TradeOfferProps) => {
-  const { resourcesGet, resourcesGive, canAccept, ratio } = marketOffer;
+  const { distance, resourcesGet, resourcesGive, canAccept, ratio } = marketOffer;
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -26,8 +26,6 @@ export const MarketOffer = ({ marketOffer, onAccept }: TradeOfferProps) => {
   }, [marketOffer]);
 
   let { realm: makerRealm } = useGetRealm(marketOffer.makerId);
-
-  let timeLeft = useMemo(() => formatTimeLeft(marketOffer.expiresAt - Date.now() / 1000), [marketOffer.expiresAt]);
 
   return (
     <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold">
@@ -39,7 +37,7 @@ export const MarketOffer = ({ marketOffer, onAccept }: TradeOfferProps) => {
             {realmsData["features"][makerRealm.realmId - 1].name}
           </div>
         )}
-        <div className="-mt-2 text-gold">{timeLeft}</div>
+        <div className="-mt-2 text-gold">{`${distance.toFixed(0)} km`}</div>
       </div>
       <div className="flex items-end mt-2">
         <div className="flex items-center justify-around flex-1">
@@ -96,14 +94,6 @@ export const MarketOffer = ({ marketOffer, onAccept }: TradeOfferProps) => {
       </div>
     </div>
   );
-};
-
-const formatTimeLeft = (seconds: number) => {
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-
-  return `${days} days ${hours}h:${minutes}m`;
 };
 
 export const calculateRatio = (resourcesGive: ResourcesOffer[], resourcesGet: ResourcesOffer[]) => {

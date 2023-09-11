@@ -45,6 +45,7 @@ export interface MarketInterface {
   resourcesGive: Resource[];
   canAccept?: boolean;
   ratio: number;
+  distance: number;
 }
 
 export interface PositionInterface {
@@ -424,7 +425,6 @@ export const useSyncWorld = (): { loading: boolean } => {
 
   const [loading, setLoading] = useState(true);
 
-  // TODO: add loading bar
   useMemo(() => {
     const syncData = async () => {
       try {
