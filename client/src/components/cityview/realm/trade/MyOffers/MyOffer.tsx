@@ -8,8 +8,8 @@ import { useDojo } from "../../../../../DojoContext";
 import { orderNameDict } from "../../../../../constants/orders";
 import * as realmsData from "../../../../../geodata/realms.json";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import { MarketInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
-import { getRealm } from "../../SettleRealmComponent";
+import { getRealm } from "../../../../../utils/realms";
+import { MarketInterface } from "../../../../../hooks/helpers/useTrade";
 
 type TradeOfferProps = {
   myOffer: MarketInterface;
@@ -32,8 +32,6 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
     account: { account },
   } = useDojo();
 
-  const { realmId } = useRealmStore();
-
   const onCancel = async () => {
     // status 2 = cancel
     setIsLoading(true);
@@ -43,7 +41,7 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
     });
   };
 
-  let makerRealm = useMemo(() => (realmId ? getRealm(realmId) : undefined), [realmId]);
+  let takerRealm = useMemo(() => (myOffer.takerId !== 0 ? getRealm(myOffer.takerId) : undefined), [myOffer]);
 
   const getResourceTrait = useMemo(() => {
     return (resourceId: number) => findResourceById(resourceId)?.trait as any;
@@ -54,12 +52,14 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
   return (
     <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold">
       <div className="flex items-center justify-between">
-        {makerRealm && (
+        {takerRealm ? (
           <div className="flex items-center p-1 -mt-2 -ml-2 border border-t-0 border-l-0 rounded-br-md border-gray-gold">
-            {/* // order of the order maker */}
-            {makerRealm.order && <OrderIcon order={orderNameDict[makerRealm.order]} size="xs" className="mr-1" />}
-            {realmsData["features"][makerRealm.realm_id - 1].name}
+            {/* order of the order maker */}
+            {takerRealm.order && <OrderIcon order={orderNameDict[takerRealm.order]} size="xs" className="mr-1" />}
+            {realmsData["features"][takerRealm.realm_id - 1].name}
           </div>
+        ) : (
+          <div className="flex-1"></div>
         )}
         <div className="-mt-2 text-gold">{timeLeft}</div>
       </div>

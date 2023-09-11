@@ -2,13 +2,10 @@ import { ReactComponent as Checkmark } from "../../assets/icons/common/checkmark
 import { OrderIcon } from "../../elements/OrderIcon";
 import { Badge } from "../../elements/Badge";
 import { ResourceIcon } from "../../elements/ResourceIcon";
-import {
-  getRealmNameById,
-  getRealmOrderNameById,
-} from "../../components/cityview/realm/trade/TradeUtils";
 import { NotificationType } from "./useNotifications";
 import { findResourceById } from "../../constants/resources";
 import { useTrade } from "../helpers/useTrade";
+import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 
 export const useClaimOrderNotification = (
   notification: NotificationType,
@@ -23,16 +20,12 @@ export const useClaimOrderNotification = (
   const { getTradeResources } = useTrade();
 
   const realmId =
-    notification.data && "destinationRealmId" in notification.data
-      ? notification.data.destinationRealmId
-      : undefined;
+    notification.data && "destinationRealmId" in notification.data ? notification.data.destinationRealmId : undefined;
 
   const realmName = realmId ? getRealmNameById(realmId) : "";
   const realmOrderName = realmId ? getRealmOrderNameById(realmId) : "";
 
-  let claimableResources = orderId
-    ? getTradeResources(parseInt(orderId))
-    : undefined;
+  let claimableResources = orderId ? getTradeResources(parseInt(orderId)) : undefined;
 
   return {
     type: "success",

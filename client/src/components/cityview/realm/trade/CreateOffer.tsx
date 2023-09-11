@@ -11,14 +11,19 @@ import { ReactComponent as Danger } from "../../../../assets/icons/common/danger
 import { ReactComponent as Donkey } from "../../../../assets/icons/units/donkey.svg";
 import { Caravan } from "./Caravans/Caravan";
 import { Steps } from "../../../../elements/Steps";
-import { CaravanInterface } from "../../../../hooks/graphql/useGraphQLQueries";
+import { CaravanInterface, getLatestRealmId } from "../../../../hooks/graphql/useGraphQLQueries";
 import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
-import { useGetRealmCaravans } from "../../../../hooks/helpers/useCaravans";
+import { useCaravan, useGetRealmCaravans } from "../../../../hooks/helpers/useCaravans";
 import { getEntityIdFromKeys } from "../../../../utils/utils";
-import { getComponentValue } from "@latticexyz/recs";
+import { HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
+import { Realm } from "../../../../types";
+import { getRealm } from "../../../../utils/realms";
+import { getOrderName } from "../../../../constants/orders";
+import { OrderIcon } from "../../../../elements/OrderIcon";
+import { useTrade } from "../../../../hooks/helpers/useTrade";
 
 type CreateOfferPopupProps = {
   onClose: () => void;
@@ -32,6 +37,8 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] = useState<{ [key: number]: number }>({});
   const [selectedResourcesGetAmounts, setSelectedResourcesGetAmounts] = useState<{ [key: number]: number }>({});
   const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
+  const [selectedRealmEntityId, setSelectedRealmEntityId] = useState<number | undefined>();
+  const [selectedRealmId, setSelectedRealmId] = useState<number | undefined>();
   const [isNewCaravan, setIsNewCaravan] = useState(false);
   const [donkeysCount, setDonkeysCount] = useState(1);
   const [resourceWeight, setResourceWeight] = useState(0);
@@ -46,7 +53,14 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
     },
   } = useDojo();
 
-  const { realmEntityId } = useRealmStore();
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+
+  const { getRealmEntityIdFromRealmId } = useTrade();
+
+  const onSelectRealmId = (realmId: number) => {
+    const entityId = getRealmEntityIdFromRealmId(realmId);
+    entityId && setSelectedRealmEntityId(entityId);
+  };
 
   const createOrder = async () => {
     setIsLoading(true);
@@ -56,6 +70,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
         maker_id: realmEntityId,
         maker_entity_types: selectedResourceIdsGive,
         maker_quantities: Object.values(selectedResourcesGiveAmounts),
+        taker_id: selectedRealmEntityId || 0,
         taker_entity_types: selectedResourceIdsGet,
         taker_quantities: Object.values(selectedResourcesGetAmounts),
       });
@@ -80,6 +95,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
         maker_id: realmEntityId,
         maker_entity_types: selectedResourceIdsGive,
         maker_quantities: Object.values(selectedResourcesGiveAmounts),
+        taker_id: selectedRealmEntityId || 0,
         taker_entity_types: selectedResourceIdsGet,
         taker_quantities: Object.values(selectedResourcesGetAmounts),
       });
@@ -140,6 +156,8 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
               selectedResourcesGetAmounts={selectedResourcesGetAmounts}
               setSelectedResourcesGetAmounts={setSelectedResourcesGetAmounts}
               setResourceWeight={setResourceWeight}
+              selectedRealmId={selectedRealmId}
+              setSelectedRealmId={setSelectedRealmId}
             />
           )}
           {step == 3 && (
@@ -176,6 +194,9 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
                 if (step === 3) {
                   createOrder();
                 } else {
+                  if (step === 2) {
+                    selectedRealmId && onSelectRealmId(selectedRealmId);
+                  }
                   setStep(step + 1);
                 }
               }}
@@ -286,6 +307,8 @@ const SelectResourcesAmountPanel = ({
   setSelectedResourcesGiveAmounts,
   setSelectedResourcesGetAmounts,
   setResourceWeight,
+  selectedRealmId,
+  setSelectedRealmId,
 }: {
   selectedResourceIdsGive: number[];
   selectedResourceIdsGet: number[];
@@ -295,6 +318,8 @@ const SelectResourcesAmountPanel = ({
   setSelectedResourcesGiveAmounts: (selectedResourcesGiveAmounts: { [key: number]: number }) => void;
   setSelectedResourcesGetAmounts: (selectedResourcesGetAmounts: { [key: number]: number }) => void;
   setResourceWeight: (resourceWeight: number) => void;
+  selectedRealmId: number | undefined;
+  setSelectedRealmId: (selectedRealmId: number) => void;
 }) => {
   const {
     setup: {
@@ -380,7 +405,93 @@ const SelectResourcesAmountPanel = ({
       <div className="flex text-xs text-center text-white">
         Items Weight <div className="ml-1 text-gold">{`${resourceWeight}kg`}</div>
       </div>
+      <SelectRealmIdPanel
+        selectedRealmId={selectedRealmId}
+        setSelectedRealmId={setSelectedRealmId}
+      ></SelectRealmIdPanel>
     </>
+  );
+};
+
+export const SelectRealmIdPanel = ({
+  selectedRealmId,
+  setSelectedRealmId,
+}: {
+  selectedRealmId: number | undefined;
+  setSelectedRealmId: (selectedRealmId: number) => void;
+}) => {
+  const [specifyRealmId, setSpecifyRealmId] = useState(false);
+  const [allRealms, setAllRealms] = useState<Realm[]>([]); // This would ideally be populated from an API call or similar.
+
+  const { realmId, realmEntityId } = useRealmStore();
+
+  const { getRealmEntityIdFromRealmId } = useTrade();
+
+  const { calculateDistance } = useCaravan();
+
+  useEffect(() => {
+    const buildRealmIds = async () => {
+      const realm_id = await getLatestRealmId();
+      setAllRealms(
+        Array.from({ length: realm_id }, (_, i) => i + 1)
+          .map((id) => {
+            return getRealm(id);
+          })
+          .filter((realm) => realm.realm_id !== realmId && realm.realm_id !== 1),
+      );
+    };
+    buildRealmIds();
+  }, []);
+
+  return (
+    <div className="flex flex-col items-center w-full p-2">
+      {!specifyRealmId && (
+        <div
+          onClick={() => setSpecifyRealmId(true)}
+          className="w-full mx-4 h-8 py-[7px] bg-dark-brown cursor-pointer rounded justify-center items-center"
+        >
+          <div className="text-xs text-center text-gold"> + Make Direct Offer</div>
+        </div>
+      )}
+      {specifyRealmId && (
+        <div
+          onClick={() => setSpecifyRealmId(false)}
+          className="w-full mx-4 h-8 py-[7px] bg-dark-brown cursor-pointer rounded justify-center items-center"
+        >
+          <div className="text-xs text-center text-gold">Back to Market Offer</div>
+        </div>
+      )}
+      {specifyRealmId && realmEntityId && (
+        <div>
+          <input
+            type="number"
+            id="realm-id"
+            value={selectedRealmId || ""}
+            onChange={(e) => setSelectedRealmId(Number(e.target.value))}
+            placeholder="Enter realm id..."
+          />
+          <div className="bg-gray-100 p-4 rounded shadow-lg max-h-[150px] overflow-y-auto text-gold">
+            {allRealms.map(({ order, name, realm_id: takerRealmId }) => {
+              const takerEntityId = getRealmEntityIdFromRealmId(takerRealmId);
+              const distance = takerEntityId ? calculateDistance(realmEntityId, takerEntityId) : 0;
+              return (
+                <div
+                  key={takerRealmId}
+                  className={`realmItem ${selectedRealmId === takerRealmId ? "active" : ""}`}
+                  onClick={() => setSelectedRealmId(takerRealmId)}
+                >
+                  <div className="flex items-center p-1 -mt-2 -ml-2 border border-t-0 border-l-0 rounded-br-md border-gray-gold">
+                    {takerRealmId}
+                    <OrderIcon order={getOrderName(order)} size="xs" className="mr-1" />
+                    {name}-{`${distance?.toFixed(0)} km`}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

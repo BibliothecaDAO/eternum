@@ -6,10 +6,10 @@ import { findResourceById } from "../../../../../constants/resources";
 import { ReactComponent as RatioIcon } from "../../../../../assets/icons/common/ratio.svg";
 import { orderNameDict } from "../../../../../constants/orders";
 import * as realmsData from "../../../../../geodata/realms.json";
-import { MarketInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { ResourcesOffer } from "../../../../../types";
+import { MarketInterface } from "../../../../../hooks/helpers/useTrade";
 
 type TradeOfferProps = {
   marketOffer: MarketInterface;

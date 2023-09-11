@@ -23,7 +23,7 @@ export function createOptimisticSystemCalls({
 }: ClientComponents) {
   function optimisticMakeFungibleOrder(systemCall: (args: MakeFungibleOrderProps) => Promise<number>) {
     return async function (this: any, args: MakeFungibleOrderProps): Promise<number> {
-      const { maker_id, maker_entity_types, maker_quantities, taker_entity_types, taker_quantities } = args;
+      const { maker_id, maker_entity_types, maker_quantities, taker_id, taker_entity_types, taker_quantities } = args;
 
       const expires_at = Math.floor(Date.now() / 1000 + 2628000);
 
@@ -35,12 +35,13 @@ export function createOptimisticSystemCalls({
       const key = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 3)]);
 
       const numberMakerId = maker_id as Type.Number;
+      const numberTakerId = taker_id as Type.Number;
 
       Trade.addOverride(overrideId, {
         entity: trade_id,
         value: {
           maker_id: numberMakerId,
-          taker_id: 0,
+          taker_id: numberTakerId,
           maker_order_id,
           taker_order_id,
           expires_at,

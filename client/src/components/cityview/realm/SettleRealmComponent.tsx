@@ -1,15 +1,13 @@
 import { useState } from "react";
 import Button from "../../../elements/Button";
-import realms from "../../../data/realms.json";
+
 import realmCoords from "../../../geodata/coords.json";
 import { useDojo } from "../../../DojoContext";
-import { Realm } from "../../../types";
-import { findResourceIdByTrait } from "../../../constants/resources";
-import { packResources } from "../../../utils/packedData";
-import { orders } from "../../../constants/orders";
+
 import { getLatestRealmId } from "../../../hooks/graphql/useGraphQLQueries";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
+import { getRealm } from "../../../utils/realms";
 
 export const SettleRealmComponent = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -62,10 +60,7 @@ export const SettleRealmComponent = () => {
     // add the new entity_id in the list of entityIds in my localStorage
     const entityIds = localStorage.getItem("entityIds");
     const updatedEntityIds = entityIds
-      ? [
-          ...JSON.parse(entityIds),
-          { realmEntityId: entity_id, realmId: new_realm_id },
-        ]
+      ? [...JSON.parse(entityIds), { realmEntityId: entity_id, realmId: new_realm_id }]
       : [{ realmEntityId: entity_id, realmId: new_realm_id }];
     localStorage.setItem("entityIds", JSON.stringify(updatedEntityIds));
     setRealmEntityIds(updatedEntityIds);
@@ -81,29 +76,16 @@ export const SettleRealmComponent = () => {
   return (
     <div className="flex items-center h-min">
       {!isLoading && (
-        <Button
-          onClick={settleRealm}
-          className="ml-auto p-2 !h-8 text-lg !rounded-md"
-          variant="success"
-        >
+        <Button onClick={settleRealm} className="ml-auto p-2 !h-8 text-lg !rounded-md" variant="success">
           Settle Realm
         </Button>
       )}
       {isLoading && (
-        <Button
-          isLoading={true}
-          onClick={() => {}}
-          variant="danger"
-          className="ml-2 p-2 !h-4 text-xxs !rounded-md"
-        >
+        <Button isLoading={true} onClick={() => {}} variant="danger" className="ml-2 p-2 !h-4 text-xxs !rounded-md">
           {}
         </Button>
       )}
-      <Button
-        onClick={() => clearRealms()}
-        variant="danger"
-        className="ml-2 p-2 !h-8 text-lg !rounded-md"
-      >
+      <Button onClick={() => clearRealms()} variant="danger" className="ml-2 p-2 !h-8 text-lg !rounded-md">
         Clear Realms
       </Button>
     </div>
@@ -111,76 +93,8 @@ export const SettleRealmComponent = () => {
 };
 
 export function getPosition(realm_id: number): { x: number; y: number } {
-  const coords = realmCoords.features[realm_id - 1].geometry.coordinates.map(
-    (value) => parseInt(value),
-  );
+  const coords = realmCoords.features[realm_id - 1].geometry.coordinates.map((value) => parseInt(value));
   return { x: coords[0] + 1800000, y: coords[1] + 1800000 };
-}
-
-interface Attribute {
-  trait_type: string;
-  value: any;
-}
-
-export function getRealm(realm_id: number): Realm {
-  const realmsData = realms as {
-    [key: string]: any;
-  };
-  const realm = realmsData[realm_id.toString()];
-  const resourceIds = realm.attributes
-    .filter(({ trait_type }: Attribute) => trait_type === "Resource")
-    .map(({ value }: Attribute) => findResourceIdByTrait(value));
-  const resource_types_packed = parseInt(packResources(resourceIds));
-  let cities: number = 0;
-  realm.attributes.forEach(({ trait_type, value }: Attribute) => {
-    if (trait_type === "Cities") {
-      cities = value;
-    }
-  });
-  let harbors: number = 0;
-  realm.attributes.forEach(({ trait_type, value }: Attribute) => {
-    if (trait_type === "Harbors") {
-      harbors = value;
-    }
-  });
-  let rivers: number = 0;
-  realm.attributes.forEach(({ trait_type, value }: Attribute) => {
-    if (trait_type === "Rivers") {
-      rivers = value;
-    }
-  });
-  let regions: number = 0;
-  realm.attributes.forEach(({ trait_type, value }: Attribute) => {
-    if (trait_type === "Regions") {
-      regions = value;
-    }
-  });
-
-  const wonder: number = 1;
-
-  let order: number = 0;
-  realm.attributes.forEach(({ trait_type, value }: Attribute) => {
-    if (trait_type === "Order") {
-      const name: string = value.split(" ").pop() || "";
-      orders.forEach(({ orderId, orderName }) => {
-        if (name === orderName) {
-          order = orderId;
-        }
-      });
-    }
-  });
-
-  return {
-    realm_id,
-    resource_types_packed,
-    resource_types_count: resourceIds.length,
-    cities,
-    harbors,
-    rivers,
-    regions,
-    wonder,
-    order,
-  };
 }
 
 export default SettleRealmComponent;

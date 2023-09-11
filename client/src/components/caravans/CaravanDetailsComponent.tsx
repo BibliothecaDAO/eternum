@@ -5,9 +5,9 @@ import Button from "../../elements/Button";
 import { OrderIcon } from "../../elements/OrderIcon";
 import { ResourceCost } from "../../elements/ResourceCost";
 import useBlockchainStore from "../../hooks/store/useBlockchainStore";
-import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../cityview/realm/trade/TradeUtils";
 import { CaravanInterface } from "../../hooks/graphql/useGraphQLQueries";
 import { useTrade } from "../../hooks/helpers/useTrade";
+import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 
 type CaravanDetailsProps = {
   caravan: CaravanInterface;

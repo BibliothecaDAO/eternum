@@ -4,12 +4,13 @@ import { Component, Has, HasValue, getComponentValue, runQuery } from "@latticex
 import { getEntityIdFromKeys } from "../../utils/utils";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { calculateNextHarvest } from "../../components/cityview/realm/labor/laborUtils";
-import { getPosition, getRealm } from "../../components/cityview/realm/SettleRealmComponent";
+import { getPosition } from "../../components/cityview/realm/SettleRealmComponent";
 import useRealmStore from "../store/useRealmStore";
 import { unpackResources } from "../../utils/packedData";
 import { ResourcesIds } from "../../constants/resources";
 import { UpdatedEntity } from "../../dojo/createEntitySubscription";
 import { Position } from "../../types";
+import { getRealm } from "../../utils/realms";
 
 const LABOR_CONFIG = {
   base_food_per_cycle: 14000,

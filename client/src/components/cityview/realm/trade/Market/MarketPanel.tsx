@@ -9,12 +9,13 @@ import { CreateOfferPopup } from "../CreateOffer";
 import Button from "../../../../../elements/Button";
 import { MarketOffer } from "./MarketOffer";
 import { AcceptOfferPopup } from "../AcceptOffer";
-import { MarketInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
-import { sortTrades, useGetMarket } from "../../../../../hooks/helpers/useTrade";
+import { MarketInterface, sortTrades, useGetMarket } from "../../../../../hooks/helpers/useTrade";
 
-type MarketPanelProps = {};
+type MarketPanelProps = {
+  directOffers: boolean;
+};
 
-export const MarketPanel = ({}: MarketPanelProps) => {
+export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
   const [activeFilter, setActiveFilter] = useState(false);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<MarketInterface | undefined>(undefined);
@@ -36,7 +37,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
     sort: "none",
   });
 
-  const market = useGetMarket({ selectedResources, selectedOrders });
+  const market = useGetMarket({ selectedResources, selectedOrders, directOffers });
 
   const renderedMarketOffers = useMemo(() => {
     if (!market) return null;
