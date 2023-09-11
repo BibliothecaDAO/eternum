@@ -17,7 +17,7 @@ import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useCaravan, useGetRealmCaravans } from "../../../../hooks/helpers/useCaravans";
 import { getEntityIdFromKeys } from "../../../../utils/utils";
-import { HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
+import { getComponentValue } from "@latticexyz/recs";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 import { Realm } from "../../../../types";
 import { getRealm } from "../../../../utils/realms";
