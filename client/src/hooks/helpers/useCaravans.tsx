@@ -1,9 +1,6 @@
 import { Has, HasValue, getComponentValue } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
-import {
-  CaravanInfoInterface,
-  CaravanInterface,
-} from "../graphql/useGraphQLQueries";
+import { CaravanInterface } from "../graphql/useGraphQLQueries";
 import { useMemo, useState } from "react";
 import { getEntityIdFromKeys } from "../../utils/utils";
 import { useEntityQuery } from "@dojoengine/react";
@@ -11,83 +8,66 @@ import { useEntityQuery } from "@dojoengine/react";
 export function useCaravan() {
   const {
     setup: {
-      components: { ArrivalTime, Movable, Capacity, Position },
+      components: { ArrivalTime, Movable, Capacity, Position, OrderId },
     },
   } = useDojo();
 
-  const getCaravanInfo = (
-    caravanId: number,
-    orderId: number,
-  ): CaravanInfoInterface | undefined => {
-    const arrivalTime = getComponentValue(
-      ArrivalTime,
-      getEntityIdFromKeys([BigInt(caravanId)]),
-    );
-    const movable = getComponentValue(
-      Movable,
-      getEntityIdFromKeys([BigInt(caravanId)]),
-    );
-    const capacity = getComponentValue(
-      Capacity,
-      getEntityIdFromKeys([BigInt(caravanId)]),
-    );
-    const rawDestination = getComponentValue(
-      Position,
-      getEntityIdFromKeys([BigInt(orderId)]),
-    );
-    let destination = rawDestination
-      ? { x: rawDestination.x, y: rawDestination.y }
-      : undefined;
-    if (movable && capacity) {
-      return {
-        arrivalTime: arrivalTime?.arrives_at,
-        blocked: movable.blocked,
-        capacity: capacity.weight_gram,
-        destination,
-      };
-    }
+  const getCaravanInfo = (caravanId: number): CaravanInterface => {
+    const orderId = getComponentValue(OrderId, getEntityIdFromKeys([BigInt(caravanId)]));
+    const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([BigInt(caravanId)]));
+    const movable = getComponentValue(Movable, getEntityIdFromKeys([BigInt(caravanId)]));
+    const capacity = getComponentValue(Capacity, getEntityIdFromKeys([BigInt(caravanId)]));
+    const rawDestination = orderId ? getComponentValue(Position, getEntityIdFromKeys([BigInt(orderId.id)])) : undefined;
+    let destination = rawDestination ? { x: rawDestination.x, y: rawDestination.y } : undefined;
+    return {
+      caravanId,
+      orderId: orderId?.id,
+      arrivalTime: arrivalTime?.arrives_at,
+      blocked: movable?.blocked,
+      capacity: capacity?.weight_gram,
+      destination,
+    };
   };
 
-  return { getCaravanInfo };
+  function calculateDistance(startId: number, destinationId: number): number | undefined {
+    // d = √((x2-x1)² + (y2-y1)²)
+    let start = getComponentValue(Position, getEntityIdFromKeys([BigInt(startId)]));
+    let destination = getComponentValue(Position, getEntityIdFromKeys([BigInt(destinationId)]));
+    if (start && destination) {
+      const x: number =
+        start.x > destination.x ? Math.pow(start.x - destination.x, 2) : Math.pow(destination.x - start.x, 2);
+
+      const y: number =
+        start.y > destination.y ? Math.pow(start.y - destination.y, 2) : Math.pow(destination.y - start.y, 2);
+
+      // Using bitwise shift for the square root approximation for BigInt.
+      // we store coords in x * 10000 to get precise distance
+      const distance = (x + y) ** 0.5 / 10000;
+
+      return distance;
+    }
+  }
+
+  return { getCaravanInfo, calculateDistance };
 }
 
 export function useGetRealmCaravans(x: number, y: number) {
   const {
     setup: {
-      components: {
-        Position,
-        CaravanMembers,
-        OrderId,
-        ArrivalTime,
-        Movable,
-        Capacity,
-      },
+      components: { Position, CaravanMembers },
     },
   } = useDojo();
 
   const [realmCaravans, setRealmCaravans] = useState<CaravanInterface[]>([]);
 
-  const entityIds = useEntityQuery([
-    HasValue(Position, { x, y }),
-    Has(CaravanMembers),
-  ]);
+  const entityIds = useEntityQuery([HasValue(Position, { x, y }), Has(CaravanMembers)]);
+
+  const { getCaravanInfo } = useCaravan();
 
   useMemo(() => {
     const caravans = entityIds
       .map((id) => {
-        let orderId = getComponentValue(OrderId, id);
-        let capacity = getComponentValue(Capacity, id);
-        let arrivalTime = getComponentValue(ArrivalTime, id);
-        let movable = getComponentValue(Movable, id);
-        if (orderId && capacity && movable) {
-          return {
-            caravanId: id,
-            orderId: orderId.id,
-            blocked: movable.blocked,
-            arrivalTime: arrivalTime?.arrives_at,
-            capacity: capacity.weight_gram,
-          } as CaravanInterface;
-        }
+        return getCaravanInfo(id);
       })
       .filter(Boolean)
       .sort((a, b) => b!.caravanId - a!.caravanId) as CaravanInterface[];

@@ -5,20 +5,19 @@ import { ResourceIcon } from "../../../../../elements/ResourceIcon";
 import { findResourceById } from "../../../../../constants/resources";
 import { ReactComponent as RatioIcon } from "../../../../../assets/icons/common/ratio.svg";
 import { useDojo } from "../../../../../DojoContext";
-import { ResourcesOffer } from "../../../../../types";
 import { orderNameDict } from "../../../../../constants/orders";
 import * as realmsData from "../../../../../geodata/realms.json";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import { MarketInterface, useSyncTradeResources } from "../../../../../hooks/graphql/useGraphQLQueries";
+import { MarketInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
 import { getRealm } from "../../SettleRealmComponent";
-import { useTrade } from "../../../../../hooks/helpers/useTrade";
-import { numberToHex } from "../../../../../utils/utils";
 
 type TradeOfferProps = {
   myOffer: MarketInterface;
 };
 
 export const MyOffer = ({ myOffer }: TradeOfferProps) => {
+  const { resourcesGet, resourcesGive, ratio } = myOffer;
+
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -35,13 +34,6 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
 
   const { realmId } = useRealmStore();
 
-  useSyncTradeResources({
-    makerOrderId: numberToHex(myOffer.takerOrderId),
-    takerOrderId: numberToHex(myOffer.makerOrderId),
-  });
-
-  const { getTradeResources } = useTrade();
-
   const onCancel = async () => {
     // status 2 = cancel
     setIsLoading(true);
@@ -53,19 +45,9 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
 
   let makerRealm = useMemo(() => (realmId ? getRealm(realmId) : undefined), [realmId]);
 
-  // TODO: how to only call once when useSyncTradeResources has finished syncincg ?
-  let resourcesGet = getTradeResources(myOffer.takerOrderId);
-  let resourcesGive = getTradeResources(myOffer.makerOrderId);
-
   const getResourceTrait = useMemo(() => {
     return (resourceId: number) => findResourceById(resourceId)?.trait as any;
   }, []);
-
-  const ratio = useMemo(() => {
-    return resourcesGive.length > 0 && resourcesGet.length > 0
-      ? calculateRatio(resourcesGive, resourcesGet)
-      : undefined;
-  }, [resourcesGive, resourcesGet]);
 
   let timeLeft = formatTimeLeft(myOffer.expiresAt - Date.now() / 1000);
 
@@ -94,7 +76,7 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
           </div>
           <div className="flex flex-col items-center text-white">
             <RatioIcon className="mb-1 fill-white" />
-            {ratio?.toFixed(2) || 0}
+            {ratio.toFixed(2)}
           </div>
           <div className="flex-1 text-gold flex justify-center items-center flex-wrap">
             {resourcesGet &&
@@ -134,16 +116,4 @@ const formatTimeLeft = (seconds: number) => {
   const minutes = Math.floor((seconds % 3600) / 60);
 
   return `${days} days ${hours}h:${minutes}m`;
-};
-
-const calculateRatio = (resourcesGive: ResourcesOffer[], resourcesGet: ResourcesOffer[]) => {
-  let quantityGive = 0;
-  for (let i = 0; i < resourcesGive.length; i++) {
-    quantityGive += resourcesGive[i].amount;
-  }
-  let quantityGet = 0;
-  for (let i = 0; i < resourcesGet.length; i++) {
-    quantityGet += resourcesGet[i].amount;
-  }
-  return quantityGet / quantityGive;
 };

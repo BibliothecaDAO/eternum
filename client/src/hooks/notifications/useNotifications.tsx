@@ -1,19 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDojo } from "../../DojoContext";
-import {
-  Component,
-  Has,
-  HasValue,
-  getComponentValue,
-  runQuery,
-} from "@latticexyz/recs";
+import { Component, Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { getEntityIdFromKeys } from "../../utils/utils";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { calculateNextHarvest } from "../../components/cityview/realm/labor/laborUtils";
-import {
-  getPosition,
-  getRealm,
-} from "../../components/cityview/realm/SettleRealmComponent";
+import { getPosition, getRealm } from "../../components/cityview/realm/SettleRealmComponent";
 import useRealmStore from "../store/useRealmStore";
 import { unpackResources } from "../../utils/packedData";
 import { ResourcesIds } from "../../constants/resources";
@@ -55,27 +46,17 @@ export const useNotifications = () => {
   const {
     setup: {
       entityUpdates,
-      components: {
-        Status,
-        Labor,
-        ArrivalTime,
-        Position,
-        Trade,
-        FungibleEntities,
-      },
+      components: { Status, Labor, ArrivalTime, Position, Trade, FungibleEntities },
     },
   } = useDojo();
 
-  const { nextBlockTimestamp } = useBlockchainStore();
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const { realmEntityIds } = useRealmStore();
   const realmsResources = useRealmsResource(realmEntityIds);
   const realmPositions = useRealmsPosition(realmEntityIds);
 
-  console.log({ aymericRealmPositions: realmPositions });
-
   // const [notifications, setNotifications] = useState<NotificationType[]>([]);
   const [notifications, setNotifications] = useState<NotificationType[]>([]);
-  console.log({ notifications });
 
   /**
    * Trade notifications
@@ -131,8 +112,6 @@ export const useNotifications = () => {
           )
         : [];
 
-      console.log({ aymericNotifications: notifications });
-
       // add only add if not already in there
       addUniqueNotifications(notifications, setNotifications);
     };
@@ -167,9 +146,7 @@ const addUniqueNotifications = (
     const prevIds = new Set(prev.map((n) => generateUniqueId(n)));
 
     // Filter out notifications that are already in the prev list
-    const newNotifications = notifications.filter(
-      (notification) => !prevIds.has(generateUniqueId(notification)),
-    );
+    const newNotifications = notifications.filter((notification) => !prevIds.has(generateUniqueId(notification)));
 
     // If there are no new notifications, return the previous state to avoid re-render
     if (newNotifications.length === 0) {
@@ -187,17 +164,11 @@ const addUniqueNotifications = (
  * @param Status Component
  * @returns
  */
-const generateTradeNotifications = (
-  entityUpdates: UpdatedEntity[],
-  Status: Component,
-) => {
+const generateTradeNotifications = (entityUpdates: UpdatedEntity[], Status: Component) => {
   const notifications = entityUpdates
     .map((update) => {
       if (update.componentNames.includes("Trade")) {
-        const status = getComponentValue(
-          Status,
-          getEntityIdFromKeys(update.entityKeys.map((str) => BigInt(str))),
-        );
+        const status = getComponentValue(Status, getEntityIdFromKeys(update.entityKeys.map((str) => BigInt(str))));
         switch (status?.value) {
           case 0:
             return { eventType: EventType.MakeOffer, keys: update.entityKeys };
@@ -243,13 +214,8 @@ const generateLaborNotifications = (
   const notifications: NotificationType[] = [];
   resourcesPerRealm.forEach(({ realmEntityId, resourceIds }) => {
     resourceIds.forEach((resourceId) => {
-      const isFood = [ResourcesIds["Wheat"], ResourcesIds["Fish"]].includes(
-        resourceId,
-      );
-      const labor = getComponentValue(
-        Labor,
-        getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
-      ) as
+      const isFood = [ResourcesIds["Wheat"], ResourcesIds["Fish"]].includes(resourceId);
+      const labor = getComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)])) as
         | { balance: number; last_harvest: number; multiplier: number }
         | undefined;
       const harvest =
@@ -259,9 +225,7 @@ const generateLaborNotifications = (
               labor.last_harvest,
               labor.multiplier,
               LABOR_CONFIG.base_labor_units,
-              isFood
-                ? LABOR_CONFIG.base_food_per_cycle
-                : LABOR_CONFIG.base_resources_per_cycle,
+              isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
               nextBlockTimestamp,
             )
           : 0;
@@ -307,43 +271,17 @@ const generateClaimableOrdersNotifications = (
       HasValue(Position, { x: realmPosition.x, y: realmPosition.y }),
     ]);
 
-    console.log({ aymericOrderIds: orderIds });
-
     for (const orderId of orderIds) {
-      console.log({ aymericOrderId: orderId });
       let claimed =
-        runQuery([
-          HasValue(Trade, { maker_order_id: orderId, claimed_by_maker: 0 }),
-        ]).size === 0 &&
-        runQuery([
-          HasValue(Trade, { taker_order_id: orderId, claimed_by_taker: 0 }),
-        ]).size === 0;
-
-      let trades1 = runQuery([
-        HasValue(Trade, { maker_order_id: orderId, claimed_by_maker: 0 }),
-      ]);
-
-      let trades2 = runQuery([
-        HasValue(Trade, { taker_order_id: orderId, claimed_by_taker: 0 }),
-      ]);
-      console.log({
-        aymericTrades1: trades1,
-        aymericTrades2: trades2,
-        claimed,
-      });
-
-      // console.log({ aymericClaimed: claimed });
+        runQuery([HasValue(Trade, { maker_order_id: orderId, claimed_by_maker: 0 })]).size === 0 &&
+        runQuery([HasValue(Trade, { taker_order_id: orderId, claimed_by_taker: 0 })]).size === 0;
 
       if (!claimed) {
-        const arrivalTime = getComponentValue(
-          ArrivalTime,
-          getEntityIdFromKeys([BigInt(orderId)]),
-        ) as { arrives_at: number } | undefined;
+        const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([BigInt(orderId)])) as
+          | { arrives_at: number }
+          | undefined;
 
-        if (
-          arrivalTime?.arrives_at &&
-          arrivalTime.arrives_at <= nextBlockTimestamp
-        ) {
+        if (arrivalTime?.arrives_at && arrivalTime.arrives_at <= nextBlockTimestamp) {
           notifications.push({
             eventType: EventType.OrderClaimable,
             keys: [orderId.toString()],
@@ -377,15 +315,10 @@ const useRealmsResource = (
           : { resource_types_packed: 0, resource_types_count: 0 };
 
         if (realmId) {
-          let unpackedResources = unpackResources(
-            BigInt(resource_types_packed),
-            resource_types_count,
-          );
+          let unpackedResources = unpackResources(BigInt(resource_types_packed), resource_types_count);
           return {
             realmEntityId,
-            resourceIds: [ResourcesIds["Wheat"], ResourcesIds["Fish"]].concat(
-              unpackedResources,
-            ),
+            resourceIds: [ResourcesIds["Wheat"], ResourcesIds["Fish"]].concat(unpackedResources),
           };
         }
         return null;

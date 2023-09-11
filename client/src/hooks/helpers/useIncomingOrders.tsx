@@ -1,9 +1,6 @@
 import { EntityIndex, HasValue, getComponentValue } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
-import {
-  IncomingOrderInfoInterface,
-  IncomingOrderInterface,
-} from "../graphql/useGraphQLQueries";
+import { IncomingOrderInterface } from "../graphql/useGraphQLQueries";
 import { useEffect, useMemo, useState } from "react";
 import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys } from "../../utils/utils";
@@ -12,28 +9,27 @@ import { useEntityQuery } from "@dojoengine/react";
 export function useIncomingOrders() {
   const {
     setup: {
-      components: { ArrivalTime, Position },
+      components: { ArrivalTime, Position, Trade },
     },
   } = useDojo();
 
-  const getIncomingOrderInfo = (
-    orderId: number,
-    counterpartyId: number,
-  ): IncomingOrderInfoInterface | undefined => {
-    const origin = getComponentValue(
-      Position,
-      getEntityIdFromKeys([BigInt(orderId)]),
-    );
-    const arrivalTime = getComponentValue(
-      ArrivalTime,
-      getEntityIdFromKeys([BigInt(counterpartyId)]),
-    );
-    if (origin && arrivalTime) {
-      return {
-        arrivalTime: arrivalTime.arrives_at,
-        origin,
-      };
-    }
+  const getIncomingOrderInfo = (realmEntityId: number, tradeId: EntityIndex): IncomingOrderInterface => {
+    let trade = getComponentValue(Trade, tradeId);
+    let isMaker = trade ? trade.maker_id === realmEntityId : undefined;
+    const orderId = isMaker ? trade?.maker_order_id : trade?.taker_order_id;
+    const counterPartyOrderId = isMaker ? trade?.taker_order_id : trade?.maker_order_id;
+    const origin = orderId ? getComponentValue(Position, getEntityIdFromKeys([BigInt(orderId)])) : undefined;
+    const arrivalTime = counterPartyOrderId
+      ? getComponentValue(ArrivalTime, getEntityIdFromKeys([BigInt(counterPartyOrderId)]))
+      : undefined;
+    return {
+      orderId,
+      counterPartyOrderId,
+      claimed: false,
+      tradeId,
+      arrivalTime: arrivalTime?.arrives_at,
+      origin,
+    };
   };
 
   return { getIncomingOrderInfo };
@@ -48,10 +44,10 @@ export function useGetIncomingOrders() {
 
   const { realmEntityId } = useRealmStore();
 
-  const [incomingOrders, setIncomingOrders] = useState<
-    IncomingOrderInterface[]
-  >([]);
+  const [incomingOrders, setIncomingOrders] = useState<IncomingOrderInterface[]>([]);
   const [entityIds, setEntityIds] = useState<EntityIndex[]>([]);
+
+  const { getIncomingOrderInfo } = useIncomingOrders();
 
   const set1 = useEntityQuery([
     HasValue(Trade, {
@@ -78,18 +74,7 @@ export function useGetIncomingOrders() {
   useMemo(() => {
     const incomingOrders = entityIds
       .map((id) => {
-        let entity = getComponentValue(Trade, id);
-        if (entity) {
-          let isMaker = entity.maker_id === realmEntityId;
-          return {
-            orderId: isMaker ? entity.maker_order_id : entity.taker_order_id,
-            counterPartyOrderId: isMaker
-              ? entity.taker_order_id
-              : entity.maker_order_id,
-            claimed: false,
-            tradeId: id,
-          } as IncomingOrderInterface;
-        }
+        return getIncomingOrderInfo(realmEntityId, id);
       })
       .filter(Boolean)
       // TODO: manage sorting here

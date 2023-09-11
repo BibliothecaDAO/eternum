@@ -112,13 +112,12 @@ for system in $(echo $system_components_json | jq -r 'keys[]'); do
 done
 
 
-prod=false  # Default value
-# Check if --prod option is present
-if [[ ! -z "$1" ]]; then
-    if [[ "$1" == "prod" ]]; then
-        echo "is prod"
-        prod=true
-    fi
+# Ask the user for the desired delay between commands
+read -p "Specify a delay in seconds between each command (or press Enter for no delay): " delay
+
+# Check if the delay is a valid number (integer or floating point)
+if [[ ! "$delay" =~ ^[0-9]*\.?[0-9]+$ ]]; then
+    delay=0
 fi
 
 for cmd in "${commands[@]}"; do
@@ -128,12 +127,9 @@ for cmd in "${commands[@]}"; do
     echo "$output"
     echo "--------------------------------------"
 
-    if [ "$prod" = true ]; then
-        echo "Sleeping for 3 second..."
-        sleep 3
-    else 
-        echo "Sleeping for 0.5 second..."
-        sleep 0.5
+    if [ $(echo "$delay > 0" | bc -l) -eq 1 ]; then
+        echo "Sleeping for $delay seconds..."
+        sleep $delay
     fi
 done
 

@@ -413,7 +413,7 @@ export const SelectCaravanPanel = ({
 }) => {
   const { realmEntityId } = useRealmStore();
 
-  const { nextBlockTimestamp } = useBlockchainStore();
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const { realm } = useGetRealm(realmEntityId);
   const { realmCaravans } = useGetRealmCaravans(realm?.position.x || 0, realm?.position.y || 0);
@@ -427,10 +427,9 @@ export const SelectCaravanPanel = ({
                 caravan &&
                 nextBlockTimestamp &&
                 !caravan.blocked &&
-                (!caravan.arrivalTime ||
-                  caravan.arrivalTime <= nextBlockTimestamp);
+                (!caravan.arrivalTime || caravan.arrivalTime <= nextBlockTimestamp);
               // capacity in gr (1kg = 1000gr)
-              const canCarry = caravan.capacity / 1000 >= resourceWeight;
+              const canCarry = caravan.capacity ? caravan.capacity / 1000 >= resourceWeight : false;
               if (isIdle && canCarry) {
                 return caravan;
               }

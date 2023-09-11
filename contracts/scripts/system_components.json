@@ -68,5 +68,9 @@
         "Realm",
         "Position",
         "Age"
+    ],
+    "CreateRoad": [
+        "Road",
+        "Resource"
     ]
 }
