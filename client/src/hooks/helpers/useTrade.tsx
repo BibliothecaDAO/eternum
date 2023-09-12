@@ -13,6 +13,7 @@ import { resources } from "../../constants/resources";
 import { orders } from "../../constants/orders";
 import { SortInterface } from "../../elements/SortButton";
 import { useCaravan } from "./useCaravans";
+import { useRoads } from "./useRoads";
 
 type useGetMarketProps = {
   selectedResources: string[];
@@ -120,6 +121,7 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
   const entityIds = useTradeQuery(fragments);
 
   const { getTradeResources } = useTrade();
+  const { getHasRoad } = useRoads();
 
   useMemo(() => {
     const optimisticTradeId = entityIds.indexOf(HIGH_ENTITY_ID as EntityIndex);
@@ -131,6 +133,7 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
         if (trade) {
           const resourcesGet = getTradeResources(trade.taker_order_id);
           const resourcesGive = getTradeResources(trade.maker_order_id);
+          const hasRoad = getHasRoad(realmEntityId, trade.taker_id);
           return {
             tradeId,
             makerId: trade.maker_id,
@@ -141,6 +144,7 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
             resourcesGet,
             resourcesGive,
             canAccept: false,
+            hasRoad,
             ratio: calculateRatio(resourcesGive, resourcesGet),
             distance: 0,
           } as MarketInterface;
@@ -201,6 +205,7 @@ export function useGetMarket({ selectedResources, selectedOrders }: useGetMarket
 
   const { getTradeResources, canAcceptOffer } = useTrade();
   const { calculateDistance } = useCaravan();
+  const { getHasRoad } = useRoads();
 
   useEffect(() => {
     const trades = entityIds
@@ -210,6 +215,7 @@ export function useGetMarket({ selectedResources, selectedOrders }: useGetMarket
           const resourcesGet = getTradeResources(trade.maker_order_id);
           const resourcesGive = getTradeResources(trade.taker_order_id);
           const distance = calculateDistance(trade.maker_id, realmEntityId);
+          const hasRoad = getHasRoad(realmEntityId, trade.maker_id);
           return {
             tradeId,
             makerId: trade.maker_id,
@@ -222,6 +228,7 @@ export function useGetMarket({ selectedResources, selectedOrders }: useGetMarket
             canAccept: canAcceptOffer({ realmEntityId, resourcesGive }),
             ratio: calculateRatio(resourcesGive, resourcesGet),
             distance: distance || 0,
+            hasRoad,
           } as MarketInterface;
         }
       })

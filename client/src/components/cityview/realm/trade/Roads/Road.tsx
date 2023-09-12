@@ -2,46 +2,51 @@ import { useMemo } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
 import { orderNameDict } from "../../../../../constants/orders";
-import * as realmsData from "../../../../../geodata/realms.json";
-import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import { getRealm } from "../../SettleRealmComponent";
+import { RoadInterface } from "../../../../../hooks/helpers/useRoads";
 
 type RoadProps = {
-  toRealmId: number;
-  usage: number;
+  road: RoadInterface;
   onAddUsage: () => void;
 };
 
 export const Road = (props: RoadProps) => {
-  const { realmId } = useRealmStore();
+  const {
+    road: { startRealmName, startRealmOrder, destinationRealmName, destinationRealmOrder, usageLeft },
+    onAddUsage,
+  } = props;
 
-  const fromRealm = useMemo(() => (realmId ? getRealm(realmId) : undefined), [realmId]);
-  const toRealm = useMemo(() => (props.toRealmId ? getRealm(props.toRealmId) : undefined), [props.toRealmId]);
+  const canBuild = useMemo(() => {
+    return usageLeft === 0;
+  }, [usageLeft]);
 
   return (
     <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold">
       <div className="flex items-center justify-between">
-        {fromRealm && (
+        {startRealmName && (
           <div className="flex items-center p-1 -mt-2 -ml-2 border border-t-0 border-l-0 rounded-br-md border-gray-gold">
             {/* // order of the order maker */}
-            {fromRealm.order && <OrderIcon order={orderNameDict[fromRealm.order]} size="xs" className="mr-1" />}
-            {realmsData["features"][fromRealm.realm_id - 1].name}
+            {startRealmOrder && <OrderIcon order={orderNameDict[startRealmOrder]} size="xs" className="mr-1" />}
+            {startRealmName}
           </div>
         )}
-        <div className="-mt-2 text-gold">Usages left: {props.usage}</div>
+        <div className="-mt-2 text-gold">Usages left: {usageLeft}</div>
       </div>
       <div className="flex items-center text-gold pt-2">
-        {toRealm && (
+        {destinationRealmName && (
           <>
-            Road to {toRealm.order && <OrderIcon order={orderNameDict[toRealm.order]} size="xs" className="mx-1" />}
-            {realmsData["features"][toRealm.realm_id - 1].name}
+            Road to{" "}
+            {destinationRealmOrder && (
+              <OrderIcon order={orderNameDict[destinationRealmOrder]} size="xs" className="mx-1" />
+            )}
+            {destinationRealmName}
           </>
         )}
         <div className="flex items-end ml-auto">
           <Button
-            onClick={props.onAddUsage}
-            variant={"danger"}
-            className="ml-auto p-2 !h-4 text-xxs !rounded-md"
+            onClick={onAddUsage}
+            disabled={!canBuild}
+            variant={!canBuild ? "danger" : "success"}
+            className={"ml-auto p-2 !h-4 text-xxs !rounded-md"}
           >{`Add Usage`}</Button>
         </div>
       </div>

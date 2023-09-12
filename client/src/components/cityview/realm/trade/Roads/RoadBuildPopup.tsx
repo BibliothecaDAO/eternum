@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
 import Button from "../../../../../elements/Button";
 import { Headline } from "../../../../../elements/Headline";
@@ -10,28 +10,29 @@ import { getComponentValue } from "@latticexyz/recs";
 import { getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import * as realmsData from "../../../../../geodata/realms.json";
-import { getRealm } from "../../SettleRealmComponent";
 
 type RoadBuildPopupProps = {
-  toRealmId: number;
+  toEntityId: number;
   onClose: () => void;
 };
 
-export const RoadBuildPopup = ({ toRealmId, onClose }: RoadBuildPopupProps) => {
+export const RoadBuildPopup = ({ toEntityId, onClose }: RoadBuildPopupProps) => {
   const {
     setup: {
       components: { Resource },
+      systemCalls: { create_road },
     },
+    account: { account },
   } = useDojo();
 
   const [canBuild, setCanBuild] = useState(true);
-  const [usageAmount, setUsageAmount] = useState(1);
+  const [usageAmount, setUsageAmount] = useState(2);
 
   let { realmEntityId } = useRealmStore();
 
   // @ts-ignore
   const { realm } = useGetRealm(realmEntityId);
-  const toRealm = useMemo(() => (toRealmId ? getRealm(toRealmId) : undefined), [toRealmId]);
+  const { realm: toRealm } = useGetRealm(toEntityId);
 
   // TODO: get info from contract config file
   // calculate the costs of building/buying tools
@@ -42,6 +43,21 @@ export const RoadBuildPopup = ({ toRealmId, onClose }: RoadBuildPopupProps) => {
     const totalAmount = amount * usageAmount;
     amount && costResources.push({ resourceId: resourceIdCost, amount: totalAmount });
   }
+
+  const onBuild = () => {
+    if (realm && toRealm) {
+      const start_position = realm.position;
+      const end_position = toRealm.position;
+      create_road({
+        signer: account,
+        creator_id: realmEntityId,
+        start_coord: start_position,
+        end_coord: end_position,
+        usage_count: usageAmount,
+      });
+      onClose();
+    }
+  };
 
   useEffect(() => {
     setCanBuild(false);
@@ -65,7 +81,9 @@ export const RoadBuildPopup = ({ toRealmId, onClose }: RoadBuildPopupProps) => {
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"376px"}>
         <div className="flex flex-col items-center p-2">
-          <Headline size="big">Build road to {toRealm && realmsData["features"][toRealm.realm_id - 1].name}</Headline>
+          {toRealm && (
+            <Headline size="big">Build road to {toRealm && realmsData["features"][toRealm.realmId - 1].name}</Headline>
+          )}
           <div className={"relative w-full mt-3"}>
             <img src={`/images/road.jpg`} className="object-cover w-full h-full rounded-[10px]" />
             <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
@@ -81,7 +99,14 @@ export const RoadBuildPopup = ({ toRealmId, onClose }: RoadBuildPopupProps) => {
         <div className="flex justify-between m-2 text-xxs">
           <div className="flex items-center">
             <div className="italic text-light-pink">Amount</div>
-            <NumberInput className="ml-2 mr-2" value={usageAmount} onChange={setUsageAmount} min={1} max={999} />
+            <NumberInput
+              className="ml-2 mr-2"
+              value={usageAmount}
+              onChange={setUsageAmount}
+              min={2}
+              max={999}
+              step={2}
+            />
           </div>
           <div className="flex flex-col items-center justify-center">
             <div className="flex">
@@ -97,7 +122,7 @@ export const RoadBuildPopup = ({ toRealmId, onClose }: RoadBuildPopupProps) => {
               <Button
                 className="!px-[6px] !py-[2px] text-xxs ml-auto"
                 disabled={!canBuild}
-                onClick={() => {}}
+                onClick={onBuild}
                 variant="outline"
                 withoutSound
               >

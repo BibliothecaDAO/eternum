@@ -21,7 +21,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
   const [selectedTrade, setSelectedTrade] = useState<MarketInterface | undefined>(undefined);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
-  const [buildRoadToRealmId, setBuildRoadToRealmId] = useState<number | undefined>(undefined);
+  const [buildRoadToEntityId, setBuildRoadToEntityId] = useState<number | undefined>(undefined);
 
   const sortingParams = useMemo(() => {
     return [
@@ -50,7 +50,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
             key={trade.tradeId}
             marketOffer={trade}
             onAccept={() => setSelectedTrade(trade)}
-            onBuildRoad={() => setBuildRoadToRealmId(trade.makerId)}
+            onBuildRoad={() => setBuildRoadToEntityId(trade.makerId)}
           />
         ))}
       </div>
@@ -84,8 +84,8 @@ export const MarketPanel = ({}: MarketPanelProps) => {
         ))}
       </SortPanel>
       {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
-      {buildRoadToRealmId && (
-        <RoadBuildPopup onClose={() => setBuildRoadToRealmId(undefined)} toRealmId={buildRoadToRealmId} />
+      {buildRoadToEntityId && (
+        <RoadBuildPopup onClose={() => setBuildRoadToEntityId(undefined)} toEntityId={buildRoadToEntityId} />
       )}
       {selectedTrade && (
         <AcceptOfferPopup

@@ -19,18 +19,15 @@ type TradeOfferProps = {
 };
 
 export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferProps) => {
-  const { distance, resourcesGet, resourcesGive, canAccept, ratio } = marketOffer;
+  const { hasRoad, distance, resourcesGet, resourcesGive, canAccept, ratio } = marketOffer;
+
+  let { realm: makerRealm } = useGetRealm(marketOffer.makerId);
 
   const [isLoading, setIsLoading] = useState(false);
-
-  // @ts-ignore
-  const [hasRoad, setHasRoad] = useState(false);
 
   useEffect(() => {
     setIsLoading(false);
   }, [marketOffer]);
-
-  let { realm: makerRealm } = useGetRealm(marketOffer.makerId);
 
   return (
     <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold">
@@ -46,7 +43,7 @@ export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferPr
           <div className=" text-right">{`${distance.toFixed(0)} km`}</div>
           {hasRoad ? (
             <div className="text-order-brilliance relative group ml-2">
-              (+50% speed)
+              (x2 speed)
               <Tooltip position="left">
                 <p className="whitespace-nowrap">This Realm has built road</p>
                 <p className="whitespace-nowrap">to your Realm.</p>
