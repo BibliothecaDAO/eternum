@@ -23,6 +23,7 @@ export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferPr
 
   const [isLoading, setIsLoading] = useState(false);
 
+  // @ts-ignore
   const [hasRoad, setHasRoad] = useState(false);
 
   useEffect(() => {

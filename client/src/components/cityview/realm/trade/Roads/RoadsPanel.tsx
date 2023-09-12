@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { Road } from "./Road";
-import Button from "../../../../../elements/Button";
 import { RoadBuildPopup } from "./RoadBuildPopup";
 
 type RoadsPanelProps = {} & React.HTMLAttributes<HTMLDivElement>;
 
+// @ts-ignore
 export const RoadsPanel = (props: RoadsPanelProps) => {
   const [buildRoadToRealmId, setBuildRoadToRealmId] = useState<number | undefined>(undefined);
 

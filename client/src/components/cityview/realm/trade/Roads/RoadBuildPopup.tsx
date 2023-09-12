@@ -4,17 +4,10 @@ import Button from "../../../../../elements/Button";
 import { Headline } from "../../../../../elements/Headline";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../../elements/NumberInput";
-import { ResourcesIds, findResourceById } from "../../../../../constants/resources";
-import { ReactComponent as FishingVillages } from "../../../../../assets/icons/resources/FishingVillages.svg";
-import { ReactComponent as Farms } from "../../../../assets/icons/resources/Farms.svg";
-import { ResourceIcon } from "../../../../../elements/ResourceIcon";
-import { BuildingsCount } from "../../../../../elements/BuildingsCount";
-import clsx from "clsx";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../DojoContext";
 import { getComponentValue } from "@latticexyz/recs";
 import { getEntityIdFromKeys } from "../../../../../utils/utils";
-import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import * as realmsData from "../../../../../geodata/realms.json";
 import { getRealm } from "../../SettleRealmComponent";
@@ -35,6 +28,8 @@ export const RoadBuildPopup = ({ toRealmId, onClose }: RoadBuildPopupProps) => {
   const [usageAmount, setUsageAmount] = useState(1);
 
   let { realmEntityId } = useRealmStore();
+
+  // @ts-ignore
   const { realm } = useGetRealm(realmEntityId);
   const toRealm = useMemo(() => (toRealmId ? getRealm(toRealmId) : undefined), [toRealmId]);
 

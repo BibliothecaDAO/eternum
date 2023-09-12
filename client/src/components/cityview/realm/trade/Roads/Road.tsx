@@ -1,14 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
-import { ResourceIcon } from "../../../../../elements/ResourceIcon";
-import { findResourceById } from "../../../../../constants/resources";
-import { ReactComponent as RatioIcon } from "../../../../../assets/icons/common/ratio.svg";
-import { useDojo } from "../../../../../DojoContext";
 import { orderNameDict } from "../../../../../constants/orders";
 import * as realmsData from "../../../../../geodata/realms.json";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import { MarketInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
 import { getRealm } from "../../SettleRealmComponent";
 
 type RoadProps = {

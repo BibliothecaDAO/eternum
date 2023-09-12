@@ -3,7 +3,6 @@ import { Tabs } from "../../../elements/tab";
 import { CaravansPanel } from "./trade/Caravans/CaravansPanel";
 import { MarketPanel } from "./trade/Market/MarketPanel";
 import { MyOffersPanel } from "./trade/MyOffers/MyOffersPanel";
-import { IncomingOrdersPanel } from "./trade/Caravans/IncomingOrdersPanel";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useRoute, useLocation } from "wouter";
 import useRealmStore from "../../../hooks/store/useRealmStore";
