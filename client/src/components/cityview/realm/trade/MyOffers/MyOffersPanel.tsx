@@ -9,6 +9,8 @@ import { CreateOfferPopup } from "../CreateOffer";
 import Button from "../../../../../elements/Button";
 import { MyOffer } from "./MyOffer";
 import { sortTrades, useGetMyOffers } from "../../../../../hooks/helpers/useTrade";
+import { IncomingOrder } from "../Caravans/IncomingOrder";
+import { useGetIncomingOrders } from "../../../../../hooks/helpers/useIncomingOrders";
 
 type MarketPanelProps = {};
 
@@ -24,6 +26,8 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
   });
 
   const myOffers = useGetMyOffers({ selectedResources, selectedOrders });
+
+  const { incomingOrders } = useGetIncomingOrders();
 
   const sortingParams = useMemo(() => {
     return [
@@ -63,12 +67,13 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
       </SortPanel>
       {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
       {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
-      {myOffers.length &&
-        sortTrades(myOffers, activeSort).map((myOffer) => (
-          <div className="flex flex-col p-2" key={myOffer.tradeId}>
-            <MyOffer myOffer={myOffer} />
-          </div>
+      <div className="flex flex-col p-2 space-y-2">
+        {incomingOrders.map((incomingOrder) => (
+          <IncomingOrder key={incomingOrder.tradeId} incomingOrder={incomingOrder} />
         ))}
+        {myOffers.length > 0 &&
+          sortTrades(myOffers, activeSort).map((myOffer) => <MyOffer key={myOffer.tradeId} myOffer={myOffer} />)}
+      </div>
       <Button
         className="sticky w-32 -translate-x-1/2 bottom-2 left-1/2 !rounded-full"
         onClick={() => setShowCreateOffer(true)}
