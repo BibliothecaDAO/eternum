@@ -15,12 +15,15 @@ import { Tooltip } from "../../../../../elements/Tooltip";
 type TradeOfferProps = {
   marketOffer: MarketInterface;
   onAccept: () => void;
+  onBuildRoad: () => void;
 };
 
-export const MarketOffer = ({ marketOffer, onAccept }: TradeOfferProps) => {
+export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferProps) => {
   const { distance, resourcesGet, resourcesGive, canAccept, ratio } = marketOffer;
 
   const [isLoading, setIsLoading] = useState(false);
+
+  const [hasRoad, setHasRoad] = useState(false);
 
   useEffect(() => {
     setIsLoading(false);
@@ -40,13 +43,23 @@ export const MarketOffer = ({ marketOffer, onAccept }: TradeOfferProps) => {
         )}
         <div className=" text-gold flex">
           <div className=" text-right">{`${distance.toFixed(0)} km`}</div>
-          <div className="text-order-brilliance relative group ml-2">
-            (+50% speed)
-            <Tooltip position="left">
-              <p className="whitespace-nowrap">This Realm has built road</p>
-              <p className="whitespace-nowrap">to your Realm.</p>
-            </Tooltip>
-          </div>
+          {hasRoad ? (
+            <div className="text-order-brilliance relative group ml-2">
+              (+50% speed)
+              <Tooltip position="left">
+                <p className="whitespace-nowrap">This Realm has built road</p>
+                <p className="whitespace-nowrap">to your Realm.</p>
+              </Tooltip>
+            </div>
+          ) : (
+            <div className="text-gold/50 decoration-dotted underline relative group ml-2" onClick={onBuildRoad}>
+              (Normal speed)
+              <Tooltip position="left">
+                <p className="whitespace-nowrap">Click to build road and</p>
+                <p className="whitespace-nowrap">speed up trades with this Realm.</p>
+              </Tooltip>
+            </div>
+          )}
         </div>
       </div>
       <div className="flex items-end mt-2">

@@ -11,6 +11,7 @@ import { MarketOffer } from "./MarketOffer";
 import { AcceptOfferPopup } from "../AcceptOffer";
 import { MarketInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
 import { sortTrades, useGetMarket } from "../../../../../hooks/helpers/useTrade";
+import { RoadBuildPopup } from "../Roads/RoadBuildPopup";
 
 type MarketPanelProps = {};
 
@@ -20,6 +21,7 @@ export const MarketPanel = ({}: MarketPanelProps) => {
   const [selectedTrade, setSelectedTrade] = useState<MarketInterface | undefined>(undefined);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [buildRoadToRealmId, setBuildRoadToRealmId] = useState<number | undefined>(undefined);
 
   const sortingParams = useMemo(() => {
     return [
@@ -44,7 +46,12 @@ export const MarketPanel = ({}: MarketPanelProps) => {
     return (
       <div className="flex flex-col p-2 space-y-2">
         {sortTrades(market, activeSort).map((trade) => (
-          <MarketOffer key={trade.tradeId} marketOffer={trade} onAccept={() => setSelectedTrade(trade)} />
+          <MarketOffer
+            key={trade.tradeId}
+            marketOffer={trade}
+            onAccept={() => setSelectedTrade(trade)}
+            onBuildRoad={() => setBuildRoadToRealmId(trade.makerId)}
+          />
         ))}
       </div>
     );
@@ -77,6 +84,9 @@ export const MarketPanel = ({}: MarketPanelProps) => {
         ))}
       </SortPanel>
       {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
+      {buildRoadToRealmId && (
+        <RoadBuildPopup onClose={() => setBuildRoadToRealmId(undefined)} toRealmId={buildRoadToRealmId} />
+      )}
       {selectedTrade && (
         <AcceptOfferPopup
           onClose={() => {

@@ -14,6 +14,7 @@ import { getRealm } from "../../SettleRealmComponent";
 type RoadProps = {
   toRealmId: number;
   usage: number;
+  onAddUsage: () => void;
 };
 
 export const Road = (props: RoadProps) => {
@@ -43,7 +44,7 @@ export const Road = (props: RoadProps) => {
         )}
         <div className="flex items-end ml-auto">
           <Button
-            onClick={() => {}}
+            onClick={props.onAddUsage}
             variant={"danger"}
             className="ml-auto p-2 !h-4 text-xxs !rounded-md"
           >{`Add Usage`}</Button>
