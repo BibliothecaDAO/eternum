@@ -10,6 +10,7 @@ import { MarketInterface } from "../../../../../hooks/graphql/useGraphQLQueries"
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { ResourcesOffer } from "../../../../../types";
+import { Tooltip } from "../../../../../elements/Tooltip";
 
 type TradeOfferProps = {
   marketOffer: MarketInterface;
@@ -37,10 +38,19 @@ export const MarketOffer = ({ marketOffer, onAccept }: TradeOfferProps) => {
             {realmsData["features"][makerRealm.realmId - 1].name}
           </div>
         )}
-        <div className="-mt-2 text-gold">{`${distance.toFixed(0)} km`}</div>
+        <div className=" text-gold flex">
+          <div className=" text-right">{`${distance.toFixed(0)} km`}</div>
+          <div className="text-order-brilliance relative group ml-2">
+            (+50% speed)
+            <Tooltip position="left">
+              <p className="whitespace-nowrap">This Realm has built road</p>
+              <p className="whitespace-nowrap">to your Realm.</p>
+            </Tooltip>
+          </div>
+        </div>
       </div>
       <div className="flex items-end mt-2">
-        <div className="flex items-center justify-around flex-1">
+        <div className={clsx("flex items-center justify-around flex-1", !canAccept && " mb-3")}>
           <div className="flex-1 text-gold flex justify-center items-center flex-wrap">
             {resourcesGive &&
               resourcesGive.map(({ resourceId, amount }) => (

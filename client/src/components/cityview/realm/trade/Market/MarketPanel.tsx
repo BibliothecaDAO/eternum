@@ -41,11 +41,13 @@ export const MarketPanel = ({}: MarketPanelProps) => {
   const renderedMarketOffers = useMemo(() => {
     if (!market) return null;
 
-    return sortTrades(market, activeSort).map((trade) => (
-      <div className="flex flex-col p-2" key={trade.tradeId}>
-        <MarketOffer marketOffer={trade} onAccept={() => setSelectedTrade(trade)} />
+    return (
+      <div className="flex flex-col p-2 space-y-2">
+        {sortTrades(market, activeSort).map((trade) => (
+          <MarketOffer key={trade.tradeId} marketOffer={trade} onAccept={() => setSelectedTrade(trade)} />
+        ))}
       </div>
-    ));
+    );
   }, [market, activeSort]);
 
   return (
