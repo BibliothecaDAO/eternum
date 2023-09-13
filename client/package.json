@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@dojoengine/core": "^0.0.17",
-    "@dojoengine/create-burner": "^0.0.17",
+    "@dojoengine/create-burner": "^0.0.18",
     "@dojoengine/react": "^0.0.3",
     "@headlessui/react": "^1.7.14",
     "@latticexyz/recs": "^1.43.0",
