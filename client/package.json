@@ -6,11 +6,12 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "codegen": "graphql-codegen"
+    "codegen": "graphql-codegen",
+    "components": "npx @dojoengine/core ../contracts/target/dev/manifest.json src/dojo/contractComponents.ts"
   },
   "dependencies": {
-    "@dojoengine/core": "^0.0.15",
-    "@dojoengine/create-burner": "^0.0.3",
+    "@dojoengine/core": "^0.0.17",
+    "@dojoengine/create-burner": "^0.0.17",
     "@dojoengine/react": "^0.0.3",
     "@headlessui/react": "^1.7.14",
     "@latticexyz/recs": "^1.43.0",
