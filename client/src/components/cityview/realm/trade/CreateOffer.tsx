@@ -24,6 +24,7 @@ import { getRealm } from "../../../../utils/realms";
 import { getOrderName } from "../../../../constants/orders";
 import { OrderIcon } from "../../../../elements/OrderIcon";
 import { useTrade } from "../../../../hooks/helpers/useTrade";
+import { SelectRealmPanel } from "../SelectRealmPanel";
 
 type CreateOfferPopupProps = {
   onClose: () => void;
@@ -405,10 +406,7 @@ const SelectResourcesAmountPanel = ({
       <div className="flex text-xs text-center text-white">
         Items Weight <div className="ml-1 text-gold">{`${resourceWeight}kg`}</div>
       </div>
-      <SelectRealmIdPanel
-        selectedRealmId={selectedRealmId}
-        setSelectedRealmId={setSelectedRealmId}
-      ></SelectRealmIdPanel>
+      <SelectRealmPanel selectedRealmId={selectedRealmId} setSelectedRealmId={setSelectedRealmId}></SelectRealmPanel>
     </>
   );
 };
