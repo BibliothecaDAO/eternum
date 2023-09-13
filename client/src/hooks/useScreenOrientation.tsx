@@ -48,9 +48,9 @@ const useScreenOrientation = () => {
     }
 
     // (A2) THEN LOCK ORIENTATION
-    screen.orientation.lock("landscape").catch((e) => {
-      console.log(e);
-    });
+    // screen.orientation.lock("landscape").catch((e: any) => {
+    //   console.log(e);
+    // });
   };
 
   const exitFullScreen = (doc: DocumentWithFullscreen) => {
