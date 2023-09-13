@@ -3,6 +3,7 @@ import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
 import { orderNameDict } from "../../../../../constants/orders";
 import { RoadInterface } from "../../../../../hooks/helpers/useRoads";
+import clsx from "clsx";
 
 type RoadProps = {
   road: RoadInterface;
@@ -41,13 +42,16 @@ export const Road = (props: RoadProps) => {
             {destinationRealmName}
           </>
         )}
-        <div className="flex items-end ml-auto">
+        <div className="flex flex-col items-end ml-auto">
           <Button
             onClick={onAddUsage}
             disabled={!canBuild}
             variant={!canBuild ? "danger" : "success"}
-            className={"ml-auto p-2 !h-4 text-xxs !rounded-md"}
+            className={clsx("ml-auto p-2 !h-4 text-xxs !rounded-md", !canBuild && "mb-0.5")}
           >{`Add Usage`}</Button>
+          {!canBuild && (
+            <div className="text-xxs text-order-giants/70 w-min whitespace-nowrap">Can only add when usage is 0</div>
+          )}
         </div>
       </div>
     </div>

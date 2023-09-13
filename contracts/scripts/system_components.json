@@ -47,7 +47,8 @@
         "ArrivalTime",
         "Position",
         "Movable",
-        "Trade"
+        "Trade",
+        "Road"
     ],
     "CancelFungibleOrder": [
         "Resource",
