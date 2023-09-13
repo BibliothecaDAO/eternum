@@ -7,7 +7,6 @@ import { ReactComponent as RatioIcon } from "../../../../../assets/icons/common/
 import { useDojo } from "../../../../../DojoContext";
 import { orderNameDict } from "../../../../../constants/orders";
 import * as realmsData from "../../../../../geodata/realms.json";
-import { getRealm } from "../../../../../utils/realms";
 import { MarketInterface } from "../../../../../hooks/helpers/useTrade";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 
