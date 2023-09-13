@@ -1,7 +1,8 @@
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext, useMemo } from "react";
 import { SetupResult } from "./dojo/setup";
 import { Account, RpcProvider } from "starknet";
 import { useBurner } from "@dojoengine/create-burner";
+import { displayAddress } from "./utils/utils";
 
 const DojoContext = createContext<SetupResult | null>(null);
 
@@ -19,21 +20,30 @@ export const DojoProvider = ({ children, value }: Props) => {
 export const useDojo = () => {
   const value = useContext(DojoContext);
 
-  const provider = new RpcProvider({
-    nodeUrl: import.meta.env.VITE_KATANA_URL,
-  });
+  const provider = useMemo(
+    () =>
+      new RpcProvider({
+        nodeUrl: import.meta.env.VITE_KATANA_URL!,
+      }),
+    [],
+  );
 
-  const masterAccount = new Account(
-    provider,
-    import.meta.env.VITE_KATANA_ACCOUNT_1_ADDRESS!,
-    import.meta.env.VITE_KATANA_ACCOUNT_1_PRIVATE_KEY!,
+  const masterAddress = import.meta.env.VITE_KATANA_ACCOUNT_1_ADDRESS!;
+  const privateKey = import.meta.env.VITE_KATANA_ACCOUNT_1_PRIVATE_KEY!;
+  const masterAccount = useMemo(
+    () => new Account(provider, masterAddress, privateKey),
+    [provider, masterAddress, privateKey],
   );
 
   const { create, list, get, account, select, isDeploying } = useBurner({
     masterAccount: masterAccount,
     accountClassHash: import.meta.env.VITE_PUBLIC_ACCOUNT_CLASS_HASH!,
-    provider: provider,
   });
+
+  const accountDisplay = useMemo(() => {
+    return displayAddress(account?.address || masterAccount.address);
+  }, [account]);
+
 
   if (!value) throw new Error("Must be used within a DojoProvider");
   return {
@@ -44,7 +54,9 @@ export const useDojo = () => {
       get,
       select,
       account: account ? account : masterAccount,
+      masterAccount,
       isDeploying,
+      accountDisplay,
     },
   };
 };
