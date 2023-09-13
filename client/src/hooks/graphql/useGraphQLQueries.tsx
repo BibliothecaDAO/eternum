@@ -85,6 +85,20 @@ export interface IncomingOrdersInterface {
   incomingOrders: IncomingOrderInterface[];
 }
 
+export interface CaravanInterface {
+  caravanId: number;
+  orderId: number | undefined;
+  blocked: boolean | undefined;
+  arrivalTime: number | undefined;
+  capacity: number | undefined;
+  destination: PositionInterface | undefined;
+}
+
+export interface ResourceInterface {
+  resourceId: number;
+  amount: number;
+}
+
 export const useSyncRealmLabor = (realmEntityId: number) => {
   const {
     setup: { components },
@@ -273,20 +287,6 @@ export const useGetCounterPartyOrderId = (
     error,
   };
 };
-
-export interface CaravanInterface {
-  caravanId: number;
-  orderId: number | undefined;
-  blocked: boolean | undefined;
-  arrivalTime: number | undefined;
-  capacity: number | undefined;
-  destination: PositionInterface | undefined;
-}
-
-export interface ResourceInterface {
-  resourceId: number;
-  amount: number;
-}
 
 export const useSyncCaravanInfo = (caravanId: number, orderId: number, counterpartyOrderId: number) => {
   const {

@@ -10,6 +10,9 @@ import { orderNameDict } from "../../constants/orders";
 import realmsNames from "../../geodata/realms.json";
 import useUIStore from "../../hooks/store/useUIStore";
 import { getRealm } from "../../utils/realms";
+import { useDojo } from "../../DojoContext";
+import { Has, HasValue, getComponentValue } from "@latticexyz/recs";
+import { useEntityQuery } from "@dojoengine/react";
 
 type RealmSwitchProps = {} & ComponentPropsWithRef<"div">;
 
@@ -21,10 +24,33 @@ type Realm = {
 };
 
 export const RealmSwitch = ({ className }: RealmSwitchProps) => {
+  const {
+    account: { account },
+    setup: {
+      components: { Realm, Owner },
+    },
+  } = useDojo();
+
   const [showRealms, setShowRealms] = useState(false);
   const [yourRealms, setYourRealms] = useState<Realm[]>([]);
 
-  const { realmEntityId, realmId, setRealmId, setRealmEntityId, realmEntityIds } = useRealmStore();
+  const { realmEntityId, realmId, setRealmId, setRealmEntityId, realmEntityIds, setRealmEntityIds } = useRealmStore();
+
+  const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: parseInt(account.address) })]);
+
+  // set realm entity ids everytime the entity ids change
+  useEffect(() => {
+    let realmEntityIds = Array.from(entityIds)
+      .map((id) => {
+        const realm = getComponentValue(Realm, id);
+        if (realm) {
+          return { realmEntityId: Number(id), realmId: realm?.realm_id };
+        }
+      })
+      .filter(Boolean)
+      .sort((a, b) => a!.realmId - b!.realmId) as { realmEntityId: number; realmId: number }[];
+    setRealmEntityIds(realmEntityIds);
+  }, [entityIds]);
 
   const moveCameraToRealmView = useUIStore((state) => state.moveCameraToRealmView);
 

@@ -5,9 +5,11 @@ import realmCoords from "../../../geodata/coords.json";
 import { useDojo } from "../../../DojoContext";
 
 import { getLatestRealmId } from "../../../hooks/graphql/useGraphQLQueries";
-import useRealmStore from "../../../hooks/store/useRealmStore";
 import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 import { getRealm } from "../../../utils/realms";
+import useRealmStore from "../../../hooks/store/useRealmStore";
+
+export const MAX_REALMS = 5;
 
 export const SettleRealmComponent = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,12 +18,14 @@ export const SettleRealmComponent = () => {
     setup: {
       systemCalls: { create_realm, mint_resources },
     },
-    account: { account },
+    account: { account, masterAccount },
   } = useDojo();
 
-  const { setRealmEntityIds } = useRealmStore();
-
   const { play: playSign } = useUiSounds(soundSelector.sign);
+
+  const { realmEntityIds } = useRealmStore();
+
+  const canSettle = realmEntityIds.length < MAX_REALMS;
 
   const settleRealm = async () => {
     setIsLoading(true);
@@ -33,50 +37,43 @@ export const SettleRealmComponent = () => {
     let realm = getRealm(new_realm_id);
     let position = getPosition(new_realm_id);
     let entity_id = await create_realm({
-      signer: account,
-      owner: import.meta.env.VITE_KATANA_ACCOUNT_1_ADDRESS,
+      signer: masterAccount,
+      owner: BigInt(account.address),
       ...realm,
       position,
     });
     // mint basic resources to start
     await mint_resources({
-      signer: account,
+      signer: masterAccount,
       entity_id,
       resource_type: 2,
       amount: 1000,
     });
     await mint_resources({
-      signer: account,
+      signer: masterAccount,
       entity_id,
       resource_type: 3,
       amount: 1000,
     });
     await mint_resources({
-      signer: account,
+      signer: masterAccount,
       entity_id,
       resource_type: 253,
       amount: 1000,
     });
-    // add the new entity_id in the list of entityIds in my localStorage
-    const entityIds = localStorage.getItem("entityIds");
-    const updatedEntityIds = entityIds
-      ? [...JSON.parse(entityIds), { realmEntityId: entity_id, realmId: new_realm_id }]
-      : [{ realmEntityId: entity_id, realmId: new_realm_id }];
-    localStorage.setItem("entityIds", JSON.stringify(updatedEntityIds));
-    setRealmEntityIds(updatedEntityIds);
     setIsLoading(false);
     playSign();
-  };
-
-  const clearRealms = () => {
-    localStorage.removeItem("entityIds");
-    setRealmEntityIds([]);
   };
 
   return (
     <div className="flex items-center h-min">
       {!isLoading && (
-        <Button onClick={settleRealm} className="ml-auto p-2 !h-8 text-lg !rounded-md" variant="success">
+        <Button
+          disabled={!canSettle}
+          onClick={settleRealm}
+          className="ml-auto p-2 !h-8 text-lg !rounded-md"
+          variant="success"
+        >
           Settle Realm
         </Button>
       )}
@@ -85,9 +82,6 @@ export const SettleRealmComponent = () => {
           {}
         </Button>
       )}
-      <Button onClick={() => clearRealms()} variant="danger" className="ml-2 p-2 !h-8 text-lg !rounded-md">
-        Clear Realms
-      </Button>
     </div>
   );
 };
