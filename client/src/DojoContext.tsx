@@ -4,7 +4,22 @@ import { Account, RpcProvider } from "starknet";
 import { useBurner } from "@dojoengine/create-burner";
 import { displayAddress } from "./utils/utils";
 
-const DojoContext = createContext<SetupResult | null>(null);
+type EternumContext = {
+  setup: SetupResult;
+  account: {
+    create: () => void;
+    list: () => any[];
+    get: (id: string) => any;
+    select: (id: string) => void;
+    account: Account;
+    masterAccount: Account;
+    isDeploying: boolean;
+    accountDisplay: string;
+    clear: () => void;
+  };
+}
+
+const DojoContext = createContext<EternumContext | null>(null);
 
 type Props = {
   children: ReactNode;
@@ -14,11 +29,6 @@ type Props = {
 export const DojoProvider = ({ children, value }: Props) => {
   const currentValue = useContext(DojoContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
-  return <DojoContext.Provider value={value}>{children}</DojoContext.Provider>;
-};
-
-export const useDojo = () => {
-  const value = useContext(DojoContext);
 
   const provider = useMemo(
     () =>
@@ -35,28 +45,35 @@ export const useDojo = () => {
     [provider, masterAddress, privateKey],
   );
 
-  const { create, list, get, account, select, isDeploying } = useBurner({
+  const { create, list, get, account, select, isDeploying, clear } = useBurner({
     masterAccount: masterAccount,
     accountClassHash: import.meta.env.VITE_PUBLIC_ACCOUNT_CLASS_HASH!,
   });
 
-  const accountDisplay = useMemo(() => {
-    return displayAddress(account?.address || masterAccount.address);
-  }, [account]);
+  const selectedAccount = useMemo(() => {
+    return account || masterAccount;
+  }, [account])
 
-
-  if (!value) throw new Error("Must be used within a DojoProvider");
-  return {
-    setup: value,
+  const contextValue: EternumContext = {
+    setup: value,    // the provided setup
     account: {
-      create,
-      list,
-      get,
-      select,
-      account: account ? account : masterAccount,
-      masterAccount,
-      isDeploying,
-      accountDisplay,
-    },
-  };
+      create,        // create a new account
+      list,          // list all accounts
+      get,           // get an account by id
+      select,        // select an account by id
+      account: selectedAccount,       // the selected account
+      masterAccount, // the master account
+      isDeploying,   // is the account being deployed
+      accountDisplay: displayAddress(account?.address!),
+      clear
+    }
+  }
+
+  return <DojoContext.Provider value={contextValue}>{children}</DojoContext.Provider>;
+};
+
+export const useDojo = () => {
+  const value = useContext(DojoContext);
+  if (!value) throw new Error("Must be used within a DojoProvider");
+  return value;
 };

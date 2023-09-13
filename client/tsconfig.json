@@ -18,12 +18,12 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    // "noUnusedParameters": true,
     "noEmit": true,
     "jsx": "react-jsx",
     "types": [
       "vite-plugin-svgr/client",
-      "node"
+      "node",
     ]
   },
   "include": [
