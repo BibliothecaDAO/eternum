@@ -32,7 +32,7 @@ mod TransportToHyperStructure {
         assert(caravan_owner.address == ctx.origin, 'not owner of caravan id');
         
         let hyperstructure = get!(ctx.world, hyperstructure_id, HyperStructure);
-        assert(hyperstructure.created_at != 0 , 'hyper structure not found');
+        assert(hyperstructure.started_at != 0 , 'hyper structure not found');
         assert(hyperstructure.completed_at == 0, 'hyper structure completed!');
 
 

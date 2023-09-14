@@ -28,7 +28,7 @@ mod BuildHyperStructure {
         assert(caravan_owner.address == ctx.origin, 'caravan owner mismatch');
         
         let hyperstructure = get!(ctx.world, hyperstructure_id, HyperStructure);
-        assert(hyperstructure.created_at != 0 , 'hyper structure not found');
+        assert(hyperstructure.started_at != 0 , 'hyper structure not found');
 
         if (hyperstructure.completed_at != 0) {
             // if hyperstructure isn't completed,
