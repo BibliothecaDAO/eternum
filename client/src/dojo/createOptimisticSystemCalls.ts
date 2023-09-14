@@ -6,6 +6,7 @@ import {
   BuildLaborProps,
   CancelFungibleOrderProps,
   ClaimFungibleOrderProps,
+  CreateRoadProps,
   HarvestLaborProps,
   MakeFungibleOrderProps,
 } from "./createSystemCalls";
@@ -20,6 +21,7 @@ export function createOptimisticSystemCalls({
   Resource,
   FungibleEntities,
   OrderResource,
+  Road,
 }: ClientComponents) {
   function optimisticMakeFungibleOrder(systemCall: (args: MakeFungibleOrderProps) => Promise<number>) {
     return async function (this: any, args: MakeFungibleOrderProps): Promise<number> {
@@ -316,6 +318,45 @@ export function createOptimisticSystemCalls({
     };
   }
 
+  function optimisticBuildRoad(systemCall: (args: CreateRoadProps) => Promise<void>) {
+    return async function (this: any, args: CreateRoadProps) {
+      const { creator_id, start_coord, end_coord, usage_count } = args;
+      const overrideId = uuid();
+      // change status from open to accepted
+      let usageCount = usage_count as Type.Number;
+      Road.addOverride(overrideId, {
+        entity: getEntityIdFromKeys([
+          BigInt(start_coord.x),
+          BigInt(start_coord.y),
+          BigInt(end_coord.x),
+          BigInt(end_coord.y),
+        ]),
+        value: { usage_count: usageCount },
+      });
+
+      let { balance } = getComponentValue(Resource, getEntityIdFromKeys([BigInt(creator_id), BigInt(2)])) || {
+        balance: 0,
+      };
+
+      // change trade taker_id to realm
+      Resource.addOverride(overrideId, {
+        entity: getEntityIdFromKeys([BigInt(creator_id), BigInt(2)]),
+        value: {
+          // 10 stone per usage
+          balance: balance - usageCount * 10,
+        },
+      });
+
+      try {
+        await systemCall(args); // Call the original function with its arguments and correct context
+      } finally {
+        // remove overrides
+        Road.removeOverride(overrideId);
+        Resource.removeOverride(overrideId);
+      }
+    };
+  }
+
   return {
     optimisticClaimFungibleOrder,
     optimisticMakeFungibleOrder,
@@ -323,5 +364,6 @@ export function createOptimisticSystemCalls({
     optimisticCancelOffer,
     optimisticBuildLabor,
     optimisticHarvestLabor,
+    optimisticBuildRoad,
   };
 }

@@ -15,7 +15,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     LaborConfig: (() => {
@@ -31,7 +31,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     TravelConfig: (() => {
@@ -45,7 +45,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     BuildingConfig: (() => {
@@ -60,7 +60,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     BuildingCost: (() => {
@@ -75,7 +75,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     BuildingTypeConfig: (() => {
@@ -92,7 +92,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     LaborCostResources: (() => {
@@ -107,7 +107,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     LaborCostAmount: (() => {
@@ -121,7 +121,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     CapacityConfig: (() => {
@@ -136,7 +136,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     SpeedConfig: (() => {
@@ -151,7 +151,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     WeightConfig: (() => {
@@ -166,7 +166,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     Age: (() => {
@@ -180,7 +180,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     Position: (() => {
@@ -195,7 +195,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     Realm: (() => {
@@ -217,7 +217,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     Resource: (() => {
@@ -231,7 +231,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     OrderResource: (() => {
@@ -246,7 +246,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     Vault: (() => {
@@ -260,7 +260,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     Labor: (() => {
@@ -276,7 +276,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     Owner: (() => {
@@ -290,7 +290,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     Capacity: (() => {
@@ -304,7 +304,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     Movable: (() => {
@@ -319,7 +319,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     ArrivalTime: (() => {
@@ -333,7 +333,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     Quantity: (() => {
@@ -347,7 +347,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     QuantityTracker: (() => {
@@ -361,7 +361,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     MetaData: (() => {
@@ -375,7 +375,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     ForeignKey: (() => {
@@ -389,7 +389,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     Caravan: (() => {
@@ -403,7 +403,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     CaravanMembers: (() => {
@@ -418,7 +418,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     Trade: (() => {
@@ -439,7 +439,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     Status: (() => {
@@ -453,7 +453,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     FungibleEntities: (() => {
@@ -468,7 +468,7 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
       );
     })(),
     OrderId: (() => {
@@ -482,7 +482,25 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: name,
           },
-        }
+        },
+      );
+    })(),
+    Road: (() => {
+      const name = "Road";
+      return defineComponent(
+        world,
+        {
+          start_coord_x: RecsType.Number,
+          start_coord_y: RecsType.Number,
+          end_coord_x: RecsType.Number,
+          end_coord_y: RecsType.Number,
+          usage_count: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
       );
     })(),
   };

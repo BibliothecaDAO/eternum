@@ -46,6 +46,7 @@ export interface MarketInterface {
   canAccept?: boolean;
   ratio: number;
   distance: number;
+  hasRoad: boolean;
 }
 
 export interface PositionInterface {

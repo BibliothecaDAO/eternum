@@ -72,11 +72,14 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
             </div>
           )}
         </div>
-        {isWaitingForDeparture && (
-          <div className="flex ml-auto -mt-2 italic text-gold">
-            Waiting departure <Pen className="ml-1 fill-gold" />
-          </div>
-        )}
+        {
+          // isWaitingForDeparture is '0' instead of false, need to fix that
+          isWaitingForDeparture == true && (
+            <div className="flex ml-auto -mt-2 italic text-gold">
+              Waiting departure <Pen className="ml-1 fill-gold" />
+            </div>
+          )
+        }
         {isIdle && (
           <div className="flex ml-auto -mt-2 italic text-gold">
             Idle

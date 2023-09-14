@@ -3,7 +3,7 @@ import React from "react";
 
 type TooltipProps = {
   children: React.ReactNode;
-  position?: "top" | "bottom";
+  position?: "top" | "bottom" | "left";
   className?: string;
 };
 
@@ -13,15 +13,17 @@ export const Tooltip = ({ position = "top", className, children }: TooltipProps)
       "absolute z-[100] opacity-80 text-xxs hidden left-1/2 -translate-x-1/2 p-2 bg-black rounded-md flex-col justify-start items-center text-white group-hover:inline-flex",
       position == "top" && "top-0 -translate-y-full",
       position == "bottom" && "bottom-0 translate-y-[120%]",
+      position == "left" && "!left-0 !top-1/2 -translate-x-[110%] -translate-y-1/2",
       className,
     )}
   >
     {children}
     <svg
       className={clsx(
-        "absolute bottom-0 z-0 -translate-x-1/2 left-1/2",
-        position == "top" && "bottom-0 translate-y-1/2",
-        position == "bottom" && "top-0 -translate-y-1/2 rotate-180",
+        "absolute z-0",
+        position == "top" && "bottom-0 translate-y-1/2 -translate-x-1/2 left-1/2 bottom-0",
+        position == "bottom" && "top-0 -translate-y-1/2 rotate-180 -translate-x-1/2 left-1/2 bottom-0",
+        position == "left" && "right-0 top-1/2 -translate-y-1/2 translate-x-1/2 -rotate-90",
       )}
       width="26"
       height="18"
