@@ -49,6 +49,19 @@ export interface AttachCaravanProps extends SystemSigner {
   caravan_id: num.BigNumberish;
 }
 
+export interface CreateRoadProps extends SystemSigner {
+  creator_id: num.BigNumberish;
+  start_coord: {
+    x: num.BigNumberish;
+    y: num.BigNumberish;
+  };
+  end_coord: {
+    x: num.BigNumberish;
+    y: num.BigNumberish;
+  };
+  usage_count: num.BigNumberish;
+}
+
 export interface ClaimFungibleOrderProps extends SystemSigner {
   entity_id: num.BigNumberish;
   trade_id: num.BigNumberish;
@@ -236,6 +249,22 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
     }
     return realm_entity_id;
   };
+
+  const create_road = async (props: CreateRoadProps) => {
+    const { creator_id, start_coord, end_coord, usage_count, signer } = props;
+    const tx = await execute(signer, "CreateRoad", [
+      creator_id,
+      start_coord.x,
+      start_coord.y,
+      end_coord.x,
+      end_coord.y,
+      usage_count,
+    ]);
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
+    const events = getEvents(receipt);
+    setComponentsFromEvents(contractComponents, events);
+  };
+
   return {
     build_labor,
     harvest_labor,
@@ -248,6 +277,7 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
     create_caravan,
     attach_caravan,
     create_realm,
+    create_road,
   };
 }
 
@@ -281,10 +311,17 @@ export function setComponentFromEvent(components: Components, eventData: string[
   let numberOfValues = parseInt(eventData[index++]);
 
   // get values
-  const values = eventData.slice(index, index + numberOfValues);
+  const valuesFromEventData = eventData.slice(index, index + numberOfValues);
+
+  // get component files
+  let componentFields = Object.keys(component.schema);
+
+  // Add keys to values if there are extra fields in the component schema (in case we want to add keys to the field values)
+  const values =
+    valuesFromEventData.length < componentFields.length ? [...keys, ...valuesFromEventData] : valuesFromEventData;
 
   // create component object from values with schema
-  const componentValues = Object.keys(component.schema).reduce((acc: Schema, key, index) => {
+  const componentValues = componentFields.reduce((acc: Schema, key, index) => {
     const value = values[index];
     acc[key] = Number(value);
     return acc;

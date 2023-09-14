@@ -10,6 +10,7 @@ import Button from "../../../../../elements/Button";
 import { MarketOffer } from "./MarketOffer";
 import { AcceptOfferPopup } from "../AcceptOffer";
 import { MarketInterface, sortTrades, useGetMarket } from "../../../../../hooks/helpers/useTrade";
+import { RoadBuildPopup } from "../Roads/RoadBuildPopup";
 
 type MarketPanelProps = {
   directOffers: boolean;
@@ -21,6 +22,7 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
   const [selectedTrade, setSelectedTrade] = useState<MarketInterface | undefined>(undefined);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [buildRoadToEntityId, setBuildRoadToEntityId] = useState<number | undefined>(undefined);
 
   const sortingParams = useMemo(() => {
     return [
@@ -42,11 +44,18 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
   const renderedMarketOffers = useMemo(() => {
     if (!market) return null;
 
-    return sortTrades(market, activeSort).map((trade) => (
-      <div className="flex flex-col p-2" key={trade.tradeId}>
-        <MarketOffer marketOffer={trade} onAccept={() => setSelectedTrade(trade)} />
+    return (
+      <div className="flex flex-col p-2 space-y-2">
+        {sortTrades(market, activeSort).map((trade) => (
+          <MarketOffer
+            key={trade.tradeId}
+            marketOffer={trade}
+            onAccept={() => setSelectedTrade(trade)}
+            onBuildRoad={() => setBuildRoadToEntityId(trade.makerId)}
+          />
+        ))}
       </div>
-    ));
+    );
   }, [market, activeSort]);
 
   return (
@@ -76,6 +85,9 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
         ))}
       </SortPanel>
       {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
+      {buildRoadToEntityId && (
+        <RoadBuildPopup onClose={() => setBuildRoadToEntityId(undefined)} toEntityId={buildRoadToEntityId} />
+      )}
       {selectedTrade && (
         <AcceptOfferPopup
           onClose={() => {

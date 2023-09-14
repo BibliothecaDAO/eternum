@@ -3,11 +3,11 @@ import { Tabs } from "../../../elements/tab";
 import { CaravansPanel } from "./trade/Caravans/CaravansPanel";
 import { MarketPanel } from "./trade/Market/MarketPanel";
 import { MyOffersPanel } from "./trade/MyOffers/MyOffersPanel";
-import { IncomingOrdersPanel } from "./trade/Caravans/IncomingOrdersPanel";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useRoute, useLocation } from "wouter";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { Tooltip } from "../../../elements/Tooltip";
+import { RoadsPanel } from "./trade/Roads/RoadsPanel";
 
 export type Order = {
   orderId: number;
@@ -52,8 +52,10 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
           <div className="flex relative group flex-col items-center">
             <div>My Offers</div>
             <Tooltip position="bottom">
-              <p className="whitespace-nowrap">Check offers made by you</p>
-              <p className="whitespace-nowrap">or create new one.</p>
+              <p className="whitespace-nowrap">Check offers made by you,</p>
+              <p className="whitespace-nowrap">watch incoming caravans,</p>
+              <p className="whitespace-nowrap">claim arrived resources,</p>
+              <p className="whitespace-nowrap">or create new offers.</p>
             </Tooltip>
           </div>
         ),
@@ -98,18 +100,17 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
         component: <CaravansPanel />,
       },
       {
-        key: "incoming-caravans",
+        key: "roads",
         label: (
           <div className="flex relative group flex-col items-center">
-            <div>Incoming Caravans </div>
+            <div>Roads</div>
             <Tooltip position="bottom">
-              <p className="whitespace-nowrap">Watch caravans that on the way</p>
-              <p className="whitespace-nowrap">to your realm, and claim your resources</p>
-              <p className="whitespace-nowrap">when they arrive.</p>
+              <p className="whitespace-nowrap">Build roads to other Realms to</p>
+              <p className="whitespace-nowrap">get faster travel time for orders.</p>
             </Tooltip>
           </div>
         ),
-        component: <IncomingOrdersPanel />,
+        component: <RoadsPanel />,
       },
     ],
     [selectedTab],
