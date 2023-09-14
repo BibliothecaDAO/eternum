@@ -9,7 +9,7 @@ import clsx from "clsx";
 
 type SignUpComponentProps = {};
 
-export const SignUpComponent = ({ }: SignUpComponentProps) => {
+export const SignUpComponent = ({}: SignUpComponentProps) => {
   const {
     account: { create, isDeploying, list, account, select, clear },
   } = useDojo();
@@ -58,14 +58,25 @@ export const SignUpComponent = ({ }: SignUpComponentProps) => {
           <div className="flex flex-col w-full text-center text-xs text-white">
             <div className=" border border-gold my-3 w-full rounded-lg bg-black p-2 flex justify-between">
               <img src="/images/argent-x.svg" className="h-8" alt="Argent X Logo" />
-              <Button className=" !rounded text-brown" variant="primary" onClick={() => setShowSignupPopup(false)}>
+              <Button
+                // cannot use master account to sign in
+                disabled={account.address === import.meta.env.VITE_KATANA_ACCOUNT_1_ADDRESS!}
+                className=" !rounded text-brown"
+                variant="primary"
+                onClick={() => setShowSignupPopup(false)}
+              >
                 Log in with Argent X
               </Button>
             </div>
             Or
             <div className=" border border-gold my-3 w-full rounded-lg bg-black p-2 flex justify-between">
               <img src="/images/braavos.svg" className="h-8" alt="Braavos Logo" />
-              <Button className=" !rounded text-brown" variant="primary" onClick={() => setShowSignupPopup(false)}>
+              <Button
+                disabled={account.address === import.meta.env.VITE_KATANA_ACCOUNT_1_ADDRESS!}
+                className=" !rounded text-brown"
+                variant="primary"
+                onClick={() => setShowSignupPopup(false)}
+              >
                 Log in with Braavos
               </Button>
             </div>
