@@ -8,4 +8,4 @@ mod test;
 mod order;
 mod caravan;
 mod road;
-mod craft;
+mod hyperstructure;

@@ -1,3 +1,7 @@
+use eternum::constants::{WORLD_CONFIG_ID};
+
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+
 use starknet::ContractAddress;
 
 //
@@ -120,9 +124,16 @@ struct WeightConfig {
     weight_gram: u128,
 }
 
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
-struct StructureConfig {
-    #[key]
-    structure_composition_hash: felt252,
-    structure_type: u8
+
+trait WeightConfigTrait {
+    fn get_weight(world: IWorldDispatcher, resource_type: u8, amount: u128 ) -> u128;
+}
+
+impl WeightConfigImpl of WeightConfigTrait {
+    fn get_weight(world: IWorldDispatcher, resource_type: u8, amount: u128 ) -> u128 {
+        let resource_weight_config 
+            = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig);
+
+        return resource_weight_config.weight_gram * amount.into();
+    }
 }
