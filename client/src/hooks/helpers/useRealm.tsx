@@ -1,8 +1,47 @@
 import { useMemo, useState } from "react";
 import { RealmInterface } from "../graphql/useGraphQLQueries";
-import { getComponentValue } from "@latticexyz/recs";
+import { HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import { getEntityIdFromKeys } from "../../utils/utils";
+import { getOrderName } from "../../constants/orders";
+import realmIdsByOrder from "../../data/realmids_by_order.json";
+
+export function useRealm() {
+  const {
+    setup: {
+      components: { Realm },
+    },
+  } = useDojo();
+
+  const getNextRealmIdForOrder = (order: number) => {
+    const orderName = getOrderName(order);
+
+    const entityIds = runQuery([HasValue(Realm, { order })]);
+
+    let latestRealmIdFromOrder = 0;
+
+    // sort from biggest to lowest
+    if (entityIds.size > 0) {
+      const realmEntityId = Array.from(entityIds).sort((a, b) => b - a)[0];
+      const latestRealmFromOrder = getComponentValue(Realm, realmEntityId);
+      if (latestRealmFromOrder) {
+        latestRealmIdFromOrder = latestRealmFromOrder.realm_id;
+      }
+    }
+    const orderRealmIds = (realmIdsByOrder as { [key: string]: number[] })[orderName];
+    const latestIndex = orderRealmIds.indexOf(latestRealmIdFromOrder);
+
+    if (latestIndex === -1 || latestIndex === orderRealmIds.length - 1) {
+      return orderRealmIds[0];
+    } else {
+      return orderRealmIds[latestIndex + 1];
+    }
+  };
+
+  return {
+    getNextRealmIdForOrder,
+  };
+}
 
 export function useGetRealm(realmEntityId: number | undefined) {
   const {
