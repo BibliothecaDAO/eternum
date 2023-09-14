@@ -8,15 +8,26 @@ import { OrdersFilter } from "../../../../OrdersFilterComponent";
 import { CreateOfferPopup } from "../CreateOffer";
 import Button from "../../../../../elements/Button";
 import { MyOffer } from "./MyOffer";
-import { useGetMyOffers } from "../../../../../hooks/helpers/useTrade";
+import { sortTrades, useGetMyOffers } from "../../../../../hooks/helpers/useTrade";
+import { IncomingOrder } from "../Caravans/IncomingOrder";
+import { useGetIncomingOrders } from "../../../../../hooks/helpers/useIncomingOrders";
 
 type MarketPanelProps = {};
 
 export const MyOffersPanel = ({}: MarketPanelProps) => {
   const [activeFilter, setActiveFilter] = useState(false);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
+  const [selectedResources, setSelectedResources] = useState<string[]>([]);
+  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
 
-  const { myOffers } = useGetMyOffers();
+  const [activeSort, setActiveSort] = useState<SortInterface>({
+    sortKey: "number",
+    sort: "none",
+  });
+
+  const myOffers = useGetMyOffers({ selectedResources, selectedOrders });
+
+  const { incomingOrders } = useGetIncomingOrders();
 
   const sortingParams = useMemo(() => {
     return [
@@ -28,18 +39,14 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
     ];
   }, []);
 
-  const [activeSort, setActiveSort] = useState<SortInterface>({
-    sortKey: "number",
-    sort: "none",
-  });
   return (
     <div className="relative flex flex-col pb-3 min-h-[120px]">
       <FiltersPanel className="px-3 py-2">
         <FilterButton active={activeFilter} onClick={() => setActiveFilter(!activeFilter)}>
           Filter
         </FilterButton>
-        <ResourceFilter />
-        <OrdersFilter />
+        <ResourceFilter selectedResources={selectedResources} setSelectedResources={setSelectedResources} />
+        <OrdersFilter selectedOrders={selectedOrders} setSelectedOrders={setSelectedOrders} />
       </FiltersPanel>
       <SortPanel className="px-3 py-2">
         {sortingParams.map(({ label, sortKey, className }) => (
@@ -60,12 +67,13 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
       </SortPanel>
       {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
       {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
-      {myOffers.length &&
-        myOffers.map((myOffer) => (
-          <div className="flex flex-col p-2" key={myOffer.tradeId}>
-            <MyOffer myOffer={myOffer} />
-          </div>
+      <div className="flex flex-col p-2 space-y-2">
+        {incomingOrders.map((incomingOrder) => (
+          <IncomingOrder key={incomingOrder.tradeId} incomingOrder={incomingOrder} />
         ))}
+        {myOffers.length > 0 &&
+          sortTrades(myOffers, activeSort).map((myOffer) => <MyOffer key={myOffer.tradeId} myOffer={myOffer} />)}
+      </div>
       <Button
         className="sticky w-32 -translate-x-1/2 bottom-2 left-1/2 !rounded-full"
         onClick={() => setShowCreateOffer(true)}

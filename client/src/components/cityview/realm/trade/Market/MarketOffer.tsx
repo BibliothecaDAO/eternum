@@ -1,33 +1,33 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
 import { findResourceById } from "../../../../../constants/resources";
 import { ReactComponent as RatioIcon } from "../../../../../assets/icons/common/ratio.svg";
-import { ResourcesOffer } from "../../../../../types";
 import { orderNameDict } from "../../../../../constants/orders";
 import * as realmsData from "../../../../../geodata/realms.json";
 import { MarketInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
+import { ResourcesOffer } from "../../../../../types";
+import { Tooltip } from "../../../../../elements/Tooltip";
 
 type TradeOfferProps = {
   marketOffer: MarketInterface;
   onAccept: () => void;
+  onBuildRoad: () => void;
 };
 
-export const MarketOffer = ({ marketOffer, onAccept }: TradeOfferProps) => {
-  const { resourcesGet, resourcesGive, canAccept, ratio } = marketOffer;
+export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferProps) => {
+  const { hasRoad, distance, resourcesGet, resourcesGive, canAccept, ratio } = marketOffer;
+
+  let { realm: makerRealm } = useGetRealm(marketOffer.makerId);
 
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     setIsLoading(false);
   }, [marketOffer]);
-
-  let { realm: makerRealm } = useGetRealm(marketOffer.makerId);
-
-  let timeLeft = useMemo(() => formatTimeLeft(marketOffer.expiresAt - Date.now() / 1000), [marketOffer.expiresAt]);
 
   return (
     <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold">
@@ -39,10 +39,29 @@ export const MarketOffer = ({ marketOffer, onAccept }: TradeOfferProps) => {
             {realmsData["features"][makerRealm.realmId - 1].name}
           </div>
         )}
-        <div className="-mt-2 text-gold">{timeLeft}</div>
+        <div className=" text-gold flex">
+          <div className=" text-right">{`${distance.toFixed(0)} km`}</div>
+          {hasRoad ? (
+            <div className="text-order-brilliance relative group ml-2">
+              (x2 speed)
+              <Tooltip position="left">
+                <p className="whitespace-nowrap">This Realm has built road</p>
+                <p className="whitespace-nowrap">to your Realm.</p>
+              </Tooltip>
+            </div>
+          ) : (
+            <div className="text-gold/50 decoration-dotted underline relative group ml-2" onClick={onBuildRoad}>
+              (Normal speed)
+              <Tooltip position="left">
+                <p className="whitespace-nowrap">Click to build road and</p>
+                <p className="whitespace-nowrap">speed up trades with this Realm.</p>
+              </Tooltip>
+            </div>
+          )}
+        </div>
       </div>
       <div className="flex items-end mt-2">
-        <div className="flex items-center justify-around flex-1">
+        <div className={clsx("flex items-center justify-around flex-1", !canAccept && " mb-3")}>
           <div className="flex-1 text-gold flex justify-center items-center flex-wrap">
             {resourcesGive &&
               resourcesGive.map(({ resourceId, amount }) => (
@@ -96,14 +115,6 @@ export const MarketOffer = ({ marketOffer, onAccept }: TradeOfferProps) => {
       </div>
     </div>
   );
-};
-
-const formatTimeLeft = (seconds: number) => {
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-
-  return `${days} days ${hours}h:${minutes}m`;
 };
 
 export const calculateRatio = (resourcesGive: ResourcesOffer[], resourcesGet: ResourcesOffer[]) => {

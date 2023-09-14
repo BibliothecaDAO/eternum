@@ -2,13 +2,7 @@ import { forwardRef, useMemo, useLayoutEffect } from "react";
 import { Vector2 } from "three";
 import { useThree } from "@react-three/fiber";
 import { BlendFunction } from "postprocessing";
-import {
-  EntityIndex,
-  setComponent,
-  Component,
-  Schema,
-  Components,
-} from "@latticexyz/recs";
+import { EntityIndex, setComponent, Component, Schema, Components } from "@latticexyz/recs";
 import { poseidonHashMany } from "micro-starknet";
 
 const isRef = (ref: any) => !!ref.current;
@@ -19,19 +13,13 @@ export const currencyFormat = (num: any) => {
   return num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
 };
 
-export const wrapEffect = (
-  effectImpl: any,
-  defaultBlendMode = BlendFunction.ALPHA,
-) =>
+export const wrapEffect = (effectImpl: any, defaultBlendMode = BlendFunction.ALPHA) =>
   forwardRef(function Wrap({ blendFunction, opacity, ...props }: any, ref) {
     const invalidate = useThree((state) => state.invalidate);
     const effect = useMemo(() => new effectImpl(props), [props]);
 
     useLayoutEffect(() => {
-      effect.blendMode.blendFunction =
-        !blendFunction && blendFunction !== 0
-          ? defaultBlendMode
-          : blendFunction;
+      effect.blendMode.blendFunction = !blendFunction && blendFunction !== 0 ? defaultBlendMode : blendFunction;
       if (opacity !== undefined) effect.blendMode.opacity.value = opacity;
       invalidate();
     }, [blendFunction, effect.blendMode, opacity]);
@@ -55,9 +43,7 @@ export function isValidArray(input: any): input is any[] {
 }
 
 export function extractAndCleanKey(keys: (string | null)[]): bigint[] {
-  return keys
-    .filter((value) => value !== null && value !== "")
-    .map((key) => BigInt(key as string));
+  return keys.filter((value) => value !== null && value !== "").map((key) => BigInt(key as string));
 }
 
 export type Entity = {
@@ -66,11 +52,7 @@ export type Entity = {
   components?: any | null[];
 };
 
-export function setComponentFromEntity(
-  entity: Entity | null,
-  componentName: string,
-  components: Components,
-) {
+export function setComponentFromEntity(entity: Entity | null, componentName: string, components: Components) {
   if (entity) {
     let component = components[componentName];
     let rawComponentValues = entity?.components?.find((component: any) => {
@@ -82,14 +64,11 @@ export function setComponentFromEntity(
       let entityId = getEntityIdFromKeys(keys);
       // TODO: issue is that torii returns all numbers as strings, need to fix in torii
       // so here i am transforming to a number each time (but it will cause problem for fields that are not numbers)
-      const componentValues = Object.keys(component.schema).reduce(
-        (acc: Schema, key) => {
-          const value = rawComponentValues[key];
-          acc[key] = Number(value);
-          return acc;
-        },
-        {},
-      );
+      const componentValues = Object.keys(component.schema).reduce((acc: Schema, key) => {
+        const value = rawComponentValues[key];
+        acc[key] = Number(value);
+        return acc;
+      }, {});
       setComponent(component, entityId, componentValues);
     }
   }
@@ -99,17 +78,12 @@ export const numberToHex = (num: number) => {
   return "0x" + num.toString(16);
 };
 
-export function getFirstComponentByType(
-  entities: any[] | null | undefined,
-  typename: string,
-): any | null {
+export function getFirstComponentByType(entities: any[] | null | undefined, typename: string): any | null {
   if (!isValidArray(entities)) return null;
 
   for (let entity of entities) {
     if (isValidArray(entity?.components)) {
-      const foundComponent = entity.components.find(
-        (comp: any) => comp.__typename === typename,
-      );
+      const foundComponent = entity.components.find((comp: any) => comp.__typename === typename);
       if (foundComponent) return foundComponent;
     }
   }
@@ -133,9 +107,7 @@ export function getAllComponentNames(manifest: any): any {
 }
 
 export function getAllComponentNamesAsFelt(manifest: any): any {
-  return manifest.components.map((component: any) =>
-    strTofelt252Felt(component.name),
-  );
+  return manifest.components.map((component: any) => strTofelt252Felt(component.name));
 }
 
 export function getAllSystemNames(manifest: any): any {
@@ -157,10 +129,7 @@ export function getEntityIdFromKeys(keys: bigint[]): EntityIndex {
   return parseInt(poseidon.toString()) as EntityIndex;
 }
 
-export function setComponentFromEntitiesQuery(
-  component: Component,
-  entities: bigint[],
-) {
+export function setComponentFromEntitiesQuery(component: Component, entities: bigint[]) {
   let index = 0;
 
   // Retrieve the number of entityIds
@@ -179,14 +148,11 @@ export function setComponentFromEntitiesQuery(
 
     // Retrieve entity's component values
     const valueArray = entities.slice(index, index + numValues);
-    const componentValues = Object.keys(component.schema).reduce(
-      (acc: Schema, key, index) => {
-        const value = valueArray[index];
-        acc[key] = Number(value);
-        return acc;
-      },
-      {},
-    );
+    const componentValues = Object.keys(component.schema).reduce((acc: Schema, key, index) => {
+      const value = valueArray[index];
+      acc[key] = Number(value);
+      return acc;
+    }, {});
 
     const entityIndex = parseInt(entityIds[i].toString()) as EntityIndex;
     setComponent(component, entityIndex, componentValues);
@@ -195,35 +161,24 @@ export function setComponentFromEntitiesQuery(
   }
 }
 
-export function setComponentFromEntitiesGraphqlQuery(
-  component: Component,
-  entities: Entity[],
-) {
+export function setComponentFromEntitiesGraphqlQuery(component: Component, entities: Entity[]) {
   entities.forEach((entity) => {
-    const keys = entity?.keys
-      ?.filter((key) => key !== null)
-      .map((key) => BigInt(key as string)) as bigint[];
+    const keys = entity?.keys?.filter((key) => key !== null).map((key) => BigInt(key as string)) as bigint[];
     const entityIndex = getEntityIdFromKeys(keys);
     entity.components.forEach((comp: any) => {
       if (comp.__typename === component.metadata?.name) {
-        const componentValues = Object.keys(component.schema).reduce(
-          (acc: Schema, key) => {
-            const value = comp[key];
-            acc[key] = Number(value);
-            return acc;
-          },
-          {},
-        );
+        const componentValues = Object.keys(component.schema).reduce((acc: Schema, key) => {
+          const value = comp[key];
+          acc[key] = Number(value);
+          return acc;
+        }, {});
         setComponent(component, entityIndex, componentValues);
       }
     });
   });
 }
 
-export function setComponentFromEvent(
-  components: Components,
-  eventData: string[],
-) {
+export function setComponentFromEvent(components: Components, eventData: string[]) {
   // retrieve the component name
   const componentName = hex_to_ascii(eventData[0]);
 
@@ -246,14 +201,11 @@ export function setComponentFromEvent(
   const values = eventData.slice(index, index + numberOfValues);
 
   // create component object from values with schema
-  const componentValues = Object.keys(component.schema).reduce(
-    (acc: Schema, key, index) => {
-      const value = values[index];
-      acc[key] = Number(value);
-      return acc;
-    },
-    {},
-  );
+  const componentValues = Object.keys(component.schema).reduce((acc: Schema, key, index) => {
+    const value = values[index];
+    acc[key] = Number(value);
+    return acc;
+  }, {});
 
   // set component
   setComponent(component, entityIndex, componentValues);
@@ -272,4 +224,17 @@ export const formatTimeLeft = (seconds: number) => {
   const minutes = Math.floor((seconds % 3600) / 60);
 
   return `${hours}h:${minutes}m`;
+};
+
+export function displayAddress(string: string) {
+  if (string === undefined) return "unknown";
+  return string.substring(0, 6) + "..." + string.substring(string.length - 4);
+}
+
+export const formatTimeLeftDaysHoursMinutes = (seconds: number) => {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  return `${days} days ${hours}h:${minutes}m`;
 };

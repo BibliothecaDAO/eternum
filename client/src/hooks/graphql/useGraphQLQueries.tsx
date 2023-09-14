@@ -45,6 +45,8 @@ export interface MarketInterface {
   resourcesGive: Resource[];
   canAccept?: boolean;
   ratio: number;
+  distance: number;
+  hasRoad: boolean;
 }
 
 export interface PositionInterface {
@@ -98,6 +100,20 @@ export interface IncomingOrderInterface {
 
 export interface IncomingOrdersInterface {
   incomingOrders: IncomingOrderInterface[];
+}
+
+export interface CaravanInterface {
+  caravanId: number;
+  orderId: number | undefined;
+  blocked: boolean | undefined;
+  arrivalTime: number | undefined;
+  capacity: number | undefined;
+  destination: PositionInterface | undefined;
+}
+
+export interface ResourceInterface {
+  resourceId: number;
+  amount: number;
 }
 
 export const useSyncRealmLabor = (realmEntityId: number) => {
@@ -289,20 +305,6 @@ export const useGetCounterPartyOrderId = (
   };
 };
 
-export interface CaravanInterface {
-  caravanId: number;
-  orderId: number | undefined;
-  blocked: boolean | undefined;
-  arrivalTime: number | undefined;
-  capacity: number | undefined;
-  destination: PositionInterface | undefined;
-}
-
-export interface ResourceInterface {
-  resourceId: number;
-  amount: number;
-}
-
 export const useSyncCaravanInfo = (caravanId: number, orderId: number, counterpartyOrderId: number) => {
   const {
     setup: { components },
@@ -424,7 +426,6 @@ export const useSyncWorld = (): { loading: boolean } => {
 
   const [loading, setLoading] = useState(true);
 
-  // TODO: add loading bar
   useMemo(() => {
     const syncData = async () => {
       try {
