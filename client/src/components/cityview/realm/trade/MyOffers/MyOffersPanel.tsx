@@ -11,6 +11,7 @@ import { MyOffer } from "./MyOffer";
 import { sortTrades, useGetMyOffers } from "../../../../../hooks/helpers/useTrade";
 import { IncomingOrder } from "../Caravans/IncomingOrder";
 import { useGetIncomingOrders } from "../../../../../hooks/helpers/useIncomingOrders";
+import { RoadBuildPopup } from "../Roads/RoadBuildPopup";
 
 type MarketPanelProps = {};
 
@@ -19,6 +20,7 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
   const [showCreateOffer, setShowCreateOffer] = useState(false);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [buildRoadToEntityId, setBuildRoadToEntityId] = useState<number | undefined>(undefined);
 
   const [activeSort, setActiveSort] = useState<SortInterface>({
     sortKey: "number",
@@ -67,12 +69,21 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
       </SortPanel>
       {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
       {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
+      {buildRoadToEntityId && (
+        <RoadBuildPopup onClose={() => setBuildRoadToEntityId(undefined)} toEntityId={buildRoadToEntityId} />
+      )}
       <div className="flex flex-col p-2 space-y-2">
         {incomingOrders.map((incomingOrder) => (
           <IncomingOrder key={incomingOrder.tradeId} incomingOrder={incomingOrder} />
         ))}
         {myOffers.length > 0 &&
-          sortTrades(myOffers, activeSort).map((myOffer) => <MyOffer key={myOffer.tradeId} myOffer={myOffer} />)}
+          sortTrades(myOffers, activeSort).map((myOffer) => (
+            <MyOffer
+              key={myOffer.tradeId}
+              myOffer={myOffer}
+              onBuildRoad={() => setBuildRoadToEntityId(myOffer.takerId)}
+            />
+          ))}
       </div>
       <Button
         className="sticky w-32 -translate-x-1/2 bottom-2 left-1/2 !rounded-full"

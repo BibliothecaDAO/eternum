@@ -147,6 +147,7 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
 
   const { getTradeResources } = useTrade();
   const { getHasRoad } = useRoads();
+  const { calculateDistance } = useCaravan();
 
   useMemo(() => {
     const optimisticTradeId = entityIds.indexOf(HIGH_ENTITY_ID as EntityIndex);
@@ -159,6 +160,7 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
           const resourcesGet = getTradeResources(trade.taker_order_id);
           const resourcesGive = getTradeResources(trade.maker_order_id);
           const hasRoad = getHasRoad(realmEntityId, trade.taker_id);
+          const distance = calculateDistance(trade.taker_id, realmEntityId);
           return {
             tradeId,
             makerId: trade.maker_id,
@@ -172,7 +174,7 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
             canAccept: false,
             hasRoad,
             ratio: calculateRatio(resourcesGive, resourcesGet),
-            distance: 0,
+            distance: distance || 0,
           } as MarketInterface;
         }
       })
