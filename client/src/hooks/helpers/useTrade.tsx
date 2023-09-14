@@ -209,7 +209,7 @@ export function useGetMarket({
     if (directOffers) {
       baseFragments.push(HasValue(Trade, { taker_id: realmEntityId }));
     } else {
-      baseFragments.push(NotValue(Trade, { taker_id: realmEntityId }));
+      baseFragments.push(HasValue(Trade, { taker_id: 0 }));
     }
 
     if (selectedOrders.length > 0) {
