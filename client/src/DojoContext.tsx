@@ -17,7 +17,7 @@ type EternumContext = {
     accountDisplay: string;
     clear: () => void;
   };
-}
+};
 
 const DojoContext = createContext<EternumContext | null>(null);
 
@@ -48,26 +48,27 @@ export const DojoProvider = ({ children, value }: Props) => {
   const { create, list, get, account, select, isDeploying, clear } = useBurner({
     masterAccount: masterAccount,
     accountClassHash: import.meta.env.VITE_PUBLIC_ACCOUNT_CLASS_HASH!,
+    nodeUrl: import.meta.env.VITE_KATANA_URL!,
   });
 
   const selectedAccount = useMemo(() => {
     return account || masterAccount;
-  }, [account])
+  }, [account]);
 
   const contextValue: EternumContext = {
-    setup: value,    // the provided setup
+    setup: value, // the provided setup
     account: {
-      create,        // create a new account
-      list,          // list all accounts
-      get,           // get an account by id
-      select,        // select an account by id
-      account: selectedAccount,       // the selected account
+      create, // create a new account
+      list, // list all accounts
+      get, // get an account by id
+      select, // select an account by id
+      account: selectedAccount, // the selected account
       masterAccount, // the master account
-      isDeploying,   // is the account being deployed
+      isDeploying, // is the account being deployed
       accountDisplay: displayAddress(account?.address!),
-      clear
-    }
-  }
+      clear,
+    },
+  };
 
   return <DojoContext.Provider value={contextValue}>{children}</DojoContext.Provider>;
 };
