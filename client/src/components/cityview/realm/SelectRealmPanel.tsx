@@ -26,7 +26,8 @@ export const SelectRealmPanel = ({
   setSelectedRealmId: (selectedRealmId: number) => void;
 }) => {
   const [specifyRealmId, setSpecifyRealmId] = useState(false);
-  const [allRealms, setAllRealms] = useState<SelectRealmInterface[]>([]); // This would ideally be populated from an API call or similar.
+  const [originalRealms, setOriginalRealms] = useState<SelectRealmInterface[]>([]);
+  const [sortedRealms, setSortedRealms] = useState<SelectRealmInterface[]>([]);
 
   const {
     setup: {
@@ -55,7 +56,7 @@ export const SelectRealmPanel = ({
   });
 
   useEffect(() => {
-    const buildSelectableRealms = async () => {
+    const buildSelectableRealms = () => {
       let entityIds = runQuery([Has(Realm)]);
       let realms = Array.from(entityIds)
         .map((entityId) => {
@@ -74,14 +75,15 @@ export const SelectRealmPanel = ({
           }
         })
         .filter((realm) => realm && realm.realmId !== realmId && realm.realmId !== 1) as SelectRealmInterface[];
-      setAllRealms(realms);
+      setOriginalRealms(realms);
     };
     buildSelectableRealms();
   }, []);
 
   useEffect(() => {
-    setAllRealms((prevRealms) => sortRealms(prevRealms, activeSort));
-  }, [activeSort]);
+    const sorted = sortRealms(originalRealms, activeSort);
+    setSortedRealms(sorted);
+  }, [originalRealms, activeSort]);
 
   return (
     <div className="flex flex-col items-center w-full p-2">
@@ -121,10 +123,10 @@ export const SelectRealmPanel = ({
             ))}
           </SortPanel>
           <div className="flex flex-col p-2 space-y-2 max-h-40 overflow-y-auto">
-            {allRealms.map(({ order, name, realmId: takerRealmId, distance }) => {
+            {sortedRealms.map(({ order, name, realmId: takerRealmId, distance }, i) => {
               return (
                 <div
-                  key={takerRealmId}
+                  key={i}
                   className={`flex flex-col p-2 border rounded-md ${
                     selectedRealmId === takerRealmId ? "border-order-brilliance" : ""
                   } text-xxs text-gold`}
@@ -155,9 +157,11 @@ export const SelectRealmPanel = ({
  * sort realms based on active filters
  */
 export function sortRealms(realms: SelectRealmInterface[], activeSort: SortInterface): SelectRealmInterface[] {
+  const sortedRealms = [...realms]; // Making a copy of the realms array
+
   if (activeSort.sort !== "none") {
     if (activeSort.sortKey === "id") {
-      return realms.sort((a, b) => {
+      return sortedRealms.sort((a, b) => {
         if (activeSort.sort === "asc") {
           return a.realmId - b.realmId;
         } else {
@@ -165,7 +169,7 @@ export function sortRealms(realms: SelectRealmInterface[], activeSort: SortInter
         }
       });
     } else if (activeSort.sortKey === "name") {
-      return realms.sort((a, b) => {
+      return sortedRealms.sort((a, b) => {
         if (activeSort.sort === "asc") {
           return a.name.localeCompare(b.name);
         } else {
@@ -173,7 +177,7 @@ export function sortRealms(realms: SelectRealmInterface[], activeSort: SortInter
         }
       });
     } else if (activeSort.sortKey === "distance") {
-      return realms.sort((a, b) => {
+      return sortedRealms.sort((a, b) => {
         if (activeSort.sort === "asc") {
           return a.distance - b.distance;
         } else {
@@ -181,7 +185,7 @@ export function sortRealms(realms: SelectRealmInterface[], activeSort: SortInter
         }
       });
     } else if (activeSort.sortKey === "order") {
-      return realms.sort((a, b) => {
+      return sortedRealms.sort((a, b) => {
         if (activeSort.sort === "asc") {
           return a.order.localeCompare(b.order);
         } else {
@@ -189,9 +193,9 @@ export function sortRealms(realms: SelectRealmInterface[], activeSort: SortInter
         }
       });
     } else {
-      return realms;
+      return sortedRealms;
     }
   } else {
-    return realms.sort((a, b) => b.realmId - a.realmId);
+    return sortedRealms.sort((a, b) => b.realmId - a.realmId);
   }
 }
