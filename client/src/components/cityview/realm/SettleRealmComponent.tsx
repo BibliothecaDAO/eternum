@@ -11,27 +11,13 @@ import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { OrderIcon } from "../../../elements/OrderIcon";
 import { useRealm } from "../../../hooks/helpers/useRealm";
-import ListSelect from "../../../elements/ListSelect";
+import clsx from "clsx";
 
 export const MAX_REALMS = 5;
 
 export const SettleRealmComponent = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(1);
-
-  const ordersOptions = useMemo(
-    () =>
-      orders.map(({ orderId, fullOrderName }) => ({
-        id: orderId,
-        label: (
-          <>
-            <OrderIcon className="mr-2" withTooltip={false} size={"xs"} order={getOrderName(orderId)}></OrderIcon>
-            {fullOrderName}
-          </>
-        ),
-      })),
-    [orders],
-  );
 
   const {
     setup: {
@@ -82,30 +68,42 @@ export const SettleRealmComponent = () => {
   };
 
   return (
-    <div className="flex items-center h-min">
-      {!isLoading && (
+    <>
+      <div className="flex flex-col h-min">
+        <div className="text-xxs mb-2 italic text-gold">
+          Choose Order of your Realms. You can select Order only once per wallet.
+        </div>
+        <div className="grid grid-cols-8 gap-2">
+          {orders.map(({ orderId }) => (
+            <div
+              key={orderId}
+              className={clsx(
+                " flex relative group items-center justify-center  w-11 h-11 bg-black rounded-xl border",
+                [selectedOrder, chosenOrder].includes(orderId) ? "border-gold !cursor-pointer" : "border-transparent",
+                chosenOrder && chosenOrder !== orderId && "opacity-30 cursor-not-allowed",
+                !chosenOrder && "hover:bg-white/10 cursor-pointer",
+              )}
+              onClick={() => (!chosenOrder ? setSelectedOrder(orderId) : null)}
+            >
+              <OrderIcon
+                size={"xs"}
+                withTooltip={!chosenOrder || chosenOrder == orderId}
+                order={getOrderName(orderId)}
+              ></OrderIcon>
+            </div>
+          ))}
+        </div>
         <Button
           disabled={!canSettle}
-          onClick={settleRealm}
-          className="ml-auto mr-4 p-2 !h-8 text-lg !rounded-md"
-          variant="success"
+          isLoading={isLoading}
+          onClick={() => (!isLoading ? settleRealm() : null)}
+          className="mr-auto !h-6 mt-2 text-xxs !rounded-md !p-2"
+          variant={!isLoading ? "success" : "danger"}
         >
-          Settle Realm
+          {!isLoading ? "Settle Realm" : ""}
         </Button>
-      )}
-      {isLoading && (
-        <Button isLoading={true} onClick={() => {}} variant="danger" className="m-2 p-2 !h-4 text-xxs !rounded-md">
-          {}
-        </Button>
-      )}
-      {!chosenOrder ? (
-        <ListSelect options={ordersOptions} value={selectedOrder} onChange={setSelectedOrder} />
-      ) : (
-        <div className="flex items-center">
-          <OrderIcon size={"xs"} order={getOrderName(chosenOrder ? chosenOrder : selectedOrder)}></OrderIcon>
-        </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 };
 
