@@ -1,23 +1,41 @@
 import { EntityIndex, HasValue, NotValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import { Resource } from "../../types";
-import { MarketInterface, ResourceInterface } from "../graphql/useGraphQLQueries";
+import { ResourceInterface } from "../graphql/useGraphQLQueries";
 import { useEffect, useMemo, useState } from "react";
 import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys } from "../../utils/utils";
 import { HIGH_ENTITY_ID } from "../../dojo/createOptimisticSystemCalls";
-import { getRealm } from "../../components/cityview/realm/SettleRealmComponent";
 import { calculateRatio } from "../../components/cityview/realm/trade/Market/MarketOffer";
 import { HasOrders, HasResources, QueryFragment, useTradeQuery } from "./useTradeQueries";
 import { resources } from "../../constants/resources";
 import { orders } from "../../constants/orders";
 import { SortInterface } from "../../elements/SortButton";
 import { useCaravan } from "./useCaravans";
+import { getRealm } from "../../utils/realms";
 import { useRoads } from "./useRoads";
+
+export interface MarketInterface {
+  tradeId: number;
+  makerId: number;
+  takerId: number;
+  // brillance, reflection, ...
+  makerOrder: number;
+  makerOrderId: number;
+  takerOrderId: number;
+  expiresAt: number;
+  resourcesGet: Resource[];
+  resourcesGive: Resource[];
+  canAccept?: boolean;
+  ratio: number;
+  distance: number;
+  hasRoad: boolean | undefined;
+}
 
 type useGetMarketProps = {
   selectedResources: string[];
   selectedOrders: string[];
+  directOffers: boolean;
 };
 
 type useGetMyOffersProps = {
@@ -28,7 +46,7 @@ type useGetMyOffersProps = {
 export function useTrade() {
   const {
     setup: {
-      components: { OrderResource, FungibleEntities, Resource, Trade },
+      components: { OrderResource, FungibleEntities, Resource, Trade, Realm },
     },
   } = useDojo();
 
@@ -83,7 +101,14 @@ export function useTrade() {
     return canAccept;
   };
 
-  return { getTradeResources, getCounterpartyOrderId, canAcceptOffer };
+  const getRealmEntityIdFromRealmId = (realmId: number): number | undefined => {
+    const realms = runQuery([HasValue(Realm, { realm_id: realmId })]);
+    if (realms.size > 0) {
+      return Number(realms.values().next().value);
+    }
+  };
+
+  return { getTradeResources, getCounterpartyOrderId, canAcceptOffer, getRealmEntityIdFromRealmId };
 }
 
 export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): MarketInterface[] {
@@ -122,6 +147,7 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
 
   const { getTradeResources } = useTrade();
   const { getHasRoad } = useRoads();
+  const { calculateDistance } = useCaravan();
 
   useMemo(() => {
     const optimisticTradeId = entityIds.indexOf(HIGH_ENTITY_ID as EntityIndex);
@@ -134,9 +160,11 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
           const resourcesGet = getTradeResources(trade.taker_order_id);
           const resourcesGive = getTradeResources(trade.maker_order_id);
           const hasRoad = getHasRoad(realmEntityId, trade.taker_id);
+          const distance = calculateDistance(trade.taker_id, realmEntityId);
           return {
             tradeId,
             makerId: trade.maker_id,
+            takerId: trade.taker_id,
             makerOrder: getRealm(trade.maker_id).order,
             makerOrderId: trade.maker_order_id,
             takerOrderId: trade.taker_order_id,
@@ -146,7 +174,7 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
             canAccept: false,
             hasRoad,
             ratio: calculateRatio(resourcesGive, resourcesGet),
-            distance: 0,
+            distance: distance || 0,
           } as MarketInterface;
         }
       })
@@ -158,7 +186,11 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
   return myOffers;
 }
 
-export function useGetMarket({ selectedResources, selectedOrders }: useGetMarketProps): MarketInterface[] {
+export function useGetMarket({
+  selectedResources,
+  selectedOrders,
+  directOffers,
+}: useGetMarketProps): MarketInterface[] {
   const {
     setup: {
       components: { Status, Trade, FungibleEntities, OrderResource, Realm },
@@ -172,8 +204,15 @@ export function useGetMarket({ selectedResources, selectedOrders }: useGetMarket
   const fragments = useMemo(() => {
     const baseFragments: QueryFragment[] = [
       HasValue(Status, { value: 0 }),
+      // cant be maker nor taker of the trade
       NotValue(Trade, { maker_id: realmEntityId }),
     ];
+
+    if (directOffers) {
+      baseFragments.push(HasValue(Trade, { taker_id: realmEntityId }));
+    } else {
+      baseFragments.push(HasValue(Trade, { taker_id: 0 }));
+    }
 
     if (selectedOrders.length > 0) {
       baseFragments.push(
@@ -219,6 +258,7 @@ export function useGetMarket({ selectedResources, selectedOrders }: useGetMarket
           return {
             tradeId,
             makerId: trade.maker_id,
+            takerId: trade.taker_id,
             makerOrder: getRealm(trade.maker_id).order,
             makerOrderId: trade.maker_order_id,
             takerOrderId: trade.taker_order_id,

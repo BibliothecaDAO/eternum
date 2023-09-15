@@ -9,10 +9,11 @@ import clsx from "clsx";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import { CaravanInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
-import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById, getTotalResourceWeight } from "../TradeUtils";
 import { CAPACITY_PER_DONKEY } from "../../../../../constants/travel";
 import { useTrade } from "../../../../../hooks/helpers/useTrade";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
+import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
+import { getTotalResourceWeight } from "../TradeUtils";
 
 type CaravanProps = {
   caravan: CaravanInterface;

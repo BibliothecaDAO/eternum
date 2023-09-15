@@ -1,50 +1,5 @@
-import realmsCoordsJson from "../../../../geodata/coords.json";
-import realmsJson from "../../../../geodata/realms.json";
-import realmsOrdersJson from "../../../../geodata/realms_raw.json";
 import { Trade } from "../../../../types";
 import { ResourceInterface } from "../../../../hooks/graphql/useGraphQLQueries";
-
-export const getRealmIdByPosition = (positionRaw: {
-  x: number;
-  y: number;
-}): number | undefined => {
-  let offset = 1800000;
-  let position = { x: positionRaw.x - offset, y: positionRaw.y - offset };
-  // TODO: find a better way to find position
-  for (let realm of realmsCoordsJson["features"]) {
-    if (
-      parseInt(realm["geometry"]["coordinates"][0]) === position.x &&
-      parseInt(realm["geometry"]["coordinates"][1]) === position.y
-    ) {
-      return realm["properties"]["tokenId"];
-    }
-  }
-  return undefined;
-};
-
-export const getRealmNameById = (realmId: number): string | undefined => {
-  for (let realm of realmsJson["features"]) {
-    if (realm["id"] === realmId) {
-      return realm["name"];
-    }
-  }
-  return undefined;
-};
-
-export const getRealmOrderNameById = (realmId: number): string => {
-  const orderName = realmsOrdersJson[realmId - 1].order;
-  return orderName.toLowerCase().replace("the ", "");
-};
-
-// export const getResourceIdsFromFungibleEntities = (
-//   orderId: number,
-//   key: number,
-//   count: number,
-// ): EntityIndex[] => {
-//   return Array.from({ length: count }, (_, i) => {
-//     return Utils.getEntityIdFromKeys([BigInt(orderId), BigInt(key), BigInt(i)]);
-//   });
-// };
 
 export const getOrderIdsFromTrade = (
   trade: Trade,
@@ -63,11 +18,6 @@ export const getOrderIdsFromTrade = (
     : undefined;
 };
 
-export const getTotalResourceWeight = (
-  resources: (ResourceInterface | undefined)[],
-) => {
-  return resources.reduce(
-    (total, resource) => total + (resource?.amount || 0) * 1,
-    0,
-  );
+export const getTotalResourceWeight = (resources: (ResourceInterface | undefined)[]) => {
+  return resources.reduce((total, resource) => total + (resource?.amount || 0) * 1, 0);
 };

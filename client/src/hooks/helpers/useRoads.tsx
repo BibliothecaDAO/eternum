@@ -3,9 +3,9 @@ import { useDojo } from "../../DojoContext";
 import { getEntityIdFromKeys } from "../../utils/utils";
 import { useEffect, useMemo, useState } from "react";
 import { EntityIndex, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
-import { getRealmIdByPosition, getRealmNameById } from "../../components/cityview/realm/trade/TradeUtils";
-import { getPosition, getRealm } from "../../components/cityview/realm/SettleRealmComponent";
+import { getPosition } from "../../components/cityview/realm/SettleRealmComponent";
 import useRealmStore from "../store/useRealmStore";
+import { getRealm, getRealmIdByPosition, getRealmNameById } from "../../utils/realms";
 
 export interface RoadInterface {
   startRealmName: string;

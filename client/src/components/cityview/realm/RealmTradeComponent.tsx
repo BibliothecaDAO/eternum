@@ -62,17 +62,29 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
         component: <MyOffersPanel />,
       },
       {
-        key: "market",
+        key: "open-offers",
         label: (
           <div className="flex relative group flex-col items-center">
-            <div>Market</div>
+            <div>Open Offers</div>
             <Tooltip position="bottom">
               <p className="whitespace-nowrap">Offers from all over the world are found here.</p>
               <p className="whitespace-nowrap">Trade with your fellow Lords</p>
             </Tooltip>
           </div>
         ),
-        component: <MarketPanel />,
+        component: <MarketPanel directOffers={false} />,
+      },
+      {
+        key: "direct-offers",
+        label: (
+          <div className="flex relative group flex-col items-center">
+            <div>Direct Offers</div>
+            <Tooltip position="bottom">
+              <p className="whitespace-nowrap">Offers made specifically for you are found here.</p>
+            </Tooltip>
+          </div>
+        ),
+        component: <MarketPanel directOffers={true} />,
       },
       {
         key: "caravans",

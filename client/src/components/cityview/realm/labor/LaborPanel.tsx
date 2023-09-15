@@ -7,8 +7,8 @@ import { unpackResources } from "../../../../utils/packedData";
 import { ResourcesIds } from "../../../../constants/resources";
 import { LaborBuildPopup } from "./LaborBuild";
 import { LaborConfig } from "../../../../types";
-import { getRealm } from "../SettleRealmComponent";
 import { useRoute } from "wouter";
+import { getRealm } from "../../../../utils/realms";
 
 type LaborPanelProps = {
   type?: "all" | "food" | "mines";

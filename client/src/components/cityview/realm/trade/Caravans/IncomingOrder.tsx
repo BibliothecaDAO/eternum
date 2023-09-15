@@ -7,10 +7,10 @@ import { useDojo } from "../../../../../DojoContext";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
-import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../TradeUtils";
 import { IncomingOrderInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { useTrade } from "../../../../../hooks/helpers/useTrade";
+import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 
 type IncomingOrderProps = {
   incomingOrder: IncomingOrderInterface;

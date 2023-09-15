@@ -9,7 +9,7 @@ import useRealmStore from "../../hooks/store/useRealmStore";
 import { orderNameDict } from "../../constants/orders";
 import realmsNames from "../../geodata/realms.json";
 import useUIStore from "../../hooks/store/useUIStore";
-import { getRealm } from "./realm/SettleRealmComponent";
+import { getRealm } from "../../utils/realms";
 import { useDojo } from "../../DojoContext";
 import { Has, HasValue, getComponentValue } from "@latticexyz/recs";
 import { useEntityQuery } from "@dojoengine/react";

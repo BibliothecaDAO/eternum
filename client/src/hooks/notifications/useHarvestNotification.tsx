@@ -5,12 +5,9 @@ import { getComponentValue } from "@latticexyz/recs";
 import { Badge } from "../../elements/Badge";
 import { ResourceIcon } from "../../elements/ResourceIcon";
 import { getEntityIdFromKeys } from "../../utils/utils";
-import {
-  getRealmNameById,
-  getRealmOrderNameById,
-} from "../../components/cityview/realm/trade/TradeUtils";
 import { NotificationType } from "./useNotifications";
 import { findResourceById } from "../../constants/resources";
+import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 
 export const useHarvestNotification = (
   notification: NotificationType,
@@ -28,21 +25,14 @@ export const useHarvestNotification = (
 
   const realmEntityId = notification.keys[0];
 
-  const realm = getComponentValue(
-    Realm,
-    getEntityIdFromKeys([BigInt(realmEntityId)]),
-  );
+  const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
 
   const realmName = realm ? getRealmNameById(realm.realm_id) : "";
   const realmOrderName = realm ? getRealmOrderNameById(realm?.realm_id) : "";
 
-  const resource =
-    findResourceById(parseInt(notification.keys[1]))?.trait || "";
+  const resource = findResourceById(parseInt(notification.keys[1]))?.trait || "";
 
-  const harvestAmount =
-    notification.data && "harvestAmount" in notification.data
-      ? notification.data.harvestAmount
-      : 0;
+  const harvestAmount = notification.data && "harvestAmount" in notification.data ? notification.data.harvestAmount : 0;
 
   return {
     type: "success",
@@ -63,12 +53,7 @@ export const useHarvestNotification = (
     content: (
       <div className="mt-2 items-center italic">
         <div className="flex items-center">
-          <ResourceIcon
-            containerClassName="mx-0.5"
-            className="!w-[12px]"
-            resource={resource}
-            size="xs"
-          />
+          <ResourceIcon containerClassName="mx-0.5" className="!w-[12px]" resource={resource} size="xs" />
           {`+${harvestAmount} `}
         </div>
       </div>
