@@ -10,7 +10,7 @@ type FilterPopupProps = {
 export const SecondaryPopup = ({ children, className }: FilterPopupProps) => {
   const nodeRef = React.useRef(null);
   return (
-    <Draggable nodeRef={nodeRef} onStop={(e) => console.log(e)}>
+    <Draggable nodeRef={nodeRef}>
       <div ref={nodeRef} className={clsx("fixed z-50 flex flex-col translate-x-6 top-[200px] left-[450px]", className)}>
         {children}
       </div>
