@@ -5,31 +5,38 @@ import { ReactComponent as Checkmark } from "../assets/icons/common/checkmark.sv
 import clsx from "clsx";
 
 export interface ListSelectOption {
-  id: number;
+  id: any;
   label: ReactNode;
 }
 
 type ListSelectProps = {
   title?: string;
   options: ListSelectOption[];
-  value: number;
-  onChange: (value: number) => void;
+  value: any;
+  onChange: (value: any) => void;
   className?: string;
 };
 
 function ListSelect(props: ListSelectProps) {
   const selectedOption = useMemo(
-    () => props.options.find((option) => option.id === props.value) || props.options[0],
+    () =>
+      props.options.find((option) => option.id === props.value) ||
+      props.options[0] || { id: "", label: "Select a wallet..." },
     [props.value],
   );
   return (
-    <div className={clsx("w-48", props.className)}>
+    <div className={clsx("w-full", props.className)}>
       <Listbox value={props.value} onChange={props.onChange}>
         {({ open }) => (
           <div className="relative mt-1">
-            <Listbox.Button className="flex relative w-full cursor-pointer rounded-md text-xs border border-gold !text-gold bg-brown hover:bg-gold/10 p-2">
+            <Listbox.Button
+              className={clsx(
+                "flex relative justify-center w-full cursor-pointer rounded-md text-xs py-2 px-6",
+                open ? "bg-white text-brown" : "bg-dark-brown text-white hover:bg-dark-brown/50",
+              )}
+            >
               {props.title && (
-                <span className="inline-block truncate flex items-center text-white mr-2">{props.title}</span>
+                <span className="inline-block truncate flex items-center !text-gold mr-2">{props.title}</span>
               )}
               <span className="inline-block truncate flex items-center">{selectedOption.label}</span>
               <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
@@ -55,7 +62,7 @@ function ListSelect(props: ListSelectProps) {
                 <svg
                   width="25"
                   height="18"
-                  className="absolute left-1/2 top-0 -translate-x-1/2"
+                  className="absolute right-4 top-0 z-40"
                   viewBox="0 0 25 18"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
@@ -71,7 +78,7 @@ function ListSelect(props: ListSelectProps) {
                     <Listbox.Option
                       key={option.id}
                       className={({ active }) =>
-                        `relative cursor-pointer select-none py-2 flex items-center pl-8 text-gold ${
+                        `relative cursor-pointer z-50 select-none py-2 flex items-center pl-8 text-gold ${
                           active ? "bg-gold/50 text-white/90" : ""
                         }`
                       }
@@ -80,7 +87,9 @@ function ListSelect(props: ListSelectProps) {
                       {({ selected }) => (
                         <>
                           <span
-                            className={`flex items-center block truncate ${selected ? "font-bold" : "font-normal"}`}
+                            className={`flex items-center block truncate ${
+                              selected ? "font-bold text-white" : "font-normal"
+                            }`}
                           >
                             {option.label}
                           </span>

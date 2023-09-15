@@ -22,7 +22,7 @@ const STYLES = {
   outline: "border border-gold !text-gold bg-transparent hover:bg-gold/10",
   danger: "border border-orange !text-orange bg-transparent hover:bg-orange/10",
   secondary: "border border-orange !text-orange bg-transparent hover:bg-orange/10",
-  loadingStyle: "relative w-6",
+  loadingStyle: "relative w-6 h-6",
 };
 
 const SIZES = {
