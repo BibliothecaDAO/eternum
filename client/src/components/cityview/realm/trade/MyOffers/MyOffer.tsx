@@ -17,7 +17,7 @@ type TradeOfferProps = {
 };
 
 export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
-  const { hasRoad, distance, resourcesGet, resourcesGive, ratio } = myOffer;
+  const { takerId, hasRoad, distance, resourcesGet, resourcesGive, ratio } = myOffer;
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -42,7 +42,7 @@ export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
     });
   };
 
-  let { realm: takerRealm } = useGetRealm(myOffer.takerId);
+  let { realm: takerRealm } = useGetRealm(takerId);
 
   const getResourceTrait = useMemo(() => {
     return (resourceId: number) => findResourceById(resourceId)?.trait as any;

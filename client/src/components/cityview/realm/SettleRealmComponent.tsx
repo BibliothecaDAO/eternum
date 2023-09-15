@@ -69,7 +69,7 @@ export const SettleRealmComponent = () => {
     <>
       <div className="flex flex-col h-min">
         <div className="text-xxs mb-2 italic text-gold">
-          Choose Order of your Realms. You can select Order only once per wallet.
+          {`Choose Order of your Realms. You can only select one Order per wallet. You can settle up to ${MAX_REALMS} Realms per wallet.`}
         </div>
         <div className="grid grid-cols-8 gap-2">
           {orders.map(({ orderId }) => (

@@ -2,15 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useTrade } from "../../../hooks/helpers/useTrade";
 import { useCaravan } from "../../../hooks/helpers/useCaravans";
-import { getLatestRealmId } from "../../../hooks/graphql/useGraphQLQueries";
 import { getRealm } from "../../../utils/realms";
 import { getOrderName } from "../../../constants/orders";
 import { OrderIcon } from "../../../elements/OrderIcon";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
+import { Has, getComponentValue, runQuery } from "@latticexyz/recs";
+import { useDojo } from "../../../DojoContext";
 
 export interface SelectRealmInterface {
-  id: number;
+  entityId: number;
+  realmId: number;
   name: string;
   order: string;
   distance: number;
@@ -24,7 +26,14 @@ export const SelectRealmPanel = ({
   setSelectedRealmId: (selectedRealmId: number) => void;
 }) => {
   const [specifyRealmId, setSpecifyRealmId] = useState(false);
-  const [allRealms, setAllRealms] = useState<SelectRealmInterface[]>([]); // This would ideally be populated from an API call or similar.
+  const [originalRealms, setOriginalRealms] = useState<SelectRealmInterface[]>([]);
+  const [sortedRealms, setSortedRealms] = useState<SelectRealmInterface[]>([]);
+
+  const {
+    setup: {
+      components: { Realm },
+    },
+  } = useDojo();
 
   const { realmId, realmEntityId } = useRealmStore();
 
@@ -47,29 +56,34 @@ export const SelectRealmPanel = ({
   });
 
   useEffect(() => {
-    const buildSelectableRealms = async () => {
-      const realm_id = await getLatestRealmId();
-      let realms = Array.from({ length: realm_id }, (_, i) => i + 1)
-        .map((id) => {
-          const { name, order, realm_id: takerRealmId } = getRealm(id);
-          const takerEntityId = getRealmEntityIdFromRealmId(takerRealmId);
-          const distance = takerEntityId ? calculateDistance(realmEntityId, takerEntityId) || 0 : 0;
-          return {
-            id,
-            name,
-            order: getOrderName(order),
-            distance,
-          };
+    const buildSelectableRealms = () => {
+      let entityIds = runQuery([Has(Realm)]);
+      let realms = Array.from(entityIds)
+        .map((entityId) => {
+          const realm = getComponentValue(Realm, entityId);
+          if (realm) {
+            const { name, order, realm_id: takerRealmId } = getRealm(realm.realm_id);
+            const takerEntityId = getRealmEntityIdFromRealmId(takerRealmId);
+            const distance = takerEntityId ? calculateDistance(realmEntityId, takerEntityId) ?? 0 : 0;
+            return {
+              entityId,
+              realmId: realm.realm_id,
+              name,
+              order: getOrderName(order),
+              distance,
+            };
+          }
         })
-        .filter((realm) => realm.id !== realmId && realm.id !== 1);
-      setAllRealms(realms);
+        .filter((realm) => realm && realm.realmId !== realmId && realm.realmId !== 1) as SelectRealmInterface[];
+      setOriginalRealms(realms);
     };
     buildSelectableRealms();
   }, []);
 
   useEffect(() => {
-    setAllRealms((prevRealms) => sortRealms(prevRealms, activeSort));
-  }, [activeSort]);
+    const sorted = sortRealms(originalRealms, activeSort);
+    setSortedRealms(sorted);
+  }, [originalRealms, activeSort]);
 
   return (
     <div className="flex flex-col items-center w-full p-2">
@@ -109,10 +123,10 @@ export const SelectRealmPanel = ({
             ))}
           </SortPanel>
           <div className="flex flex-col p-2 space-y-2 max-h-40 overflow-y-auto">
-            {allRealms.map(({ order, name, id: takerRealmId, distance }) => {
+            {sortedRealms.map(({ order, name, realmId: takerRealmId, distance }, i) => {
               return (
                 <div
-                  key={takerRealmId}
+                  key={i}
                   className={`flex flex-col p-2 border rounded-md ${
                     selectedRealmId === takerRealmId ? "border-order-brilliance" : ""
                   } text-xxs text-gold`}
@@ -143,17 +157,19 @@ export const SelectRealmPanel = ({
  * sort realms based on active filters
  */
 export function sortRealms(realms: SelectRealmInterface[], activeSort: SortInterface): SelectRealmInterface[] {
+  const sortedRealms = [...realms]; // Making a copy of the realms array
+
   if (activeSort.sort !== "none") {
     if (activeSort.sortKey === "id") {
-      return realms.sort((a, b) => {
+      return sortedRealms.sort((a, b) => {
         if (activeSort.sort === "asc") {
-          return a.id - b.id;
+          return a.realmId - b.realmId;
         } else {
-          return b.id - a.id;
+          return b.realmId - a.realmId;
         }
       });
     } else if (activeSort.sortKey === "name") {
-      return realms.sort((a, b) => {
+      return sortedRealms.sort((a, b) => {
         if (activeSort.sort === "asc") {
           return a.name.localeCompare(b.name);
         } else {
@@ -161,7 +177,7 @@ export function sortRealms(realms: SelectRealmInterface[], activeSort: SortInter
         }
       });
     } else if (activeSort.sortKey === "distance") {
-      return realms.sort((a, b) => {
+      return sortedRealms.sort((a, b) => {
         if (activeSort.sort === "asc") {
           return a.distance - b.distance;
         } else {
@@ -169,17 +185,17 @@ export function sortRealms(realms: SelectRealmInterface[], activeSort: SortInter
         }
       });
     } else if (activeSort.sortKey === "order") {
-      return realms.sort((a, b) => {
+      return sortedRealms.sort((a, b) => {
         if (activeSort.sort === "asc") {
-          return parseInt(a.order) - parseInt(b.order);
+          return a.order.localeCompare(b.order);
         } else {
-          return parseInt(b.order) - parseInt(a.order);
+          return b.order.localeCompare(a.order);
         }
       });
     } else {
-      return realms;
+      return sortedRealms;
     }
   } else {
-    return realms.sort((a, b) => b!.id - a!.id);
+    return sortedRealms.sort((a, b) => b.realmId - a.realmId);
   }
 }
