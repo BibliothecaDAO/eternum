@@ -77,7 +77,8 @@ export const SettleRealmComponent = () => {
               key={orderId}
               className={clsx(
                 " flex relative group items-center justify-center  w-11 h-11 bg-black rounded-xl border",
-                [selectedOrder, chosenOrder].includes(orderId) ? "border-gold !cursor-pointer" : "border-transparent",
+                selectedOrder == orderId && !chosenOrder ? "border-gold !cursor-pointer" : "border-transparent",
+                chosenOrder && chosenOrder == orderId && "!border-gold",
                 chosenOrder && chosenOrder !== orderId && "opacity-30 cursor-not-allowed",
                 !chosenOrder && "hover:bg-white/10 cursor-pointer",
               )}
