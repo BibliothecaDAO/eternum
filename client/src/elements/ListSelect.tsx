@@ -9,11 +9,13 @@ export interface ListSelectOption {
   label: ReactNode;
 }
 
-interface ListSelectProps {
+type ListSelectProps = {
+  title?: string;
   options: ListSelectOption[];
   value: number;
   onChange: (value: number) => void;
-}
+  className?: string;
+};
 
 function ListSelect(props: ListSelectProps) {
   const selectedOption = useMemo(
@@ -21,12 +23,15 @@ function ListSelect(props: ListSelectProps) {
     [props.value],
   );
   return (
-    <div className="w-48">
+    <div className={clsx("w-48", props.className)}>
       <Listbox value={props.value} onChange={props.onChange}>
         {({ open }) => (
           <div className="relative mt-1">
-            <Listbox.Button className="relative w-full cursor-pointer rounded-md text-xs border border-gold !text-gold bg-brown hover:bg-gold/10 p-2">
-              <span className="block truncate flex items-center">{selectedOption.label}</span>
+            <Listbox.Button className="flex relative w-full cursor-pointer rounded-md text-xs border border-gold !text-gold bg-brown hover:bg-gold/10 p-2">
+              {props.title && (
+                <span className="inline-block truncate flex items-center text-white mr-2">{props.title}</span>
+              )}
+              <span className="inline-block truncate flex items-center">{selectedOption.label}</span>
               <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                 <div className="flex flex-col items-center justify-center ml-1">
                   <CaretDown
