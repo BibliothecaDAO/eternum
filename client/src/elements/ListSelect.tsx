@@ -29,12 +29,19 @@ function ListSelect(props: ListSelectProps) {
               <span className="block truncate flex items-center">{selectedOption.label}</span>
               <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                 <div className="flex flex-col items-center justify-center ml-1">
-                  <CaretDown className={clsx("stroke-gold fill-gold", open && "-rotate-180")} />
+                  <CaretDown
+                    className={clsx("stroke-gold fill-gold transition-transform duration-100", open && "rotate-180")}
+                  />
                 </div>
               </span>
             </Listbox.Button>
             <Transition
               as={Fragment}
+              show={open}
+              appear
+              enter="transition ease-out duration-100"
+              enterFrom="opacity-0"
+              enterTo="opacity-100"
               leave="transition ease-in duration-100"
               leaveFrom="opacity-100"
               leaveTo="opacity-0"
