@@ -2,15 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useTrade } from "../../../hooks/helpers/useTrade";
 import { useCaravan } from "../../../hooks/helpers/useCaravans";
-import { getLatestRealmId } from "../../../hooks/graphql/useGraphQLQueries";
 import { getRealm } from "../../../utils/realms";
 import { getOrderName } from "../../../constants/orders";
 import { OrderIcon } from "../../../elements/OrderIcon";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
+import { Has, getComponentValue, runQuery } from "@latticexyz/recs";
+import { useDojo } from "../../../DojoContext";
 
 export interface SelectRealmInterface {
-  id: number;
+  entityId: number;
+  realmId: number;
   name: string;
   order: string;
   distance: number;
@@ -25,6 +27,12 @@ export const SelectRealmPanel = ({
 }) => {
   const [specifyRealmId, setSpecifyRealmId] = useState(false);
   const [allRealms, setAllRealms] = useState<SelectRealmInterface[]>([]); // This would ideally be populated from an API call or similar.
+
+  const {
+    setup: {
+      components: { Realm },
+    },
+  } = useDojo();
 
   const { realmId, realmEntityId } = useRealmStore();
 
@@ -48,20 +56,24 @@ export const SelectRealmPanel = ({
 
   useEffect(() => {
     const buildSelectableRealms = async () => {
-      const realm_id = await getLatestRealmId();
-      let realms = Array.from({ length: realm_id }, (_, i) => i + 1)
-        .map((id) => {
-          const { name, order, realm_id: takerRealmId } = getRealm(id);
-          const takerEntityId = getRealmEntityIdFromRealmId(takerRealmId);
-          const distance = takerEntityId ? calculateDistance(realmEntityId, takerEntityId) || 0 : 0;
-          return {
-            id,
-            name,
-            order: getOrderName(order),
-            distance,
-          };
+      let entityIds = runQuery([Has(Realm)]);
+      let realms = Array.from(entityIds)
+        .map((entityId) => {
+          const realm = getComponentValue(Realm, entityId);
+          if (realm) {
+            const { name, order, realm_id: takerRealmId } = getRealm(realm.realm_id);
+            const takerEntityId = getRealmEntityIdFromRealmId(takerRealmId);
+            const distance = takerEntityId ? calculateDistance(realmEntityId, takerEntityId) ?? 0 : 0;
+            return {
+              entityId,
+              realmId: realm.realm_id,
+              name,
+              order: getOrderName(order),
+              distance,
+            };
+          }
         })
-        .filter((realm) => realm.id !== realmId && realm.id !== 1);
+        .filter((realm) => realm && realm.realmId !== realmId && realm.realmId !== 1) as SelectRealmInterface[];
       setAllRealms(realms);
     };
     buildSelectableRealms();
@@ -109,7 +121,7 @@ export const SelectRealmPanel = ({
             ))}
           </SortPanel>
           <div className="flex flex-col p-2 space-y-2 max-h-40 overflow-y-auto">
-            {allRealms.map(({ order, name, id: takerRealmId, distance }) => {
+            {allRealms.map(({ order, name, realmId: takerRealmId, distance }) => {
               return (
                 <div
                   key={takerRealmId}
@@ -147,9 +159,9 @@ export function sortRealms(realms: SelectRealmInterface[], activeSort: SortInter
     if (activeSort.sortKey === "id") {
       return realms.sort((a, b) => {
         if (activeSort.sort === "asc") {
-          return a.id - b.id;
+          return a.realmId - b.realmId;
         } else {
-          return b.id - a.id;
+          return b.realmId - a.realmId;
         }
       });
     } else if (activeSort.sortKey === "name") {
@@ -171,15 +183,15 @@ export function sortRealms(realms: SelectRealmInterface[], activeSort: SortInter
     } else if (activeSort.sortKey === "order") {
       return realms.sort((a, b) => {
         if (activeSort.sort === "asc") {
-          return parseInt(a.order) - parseInt(b.order);
+          return a.order.localeCompare(b.order);
         } else {
-          return parseInt(b.order) - parseInt(a.order);
+          return b.order.localeCompare(a.order);
         }
       });
     } else {
       return realms;
     }
   } else {
-    return realms.sort((a, b) => b!.id - a!.id);
+    return realms.sort((a, b) => b.realmId - a.realmId);
   }
 }

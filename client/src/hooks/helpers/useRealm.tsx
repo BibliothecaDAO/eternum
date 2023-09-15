@@ -74,7 +74,7 @@ export function useGetRealm(realmEntityId: number | undefined) {
         const { address } = owner;
         setRealm({
           realmId: realm_id,
-          cities: cities,
+          cities,
           rivers,
           wonder,
           harbors,
