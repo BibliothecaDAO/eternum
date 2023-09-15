@@ -3,10 +3,6 @@ import Button from "../../../elements/Button";
 
 import realmCoords from "../../../geodata/coords.json";
 import { useDojo } from "../../../DojoContext";
-import { getLatestRealmId } from "../../../hooks/graphql/useGraphQLQueries";
-import { Realm } from "../../../types";
-import { findResourceIdByTrait } from "../../../constants/resources";
-import { packResources } from "../../../utils/packedData";
 import { getOrderName, orders } from "../../../constants/orders";
 import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 import { getRealm } from "../../../utils/realms";
