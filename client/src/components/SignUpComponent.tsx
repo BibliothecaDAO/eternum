@@ -1,11 +1,12 @@
 import { SecondaryPopup } from "../elements/SecondaryPopup";
 import { Headline } from "../elements/Headline";
 import Button from "../elements/Button";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useUIStore from "../hooks/store/useUIStore";
 import { useDojo } from "../DojoContext";
 import { displayAddress } from "../utils/utils";
 import clsx from "clsx";
+import ListSelect from "../elements/ListSelect";
 
 type SignUpComponentProps = {};
 
@@ -17,6 +18,9 @@ export const SignUpComponent = ({}: SignUpComponentProps) => {
   const [showSignupPopup, setShowSignupPopup] = useState(true);
   const setShowBlurOverlay = useUIStore((state) => state.setShowBlurOverlay);
   const toggleSound = useUIStore((state) => state.toggleSound);
+
+  const isWalletSelected = useMemo(() => account.address !== import.meta.env.VITE_KATANA_ACCOUNT_1_ADDRESS!, [account]);
+
   useEffect(() => {
     setShowBlurOverlay(showSignupPopup);
     if (!showSignupPopup) {
@@ -33,28 +37,42 @@ export const SignUpComponent = ({}: SignUpComponentProps) => {
         <div className="flex flex-col items-center p-3">
           <img src="/images/eternum-logo.svg" className=" w-48" alt="Eternum Logo" />
           <img src="/images/buildings/storehouse.jpg" className="w-full my-3" alt="Eternum Logo" />
-          <div className={clsx("flex mx-2")}>
-            <Button variant={"primary"} onClick={create}>
-              {isDeploying ? "deploying burner" : "create burner"}
+          <Headline size="big">Testnet Sign Up</Headline>
+          <div className="flex my-2 items-center space-x-2">
+            <Button variant={"success"} onClick={create} disabled={isDeploying} isLoading={isDeploying}>
+              {isDeploying ? "" : "Create a new wallet"}
             </Button>
-            <Button variant={"danger"} onClick={clear}>
-              {"reset burners"}
+            <div className="text-white text-xs"> Or </div>
+            <Button
+              variant={"danger"}
+              onClick={() => {
+                if (window.confirm("Are you sure want to delete all wallets?")) {
+                  clear();
+                }
+              }}
+            >
+              {"Delete all wallets"}
             </Button>
           </div>
-          <div className="border border-gold my-3 w-full rounded-lg bg-black  flex p-2 text-white">
-            <div className="px-2">signer: </div>
-
-            <select value={account.address} className={"w-full bg-black"} onChange={(e) => select(e.target.value)}>
-              {list().map((account, index) => {
-                return (
-                  <option value={account.address} key={index}>
-                    {displayAddress(account.address)}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-          <Headline size="big">Sign Up</Headline>
+          <ListSelect
+            title="Active Wallet: "
+            options={list().map((account) => ({
+              id: account.address,
+              label: account.address.slice(0, 6) + "..." + account.address.slice(-4),
+            }))}
+            value={account.address}
+            onChange={select}
+          />
+          <Button
+            // cannot use master account to sign in
+            disabled={!isWalletSelected}
+            className="mt-2 !p-2"
+            variant={isWalletSelected ? "primary" : "outline"}
+            onClick={() => setShowSignupPopup(false)}
+          >
+            {isWalletSelected ? "Start playing" : "No wallet selected"}
+          </Button>
+          {/* <Headline size="big">Sign Up</Headline>
           <div className="flex flex-col w-full text-center text-xs text-white">
             <div className=" border border-gold my-3 w-full rounded-lg bg-black p-2 flex justify-between">
               <img src="/images/argent-x.svg" className="h-8" alt="Argent X Logo" />
@@ -80,7 +98,7 @@ export const SignUpComponent = ({}: SignUpComponentProps) => {
                 Log in with Braavos
               </Button>
             </div>
-          </div>
+          </div> */}
         </div>
       </SecondaryPopup.Body>
     </SecondaryPopup>
