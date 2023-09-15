@@ -20,7 +20,7 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
     }
   };
 
-  const handleClick = () => {
+  const moveToTopZIndex = () => {
     let maxZIndex = 50;
     document.querySelectorAll(".popup").forEach((popup) => {
       const zIndex = parseInt(window.getComputedStyle(popup).zIndex);
@@ -45,6 +45,10 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
     }
   };
 
+  const handleClick = () => {
+    moveToTopZIndex();
+  };
+
   useEffect(() => {
     if (name) {
       const pos = localStorage.getItem(name);
@@ -54,6 +58,10 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
     }
     setLoaded(true);
   }, []);
+
+  useEffect(() => {
+    moveToTopZIndex();
+  }, [loaded]);
 
   return (
     <>
