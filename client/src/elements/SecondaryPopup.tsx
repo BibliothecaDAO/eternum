@@ -8,14 +8,7 @@ type FilterPopupProps = {
 
 export const SecondaryPopup = ({ children, className }: FilterPopupProps) => {
   return (
-    <div
-      className={clsx(
-        "fixed flex flex-col translate-x-6 -translate-y-4 left-[432px]",
-        className,
-      )}
-    >
-      {children}
-    </div>
+    <div className={clsx("fixed flex flex-col translate-x-6 top-[200px] left-[432px] z-50", className)}>{children}</div>
   );
 };
 
@@ -26,13 +19,7 @@ SecondaryPopup.Head = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-SecondaryPopup.Body = ({
-  width = null,
-  children,
-}: {
-  width?: string | null;
-  children: React.ReactNode;
-}) => (
+SecondaryPopup.Body = ({ width = null, children }: { width?: string | null; children: React.ReactNode }) => (
   <div
     className={`${
       width ? "" : "min-w-[438px]"

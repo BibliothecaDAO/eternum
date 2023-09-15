@@ -28,7 +28,7 @@ export const SignUpComponent = ({}: SignUpComponentProps) => {
   }, [showSignupPopup]);
 
   return (
-    <SecondaryPopup className="!translate-x-0 !left-auto">
+    <SecondaryPopup className="!translate-x-0 !left-auto !top-1/2 !-translate-y-1/2">
       <SecondaryPopup.Head>
         <div className="mr-0.5">Sign Up</div>
       </SecondaryPopup.Head>
