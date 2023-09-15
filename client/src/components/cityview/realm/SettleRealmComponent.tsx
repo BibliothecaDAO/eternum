@@ -9,15 +9,29 @@ import { packResources } from "../../../utils/packedData";
 import { getOrderName, orders } from "../../../constants/orders";
 import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { NumberInput } from "../../../elements/NumberInput";
 import { OrderIcon } from "../../../elements/OrderIcon";
 import { useRealm } from "../../../hooks/helpers/useRealm";
+import ListSelect from "../../../elements/ListSelect";
 
 export const MAX_REALMS = 5;
 
 export const SettleRealmComponent = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(1);
+
+  const ordersOptions = useMemo(
+    () =>
+      orders.map(({ orderId, fullOrderName }) => ({
+        id: orderId,
+        label: (
+          <>
+            <OrderIcon className="mr-2" withTooltip={false} size={"xs"} order={getOrderName(orderId)}></OrderIcon>
+            {fullOrderName}
+          </>
+        ),
+      })),
+    [orders],
+  );
 
   const {
     setup: {
@@ -84,14 +98,13 @@ export const SettleRealmComponent = () => {
           {}
         </Button>
       )}
-      {!chosenOrder && (
-        <div className="flex items-center mr-2">
-          <NumberInput max={16} min={1} value={selectedOrder} onChange={(value) => setSelectedOrder(value)} />
+      {!chosenOrder ? (
+        <ListSelect options={ordersOptions} value={selectedOrder} onChange={setSelectedOrder} />
+      ) : (
+        <div className="flex items-center">
+          <OrderIcon size={"xs"} order={getOrderName(chosenOrder ? chosenOrder : selectedOrder)}></OrderIcon>
         </div>
       )}
-      <div className="flex items-center">
-        <OrderIcon size={"xs"} order={getOrderName(chosenOrder ? chosenOrder : selectedOrder)}></OrderIcon>
-      </div>
     </div>
   );
 };
