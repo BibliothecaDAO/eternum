@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import React from "react";
+import Draggable from "react-draggable";
 
 type FilterPopupProps = {
   children: React.ReactNode;
@@ -7,8 +8,13 @@ type FilterPopupProps = {
 };
 
 export const SecondaryPopup = ({ children, className }: FilterPopupProps) => {
+  const nodeRef = React.useRef(null);
   return (
-    <div className={clsx("fixed flex flex-col translate-x-6 top-[200px] left-[432px] z-50", className)}>{children}</div>
+    <Draggable nodeRef={nodeRef} onStop={(e) => console.log(e)}>
+      <div ref={nodeRef} className={clsx("fixed z-50 flex flex-col translate-x-6 top-[200px] left-[450px]", className)}>
+        {children}
+      </div>
+    </Draggable>
   );
 };
 
