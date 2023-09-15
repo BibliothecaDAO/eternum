@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import useUIStore from "../hooks/store/useUIStore";
 import { useDojo } from "../DojoContext";
 import { displayAddress } from "../utils/utils";
-import clsx from "clsx";
 import ListSelect from "../elements/ListSelect";
 
 type SignUpComponentProps = {};
@@ -58,7 +57,7 @@ export const SignUpComponent = ({}: SignUpComponentProps) => {
             title="Active Wallet: "
             options={list().map((account) => ({
               id: account.address,
-              label: account.address.slice(0, 6) + "..." + account.address.slice(-4),
+              label: displayAddress(account.address),
             }))}
             value={account.address}
             onChange={select}
