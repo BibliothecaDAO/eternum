@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Draggable from "react-draggable";
 
 type FilterPopupProps = {
@@ -9,7 +9,7 @@ type FilterPopupProps = {
 };
 
 export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) => {
-  const nodeRef = React.useRef(null);
+  const nodeRef = useRef<any>(null);
 
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [loaded, setLoaded] = useState(false);
@@ -17,6 +17,31 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
   const handleStop = (e: any, data: any) => {
     if (name) {
       localStorage.setItem(name, JSON.stringify({ x: data.x, y: data.y }));
+    }
+  };
+
+  const handleClick = () => {
+    let maxZIndex = 50;
+    document.querySelectorAll(".popup").forEach((popup) => {
+      const zIndex = parseInt(window.getComputedStyle(popup).zIndex);
+      if (zIndex > maxZIndex) {
+        maxZIndex = zIndex;
+      }
+    });
+    if (nodeRef && nodeRef.current) {
+      nodeRef.current.style.zIndex = `${maxZIndex + 1}`;
+      document.querySelectorAll("[data-old-z-index]").forEach((popup: any) => {
+        popup.style.zIndex = popup.getAttribute("data-old-z-index");
+        popup.removeAttribute("data-old-z-index");
+      });
+      let parent = nodeRef.current.parentElement;
+      while (parent && getComputedStyle(parent).position !== "absolute") {
+        parent = parent.parentElement;
+      }
+      if (parent) {
+        parent.setAttribute("data-old-z-index", parent.style.zIndex);
+        parent.style.zIndex = `${maxZIndex + 1}`;
+      }
     }
   };
 
@@ -35,8 +60,9 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
       {loaded && (
         <Draggable handle=".handle" defaultPosition={position} nodeRef={nodeRef} onStop={handleStop}>
           <div
+            onClick={handleClick}
             ref={nodeRef}
-            className={clsx("fixed z-50 flex flex-col translate-x-6 top-[200px] left-[450px]", className)}
+            className={clsx("popup fixed z-50 flex flex-col translate-x-6 top-[200px] left-[450px]", className)}
           >
             {children}
           </div>
