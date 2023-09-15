@@ -15,8 +15,10 @@ import useScreenOrientation from "../hooks/useScreenOrientation";
 import { useDojo } from "../DojoContext";
 type SettingsComponentProps = {};
 
-export const SettingsComponent = ({ }: SettingsComponentProps) => {
-  const { account: { accountDisplay } } = useDojo();
+export const SettingsComponent = ({}: SettingsComponentProps) => {
+  const {
+    account: { accountDisplay },
+  } = useDojo();
   const [showSettings, setShowSettings] = useState(false);
   const musicLevel = useUIStore((state) => state.musicLevel);
   const effectsLevel = useUIStore((state) => state.effectsLevel);
@@ -36,33 +38,22 @@ export const SettingsComponent = ({ }: SettingsComponentProps) => {
   return (
     <div className="flex items-center text-white">
       <Crown className="mr-[6px] fill-current" />
-      <div className="text-xs font-bold">
-        {accountDisplay}
-      </div>
+      <div className="text-xs font-bold">{accountDisplay}</div>
       <Settings
         onClick={() => setShowSettings(!showSettings)}
         className="ml-[6px] cursor-pointer fill-gold translate-y-1"
       />
       {isSoundOn ? (
-        <Unmuted
-          onClick={() => toggleSound()}
-          className="ml-[6px] cursor-pointer fill-gold"
-        />
+        <Unmuted onClick={() => toggleSound()} className="ml-[6px] cursor-pointer fill-gold" />
       ) : (
-        <Muted
-          onClick={() => toggleSound()}
-          className="ml-[6px] cursor-pointer fill-gold"
-        />
+        <Muted onClick={() => toggleSound()} className="ml-[6px] cursor-pointer fill-gold" />
       )}
       {showSettings && (
         <SecondaryPopup className="top-1/3">
           <SecondaryPopup.Head>
             <div className="flex items-center">
               <div className="mr-0.5">Settings</div>
-              <CloseIcon
-                className="w-3 h-3 cursor-pointer fill-white"
-                onClick={() => setShowSettings(!showSettings)}
-              />
+              <CloseIcon className="w-3 h-3 cursor-pointer fill-white" onClick={() => setShowSettings(!showSettings)} />
             </div>
           </SecondaryPopup.Head>
           <SecondaryPopup.Body width="400px">
@@ -76,27 +67,13 @@ export const SettingsComponent = ({ }: SettingsComponentProps) => {
                 <div>Fullscreen</div>
               </div>
               <Headline size="big">Sound</Headline>
-              <RangeInput
-                value={musicLevel}
-                fromTitle="Mute"
-                onChange={setMusicLevel}
-                title="Music"
-              />
-              <RangeInput
-                value={effectsLevel}
-                fromTitle="Mute"
-                onChange={setEffectsLevel}
-                title="Effects"
-              />
-              <Headline size="big">Settling</Headline>
+              <RangeInput value={musicLevel} fromTitle="Mute" onChange={setMusicLevel} title="Music" />
+              <RangeInput value={effectsLevel} fromTitle="Mute" onChange={setEffectsLevel} title="Effects" />
+              <Headline size="big">Testnet Menu</Headline>
               <div className="flex justify-center">
                 <SettleRealmComponent />
               </div>
-              <Button
-                onClick={() => setShowSettings(false)}
-                variant="outline"
-                className="text-xxs !py-1 !px-2 mr-auto"
-              >
+              <Button onClick={() => setShowSettings(false)} variant="outline" className="text-xxs !py-1 !px-2 mr-auto">
                 Done
               </Button>
             </div>
