@@ -11,12 +11,12 @@ mod DefineHyperStructure {
     use core::array::{SpanTrait};
 
     #[derive(Copy, Drop, Serde)]
-    struct ReqiuredResource {
+    struct RequiredResource {
         resource_type: u8,
         amount: usize
     }
 
-    fn execute(ctx: Context, mut resources: Span<ReqiuredResource>, coord: Coord) -> ID {   
+    fn execute(ctx: Context, mut resources: Span<RequiredResource>, coord: Coord) -> ID {   
 
         // todo@credence: check admin permissions
 
