@@ -1,13 +1,18 @@
 #[system]
-mod InitializeHyperStructure {
+mod InitializeHyperstructure {
     use eternum::alias::ID;
     use eternum::components::hyperstructure::HyperStructure;
+    use eternum::components::owner::Owner;
+
 
     use dojo::world::Context;
 
     fn execute(ctx: Context, entity_id:ID, hyperstructure_id: ID) {   
-
+        
         // todo@credence: use entity_id to check that realm is in order
+        let entity_owner = get!(ctx.world, entity_id, Owner);
+        assert(entity_owner.address == ctx.origin, 'not owner of entity');
+
 
         let hyperstructure = get!(ctx.world, hyperstructure_id, HyperStructure);
         assert(hyperstructure.resource_count != 0, 'hyperstructure does not exist');

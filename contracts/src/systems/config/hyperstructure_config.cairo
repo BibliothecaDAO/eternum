@@ -16,34 +16,31 @@ mod DefineHyperStructure {
         amount: usize
     }
 
-    fn execute(ctx: Context, resources: Span<ReqiuredResource>, coord: Coord) -> ID {   
+    fn execute(ctx: Context, mut resources: Span<ReqiuredResource>, coord: Coord) -> ID {   
 
         // todo@credence: check admin permissions
-        // todo@credence: maybe ensure resources aren't duplicated
 
         let hyperstructure_id: ID = ctx.world.uuid().into();
         let mut index = 0;
         loop {
-            if index == resources.len() {
-                break;
-            }
+            match resources.pop_front() {
+                Option::Some(resource) => {
+                    assert(*resource.amount > 0, 'amount must not be 0');
 
-            let resource: ReqiuredResource = *resources[index];
-            assert(resource.amount > 0, 'amount must not be 0');
+                    set!(ctx.world, (
+                        HyperStructureResource {
+                            entity_id: hyperstructure_id,
+                            index,
+                            resource_type: *resource.resource_type,
+                            amount: *resource.amount
+                        }
+                    ));
 
-
-            set!(ctx.world, (
-                HyperStructureResource {
-                    entity_id: hyperstructure_id,
-                    index,
-                    resource_type: resource.resource_type,
-                    amount: resource.amount
-                }
-            ));
-
-            index += 1;
+                    index += 1;
+                },
+                Option::None => {break;}
+            };
         };
-
 
         set!(ctx.world, (
             HyperStructure {
