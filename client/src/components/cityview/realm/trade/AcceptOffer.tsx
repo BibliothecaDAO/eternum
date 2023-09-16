@@ -4,18 +4,14 @@ import Button from "../../../../elements/Button";
 import { SelectCaravanPanel } from "./CreateOffer";
 import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { MarketInterface } from "../../../../hooks/graphql/useGraphQLQueries";
-import { useTrade } from "../../../../hooks/helpers/useTrade";
+import { MarketInterface, useTrade } from "../../../../hooks/helpers/useTrade";
 
 type AcceptOfferPopupProps = {
   onClose: () => void;
   selectedTrade: MarketInterface;
 };
 
-export const AcceptOfferPopup = ({
-  onClose,
-  selectedTrade,
-}: AcceptOfferPopupProps) => {
+export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupProps) => {
   const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
   const [isNewCaravan, setIsNewCaravan] = useState(false);
   const [donkeysCount, setDonkeysCount] = useState(1);
@@ -31,12 +27,7 @@ export const AcceptOfferPopup = ({
     account: { account },
     setup: {
       optimisticSystemCalls: { optimisticAcceptOffer },
-      systemCalls: {
-        attach_caravan,
-        take_fungible_order,
-        create_free_transport_unit,
-        create_caravan,
-      },
+      systemCalls: { attach_caravan, take_fungible_order, create_free_transport_unit, create_caravan },
     },
   } = useDojo();
 
@@ -93,9 +84,7 @@ export const AcceptOfferPopup = ({
   let resourcesGive = getTradeResources(selectedTrade.makerOrderId);
 
   let resourceWeight = 0;
-  for (const [_, amount] of Object.entries(
-    resourcesGet.map((resource) => resource.amount) || {},
-  )) {
+  for (const [_, amount] of Object.entries(resourcesGet.map((resource) => resource.amount) || {})) {
     resourceWeight += amount * 1;
   }
 
@@ -143,24 +132,16 @@ export const AcceptOfferPopup = ({
             setIsNewCaravan={setIsNewCaravan}
             selectedCaravan={selectedCaravan}
             setSelectedCaravan={setSelectedCaravan}
-            selectedResourceIdsGet={
-              resourcesGive.map((resource) => resource.resourceId) || []
-            }
+            selectedResourceIdsGet={resourcesGive.map((resource) => resource.resourceId) || []}
             selectedResourcesGetAmounts={selectedResourcesGetAmounts}
-            selectedResourceIdsGive={
-              resourcesGet.map((resource) => resource.resourceId) || []
-            }
+            selectedResourceIdsGive={resourcesGet.map((resource) => resource.resourceId) || []}
             selectedResourcesGiveAmounts={selectedResourcesGiveAmounts}
             resourceWeight={resourceWeight}
             hasEnoughDonkeys={hasEnoughDonkeys}
           />
         </div>
         <div className="flex justify-between m-2 text-xxs">
-          <Button
-            className="!px-[6px] !py-[2px] text-xxs"
-            onClick={onClose}
-            variant="outline"
-          >
+          <Button className="!px-[6px] !py-[2px] text-xxs" onClick={onClose} variant="outline">
             Cancel
           </Button>
           <div>

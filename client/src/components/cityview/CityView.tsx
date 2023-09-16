@@ -12,7 +12,7 @@ import { button, buttonGroup, useControls } from "leva";
 import useUIStore from "../../hooks/store/useUIStore";
 import { useLocation } from "wouter";
 import useRealmStore from "../../hooks/store/useRealmStore";
-import { getRealm } from "./realm/SettleRealmComponent";
+import { getRealm } from "../../utils/realms";
 
 type GLTFResult = GLTF & {
   nodes: {

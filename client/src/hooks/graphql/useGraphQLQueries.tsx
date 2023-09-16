@@ -4,7 +4,6 @@ import { GetRealmIdsQuery, getSdk } from "../../generated/graphql";
 import { useDojo } from "../../DojoContext";
 import { numberToHex, setComponentFromEntity } from "../../utils/utils";
 import { Components } from "@latticexyz/recs";
-import { Resource } from "../../types";
 
 export enum FetchStatus {
   Idle = "idle",
@@ -32,22 +31,6 @@ type getEntitiesQuery = {
     }[];
   };
 };
-
-export interface MarketInterface {
-  tradeId: number;
-  makerId: number;
-  // brillance, reflection, ...
-  makerOrder: number;
-  makerOrderId: number;
-  takerOrderId: number;
-  expiresAt: number;
-  resourcesGet: Resource[];
-  resourcesGive: Resource[];
-  canAccept?: boolean;
-  ratio: number;
-  distance: number;
-  hasRoad: boolean;
-}
 
 export interface PositionInterface {
   x: number;

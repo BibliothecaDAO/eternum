@@ -19,6 +19,8 @@ import { useGetRealmCaravans } from "../../../../hooks/helpers/useCaravans";
 import { getEntityIdFromKeys } from "../../../../utils/utils";
 import { getComponentValue } from "@latticexyz/recs";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
+import { useTrade } from "../../../../hooks/helpers/useTrade";
+import { SelectRealmPanel } from "../SelectRealmPanel";
 
 type CreateOfferPopupProps = {
   onClose: () => void;
@@ -32,6 +34,8 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] = useState<{ [key: number]: number }>({});
   const [selectedResourcesGetAmounts, setSelectedResourcesGetAmounts] = useState<{ [key: number]: number }>({});
   const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
+  const [selectedRealmEntityId, setSelectedRealmEntityId] = useState<number | undefined>();
+  const [selectedRealmId, setSelectedRealmId] = useState<number | undefined>();
   const [isNewCaravan, setIsNewCaravan] = useState(false);
   const [donkeysCount, setDonkeysCount] = useState(1);
   const [resourceWeight, setResourceWeight] = useState(0);
@@ -46,7 +50,14 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
     },
   } = useDojo();
 
-  const { realmEntityId } = useRealmStore();
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+
+  const { getRealmEntityIdFromRealmId } = useTrade();
+
+  const onSelectRealmId = (realmId: number) => {
+    const entityId = getRealmEntityIdFromRealmId(realmId);
+    entityId && setSelectedRealmEntityId(entityId);
+  };
 
   const createOrder = async () => {
     setIsLoading(true);
@@ -56,6 +67,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
         maker_id: realmEntityId,
         maker_entity_types: selectedResourceIdsGive,
         maker_quantities: Object.values(selectedResourcesGiveAmounts),
+        taker_id: selectedRealmEntityId || 0,
         taker_entity_types: selectedResourceIdsGet,
         taker_quantities: Object.values(selectedResourcesGetAmounts),
       });
@@ -80,6 +92,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
         maker_id: realmEntityId,
         maker_entity_types: selectedResourceIdsGive,
         maker_quantities: Object.values(selectedResourcesGiveAmounts),
+        taker_id: selectedRealmEntityId || 0,
         taker_entity_types: selectedResourceIdsGet,
         taker_quantities: Object.values(selectedResourcesGetAmounts),
       });
@@ -140,6 +153,8 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
               selectedResourcesGetAmounts={selectedResourcesGetAmounts}
               setSelectedResourcesGetAmounts={setSelectedResourcesGetAmounts}
               setResourceWeight={setResourceWeight}
+              selectedRealmId={selectedRealmId}
+              setSelectedRealmId={setSelectedRealmId}
             />
           )}
           {step == 3 && (
@@ -176,6 +191,9 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
                 if (step === 3) {
                   createOrder();
                 } else {
+                  if (step === 2) {
+                    selectedRealmId && onSelectRealmId(selectedRealmId);
+                  }
                   setStep(step + 1);
                 }
               }}
@@ -286,6 +304,8 @@ const SelectResourcesAmountPanel = ({
   setSelectedResourcesGiveAmounts,
   setSelectedResourcesGetAmounts,
   setResourceWeight,
+  selectedRealmId,
+  setSelectedRealmId,
 }: {
   selectedResourceIdsGive: number[];
   selectedResourceIdsGet: number[];
@@ -295,6 +315,8 @@ const SelectResourcesAmountPanel = ({
   setSelectedResourcesGiveAmounts: (selectedResourcesGiveAmounts: { [key: number]: number }) => void;
   setSelectedResourcesGetAmounts: (selectedResourcesGetAmounts: { [key: number]: number }) => void;
   setResourceWeight: (resourceWeight: number) => void;
+  selectedRealmId: number | undefined;
+  setSelectedRealmId: (selectedRealmId: number) => void;
 }) => {
   const {
     setup: {
@@ -380,6 +402,7 @@ const SelectResourcesAmountPanel = ({
       <div className="flex text-xs text-center text-white">
         Items Weight <div className="ml-1 text-gold">{`${resourceWeight}kg`}</div>
       </div>
+      <SelectRealmPanel selectedRealmId={selectedRealmId} setSelectedRealmId={setSelectedRealmId}></SelectRealmPanel>
     </>
   );
 };

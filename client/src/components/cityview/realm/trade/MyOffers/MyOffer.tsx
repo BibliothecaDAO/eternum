@@ -7,16 +7,17 @@ import { ReactComponent as RatioIcon } from "../../../../../assets/icons/common/
 import { useDojo } from "../../../../../DojoContext";
 import { orderNameDict } from "../../../../../constants/orders";
 import * as realmsData from "../../../../../geodata/realms.json";
-import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import { MarketInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
-import { getRealm } from "../../SettleRealmComponent";
+import { MarketInterface } from "../../../../../hooks/helpers/useTrade";
+import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
+import { Tooltip } from "../../../../../elements/Tooltip";
 
 type TradeOfferProps = {
   myOffer: MarketInterface;
+  onBuildRoad: () => void;
 };
 
-export const MyOffer = ({ myOffer }: TradeOfferProps) => {
-  const { resourcesGet, resourcesGive, ratio } = myOffer;
+export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
+  const { takerId, hasRoad, distance, resourcesGet, resourcesGive, ratio } = myOffer;
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -32,8 +33,6 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
     account: { account },
   } = useDojo();
 
-  const { realmId } = useRealmStore();
-
   const onCancel = async () => {
     // status 2 = cancel
     setIsLoading(true);
@@ -43,7 +42,7 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
     });
   };
 
-  let makerRealm = useMemo(() => (realmId ? getRealm(realmId) : undefined), [realmId]);
+  let { realm: takerRealm } = useGetRealm(takerId);
 
   const getResourceTrait = useMemo(() => {
     return (resourceId: number) => findResourceById(resourceId)?.trait as any;
@@ -54,14 +53,38 @@ export const MyOffer = ({ myOffer }: TradeOfferProps) => {
   return (
     <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold">
       <div className="flex items-center justify-between">
-        {makerRealm && (
+        {takerRealm ? (
           <div className="flex items-center p-1 -mt-2 -ml-2 border border-t-0 border-l-0 rounded-br-md border-gray-gold">
-            {/* // order of the order maker */}
-            {makerRealm.order && <OrderIcon order={orderNameDict[makerRealm.order]} size="xs" className="mr-1" />}
-            {realmsData["features"][makerRealm.realm_id - 1].name}
+            {/* order of the order maker */}
+            {takerRealm.order && <OrderIcon order={orderNameDict[takerRealm.order]} size="xs" className="mr-1" />}
+            {realmsData["features"][takerRealm.realmId - 1].name}
+          </div>
+        ) : (
+          <div className="flex-1"></div>
+        )}
+        {!takerRealm && <div className="-mt-2 text-gold">{timeLeft}</div>}
+        {takerRealm && (
+          <div className=" text-gold flex">
+            <div className=" text-right">{`${distance.toFixed(0)} km`}</div>
+            {hasRoad ? (
+              <div className="text-order-brilliance relative group ml-2">
+                (x2 speed)
+                <Tooltip position="left">
+                  <p className="whitespace-nowrap">This Realm has built road</p>
+                  <p className="whitespace-nowrap">to your Realm.</p>
+                </Tooltip>
+              </div>
+            ) : (
+              <div className="text-gold/50 decoration-dotted underline relative group ml-2" onClick={onBuildRoad}>
+                (Normal speed)
+                <Tooltip position="left">
+                  <p className="whitespace-nowrap">Click to build road and</p>
+                  <p className="whitespace-nowrap">speed up trades with this Realm.</p>
+                </Tooltip>
+              </div>
+            )}
           </div>
         )}
-        <div className="-mt-2 text-gold">{timeLeft}</div>
       </div>
       <div className="flex items-end">
         <div className="flex items-center justify-around flex-1">

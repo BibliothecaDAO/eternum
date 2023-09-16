@@ -89,6 +89,7 @@ export interface MakeFungibleOrderProps extends SystemSigner {
   maker_id: num.BigNumberish;
   maker_entity_types: num.BigNumberish[];
   maker_quantities: num.BigNumberish[];
+  taker_id: num.BigNumberish;
   taker_entity_types: num.BigNumberish[];
   taker_quantities: num.BigNumberish[];
 }
@@ -122,7 +123,8 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
   };
 
   const make_fungible_order = async (props: MakeFungibleOrderProps): Promise<number> => {
-    const { maker_id, maker_entity_types, maker_quantities, taker_entity_types, taker_quantities, signer } = props;
+    const { maker_id, maker_entity_types, maker_quantities, taker_id, taker_entity_types, taker_quantities, signer } =
+      props;
 
     const expires_at = Math.floor(Date.now() / 1000 + 2628000);
 
@@ -132,7 +134,7 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
       ...maker_entity_types,
       maker_quantities.length,
       ...maker_quantities,
-      0,
+      taker_id,
       taker_entity_types.length,
       ...taker_entity_types,
       taker_quantities.length,
