@@ -31,6 +31,17 @@ struct TravelConfig {
     free_transport_per_city: u128
 }
 
+
+#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+struct RoadConfig {
+    #[key]
+    config_id: u128,
+    fee_resource_type: u8,
+    fee_amount: u128,
+    speed_up_by: u64
+}
+
+
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct BuildingConfig {
     #[key]

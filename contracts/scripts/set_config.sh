@@ -29,6 +29,13 @@ commands=(
     # 100000 gr = 100 kg
     "sozo execute --world $world SetCapacityConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 256,100000"
 
+    ### ROAD ###
+    # fee resource type = 2 # Stone
+    # fee amount = 10
+    # speed up transit by 2x = 2
+
+    "sozo execute --world $world SetRoadConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 2,10,2"
+
 )
 
 ### WEIGHT ###
