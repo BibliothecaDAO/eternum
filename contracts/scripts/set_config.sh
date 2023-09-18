@@ -87,6 +87,15 @@ commands+=(
     "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 255,3,10"
 )
 
+
+commands+=(
+    # Define hyperstructure
+    # hyperstructure type 1
+    # resource 1,000 stone and 1,000 shekels
+    # hyperstructure coordinate x: 800, y : 200 
+    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1, 2,2,1000,3,1000, 800,200"
+)
+
 commands+=(
     # NOTE: mint a random realm so that no player has the 0x0 entity id as a realm
     # because 0x0 is also used in make_fungible_order as taker_id to specify that any entity can take the order

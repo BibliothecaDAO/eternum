@@ -2,6 +2,7 @@
 struct HyperStructure {
     #[key]
     entity_id: u128,
+    hyperstructure_type: u8,
     started_at: u64,
     completed_at: u64,
     resource_count: usize

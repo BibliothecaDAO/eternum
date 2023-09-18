@@ -1,5 +1,5 @@
 #[system]
-mod CompleteHyperstructure {
+mod CompleteHyperStructure {
     use eternum::alias::ID;
     use eternum::components::hyperstructure::{HyperStructure, HyperStructureResource};
     use eternum::components::resources::Resource;
@@ -11,7 +11,7 @@ mod CompleteHyperstructure {
     fn execute(ctx: Context, hyperstructure_id: ID) {
         
         let hyperstructure = get!(ctx.world, hyperstructure_id, HyperStructure);
-        assert(hyperstructure.started_at != 0 , 'hyperstructure not found');
+        assert(hyperstructure.started_at != 0 , 'hyperstructure not initialized');
         assert(hyperstructure.completed_at == 0 , 'hyperstructure completed');
 
         let mut index = hyperstructure.resource_count;
@@ -30,6 +30,7 @@ mod CompleteHyperstructure {
         set!(ctx.world, (
              HyperStructure {
                 entity_id: hyperstructure_id,
+                hyperstructure_type: hyperstructure.hyperstructure_type,
                 started_at: hyperstructure.started_at,
                 completed_at: starknet::get_block_timestamp(),
                 resource_count: hyperstructure.resource_count
@@ -39,3 +40,160 @@ mod CompleteHyperstructure {
     }        
 }
 
+
+
+#[cfg(test)]
+mod tests {
+
+    use eternum::components::position::Coord;
+    use eternum::components::resources::Resource;
+    use eternum::components::hyperstructure::HyperStructure;
+    use eternum::components::owner::Owner;
+
+    use eternum::constants::ResourceTypes;
+    
+    use eternum::utils::testing::spawn_eternum;
+    
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+
+    use starknet::contract_address_const;
+
+    use core::array::ArrayTrait;
+    use core::serde::Serde;
+    use core::traits::TryInto;
+    use core::option::OptionTrait;
+    use core::clone::Clone;
+
+
+    fn setup() -> (IWorldDispatcher, felt252 ){
+        let world = spawn_eternum();
+
+        let entity_id: u128 = 44;
+
+        starknet::testing::set_contract_address(world.executor());
+        set!(world, ( 
+            Owner { entity_id, address: contract_address_const::<'entity'>()},
+            Resource {
+                entity_id: entity_id,
+                resource_type: ResourceTypes::STONE,
+                balance: 400
+            }
+        ));
+
+
+        starknet::testing::set_contract_address(contract_address_const::<'entity'>());
+
+        let hyperstructure_type = 1_u8;
+        let hyperstructure_resources = array![
+            (ResourceTypes::STONE, 10_u8), // 10 stone
+            (ResourceTypes::WOOD, 10_u8)  // 10 wood
+        ];
+        let hyperstructure_coord = Coord{ x:20, y:30 };
+
+
+
+        let mut calldata = array![];
+        Serde::serialize(@hyperstructure_type, ref calldata);
+        Serde::serialize(@hyperstructure_resources, ref calldata); 
+        Serde::serialize(@hyperstructure_coord, ref calldata);
+        let result = world.execute('DefineHyperStructure', calldata);
+        let hyperstructure_id = *result[0];
+
+        // update block timestamp
+        starknet::testing::set_block_timestamp(1);
+        let mut calldata = array![];
+        Serde::serialize(@entity_id, ref calldata);
+        Serde::serialize(@hyperstructure_id, ref calldata);
+        world.execute('InitializeHyperStructure', calldata);
+
+        (world, hyperstructure_id)
+    }
+
+
+
+    #[test]
+    #[available_gas(3000000000000)]  
+    fn test_complete() {
+        let (world, hyperstructure_id) = setup();
+
+        starknet::testing::set_contract_address(world.executor());
+        set!(world, ( 
+            Resource {
+                entity_id: hyperstructure_id.try_into().unwrap(),
+                resource_type: ResourceTypes::STONE,
+                balance: 20
+            },
+            Resource {
+                entity_id: hyperstructure_id.try_into().unwrap(),
+                resource_type: ResourceTypes::WOOD,
+                balance: 10
+            }   
+        ));
+
+        starknet::testing::set_contract_address(contract_address_const::<'entity'>());
+        let mut calldata = array![];
+        Serde::serialize(@hyperstructure_id, ref calldata);
+        world.execute('CompleteHyperStructure', calldata);
+
+        let hyperstructure = get!(world, hyperstructure_id, HyperStructure);
+        assert(hyperstructure.completed_at != 0, 'not completed');
+    }
+
+
+
+
+
+    #[test]
+    #[available_gas(3000000000000)]  
+    #[should_panic(expected: ('not enough resources','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED' ))]
+    fn test_not_enough_resources() {
+        let (world, hyperstructure_id) = setup();
+
+        starknet::testing::set_contract_address(world.executor());
+        set!(world, ( 
+            Resource {
+                entity_id: hyperstructure_id.try_into().unwrap(),
+                resource_type: ResourceTypes::STONE,
+                balance: 20
+            }
+        ));
+
+        starknet::testing::set_contract_address(contract_address_const::<'entity'>());
+        let mut calldata = array![];
+        Serde::serialize(@hyperstructure_id, ref calldata);
+        world.execute('CompleteHyperStructure', calldata);
+    }
+
+
+
+
+
+    #[test]
+    #[available_gas(3000000000000)]  
+    #[should_panic(expected: ('hyperstructure completed','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED' ))]
+    fn test_already_completed() {
+        let (world, hyperstructure_id) = setup();
+
+        starknet::testing::set_contract_address(world.executor());
+        set!(world, ( 
+            Resource {
+                entity_id: hyperstructure_id.try_into().unwrap(),
+                resource_type: ResourceTypes::STONE,
+                balance: 10
+            },
+            Resource {
+                entity_id: hyperstructure_id.try_into().unwrap(),
+                resource_type: ResourceTypes::WOOD,
+                balance: 10
+            }   
+        ));
+
+        starknet::testing::set_contract_address(contract_address_const::<'entity'>());
+        let mut calldata = array![];
+        Serde::serialize(@hyperstructure_id, ref calldata);
+
+        // call complete system twice
+        world.execute('CompleteHyperStructure', calldata.clone());
+        world.execute('CompleteHyperStructure', calldata.clone());
+    }
+}

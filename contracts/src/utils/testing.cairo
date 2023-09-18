@@ -11,6 +11,11 @@ use eternum::components::resources::{vault, Vault};
 use eternum::components::metadata::{foreign_key, ForeignKey};
 use eternum::components::trade::{fungible_entities, FungibleEntities};
 use eternum::components::road::{road, Road};
+use eternum::components::hyperstructure::{
+    hyper_structure, HyperStructure,
+    hyper_structure_resource, HyperStructureResource
+};
+
 use eternum::components::config::{
     world_config, WorldConfig,
     speed_config, SpeedConfig,
@@ -19,7 +24,9 @@ use eternum::components::config::{
     labor_config, LaborConfig,
     labor_cost_amount, LaborCostAmount,
     labor_cost_resources, LaborCostResources,
-    weight_config, WeightConfig 
+    weight_config, WeightConfig,
+    road_config, RoadConfig
+
 };
 use eternum::components::quantity::{
     quantity, Quantity, 
@@ -59,10 +66,15 @@ use eternum::systems::labor::build_labor::BuildLabor;
 use eternum::systems::config::labor_config::SetLaborConfig;
 use eternum::systems::config::labor_config::SetLaborCostResources;
 use eternum::systems::config::labor_config::SetLaborCostAmount;
+use eternum::systems::config::hyperstructure_config::DefineHyperStructure;
 use eternum::systems::config::weight_config::SetWeightConfig;
 use eternum::systems::test::mint_resources::MintResources;
 use eternum::systems::labor::harvest_labor::HarvestLabor;
 use eternum::systems::road::create_road::CreateRoad;
+use eternum::systems::travel::Travel;
+use eternum::systems::resources::transfer_resources::TransferResources;
+use eternum::systems::hyperstructure::initialize_hyperstructure::InitializeHyperStructure;
+use eternum::systems::hyperstructure::complete_hyperstructure::CompleteHyperStructure;
 
 use dojo::{executor::executor, world::{world, IWorldDispatcher, IWorldDispatcherTrait}};
 use dojo::test_utils::spawn_test_world;
@@ -112,7 +124,10 @@ fn spawn_eternum() -> IWorldDispatcher {
         labor_cost_resources::TEST_CLASS_HASH,
         vault::TEST_CLASS_HASH,
         weight_config::TEST_CLASS_HASH,
-        road::TEST_CLASS_HASH
+        road::TEST_CLASS_HASH,
+        road_config::TEST_CLASS_HASH,
+        hyper_structure::TEST_CLASS_HASH,
+        hyper_structure_resource::TEST_CLASS_HASH,
     ];
 
     
@@ -137,7 +152,13 @@ fn spawn_eternum() -> IWorldDispatcher {
         MintResources::TEST_CLASS_HASH,
         HarvestLabor::TEST_CLASS_HASH,
         SetWeightConfig::TEST_CLASS_HASH,
-        CreateRoad::TEST_CLASS_HASH
+        CreateRoad::TEST_CLASS_HASH,
+        DefineHyperStructure::TEST_CLASS_HASH,
+        InitializeHyperStructure::TEST_CLASS_HASH,
+        CompleteHyperStructure::TEST_CLASS_HASH,
+        Travel::TEST_CLASS_HASH,
+        TransferResources::TEST_CLASS_HASH,
+
     ];
     
 
