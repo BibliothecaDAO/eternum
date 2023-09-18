@@ -1,21 +1,93 @@
 import clsx from "clsx";
-import React from "react";
+import { useEffect, useState, useRef } from "react";
+import Draggable from "react-draggable";
 
 type FilterPopupProps = {
   children: React.ReactNode;
   className?: string;
+  name?: string;
 };
 
-export const SecondaryPopup = ({ children, className }: FilterPopupProps) => {
+export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) => {
+  const nodeRef = useRef<any>(null);
+
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [loaded, setLoaded] = useState(false);
+
+  const handleStop = (e: any, data: any) => {
+    if (name) {
+      localStorage.setItem(name, JSON.stringify({ x: data.x, y: data.y }));
+    }
+  };
+
+  const moveToTopZIndex = () => {
+    let maxZIndex = 50;
+    document.querySelectorAll(".popup").forEach((popup) => {
+      const zIndex = parseInt(window.getComputedStyle(popup).zIndex);
+      if (zIndex > maxZIndex) {
+        maxZIndex = zIndex;
+      }
+    });
+    if (nodeRef && nodeRef.current) {
+      nodeRef.current.style.zIndex = `${maxZIndex + 1}`;
+      document.querySelectorAll("[data-old-z-index]").forEach((popup: any) => {
+        popup.style.zIndex = popup.getAttribute("data-old-z-index");
+        popup.removeAttribute("data-old-z-index");
+      });
+      let parent = nodeRef.current.parentElement;
+      while (parent && getComputedStyle(parent).position !== "absolute") {
+        parent = parent.parentElement;
+      }
+      if (parent) {
+        parent.setAttribute("data-old-z-index", parent.style.zIndex);
+        parent.style.zIndex = `${maxZIndex + 1}`;
+      }
+    }
+  };
+
+  const handleClick = () => {
+    moveToTopZIndex();
+  };
+
+  useEffect(() => {
+    if (name) {
+      const pos = localStorage.getItem(name);
+      if (pos) {
+        setPosition(JSON.parse(pos));
+      }
+    }
+    setLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    moveToTopZIndex();
+  }, [loaded]);
+
   return (
-    <div className={clsx("fixed flex flex-col translate-x-6 top-[200px] left-[432px] z-50", className)}>{children}</div>
+    <>
+      {loaded && (
+        <Draggable handle=".handle" defaultPosition={position} nodeRef={nodeRef} onStop={handleStop}>
+          <div
+            onClick={handleClick}
+            ref={nodeRef}
+            className={clsx("popup fixed z-50 flex flex-col translate-x-6 top-[200px] left-[450px]", className)}
+          >
+            {children}
+          </div>
+        </Draggable>
+      )}
+    </>
   );
 };
 
-SecondaryPopup.Head = ({ children }: { children: React.ReactNode }) => (
-  <div className="text-xxs relative -mb-[1px] z-10 bg-brown px-1 py-0.5 rounded-t-[4px] border-t border-x border-white text-white w-min whitespace-nowrap">
-    {" "}
-    {children}{" "}
+SecondaryPopup.Head = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <div
+    className={clsx(
+      "text-xxs relative cursor-move -mb-[1px] z-30 bg-brown px-1 py-0.5 rounded-t-[4px] border-t border-x border-white text-white w-min whitespace-nowrap handle",
+      className,
+    )}
+  >
+    {children}
   </div>
 );
 
@@ -23,7 +95,7 @@ SecondaryPopup.Body = ({ width = null, children }: { width?: string | null; chil
   <div
     className={`${
       width ? "" : "min-w-[438px]"
-    } relative z-0 bg-gray border flex flex-col border-white rounded-tr-[4px] rounded-b-[4px]`}
+    } relative z-10 bg-gray border flex flex-col border-white rounded-tr-[4px] rounded-b-[4px]`}
     style={{ width: width ? width : "" }}
   >
     {children}
