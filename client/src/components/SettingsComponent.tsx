@@ -49,7 +49,7 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
         <Muted onClick={() => toggleSound()} className="ml-[6px] cursor-pointer fill-gold" />
       )}
       {showSettings && (
-        <SecondaryPopup className="top-1/3">
+        <SecondaryPopup className="top-1/3" name="settings">
           <SecondaryPopup.Head>
             <div className="flex items-center">
               <div className="mr-0.5">Settings</div>

@@ -121,7 +121,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   }, [donkeysCount, resourceWeight]);
 
   return (
-    <SecondaryPopup>
+    <SecondaryPopup name="create-offer">
       <SecondaryPopup.Head>
         <div className="flex items-center space-x-1">
           <div className="mr-0.5">Create Offer:</div>
