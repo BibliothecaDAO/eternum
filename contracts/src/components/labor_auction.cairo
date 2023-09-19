@@ -1,53 +1,53 @@
 use cubit::f128::math::core::{ln, abs, exp, pow};
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use starknet::{ContractAddress, get_block_timestamp};
+use dojo_defi::dutch_auction::vrgda::{LinearVRGDA, LinearVRGDATrait};
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-// TODO: put that in dojo
-/// A Linear Variable Rate Gradual Dutch Auction (VRGDA) struct.
-/// Represents an auction where the price decays linearly based on the target price,
-/// decay constant, and per-time-unit rate.
-#[derive(Copy, Drop, Serde, starknet::Storage)]
-struct LinearVRGDA {
-    target_price: Fixed,
-    decay_constant: Fixed,
-    // depends on number of realms settled per region
-    per_time_unit: Fixed,
-}
+// /// A Linear Variable Rate Gradual Dutch Auction (VRGDA) struct.
+// /// Represents an auction where the price decays linearly based on the target price,
+// /// decay constant, and per-time-unit rate.
+// #[derive(Copy, Drop, Serde, starknet::Storage)]
+// struct LinearVRGDA {
+//     target_price: Fixed,
+//     decay_constant: Fixed,
+//     // depends on number of realms settled per region
+//     per_time_unit: Fixed,
+// }
 
-#[generate_trait]
-impl LinearVRGDAImpl of LinearVRGDATrait {
-    /// Calculates the target sale time based on the quantity bought.
-    ///
-    /// # Arguments
-    ///
-    /// * `bought`: Quantity bought.
-    ///
-    /// # Returns
-    ///
-    /// * A `Fixed` representing the target buy time.
-    fn get_target_buy_time(self: @LinearVRGDA, bought: Fixed, realms_count: Fixed) -> Fixed {
-        bought / (*self.per_time_unit * realms_count)
-    }
+// #[generate_trait]
+// impl LinearVRGDAImpl of LinearVRGDATrait {
+//     /// Calculates the target sale time based on the quantity bought.
+//     ///
+//     /// # Arguments
+//     ///
+//     /// * `bought`: Quantity bought.
+//     ///
+//     /// # Returns
+//     ///
+//     /// * A `Fixed` representing the target buy time.
+//     fn get_target_buy_time(self: @LinearVRGDA, bought: Fixed) -> Fixed {
+//         bought / (*self.per_time_unit)
+//     }
 
-    /// Calculates the VRGDA price at a specific time since the auction started.
-    ///
-    /// # Arguments
-    ///
-    /// * `time_since_start`: Time since the auction started.
-    /// * `bought`: Quantity bought.
-    ///
-    /// # Returns
-    ///
-    /// * A `Fixed` representing the price.
-    fn get_vrgda_price(
-        self: @LinearVRGDA, time_since_start: Fixed, bought: Fixed, realms_count: Fixed
-    ) -> Fixed {
-        // time_since_start = nb of periods since start
-        *self.target_price * pow(FixedTrait::new_unscaled(1, false) - *self.decay_constant, time_since_start - self.get_target_buy_time(bought, realms_count))
-    }
-}
+//     /// Calculates the VRGDA price at a specific time since the auction started.
+//     ///
+//     /// # Arguments
+//     ///
+//     /// * `time_since_start`: Time since the auction started.
+//     /// * `bought`: Quantity bought.
+//     ///
+//     /// # Returns
+//     ///
+//     /// * A `Fixed` representing the price.
+//     fn get_vrgda_price(
+//         self: @LinearVRGDA, time_since_start: Fixed, bought: Fixed
+//     ) -> Fixed {
+//         // time_since_start = nb of periods since start
+//         *self.target_price * pow(FixedTrait::new_unscaled(1, false) - *self.decay_constant, time_since_start - self.get_target_buy_time(bought))
+//     }
+// }
 
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct LaborAuction {
@@ -70,7 +70,7 @@ impl LaborAuctionImpl of LaborAuctionTrait {
         LinearVRGDA {
             target_price: FixedTrait::new_unscaled(self.target_price, false),
             decay_constant: FixedTrait::new(self.decay_constant_mag, self.decay_constant_sign),
-            per_time_unit: FixedTrait::new_unscaled(self.per_time_unit, false)
+            per_time_unit: FixedTrait::new_unscaled(self.per_time_unit * self.realms_count, false)
         }
     }
 
@@ -83,10 +83,8 @@ impl LaborAuctionImpl of LaborAuctionTrait {
             .to_LinearVRGDA()
             .get_vrgda_price(
                 // 1 period = 1 day
-                // DISUCSS: should we floor ?
                 FixedTrait::new_unscaled(time_since_start / 86400, false), // time since start
                 FixedTrait::new_unscaled(self.bought, false), // amount bought
-                FixedTrait::new_unscaled(self.realms_count, false) // number of realms in that zone
             )
     }
 
@@ -108,11 +106,19 @@ mod tests {
 
     // testing
     use eternum::utils::testing::spawn_eternum;
+    use debug::PrintTrait;
 
     use dojo::world::{IWorldDispatcher,IWorldDispatcherTrait};
 
     // constants
     const _0_1: u128 = 1844674407370955161; // 0.1
+    const _69_42: u128 = 1280572973596917000000;
+    const _0_31: u128 = 5718490662849961000;
+    const DELTA_0_0005: u128 = 9223372036854776;
+    const DELTA_0_02: u128 = 368934881474191000;
+    const DELTA: u128 = 184467440737095;
+
+    use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
     #[test]
     #[available_gas(30000000)]
@@ -199,6 +205,20 @@ mod tests {
 
         let price = auction.get_price();
         assert(price.mag == 182709003719136910070, 'price is wrong');
+    }
+
+
+    #[test]
+    #[available_gas(20000000)]
+    fn test_pricing_basic() {
+        let auction = LinearVRGDA {
+            target_price: FixedTrait::new(_69_42, false),
+            decay_constant: FixedTrait::new(_0_31, false),
+            per_time_unit: FixedTrait::new_unscaled(2, false),
+        };
+        let time_delta = FixedTrait::new(10368001, false); // 120 days
+        let num_mint = FixedTrait::new(0, true);
+        let cost = auction.get_vrgda_price(time_delta, num_mint);
     }
 
 }
