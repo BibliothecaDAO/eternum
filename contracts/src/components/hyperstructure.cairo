@@ -3,19 +3,12 @@ struct HyperStructure {
     #[key]
     entity_id: u128,
     hyperstructure_type: u8,
-    started_at: u64,
+    initialization_resource_id: u128,
+    initialization_resource_count: usize,
+    construction_resource_id: u128,
+    construction_resource_count: usize,
+    initialized_at: u64,
     completed_at: u64,
-    resource_count: usize
-}
-
-
-
-#[derive(Component, Copy, Drop, Serde)]
-struct HyperStructureResource {
-    #[key]
-    entity_id: u128,
-    #[key]
-    index: usize,
-    resource_type: u8,
-    amount: usize
+    coord_x: u32,
+    coord_y: u32
 }

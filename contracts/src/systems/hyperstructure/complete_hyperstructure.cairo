@@ -1,8 +1,8 @@
 #[system]
 mod CompleteHyperStructure {
     use eternum::alias::ID;
-    use eternum::components::hyperstructure::{HyperStructure, HyperStructureResource};
-    use eternum::components::resources::Resource;
+    use eternum::components::hyperstructure::HyperStructure;
+    use eternum::components::resources::{Resource, ResourceCost};
 
     use dojo::world::Context;
 
@@ -11,29 +11,34 @@ mod CompleteHyperStructure {
     fn execute(ctx: Context, hyperstructure_id: ID) {
         
         let hyperstructure = get!(ctx.world, hyperstructure_id, HyperStructure);
-        assert(hyperstructure.started_at != 0 , 'hyperstructure not initialized');
+        assert(hyperstructure.initialized_at != 0 , 'hyperstructure not initialized');
         assert(hyperstructure.completed_at == 0 , 'hyperstructure completed');
 
-        let mut index = hyperstructure.resource_count;
+        let mut index = 0;
         loop {
-            if index == 0 {
+            if index == hyperstructure.construction_resource_count {
                 break;
             }
 
-            let hyperstructure_resource = get!(ctx.world, (hyperstructure_id, index), HyperStructureResource);
-            let resource = get!(ctx.world, (hyperstructure_id, hyperstructure_resource.resource_type), Resource);
-            assert(resource.balance >= hyperstructure_resource.amount.into(), 'not enough resources');
+            let construction_resource_cost = get!(ctx.world, (hyperstructure.construction_resource_id, index), ResourceCost);
+            let hyperstructure_resource = get!(ctx.world, (hyperstructure_id, construction_resource_cost.resource_type), Resource);
+            assert(hyperstructure_resource.balance >= construction_resource_cost.amount, 'not enough resources');
             
-            index -= 1;
+            index += 1;
         };
 
         set!(ctx.world, (
              HyperStructure {
-                entity_id: hyperstructure_id,
+                entity_id: hyperstructure.entity_id,
                 hyperstructure_type: hyperstructure.hyperstructure_type,
-                started_at: hyperstructure.started_at,
+                initialization_resource_id: hyperstructure.initialization_resource_id,
+                initialization_resource_count: hyperstructure.initialization_resource_count,
+                construction_resource_id: hyperstructure.construction_resource_id,
+                construction_resource_count: hyperstructure.construction_resource_count,
+                initialized_at: hyperstructure.initialized_at,
                 completed_at: starknet::get_block_timestamp(),
-                resource_count: hyperstructure.resource_count
+                coord_x: hyperstructure.coord_x,
+                coord_y: hyperstructure.coord_y
             }
         ));
 
@@ -73,9 +78,15 @@ mod tests {
         starknet::testing::set_contract_address(world.executor());
         set!(world, ( 
             Owner { entity_id, address: contract_address_const::<'entity'>()},
+            // set resources for initialization
             Resource {
                 entity_id: entity_id,
                 resource_type: ResourceTypes::STONE,
+                balance: 400
+            },
+            Resource {
+                entity_id: entity_id,
+                resource_type: ResourceTypes::WOOD,
                 balance: 400
             }
         ));
@@ -83,18 +94,23 @@ mod tests {
 
         starknet::testing::set_contract_address(contract_address_const::<'entity'>());
 
+        
         let hyperstructure_type = 1_u8;
-        let hyperstructure_resources = array![
+        let initialization_resources = array![
             (ResourceTypes::STONE, 10_u8), // 10 stone
-            (ResourceTypes::WOOD, 10_u8)  // 10 wood
+            (ResourceTypes::WOOD, 13_u8)  // 13 wood
+        ];
+        let construction_resources = array![
+            (ResourceTypes::STONE, 40_u8), // 40 stone
+            (ResourceTypes::WOOD, 50_u8)  // 50 wood
         ];
         let hyperstructure_coord = Coord{ x:20, y:30 };
 
 
-
         let mut calldata = array![];
         Serde::serialize(@hyperstructure_type, ref calldata);
-        Serde::serialize(@hyperstructure_resources, ref calldata); 
+        Serde::serialize(@initialization_resources, ref calldata); 
+        Serde::serialize(@construction_resources, ref calldata); 
         Serde::serialize(@hyperstructure_coord, ref calldata);
         let result = world.execute('DefineHyperStructure', calldata);
         let hyperstructure_id = *result[0];
@@ -121,12 +137,12 @@ mod tests {
             Resource {
                 entity_id: hyperstructure_id.try_into().unwrap(),
                 resource_type: ResourceTypes::STONE,
-                balance: 20
+                balance: 60
             },
             Resource {
                 entity_id: hyperstructure_id.try_into().unwrap(),
                 resource_type: ResourceTypes::WOOD,
-                balance: 10
+                balance: 50
             }   
         ));
 
@@ -153,8 +169,8 @@ mod tests {
         set!(world, ( 
             Resource {
                 entity_id: hyperstructure_id.try_into().unwrap(),
-                resource_type: ResourceTypes::STONE,
-                balance: 20
+                resource_type: ResourceTypes::WOOD,
+                balance: 50
             }
         ));
 
@@ -179,12 +195,12 @@ mod tests {
             Resource {
                 entity_id: hyperstructure_id.try_into().unwrap(),
                 resource_type: ResourceTypes::STONE,
-                balance: 10
+                balance: 40
             },
             Resource {
                 entity_id: hyperstructure_id.try_into().unwrap(),
                 resource_type: ResourceTypes::WOOD,
-                balance: 10
+                balance: 50
             }   
         ));
 

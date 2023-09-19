@@ -75,15 +75,16 @@
         "Resource"
     ],
     "InitializeHyperStructure": [
-        "HyperStructure"
+        "HyperStructure",
+        "Position",
+        "Resource"
     ],
     "CompleteHyperStructure": [
         "HyperStructure"
     ],
     "DefineHyperStructure": [
         "HyperStructure",
-        "HyperStructureResource",
-        "Position"
+        "ResourceCost"
     ],
     "TransferResources": [
         "Resource"

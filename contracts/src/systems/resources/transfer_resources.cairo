@@ -65,7 +65,7 @@ mod TransferResources {
                     ));
                     
                     total_weight += WeightConfigImpl::get_weight(
-                        ctx.world, resource_type, resource_amount.into()
+                        ctx.world, resource_type, resource_amount
                     );
                 },
                 Option::None(_) => {break;}

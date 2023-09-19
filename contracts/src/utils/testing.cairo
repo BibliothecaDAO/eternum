@@ -2,6 +2,7 @@
 use eternum::components::owner::{owner, Owner};
 use eternum::components::realm::{realm, Realm};
 use eternum::components::resources::{resource, Resource};
+use eternum::components::resources::{resource_cost, ResourceCost};
 use eternum::components::position::{position, Position};
 use eternum::components::capacity::{capacity, Capacity};
 use eternum::components::metadata::{meta_data, MetaData};
@@ -11,10 +12,8 @@ use eternum::components::resources::{vault, Vault};
 use eternum::components::metadata::{foreign_key, ForeignKey};
 use eternum::components::trade::{fungible_entities, FungibleEntities};
 use eternum::components::road::{road, Road};
-use eternum::components::hyperstructure::{
-    hyper_structure, HyperStructure,
-    hyper_structure_resource, HyperStructureResource
-};
+use eternum::components::hyperstructure::{hyper_structure, HyperStructure};
+
 
 use eternum::components::config::{
     world_config, WorldConfig,
@@ -115,6 +114,7 @@ fn spawn_eternum() -> IWorldDispatcher {
         fungible_entities::TEST_CLASS_HASH,
         order_resource::TEST_CLASS_HASH,
         resource::TEST_CLASS_HASH,
+        resource_cost::TEST_CLASS_HASH,
         status::TEST_CLASS_HASH,
         age::TEST_CLASS_HASH,
         travel_config::TEST_CLASS_HASH,
@@ -127,7 +127,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         road::TEST_CLASS_HASH,
         road_config::TEST_CLASS_HASH,
         hyper_structure::TEST_CLASS_HASH,
-        hyper_structure_resource::TEST_CLASS_HASH,
     ];
 
     

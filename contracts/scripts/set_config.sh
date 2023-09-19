@@ -91,9 +91,10 @@ commands+=(
 commands+=(
     # Define hyperstructure
     # hyperstructure type 1
-    # resource 1,000 stone and 1,000 shekels
+    # intialization resources: 500 stone and 500 shekels
+    # construction resources: 1,000 stone and 1,000 shekels
     # hyperstructure coordinate x: 800, y : 200 
-    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1, 2,2,1000,3,1000, 800,200"
+    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,2,500,3,500,2,2,1000,3,1000,800,200"
 )
 
 commands+=(

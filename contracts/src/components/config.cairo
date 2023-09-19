@@ -145,6 +145,6 @@ impl WeightConfigImpl of WeightConfigTrait {
         let resource_weight_config 
             = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig);
 
-        return resource_weight_config.weight_gram * amount.into();
+        return resource_weight_config.weight_gram * amount;
     }
 }
