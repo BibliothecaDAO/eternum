@@ -12,4 +12,4 @@ mod metadata;
 mod caravan;
 mod trade;
 mod road;
-mod auction;
+mod labor_auction;

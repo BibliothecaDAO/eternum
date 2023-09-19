@@ -8,5 +8,6 @@ mod test;
 mod order;
 mod caravan;
 mod road;
+mod labor_auction;
 
 
