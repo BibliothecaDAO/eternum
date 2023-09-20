@@ -8,10 +8,11 @@ interface TextInputProps {
     maxLength?: number;
     onBlur?: (e: any) => void;
     onFocus?: (e: any) => void;
+    onKeyDown?: (e: any) => void;
 }
 
 const TextInput = (props: TextInputProps) => {
-    const { value, onChange, className, placeholder, maxLength, onBlur, onFocus } = props;
+    const { value, onChange, className, placeholder, maxLength, onBlur, onFocus, onKeyDown } = props;
     return (
         <input
             className={clsx(
@@ -25,6 +26,7 @@ const TextInput = (props: TextInputProps) => {
             maxLength={maxLength}
             onBlur={onBlur}
             onFocus={onFocus}
+            onKeyDown={onKeyDown}
         />
     );
 };

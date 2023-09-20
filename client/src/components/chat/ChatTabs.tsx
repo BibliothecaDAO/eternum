@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Tabs } from "../../elements/tab";
 import { ChatMessageProps } from "../../elements/ChatMessage";
 import ChatHistory from "./ChatHistory";
-import { ReactComponent as RedDot } from "../../assets/icons/common/red-dot.svg";
+// import { ReactComponent as RedDot } from "../../assets/icons/common/red-dot.svg";
 
 type ChatTabsProps = {};
 
@@ -99,7 +99,7 @@ const dummyMessages: ChatMessageProps[] = [
   },
 ];
 
-export const ChatTabs = ({}: ChatTabsProps) => {
+export const ChatTabs = ({ }: ChatTabsProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
 
   const tabs = useMemo(
@@ -112,23 +112,23 @@ export const ChatTabs = ({}: ChatTabsProps) => {
         ),
         component: <ChatHistory messages={dummyMessages} />,
       },
-      {
-        label: (
-          <div className="flex flex-col items-center">
-            <div>Guild Chat</div>
-          </div>
-        ),
-        component: <div></div>,
-      },
-      {
-        label: (
-          <div className="flex flex-col items-center" title="Not implemented">
-            <div>PM</div>
-            <RedDot className="absolute right-0 top-1" />
-          </div>
-        ),
-        component: <div></div>,
-      },
+      // {
+      //   label: (
+      //     <div className="flex flex-col items-center">
+      //       <div>Guild Chat</div>
+      //     </div>
+      //   ),
+      //   component: <div></div>,
+      // },
+      // {
+      //   label: (
+      //     <div className="flex flex-col items-center" title="Not implemented">
+      //       <div>PM</div>
+      //       <RedDot className="absolute right-0 top-1" />
+      //     </div>
+      //   ),
+      //   component: <div></div>,
+      // },
     ],
     [selectedTab],
   );
