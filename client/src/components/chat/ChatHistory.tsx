@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import ChatMessage, { ChatMessageProps } from "../../elements/ChatMessage";
 import Button from "../../elements/Button";
 import { useChat } from "../../ChatContext";
-import { set } from "mobx";
 
 interface ChatHistoryProps {
     messages: ChatMessageProps[];
