@@ -7,10 +7,10 @@ version = "0.1.0"
 sierra-replace-ids = true
 
 [dependencies]
-dojo = { git = "https://github.com/dojoengine/dojo" }
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "nightly-b924dac179726a6af56f4b61f0d66883e16aa76e" }
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "e1aa42853815f04ff00e4ed3507cfd74d7b0c644" }
 cubit = { git = "https://github.com/influenceth/cubit" }
-dojo_defi = { git = "https://github.com/dojoengine/dojo" }
+dojo_defi = { git = "https://github.com/dojoengine/dojo", tag = "nightly-b924dac179726a6af56f4b61f0d66883e16aa76e" }
 
 [[target.dojo]]
 initializer_class_hash = "0xbeef"
