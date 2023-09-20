@@ -46,8 +46,8 @@ impl LaborAuctionImpl of LaborAuctionTrait {
             )
     }
 
-    fn buy(ref self: LaborAuction, amount: u128, world: IWorldDispatcher) {
-        self.sold += amount;
+    fn sell(ref self: LaborAuction, world: IWorldDispatcher) {
+        self.sold += 1;
         set!(world, (self));
     }
 }
@@ -101,8 +101,8 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(30000000)]
-    fn test_auction_buy() {
+    #[available_gas(3000000000)]
+    fn test_auction_sell() {
         let world = spawn_eternum();
         starknet::testing::set_contract_address(world.executor());
 
@@ -122,8 +122,15 @@ mod tests {
         // advance time to 1 day
         starknet::testing::set_block_timestamp(86400);
 
-        // buy all remaining labor
-        auction.buy(50, world);
+        // sell all remaining labor
+        let mut i: u8 = 1;
+        loop {
+            if i > 50 {
+                break;
+            }
+            auction.sell(world);
+            i += 1;
+        };
 
         let auction = get!(world, (1, 1), LaborAuction);
         assert(auction.sold == 100, 'sold is wrong');
