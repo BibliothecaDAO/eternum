@@ -39,6 +39,8 @@ const ChatHistory = (props: ChatHistoryProps) => {
     const setGroup = async (group: string) => {
         setLoadingMessages(true)
 
+        await client?.channel.joinGroup(group)
+
         const { channelList } = client?.channel as any;
 
         console.log('channelList', channelList)
