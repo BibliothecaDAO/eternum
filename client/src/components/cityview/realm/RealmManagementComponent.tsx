@@ -102,7 +102,7 @@ const RealmManagementComponent = () => {
 
   useEffect(() => {
     let _tab: string = "";
-    if (["caravans", "market"].includes(params?.tab as string)) {
+    if (["caravans", "market", "open-offers", "my-offers", "direct-offers"].includes(params?.tab as string)) {
       _tab = "market";
     } else if (["labor", "food", "mines", "farm", "fish"].includes(params?.tab as string)) {
       _tab = "labor";

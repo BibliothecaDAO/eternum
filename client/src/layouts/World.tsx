@@ -22,6 +22,7 @@ import { SignUpComponent } from "../components/SignUpComponent";
 import useSound from "use-sound";
 import { NotificationsComponent } from "../components/NotificationsComponent";
 import { useSyncWorld } from "../hooks/graphql/useGraphQLQueries";
+import WorldMapMenuModule from "../modules/WorldMapMenuModule";
 
 export const World = () => {
   const { loading } = useSyncWorld();
@@ -86,6 +87,7 @@ export const World = () => {
       </TopContainer>
       <ContentContainer>
         <RealmManagementModule />
+        <WorldMapMenuModule />
       </ContentContainer>
       <BottomMiddleContainer>{/* <WolrdMapLayersModule /> */}</BottomMiddleContainer>
       <BottomRightContainer>

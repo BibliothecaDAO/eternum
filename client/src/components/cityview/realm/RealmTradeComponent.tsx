@@ -30,9 +30,9 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
   const [match, params] = useRoute("/realm/:id/:tab");
 
   useEffect(() => {
-    if ([0, 1].includes(selectedTab)) {
+    if ([0, 1, 2].includes(selectedTab)) {
       moveCameraToMarketView();
-    } else if ([2, 3].includes(selectedTab)) {
+    } else if ([3, 4].includes(selectedTab)) {
       moveCameraToCaravansView();
     }
   }, [selectedTab]);

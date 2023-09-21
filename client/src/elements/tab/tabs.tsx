@@ -40,7 +40,7 @@ export interface TabsProps {
   variant?: keyof typeof VARIANTS;
   className?: string;
   selectedIndex?: number;
-  onChange?: (index: number | SyntheticEvent) => void;
+  onChange?: (index: number) => void;
 }
 
 export const Tabs = ({ children, className, variant = "default", selectedIndex = 0, onChange }: TabsProps) => {

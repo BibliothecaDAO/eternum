@@ -110,7 +110,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
                 setLocation(`/realm/${realm.id}`);
                 setRealmEntityId(realm.id);
                 setRealmId(realm.realmId);
-                moveCameraToRealmView();
+                //moveCameraToRealmView();
               }, 500);
             }}
           >
