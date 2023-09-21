@@ -16,7 +16,7 @@ mod BuildLabor {
     use eternum::constants::{LABOR_CONFIG_ID, ResourceTypes};
     use eternum::utils::unpack::unpack_resource_types;
 
-use cubit::f128::types::fixed::{Fixed, FixedTrait};
+    use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
     use dojo::world::Context;
 
@@ -136,9 +136,9 @@ use cubit::f128::types::fixed::{Fixed, FixedTrait};
             labor_cost_resources.resource_types_packed, labor_cost_resources.resource_types_count
         );
 
-
         let zone = position.get_zone();
         let mut labor_auction = get!(ctx.world, (resource_type, zone), (LaborAuction));
+        assert(labor_auction.target_price != 0, 'Labor auction not found');
 
         let mut labor_units_remaining = labor_units;
 
@@ -161,7 +161,10 @@ use cubit::f128::types::fixed::{Fixed, FixedTrait};
                 );
 
                 let labor_cost_multiplier = labor_auction.get_price();
-                let total_cost_fixed = FixedTrait::new_unscaled(labor_cost_per_unit.value * labor_units.into() * multiplier.into(), false) * labor_cost_multiplier.into();
+                let total_cost_fixed = FixedTrait::new_unscaled(
+                    labor_cost_per_unit.value * multiplier.into(), false
+                )
+                    * labor_cost_multiplier.into();
                 let total_cost: u128 = total_cost_fixed.try_into().unwrap();
                 assert(current_resource.balance >= total_cost, 'Not enough resources');
                 set!(
@@ -189,6 +192,7 @@ mod tests {
     use eternum::components::resources::Resource;
     use eternum::components::labor::Labor;
     use eternum::components::position::Position;
+    use eternum::systems::labor_auction::create_labor_auction::CreateLaborAuction;
 
     use eternum::utils::testing::spawn_eternum;
 
@@ -200,6 +204,7 @@ mod tests {
 
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
+    const _0_1: u128 = 1844674407370955161; // 0.1
 
     // TODO: new testing with new auction system 
     #[test]
@@ -207,8 +212,14 @@ mod tests {
     fn test_build_labor_non_food() {
         let world = spawn_eternum();
 
+        let mut create_labor_auction_calldata = array![];
+        Serde::serialize(@_0_1, ref create_labor_auction_calldata); // decay
+        Serde::serialize(@50, ref create_labor_auction_calldata); // unit per time
+        world.execute('CreateLaborAuction', create_labor_auction_calldata);
+
         // set realm entity
-        let position = Position { x: 1, y: 1, entity_id: 1_u128 };
+        // x needs to be > 470200 to get zone
+        let position = Position { x: 500200, y: 1, entity_id: 1_u128 };
         let mut create_realm_calldata = Default::default();
 
         Serde::serialize(@1, ref create_realm_calldata); // realm id
@@ -291,11 +302,11 @@ mod tests {
         // assert resources are the right amount
         let coal_resource = get!(world, (realm_entity_id, ResourceTypes::COAL), Resource);
         assert(coal_resource.resource_type == ResourceTypes::COAL, 'failed resource type');
-        assert(coal_resource.balance == 80_000, 'failed resource amount');
+        assert(coal_resource.balance == 79_603, 'failed resource amount');
 
         let stone_resource = get!(world, (realm_entity_id, ResourceTypes::STONE), Resource);
         assert(stone_resource.resource_type == ResourceTypes::STONE, 'failed resource type');
-        assert(stone_resource.balance == 80_000, 'failed resource amount');
+        assert(stone_resource.balance == 79_603, 'failed resource amount');
 
         // assert labor is right amount
         let gold_labor = get!(world, (realm_entity_id, ResourceTypes::GOLD), Labor);
@@ -310,8 +321,13 @@ mod tests {
     fn test_build_labor_food() {
         let world = spawn_eternum();
 
+        let mut create_labor_auction_calldata = array![];
+        Serde::serialize(@_0_1, ref create_labor_auction_calldata); // decay
+        Serde::serialize(@50, ref create_labor_auction_calldata); // unit per time
+        world.execute('CreateLaborAuction', create_labor_auction_calldata);
+
         // set realm entity
-        let position = Position { x: 1, y: 1, entity_id: 1_u128 };
+        let position = Position { x: 500200, y: 1, entity_id: 1_u128 };
         let mut create_realm_calldata = Default::default();
 
         Serde::serialize(@1, ref create_realm_calldata); // realm id
@@ -400,11 +416,11 @@ mod tests {
         // assert resources are the right amount
         let coal_resource = get!(world, (realm_entity_id, ResourceTypes::COAL), Resource);
         assert(coal_resource.resource_type == ResourceTypes::COAL, 'failed resource type');
-        assert(coal_resource.balance == 80_000, 'failed resource amount');
+        assert(coal_resource.balance == 79_603, 'failed resource amount');
 
         let stone_resource = get!(world, (realm_entity_id, ResourceTypes::STONE), Resource);
         assert(stone_resource.resource_type == ResourceTypes::STONE, 'failed resource type');
-        assert(stone_resource.balance == 80_000, 'failed resource amount');
+        assert(stone_resource.balance == 79_603, 'failed resource amount');
 
         // assert labor is right amount
         let wheat_labor = get!(world, (realm_entity_id, ResourceTypes::WHEAT), Labor);
@@ -422,6 +438,7 @@ mod tests {
         // set block timestamp in order to harvest labor
         starknet::testing::set_block_timestamp(20_000);
 
+        let coal_resource_1 = get!(world, (realm_entity_id, ResourceTypes::COAL), Resource);
         // build labor again but with different multiplier
         // call build labor system
         let mut build_labor_calldata = array![];
@@ -434,11 +451,11 @@ mod tests {
         // assert resource is right amount
         let coal_resource = get!(world, (realm_entity_id, ResourceTypes::COAL), Resource);
         assert(coal_resource.resource_type == ResourceTypes::COAL, 'failed resource type');
-        assert(coal_resource.balance == 80_000 - (20_000 * 2), 'failed resource amount');
+        assert(coal_resource.balance == 79_603 - 42_561, 'failed resource amount');
 
         let stone_resource = get!(world, (realm_entity_id, ResourceTypes::STONE), Resource);
         assert(stone_resource.resource_type == ResourceTypes::STONE, 'failed resource type');
-        assert(stone_resource.balance == 80_000 - (20_000 * 2), 'failed resource amount');
+        assert(stone_resource.balance == 79_603 - 42_561, 'failed resource amount');
 
         // check food
         let (wheat_resource, wheat_labor) = get!(
