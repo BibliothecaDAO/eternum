@@ -7,10 +7,10 @@ import { useChat } from "../../ChatContext";
 const ChatForm = () => {
   const [message, setMessage] = useState<string>("");
 
-  const { client, userId } = useChat();
+  const { client } = useChat();
 
   const handleSendMessage = () => {
-    client?.message.sendMessage(message, userId)
+    client?.message.sendMessage(message)
     setMessage("");
   }
 

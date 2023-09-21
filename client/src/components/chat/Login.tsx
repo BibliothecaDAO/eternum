@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Client, WalletType } from "@web3mq/client";
 
 export const useLogin = () => {
-    const [didValue, setDidValue] = useState<string>('');
+    const [_didValue, setDidValue] = useState<string>('');
     const password = '123456';
     const didType: WalletType = 'argentX' // or 'starknet';
 
@@ -34,7 +34,7 @@ export const useLogin = () => {
     }
 
     // 2. create main key pairs
-    const createKeyPairs = async () => {
+    const createKeyPairs = async (didValue: string) => {
         const { publicKey: localMainPublicKey, secretKey: localMainPrivateKey } = await Client.register.getMainKeypair({
             password,
             did_value: didValue,
@@ -95,6 +95,7 @@ export const useLogin = () => {
 
         localStorage.setItem("TEMP_PRIVATE_KEY", tempPrivateKey)
         localStorage.setItem("TEMP_PUBLIC_KEY", tempPublicKey)
+        localStorage.setItem('PUBKEY_EXPIRED_TIMESTAMP', String(pubkeyExpiredTimestamp));
 
         setLoggedIn(!loggedIn)
 
@@ -108,9 +109,14 @@ export const useLogin = () => {
         }
     }
 
+    const expiredKeys = () => {
+        const timestamp = getStorageValue('PUBKEY_EXPIRED_TIMESTAMP');
+        return timestamp ? Number(timestamp) < Date.now() : true;
+    }
+
     const init = async () => {
         const fastUrl = await Client.init({
-            connectUrl: localStorage.getItem("FAST_URL"),
+            connectUrl: getStorageValue("FAST_URL"),
             app_key: "OVEEGLRxtqXcEIJN",
         });
         localStorage.setItem("FAST_URL", fastUrl);
@@ -145,9 +151,9 @@ export const useLogin = () => {
 
         const { userExist, didValue } = await connect();
 
-        if (!hasKeys) {
+        if (!hasKeys || expiredKeys()) {
             try {
-                await createKeyPairs();
+                await createKeyPairs(didValue);
             } catch (e) {
                 console.log("key", e)
             }
@@ -175,8 +181,6 @@ export const useLogin = () => {
 
         setLoading(false)
     }
-
-
 
     return {
         login,

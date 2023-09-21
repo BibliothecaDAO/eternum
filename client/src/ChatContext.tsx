@@ -6,7 +6,7 @@ type ChatSetup = {
     login: (didValue: string) => void;
     init: () => void;
     connect: () => void;
-    createKeyPairs: () => void;
+    createKeyPairs: (didValue: string) => void;
     register: (didValue: string) => void;
     client: Client | null;
     userId: string;

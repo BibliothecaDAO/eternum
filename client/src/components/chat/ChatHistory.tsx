@@ -26,11 +26,11 @@ const ChatHistory = (props: ChatHistoryProps) => {
         loginFlow,
         client,
         loading,
-        userId,
         loggedIn
     } = useChat();
 
-    const group = 'group:2b9e905467958d8de84799db6b67eeb2dc393196'
+    // Temp world chat
+    const group = 'group:208154ace09503e942133c8766666a56c77be6af'
 
     const setGroup = async (group: string) => {
         setLoadingMessages(true)
@@ -46,7 +46,7 @@ const ChatHistory = (props: ChatHistoryProps) => {
         await client?.message.getMessageList({
             page: 1,
             size: 20,
-        }, userId);
+        });
 
         setLoadingMessages(false)
     }
@@ -56,7 +56,6 @@ const ChatHistory = (props: ChatHistoryProps) => {
         const list = client?.message.messageList as any
 
         if (event.type === 'channel.updated') {
-            console.log(client?.message)
             setMessageList(list.map((message: any) => ({
                 sender: 'anon',
                 message: message.content,
@@ -66,7 +65,6 @@ const ChatHistory = (props: ChatHistoryProps) => {
         }
 
         if (event.type == 'message.getList') {
-            console.log('message.getList', client?.message)
             setMessageList(list.map((message: any) => ({
                 sender: 'anon',
                 message: message.content,
@@ -103,16 +101,24 @@ const ChatHistory = (props: ChatHistoryProps) => {
                 </div>
             )}
 
-            <div className="p-3 mx-auto flex flex-col space-y-2">
-                {!loggedIn && (<Button variant="outline" onClick={() => loginFlow()}>Connect</Button>)}
-                {loggedIn && !messageList.length && <Button variant="outline" onClick={() => setGroup(group)}>World Chat</Button>}
-            </div>
+
+            {!loggedIn && (
+                <div className="my-2 w-full p-2 flex">
+                    <Button className="mx-auto" variant="outline" onClick={() => loginFlow()}>Connect</Button>
+                </div>
+            )}
+            {loggedIn && !messageList.length && (
+                <div className="my-2 w-full p-2 mx-auto flex">
+                    <Button className="mx-auto" variant="outline" onClick={() => setGroup(group)}>World Chat</Button>
+                </div>
+            )}
 
             {messageList.map((message, index) => (
                 <ChatMessage key={index} {...message} />
             ))}
 
-            <div ref={bottomRef}></div>
+            {loggedIn && messageList && <span className="h-[0px]" ref={bottomRef}></span>}
+
         </div>
     )
 }

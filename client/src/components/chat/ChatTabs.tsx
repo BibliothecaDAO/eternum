@@ -107,7 +107,7 @@ export const ChatTabs = ({ }: ChatTabsProps) => {
       {
         label: (
           <div className="flex flex-col items-center">
-            <div>Global Chat</div>
+            <div>World Chat</div>
           </div>
         ),
         component: <ChatHistory messages={dummyMessages} />,
