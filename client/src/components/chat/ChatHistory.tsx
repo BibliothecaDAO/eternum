@@ -30,10 +30,17 @@ const ChatHistory = (props: ChatHistoryProps) => {
     } = useChat();
 
     // Temp world chat
-    const group = 'group:059a21162f236d0057bdb80b5a0ed263a417882b'
+    const group = 'group:aaa83cddb7d563d2847d56247060cec696f3d425'
 
     // const createRoom = async (groupName: string) => {
-    //     client?.channel.createRoom({ groupName })
+    //     client?.channel.createRoom({
+    //         groupName, permissions: {
+    //             "group:join": {
+    //                 type: "enum",
+    //                 value: "public"
+    //             }
+    //         }
+    //     })
     // }
 
     const setGroup = async (group: string) => {
@@ -122,6 +129,8 @@ const ChatHistory = (props: ChatHistoryProps) => {
                     <Button className="mx-auto" variant="outline" onClick={() => setGroup(group)}>World Chat</Button>
                 </div>
             )}
+
+            {/* <Button onClick={() => createRoom('world')}>create</Button> */}
 
             {messageList.map((message, index) => (
                 <ChatMessage key={index} {...message} />
