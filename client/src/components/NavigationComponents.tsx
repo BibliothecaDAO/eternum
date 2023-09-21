@@ -8,13 +8,9 @@ import { Link, useLocation } from "wouter";
 import useUIStore from "../hooks/store/useUIStore";
 
 const NavgationComponent = () => {
-  const moveCameraToWorldMapView = useUIStore(
-    (state) => state.moveCameraToWorldMapView,
-  );
+  const moveCameraToWorldMapView = useUIStore((state) => state.moveCameraToWorldMapView);
 
-  const setIsLoadingScreenEnabled = useUIStore(
-    (state) => state.setIsLoadingScreenEnabled,
-  );
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
   const [location] = useLocation();
 
@@ -30,24 +26,16 @@ const NavgationComponent = () => {
       >
         <CircleButton
           size="md"
-          className={clsx("absolute z-0 text-[10px]", "top-0 left-16 ml-3")}
+          className={clsx("absolute z-0 text-[10px]", "top-0 left-16 ml-3", location.includes("/map") && "text-white")}
         >
           <WorldIcon className="fill-current" />
         </CircleButton>
       </Link>
 
-      <CircleButton
-        size="md"
-        className={clsx("absolute z-0 text-[10px]", "top-16 mt-3")}
-      >
+      <CircleButton size="md" className={clsx("absolute z-0 text-[10px]", "top-16 mt-3")}>
         <ForwardBurgerIcon className="fill-current" />
       </CircleButton>
-      <RealmSwitch
-        className={clsx(
-          "absolute z-0 text-[10px]",
-          "top-20 left-16 -ml-2 -mt-5",
-        )}
-      />
+      <RealmSwitch className={clsx("absolute z-0 text-[10px]", "top-20 left-16 -ml-2 -mt-5")} />
     </div>
   );
 };
