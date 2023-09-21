@@ -48,6 +48,7 @@ mod ResourceTypes {
     const UNREFINED_ORE: u8 = 26;
     const SUNKEN_SHEKEL: u8 = 27;
     const DEMONHIDE: u8 = 28;
+    const SHEKELS: u8 = 253;
     const WHEAT: u8 = 254;
     const FISH: u8 = 255;
 }

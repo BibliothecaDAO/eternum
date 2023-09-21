@@ -57,6 +57,7 @@ use eternum::systems::order::cancel_fungible_order::CancelFungibleOrder;
 use eternum::systems::order::attach_caravan::AttachCaravan;
 use eternum::systems::order::claim_fungible_order::ClaimFungibleOrder;
 use eternum::systems::labor::build_labor::BuildLabor;
+use eternum::systems::labor::purchase_labor::PurchaseLabor;
 use eternum::systems::config::labor_config::SetLaborConfig;
 use eternum::systems::config::labor_config::SetLaborCostResources;
 use eternum::systems::config::labor_config::SetLaborCostAmount;
@@ -134,6 +135,7 @@ fn spawn_eternum() -> IWorldDispatcher {
         ClaimFungibleOrder::TEST_CLASS_HASH,
         SetTravelConfig::TEST_CLASS_HASH,
         BuildLabor::TEST_CLASS_HASH,
+        PurchaseLabor::TEST_CLASS_HASH,
         SetLaborConfig::TEST_CLASS_HASH,
         SetLaborCostResources::TEST_CLASS_HASH,
         SetLaborCostAmount::TEST_CLASS_HASH,

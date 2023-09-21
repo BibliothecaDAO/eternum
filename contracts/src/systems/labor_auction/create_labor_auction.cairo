@@ -1,68 +1,20 @@
 #[system]
 mod CreateLaborAuction {
     use eternum::components::labor_auction::{LaborAuction, LaborAuctionTrait};
-    use eternum::constants::ResourceTypes;
 
     use dojo::world::Context;
 
     fn execute(ctx: Context, decay_constant: u128, per_time_unit: u128) {
         let start_time = starknet::get_block_timestamp();
 
-        let mut resource_type: u8 = 1;
-        loop {
-            if resource_type > 28 {
-                break;
-            }
-
-            let mut zone: u8 = 1;
-
-            loop {
-                if zone > 10 {
-                    break;
-                }
-
-                let auction = LaborAuction {
-                    resource_type,
-                    zone,
-                    // target_price of 1 because we want to use it as a multiplier for labor costs
-                    // since there are multiple resources needed for one labor
-                    target_price: 1,
-                    decay_constant_mag: decay_constant,
-                    decay_constant_sign: false,
-                    per_time_unit,
-                    start_time,
-                    sold: 0,
-                };
-
-                set!(ctx.world, (auction));
-
-                zone += 1;
-            };
-
-            resource_type += 1;
-        };
-
-        // add auction for fish and wheat as well
         let mut zone: u8 = 1;
+
         loop {
             if zone > 10 {
                 break;
             }
 
-            let fish_auction = LaborAuction {
-                resource_type: ResourceTypes::FISH,
-                zone,
-                // target_price of 1 because we want to use it as a multiplier for labor costs
-                // since there are multiple resources needed for one labor
-                target_price: 1,
-                decay_constant_mag: decay_constant,
-                decay_constant_sign: false,
-                per_time_unit,
-                start_time,
-                sold: 0,
-            };
-            let wheat_auction = LaborAuction {
-                resource_type: ResourceTypes::WHEAT,
+            let auction = LaborAuction {
                 zone,
                 // target_price of 1 because we want to use it as a multiplier for labor costs
                 // since there are multiple resources needed for one labor
@@ -74,8 +26,7 @@ mod CreateLaborAuction {
                 sold: 0,
             };
 
-            set!(ctx.world, (fish_auction));
-            set!(ctx.world, (wheat_auction));
+            set!(ctx.world, (auction));
 
             zone += 1;
         };
@@ -86,8 +37,6 @@ mod CreateLaborAuction {
 #[cfg(test)]
 mod tests {
     use eternum::components::labor_auction::{LaborAuction, LaborAuctionTrait};
-
-    use eternum::constants::ResourceTypes;
 
     // testing
     use eternum::utils::testing::spawn_eternum;
@@ -105,7 +54,6 @@ mod tests {
 
         starknet::testing::set_contract_address(world.executor());
 
-        let resource_type: u8 = ResourceTypes::GOLD;
         let zone: u8 = 5;
         let target_price: u128 = 1;
         let decay_constant: u128 = _0_1;
@@ -116,7 +64,7 @@ mod tests {
         Serde::serialize(@per_time_unit, ref calldata);
         world.execute('CreateLaborAuction', calldata);
 
-        let labor_auction = get!(world, (resource_type, zone), LaborAuction);
+        let labor_auction = get!(world, (zone), LaborAuction);
 
         assert(labor_auction.zone == zone, 'zone');
         assert(labor_auction.target_price == target_price, 'target_price');
@@ -124,15 +72,13 @@ mod tests {
         assert(labor_auction.per_time_unit == per_time_unit, 'per_time_unit');
         assert(labor_auction.sold == 0, 'sold');
         assert(labor_auction.decay_constant_sign == false, 'decay_constant_sign');
-        assert(labor_auction.resource_type == resource_type, 'resource_type');
 
-        let labor_auction_food = get!(world, (ResourceTypes::WHEAT, zone), LaborAuction);
+        let labor_auction_food = get!(world, (zone), LaborAuction);
         assert(labor_auction_food.zone == zone, 'zone');
         assert(labor_auction_food.target_price == target_price, 'target_price');
         assert(labor_auction_food.decay_constant_mag == decay_constant, 'decay_constant_mag');
         assert(labor_auction_food.per_time_unit == per_time_unit, 'per_time_unit');
         assert(labor_auction_food.sold == 0, 'sold');
         assert(labor_auction_food.decay_constant_sign == false, 'decay_constant_sign');
-        assert(labor_auction_food.resource_type == ResourceTypes::WHEAT, 'resource_type');
     }
 }

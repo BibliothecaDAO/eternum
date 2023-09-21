@@ -9,8 +9,6 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct LaborAuction {
     #[key]
-    resource_type: u8,
-    #[key]
     zone: u8,
     target_price: u128,
     decay_constant_mag: u128,
@@ -79,7 +77,6 @@ mod tests {
     #[available_gas(30000000)]
     fn test_auction_get_price() {
         let auction = LaborAuction {
-            resource_type: 0,
             zone: 0,
             target_price: 10,
             decay_constant_mag: _0_1,
@@ -107,7 +104,6 @@ mod tests {
         starknet::testing::set_contract_address(world.executor());
 
         let mut auction = LaborAuction {
-            resource_type: 1,
             zone: 1,
             target_price: 10,
             decay_constant_mag: _0_1,
@@ -132,7 +128,7 @@ mod tests {
             i += 1;
         };
 
-        let auction = get!(world, (1, 1), LaborAuction);
+        let auction = get!(world, 1, LaborAuction);
         assert(auction.sold == 100, 'sold is wrong');
 
         let price = auction.get_price();

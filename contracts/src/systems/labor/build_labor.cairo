@@ -3,27 +3,23 @@ mod BuildLabor {
     use traits::Into;
     use box::BoxTrait;
     use eternum::components::labor::{Labor, LaborTrait};
-    use eternum::components::labor_auction::{LaborAuction, LaborAuctionTrait};
+    use eternum::systems::labor::utils::get_labor_resource_type;
 
     use eternum::alias::ID;
     use eternum::components::owner::Owner;
     use eternum::components::realm::{Realm, RealmTrait};
-    use eternum::components::position::{Position, PositionTrait};
     use eternum::components::resources::Resource;
 
     use eternum::components::config::{LaborConfig, LaborCostResources, LaborCostAmount};
     use starknet::ContractAddress;
     use eternum::constants::{LABOR_CONFIG_ID, ResourceTypes};
-    use eternum::utils::unpack::unpack_resource_types;
-
-    use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
     use dojo::world::Context;
 
     fn execute(ctx: Context, realm_id: u128, resource_type: u8, labor_units: u64, multiplier: u64) {
         // assert owner of realm
         let player_id: ContractAddress = ctx.origin;
-        let (realm, owner, position) = get!(ctx.world, realm_id, (Realm, Owner, Position));
+        let (realm, owner) = get!(ctx.world, realm_id, (Realm, Owner));
         assert(owner.address == player_id, 'Realm does not belong to player');
 
         // check that resource is on realm
@@ -42,7 +38,6 @@ mod BuildLabor {
         // get labor
         let resource_query = (realm_id, resource_type);
 
-        // TODO: Discuss
         let maybe_labor = get!(ctx.world, resource_query, Labor);
         let labor = match maybe_labor.balance.into() {
             0 => Labor {
@@ -130,58 +125,23 @@ mod BuildLabor {
             }
         );
 
+        let labor_resource_type = get_labor_resource_type(resource_type);
+
         // pay for labor 
-        let labor_cost_resources = get!(ctx.world, resource_type, LaborCostResources);
-        let labor_cost_resource_types: Span<u8> = unpack_resource_types(
-            labor_cost_resources.resource_types_packed, labor_cost_resources.resource_types_count
+        let labor_resources = get!(ctx.world, (realm_id, labor_resource_type), Resource);
+        assert(
+            labor_resources.balance >= labor_units.into() * multiplier.into(),
+            'Not enough labor resources'
         );
 
-        let zone = position.get_zone();
-        let mut labor_auction = get!(ctx.world, (resource_type, zone), (LaborAuction));
-        assert(labor_auction.target_price != 0, 'Labor auction not found');
-
-        let mut labor_units_remaining = labor_units;
-
-        loop {
-            if labor_units_remaining == 0 {
-                break;
+        set!(
+            ctx.world,
+            Resource {
+                entity_id: realm_id,
+                resource_type: labor_resource_type,
+                balance: labor_resources.balance - labor_units.into() * multiplier.into()
             }
-
-            let mut index = 0_usize;
-            loop {
-                if index == labor_cost_resources.resource_types_count.into() {
-                    break ();
-                }
-                let labor_cost_resource_type = *labor_cost_resource_types[index];
-                let labor_cost_per_unit = get!(
-                    ctx.world, (resource_type, labor_cost_resource_type).into(), LaborCostAmount
-                );
-                let current_resource: Resource = get!(
-                    ctx.world, (realm_id, labor_cost_resource_type).into(), Resource
-                );
-
-                let labor_cost_multiplier = labor_auction.get_price();
-                let total_cost_fixed = FixedTrait::new_unscaled(
-                    labor_cost_per_unit.value * multiplier.into(), false
-                )
-                    * labor_cost_multiplier.into();
-                let total_cost: u128 = total_cost_fixed.try_into().unwrap();
-                assert(current_resource.balance >= total_cost, 'Not enough resources');
-                set!(
-                    ctx.world,
-                    Resource {
-                        entity_id: realm_id,
-                        resource_type: current_resource.resource_type,
-                        balance: current_resource.balance - total_cost
-                    }
-                );
-                index += 1;
-            };
-
-            labor_auction.sell(ctx.world);
-            labor_units_remaining -= 1;
-        };
-        return ();
+        );
     }
 }
 
@@ -192,7 +152,7 @@ mod tests {
     use eternum::components::resources::Resource;
     use eternum::components::labor::Labor;
     use eternum::components::position::Position;
-    use eternum::systems::labor_auction::create_labor_auction::CreateLaborAuction;
+    use eternum::systems::labor::utils::get_labor_resource_type;
 
     use eternum::utils::testing::spawn_eternum;
 
@@ -204,18 +164,14 @@ mod tests {
 
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-    const _0_1: u128 = 1844674407370955161; // 0.1
-
-    // TODO: new testing with new auction system 
     #[test]
     #[available_gas(300000000000)]
     fn test_build_labor_non_food() {
         let world = spawn_eternum();
 
-        let mut create_labor_auction_calldata = array![];
-        Serde::serialize(@_0_1, ref create_labor_auction_calldata); // decay
-        Serde::serialize(@50, ref create_labor_auction_calldata); // unit per time
-        world.execute('CreateLaborAuction', create_labor_auction_calldata);
+        let player_address = starknet::get_caller_address();
+
+        let resource_type = ResourceTypes::GOLD;
 
         // set realm entity
         // x needs to be > 470200 to get zone
@@ -248,71 +204,41 @@ mod tests {
         ); // base_food_per_cycle
         world.execute('SetLaborConfig', create_labor_conf_calldata);
 
-        let mut create_labor_cr_calldata = array![];
-        Serde::serialize(@ResourceTypes::GOLD, ref create_labor_cr_calldata); // resource_type_labor
-        Serde::serialize(
-            @0x203, ref create_labor_cr_calldata
-        ); // resource_types_packed // 2,3 // stone and coal
-        Serde::serialize(
-            @2, ref create_labor_cr_calldata
-        ); // resource_types_count // stone and coal
-        world.execute('SetLaborCostResources', create_labor_cr_calldata);
-
-        // cost for gold in coal
-        let mut create_labor_cv_calldata = array![];
-        Serde::serialize(@ResourceTypes::GOLD, ref create_labor_cv_calldata); // resource_type_labor
-        Serde::serialize(@ResourceTypes::COAL, ref create_labor_cv_calldata); // resource_type_cost
-        Serde::serialize(@1_000, ref create_labor_cv_calldata); // resource_type_value
-        world.execute('SetLaborCostAmount', create_labor_cv_calldata);
-
-        // cost for gold in stone
-        let mut create_labor_cv_calldata = array![];
-        Serde::serialize(@ResourceTypes::GOLD, ref create_labor_cv_calldata); // resource_type_labor
-        Serde::serialize(@ResourceTypes::STONE, ref create_labor_cv_calldata); // resource_type_cost
-        Serde::serialize(@1_000, ref create_labor_cv_calldata); // resource_type_value
-        world.execute('SetLaborCostAmount', create_labor_cv_calldata);
-
-        // mint 100_000 coal for the realm;
-        let mut mint_coal_calldata = array![];
-        Serde::serialize(@realm_entity_id, ref mint_coal_calldata); // realm entity id
-        Serde::serialize(@ResourceTypes::COAL, ref mint_coal_calldata); // resource_type
-        Serde::serialize(@100_000, ref mint_coal_calldata); // amount
-        world.execute('MintResources', mint_coal_calldata);
-
-        // mint 100_000 stone for the realm;
-        let mut mint_stone_calldata = array![];
-        Serde::serialize(@realm_entity_id, ref mint_stone_calldata); // realm entity id
-        Serde::serialize(@ResourceTypes::STONE, ref mint_stone_calldata); // resource_type
-        Serde::serialize(@100_000, ref mint_stone_calldata); // amount
-        world.execute('MintResources', mint_stone_calldata);
-
         // set block timestamp in order to harvest labor
         // initial ts = 0
         let ts = 10_000;
         starknet::testing::set_block_timestamp(ts);
 
+        let labor_resource_type = get_labor_resource_type(resource_type);
+
+        // switch to executor to set storage directly
+        starknet::testing::set_contract_address(world.executor());
+        set!(
+            world,
+            Resource {
+                entity_id: realm_entity_id.try_into().unwrap(),
+                resource_type: labor_resource_type,
+                balance: 40
+            }
+        );
+        starknet::testing::set_contract_address(player_address);
+
         // build labor for gold
         let mut build_labor_calldata = array![];
         Serde::serialize(@realm_entity_id, ref build_labor_calldata); // realm_id
-        Serde::serialize(@ResourceTypes::GOLD, ref build_labor_calldata); // resource_type
+        Serde::serialize(@resource_type, ref build_labor_calldata); // resource_type
         Serde::serialize(@20, ref build_labor_calldata); // labor_units
         Serde::serialize(@1, ref build_labor_calldata); // multiplier
         world.execute('BuildLabor', build_labor_calldata);
 
-        // assert resources are the right amount
-        let coal_resource = get!(world, (realm_entity_id, ResourceTypes::COAL), Resource);
-        assert(coal_resource.resource_type == ResourceTypes::COAL, 'failed resource type');
-        assert(coal_resource.balance == 79_603, 'failed resource amount');
-
-        let stone_resource = get!(world, (realm_entity_id, ResourceTypes::STONE), Resource);
-        assert(stone_resource.resource_type == ResourceTypes::STONE, 'failed resource type');
-        assert(stone_resource.balance == 79_603, 'failed resource amount');
-
         // assert labor is right amount
-        let gold_labor = get!(world, (realm_entity_id, ResourceTypes::GOLD), Labor);
+        let gold_labor = get!(world, (realm_entity_id, resource_type), Labor);
         assert(gold_labor.balance == ts + (7_200 * 20), 'wrong gold labor balance');
         assert(gold_labor.last_harvest == ts, 'wrong gold labor last harvest');
         assert(gold_labor.multiplier == 1, 'wrong gold multiplier');
+
+        let gold_resource_type = get!(world, (realm_entity_id, labor_resource_type), Resource);
+        assert(gold_resource_type.balance == 20, 'wrong labor resource');
     }
 
 
@@ -321,10 +247,9 @@ mod tests {
     fn test_build_labor_food() {
         let world = spawn_eternum();
 
-        let mut create_labor_auction_calldata = array![];
-        Serde::serialize(@_0_1, ref create_labor_auction_calldata); // decay
-        Serde::serialize(@50, ref create_labor_auction_calldata); // unit per time
-        world.execute('CreateLaborAuction', create_labor_auction_calldata);
+        let player_address = starknet::get_caller_address();
+
+        let resource_type = ResourceTypes::WHEAT;
 
         // set realm entity
         let position = Position { x: 500200, y: 1, entity_id: 1_u128 };
@@ -356,71 +281,32 @@ mod tests {
         ); // base_food_per_cycle
         world.execute('SetLaborConfig', create_labor_conf_calldata);
 
-        let mut create_labor_cr_calldata = array![];
-        Serde::serialize(
-            @ResourceTypes::WHEAT, ref create_labor_cr_calldata
-        ); // resource_type_labor
-        Serde::serialize(
-            @0x203, ref create_labor_cr_calldata
-        ); // resource_types_packed // 2,3 // stone and coal
-        Serde::serialize(
-            @2, ref create_labor_cr_calldata
-        ); // resource_types_count // stone and coal
-        world.execute('SetLaborCostResources', create_labor_cr_calldata);
-
-        // cost for wheat in coal
-        let mut create_labor_cv_calldata = array![];
-        Serde::serialize(
-            @ResourceTypes::WHEAT, ref create_labor_cv_calldata
-        ); // resource_type_labor
-        Serde::serialize(@ResourceTypes::COAL, ref create_labor_cv_calldata); // resource_type_cost
-        Serde::serialize(@1_000, ref create_labor_cv_calldata); // resource_type_value
-        world.execute('SetLaborCostAmount', create_labor_cv_calldata);
-
-        // cost for wheat in stone
-        let mut create_labor_cv_calldata = array![];
-        Serde::serialize(
-            @ResourceTypes::WHEAT, ref create_labor_cv_calldata
-        ); // resource_type_labor
-        Serde::serialize(@ResourceTypes::STONE, ref create_labor_cv_calldata); // resource_type_cost
-        Serde::serialize(@1_000, ref create_labor_cv_calldata); // resource_type_value
-        world.execute('SetLaborCostAmount', create_labor_cv_calldata);
-
-        // mint 100_000 coal for the realm;
-        let mut mint_coal_calldata = array![];
-        Serde::serialize(@realm_entity_id, ref mint_coal_calldata); // realm entity id
-        Serde::serialize(@ResourceTypes::COAL, ref mint_coal_calldata); // resource_type
-        Serde::serialize(@100_000, ref mint_coal_calldata); // amount
-        world.execute('MintResources', mint_coal_calldata);
-
-        // mint 100_000 stone for the realm;
-        let mut mint_stone_calldata = array![];
-        Serde::serialize(@realm_entity_id, ref mint_stone_calldata); // realm entity id
-        Serde::serialize(@ResourceTypes::STONE, ref mint_stone_calldata); // resource_type
-        Serde::serialize(@100_000, ref mint_stone_calldata); // amount
-        world.execute('MintResources', mint_stone_calldata);
-
         // set block timestamp in order to harvest labor
         // initial ts = 0
         let ts = 10_000;
         starknet::testing::set_block_timestamp(ts);
 
+        let labor_resource_type = get_labor_resource_type(resource_type);
+
+        // switch to executor to set storage directly
+        starknet::testing::set_contract_address(world.executor());
+        set!(
+            world,
+            Resource {
+                entity_id: realm_entity_id.try_into().unwrap(),
+                resource_type: labor_resource_type,
+                balance: 100
+            }
+        );
+        starknet::testing::set_contract_address(player_address);
+
         // build labor for wheat
         let mut build_labor_calldata = array![];
         Serde::serialize(@realm_entity_id, ref build_labor_calldata); // realm_id
-        Serde::serialize(@ResourceTypes::WHEAT, ref build_labor_calldata); // resource_type
+        Serde::serialize(@resource_type, ref build_labor_calldata); // resource_type
         Serde::serialize(@20, ref build_labor_calldata); // labor_units
         Serde::serialize(@1, ref build_labor_calldata); // multiplier
         world.execute('BuildLabor', build_labor_calldata);
-
-        // assert resources are the right amount
-        let coal_resource = get!(world, (realm_entity_id, ResourceTypes::COAL), Resource);
-        assert(coal_resource.resource_type == ResourceTypes::COAL, 'failed resource type');
-        assert(coal_resource.balance == 79_603, 'failed resource amount');
-
-        let stone_resource = get!(world, (realm_entity_id, ResourceTypes::STONE), Resource);
-        assert(stone_resource.resource_type == ResourceTypes::STONE, 'failed resource type');
-        assert(stone_resource.balance == 79_603, 'failed resource amount');
 
         // assert labor is right amount
         let wheat_labor = get!(world, (realm_entity_id, ResourceTypes::WHEAT), Labor);
@@ -428,6 +314,10 @@ mod tests {
         assert(wheat_labor.balance == ts + (7_200 * 20), 'wrong wheat labor balance');
         assert(wheat_labor.last_harvest == ts, 'wrong wheat labor last harvest');
         assert(wheat_labor.multiplier == 1, 'wrong wheat multiplier');
+
+        let labor_resource = get!(world, (realm_entity_id, labor_resource_type), Resource);
+
+        assert(labor_resource.balance == 80, 'wrong labor resource');
 
         //------------------------------------------
         //
@@ -438,7 +328,6 @@ mod tests {
         // set block timestamp in order to harvest labor
         starknet::testing::set_block_timestamp(20_000);
 
-        let coal_resource_1 = get!(world, (realm_entity_id, ResourceTypes::COAL), Resource);
         // build labor again but with different multiplier
         // call build labor system
         let mut build_labor_calldata = array![];
@@ -448,14 +337,9 @@ mod tests {
         Serde::serialize(@2, ref build_labor_calldata); // multiplier
         world.execute('BuildLabor', build_labor_calldata);
 
-        // assert resource is right amount
-        let coal_resource = get!(world, (realm_entity_id, ResourceTypes::COAL), Resource);
-        assert(coal_resource.resource_type == ResourceTypes::COAL, 'failed resource type');
-        assert(coal_resource.balance == 79_603 - 42_561, 'failed resource amount');
+        let labor_resource = get!(world, (realm_entity_id, labor_resource_type), Resource);
 
-        let stone_resource = get!(world, (realm_entity_id, ResourceTypes::STONE), Resource);
-        assert(stone_resource.resource_type == ResourceTypes::STONE, 'failed resource type');
-        assert(stone_resource.balance == 79_603 - 42_561, 'failed resource amount');
+        assert(labor_resource.balance == 40, 'wrong labor resource');
 
         // check food
         let (wheat_resource, wheat_labor) = get!(
