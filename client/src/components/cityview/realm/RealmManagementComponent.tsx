@@ -65,7 +65,7 @@ const RealmManagementComponent = () => {
         component: <RealmLaborComponent />,
       },
       {
-        key: "market",
+        key: "open-offers",
         label: (
           <div className="flex relative group flex-col items-center">
             <Coin className="mb-2 fill-gold" /> <div>Trade</div>
@@ -103,7 +103,7 @@ const RealmManagementComponent = () => {
   useEffect(() => {
     let _tab: string = "";
     if (["caravans", "market", "open-offers", "my-offers", "direct-offers"].includes(params?.tab as string)) {
-      _tab = "market";
+      _tab = "open-offers";
     } else if (["labor", "food", "mines", "farm", "fish"].includes(params?.tab as string)) {
       _tab = "labor";
     }

@@ -5,9 +5,10 @@ import { ReactComponent as World } from "../../assets/icons/common/world.svg";
 import { useLocation } from "wouter";
 import { Tabs } from "../../elements/tab";
 import { Tooltip } from "../../elements/Tooltip";
+import RealmsListPanel from "./RealmsListPanel";
 
 const WorldMapMenuComponent = () => {
-  const [selectedTab, setSelectedTab] = useState(1);
+  const [selectedTab, setSelectedTab] = useState(0);
 
   const [_location, setLocation] = useLocation();
 
@@ -25,7 +26,7 @@ const WorldMapMenuComponent = () => {
             </Tooltip>
           </div>
         ),
-        component: <div />,
+        component: <RealmsListPanel />,
       },
       {
         key: "hyperstructures",
@@ -46,7 +47,7 @@ const WorldMapMenuComponent = () => {
 
   return (
     <>
-      <div className="relative rounded-t-xl transition-colors duration-300 text-sm shadow-lg shadow-black/25 flex items-center px-4 py-2 text-white h-[50px]">
+      <div className="relative rounded-t-xl transition-colors duration-300 text-sm shadow-lg shadow-black/25 flex items-center px-4 py-2 text-white min-h-[50px]">
         <div className="flex flex-col leading-4">
           <div className="font-bold">Eternum Map</div>
         </div>
