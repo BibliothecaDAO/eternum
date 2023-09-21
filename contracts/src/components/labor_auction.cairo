@@ -1,9 +1,64 @@
 use cubit::f128::math::core::{ln, abs, exp, pow};
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use starknet::{ContractAddress, get_block_timestamp};
-use dojo_defi::dutch_auction::vrgda::{LinearVRGDA, LinearVRGDATrait};
+// TODO: use dojo_defi when works with nightly
+// use dojo_defi::dutch_auction::vrgda::{LinearVRGDA, LinearVRGDATrait};
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+
+/// A Linear Variable Rate Gradual Dutch Auction (VRGDA) struct.
+/// Represents an auction where the price decays linearly based on the target price,
+/// decay constant, and per-time-unit rate.
+#[derive(Copy, Drop, Serde, starknet::Storage)]
+struct LinearVRGDA {
+    target_price: Fixed,
+    decay_constant: Fixed,
+    per_time_unit: Fixed,
+}
+
+#[generate_trait]
+impl LinearVRGDAImpl of LinearVRGDATrait {
+    /// Calculates the target sale time based on the quantity sold.
+    ///
+    /// # Arguments
+    ///
+    /// * `sold`: Quantity sold.
+    ///
+    /// # Returns
+    ///
+    /// * A `Fixed` representing the target sale time.
+    fn get_target_sale_time(self: @LinearVRGDA, sold: Fixed) -> Fixed {
+        sold / *self.per_time_unit
+    }
+
+    /// Calculates the VRGDA price at a specific time since the auction started.
+    ///
+    /// # Arguments
+    ///
+    /// * `time_since_start`: Time since the auction started.
+    /// * `sold`: Quantity sold.
+    ///
+    /// # Returns
+    ///
+    /// * A `Fixed` representing the price.
+    fn get_vrgda_price(self: @LinearVRGDA, time_since_start: Fixed, sold: Fixed) -> Fixed {
+        *self.target_price
+            * exp(
+                *self.decay_constant
+                    * (time_since_start
+                        - self.get_target_sale_time(sold + FixedTrait::new(1, false)))
+            )
+    }
+
+    fn get_reverse_vrgda_price(self: @LinearVRGDA, time_since_start: Fixed, sold: Fixed) -> Fixed {
+        *self.target_price
+            * exp(
+                (*self.decay_constant * FixedTrait::new(1, true))
+                    * (time_since_start
+                        - self.get_target_sale_time(sold + FixedTrait::new(1, false)))
+            )
+    }
+}
 
 
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
@@ -61,7 +116,8 @@ mod tests {
 
     // testing
     use eternum::utils::testing::spawn_eternum;
-    use dojo_defi::tests::utils::{assert_rel_approx_eq};
+    // use dojo_defi when working with nightly
+    // use dojo_defi::tests::utils::{assert_rel_approx_eq};
     use debug::PrintTrait;
 
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
@@ -72,6 +128,19 @@ mod tests {
     const DELTA_0_0005: u128 = 9223372036854776;
 
     use cubit::f128::types::fixed::{Fixed, FixedTrait};
+
+    fn assert_rel_approx_eq(a: Fixed, b: Fixed, max_percent_delta: Fixed) {
+        if b == FixedTrait::ZERO() {
+            assert(a == b, 'a should eq ZERO');
+        }
+        let percent_delta = if a > b {
+            (a - b) / b
+        } else {
+            (b - a) / b
+        };
+
+        assert(percent_delta < max_percent_delta, 'a ~= b not satisfied');
+    }
 
     #[test]
     #[available_gas(30000000)]
