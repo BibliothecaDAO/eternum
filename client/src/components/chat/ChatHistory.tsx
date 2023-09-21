@@ -30,12 +30,18 @@ const ChatHistory = (props: ChatHistoryProps) => {
     } = useChat();
 
     // Temp world chat
-    const group = 'group:208154ace09503e942133c8766666a56c77be6af'
+    const group = 'group:059a21162f236d0057bdb80b5a0ed263a417882b'
+
+    // const createRoom = async (groupName: string) => {
+    //     client?.channel.createRoom({ groupName })
+    // }
 
     const setGroup = async (group: string) => {
         setLoadingMessages(true)
 
         const { channelList } = client?.channel as any;
+
+        console.log('channelList', channelList)
         const channel = channelList?.find((channel: any) => channel.chatid === group)
 
         await client?.channel.setActiveChannel(channel);
@@ -56,6 +62,7 @@ const ChatHistory = (props: ChatHistoryProps) => {
         const list = client?.message.messageList as any
 
         if (event.type === 'channel.updated') {
+            console.log('message.getList', list)
             setMessageList(list.map((message: any) => ({
                 sender: 'anon',
                 message: message.content,
@@ -65,6 +72,7 @@ const ChatHistory = (props: ChatHistoryProps) => {
         }
 
         if (event.type == 'message.getList') {
+            console.log('message.getList', list)
             setMessageList(list.map((message: any) => ({
                 sender: 'anon',
                 message: message.content,
