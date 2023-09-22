@@ -4,7 +4,7 @@ import { Resource } from "../../types";
 import { ResourceInterface } from "../graphql/useGraphQLQueries";
 import { useEffect, useMemo, useState } from "react";
 import useRealmStore from "../store/useRealmStore";
-import { divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
+import { getEntityIdFromKeys } from "../../utils/utils";
 import { HIGH_ENTITY_ID } from "../../dojo/createOptimisticSystemCalls";
 import { calculateRatio } from "../../components/cityview/realm/trade/Market/MarketOffer";
 import { HasOrders, HasResources, QueryFragment, useTradeQuery } from "./useTradeQueries";
@@ -60,7 +60,7 @@ export function useTrade() {
       if (resource) {
         resources.push({
           resourceId: resource.resource_type,
-          amount: divideByPrecision(resource.balance),
+          amount: resource.balance,
         });
       }
     }

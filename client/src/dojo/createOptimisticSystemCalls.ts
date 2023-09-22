@@ -1,6 +1,6 @@
 import { uuid } from "@latticexyz/utils";
 import { ClientComponents } from "./createClientComponents";
-import { getEntityIdFromKeys } from "../utils/utils";
+import { getEntityIdFromKeys, multiplyByPrecision } from "../utils/utils";
 import { Type, getComponentValue } from "@latticexyz/recs";
 import {
   BuildLaborProps,
@@ -11,6 +11,7 @@ import {
   MakeFungibleOrderProps,
 } from "./createSystemCalls";
 import { Resource } from "../types";
+import { LaborCostInterface } from "../hooks/helpers/useLabor";
 
 export const HIGH_ENTITY_ID = 9999999999;
 
@@ -198,7 +199,11 @@ export function createOptimisticSystemCalls({
     };
   }
 
-  function optimisticBuildLabor(ts: number, systemCall: (args: BuildLaborProps) => Promise<void>) {
+  function optimisticBuildLabor(
+    ts: number,
+    costResources: LaborCostInterface[],
+    systemCall: (args: BuildLaborProps) => Promise<void>,
+  ) {
     return async function (this: any, args: BuildLaborProps) {
       const { realm_id: realmEntityId, resource_type: resourceId, labor_units: laborUnits, multiplier } = args;
 
@@ -212,17 +217,14 @@ export function createOptimisticSystemCalls({
         base_resources_per_cycle: 21,
       };
 
-      let costResources = [
-        { resourceId: 2, balance: 10 },
-        { resourceId: 3, balance: 10 },
-      ];
       for (let i = 0; i < costResources.length; i++) {
         let costId = getEntityIdFromKeys([BigInt(realmEntityId), BigInt(costResources[i].resourceId)]);
         let currentResource = getComponentValue(Resource, costId) || {
           balance: 0,
         };
         let balance =
-          currentResource.balance - (laborUnits as number) * (multiplier as number) * costResources[i].balance;
+          currentResource.balance -
+          (laborUnits as number) * (multiplier as number) * multiplyByPrecision(costResources[i].amount);
         Resource.addOverride(overrideId, {
           entity: costId,
           value: {

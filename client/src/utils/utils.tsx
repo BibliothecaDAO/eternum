@@ -10,9 +10,9 @@ const isRef = (ref: any) => !!ref.current;
 
 export const resolveRef = (ref: any) => (isRef(ref) ? ref.current : ref);
 
-export const currencyFormat = (num: any) => {
+export const currencyFormat = (num: any, decimals: number) => {
   return divideByPrecision(num)
-    .toFixed(2)
+    .toFixed(decimals)
     .replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
 };
 

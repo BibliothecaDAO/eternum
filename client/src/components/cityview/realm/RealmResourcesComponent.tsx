@@ -136,7 +136,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
             size="xs"
             className="mr-2"
           />
-          <div className="text-xs">{currencyFormat(resource ? resource.balance : 0)}</div>
+          <div className="text-xs">{currencyFormat(resource ? resource.balance : 0, 2)}</div>
           <Tooltip>{findResourceById(resourceId)?.trait}</Tooltip>
         </div>
         {resourceId !== 253 && (

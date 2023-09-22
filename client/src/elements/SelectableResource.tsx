@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { ResourceIcon } from "./ResourceIcon";
 import { Tooltip } from "./Tooltip";
 import { soundSelector, useUiSounds } from "../hooks/useUISound";
-import { divideByPrecision } from "../utils/utils";
+import { currencyFormat } from "../utils/utils";
 
 type SelectableResourceProps = {
   resourceId: number;
@@ -144,7 +144,7 @@ export const SelectableResource = ({ resourceId, amount, selected, disabled, onC
         <Tooltip>
           <div className="relative z-50 flex flex-col items-center justify-center mb-1 text-xs text-center text-lightest">
             {resource?.trait}
-            <div className="mt-0.5 font-bold">{divideByPrecision(amount || 0)}</div>
+            <div className="mt-0.5 font-bold">{currencyFormat(amount || 0, 0)}</div>
           </div>
         </Tooltip>
       )}
