@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
 import { RealmInterface } from "../graphql/useGraphQLQueries";
-import { HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
+import { Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import { getEntityIdFromKeys } from "../../utils/utils";
 import { getOrderName } from "../../constants/orders";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
+import { unpackResources } from "../../utils/packedData";
+import { useEntityQuery } from "@dojoengine/react";
 
 export function useRealm() {
   const {
@@ -91,5 +93,31 @@ export function useGetRealm(realmEntityId: number | undefined) {
 
   return {
     realm,
+  };
+}
+
+export function useGetRealms() {
+  const {
+    setup: {
+      components: { Realm, Owner },
+    },
+  } = useDojo();
+
+  const realmEntityIds = useEntityQuery([Has(Realm)]);
+
+  const realms: any[] = useMemo(
+    () =>
+      Array.from(realmEntityIds).map((entityId) => {
+        const realm = getComponentValue(Realm, entityId) as any;
+        realm.entity_id = entityId;
+        realm.owner = getComponentValue(Owner, entityId);
+        realm.resources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
+        return realm;
+      }),
+    [realmEntityIds],
+  );
+
+  return {
+    realms,
   };
 }

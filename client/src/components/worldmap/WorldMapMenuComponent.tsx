@@ -6,6 +6,7 @@ import { useLocation } from "wouter";
 import { Tabs } from "../../elements/tab";
 import { Tooltip } from "../../elements/Tooltip";
 import RealmsListPanel from "./RealmsListPanel";
+import { HyperstructuresPanel } from "./HyperstructuresPanel";
 
 const WorldMapMenuComponent = () => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -39,7 +40,7 @@ const WorldMapMenuComponent = () => {
             </Tooltip>
           </div>
         ),
-        component: <div />,
+        component: <HyperstructuresPanel />,
       },
     ],
     [selectedTab],
