@@ -16,7 +16,7 @@ import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useGetRealmCaravans } from "../../../../hooks/helpers/useCaravans";
-import { getEntityIdFromKeys } from "../../../../utils/utils";
+import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../../utils/utils";
 import { getComponentValue } from "@latticexyz/recs";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 import { useTrade } from "../../../../hooks/helpers/useTrade";
@@ -66,10 +66,10 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
         signer: account,
         maker_id: realmEntityId,
         maker_entity_types: selectedResourceIdsGive,
-        maker_quantities: Object.values(selectedResourcesGiveAmounts),
+        maker_quantities: Object.values(selectedResourcesGiveAmounts).map((amount) => multiplyByPrecision(amount)),
         taker_id: selectedRealmEntityId || 0,
         taker_entity_types: selectedResourceIdsGet,
-        taker_quantities: Object.values(selectedResourcesGetAmounts),
+        taker_quantities: Object.values(selectedResourcesGetAmounts).map((amount) => multiplyByPrecision(amount)),
       });
       const transport_units_id = await create_free_transport_unit({
         signer: account,
@@ -91,10 +91,10 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
         signer: account,
         maker_id: realmEntityId,
         maker_entity_types: selectedResourceIdsGive,
-        maker_quantities: Object.values(selectedResourcesGiveAmounts),
+        maker_quantities: Object.values(selectedResourcesGiveAmounts).map((amount) => multiplyByPrecision(amount)),
         taker_id: selectedRealmEntityId || 0,
         taker_entity_types: selectedResourceIdsGet,
-        taker_quantities: Object.values(selectedResourcesGetAmounts),
+        taker_quantities: Object.values(selectedResourcesGetAmounts).map((amount) => multiplyByPrecision(amount)),
       });
       await attach_caravan({
         signer: account,
@@ -368,7 +368,7 @@ const SelectResourcesAmountPanel = ({
                     });
                   }}
                 >
-                  {`Max ${resource?.balance || 0}`}
+                  {`Max ${divideByPrecision(resource?.balance || 0)}`}
                 </div>
               </div>
             );

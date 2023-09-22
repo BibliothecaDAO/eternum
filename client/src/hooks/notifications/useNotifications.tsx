@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDojo } from "../../DojoContext";
 import { Component, Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
-import { getEntityIdFromKeys } from "../../utils/utils";
+import { getEntityIdFromKeys, getPosition } from "../../utils/utils";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { calculateNextHarvest } from "../../components/cityview/realm/labor/laborUtils";
-import { getPosition } from "../../components/cityview/realm/SettleRealmComponent";
 import useRealmStore from "../store/useRealmStore";
 import { unpackResources } from "../../utils/packedData";
 import { ResourcesIds } from "../../constants/resources";

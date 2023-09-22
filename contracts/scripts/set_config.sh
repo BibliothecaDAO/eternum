@@ -4,6 +4,8 @@
 
 world="$SOZO_WORLD"
 
+resource_precision=1000
+
 commands=(
     ### WORLD ###
     # realm_l2_contract
@@ -13,7 +15,7 @@ commands=(
     # base_labor_units 7200
     # base_resources_per_cycle 21
     # base_food_per_cycle 14000
-    "sozo execute --world $world SetLaborConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 7200,21,14000"
+    "sozo execute --world $world SetLaborConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 7200,$((21 * resource_precision)),$((14000 * resource_precision))"
 
     ### SPEED ###
     # entity type FREE_TRANSPORT_ENTITY_TYPE = 256
@@ -27,7 +29,7 @@ commands=(
     ### CAPACITY ###
     # entity type FREE_TRANSPORT_ENTITY_TYPE = 256
     # 100000 gr = 100 kg
-    "sozo execute --world $world SetCapacityConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 256,100000"
+    "sozo execute --world $world SetCapacityConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 256,$((100 * resource_precision))"
 
 )
 
@@ -61,23 +63,23 @@ do
         "sozo execute --world "$world" SetLaborCostResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $resource_type,515,2"
         # resource_type_cost = 3
         # resource_type_value = 10
-        "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $resource_type,2,10"
+        "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $resource_type,2,$((10 * resource_precision))"
         # resource_type_cost = 3
         # resource_type_value = 10
-        "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $resource_type,3,10"
+        "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $resource_type,3,$((10 * resource_precision))"
     )
 done
 
 commands+=(
     # Resource type 254
     "sozo execute --world "$world" SetLaborCostResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata 254,515,2"
-    "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 254,2,10"
-    "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 254,3,10"
+    "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 254,2,$((10 * resource_precision))"
+    "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 254,3,$((10 * resource_precision))"
 
     # Resource type 255
     "sozo execute --world "$world" SetLaborCostResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata 255,515,2"
-    "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 255,2,10"
-    "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 255,3,10"
+    "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 255,2,$((10 * resource_precision))"
+    "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 255,3,$((10 * resource_precision))"
 )
 
 commands+=(

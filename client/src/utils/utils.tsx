@@ -4,13 +4,16 @@ import { useThree } from "@react-three/fiber";
 import { BlendFunction } from "postprocessing";
 import { EntityIndex, setComponent, Component, Schema, Components } from "@latticexyz/recs";
 import { poseidonHashMany } from "micro-starknet";
+import realmCoords from "../geodata/coords.json";
 
 const isRef = (ref: any) => !!ref.current;
 
 export const resolveRef = (ref: any) => (isRef(ref) ? ref.current : ref);
 
 export const currencyFormat = (num: any) => {
-  return num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
+  return divideByPrecision(num)
+    .toFixed(2)
+    .replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
 };
 
 export const wrapEffect = (effectImpl: any, defaultBlendMode = BlendFunction.ALPHA) =>
@@ -238,3 +241,18 @@ export const formatTimeLeftDaysHoursMinutes = (seconds: number) => {
 
   return `${days} days ${hours}h:${minutes}m`;
 };
+
+const PRECISION = 1000;
+
+export function multiplyByPrecision(value: number): number {
+  return Math.floor(value * PRECISION);
+}
+
+export function divideByPrecision(value: number): number {
+  return value / PRECISION;
+}
+
+export function getPosition(realm_id: number): { x: number; y: number } {
+  const coords = realmCoords.features[realm_id - 1].geometry.coordinates.map((value) => parseInt(value));
+  return { x: coords[0] + 1800000, y: coords[1] + 1800000 };
+}
