@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Tabs } from "../../elements/tab";
 import { ChatMessageProps } from "../../elements/ChatMessage";
 import ChatHistory from "./ChatHistory";
+// import { ChatAccount } from "./ChatAccount";
 // import { ReactComponent as RedDot } from "../../assets/icons/common/red-dot.svg";
 
 type ChatTabsProps = {};
@@ -115,10 +116,10 @@ export const ChatTabs = ({ }: ChatTabsProps) => {
       // {
       //   label: (
       //     <div className="flex flex-col items-center">
-      //       <div>Guild Chat</div>
+      //       <div>Account</div>
       //     </div>
       //   ),
-      //   component: <div></div>,
+      //   component: <ChatAccount />,
       // },
       // {
       //   label: (

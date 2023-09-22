@@ -66,28 +66,24 @@ const ChatHistory = (props: ChatHistoryProps) => {
         setLoadingMessages(false)
     }
 
+    const transform = (s: string) => s.replace('user:', '').slice(0, 2) + '...' + s.slice(-3);
+
     const handleEvent = (event: { type: any }) => {
 
-        const list = client?.message.messageList as any
-
-        if (event.type === 'channel.updated') {
-            console.log('message.getList', list)
-            setMessageList(list.map((message: any) => ({
-                sender: 'anon',
+        const format = (message: any) => {
+            return {
+                sender: transform(message.senderId),
                 message: message.content,
                 avatar: "/images/avatars/1.png",
                 timestamp: message.date,
-            })) || [])
+            }
         }
 
-        if (event.type == 'message.getList') {
+        const list = client?.message.messageList
+
+        if (event.type === 'channel.updated' || event.type == 'message.getList') {
             console.log('message.getList', list)
-            setMessageList(list.map((message: any) => ({
-                sender: 'anon',
-                message: message.content,
-                avatar: "/images/avatars/1.png",
-                timestamp: message.date,
-            })) || [])
+            setMessageList(list?.map((message: any) => (format(message))) || [])
         }
     };
 
