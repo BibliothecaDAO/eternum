@@ -13,3 +13,4 @@ mod caravan;
 mod trade;
 mod road;
 mod labor_auction;
+mod hyperstructure;

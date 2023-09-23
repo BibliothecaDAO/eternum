@@ -9,6 +9,16 @@ struct Resource {
     balance: u128,
 }
 
+#[derive(Component, Copy, Drop, Serde)]
+struct ResourceCost {
+    #[key]
+    entity_id: u128,
+    #[key]
+    index: usize,
+    resource_type: u8,
+    amount: u128
+}
+
 // TODO: need to change the whole vault logic
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct Vault {

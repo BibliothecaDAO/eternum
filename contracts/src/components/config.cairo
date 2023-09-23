@@ -1,3 +1,7 @@
+use eternum::constants::{WORLD_CONFIG_ID};
+
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+
 use starknet::ContractAddress;
 
 //
@@ -26,6 +30,17 @@ struct TravelConfig {
     config_id: u128,
     free_transport_per_city: u128
 }
+
+
+#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+struct RoadConfig {
+    #[key]
+    config_id: u128,
+    fee_resource_type: u8,
+    fee_amount: u128,
+    speed_up_by: u64
+}
+
 
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct BuildingConfig {
@@ -118,4 +133,18 @@ struct WeightConfig {
     weight_config_id: u128,
     entity_type: u128,
     weight_gram: u128,
+}
+
+
+trait WeightConfigTrait {
+    fn get_weight(world: IWorldDispatcher, resource_type: u8, amount: u128 ) -> u128;
+}
+
+impl WeightConfigImpl of WeightConfigTrait {
+    fn get_weight(world: IWorldDispatcher, resource_type: u8, amount: u128 ) -> u128 {
+        let resource_weight_config 
+            = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig);
+
+        return resource_weight_config.weight_gram * amount;
+    }
 }
