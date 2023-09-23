@@ -256,3 +256,11 @@ export function getPosition(realm_id: number): { x: number; y: number } {
   const coords = realmCoords.features[realm_id - 1].geometry.coordinates.map((value) => parseInt(value));
   return { x: coords[0] + 1800000, y: coords[1] + 1800000 };
 }
+
+const HIGHEST_X = 3120937;
+const LOWEST_X = 470200;
+
+// get zone for labor auction
+export function getZone(x: number): number {
+  return 1 + Math.floor(((x - LOWEST_X) * 10) / (HIGHEST_X - LOWEST_X));
+}

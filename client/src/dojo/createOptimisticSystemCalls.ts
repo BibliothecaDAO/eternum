@@ -1,6 +1,6 @@
 import { uuid } from "@latticexyz/utils";
 import { ClientComponents } from "./createClientComponents";
-import { getEntityIdFromKeys, multiplyByPrecision } from "../utils/utils";
+import { getEntityIdFromKeys } from "../utils/utils";
 import { Type, getComponentValue } from "@latticexyz/recs";
 import {
   BuildLaborProps,

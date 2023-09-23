@@ -108,7 +108,7 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
     const { entity_id, resource_type, labor_units, signer } = props;
     const tx = await execute(signer, "PurchaseLabor", [entity_id, resource_type, labor_units]);
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-    console.log("purchase receipt", receipt);
+
     setComponentsFromEvents(contractComponents, getEvents(receipt));
   };
 
@@ -117,7 +117,7 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
     const { realm_id, resource_type, labor_units, multiplier, signer } = props;
     const tx = await execute(signer, "BuildLabor", [realm_id, resource_type, labor_units, multiplier]);
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-    console.log("build receipt", receipt);
+
     setComponentsFromEvents(contractComponents, getEvents(receipt));
   };
 
