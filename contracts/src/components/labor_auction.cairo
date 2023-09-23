@@ -196,7 +196,6 @@ mod tests {
             i += 1;
         };
 
-        let auction = get!(world, 1, LaborAuction);
         assert(auction.sold == 100, 'sold is wrong');
 
         let price = auction.get_price();
