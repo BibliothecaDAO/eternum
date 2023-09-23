@@ -503,5 +503,25 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    LaborAuction: (() => {
+      const name = "LaborAuction";
+      return defineComponent(
+        world,
+        {
+          zone: RecsType.Number,
+          target_price: RecsType.Number,
+          decay_constant_mag: RecsType.Number,
+          decay_constant_sign: RecsType.Boolean,
+          per_time_unit: RecsType.Number,
+          start_time: RecsType.Number,
+          sold: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
   };
 }

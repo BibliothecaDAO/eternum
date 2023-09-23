@@ -99,6 +99,19 @@ commands+=(
 )
 
 
+#### SET LABOR AUCTIONS ####
+
+commands+=(
+    # assuming 20 realms per zone
+    # labor on 5 different food/non-food resources every day
+    # 12 labor units needed per day for full-time
+    # 20 * 5 * 12 = 960 labor units per day per zone as target
+
+    # 0.1 decay = 1844674407370955161
+    "sozo execute --world $world CreateLaborAuction --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1844674407370955161,960"
+)
+
+
 # Read the System to Components JSON file
 system_components_json=$(cat ./scripts/system_components.json)
 

@@ -7,6 +7,12 @@ interface SystemSigner {
   signer: Account;
 }
 
+export interface PurchaseLaborProps extends SystemSigner {
+  entity_id: num.BigNumberish;
+  resource_type: num.BigNumberish;
+  labor_units: num.BigNumberish;
+}
+
 export interface BuildLaborProps extends SystemSigner {
   realm_id: num.BigNumberish;
   resource_type: num.BigNumberish;
@@ -98,11 +104,20 @@ export type SystemCalls = ReturnType<typeof createSystemCalls>;
 
 // NOTE: need to add waitForTransaction when connected to rinnigan
 export function createSystemCalls({ execute, provider, contractComponents }: SetupNetworkResult) {
+  const purchase_labor = async (props: PurchaseLaborProps) => {
+    const { entity_id, resource_type, labor_units, signer } = props;
+    const tx = await execute(signer, "PurchaseLabor", [entity_id, resource_type, labor_units]);
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
+    console.log("purchase receipt", receipt);
+    setComponentsFromEvents(contractComponents, getEvents(receipt));
+  };
+
   // Refactor the functions using the interfaces
   const build_labor = async (props: BuildLaborProps) => {
     const { realm_id, resource_type, labor_units, multiplier, signer } = props;
     const tx = await execute(signer, "BuildLabor", [realm_id, resource_type, labor_units, multiplier]);
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
+    console.log("build receipt", receipt);
     setComponentsFromEvents(contractComponents, getEvents(receipt));
   };
 
@@ -266,6 +281,7 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
   };
 
   return {
+    purchase_labor,
     build_labor,
     harvest_labor,
     mint_resources,

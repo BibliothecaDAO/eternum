@@ -101,7 +101,6 @@ impl LaborAuctionImpl of LaborAuctionTrait {
 
     fn sell(ref self: LaborAuction, world: IWorldDispatcher) {
         self.sold += 1;
-        set!(world, (self));
     }
 }
 

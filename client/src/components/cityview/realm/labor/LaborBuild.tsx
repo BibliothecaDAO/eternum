@@ -18,6 +18,7 @@ import { getComponentValue } from "@latticexyz/recs";
 import { getEntityIdFromKeys } from "../../../../utils/utils";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
+import { BuildLaborProps } from "../../../../dojo/createSystemCalls";
 
 let LABOR_CONFIG = {
   base_food_per_cycle: 14000,
@@ -35,7 +36,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   const {
     setup: {
       components: { Resource },
-      systemCalls: { build_labor },
+      systemCalls: { build_labor, purchase_labor },
       optimisticSystemCalls: { optimisticBuildLabor },
     },
     account: { account },
@@ -67,6 +68,24 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     amount && costResources.push({ resourceId: resourceIdCost, amount: totalAmount });
   }
 
+  const buildLabor = async ({ realm_id, resource_type, labor_units, multiplier }: BuildLaborProps) => {
+    let total_units = Number(labor_units) * Number(multiplier);
+    await purchase_labor({
+      signer: account,
+      entity_id: realm_id,
+      resource_type,
+      labor_units: total_units,
+    });
+
+    await build_labor({
+      signer: account,
+      realm_id,
+      resource_type,
+      labor_units,
+      multiplier,
+    });
+  };
+
   useEffect(() => {
     setCanBuild(false);
     costResources.forEach(({ resourceId, amount }) => {
@@ -87,7 +106,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     }));
     optimisticBuildLabor(
       nextBlockTimestamp || 0,
-      build_labor,
+      buildLabor,
     )({
       signer: account,
       realm_id: realmEntityId,

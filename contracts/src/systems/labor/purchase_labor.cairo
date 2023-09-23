@@ -1,5 +1,6 @@
 #[system]
 mod PurchaseLabor {
+    use core::dict::Felt252DictTrait;
     use traits::Into;
     use box::BoxTrait;
     use eternum::systems::labor::utils::{assert_harvestable_resource, get_labor_resource_type};
@@ -42,6 +43,7 @@ mod PurchaseLabor {
         assert(labor_auction.target_price != 0, 'Labor auction not found');
 
         let mut labor_units_remaining = labor_units;
+        let mut total_costs: Felt252Dict<u128> = Default::default();
 
         loop {
             if labor_units_remaining == 0 {
@@ -57,29 +59,48 @@ mod PurchaseLabor {
                 let labor_cost_per_unit = get!(
                     ctx.world, (resource_type, labor_cost_resource_type).into(), LaborCostAmount
                 );
-                let current_resource: Resource = get!(
-                    ctx.world, (entity_id, labor_cost_resource_type).into(), Resource
-                );
 
                 let labor_cost_multiplier = labor_auction.get_price();
-                let total_cost_fixed = FixedTrait::new_unscaled(labor_cost_per_unit.value, false)
+                let cost_fixed = FixedTrait::new_unscaled(labor_cost_per_unit.value, false)
                     * labor_cost_multiplier.into();
-                let total_cost: u128 = total_cost_fixed.try_into().unwrap();
-                assert(current_resource.balance >= total_cost, 'Not enough resources');
-                set!(
-                    ctx.world,
-                    Resource {
-                        entity_id,
-                        resource_type: current_resource.resource_type,
-                        balance: current_resource.balance - total_cost
-                    }
-                );
+                let cost: u128 = cost_fixed.try_into().unwrap();
+
+                let total_cost = total_costs.get(labor_cost_resource_type.into());
+                total_costs.insert(labor_cost_resource_type.into(), total_cost + cost);
                 index += 1;
             };
 
             labor_auction.sell(ctx.world);
             labor_units_remaining -= 1;
         };
+
+        let mut index = 0_usize;
+        loop {
+            if index == labor_cost_resources.resource_types_count.into() {
+                break ();
+            }
+
+            let labor_cost_resource_type = *labor_cost_resource_types[index];
+            let total_cost = total_costs.get(labor_cost_resource_type.into());
+
+            let current_resource: Resource = get!(
+                ctx.world, (entity_id, labor_cost_resource_type).into(), Resource
+            );
+
+            assert(current_resource.balance >= total_cost, 'Not enough resources');
+            set!(
+                ctx.world,
+                Resource {
+                    entity_id,
+                    resource_type: labor_cost_resource_type,
+                    balance: current_resource.balance - total_cost
+                }
+            );
+
+            index += 1;
+        };
+
+        set!(ctx.world, (labor_auction));
 
         let labor_resource_type: u8 = get_labor_resource_type(resource_type);
 
@@ -107,6 +128,7 @@ mod tests {
     use eternum::components::labor::Labor;
     use eternum::components::position::Position;
     use eternum::systems::labor_auction::create_labor_auction::CreateLaborAuction;
+    use eternum::components::labor_auction::{LaborAuction, LaborAuctionTrait};
 
     // testing
     use eternum::utils::testing::spawn_eternum;
@@ -227,6 +249,9 @@ mod tests {
         // assert labor resource is right amount
         let gold_labor_resource = get!(world, (realm_entity_id, resource_type + 28), Resource);
         assert(gold_labor_resource.balance == 20, 'wrong labor resource balance');
+
+        let labor_auction = get!(world, 1, LaborAuction);
+        assert(labor_auction.sold == 20, 'wrong labor auction sold');
     }
 
     #[test]
@@ -254,6 +279,9 @@ mod tests {
         // assert labor resource is right amount
         let fish_labor_resource = get!(world, (realm_entity_id, resource_type - 3), Resource);
         assert(fish_labor_resource.balance == 20, 'wrong labor resource balance');
+
+        let labor_auction = get!(world, 1, LaborAuction);
+        assert(labor_auction.sold == 20, 'wrong labor auction sold');
     }
 }
 
