@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { findResourceById } from "../constants/resources";
 import { ResourceIcon } from "./ResourceIcon";
 import clsx from "clsx";
+import { currencyFormat } from "../utils/utils";
 
 type ResourceCostProps = {
   resourceId: number;
@@ -28,7 +29,7 @@ export const ResourceCost = ({ type = "horizontal", className, ...props }: Resou
       >
         <div className={clsx("relative text-xs", props.color)}>
           {props.color && props.amount > 0 ? "+" : ""}
-          {props.amount}
+          {currencyFormat(props.amount, 0)}
         </div>
         {type === "horizontal" && <div className="text-xxs leading-[10px] self-start relative">{trait}</div>}
       </div>
