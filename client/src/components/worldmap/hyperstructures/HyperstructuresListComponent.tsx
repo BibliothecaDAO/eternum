@@ -1,11 +1,11 @@
-import { FiltersPanel } from "../../elements/FiltersPanel";
-import { FilterButton } from "../../elements/FilterButton";
-import { HYPERSTRUCTURES_POSITIONS } from "../../modules/scenes/WorldMapScene";
+import { FiltersPanel } from "../../../elements/FiltersPanel";
+import { FilterButton } from "../../../elements/FilterButton";
+import { HYPERSTRUCTURES_POSITIONS } from "../../../modules/scenes/WorldMapScene";
 import { HyperstructuresListItem } from "./HyperstructuresListItem";
-import useRealmStore from "../../hooks/store/useRealmStore";
+import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useMemo } from "react";
-import { getRealm } from "../../utils/realms";
-import { useDojo } from "../../DojoContext";
+import { getRealm } from "../../../utils/realms";
+import { useDojo } from "../../../DojoContext";
 
 type HyperstructuresListComponentProps = {};
 

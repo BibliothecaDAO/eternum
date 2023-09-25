@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
 import { Tabs } from "../../elements/tab";
 import { Tooltip } from "../../elements/Tooltip";
 import RealmsListPanel from "./RealmsListPanel";
-import { HyperstructuresPanel } from "./HyperstructuresPanel";
+import { HyperstructuresPanel } from "./hyperstructures/HyperstructuresPanel";
 
 const WorldMapMenuComponent = () => {
   const [selectedTab, setSelectedTab] = useState(0);

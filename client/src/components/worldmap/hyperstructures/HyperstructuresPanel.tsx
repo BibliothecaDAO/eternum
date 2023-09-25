@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useSyncRealms } from "../../hooks/graphql/useGraphQLQueries";
-import { Tooltip } from "../../elements/Tooltip";
-import { Tabs } from "../../elements/tab";
+import { useSyncRealms } from "../../../hooks/graphql/useGraphQLQueries";
+import { Tooltip } from "../../../elements/Tooltip";
+import { Tabs } from "../../../elements/tab";
 import { HyperstructuresListComponent } from "./HyperstructuresListComponent";
 
 type HyperstructuresPanelProps = {};
