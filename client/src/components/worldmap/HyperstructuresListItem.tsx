@@ -3,13 +3,15 @@ import Button from "../../elements/Button";
 import { ReactComponent as Map } from "../../assets/icons/common/map.svg";
 import { orderNameDict, orders } from "../../constants/orders";
 import useUIStore from "../../hooks/store/useUIStore";
+import ProgressBar from "../../elements/ProgressBar";
 
 type HyperstructuresListItemProps = {
   order: number;
   coords: { x: number; y: number; z: number };
+  canBuild?: boolean;
 };
 
-export const HyperstructuresListItem = ({ order, coords }: HyperstructuresListItemProps) => {
+export const HyperstructuresListItem = ({ order, coords, canBuild = false }: HyperstructuresListItemProps) => {
   const moveCameraToTarget = useUIStore((state) => state.moveCameraToTarget);
 
   return (
@@ -31,7 +33,18 @@ export const HyperstructuresListItem = ({ order, coords }: HyperstructuresListIt
           </Button>
         </div>
       </div>
-      <div className="flex items-end mt-2">Not initialized</div>
+      <div className="flex flex-col w-full mt-3">
+        <ProgressBar rounded progress={30} className="bg-white" />
+        <div className="flex items-center mt-2">
+          <div className="ml-1 italic text-white/70">Not initialized</div>
+
+          {canBuild && (
+            <Button className="!px-[6px] !py-[2px] text-xxs ml-auto" variant="outline" onClick={() => {}}>
+              Initialize
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
