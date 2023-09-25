@@ -106,8 +106,8 @@ export function Flags(props) {
     if (!woodInstances.length || !flagInstances.length) return;
 
     const scales = {
-      startScale: showRealmsFlags ? 0.01 : 0.5,
-      endScale: showRealmsFlags ? 0.5 : 0.01,
+      startScale: showRealmsFlags ? 0.01 : 1,
+      endScale: showRealmsFlags ? 1 : 0.01,
     };
     const tl = gsap.timeline();
     tl.to(scales, {
