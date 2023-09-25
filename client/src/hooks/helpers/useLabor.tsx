@@ -70,7 +70,7 @@ export function useLabor() {
       if (laborAuction && nextBlockTimestamp) {
         setLaborCoefficient(computeCoefficient(laborAuction.start_time, nextBlockTimestamp, laborAuction.sold));
       }
-    }, [laborAuction]);
+    }, [laborAuction, nextBlockTimestamp]);
 
     return laborCoefficient;
   };

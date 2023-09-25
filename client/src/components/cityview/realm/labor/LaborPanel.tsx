@@ -6,7 +6,6 @@ import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { unpackResources } from "../../../../utils/packedData";
 import { ResourcesIds } from "../../../../constants/resources";
 import { LaborBuildPopup } from "./LaborBuild";
-import { LaborConfig } from "../../../../types";
 import { useRoute } from "wouter";
 import { getRealm } from "../../../../utils/realms";
 
@@ -69,13 +68,6 @@ export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
     }
   }, [realm]);
 
-  // TODO: use config file
-  let laborConfig = {
-    base_food_per_cycle: 14000,
-    base_labor_units: 7200,
-    base_resources_per_cycle: 21,
-  };
-
   return (
     <div className="flex flex-col">
       <SortPanel className="px-3 py-2">
@@ -110,9 +102,7 @@ export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
                 buildResource == resourceId ? setBuildResource(null) : setBuildResource(resourceId);
               }}
               resourceId={resourceId}
-              // labor={realmLabor[resourceId]}
               realm={realm}
-              laborConfig={laborConfig as LaborConfig}
               setBuildLoadingStates={setBuildLoadingStates}
               buildLoadingStates={buildLoadingStates}
             />
