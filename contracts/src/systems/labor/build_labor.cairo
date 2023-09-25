@@ -57,6 +57,11 @@ mod BuildLabor {
         let mut new_labor_balance = labor.balance + additional_labor;
         let mut new_last_harvest = labor.last_harvest;
 
+        // if no more labor, set last_harvest to today
+        if labor.balance <= ts {
+            new_last_harvest = ts;
+        };
+
         // assert multiplier higher than 0
         assert(multiplier > 0, 'Multiplier cannot be zero');
 
