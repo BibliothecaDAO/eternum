@@ -20,6 +20,7 @@ interface UIStore {
   cameraTarget: any;
   setCameraTarget: (target: any) => void;
   moveCameraToRealm: (realmId: number) => void;
+  moveCameraToTarget: (target: { x: number; y: number; z: number }, distance?: number) => void;
   showRealmsFlags: boolean;
   setShowRealmsFlags: (show: boolean) => void;
   moveCameraToWorldMapView: () => void;
@@ -64,6 +65,15 @@ const useUIStore = create<UIStore & PopupsStore>((set) => ({
     const cameraPos = new Vector3(x + 25 * (Math.random() < 0.5 ? 1 : -1), 25, y + 25 * (Math.random() < 0.5 ? 1 : -1));
     set({ cameraPosition: cameraPos });
     set({ cameraTarget: targetPos });
+  },
+  moveCameraToTarget: (target, distance = 25) => {
+    const cameraPos = new Vector3(
+      target.x + distance * (Math.random() < 0.5 ? 1 : -1),
+      distance / 2,
+      target.y + distance * (Math.random() < 0.5 ? 1 : -1),
+    );
+    set({ cameraPosition: cameraPos });
+    set({ cameraTarget: target });
   },
   showRealmsFlags: false,
   setShowRealmsFlags: (show) => set({ showRealmsFlags: show }),
