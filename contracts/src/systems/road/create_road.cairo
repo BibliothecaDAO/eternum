@@ -5,29 +5,30 @@ mod CreateRoad {
     use eternum::components::resources::Resource;
     use eternum::components::road::{Road, RoadImpl};
     use eternum::components::owner::Owner;
+    use eternum::components::config::RoadConfig;
 
-    use eternum::constants::ResourceTypes;
+    use eternum::constants::ROAD_CONFIG_ID;
     
     use dojo::world::Context;
 
     use core::traits::Into;
 
 
-    fn execute(ctx: Context, creator_id: u128, start_coord: Coord, end_coord: Coord, usage_count: u32) {
+    fn execute(ctx: Context, entity_id: u128, start_coord: Coord, end_coord: Coord, usage_count: usize) {
 
-        // assert that creator entity is owned by caller
-        let creator_owner = get!(ctx.world, creator_id, Owner);
-        assert(creator_owner.address == ctx.origin, 'creator id not owned by caller');
+        // assert that entity is owned by caller
+        let entity_owner = get!(ctx.world, entity_id, Owner);
+        assert(entity_owner.address == ctx.origin, 'entity id not owned by caller');
 
         let road = RoadImpl::get(ctx.world, start_coord, end_coord);
         assert(road.usage_count == 0, 'road already exists');
 
-        let cost_per_usage: u128 = 10;
-        let fee: u128 = usage_count.into() * cost_per_usage;
+        let road_config = get!(ctx.world, ROAD_CONFIG_ID, RoadConfig);
+        let fee: u128 = road_config.fee_amount * usage_count.into();
 
         // ensure fee payment
-        let creator_stone_resource = get!(ctx.world, (creator_id, ResourceTypes::STONE), Resource);
-        assert(creator_stone_resource.balance >= fee, 'insufficient stone balance');
+        let entity_fee_resource = get!(ctx.world, (entity_id, road_config.fee_resource_type), Resource);
+        assert(entity_fee_resource.balance >= fee, 'insufficient stone balance');
         
         set!(ctx.world, (
             Road {
@@ -38,9 +39,9 @@ mod CreateRoad {
                 usage_count
             },
             Resource {
-                entity_id: creator_stone_resource.entity_id,
-                resource_type: creator_stone_resource.resource_type,
-                balance: creator_stone_resource.balance -  fee
+                entity_id: entity_fee_resource.entity_id,
+                resource_type: entity_fee_resource.resource_type,
+                balance: entity_fee_resource.balance -  fee
             }
         ));
     }
@@ -54,12 +55,13 @@ mod tests {
     use eternum::components::resources::Resource;
     use eternum::components::road::{Road, RoadImpl};
     use eternum::components::owner::Owner;
+    use eternum::components::config::RoadConfig;
 
-    use eternum::constants::ResourceTypes;
+    use eternum::constants::{ROAD_CONFIG_ID, ResourceTypes};
     
     use eternum::utils::testing::spawn_eternum;
     
-    use dojo::world::IWorldDispatcherTrait;
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     use starknet::contract_address_const;
 
@@ -71,25 +73,31 @@ mod tests {
     fn test_create() {
         let world = spawn_eternum();
 
-        let creator_id: u128 = 44;
+        let entity_id: u128 = 44;
 
         starknet::testing::set_contract_address(world.executor());
         set!(world, ( 
-            Owner { entity_id: creator_id, address: contract_address_const::<'creator'>()},
+            Owner { entity_id: entity_id, address: contract_address_const::<'entity'>()},
             Resource {
-                entity_id: creator_id,
+                entity_id: entity_id,
                 resource_type: ResourceTypes::STONE,
                 balance: 400
+            },
+            RoadConfig {
+                config_id: ROAD_CONFIG_ID,
+                fee_resource_type: ResourceTypes::STONE,
+                fee_amount: 10,
+                speed_up_by: 2
             }
         ));
 
         let start_coord = Coord { x: 20, y: 30};
         let end_coord = Coord { x: 40, y: 50};
 
-        starknet::testing::set_contract_address(contract_address_const::<'creator'>());
+        starknet::testing::set_contract_address(contract_address_const::<'entity'>());
 
         let mut calldata = array![];
-        Serde::serialize(@creator_id, ref calldata);
+        Serde::serialize(@entity_id, ref calldata);
         Serde::serialize(@end_coord, ref calldata); // end first because order should not matter
         Serde::serialize(@start_coord, ref calldata);
         Serde::serialize(@33, ref calldata);
@@ -98,24 +106,24 @@ mod tests {
         let road = RoadImpl::get(world, start_coord, end_coord);
         assert(road.usage_count == 33, 'usage count should be 33');
 
-        let creator_stone_resource = get!(world, (creator_id, ResourceTypes::STONE), Resource);
-        assert(creator_stone_resource.balance == 400 - (33 * 10), 'stone balance should be 70');
+        let entity_fee_resource = get!(world, (entity_id, ResourceTypes::STONE), Resource);
+        assert(entity_fee_resource.balance == 400 - (33 * 10), 'stone balance should be 70');
     }
 
 
 
     #[test]
     #[available_gas(3000000000000)]  
-    #[should_panic(expected: ('creator id not owned by caller','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED' ))]
-    fn test_not_creator() {
+    #[should_panic(expected: ('entity id not owned by caller','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED' ))]
+    fn test_not_entity() {
         let world = spawn_eternum();
 
         starknet::testing::set_contract_address(world.executor());
-        let creator_id: u128 = 44;
+        let entity_id: u128 = 44;
         let start_coord = Coord { x: 20, y: 30};
         let end_coord = Coord { x: 40, y: 50};
         set!(world, ( 
-            Owner { entity_id: creator_id, address: contract_address_const::<'creator'>()},
+            Owner { entity_id: entity_id, address: contract_address_const::<'entity'>()},
             Road {
                 start_coord_x: start_coord.x,
                 start_coord_y: start_coord.y,
@@ -131,7 +139,7 @@ mod tests {
         );
 
         let mut calldata = array![];
-        Serde::serialize(@creator_id, ref calldata);
+        Serde::serialize(@entity_id, ref calldata);
         Serde::serialize(@end_coord, ref calldata); // end first because order should not matter
         Serde::serialize(@start_coord, ref calldata);
         Serde::serialize(@1, ref calldata);
@@ -148,25 +156,31 @@ mod tests {
     fn test_insufficient_balance() {
         let world = spawn_eternum();
 
-        let creator_id: u128 = 44;
+        let entity_id: u128 = 44;
 
         starknet::testing::set_contract_address(world.executor());
         set!(world, ( 
-            Owner { entity_id: creator_id, address: contract_address_const::<'creator'>()},
+            Owner { entity_id: entity_id, address: contract_address_const::<'entity'>()},
             Resource {
-                entity_id: creator_id,
+                entity_id: entity_id,
                 resource_type: ResourceTypes::STONE,
                 balance: 400
+            },
+            RoadConfig {
+                config_id: ROAD_CONFIG_ID,
+                fee_resource_type: ResourceTypes::STONE,
+                fee_amount: 10,
+                speed_up_by: 2
             }
         ));
 
         let start_coord = Coord { x: 20, y: 30};
         let end_coord = Coord { x: 40, y: 50};
 
-        starknet::testing::set_contract_address(contract_address_const::<'creator'>());
+        starknet::testing::set_contract_address(contract_address_const::<'entity'>());
 
         let mut calldata = array![];
-        Serde::serialize(@creator_id, ref calldata);
+        Serde::serialize(@entity_id, ref calldata);
         Serde::serialize(@end_coord, ref calldata); 
         Serde::serialize(@start_coord, ref calldata);
         Serde::serialize(@50, ref calldata); // 50 * 10 > 400
@@ -184,11 +198,11 @@ mod tests {
         let world = spawn_eternum();
 
         starknet::testing::set_contract_address(world.executor());
-        let creator_id: u128 = 44;
+        let entity_id: u128 = 44;
         let start_coord = Coord { x: 20, y: 30};
         let end_coord = Coord { x: 40, y: 50};
         set!(world, ( 
-            Owner { entity_id: creator_id, address: contract_address_const::<'creator'>()},
+            Owner { entity_id: entity_id, address: contract_address_const::<'entity'>()},
             Road {
                 start_coord_x: start_coord.x,
                 start_coord_y: start_coord.y,
@@ -198,10 +212,10 @@ mod tests {
             })
         );
 
-        starknet::testing::set_contract_address(contract_address_const::<'creator'>());
+        starknet::testing::set_contract_address(contract_address_const::<'entity'>());
 
         let mut calldata = array![];
-        Serde::serialize(@creator_id, ref calldata);
+        Serde::serialize(@entity_id, ref calldata);
         Serde::serialize(@end_coord, ref calldata); // end first because order should not matter
         Serde::serialize(@start_coord, ref calldata);
         Serde::serialize(@1, ref calldata);

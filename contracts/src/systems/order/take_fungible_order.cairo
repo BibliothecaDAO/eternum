@@ -11,6 +11,9 @@ mod TakeFungibleOrder {
     use eternum::components::caravan::Caravan;
     use eternum::components::road::{Road, RoadTrait, RoadImpl};
     use eternum::components::movable::{Movable, ArrivalTime};
+    use eternum::components::config::RoadConfig;
+
+    use eternum::constants::ROAD_CONFIG_ID;
 
     use traits::Into;
     use traits::TryInto;
@@ -97,10 +100,13 @@ mod TakeFungibleOrder {
             // if a road exists, use it and get new travel time 
             let mut road: Road = RoadImpl::get(ctx.world, caravan_position.into(), taker_position.into());
             if road.usage_count > 0 {
-                road.travel(ctx.world);
+                let road_config = get!(ctx.world, ROAD_CONFIG_ID, RoadConfig);
+                
+                road.usage_count -= 1;
+                set!(ctx.world, (road));
 
-                taker_order_travel_time /= road.speed_boost();
-                maker_caravan_travel_time /= road.speed_boost(); 
+                taker_order_travel_time /= road_config.speed_up_by;
+                maker_caravan_travel_time /= road_config.speed_up_by; 
             }
 
             set !(
@@ -177,10 +183,14 @@ mod TakeFungibleOrder {
             // if a road exists, use it and get new travel time 
             let mut road: Road = RoadImpl::get(ctx.world, caravan_position.into(), maker_position.into());
             if road.usage_count > 0 {
-                road.travel(ctx.world);
+                let road_config = get!(ctx.world, ROAD_CONFIG_ID, RoadConfig);
+                
+                road.usage_count -= 1;
+                set!(ctx.world, (road));
 
-                maker_order_travel_time /= road.speed_boost();
-                taker_caravan_travel_time /= road.speed_boost(); 
+
+                maker_order_travel_time /= road_config.speed_up_by;
+                taker_caravan_travel_time /= road_config.speed_up_by; 
             }
 
 
@@ -272,14 +282,14 @@ mod tests {
     use eternum::components::capacity::Capacity;
     use eternum::components::movable::{Movable, ArrivalTime};
     use eternum::components::caravan::Caravan;
-    use eternum::components::config::WeightConfig;
+    use eternum::components::config::{WeightConfig, RoadConfig};
     use eternum::components::road::{Road, RoadImpl};
 
     
     use eternum::components::trade::{Trade,Status, OrderId, OrderResource};
 
     use eternum::constants::ResourceTypes;
-    use eternum::constants::WORLD_CONFIG_ID;
+    use eternum::constants::{WORLD_CONFIG_ID, ROAD_CONFIG_ID};
 
     use eternum::utils::testing::spawn_eternum;
 
@@ -300,6 +310,15 @@ mod tests {
         
         // set as executor
         starknet::testing::set_contract_address(world.executor());
+        
+        set!(world,(
+            RoadConfig {
+                config_id: ROAD_CONFIG_ID, 
+                fee_resource_type: ResourceTypes::STONE,
+                fee_amount: 10,
+                speed_up_by: 2
+             }
+        ));
 
         let maker_id = 11_u64;
         let taker_id = 12_u64;
@@ -309,6 +328,7 @@ mod tests {
 
         set!(world, (Position { x: 900_000, y: 100_000, entity_id: taker_id.into()}));
         set!(world, (Owner { address: contract_address_const::<'taker'>(), entity_id: taker_id.into()}));
+
 
 
 

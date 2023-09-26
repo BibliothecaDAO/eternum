@@ -73,5 +73,25 @@
     "CreateRoad": [
         "Road",
         "Resource"
+    ],
+    "InitializeHyperStructure": [
+        "HyperStructure",
+        "Position",
+        "Resource"
+    ],
+    "CompleteHyperStructure": [
+        "HyperStructure"
+    ],
+    "DefineHyperStructure": [
+        "HyperStructure",
+        "ResourceCost"
+    ],
+    "TransferResources": [
+        "Resource"
+    ],
+    "Travel": [
+        "ArrivalTime",
+        "Position",
+        "Road"
     ]
 }

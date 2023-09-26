@@ -29,6 +29,13 @@ commands=(
     # 100000 gr = 100 kg
     "sozo execute --world $world SetCapacityConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 256,100000"
 
+    ### ROAD ###
+    # fee resource type = 2 # Stone
+    # fee amount = 10
+    # speed up transit by 2x = 2
+
+    "sozo execute --world $world SetRoadConfig --account-address $DOJO_ACCOUNT_ADDRESS --calldata 2,10,2"
+
 )
 
 ### WEIGHT ###
@@ -78,6 +85,16 @@ commands+=(
     "sozo execute --world "$world" SetLaborCostResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata 255,515,2"
     "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 255,2,10"
     "sozo execute --world "$world" SetLaborCostAmount --account-address $DOJO_ACCOUNT_ADDRESS --calldata 255,3,10"
+)
+
+
+commands+=(
+    # Define hyperstructure
+    # hyperstructure type 1
+    # intialization resources: 500 stone and 500 shekels
+    # construction resources: 1,000 stone and 1,000 shekels
+    # hyperstructure coordinate x: 800, y : 200 
+    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,2,500,3,500,2,2,1000,3,1000,800,200"
 )
 
 commands+=(
