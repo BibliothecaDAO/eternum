@@ -21,6 +21,7 @@ import { getComponentValue } from "@latticexyz/recs";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 import { useTrade } from "../../../../hooks/helpers/useTrade";
 import { SelectRealmPanel } from "../SelectRealmPanel";
+import clsx from "clsx";
 
 type CreateOfferPopupProps = {
   onClose: () => void;
@@ -465,7 +466,12 @@ export const SelectCaravanPanel = ({
   return (
     <div className="flex flex-col items-center w-full p-2">
       <div className="grid grid-cols-9 gap-2">
-        <div className="flex flex-col items-center col-span-4 space-y-2 h-min">
+        <div
+          className={clsx(
+            "flex flex-col items-center  space-y-2 h-min",
+            selectedResourceIdsGet.length > 0 ? "col-span-4" : "col-span-9",
+          )}
+        >
           <Headline className="mb-2">You Give</Headline>
           <div className="flex items-center justify-center w-full">
             {selectedResourceIdsGive.map((id) => (
@@ -480,24 +486,28 @@ export const SelectCaravanPanel = ({
             ))}
           </div>
         </div>
-        <div className="flex items-center justify-center">
-          <ArrowSeparator />
-        </div>
-        <div className="flex flex-col items-center col-span-4 space-y-2 h-min">
-          <Headline className="mb-2">You Get</Headline>
-          <div className="flex items-center justify-center w-full">
-            {selectedResourceIdsGet.map((id) => (
-              <ResourceCost
-                key={id}
-                className="!w-min mx-2"
-                type="vertical"
-                color="text-brilliance"
-                resourceId={id}
-                amount={selectedResourcesGetAmounts[id]}
-              />
-            ))}
-          </div>
-        </div>
+        {selectedResourceIdsGet.length > 0 && (
+          <>
+            <div className="flex items-center justify-center">
+              <ArrowSeparator />
+            </div>
+            <div className="flex flex-col items-center col-span-4 space-y-2 h-min">
+              <Headline className="mb-2">You Get</Headline>
+              <div className="flex items-center justify-center w-full">
+                {selectedResourceIdsGet.map((id) => (
+                  <ResourceCost
+                    key={id}
+                    className="!w-min mx-2"
+                    type="vertical"
+                    color="text-brilliance"
+                    resourceId={id}
+                    amount={selectedResourcesGetAmounts[id]}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
       <div className="flex mb-3 text-xs text-center text-white">
         Items Weight <div className="ml-1 text-gold">{`${resourceWeight}kg`}</div>

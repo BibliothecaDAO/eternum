@@ -8,10 +8,10 @@ import ProgressBar from "../../../elements/ProgressBar";
 type HyperstructuresListItemProps = {
   order: number;
   coords: { x: number; y: number; z: number };
-  canBuild?: boolean;
+  onFeed?: () => void;
 };
 
-export const HyperstructuresListItem = ({ order, coords, canBuild = false }: HyperstructuresListItemProps) => {
+export const HyperstructuresListItem = ({ order, coords, onFeed = undefined }: HyperstructuresListItemProps) => {
   const moveCameraToTarget = useUIStore((state) => state.moveCameraToTarget);
 
   return (
@@ -38,9 +38,9 @@ export const HyperstructuresListItem = ({ order, coords, canBuild = false }: Hyp
         <div className="flex items-center mt-2">
           <div className="ml-1 italic text-white/70">Not initialized</div>
 
-          {canBuild && (
-            <Button className="!px-[6px] !py-[2px] text-xxs ml-auto" variant="outline" onClick={() => {}}>
-              Initialize
+          {onFeed && (
+            <Button className="!px-[6px] !py-[2px] text-xxs ml-auto" variant="outline" onClick={onFeed}>
+              Manage
             </Button>
           )}
         </div>
