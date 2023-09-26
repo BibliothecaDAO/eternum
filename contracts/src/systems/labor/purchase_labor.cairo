@@ -40,7 +40,7 @@ mod PurchaseLabor {
 
         let zone = position.get_zone();
         let mut labor_auction = get!(ctx.world, zone, (LaborAuction));
-        assert(labor_auction.target_price != 0, 'Labor auction not found');
+        assert(labor_auction.per_time_unit != 0, 'Labor auction not found');
 
         let mut labor_units_remaining = labor_units;
         let mut total_costs: Felt252Dict<u128> = Default::default();

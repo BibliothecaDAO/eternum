@@ -65,7 +65,6 @@ impl LinearVRGDAImpl of LinearVRGDATrait {
 struct LaborAuction {
     #[key]
     zone: u8,
-    target_price: u128,
     decay_constant_mag: u128,
     decay_constant_sign: bool,
     per_time_unit: u128,
@@ -77,7 +76,7 @@ struct LaborAuction {
 impl LaborAuctionImpl of LaborAuctionTrait {
     fn to_LinearVRGDA(self: LaborAuction) -> LinearVRGDA {
         LinearVRGDA {
-            target_price: FixedTrait::new_unscaled(self.target_price, false),
+            target_price: FixedTrait::new_unscaled(1, false),
             decay_constant: ln(
                 FixedTrait::ONE()
                     - FixedTrait::new(self.decay_constant_mag, self.decay_constant_sign)
@@ -115,15 +114,16 @@ mod tests {
 
     // testing
     use eternum::utils::testing::spawn_eternum;
+
     // use dojo_defi when working with nightly
     // use dojo_defi::tests::utils::{assert_rel_approx_eq};
-    use debug::PrintTrait;
 
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     // constants
+    const _0_9: u128 = 16602069666338596454; // 0.9
     const _0_1: u128 = 1844674407370955161; // 0.1
-    const _11_1111111111: u128 = 204963823041012276354;
+    const _1_1111111111: u128 = 20496382303916760194; // 1.111...
     const DELTA_0_0005: u128 = 9223372036854776;
 
     use cubit::f128::types::fixed::{Fixed, FixedTrait};
@@ -146,7 +146,6 @@ mod tests {
     fn test_auction_get_price() {
         let auction = LaborAuction {
             zone: 0,
-            target_price: 10,
             decay_constant_mag: _0_1,
             decay_constant_sign: false,
             per_time_unit: 50,
@@ -158,10 +157,9 @@ mod tests {
         starknet::testing::set_block_timestamp(172800);
 
         let price = auction.get_price();
-        // assert(price.mag == 169556217585565105770, 'price is wrong');
 
         assert_rel_approx_eq(
-            price, FixedTrait::new_unscaled(9, false), FixedTrait::new(DELTA_0_0005, false)
+            price, FixedTrait::new(_0_9, false), FixedTrait::new(DELTA_0_0005, false)
         )
     }
 
@@ -173,7 +171,6 @@ mod tests {
 
         let mut auction = LaborAuction {
             zone: 1,
-            target_price: 10,
             decay_constant_mag: _0_1,
             decay_constant_sign: false,
             per_time_unit: 50,
@@ -201,7 +198,7 @@ mod tests {
         let price = auction.get_price();
 
         assert_rel_approx_eq(
-            price, FixedTrait::new(_11_1111111111, false), FixedTrait::new(DELTA_0_0005, false)
+            price, FixedTrait::new(_1_1111111111, false), FixedTrait::new(DELTA_0_0005, false)
         )
     }
 }

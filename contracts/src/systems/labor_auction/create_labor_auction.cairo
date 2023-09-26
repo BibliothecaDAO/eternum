@@ -16,9 +16,6 @@ mod CreateLaborAuction {
 
             let auction = LaborAuction {
                 zone,
-                // target_price of 1 because we want to use it as a multiplier for labor costs
-                // since there are multiple resources needed for one labor
-                target_price: 1,
                 decay_constant_mag: decay_constant,
                 decay_constant_sign: false,
                 per_time_unit,
@@ -55,7 +52,6 @@ mod tests {
         starknet::testing::set_contract_address(world.executor());
 
         let zone: u8 = 5;
-        let target_price: u128 = 1;
         let decay_constant: u128 = _0_1;
         let per_time_unit: u128 = 50;
 
@@ -67,7 +63,6 @@ mod tests {
         let labor_auction = get!(world, (zone), LaborAuction);
 
         assert(labor_auction.zone == zone, 'zone');
-        assert(labor_auction.target_price == target_price, 'target_price');
         assert(labor_auction.decay_constant_mag == decay_constant, 'decay_constant_mag');
         assert(labor_auction.per_time_unit == per_time_unit, 'per_time_unit');
         assert(labor_auction.sold == 0, 'sold');
@@ -75,7 +70,6 @@ mod tests {
 
         let labor_auction_food = get!(world, (zone), LaborAuction);
         assert(labor_auction_food.zone == zone, 'zone');
-        assert(labor_auction_food.target_price == target_price, 'target_price');
         assert(labor_auction_food.decay_constant_mag == decay_constant, 'decay_constant_mag');
         assert(labor_auction_food.per_time_unit == per_time_unit, 'per_time_unit');
         assert(labor_auction_food.sold == 0, 'sold');
