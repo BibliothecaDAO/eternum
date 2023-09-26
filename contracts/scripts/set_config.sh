@@ -89,12 +89,25 @@ commands+=(
 
 
 commands+=(
-    # Define hyperstructure
-    # hyperstructure type 1
-    # intialization resources: 500 stone and 500 shekels
-    # construction resources: 1,000 stone and 1,000 shekels
-    # hyperstructure coordinate x: 800, y : 200 
-    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,2,500,3,500,2,2,1000,3,1000,800,200"
+    # Define hyperstructures
+    # @dev generated using data/hyperstructures/generateCommands.js
+    # data => ./contracts/data/hyperstructures/hyperstructures.json
+    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,2,10000,3,10000,2,2,200000,3,200000,740492,1446359"
+    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,2,10000,3,10000,2,2,200000,3,200000,893997,1873356"
+    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,2,10000,3,10000,2,2,200000,3,200000,605410,2023632"
+    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,2,10000,3,10000,2,2,200000,3,200000,1097424,1476206"
+    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,2,10000,3,10000,2,2,200000,3,200000,1572668,1517683"
+    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,2,10000,3,10000,2,2,200000,3,200000,1650208,1764081"
+    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,2,10000,3,10000,2,2,200000,3,200000,1412094,1993452"
+    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,2,10000,3,10000,2,2,200000,3,200000,1652610,2103276"
+    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,2,10000,3,10000,2,2,200000,3,200000,1954116,2171570"
+    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,2,10000,3,10000,2,2,200000,3,200000,2072443,1712964"
+    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,2,10000,3,10000,2,2,200000,3,200000,1906818,1409047"
+    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,2,10000,3,10000,2,2,200000,3,200000,2621909,1458147"
+    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,2,10000,3,10000,2,2,200000,3,200000,2844078,1697894"
+    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,2,10000,3,10000,2,2,200000,3,200000,2509517,1884363"
+    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,2,10000,3,10000,2,2,200000,3,200000,2919158,2127177"
+    "sozo execute --world $world DefineHyperStructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1,2,2,10000,3,10000,2,2,200000,3,200000,2445183,2275580"
 )
 
 commands+=(
