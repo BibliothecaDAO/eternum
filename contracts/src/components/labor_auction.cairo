@@ -49,15 +49,6 @@ impl LinearVRGDAImpl of LinearVRGDATrait {
                         - self.get_target_sale_time(sold + FixedTrait::new(1, false)))
             )
     }
-
-    fn get_reverse_vrgda_price(self: @LinearVRGDA, time_since_start: Fixed, sold: Fixed) -> Fixed {
-        *self.target_price
-            * exp(
-                (*self.decay_constant * FixedTrait::new(1, true))
-                    * (time_since_start
-                        - self.get_target_sale_time(sold + FixedTrait::new(1, false)))
-            )
-    }
 }
 
 
@@ -98,7 +89,7 @@ impl LaborAuctionImpl of LaborAuctionTrait {
             )
     }
 
-    fn sell(ref self: LaborAuction, world: IWorldDispatcher) {
+    fn sell(ref self: LaborAuction) {
         self.sold += 1;
     }
 }
@@ -189,7 +180,7 @@ mod tests {
             if i > 50 {
                 break;
             }
-            auction.sell(world);
+            auction.sell();
             i += 1;
         };
 

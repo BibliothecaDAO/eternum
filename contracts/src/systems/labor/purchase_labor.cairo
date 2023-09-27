@@ -70,7 +70,7 @@ mod PurchaseLabor {
                 index += 1;
             };
 
-            labor_auction.sell(ctx.world);
+            labor_auction.sell();
             labor_units_remaining -= 1;
         };
 
