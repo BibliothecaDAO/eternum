@@ -5,7 +5,7 @@ import { SelectCaravanPanel } from "../../cityview/realm/trade/CreateOffer";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { getRealm } from "../../../utils/realms";
 import { getComponentValue } from "@latticexyz/recs";
-import { getContractPositionFromRealPosition, getEntityIdFromKeys } from "../../../utils/utils";
+import { divideByPrecision, getContractPositionFromRealPosition, getEntityIdFromKeys } from "../../../utils/utils";
 import { useDojo } from "../../../DojoContext";
 import { Steps } from "../../../elements/Steps";
 import { Headline } from "../../../elements/Headline";
@@ -29,12 +29,78 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
   const [step, setStep] = useState<number>(1);
   const [isLoading, setIsLoading] = useState(false);
 
+  const hyperStructurePosition = useMemo(() => {
+    return getContractPositionFromRealPosition({ x: hyperstructure[order - 1].x, y: hyperstructure[order - 1].z });
+  }, [order]);
+
+  const {
+    account: { account },
+    setup: {
+      systemCalls: { create_caravan, create_free_transport_unit, transfer_resources, travel },
+    },
+  } = useDojo();
+
+  const initHyperStructure = async () => {
+    setIsLoading(true);
+    if (hyperstructureData) {
+      if (isNewCaravan) {
+        const transport_units_id = await create_free_transport_unit({
+          signer: account,
+          realm_id: realmEntityId,
+          quantity: donkeysCount,
+        });
+        const caravan_id = await create_caravan({
+          signer: account,
+          entity_ids: [transport_units_id],
+        });
+
+        // transfer resources to caravan
+        await transfer_resources({
+          signer: account,
+          sending_entity_id: realmEntityId,
+          receiving_entity_id: caravan_id,
+          resources:
+            hyperstructureData?.initialzationResources.flatMap((resource) => [resource.resourceId, resource.amount]) ||
+            [],
+        });
+
+        // send caravan to hyperstructure
+        await travel({
+          signer: account,
+          travelling_entity_id: caravan_id,
+          destination_entity_id: hyperstructureData.hyperstructureId,
+        });
+      } else {
+        // transfer resources to caravan
+        await transfer_resources({
+          signer: account,
+          sending_entity_id: realmEntityId,
+          receiving_entity_id: selectedCaravan,
+          resources:
+            hyperstructureData?.initialzationResources.flatMap((resource) => [
+              2,
+              resource.resourceId,
+              resource.amount,
+            ]) || [],
+        });
+
+        // send caravan to hyperstructure
+        await travel({
+          signer: account,
+          travelling_entity_id: selectedCaravan,
+          destination_entity_id: hyperstructureData.hyperstructureId,
+        });
+      }
+    }
+    onClose();
+  };
+
   const { getHyperstructure } = useHyperstructure();
 
   const hyperstructureData = getHyperstructure(
     order,
     // TODO: change z to y when right one
-    getContractPositionFromRealPosition({ x: hyperstructure[order - 1].x, y: hyperstructure[order - 1].z }),
+    hyperStructurePosition,
   );
 
   const {
@@ -47,7 +113,7 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
   for (const [_, amount] of Object.entries(
     hyperstructureData?.initialzationResources.map((resource) => resource.amount) || {},
   )) {
-    resourceWeight += amount * 1;
+    resourceWeight += divideByPrecision(amount) * 1;
   }
 
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
@@ -61,7 +127,7 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
   const initializeResourceAmounts = useMemo(() => {
     const amounts: any = {};
     hyperstructureData?.initialzationResources.forEach((resource) => {
-      amounts[resource.resourceId] = resource.amount;
+      amounts[resource.resourceId] = divideByPrecision(resource.amount);
     });
     return amounts;
   }, []);
@@ -87,8 +153,12 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
   }, [selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
 
   const canGoToNextStep = useMemo(() => {
-    return true;
-  }, []);
+    if (step === 2) {
+      return selectedCaravan !== 0 || (hasEnoughDonkeys && isNewCaravan);
+    } else {
+      return true;
+    }
+  }, [step, selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
 
   useEffect(() => {
     if (donkeysCount * 100 >= resourceWeight) {
@@ -185,11 +255,26 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
               disabled={!canGoToNextStep}
               isLoading={isLoading}
               onClick={() => {
-                setStep(step + 1);
+                if (step == 2) {
+                  initHyperStructure();
+                } else {
+                  setStep(step + 1);
+                }
               }}
               variant={canGoToNextStep ? "success" : "danger"}
             >
               {step == 2 ? "Send Caravan" : "Next Step"}
+            </Button>
+          )}
+          {isLoading && (
+            <Button
+              isLoading={true}
+              onClick={() => {}}
+              variant="danger"
+              className="ml-auto p-2 !h-4 text-xxs !rounded-md"
+            >
+              {" "}
+              {}{" "}
             </Button>
           )}
         </div>

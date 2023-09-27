@@ -5,6 +5,7 @@ import hyperstructureData from "../../data/hyperstructures.json";
 import { getEntityIdFromKeys } from "../../utils/utils";
 
 export interface HyperStructureInterface {
+  hyperstructureId: number;
   progress: number;
   hyperstructureResources: {
     resourceId: number;
@@ -30,15 +31,15 @@ export const useHyperstructure = () => {
     const hypestructureId = runQuery([HasValue(HyperStructure, { coord_x: position.x, coord_y: position.y })]);
 
     if (hypestructureId.size > 0) {
-      let hyperstructureID = Array.from(hypestructureId)[0];
-      let hyperstructure = getComponentValue(HyperStructure, hyperstructureID);
+      let hyperstructureId = Array.from(hypestructureId)[0];
+      let hyperstructure = getComponentValue(HyperStructure, hyperstructureId);
 
       if (hyperstructure) {
         let hyperstructureResources: { resourceId: number; currentAmount: number; completeAmount: number }[] = [];
         hyperstructureData[orderId - 1].resources.completion.forEach((resource) => {
           let hyperstructureResource = getComponentValue(
             Resource,
-            getEntityIdFromKeys([BigInt(hyperstructureID), BigInt(resource.resourceType)]),
+            getEntityIdFromKeys([BigInt(hyperstructureId), BigInt(resource.resourceType)]),
           );
           hyperstructureResources.push({
             resourceId: resource.resourceType,
@@ -52,6 +53,7 @@ export const useHyperstructure = () => {
         }, 0);
 
         return {
+          hyperstructureId,
           progress,
           hyperstructureResources,
           initialzationResources: hyperstructureData[orderId].resources.initialization.map((resource) => {

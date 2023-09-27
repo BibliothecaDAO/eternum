@@ -7,6 +7,22 @@ interface SystemSigner {
   signer: Account;
 }
 
+export interface TravelProps extends SystemSigner {
+  travelling_entity_id: num.BigNumberish;
+  destination_entity_id: num.BigNumberish;
+}
+
+export interface InitializeHyperstructuresProps extends SystemSigner {
+  entity_id: num.BigNumberish;
+  hyperstructure_id: num.BigNumberish;
+}
+
+export interface TransferResourcesProps extends SystemSigner {
+  sending_entity_id: num.BigNumberish;
+  receiving_entity_id: num.BigNumberish;
+  resources: num.BigNumberish[];
+}
+
 export interface BuildLaborProps extends SystemSigner {
   realm_id: num.BigNumberish;
   resource_type: num.BigNumberish;
@@ -265,6 +281,38 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
     setComponentsFromEvents(contractComponents, events);
   };
 
+  const transfer_resources = async (props: TransferResourcesProps) => {
+    const { sending_entity_id, receiving_entity_id, resources, signer } = props;
+    const tx = await execute(signer, "TransferResources", [
+      sending_entity_id,
+      receiving_entity_id,
+      resources.length / 2,
+      ...resources,
+    ]);
+
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
+    const events = getEvents(receipt);
+    setComponentsFromEvents(contractComponents, events);
+  };
+
+  const initialize_hyperstructure = async (props: InitializeHyperstructuresProps) => {
+    const { entity_id, hyperstructure_id, signer } = props;
+    const tx = await execute(signer, "InitializeHyperstructures", [entity_id, hyperstructure_id]);
+
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
+    const events = getEvents(receipt);
+    setComponentsFromEvents(contractComponents, events);
+  };
+
+  const travel = async (props: TravelProps) => {
+    const { travelling_entity_id, destination_entity_id, signer } = props;
+    const tx = await execute(signer, "Travel", [travelling_entity_id, destination_entity_id]);
+
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
+    const events = getEvents(receipt);
+    setComponentsFromEvents(contractComponents, events);
+  };
+
   return {
     build_labor,
     harvest_labor,
@@ -278,6 +326,9 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
     attach_caravan,
     create_realm,
     create_road,
+    transfer_resources,
+    initialize_hyperstructure,
+    travel,
   };
 }
 
