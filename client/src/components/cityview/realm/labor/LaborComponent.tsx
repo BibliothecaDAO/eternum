@@ -126,7 +126,9 @@ export const LaborComponent = ({
         <div className="flex flex-col w-full h-full col-span-5 p-2 text-white/70">
           <div className="flex items-center mb-2">
             <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="sm" />
-            <div className="ml-2 text-xs font-bold text-white">{currencyFormat(resource ? resource.balance : 0)}</div>
+            <div className="ml-2 text-xs font-bold text-white">
+              {currencyFormat(resource ? resource.balance : 0, 2)}
+            </div>
             <div className="flex items-center ml-auto">
               {isFood && <Village />}
               {/* // DISCUSS: when there is no labor anymore, it means full decay of the buildings, so it should be multiplier 0 */}

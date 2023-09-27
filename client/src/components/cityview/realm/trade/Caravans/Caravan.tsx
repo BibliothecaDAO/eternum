@@ -14,6 +14,7 @@ import { useTrade } from "../../../../../hooks/helpers/useTrade";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 import { getTotalResourceWeight } from "../TradeUtils";
+import { divideByPrecision } from "../../../../../utils/utils";
 
 type CaravanProps = {
   caravan: CaravanInterface;
@@ -66,7 +67,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
           )}
           {capacity && resourceWeight !== undefined && capacity && (
             <div className="flex items-center ml-1 text-gold">
-              {isTraveling || isWaitingForDeparture ? resourceWeight : 0}
+              {isTraveling || isWaitingForDeparture ? divideByPrecision(resourceWeight) : 0}
               <div className="mx-0.5 italic text-light-pink">/</div>
               {`${capacity / 1000} kg`}
               <CaretDownFill className="ml-1 fill-current" />

@@ -4,7 +4,7 @@ import { ReactComponent as RatioIcon } from "../../assets/icons/common/ratio.svg
 import { useDojo } from "../../DojoContext";
 import { getComponentValue } from "@latticexyz/recs";
 import { Badge } from "../../elements/Badge";
-import { getEntityIdFromKeys } from "../../utils/utils";
+import { currencyFormat, getEntityIdFromKeys } from "../../utils/utils";
 import { useTrade } from "../helpers/useTrade";
 import { ResourceIcon } from "../../elements/ResourceIcon";
 import { findResourceById } from "../../constants/resources";
@@ -99,7 +99,7 @@ export const useTradeNotification = (
               orderResources1.map(({ resourceId, amount }) => (
                 <div className="flex flex-col items-center mx-2 my-1" key={resourceId}>
                   <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="xs" className="mb-1" />
-                  {amount}
+                  {currencyFormat(amount, 0)}
                 </div>
               ))}
           </div>
@@ -112,7 +112,7 @@ export const useTradeNotification = (
               orderResources2.map(({ resourceId, amount }) => (
                 <div className="flex flex-col items-center mx-2 my-1" key={resourceId}>
                   <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="xs" />
-                  {amount}
+                  {currencyFormat(amount, 0)}
                 </div>
               ))}
           </div>

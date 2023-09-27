@@ -18,6 +18,7 @@ import { getComponentValue } from "@latticexyz/recs";
 import { getEntityIdFromKeys } from "../../../../utils/utils";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
+import { useLabor } from "../../../../hooks/helpers/useLabor";
 
 let LABOR_CONFIG = {
   base_food_per_cycle: 14000,
@@ -58,27 +59,26 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   const laborUnits = useMemo(() => (isFood ? 12 : laborAmount), [laborAmount]);
   const resourceInfo = useMemo(() => findResourceById(resourceId), [resourceId]);
 
-  // TODO: get info from contract config file
-  // calculate the costs of building/buying tools
-  let costResources: { resourceId: number; amount: number }[] = [];
-  for (const resourceIdCost of [2, 3]) {
-    const amount = 10;
-    const totalAmount = amount * multiplier * (isFood ? 12 : laborAmount);
-    amount && costResources.push({ resourceId: resourceIdCost, amount: totalAmount });
-  }
+  const { getLaborCost } = useLabor();
+
+  const costResources = useMemo(() => getLaborCost(resourceId), [resourceId]);
+
+  const getTotalAmount = (amount: number, isFood: boolean, multiplier: number, laborAmount: number) => {
+    return amount * multiplier * (isFood ? 12 : laborAmount);
+  };
 
   useEffect(() => {
     setCanBuild(false);
-    costResources.forEach(({ resourceId, amount }) => {
+    const canBuild = costResources.every(({ resourceId, amount }) => {
       const realmResource = getComponentValue(
         Resource,
         getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
       );
-      if (realmResource && realmResource.balance >= amount) {
-        setCanBuild(true);
-      }
+      return realmResource && realmResource.balance >= getTotalAmount(amount, isFood, multiplier, laborAmount);
     });
-  }, [laborAmount, multiplier]);
+
+    setCanBuild(canBuild);
+  }, [laborAmount, multiplier, costResources]);
 
   const onBuild = () => {
     setBuildLoadingStates((prevStates: any) => ({
@@ -87,6 +87,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     }));
     optimisticBuildLabor(
       nextBlockTimestamp || 0,
+      costResources,
       build_labor,
     )({
       signer: account,
@@ -236,14 +237,6 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
                 </div>
               )}
             </div>
-            {/* // TODO: could be total harvest after 24 hours */}
-            {/* <div className='absolute flex flex-col items-center -translate-x-1/2 -translate-y-1 left-1/2'>
-                            <div className='flex'>
-                                <div className='mx-1 text-brilliance'>+99.23</div>
-                                <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size='xs' className='!w-[12px]' />
-                            </div>
-                            <div className='italic text-light-pink'>Harvested</div>
-                        </div> */}
             <div className="flex items-center">
               {`+${isFood ? (LABOR_CONFIG.base_food_per_cycle * multiplier) / 2 : ""}${
                 isFood ? "" : LABOR_CONFIG.base_resources_per_cycle / 2
@@ -281,7 +274,12 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
               <div className="grid grid-cols-4 gap-2">
                 {costResources.map(({ resourceId, amount }) => (
-                  <ResourceCost key={resourceId} type="vertical" resourceId={resourceId} amount={amount} />
+                  <ResourceCost
+                    key={resourceId}
+                    type="vertical"
+                    resourceId={resourceId}
+                    amount={Number(getTotalAmount(amount, isFood, multiplier, laborAmount).toFixed(2))}
+                  />
                 ))}
               </div>
             </div>

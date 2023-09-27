@@ -16,7 +16,7 @@ import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useGetRealmCaravans } from "../../../../hooks/helpers/useCaravans";
-import { getEntityIdFromKeys } from "../../../../utils/utils";
+import { currencyFormat, divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../../utils/utils";
 import { getComponentValue } from "@latticexyz/recs";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 import { useTrade } from "../../../../hooks/helpers/useTrade";
@@ -67,10 +67,10 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
         signer: account,
         maker_id: realmEntityId,
         maker_entity_types: selectedResourceIdsGive,
-        maker_quantities: Object.values(selectedResourcesGiveAmounts),
+        maker_quantities: Object.values(selectedResourcesGiveAmounts).map((amount) => multiplyByPrecision(amount)),
         taker_id: selectedRealmEntityId || 0,
         taker_entity_types: selectedResourceIdsGet,
-        taker_quantities: Object.values(selectedResourcesGetAmounts),
+        taker_quantities: Object.values(selectedResourcesGetAmounts).map((amount) => multiplyByPrecision(amount)),
       });
       const transport_units_id = await create_free_transport_unit({
         signer: account,
@@ -92,10 +92,10 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
         signer: account,
         maker_id: realmEntityId,
         maker_entity_types: selectedResourceIdsGive,
-        maker_quantities: Object.values(selectedResourcesGiveAmounts),
+        maker_quantities: Object.values(selectedResourcesGiveAmounts).map((amount) => multiplyByPrecision(amount)),
         taker_id: selectedRealmEntityId || 0,
         taker_entity_types: selectedResourceIdsGet,
-        taker_quantities: Object.values(selectedResourcesGetAmounts),
+        taker_quantities: Object.values(selectedResourcesGetAmounts).map((amount) => multiplyByPrecision(amount)),
       });
       await attach_caravan({
         signer: account,
@@ -346,17 +346,18 @@ const SelectResourcesAmountPanel = ({
             return (
               <div key={id} className="flex items-center w-full">
                 <NumberInput
-                  max={resource?.balance || 0}
+                  max={divideByPrecision(resource?.balance || 0)}
+                  min={1}
                   value={selectedResourcesGiveAmounts[id]}
                   onChange={(value) => {
                     setSelectedResourcesGiveAmounts({
                       ...selectedResourcesGiveAmounts,
-                      [id]: Math.min(resource?.balance || 0, value),
+                      [id]: Math.min(divideByPrecision(resource?.balance || 0), value),
                     });
                   }}
                 />
                 <div className="ml-2">
-                  <ResourceCost resourceId={id} amount={selectedResourcesGiveAmounts[id]} />
+                  <ResourceCost resourceId={id} amount={multiplyByPrecision(selectedResourcesGiveAmounts[id])} />
                 </div>
                 <div
                   className={`ml-2 text-xs ${
@@ -365,11 +366,11 @@ const SelectResourcesAmountPanel = ({
                   onClick={() => {
                     setSelectedResourcesGiveAmounts({
                       ...selectedResourcesGiveAmounts,
-                      [id]: resource?.balance || 0,
+                      [id]: divideByPrecision(resource?.balance || 0),
                     });
                   }}
                 >
-                  {`Max ${resource?.balance || 0}`}
+                  {`Max ${currencyFormat(resource?.balance || 0, 0)}`}
                 </div>
               </div>
             );
@@ -394,7 +395,7 @@ const SelectResourcesAmountPanel = ({
                 }}
               />
               <div className="ml-2">
-                <ResourceCost resourceId={id} amount={selectedResourcesGetAmounts[id]} />
+                <ResourceCost resourceId={id} amount={multiplyByPrecision(selectedResourcesGetAmounts[id])} />
               </div>
             </div>
           ))}
@@ -481,7 +482,7 @@ export const SelectCaravanPanel = ({
                 resourceId={id}
                 color="text-gold"
                 type="vertical"
-                amount={-selectedResourcesGiveAmounts[id]}
+                amount={-multiplyByPrecision(selectedResourcesGiveAmounts[id])}
               />
             ))}
           </div>
@@ -501,7 +502,7 @@ export const SelectCaravanPanel = ({
                     type="vertical"
                     color="text-brilliance"
                     resourceId={id}
-                    amount={selectedResourcesGetAmounts[id]}
+                    amount={multiplyByPrecision(selectedResourcesGetAmounts[id])}
                   />
                 ))}
               </div>

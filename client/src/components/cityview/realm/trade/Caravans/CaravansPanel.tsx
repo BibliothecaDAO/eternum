@@ -9,7 +9,7 @@ import { CaravanInterface } from "../../../../../hooks/graphql/useGraphQLQueries
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { useGetRealmCaravans } from "../../../../../hooks/helpers/useCaravans";
-import { getPosition } from "../../SettleRealmComponent";
+import { getPosition } from "../../../../../utils/utils";
 
 type CaravansPanelProps = {};
 
