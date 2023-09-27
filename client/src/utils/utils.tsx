@@ -4,6 +4,7 @@ import { useThree } from "@react-three/fiber";
 import { BlendFunction } from "postprocessing";
 import { EntityIndex, setComponent, Component, Schema, Components } from "@latticexyz/recs";
 import { poseidonHashMany } from "micro-starknet";
+import { Position } from "../types";
 
 const isRef = (ref: any) => !!ref.current;
 
@@ -237,4 +238,12 @@ export const formatTimeLeftDaysHoursMinutes = (seconds: number) => {
   const minutes = Math.floor((seconds % 3600) / 60);
 
   return `${days} days ${hours}h:${minutes}m`;
+};
+
+export const getContractPositionFromRealPosition = (position: Position): Position => {
+  const { x, y } = position;
+  return {
+    x: Math.floor(x * 10000 + 1800000),
+    y: Math.floor(y * 10000 + 1800000),
+  };
 };

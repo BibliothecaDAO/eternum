@@ -5,7 +5,7 @@ import { SelectCaravanPanel } from "../../cityview/realm/trade/CreateOffer";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { getRealm } from "../../../utils/realms";
 import { getComponentValue } from "@latticexyz/recs";
-import { getEntityIdFromKeys } from "../../../utils/utils";
+import { getContractPositionFromRealPosition, getEntityIdFromKeys } from "../../../utils/utils";
 import { useDojo } from "../../../DojoContext";
 import { Steps } from "../../../elements/Steps";
 import { Headline } from "../../../elements/Headline";
@@ -13,22 +13,13 @@ import { OrderIcon } from "../../../elements/OrderIcon";
 import { orderNameDict, orders } from "../../../constants/orders";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import clsx from "clsx";
+import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
+import hyperstructure from "../../../data/hyperstructures.json";
 
 type FeedHyperstructurePopupProps = {
   onClose: () => void;
   order: number;
 };
-
-const HYPERSTRUCTURE_COST = [
-  {
-    resourceId: 2,
-    amount: 10,
-  },
-  {
-    resourceId: 3,
-    amount: 10,
-  },
-];
 
 export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePopupProps) => {
   const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
@@ -38,6 +29,14 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
   const [step, setStep] = useState<number>(1);
   const [isLoading, setIsLoading] = useState(false);
 
+  const { getHyperstructure } = useHyperstructure();
+
+  const hyperstructureData = getHyperstructure(
+    order,
+    // TODO: change z to y when right one
+    getContractPositionFromRealPosition({ x: hyperstructure[order - 1].x, y: hyperstructure[order - 1].z }),
+  );
+
   const {
     setup: {
       components: { Resource },
@@ -45,18 +44,23 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
   } = useDojo();
 
   let resourceWeight = 0;
+  for (const [_, amount] of Object.entries(
+    hyperstructureData?.initialzationResources.map((resource) => resource.amount) || {},
+  )) {
+    resourceWeight += amount * 1;
+  }
 
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const setRealmEntityId = useRealmStore((state) => state.setRealmEntityId);
 
   const initializeResourceIds = useMemo(() => {
-    return HYPERSTRUCTURE_COST.map((resource) => resource.resourceId);
+    return hyperstructureData?.initialzationResources.map((resource) => resource.resourceId) || [];
   }, []);
 
   const initializeResourceAmounts = useMemo(() => {
     const amounts: any = {};
-    HYPERSTRUCTURE_COST.forEach((resource) => {
+    hyperstructureData?.initialzationResources.forEach((resource) => {
       amounts[resource.resourceId] = resource.amount;
     });
     return amounts;
@@ -66,7 +70,7 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
     () =>
       realmEntityIds.map((realmEntityId) => {
         const _realm = getRealm(realmEntityId.realmId);
-        const _resources = HYPERSTRUCTURE_COST.map((resource) => ({
+        const _resources = hyperstructureData?.initialzationResources.map((resource) => ({
           id: resource.resourceId,
           balance: getComponentValue(
             Resource,
@@ -117,7 +121,7 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
             <div className="flex items-center">
               <span className="text-gray-gold">Required resources:</span>
               <div className="flex items-center">
-                {HYPERSTRUCTURE_COST.map((resource) => {
+                {hyperstructureData?.initialzationResources.map((resource) => {
                   return (
                     <ResourceCost key={resource.resourceId} resourceId={resource.resourceId} amount={resource.amount} />
                   );
@@ -185,7 +189,7 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
               }}
               variant={canGoToNextStep ? "success" : "danger"}
             >
-              {step == 3 ? "Send Caravan" : "Next Step"}
+              {step == 2 ? "Send Caravan" : "Next Step"}
             </Button>
           )}
         </div>

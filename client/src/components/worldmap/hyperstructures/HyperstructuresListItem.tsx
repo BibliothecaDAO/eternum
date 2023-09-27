@@ -4,6 +4,7 @@ import { ReactComponent as Map } from "../../../assets/icons/common/map.svg";
 import { orderNameDict, orders } from "../../../constants/orders";
 import useUIStore from "../../../hooks/store/useUIStore";
 import ProgressBar from "../../../elements/ProgressBar";
+import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
 
 type HyperstructuresListItemProps = {
   order: number;
@@ -13,6 +14,10 @@ type HyperstructuresListItemProps = {
 
 export const HyperstructuresListItem = ({ order, coords, onFeed = undefined }: HyperstructuresListItemProps) => {
   const moveCameraToTarget = useUIStore((state) => state.moveCameraToTarget);
+
+  const { getHyperstructure } = useHyperstructure();
+
+  const hyperstructure = getHyperstructure(order, coords);
 
   return (
     <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold">
@@ -34,7 +39,7 @@ export const HyperstructuresListItem = ({ order, coords, onFeed = undefined }: H
         </div>
       </div>
       <div className="flex flex-col w-full mt-3">
-        <ProgressBar rounded progress={30} className="bg-white" />
+        <ProgressBar rounded progress={hyperstructure?.progress || 0} className="bg-white" />
         <div className="flex items-center mt-2">
           <div className="ml-1 italic text-white/70">Not initialized</div>
 
