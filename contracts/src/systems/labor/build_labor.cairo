@@ -53,14 +53,7 @@ mod BuildLabor {
         // config
         let additional_labor = labor_units * labor_config.base_labor_units;
 
-        // set new labor balance
-        let mut new_labor_balance = labor.balance + additional_labor;
-        let mut new_last_harvest = labor.last_harvest;
-
-        // if no more labor, set last_harvest to today
-        if labor.balance <= ts {
-            new_last_harvest = ts;
-        };
+        let mut new_labor = labor.compute_new_labor(additional_labor, ts, multiplier);
 
         // assert multiplier higher than 0
         assert(multiplier > 0, 'Multiplier cannot be zero');
@@ -111,23 +104,13 @@ mod BuildLabor {
                             * labor_config.base_food_per_cycle)
                 }
             );
-
-            // if unharvested has been harvested, remove it from the labor balance
-            new_labor_balance = new_labor_balance - labor_unharvested;
-            // if unharvested has been harvested, update last_harvest
-            new_last_harvest = ts;
+            new_labor.harvest_unharvested(labor_unharvested, ts)
         }
 
         // update the labor
         let _ = set!(
             ctx.world,
-            Labor {
-                entity_id: realm_id,
-                resource_type: current_resource.resource_type,
-                balance: new_labor_balance,
-                last_harvest: new_last_harvest,
-                multiplier: multiplier
-            }
+            (new_labor)
         );
 
         let labor_resource_type = get_labor_resource_type(resource_type);
@@ -169,14 +152,18 @@ mod tests {
 
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-    #[test]
-    #[available_gas(300000000000)]
-    fn test_build_labor_non_food() {
+    fn setup() -> (IWorldDispatcher, felt252) {
         let world = spawn_eternum();
 
-        let player_address = starknet::get_caller_address();
+        // set labor configuration entity
+        let mut create_labor_conf_calldata = array![];
 
-        let resource_type = ResourceTypes::GOLD;
+        Serde::serialize(@7200, ref create_labor_conf_calldata); // base_labor_units
+        Serde::serialize(@250, ref create_labor_conf_calldata); // base_resources_per_cycle
+        Serde::serialize(
+            @21_000_000_000_000_000_000, ref create_labor_conf_calldata
+        ); // base_food_per_cycle
+        world.execute('SetLaborConfig', create_labor_conf_calldata);
 
         // set realm entity
         // x needs to be > 470200 to get zone
@@ -199,15 +186,17 @@ mod tests {
         let result = world.execute('CreateRealm', create_realm_calldata);
         let realm_entity_id = *result[0];
 
-        // set labor configuration entity
-        let mut create_labor_conf_calldata = array![];
+        (world, realm_entity_id)
+    }
 
-        Serde::serialize(@7200, ref create_labor_conf_calldata); // base_labor_units
-        Serde::serialize(@250, ref create_labor_conf_calldata); // base_resources_per_cycle
-        Serde::serialize(
-            @21_000_000_000_000_000_000, ref create_labor_conf_calldata
-        ); // base_food_per_cycle
-        world.execute('SetLaborConfig', create_labor_conf_calldata);
+    #[test]
+    #[available_gas(300000000000)]
+    fn test_build_labor_non_food() {
+        let (world, realm_entity_id) = setup();
+
+        let player_address = starknet::get_caller_address();
+
+        let resource_type = ResourceTypes::GOLD;
 
         // set block timestamp in order to harvest labor
         // initial ts = 0
@@ -250,41 +239,10 @@ mod tests {
     #[test]
     #[available_gas(300000000000)]
     fn test_build_labor_food() {
-        let world = spawn_eternum();
+        let (world, realm_entity_id) = setup();
 
-        let player_address = starknet::get_caller_address();
-
+        let caller_address = starknet::get_caller_address();
         let resource_type = ResourceTypes::WHEAT;
-
-        // set realm entity
-        let position = Position { x: 500200, y: 1, entity_id: 1_u128 };
-        let mut create_realm_calldata = Default::default();
-
-        Serde::serialize(@1, ref create_realm_calldata); // realm id
-        Serde::serialize(@starknet::get_caller_address(), ref create_realm_calldata); // owner
-        Serde::serialize(
-            @1, ref create_realm_calldata
-        ); // resource_types_packed // doesn't matter since wheat is food
-        Serde::serialize(@3, ref create_realm_calldata); // resource_types_count
-        Serde::serialize(@5, ref create_realm_calldata); // cities
-        Serde::serialize(@5, ref create_realm_calldata); // harbors
-        Serde::serialize(@5, ref create_realm_calldata); // rivers
-        Serde::serialize(@5, ref create_realm_calldata); // regions
-        Serde::serialize(@1, ref create_realm_calldata); // wonder
-        Serde::serialize(@1, ref create_realm_calldata); // order
-        Serde::serialize(@position, ref create_realm_calldata); // position
-        let result = world.execute('CreateRealm', create_realm_calldata);
-        let realm_entity_id = *result[0];
-
-        // set labor configuration entity
-        let mut create_labor_conf_calldata = array![];
-
-        Serde::serialize(@7200, ref create_labor_conf_calldata); // base_labor_units
-        Serde::serialize(@250, ref create_labor_conf_calldata); // base_resources_per_cycle
-        Serde::serialize(
-            @21_000_000_000_000_000_000, ref create_labor_conf_calldata
-        ); // base_food_per_cycle
-        world.execute('SetLaborConfig', create_labor_conf_calldata);
 
         // set block timestamp in order to harvest labor
         // initial ts = 0
@@ -303,7 +261,7 @@ mod tests {
                 balance: 100
             }
         );
-        starknet::testing::set_contract_address(player_address);
+        starknet::testing::set_contract_address(caller_address);
 
         // build labor for wheat
         let mut build_labor_calldata = array![];
@@ -368,6 +326,64 @@ mod tests {
         );
         assert(wheat_labor.last_harvest == 20_000, 'wrong wheat labor last harvest');
         assert(wheat_labor.multiplier == 2, 'wrong wheat multiplier');
+    }
+
+
+    #[test]
+    #[available_gas(300000000000)]
+    fn test_build_labor_after_completed() {
+        let (world, realm_entity_id) = setup();
+
+        let caller_address = starknet::get_caller_address();
+
+        let resource_type = ResourceTypes::GOLD;
+
+        // set block timestamp in order to harvest labor
+        // initial ts = 0
+        let ts = 10_000;
+        starknet::testing::set_block_timestamp(ts);
+
+        let labor_resource_type = get_labor_resource_type(resource_type);
+
+        // switch to executor to set storage directly
+        starknet::testing::set_contract_address(world.executor());
+        set!(
+            world,
+            Resource {
+                entity_id: realm_entity_id.try_into().unwrap(),
+                resource_type: labor_resource_type,
+                balance: 40
+            }
+        );
+        set!(
+            world,
+            Labor {
+                entity_id: realm_entity_id.try_into().unwrap(),
+                resource_type,
+                balance: 9_000,
+                last_harvest: 1_000,
+                multiplier: 1,
+            }
+        );
+        starknet::testing::set_contract_address(caller_address);
+
+        // build labor for gold
+        let mut build_labor_calldata = array![];
+        Serde::serialize(@realm_entity_id, ref build_labor_calldata); // realm_id
+        Serde::serialize(@resource_type, ref build_labor_calldata); // resource_type
+        Serde::serialize(@20, ref build_labor_calldata); // labor_units
+        Serde::serialize(@1, ref build_labor_calldata); // multiplier
+        world.execute('BuildLabor', build_labor_calldata);
+
+
+        // // assert labor is right amount
+        let gold_labor = get!(world, (realm_entity_id, resource_type), Labor);
+        assert(gold_labor.balance == ts + (7_200 * 20), 'wrong gold labor balance');
+        assert(gold_labor.last_harvest == 2_000, 'wrong gold labor last harvest');
+        assert(gold_labor.multiplier == 1, 'wrong gold multiplier');
+
+        let gold_resource_type = get!(world, (realm_entity_id, labor_resource_type), Resource);
+        assert(gold_resource_type.balance == 20, 'wrong labor resource');
     }
 }
 
