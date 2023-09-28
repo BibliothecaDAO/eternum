@@ -4,7 +4,7 @@ mod CreateLaborAuction {
 
     use dojo::world::Context;
 
-    fn execute(ctx: Context, decay_constant: u128, per_time_unit: u128) {
+    fn execute(ctx: Context, decay_constant: u128, per_time_unit: u128, price_update_interval: u128) {
         let start_time = starknet::get_block_timestamp();
 
         let mut zone: u8 = 1;
@@ -21,6 +21,7 @@ mod CreateLaborAuction {
                 per_time_unit,
                 start_time,
                 sold: 0,
+                price_update_interval,
             };
 
             set!(ctx.world, (auction));
@@ -54,10 +55,12 @@ mod tests {
         let zone: u8 = 5;
         let decay_constant: u128 = _0_1;
         let per_time_unit: u128 = 50;
+        let price_update_interval: u128 = 10;
 
         let mut calldata = array![];
         Serde::serialize(@decay_constant, ref calldata);
         Serde::serialize(@per_time_unit, ref calldata);
+        Serde::serialize(@price_update_interval, ref calldata);
         world.execute('CreateLaborAuction', calldata);
 
         let labor_auction = get!(world, (zone), LaborAuction);
@@ -67,12 +70,6 @@ mod tests {
         assert(labor_auction.per_time_unit == per_time_unit, 'per_time_unit');
         assert(labor_auction.sold == 0, 'sold');
         assert(labor_auction.decay_constant_sign == false, 'decay_constant_sign');
-
-        let labor_auction_food = get!(world, (zone), LaborAuction);
-        assert(labor_auction_food.zone == zone, 'zone');
-        assert(labor_auction_food.decay_constant_mag == decay_constant, 'decay_constant_mag');
-        assert(labor_auction_food.per_time_unit == per_time_unit, 'per_time_unit');
-        assert(labor_auction_food.sold == 0, 'sold');
-        assert(labor_auction_food.decay_constant_sign == false, 'decay_constant_sign');
+        assert(labor_auction.price_update_interval == 10, 'price_update_interval');
     }
 }

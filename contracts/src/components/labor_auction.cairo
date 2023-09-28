@@ -61,6 +61,7 @@ struct LaborAuction {
     per_time_unit: u128,
     start_time: u64,
     sold: u128,
+    price_update_interval: u128,
 }
 
 #[generate_trait]
@@ -142,6 +143,7 @@ mod tests {
             per_time_unit: 50,
             start_time: 0,
             sold: 50,
+            price_update_interval: 10,
         };
 
         // 2 days in the future
@@ -167,6 +169,7 @@ mod tests {
             per_time_unit: 50,
             start_time: 0,
             sold: 50,
+            price_update_interval: 10,
         };
 
         set!(world, (auction));

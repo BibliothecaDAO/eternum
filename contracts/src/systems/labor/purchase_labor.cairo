@@ -7,6 +7,8 @@ mod PurchaseLabor {
     use eternum::components::labor::{Labor, LaborTrait};
     use eternum::components::labor_auction::{LaborAuction, LaborAuctionTrait};
 
+    use debug::PrintTrait;
+
     use eternum::alias::ID;
     use eternum::components::owner::Owner;
     use eternum::components::position::{Position, PositionTrait};
@@ -45,12 +47,15 @@ mod PurchaseLabor {
         let mut labor_units_remaining = labor_units;
         let mut total_costs: Felt252Dict<u128> = Default::default();
 
+        let mut labor_cost_multiplier = labor_auction.get_price();
+
         loop {
             if labor_units_remaining == 0 {
                 break;
             }
 
             let mut index = 0_usize;
+
             loop {
                 if index == labor_cost_resources.resource_types_count.into() {
                     break ();
@@ -60,17 +65,20 @@ mod PurchaseLabor {
                     ctx.world, (resource_type, labor_cost_resource_type).into(), LaborCostAmount
                 );
 
-                let labor_cost_multiplier = labor_auction.get_price();
                 let cost_fixed = FixedTrait::new_unscaled(labor_cost_per_unit.value, false)
                     * labor_cost_multiplier.into();
                 let cost: u128 = cost_fixed.try_into().unwrap();
 
                 let total_cost = total_costs.get(labor_cost_resource_type.into());
                 total_costs.insert(labor_cost_resource_type.into(), total_cost + cost);
+
                 index += 1;
             };
 
             labor_auction.sell();
+            if (labor_auction.sold) % labor_auction.price_update_interval == 0 {
+                labor_cost_multiplier = labor_auction.get_price();
+            };
             labor_units_remaining -= 1;
         };
 
@@ -132,6 +140,7 @@ mod tests {
 
     // testing
     use eternum::utils::testing::spawn_eternum;
+    use debug::PrintTrait;
 
     use traits::Into;
     use result::ResultTrait;
@@ -149,6 +158,7 @@ mod tests {
         let mut create_labor_auction_calldata = array![];
         Serde::serialize(@_0_1, ref create_labor_auction_calldata); // decay
         Serde::serialize(@50, ref create_labor_auction_calldata); // unit per time
+        Serde::serialize(@10, ref create_labor_auction_calldata); // interval per price change
         world.execute('CreateLaborAuction', create_labor_auction_calldata);
 
         // set realm entity
@@ -239,12 +249,13 @@ mod tests {
 
         // assert resources are the right amount
         let coal_resource = get!(world, (realm_entity_id, ResourceTypes::COAL), Resource);
+        coal_resource.balance.print();
         assert(coal_resource.resource_type == ResourceTypes::COAL, 'failed resource type');
-        assert(coal_resource.balance == 79_603, 'failed resource amount');
+        assert(coal_resource.balance == 79_790, 'failed resource amount');
 
         let stone_resource = get!(world, (realm_entity_id, ResourceTypes::STONE), Resource);
         assert(stone_resource.resource_type == ResourceTypes::STONE, 'failed resource type');
-        assert(stone_resource.balance == 79_603, 'failed resource amount');
+        assert(stone_resource.balance == 79_790, 'failed resource amount');
 
         // assert labor resource is right amount
         let gold_labor_resource = get!(world, (realm_entity_id, resource_type + 28), Resource);
@@ -270,11 +281,11 @@ mod tests {
         // assert resources are the right amount
         let coal_resource = get!(world, (realm_entity_id, ResourceTypes::COAL), Resource);
         assert(coal_resource.resource_type == ResourceTypes::COAL, 'failed resource type');
-        assert(coal_resource.balance == 79_603, 'failed resource amount');
+        assert(coal_resource.balance == 79_790, 'failed resource amount');
 
         let stone_resource = get!(world, (realm_entity_id, ResourceTypes::STONE), Resource);
         assert(stone_resource.resource_type == ResourceTypes::STONE, 'failed resource type');
-        assert(stone_resource.balance == 79_603, 'failed resource amount');
+        assert(stone_resource.balance == 79_790, 'failed resource amount');
 
         // assert labor resource is right amount
         let fish_labor_resource = get!(world, (realm_entity_id, resource_type - 3), Resource);
