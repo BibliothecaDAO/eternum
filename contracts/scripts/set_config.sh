@@ -202,7 +202,7 @@ commands+=(
     # 20 * 5 * 12 = 960 labor units per day per zone as target
 
     # 0.1 decay = 1844674407370955161
-    "sozo execute --world $world CreateLaborAuction --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1844674407370955161,960"
+    "sozo execute --world $world CreateLaborAuction --account-address $DOJO_ACCOUNT_ADDRESS --calldata 1844674407370955161,960,10"
 )
 
 

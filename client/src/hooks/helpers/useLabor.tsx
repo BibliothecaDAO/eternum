@@ -99,13 +99,17 @@ function computeAverageCoefficient(
   nextBlockTimestamp: number,
   sold: number,
   laborUnits: number,
-) {
+): number {
   let sum = 0;
-  for (let i = 1; i <= laborUnits; i++) {
-    sum += Math.exp(
-      Math.log(1 - DECAY) *
-        (Math.floor((nextBlockTimestamp - startTimestamp) / SECONDS_PER_DAY) - (sold + i) / UNITS_PER_DAY),
-    );
+  let multiplier = computeCoefficient(startTimestamp, nextBlockTimestamp, sold);
+  // start at number of units already sold and add 1 everytime
+  for (let i = sold; i < sold + laborUnits; i++) {
+    if (i % 10 == 0) {
+      multiplier = computeCoefficient(startTimestamp, nextBlockTimestamp, i);
+      sum += multiplier;
+    } else {
+      sum += multiplier;
+    }
   }
-  return sum / laborUnits; // Return the average coefficient
+  return sum / laborUnits; // Return the average coefficient}
 }

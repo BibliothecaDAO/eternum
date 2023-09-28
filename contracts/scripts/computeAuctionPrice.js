@@ -30,7 +30,48 @@ function getTotalPrice(
 }
 
 // Example usage
-let price = getTotalPrice(0.1, 1000, 20, 50, 0, 0, 1, 10);
-console.log("total price", price);
-let balance = 100000;
-console.log("resource left", balance - price);
+// let price = getTotalPrice(0.1, 1000, 20, 50, 0, 0, 1, 10);
+// console.log("total price", price);
+// let balance = 100000;
+// console.log("resource left", balance - price);
+
+const DECAY = 0.1;
+const UNITS_PER_DAY = 960;
+const SECONDS_PER_DAY = 86400;
+
+function computeCoefficient(startTimestamp, nextBlockTimestamp, sold) {
+  return Math.exp(
+    Math.log(1 - DECAY) *
+      (Math.floor((nextBlockTimestamp - startTimestamp) / SECONDS_PER_DAY) -
+        sold / UNITS_PER_DAY)
+  );
+}
+
+function computeAverageCoefficient(
+  startTimestamp,
+  nextBlockTimestamp,
+  sold,
+  laborUnits,
+  interval
+) {
+  let sum = 0;
+  let multiplier = computeCoefficient(startTimestamp, nextBlockTimestamp, sold);
+  // start at number of units already sold and add 1 everytime
+  for (let i = sold; i < sold + laborUnits; i++) {
+    console.log({ multiplier });
+    if (i % interval == 0) {
+      multiplier = computeCoefficient(startTimestamp, nextBlockTimestamp, i);
+      sum += multiplier;
+    } else {
+      sum += multiplier;
+    }
+  }
+  return sum / laborUnits; // Return the average coefficient
+}
+
+const averageCoefficient = computeAverageCoefficient(0, 0, 0, 1566, 10);
+
+// Example usage
+// console.log({ averageCoefficient });
+// console.log({ totalCost: 1000 * 16 * averageCoefficient });
+// console.log({ remainder: 100000 - 1000 * 20 * averageCoefficient });
