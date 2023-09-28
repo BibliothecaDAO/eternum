@@ -109,7 +109,8 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
       laborLeft = labor.balance - nextBlockTimestamp;
     }
     const productivity =
-      labor && laborLeft
+      // can have a small difference between block timestamp and actual block so make sure that laborLeft is more than 1 minute
+      labor && laborLeft > 60
         ? calculateProductivity(
             isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
             labor.multiplier,

@@ -233,16 +233,22 @@ export function createOptimisticSystemCalls({
         multiplier: 1,
       };
 
-      const balance = labor.balance + (laborUnits as number) * LABOR_CONFIG.base_labor_units;
-      const laborLeft = labor.balance - ts;
+      let additional_labor = (laborUnits as number) * LABOR_CONFIG.base_labor_units;
+      let new_balance: number = labor.balance;
+      let new_last_harvest: number = labor.last_harvest;
+      if (labor.balance <= ts) {
+        new_last_harvest += ts - labor.balance;
+        new_balance = ts + additional_labor;
+      } else {
+        new_balance += additional_labor;
+      }
 
-      // change status from open to accepted
       Labor.addOverride(overrideId, {
         entity: resource_id,
         value: {
           multiplier: multiplier as number,
-          balance,
-          last_harvest: laborLeft > 0 ? labor.last_harvest : ts,
+          balance: new_balance,
+          last_harvest: new_last_harvest,
         },
       });
 
