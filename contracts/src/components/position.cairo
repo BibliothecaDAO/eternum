@@ -11,6 +11,75 @@ struct Coord {
     y: u32
 }
 
+#[generate_trait]
+impl CoordImpl of CoordTrait {
+
+    // todo@credence revisit this
+    fn interpolate(self: Coord, other: Coord, percent: u32) -> Coord {
+        assert(percent >= 0 && percent <= 100, 'percentage out of range');
+
+        let self_x_felt : felt252 = self.x.into();
+        let self_y_felt : felt252 = self.y.into();
+
+        let other_x_felt : felt252 = other.x.into();
+        let other_y_felt : felt252 = other.y.into();
+        
+        let mut interpolated_x: i32 = ((other_x_felt.try_into().unwrap() - self_x_felt.try_into().unwrap()));
+        let mut interpolated_x_final : u32 = 0;
+
+        if interpolated_x < 0 {
+            interpolated_x = interpolated_x * -1;
+            let interpolated_x_felt: felt252 = interpolated_x.into();
+            interpolated_x_final = self.x - interpolated_x_felt.try_into().unwrap() * percent / 100;
+        } else {
+            let interpolated_x_felt: felt252 = interpolated_x.into();
+            interpolated_x_final = self.x + interpolated_x_felt.try_into().unwrap() * percent / 100;
+        }
+
+        let mut interpolated_y: i32 = ((other_y_felt.try_into().unwrap() - self_y_felt.try_into().unwrap()));
+        let mut interpolated_y_final : u32 = 0;
+
+        if interpolated_y < 0 {
+            interpolated_y = interpolated_y * -1;
+            let interpolated_y_felt: felt252 = interpolated_y.into();
+            interpolated_y_final = self.y - interpolated_y_felt.try_into().unwrap() * percent / 100;
+        } else {
+            let interpolated_y_felt: felt252 = interpolated_y.into();
+            interpolated_y_final = self.y + interpolated_y_felt.try_into().unwrap() * percent / 100;
+        }
+
+        Coord { x: interpolated_x_final, y: interpolated_y_final }
+    }
+
+
+    fn measure_distance(self: Coord, destination: Coord) -> u32 {
+        // d = √((x2-x1)² + (y2-y1)²)
+        let x: u128 = if self.x > destination.x {
+            pow((self.x - destination.x).into(), 2)
+        } else {
+            pow((destination.x - self.x).into(), 2)
+        };
+        let y: u128 = if self.y > destination.y {
+            pow((self.y - destination.y).into(), 2)
+        } else {
+            pow((destination.y - self.y).into(), 2)
+        };
+
+        // we store coords in x * 10000 to get precise distance
+        let distance = u128_sqrt(x + y) / 10000;
+
+        distance.try_into().unwrap()
+    }
+
+
+    fn measure_travel_time(self: Coord, destination: Coord, sec_per_km: u16) -> u64 {
+        let distance: u32 = self.measure_distance(destination);
+        let time = distance * sec_per_km.into();
+        time.into()
+    }
+}
+
+
 impl CoordPrint of PrintTrait<Coord> {
     fn print(self: Coord) {
         self.x.print();
@@ -35,33 +104,14 @@ struct Position {
     y: u32
 }
 
-trait PositionTrait {
-    fn calculate_distance(self: Position, destination: Position) -> u32;
-    fn calculate_travel_time(self: Position, destination: Position, sec_per_km: u16) -> u64;
-}
+#[generate_trait]
 impl PositionImpl of PositionTrait {
     fn calculate_distance(self: Position, destination: Position) -> u32 {
-        // d = √((x2-x1)² + (y2-y1)²)
-        let x: u128 = if self.x > destination.x {
-            pow((self.x - destination.x).into(), 2)
-        } else {
-            pow((destination.x - self.x).into(), 2)
-        };
-        let y: u128 = if self.y > destination.y {
-            pow((self.y - destination.y).into(), 2)
-        } else {
-            pow((destination.y - self.y).into(), 2)
-        };
+        CoordImpl::measure_distance(self.into(), destination.into())
 
-        // we store coords in x * 10000 to get precise distance
-        let distance = u128_sqrt(x + y) / 10000;
-
-        distance.try_into().unwrap()
     }
     fn calculate_travel_time(self: Position, destination: Position, sec_per_km: u16) -> u64 {
-        let distance: u32 = self.calculate_distance(destination);
-        let time = distance * sec_per_km.into();
-        time.into()
+        CoordImpl::measure_travel_time(self.into(), destination.into(), sec_per_km)
     }
 }
 

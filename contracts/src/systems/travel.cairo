@@ -2,8 +2,8 @@
 mod Travel {
     
     use eternum::alias::ID;
-    use eternum::components::movable::{Movable, ArrivalTime};
-    use eternum::components::position::{Position, PositionTrait};
+    use eternum::components::movable::{Movable, Travel};
+    use eternum::components::position::{Coord, CoordTrait, Position, PositionTrait};
     use eternum::components::owner::Owner;
     use eternum::components::road::RoadImpl;
     use eternum::components::config::RoadConfig;
@@ -14,29 +14,28 @@ mod Travel {
 
     use core::traits::Into;
     
-    fn execute(ctx: Context, travelling_entity_id: ID, destination_entity_id: ID) {
+    fn execute(ctx: Context, entity_id: ID, destination: Coord) {
 
-        let travelling_entity_owner = get!(ctx.world, travelling_entity_id, Owner);
-        assert(travelling_entity_owner.address == ctx.origin, 'not owner of entity');
+        let entity_owner = get!(ctx.world, entity_id, Owner);
+        assert(entity_owner.address == ctx.origin, 'not owner of entity');
 
-        let travelling_entity_movable = get!(ctx.world, travelling_entity_id, Movable);      
-        assert(travelling_entity_movable.sec_per_km != 0, 'entity has no speed');  
-        assert(travelling_entity_movable.blocked == false, 'entity is blocked');  
+        let entity_movable = get!(ctx.world, entity_id, Movable);      
+        assert(entity_movable.sec_per_km != 0, 'entity has no speed');  
+        assert(entity_movable.blocked == false, 'entity is blocked');  
         
-        let travelling_entity_arrival_time = get!(ctx.world, travelling_entity_id, ArrivalTime);
+        let entity_travel_time = get!(ctx.world, entity_id, Travel);
         let ts = starknet::get_block_timestamp();
-        assert(travelling_entity_arrival_time.arrives_at <= ts, 'entity is in transit');
+        assert(entity_travel_time.arrival_time <= ts, 'entity is in transit');
 
 
-        let travelling_entity_position = get!(ctx.world, travelling_entity_id, Position);
-        let destination_position = get!(ctx.world, destination_entity_id, Position);
+        let entity_coord: Coord = (get!(ctx.world, entity_id, Position)).into();
 
-        let mut travel_time = travelling_entity_position.calculate_travel_time(
-            destination_position, travelling_entity_movable.sec_per_km
+        let mut travel_time = entity_coord.measure_travel_time(
+            destination, entity_movable.sec_per_km
         );
         
         // reduce travel time if a road exists
-        let mut road = RoadImpl::get(ctx.world, travelling_entity_position.into(), destination_position.into());
+        let mut road = RoadImpl::get(ctx.world, entity_coord, destination);
         if road.usage_count > 0 {
             let road_config = get!(ctx.world, ROAD_CONFIG_ID, RoadConfig);
             
@@ -48,14 +47,19 @@ mod Travel {
 
     
         set!(ctx.world,(
-            ArrivalTime {
-                entity_id: travelling_entity_id,
-                arrives_at: ts + travel_time
+            Travel {
+                entity_id: entity_id,
+                departure_time: ts,
+                arrival_time: ts + travel_time,
+                departure_coord_x: entity_coord.x,
+                departure_coord_y: entity_coord.y,
+                last_stop_coord_x: entity_coord.x,
+                last_stop_coord_y: entity_coord.y
             },
             Position {
-                entity_id: travelling_entity_id,
-                x: destination_position.x,
-                y: destination_position.y
+                entity_id: entity_id,
+                x: destination.x,
+                y: destination.y
             }
         ));
 
@@ -94,18 +98,18 @@ mod tests {
         starknet::testing::set_contract_address(world.executor());
         
         
-        let travelling_entity_id = 11_u64;
-        let travelling_entity_position = Position { 
+        let entity_id = 11_u64;
+        let entity_position = Position { 
             x: 100_000, 
             y: 200_000, 
-            entity_id: travelling_entity_id.into()
+            entity_id: entity_id.into()
         };
 
-        set!(world, (travelling_entity_position));
+        set!(world, (entity_position));
         set!(world, (
             Owner { 
-                address: contract_address_const::<'travelling_entity'>(), 
-                entity_id: travelling_entity_id.into()
+                address: contract_address_const::<'entity'>(), 
+                entity_id: entity_id.into()
             }
         ));
 
@@ -118,8 +122,8 @@ mod tests {
         set!(world, (destination_entity_position));
 
 
-        (world, travelling_entity_id, destination_entity_id,
-         travelling_entity_position, destination_entity_position )
+        (world, entity_id, destination_entity_id,
+         entity_position, destination_entity_position )
     }
 
 
@@ -131,13 +135,13 @@ mod tests {
     fn test_travel() {
         
         let (world, 
-            travelling_entity_id, destination_entity_id,
+            entity_id, destination_entity_id,
             _, destination_entity_position
          ) = setup();
 
         set!(world, (
             Movable {
-                entity_id: travelling_entity_id.into(),
+                entity_id: entity_id.into(),
                 sec_per_km: 10,
                 blocked: false
             }
@@ -145,22 +149,22 @@ mod tests {
 
         
         // travelling entity travels
-        starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
+        starknet::testing::set_contract_address(contract_address_const::<'entity'>());
 
         let mut calldata = array![];
-        Serde::serialize(@travelling_entity_id, ref calldata);
+        Serde::serialize(@entity_id, ref calldata);
         Serde::serialize(@destination_entity_id, ref calldata);
         world.execute('Travel', calldata);
 
         
-        // verify arrival time and position of travelling_entity 
-        let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
-        let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
+        // verify arrival time and position of entity 
+        let entity_arrival_time = get!(world, entity_id, ArrivalTime);
+        let new_entity_position = get!(world, entity_id, Position);
 
-        assert(travelling_entity_arrival_time.arrives_at == 800, 'arrival time not correct');
+        assert(entity_arrival_time.arrival_time == 800, 'arrival time not correct');
 
-        assert(new_travelling_entity_position.x == destination_entity_position.x, 'position x is not correct');
-        assert(new_travelling_entity_position.y == destination_entity_position.y, 'position y is not correct');
+        assert(new_entity_position.x == destination_entity_position.x, 'position x is not correct');
+        assert(new_entity_position.y == destination_entity_position.y, 'position y is not correct');
 
     }
 
@@ -170,8 +174,8 @@ mod tests {
     fn test_travel_with_road(){
                 
         let (world, 
-            travelling_entity_id, destination_entity_id,
-            travelling_entity_position, destination_entity_position
+            entity_id, destination_entity_id,
+            entity_position, destination_entity_position
          ) = setup();
 
         set!(world, (
@@ -183,14 +187,14 @@ mod tests {
                 speed_up_by: 2
              },
              Road {
-                start_coord_x: travelling_entity_position.x,
-                start_coord_y: travelling_entity_position.y,
+                start_coord_x: entity_position.x,
+                start_coord_y: entity_position.y,
                 end_coord_x: destination_entity_position.x,
                 end_coord_y: destination_entity_position.y,
                 usage_count: 2
              },
             Movable {
-                entity_id: travelling_entity_id.into(),
+                entity_id: entity_id.into(),
                 sec_per_km: 10,
                 blocked: false
             }
@@ -199,25 +203,25 @@ mod tests {
 
         
         // travelling entity travels
-        starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
+        starknet::testing::set_contract_address(contract_address_const::<'entity'>());
 
         let mut calldata = array![];
-        Serde::serialize(@travelling_entity_id, ref calldata);
+        Serde::serialize(@entity_id, ref calldata);
         Serde::serialize(@destination_entity_id, ref calldata);
         world.execute('Travel', calldata);
 
         
-        // verify arrival time and position of travelling_entity 
-        let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
-        let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
+        // verify arrival time and position of entity 
+        let entity_arrival_time = get!(world, entity_id, ArrivalTime);
+        let new_entity_position = get!(world, entity_id, Position);
 
-        assert(travelling_entity_arrival_time.arrives_at == 800 / 2 , 'arrival time not correct');
+        assert(entity_arrival_time.arrival_time == 800 / 2 , 'arrival time not correct');
 
-        assert(new_travelling_entity_position.x == destination_entity_position.x, 'position x is not correct');
-        assert(new_travelling_entity_position.y == destination_entity_position.y, 'position y is not correct');
+        assert(new_entity_position.x == destination_entity_position.x, 'position x is not correct');
+        assert(new_entity_position.y == destination_entity_position.y, 'position y is not correct');
 
         // verify road usage count
-        let road = RoadImpl::get(world, travelling_entity_position.into(), destination_entity_position.into());
+        let road = RoadImpl::get(world, entity_position.into(), destination_entity_position.into());
         assert(road.usage_count == 1, 'road usage count not correct');
 
     }
@@ -230,13 +234,13 @@ mod tests {
     fn test_not_owner() {
         
         let (world, 
-            travelling_entity_id, destination_entity_id,
+            entity_id, destination_entity_id,
             _, _
          ) = setup();
         
         starknet::testing::set_contract_address(contract_address_const::<'not_owner'>());
         let mut calldata = array![];
-        Serde::serialize(@travelling_entity_id, ref calldata);
+        Serde::serialize(@entity_id, ref calldata);
         Serde::serialize(@destination_entity_id, ref calldata);
         world.execute('Travel', calldata);
     }
@@ -248,13 +252,13 @@ mod tests {
     fn test_no_speed() {
         
         let (world, 
-            travelling_entity_id, destination_entity_id,
+            entity_id, destination_entity_id,
             _, _
          ) = setup();
         
-        starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
+        starknet::testing::set_contract_address(contract_address_const::<'entity'>());
         let mut calldata = array![];
-        Serde::serialize(@travelling_entity_id, ref calldata);
+        Serde::serialize(@entity_id, ref calldata);
         Serde::serialize(@destination_entity_id, ref calldata);
         world.execute('Travel', calldata);
     }
@@ -266,21 +270,21 @@ mod tests {
     fn test_blocked() {
         
         let (world, 
-            travelling_entity_id, destination_entity_id,
+            entity_id, destination_entity_id,
             _, _
          ) = setup();
         
         set!(world, (
             Movable {
-                entity_id: travelling_entity_id.into(),
+                entity_id: entity_id.into(),
                 sec_per_km: 10,
                 blocked: true
             }
         ));
 
-        starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
+        starknet::testing::set_contract_address(contract_address_const::<'entity'>());
         let mut calldata = array![];
-        Serde::serialize(@travelling_entity_id, ref calldata);
+        Serde::serialize(@entity_id, ref calldata);
         Serde::serialize(@destination_entity_id, ref calldata);
         world.execute('Travel', calldata);
     }
@@ -292,25 +296,25 @@ mod tests {
     fn test_in_transit() {
         
         let (world, 
-            travelling_entity_id, destination_entity_id,
+            entity_id, destination_entity_id,
             _, _
          ) = setup();
         
         set!(world, (
             Movable {
-                entity_id: travelling_entity_id.into(),
+                entity_id: entity_id.into(),
                 sec_per_km: 10,
                 blocked: false
             },
             ArrivalTime {
-                entity_id: travelling_entity_id.into(),
-                arrives_at: 100
+                entity_id: entity_id.into(),
+                arrival_time: 100
             }
         ));
 
-        starknet::testing::set_contract_address(contract_address_const::<'travelling_entity'>());
+        starknet::testing::set_contract_address(contract_address_const::<'entity'>());
         let mut calldata = array![];
-        Serde::serialize(@travelling_entity_id, ref calldata);
+        Serde::serialize(@entity_id, ref calldata);
         Serde::serialize(@destination_entity_id, ref calldata);
         world.execute('Travel', calldata);
     }

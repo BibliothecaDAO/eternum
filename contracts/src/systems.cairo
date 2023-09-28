@@ -10,3 +10,5 @@ mod caravan;
 mod road;
 mod hyperstructure;
 mod travel;
+mod mercenary;
+mod raid;

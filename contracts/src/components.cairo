@@ -13,3 +13,5 @@ mod caravan;
 mod trade;
 mod road;
 mod hyperstructure;
+mod attack;
+mod health;
