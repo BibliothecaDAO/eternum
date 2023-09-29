@@ -67,7 +67,7 @@ use eternum::systems::config::labor_config::SetLaborCostResources;
 use eternum::systems::config::labor_config::SetLaborCostAmount;
 use eternum::systems::config::hyperstructure_config::DefineHyperStructure;
 use eternum::systems::config::weight_config::SetWeightConfig;
-use eternum::systems::test::mint_resources::MintResources;
+use eternum::systems::test::mint_resources::{MintResources, MintAllResources};
 use eternum::systems::labor::harvest_labor::HarvestLabor;
 use eternum::systems::road::create_road::CreateRoad;
 use eternum::systems::travel::Travel;
@@ -149,6 +149,7 @@ fn spawn_eternum() -> IWorldDispatcher {
         SetLaborCostResources::TEST_CLASS_HASH,
         SetLaborCostAmount::TEST_CLASS_HASH,
         MintResources::TEST_CLASS_HASH,
+        MintAllResources::TEST_CLASS_HASH,
         HarvestLabor::TEST_CLASS_HASH,
         SetWeightConfig::TEST_CLASS_HASH,
         CreateRoad::TEST_CLASS_HASH,
