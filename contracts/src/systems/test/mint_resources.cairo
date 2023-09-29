@@ -24,12 +24,14 @@ mod MintResources {
 mod MintAllResources {
     use traits::Into;
     use eternum::components::resources::Resource;
+    use eternum::constants::ResourceTypes;
     use eternum::alias::ID;
 
     use dojo::world::Context;
 
     fn execute(ctx: Context, entity_id: u128, amount: u128) {
 
+        // mint non food
         let mut resource_type: u8 = 1;
         loop {
             if resource_type > 22 {
@@ -46,6 +48,27 @@ mod MintAllResources {
             resource_type+=1;
             
         }; 
+
+        // shekels
+        let resource = get !(ctx.world, (entity_id, ResourceTypes::SHEKELS), Resource);
+        set!(
+            ctx.world,
+            (Resource { entity_id, resource_type: ResourceTypes::SHEKELS, balance: resource.balance + amount,  }, )
+        );
+
+        // wheat
+        let resource = get !(ctx.world, (entity_id, ResourceTypes::WHEAT), Resource);
+        set!(
+            ctx.world,
+            (Resource { entity_id, resource_type: ResourceTypes::WHEAT, balance: resource.balance + amount,  }, )
+        );
+
+        // fish
+        let resource = get !(ctx.world, (entity_id, ResourceTypes::FISH), Resource);
+        set!(
+            ctx.world,
+            (Resource { entity_id, resource_type: ResourceTypes::FISH, balance: resource.balance + amount,  }, )
+        );
     }
 }
 
@@ -83,6 +106,17 @@ mod tests {
 
         let no_resource = get!(world, (entity_id, 23), Resource);
         assert(no_resource.balance == 0, 'resource amount not right');
+
+
+        // shekels
+        let shekels = get!(world, (entity_id, 253), Resource);
+        assert(shekels.balance == 1000, 'shekels amount not right');
+
+        // food
+        let wheat = get!(world, (entity_id, 254), Resource);
+        assert(wheat.balance == 1000, 'wheat amount not right');
+        let fish = get!(world, (entity_id, 255), Resource);
+        assert(fish.balance == 1000, 'fish amount not right');
     }
 
 }
