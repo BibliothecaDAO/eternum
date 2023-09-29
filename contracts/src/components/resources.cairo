@@ -9,7 +9,7 @@ struct Resource {
     balance: u128,
 }
 
-#[derive(Component, Copy, Drop, Serde)]
+#[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct ResourceCost {
     #[key]
     entity_id: u128,
