@@ -19,7 +19,7 @@ export const SettleRealmComponent = () => {
 
   const {
     setup: {
-      systemCalls: { create_realm, mint_resources },
+      systemCalls: { create_realm, mint_all_resources },
     },
     account: { account, masterAccount },
   } = useDojo();
@@ -52,15 +52,7 @@ export const SettleRealmComponent = () => {
       position,
     });
     // mint basic resources to start
-    const resources = [2, 3, 253];
-    for (const resource of resources) {
-      await mint_resources({
-        signer: masterAccount,
-        entity_id,
-        resource_type: resource,
-        amount: 1000,
-      });
-    }
+    await mint_all_resources({ signer: masterAccount, entity_id: entity_id, amount: 1000000 });
     setIsLoading(false);
     playSign();
   };
