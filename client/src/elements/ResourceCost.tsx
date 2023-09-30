@@ -13,7 +13,7 @@ type ResourceCostProps = {
   withTooltip?: boolean;
 };
 
-export const ResourceCost = ({ type = "horizontal", className, ...props }: ResourceCostProps) => {
+export const ResourceCost = ({ type = "horizontal", className, withTooltip = false, ...props }: ResourceCostProps) => {
   const trait = useMemo(() => findResourceById(props.resourceId)?.trait, [props.resourceId]);
   return (
     <div
@@ -23,7 +23,7 @@ export const ResourceCost = ({ type = "horizontal", className, ...props }: Resou
         className,
       )}
     >
-      <ResourceIcon withTooltip={false} resource={trait || ""} size="xs" />
+      <ResourceIcon withTooltip={withTooltip} resource={trait || ""} size="xs" />
       <div
         className={clsx("relative flex flex-col shrink-0", type === "horizontal" ? "ml-1 font-bold" : "items-center")}
       >

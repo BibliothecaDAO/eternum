@@ -8,7 +8,7 @@ import { SelectableResource } from "../../../../elements/SelectableResource";
 import { resources } from "../../../../constants/resources";
 import { ReactComponent as ArrowSeparator } from "../../../../assets/icons/common/arrow-separator.svg";
 import { ReactComponent as Danger } from "../../../../assets/icons/common/danger.svg";
-import { ReactComponent as Donkey } from "../../../../assets/icons/units/donkey.svg";
+import { ReactComponent as Donkey } from "../../../../assets/icons/units/donkey-circle.svg";
 import { Caravan } from "./Caravans/Caravan";
 import { Steps } from "../../../../elements/Steps";
 import { CaravanInterface } from "../../../../hooks/graphql/useGraphQLQueries";
@@ -242,7 +242,9 @@ const SelectResourcesPanel = ({
   return (
     <div className="grid grid-cols-9 gap-2 p-2">
       <div className="flex flex-col items-center col-span-4">
-        <Headline className="mb-2">You Give</Headline>
+        <Headline className="mb-2" size="big">
+          You Give
+        </Headline>
         <div className="grid grid-cols-4 gap-2">
           {resources.map(({ id, trait: _name }) => {
             let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
@@ -269,7 +271,9 @@ const SelectResourcesPanel = ({
         <ArrowSeparator />
       </div>
       <div className="flex flex-col items-center col-span-4">
-        <Headline className="mb-2">You Get</Headline>
+        <Headline className="mb-2" size="big">
+          You Get
+        </Headline>
         <div className="grid grid-cols-4 gap-2">
           {resources.map(({ id, trait: _name }) => {
             let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
@@ -340,7 +344,9 @@ const SelectResourcesAmountPanel = ({
     <>
       <div className="grid grid-cols-9 gap-2 p-2">
         <div className="flex flex-col items-center col-span-4 space-y-2">
-          <Headline className="mb-2">You Give</Headline>
+          <Headline className="mb-2" size="big">
+            You Give
+          </Headline>
           {selectedResourceIdsGive.map((id) => {
             let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
             return (
@@ -380,7 +386,9 @@ const SelectResourcesAmountPanel = ({
           <ArrowSeparator />
         </div>
         <div className="flex flex-col items-center col-span-4 space-y-2">
-          <Headline className="mb-2">You Get</Headline>
+          <Headline className="mb-2" size="big">
+            You Get
+          </Headline>
           {selectedResourceIdsGet.map((id) => (
             <div key={id} className="flex items-center w-full">
               <NumberInput
@@ -422,6 +430,7 @@ export const SelectCaravanPanel = ({
   selectedResourcesGiveAmounts,
   resourceWeight,
   hasEnoughDonkeys,
+  headline = "You Give",
 }: {
   donkeysCount: number;
   setDonkeysCount: (donkeysCount: number) => void;
@@ -435,6 +444,7 @@ export const SelectCaravanPanel = ({
   selectedResourcesGiveAmounts: { [key: number]: number };
   resourceWeight: number;
   hasEnoughDonkeys: boolean;
+  headline: string;
 }) => {
   const { realmEntityId } = useRealmStore();
 
@@ -473,7 +483,9 @@ export const SelectCaravanPanel = ({
             selectedResourceIdsGet.length > 0 ? "col-span-4" : "col-span-9",
           )}
         >
-          <Headline className="mb-2">You Give</Headline>
+          <Headline className="mb-2" size="big">
+            {headline}
+          </Headline>
           <div className="flex items-center justify-center w-full">
             {selectedResourceIdsGive.map((id) => (
               <ResourceCost
@@ -493,7 +505,9 @@ export const SelectCaravanPanel = ({
               <ArrowSeparator />
             </div>
             <div className="flex flex-col items-center col-span-4 space-y-2 h-min">
-              <Headline className="mb-2">You Get</Headline>
+              <Headline className="mb-2" size="big">
+                You Get
+              </Headline>
               <div className="flex items-center justify-center w-full">
                 {selectedResourceIdsGet.map((id) => (
                   <ResourceCost
@@ -510,17 +524,19 @@ export const SelectCaravanPanel = ({
           </>
         )}
       </div>
-      <div className="flex mb-3 text-xs text-center text-white">
+      <div className="flex my-3 text-xs text-center text-white">
         Items Weight <div className="ml-1 text-gold">{`${resourceWeight}kg`}</div>
       </div>
       {isNewCaravan && (
         <>
           <div className="flex flex-col">
-            <Headline className="mb-2">Summon a New Caravan</Headline>
+            <Headline className="mb-2" size="big">
+              Summon a New Caravan
+            </Headline>
             <div className="grid grid-cols-9 gap-2 p-2">
               <div className="flex items-center col-span-3">
                 <NumberInput value={donkeysCount} onChange={setDonkeysCount} max={1000} />
-                <Donkey className="ml-2" />
+                <Donkey className="ml-2 w-5 h-5 min-w-[20px]" />
                 <div className="flex flex-col justify-center ml-2">
                   <div className="text-xs font-bold text-white">{donkeysCount}</div>
                   <div className="text-xs text-center text-white">Donkeys</div>
@@ -530,7 +546,9 @@ export const SelectCaravanPanel = ({
           </div>
           <div className="flex mb-1 text-xs text-center text-white">
             Caravan Capacity{" "}
-            <div className={`ml-1 text-${hasEnoughDonkeys ? "success" : "danger"}`}>{`${donkeysCount * 100}kg`}</div>
+            <div className={`ml-1 text-${hasEnoughDonkeys ? "order-brilliance" : "danger"}`}>{`${
+              donkeysCount * 100
+            }kg`}</div>
           </div>
           {!hasEnoughDonkeys && (
             <div className="flex items-center mb-1 text-xs text-center text-white">

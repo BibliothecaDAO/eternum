@@ -15,6 +15,9 @@ import { ResourceCost } from "../../../elements/ResourceCost";
 import clsx from "clsx";
 import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
 import hyperstructure from "../../../data/hyperstructures.json";
+import { Tabs } from "../../../elements/tab";
+import { Tooltip } from "../../../elements/Tooltip";
+import ProgressBar from "../../../elements/ProgressBar";
 
 type FeedHyperstructurePopupProps = {
   onClose: () => void;
@@ -22,6 +25,128 @@ type FeedHyperstructurePopupProps = {
 };
 
 export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePopupProps) => {
+  const [selectedTab, setSelectedTab] = useState(0);
+
+  const tabs = useMemo(
+    () => [
+      {
+        key: "all",
+        label: (
+          <div className="flex relative group flex-col items-center">
+            <div>Build</div>
+            <Tooltip position="bottom">
+              <p className="whitespace-nowrap">Initialize or feed Hyperstructure with resources.</p>
+            </Tooltip>
+          </div>
+        ),
+        component: <BuildHyperstructurePanel order={order} onClose={onClose} />,
+      },
+      {
+        key: "my",
+        label: (
+          <div className="flex group relative flex-col items-center">
+            <div>Caravans (0)</div>
+            <Tooltip position="bottom">
+              <p className="whitespace-nowrap">Watch incoming caravans.</p>
+              <p className="whitespace-nowrap">Pass resources to Hyperstructure on arriving.</p>
+            </Tooltip>
+          </div>
+        ),
+        component: <></>,
+      },
+    ],
+    [selectedTab],
+  );
+
+  return (
+    <SecondaryPopup name="hyperstructure">
+      <SecondaryPopup.Head>
+        <div className="flex items-center space-x-1">
+          <div className="mr-0.5 bg-gray">Manage Hyperstructure:</div>
+        </div>
+      </SecondaryPopup.Head>
+      <SecondaryPopup.Body width={"460px"}>
+        <Tabs
+          selectedIndex={selectedTab}
+          onChange={(index: any) => setSelectedTab(index)}
+          variant="default"
+          className="h-full"
+        >
+          <Tabs.List className="!border-t-transparent">
+            {tabs.map((tab, index) => (
+              <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+            ))}
+          </Tabs.List>
+          <Tabs.Panels className="overflow-hidden">
+            {tabs.map((tab, index) => (
+              <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+            ))}
+          </Tabs.Panels>
+        </Tabs>
+      </SecondaryPopup.Body>
+    </SecondaryPopup>
+  );
+};
+
+const SelectableRealm = ({ realm, selected = false, onClick, costs, ...props }: any) => {
+  const costById = useMemo(() => {
+    const costById: any = {};
+    costs.forEach((cost: any) => {
+      costById[cost.resourceId] = cost.amount;
+    });
+    return costById;
+  }, [costs]);
+
+  const canInitialize = useMemo(() => {
+    let canInitialize = true;
+    realm.resources.forEach((resource: any) => {
+      if (resource.balance.balance < costById[resource.id]) {
+        canInitialize = false;
+      }
+    });
+    return canInitialize;
+  }, [costById, realm.resources]);
+
+  return (
+    <div
+      className={clsx(
+        "flex flex-col relative items-center p-2 border rounded-md text-xxs text-gray-gold",
+        "border-gray-gold",
+      )}
+      {...props}
+    >
+      {realm && (
+        <div className="flex absolute items-center p-1 top-0 left-0 border border-t-0 border-l-0 rounded-br-md border-gray-gold">
+          {realm.order && <OrderIcon order={orderNameDict[realm.order]} size="xs" className="mr-1" />}
+          {realm.name}
+        </div>
+      )}
+      <div className="text-gold ml-auto absolute right-2 top-2">24h:10m away</div>
+      <div className="flex items-center mt-6 w-full">
+        <div className="flex">
+          {realm.resources &&
+            realm.resources.map((resource: any) => {
+              return (
+                <ResourceCost
+                  type="vertical"
+                  withTooltip
+                  key={resource.id}
+                  resourceId={resource.id}
+                  amount={resource.balance.balance}
+                  color={resource.balance.balance >= costById[resource.id] ? "" : "text-order-giants"}
+                />
+              );
+            })}
+        </div>
+        <Button disabled={!canInitialize} onClick={onClick} className="h-6 text-xxs ml-auto" variant="success">
+          Initialize construction
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+const BuildHyperstructurePanel = ({ order, onClose }: any) => {
   const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
   const [isNewCaravan, setIsNewCaravan] = useState(false);
   const [donkeysCount, setDonkeysCount] = useState(1);
@@ -153,8 +278,10 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
   }, [selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
 
   const canGoToNextStep = useMemo(() => {
-    if (step === 2) {
+    if (step === 3) {
       return selectedCaravan !== 0 || (hasEnoughDonkeys && isNewCaravan);
+    } else if (step == 2) {
+      return false;
     } else {
       return true;
     }
@@ -169,135 +296,123 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
   }, [donkeysCount, resourceWeight]);
 
   return (
-    <SecondaryPopup name="hyperstructure">
-      <SecondaryPopup.Head>
-        <div className="flex items-center space-x-1">
-          <div className="mr-0.5">Manage Hyperstructure:</div>
-        </div>
-      </SecondaryPopup.Head>
-      <SecondaryPopup.Body width={"500px"}>
-        <div className="flex flex-col space-y-2 p-3 text-xs">
-          <Headline size="big">Hyperstructure Status:</Headline>
-          <div className="flex flex-col space-y-1">
-            <div className="flex">
-              <span className="text-gray-gold">Order:</span>
-              {<OrderIcon order={orderNameDict[order]} size="xs" className="mx-1" />}
-              <span className="text-gold">{orders[order - 1].fullOrderName}</span>
-            </div>
-            <div>
-              <span className="text-gray-gold">State:</span>
-              <span className="text-order-giants ml-1">Not initialized</span>
-            </div>
-            <div className="flex items-center">
-              <span className="text-gray-gold">Required resources:</span>
+    <div className="flex flex-col items-center p-2">
+      {step == 1 && (
+        <>
+          <div className="flex flex-col space-y-2 text-xs">
+            <div className="flex justify-between">
               <div className="flex items-center">
-                {hyperstructureData?.initialzationResources.map((resource) => {
-                  return (
-                    <ResourceCost key={resource.resourceId} resourceId={resource.resourceId} amount={resource.amount} />
-                  );
-                })}
+                {<OrderIcon order={orderNameDict[order]} size="xs" className="mx-1" />}
+                <span className="text-white font-bold">{orders[order - 1].fullOrderName}</span>
+              </div>
+              <div className="flex flex-col text-xxs text-right">
+                <span className="text-gray-gold italic">State</span>
+                <span className="text-order-giants">Not initialized</span>
               </div>
             </div>
-          </div>
-          <Headline size="big">Initialize - Step {step}</Headline>
-          <div className="text-xxs mb-2 italic text-gold">
-            {`To start construction of the Hyperstructure you need to send a caravan with initial cost of resources to the Hyperstructure location.`}
-          </div>
-          {step == 1 && (
-            <>
-              <div className="text-xxs mb-2 italic text-white">{`Step 1: Select a Realm with enough resources.`}</div>
-              <div className="flex flex-col space-y-2">
-                {realms.map((realm) => (
-                  <SelectableRealm
-                    key={realm.realm_id}
-                    realm={realm}
-                    onClick={() => {
-                      setRealmEntityId(realm.entity_id);
-                    }}
-                    selected={realmEntityId === realm.entity_id}
-                  />
-                ))}
+            <ProgressBar rounded progress={hyperstructureData?.progress || 0} className="bg-gold" />
+            <div className="relative w-full">
+              <img src={`/images/buildings/hyperstructure.jpg`} className="object-cover w-full h-full rounded-[10px]" />
+              <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
+                <div className="mb-1 ml-1 italic text-light-pink text-xxs">Initialization cost:</div>
+                <div className="grid grid-cols-4 gap-2">
+                  {hyperstructureData?.initialzationResources.map(({ resourceId, amount }) => (
+                    <ResourceCost
+                      withTooltip
+                      type="vertical"
+                      key={resourceId}
+                      resourceId={resourceId}
+                      amount={amount}
+                    />
+                  ))}
+                </div>
               </div>
-            </>
-          )}
-          {step == 2 && (
-            <>
-              <div className="text-xxs mb-2 italic text-white">{`Step 2: Select or summon a caravan and send it to Hyperstructure location`}</div>
-              <SelectCaravanPanel
-                donkeysCount={donkeysCount}
-                setDonkeysCount={setDonkeysCount}
-                isNewCaravan={isNewCaravan}
-                setIsNewCaravan={setIsNewCaravan}
-                selectedCaravan={selectedCaravan}
-                setSelectedCaravan={setSelectedCaravan}
-                selectedResourceIdsGet={[]}
-                selectedResourcesGetAmounts={[]}
-                selectedResourceIdsGive={initializeResourceIds}
-                selectedResourcesGiveAmounts={initializeResourceAmounts}
-                resourceWeight={resourceWeight}
-                hasEnoughDonkeys={hasEnoughDonkeys}
-              />
-            </>
-          )}
-        </div>
-        <div className="flex justify-between m-2 text-xxs">
-          <Button
-            className="!px-[6px] !py-[2px] text-xxs"
-            onClick={() => (step === 1 ? onClose() : setStep(step - 1))}
-            variant="outline"
-          >
-            {step === 1 ? "Cancel" : "Back"}
-          </Button>
-          <Steps className="absolute -translate-x-1/2 left-1/2 bottom-4" step={step} maxStep={2} />
-          {!isLoading && (
-            <Button
-              className="!px-[6px] !py-[2px] text-xxs ml-auto"
-              disabled={!canGoToNextStep}
-              isLoading={isLoading}
-              onClick={() => {
-                if (step == 2) {
-                  initHyperStructure();
-                } else {
-                  setStep(step + 1);
-                }
-              }}
-              variant={canGoToNextStep ? "success" : "danger"}
-            >
-              {step == 2 ? "Send Caravan" : "Next Step"}
-            </Button>
-          )}
-          {isLoading && (
-            <Button
-              isLoading={true}
-              onClick={() => {}}
-              variant="danger"
-              className="ml-auto p-2 !h-4 text-xxs !rounded-md"
-            >
-              {" "}
-              {}{" "}
-            </Button>
-          )}
-        </div>
-      </SecondaryPopup.Body>
-    </SecondaryPopup>
-  );
-};
+            </div>
+            <Headline size="big">Initialize - Step {step}</Headline>
+            <div className="text-xxs mb-2 italic text-gold">
+              {`To start construction of the Hyperstructure you need to send a caravan with initial cost of resources to the Hyperstructure location.`}
+            </div>
 
-const SelectableRealm = ({ realm, selected = false, ...props }: any) => {
-  return (
-    <div
-      className={clsx(
-        "flex items-center p-2 border rounded-md text-xxs text-gray-gold",
-        selected ? "border-order-brilliance" : "border-gray-gold",
+            <div className="text-xxs mb-2 italic text-white">{`Press "Next" button to select a Realm with enough resources.`}</div>
+          </div>
+        </>
       )}
-      {...props}
-    >
-      <OrderIcon order={orderNameDict[realm.order]} size="xs" className="mx-1" />
-      <div>{realm.name}</div>
-      <div className="flex ml-auto">
-        {realm.resources.map((resource: any) => {
-          return <ResourceCost key={resource.id} resourceId={resource.id} amount={resource.balance.balance} />;
-        })}
+      {step == 2 && (
+        <div className="flex flex-col w-full space-y-2">
+          <Headline size="big">Select Realm - Step {step}</Headline>
+          <div className="text-xxs mb-2 italic text-gold">
+            {`Press "Initialize construction" on any Realm with enough resources, to send caravan to Hyperstructure.`}
+          </div>
+          {realms.map((realm) => (
+            <SelectableRealm
+              key={realm.realm_id}
+              realm={realm}
+              onClick={() => {
+                setRealmEntityId(realm.entity_id);
+                setStep(step + 1);
+              }}
+              costs={hyperstructureData?.initialzationResources}
+              selected={realmEntityId === realm.entity_id}
+            />
+          ))}
+        </div>
+      )}
+      {step == 3 && (
+        <>
+          <SelectCaravanPanel
+            donkeysCount={donkeysCount}
+            setDonkeysCount={setDonkeysCount}
+            isNewCaravan={isNewCaravan}
+            setIsNewCaravan={setIsNewCaravan}
+            selectedCaravan={selectedCaravan}
+            setSelectedCaravan={setSelectedCaravan}
+            selectedResourceIdsGet={[]}
+            selectedResourcesGetAmounts={[]}
+            selectedResourceIdsGive={initializeResourceIds}
+            selectedResourcesGiveAmounts={initializeResourceAmounts}
+            resourceWeight={resourceWeight}
+            hasEnoughDonkeys={hasEnoughDonkeys}
+            headline="Select Caravan - Step 3"
+          />
+        </>
+      )}
+      <div className="flex justify-between items-center mt-2 w-full text-xxs">
+        <Button
+          className="!px-[6px] !py-[2px] text-xxs"
+          onClick={() => (step === 1 ? onClose() : setStep(step - 1))}
+          variant="outline"
+        >
+          {step === 1 ? "Cancel" : "Back"}
+        </Button>
+        <Steps className="absolute -translate-x-1/2 left-1/2 bottom-3" step={step} maxStep={3} />
+        {!isLoading && (
+          <Button
+            className="!px-[6px] !py-[2px] text-xxs ml-auto"
+            disabled={!canGoToNextStep}
+            isLoading={isLoading}
+            onClick={() => {
+              if (step == 3) {
+                initHyperStructure();
+              } else {
+                setStep(step + 1);
+              }
+            }}
+            variant={canGoToNextStep ? "success" : "outline"}
+          >
+            {step == 3 ? "Send Caravan" : "Next Step"}
+          </Button>
+        )}
+        {isLoading && (
+          <Button
+            isLoading={true}
+            onClick={() => {}}
+            variant="danger"
+            className="ml-auto p-2 !h-4 text-xxs !rounded-md"
+          >
+            {" "}
+            {}{" "}
+          </Button>
+        )}
       </div>
     </div>
   );

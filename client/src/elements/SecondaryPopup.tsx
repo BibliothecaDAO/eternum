@@ -83,7 +83,7 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
 SecondaryPopup.Head = ({ children, className }: { children: React.ReactNode; className?: string }) => (
   <div
     className={clsx(
-      "text-xxs relative cursor-move -mb-[1px] z-30 bg-brown px-1 py-0.5 rounded-t-[4px] border-t border-x border-white text-white w-min whitespace-nowrap handle",
+      "text-xxs relative cursor-move -mb-[1px] z-30 bg-gray px-1 py-0.5 rounded-t-[4px] border-t border-x border-white text-white w-min whitespace-nowrap handle",
       className,
     )}
   >
