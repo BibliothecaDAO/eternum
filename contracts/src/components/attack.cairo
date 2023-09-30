@@ -5,41 +5,22 @@ use eternum::utils::coin_toss;
 struct Attack {
     #[key]
     entity_id: ID,
-    chance: u8,
+    value: u8,
     last_attack: u64
 }
 
 #[generate_trait]
 impl AttackImpl of AttackTrait{
-    
-    fn get_cost(self: @Attack) -> u8 {
-        // todo@credence move hardcoded price to config
-        *self.chance * 40 
-    }
 
-    #[inline(always)]
-    fn new(entity_id: ID, chance: u8) -> Attack {
-        assert(chance <= AttackImpl::max_chance() - 3, 
-            // e.g max_chance = 7 / 10 so that you can only increase 
-            // your chances and can't actually buy the outcome
-            'chance is greater than max' 
-        );
-        assert(chance > 0, 'chance is 0');
-        
-        Attack {
-            entity_id,
-            chance,
-            last_attack: 0
-        }
-    }
+    /// Check whether an attack can be launched
+    ///
+    /// Returns true if it can else false
+    ///
+    fn can_launch(self: @Attack, min_cooldown_minutes: u64 ) -> bool {
+        if *self.value > 0  {
 
-
-    fn can_attack(self: @Attack) -> bool {
-        if *self.chance > 0  {
-            // todo@credence move hardcoded cooldown to config
-            let cooldown = 60 * 60 * 3; // 3 minutes
             let time_passed_since_last_attack = starknet::get_block_timestamp() - *self.last_attack;
-            if  time_passed_since_last_attack > cooldown {
+            if  time_passed_since_last_attack > min_cooldown_minutes {
                 return true;
             }
         }
@@ -47,15 +28,20 @@ impl AttackImpl of AttackTrait{
         return false;
     }
 
-    /// Returns true if attack was successful
+    /// Launch attack
+    ///
+    /// Returns true if attack was successful, 
+    /// false otherwise
+    ///
     fn launch(self: @Attack) -> bool { 
-        // e.g if they have 7/10 chance, then they have to roll a die 10 times
-        // and if they get heads up to 3 times, they win    
-        coin_toss(AttackImpl::max_chance() - *self.chance, AttackImpl::max_chance())
+        // if self.value == 7, for example, they have 
+        // to roll a die 10 (max) times and if they get 
+        // heads up to 3 times, they win.   
+        coin_toss(AttackImpl::max_value() - *self.value, AttackImpl::max_value())
     }
 
 
-    fn max_chance() -> u8 {
+    fn max_value() -> u8 {
         10
     }
 }

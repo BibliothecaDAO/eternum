@@ -2,7 +2,7 @@
 mod Travel {
     
     use eternum::alias::ID;
-    use eternum::components::movable::{Movable, Travel};
+    use eternum::components::movable::{Movable, NewMovable};
     use eternum::components::position::{Coord, CoordTrait, Position, PositionTrait};
     use eternum::components::owner::Owner;
     use eternum::components::road::RoadImpl;
@@ -14,28 +14,28 @@ mod Travel {
 
     use core::traits::Into;
     
-    fn execute(ctx: Context, entity_id: ID, destination: Coord) {
+    fn execute(ctx: Context, entity_id: ID, last_stop_coord: Coord, round_trip: bool) {
 
         let entity_owner = get!(ctx.world, entity_id, Owner);
         assert(entity_owner.address == ctx.origin, 'not owner of entity');
 
-        let entity_movable = get!(ctx.world, entity_id, Movable);      
+        let entity_movable = get!(ctx.world, entity_id, NewMovable);      
         assert(entity_movable.sec_per_km != 0, 'entity has no speed');  
         assert(entity_movable.blocked == false, 'entity is blocked');  
-        
-        let entity_travel_time = get!(ctx.world, entity_id, Travel);
+
         let ts = starknet::get_block_timestamp();
-        assert(entity_travel_time.arrival_time <= ts, 'entity is in transit');
+        assert(entity_movable.arrival_time <= ts, 'entity is in transit');
 
 
         let entity_coord: Coord = (get!(ctx.world, entity_id, Position)).into();
 
         let mut travel_time = entity_coord.measure_travel_time(
-            destination, entity_movable.sec_per_km
+            last_stop_coord, entity_movable.sec_per_km
         );
+        if round_trip {travel_time *=  2;}
         
         // reduce travel time if a road exists
-        let mut road = RoadImpl::get(ctx.world, entity_coord, destination);
+        let mut road = RoadImpl::get(ctx.world, entity_coord, last_stop_coord);
         if road.usage_count > 0 {
             let road_config = get!(ctx.world, ROAD_CONFIG_ID, RoadConfig);
             
@@ -45,21 +45,29 @@ mod Travel {
             set!(ctx.world, (road));
         }
 
-    
+
+        if round_trip == false {
+            set!(ctx.world,(
+                Position {
+                    entity_id: entity_id,
+                    x: last_stop_coord.x,
+                    y: last_stop_coord.y
+                }
+            ));
+        }
+
         set!(ctx.world,(
-            Travel {
+            NewMovable {
                 entity_id: entity_id,
+                sec_per_km: entity_movable.sec_per_km,
+                blocked: entity_movable.blocked,
+
                 departure_time: ts,
                 arrival_time: ts + travel_time,
-                departure_coord_x: entity_coord.x,
-                departure_coord_y: entity_coord.y,
-                last_stop_coord_x: entity_coord.x,
-                last_stop_coord_y: entity_coord.y
-            },
-            Position {
-                entity_id: entity_id,
-                x: destination.x,
-                y: destination.y
+
+                last_stop_coord_x: last_stop_coord.x,
+                last_stop_coord_y: last_stop_coord.y,
+                round_trip
             }
         ));
 
@@ -113,17 +121,17 @@ mod tests {
             }
         ));
 
-        let destination_entity_id = 12_u64;
-        let destination_entity_position = Position { 
+        let last_stop_coord_entity_id = 12_u64;
+        let last_stop_coord_entity_position = Position { 
             x: 900_000, 
             y: 100_000, 
-            entity_id: destination_entity_id.into()
+            entity_id: last_stop_coord_entity_id.into()
         };
-        set!(world, (destination_entity_position));
+        set!(world, (last_stop_coord_entity_position));
 
 
-        (world, entity_id, destination_entity_id,
-         entity_position, destination_entity_position )
+        (world, entity_id, last_stop_coord_entity_id,
+         entity_position, last_stop_coord_entity_position )
     }
 
 
@@ -135,8 +143,8 @@ mod tests {
     fn test_travel() {
         
         let (world, 
-            entity_id, destination_entity_id,
-            _, destination_entity_position
+            entity_id, last_stop_coord_entity_id,
+            _, last_stop_coord_entity_position
          ) = setup();
 
         set!(world, (
@@ -153,7 +161,7 @@ mod tests {
 
         let mut calldata = array![];
         Serde::serialize(@entity_id, ref calldata);
-        Serde::serialize(@destination_entity_id, ref calldata);
+        Serde::serialize(@last_stop_coord_entity_id, ref calldata);
         world.execute('Travel', calldata);
 
         
@@ -163,8 +171,8 @@ mod tests {
 
         assert(entity_arrival_time.arrival_time == 800, 'arrival time not correct');
 
-        assert(new_entity_position.x == destination_entity_position.x, 'position x is not correct');
-        assert(new_entity_position.y == destination_entity_position.y, 'position y is not correct');
+        assert(new_entity_position.x == last_stop_coord_entity_position.x, 'position x is not correct');
+        assert(new_entity_position.y == last_stop_coord_entity_position.y, 'position y is not correct');
 
     }
 
@@ -174,8 +182,8 @@ mod tests {
     fn test_travel_with_road(){
                 
         let (world, 
-            entity_id, destination_entity_id,
-            entity_position, destination_entity_position
+            entity_id, last_stop_coord_entity_id,
+            entity_position, last_stop_coord_entity_position
          ) = setup();
 
         set!(world, (
@@ -189,8 +197,8 @@ mod tests {
              Road {
                 start_coord_x: entity_position.x,
                 start_coord_y: entity_position.y,
-                end_coord_x: destination_entity_position.x,
-                end_coord_y: destination_entity_position.y,
+                end_coord_x: last_stop_coord_entity_position.x,
+                end_coord_y: last_stop_coord_entity_position.y,
                 usage_count: 2
              },
             Movable {
@@ -207,7 +215,7 @@ mod tests {
 
         let mut calldata = array![];
         Serde::serialize(@entity_id, ref calldata);
-        Serde::serialize(@destination_entity_id, ref calldata);
+        Serde::serialize(@last_stop_coord_entity_id, ref calldata);
         world.execute('Travel', calldata);
 
         
@@ -217,11 +225,11 @@ mod tests {
 
         assert(entity_arrival_time.arrival_time == 800 / 2 , 'arrival time not correct');
 
-        assert(new_entity_position.x == destination_entity_position.x, 'position x is not correct');
-        assert(new_entity_position.y == destination_entity_position.y, 'position y is not correct');
+        assert(new_entity_position.x == last_stop_coord_entity_position.x, 'position x is not correct');
+        assert(new_entity_position.y == last_stop_coord_entity_position.y, 'position y is not correct');
 
         // verify road usage count
-        let road = RoadImpl::get(world, entity_position.into(), destination_entity_position.into());
+        let road = RoadImpl::get(world, entity_position.into(), last_stop_coord_entity_position.into());
         assert(road.usage_count == 1, 'road usage count not correct');
 
     }
@@ -234,14 +242,14 @@ mod tests {
     fn test_not_owner() {
         
         let (world, 
-            entity_id, destination_entity_id,
+            entity_id, last_stop_coord_entity_id,
             _, _
          ) = setup();
         
         starknet::testing::set_contract_address(contract_address_const::<'not_owner'>());
         let mut calldata = array![];
         Serde::serialize(@entity_id, ref calldata);
-        Serde::serialize(@destination_entity_id, ref calldata);
+        Serde::serialize(@last_stop_coord_entity_id, ref calldata);
         world.execute('Travel', calldata);
     }
 
@@ -252,14 +260,14 @@ mod tests {
     fn test_no_speed() {
         
         let (world, 
-            entity_id, destination_entity_id,
+            entity_id, last_stop_coord_entity_id,
             _, _
          ) = setup();
         
         starknet::testing::set_contract_address(contract_address_const::<'entity'>());
         let mut calldata = array![];
         Serde::serialize(@entity_id, ref calldata);
-        Serde::serialize(@destination_entity_id, ref calldata);
+        Serde::serialize(@last_stop_coord_entity_id, ref calldata);
         world.execute('Travel', calldata);
     }
 
@@ -270,7 +278,7 @@ mod tests {
     fn test_blocked() {
         
         let (world, 
-            entity_id, destination_entity_id,
+            entity_id, last_stop_coord_entity_id,
             _, _
          ) = setup();
         
@@ -285,7 +293,7 @@ mod tests {
         starknet::testing::set_contract_address(contract_address_const::<'entity'>());
         let mut calldata = array![];
         Serde::serialize(@entity_id, ref calldata);
-        Serde::serialize(@destination_entity_id, ref calldata);
+        Serde::serialize(@last_stop_coord_entity_id, ref calldata);
         world.execute('Travel', calldata);
     }
 
@@ -296,7 +304,7 @@ mod tests {
     fn test_in_transit() {
         
         let (world, 
-            entity_id, destination_entity_id,
+            entity_id, last_stop_coord_entity_id,
             _, _
          ) = setup();
         
@@ -315,7 +323,7 @@ mod tests {
         starknet::testing::set_contract_address(contract_address_const::<'entity'>());
         let mut calldata = array![];
         Serde::serialize(@entity_id, ref calldata);
-        Serde::serialize(@destination_entity_id, ref calldata);
+        Serde::serialize(@last_stop_coord_entity_id, ref calldata);
         world.execute('Travel', calldata);
     }
 

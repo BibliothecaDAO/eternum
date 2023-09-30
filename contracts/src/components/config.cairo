@@ -124,6 +124,18 @@ struct SpeedConfig {
     sec_per_km: u16,
 }
 
+
+#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+struct AttackConfig {
+    #[key]
+    config_id: u128,
+    min_attack_distance: u32,
+    min_cooldown_minutes: u64,
+    fee_resource_type: u8,
+    fee_amount: u128,
+    value: u8
+}
+
 // weight
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct WeightConfig {

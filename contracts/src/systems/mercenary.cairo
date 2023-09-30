@@ -4,111 +4,69 @@ mod CreateMercenary {
     use eternum::components::position::Position;
     use eternum::components::resources::Resource;
     use eternum::components::owner::Owner;
-    use eternum::components::movable::Movable;
+    use eternum::components::movable::{Movable, NewMovable};
     use eternum::components::capacity::Capacity;
     use eternum::components::attack::{Attack, AttackTrait, AttackImpl};
-    use eternum::components::quantity::{Quantity, QuantityTrait};
+    use eternum::components::config::AttackConfig;
 
     use eternum::constants::ResourceTypes;
+    use eternum::constants::ATTACK_CONFIG_ID;
     
     use dojo::world::Context;
 
     use core::traits::Into;
 
 
-    fn execute(ctx: Context, entity_id: u128, attack_chance: u8, mut transport_unit_ids: Array<u128>) {
+    fn execute(ctx: Context, entity_id: ID) {
 
         let entity_owner = get!(ctx.world, entity_id, Owner);
         assert(entity_owner.address == ctx.origin, 'caller not owner');
 
-        let entity_position = get!(ctx.world, entity_id, Position);
-
-        // calculate mercenary capacity and movement data
-        
-        let mut total_speed: u128 = 0;
-        let mut total_quantity: u128 = 0;
-        let mut total_capacity: u128 = 0;
-
-        loop {
-            match transport_unit_ids.pop_front() {
-                Option::Some(transport_unit_id) => {
-
-                    let transport_unit_position = get!(ctx.world, transport_unit_id, Position);
-                    assert(entity_position.x == transport_unit_position.x, 'position mismatch');
-                    assert(entity_position.y == transport_unit_position.y, 'position mismatch');
-
-                    let transport_unit_owner = get!(ctx.world, transport_unit_id, Owner);
-                    assert(transport_unit_owner.address == ctx.origin, 'caller not owner');
-
-                    let transport_unit_movable = get!(ctx.world, transport_unit_id, Movable);
-                    assert(transport_unit_movable.blocked == false, 'unit is blocked');
-
-                    // block transport unit to prevent double use
-                    let transport_unit_movable = get!(ctx.world, transport_unit_id, Movable);
-                    set!(ctx.world, (
-                        Movable { 
-                            entity_id: transport_unit_id, 
-                            sec_per_km: transport_unit_movable.sec_per_km, 
-                            blocked: true
-                        }
-                    ));
-
-
-                    let (transport_unit_capacity, transport_unit_quantity) 
-                        = get!(ctx.world, transport_unit_id, (Capacity, Quantity));
-
-                    let quantity: u128 = transport_unit_quantity.get_value();
-                    total_speed += transport_unit_movable.sec_per_km.into() * quantity;
-                    total_quantity += quantity;
-                    total_capacity += transport_unit_capacity.weight_gram * quantity;
-                },
-
-                Option::None => {
-                    break;
-                }
-            }; 
-        };
-
-
-        let average_speed = total_speed / total_quantity;
-        let average_speed: u16 = average_speed.try_into().unwrap();
-
-        // generate mercenary id
-        let mercenary_id: ID = ctx.world.uuid().into();
-        
-        // create attack
-        let attack = AttackImpl::new(mercenary_id, attack_chance);
-        let attack_cost = attack.get_cost();
+        let attack_config = get!(ctx.world, ATTACK_CONFIG_ID, AttackConfig);
+        assert(attack_config.value != 0, 'attack config not set');
 
         // make payment for attack
-
-        // todo@credence move hardcoded fee resource_type to config
-        let entity_fee_resource = get!(ctx.world, (entity_id, ResourceTypes::SUNKEN_SHEKEL), Resource);
-        assert(entity_fee_resource.balance >= attack_cost.into(), 'insufficient fund');
-
+        let entity_fee_resource = get!(ctx.world, (entity_id, attack_config.fee_resource_type), Resource);
+        assert(entity_fee_resource.balance >= attack_config.fee_amount, 'insufficient fund');
+        
         set!(ctx.world, (
             Resource {
                 entity_id,
                 resource_type: entity_fee_resource.resource_type,
-                balance: entity_fee_resource.balance - attack_cost.into(),
+                balance: entity_fee_resource.balance - attack_config.fee_amount,
             }
         ));
 
+
+        let mercenary_id: ID = ctx.world.uuid().into();
+        let entity_position = get!(ctx.world, entity_id, Position);
+
         // create mercenary
         set!(ctx.world, (
-                attack, 
+                Attack {
+                    entity_id: mercenary_id,
+                    value: attack_config.value,
+                    last_attack: 0
+                },
                 Owner {
                     entity_id: mercenary_id, 
                     address: ctx.origin
                 },
-                Movable {
-                    entity_id: mercenary_id, 
-                    sec_per_km: average_speed, 
-                    blocked: false, 
-                }, 
+                NewMovable {
+                    entity_id: entity_id,
+                    sec_per_km: 15, //? mercenary_config.sec_per_km ?
+                    blocked: false,
+
+                    departure_time: 0,
+                    arrival_time: 0,
+
+                    last_stop_coord_x: entity_position.x,
+                    last_stop_coord_y: entity_position.y,
+                    round_trip: false
+                },
                 Capacity {
                     entity_id: mercenary_id, 
-                    weight_gram: total_capacity, 
+                    weight_gram: 12, //? mercenary_config.weight_gram ?
                 }, 
                 Position {
                     entity_id: mercenary_id, 

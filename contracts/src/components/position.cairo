@@ -14,41 +14,41 @@ struct Coord {
 #[generate_trait]
 impl CoordImpl of CoordTrait {
 
-    // todo@credence revisit this
-    fn interpolate(self: Coord, other: Coord, percent: u32) -> Coord {
-        assert(percent >= 0 && percent <= 100, 'percentage out of range');
 
-        let self_x_felt : felt252 = self.x.into();
-        let self_y_felt : felt252 = self.y.into();
+    /// Calculate a point between two positions based on a percentage.
+    ///
+    /// This function takes two positions (`self` and `end`) and a percentage (`percent`)
+    /// to determine a point that lies between the two positions. It finds a point
+    /// along a path connecting two points, with the percentage specifying how far along that path.
+    /// 
+    /// Args
+    ///     self: The starting position.
+    ///     end: The ending position.
+    ///     percent: A number from 0 to 100
+    ///
+    /// Returns a new position that's a fraction of the way between `self` and `end`. If `percent`
+    /// is 0, the result is the same as `self`. If `percent` is 100, it's the same as `end`.
+    /// and if `percent` is 50, you'll get a point right in the middle.
+    ///
+    fn interpolate(self: Coord, end: Coord, percent: u32) -> Coord {
+        assert(percent <= 100, 'percentage out of range');
 
-        let other_x_felt : felt252 = other.x.into();
-        let other_y_felt : felt252 = other.y.into();
-        
-        let mut interpolated_x: i32 = ((other_x_felt.try_into().unwrap() - self_x_felt.try_into().unwrap()));
-        let mut interpolated_x_final : u32 = 0;
+        let mut interpolated_x: u32 = 0;
+        let mut interpolated_y: u32 = 0;
 
-        if interpolated_x < 0 {
-            interpolated_x = interpolated_x * -1;
-            let interpolated_x_felt: felt252 = interpolated_x.into();
-            interpolated_x_final = self.x - interpolated_x_felt.try_into().unwrap() * percent / 100;
+        if (self.x <= end.x) {
+            interpolated_x = self.x + (end.x - self.x) * percent / 100;
         } else {
-            let interpolated_x_felt: felt252 = interpolated_x.into();
-            interpolated_x_final = self.x + interpolated_x_felt.try_into().unwrap() * percent / 100;
+            interpolated_x = self.x - (self.x - end.x) * percent / 100;
         }
 
-        let mut interpolated_y: i32 = ((other_y_felt.try_into().unwrap() - self_y_felt.try_into().unwrap()));
-        let mut interpolated_y_final : u32 = 0;
-
-        if interpolated_y < 0 {
-            interpolated_y = interpolated_y * -1;
-            let interpolated_y_felt: felt252 = interpolated_y.into();
-            interpolated_y_final = self.y - interpolated_y_felt.try_into().unwrap() * percent / 100;
+        if (self.y <= end.y) {
+            interpolated_y = self.y + (end.y - self.y) * percent / 100;
         } else {
-            let interpolated_y_felt: felt252 = interpolated_y.into();
-            interpolated_y_final = self.y + interpolated_y_felt.try_into().unwrap() * percent / 100;
+            interpolated_y = self.y - (self.y - end.y) * percent / 100;
         }
 
-        Coord { x: interpolated_x_final, y: interpolated_y_final }
+        Coord { x: interpolated_x, y: interpolated_y }
     }
 
 
