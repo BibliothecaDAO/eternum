@@ -5,6 +5,7 @@ import { SelectCaravanPanel } from "./CreateOffer";
 import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { MarketInterface, useTrade } from "../../../../hooks/helpers/useTrade";
+import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
 
 type AcceptOfferPopupProps = {
   onClose: () => void;
@@ -93,7 +94,7 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
   }, [selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
 
   useEffect(() => {
-    if (donkeysCount * 100 >= resourceWeight) {
+    if (multiplyByPrecision(donkeysCount * 100) >= resourceWeight) {
       setHasEnoughDonkeys(true);
     } else {
       setHasEnoughDonkeys(false);
@@ -103,7 +104,7 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
   const selectedResourcesGetAmounts = useMemo(() => {
     let selectedResourcesGetAmounts: { [resourceId: number]: number } = {};
     resourcesGive.forEach((resource) => {
-      selectedResourcesGetAmounts[resource.resourceId] = resource.amount;
+      selectedResourcesGetAmounts[resource.resourceId] = divideByPrecision(resource.amount);
     });
     return selectedResourcesGetAmounts;
   }, [selectedTrade]);
@@ -111,7 +112,7 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
   const selectedResourcesGiveAmounts = useMemo(() => {
     let selectedResourcesGiveAmounts: { [resourceId: number]: number } = {};
     resourcesGet.forEach((resource) => {
-      selectedResourcesGiveAmounts[resource.resourceId] = resource.amount;
+      selectedResourcesGiveAmounts[resource.resourceId] = divideByPrecision(resource.amount);
     });
     return selectedResourcesGiveAmounts;
   }, [selectedTrade]);

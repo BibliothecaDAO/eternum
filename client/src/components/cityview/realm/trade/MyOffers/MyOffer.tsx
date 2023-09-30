@@ -10,6 +10,7 @@ import * as realmsData from "../../../../../geodata/realms.json";
 import { MarketInterface } from "../../../../../hooks/helpers/useTrade";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import { Tooltip } from "../../../../../elements/Tooltip";
+import { currencyFormat } from "../../../../../utils/utils";
 
 type TradeOfferProps = {
   myOffer: MarketInterface;
@@ -93,7 +94,7 @@ export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
               resourcesGive.map(({ resourceId, amount }) => (
                 <div className="flex flex-col items-center mx-2 my-0.5" key={resourceId}>
                   <ResourceIcon resource={getResourceTrait(resourceId)} size="xs" className="mb-1" />
-                  {amount}
+                  {currencyFormat(amount, 0)}
                 </div>
               ))}
           </div>
@@ -106,7 +107,7 @@ export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
               resourcesGet.map(({ resourceId, amount }) => (
                 <div className="flex flex-col items-center mx-2 my-0.5" key={resourceId}>
                   <ResourceIcon key={resourceId} resource={getResourceTrait(resourceId)} size="xs" />
-                  {amount}
+                  {currencyFormat(amount, 0)}
                 </div>
               ))}
           </div>

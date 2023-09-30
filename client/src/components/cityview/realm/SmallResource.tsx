@@ -25,7 +25,7 @@ export const SmallResource = ({ resourceId }: { resourceId: number }) => {
         size="xs"
         className="mr-1"
       />
-      <div className="text-xxs">{currencyFormat(resource?.balance || 0)}</div>
+      <div className="text-xxs">{currencyFormat(resource?.balance || 0, 2)}</div>
       <Tooltip>{findResourceById(resourceId)?.trait}</Tooltip>
     </div>
   );

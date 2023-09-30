@@ -5,6 +5,15 @@ use debug::PrintTrait;
 
 use alexandria_math::math::pow;
 
+// highest x = 1320937 + 1800000 = 3120937
+const HIGHEST_X: u32 = 3120937;
+// lowest x = -1329800 + 1800000 = 470200
+const LOWEST_X: u32 = 470200;
+// highest y = 612800 + 1800000 = 2412800
+const HIGHEST_Y: u32 = 2412800;
+// lowest y = -618996 + 1800000 = 1181004
+const LOWEST_Y: u32 = 1181004;
+
 #[derive(Copy, Drop, PartialEq, Serde)]
 struct Coord {
     x: u32,
@@ -113,6 +122,11 @@ impl PositionImpl of PositionTrait {
     fn calculate_travel_time(self: Position, destination: Position, sec_per_km: u16) -> u64 {
         CoordImpl::measure_travel_time(self.into(), destination.into(), sec_per_km)
     }
+    // world is divided into 10 timezones
+    fn get_zone(self: Position) -> u32 {
+        // use highest and lowest x to divide map into 10 timezones
+        1 + (self.x - LOWEST_X) * 10 / (HIGHEST_X - LOWEST_X)
+    }
 }
 
 #[test]
@@ -145,5 +159,12 @@ fn test_position_non_equal() {
     let a = Position { entity_id: 0, x: 1, y: 2 };
     let b = Position { entity_id: 0, x: 2, y: 1 };
     assert(a != b, 'a should not equal b');
+}
+
+#[test]
+fn test_get_zone() { 
+    let a = Position { entity_id: 0, x: 1333333, y: 200000 };
+    let zone = a.get_zone();
+    assert(zone == 4, 'zone should be 4');
 }
 

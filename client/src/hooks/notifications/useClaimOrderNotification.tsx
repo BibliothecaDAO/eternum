@@ -6,6 +6,7 @@ import { NotificationType } from "./useNotifications";
 import { findResourceById } from "../../constants/resources";
 import { useTrade } from "../helpers/useTrade";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
+import { currencyFormat } from "../../utils/utils";
 
 export const useClaimOrderNotification = (
   notification: NotificationType,
@@ -55,7 +56,7 @@ export const useClaimOrderNotification = (
                 resource={findResourceById(resourceId)?.trait as any}
                 size="xs"
               />
-              {`+${amount}`}
+              {`+${currencyFormat(amount, 0)}`}
             </div>
           ))}
       </div>

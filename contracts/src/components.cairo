@@ -13,5 +13,7 @@ mod caravan;
 mod trade;
 mod road;
 mod hyperstructure;
+mod labor_auction;
+mod hyperstructure;
 mod attack;
 mod health;
