@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import Button from "../../../elements/Button";
 
-import realmCoords from "../../../geodata/coords.json";
 import { useDojo } from "../../../DojoContext";
 import { getOrderName, orders } from "../../../constants/orders";
 import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
@@ -10,6 +9,7 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import { OrderIcon } from "../../../elements/OrderIcon";
 import { useRealm } from "../../../hooks/helpers/useRealm";
 import clsx from "clsx";
+import { getPosition, multiplyByPrecision } from "../../../utils/utils";
 
 export const MAX_REALMS = 5;
 
@@ -52,7 +52,7 @@ export const SettleRealmComponent = () => {
       position,
     });
     // mint basic resources to start
-    await mint_all_resources({ signer: masterAccount, entity_id: entity_id, amount: 1000000 });
+    await mint_all_resources({ signer: masterAccount, entity_id: entity_id, amount: multiplyByPrecision(1000) });
     setIsLoading(false);
     playSign();
   };
@@ -97,10 +97,5 @@ export const SettleRealmComponent = () => {
     </>
   );
 };
-
-export function getPosition(realm_id: number): { x: number; y: number } {
-  const coords = realmCoords.features[realm_id - 1].geometry.coordinates.map((value) => parseInt(value));
-  return { x: coords[0] + 1800000, y: coords[1] + 1800000 };
-}
 
 export default SettleRealmComponent;

@@ -11,6 +11,8 @@ import {
   MakeFungibleOrderProps,
 } from "./createSystemCalls";
 import { Resource } from "../types";
+import { LaborCostInterface } from "../hooks/helpers/useLabor";
+import { LABOR_CONFIG } from "../constants/labor";
 
 export const HIGH_ENTITY_ID = 9999999999;
 
@@ -198,31 +200,24 @@ export function createOptimisticSystemCalls({
     };
   }
 
-  function optimisticBuildLabor(ts: number, systemCall: (args: BuildLaborProps) => Promise<void>) {
+  function optimisticBuildLabor(
+    ts: number,
+    costResources: LaborCostInterface[],
+    systemCall: (args: BuildLaborProps) => Promise<void>,
+  ) {
     return async function (this: any, args: BuildLaborProps) {
       const { realm_id: realmEntityId, resource_type: resourceId, labor_units: laborUnits, multiplier } = args;
 
       const overrideId = uuid();
       const resource_id = getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]);
 
-      // TODO: put in config file
-      let laborConfig = {
-        base_food_per_cycle: 14000,
-        base_labor_units: 7200,
-        base_resources_per_cycle: 21,
-      };
-
-      let costResources = [
-        { resourceId: 2, balance: 10 },
-        { resourceId: 3, balance: 10 },
-      ];
       for (let i = 0; i < costResources.length; i++) {
         let costId = getEntityIdFromKeys([BigInt(realmEntityId), BigInt(costResources[i].resourceId)]);
         let currentResource = getComponentValue(Resource, costId) || {
           balance: 0,
         };
         let balance =
-          currentResource.balance - (laborUnits as number) * (multiplier as number) * costResources[i].balance;
+          currentResource.balance - (laborUnits as number) * (multiplier as number) * costResources[i].amount;
         Resource.addOverride(overrideId, {
           entity: costId,
           value: {
@@ -237,15 +232,23 @@ export function createOptimisticSystemCalls({
         last_harvest: ts,
         multiplier: 1,
       };
-      // TODO: use block timestamp
-      const balance = labor.balance + (laborUnits as number) * laborConfig.base_labor_units;
-      // change status from open to accepted
+
+      let additional_labor = (laborUnits as number) * LABOR_CONFIG.base_labor_units;
+      let new_balance: number = labor.balance;
+      let new_last_harvest: number = labor.last_harvest;
+      if (labor.balance <= ts) {
+        new_last_harvest += ts - labor.balance;
+        new_balance = ts + additional_labor;
+      } else {
+        new_balance += additional_labor;
+      }
+
       Labor.addOverride(overrideId, {
         entity: resource_id,
         value: {
           multiplier: multiplier as number,
-          balance,
-          last_harvest: labor.last_harvest,
+          balance: new_balance,
+          last_harvest: new_last_harvest,
         },
       });
 
@@ -267,13 +270,6 @@ export function createOptimisticSystemCalls({
       const overrideId = uuid();
       const resource_id = getEntityIdFromKeys([BigInt(realm_id), BigInt(resource_type)]);
 
-      // TODO: put in config file
-      let laborConfig = {
-        base_food_per_cycle: 14000,
-        base_labor_units: 7200,
-        base_resources_per_cycle: 21,
-      };
-
       // compute new values
       let labor = getComponentValue(Labor, resource_id) || {
         balance: ts,
@@ -282,8 +278,8 @@ export function createOptimisticSystemCalls({
       };
       let laborGenerated = labor.balance <= ts ? labor.balance - labor.last_harvest : ts - labor.last_harvest;
       let laborUnharvested = labor.balance <= ts ? 0 : labor.balance - ts;
-      let laborUnitsGenerated = Math.floor(laborGenerated / laborConfig.base_labor_units);
-      let remainder = laborGenerated - laborUnitsGenerated * laborConfig.base_labor_units;
+      let laborUnitsGenerated = Math.floor(laborGenerated / LABOR_CONFIG.base_labor_units);
+      let remainder = laborGenerated - laborUnitsGenerated * LABOR_CONFIG.base_labor_units;
       const balance = ts + remainder + laborUnharvested;
       const isFood = resource_type === 255 || resource_type === 254 ? true : false;
 
@@ -300,8 +296,8 @@ export function createOptimisticSystemCalls({
         balance: 0,
       };
       let resourceBalance = isFood
-        ? laborUnitsGenerated * laborConfig.base_food_per_cycle * labor.multiplier
-        : laborUnitsGenerated * laborConfig.base_resources_per_cycle;
+        ? laborUnitsGenerated * LABOR_CONFIG.base_food_per_cycle * labor.multiplier
+        : laborUnitsGenerated * LABOR_CONFIG.base_resources_per_cycle;
       Resource.addOverride(overrideId, {
         entity: resource_id,
         value: {

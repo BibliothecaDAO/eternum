@@ -13,6 +13,7 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import RealmStatusComponent from "./RealmStatusComponent";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import { Tooltip } from "../../../elements/Tooltip";
+import { LaborAuction } from "./labor/LaborAuction";
 
 const RealmManagementComponent = () => {
   const { realmEntityId } = useRealmStore();
@@ -125,6 +126,7 @@ const RealmManagementComponent = () => {
           Show on map
         </button>
       </div>
+      <LaborAuction />
       <Tabs
         selectedIndex={selectedTab}
         onChange={(index: any) => setLocation(`/realm/${realmEntityId}/${tabs[index].key}`)}

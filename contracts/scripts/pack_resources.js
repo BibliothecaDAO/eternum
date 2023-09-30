@@ -45,6 +45,11 @@ function unpackResources(packedValue, valueCount) {
   return unpackedNumbers;
 }
 
+module.exports = {
+  packResources,
+  unpackResources,
+};
+
 // Example usage
 const numbers = [2, 3];
 const packedResult = packResources(numbers);

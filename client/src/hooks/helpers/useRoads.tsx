@@ -1,9 +1,8 @@
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { useDojo } from "../../DojoContext";
-import { getEntityIdFromKeys } from "../../utils/utils";
+import { getEntityIdFromKeys, getPosition } from "../../utils/utils";
 import { useEffect, useMemo, useState } from "react";
 import { EntityIndex, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
-import { getPosition } from "../../components/cityview/realm/SettleRealmComponent";
 import useRealmStore from "../store/useRealmStore";
 import { getRealm, getRealmIdByPosition, getRealmNameById } from "../../utils/realms";
 

@@ -11,6 +11,7 @@ import clsx from "clsx";
 import { ResourcesOffer } from "../../../../../types";
 import { MarketInterface } from "../../../../../hooks/helpers/useTrade";
 import { Tooltip } from "../../../../../elements/Tooltip";
+import { currencyFormat } from "../../../../../utils/utils";
 
 type TradeOfferProps = {
   marketOffer: MarketInterface;
@@ -67,7 +68,7 @@ export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferPr
               resourcesGive.map(({ resourceId, amount }) => (
                 <div className="flex flex-col items-center mx-2 my-0.5" key={resourceId}>
                   <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="xs" className="mb-1" />
-                  {amount}
+                  {currencyFormat(amount, 0)}
                 </div>
               ))}
           </div>
@@ -80,7 +81,7 @@ export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferPr
               resourcesGet.map(({ resourceId, amount }) => (
                 <div className="flex flex-col items-center mx-2 my-0.5" key={resourceId}>
                   <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="xs" />
-                  {amount}
+                  {currencyFormat(amount, 0)}
                 </div>
               ))}
           </div>
