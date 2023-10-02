@@ -284,7 +284,7 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
-          address: RecsType.Number,
+          address: RecsType.String,
         },
         {
           metadata: {

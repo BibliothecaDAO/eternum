@@ -22,9 +22,7 @@ export const RealmsListComponent = ({ onlyMyRealms = false }: RealmsListComponen
 
   const { realms } = useGetRealms();
 
-  const myRealms = onlyMyRealms
-    ? useEntityQuery([Has(Realm), HasValue(Owner, { address: parseInt(account.address) })])
-    : [];
+  const myRealms = onlyMyRealms ? useEntityQuery([Has(Realm), HasValue(Owner, { address: account.address })]) : [];
 
   const realmsList = useMemo(() => {
     if (onlyMyRealms) {
@@ -41,7 +39,7 @@ export const RealmsListComponent = ({ onlyMyRealms = false }: RealmsListComponen
       </FiltersPanel>
       <div className="flex flex-col space-y-2 px-2 mb-2">
         {realmsList.map((realm) => (
-          <RealmListItem key={realm.realm_id} realm={realm} />
+          <RealmListItem key={realm.realmId} realm={realm} />
         ))}
       </div>
     </>

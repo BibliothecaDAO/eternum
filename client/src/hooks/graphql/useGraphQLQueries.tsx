@@ -60,7 +60,7 @@ export interface RealmInterface {
   resource_types_packed: number;
   order: number;
   position: PositionInterface;
-  owner: number;
+  owner: string;
 }
 
 export interface RealmLaborInterface {
@@ -92,6 +92,8 @@ export interface CaravanInterface {
   arrivalTime: number | undefined;
   capacity: number | undefined;
   destination: PositionInterface | undefined;
+  owner: string | undefined;
+  isMine: boolean;
 }
 
 export interface ResourceInterface {

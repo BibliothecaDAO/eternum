@@ -7,8 +7,9 @@ import { useEntityQuery } from "@dojoengine/react";
 
 export function useCaravan() {
   const {
+    account: { account },
     setup: {
-      components: { ArrivalTime, Movable, Capacity, Position, OrderId },
+      components: { ArrivalTime, Movable, Capacity, Position, OrderId, Owner },
     },
   } = useDojo();
 
@@ -17,6 +18,7 @@ export function useCaravan() {
     const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([BigInt(caravanId)]));
     const movable = getComponentValue(Movable, getEntityIdFromKeys([BigInt(caravanId)]));
     const capacity = getComponentValue(Capacity, getEntityIdFromKeys([BigInt(caravanId)]));
+    const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(caravanId)]));
     const rawDestination = orderId ? getComponentValue(Position, getEntityIdFromKeys([BigInt(orderId.id)])) : undefined;
     let destination = rawDestination ? { x: rawDestination.x, y: rawDestination.y } : undefined;
     return {
@@ -26,6 +28,8 @@ export function useCaravan() {
       blocked: movable?.blocked,
       capacity: capacity?.weight_gram,
       destination,
+      owner: owner?.address,
+      isMine: owner?.address === account.address,
     };
   };
 
@@ -51,14 +55,14 @@ export function useCaravan() {
   return { getCaravanInfo, calculateDistance };
 }
 
-export function useGetRealmCaravans(x: number, y: number) {
+export function useGetPositionCaravans(x: number, y: number) {
   const {
     setup: {
       components: { Position, CaravanMembers },
     },
   } = useDojo();
 
-  const [realmCaravans, setRealmCaravans] = useState<CaravanInterface[]>([]);
+  const [caravans, setCaravans] = useState<CaravanInterface[]>([]);
 
   const entityIds = useEntityQuery([HasValue(Position, { x, y }), Has(CaravanMembers)]);
 
@@ -72,11 +76,11 @@ export function useGetRealmCaravans(x: number, y: number) {
       .filter(Boolean)
       .sort((a, b) => b!.caravanId - a!.caravanId) as CaravanInterface[];
     // DISCUSS: can add sorting logic here
-    setRealmCaravans(caravans);
+    setCaravans(caravans);
     // only recompute when different number of orders
   }, [entityIds.length]);
 
   return {
-    realmCaravans,
+    caravans,
   };
 }

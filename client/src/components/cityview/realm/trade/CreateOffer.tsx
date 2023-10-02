@@ -15,7 +15,7 @@ import { CaravanInterface } from "../../../../hooks/graphql/useGraphQLQueries";
 import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
-import { useGetRealmCaravans } from "../../../../hooks/helpers/useCaravans";
+import { useGetPositionCaravans } from "../../../../hooks/helpers/useCaravans";
 import { currencyFormat, divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../../utils/utils";
 import { getComponentValue } from "@latticexyz/recs";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
@@ -451,7 +451,7 @@ export const SelectCaravanPanel = ({
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const { realm } = useGetRealm(realmEntityId);
-  const { realmCaravans } = useGetRealmCaravans(realm?.position.x || 0, realm?.position.y || 0);
+  const { caravans: realmCaravans } = useGetPositionCaravans(realm?.position.x || 0, realm?.position.y || 0);
 
   let myAvailableCaravans = useMemo(
     () =>

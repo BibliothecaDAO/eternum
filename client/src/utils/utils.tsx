@@ -70,9 +70,11 @@ export function setComponentFromEntity(entity: Entity | null, componentName: str
       // so here i am transforming to a number each time (but it will cause problem for fields that are not numbers)
       const componentValues = Object.keys(component.schema).reduce((acc: Schema, key) => {
         const value = rawComponentValues[key];
-        acc[key] = Number(value);
+        // TODO: better way to do this? check the recs type
+        acc[key] = key === "address" ? value : Number(value);
         return acc;
       }, {});
+
       setComponent(component, entityId, componentValues);
     }
   }
@@ -173,7 +175,7 @@ export function setComponentFromEntitiesGraphqlQuery(component: Component, entit
       if (comp.__typename === component.metadata?.name) {
         const componentValues = Object.keys(component.schema).reduce((acc: Schema, key) => {
           const value = comp[key];
-          acc[key] = Number(value);
+          acc[key] = key === "address" ? value : Number(value);
           return acc;
         }, {});
         setComponent(component, entityIndex, componentValues);
@@ -207,7 +209,7 @@ export function setComponentFromEvent(components: Components, eventData: string[
   // create component object from values with schema
   const componentValues = Object.keys(component.schema).reduce((acc: Schema, key, index) => {
     const value = values[index];
-    acc[key] = Number(value);
+    acc[key] = key === "address" ? value : Number(value);
     return acc;
   }, {});
 

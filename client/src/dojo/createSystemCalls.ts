@@ -9,7 +9,8 @@ interface SystemSigner {
 
 export interface TravelProps extends SystemSigner {
   travelling_entity_id: num.BigNumberish;
-  destination_entity_id: num.BigNumberish;
+  destination_coord_x: num.BigNumberish;
+  destination_coord_y: num.BigNumberish;
 }
 
 export interface InitializeHyperstructuresProps extends SystemSigner {
@@ -325,7 +326,7 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
 
   const initialize_hyperstructure = async (props: InitializeHyperstructuresProps) => {
     const { entity_id, hyperstructure_id, signer } = props;
-    const tx = await execute(signer, "InitializeHyperstructures", [entity_id, hyperstructure_id]);
+    const tx = await execute(signer, "InitializeHyperStructure", [entity_id, hyperstructure_id]);
 
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
@@ -333,8 +334,9 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
   };
 
   const travel = async (props: TravelProps) => {
-    const { travelling_entity_id, destination_entity_id, signer } = props;
-    const tx = await execute(signer, "Travel", [travelling_entity_id, destination_entity_id]);
+    const { travelling_entity_id, destination_coord_x, destination_coord_y, signer } = props;
+    // TODO: put coords
+    const tx = await execute(signer, "Travel", [travelling_entity_id, destination_coord_x, destination_coord_y]);
 
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
@@ -404,7 +406,7 @@ export function setComponentFromEvent(components: Components, eventData: string[
   // create component object from values with schema
   const componentValues = componentFields.reduce((acc: Schema, key, index) => {
     const value = values[index];
-    acc[key] = Number(value);
+    acc[key] = key === "address" ? value : Number(value);
     return acc;
   }, {});
 

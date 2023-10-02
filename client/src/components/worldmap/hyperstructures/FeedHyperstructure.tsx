@@ -13,11 +13,13 @@ import { OrderIcon } from "../../../elements/OrderIcon";
 import { orderNameDict, orders } from "../../../constants/orders";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import clsx from "clsx";
-import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
-import hyperstructure from "../../../data/hyperstructures.json";
+import { HyperStructureInterface, useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
 import { Tabs } from "../../../elements/tab";
 import { Tooltip } from "../../../elements/Tooltip";
 import ProgressBar from "../../../elements/ProgressBar";
+import { HyperStructureCaravansPanel } from "./HyperStructureCaravans/HyperStructureCaravansPanel";
+import hyperStructures from "../../../data/hyperstructures.json";
+import { useGetPositionCaravans } from "../../../hooks/helpers/useCaravans";
 
 type FeedHyperstructurePopupProps = {
   onClose: () => void;
@@ -26,6 +28,16 @@ type FeedHyperstructurePopupProps = {
 
 export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePopupProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
+
+  const hyperStructurePosition = useMemo(() => {
+    const { x, z } = hyperStructures[order - 1];
+    return getContractPositionFromRealPosition({ x, y: z });
+  }, [order]);
+
+  const { getHyperstructure } = useHyperstructure();
+  const hyperstructureData = getHyperstructure(order, hyperStructurePosition);
+
+  const { caravans } = useGetPositionCaravans(hyperStructurePosition.x, hyperStructurePosition.y);
 
   const tabs = useMemo(
     () => [
@@ -39,23 +51,29 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
             </Tooltip>
           </div>
         ),
-        component: <BuildHyperstructurePanel order={order} onClose={onClose} />,
+        component: <BuildHyperstructurePanel order={order} onClose={onClose} hyperstructureData={hyperstructureData} />,
       },
       {
         key: "my",
         label: (
+          // TODO: implement incoming caravans here
           <div className="flex group relative flex-col items-center">
-            <div>Caravans (0)</div>
+            <div>{`Caravans (${caravans.length})`}</div>
             <Tooltip position="bottom">
               <p className="whitespace-nowrap">Watch incoming caravans.</p>
               <p className="whitespace-nowrap">Pass resources to Hyperstructure on arriving.</p>
             </Tooltip>
           </div>
         ),
-        component: <></>,
+        component: (
+          <HyperStructureCaravansPanel
+            caravans={caravans}
+            hyperstructureData={hyperstructureData}
+          ></HyperStructureCaravansPanel>
+        ),
       },
     ],
-    [selectedTab],
+    [selectedTab, caravans],
   );
 
   return (
@@ -100,7 +118,7 @@ const SelectableRealm = ({ realm, selected = false, onClick, costs, ...props }: 
   const canInitialize = useMemo(() => {
     let canInitialize = true;
     realm.resources.forEach((resource: any) => {
-      if (resource.balance.balance < costById[resource.id]) {
+      if (resource.balance < costById[resource.id]) {
         canInitialize = false;
       }
     });
@@ -132,8 +150,8 @@ const SelectableRealm = ({ realm, selected = false, onClick, costs, ...props }: 
                   withTooltip
                   key={resource.id}
                   resourceId={resource.id}
-                  amount={resource.balance.balance}
-                  color={resource.balance.balance >= costById[resource.id] ? "" : "text-order-giants"}
+                  amount={resource.balance}
+                  color={resource.balance >= costById[resource.id] ? "" : "text-order-giants"}
                 />
               );
             })}
@@ -146,17 +164,21 @@ const SelectableRealm = ({ realm, selected = false, onClick, costs, ...props }: 
   );
 };
 
-const BuildHyperstructurePanel = ({ order, onClose }: any) => {
+const BuildHyperstructurePanel = ({
+  order,
+  onClose,
+  hyperstructureData,
+}: {
+  order: number;
+  onClose: () => void;
+  hyperstructureData: HyperStructureInterface | undefined;
+}) => {
   const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
   const [isNewCaravan, setIsNewCaravan] = useState(false);
   const [donkeysCount, setDonkeysCount] = useState(1);
   const [hasEnoughDonkeys, setHasEnoughDonkeys] = useState(false);
   const [step, setStep] = useState<number>(1);
   const [isLoading, setIsLoading] = useState(false);
-
-  const hyperStructurePosition = useMemo(() => {
-    return getContractPositionFromRealPosition({ x: hyperstructure[order - 1].x, y: hyperstructure[order - 1].z });
-  }, [order]);
 
   const {
     account: { account },
@@ -193,7 +215,8 @@ const BuildHyperstructurePanel = ({ order, onClose }: any) => {
         await travel({
           signer: account,
           travelling_entity_id: caravan_id,
-          destination_entity_id: hyperstructureData.hyperstructureId,
+          destination_coord_x: hyperstructureData.position.x,
+          destination_coord_y: hyperstructureData.position.y,
         });
       } else {
         // transfer resources to caravan
@@ -213,20 +236,13 @@ const BuildHyperstructurePanel = ({ order, onClose }: any) => {
         await travel({
           signer: account,
           travelling_entity_id: selectedCaravan,
-          destination_entity_id: hyperstructureData.hyperstructureId,
+          destination_coord_x: hyperstructureData.position.x,
+          destination_coord_y: hyperstructureData.position.y,
         });
       }
     }
     onClose();
   };
-
-  const { getHyperstructure } = useHyperstructure();
-
-  const hyperstructureData = getHyperstructure(
-    order,
-    // TODO: change z to y when right one
-    hyperStructurePosition,
-  );
 
   const {
     setup: {
@@ -263,10 +279,11 @@ const BuildHyperstructurePanel = ({ order, onClose }: any) => {
         const _realm = getRealm(realmEntityId.realmId);
         const _resources = hyperstructureData?.initialzationResources.map((resource) => ({
           id: resource.resourceId,
-          balance: getComponentValue(
-            Resource,
-            getEntityIdFromKeys([BigInt(realmEntityId.realmEntityId), BigInt(resource.resourceId)]),
-          ),
+          balance:
+            getComponentValue(
+              Resource,
+              getEntityIdFromKeys([BigInt(realmEntityId.realmEntityId), BigInt(resource.resourceId)]),
+            )?.balance || 0,
         }));
         return { ..._realm, entity_id: realmEntityId.realmEntityId, resources: _resources };
       }),

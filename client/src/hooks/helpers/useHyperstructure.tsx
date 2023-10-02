@@ -18,6 +18,7 @@ export interface HyperStructureInterface {
   }[];
   initialized: boolean;
   completed: boolean;
+  position: Position;
 }
 
 export const useHyperstructure = () => {
@@ -64,6 +65,7 @@ export const useHyperstructure = () => {
           }),
           initialized: hyperstructure.initialized_at > 0,
           completed: hyperstructure.completed_at > 0,
+          position,
         };
       }
     }
