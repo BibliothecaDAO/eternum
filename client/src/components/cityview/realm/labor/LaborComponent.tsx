@@ -1,23 +1,23 @@
 import Button from "../../../../elements/Button";
 import { ResourceIcon } from "../../../../elements/ResourceIcon";
 import { ResourcesIds, findResourceById } from "../../../../constants/resources";
-import { currencyFormat, getEntityIdFromKeys } from "../../../../utils/utils.jsx";
+import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "../../../../utils/utils.jsx";
 import { ReactComponent as Clock } from "../../../../assets/icons/common/clock.svg";
 import { ReactComponent as Village } from "../../../../assets/icons/common/village.svg";
 import ProgressBar from "../../../../elements/ProgressBar";
 import { useDojo } from "../../../../DojoContext";
-import { LaborConfig, Realm } from "../../../../types";
+import { Realm } from "../../../../types";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { calculateNextHarvest, calculateProductivity, formatSecondsInHoursMinutes } from "./laborUtils";
 import { useEffect, useMemo, useState } from "react";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useComponentValue } from "@dojoengine/react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
+import { LABOR_CONFIG } from "../../../../constants/labor";
 
 type LaborComponentProps = {
   resourceId: number;
   realm: Realm;
-  laborConfig: LaborConfig | undefined;
   buildLoadingStates: { [key: number]: boolean };
   setBuildLoadingStates: (prevStates: any) => void;
   onBuild: () => void;
@@ -26,7 +26,6 @@ type LaborComponentProps = {
 export const LaborComponent = ({
   resourceId,
   realm,
-  laborConfig,
   onBuild,
   setBuildLoadingStates,
   buildLoadingStates,
@@ -65,14 +64,14 @@ export const LaborComponent = ({
   // time until the next possible harvest (that happens every 7200 seconds (2hrs))
   // if labor balance is less than current time, then there is no time to next harvest
   const timeLeftToHarvest = useMemo(() => {
-    if (nextBlockTimestamp && labor && laborConfig && labor.last_harvest > 0) {
-      if (labor.balance > nextBlockTimestamp) {
+    if (nextBlockTimestamp && labor && labor.last_harvest > 0) {
+      if (nextBlockTimestamp > labor.last_harvest && labor.balance > nextBlockTimestamp) {
         const timeSinceLastHarvest = nextBlockTimestamp - labor.last_harvest;
-        return laborConfig.base_labor_units - (timeSinceLastHarvest % laborConfig.base_labor_units);
+        return LABOR_CONFIG.base_labor_units - (timeSinceLastHarvest % LABOR_CONFIG.base_labor_units);
       }
     }
     return undefined;
-  }, [labor, laborConfig, nextBlockTimestamp]);
+  }, [labor, nextBlockTimestamp]);
 
   const { play: playHarvest } = useUiSounds(soundSelector.harvest);
 
@@ -92,9 +91,8 @@ export const LaborComponent = ({
   // if the labor balance does not exist or is lower than the current time,
   // then there is no labor left
   const laborLeft = useMemo(() => {
-    if (nextBlockTimestamp && labor && laborConfig && labor.balance > nextBlockTimestamp) {
-      let left = labor.balance - nextBlockTimestamp;
-      return left < laborConfig.base_labor_units ? 0 : left;
+    if (nextBlockTimestamp && labor && labor.balance > nextBlockTimestamp) {
+      return labor.balance - nextBlockTimestamp;
     }
     return 0;
   }, [nextBlockTimestamp, labor]);
@@ -102,19 +100,19 @@ export const LaborComponent = ({
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 
   const nextHarvest = useMemo(() => {
-    if (labor && laborConfig && nextBlockTimestamp) {
+    if (labor && nextBlockTimestamp) {
       return calculateNextHarvest(
         labor.balance,
         labor.last_harvest,
         labor.multiplier,
-        laborConfig.base_labor_units,
-        isFood ? laborConfig.base_food_per_cycle : laborConfig.base_resources_per_cycle,
+        LABOR_CONFIG.base_labor_units,
+        isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
         nextBlockTimestamp,
       );
     } else {
       return 0;
     }
-  }, [labor, laborConfig, nextBlockTimestamp]);
+  }, [labor, nextBlockTimestamp]);
 
   return (
     <div className="relative flex flex-col border rounded-md border-gray-gold text-xxs text-gray-gold">
@@ -158,25 +156,25 @@ export const LaborComponent = ({
           </div>
           <ProgressBar
             rounded
-            progress={
-              laborConfig && timeLeftToHarvest ? 100 - (timeLeftToHarvest / laborConfig.base_labor_units) * 100 : 0
-            }
+            progress={timeLeftToHarvest ? 100 - (timeLeftToHarvest / LABOR_CONFIG.base_labor_units) * 100 : 0}
             className="bg-white"
           />
           <div className="flex items-center mt-2">
             <>
               <Clock />
               <div className="ml-1 italic text-white/70">
-                {laborLeft ? `${formatSecondsInHoursMinutes(laborLeft)} left` : "No Labor"}
+                {laborLeft > 60 ? `${formatSecondsInHoursMinutes(laborLeft)} left` : "No Labor"}
               </div>
             </>
 
             <div className="flex items-center mx-auto text-white/70">
-              {laborConfig && labor && laborLeft > 0
-                ? `+${calculateProductivity(
-                    isFood ? laborConfig.base_food_per_cycle : laborConfig.base_resources_per_cycle,
-                    labor.multiplier,
-                    laborConfig.base_labor_units,
+              {labor && laborLeft > 0
+                ? `+${divideByPrecision(
+                    calculateProductivity(
+                      isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
+                      labor.multiplier,
+                      LABOR_CONFIG.base_labor_units,
+                    ),
                   ).toFixed(0)}`
                 : "+0"}
               <ResourceIcon
@@ -189,7 +187,7 @@ export const LaborComponent = ({
             </div>
             <>
               <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="xs" className="!w-[12px]" />
-              <div className="mx-1 text-brilliance">{`+${nextHarvest}`}</div>
+              <div className="mx-1 text-brilliance">{`+${divideByPrecision(nextHarvest)}`}</div>
             </>
             {/* // TODO: visual cue to show disabled? */}
             {!isHarvestLoading && (

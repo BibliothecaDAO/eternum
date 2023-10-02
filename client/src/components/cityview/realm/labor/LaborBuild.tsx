@@ -15,9 +15,10 @@ import { useDojo } from "../../../../DojoContext";
 import { formatSecondsLeftInDaysHours } from "./laborUtils";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { getComponentValue } from "@latticexyz/recs";
-import { getEntityIdFromKeys } from "../../../../utils/utils";
+import { getEntityIdFromKeys, getPosition, getZone } from "../../../../utils/utils";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
+import { BuildLaborProps } from "../../../../dojo/createSystemCalls";
 import { useLabor } from "../../../../hooks/helpers/useLabor";
 
 let LABOR_CONFIG = {
@@ -36,7 +37,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   const {
     setup: {
       components: { Resource },
-      systemCalls: { build_labor },
+      systemCalls: { build_labor, purchase_labor },
       optimisticSystemCalls: { optimisticBuildLabor },
     },
     account: { account },
@@ -50,7 +51,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     setMultiplier(1); // Reset the multiplier to 1 when the resourceId changes
   }, [resourceId]);
 
-  let { realmEntityId } = useRealmStore();
+  let { realmEntityId, realmId } = useRealmStore();
   const { realm } = useGetRealm(realmEntityId);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
@@ -59,12 +60,49 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   const laborUnits = useMemo(() => (isFood ? 12 : laborAmount), [laborAmount]);
   const resourceInfo = useMemo(() => findResourceById(resourceId), [resourceId]);
 
-  const { getLaborCost } = useLabor();
+  const { getLaborCost, getLaborAuctionAverageCoefficient, getNextLaborAuctionCoefficient } = useLabor();
+
+  const position = realmId ? getPosition(realmId) : undefined;
+  const zone = position ? getZone(position.x) : undefined;
+
+  const laborAuctionAverageCoefficient = useMemo(() => {
+    let coefficient = zone ? getLaborAuctionAverageCoefficient(zone, laborUnits * multiplier) : undefined;
+    return coefficient || 1;
+  }, [zone, laborUnits, multiplier]);
+
+  const nextLaborAuctionCoefficient = useMemo(
+    () => (zone ? getNextLaborAuctionCoefficient(zone, laborUnits * multiplier) : undefined),
+    [zone, laborUnits, multiplier],
+  );
 
   const costResources = useMemo(() => getLaborCost(resourceId), [resourceId]);
 
-  const getTotalAmount = (amount: number, isFood: boolean, multiplier: number, laborAmount: number) => {
-    return amount * multiplier * (isFood ? 12 : laborAmount);
+  const getTotalAmount = (
+    amount: number,
+    isFood: boolean,
+    multiplier: number,
+    laborAmount: number,
+    laborCoefficient: number,
+  ) => {
+    return amount * multiplier * (isFood ? 12 : laborAmount) * laborCoefficient;
+  };
+
+  const buildLabor = async ({ realm_id, resource_type, labor_units, multiplier }: BuildLaborProps) => {
+    let total_units = Number(labor_units) * Number(multiplier);
+    await purchase_labor({
+      signer: account,
+      entity_id: realm_id,
+      resource_type,
+      labor_units: total_units,
+    });
+
+    await build_labor({
+      signer: account,
+      realm_id,
+      resource_type,
+      labor_units,
+      multiplier,
+    });
   };
 
   useEffect(() => {
@@ -74,7 +112,10 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
         Resource,
         getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
       );
-      return realmResource && realmResource.balance >= getTotalAmount(amount, isFood, multiplier, laborAmount);
+      return (
+        realmResource &&
+        realmResource.balance >= getTotalAmount(amount, isFood, multiplier, laborAmount, laborAuctionAverageCoefficient)
+      );
     });
 
     setCanBuild(canBuild);
@@ -88,7 +129,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     optimisticBuildLabor(
       nextBlockTimestamp || 0,
       costResources,
-      build_labor,
+      buildLabor,
     )({
       signer: account,
       realm_id: realmEntityId,
@@ -278,12 +319,22 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
                     key={resourceId}
                     type="vertical"
                     resourceId={resourceId}
-                    amount={Number(getTotalAmount(amount, isFood, multiplier, laborAmount).toFixed(2))}
+                    amount={Number(
+                      getTotalAmount(amount, isFood, multiplier, laborAmount, laborAuctionAverageCoefficient).toFixed(
+                        2,
+                      ),
+                    )}
                   />
                 ))}
               </div>
             </div>
           </div>
+        </div>
+        <div className={"flex items-center text-white text-xxs space-x-4 mx-2"}>
+          <div className="">Labor Average Price: </div>
+          {<div className="">x {laborAuctionAverageCoefficient.toFixed(3)}</div>}
+          <div className="">Labor Next Price: </div>
+          {<div className="">x {nextLaborAuctionCoefficient?.toFixed(3)}</div>}
         </div>
         <div className="flex justify-between m-2 text-xxs">
           {!isFood && (

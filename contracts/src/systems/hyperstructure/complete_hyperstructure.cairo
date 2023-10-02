@@ -50,7 +50,7 @@ mod CompleteHyperStructure {
 #[cfg(test)]
 mod tests {
 
-    use eternum::components::position::Coord;
+    use eternum::components::position::{Coord, Position};
     use eternum::components::resources::Resource;
     use eternum::components::hyperstructure::HyperStructure;
     use eternum::components::owner::Owner;
@@ -88,6 +88,11 @@ mod tests {
                 entity_id: entity_id,
                 resource_type: ResourceTypes::WOOD,
                 balance: 400
+            },
+            Position {
+                entity_id: entity_id,
+                x: 20,
+                y: 30
             }
         ));
 

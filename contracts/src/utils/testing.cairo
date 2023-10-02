@@ -12,6 +12,7 @@ use eternum::components::resources::{vault, Vault};
 use eternum::components::metadata::{foreign_key, ForeignKey};
 use eternum::components::trade::{fungible_entities, FungibleEntities};
 use eternum::components::road::{road, Road};
+use eternum::components::labor_auction::{labor_auction, LaborAuction};
 use eternum::components::hyperstructure::{hyper_structure, HyperStructure};
 
 
@@ -62,6 +63,7 @@ use eternum::systems::order::cancel_fungible_order::CancelFungibleOrder;
 use eternum::systems::order::attach_caravan::AttachCaravan;
 use eternum::systems::order::claim_fungible_order::ClaimFungibleOrder;
 use eternum::systems::labor::build_labor::BuildLabor;
+use eternum::systems::labor::purchase_labor::PurchaseLabor;
 use eternum::systems::config::labor_config::SetLaborConfig;
 use eternum::systems::config::labor_config::SetLaborCostResources;
 use eternum::systems::config::labor_config::SetLaborCostAmount;
@@ -70,6 +72,7 @@ use eternum::systems::config::weight_config::SetWeightConfig;
 use eternum::systems::test::mint_resources::{MintResources, MintAllResources};
 use eternum::systems::labor::harvest_labor::HarvestLabor;
 use eternum::systems::road::create_road::CreateRoad;
+use eternum::systems::labor_auction::create_labor_auction::CreateLaborAuction;
 use eternum::systems::travel::Travel;
 use eternum::systems::resources::transfer_resources::TransferResources;
 use eternum::systems::hyperstructure::initialize_hyperstructure::InitializeHyperStructure;
@@ -125,6 +128,7 @@ fn spawn_eternum() -> IWorldDispatcher {
         vault::TEST_CLASS_HASH,
         weight_config::TEST_CLASS_HASH,
         road::TEST_CLASS_HASH,
+        labor_auction::TEST_CLASS_HASH,
         road_config::TEST_CLASS_HASH,
         hyper_structure::TEST_CLASS_HASH,
     ];
@@ -145,6 +149,7 @@ fn spawn_eternum() -> IWorldDispatcher {
         ClaimFungibleOrder::TEST_CLASS_HASH,
         SetTravelConfig::TEST_CLASS_HASH,
         BuildLabor::TEST_CLASS_HASH,
+        PurchaseLabor::TEST_CLASS_HASH,
         SetLaborConfig::TEST_CLASS_HASH,
         SetLaborCostResources::TEST_CLASS_HASH,
         SetLaborCostAmount::TEST_CLASS_HASH,
@@ -153,12 +158,12 @@ fn spawn_eternum() -> IWorldDispatcher {
         HarvestLabor::TEST_CLASS_HASH,
         SetWeightConfig::TEST_CLASS_HASH,
         CreateRoad::TEST_CLASS_HASH,
+        CreateLaborAuction::TEST_CLASS_HASH,
         DefineHyperStructure::TEST_CLASS_HASH,
         InitializeHyperStructure::TEST_CLASS_HASH,
         CompleteHyperStructure::TEST_CLASS_HASH,
         Travel::TEST_CLASS_HASH,
         TransferResources::TEST_CLASS_HASH,
-
     ];
     
 

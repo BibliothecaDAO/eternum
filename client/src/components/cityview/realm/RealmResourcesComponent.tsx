@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
 import { ResourcesIds, findResourceById, resources } from "../../../constants/resources";
-import { currencyFormat, getEntityIdFromKeys } from "../../../utils/utils.jsx";
+import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "../../../utils/utils.jsx";
 import clsx from "clsx";
 import { unpackResources } from "../../../utils/packedData";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
@@ -14,6 +14,7 @@ import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../DojoContext";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import { Tooltip } from "../../../elements/Tooltip";
+import { LABOR_CONFIG } from "../../../constants/labor";
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<"div">;
 
@@ -96,13 +97,6 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const [productivity, setProductivity] = useState<number>(0);
 
-  // TODO: use config file
-  let laborConfig = {
-    base_food_per_cycle: 14000,
-    base_labor_units: 7200,
-    base_resources_per_cycle: 21,
-  };
-
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 
   const labor = useComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]));
@@ -111,20 +105,20 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
 
   useEffect(() => {
     let laborLeft: number = 0;
-    if (nextBlockTimestamp && labor && laborConfig && labor.balance > nextBlockTimestamp) {
-      let left = labor.balance - nextBlockTimestamp;
-      laborLeft = left < laborConfig.base_labor_units ? 0 : left;
+    if (nextBlockTimestamp && labor && labor.balance > nextBlockTimestamp) {
+      laborLeft = labor.balance - nextBlockTimestamp;
     }
     const productivity =
-      labor && laborLeft && laborConfig
+      // can have a small difference between block timestamp and actual block so make sure that laborLeft is more than 1 minute
+      labor && laborLeft > 60
         ? calculateProductivity(
-            isFood ? laborConfig.base_food_per_cycle : laborConfig.base_resources_per_cycle,
+            isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
             labor.multiplier,
-            laborConfig.base_labor_units,
+            LABOR_CONFIG.base_labor_units,
           )
         : 0;
     setProductivity(productivity);
-  }, [nextBlockTimestamp, labor, laborConfig]);
+  }, [nextBlockTimestamp, labor]);
 
   return (
     <>
@@ -147,7 +141,9 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
               (productivity === 0 || productivity === undefined) && "text-gold bg-brown",
             )}
           >
-            {productivity === 0 || productivity === undefined ? "IDLE" : `${productivity}/h`}
+            {productivity === 0 || productivity === undefined
+              ? "IDLE"
+              : `${divideByPrecision(productivity).toFixed(0)}/h`}
           </div>
         )}
       </div>

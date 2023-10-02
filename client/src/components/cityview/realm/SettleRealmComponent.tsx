@@ -52,7 +52,7 @@ export const SettleRealmComponent = () => {
       position,
     });
     // mint basic resources to start
-    await mint_all_resources({ signer: masterAccount, entity_id: entity_id, amount: 1000000 });
+    await mint_all_resources({ signer: masterAccount, entity_id: entity_id, amount: multiplyByPrecision(1000) });
     setIsLoading(false);
     playSign();
   };

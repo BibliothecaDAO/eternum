@@ -21,6 +21,10 @@
         "Labor",
         "Resource"
     ],
+    "PurchaseLabor": [
+        "Resource",
+        "LaborAuction"
+    ],
     "HarvestLabor": [
         "Labor",
         "Resource"
