@@ -225,11 +225,8 @@ const BuildHyperstructurePanel = ({
           sending_entity_id: realmEntityId,
           receiving_entity_id: selectedCaravan,
           resources:
-            hyperstructureData?.initialzationResources.flatMap((resource) => [
-              2,
-              resource.resourceId,
-              resource.amount,
-            ]) || [],
+            hyperstructureData?.initialzationResources.flatMap((resource) => [resource.resourceId, resource.amount]) ||
+            [],
         });
 
         // send caravan to hyperstructure
