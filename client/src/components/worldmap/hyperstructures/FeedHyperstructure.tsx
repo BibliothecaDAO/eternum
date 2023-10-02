@@ -5,7 +5,13 @@ import { SelectCaravanPanel } from "../../cityview/realm/trade/CreateOffer";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { getRealm } from "../../../utils/realms";
 import { getComponentValue } from "@latticexyz/recs";
-import { divideByPrecision, getContractPositionFromRealPosition, getEntityIdFromKeys } from "../../../utils/utils";
+import {
+  currencyFormat,
+  divideByPrecision,
+  getContractPositionFromRealPosition,
+  getEntityIdFromKeys,
+  multiplyByPrecision,
+} from "../../../utils/utils";
 import { useDojo } from "../../../DojoContext";
 import { Steps } from "../../../elements/Steps";
 import { Headline } from "../../../elements/Headline";
@@ -18,6 +24,8 @@ import hyperstructure from "../../../data/hyperstructures.json";
 import { Tabs } from "../../../elements/tab";
 import { Tooltip } from "../../../elements/Tooltip";
 import ProgressBar from "../../../elements/ProgressBar";
+import { NumberInput } from "../../../elements/NumberInput";
+import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/arrow-separator.svg";
 
 type FeedHyperstructurePopupProps = {
   onClose: () => void;
@@ -248,10 +256,11 @@ const BuildHyperstructurePanel = ({ order, onClose }: any) => {
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const setRealmEntityId = useRealmStore((state) => state.setRealmEntityId);
+  const [feedResourcesGiveAmounts, setFeedResourcesGiveAmounts] = useState<{ [key: number]: number }>({});
 
   const initializeResourceIds = useMemo(() => {
     return hyperstructureData?.initialzationResources.map((resource) => resource.resourceId) || [];
-  }, []);
+  }, [hyperstructureData]);
 
   const initializeResourceAmounts = useMemo(() => {
     const amounts: any = {};
@@ -259,7 +268,16 @@ const BuildHyperstructurePanel = ({ order, onClose }: any) => {
       amounts[resource.resourceId] = divideByPrecision(resource.amount);
     });
     return amounts;
-  }, []);
+  }, [hyperstructureData]);
+
+  const resourcesLeftToComplete = useMemo(() => {
+    const resourcesLeftToComplete: any = {};
+    hyperstructureData?.hyperstructureResources.forEach((resource) => {
+      resourcesLeftToComplete[resource.resourceId] =
+        divideByPrecision(resource.completeAmount) - divideByPrecision(resource.currentAmount);
+    });
+    return resourcesLeftToComplete;
+  }, [hyperstructureData]);
 
   const realms = useMemo(
     () =>
@@ -301,20 +319,36 @@ const BuildHyperstructurePanel = ({ order, onClose }: any) => {
 
   return (
     <div className="flex flex-col items-center p-2">
+      <div className="flex flex-col space-y-2 text-xs w-full mb-3">
+        <div className="flex justify-between">
+          <div className="flex items-center">
+            {<OrderIcon order={orderNameDict[order]} size="xs" className="mx-1" />}
+            <span className="text-white font-bold">{orders[order - 1].fullOrderName}</span>
+          </div>
+          <div className="flex flex-col text-xxs text-right">
+            <span className="text-gray-gold italic">State</span>
+            <span
+              className={clsx(
+                !hyperstructureData?.initialized && "text-order-giants",
+                hyperstructureData?.completed && "text-order-brilliance",
+                hyperstructureData && hyperstructureData?.progress > 0 && !hyperstructureData?.completed
+                  ? "text-gold"
+                  : "",
+              )}
+            >
+              {hyperstructureData?.completed
+                ? "Completed"
+                : hyperstructureData?.initialized
+                ? `Building in progress ${hyperstructureData?.progress}`
+                : "Not initialized"}
+            </span>
+          </div>
+        </div>
+        <ProgressBar rounded progress={hyperstructureData?.progress || 0} className="bg-gold" />
+      </div>
       {step == 1 && (
         <>
           <div className="flex flex-col space-y-2 text-xs">
-            <div className="flex justify-between">
-              <div className="flex items-center">
-                {<OrderIcon order={orderNameDict[order]} size="xs" className="mx-1" />}
-                <span className="text-white font-bold">{orders[order - 1].fullOrderName}</span>
-              </div>
-              <div className="flex flex-col text-xxs text-right">
-                <span className="text-gray-gold italic">State</span>
-                <span className="text-order-giants">Not initialized</span>
-              </div>
-            </div>
-            <ProgressBar rounded progress={hyperstructureData?.progress || 0} className="bg-gold" />
             <div className="relative w-full">
               <img src={`/images/buildings/hyperstructure.jpg`} className="object-cover w-full h-full rounded-[10px]" />
               <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
@@ -363,7 +397,66 @@ const BuildHyperstructurePanel = ({ order, onClose }: any) => {
       )}
       {step == 3 && (
         <>
+          {hyperstructureData?.initialized && (
+            <>
+              <div className="grid grid-cols-9 gap-2">
+                <div className={clsx("flex flex-col items-center  space-y-2 h-min", "col-span-4")}>
+                  <Headline className="mb-2">You Give</Headline>
+                  {Object.keys(resourcesLeftToComplete).map((_id) => {
+                    const id: any = Number(_id);
+                    let resource = getComponentValue(
+                      Resource,
+                      getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]),
+                    );
+                    return (
+                      <div key={id} className="flex items-center w-full">
+                        <NumberInput
+                          max={resourcesLeftToComplete[id]}
+                          min={1}
+                          value={feedResourcesGiveAmounts[id]}
+                          onChange={(value) => {
+                            setFeedResourcesGiveAmounts({
+                              ...feedResourcesGiveAmounts,
+                              [id]: Math.min(divideByPrecision(resource?.balance || 0), value),
+                            });
+                          }}
+                        />
+                        <div className="ml-2">
+                          <ResourceCost
+                            className=" cursor-pointer"
+                            onClick={() => {
+                              setFeedResourcesGiveAmounts({
+                                ...feedResourcesGiveAmounts,
+                                [id]: resourcesLeftToComplete[id],
+                              });
+                            }}
+                            resourceId={id}
+                            amount={resource?.balance || 0}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center justify-center">
+                  <ArrowSeparator />
+                </div>
+                <div className="flex flex-col col-span-4 space-y-2 h-min">
+                  <Headline className="mb-2">Structure needs</Headline>
+                  {Object.keys(resourcesLeftToComplete).map((id) => (
+                    <ResourceCost
+                      key={id}
+                      className="!w-min h-8"
+                      resourceId={Number(id)}
+                      amount={multiplyByPrecision(resourcesLeftToComplete[id])}
+                    />
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
           <SelectCaravanPanel
+            className="!p-0"
             donkeysCount={donkeysCount}
             setDonkeysCount={setDonkeysCount}
             isNewCaravan={isNewCaravan}
@@ -372,15 +465,15 @@ const BuildHyperstructurePanel = ({ order, onClose }: any) => {
             setSelectedCaravan={setSelectedCaravan}
             selectedResourceIdsGet={[]}
             selectedResourcesGetAmounts={[]}
-            selectedResourceIdsGive={initializeResourceIds}
-            selectedResourcesGiveAmounts={initializeResourceAmounts}
+            selectedResourceIdsGive={hyperstructureData?.initialized ? [] : initializeResourceIds}
+            selectedResourcesGiveAmounts={hyperstructureData?.initialized ? [] : initializeResourceAmounts}
             resourceWeight={resourceWeight}
             hasEnoughDonkeys={hasEnoughDonkeys}
             headline="Select Caravan - Step 3"
           />
         </>
       )}
-      <div className="flex justify-between items-center mt-2 w-full text-xxs">
+      <div className="flex justify-between items-center mt-3 w-full text-xxs">
         <Button
           className="!px-[6px] !py-[2px] text-xxs"
           onClick={() => (step === 1 ? onClose() : setStep(step - 1))}
