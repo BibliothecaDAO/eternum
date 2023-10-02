@@ -24,16 +24,40 @@ struct NewMovable {
     departure_time: u64,
     // last stop means last location before reaching destination
     // e.g if a caravan is traveling from A -> B -> A,
-    // last_stop_coord will be that of B.
-    last_stop_coord_x: u32,
-    last_stop_coord_y: u32,
+    // destination_coord will be that of B.
+    destination_coord_x: u32,
+    destination_coord_y: u32,
     round_trip: bool
 
 }
 
 #[generate_trait]
 impl NewMovableImpl of NewMovableTrait {
-    fn live_location(self: @NewMovable, destination_coord: Coord) -> Coord {
+    /// Calculate the current position of a movable object during its journey.
+    ///
+    /// This function calculates the current position of a movable object, represented by `self`,
+    /// along its journey to the `journey_end_coord` based on the current timestamp. It considers
+    /// factors like departure and arrival times, total transit time, and whether the journey is
+    /// a round trip or one way.
+    ///
+    /// Args:
+    ///     self: The movable object being tracked.
+    ///     journey_end_coord: The final destination coordinates of the journey. 
+    ///                         i.e the x,y coord of the entity's current `Position`.
+    ///
+    /// Returns:
+    ///     A `Coord` representing the current position of the movable object.
+    ///
+    /// Example:
+    ///
+    /// ```
+    /// let movable = NewMovable { ... };
+    /// let destination = Coord { x: 10, y: 20 };
+    /// let current_location = live_location(movable, destination);
+    /// // current_location is the current position of the movable object.
+    /// // e.g Coord{ x:5, y:10 } if the object is halfway through its journey.
+    /// ```
+      fn live_location(self: @NewMovable, journey_end_coord: Coord) -> Coord {
         
         let timestamp = starknet::get_block_timestamp();
 
@@ -47,17 +71,17 @@ impl NewMovableImpl of NewMovableTrait {
                     = journey_percentage_completed.try_into().unwrap();
 
             let last_stop_coord = Coord {
-                x: *self.last_stop_coord_x,
-                y: *self.last_stop_coord_y
+                x: *self.destination_coord_x,
+                y: *self.destination_coord_y
             };
 
             if *self.round_trip  {
                 if time_in_transit <= total_transit_time / 2 {
                     // we're on the way there
                     
-                    // since it's a round trip, destination coord == start coord
+                    // since it's a round trip, journey_end_coord == start coord
                     // so we interpolate the start coord with last stop coord
-                    return destination_coord.interpolate(
+                    return journey_end_coord.interpolate(
                         last_stop_coord, 
                         journey_percentage_completed * 2
                     );
@@ -66,7 +90,7 @@ impl NewMovableImpl of NewMovableTrait {
                     // we're on the way back
 
                     return last_stop_coord.interpolate(
-                        destination_coord, 
+                        journey_end_coord, 
                         (journey_percentage_completed - 50) * 2
                     );
                 }
@@ -74,14 +98,14 @@ impl NewMovableImpl of NewMovableTrait {
             } else {
                 // it's a one way journey
                 return last_stop_coord.interpolate(
-                    destination_coord, 
+                    journey_end_coord, 
                     journey_percentage_completed
                 );
             }
 
         }
 
-        return destination_coord;
+        return journey_end_coord;
     }
     
 }

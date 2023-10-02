@@ -7,10 +7,10 @@ mod CreateMercenary {
     use eternum::components::movable::{Movable, NewMovable};
     use eternum::components::capacity::Capacity;
     use eternum::components::attack::{Attack, AttackTrait, AttackImpl};
-    use eternum::components::config::AttackConfig;
+    use eternum::components::config::{AttackConfig, MercenaryConfig};
 
     use eternum::constants::ResourceTypes;
-    use eternum::constants::ATTACK_CONFIG_ID;
+    use eternum::constants::{ATTACK_CONFIG_ID, MERCENARY_CONFIG_ID};
     
     use dojo::world::Context;
 
@@ -24,6 +24,8 @@ mod CreateMercenary {
 
         let attack_config = get!(ctx.world, ATTACK_CONFIG_ID, AttackConfig);
         assert(attack_config.value != 0, 'attack config not set');
+
+
 
         // make payment for attack
         let entity_fee_resource = get!(ctx.world, (entity_id, attack_config.fee_resource_type), Resource);
@@ -39,6 +41,8 @@ mod CreateMercenary {
 
 
         let mercenary_id: ID = ctx.world.uuid().into();
+        let mercenary_config = get!(ctx.world, MERCENARY_CONFIG_ID, MercenaryConfig);
+
         let entity_position = get!(ctx.world, entity_id, Position);
 
         // create mercenary
@@ -53,20 +57,20 @@ mod CreateMercenary {
                     address: ctx.origin
                 },
                 NewMovable {
-                    entity_id: entity_id,
-                    sec_per_km: 15, //? mercenary_config.sec_per_km ?
+                    entity_id: entity_id, 
+                    sec_per_km: mercenary_config.sec_per_km,
                     blocked: false,
 
                     departure_time: 0,
                     arrival_time: 0,
 
-                    last_stop_coord_x: entity_position.x,
-                    last_stop_coord_y: entity_position.y,
+                    destination_coord_x: entity_position.x,
+                    destination_coord_y: entity_position.y,
                     round_trip: false
                 },
                 Capacity {
                     entity_id: mercenary_id, 
-                    weight_gram: 12, //? mercenary_config.weight_gram ?
+                    weight_gram: mercenary_config.weight_gram 
                 }, 
                 Position {
                     entity_id: mercenary_id, 

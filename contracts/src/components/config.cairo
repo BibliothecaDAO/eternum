@@ -136,6 +136,14 @@ struct AttackConfig {
     value: u8
 }
 
+#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+struct MercenaryConfig {
+    #[key]
+    config_id: u128,
+    sec_per_km: u16,
+    weight_gram: u128
+}
+
 // weight
 #[derive(Component, Copy, Drop, Serde, SerdeLen)]
 struct WeightConfig {
@@ -153,6 +161,7 @@ trait WeightConfigTrait {
 }
 
 impl WeightConfigImpl of WeightConfigTrait {
+    #[inline(always)]
     fn get_weight(world: IWorldDispatcher, resource_type: u8, amount: u128 ) -> u128 {
         let resource_weight_config 
             = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig);
