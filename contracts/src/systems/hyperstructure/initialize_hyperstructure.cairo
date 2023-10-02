@@ -4,7 +4,7 @@ mod InitializeHyperStructure {
     use eternum::components::hyperstructure::HyperStructure;
     use eternum::components::resources::{Resource, ResourceCost};
     use eternum::components::owner::Owner;
-    use eternum::components::position::Position;
+    use eternum::components::position::{Coord, Position};
 
     use dojo::world::Context;
 
@@ -15,9 +15,16 @@ mod InitializeHyperStructure {
         let entity_owner = get!(ctx.world, entity_id, Owner);
         assert(entity_owner.address == ctx.origin, 'not owner of entity');
 
+
         let hyperstructure = get!(ctx.world, hyperstructure_id, HyperStructure);
         assert(hyperstructure.hyperstructure_type != 0, 'hyperstructure does not exist');
         assert(hyperstructure.initialized_at == 0, 'already initialized');
+
+        let entity_position = get!(ctx.world, entity_id, Position);
+        let entity_coord: Coord = entity_position.into();
+        assert(entity_coord.x == hyperstructure.coord_x, 'wrong position');
+        assert(entity_coord.y == hyperstructure.coord_y, 'wrong position');
+
 
         let mut index = 0;
         loop {
@@ -87,10 +94,12 @@ mod tests {
 
     use core::array::ArrayTrait;
     use core::serde::Serde;
+    use core::traits::TryInto;
+    use core::option::OptionTrait;
 
-    #[test]
-    #[available_gas(3000000000000)]  
-    fn test_initialize() {
+
+
+    fn setup() -> (IWorldDispatcher, u128, u128, Coord) {
         let world = spawn_eternum();
 
         let entity_id: u128 = 44;
@@ -107,6 +116,11 @@ mod tests {
                 entity_id,
                 resource_type: ResourceTypes::WOOD,
                 balance: 400
+            },
+            Position {
+                entity_id,
+                x: 20,
+                y: 30
             }
         ));
 
@@ -131,17 +145,28 @@ mod tests {
         Serde::serialize(@construction_resources, ref calldata); 
         Serde::serialize(@hyperstructure_coord, ref calldata);
         let result = world.execute('DefineHyperStructure', calldata);
-        let hyperstructure_id = *result[0];
+        let hyperstructure_id: u128 = (*result[0]).try_into().unwrap();
+
+        (world, entity_id, hyperstructure_id, hyperstructure_coord)
+
+    }
 
 
+
+    #[test]
+    #[available_gas(3000000000000)]  
+    fn test_initialize() {
+
+        let (world, entity_id, hyperstructure_id, hyperstructure_coord) = setup();
 
         // update block timestamp
         starknet::testing::set_block_timestamp(1);
+        // call initialize
         let mut calldata = array![];
         Serde::serialize(@entity_id, ref calldata);
         Serde::serialize(@hyperstructure_id, ref calldata);
         world.execute('InitializeHyperStructure', calldata);
-
+        
 
         let hyperstructure = get!(world, hyperstructure_id, HyperStructure);
         assert(hyperstructure.initialized_at != 0, 'not initialized');
@@ -155,6 +180,35 @@ mod tests {
         let position = get!(world, hyperstructure_id, Position);
         assert(position.x == hyperstructure_coord.x, 'wrong x coord');
         assert(position.y == hyperstructure_coord.y, 'wrong y coord');
+    }
+
+
+    #[test]
+    #[available_gas(3000000000000)]  
+    #[should_panic(expected: ('wrong position','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED' ))]
+    fn test_wrong_position() {
+
+        let (world, entity_id, hyperstructure_id, hyperstructure_coord) = setup();
+
+        starknet::testing::set_contract_address(world.executor());
+        set!(world, ( 
+            Position {
+                entity_id,
+                x: 50,
+                y: 60
+            }
+        ));
+
+
+        starknet::testing::set_contract_address(contract_address_const::<'entity'>());
+        
+        // update block timestamp
+        starknet::testing::set_block_timestamp(1);
+        // call initialize
+        let mut calldata = array![];
+        Serde::serialize(@entity_id, ref calldata);
+        Serde::serialize(@hyperstructure_id, ref calldata);
+        world.execute('InitializeHyperStructure', calldata);
     }
 
 }
