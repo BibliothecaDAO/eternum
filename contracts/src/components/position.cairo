@@ -20,6 +20,37 @@ struct Coord {
     y: u32
 }
 
+#[generate_trait]
+impl CoordImpl of CoordTrait {
+
+    fn calculate_distance(self: Coord, destination: Coord) -> u32 {
+        // d = √((x2-x1)² + (y2-y1)²)
+        let x: u128 = if self.x > destination.x {
+            pow((self.x - destination.x).into(), 2)
+        } else {
+            pow((destination.x - self.x).into(), 2)
+        };
+        let y: u128 = if self.y > destination.y {
+            pow((self.y - destination.y).into(), 2)
+        } else {
+            pow((destination.y - self.y).into(), 2)
+        };
+
+        // we store coords in x * 10000 to get precise distance
+        let distance = u128_sqrt(x + y) / 10000;
+
+        distance.try_into().unwrap()
+    }
+
+
+    fn calculate_travel_time(self: Coord, destination: Coord, sec_per_km: u16) -> u64 {
+        let distance: u32 = self.calculate_distance(destination);
+        let time = distance * sec_per_km.into();
+        time.into()
+    }
+}
+
+
 impl CoordPrint of PrintTrait<Coord> {
     fn print(self: Coord) {
         self.x.print();
@@ -47,27 +78,10 @@ struct Position {
 #[generate_trait]
 impl PositionImpl of PositionTrait {
     fn calculate_distance(self: Position, destination: Position) -> u32 {
-        // d = √((x2-x1)² + (y2-y1)²)
-        let x: u128 = if self.x > destination.x {
-            pow((self.x - destination.x).into(), 2)
-        } else {
-            pow((destination.x - self.x).into(), 2)
-        };
-        let y: u128 = if self.y > destination.y {
-            pow((self.y - destination.y).into(), 2)
-        } else {
-            pow((destination.y - self.y).into(), 2)
-        };
-
-        // we store coords in x * 10000 to get precise distance
-        let distance = u128_sqrt(x + y) / 10000;
-
-        distance.try_into().unwrap()
+       CoordImpl::calculate_distance(self.into(), destination.into())
     }
     fn calculate_travel_time(self: Position, destination: Position, sec_per_km: u16) -> u64 {
-        let distance: u32 = self.calculate_distance(destination);
-        let time = distance * sec_per_km.into();
-        time.into()
+        CoordImpl::calculate_travel_time(self.into(), destination.into(), sec_per_km)
     }
     // world is divided into 10 timezones
     fn get_zone(self: Position) -> u32 {
