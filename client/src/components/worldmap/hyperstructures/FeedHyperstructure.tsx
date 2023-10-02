@@ -91,14 +91,18 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
 const SelectableRealm = ({ realm, selected = false, onClick, costs, ...props }: any) => {
   const costById = useMemo(() => {
     const costById: any = {};
-    costs.forEach((cost: any) => {
-      costById[cost.resourceId] = cost.amount;
-    });
+    costs &&
+      costs.forEach((cost: any) => {
+        costById[cost.resourceId] = cost.amount;
+      });
     return costById;
   }, [costs]);
 
   const canInitialize = useMemo(() => {
     let canInitialize = true;
+    if (!realm || !realm.resources) {
+      return false;
+    }
     realm.resources.forEach((resource: any) => {
       if (resource.balance.balance < costById[resource.id]) {
         canInitialize = false;
