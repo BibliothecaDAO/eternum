@@ -128,8 +128,8 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
           <div className="mr-0.5">Create Offer:</div>
         </div>
       </SecondaryPopup.Head>
-      <SecondaryPopup.Body>
-        <div className="flex flex-col items-center pt-2">
+      <SecondaryPopup.Body width={"476px"}>
+        <div className="flex flex-col items-center p-2">
           {step == 1 && (
             <SelectResourcesPanel
               selectedResourceIdsGive={selectedResourceIdsGive}
@@ -242,9 +242,7 @@ const SelectResourcesPanel = ({
   return (
     <div className="grid grid-cols-9 gap-2 p-2">
       <div className="flex flex-col items-center col-span-4">
-        <Headline className="mb-2" size="big">
-          You Give
-        </Headline>
+        <Headline className="mb-2">You Give</Headline>
         <div className="grid grid-cols-4 gap-2">
           {resources.map(({ id, trait: _name }) => {
             let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
@@ -271,9 +269,7 @@ const SelectResourcesPanel = ({
         <ArrowSeparator />
       </div>
       <div className="flex flex-col items-center col-span-4">
-        <Headline className="mb-2" size="big">
-          You Get
-        </Headline>
+        <Headline className="mb-2">You Get</Headline>
         <div className="grid grid-cols-4 gap-2">
           {resources.map(({ id, trait: _name }) => {
             let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
@@ -344,9 +340,7 @@ const SelectResourcesAmountPanel = ({
     <>
       <div className="grid grid-cols-9 gap-2 p-2">
         <div className="flex flex-col items-center col-span-4 space-y-2">
-          <Headline className="mb-2" size="big">
-            You Give
-          </Headline>
+          <Headline className="mb-2">You Give</Headline>
           {selectedResourceIdsGive.map((id) => {
             let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
             return (
@@ -363,20 +357,16 @@ const SelectResourcesAmountPanel = ({
                   }}
                 />
                 <div className="ml-2">
-                  <ResourceCost resourceId={id} amount={multiplyByPrecision(selectedResourcesGiveAmounts[id])} />
-                </div>
-                <div
-                  className={`ml-2 text-xs ${
-                    selectedResourcesGiveAmounts[id] <= (resource?.balance || 0) ? "text-orange" : "text-red"
-                  } cursor-pointer`}
-                  onClick={() => {
-                    setSelectedResourcesGiveAmounts({
-                      ...selectedResourcesGiveAmounts,
-                      [id]: divideByPrecision(resource?.balance || 0),
-                    });
-                  }}
-                >
-                  {`Max ${currencyFormat(resource?.balance || 0, 0)}`}
+                  <ResourceCost
+                    onClick={() => {
+                      setSelectedResourcesGiveAmounts({
+                        ...selectedResourcesGiveAmounts,
+                        [id]: divideByPrecision(resource?.balance || 0),
+                      });
+                    }}
+                    resourceId={id}
+                    amount={resource?.balance || 0}
+                  />
                 </div>
               </div>
             );
@@ -386,9 +376,7 @@ const SelectResourcesAmountPanel = ({
           <ArrowSeparator />
         </div>
         <div className="flex flex-col items-center col-span-4 space-y-2">
-          <Headline className="mb-2" size="big">
-            You Get
-          </Headline>
+          <Headline className="mb-2">You Get</Headline>
           {selectedResourceIdsGet.map((id) => (
             <div key={id} className="flex items-center w-full">
               <NumberInput
@@ -431,6 +419,7 @@ export const SelectCaravanPanel = ({
   resourceWeight,
   hasEnoughDonkeys,
   headline = "You Give",
+  className,
 }: {
   donkeysCount: number;
   setDonkeysCount: (donkeysCount: number) => void;
@@ -445,6 +434,7 @@ export const SelectCaravanPanel = ({
   resourceWeight: number;
   hasEnoughDonkeys: boolean;
   headline: string;
+  className?: string;
 }) => {
   const { realmEntityId } = useRealmStore();
 
@@ -475,55 +465,61 @@ export const SelectCaravanPanel = ({
   );
 
   return (
-    <div className="flex flex-col items-center w-full p-2">
-      <div className="grid grid-cols-9 gap-2">
-        <div
-          className={clsx(
-            "flex flex-col items-center  space-y-2 h-min",
-            selectedResourceIdsGet.length > 0 ? "col-span-4" : "col-span-9",
-          )}
-        >
-          <Headline className="mb-2" size="big">
-            {headline}
-          </Headline>
-          <div className="flex items-center justify-center w-full">
-            {selectedResourceIdsGive.map((id) => (
-              <ResourceCost
-                key={id}
-                className="!w-min mx-2"
-                resourceId={id}
-                color="text-gold"
-                type="vertical"
-                amount={-multiplyByPrecision(selectedResourcesGiveAmounts[id])}
-              />
-            ))}
-          </div>
-        </div>
-        {selectedResourceIdsGet.length > 0 && (
-          <>
-            <div className="flex items-center justify-center">
-              <ArrowSeparator />
-            </div>
-            <div className="flex flex-col items-center col-span-4 space-y-2 h-min">
-              <Headline className="mb-2" size="big">
-                You Get
-              </Headline>
-              <div className="flex items-center justify-center w-full">
-                {selectedResourceIdsGet.map((id) => (
-                  <ResourceCost
-                    key={id}
-                    className="!w-min mx-2"
-                    type="vertical"
-                    color="text-brilliance"
-                    resourceId={id}
-                    amount={multiplyByPrecision(selectedResourcesGetAmounts[id])}
-                  />
-                ))}
+    <div className={clsx("flex flex-col items-center w-full p-2", className)}>
+      {selectedResourceIdsGive.length > 0 || selectedResourceIdsGet.length > 0 ? (
+        <div className="grid grid-cols-9 gap-2">
+          {selectedResourceIdsGive.length > 0 && (
+            <>
+              <div
+                className={clsx(
+                  "flex flex-col items-center  space-y-2 h-min",
+                  selectedResourceIdsGet.length > 0 ? "col-span-4" : "col-span-9",
+                )}
+              >
+                <Headline className="mb-2" size="big">
+                  {headline}
+                </Headline>
+                <div className="flex items-center justify-center w-full">
+                  {selectedResourceIdsGive.map((id) => (
+                    <ResourceCost
+                      key={id}
+                      className="!w-min mx-2"
+                      resourceId={id}
+                      color="text-gold"
+                      type="vertical"
+                      amount={-multiplyByPrecision(selectedResourcesGiveAmounts[id])}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          </>
-        )}
-      </div>
+            </>
+          )}
+          {selectedResourceIdsGet.length > 0 && (
+            <>
+              <div className="flex items-center justify-center">
+                <ArrowSeparator />
+              </div>
+              <div className="flex flex-col items-center col-span-4 space-y-2 h-min">
+                <Headline className="mb-2" size="big">
+                  You Get
+                </Headline>
+                <div className="flex items-center justify-center w-full">
+                  {selectedResourceIdsGet.map((id) => (
+                    <ResourceCost
+                      key={id}
+                      className="!w-min mx-2"
+                      type="vertical"
+                      color="text-brilliance"
+                      resourceId={id}
+                      amount={multiplyByPrecision(selectedResourcesGetAmounts[id])}
+                    />
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      ) : null}
       <div className="flex my-3 text-xs text-center text-white">
         Items Weight <div className="ml-1 text-gold">{`${resourceWeight}kg`}</div>
       </div>
