@@ -6,7 +6,7 @@
 mod CreateFreeTransportUnit {
     use eternum::alias::ID;
     use eternum::components::owner::Owner;
-    use eternum::components::position::Position;
+    use eternum::components::position::{Position, HomePosition};
     use eternum::components::realm::Realm;
     use eternum::components::capacity::Capacity;
     use eternum::components::metadata::MetaData;
@@ -73,6 +73,8 @@ mod CreateFreeTransportUnit {
             (
                 Position {
                     entity_id: id.into(), x: position.x, y: position.y
+                    }, HomePosition {
+                    entity_id: id.into(), x: position.x, y: position.y                    
                     }, MetaData {
                     entity_id: id.into(), entity_type: FREE_TRANSPORT_ENTITY_TYPE
                     }, Owner {
