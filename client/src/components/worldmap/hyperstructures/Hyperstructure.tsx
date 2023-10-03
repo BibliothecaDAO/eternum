@@ -5,7 +5,6 @@ Files: .\public\models\hyperstructure.glb [21.82KB] > hyperstructure-transformed
 */
 
 import * as THREE from "three";
-import React from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 
