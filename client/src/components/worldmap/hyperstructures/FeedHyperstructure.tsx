@@ -27,7 +27,6 @@ import hyperStructures from "../../../data/hyperstructures.json";
 import { useGetPositionCaravans } from "../../../hooks/helpers/useCaravans";
 import { NumberInput } from "../../../elements/NumberInput";
 import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/arrow-separator.svg";
-import { id } from "ethers/lib/utils";
 
 type FeedHyperstructurePopupProps = {
   onClose: () => void;

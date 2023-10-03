@@ -6,7 +6,6 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import ProgressBar from "../../../elements/ProgressBar";
 import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
 import clsx from "clsx";
-import { useEffect } from "react";
 
 type HyperstructuresListItemProps = {
   order: number;
@@ -31,7 +30,13 @@ export const HyperstructuresListItem = ({ order, coords, onFeed = undefined }: H
 
         <div className=" text-gold flex ml-auto ">
           <Button
-            onClick={() => moveCameraToTarget(coords)}
+            onClick={() =>
+              moveCameraToTarget({
+                x: coords.x,
+                y: 0.528415243525413,
+                z: coords.y,
+              })
+            }
             variant="outline"
             className="p-1 !h-4 text-xxs !rounded-md"
           >
