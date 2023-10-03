@@ -166,7 +166,12 @@ const SelectableRealm = ({ realm, selected = false, initialized = false, onClick
               );
             })}
         </div>
-        <Button disabled={!canInitialize} onClick={onClick} className="h-6 text-xxs ml-auto" variant="success">
+        <Button
+          disabled={!initialized && !canInitialize}
+          onClick={onClick}
+          className="h-6 text-xxs ml-auto"
+          variant="success"
+        >
           {initialized ? `Set the amounts` : `Initialize construction`}
         </Button>
       </div>
