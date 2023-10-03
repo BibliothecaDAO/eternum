@@ -113,7 +113,7 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
   );
 };
 
-const SelectableRealm = ({ realm, selected = false, onClick, costs, ...props }: any) => {
+const SelectableRealm = ({ realm, selected = false, initialized = false, onClick, costs, ...props }: any) => {
   const costById = useMemo(() => {
     const costById: any = {};
     costs &&
@@ -168,7 +168,7 @@ const SelectableRealm = ({ realm, selected = false, onClick, costs, ...props }: 
             })}
         </div>
         <Button disabled={!canInitialize} onClick={onClick} className="h-6 text-xxs ml-auto" variant="success">
-          Initialize construction
+          {initialized ? `Set the amounts` : `Initialize construction`}
         </Button>
       </div>
     </div>
@@ -263,7 +263,30 @@ const BuildHyperstructurePanel = ({
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const setRealmEntityId = useRealmStore((state) => state.setRealmEntityId);
-  const [feedResourcesGiveAmounts, setFeedResourcesGiveAmounts] = useState<{ [key: number]: number }>({});
+  const [feedResourcesGiveAmounts, setFeedResourcesGiveAmounts] = useState<{ [key: number]: number }>({
+    1: 0,
+    2: 0,
+    3: 0,
+    4: 0,
+    5: 0,
+    6: 0,
+    7: 0,
+    8: 0,
+    9: 0,
+    10: 0,
+    11: 0,
+    12: 0,
+    13: 0,
+    14: 0,
+    15: 0,
+    16: 0,
+    17: 0,
+    18: 0,
+    19: 0,
+    20: 0,
+    21: 0,
+    22: 0,
+  });
 
   const resourceWeight = useMemo(() => {
     let _resourceWeight = 0;
@@ -376,26 +399,45 @@ const BuildHyperstructurePanel = ({
             <div className="relative w-full">
               <img src={`/images/buildings/hyperstructure.jpg`} className="object-cover w-full h-full rounded-[10px]" />
               <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
-                <div className="mb-1 ml-1 italic text-light-pink text-xxs">Initialization cost:</div>
-                <div className="grid grid-cols-4 gap-2">
-                  {hyperstructureData?.initialzationResources.map(({ resourceId, amount }) => (
-                    <ResourceCost
-                      withTooltip
-                      type="vertical"
-                      key={resourceId}
-                      resourceId={resourceId}
-                      amount={amount}
-                    />
-                  ))}
+                <div className="mb-1 ml-1 italic text-light-pink text-xxs">
+                  {hyperstructureData?.initialized ? "Resources need to complete:" : "Initialization cost:"}
+                </div>
+                <div className="grid grid-cols-4 gap-1">
+                  {!hyperstructureData?.initialized
+                    ? hyperstructureData?.initialzationResources.map(({ resourceId, amount }) => (
+                        <ResourceCost
+                          withTooltip
+                          type="vertical"
+                          key={resourceId}
+                          resourceId={resourceId}
+                          amount={amount}
+                        />
+                      ))
+                    : resourcesLeftToComplete &&
+                      Object.keys(resourcesLeftToComplete).map((id) => (
+                        <ResourceCost
+                          withTooltip
+                          type="vertical"
+                          key={id}
+                          resourceId={Number(id)}
+                          amount={multiplyByPrecision(resourcesLeftToComplete[id])}
+                        />
+                      ))}
                 </div>
               </div>
             </div>
-            <Headline size="big">Initialize - Step {step}</Headline>
+            <Headline size="big">
+              {hyperstructureData?.initialized ? "Feed Hyperstructure" : "Initialize Hyperstructure"}- Step {step}
+            </Headline>
             <div className="text-xxs mb-2 italic text-gold">
-              {`To start construction of the Hyperstructure you need to send a caravan with initial cost of resources to the Hyperstructure location.`}
+              {hyperstructureData?.initialized
+                ? `
+                To feed the Hyperstructure you need to send any amount of required resources to the Hyperstructure location.
+              `
+                : `To start construction of the Hyperstructure you need to send a caravan with initial cost of resources to the Hyperstructure location.`}
             </div>
 
-            <div className="text-xxs mb-2 italic text-white">{`Press "Next" button to select a Realm with enough resources.`}</div>
+            <div className="text-xxs mb-2 italic text-white">{`Click the "Next" button to select a Realm from which you want to spend resources.`}</div>
           </div>
         </>
       )}
@@ -403,7 +445,9 @@ const BuildHyperstructurePanel = ({
         <div className="flex flex-col w-full space-y-2">
           <Headline size="big">Select Realm - Step {step}</Headline>
           <div className="text-xxs mb-2 italic text-gold">
-            {`Press "Initialize construction" on any Realm with enough resources, to send caravan to Hyperstructure.`}
+            {hyperstructureData?.initialized
+              ? `Press "Set the amounts" on any Realm with required resources, to set amounts and send caravan to Hyperstructure.`
+              : `Press "Initialize construction" on any Realm with enough resources, to send caravan to Hyperstructure.`}
           </div>
           {realms.map((realm) => (
             <SelectableRealm
@@ -415,6 +459,7 @@ const BuildHyperstructurePanel = ({
               }}
               costs={hyperstructureData?.initialzationResources}
               selected={realmEntityId === realm.entity_id}
+              initialized={hyperstructureData?.initialized}
             />
           ))}
         </div>
@@ -470,9 +515,15 @@ const BuildHyperstructurePanel = ({
                   {Object.keys(resourcesLeftToComplete).map((id) => (
                     <ResourceCost
                       key={id}
-                      className="!w-min h-8"
+                      className="!w-min h-8 cursor-pointer"
                       resourceId={Number(id)}
                       amount={multiplyByPrecision(resourcesLeftToComplete[id])}
+                      onClick={() => {
+                        setFeedResourcesGiveAmounts({
+                          ...feedResourcesGiveAmounts,
+                          [id]: resourcesLeftToComplete[id],
+                        });
+                      }}
                     />
                   ))}
                 </div>
