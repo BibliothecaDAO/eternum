@@ -8,6 +8,7 @@ import { getRealm } from "../../../utils/realms";
 import { useDojo } from "../../../DojoContext";
 import { FeedHyperstructurePopup } from "./FeedHyperstructure";
 import useUIStore from "../../../hooks/store/useUIStore";
+import { getContractPositionFromRealPosition } from "../../../utils/utils";
 
 type HyperstructuresListComponentProps = {};
 
@@ -36,7 +37,10 @@ export const HyperstructuresListComponent = ({}: HyperstructuresListComponentPro
         <div className="text-xs text-gold">Hyperstructure of your order: </div>
         <HyperstructuresListItem
           order={chosenOrder - 1}
-          coords={HYPERSTRUCTURES_POSITIONS[chosenOrder - 1]}
+          coords={getContractPositionFromRealPosition({
+            x: HYPERSTRUCTURES_POSITIONS[chosenOrder - 1].x,
+            y: HYPERSTRUCTURES_POSITIONS[chosenOrder - 1].z,
+          })}
           onFeed={() => {
             moveCameraToTarget(HYPERSTRUCTURES_POSITIONS[chosenOrder - 1]);
             setShowFeedPopup(true);

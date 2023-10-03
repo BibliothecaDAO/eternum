@@ -27,6 +27,7 @@ import hyperStructures from "../../../data/hyperstructures.json";
 import { useGetPositionCaravans } from "../../../hooks/helpers/useCaravans";
 import { NumberInput } from "../../../elements/NumberInput";
 import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/arrow-separator.svg";
+import { id } from "ethers/lib/utils";
 
 type FeedHyperstructurePopupProps = {
   onClose: () => void;
@@ -197,9 +198,15 @@ const BuildHyperstructurePanel = ({
     },
   } = useDojo();
 
-  const initHyperStructure = async () => {
+  const sendResourcesToHyperStructure = async () => {
     setIsLoading(true);
     if (hyperstructureData) {
+      const resourcesList = hyperstructureData?.initialized
+        ? Object.keys(feedResourcesGiveAmounts).flatMap((id) => [
+            Number(id),
+            multiplyByPrecision(feedResourcesGiveAmounts[Number(id)]),
+          ])
+        : hyperstructureData?.initialzationResources.flatMap((resource) => [resource.resourceId, resource.amount]);
       if (isNewCaravan) {
         const transport_units_id = await create_free_transport_unit({
           signer: account,
@@ -216,9 +223,7 @@ const BuildHyperstructurePanel = ({
           signer: account,
           sending_entity_id: realmEntityId,
           receiving_entity_id: caravan_id,
-          resources:
-            hyperstructureData?.initialzationResources.flatMap((resource) => [resource.resourceId, resource.amount]) ||
-            [],
+          resources: resourcesList || [],
         });
 
         // send caravan to hyperstructure
@@ -234,9 +239,7 @@ const BuildHyperstructurePanel = ({
           signer: account,
           sending_entity_id: realmEntityId,
           receiving_entity_id: selectedCaravan,
-          resources:
-            hyperstructureData?.initialzationResources.flatMap((resource) => [resource.resourceId, resource.amount]) ||
-            [],
+          resources: resourcesList || [],
         });
 
         // send caravan to hyperstructure
@@ -257,17 +260,26 @@ const BuildHyperstructurePanel = ({
     },
   } = useDojo();
 
-  let resourceWeight = 0;
-  for (const [_, amount] of Object.entries(
-    hyperstructureData?.initialzationResources.map((resource) => resource.amount) || {},
-  )) {
-    resourceWeight += divideByPrecision(amount) * 1;
-  }
-
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const setRealmEntityId = useRealmStore((state) => state.setRealmEntityId);
   const [feedResourcesGiveAmounts, setFeedResourcesGiveAmounts] = useState<{ [key: number]: number }>({});
+
+  const resourceWeight = useMemo(() => {
+    let _resourceWeight = 0;
+    if (!hyperstructureData?.initialized) {
+      for (const [_, amount] of Object.entries(
+        hyperstructureData?.initialzationResources.map((resource) => resource.amount) || {},
+      )) {
+        _resourceWeight += divideByPrecision(amount) * 1;
+      }
+    } else {
+      for (const amount of Object.values(feedResourcesGiveAmounts || {})) {
+        _resourceWeight += amount;
+      }
+    }
+    return _resourceWeight;
+  }, [hyperstructureData, feedResourcesGiveAmounts]);
 
   const initializeResourceIds = useMemo(() => {
     return hyperstructureData?.initialzationResources.map((resource) => resource.resourceId) || [];
@@ -288,6 +300,10 @@ const BuildHyperstructurePanel = ({
         divideByPrecision(resource.completeAmount) - divideByPrecision(resource.currentAmount);
     });
     return resourcesLeftToComplete;
+  }, [hyperstructureData]);
+
+  useEffect(() => {
+    console.log("data", hyperstructureData);
   }, [hyperstructureData]);
 
   const realms = useMemo(
@@ -339,7 +355,7 @@ const BuildHyperstructurePanel = ({
               className={clsx(
                 !hyperstructureData?.initialized && "text-order-giants",
                 hyperstructureData?.completed && "text-order-brilliance",
-                hyperstructureData && hyperstructureData?.progress > 0 && !hyperstructureData?.completed
+                hyperstructureData && hyperstructureData?.progress >= 0 && !hyperstructureData?.completed
                   ? "text-gold"
                   : "",
               )}
@@ -347,7 +363,7 @@ const BuildHyperstructurePanel = ({
               {hyperstructureData?.completed
                 ? "Completed"
                 : hyperstructureData?.initialized
-                ? `Building in progress ${hyperstructureData?.progress}`
+                ? `Building in progress ${hyperstructureData?.progress}%`
                 : "Not initialized"}
             </span>
           </div>
@@ -497,7 +513,7 @@ const BuildHyperstructurePanel = ({
             isLoading={isLoading}
             onClick={() => {
               if (step == 3) {
-                initHyperStructure();
+                sendResourcesToHyperStructure();
               } else {
                 setStep(step + 1);
               }
