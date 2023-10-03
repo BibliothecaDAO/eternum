@@ -118,7 +118,7 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
   }, [selectedTrade]);
 
   return (
-    <SecondaryPopup>
+    <SecondaryPopup name="accept-offer">
       <SecondaryPopup.Head>
         <div className="flex items-center space-x-1">
           <div className="mr-0.5">Accept Offer:</div>

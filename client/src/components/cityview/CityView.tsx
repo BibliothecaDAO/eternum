@@ -515,7 +515,7 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
           onPointerLeave={() => setHoveredArea(null)}
           name="floor_market"
           position={[0, -0.002192, 0]}
-          onClick={() => setLocation(`/realm/${realmEntityId}/market`)}
+          onClick={() => setLocation(`/realm/${realmEntityId}/open-offers`)}
         >
           {hoveredArea === "market" && (
             <Html position={[125, 75, 75]} distanceFactor={400}>

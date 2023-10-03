@@ -11,9 +11,16 @@ type ResourceCostProps = {
   type?: "horizontal" | "vertical";
   className?: string;
   withTooltip?: boolean;
+  onClick?: () => void;
 };
 
-export const ResourceCost = ({ type = "horizontal", className, ...props }: ResourceCostProps) => {
+export const ResourceCost = ({
+  type = "horizontal",
+  className,
+  withTooltip = false,
+  onClick,
+  ...props
+}: ResourceCostProps) => {
   const trait = useMemo(() => findResourceById(props.resourceId)?.trait, [props.resourceId]);
   return (
     <div
@@ -22,8 +29,9 @@ export const ResourceCost = ({ type = "horizontal", className, ...props }: Resou
         type === "horizontal" ? "flex-row justify-start" : "flex-col justify-center",
         className,
       )}
+      onClick={onClick}
     >
-      <ResourceIcon withTooltip={false} resource={trait || ""} size="xs" />
+      <ResourceIcon withTooltip={withTooltip} resource={trait || ""} size="xs" />
       <div
         className={clsx("relative flex flex-col shrink-0", type === "horizontal" ? "ml-1 font-bold" : "items-center")}
       >

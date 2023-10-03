@@ -7,6 +7,27 @@ interface SystemSigner {
   signer: Account;
 }
 
+export interface TravelProps extends SystemSigner {
+  travelling_entity_id: num.BigNumberish;
+  destination_coord_x: num.BigNumberish;
+  destination_coord_y: num.BigNumberish;
+}
+
+export interface InitializeHyperstructuresProps extends SystemSigner {
+  entity_id: num.BigNumberish;
+  hyperstructure_id: num.BigNumberish;
+}
+
+export interface CompleteHyperStructureProps extends SystemSigner {
+  hyperstructure_id: num.BigNumberish;
+}
+
+export interface TransferResourcesProps extends SystemSigner {
+  sending_entity_id: num.BigNumberish;
+  receiving_entity_id: num.BigNumberish;
+  resources: num.BigNumberish[];
+}
+
 export interface PurchaseLaborProps extends SystemSigner {
   entity_id: num.BigNumberish;
   resource_type: num.BigNumberish;
@@ -293,6 +314,48 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
     setComponentsFromEvents(contractComponents, events);
   };
 
+  const transfer_resources = async (props: TransferResourcesProps) => {
+    const { sending_entity_id, receiving_entity_id, resources, signer } = props;
+    const tx = await execute(signer, "TransferResources", [
+      sending_entity_id,
+      receiving_entity_id,
+      resources.length / 2,
+      ...resources,
+    ]);
+
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
+    const events = getEvents(receipt);
+    setComponentsFromEvents(contractComponents, events);
+  };
+
+  const initialize_hyperstructure = async (props: InitializeHyperstructuresProps) => {
+    const { entity_id, hyperstructure_id, signer } = props;
+    const tx = await execute(signer, "InitializeHyperStructure", [entity_id, hyperstructure_id]);
+
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
+    const events = getEvents(receipt);
+    setComponentsFromEvents(contractComponents, events);
+  };
+
+  const complete_hyperstructure = async (props: CompleteHyperStructureProps) => {
+    const { hyperstructure_id, signer } = props;
+    const tx = await execute(signer, "CompleteHyperStructure", [hyperstructure_id]);
+
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
+    const events = getEvents(receipt);
+    setComponentsFromEvents(contractComponents, events);
+  };
+
+  const travel = async (props: TravelProps) => {
+    const { travelling_entity_id, destination_coord_x, destination_coord_y, signer } = props;
+    // TODO: put coords
+    const tx = await execute(signer, "Travel", [travelling_entity_id, destination_coord_x, destination_coord_y]);
+
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
+    const events = getEvents(receipt);
+    setComponentsFromEvents(contractComponents, events);
+  };
+
   return {
     purchase_labor,
     build_labor,
@@ -308,6 +371,10 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
     attach_caravan,
     create_realm,
     create_road,
+    transfer_resources,
+    initialize_hyperstructure,
+    complete_hyperstructure,
+    travel,
   };
 }
 
@@ -353,7 +420,8 @@ export function setComponentFromEvent(components: Components, eventData: string[
   // create component object from values with schema
   const componentValues = componentFields.reduce((acc: Schema, key, index) => {
     const value = values[index];
-    acc[key] = Number(value);
+    // @ts-ignore
+    acc[key] = key === "address" ? value : Number(value);
     return acc;
   }, {});
 

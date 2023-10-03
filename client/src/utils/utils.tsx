@@ -4,6 +4,7 @@ import { useThree } from "@react-three/fiber";
 import { BlendFunction } from "postprocessing";
 import { EntityIndex, setComponent, Component, Schema, Components } from "@latticexyz/recs";
 import { poseidonHashMany } from "micro-starknet";
+import { Position } from "../types";
 import realmCoords from "../geodata/coords.json";
 
 const isRef = (ref: any) => !!ref.current;
@@ -69,9 +70,11 @@ export function setComponentFromEntity(entity: Entity | null, componentName: str
       // so here i am transforming to a number each time (but it will cause problem for fields that are not numbers)
       const componentValues = Object.keys(component.schema).reduce((acc: Schema, key) => {
         const value = rawComponentValues[key];
-        acc[key] = Number(value);
+        // TODO: better way to do this? check the recs type
+        acc[key] = key === "address" ? value : Number(value);
         return acc;
       }, {});
+
       setComponent(component, entityId, componentValues);
     }
   }
@@ -172,7 +175,7 @@ export function setComponentFromEntitiesGraphqlQuery(component: Component, entit
       if (comp.__typename === component.metadata?.name) {
         const componentValues = Object.keys(component.schema).reduce((acc: Schema, key) => {
           const value = comp[key];
-          acc[key] = Number(value);
+          acc[key] = key === "address" ? value : Number(value);
           return acc;
         }, {});
         setComponent(component, entityIndex, componentValues);
@@ -206,7 +209,8 @@ export function setComponentFromEvent(components: Components, eventData: string[
   // create component object from values with schema
   const componentValues = Object.keys(component.schema).reduce((acc: Schema, key, index) => {
     const value = values[index];
-    acc[key] = Number(value);
+    // @ts-ignore
+    acc[key] = key === "address" ? value : Number(value);
     return acc;
   }, {});
 
@@ -240,6 +244,14 @@ export const formatTimeLeftDaysHoursMinutes = (seconds: number) => {
   const minutes = Math.floor((seconds % 3600) / 60);
 
   return `${days} days ${hours}h:${minutes}m`;
+};
+
+export const getContractPositionFromRealPosition = (position: Position): Position => {
+  const { x, y } = position;
+  return {
+    x: Math.floor(x * 10000 + 1800000),
+    y: Math.floor(y * 10000 + 1800000),
+  };
 };
 
 const PRECISION = 1000;

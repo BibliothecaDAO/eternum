@@ -8,7 +8,7 @@ import { CaravanDetails } from "../../../../caravans/CaravanDetailsComponent";
 import { CaravanInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
-import { useGetRealmCaravans } from "../../../../../hooks/helpers/useCaravans";
+import { useGetPositionCaravans } from "../../../../../hooks/helpers/useCaravans";
 import { getPosition } from "../../../../../utils/utils";
 
 type CaravansPanelProps = {};
@@ -33,7 +33,7 @@ export const CaravansPanel = ({}: CaravansPanelProps) => {
   const realmPosition = useMemo(() => {
     return realmId ? getPosition(realmId) : undefined;
   }, [realmId]);
-  const { realmCaravans } = useGetRealmCaravans(realmPosition?.x || 0, realmPosition?.y || 0);
+  const { caravans: realmCaravans } = useGetPositionCaravans(realmPosition?.x || 0, realmPosition?.y || 0);
 
   const sortingParams = useMemo(() => {
     return [

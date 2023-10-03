@@ -284,7 +284,7 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
-          address: RecsType.Number,
+          address: RecsType.String,
         },
         {
           metadata: {
@@ -495,6 +495,43 @@ export function defineContractComponents(world: World) {
           end_coord_x: RecsType.Number,
           end_coord_y: RecsType.Number,
           usage_count: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
+    ResourceCost: (() => {
+      const name = "ResourceCost";
+      return defineComponent(
+        world,
+        {
+          resource_type: RecsType.Number,
+          amount: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
+    HyperStructure: (() => {
+      const name = "HyperStructure";
+      return defineComponent(
+        world,
+        {
+          hyperstructure_type: RecsType.Number,
+          initialization_resource_id: RecsType.Number,
+          initialization_resource_count: RecsType.Number,
+          construction_resource_id: RecsType.Number,
+          construction_resource_count: RecsType.Number,
+          initialized_at: RecsType.Number,
+          completed_at: RecsType.Number,
+          coord_x: RecsType.Number,
+          coord_y: RecsType.Number,
         },
         {
           metadata: {

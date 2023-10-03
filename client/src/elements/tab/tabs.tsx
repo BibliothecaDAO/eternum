@@ -1,6 +1,6 @@
 import { Tab as HeadlessTab } from "@headlessui/react";
 import clsx from "clsx";
-import type { ReactNode, SyntheticEvent } from "react";
+import type { ReactNode } from "react";
 import { Tab } from "./tab";
 import { TabList } from "./TabList";
 import { TabPanel } from "./TabPanel";
@@ -40,7 +40,7 @@ export interface TabsProps {
   variant?: keyof typeof VARIANTS;
   className?: string;
   selectedIndex?: number;
-  onChange?: (index: number | SyntheticEvent) => void;
+  onChange?: (index: number) => void;
 }
 
 export const Tabs = ({ children, className, variant = "default", selectedIndex = 0, onChange }: TabsProps) => {

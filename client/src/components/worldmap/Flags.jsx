@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useGLTF, Html } from "@react-three/drei";
 import realmsJson from "../../geodata/realms.json";
 import realmsOrders from "../../geodata/realms_raw.json";
 import * as THREE from "three";
 import useUIStore from "../../hooks/store/useUIStore";
+import { useGetRealms } from "../../hooks/helpers/useRealm";
 import { useSpring, animated } from "@react-spring/three";
 import gsap from "gsap";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useControls } from "leva";
+import { orderNameDict } from "../../constants/orders";
 
 const count = realmsJson.features.length;
 
@@ -38,10 +40,6 @@ realmsJson.features = realmsJson.features.map((feature, index) => {
   };
 });
 
-const ordersRealms = orders.map((order) => {
-  return realmsJson.features.filter((feature) => feature.order === order);
-});
-
 export function Flags(props) {
   const { nodes, materials } = useGLTF("/models/flags_1-transformed.glb");
 
@@ -55,6 +53,16 @@ export function Flags(props) {
 
   const [woodInstances, setWoodInstances] = useState([]);
   const [flagInstances, setFlagInstances] = useState([]);
+
+  const { realms } = useGetRealms();
+
+  const ordersRealms = useMemo(
+    () =>
+      orders.map((order, i) => {
+        return realms.filter((realm) => orderNameDict[realm.order] === order.toLowerCase());
+      }),
+    [realms],
+  );
 
   const { flagsPosition, flagsScale } = useControls({
     flagsPosition: {
@@ -76,11 +84,7 @@ export function Flags(props) {
     scale.set(_scale, _scale, _scale);
     //woodInstances.getMatrixAt(id, matrix);
     woodInstances[meshIndex].getMatrixAt(id, matrix);
-    matrix.decompose(
-      tempObject.position,
-      tempObject.quaternion,
-      tempObject.scale,
-    );
+    matrix.decompose(tempObject.position, tempObject.quaternion, tempObject.scale);
     tempObject.scale.copy(scale);
     tempObject.updateMatrix();
 
@@ -102,8 +106,8 @@ export function Flags(props) {
     if (!woodInstances.length || !flagInstances.length) return;
 
     const scales = {
-      startScale: showRealmsFlags ? 0.01 : 0.5,
-      endScale: showRealmsFlags ? 0.5 : 0.01,
+      startScale: showRealmsFlags ? 0.01 : 1,
+      endScale: showRealmsFlags ? 1 : 0.01,
     };
     const tl = gsap.timeline();
     tl.to(scales, {
@@ -152,21 +156,9 @@ export function Flags(props) {
 
     //woodMesh = new THREE.InstancedMesh( woodGeometry, woodMaterial, count )
     //flagMesh = new THREE.InstancedMesh( flagGeometry, flagMaterial, count )
-    woodMeshes = orders.map(
-      (order, i) =>
-        new THREE.InstancedMesh(
-          woodGeometry,
-          woodMaterial,
-          ordersRealms[i].length,
-        ),
-    );
+    woodMeshes = orders.map((order, i) => new THREE.InstancedMesh(woodGeometry, woodMaterial, ordersRealms[i].length));
     flagMeshes = orders.map(
-      (order, i) =>
-        new THREE.InstancedMesh(
-          flagGeometry,
-          materials[order],
-          ordersRealms[i].length,
-        ),
+      (order, i) => new THREE.InstancedMesh(flagGeometry, materials[order], ordersRealms[i].length),
     );
 
     woodMeshes.forEach((woodMesh) => {
@@ -176,10 +168,11 @@ export function Flags(props) {
       flagMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     });
 
+    console.log("test", ordersRealms);
     ordersRealms.forEach((orderRealms, index) => {
       orderRealms.forEach((realm, i) => {
-        const x = realm.xy[0];
-        const y = realm.xy[1];
+        const x = realmsJson.features[realm.realm_id - 1].xy[0];
+        const y = realmsJson.features[realm.realm_id - 1].xy[1];
         const z = -0.7;
         _position.set(x, y, z);
         dummy.position.copy(_position);
@@ -195,7 +188,7 @@ export function Flags(props) {
     });
     setWoodInstances(woodMeshes);
     setFlagInstances(flagMeshes);
-  }, []);
+  }, [ordersRealms]);
 
   const clickHandler = (e, index) => {
     e.stopPropagation();
@@ -247,11 +240,7 @@ export function Flags(props) {
       >
         {woodInstances.map((woodInstance, index) => {
           return (
-            <group
-              key={index}
-              onClick={(e) => clickHandler(e, index)}
-              onPointerEnter={(e) => hoverHandler(e, index)}
-            >
+            <group key={index} onClick={(e) => clickHandler(e, index)} onPointerEnter={(e) => hoverHandler(e, index)}>
               <primitive object={woodInstance} />
               <primitive object={flagInstances[index]} />
             </group>
