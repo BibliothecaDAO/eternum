@@ -12,7 +12,7 @@ const WorldMapMenuModule = () => {
     if (location.includes("/map")) {
       setTimeout(() => {
         setShowMenu(true);
-      }, 500);
+      }, 1000);
     } else {
       setShowMenu(false);
     }
