@@ -209,6 +209,7 @@ export function setComponentFromEvent(components: Components, eventData: string[
   // create component object from values with schema
   const componentValues = Object.keys(component.schema).reduce((acc: Schema, key, index) => {
     const value = values[index];
+    // @ts-ignore
     acc[key] = key === "address" ? value : Number(value);
     return acc;
   }, {});
