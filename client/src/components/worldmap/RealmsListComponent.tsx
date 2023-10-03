@@ -1,8 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useDojo } from "../../DojoContext";
 import { useEntityQuery } from "@dojoengine/react";
-import { Has, HasValue, getComponentValue } from "@latticexyz/recs";
-import { unpackResources } from "../../utils/packedData";
+import { Has, HasValue } from "@latticexyz/recs";
 import { FiltersPanel } from "../../elements/FiltersPanel";
 import { FilterButton } from "../../elements/FilterButton";
 import { RealmListItem } from "./RealmListItem";

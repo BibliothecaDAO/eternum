@@ -11,9 +11,8 @@ import realmsNames from "../../geodata/realms.json";
 import useUIStore from "../../hooks/store/useUIStore";
 import { getRealm } from "../../utils/realms";
 import { useDojo } from "../../DojoContext";
-import { Has, HasValue, getComponentValue, setComponent } from "@latticexyz/recs";
+import { Has, HasValue, getComponentValue } from "@latticexyz/recs";
 import { useEntityQuery } from "@dojoengine/react";
-import { getEntityIdFromKeys } from "../../utils/utils";
 
 type RealmSwitchProps = {} & ComponentPropsWithRef<"div">;
 
@@ -52,8 +51,6 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
       .sort((a, b) => a!.realmId - b!.realmId) as { realmEntityId: number; realmId: number }[];
     setRealmEntityIds(realmEntityIds);
   }, [entityIds]);
-
-  const moveCameraToRealmView = useUIStore((state) => state.moveCameraToRealmView);
 
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
@@ -122,7 +119,6 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
                 setLocation(`/realm/${realm.id}`);
                 setRealmEntityId(realm.id);
                 setRealmId(realm.realmId);
-                //moveCameraToRealmView();
               }, 500);
             }}
           >

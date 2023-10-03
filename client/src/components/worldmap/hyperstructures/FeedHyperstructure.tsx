@@ -72,11 +72,10 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
             </Tooltip>
           </div>
         ),
-        component: (
-          <HyperStructureCaravansPanel
-            caravans={caravans}
-            hyperstructureData={hyperstructureData}
-          ></HyperStructureCaravansPanel>
+        component: hyperstructureData ? (
+          <HyperStructureCaravansPanel caravans={caravans} hyperstructureData={hyperstructureData} />
+        ) : (
+          <></>
         ),
       },
     ],
@@ -307,10 +306,6 @@ const BuildHyperstructurePanel = ({
       }),
     [realmEntityIds],
   );
-
-  const canSendCaravan = useMemo(() => {
-    return selectedCaravan !== 0 || (isNewCaravan && hasEnoughDonkeys);
-  }, [selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
 
   const canGoToNextStep = useMemo(() => {
     if (step === 3) {

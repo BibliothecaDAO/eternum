@@ -1,6 +1,6 @@
 import { Tab as HeadlessTab } from "@headlessui/react";
 import clsx from "clsx";
-import type { ReactNode, SyntheticEvent } from "react";
+import type { ReactNode } from "react";
 import { Tab } from "./tab";
 import { TabList } from "./TabList";
 import { TabPanel } from "./TabPanel";

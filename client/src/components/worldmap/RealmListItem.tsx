@@ -5,10 +5,8 @@ import { findResourceById } from "../../constants/resources";
 import { ReactComponent as Map } from "../../assets/icons/common/map.svg";
 import { orderNameDict } from "../../constants/orders";
 import * as realmsData from "../../geodata/realms.json";
-import { useGetRealm } from "../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import useUIStore from "../../hooks/store/useUIStore";
-import { useEffect } from "react";
 import { displayAddress, numberToHex } from "../../utils/utils";
 
 type RealmListItemProps = {

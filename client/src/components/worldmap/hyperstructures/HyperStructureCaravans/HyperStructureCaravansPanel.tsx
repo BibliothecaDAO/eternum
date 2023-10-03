@@ -62,7 +62,12 @@ export const HyperStructureCaravansPanel = ({ caravans, hyperstructureData }: Ca
       {caravans && (
         <div className="flex flex-col p-2 space-y-2">
           {caravans.map((caravan) => (
-            <HyperStructureCaravan key={caravan.caravanId} caravan={caravan} hyperstructureData={hyperstructureData} />
+            <HyperStructureCaravan
+              onClick={() => setSelectedCaravan(caravan)}
+              key={caravan.caravanId}
+              caravan={caravan}
+              hyperstructureData={hyperstructureData}
+            />
           ))}
         </div>
       )}

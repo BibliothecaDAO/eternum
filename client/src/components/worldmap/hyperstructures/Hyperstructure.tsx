@@ -5,7 +5,7 @@ Files: .\public\models\hyperstructure.glb [21.82KB] > hyperstructure-transformed
 */
 
 import * as THREE from "three";
-import React, { useRef } from "react";
+import React from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 
@@ -21,8 +21,6 @@ type GLTFResult = GLTF & {
     Grass: THREE.MeshStandardMaterial;
   };
 };
-
-type ContextType = Record<string, React.ForwardRefExoticComponent<JSX.IntrinsicElements["mesh"]>>;
 
 export function Model(props: JSX.IntrinsicElements["group"]) {
   const { nodes, materials } = useGLTF("/models/hyperstructure-transformed.glb") as GLTFResult;

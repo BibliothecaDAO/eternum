@@ -11,6 +11,7 @@ import { HyperstructuresPanel } from "./hyperstructures/HyperstructuresPanel";
 const WorldMapMenuComponent = () => {
   const [selectedTab, setSelectedTab] = useState(0);
 
+  // @ts-ignore
   const [_location, setLocation] = useLocation();
 
   const tabs = useMemo(

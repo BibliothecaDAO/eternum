@@ -16,7 +16,7 @@ import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useGetPositionCaravans } from "../../../../hooks/helpers/useCaravans";
-import { currencyFormat, divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../../utils/utils";
+import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../../utils/utils";
 import { getComponentValue } from "@latticexyz/recs";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 import { useTrade } from "../../../../hooks/helpers/useTrade";
@@ -433,7 +433,7 @@ export const SelectCaravanPanel = ({
   selectedResourcesGiveAmounts: { [key: number]: number };
   resourceWeight: number;
   hasEnoughDonkeys: boolean;
-  headline: string;
+  headline?: string;
   className?: string;
 }) => {
   const { realmEntityId } = useRealmStore();
