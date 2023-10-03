@@ -18,6 +18,10 @@ export interface InitializeHyperstructuresProps extends SystemSigner {
   hyperstructure_id: num.BigNumberish;
 }
 
+export interface CompleteHyperStructureProps extends SystemSigner {
+  hyperstructure_id: num.BigNumberish;
+}
+
 export interface TransferResourcesProps extends SystemSigner {
   sending_entity_id: num.BigNumberish;
   receiving_entity_id: num.BigNumberish;
@@ -333,6 +337,15 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
     setComponentsFromEvents(contractComponents, events);
   };
 
+  const complete_hyperstructure = async (props: CompleteHyperStructureProps) => {
+    const { hyperstructure_id, signer } = props;
+    const tx = await execute(signer, "CompleteHyperStructure", [hyperstructure_id]);
+
+    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
+    const events = getEvents(receipt);
+    setComponentsFromEvents(contractComponents, events);
+  };
+
   const travel = async (props: TravelProps) => {
     const { travelling_entity_id, destination_coord_x, destination_coord_y, signer } = props;
     // TODO: put coords
@@ -360,6 +373,7 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
     create_road,
     transfer_resources,
     initialize_hyperstructure,
+    complete_hyperstructure,
     travel,
   };
 }

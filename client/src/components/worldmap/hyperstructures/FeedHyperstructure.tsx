@@ -193,18 +193,23 @@ const BuildHyperstructurePanel = ({
   const {
     account: { account },
     setup: {
-      systemCalls: { create_caravan, create_free_transport_unit, transfer_resources, travel },
+      systemCalls: { create_caravan, create_free_transport_unit, transfer_resources, travel, complete_hyperstructure },
     },
   } = useDojo();
+
+  const completeHyperstructure = async () => {
+    setIsLoading(true);
+    await complete_hyperstructure({ signer: account, hyperstructure_id: hyperstructureData?.hyperstructureId || 0 });
+    onClose();
+  };
 
   const sendResourcesToHyperStructure = async () => {
     setIsLoading(true);
     if (hyperstructureData) {
       const resourcesList = hyperstructureData?.initialized
-        ? Object.keys(feedResourcesGiveAmounts).flatMap((id) => [
-            Number(id),
-            multiplyByPrecision(feedResourcesGiveAmounts[Number(id)]),
-          ])
+        ? Object.keys(feedResourcesGiveAmounts)
+            .filter((id) => feedResourcesGiveAmounts[Number(id)] > 0)
+            .flatMap((id) => [Number(id), multiplyByPrecision(feedResourcesGiveAmounts[Number(id)])])
         : hyperstructureData?.initialzationResources.flatMap((resource) => [resource.resourceId, resource.amount]);
       if (isNewCaravan) {
         const transport_units_id = await create_free_transport_unit({
@@ -287,6 +292,8 @@ const BuildHyperstructurePanel = ({
     22: 0,
   });
 
+  const isComplete = hyperstructureData && hyperstructureData?.progress >= 100;
+
   const resourceWeight = useMemo(() => {
     let _resourceWeight = 0;
     if (!hyperstructureData?.initialized) {
@@ -322,10 +329,6 @@ const BuildHyperstructurePanel = ({
         divideByPrecision(resource.completeAmount) - divideByPrecision(resource.currentAmount);
     });
     return resourcesLeftToComplete;
-  }, [hyperstructureData]);
-
-  useEffect(() => {
-    console.log("data", hyperstructureData);
   }, [hyperstructureData]);
 
   const realms = useMemo(
@@ -385,7 +388,7 @@ const BuildHyperstructurePanel = ({
               {hyperstructureData?.completed
                 ? "Completed"
                 : hyperstructureData?.initialized
-                ? `Building in progress ${hyperstructureData?.progress}%`
+                ? `Building in progress ${hyperstructureData?.progress.toFixed(2)}%`
                 : "Not initialized"}
             </span>
           </div>
@@ -565,12 +568,12 @@ const BuildHyperstructurePanel = ({
               if (step == 3) {
                 sendResourcesToHyperStructure();
               } else {
-                setStep(step + 1);
+                isComplete ? completeHyperstructure() : setStep(step + 1);
               }
             }}
             variant={canGoToNextStep ? "success" : "outline"}
           >
-            {step == 3 ? "Send Caravan" : "Next Step"}
+            {step == 3 ? "Send Caravan" : isComplete ? "Complete" : "Next Step"}
           </Button>
         )}
         {isLoading && (

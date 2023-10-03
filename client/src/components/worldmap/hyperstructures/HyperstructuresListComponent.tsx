@@ -23,7 +23,7 @@ export const HyperstructuresListComponent = ({}: HyperstructuresListComponentPro
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
   const chosenOrder = useMemo(
-    () => (realmEntityIds.length > 0 ? getRealm(realmEntityIds[0].realmId).order : 1),
+    () => (realmEntityIds.length > 0 ? getRealm(realmEntityIds[0].realmId).order : undefined),
     [account, realmEntityIds],
   );
 
@@ -32,25 +32,38 @@ export const HyperstructuresListComponent = ({}: HyperstructuresListComponentPro
       <FiltersPanel className="px-3 py-2">
         <FilterButton active={false}>Filter</FilterButton>
       </FiltersPanel>
-      {showFeedPopup && <FeedHyperstructurePopup onClose={() => setShowFeedPopup(false)} order={chosenOrder} />}
-      <div className="space-y-2 px-2 mb-2">
-        <div className="text-xs text-gold">Hyperstructure of your order: </div>
-        <HyperstructuresListItem
-          order={chosenOrder - 1}
-          coords={getContractPositionFromRealPosition({
-            x: HYPERSTRUCTURES_POSITIONS[chosenOrder - 1].x,
-            y: HYPERSTRUCTURES_POSITIONS[chosenOrder - 1].z,
-          })}
-          onFeed={() => {
-            moveCameraToTarget(HYPERSTRUCTURES_POSITIONS[chosenOrder - 1]);
-            setShowFeedPopup(true);
-          }}
-        />
-      </div>
+      {chosenOrder && showFeedPopup && (
+        <FeedHyperstructurePopup onClose={() => setShowFeedPopup(false)} order={chosenOrder} />
+      )}
+      {chosenOrder && (
+        <div className="space-y-2 px-2 mb-2">
+          <div className="text-xs text-gold">Hyperstructure of your order: </div>
+          <HyperstructuresListItem
+            order={chosenOrder}
+            coords={getContractPositionFromRealPosition({
+              x: HYPERSTRUCTURES_POSITIONS[chosenOrder - 1].x,
+              y: HYPERSTRUCTURES_POSITIONS[chosenOrder - 1].z,
+            })}
+            onFeed={() => {
+              moveCameraToTarget(HYPERSTRUCTURES_POSITIONS[chosenOrder - 1]);
+              setShowFeedPopup(true);
+            }}
+          />
+        </div>
+      )}
       <div className="flex flex-col space-y-2 px-2 mb-2">
         <div className="text-xs text-gold">Other Hyperstructures: </div>
         {HYPERSTRUCTURES_POSITIONS.map((hyperstructure, i) =>
-          i + 1 !== chosenOrder ? <HyperstructuresListItem key={i} order={i} coords={hyperstructure} /> : null,
+          chosenOrder && i + 1 !== chosenOrder ? (
+            <HyperstructuresListItem
+              key={i}
+              order={i + 1}
+              coords={getContractPositionFromRealPosition({
+                x: hyperstructure.x,
+                y: hyperstructure.z,
+              })}
+            />
+          ) : null,
         )}
       </div>
     </>

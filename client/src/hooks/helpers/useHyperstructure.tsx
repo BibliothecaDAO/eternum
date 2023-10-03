@@ -49,15 +49,20 @@ export const useHyperstructure = () => {
           });
         });
 
-        let progress = hyperstructureResources.reduce((acc, resource) => {
-          return acc + (resource.currentAmount / resource.completeAmount) * 100;
-        }, 0);
+        // calculate hypestructure progress
+        let totCurrentAmount = 0;
+        let totCompleteAmount = 0;
+        hyperstructureResources.forEach((resource) => {
+          totCurrentAmount += Math.min(resource.currentAmount, resource.completeAmount);
+          totCompleteAmount += resource.completeAmount;
+        });
+        let progress = (totCurrentAmount / totCompleteAmount) * 100;
 
         return {
           hyperstructureId,
           progress,
           hyperstructureResources,
-          initialzationResources: hyperstructureData[orderId].resources.initialization.map((resource) => {
+          initialzationResources: hyperstructureData[orderId - 1].resources.initialization.map((resource) => {
             return {
               resourceId: resource.resourceType, // Fixed: changed semicolon to comma
               amount: resource.amount,
