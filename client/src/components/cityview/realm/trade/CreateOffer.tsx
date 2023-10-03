@@ -15,7 +15,7 @@ import { CaravanInterface } from "../../../../hooks/graphql/useGraphQLQueries";
 import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
-import { useGetPositionCaravans } from "../../../../hooks/helpers/useCaravans";
+import { useCaravan, useGetPositionCaravans } from "../../../../hooks/helpers/useCaravans";
 import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../../utils/utils";
 import { getComponentValue } from "@latticexyz/recs";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
@@ -440,8 +440,18 @@ export const SelectCaravanPanel = ({
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
+  const { getRealmDonkeysCount } = useCaravan();
   const { realm } = useGetRealm(realmEntityId);
   const { caravans: realmCaravans } = useGetPositionCaravans(realm?.position.x || 0, realm?.position.y || 0);
+
+  const donkeysLeft = useMemo(() => {
+    const realmDonkeysCount = getRealmDonkeysCount(realmEntityId);
+    if (realmDonkeysCount && realm) {
+      return realm?.cities * 100 - realmDonkeysCount;
+    } else {
+      return (realm?.cities || 0) * 100;
+    }
+  }, [realm]);
 
   let myAvailableCaravans = useMemo(
     () =>
@@ -531,7 +541,11 @@ export const SelectCaravanPanel = ({
             </Headline>
             <div className="grid grid-cols-9 gap-2 p-2">
               <div className="flex items-center col-span-3">
-                <NumberInput value={donkeysCount} onChange={setDonkeysCount} max={1000} />
+                <NumberInput
+                  value={donkeysCount}
+                  onChange={(value) => setDonkeysCount(Math.min(donkeysLeft || 0, value))}
+                  max={donkeysLeft || 0}
+                />
                 <Donkey className="ml-2 w-5 h-5 min-w-[20px]" />
                 <div className="flex flex-col justify-center ml-2">
                   <div className="text-xs font-bold text-white">{donkeysCount}</div>
@@ -550,6 +564,12 @@ export const SelectCaravanPanel = ({
             <div className="flex items-center mb-1 text-xs text-center text-white">
               <Danger />
               <div className="ml-1 uppercase text-danger">Increase the amount of units</div>
+            </div>
+          )}
+          {donkeysLeft && (
+            <div className="flex mb-1 text-xs text-center text-white">
+              Donkeys Left{" "}
+              <div className={`ml-1 text-${hasEnoughDonkeys ? "order-brilliance" : "danger"}`}>{donkeysLeft}</div>
             </div>
           )}
         </>
