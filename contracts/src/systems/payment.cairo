@@ -2,8 +2,8 @@
 mod SpendResources {
     use traits::Into;
 
-    use eternum::components::resources::Resource;
-    use eternum::components::owner::Owner;
+    use eternum::models::resources::Resource;
+    use eternum::models::owner::Owner;
     use eternum::alias::ID;
 
     use dojo::world::Context;

@@ -8,11 +8,11 @@ mod Settle {
     use eternum::constants::{WORLD_CONFIG_ID, LABOR_CONFIG_ID};
     use eternum::interfaces::{IERC721Dispatcher, IERC721DispatcherTrait};
     use eternum::erc721::erc721::{RealmData, Position};
-    use eternum::components::owner::Owner;
-    use eternum::components::realm::Realm;
-    use eternum::components::resources::Resource;
-    use eternum::components::age::Age;
-    use eternum::components::config::{WorldConfig, LaborConfig};
+    use eternum::models::owner::Owner;
+    use eternum::models::realm::Realm;
+    use eternum::models::resources::Resource;
+    use eternum::models::age::Age;
+    use eternum::models::config::{WorldConfig, LaborConfig};
 
     use dojo::world::Context;
 
@@ -94,11 +94,11 @@ mod Unsettle {
     use eternum::constants::{WORLD_CONFIG_ID, LABOR_CONFIG_ID};
     use eternum::interfaces::{IERC721Dispatcher, IERC721DispatcherTrait};
     use eternum::erc721::erc721::Position;
-    use eternum::components::owner::Owner;
-    use eternum::components::realm::Realm;
-    use eternum::components::resources::Resource;
-    use eternum::components::age::Age;
-    use eternum::components::config::{WorldConfig, LaborConfig};
+    use eternum::models::owner::Owner;
+    use eternum::models::realm::Realm;
+    use eternum::models::resources::Resource;
+    use eternum::models::age::Age;
+    use eternum::models::config::{WorldConfig, LaborConfig};
     use eternum::alias::ID;
 
     use dojo::world::Context;

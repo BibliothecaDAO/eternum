@@ -1,7 +1,7 @@
 #[system]
 mod SetCapacityConfig {
     use traits::Into;
-    use eternum::components::config::CapacityConfig;
+    use eternum::models::config::CapacityConfig;
     use eternum::constants::WORLD_CONFIG_ID;
 
     use dojo::world::Context;

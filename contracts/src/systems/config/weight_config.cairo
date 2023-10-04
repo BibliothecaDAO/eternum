@@ -1,7 +1,7 @@
 #[system]
 mod SetWeightConfig {
     use traits::Into;
-    use eternum::components::config::WeightConfig;
+    use eternum::models::config::WeightConfig;
     use eternum::constants::WORLD_CONFIG_ID;
 
     use dojo::world::Context;

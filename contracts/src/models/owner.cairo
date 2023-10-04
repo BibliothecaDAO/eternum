@@ -1,7 +1,7 @@
 use starknet::ContractAddress;
 
 // contract address owning an entity
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct Owner {
     #[key]
     entity_id: u128,

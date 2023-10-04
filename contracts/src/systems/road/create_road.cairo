@@ -1,11 +1,11 @@
 #[system]
 mod CreateRoad {
     
-    use eternum::components::position::{Coord};
-    use eternum::components::resources::Resource;
-    use eternum::components::road::{Road, RoadImpl};
-    use eternum::components::owner::Owner;
-    use eternum::components::config::RoadConfig;
+    use eternum::models::position::{Coord};
+    use eternum::models::resources::Resource;
+    use eternum::models::road::{Road, RoadImpl};
+    use eternum::models::owner::Owner;
+    use eternum::models::config::RoadConfig;
 
     use eternum::constants::ROAD_CONFIG_ID;
     
@@ -51,11 +51,11 @@ mod CreateRoad {
 
 #[cfg(test)]
 mod tests {
-    use eternum::components::position::{Coord };
-    use eternum::components::resources::Resource;
-    use eternum::components::road::{Road, RoadImpl};
-    use eternum::components::owner::Owner;
-    use eternum::components::config::RoadConfig;
+    use eternum::models::position::{Coord };
+    use eternum::models::resources::Resource;
+    use eternum::models::road::{Road, RoadImpl};
+    use eternum::models::owner::Owner;
+    use eternum::models::config::RoadConfig;
 
     use eternum::constants::{ROAD_CONFIG_ID, ResourceTypes};
     

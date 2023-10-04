@@ -6,7 +6,7 @@ mod TickSystem {
     use traits::Into;
 
     use eternum::alias::ID;
-    use eternum::components::tick::Tick;
+    use eternum::models::tick::Tick;
 
     use dojo::world::Context;
 

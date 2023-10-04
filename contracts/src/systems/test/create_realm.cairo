@@ -3,10 +3,10 @@ mod CreateRealm {
     use traits::Into;
     use starknet::ContractAddress;
 
-    use eternum::components::realm::Realm;
-    use eternum::components::owner::Owner;
-    use eternum::components::position::Position;
-    use eternum::components::metadata::MetaData;
+    use eternum::models::realm::Realm;
+    use eternum::models::owner::Owner;
+    use eternum::models::position::Position;
+    use eternum::models::metadata::MetaData;
     use eternum::constants::REALM_ENTITY_TYPE;
 
     use eternum::alias::ID;

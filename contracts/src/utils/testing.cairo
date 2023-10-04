@@ -1,22 +1,22 @@
 // components
-use eternum::components::owner::{owner, Owner};
-use eternum::components::realm::{realm, Realm};
-use eternum::components::resources::{resource, Resource};
-use eternum::components::resources::{resource_cost, ResourceCost};
-use eternum::components::position::{position, Position};
-use eternum::components::capacity::{capacity, Capacity};
-use eternum::components::metadata::{meta_data, MetaData};
-use eternum::components::age::{age, Age};
-use eternum::components::labor::{labor, Labor};
-use eternum::components::resources::{vault, Vault};
-use eternum::components::metadata::{foreign_key, ForeignKey};
-use eternum::components::trade::{fungible_entities, FungibleEntities};
-use eternum::components::road::{road, Road};
-use eternum::components::labor_auction::{labor_auction, LaborAuction};
-use eternum::components::hyperstructure::{hyper_structure, HyperStructure};
+use eternum::models::owner::{owner, Owner};
+use eternum::models::realm::{realm, Realm};
+use eternum::models::resources::{resource, Resource};
+use eternum::models::resources::{resource_cost, ResourceCost};
+use eternum::models::position::{position, Position};
+use eternum::models::capacity::{capacity, Capacity};
+use eternum::models::metadata::{meta_data, MetaData};
+use eternum::models::age::{age, Age};
+use eternum::models::labor::{labor, Labor};
+use eternum::models::resources::{vault, Vault};
+use eternum::models::metadata::{foreign_key, ForeignKey};
+use eternum::models::trade::{fungible_entities, FungibleEntities};
+use eternum::models::road::{road, Road};
+use eternum::models::labor_auction::{labor_auction, LaborAuction};
+use eternum::models::hyperstructure::{hyper_structure, HyperStructure};
 
 
-use eternum::components::config::{
+use eternum::models::config::{
     world_config, WorldConfig,
     speed_config, SpeedConfig,
     capacity_config, CapacityConfig,
@@ -28,19 +28,19 @@ use eternum::components::config::{
     road_config, RoadConfig
 
 };
-use eternum::components::quantity::{
+use eternum::models::quantity::{
     quantity, Quantity, 
     quantity_tracker, QuantityTracker
 };
-use eternum::components::movable::{
+use eternum::models::movable::{
     movable, Movable, 
     arrival_time, ArrivalTime
 };
-use eternum::components::caravan::{
+use eternum::models::caravan::{
     caravan, Caravan,
     caravan_members, CaravanMembers,
 };
-use eternum::components::trade::{
+use eternum::models::trade::{
     status, Status, 
     trade, Trade,
     order_resource, OrderResource,

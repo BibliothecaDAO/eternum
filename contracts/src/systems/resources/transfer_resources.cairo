@@ -1,12 +1,12 @@
 #[system]
 mod TransferResources {
     use eternum::alias::ID;
-    use eternum::components::resources::Resource;
-    use eternum::components::owner::Owner;
-    use eternum::components::position::Position;
-    use eternum::components::quantity::{Quantity, QuantityTrait};
-    use eternum::components::capacity::Capacity;
-    use eternum::components::config::WeightConfigImpl;
+    use eternum::models::resources::Resource;
+    use eternum::models::owner::Owner;
+    use eternum::models::position::Position;
+    use eternum::models::quantity::{Quantity, QuantityTrait};
+    use eternum::models::capacity::Capacity;
+    use eternum::models::config::WeightConfigImpl;
 
     use dojo::world::Context;
 
@@ -82,12 +82,12 @@ mod TransferResources {
 
 #[cfg(test)]
 mod tests {
-    use eternum::components::resources::Resource;
-    use eternum::components::owner::Owner;
-    use eternum::components::position::Position;    
-    use eternum::components::capacity::Capacity;    
-    use eternum::components::quantity::Quantity;
-    use eternum::components::config::WeightConfig;
+    use eternum::models::resources::Resource;
+    use eternum::models::owner::Owner;
+    use eternum::models::position::Position;    
+    use eternum::models::capacity::Capacity;    
+    use eternum::models::quantity::Quantity;
+    use eternum::models::config::WeightConfig;
 
     use eternum::constants::ResourceTypes;
     use eternum::constants::WORLD_CONFIG_ID;

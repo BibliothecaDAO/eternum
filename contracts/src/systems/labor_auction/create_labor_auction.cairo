@@ -1,6 +1,6 @@
 #[system]
 mod CreateLaborAuction {
-    use eternum::components::labor_auction::{LaborAuction, LaborAuctionTrait};
+    use eternum::models::labor_auction::{LaborAuction, LaborAuctionTrait};
 
     use dojo::world::Context;
 
@@ -34,7 +34,7 @@ mod CreateLaborAuction {
 
 #[cfg(test)]
 mod tests {
-    use eternum::components::labor_auction::{LaborAuction, LaborAuctionTrait};
+    use eternum::models::labor_auction::{LaborAuction, LaborAuctionTrait};
 
     // testing
     use eternum::utils::testing::spawn_eternum;

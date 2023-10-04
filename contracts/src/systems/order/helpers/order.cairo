@@ -1,6 +1,6 @@
 use eternum::alias::ID;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-use eternum::components::trade::{Status, TradeStatus};
+use eternum::models::trade::{Status, TradeStatus};
 
 
 #[inline(always)]
@@ -18,10 +18,10 @@ fn cancel(world: IWorldDispatcher, trade_id: ID){
 
 mod resource {
     use eternum::alias::ID;
-    use eternum::components::caravan::Caravan;
-    use eternum::components::trade::FungibleEntities;
-    use eternum::components::trade::OrderResource;
-    use eternum::components::resources::Resource;
+    use eternum::models::caravan::Caravan;
+    use eternum::models::trade::FungibleEntities;
+    use eternum::models::trade::OrderResource;
+    use eternum::models::resources::Resource;
 
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
@@ -72,9 +72,9 @@ mod resource {
 
 mod caravan {
     use eternum::alias::ID;
-    use eternum::components::caravan::Caravan;
-    use eternum::components::movable::Movable;
-    use eternum::components::trade::OrderId;
+    use eternum::models::caravan::Caravan;
+    use eternum::models::movable::Movable;
+    use eternum::models::trade::OrderId;
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
     
     use traits::Into;

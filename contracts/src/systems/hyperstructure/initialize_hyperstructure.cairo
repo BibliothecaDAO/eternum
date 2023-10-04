@@ -1,10 +1,10 @@
 #[system]
 mod InitializeHyperStructure {
     use eternum::alias::ID;
-    use eternum::components::hyperstructure::HyperStructure;
-    use eternum::components::resources::{Resource, ResourceCost};
-    use eternum::components::owner::Owner;
-    use eternum::components::position::{Coord, Position};
+    use eternum::models::hyperstructure::HyperStructure;
+    use eternum::models::resources::{Resource, ResourceCost};
+    use eternum::models::owner::Owner;
+    use eternum::models::position::{Coord, Position};
 
     use dojo::world::Context;
 
@@ -79,10 +79,10 @@ mod InitializeHyperStructure {
 #[cfg(test)]
 mod tests {
 
-    use eternum::components::position::{Coord, Position};
-    use eternum::components::hyperstructure::HyperStructure;
-    use eternum::components::resources::{Resource, ResourceCost};
-    use eternum::components::owner::Owner;
+    use eternum::models::position::{Coord, Position};
+    use eternum::models::hyperstructure::HyperStructure;
+    use eternum::models::resources::{Resource, ResourceCost};
+    use eternum::models::owner::Owner;
 
     use eternum::constants::ResourceTypes;
     

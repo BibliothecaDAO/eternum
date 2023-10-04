@@ -2,7 +2,7 @@ use eternum::alias::ID;
 
 // a way to store the type of the entity in addition
 // to the list of components which we already have
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct MetaData {
     #[key]
     entity_id: u128,
@@ -15,7 +15,7 @@ struct MetaData {
 // using an index and the foreign key
 // see CreateCaravan for an example
 // TODO: change ForeignKey to CaravanMember and stop using general purpose components 
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct ForeignKey {
     #[key]
     foreign_key: felt252,

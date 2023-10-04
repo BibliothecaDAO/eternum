@@ -8,14 +8,14 @@ use starknet::ContractAddress;
 // GLOBAL CONFIGS
 //
 
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct WorldConfig {
     #[key]
     config_id: u128,
     realm_l2_contract: ContractAddress,
 }
 
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct LaborConfig {
     #[key]
     config_id: u128,
@@ -24,7 +24,7 @@ struct LaborConfig {
     base_food_per_cycle: u128,
 }
 
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct TravelConfig {
     #[key]
     config_id: u128,
@@ -32,7 +32,7 @@ struct TravelConfig {
 }
 
 
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct RoadConfig {
     #[key]
     config_id: u128,
@@ -42,7 +42,7 @@ struct RoadConfig {
 }
 
 
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct BuildingConfig {
     #[key]
     config_id: u128,
@@ -55,7 +55,7 @@ struct BuildingConfig {
 // We use component key to store the config id
 //
 
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct BuildingCost {
     #[key]
     config_id: u128,
@@ -65,7 +65,7 @@ struct BuildingCost {
     cost: u128,
 }
 
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct BuildingTypeConfig {
     #[key]
     config_id: u128,
@@ -79,7 +79,7 @@ struct BuildingTypeConfig {
 
 
 // labor cost resources
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct LaborCostResources {
     #[key]
     resource_type_labor: felt252,
@@ -89,7 +89,7 @@ struct LaborCostResources {
 
 // labor cost values
 // mapping of resource_type for which we want to increase labor, resource_type that needs to be burned, value to be burned
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct LaborCostAmount {
     #[key]
     resource_type_labor: felt252,
@@ -103,7 +103,7 @@ struct LaborCostAmount {
 // that it's a config for one specific entity type?
 // and not the same as world config or labor config
 // e.g. EntityTypeCapacityConfig?
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct CapacityConfig {
     #[key]
     config_id: u128,
@@ -114,7 +114,7 @@ struct CapacityConfig {
 }
 
 // speed
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct SpeedConfig {
     #[key]
     config_id: u128,
@@ -125,7 +125,7 @@ struct SpeedConfig {
 }
 
 // weight
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct WeightConfig {
     #[key]
     config_id: u128,

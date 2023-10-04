@@ -7,14 +7,14 @@
 //     use traits::Into;
 //     use array::ArrayTrait;
 
-//     use eternum::components::config::WorldConfig;
-//     use eternum::components::realm::Realm;
-//     use eternum::components::realm::RealmTrait;
-//     use eternum::components::resources::Resource;
-//     use eternum::components::resources::Vault;
-//     use eternum::components::labor::Labor;
-//     use eternum::components::labor::LaborTrait;
-//     use eternum::components::config::LaborConfig;
+//     use eternum::models::config::WorldConfig;
+//     use eternum::models::realm::Realm;
+//     use eternum::models::realm::RealmTrait;
+//     use eternum::models::resources::Resource;
+//     use eternum::models::resources::Vault;
+//     use eternum::models::labor::Labor;
+//     use eternum::models::labor::LaborTrait;
+//     use eternum::models::config::LaborConfig;
 //     use starknet::ContractAddress;
 //     // todo need better way to store resources
 //     use eternum::constants::WORLD_CONFIG_ID;

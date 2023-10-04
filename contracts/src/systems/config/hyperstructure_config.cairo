@@ -1,9 +1,9 @@
 #[system]
 mod DefineHyperStructure {
     use eternum::alias::ID;
-    use eternum::components::hyperstructure::HyperStructure;
-    use eternum::components::resources::ResourceCost;
-    use eternum::components::position::{Position, Coord};
+    use eternum::models::hyperstructure::HyperStructure;
+    use eternum::models::resources::ResourceCost;
+    use eternum::models::position::{Position, Coord};
 
     use dojo::world::Context;
 
@@ -99,9 +99,9 @@ mod DefineHyperStructure {
 #[cfg(test)]
 mod tests {
 
-    use eternum::components::hyperstructure::HyperStructure;
-    use eternum::components::resources::ResourceCost;
-    use eternum::components::position::{Position, Coord};
+    use eternum::models::hyperstructure::HyperStructure;
+    use eternum::models::resources::ResourceCost;
+    use eternum::models::position::{Position, Coord};
     use eternum::constants::ResourceTypes;
     
     use eternum::utils::testing::spawn_eternum;

@@ -1,10 +1,10 @@
 use eternum::alias::ID;
-use eternum::components::position::Coord;
+use eternum::models::position::Coord;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct Road {
     #[key]
     start_coord_x: u32,
@@ -36,8 +36,8 @@ impl RoadImpl of RoadTrait {
 
 #[cfg(test)]
 mod tests {
-    use eternum::components::position::{Coord};
-    use eternum::components::road::{Road, RoadImpl, RoadTrait};
+    use eternum::models::position::{Coord};
+    use eternum::models::road::{Road, RoadImpl, RoadTrait};
     
     use eternum::utils::testing::spawn_eternum;
 

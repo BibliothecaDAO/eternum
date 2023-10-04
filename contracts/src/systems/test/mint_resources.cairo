@@ -5,7 +5,7 @@
 #[system]
 mod MintResources {
     use traits::Into;
-    use eternum::components::resources::Resource;
+    use eternum::models::resources::Resource;
     use eternum::alias::ID;
 
     use dojo::world::Context;
@@ -23,7 +23,7 @@ mod MintResources {
 #[system]
 mod MintAllResources {
     use traits::Into;
-    use eternum::components::resources::Resource;
+    use eternum::models::resources::Resource;
     use eternum::constants::ResourceTypes;
     use eternum::alias::ID;
 
@@ -75,7 +75,7 @@ mod MintAllResources {
 
 #[cfg(test)]
 mod tests {
-    use eternum::components::resources::Resource;
+    use eternum::models::resources::Resource;
     
     use eternum::utils::testing::spawn_eternum;
 

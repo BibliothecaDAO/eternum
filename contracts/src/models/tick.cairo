@@ -1,8 +1,8 @@
 // TODO next milestone
-// use eternum::components::config::WorldConfig;
+// use eternum::models::config::WorldConfig;
 // use eternum::utils::math::get_past_time;
 
-// #[derive(Component, Copy, Drop, Serde, SerdeLen)]
+// #[derive(Model, Copy, Drop, Serde)]
 // struct Tick {
 //     last_update: u128
 // }

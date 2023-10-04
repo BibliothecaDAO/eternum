@@ -4,17 +4,17 @@
 mod ClaimFungibleOrder {
     use eternum::alias::ID;
     use eternum::constants::WORLD_CONFIG_ID;
-    use eternum::components::config::WeightConfig;
-    use eternum::components::capacity::Capacity;
-    use eternum::components::movable::ArrivalTime;
-    use eternum::components::movable::Movable;
-    use eternum::components::quantity::Quantity;
-    use eternum::components::owner::Owner;
-    use eternum::components::position::Position;
-    use eternum::components::resources::Resource;
-    use eternum::components::caravan::Caravan;
-    use eternum::components::trade::{Trade, Status, TradeStatus, OrderResource};
-    use eternum::components::trade::FungibleEntities;
+    use eternum::models::config::WeightConfig;
+    use eternum::models::capacity::Capacity;
+    use eternum::models::movable::ArrivalTime;
+    use eternum::models::movable::Movable;
+    use eternum::models::quantity::Quantity;
+    use eternum::models::owner::Owner;
+    use eternum::models::position::Position;
+    use eternum::models::resources::Resource;
+    use eternum::models::caravan::Caravan;
+    use eternum::models::trade::{Trade, Status, TradeStatus, OrderResource};
+    use eternum::models::trade::FungibleEntities;
 
     use traits::Into;
     use traits::TryInto;
@@ -114,12 +114,12 @@ mod ClaimFungibleOrder {
 #[cfg(test)]
 mod tests {
    
-    use eternum::components::resources::Resource;
-    use eternum::components::trade::FungibleEntities;
-    use eternum::components::owner::Owner;
-    use eternum::components::position::Position;
-    use eternum::components::movable::ArrivalTime;
-    use eternum::components::trade::{Trade, OrderResource};
+    use eternum::models::resources::Resource;
+    use eternum::models::trade::FungibleEntities;
+    use eternum::models::owner::Owner;
+    use eternum::models::position::Position;
+    use eternum::models::movable::ArrivalTime;
+    use eternum::models::trade::{Trade, OrderResource};
 
     use eternum::constants::ResourceTypes;
 

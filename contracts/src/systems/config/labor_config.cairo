@@ -1,7 +1,7 @@
 #[system]
 mod SetLaborCostResources {
     use traits::Into;
-    use eternum::components::config::LaborCostResources;
+    use eternum::models::config::LaborCostResources;
 
     use dojo::world::Context;
 
@@ -24,7 +24,7 @@ mod SetLaborCostResources {
 #[system]
 mod SetLaborCostAmount {
     use traits::Into;
-    use eternum::components::config::LaborCostAmount;
+    use eternum::models::config::LaborCostAmount;
 
     use dojo::world::Context;
 
@@ -47,7 +47,7 @@ mod SetLaborCostAmount {
 mod SetLaborConfig {
     use traits::Into;
     use eternum::constants::LABOR_CONFIG_ID;
-    use eternum::components::config::LaborConfig;
+    use eternum::models::config::LaborConfig;
 
     use dojo::world::Context;
 

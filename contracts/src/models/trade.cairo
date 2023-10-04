@@ -1,6 +1,6 @@
 use eternum::alias::ID;
 
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct Trade {
     #[key]
     trade_id: u128,
@@ -15,14 +15,14 @@ struct Trade {
     taker_needs_caravan: bool,
 }
 
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct Status {
     #[key]
     trade_id: u128,
     value: u128,
 }
 
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct OrderId {
     #[key]
     entity_id: u128,
@@ -38,12 +38,6 @@ struct OrderId {
 // }
 
 
-// impl TradeStatusSerdeLen of dojo::SerdeLen<TradeStatus> {
-//     #[inline(always)]
-//     fn len() -> usize {
-//         1
-//     }
-// }
 
 mod TradeStatus {
     const OPEN: u128 = 0;
@@ -54,7 +48,7 @@ mod TradeStatus {
 // DISCUSS: rename this to avoid using Entities?
 // here fungible entities represents a collection of entities
 // that will be traded through the orderbook
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct FungibleEntities {
     #[key]
     entity_id: u128,
@@ -62,7 +56,7 @@ struct FungibleEntities {
     count: usize,
 }
 
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct OrderResource {
     #[key]
     order_id: u128,

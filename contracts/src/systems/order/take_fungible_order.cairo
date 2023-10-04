@@ -2,16 +2,16 @@
 // trade_id is the entity holding the Meta of the trade 
 #[system]
 mod TakeFungibleOrder {
-    use eternum::components::trade::FungibleEntities;
-    use eternum::components::resources::Resource;
+    use eternum::models::trade::FungibleEntities;
+    use eternum::models::resources::Resource;
     use eternum::alias::ID;
-    use eternum::components::owner::Owner;
-    use eternum::components::position::{Position, PositionTrait};
-    use eternum::components::trade::{Trade, Status, TradeStatus, OrderResource};
-    use eternum::components::caravan::Caravan;
-    use eternum::components::road::{Road, RoadTrait, RoadImpl};
-    use eternum::components::movable::{Movable, ArrivalTime};
-    use eternum::components::config::RoadConfig;
+    use eternum::models::owner::Owner;
+    use eternum::models::position::{Position, PositionTrait};
+    use eternum::models::trade::{Trade, Status, TradeStatus, OrderResource};
+    use eternum::models::caravan::Caravan;
+    use eternum::models::road::{Road, RoadTrait, RoadImpl};
+    use eternum::models::movable::{Movable, ArrivalTime};
+    use eternum::models::config::RoadConfig;
 
     use eternum::constants::ROAD_CONFIG_ID;
 
@@ -275,18 +275,18 @@ mod TakeFungibleOrder {
 
 #[cfg(test)]
 mod tests {
-    use eternum::components::resources::Resource;
-    use eternum::components::trade::FungibleEntities;
-    use eternum::components::owner::Owner;
-    use eternum::components::position::{Position, Coord};
-    use eternum::components::capacity::Capacity;
-    use eternum::components::movable::{Movable, ArrivalTime};
-    use eternum::components::caravan::Caravan;
-    use eternum::components::config::{WeightConfig, RoadConfig};
-    use eternum::components::road::{Road, RoadImpl};
+    use eternum::models::resources::Resource;
+    use eternum::models::trade::FungibleEntities;
+    use eternum::models::owner::Owner;
+    use eternum::models::position::{Position, Coord};
+    use eternum::models::capacity::Capacity;
+    use eternum::models::movable::{Movable, ArrivalTime};
+    use eternum::models::caravan::Caravan;
+    use eternum::models::config::{WeightConfig, RoadConfig};
+    use eternum::models::road::{Road, RoadImpl};
 
     
-    use eternum::components::trade::{Trade,Status, OrderId, OrderResource};
+    use eternum::models::trade::{Trade,Status, OrderId, OrderResource};
 
     use eternum::constants::ResourceTypes;
     use eternum::constants::{WORLD_CONFIG_ID, ROAD_CONFIG_ID};

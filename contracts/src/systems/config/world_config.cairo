@@ -2,7 +2,7 @@
 mod SetWorldConfig {
     use traits::Into;
 
-    use eternum::components::config::WorldConfig;
+    use eternum::models::config::WorldConfig;
     use eternum::constants::WORLD_CONFIG_ID;
 
     use dojo::world::Context;

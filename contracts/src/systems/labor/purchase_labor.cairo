@@ -4,17 +4,17 @@ mod PurchaseLabor {
     use traits::Into;
     use box::BoxTrait;
     use eternum::systems::labor::utils::{assert_harvestable_resource, get_labor_resource_type};
-    use eternum::components::labor::{Labor, LaborTrait};
-    use eternum::components::labor_auction::{LaborAuction, LaborAuctionTrait};
+    use eternum::models::labor::{Labor, LaborTrait};
+    use eternum::models::labor_auction::{LaborAuction, LaborAuctionTrait};
 
     use debug::PrintTrait;
 
     use eternum::alias::ID;
-    use eternum::components::owner::Owner;
-    use eternum::components::position::{Position, PositionTrait};
-    use eternum::components::resources::Resource;
+    use eternum::models::owner::Owner;
+    use eternum::models::position::{Position, PositionTrait};
+    use eternum::models::resources::Resource;
 
-    use eternum::components::config::{LaborConfig, LaborCostResources, LaborCostAmount};
+    use eternum::models::config::{LaborConfig, LaborCostResources, LaborCostAmount};
     use starknet::ContractAddress;
     use eternum::constants::{LABOR_CONFIG_ID, ResourceTypes};
     use eternum::utils::unpack::unpack_resource_types;
@@ -132,11 +132,11 @@ mod PurchaseLabor {
 #[cfg(test)]
 mod tests {
     use eternum::constants::ResourceTypes;
-    use eternum::components::resources::Resource;
-    use eternum::components::labor::Labor;
-    use eternum::components::position::Position;
+    use eternum::models::resources::Resource;
+    use eternum::models::labor::Labor;
+    use eternum::models::position::Position;
     use eternum::systems::labor_auction::create_labor_auction::CreateLaborAuction;
-    use eternum::components::labor_auction::{LaborAuction, LaborAuctionTrait};
+    use eternum::models::labor_auction::{LaborAuction, LaborAuctionTrait};
 
     // testing
     use eternum::utils::testing::spawn_eternum;

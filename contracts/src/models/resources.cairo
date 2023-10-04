@@ -1,5 +1,5 @@
 // Used as helper struct throughout the world
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct Resource {
     // This is compound key of entity_id and resource_type
     #[key]
@@ -9,7 +9,7 @@ struct Resource {
     balance: u128,
 }
 
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct ResourceCost {
     #[key]
     entity_id: u128,
@@ -20,7 +20,7 @@ struct ResourceCost {
 }
 
 // TODO: need to change the whole vault logic
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct Vault {
     // This is compound key of entity_id and resource_type
     #[key]

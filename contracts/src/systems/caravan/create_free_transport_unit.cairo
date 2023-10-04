@@ -5,14 +5,14 @@
 #[system]
 mod CreateFreeTransportUnit {
     use eternum::alias::ID;
-    use eternum::components::owner::Owner;
-    use eternum::components::position::Position;
-    use eternum::components::realm::Realm;
-    use eternum::components::capacity::Capacity;
-    use eternum::components::metadata::MetaData;
-    use eternum::components::movable::{Movable, ArrivalTime};
-    use eternum::components::config::{TravelConfig, SpeedConfig, CapacityConfig};
-    use eternum::components::quantity::{Quantity, QuantityTracker};
+    use eternum::models::owner::Owner;
+    use eternum::models::position::Position;
+    use eternum::models::realm::Realm;
+    use eternum::models::capacity::Capacity;
+    use eternum::models::metadata::MetaData;
+    use eternum::models::movable::{Movable, ArrivalTime};
+    use eternum::models::config::{TravelConfig, SpeedConfig, CapacityConfig};
+    use eternum::models::quantity::{Quantity, QuantityTracker};
     use eternum::constants::{
         REALM_ENTITY_TYPE, WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, FREE_TRANSPORT_ENTITY_TYPE
     };
@@ -96,12 +96,12 @@ mod CreateFreeTransportUnit {
 mod tests {
 
     use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
-    use eternum::components::position::Position;
-    use eternum::components::movable::{Movable, ArrivalTime};
-    use eternum::components::capacity::Capacity;
-    use eternum::components::owner::Owner;
-    use eternum::components::metadata::MetaData;
-    use eternum::components::quantity::{Quantity, QuantityTracker};
+    use eternum::models::position::Position;
+    use eternum::models::movable::{Movable, ArrivalTime};
+    use eternum::models::capacity::Capacity;
+    use eternum::models::owner::Owner;
+    use eternum::models::metadata::MetaData;
+    use eternum::models::quantity::{Quantity, QuantityTracker};
 
     // testing
     use eternum::utils::testing::spawn_eternum;

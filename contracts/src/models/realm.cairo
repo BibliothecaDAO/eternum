@@ -4,7 +4,7 @@ use array::SpanTrait;
 use eternum::alias::ID;
 use eternum::utils::unpack::unpack_resource_types;
 
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct Realm {
     #[key]
     entity_id: u128,

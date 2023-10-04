@@ -2,9 +2,9 @@
 mod SetTravelConfig {
     use traits::Into;
 
-    use eternum::components::config::WorldConfig;
+    use eternum::models::config::WorldConfig;
     use eternum::constants::TRANSPORT_CONFIG_ID;
-    use eternum::components::config::TravelConfig;
+    use eternum::models::config::TravelConfig;
 
     use dojo::world::Context;
 

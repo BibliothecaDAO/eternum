@@ -6,12 +6,12 @@ mod HarvestLabor {
     use array::ArrayTrait;
     use box::BoxTrait;
 
-    use eternum::components::config::WorldConfig;
-    use eternum::components::owner::Owner;
-    use eternum::components::realm::{Realm, RealmTrait};
-    use eternum::components::resources::{Resource, Vault};
-    use eternum::components::labor::{Labor, LaborTrait};
-    use eternum::components::config::LaborConfig;
+    use eternum::models::config::WorldConfig;
+    use eternum::models::owner::Owner;
+    use eternum::models::realm::{Realm, RealmTrait};
+    use eternum::models::resources::{Resource, Vault};
+    use eternum::models::labor::{Labor, LaborTrait};
+    use eternum::models::config::LaborConfig;
     use eternum::constants::{LABOR_CONFIG_ID, WORLD_CONFIG_ID, ResourceTypes};
     use eternum::alias::ID;
 
@@ -118,9 +118,9 @@ mod HarvestLabor {
 #[cfg(test)]
 mod tests {
     use eternum::constants::ResourceTypes;
-    use eternum::components::resources::Resource;
-    use eternum::components::labor::Labor;
-    use eternum::components::position::Position;
+    use eternum::models::resources::Resource;
+    use eternum::models::labor::Labor;
+    use eternum::models::position::Position;
     use eternum::systems::labor::utils::get_labor_resource_type;
 
     // testing

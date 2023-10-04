@@ -1,7 +1,7 @@
 #[system]
 mod SetSpeedConfig {
     use traits::Into;
-    use eternum::components::config::SpeedConfig;
+    use eternum::models::config::SpeedConfig;
     use eternum::constants::WORLD_CONFIG_ID;
 
     use dojo::world::Context;

@@ -2,7 +2,7 @@
 mod SetRoadConfig {
 
     use eternum::constants::ROAD_CONFIG_ID;
-    use eternum::components::config::RoadConfig;
+    use eternum::models::config::RoadConfig;
 
     use dojo::world::Context;
 

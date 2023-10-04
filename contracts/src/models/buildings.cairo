@@ -4,7 +4,7 @@
 use array::ArrayTrait;
 // TODO for next milestone
 
-// #[derive(Component, Copy, Drop, Serde, SerdeLen)]
+// #[derive(Model,y, Drop, Serde)]
 // struct Buildings {
 //     #[key]
 //     entity_id: u128,
