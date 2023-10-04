@@ -52,7 +52,7 @@ impl LinearVRGDAImpl of LinearVRGDATrait {
 }
 
 
-#[derive(Component, Copy, Drop, Serde, SerdeLen)]
+#[derive(Model, Copy, Drop, Serde)]
 struct LaborAuction {
     #[key]
     zone: u8,
