@@ -35,6 +35,11 @@ trait ILaborConfig<TContractState> {
         self: @TContractState, world: IWorldDispatcher, 
         base_labor_units: u64, base_resources_per_cycle: u128, base_food_per_cycle: u128
     );
+
+    fn set_labor_auction(
+        self: @TContractState, world: IWorldDispatcher, 
+        decay_constant: u128, per_time_unit: u128, price_update_interval: u128
+    );
 }
 
 #[starknet::interface]

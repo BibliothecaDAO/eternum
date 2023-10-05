@@ -21,14 +21,14 @@ use core::array::{ArrayTrait, SpanTrait};
 fn setup() -> (IWorldDispatcher, IHyperstructureConfigDispatcher) {
     let world = spawn_eternum();
 
-    let hyperstructure_config_address 
+    let config_systems_address 
         = deploy_system(config_systems::TEST_CLASS_HASH);
 
-    let hyperstructure_config = IHyperstructureConfigDispatcher {
-        contract_address: hyperstructure_config_address
+    let hyperstructure_config_dispatcher = IHyperstructureConfigDispatcher {
+        contract_address: config_systems_address
     };
 
-    (world, hyperstructure_config)
+    (world, hyperstructure_config_dispatcher)
 }
 
 
@@ -36,7 +36,7 @@ fn setup() -> (IWorldDispatcher, IHyperstructureConfigDispatcher) {
 #[test]
 #[available_gas(3000000000000)]  
 fn test_create_hyperstructure() {
-    let (world, hyperstructure_config) = setup();
+    let (world, hyperstructure_config_dispatcher) = setup();
 
     starknet::testing::set_contract_address(
         contract_address_const::<'entity'>()
@@ -55,7 +55,7 @@ fn test_create_hyperstructure() {
 
 
     let hyperstructure_id 
-        = hyperstructure_config.create_hyperstructure(
+        = hyperstructure_config_dispatcher.create_hyperstructure(
             world,
             hyperstructure_type,
             initialization_resources.span(),

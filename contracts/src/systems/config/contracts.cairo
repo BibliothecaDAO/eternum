@@ -5,6 +5,7 @@
 mod config_systems {
     use eternum::alias::ID;
 
+    use eternum::models::labor_auction::LaborAuction;
     use eternum::models::config::{
         LaborCostResources, LaborCostAmount, LaborConfig,CapacityConfig, 
         RoadConfig, SpeedConfig, TravelConfig, WeightConfig,WorldConfig,
@@ -125,6 +126,39 @@ mod config_systems {
                     base_food_per_cycle
                 })
             );
+        }
+
+
+        fn set_labor_auction(
+            self: @ContractState, 
+            world: IWorldDispatcher, 
+            decay_constant: u128, 
+            per_time_unit: u128, 
+            price_update_interval: u128
+        ) {
+            let start_time = starknet::get_block_timestamp();
+
+            let mut zone: u8 = 1;
+
+            loop {
+                if zone > 10 {
+                    break;
+                }
+
+                set!(world, (
+                    LaborAuction {
+                        zone,
+                        decay_constant_mag: decay_constant,
+                        decay_constant_sign: false,
+                        per_time_unit,
+                        start_time,
+                        sold: 0,
+                        price_update_interval,
+                    }
+                ));
+
+                zone += 1;
+            };
         }
 
     }

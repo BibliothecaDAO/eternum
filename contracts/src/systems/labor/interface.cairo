@@ -1,6 +1,7 @@
 use dojo::world::IWorldDispatcher;
 
-trait ILabor<TContractState> {
+#[starknet::interface]
+trait ILaborSystems<TContractState> {
     fn build(
         self: @TContractState, 
         world: IWorldDispatcher, 
