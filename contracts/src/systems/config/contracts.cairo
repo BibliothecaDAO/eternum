@@ -197,11 +197,12 @@ mod config_systems {
             self: @ContractState,
             world: IWorldDispatcher,
             hyperstructure_type: u8,
-            ref initialization_resources: Span<(u8, u128)>,
-            ref construction_resources: Span<(u8, u128)>,
+            initialization_resources: Span<(u8, u128)>,
+            construction_resources: Span<(u8, u128)>,
             coord: Coord
         ) -> ID {
-
+            let mut initialization_resources = initialization_resources;
+            let mut construction_resources = construction_resources;
         
             let initialization_resource_count = initialization_resources.len();
             assert(initialization_resource_count > 0, 'resources must not be empty');
@@ -280,97 +281,3 @@ mod config_systems {
 
     }
 }
-
-
-
-
-// #[cfg(test)]
-// mod hyperstructure_tests {
-
-//     use eternum::models::hyperstructure::HyperStructure;
-//     use eternum::models::resources::ResourceCost;
-//     use eternum::models::position::{Position, Coord};
-//     use eternum::constants::ResourceTypes;
-    
-//     use eternum::utils::testing::spawn_eternum;
-    
-//     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
-//     use starknet::contract_address_const;
-
-//     use core::array::ArrayTrait;
-//     use core::serde::Serde;
-
-//     #[test]
-//     #[available_gas(3000000000000)]  
-//     fn test_define_hyperstructure() {
-//         let world = spawn_eternum();
-
-//         starknet::testing::set_contract_address(
-//             contract_address_const::<'entity'>()
-//         );
-
-//         let hyperstructure_type = 1_u8;
-//         let initialization_resources = array![
-//             (ResourceTypes::STONE, 10_u8), // 10 stone
-//             (ResourceTypes::WOOD, 13_u8)  // 13 wood
-//         ];
-//         let construction_resources = array![
-//             (ResourceTypes::STONE, 40_u8), // 40 stone
-//             (ResourceTypes::WOOD, 50_u8)  // 50 wood
-//         ];
-//         let hyperstructure_coord = Coord{ x:20, y:30 };
-
-
-//         let mut calldata = array![];
-//         Serde::serialize(@hyperstructure_type, ref calldata);
-//         Serde::serialize(@initialization_resources, ref calldata); 
-//         Serde::serialize(@construction_resources, ref calldata); 
-//         Serde::serialize(@hyperstructure_coord, ref calldata);
-//         let result = world.execute('DefineHyperStructure', calldata);
-//         let hyperstructure_id = *result[0];
-
-
-//         let hyperstructure = get!(world, hyperstructure_id, HyperStructure);
-//         assert(hyperstructure.hyperstructure_type == hyperstructure_type, 
-//                 'wrong hyperstructure_type value'
-//         );
-//         assert(hyperstructure.initialized_at == 0, 'wrong initialized_at value');
-//         assert(hyperstructure.completed_at == 0, 'wrong completed_at value');
-//         assert(hyperstructure.initialization_resource_count == 2, 'wrong resource count');
-//         assert(hyperstructure.construction_resource_count == 2, 'wrong resource count');
-
-//         let hyperstructure = get!(world, hyperstructure_id, HyperStructure);
-
-//         let hyperstructure_initialization_stone_cost = get!(world, (hyperstructure.initialization_resource_id, 0), ResourceCost);
-//         assert(hyperstructure_initialization_stone_cost.amount == 10, 'wrong amount value');
-//         assert(hyperstructure_initialization_stone_cost.resource_type == ResourceTypes::STONE, 
-//                 'wrong resource_type value'
-//         );
-
-
-//         let hyperstructure_initialization_wood_cost = get!(world, (hyperstructure.initialization_resource_id, 1), ResourceCost);
-//         assert(hyperstructure_initialization_wood_cost.amount == 13, 'wrong amount value');
-//         assert(hyperstructure_initialization_wood_cost.resource_type == ResourceTypes::WOOD, 
-//                 'wrong resource_type value'
-//         );
-
-//         let hyperstructure_construction_stone_cost = get!(world, (hyperstructure.construction_resource_id, 0), ResourceCost);
-//         assert(hyperstructure_construction_stone_cost.amount == 40, 'wrong amount value');
-//         assert(hyperstructure_construction_stone_cost.resource_type == ResourceTypes::STONE, 
-//                 'wrong resource_type value'
-//         );
-
-
-//         let hyperstructure_construction_wood_cost = get!(world, (hyperstructure.construction_resource_id, 1), ResourceCost);
-//         assert(hyperstructure_construction_wood_cost.amount == 50, 'wrong amount value');
-//         assert(hyperstructure_construction_wood_cost.resource_type == ResourceTypes::WOOD, 
-//                 'wrong resource_type value'
-//         );
-
-
-//         assert(hyperstructure.coord_x == hyperstructure_coord.x, 'wrong x value');
-//         assert(hyperstructure.coord_y == hyperstructure_coord.y, 'wrong y value');
-//     }
-
-// }

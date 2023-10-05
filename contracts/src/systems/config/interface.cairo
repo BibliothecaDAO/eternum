@@ -3,7 +3,7 @@ use eternum::models::position::Coord;
 
 use dojo::world::IWorldDispatcher;
 
-
+#[starknet::interface]
 trait IWorldConfig<TContractState> {
     fn set_world_config(
         self: @TContractState, world: IWorldDispatcher, 
@@ -11,7 +11,7 @@ trait IWorldConfig<TContractState> {
     );
 }
 
-
+#[starknet::interface]
 trait IWeightConfig<TContractState> {
     fn set_weight_config(
         self: @TContractState, world: IWorldDispatcher, 
@@ -19,7 +19,7 @@ trait IWeightConfig<TContractState> {
     );
 }
 
-
+#[starknet::interface]
 trait ILaborConfig<TContractState> {
     fn set_labor_cost_resources(
         self: @TContractState, world: IWorldDispatcher, 
@@ -37,7 +37,7 @@ trait ILaborConfig<TContractState> {
     );
 }
 
-
+#[starknet::interface]
 trait ITransportConfig<TContractState> {
     
     fn set_road_config(
@@ -57,12 +57,12 @@ trait ITransportConfig<TContractState> {
 }
 
 
-
+#[starknet::interface]
 trait IHyperstructureConfig<TContractState> {
     fn create_hyperstructure(
         self: @TContractState, world: IWorldDispatcher, 
-        hyperstructure_type: u8, ref initialization_resources: Span<(u8, u128)>, 
-        ref construction_resources: Span<(u8, u128)>, coord: Coord
-    ) -> ID ;
+        hyperstructure_type: u8, initialization_resources: Span<(u8, u128)>, 
+        construction_resources: Span<(u8, u128)>, coord: Coord
+    ) -> ID;
 
 }

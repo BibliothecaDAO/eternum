@@ -98,7 +98,7 @@ impl LaborAuctionImpl of LaborAuctionTrait {
 
 #[cfg(test)]
 mod tests {
-    use eternum::components::labor_auction::{
+    use eternum::models::labor_auction::{
         LaborAuction, LaborAuctionTrait, LinearVRGDATrait, LinearVRGDA
     };
 

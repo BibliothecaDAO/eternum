@@ -47,50 +47,12 @@ use eternum::models::trade::{
 };
 
 
-
-// systems
-use eternum::systems::test::create_realm::CreateRealm;
-use eternum::systems::caravan::create_free_transport_unit::CreateFreeTransportUnit;
-use eternum::systems::caravan::create_caravan::CreateCaravan;
-use eternum::systems::config::speed_config::SetSpeedConfig;
-use eternum::systems::config::travel_config::SetTravelConfig;
-use eternum::systems::config::capacity_config::SetCapacityConfig;
-use eternum::systems::config::world_config::SetWorldConfig;
-use eternum::systems::caravan::utils::GetAverageSpeed;
-use eternum::systems::order::make_fungible_order::MakeFungibleOrder;
-use eternum::systems::order::take_fungible_order::TakeFungibleOrder;
-use eternum::systems::order::cancel_fungible_order::CancelFungibleOrder;
-use eternum::systems::order::attach_caravan::AttachCaravan;
-use eternum::systems::order::claim_fungible_order::ClaimFungibleOrder;
-use eternum::systems::labor::build_labor::BuildLabor;
-use eternum::systems::labor::purchase_labor::PurchaseLabor;
-use eternum::systems::config::labor_config::SetLaborConfig;
-use eternum::systems::config::labor_config::SetLaborCostResources;
-use eternum::systems::config::labor_config::SetLaborCostAmount;
-use eternum::systems::config::hyperstructure_config::DefineHyperStructure;
-use eternum::systems::config::weight_config::SetWeightConfig;
-use eternum::systems::test::mint_resources::{MintResources, MintAllResources};
-use eternum::systems::labor::harvest_labor::HarvestLabor;
-use eternum::systems::road::create_road::CreateRoad;
-use eternum::systems::labor_auction::create_labor_auction::CreateLaborAuction;
-use eternum::systems::travel::Travel;
-use eternum::systems::resources::transfer_resources::TransferResources;
-use eternum::systems::hyperstructure::initialize_hyperstructure::InitializeHyperStructure;
-use eternum::systems::hyperstructure::complete_hyperstructure::CompleteHyperStructure;
-
-use dojo::{executor::executor, world::{world, IWorldDispatcher, IWorldDispatcherTrait}};
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::test_utils::spawn_test_world;
 
 use starknet::{
-    syscalls::deploy_syscall,
-    class_hash::Felt252TryIntoClassHash, 
-    get_caller_address, ClassHash
+    syscalls::deploy_syscall,ClassHash, ContractAddress
 };
-
-use traits::{Into, TryInto};
-use result::ResultTrait;
-use array::ArrayTrait;
-use option::OptionTrait;
 
 
 
@@ -133,40 +95,16 @@ fn spawn_eternum() -> IWorldDispatcher {
         hyper_structure::TEST_CLASS_HASH,
     ];
 
-    
-    let mut systems = array![
-        GetAverageSpeed::TEST_CLASS_HASH,
-        CreateFreeTransportUnit::TEST_CLASS_HASH,
-        CreateCaravan::TEST_CLASS_HASH,
-        SetSpeedConfig::TEST_CLASS_HASH,
-        SetCapacityConfig::TEST_CLASS_HASH,
-        SetWorldConfig::TEST_CLASS_HASH,
-        CreateRealm::TEST_CLASS_HASH,
-        MakeFungibleOrder::TEST_CLASS_HASH,
-        TakeFungibleOrder::TEST_CLASS_HASH,
-        CancelFungibleOrder::TEST_CLASS_HASH,
-        AttachCaravan::TEST_CLASS_HASH,
-        ClaimFungibleOrder::TEST_CLASS_HASH,
-        SetTravelConfig::TEST_CLASS_HASH,
-        BuildLabor::TEST_CLASS_HASH,
-        PurchaseLabor::TEST_CLASS_HASH,
-        SetLaborConfig::TEST_CLASS_HASH,
-        SetLaborCostResources::TEST_CLASS_HASH,
-        SetLaborCostAmount::TEST_CLASS_HASH,
-        MintResources::TEST_CLASS_HASH,
-        MintAllResources::TEST_CLASS_HASH,
-        HarvestLabor::TEST_CLASS_HASH,
-        SetWeightConfig::TEST_CLASS_HASH,
-        CreateRoad::TEST_CLASS_HASH,
-        CreateLaborAuction::TEST_CLASS_HASH,
-        DefineHyperStructure::TEST_CLASS_HASH,
-        InitializeHyperStructure::TEST_CLASS_HASH,
-        CompleteHyperStructure::TEST_CLASS_HASH,
-        Travel::TEST_CLASS_HASH,
-        TransferResources::TEST_CLASS_HASH,
-    ];
-    
+    spawn_test_world(components)
 
-    spawn_test_world(components, systems)
+}
 
+
+
+fn deploy_system(class_hash_felt: felt252) -> ContractAddress {
+    let (system_contract_address, _) = deploy_syscall(
+        class_hash_felt.try_into().unwrap(), 0, array![].span(), false
+    ).unwrap();
+
+    system_contract_address
 }
