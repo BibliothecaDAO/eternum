@@ -4,18 +4,18 @@
 
 #[system]
 mod MakeFungibleOrder {
-    use eternum::components::trade::FungibleEntities;
-    use eternum::components::resources::Resource;
+    use eternum::models::trade::FungibleEntities;
+    use eternum::models::resources::Resource;
     use eternum::alias::ID;
-    use eternum::components::owner::Owner;
-    use eternum::components::position::Position;
-    use eternum::components::realm::Realm;
-    use eternum::components::trade::{Trade, Status, TradeStatus, OrderResource};
-    use eternum::components::capacity::Capacity;
-    use eternum::components::metadata::MetaData;
-    use eternum::components::movable::{Movable, ArrivalTime};
-    use eternum::components::config::{WorldConfig, SpeedConfig, CapacityConfig};
-    use eternum::components::quantity::{Quantity, QuantityTracker};
+    use eternum::models::owner::Owner;
+    use eternum::models::position::Position;
+    use eternum::models::realm::Realm;
+    use eternum::models::trade::{Trade, Status, TradeStatus, OrderResource};
+    use eternum::models::capacity::Capacity;
+    use eternum::models::metadata::MetaData;
+    use eternum::models::movable::{Movable, ArrivalTime};
+    use eternum::models::config::{WorldConfig, SpeedConfig, CapacityConfig};
+    use eternum::models::quantity::{Quantity, QuantityTracker};
     use eternum::constants::{REALM_ENTITY_TYPE, WORLD_CONFIG_ID, FREE_TRANSPORT_ENTITY_TYPE};
 
     use traits::Into;
@@ -162,10 +162,10 @@ mod MakeFungibleOrder {
 
 #[cfg(test)]
 mod tests {
-    use eternum::components::resources::Resource;
-    use eternum::components::trade::FungibleEntities;
-    use eternum::components::owner::Owner;
-    use eternum::components::trade::{Trade, OrderResource};
+    use eternum::models::resources::Resource;
+    use eternum::models::trade::FungibleEntities;
+    use eternum::models::owner::Owner;
+    use eternum::models::trade::{Trade, OrderResource};
 
     use eternum::constants::ResourceTypes;
 

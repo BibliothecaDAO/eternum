@@ -6,8 +6,8 @@
 #[system]
 mod GetAverageSpeed {
     use eternum::alias::ID;
-    use eternum::components::quantity::Quantity;
-    use eternum::components::movable::Movable;
+    use eternum::models::quantity::Quantity;
+    use eternum::models::movable::Movable;
 
     use traits::Into;
     use box::BoxTrait;
@@ -56,7 +56,7 @@ mod GetAverageSpeed {
 #[cfg(test)]
 mod tests {
     use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
-    use eternum::components::position::Position;
+    use eternum::models::position::Position;
 
     // testing
     use eternum::utils::testing::spawn_eternum;

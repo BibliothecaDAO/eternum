@@ -1,22 +1,22 @@
-// components
-use eternum::components::owner::{owner, Owner};
-use eternum::components::realm::{realm, Realm};
-use eternum::components::resources::{resource, Resource};
-use eternum::components::resources::{resource_cost, ResourceCost};
-use eternum::components::position::{position, Position};
-use eternum::components::capacity::{capacity, Capacity};
-use eternum::components::metadata::{meta_data, MetaData};
-use eternum::components::age::{age, Age};
-use eternum::components::labor::{labor, Labor};
-use eternum::components::resources::{vault, Vault};
-use eternum::components::metadata::{foreign_key, ForeignKey};
-use eternum::components::trade::{fungible_entities, FungibleEntities};
-use eternum::components::road::{road, Road};
-use eternum::components::labor_auction::{labor_auction, LaborAuction};
-use eternum::components::hyperstructure::{hyper_structure, HyperStructure};
+// models
+use eternum::models::owner::{owner, Owner};
+use eternum::models::realm::{realm, Realm};
+use eternum::models::resources::{resource, Resource};
+use eternum::models::resources::{resource_cost, ResourceCost};
+use eternum::models::position::{position, Position};
+use eternum::models::capacity::{capacity, Capacity};
+use eternum::models::metadata::{meta_data, MetaData};
+use eternum::models::age::{age, Age};
+use eternum::models::labor::{labor, Labor};
+use eternum::models::resources::{vault, Vault};
+use eternum::models::metadata::{foreign_key, ForeignKey};
+use eternum::models::trade::{fungible_entities, FungibleEntities};
+use eternum::models::road::{road, Road};
+use eternum::models::labor_auction::{labor_auction, LaborAuction};
+use eternum::models::hyperstructure::{hyper_structure, HyperStructure};
 
 
-use eternum::components::config::{
+use eternum::models::config::{
     world_config, WorldConfig,
     speed_config, SpeedConfig,
     capacity_config, CapacityConfig,
@@ -28,76 +28,38 @@ use eternum::components::config::{
     road_config, RoadConfig
 
 };
-use eternum::components::quantity::{
+use eternum::models::quantity::{
     quantity, Quantity, 
     quantity_tracker, QuantityTracker
 };
-use eternum::components::movable::{
+use eternum::models::movable::{
     movable, Movable, 
     arrival_time, ArrivalTime
 };
-use eternum::components::caravan::{
+use eternum::models::caravan::{
     caravan, Caravan,
     caravan_members, CaravanMembers,
 };
-use eternum::components::trade::{
+use eternum::models::trade::{
     status, Status, 
     trade, Trade,
     order_resource, OrderResource,
 };
 
 
-
-// systems
-use eternum::systems::test::create_realm::CreateRealm;
-use eternum::systems::caravan::create_free_transport_unit::CreateFreeTransportUnit;
-use eternum::systems::caravan::create_caravan::CreateCaravan;
-use eternum::systems::config::speed_config::SetSpeedConfig;
-use eternum::systems::config::travel_config::SetTravelConfig;
-use eternum::systems::config::capacity_config::SetCapacityConfig;
-use eternum::systems::config::world_config::SetWorldConfig;
-use eternum::systems::caravan::utils::GetAverageSpeed;
-use eternum::systems::order::make_fungible_order::MakeFungibleOrder;
-use eternum::systems::order::take_fungible_order::TakeFungibleOrder;
-use eternum::systems::order::cancel_fungible_order::CancelFungibleOrder;
-use eternum::systems::order::attach_caravan::AttachCaravan;
-use eternum::systems::order::claim_fungible_order::ClaimFungibleOrder;
-use eternum::systems::labor::build_labor::BuildLabor;
-use eternum::systems::labor::purchase_labor::PurchaseLabor;
-use eternum::systems::config::labor_config::SetLaborConfig;
-use eternum::systems::config::labor_config::SetLaborCostResources;
-use eternum::systems::config::labor_config::SetLaborCostAmount;
-use eternum::systems::config::hyperstructure_config::DefineHyperStructure;
-use eternum::systems::config::weight_config::SetWeightConfig;
-use eternum::systems::test::mint_resources::{MintResources, MintAllResources};
-use eternum::systems::labor::harvest_labor::HarvestLabor;
-use eternum::systems::road::create_road::CreateRoad;
-use eternum::systems::labor_auction::create_labor_auction::CreateLaborAuction;
-use eternum::systems::travel::Travel;
-use eternum::systems::resources::transfer_resources::TransferResources;
-use eternum::systems::hyperstructure::initialize_hyperstructure::InitializeHyperStructure;
-use eternum::systems::hyperstructure::complete_hyperstructure::CompleteHyperStructure;
-
-use dojo::{executor::executor, world::{world, IWorldDispatcher, IWorldDispatcherTrait}};
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use dojo::test_utils::spawn_test_world;
 
 use starknet::{
-    syscalls::deploy_syscall,
-    class_hash::Felt252TryIntoClassHash, 
-    get_caller_address, ClassHash
+    syscalls::deploy_syscall,ClassHash, ContractAddress
 };
 
-use traits::{Into, TryInto};
-use result::ResultTrait;
-use array::ArrayTrait;
-use option::OptionTrait;
 
 
-
-// used to spawn a test world with all the components and systems registered
+// used to spawn a test world with all the models and systems registered
 fn spawn_eternum() -> IWorldDispatcher {
 
-    let mut components = array![
+    let mut models = array![
         owner::TEST_CLASS_HASH,
         movable::TEST_CLASS_HASH,
         quantity::TEST_CLASS_HASH,
@@ -133,40 +95,16 @@ fn spawn_eternum() -> IWorldDispatcher {
         hyper_structure::TEST_CLASS_HASH,
     ];
 
-    
-    let mut systems = array![
-        GetAverageSpeed::TEST_CLASS_HASH,
-        CreateFreeTransportUnit::TEST_CLASS_HASH,
-        CreateCaravan::TEST_CLASS_HASH,
-        SetSpeedConfig::TEST_CLASS_HASH,
-        SetCapacityConfig::TEST_CLASS_HASH,
-        SetWorldConfig::TEST_CLASS_HASH,
-        CreateRealm::TEST_CLASS_HASH,
-        MakeFungibleOrder::TEST_CLASS_HASH,
-        TakeFungibleOrder::TEST_CLASS_HASH,
-        CancelFungibleOrder::TEST_CLASS_HASH,
-        AttachCaravan::TEST_CLASS_HASH,
-        ClaimFungibleOrder::TEST_CLASS_HASH,
-        SetTravelConfig::TEST_CLASS_HASH,
-        BuildLabor::TEST_CLASS_HASH,
-        PurchaseLabor::TEST_CLASS_HASH,
-        SetLaborConfig::TEST_CLASS_HASH,
-        SetLaborCostResources::TEST_CLASS_HASH,
-        SetLaborCostAmount::TEST_CLASS_HASH,
-        MintResources::TEST_CLASS_HASH,
-        MintAllResources::TEST_CLASS_HASH,
-        HarvestLabor::TEST_CLASS_HASH,
-        SetWeightConfig::TEST_CLASS_HASH,
-        CreateRoad::TEST_CLASS_HASH,
-        CreateLaborAuction::TEST_CLASS_HASH,
-        DefineHyperStructure::TEST_CLASS_HASH,
-        InitializeHyperStructure::TEST_CLASS_HASH,
-        CompleteHyperStructure::TEST_CLASS_HASH,
-        Travel::TEST_CLASS_HASH,
-        TransferResources::TEST_CLASS_HASH,
-    ];
-    
+    spawn_test_world(models)
 
-    spawn_test_world(components, systems)
+}
 
+
+
+fn deploy_system(class_hash_felt: felt252) -> ContractAddress {
+    let (system_contract_address, _) = deploy_syscall(
+        class_hash_felt.try_into().unwrap(), 0, array![].span(), false
+    ).unwrap();
+
+    system_contract_address
 }

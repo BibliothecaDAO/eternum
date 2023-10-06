@@ -1,7 +1,7 @@
 #[system]
 mod CancelFungibleOrder {
-    use eternum::components::owner::Owner;
-    use eternum::components::trade::{Trade, Status, TradeStatus};
+    use eternum::models::owner::Owner;
+    use eternum::models::trade::{Trade, Status, TradeStatus};
 
     use eternum::systems::order::helpers::order;
 
@@ -39,11 +39,11 @@ mod CancelFungibleOrder {
 
 #[cfg(test)]
 mod tests {
-    use eternum::components::resources::Resource;
-    use eternum::components::trade::FungibleEntities;
-    use eternum::components::owner::Owner;
-    use eternum::components::movable::Movable;
-    use eternum::components::trade::{Trade, Status, TradeStatus, OrderResource};
+    use eternum::models::resources::Resource;
+    use eternum::models::trade::FungibleEntities;
+    use eternum::models::owner::Owner;
+    use eternum::models::movable::Movable;
+    use eternum::models::trade::{Trade, Status, TradeStatus, OrderResource};
     use eternum::systems::order::helpers::order;
 
 

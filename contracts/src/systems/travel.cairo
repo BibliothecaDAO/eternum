@@ -2,11 +2,11 @@
 mod Travel {
     
     use eternum::alias::ID;
-    use eternum::components::movable::{Movable, ArrivalTime};
-    use eternum::components::position::{Coord, CoordTrait, Position};
-    use eternum::components::owner::Owner;
-    use eternum::components::road::RoadImpl;
-    use eternum::components::config::RoadConfig;
+    use eternum::models::movable::{Movable, ArrivalTime};
+    use eternum::models::position::{Coord, CoordTrait, Position};
+    use eternum::models::owner::Owner;
+    use eternum::models::road::RoadImpl;
+    use eternum::models::config::RoadConfig;
 
     use eternum::constants::ROAD_CONFIG_ID;
 
@@ -69,12 +69,12 @@ mod Travel {
 
 #[cfg(test)]
 mod tests {
-    use eternum::components::resources::Resource;
-    use eternum::components::owner::Owner;
-    use eternum::components::position::{Coord, Position};
-    use eternum::components::movable::{Movable, ArrivalTime};
-    use eternum::components::config::RoadConfig;
-    use eternum::components::road::{Road, RoadImpl};
+    use eternum::models::resources::Resource;
+    use eternum::models::owner::Owner;
+    use eternum::models::position::{Coord, Position};
+    use eternum::models::movable::{Movable, ArrivalTime};
+    use eternum::models::config::RoadConfig;
+    use eternum::models::road::{Road, RoadImpl};
     
     
 

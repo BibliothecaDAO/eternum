@@ -3,7 +3,7 @@ mod ERC721Approve {
     use traits::{Into, TryInto};
     use starknet::contract_address::Felt252TryIntoContractAddress;
 
-    use super::super::components::TokenApproval;
+    use super::super::models::TokenApproval;
     use eternum::alias::ID;
 
     use dojo::world::Context;
@@ -22,8 +22,8 @@ mod ERC721TransferFrom {
     use traits::{Into, TryInto};
     use starknet::contract_address::Felt252TryIntoContractAddress;
 
-    use super::super::components::{TokenApproval, Balance};
-    use eternum::components::owner::Owner;
+    use super::super::models::{TokenApproval, Balance};
+    use eternum::models::owner::Owner;
     use eternum::alias::ID;
 
     use dojo::world::Context;
@@ -65,8 +65,8 @@ mod ERC721Mint {
     use starknet::contract_address::Felt252TryIntoContractAddress;
 
     use eternum::alias::ID;
-    use super::super::components::Balance;
-    use eternum::components::owner::Owner;
+    use super::super::models::Balance;
+    use eternum::models::owner::Owner;
 
     use dojo::world::Context;
 

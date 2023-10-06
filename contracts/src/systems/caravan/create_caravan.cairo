@@ -8,13 +8,13 @@
 #[system]
 mod CreateCaravan {
     use eternum::alias::ID;
-    use eternum::components::metadata::ForeignKey;
-    use eternum::components::caravan::CaravanMembers;
-    use eternum::components::quantity::{Quantity, QuantityTrait};
-    use eternum::components::position::Position;
-    use eternum::components::movable::Movable;
-    use eternum::components::capacity::Capacity;
-    use eternum::components::owner::Owner;
+    use eternum::models::metadata::ForeignKey;
+    use eternum::models::caravan::CaravanMembers;
+    use eternum::models::quantity::{Quantity, QuantityTrait};
+    use eternum::models::position::Position;
+    use eternum::models::movable::Movable;
+    use eternum::models::capacity::Capacity;
+    use eternum::models::owner::Owner;
 
     use traits::Into;
     use traits::TryInto;
@@ -130,12 +130,12 @@ mod CreateCaravan {
 mod tests {
 
     use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
-    use eternum::components::position::Position;
-    use eternum::components::caravan::CaravanMembers;
-    use eternum::components::metadata::ForeignKey;
-    use eternum::components::movable::Movable;
-    use eternum::components::capacity::Capacity;
-    use eternum::components::owner::Owner;
+    use eternum::models::position::Position;
+    use eternum::models::caravan::CaravanMembers;
+    use eternum::models::metadata::ForeignKey;
+    use eternum::models::movable::Movable;
+    use eternum::models::capacity::Capacity;
+    use eternum::models::owner::Owner;
 
     // testing
     use eternum::utils::testing::spawn_eternum;
