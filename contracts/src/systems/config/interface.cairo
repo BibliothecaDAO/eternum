@@ -11,11 +11,20 @@ trait IWorldConfig<TContractState> {
     );
 }
 
+
 #[starknet::interface]
 trait IWeightConfig<TContractState> {
     fn set_weight_config(
         self: @TContractState, world: IWorldDispatcher, 
-        entity_type: u128,  weight_gram: u128
+        weight_config_id: u128, entity_type: u128,  weight_gram: u128
+    );
+}
+
+#[starknet::interface]
+trait ICapacityConfig<TContractState> {
+    fn set_capacity_config(
+        self: @TContractState, world: IWorldDispatcher, 
+        entity_type: u128, weight_gram: u128
     );
 }
 

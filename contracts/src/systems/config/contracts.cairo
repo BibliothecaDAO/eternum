@@ -1,6 +1,3 @@
-
-
-
 #[system]
 mod config_systems {
     use eternum::alias::ID;
@@ -12,8 +9,8 @@ mod config_systems {
     };
 
     use eternum::systems::config::interface::{
-        IWorldConfig, IWeightConfig, ILaborConfig, ITransportConfig, 
-        IHyperstructureConfig
+        IWorldConfig, IWeightConfig, ICapacityConfig, ILaborConfig, 
+        ITransportConfig, IHyperstructureConfig
     };
 
     use eternum::constants::{
@@ -24,7 +21,6 @@ mod config_systems {
     use eternum::models::resources::ResourceCost;
     use eternum::models::position::{Position, Coord};
     
-
 
 
     #[external(v0)]
@@ -47,10 +43,30 @@ mod config_systems {
 
 
     #[external(v0)]
+    impl CapacityConfigImpl of ICapacityConfig<ContractState> {
+        fn set_capacity_config(
+            self: @ContractState, 
+            world: IWorldDispatcher, 
+            entity_type: u128, 
+            weight_gram: u128
+        ) {
+            set!(world, (
+                CapacityConfig {
+                    config_id: WORLD_CONFIG_ID,
+                    carry_capacity_config_id: entity_type,
+                    entity_type,
+                    weight_gram,
+                }
+            ));
+        }
+    }
+
+    #[external(v0)]
     impl WeightConfigImpl of IWeightConfig<ContractState> {
         fn set_weight_config(
             self: @ContractState, 
             world: IWorldDispatcher, 
+            weight_config_id: u128, 
             entity_type: u128, 
             weight_gram: u128
         ) {
@@ -58,7 +74,7 @@ mod config_systems {
                 world,
                 (WeightConfig {
                     config_id: WORLD_CONFIG_ID,
-                    weight_config_id: entity_type,
+                    weight_config_id,
                     entity_type,
                     weight_gram,
                 })
