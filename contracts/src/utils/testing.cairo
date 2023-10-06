@@ -1,4 +1,4 @@
-// components
+// models
 use eternum::models::owner::{owner, Owner};
 use eternum::models::realm::{realm, Realm};
 use eternum::models::resources::{resource, Resource};
@@ -56,10 +56,10 @@ use starknet::{
 
 
 
-// used to spawn a test world with all the components and systems registered
+// used to spawn a test world with all the models and systems registered
 fn spawn_eternum() -> IWorldDispatcher {
 
-    let mut components = array![
+    let mut models = array![
         owner::TEST_CLASS_HASH,
         movable::TEST_CLASS_HASH,
         quantity::TEST_CLASS_HASH,
@@ -95,7 +95,7 @@ fn spawn_eternum() -> IWorldDispatcher {
         hyper_structure::TEST_CLASS_HASH,
     ];
 
-    spawn_test_world(components)
+    spawn_test_world(models)
 
 }
 
