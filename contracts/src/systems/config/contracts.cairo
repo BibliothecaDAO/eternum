@@ -66,7 +66,6 @@ mod config_systems {
         fn set_weight_config(
             self: @ContractState, 
             world: IWorldDispatcher, 
-            weight_config_id: u128, 
             entity_type: u128, 
             weight_gram: u128
         ) {
@@ -74,7 +73,7 @@ mod config_systems {
                 world,
                 (WeightConfig {
                     config_id: WORLD_CONFIG_ID,
-                    weight_config_id,
+                    weight_config_id: entity_type,
                     entity_type,
                     weight_gram,
                 })

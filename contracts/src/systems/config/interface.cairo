@@ -16,7 +16,7 @@ trait IWorldConfig<TContractState> {
 trait IWeightConfig<TContractState> {
     fn set_weight_config(
         self: @TContractState, world: IWorldDispatcher, 
-        weight_config_id: u128, entity_type: u128,  weight_gram: u128
+        entity_type: u128,  weight_gram: u128
     );
 }
 
