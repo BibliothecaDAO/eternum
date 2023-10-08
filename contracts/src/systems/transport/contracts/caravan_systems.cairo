@@ -16,7 +16,12 @@ mod caravan_systems {
 
     #[external(v0)]
     impl CaravanSystemsImpl of ICaravanSystems<ContractState>{
-
+        /// Create a caravan entity
+        ///
+        /// # Arguments
+        ///
+        /// * `entity_ids` - The list of transport units used to create the caravan
+        ///
         fn create(self: @ContractState, world: IWorldDispatcher, entity_ids: Array<ID>) -> ID {
             // speed
             let mut total_speed: u128 = 0_u128;
@@ -27,9 +32,9 @@ mod caravan_systems {
             // get key to write each entity of the caravan
             let entities_key = world.uuid();
             // get caravan id
-            let caravan_id = world.uuid();
+            let caravan_id: ID = world.uuid().into();
 
-            let mut entity_position: Position = Position { entity_id: caravan_id.into(), x: 0, y: 0 };
+            let mut entity_position: Position = Position { entity_id: caravan_id, x: 0, y: 0 };
 
             let caller = starknet::get_caller_address();
 
@@ -103,31 +108,31 @@ mod caravan_systems {
             // set the caravan entity
             set!(world, (
                     Owner {
-                        entity_id: caravan_id.into(), 
+                        entity_id: caravan_id, 
                         address: caller, 
                     }, 
                     Movable {
-                        entity_id: caravan_id.into(), 
+                        entity_id: caravan_id, 
                         sec_per_km: average_speed, 
                         blocked: false, 
                     }, 
                     Capacity {
-                        entity_id: caravan_id.into(), 
+                        entity_id: caravan_id, 
                         weight_gram: total_capacity, 
                     }, 
                     CaravanMembers {
-                        entity_id: caravan_id.into(), 
+                        entity_id: caravan_id, 
                         key: entities_key.into(), 
                         count: length
                     }, 
                     Position {
-                        entity_id: caravan_id.into(), 
+                        entity_id: caravan_id, 
                         x: entity_position.x, 
                         y: entity_position.y
                     }
                 )
             );
-            caravan_id.into()
+            caravan_id
         }
     }
 }

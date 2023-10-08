@@ -12,6 +12,14 @@ mod resource_systems {
 
     #[external(v0)]
     impl ResourceSystemsImpl of IResourceSystems<ContractState> {
+        /// Transfer resources from one entity to another.
+        ///
+        /// # Arguments
+        ///
+        /// * `sending_entity_id` - The id of the entity sending the resources.
+        /// * `receiving_entity_id` - The id of the entity receiving the resources.
+        /// * `resources` - The resources to transfer.  
+        ///      
         fn transfer(
             self: @ContractState, world: IWorldDispatcher, sending_entity_id: ID, 
             receiving_entity_id: ID, resources: Span<(u8, u128)>

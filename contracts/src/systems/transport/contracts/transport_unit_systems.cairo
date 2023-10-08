@@ -24,7 +24,17 @@ mod transport_unit_systems {
 
     #[external(v0)]
     impl TransportUnitSystemsImpl of ITransportUnitSystems<ContractState>{
-    
+
+        /// Creates a new free transport unit.
+        ///
+        /// Transport units are the basic units of transports in 
+        /// the game which can be combined to create a caravan.
+        ///
+        /// # Arguments
+        ///
+        /// * `entity_id` - The id of the realm to create the transport unit in.
+        /// * `quantity` - The number of transport units to create.
+        ///
         fn create_free_unit(
             self: @ContractState, world: IWorldDispatcher,
              entity_id: u128, quantity: u128

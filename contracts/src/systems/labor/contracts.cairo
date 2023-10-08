@@ -23,6 +23,27 @@ mod labor_systems {
     
     #[external(v0)]
     impl LaborSystemsImpl of ILaborSystems<ContractState> {
+        /// Builds labor for a particular resource on a realm
+        ///
+        /// This function is called when a player wants to build labor 
+        /// for a particular resource on their realm. In order to call this
+        /// function, the realm must have enough of some other resource type used 
+        /// to pay for it. for example, if you want to build labor for gold, 
+        /// you need to have enough some other resource (e.g `labor_gold`) to pay for it.
+        /// This other resource can be gotten by purchasing it from the labor auction 
+        /// as defined in the `purchase` system below.
+        ///
+        ///
+        /// # Arguments
+        ///
+        /// * `realm_id` - The realm id
+        /// * `resource_type` - The resource type (e.g fish, wheat, gold etc)
+        /// * `labor_units` - The number of labor units to build
+        /// * `multiplier` - The multiplier for the labor units. 
+        ///     Note that multiplier can only be greater than 1 when it used 
+        ///     for food (fish and wheat). say for example the realm has 3 rivers,
+        ///     then the multiplier can be 1, 2 or 3. 
+        ///
         fn build(
                 self: @ContractState, 
                 world: IWorldDispatcher, 
@@ -144,8 +165,22 @@ mod labor_systems {
             }
 
 
-
-
+            /// Harvests a particular resource on a realm
+            ///
+            /// This function is called when a player wants to harvest a particular resource
+            /// on their realm. In order to call this function, the realm must have previously
+            /// built labor for that resource. The amount harvested will be based on the
+            /// amount of labor built and the percentage of the harvest cycle that has passed.
+            ///
+            /// For example, if the player has built labor for fish and the total harvestable 
+            /// at the end of the cycle is 100, if the cycle is 50% complete( i.e half the amount of time
+            /// required for the cycle has passed), then the player will be able to harvest 50 fish.
+            ///
+            /// # Arguments
+            ///
+            /// * `realm_id` - The realm id
+            /// * `resource_type` - The resource type (e.g fish, wheat, gold etc)
+            ///
             fn harvest(self: @ContractState, world: IWorldDispatcher, realm_id: u128, resource_type: u8) {
                 let player_id: ContractAddress = starknet::get_caller_address();
                 let (realm, owner) = get!(world, realm_id, (Realm, Owner));
@@ -245,6 +280,21 @@ mod labor_systems {
 
 
 
+
+            /// Purchases labor for a particular resource on a realm
+            ///
+            /// This function is called when a player wants to purchase resources
+            /// that can be used to build labor for a particular resource on their realm.
+            /// For example, if you want to build labor for gold, you need to have enough
+            /// some other resource (e.g `labor_gold`) to pay for it. This other resource
+            /// can be gotten by purchasing it from the labor auction as defined here.
+            ///
+            /// # Arguments
+            ///
+            /// * `entity_id` - The realm id
+            /// * `resource_type` - The resource type (e.g fish, wheat, gold etc)
+            /// * `labor_units` - The number of labor units to build
+            ///
             fn purchase(
                 self: @ContractState, 
                 world: IWorldDispatcher, 

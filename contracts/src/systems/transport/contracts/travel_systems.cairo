@@ -18,6 +18,18 @@ mod travel_systems {
     #[external(v0)]
     impl TravelSystemsImpl of ITravelSystems<ContractState> {
 
+        /// Travel to a destination
+        ///
+        /// This system can be called to move an entity from
+        /// its current location to another coordinate on the map. It 
+        //  is however crucial that the entity has all the necessary 
+        //  models or components allowing it to move (i.e it must be movable)
+        ///
+        /// # Arguments
+        ///
+        /// * `travelling_entity_id` - The ID of the entity that is travelling
+        /// * `destination_coord` - The coordinate to travel to
+        ///
         fn travel(
             self: @ContractState, world: IWorldDispatcher, 
             travelling_entity_id: ID, destination_coord: Coord

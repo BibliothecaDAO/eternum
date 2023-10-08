@@ -16,6 +16,17 @@ mod road_systems {
     #[external(v0)]
     impl RoadSystemsImpl of IRoadSystems<ContractState> {
 
+        /// Create a road between two coordinates on the map.
+        ///
+        /// Note: when you creat a road from A -> B, 
+        ///       you also automatically create a road from B -> A. 
+        ///
+        /// # Arguments
+        ///
+        /// * `entity_id` - The id of the entity creating the road.
+        /// * `start_coord` - The starting coordinate of the road.
+        /// * `end_coord` - The ending coordinate of the road.
+        /// * `usage_count` - The number of times the road can be used.
         fn create(
             self:@ContractState, world: IWorldDispatcher, 
             entity_id: u128, start_coord: Coord, end_coord: Coord, usage_count: usize
