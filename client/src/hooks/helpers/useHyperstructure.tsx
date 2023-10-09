@@ -1,8 +1,8 @@
 import { HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
-import { Position } from "../../types";
+import { Position, UIPosition } from "../../types";
 import hyperstructureData from "../../data/hyperstructures.json";
-import { getEntityIdFromKeys } from "../../utils/utils";
+import { getContractPositionFromRealPosition, getEntityIdFromKeys } from "../../utils/utils";
 
 export interface HyperStructureInterface {
   hyperstructureId: number;
@@ -19,6 +19,7 @@ export interface HyperStructureInterface {
   initialized: boolean;
   completed: boolean;
   position: Position;
+  uiPosition: UIPosition;
 }
 
 export const useHyperstructure = () => {
@@ -28,7 +29,8 @@ export const useHyperstructure = () => {
     },
   } = useDojo();
 
-  const getHyperstructure = (orderId: number, position: Position): HyperStructureInterface | undefined => {
+  const getHyperstructure = (orderId: number, uiPosition: UIPosition): HyperStructureInterface | undefined => {
+    const position = getContractPositionFromRealPosition({ x: uiPosition.x, y: uiPosition.z });
     const hypestructureId = runQuery([HasValue(HyperStructure, { coord_x: position.x, coord_y: position.y })]);
 
     if (hypestructureId.size > 0) {
@@ -71,6 +73,7 @@ export const useHyperstructure = () => {
           initialized: hyperstructure.initialized_at > 0,
           completed: hyperstructure.completed_at > 0,
           position,
+          uiPosition,
         };
       }
     }

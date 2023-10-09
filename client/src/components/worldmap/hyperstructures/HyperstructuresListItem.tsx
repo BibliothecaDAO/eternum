@@ -4,22 +4,25 @@ import { ReactComponent as Map } from "../../../assets/icons/common/map.svg";
 import { orderNameDict, orders } from "../../../constants/orders";
 import useUIStore from "../../../hooks/store/useUIStore";
 import ProgressBar from "../../../elements/ProgressBar";
-import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
+import { HyperStructureInterface } from "../../../hooks/helpers/useHyperstructure";
 import clsx from "clsx";
 import { getContractPositionFromRealPosition } from "../../../utils/utils";
+import { UIPosition } from "../../../types";
 
 type HyperstructuresListItemProps = {
+  hyperstructure: HyperStructureInterface | undefined;
   order: number;
-  coords: { x: number; y: number; z: number };
+  coords: UIPosition | undefined;
   onFeed?: () => void;
 };
 
-export const HyperstructuresListItem = ({ order, coords, onFeed = undefined }: HyperstructuresListItemProps) => {
+export const HyperstructuresListItem = ({
+  hyperstructure,
+  order,
+  coords,
+  onFeed = undefined,
+}: HyperstructuresListItemProps) => {
   const moveCameraToTarget = useUIStore((state) => state.moveCameraToTarget);
-
-  const { getHyperstructure } = useHyperstructure();
-
-  const hyperstructure = getHyperstructure(order, getContractPositionFromRealPosition({ x: coords.x, y: coords.z }));
 
   return (
     <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold">
@@ -32,7 +35,7 @@ export const HyperstructuresListItem = ({ order, coords, onFeed = undefined }: H
         <div className=" text-gold flex ml-auto ">
           <Button
             onClick={() => {
-              moveCameraToTarget(coords);
+              moveCameraToTarget(coords as any);
             }}
             variant="outline"
             className="p-1 !h-4 text-xxs !rounded-md"
