@@ -6,6 +6,7 @@ import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { MarketInterface, useTrade } from "../../../../hooks/helpers/useTrade";
 import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
+import { WEIGHT_PER_DONKEY_KG } from "../../../../constants/travel";
 
 type AcceptOfferPopupProps = {
   onClose: () => void;
@@ -94,7 +95,7 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
   }, [selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
 
   useEffect(() => {
-    if (multiplyByPrecision(donkeysCount * 100) >= resourceWeight) {
+    if (multiplyByPrecision(donkeysCount * WEIGHT_PER_DONKEY_KG) >= resourceWeight) {
       setHasEnoughDonkeys(true);
     } else {
       setHasEnoughDonkeys(false);

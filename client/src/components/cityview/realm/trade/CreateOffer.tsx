@@ -22,6 +22,7 @@ import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 import { useTrade } from "../../../../hooks/helpers/useTrade";
 import { SelectRealmPanel } from "../SelectRealmPanel";
 import clsx from "clsx";
+import { DONKEYS_PER_CITY, WEIGHT_PER_DONKEY_KG } from "../../../../constants/travel";
 
 type CreateOfferPopupProps = {
   onClose: () => void;
@@ -118,7 +119,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   }, [step, selectedCaravan, hasEnoughDonkeys, selectedResourceIdsGet, selectedResourceIdsGive, isNewCaravan]);
 
   useEffect(() => {
-    setHasEnoughDonkeys(donkeysCount * 100 >= resourceWeight);
+    setHasEnoughDonkeys(donkeysCount * WEIGHT_PER_DONKEY_KG >= resourceWeight);
   }, [donkeysCount, resourceWeight]);
 
   return (
@@ -447,9 +448,9 @@ export const SelectCaravanPanel = ({
   const donkeysLeft = useMemo(() => {
     const realmDonkeysCount = getRealmDonkeysCount(realmEntityId);
     if (realmDonkeysCount && realm) {
-      return realm?.cities * 100 - realmDonkeysCount;
+      return realm?.cities * DONKEYS_PER_CITY - realmDonkeysCount;
     } else {
-      return (realm?.cities || 0) * 100;
+      return (realm?.cities || 0) * DONKEYS_PER_CITY;
     }
   }, [realm]);
 
@@ -557,7 +558,7 @@ export const SelectCaravanPanel = ({
           <div className="flex mb-1 text-xs text-center text-white">
             Caravan Capacity{" "}
             <div className={`ml-1 text-${hasEnoughDonkeys ? "order-brilliance" : "danger"}`}>{`${
-              donkeysCount * 100
+              donkeysCount * WEIGHT_PER_DONKEY_KG
             }kg`}</div>
           </div>
           {!hasEnoughDonkeys && (
