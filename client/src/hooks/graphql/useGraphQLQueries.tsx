@@ -423,14 +423,14 @@ export const useSyncWorld = (): { loading: boolean } => {
             // Fixed the template literal syntax here
             const queryBuilder = `
               query SyncWorld {
-                entities: ${componentName.toLowerCase()}Components(${cursor ? `after: "${cursor}"` : ""} first: 100) {
+                entities: ${componentName.toLowerCase()}Models(${cursor ? `after: "${cursor}"` : ""} first: 100) {
                   edges {
                     cursor
                     node {
                       entity {
                         keys
                         id
-                        components {
+                        models {
                           ... on ${componentName} {
                             __typename
                             ${fields}
