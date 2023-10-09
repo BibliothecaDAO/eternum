@@ -12,6 +12,20 @@ mod hyperstructure_systems {
     #[external(v0)]
     impl HyperstructureSystemsImpl of IHyperstructureSystems<ContractState> {
 
+        /// Initializes a hyperstructure.
+        ///
+        /// This initializes a hyperstructure after it has been created 
+        /// by an admin (see config_systems for how it is created). It first 
+        /// ensures that the caller has the appropriate amount of resources
+        /// to initialize the hyperstructure. Then it burns the resources
+        /// from the caller and sets the hyperstructure as initialized, as
+        /// well as adding it to the map by setting its position.
+        ///
+        /// # Arguments
+        ///
+        /// * `entity_id` - The entity id of the hyperstructure.
+        /// * `hyperstructure_id` - The hyperstructure id.
+        ///
         fn initialize(self: @ContractState, world: IWorldDispatcher, entity_id:ID, hyperstructure_id: ID) {   
             
             // todo@credence: use entity_id to check that realm is in order
@@ -80,8 +94,16 @@ mod hyperstructure_systems {
         }
 
 
-
-
+        /// Completes a hyperstructure.
+        ///
+        /// it ensures that the caller has the appropriate amount of resources
+        /// to complete the hyperstructure. Then it burns the resources
+        /// from the caller and sets the hyperstructure as completed.
+        ///
+        /// # Arguments
+        ///
+        /// * `hyperstructure_id` - The hyperstructure id.
+        ///
         fn complete(self: @ContractState, world: IWorldDispatcher, hyperstructure_id: ID) {
     
             let hyperstructure = get!(world, hyperstructure_id, HyperStructure);

@@ -1,87 +1,4 @@
-#[system]
-mod TransferResources {
-    use eternum::alias::ID;
-    use eternum::models::resources::Resource;
-    use eternum::models::owner::Owner;
-    use eternum::models::position::Position;
-    use eternum::models::quantity::{Quantity, QuantityTrait};
-    use eternum::models::capacity::Capacity;
-    use eternum::models::config::WeightConfigImpl;
-
-    use dojo::world::Context;
-
-    use core::traits::Into;
-    use core::array::SpanTrait;
-
-    fn execute(ctx: Context, sending_entity_id: ID, receiving_entity_id: ID, mut resources: Span<(u8, u128)>) {
-        
-        assert(sending_entity_id != receiving_entity_id, 'transfer to self');
-        assert(resources.len() != 0, 'no resource to transfer');
-
-        let sending_entity_owner = get!(ctx.world, sending_entity_id, Owner);
-        assert(sending_entity_owner.address == ctx.origin, 'not owner of entity id');
-        
-        // compare positions
-        let sending_entity_position = get!(ctx.world, sending_entity_id, Position);
-        let receiving_entity_position = get!(ctx.world, receiving_entity_id, Position);
-
-        assert(receiving_entity_position.x !=  0, 'entity position mismatch');
-        assert(receiving_entity_position.y != 0, 'entity position mismatch');
-
-        assert(receiving_entity_position.x == sending_entity_position.x, 'entity position mismatch');
-        assert(receiving_entity_position.y == sending_entity_position.y, 'entity position mismatch');
-       
-        // get receiving entity's total capacity
-        let receiving_entity_capacity = get!(ctx.world, receiving_entity_id, Capacity);
-        let mut receiving_entity_total_capacity = 0;
-        if receiving_entity_capacity.weight_gram != 0 {
-            let receiving_entity_quantity = get!(ctx.world, receiving_entity_id, Quantity );
-            receiving_entity_total_capacity = receiving_entity_capacity.weight_gram * receiving_entity_quantity.get_value();
-        }
-
-
-        let mut total_weight = 0;
-        loop {
-            match resources.pop_front() {
-                Option::Some((resource_type, resource_amount)) => {
-                    let (resource_type, resource_amount) = (*resource_type, *resource_amount);
-                    assert(resource_amount != 0, 'resource transfer amount is 0');
-
-                    let sending_entity_resource = get!(ctx.world, (sending_entity_id, resource_type) , Resource);  
-                    assert(sending_entity_resource.balance >= resource_amount, 'insufficient balance');
-
-                    let receiving_entity_resource = get!(ctx.world, (receiving_entity_id, resource_type) , Resource);
-                    set!(ctx.world, (
-                        Resource { 
-                            entity_id: sending_entity_id, 
-                            resource_type: resource_type, 
-                            balance: sending_entity_resource.balance - resource_amount
-                        },
-                        Resource { 
-                            entity_id: receiving_entity_id, 
-                            resource_type: resource_type, 
-                            balance: receiving_entity_resource.balance + resource_amount
-                        }
-                    ));
-                    
-                    total_weight += WeightConfigImpl::get_weight(
-                        ctx.world, resource_type, resource_amount
-                    );
-                },
-                Option::None(_) => {break;}
-            };
-        };
-
-        // ensure receiving entity has adequate capacity
-        if receiving_entity_total_capacity != 0 {
-            assert(receiving_entity_total_capacity >= total_weight, 'capacity not enough');
-        }
-    }   
-}
-
-
-#[cfg(test)]
-mod tests {
+mod resource_systems_tests {
     use eternum::models::resources::Resource;
     use eternum::models::owner::Owner;
     use eternum::models::position::Position;    
@@ -92,21 +9,42 @@ mod tests {
     use eternum::constants::ResourceTypes;
     use eternum::constants::WORLD_CONFIG_ID;
 
+    use eternum::systems::resources::contracts::resource_systems;
+    use eternum::systems::resources::interface::{
+        IResourceSystemsDispatcher, 
+        IResourceSystemsDispatcherTrait
+    };
 
-    use eternum::utils::testing::spawn_eternum;
+
+    use eternum::utils::testing::{spawn_eternum, deploy_system};
 
     use dojo::world::{ IWorldDispatcher, IWorldDispatcherTrait};
     use starknet::contract_address_const;
 
     use core::traits::Into;
-    use core::serde::Serde;
+
+
+    fn setup() -> (IWorldDispatcher, IResourceSystemsDispatcher) {
+        let world = spawn_eternum();
+
+        let resource_systems_address 
+            = deploy_system(resource_systems::TEST_CLASS_HASH);
+
+        let resource_systems_dispatcher = IResourceSystemsDispatcher {
+            contract_address: resource_systems_address
+        };
+
+        (world, resource_systems_dispatcher)
+    }
+
 
 
     #[test]
     #[available_gas(30000000000000)]
     fn test_transfer_to_entity() {
+
+        let (world, resource_systems_dispatcher) = setup();
         
-        let world = spawn_eternum();
         // call as executor
         starknet::testing::set_contract_address(world.executor());
         
@@ -161,14 +99,16 @@ mod tests {
         // transfer resources
         starknet::testing::set_contract_address(contract_address_const::<'sending_entity'>());
 
-        let mut calldata = array![];
-        Serde::serialize(@sending_entity_id, ref calldata);
-        Serde::serialize(@receiving_entity_id, ref calldata);
-        Serde::serialize(@array![
-            (ResourceTypes::STONE, 400),
-            (ResourceTypes::WOOD, 700),
-        ].span(), ref calldata);
-        world.execute('TransferResources', calldata);
+        resource_systems_dispatcher.transfer(
+            world, 
+            sending_entity_id.into(), 
+            receiving_entity_id.into(), 
+            array![
+                (ResourceTypes::STONE, 400),
+                (ResourceTypes::WOOD, 700),
+            ].span()
+        );
+
 
         
         // verify resource balances
@@ -189,10 +129,11 @@ mod tests {
 
     #[test]
     #[available_gas(30000000000000)]
-    #[should_panic(expected: ('capacity not enough','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED' ))]
+    #[should_panic(expected: ('capacity not enough','ENTRYPOINT_FAILED' ))]
     fn test_not_enough_capacity() {
         
-        let world = spawn_eternum();
+        let (world, resource_systems_dispatcher) = setup();
+
         // call as executor
         starknet::testing::set_contract_address(world.executor());
 
@@ -268,17 +209,20 @@ mod tests {
         // transfer resources 
         starknet::testing::set_contract_address(contract_address_const::<'sending_entity'>());
 
-        let mut calldata = array![];
-        Serde::serialize(@sending_entity_id, ref calldata);
-        Serde::serialize(@receiving_entity_id, ref calldata);
-        Serde::serialize(@array![
-            (ResourceTypes::STONE, 400),
-            (ResourceTypes::WOOD, 700),
-        ].span(), ref calldata);
-
+       
         // should fail because total capacity 
-        // is 10,000 and total weight is 11,000
-        world.execute('TransferResources', calldata);
+        // is 10,000 and total weight is 11,000 
+        resource_systems_dispatcher.transfer(
+            world, 
+            sending_entity_id.into(), 
+            receiving_entity_id.into(), 
+            array![
+                (ResourceTypes::STONE, 400),
+                (ResourceTypes::WOOD, 700),
+            ].span()
+        );
+
+
     }
 
 
@@ -287,25 +231,23 @@ mod tests {
 
     #[test]
     #[available_gas(30000000000000)]
-    #[should_panic(expected: ('not owner of entity id','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED' ))]
+    #[should_panic(expected: ('not owner of entity id','ENTRYPOINT_FAILED' ))]
     fn test_not_owner() {
             
-        let world = spawn_eternum();
+        let (world, resource_systems_dispatcher) = setup();
             
         // transfer resources 
         starknet::testing::set_contract_address(contract_address_const::<'unknown'>());
 
-        let mut calldata = array![];
-        Serde::serialize(@1, ref calldata);
-        Serde::serialize(@2, ref calldata);
-        Serde::serialize(@array![
-            (ResourceTypes::STONE, 400),
-            (ResourceTypes::WOOD, 700),
-        ].span(), ref calldata);
-
-        // should fail because total capacity 
-        // is 10,000 and total weight is 11,000
-        world.execute('TransferResources', calldata);
+        resource_systems_dispatcher.transfer(
+            world, 
+            1, 
+            2, 
+            array![
+                (ResourceTypes::STONE, 400),
+                (ResourceTypes::WOOD, 700),
+            ].span()
+        );
     }
 
 
@@ -313,9 +255,10 @@ mod tests {
 
     #[test]
     #[available_gas(30000000000000)]
-    #[should_panic(expected: ('entity position mismatch','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED' ))]
+    #[should_panic(expected: ('entity position mismatch','ENTRYPOINT_FAILED' ))]
     fn test_entity_position_mismatch() {
-         let world = spawn_eternum();
+        let (world, resource_systems_dispatcher) = setup();
+
         // call as executor
         starknet::testing::set_contract_address(world.executor());
         
@@ -348,14 +291,15 @@ mod tests {
         // transfer resources
         starknet::testing::set_contract_address(contract_address_const::<'sending_entity'>());
 
-        let mut calldata = array![];
-        Serde::serialize(@sending_entity_id, ref calldata);
-        Serde::serialize(@receiving_entity_id, ref calldata);
-        Serde::serialize(@array![
-            (ResourceTypes::STONE, 400),
-            (ResourceTypes::WOOD, 700),
-        ].span(), ref calldata);
-        world.execute('TransferResources', calldata);
+        resource_systems_dispatcher.transfer(
+            world, 
+            sending_entity_id.into(), 
+            receiving_entity_id.into(), 
+            array![
+                (ResourceTypes::STONE, 400),
+                (ResourceTypes::WOOD, 700),
+            ].span()
+        );
         
     }
 
@@ -365,10 +309,11 @@ mod tests {
 
     #[test]
     #[available_gas(30000000000000)]
-    #[should_panic(expected: ('resource transfer amount is 0','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED' ))]
+    #[should_panic(expected: ('resource transfer amount is 0','ENTRYPOINT_FAILED' ))]
     fn test_zero_transfer_amount() {
         
-        let world = spawn_eternum();
+        let (world, resource_systems_dispatcher) = setup();
+
         // call as executor
         starknet::testing::set_contract_address(world.executor());
 
@@ -422,16 +367,15 @@ mod tests {
         
         // transfer resources 
         starknet::testing::set_contract_address(contract_address_const::<'sending_entity'>());
-
-        let mut calldata = array![];
-        Serde::serialize(@sending_entity_id, ref calldata);
-        Serde::serialize(@receiving_entity_id, ref calldata);
-        Serde::serialize(@array![
-            (ResourceTypes::STONE, 0),
-            (ResourceTypes::WOOD, 700),
-        ].span(), ref calldata);
-
-        world.execute('TransferResources', calldata);
+        resource_systems_dispatcher.transfer(
+            world, 
+            sending_entity_id.into(), 
+            receiving_entity_id.into(), 
+            array![
+                (ResourceTypes::STONE, 0),
+                (ResourceTypes::WOOD, 700),
+            ].span()
+        );
     }
 
 
@@ -440,10 +384,11 @@ mod tests {
 
     #[test]
     #[available_gas(30000000000000)]
-    #[should_panic(expected: ('insufficient balance','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED','ENTRYPOINT_FAILED' ))]
+    #[should_panic(expected: ('insufficient balance','ENTRYPOINT_FAILED' ))]
     fn test_insufficient_balance() {
         
-        let world = spawn_eternum();
+        let (world, resource_systems_dispatcher) = setup();
+
         // call as executor
         starknet::testing::set_contract_address(world.executor());
 
@@ -498,18 +443,16 @@ mod tests {
         // transfer resources 
         starknet::testing::set_contract_address(contract_address_const::<'sending_entity'>());
 
-        let mut calldata = array![];
-        Serde::serialize(@sending_entity_id, ref calldata);
-        Serde::serialize(@receiving_entity_id, ref calldata);
-        Serde::serialize(@array![
-            (ResourceTypes::STONE, 7700), // more than balance
-            (ResourceTypes::WOOD, 700),
-        ].span(), ref calldata);
+        resource_systems_dispatcher.transfer(
+            world, 
+            sending_entity_id.into(), 
+            receiving_entity_id.into(), 
+            array![
+                (ResourceTypes::STONE, 7700), // more than balance
+                (ResourceTypes::WOOD, 700),
+            ].span()
+        );
 
-        world.execute('TransferResources', calldata);
     }
-
-
-
     
 }
