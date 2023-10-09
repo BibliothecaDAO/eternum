@@ -1,10 +1,8 @@
 mod config;
 mod labor;
-mod test;
+mod trade;
 mod hyperstructure;
+mod resources;
+mod transport;
 
-// mod resources;
-// mod order;
-// mod caravan;
-// mod road;
-// mod travel;
+mod test;
