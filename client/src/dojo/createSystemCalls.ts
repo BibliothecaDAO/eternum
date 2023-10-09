@@ -1,7 +1,7 @@
 import { Components, Schema, setComponent } from "@latticexyz/recs";
 import { SetupNetworkResult } from "./setupNetwork";
 import { Account, Event, num } from "starknet";
-import { getEntityIdFromKeys } from "../utils/utils";
+import { getEntityIdFromKeys, padAddress } from "../utils/utils";
 
 const CONFIG_SYSTEMS = "0x5a457e2ecf5f338c2122e35046becb5172ba3d3cf73c0de584e504ee895af65";
 const LABOR_SYSTEMS = "0x2c96a033f4871ade10b83f17230beaf848bf1de62f202d00753d36b970a2202";
@@ -347,6 +347,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
 
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
+    console.log({ events });
     setComponentsFromEvents(contractComponents, events);
 
     let realm_entity_id: number = 0;
@@ -496,7 +497,7 @@ export function setComponentFromEvent(components: Components, eventData: string[
   const componentValues = componentFields.reduce((acc: Schema, key, index) => {
     const value = values[index];
     // @ts-ignore
-    acc[key] = key === "address" ? value : Number(value);
+    acc[key] = key === "address" ? padAddress(value) : Number(value);
     return acc;
   }, {});
 
