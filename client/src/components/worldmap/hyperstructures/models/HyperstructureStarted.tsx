@@ -5,9 +5,10 @@ Files: public/models/hyperstructure-started.glb [802.53KB] > hyperstructure-star
 */
 
 import * as THREE from "three";
-import React, { useRef } from "react";
-import { useGLTF } from "@react-three/drei";
+import React, { useEffect } from "react";
+import { Html, useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
+import { HyperStructureInterface } from "../../../../hooks/helpers/useHyperstructure";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -22,21 +23,53 @@ type GLTFResult = GLTF & {
 
 type ContextType = Record<string, React.ForwardRefExoticComponent<JSX.IntrinsicElements["mesh"]>>;
 
-export default function HyperstructureStarted(props: JSX.IntrinsicElements["group"]) {
+export default function HyperstructureStarted(
+  props: JSX.IntrinsicElements["group"] & { isInitialized: boolean; hyperstructure?: HyperStructureInterface },
+) {
   const { nodes, materials } = useGLTF("/models/hyperstructure-started-transformed.glb") as GLTFResult;
+  const { isInitialized, hyperstructure } = props;
+
+  const uninitializedMaterials = {
+    Wood: materials.Wood.clone(),
+    Stone_Rough: materials.Stone_Rough.clone(),
+  };
+
+  useEffect(() => {
+    if (!isInitialized) {
+      Object.values(uninitializedMaterials).forEach((material) => {
+        material.opacity = 0.2;
+        material.transparent = true;
+        // need to rerender
+        material.needsUpdate = true;
+      });
+    }
+  }, [isInitialized, uninitializedMaterials]);
+
   return (
     <group {...props} dispose={null}>
       <group name="Scene">
+        {!isInitialized && (
+          <Html distanceFactor={10}>
+            <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">Not Initialized</div>
+          </Html>
+        )}
+        {isInitialized && (
+          <Html position={[0, -1.1, 0]} distanceFactor={10}>
+            <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
+              Progress: {hyperstructure?.progress}%
+            </div>
+          </Html>
+        )}
         <mesh
           name="tower_initialized"
           geometry={nodes.tower_initialized.geometry}
-          material={materials.Stone_Rough}
+          material={isInitialized ? materials.Stone_Rough : uninitializedMaterials.Stone_Rough}
           position={[0, -0.096, -0.634]}
         />
         <mesh
           name="tower_initialized_scaffolds"
           geometry={nodes.tower_initialized_scaffolds.geometry}
-          material={materials.Wood}
+          material={isInitialized ? materials.Wood : uninitializedMaterials.Wood}
           position={[0.118, -0.001, -1.24]}
           rotation={[-Math.PI, 0.719, -Math.PI]}
         />
