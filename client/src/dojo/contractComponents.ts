@@ -198,6 +198,21 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    HomePosition: (() => {
+      const name = "HomePosition";
+      return defineComponent(
+        world,
+        {
+          x: RecsType.Number,
+          y: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
     Realm: (() => {
       const name = "Realm";
       return defineComponent(

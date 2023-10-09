@@ -27,6 +27,7 @@ import hyperStructures from "../../../data/hyperstructures.json";
 import { useGetPositionCaravans } from "../../../hooks/helpers/useCaravans";
 import { NumberInput } from "../../../elements/NumberInput";
 import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/arrow-separator.svg";
+import { WEIGHT_PER_DONKEY_KG } from "../../../constants/travel";
 
 type FeedHyperstructurePopupProps = {
   onClose: () => void;
@@ -364,7 +365,7 @@ const BuildHyperstructurePanel = ({
   }, [step, selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
 
   useEffect(() => {
-    if (donkeysCount * 100 >= resourceWeight) {
+    if (donkeysCount * WEIGHT_PER_DONKEY_KG >= resourceWeight) {
       setHasEnoughDonkeys(true);
     } else {
       setHasEnoughDonkeys(false);

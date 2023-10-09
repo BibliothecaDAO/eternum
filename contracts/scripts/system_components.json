@@ -10,6 +10,7 @@
     "CreateFreeTransportUnit": [
         "Owner",
         "Position",
+        "HomePosition",
         "MetaData",
         "Quantity",
         "Movable",

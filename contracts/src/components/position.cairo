@@ -75,6 +75,14 @@ struct Position {
     y: u32
 }
 
+#[derive(Component, PartialEq, Copy, Drop, Serde, SerdeLen)]
+struct HomePosition {
+    #[key]
+    entity_id: u128,
+    x: u32,
+    y: u32
+}
+
 #[generate_trait]
 impl PositionImpl of PositionTrait {
     fn calculate_distance(self: Position, destination: Position) -> u32 {
