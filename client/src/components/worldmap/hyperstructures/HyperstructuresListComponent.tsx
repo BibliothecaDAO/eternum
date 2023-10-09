@@ -52,14 +52,7 @@ export const HyperstructuresListComponent = ({}: HyperstructuresListComponentPro
         <div className="text-xs text-gold">Other Hyperstructures: </div>
         {HYPERSTRUCTURES_POSITIONS.map((hyperstructure, i) =>
           chosenOrder && i + 1 !== chosenOrder ? (
-            <HyperstructuresListItem
-              key={i}
-              order={i + 1}
-              coords={getContractPositionFromRealPosition({
-                x: hyperstructure.x,
-                y: hyperstructure.z,
-              })}
-            />
+            <HyperstructuresListItem key={i} order={i + 1} coords={hyperstructure} />
           ) : null,
         )}
       </div>
