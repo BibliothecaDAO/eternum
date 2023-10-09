@@ -18,6 +18,7 @@ mod resource_systems {
     use eternum::constants::ResourceTypes;
     use eternum::alias::ID;
 
+    #[external(v0)]
     impl ResourceSystemsImpl of super::IResourceSystems<ContractState> {
         fn mint(
             self: @ContractState, 
