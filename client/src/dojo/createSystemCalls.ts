@@ -3,6 +3,17 @@ import { SetupNetworkResult } from "./setupNetwork";
 import { Account, Event, num } from "starknet";
 import { getEntityIdFromKeys } from "../utils/utils";
 
+const CONFIG_SYSTEMS = "0x5a457e2ecf5f338c2122e35046becb5172ba3d3cf73c0de584e504ee895af65";
+const LABOR_SYSTEMS = "0x2c96a033f4871ade10b83f17230beaf848bf1de62f202d00753d36b970a2202";
+const TRADE_SYSTEMS = "0x2d5178ac3bf7d6d5fc116f543f9c8ac7eba381d09f77d1d464d1f9ebfe81391";
+const HYPERSTRUCTURE_SYSTEMS = "0x32e7b7e9e21f2d02c6f030e624514eb55003e7d3a299cbb90cc97c9df91b333";
+const RESOURCE_SYSTEMS = "0x58e0f847a24a5905350bdd445db3f472442ed55fdfabff26cb400a1d13ba195";
+const CARAVAN_SYSTEMS = "0x6cbac984e419dd953e07bacb6a45da22cb0534ea1d73fcf9075abef4b1398dd";
+const ROAD_SYSTEMS = "0x24805155428a16f39f2959e59bfb0fedac5e83d31fbdf6e1776c27036efe7a3";
+const TRANSPORT_UNIT_SYSTEMS = "0x64d9dce7519c641e6eb269b69d045d96cf3cef1b9b723b8c7e1248646bfd066";
+const TRAVEL_SYSTEMS = "0x6da6277375679a626f8a362aa0659ccfd377163d08c3e5bf59db3a0fdb08c42";
+const REALM_SYSTEMS = "0x2bc672da1c2fdf17d509c543845784dbf93894a4c0b72aaee0aecd195a64405";
+
 interface SystemSigner {
   signer: Account;
 }
@@ -129,10 +140,15 @@ export interface MakeFungibleOrderProps extends SystemSigner {
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
 
 // NOTE: need to add waitForTransaction when connected to rinnigan
-export function createSystemCalls({ execute, provider, contractComponents }: SetupNetworkResult) {
+export function createSystemCalls({ provider, contractComponents }: SetupNetworkResult) {
   const purchase_labor = async (props: PurchaseLaborProps) => {
     const { entity_id, resource_type, labor_units, signer } = props;
-    const tx = await execute(signer, "PurchaseLabor", [entity_id, resource_type, labor_units]);
+    const tx = await provider.execute(signer, LABOR_SYSTEMS, "purchase", [
+      import.meta.env.VITE_WORLD_ADDRESS!,
+      entity_id,
+      resource_type,
+      labor_units,
+    ]);
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
 
     setComponentsFromEvents(contractComponents, getEvents(receipt));
@@ -141,7 +157,13 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
   // Refactor the functions using the interfaces
   const build_labor = async (props: BuildLaborProps) => {
     const { realm_id, resource_type, labor_units, multiplier, signer } = props;
-    const tx = await execute(signer, "BuildLabor", [realm_id, resource_type, labor_units, multiplier]);
+    const tx = await provider.execute(signer, LABOR_SYSTEMS, "build", [
+      import.meta.env.VITE_WORLD_ADDRESS!,
+      realm_id,
+      resource_type,
+      labor_units,
+      multiplier,
+    ]);
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
 
     setComponentsFromEvents(contractComponents, getEvents(receipt));
@@ -149,7 +171,11 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
 
   const harvest_labor = async (props: HarvestLaborProps) => {
     const { realm_id, resource_type, signer } = props;
-    const tx = await execute(signer, "HarvestLabor", [realm_id, resource_type]);
+    const tx = await provider.execute(signer, LABOR_SYSTEMS, "harvest", [
+      import.meta.env.VITE_WORLD_ADDRESS!,
+      realm_id,
+      resource_type,
+    ]);
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
 
     setComponentsFromEvents(contractComponents, getEvents(receipt));
@@ -157,7 +183,12 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
 
   const mint_resources = async (props: MintResourcesProps) => {
     const { entity_id, resource_type, amount, signer } = props;
-    const tx = await execute(signer, "MintResources", [entity_id, resource_type, amount]);
+    const tx = await provider.execute(signer, RESOURCE_SYSTEMS, "mint", [
+      import.meta.env.VITE_WORLD_ADDRESS!,
+      entity_id,
+      resource_type,
+      amount,
+    ]);
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
 
     setComponentsFromEvents(contractComponents, getEvents(receipt));
@@ -165,7 +196,11 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
 
   const mint_all_resources = async (props: MintAllResourcesProps) => {
     const { entity_id, amount, signer } = props;
-    const tx = await execute(signer, "MintAllResources", [entity_id, amount]);
+    const tx = await provider.execute(signer, RESOURCE_SYSTEMS, "mint_all", [
+      import.meta.env.VITE_WORLD_ADDRESS!,
+      entity_id,
+      amount,
+    ]);
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
 
     setComponentsFromEvents(contractComponents, getEvents(receipt));
@@ -177,7 +212,8 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
 
     const expires_at = Math.floor(Date.now() / 1000 + 2628000);
 
-    const tx = await execute(signer, "MakeFungibleOrder", [
+    const tx = await provider.execute(signer, TRADE_SYSTEMS, "create_order", [
+      import.meta.env.VITE_WORLD_ADDRESS!,
       maker_id,
       maker_entity_types.length,
       ...maker_entity_types,
@@ -200,7 +236,11 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
 
   const take_fungible_order = async (props: TakeFungibleOrderProps) => {
     const { taker_id, trade_id, signer } = props;
-    const tx = await execute(signer, "TakeFungibleOrder", [taker_id, trade_id]);
+    const tx = await provider.execute(signer, TRADE_SYSTEMS, "accept_order", [
+      import.meta.env.VITE_WORLD_ADDRESS!,
+      taker_id,
+      trade_id,
+    ]);
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
 
     setComponentsFromEvents(contractComponents, getEvents(receipt));
@@ -208,7 +248,10 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
 
   const cancel_fungible_order = async (props: CancelFungibleOrderProps) => {
     const { trade_id, signer } = props;
-    const tx = await execute(signer, "CancelFungibleOrder", [trade_id]);
+    const tx = await provider.execute(signer, TRADE_SYSTEMS, "cancel_order", [
+      import.meta.env.VITE_WORLD_ADDRESS!,
+      trade_id,
+    ]);
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
     setComponentsFromEvents(contractComponents, events);
@@ -217,7 +260,11 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
   const create_free_transport_unit = async (props: CreateFreeTransportUnitProps): Promise<number> => {
     const { realm_id, quantity, signer } = props;
 
-    const tx = await execute(signer, "CreateFreeTransportUnit", [realm_id, quantity]);
+    const tx = await provider.execute(signer, TRANSPORT_UNIT_SYSTEMS, "create_free_unit", [
+      import.meta.env.VITE_WORLD_ADDRESS!,
+      realm_id,
+      quantity,
+    ]);
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
     setComponentsFromEvents(contractComponents, events);
@@ -227,7 +274,11 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
 
   const create_caravan = async (props: CreateCaravanProps): Promise<number> => {
     const { entity_ids, signer } = props;
-    const tx = await execute(signer, "CreateCaravan", [entity_ids.length, ...entity_ids]);
+    const tx = await provider.execute(signer, CARAVAN_SYSTEMS, "create", [
+      import.meta.env.VITE_WORLD_ADDRESS!,
+      entity_ids.length,
+      ...entity_ids,
+    ]);
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
     setComponentsFromEvents(contractComponents, events);
@@ -238,7 +289,12 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
 
   const attach_caravan = async (props: AttachCaravanProps) => {
     const { realm_id, trade_id, caravan_id, signer } = props;
-    const tx = await execute(signer, "AttachCaravan", [realm_id, trade_id, caravan_id]);
+    const tx = await provider.execute(signer, TRADE_SYSTEMS, "attach_caravan", [
+      import.meta.env.VITE_WORLD_ADDRESS!,
+      realm_id,
+      trade_id,
+      caravan_id,
+    ]);
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
     setComponentsFromEvents(contractComponents, events);
@@ -246,7 +302,11 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
 
   const claim_fungible_order = async (props: ClaimFungibleOrderProps) => {
     const { entity_id, trade_id, signer } = props;
-    const tx = await execute(signer, "ClaimFungibleOrder", [entity_id, trade_id]);
+    const tx = await provider.execute(signer, TRADE_SYSTEMS, "claim_order", [
+      import.meta.env.VITE_WORLD_ADDRESS!,
+      entity_id,
+      trade_id,
+    ]);
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
     setComponentsFromEvents(contractComponents, events);
@@ -268,7 +328,8 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
       signer,
     } = props;
 
-    const tx = await execute(signer, "CreateRealm", [
+    const tx = await provider.execute(signer, REALM_SYSTEMS, "create", [
+      import.meta.env.VITE_WORLD_ADDRESS!,
       realm_id,
       owner,
       resource_types_packed,
@@ -301,7 +362,8 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
 
   const create_road = async (props: CreateRoadProps) => {
     const { creator_id, start_coord, end_coord, usage_count, signer } = props;
-    const tx = await execute(signer, "CreateRoad", [
+    const tx = await provider.execute(signer, ROAD_SYSTEMS, "create", [
+      import.meta.env.VITE_WORLD_ADDRESS!,
       creator_id,
       start_coord.x,
       start_coord.y,
@@ -316,7 +378,8 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
 
   const transfer_resources = async (props: TransferResourcesProps) => {
     const { sending_entity_id, receiving_entity_id, resources, signer } = props;
-    const tx = await execute(signer, "TransferResources", [
+    const tx = await provider.execute(signer, RESOURCE_SYSTEMS, "transfer", [
+      import.meta.env.VITE_WORLD_ADDRESS!,
       sending_entity_id,
       receiving_entity_id,
       resources.length / 2,
@@ -330,7 +393,11 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
 
   const initialize_hyperstructure = async (props: InitializeHyperstructuresProps) => {
     const { entity_id, hyperstructure_id, signer } = props;
-    const tx = await execute(signer, "InitializeHyperStructure", [entity_id, hyperstructure_id]);
+    const tx = await provider.execute(signer, HYPERSTRUCTURE_SYSTEMS, "initialize", [
+      import.meta.env.VITE_WORLD_ADDRESS!,
+      entity_id,
+      hyperstructure_id,
+    ]);
 
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
@@ -339,7 +406,10 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
 
   const complete_hyperstructure = async (props: CompleteHyperStructureProps) => {
     const { hyperstructure_id, signer } = props;
-    const tx = await execute(signer, "CompleteHyperStructure", [hyperstructure_id]);
+    const tx = await provider.execute(signer, HYPERSTRUCTURE_SYSTEMS, "complete", [
+      import.meta.env.VITE_WORLD_ADDRESS!,
+      hyperstructure_id,
+    ]);
 
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
@@ -349,7 +419,12 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
   const travel = async (props: TravelProps) => {
     const { travelling_entity_id, destination_coord_x, destination_coord_y, signer } = props;
     // TODO: put coords
-    const tx = await execute(signer, "Travel", [travelling_entity_id, destination_coord_x, destination_coord_y]);
+    const tx = await provider.execute(signer, TRAVEL_SYSTEMS, "travel", [
+      import.meta.env.VITE_WORLD_ADDRESS!,
+      travelling_entity_id,
+      destination_coord_x,
+      destination_coord_y,
+    ]);
 
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
