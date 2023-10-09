@@ -84,6 +84,10 @@ export const numberToHex = (num: number) => {
   return "0x" + num.toString(16);
 };
 
+export const padAddress = (address: string) => {
+  return "0x" + address.substring(2).padStart(64, "0");
+};
+
 export function getFirstComponentByType(entities: Entity[] | null | undefined, typename: string): any | null {
   if (!isValidArray(entities)) return null;
 
