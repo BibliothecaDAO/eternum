@@ -6,8 +6,9 @@ Files: public/models/models/hyperstructure-half.glb [570.8KB] > hyperstructure-h
 
 import * as THREE from "three";
 import React, { useRef } from "react";
-import { useGLTF } from "@react-three/drei";
+import { Html, useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
+import { HyperStructureInterface } from "../../../../hooks/helpers/useHyperstructure";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -24,11 +25,20 @@ type GLTFResult = GLTF & {
 
 type ContextType = Record<string, React.ForwardRefExoticComponent<JSX.IntrinsicElements["mesh"]>>;
 
-export default function HyperstructureHalfFinished(props: JSX.IntrinsicElements["group"]) {
+export default function HyperstructureHalfFinished(
+  props: JSX.IntrinsicElements["group"] & { hyperstructure?: HyperStructureInterface },
+) {
   const { nodes, materials } = useGLTF("/models/hyperstructure-half-transformed.glb") as GLTFResult;
   return (
     <group {...props} dispose={null}>
       <group name="Scene">
+        {props.hyperstructure?.initialized && (
+          <Html position={[0, -1.1, 0]} distanceFactor={10}>
+            <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
+              Progress: {props.hyperstructure?.progress}%
+            </div>
+          </Html>
+        )}
         <group name="tower_half-finished">
           <mesh
             name="tower_half-finished_1"

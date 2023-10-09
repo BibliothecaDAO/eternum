@@ -114,21 +114,12 @@ export const WorldMapScene = () => {
                 position={[hyperstructure.uiPosition.x, hyperstructure.uiPosition.y, hyperstructure.uiPosition.z]}
               />
             );
-          } else if (hyperstructure.initialized) {
-            return (
-              <HyperstructureStarted
-                key={i}
-                position={[hyperstructure.uiPosition.x, hyperstructure.uiPosition.y, hyperstructure.uiPosition.z]}
-                isInitialized
-                hyperstructure={hyperstructure}
-              />
-            );
           } else {
             return (
               <HyperstructureStarted
                 key={i}
                 position={[hyperstructure.uiPosition.x, hyperstructure.uiPosition.y, hyperstructure.uiPosition.z]}
-                isInitialized={false}
+                hyperstructure={hyperstructure}
               />
             );
           }

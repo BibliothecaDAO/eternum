@@ -24,10 +24,10 @@ type GLTFResult = GLTF & {
 type ContextType = Record<string, React.ForwardRefExoticComponent<JSX.IntrinsicElements["mesh"]>>;
 
 export default function HyperstructureStarted(
-  props: JSX.IntrinsicElements["group"] & { isInitialized: boolean; hyperstructure?: HyperStructureInterface },
+  props: JSX.IntrinsicElements["group"] & { hyperstructure?: HyperStructureInterface },
 ) {
   const { nodes, materials } = useGLTF("/models/hyperstructure-started-transformed.glb") as GLTFResult;
-  const { isInitialized, hyperstructure } = props;
+  const { hyperstructure } = props;
 
   const uninitializedMaterials = {
     Wood: materials.Wood.clone(),
@@ -35,7 +35,7 @@ export default function HyperstructureStarted(
   };
 
   useEffect(() => {
-    if (!isInitialized) {
+    if (!hyperstructure?.initialized) {
       Object.values(uninitializedMaterials).forEach((material) => {
         material.opacity = 0.2;
         material.transparent = true;
@@ -43,17 +43,17 @@ export default function HyperstructureStarted(
         material.needsUpdate = true;
       });
     }
-  }, [isInitialized, uninitializedMaterials]);
+  }, [hyperstructure, uninitializedMaterials]);
 
   return (
     <group {...props} dispose={null}>
       <group name="Scene">
-        {!isInitialized && (
+        {!hyperstructure?.initialized && (
           <Html distanceFactor={10}>
             <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">Not Initialized</div>
           </Html>
         )}
-        {isInitialized && (
+        {hyperstructure?.initialized && (
           <Html position={[0, -1.1, 0]} distanceFactor={10}>
             <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
               Progress: {hyperstructure?.progress}%
@@ -63,13 +63,13 @@ export default function HyperstructureStarted(
         <mesh
           name="tower_initialized"
           geometry={nodes.tower_initialized.geometry}
-          material={isInitialized ? materials.Stone_Rough : uninitializedMaterials.Stone_Rough}
+          material={hyperstructure?.initialized ? materials.Stone_Rough : uninitializedMaterials.Stone_Rough}
           position={[0, -0.096, -0.634]}
         />
         <mesh
           name="tower_initialized_scaffolds"
           geometry={nodes.tower_initialized_scaffolds.geometry}
-          material={isInitialized ? materials.Wood : uninitializedMaterials.Wood}
+          material={hyperstructure?.initialized ? materials.Wood : uninitializedMaterials.Wood}
           position={[0.118, -0.001, -1.24]}
           rotation={[-Math.PI, 0.719, -Math.PI]}
         />

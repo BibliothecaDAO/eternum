@@ -6,8 +6,9 @@ Files: public/models/hyperstructure-finished.glb [133.63KB] > hyperstructure-fin
 
 import * as THREE from "three";
 import React from "react";
-import { useGLTF } from "@react-three/drei";
+import { Html, useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
+import { HyperStructureInterface } from "../../../../hooks/helpers/useHyperstructure";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -26,7 +27,9 @@ type GLTFResult = GLTF & {
 
 type ContextType = Record<string, React.ForwardRefExoticComponent<JSX.IntrinsicElements["mesh"]>>;
 
-export default function HyperstructureFinished(props: JSX.IntrinsicElements["group"]) {
+export default function HyperstructureFinished(
+  props: JSX.IntrinsicElements["group"] & { hyperstructure?: HyperStructureInterface },
+) {
   const { nodes, materials } = useGLTF("/models/hyperstructure-finished-transformed.glb") as GLTFResult;
 
   return (
