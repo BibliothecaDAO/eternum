@@ -6,10 +6,11 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import ProgressBar from "../../../elements/ProgressBar";
 import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
 import clsx from "clsx";
+import { getContractPositionFromRealPosition } from "../../../utils/utils";
 
 type HyperstructuresListItemProps = {
   order: number;
-  coords: { x: number; y: number };
+  coords: { x: number; y: number; z: number };
   onFeed?: () => void;
 };
 
@@ -18,7 +19,7 @@ export const HyperstructuresListItem = ({ order, coords, onFeed = undefined }: H
 
   const { getHyperstructure } = useHyperstructure();
 
-  const hyperstructure = getHyperstructure(order, coords);
+  const hyperstructure = getHyperstructure(order, getContractPositionFromRealPosition({ x: coords.x, y: coords.z }));
 
   return (
     <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold">
@@ -30,13 +31,9 @@ export const HyperstructuresListItem = ({ order, coords, onFeed = undefined }: H
 
         <div className=" text-gold flex ml-auto ">
           <Button
-            onClick={() =>
-              moveCameraToTarget({
-                x: coords.x,
-                y: 0.528415243525413,
-                z: coords.y,
-              })
-            }
+            onClick={() => {
+              moveCameraToTarget(coords);
+            }}
             variant="outline"
             className="p-1 !h-4 text-xxs !rounded-md"
           >

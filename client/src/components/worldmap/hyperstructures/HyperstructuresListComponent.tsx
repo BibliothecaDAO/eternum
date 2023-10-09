@@ -40,10 +40,7 @@ export const HyperstructuresListComponent = ({}: HyperstructuresListComponentPro
           <div className="text-xs text-gold">Hyperstructure of your order: </div>
           <HyperstructuresListItem
             order={chosenOrder}
-            coords={getContractPositionFromRealPosition({
-              x: HYPERSTRUCTURES_POSITIONS[chosenOrder - 1].x,
-              y: HYPERSTRUCTURES_POSITIONS[chosenOrder - 1].z,
-            })}
+            coords={HYPERSTRUCTURES_POSITIONS[chosenOrder - 1]}
             onFeed={() => {
               moveCameraToTarget(HYPERSTRUCTURES_POSITIONS[chosenOrder - 1]);
               setShowFeedPopup(true);
