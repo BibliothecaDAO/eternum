@@ -2,7 +2,9 @@
 import { Model as WorldMap } from "../../components/worldmap/WorldMap.jsx";
 // @ts-ignore
 import { Flags } from "../../components/worldmap/Flags.jsx";
-import { Model as Hyperstructure } from "../../components/worldmap/hyperstructures/Hyperstructure";
+import HyperstructureStarted from "../../components/worldmap/hyperstructures/models/HyperstructureStarted";
+import HyperstructureHalf from "../../components/worldmap/hyperstructures/models/HyperstructureHalf";
+import HyperstructureFinished from "../../components/worldmap/hyperstructures/models/HyperstructureFinished";
 // import { TransformControls } from "@react-three/drei";
 
 export const HYPERSTRUCTURES_POSITIONS = [
@@ -94,7 +96,7 @@ export const WorldMapScene = () => {
       <Flags />
       <WorldMap />
       {HYPERSTRUCTURES_POSITIONS.map((pos, i) => (
-        <Hyperstructure key={i} position={[pos.x, pos.y, pos.z]} />
+        <HyperstructureFinished key={i} position={[pos.x, pos.y, pos.z]} />
       ))}
       {/* <TransformControls mode="translate" onObjectChange={(e) => console.log(e?.target.object.position)}>
         <Hyperstructure />
