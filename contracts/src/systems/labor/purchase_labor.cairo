@@ -216,19 +216,11 @@ mod tests {
         Serde::serialize(@1_000, ref create_labor_cv_calldata); // resource_type_value
         world.execute('SetLaborCostAmount', create_labor_cv_calldata);
 
-        // mint 100_000 coal for the realm;
-        let mut mint_coal_calldata = array![];
-        Serde::serialize(@realm_entity_id, ref mint_coal_calldata); // realm entity id
-        Serde::serialize(@ResourceTypes::COAL, ref mint_coal_calldata); // resource_type
-        Serde::serialize(@100_000, ref mint_coal_calldata); // amount
-        world.execute('MintResources', mint_coal_calldata);
-
-        // mint 100_000 stone for the realm;
-        let mut mint_stone_calldata = array![];
-        Serde::serialize(@realm_entity_id, ref mint_stone_calldata); // realm entity id
-        Serde::serialize(@ResourceTypes::STONE, ref mint_stone_calldata); // resource_type
-        Serde::serialize(@100_000, ref mint_stone_calldata); // amount
-        world.execute('MintResources', mint_stone_calldata);
+        // mint 100_000 stone and coal for the realm;
+        let mut mint_resources_calldata = array![];
+        Serde::serialize(@realm_entity_id, ref mint_resources_calldata); // realm entity id
+        Serde::serialize(@array![(ResourceTypes::COAL, 100_000), (ResourceTypes::STONE, 100_000)], ref mint_resources_calldata); // amount
+        world.execute('MintResources', mint_resources_calldata);
 
         (world, realm_entity_id)
     }
