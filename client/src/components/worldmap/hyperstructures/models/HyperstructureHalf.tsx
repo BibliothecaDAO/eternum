@@ -5,7 +5,6 @@ Files: public/models/models/hyperstructure-half.glb [570.8KB] > hyperstructure-h
 */
 
 import * as THREE from "three";
-import React, { useRef } from "react";
 import { Html, useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { HyperStructureInterface } from "../../../../hooks/helpers/useHyperstructure";
@@ -22,8 +21,6 @@ type GLTFResult = GLTF & {
     Wood: THREE.MeshStandardMaterial;
   };
 };
-
-type ContextType = Record<string, React.ForwardRefExoticComponent<JSX.IntrinsicElements["mesh"]>>;
 
 export default function HyperstructureHalfFinished(
   props: JSX.IntrinsicElements["group"] & { hyperstructure?: HyperStructureInterface },

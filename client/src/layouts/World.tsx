@@ -25,7 +25,6 @@ import { useSyncWorld } from "../hooks/graphql/useGraphQLQueries";
 import WorldMapMenuModule from "../modules/WorldMapMenuModule";
 import { HYPERSTRUCTURES_POSITIONS } from "../modules/scenes/WorldMapScene";
 import { useHyperstructure } from "../hooks/helpers/useHyperstructure";
-import { getContractPositionFromRealPosition } from "../utils/utils";
 
 export const World = () => {
   const { loading } = useSyncWorld();
@@ -40,7 +39,6 @@ export const World = () => {
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const setHyperstructures = useUIStore((state) => state.setHyperstructures);
-  const hyperstructures = useUIStore((state) => state.hyperstructures);
 
   const [playBackground, { stop }] = useSound("/sound/music/happy_realm.mp3", {
     soundEnabled: isSoundOn,

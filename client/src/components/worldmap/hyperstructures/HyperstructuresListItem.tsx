@@ -6,7 +6,6 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import ProgressBar from "../../../elements/ProgressBar";
 import { HyperStructureInterface } from "../../../hooks/helpers/useHyperstructure";
 import clsx from "clsx";
-import { getContractPositionFromRealPosition } from "../../../utils/utils";
 import { UIPosition } from "../../../types";
 
 type HyperstructuresListItemProps = {

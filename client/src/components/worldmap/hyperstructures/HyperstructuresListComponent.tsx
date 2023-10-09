@@ -1,9 +1,8 @@
 import { FiltersPanel } from "../../../elements/FiltersPanel";
 import { FilterButton } from "../../../elements/FilterButton";
-import { HYPERSTRUCTURES_POSITIONS } from "../../../modules/scenes/WorldMapScene";
 import { HyperstructuresListItem } from "./HyperstructuresListItem";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { getRealm } from "../../../utils/realms";
 import { useDojo } from "../../../DojoContext";
 import { FeedHyperstructurePopup } from "./FeedHyperstructure";

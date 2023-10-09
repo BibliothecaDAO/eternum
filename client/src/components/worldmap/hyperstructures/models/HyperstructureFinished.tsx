@@ -5,8 +5,7 @@ Files: public/models/hyperstructure-finished.glb [133.63KB] > hyperstructure-fin
 */
 
 import * as THREE from "three";
-import React from "react";
-import { Html, useGLTF } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { HyperStructureInterface } from "../../../../hooks/helpers/useHyperstructure";
 
@@ -24,8 +23,6 @@ type GLTFResult = GLTF & {
     Foilage: THREE.MeshStandardMaterial;
   };
 };
-
-type ContextType = Record<string, React.ForwardRefExoticComponent<JSX.IntrinsicElements["mesh"]>>;
 
 export default function HyperstructureFinished(
   props: JSX.IntrinsicElements["group"] & { hyperstructure?: HyperStructureInterface },
