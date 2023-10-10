@@ -86,7 +86,7 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
   const updateHyperStructure = () => {
     const newHyperstructure = getHyperstructure(hyperstructureData.orderId, hyperstructureData.uiPosition);
     hyperstructures[hyperstructureData.orderId - 1] = newHyperstructure;
-    setHyperstructures(hyperstructures);
+    setHyperstructures([...hyperstructures]);
   };
 
   const onClick = async () => {
