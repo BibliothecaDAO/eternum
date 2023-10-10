@@ -28,6 +28,7 @@ import { useGetPositionCaravans } from "../../../hooks/helpers/useCaravans";
 import { NumberInput } from "../../../elements/NumberInput";
 import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/arrow-separator.svg";
 import { WEIGHT_PER_DONKEY_KG } from "../../../constants/travel";
+import { ReactComponent as CloseIcon } from "../../../assets/icons/common/cross-circle.svg";
 
 type FeedHyperstructurePopupProps = {
   onClose: () => void;
@@ -63,7 +64,14 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
             </Tooltip>
           </div>
         ),
-        component: <BuildHyperstructurePanel order={order} onClose={onClose} hyperstructureData={hyperstructureData} />,
+        component: (
+          <BuildHyperstructurePanel
+            order={order}
+            onSendCaravan={() => setSelectedTab(1)}
+            onClose={onClose}
+            hyperstructureData={hyperstructureData}
+          />
+        ),
       },
       {
         key: "my",
@@ -92,6 +100,7 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
       <SecondaryPopup.Head>
         <div className="flex items-center space-x-1">
           <div className="mr-0.5 bg-gray">Manage Hyperstructure:</div>
+          <CloseIcon className="w-3 h-3 cursor-pointer fill-white" onClick={onClose} />
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"460px"}>
@@ -188,10 +197,12 @@ const SelectableRealm = ({ realm, selected = false, initialized = false, onClick
 const BuildHyperstructurePanel = ({
   order,
   onClose,
+  onSendCaravan,
   hyperstructureData,
 }: {
   order: number;
   onClose: () => void;
+  onSendCaravan: () => void;
   hyperstructureData: HyperStructureInterface | undefined;
 }) => {
   const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
@@ -266,7 +277,7 @@ const BuildHyperstructurePanel = ({
         });
       }
     }
-    onClose();
+    onSendCaravan();
   };
 
   const {
