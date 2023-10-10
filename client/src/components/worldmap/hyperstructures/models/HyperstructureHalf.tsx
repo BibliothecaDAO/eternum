@@ -32,7 +32,7 @@ export default function HyperstructureHalfFinished(
         {props.hyperstructure?.initialized && (
           <Html position={[0, -1.1, 0]} distanceFactor={10}>
             <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
-              Progress: {props.hyperstructure?.progress}%
+              Progress: {props.hyperstructure?.progress.toFixed(2)}%
             </div>
           </Html>
         )}
