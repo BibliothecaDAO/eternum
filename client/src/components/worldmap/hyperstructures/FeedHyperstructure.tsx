@@ -481,7 +481,7 @@ const BuildHyperstructurePanel = ({
         <>
           {hyperstructureData?.initialized && (
             <>
-              <div className="grid grid-cols-9 gap-2">
+              <div className="grid relative grid-cols-9 gap-2 max-h-[350px] overflow-auto">
                 <div className={clsx("flex flex-col items-center  space-y-2 h-min", "col-span-4")}>
                   <Headline className="mb-2">You Give</Headline>
                   {Object.keys(resourcesLeftToComplete).map((_id) => {
@@ -491,7 +491,7 @@ const BuildHyperstructurePanel = ({
                       getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]),
                     );
                     return (
-                      <div key={id} className="flex items-center w-full">
+                      <div key={id} className="flex items-center w-full h-8">
                         <NumberInput
                           max={resourcesLeftToComplete[id]}
                           min={1}
@@ -521,7 +521,7 @@ const BuildHyperstructurePanel = ({
                   })}
                 </div>
                 <div className="flex items-center justify-center">
-                  <ArrowSeparator />
+                  <ArrowSeparator className="fixed top-1/2" />
                 </div>
                 <div className="flex flex-col col-span-4 space-y-2 h-min">
                   <Headline className="mb-2">Structure needs</Headline>
