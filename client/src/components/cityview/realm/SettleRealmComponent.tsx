@@ -10,6 +10,8 @@ import { OrderIcon } from "../../../elements/OrderIcon";
 import { useRealm } from "../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { getPosition, multiplyByPrecision } from "../../../utils/utils";
+import { initialResources } from "../../../constants/resources";
+import { BigNumberish } from "starknet";
 
 export const MAX_REALMS = 5;
 
@@ -19,7 +21,7 @@ export const SettleRealmComponent = () => {
 
   const {
     setup: {
-      systemCalls: { create_realm, mint_all_resources },
+      systemCalls: { create_realm, mint_resources },
     },
     account: { account, masterAccount },
   } = useDojo();
@@ -51,8 +53,13 @@ export const SettleRealmComponent = () => {
       ...realm,
       position,
     });
+    // create array of initial resources
+    let resources: BigNumberish[] = [];
+    for (let i = 0; i < 22; i++) {
+      resources = [...resources, i + 1, multiplyByPrecision(initialResources[i])];
+    }
     // mint basic resources to start
-    await mint_all_resources({ signer: masterAccount, entity_id: entity_id, amount: multiplyByPrecision(1000) });
+    await mint_resources({ signer: masterAccount, entity_id: entity_id, resources });
     setIsLoading(false);
     playSign();
   };

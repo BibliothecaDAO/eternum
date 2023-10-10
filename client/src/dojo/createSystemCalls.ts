@@ -48,13 +48,7 @@ export interface HarvestLaborProps extends SystemSigner {
 
 export interface MintResourcesProps extends SystemSigner {
   entity_id: num.BigNumberish;
-  resource_type: num.BigNumberish;
-  amount: num.BigNumberish;
-}
-
-export interface MintAllResourcesProps extends SystemSigner {
-  entity_id: num.BigNumberish;
-  amount: num.BigNumberish;
+  resources: num.BigNumberish[];
 }
 
 export interface TakeFungibleOrderProps extends SystemSigner {
@@ -156,16 +150,8 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
   };
 
   const mint_resources = async (props: MintResourcesProps) => {
-    const { entity_id, resource_type, amount, signer } = props;
-    const tx = await execute(signer, "MintResources", [entity_id, resource_type, amount]);
-    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-
-    setComponentsFromEvents(contractComponents, getEvents(receipt));
-  };
-
-  const mint_all_resources = async (props: MintAllResourcesProps) => {
-    const { entity_id, amount, signer } = props;
-    const tx = await execute(signer, "MintAllResources", [entity_id, amount]);
+    const { entity_id, resources, signer } = props;
+    const tx = await execute(signer, "MintResources", [entity_id, resources.length / 2, ...resources]);
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
 
     setComponentsFromEvents(contractComponents, getEvents(receipt));
@@ -361,7 +347,6 @@ export function createSystemCalls({ execute, provider, contractComponents }: Set
     build_labor,
     harvest_labor,
     mint_resources,
-    mint_all_resources,
     make_fungible_order,
     take_fungible_order,
     claim_fungible_order,

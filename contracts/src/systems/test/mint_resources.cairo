@@ -10,67 +10,28 @@ mod MintResources {
 
     use dojo::world::Context;
 
-    fn execute(ctx: Context, entity_id: u128, resource_type: u8, amount: u128) {
-        let resource = get !(ctx.world, (entity_id, resource_type), Resource);
+    fn execute(ctx: Context, entity_id: u128, mut resources: Span<(u8, u128)>) {
 
-        set!(
-            ctx.world,
-            (Resource { entity_id, resource_type, balance: resource.balance + amount,  }, )
-        );
-    }
-}
-
-#[system]
-mod MintAllResources {
-    use traits::Into;
-    use eternum::components::resources::Resource;
-    use eternum::constants::ResourceTypes;
-    use eternum::alias::ID;
-
-    use dojo::world::Context;
-
-    fn execute(ctx: Context, entity_id: u128, amount: u128) {
-
-        // mint non food
-        let mut resource_type: u8 = 1;
         loop {
-            if resource_type > 22 {
-                break;
-            }
+            match resources.pop_front() {
+                Option::Some((resource_type, amount)) => {
+                    let (resource_type, amount) = (*resource_type, *amount);
+                    assert(amount > 0, 'amount must not be 0');
 
-            let resource = get !(ctx.world, (entity_id, resource_type), Resource);
+                    let resource = get !(ctx.world, (entity_id, resource_type), Resource);
 
-            set!(
-                ctx.world,
-                (Resource { entity_id, resource_type, balance: resource.balance + amount,  }, )
-            );
+                    set!(
+                        ctx.world,
+                        (Resource { entity_id, resource_type, balance: resource.balance + amount,  }, )
+                    );
+                },
 
-            resource_type+=1;
-            
-        }; 
-
-        // shekels
-        let resource = get !(ctx.world, (entity_id, ResourceTypes::SHEKELS), Resource);
-        set!(
-            ctx.world,
-            (Resource { entity_id, resource_type: ResourceTypes::SHEKELS, balance: resource.balance + amount,  }, )
-        );
-
-        // wheat
-        let resource = get !(ctx.world, (entity_id, ResourceTypes::WHEAT), Resource);
-        set!(
-            ctx.world,
-            (Resource { entity_id, resource_type: ResourceTypes::WHEAT, balance: resource.balance + amount,  }, )
-        );
-
-        // fish
-        let resource = get !(ctx.world, (entity_id, ResourceTypes::FISH), Resource);
-        set!(
-            ctx.world,
-            (Resource { entity_id, resource_type: ResourceTypes::FISH, balance: resource.balance + amount,  }, )
-        );
+                Option::None => {break;}
+            };
+        };
     }
 }
+
 
 
 #[cfg(test)]
@@ -88,15 +49,15 @@ mod tests {
 
     #[test]
     #[available_gas(3000000000000)]  
-    fn test_mint_all_resources() {
+    fn test_mint_resources() {
         let world = spawn_eternum();
 
         let entity_id: u128 = 44;
 
         let mut calldata = array![];
         Serde::serialize(@entity_id, ref calldata);
-        Serde::serialize(@1000, ref calldata);
-        world.execute('MintAllResources', calldata);
+        Serde::serialize(@array![(ResourceTypes::GOLD, 1000), (ResourceTypes::SHEKELS, 1000), (ResourceTypes::FISH, 1000), (ResourceTypes::WHEAT, 1000)].span(), ref calldata);
+        world.execute('MintResources', calldata);
 
         let gold_resource = get!(world, (entity_id, ResourceTypes::GOLD), Resource);
         assert(gold_resource.balance == 1000, 'resource amount not right');
