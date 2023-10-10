@@ -157,7 +157,8 @@ const SelectableRealm = ({ realm, selected = false, initialized = false, onClick
       <div className="text-gold ml-auto absolute right-2 top-2">24h:10m away</div>
       <div className="flex items-center mt-6 w-full">
         <div className="flex">
-          {realm.resources &&
+          {!initialized &&
+            realm.resources &&
             realm.resources.map((resource: any) => {
               return (
                 <ResourceCost
