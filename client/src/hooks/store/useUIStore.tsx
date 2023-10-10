@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { createPopupsSlice, PopupsStore } from "./_popups";
 import realmsJson from "../../geodata/realms.json";
 import { Vector3 } from "three";
+import { createDataStoreSlice, DataStore } from "./_dataStore";
 export type Background = "map" | "realmView" | "combat" | "bastion";
 
 interface UIStore {
@@ -33,7 +34,7 @@ interface UIStore {
   setIsLoadingScreenEnabled: (enabled: boolean) => void;
 }
 
-const useUIStore = create<UIStore & PopupsStore>((set) => ({
+const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   theme: "light",
   setTheme: (theme) => set({ theme }),
   showBlurOverlay: true,
@@ -162,6 +163,7 @@ const useUIStore = create<UIStore & PopupsStore>((set) => ({
   isLoadingScreenEnabled: true,
   setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
   ...createPopupsSlice(set),
+  ...createDataStoreSlice(set),
 }));
 
 export default useUIStore;

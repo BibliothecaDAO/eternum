@@ -135,7 +135,7 @@ export function getEntityIdFromKeys(keys: bigint[]): EntityIndex {
     return parseInt(keys[0].toString()) as EntityIndex;
   }
   // calculate the poseidon hash of the keys
-  let poseidon = poseidonHashMany([BigInt(keys.length), ...keys]);
+  let poseidon = poseidonHashMany(keys);
   return parseInt(poseidon.toString()) as EntityIndex;
 }
 

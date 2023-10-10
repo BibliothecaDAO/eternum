@@ -5,10 +5,8 @@ trait IResourceSystems<TContractState> {
         self: @TContractState, 
         world: IWorldDispatcher, 
         entity_id: u128, 
-        resource_type: u8, 
-        amount: u128
+        resources: Span<(u8, u128)>, 
     );
-    fn mint_all(self: @TContractState, world: IWorldDispatcher, entity_id: u128, amount: u128);
 }
 
 
@@ -24,71 +22,26 @@ mod resource_systems {
             self: @ContractState, 
             world: IWorldDispatcher, 
             entity_id: u128, 
-            resource_type: u8, 
-            amount: u128
+            resources: Span<(u8, u128)>, 
         ){
-            let resource = get!(world, (entity_id, resource_type), Resource);
-
-            set!(world, (
-                Resource { 
-                    entity_id, 
-                    resource_type, 
-                    balance: resource.balance + amount,  
-                }
-            ));
-        }
-
-
-        fn mint_all(self: @ContractState, world: IWorldDispatcher, entity_id: u128, amount: u128) {
-            // mint non food
-            let mut resource_type: u8 = 1;
+            let mut resources = resources;
             loop {
-                if resource_type > 22 {
-                    break;
-                }
+                match resources.pop_front() {
+                    Option::Some((resource_type, amount)) => {
+                        let (resource_type, amount) = (*resource_type, *amount);
+                        assert(amount > 0, 'amount must not be 0');
 
-                let resource = get!(world, (entity_id, resource_type), Resource);
+                        let resource = get !(world, (entity_id, resource_type), Resource);
 
-                set!(world, (
-                    Resource { 
-                        entity_id, 
-                        resource_type, 
-                        balance: resource.balance + amount,  
-                    } 
-                ));
+                        set!(
+                            world,
+                            (Resource { entity_id, resource_type, balance: resource.balance + amount,  }, )
+                        );
+                    },
 
-                resource_type+=1;
-            }; 
-
-            // shekels
-            let resource = get!(world, (entity_id, ResourceTypes::SHEKELS), Resource);
-            set!(world, (
-                    Resource { 
-                        entity_id, 
-                        resource_type: ResourceTypes::SHEKELS, 
-                        balance: resource.balance + amount,  
-                    } 
-            ));
-
-            // wheat
-            let resource = get!(world, (entity_id, ResourceTypes::WHEAT), Resource);
-            set!(world, (
-                    Resource { 
-                        entity_id, 
-                        resource_type: ResourceTypes::WHEAT,
-                        balance: resource.balance + amount,  
-                    } 
-            ));
-
-            // fish
-            let resource = get!(world, (entity_id, ResourceTypes::FISH), Resource);
-            set!(world, (
-                    Resource { 
-                        entity_id, 
-                        resource_type: ResourceTypes::FISH, 
-                        balance: resource.balance + amount,  
-                    } 
-            ));
+                    Option::None => {break;}
+                };
+            };
         }
     }
 }

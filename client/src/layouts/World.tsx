@@ -23,6 +23,8 @@ import useSound from "use-sound";
 import { NotificationsComponent } from "../components/NotificationsComponent";
 import { useSyncWorld } from "../hooks/graphql/useGraphQLQueries";
 import WorldMapMenuModule from "../modules/WorldMapMenuModule";
+import { HYPERSTRUCTURES_POSITIONS } from "../modules/scenes/WorldMapScene";
+import { useHyperstructure } from "../hooks/helpers/useHyperstructure";
 
 export const World = () => {
   const { loading } = useSyncWorld();
@@ -35,8 +37,8 @@ export const World = () => {
   const musicLevel = useUIStore((state) => state.musicLevel);
 
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
-
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const setHyperstructures = useUIStore((state) => state.setHyperstructures);
 
   const [playBackground, { stop }] = useSound("/sound/music/happy_realm.mp3", {
     soundEnabled: isSoundOn,
@@ -52,13 +54,23 @@ export const World = () => {
     }
   }, [isSoundOn]);
 
+  const { getHyperstructure } = useHyperstructure();
+
+  useEffect(() => {
+    if (!loading) {
+      setHyperstructures(
+        HYPERSTRUCTURES_POSITIONS.map((hyperstructure, index) => getHyperstructure(index + 1, hyperstructure)),
+      );
+    }
+  }, [loading]);
+
   useEffect(() => {
     if (progress === 100 && !loading) {
       setIsLoadingScreenEnabled(false);
     } else {
       setIsLoadingScreenEnabled(true);
     }
-  }, [progress]);
+  }, [progress, loading]);
 
   return (
     <div className="fixed top-0 left-0 z-0 w-screen h-screen p-2 overflow-hidden">

@@ -168,7 +168,6 @@ export function Flags(props) {
       flagMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     });
 
-    console.log("test", ordersRealms);
     ordersRealms.forEach((orderRealms, index) => {
       orderRealms.forEach((realm, i) => {
         const x = realmsJson.features[realm.realm_id - 1].xy[0];

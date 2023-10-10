@@ -420,7 +420,7 @@ export const useSyncWorld = (): { loading: boolean } => {
           let fields = Object.keys(component.schema).join(",");
           let cursor: string | undefined;
           while (shouldContinue) {
-            // Fixed the template literal syntax here
+            // TODO: the first: 300 is only temp fix for now, need to do better pagination with new 0.3 features
             const queryBuilder = `
               query SyncWorld {
                 entities: ${componentName.toLowerCase()}Models(${cursor ? `after: "${cursor}"` : ""} first: 100) {
@@ -444,7 +444,7 @@ export const useSyncWorld = (): { loading: boolean } => {
 
             const { entities }: getEntitiesQuery = await client.request(queryBuilder); // Assumed queryBuilder should be passed here
 
-            if (entities.edges.length === 100) {
+            if (entities.edges.length === 300) {
               cursor = entities.edges[entities.edges.length - 1].cursor;
             } else {
               shouldContinue = false;
