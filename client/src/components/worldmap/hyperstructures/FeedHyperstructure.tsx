@@ -508,7 +508,7 @@ const BuildHyperstructurePanel = ({
                             onClick={() => {
                               setFeedResourcesGiveAmounts({
                                 ...feedResourcesGiveAmounts,
-                                [id]: resourcesLeftToComplete[id],
+                                [id]: Math.min(divideByPrecision(resource?.balance || 0), resourcesLeftToComplete[id]),
                               });
                             }}
                             resourceId={id}
