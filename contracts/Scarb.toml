@@ -7,7 +7,7 @@ version = "0.1.0"
 sierra-replace-ids = true
 
 [dependencies]
-dojo = { git = "https://github.com/dojoengine/dojo" }
+dojo = { git = "https://github.com/dojoengine/dojo", rev = "e96f08d6302b2ce1277bc13b17a0723f74cb6177" }
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "e1aa42853815f04ff00e4ed3507cfd74d7b0c644" }
 cubit = { git = "https://github.com/influenceth/cubit" }
 # TODO: use dojo_defi when works with latest nightly
@@ -21,7 +21,6 @@ initializer_class_hash = "0xbeef"
 rpc_url = "http://localhost:5050/"
 account_address = "0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973"
 private_key = "0x1800000000300000180000000000030000000000003006001800006600"
-#world_address = '0x387f5bf2a7a6a51cc39dc5117cc39e5c6c2b439d277e4888b35c26caf369e69'
 
 ## prod
 #rpc_url = "https://rinnegan.madara.zone"
