@@ -2,7 +2,7 @@ import { FiltersPanel } from "../../../elements/FiltersPanel";
 import { FilterButton } from "../../../elements/FilterButton";
 import { HyperstructuresListItem } from "./HyperstructuresListItem";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { getRealm } from "../../../utils/realms";
 import { useDojo } from "../../../DojoContext";
 import { FeedHyperstructurePopup } from "./FeedHyperstructure";
@@ -18,10 +18,6 @@ export const HyperstructuresListComponent = ({}: HyperstructuresListComponentPro
   const {
     account: { account },
   } = useDojo();
-
-  useEffect(() => {
-    console.log("Changed!");
-  }, [hyperstructures]);
 
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
