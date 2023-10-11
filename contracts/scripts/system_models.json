@@ -1,5 +1,5 @@
 { 
-    "CreateCaravan": [
+    "CARAVAN_SYSTEMS": [
         "Movable",
         "Capacity",
         "CaravanMembers",
@@ -7,7 +7,7 @@
         "Owner",
         "ForeignKey"
     ],
-    "CreateFreeTransportUnit": [
+    "TRANSPORT_UNIT_SYSTEMS": [
         "Owner",
         "Position",
         "HomePosition",
@@ -18,83 +18,38 @@
         "Capacity",
         "QuantityTracker"
     ],
-    "BuildLabor": [
+    "LABOR_SYSTEMS": [
         "Labor",
-        "Resource"
-    ],
-    "PurchaseLabor": [
         "Resource",
         "LaborAuction"
     ],
-    "HarvestLabor": [
-        "Labor",
-        "Resource"
-    ],
-    "AttachCaravan": [
-        "Caravan",
-        "Movable",
-        "OrderId"
-    ],
-    "ClaimFungibleOrder": [
-        "Trade",
-        "Resource"
-    ],
-    "MakeFungibleOrder": [
-        "Resource",
-        "FungibleEntities",
-        "OrderResource",
-        "Trade",
-        "Status"
-    ],
-    "TakeFungibleOrder": [
-        "Resource",
-        "Status",
-        "ArrivalTime",
-        "Position",
-        "Movable",
-        "Trade",
-        "Road"
-    ],
-    "CancelFungibleOrder": [
-        "Resource",
+    "TRADE_SYSTEMS": [
         "Caravan",
         "Movable",
         "OrderId",
-        "Status"
-    ],
-    "Settle": [
+        "Trade",
         "Resource",
-        "Owner",
-        "Realm",
+        "FungibleEntities",
+        "OrderResource",
+        "Status",
+        "ArrivalTime",
         "Position",
-        "Age"
+        "Road"
     ],
-    "Unsettle": [
-        "Owner",
-        "Realm",
-        "Position",
-        "Age"
-    ],
-    "CreateRoad": [
+    "ROAD_SYSTEMS": [
         "Road",
         "Resource"
     ],
-    "InitializeHyperStructure": [
+    "HYPERSTRUCTURE_SYSTEMS": [
         "HyperStructure",
         "Position",
-        "Resource"
-    ],
-    "CompleteHyperStructure": [
-        "HyperStructure"
-    ],
-    "DefineHyperStructure": [
-        "HyperStructure",
+        "Resource",
         "ResourceCost"
     ],
-    "TransferResources": [
+    "RESOURCE_SYSTEMS": [
         "Resource"
     ],
-    "Travel": [
+    "TRAVEL_SYSTEMS": [
         "ArrivalTime",
         "Position",
         "Road"
