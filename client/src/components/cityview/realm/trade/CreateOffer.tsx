@@ -454,6 +454,10 @@ export const SelectCaravanPanel = ({
     }
   }, [realm]);
 
+  const canCarry = (caravan: CaravanInterface, resourceWeight: number) => {
+    return caravan.capacity ? divideByPrecision(caravan.capacity) >= resourceWeight : false;
+  };
+
   let myAvailableCaravans = useMemo(
     () =>
       realmCaravans
@@ -465,14 +469,13 @@ export const SelectCaravanPanel = ({
                 !caravan.blocked &&
                 (!caravan.arrivalTime || caravan.arrivalTime <= nextBlockTimestamp);
               // capacity in gr (1kg = 1000gr)
-              const canCarry = caravan.capacity ? caravan.capacity / 1000 >= resourceWeight : false;
-              if (isIdle && canCarry) {
+              if (isIdle && canCarry(caravan, resourceWeight)) {
                 return caravan;
               }
             })
             .filter(Boolean) as CaravanInterface[])
         : [],
-    [realmCaravans],
+    [realmCaravans, resourceWeight],
   );
 
   return (
@@ -549,7 +552,7 @@ export const SelectCaravanPanel = ({
                 />
                 <Donkey className="ml-2 w-5 h-5 min-w-[20px]" />
                 <div className="flex flex-col justify-center ml-2">
-                  <div className="text-xs font-bold text-white">{donkeysCount}</div>
+                  <div className="text-xs font-bold text-white">{donkeysLeft - donkeysCount}</div>
                   <div className="text-xs text-center text-white">Donkeys</div>
                 </div>
               </div>
@@ -565,12 +568,6 @@ export const SelectCaravanPanel = ({
             <div className="flex items-center mb-1 text-xs text-center text-white">
               <Danger />
               <div className="ml-1 uppercase text-danger">Increase the amount of units</div>
-            </div>
-          )}
-          {donkeysLeft && (
-            <div className="flex mb-1 text-xs text-center text-white">
-              Donkeys Left{" "}
-              <div className={`ml-1 text-${hasEnoughDonkeys ? "order-brilliance" : "danger"}`}>{donkeysLeft}</div>
             </div>
           )}
         </>

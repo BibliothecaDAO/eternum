@@ -23,7 +23,7 @@ import useSound from "use-sound";
 import { NotificationsComponent } from "../components/NotificationsComponent";
 import { useSyncWorld } from "../hooks/graphql/useGraphQLQueries";
 import WorldMapMenuModule from "../modules/WorldMapMenuModule";
-import { HYPERSTRUCTURES_POSITIONS } from "../modules/scenes/WorldMapScene";
+import hyperStructures from "../data/hyperstructures.json";
 import { useHyperstructure } from "../hooks/helpers/useHyperstructure";
 
 export const World = () => {
@@ -59,7 +59,9 @@ export const World = () => {
   useEffect(() => {
     if (!loading) {
       setHyperstructures(
-        HYPERSTRUCTURES_POSITIONS.map((hyperstructure, index) => getHyperstructure(index + 1, hyperstructure)),
+        hyperStructures.map((hyperstructure, index) =>
+          getHyperstructure(index + 1, { x: hyperstructure.x, y: hyperstructure.y, z: hyperstructure.z }),
+        ),
       );
     }
   }, [loading]);
