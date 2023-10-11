@@ -1,563 +1,1842 @@
 [
-    {
-      "x": -105.95073562656883,
-      "y": 0.528415243525413,
-      "z": -35.36402704025532,
-      "resources": {
+  {
+    "x": -14.738945388790135,
+    "y": 0.528415243525413,
+    "z": 30.327674620452598,
+    "resources": {
       "initialization": [
-        {"resourceType": 1, "amount": 1000000},
-        {"resourceType": 2, "amount": 1000000},
-        {"resourceType": 3, "amount": 1000000},
-        {"resourceType": 4, "amount": 1000000 }],
+        {
+          "resourceType": 1,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 1000000
+        }
+      ],
       "completion": [
-        { "resourceType": 1, "amount": 10000000 },
-        { "resourceType": 2, "amount": 10000000 },
-        { "resourceType": 3, "amount": 10000000 },
-        { "resourceType": 4, "amount": 10000000 },
-        { "resourceType": 5, "amount": 10000000 },
-        { "resourceType": 6, "amount": 10000000 },
-        { "resourceType": 7, "amount": 10000000 },
-        { "resourceType": 8, "amount": 10000000 },
-        { "resourceType": 9, "amount": 10000000 },
-        { "resourceType": 10, "amount": 10000000 },
-        { "resourceType": 11, "amount": 10000000 },
-        { "resourceType": 12, "amount": 10000000 },
-        { "resourceType": 13, "amount": 10000000 },
-        { "resourceType": 14, "amount": 10000000 },
-        { "resourceType": 15, "amount": 10000000 },
-        { "resourceType": 16, "amount": 10000000 },
-        { "resourceType": 17, "amount": 10000000 },
-        { "resourceType": 18, "amount": 10000000 },
-        { "resourceType": 19, "amount": 10000000 },
-        { "resourceType": 20, "amount": 10000000 },
-        { "resourceType": 21, "amount": 10000000 },
-        { "resourceType": 22, "amount": 10000000 }
-      ]}
-    },
-    {
-      "x": -90.60024070188028,
-      "y": 0.528415243525413,
-      "z": 7.335662077462935,
-      "resources": {
-        "initialization": [
-          {"resourceType": 1, "amount": 1000000},
-          {"resourceType": 2, "amount": 1000000},
-          {"resourceType": 3, "amount": 1000000},
-          {"resourceType": 4, "amount": 1000000 }],
-        "completion": [
-          { "resourceType": 1, "amount": 10000000 },
-          { "resourceType": 2, "amount": 10000000 },
-          { "resourceType": 3, "amount": 10000000 },
-          { "resourceType": 4, "amount": 10000000 },
-          { "resourceType": 5, "amount": 10000000 },
-          { "resourceType": 6, "amount": 10000000 },
-          { "resourceType": 7, "amount": 10000000 },
-          { "resourceType": 8, "amount": 10000000 },
-          { "resourceType": 9, "amount": 10000000 },
-          { "resourceType": 10, "amount": 10000000 },
-          { "resourceType": 11, "amount": 10000000 },
-          { "resourceType": 12, "amount": 10000000 },
-          { "resourceType": 13, "amount": 10000000 },
-          { "resourceType": 14, "amount": 10000000 },
-          { "resourceType": 15, "amount": 10000000 },
-          { "resourceType": 16, "amount": 10000000 },
-          { "resourceType": 17, "amount": 10000000 },
-          { "resourceType": 18, "amount": 10000000 },
-          { "resourceType": 19, "amount": 10000000 },
-          { "resourceType": 20, "amount": 10000000 },
-          { "resourceType": 21, "amount": 10000000 },
-          { "resourceType": 22, "amount": 10000000 }
-        ]}
-    },
-    {
-      "x": -119.45899643774253,
-      "y": 0.528415243525413,
-      "z": 22.36329531857441,
-      "resources": {
-        "initialization": [
-          {"resourceType": 1, "amount": 1000000},
-          {"resourceType": 2, "amount": 1000000},
-          {"resourceType": 3, "amount": 1000000},
-          {"resourceType": 4, "amount": 1000000 }],
-        "completion": [
-          { "resourceType": 1, "amount": 10000000 },
-          { "resourceType": 2, "amount": 10000000 },
-          { "resourceType": 3, "amount": 10000000 },
-          { "resourceType": 4, "amount": 10000000 },
-          { "resourceType": 5, "amount": 10000000 },
-          { "resourceType": 6, "amount": 10000000 },
-          { "resourceType": 7, "amount": 10000000 },
-          { "resourceType": 8, "amount": 10000000 },
-          { "resourceType": 9, "amount": 10000000 },
-          { "resourceType": 10, "amount": 10000000 },
-          { "resourceType": 11, "amount": 10000000 },
-          { "resourceType": 12, "amount": 10000000 },
-          { "resourceType": 13, "amount": 10000000 },
-          { "resourceType": 14, "amount": 10000000 },
-          { "resourceType": 15, "amount": 10000000 },
-          { "resourceType": 16, "amount": 10000000 },
-          { "resourceType": 17, "amount": 10000000 },
-          { "resourceType": 18, "amount": 10000000 },
-          { "resourceType": 19, "amount": 10000000 },
-          { "resourceType": 20, "amount": 10000000 },
-          { "resourceType": 21, "amount": 10000000 },
-          { "resourceType": 22, "amount": 10000000 }
-        ]}
-    },
-    {
-      "x": -70.25751302528872,
-      "y": 0.528415243525413,
-      "z": -32.37931467429666,
-      "resources": {
-        "initialization": [
-          {"resourceType": 1, "amount": 1000000},
-          {"resourceType": 2, "amount": 1000000},
-          {"resourceType": 3, "amount": 1000000},
-          {"resourceType": 4, "amount": 1000000 }],
-        "completion": [
-          { "resourceType": 1, "amount": 10000000 },
-          { "resourceType": 2, "amount": 10000000 },
-          { "resourceType": 3, "amount": 10000000 },
-          { "resourceType": 4, "amount": 10000000 },
-          { "resourceType": 5, "amount": 10000000 },
-          { "resourceType": 6, "amount": 10000000 },
-          { "resourceType": 7, "amount": 10000000 },
-          { "resourceType": 8, "amount": 10000000 },
-          { "resourceType": 9, "amount": 10000000 },
-          { "resourceType": 10, "amount": 10000000 },
-          { "resourceType": 11, "amount": 10000000 },
-          { "resourceType": 12, "amount": 10000000 },
-          { "resourceType": 13, "amount": 10000000 },
-          { "resourceType": 14, "amount": 10000000 },
-          { "resourceType": 15, "amount": 10000000 },
-          { "resourceType": 16, "amount": 10000000 },
-          { "resourceType": 17, "amount": 10000000 },
-          { "resourceType": 18, "amount": 10000000 },
-          { "resourceType": 19, "amount": 10000000 },
-          { "resourceType": 20, "amount": 10000000 },
-          { "resourceType": 21, "amount": 10000000 },
-          { "resourceType": 22, "amount": 10000000 }
-        ]}
-    },
-    {
-      "x": -22.73312316195737,
-      "y": 0.528415243525413,
-      "z": -28.231658318595414,
-      "resources": {
-        "initialization": [
-          {"resourceType": 1, "amount": 1000000},
-          {"resourceType": 2, "amount": 1000000},
-          {"resourceType": 3, "amount": 1000000},
-          {"resourceType": 4, "amount": 1000000 }],
-        "completion": [
-          { "resourceType": 1, "amount": 10000000 },
-          { "resourceType": 2, "amount": 10000000 },
-          { "resourceType": 3, "amount": 10000000 },
-          { "resourceType": 4, "amount": 10000000 },
-          { "resourceType": 5, "amount": 10000000 },
-          { "resourceType": 6, "amount": 10000000 },
-          { "resourceType": 7, "amount": 10000000 },
-          { "resourceType": 8, "amount": 10000000 },
-          { "resourceType": 9, "amount": 10000000 },
-          { "resourceType": 10, "amount": 10000000 },
-          { "resourceType": 11, "amount": 10000000 },
-          { "resourceType": 12, "amount": 10000000 },
-          { "resourceType": 13, "amount": 10000000 },
-          { "resourceType": 14, "amount": 10000000 },
-          { "resourceType": 15, "amount": 10000000 },
-          { "resourceType": 16, "amount": 10000000 },
-          { "resourceType": 17, "amount": 10000000 },
-          { "resourceType": 18, "amount": 10000000 },
-          { "resourceType": 19, "amount": 10000000 },
-          { "resourceType": 20, "amount": 10000000 },
-          { "resourceType": 21, "amount": 10000000 },
-          { "resourceType": 22, "amount": 10000000 }
-        ]}
-    },
-    {
-      "x": -14.97911593658031,
-      "y": 0.528415243525413,
-      "z": -3.5918721344570272,
-      "resources": {
-        "initialization": [
-          {"resourceType": 1, "amount": 1000000},
-          {"resourceType": 2, "amount": 1000000},
-          {"resourceType": 3, "amount": 1000000},
-          {"resourceType": 4, "amount": 1000000 }],
-        "completion": [
-          { "resourceType": 1, "amount": 10000000 },
-          { "resourceType": 2, "amount": 10000000 },
-          { "resourceType": 3, "amount": 10000000 },
-          { "resourceType": 4, "amount": 10000000 },
-          { "resourceType": 5, "amount": 10000000 },
-          { "resourceType": 6, "amount": 10000000 },
-          { "resourceType": 7, "amount": 10000000 },
-          { "resourceType": 8, "amount": 10000000 },
-          { "resourceType": 9, "amount": 10000000 },
-          { "resourceType": 10, "amount": 10000000 },
-          { "resourceType": 11, "amount": 10000000 },
-          { "resourceType": 12, "amount": 10000000 },
-          { "resourceType": 13, "amount": 10000000 },
-          { "resourceType": 14, "amount": 10000000 },
-          { "resourceType": 15, "amount": 10000000 },
-          { "resourceType": 16, "amount": 10000000 },
-          { "resourceType": 17, "amount": 10000000 },
-          { "resourceType": 18, "amount": 10000000 },
-          { "resourceType": 19, "amount": 10000000 },
-          { "resourceType": 20, "amount": 10000000 },
-          { "resourceType": 21, "amount": 10000000 },
-          { "resourceType": 22, "amount": 10000000 }
-        ]}
-    },
-    {
-      "x": -38.79051261810327,
-      "y": 0.528415243525413,
-      "z": 19.345213249091845,
-      "resources": {
-        "initialization": [
-          {"resourceType": 1, "amount": 1000000},
-          {"resourceType": 2, "amount": 1000000},
-          {"resourceType": 3, "amount": 1000000},
-          {"resourceType": 4, "amount": 1000000 }],
-        "completion": [
-          { "resourceType": 1, "amount": 10000000 },
-          { "resourceType": 2, "amount": 10000000 },
-          { "resourceType": 3, "amount": 10000000 },
-          { "resourceType": 4, "amount": 10000000 },
-          { "resourceType": 5, "amount": 10000000 },
-          { "resourceType": 6, "amount": 10000000 },
-          { "resourceType": 7, "amount": 10000000 },
-          { "resourceType": 8, "amount": 10000000 },
-          { "resourceType": 9, "amount": 10000000 },
-          { "resourceType": 10, "amount": 10000000 },
-          { "resourceType": 11, "amount": 10000000 },
-          { "resourceType": 12, "amount": 10000000 },
-          { "resourceType": 13, "amount": 10000000 },
-          { "resourceType": 14, "amount": 10000000 },
-          { "resourceType": 15, "amount": 10000000 },
-          { "resourceType": 16, "amount": 10000000 },
-          { "resourceType": 17, "amount": 10000000 },
-          { "resourceType": 18, "amount": 10000000 },
-          { "resourceType": 19, "amount": 10000000 },
-          { "resourceType": 20, "amount": 10000000 },
-          { "resourceType": 21, "amount": 10000000 },
-          { "resourceType": 22, "amount": 10000000 }
-        ]}
-    },
-    {
-      "x": -14.738945388790135,
-      "y": 0.528415243525413,
-      "z": 30.327674620452598,
-      "resources": {
-        "initialization": [
-          {"resourceType": 1, "amount": 1000000},
-          {"resourceType": 2, "amount": 1000000},
-          {"resourceType": 3, "amount": 1000000},
-          {"resourceType": 4, "amount": 1000000 }],
-        "completion": [
-          { "resourceType": 1, "amount": 10000000 },
-          { "resourceType": 2, "amount": 10000000 },
-          { "resourceType": 3, "amount": 10000000 },
-          { "resourceType": 4, "amount": 10000000 },
-          { "resourceType": 5, "amount": 10000000 },
-          { "resourceType": 6, "amount": 10000000 },
-          { "resourceType": 7, "amount": 10000000 },
-          { "resourceType": 8, "amount": 10000000 },
-          { "resourceType": 9, "amount": 10000000 },
-          { "resourceType": 10, "amount": 10000000 },
-          { "resourceType": 11, "amount": 10000000 },
-          { "resourceType": 12, "amount": 10000000 },
-          { "resourceType": 13, "amount": 10000000 },
-          { "resourceType": 14, "amount": 10000000 },
-          { "resourceType": 15, "amount": 10000000 },
-          { "resourceType": 16, "amount": 10000000 },
-          { "resourceType": 17, "amount": 10000000 },
-          { "resourceType": 18, "amount": 10000000 },
-          { "resourceType": 19, "amount": 10000000 },
-          { "resourceType": 20, "amount": 10000000 },
-          { "resourceType": 21, "amount": 10000000 },
-          { "resourceType": 22, "amount": 10000000 }
-        ]}
-    },
-    {
-      "x": 15.411695237142771,
-      "y": 0.528415243525413,
-      "z": 37.15702249267392,
-      "resources": {
-        "initialization": [
-          {"resourceType": 1, "amount": 1000000},
-          {"resourceType": 2, "amount": 1000000},
-          {"resourceType": 3, "amount": 1000000},
-          {"resourceType": 4, "amount": 1000000 }],
-        "completion": [
-          { "resourceType": 1, "amount": 10000000 },
-          { "resourceType": 2, "amount": 10000000 },
-          { "resourceType": 3, "amount": 10000000 },
-          { "resourceType": 4, "amount": 10000000 },
-          { "resourceType": 5, "amount": 10000000 },
-          { "resourceType": 6, "amount": 10000000 },
-          { "resourceType": 7, "amount": 10000000 },
-          { "resourceType": 8, "amount": 10000000 },
-          { "resourceType": 9, "amount": 10000000 },
-          { "resourceType": 10, "amount": 10000000 },
-          { "resourceType": 11, "amount": 10000000 },
-          { "resourceType": 12, "amount": 10000000 },
-          { "resourceType": 13, "amount": 10000000 },
-          { "resourceType": 14, "amount": 10000000 },
-          { "resourceType": 15, "amount": 10000000 },
-          { "resourceType": 16, "amount": 10000000 },
-          { "resourceType": 17, "amount": 10000000 },
-          { "resourceType": 18, "amount": 10000000 },
-          { "resourceType": 19, "amount": 10000000 },
-          { "resourceType": 20, "amount": 10000000 },
-          { "resourceType": 21, "amount": 10000000 },
-          { "resourceType": 22, "amount": 10000000 }
-        ]}
-    },
-    {
-      "x": 27.244358277941554,
-      "y": 0.528415243525413,
-      "z": -8.70354515951557,
-      "resources": {
-        "initialization": [
-          {"resourceType": 1, "amount": 1000000},
-          {"resourceType": 2, "amount": 1000000},
-          {"resourceType": 3, "amount": 1000000},
-          {"resourceType": 4, "amount": 1000000 }],
-        "completion": [
-          { "resourceType": 1, "amount": 10000000 },
-          { "resourceType": 2, "amount": 10000000 },
-          { "resourceType": 3, "amount": 10000000 },
-          { "resourceType": 4, "amount": 10000000 },
-          { "resourceType": 5, "amount": 10000000 },
-          { "resourceType": 6, "amount": 10000000 },
-          { "resourceType": 7, "amount": 10000000 },
-          { "resourceType": 8, "amount": 10000000 },
-          { "resourceType": 9, "amount": 10000000 },
-          { "resourceType": 10, "amount": 10000000 },
-          { "resourceType": 11, "amount": 10000000 },
-          { "resourceType": 12, "amount": 10000000 },
-          { "resourceType": 13, "amount": 10000000 },
-          { "resourceType": 14, "amount": 10000000 },
-          { "resourceType": 15, "amount": 10000000 },
-          { "resourceType": 16, "amount": 10000000 },
-          { "resourceType": 17, "amount": 10000000 },
-          { "resourceType": 18, "amount": 10000000 },
-          { "resourceType": 19, "amount": 10000000 },
-          { "resourceType": 20, "amount": 10000000 },
-          { "resourceType": 21, "amount": 10000000 },
-          { "resourceType": 22, "amount": 10000000 }
-        ]}
-    },
-    {
-      "x": 10.681895243570205,
-      "y": 0.528415243525413,
-      "z": -39.09521854207338,
-      "resources": {
-        "initialization": [
-          {"resourceType": 1, "amount": 1000000},
-          {"resourceType": 2, "amount": 1000000},
-          {"resourceType": 3, "amount": 1000000},
-          {"resourceType": 4, "amount": 1000000 }],
-        "completion": [
-          { "resourceType": 1, "amount": 10000000 },
-          { "resourceType": 2, "amount": 10000000 },
-          { "resourceType": 3, "amount": 10000000 },
-          { "resourceType": 4, "amount": 10000000 },
-          { "resourceType": 5, "amount": 10000000 },
-          { "resourceType": 6, "amount": 10000000 },
-          { "resourceType": 7, "amount": 10000000 },
-          { "resourceType": 8, "amount": 10000000 },
-          { "resourceType": 9, "amount": 10000000 },
-          { "resourceType": 10, "amount": 10000000 },
-          { "resourceType": 11, "amount": 10000000 },
-          { "resourceType": 12, "amount": 10000000 },
-          { "resourceType": 13, "amount": 10000000 },
-          { "resourceType": 14, "amount": 10000000 },
-          { "resourceType": 15, "amount": 10000000 },
-          { "resourceType": 16, "amount": 10000000 },
-          { "resourceType": 17, "amount": 10000000 },
-          { "resourceType": 18, "amount": 10000000 },
-          { "resourceType": 19, "amount": 10000000 },
-          { "resourceType": 20, "amount": 10000000 },
-          { "resourceType": 21, "amount": 10000000 },
-          { "resourceType": 22, "amount": 10000000 }
-        ]}
-    },
-    {
-      "x": 82.19099990211434,
-      "y": 0.528415243525413,
-      "z": -34.185218206690024,
-      "resources": {
-        "initialization": [
-          {"resourceType": 1, "amount": 1000000},
-          {"resourceType": 2, "amount": 1000000},
-          {"resourceType": 3, "amount": 1000000},
-          {"resourceType": 4, "amount": 1000000 }],
-        "completion": [
-          { "resourceType": 1, "amount": 10000000 },
-          { "resourceType": 2, "amount": 10000000 },
-          { "resourceType": 3, "amount": 10000000 },
-          { "resourceType": 4, "amount": 10000000 },
-          { "resourceType": 5, "amount": 10000000 },
-          { "resourceType": 6, "amount": 10000000 },
-          { "resourceType": 7, "amount": 10000000 },
-          { "resourceType": 8, "amount": 10000000 },
-          { "resourceType": 9, "amount": 10000000 },
-          { "resourceType": 10, "amount": 10000000 },
-          { "resourceType": 11, "amount": 10000000 },
-          { "resourceType": 12, "amount": 10000000 },
-          { "resourceType": 13, "amount": 10000000 },
-          { "resourceType": 14, "amount": 10000000 },
-          { "resourceType": 15, "amount": 10000000 },
-          { "resourceType": 16, "amount": 10000000 },
-          { "resourceType": 17, "amount": 10000000 },
-          { "resourceType": 18, "amount": 10000000 },
-          { "resourceType": 19, "amount": 10000000 },
-          { "resourceType": 20, "amount": 10000000 },
-          { "resourceType": 21, "amount": 10000000 },
-          { "resourceType": 22, "amount": 10000000 }
-        ]}
-    },
-    {
-      "x": 104.40780672185382,
-      "y": 0.528415243525413,
-      "z": -10.210581383051249,
-      "resources": {
-        "initialization": [
-          {"resourceType": 1, "amount": 1000000},
-          {"resourceType": 2, "amount": 1000000},
-          {"resourceType": 3, "amount": 1000000},
-          {"resourceType": 4, "amount": 1000000 }],
-        "completion": [
-          { "resourceType": 1, "amount": 10000000 },
-          { "resourceType": 2, "amount": 10000000 },
-          { "resourceType": 3, "amount": 10000000 },
-          { "resourceType": 4, "amount": 10000000 },
-          { "resourceType": 5, "amount": 10000000 },
-          { "resourceType": 6, "amount": 10000000 },
-          { "resourceType": 7, "amount": 10000000 },
-          { "resourceType": 8, "amount": 10000000 },
-          { "resourceType": 9, "amount": 10000000 },
-          { "resourceType": 10, "amount": 10000000 },
-          { "resourceType": 11, "amount": 10000000 },
-          { "resourceType": 12, "amount": 10000000 },
-          { "resourceType": 13, "amount": 10000000 },
-          { "resourceType": 14, "amount": 10000000 },
-          { "resourceType": 15, "amount": 10000000 },
-          { "resourceType": 16, "amount": 10000000 },
-          { "resourceType": 17, "amount": 10000000 },
-          { "resourceType": 18, "amount": 10000000 },
-          { "resourceType": 19, "amount": 10000000 },
-          { "resourceType": 20, "amount": 10000000 },
-          { "resourceType": 21, "amount": 10000000 },
-          { "resourceType": 22, "amount": 10000000 }
-        ]}
-    },
-    {
-      "x": 70.95170623206306,
-      "y": 0.528415243525413,
-      "z": 8.4363296832867,
-      "resources": {
-        "initialization": [
-          {"resourceType": 1, "amount": 1000000},
-          {"resourceType": 2, "amount": 1000000},
-          {"resourceType": 3, "amount": 1000000},
-          {"resourceType": 4, "amount": 1000000 }],
-        "completion": [
-          { "resourceType": 1, "amount": 10000000 },
-          { "resourceType": 2, "amount": 10000000 },
-          { "resourceType": 3, "amount": 10000000 },
-          { "resourceType": 4, "amount": 10000000 },
-          { "resourceType": 5, "amount": 10000000 },
-          { "resourceType": 6, "amount": 10000000 },
-          { "resourceType": 7, "amount": 10000000 },
-          { "resourceType": 8, "amount": 10000000 },
-          { "resourceType": 9, "amount": 10000000 },
-          { "resourceType": 10, "amount": 10000000 },
-          { "resourceType": 11, "amount": 10000000 },
-          { "resourceType": 12, "amount": 10000000 },
-          { "resourceType": 13, "amount": 10000000 },
-          { "resourceType": 14, "amount": 10000000 },
-          { "resourceType": 15, "amount": 10000000 },
-          { "resourceType": 16, "amount": 10000000 },
-          { "resourceType": 17, "amount": 10000000 },
-          { "resourceType": 18, "amount": 10000000 },
-          { "resourceType": 19, "amount": 10000000 },
-          { "resourceType": 20, "amount": 10000000 },
-          { "resourceType": 21, "amount": 10000000 },
-          { "resourceType": 22, "amount": 10000000 }
-        ]}
-    },
-    {
-      "x": 111.91588278029236,
-      "y": 0.528415243525413,
-      "z": 32.71779102660024,
-      "resources": {
-        "initialization": [
-          {"resourceType": 1, "amount": 1000000},
-          {"resourceType": 2, "amount": 1000000},
-          {"resourceType": 3, "amount": 1000000},
-          {"resourceType": 4, "amount": 1000000 }],
-        "completion": [
-          { "resourceType": 1, "amount": 10000000 },
-          { "resourceType": 2, "amount": 10000000 },
-          { "resourceType": 3, "amount": 10000000 },
-          { "resourceType": 4, "amount": 10000000 },
-          { "resourceType": 5, "amount": 10000000 },
-          { "resourceType": 6, "amount": 10000000 },
-          { "resourceType": 7, "amount": 10000000 },
-          { "resourceType": 8, "amount": 10000000 },
-          { "resourceType": 9, "amount": 10000000 },
-          { "resourceType": 10, "amount": 10000000 },
-          { "resourceType": 11, "amount": 10000000 },
-          { "resourceType": 12, "amount": 10000000 },
-          { "resourceType": 13, "amount": 10000000 },
-          { "resourceType": 14, "amount": 10000000 },
-          { "resourceType": 15, "amount": 10000000 },
-          { "resourceType": 16, "amount": 10000000 },
-          { "resourceType": 17, "amount": 10000000 },
-          { "resourceType": 18, "amount": 10000000 },
-          { "resourceType": 19, "amount": 10000000 },
-          { "resourceType": 20, "amount": 10000000 },
-          { "resourceType": 21, "amount": 10000000 },
-          { "resourceType": 22, "amount": 10000000 }
-        ]}
-    },
-    {
-      "x": 64.51836447255958,
-      "y": 0.528415243525413,
-      "z": 47.55800814381176,
-      "resources": {
-        "initialization": [
-          {"resourceType": 1, "amount": 1000000},
-          {"resourceType": 2, "amount": 1000000},
-          {"resourceType": 3, "amount": 1000000},
-          {"resourceType": 4, "amount": 1000000 }],
-        "completion": [
-          { "resourceType": 1, "amount": 10000000 },
-          { "resourceType": 2, "amount": 10000000 },
-          { "resourceType": 3, "amount": 10000000 },
-          { "resourceType": 4, "amount": 10000000 },
-          { "resourceType": 5, "amount": 10000000 },
-          { "resourceType": 6, "amount": 10000000 },
-          { "resourceType": 7, "amount": 10000000 },
-          { "resourceType": 8, "amount": 10000000 },
-          { "resourceType": 9, "amount": 10000000 },
-          { "resourceType": 10, "amount": 10000000 },
-          { "resourceType": 11, "amount": 10000000 },
-          { "resourceType": 12, "amount": 10000000 },
-          { "resourceType": 13, "amount": 10000000 },
-          { "resourceType": 14, "amount": 10000000 },
-          { "resourceType": 15, "amount": 10000000 },
-          { "resourceType": 16, "amount": 10000000 },
-          { "resourceType": 17, "amount": 10000000 },
-          { "resourceType": 18, "amount": 10000000 },
-          { "resourceType": 19, "amount": 10000000 },
-          { "resourceType": 20, "amount": 10000000 },
-          { "resourceType": 21, "amount": 10000000 },
-          { "resourceType": 22, "amount": 10000000 }
-        ]}
+        {
+          "resourceType": 1,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 5,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 6,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 7,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 8,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 9,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 10,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 11,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 12,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 13,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 14,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 15,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 16,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 17,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 18,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 19,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 20,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 21,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 22,
+          "amount": 10000000
+        }
+      ]
     }
-  ]
-  
+  },
+  {
+    "x": 82.19099990211434,
+    "y": 0.528415243525413,
+    "z": -34.185218206690024,
+    "resources": {
+      "initialization": [
+        {
+          "resourceType": 1,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 1000000
+        }
+      ],
+      "completion": [
+        {
+          "resourceType": 1,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 5,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 6,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 7,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 8,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 9,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 10,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 11,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 12,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 13,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 14,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 15,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 16,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 17,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 18,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 19,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 20,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 21,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 22,
+          "amount": 10000000
+        }
+      ]
+    }
+  },
+  {
+    "x": -14.97911593658031,
+    "y": 0.528415243525413,
+    "z": -3.5918721344570272,
+    "resources": {
+      "initialization": [
+        {
+          "resourceType": 1,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 1000000
+        }
+      ],
+      "completion": [
+        {
+          "resourceType": 1,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 5,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 6,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 7,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 8,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 9,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 10,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 11,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 12,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 13,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 14,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 15,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 16,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 17,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 18,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 19,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 20,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 21,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 22,
+          "amount": 10000000
+        }
+      ]
+    }
+  },
+  {
+    "x": 111.91588278029236,
+    "y": 0.528415243525413,
+    "z": 32.71779102660024,
+    "resources": {
+      "initialization": [
+        {
+          "resourceType": 1,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 1000000
+        }
+      ],
+      "completion": [
+        {
+          "resourceType": 1,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 5,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 6,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 7,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 8,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 9,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 10,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 11,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 12,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 13,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 14,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 15,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 16,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 17,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 18,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 19,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 20,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 21,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 22,
+          "amount": 10000000
+        }
+      ]
+    }
+  },
+  {
+    "x": -105.95073562656883,
+    "y": 0.528415243525413,
+    "z": -35.36402704025532,
+    "resources": {
+      "initialization": [
+        {
+          "resourceType": 1,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 1000000
+        }
+      ],
+      "completion": [
+        {
+          "resourceType": 1,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 5,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 6,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 7,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 8,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 9,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 10,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 11,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 12,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 13,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 14,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 15,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 16,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 17,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 18,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 19,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 20,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 21,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 22,
+          "amount": 10000000
+        }
+      ]
+    }
+  },
+  {
+    "x": 64.51836447255958,
+    "y": 0.528415243525413,
+    "z": 47.55800814381176,
+    "resources": {
+      "initialization": [
+        {
+          "resourceType": 1,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 1000000
+        }
+      ],
+      "completion": [
+        {
+          "resourceType": 1,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 5,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 6,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 7,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 8,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 9,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 10,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 11,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 12,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 13,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 14,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 15,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 16,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 17,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 18,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 19,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 20,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 21,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 22,
+          "amount": 10000000
+        }
+      ]
+    }
+  },
+  {
+    "x": 15.411695237142771,
+    "y": 0.528415243525413,
+    "z": 37.15702249267392,
+    "resources": {
+      "initialization": [
+        {
+          "resourceType": 1,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 1000000
+        }
+      ],
+      "completion": [
+        {
+          "resourceType": 1,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 5,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 6,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 7,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 8,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 9,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 10,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 11,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 12,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 13,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 14,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 15,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 16,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 17,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 18,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 19,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 20,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 21,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 22,
+          "amount": 10000000
+        }
+      ]
+    }
+  },
+  {
+    "x": -38.79051261810327,
+    "y": 0.528415243525413,
+    "z": 19.345213249091845,
+    "resources": {
+      "initialization": [
+        {
+          "resourceType": 1,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 1000000
+        }
+      ],
+      "completion": [
+        {
+          "resourceType": 1,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 5,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 6,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 7,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 8,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 9,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 10,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 11,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 12,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 13,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 14,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 15,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 16,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 17,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 18,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 19,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 20,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 21,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 22,
+          "amount": 10000000
+        }
+      ]
+    }
+  },
+  {
+    "x": -90.60024070188028,
+    "y": 0.528415243525413,
+    "z": 7.335662077462935,
+    "resources": {
+      "initialization": [
+        {
+          "resourceType": 1,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 1000000
+        }
+      ],
+      "completion": [
+        {
+          "resourceType": 1,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 5,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 6,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 7,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 8,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 9,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 10,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 11,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 12,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 13,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 14,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 15,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 16,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 17,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 18,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 19,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 20,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 21,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 22,
+          "amount": 10000000
+        }
+      ]
+    }
+  },
+  {
+    "x": 70.95170623206306,
+    "y": 0.528415243525413,
+    "z": 8.4363296832867,
+    "resources": {
+      "initialization": [
+        {
+          "resourceType": 1,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 1000000
+        }
+      ],
+      "completion": [
+        {
+          "resourceType": 1,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 5,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 6,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 7,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 8,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 9,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 10,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 11,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 12,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 13,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 14,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 15,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 16,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 17,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 18,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 19,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 20,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 21,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 22,
+          "amount": 10000000
+        }
+      ]
+    }
+  },
+  {
+    "x": -70.25751302528872,
+    "y": 0.528415243525413,
+    "z": -32.37931467429666,
+    "resources": {
+      "initialization": [
+        {
+          "resourceType": 1,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 1000000
+        }
+      ],
+      "completion": [
+        {
+          "resourceType": 1,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 5,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 6,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 7,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 8,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 9,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 10,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 11,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 12,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 13,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 14,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 15,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 16,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 17,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 18,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 19,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 20,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 21,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 22,
+          "amount": 10000000
+        }
+      ]
+    }
+  },
+  {
+    "x": -22.73312316195737,
+    "y": 0.528415243525413,
+    "z": -28.231658318595414,
+    "resources": {
+      "initialization": [
+        {
+          "resourceType": 1,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 1000000
+        }
+      ],
+      "completion": [
+        {
+          "resourceType": 1,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 5,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 6,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 7,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 8,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 9,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 10,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 11,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 12,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 13,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 14,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 15,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 16,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 17,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 18,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 19,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 20,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 21,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 22,
+          "amount": 10000000
+        }
+      ]
+    }
+  },
+  {
+    "x": 10.681895243570205,
+    "y": 0.528415243525413,
+    "z": -39.09521854207338,
+    "resources": {
+      "initialization": [
+        {
+          "resourceType": 1,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 1000000
+        }
+      ],
+      "completion": [
+        {
+          "resourceType": 1,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 5,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 6,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 7,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 8,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 9,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 10,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 11,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 12,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 13,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 14,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 15,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 16,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 17,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 18,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 19,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 20,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 21,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 22,
+          "amount": 10000000
+        }
+      ]
+    }
+  },
+  {
+    "x": 27.244358277941554,
+    "y": 0.528415243525413,
+    "z": -8.70354515951557,
+    "resources": {
+      "initialization": [
+        {
+          "resourceType": 1,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 1000000
+        }
+      ],
+      "completion": [
+        {
+          "resourceType": 1,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 5,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 6,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 7,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 8,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 9,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 10,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 11,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 12,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 13,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 14,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 15,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 16,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 17,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 18,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 19,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 20,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 21,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 22,
+          "amount": 10000000
+        }
+      ]
+    }
+  },
+  {
+    "x": 104.40780672185382,
+    "y": 0.528415243525413,
+    "z": -10.210581383051249,
+    "resources": {
+      "initialization": [
+        {
+          "resourceType": 1,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 1000000
+        }
+      ],
+      "completion": [
+        {
+          "resourceType": 1,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 5,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 6,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 7,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 8,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 9,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 10,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 11,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 12,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 13,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 14,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 15,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 16,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 17,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 18,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 19,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 20,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 21,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 22,
+          "amount": 10000000
+        }
+      ]
+    }
+  },
+  {
+    "x": -119.45899643774253,
+    "y": 0.528415243525413,
+    "z": 22.36329531857441,
+    "resources": {
+      "initialization": [
+        {
+          "resourceType": 1,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 1000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 1000000
+        }
+      ],
+      "completion": [
+        {
+          "resourceType": 1,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 2,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 3,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 4,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 5,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 6,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 7,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 8,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 9,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 10,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 11,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 12,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 13,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 14,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 15,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 16,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 17,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 18,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 19,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 20,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 21,
+          "amount": 10000000
+        },
+        {
+          "resourceType": 22,
+          "amount": 10000000
+        }
+      ]
+    }
+  }
+]
