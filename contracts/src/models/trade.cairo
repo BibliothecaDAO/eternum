@@ -53,7 +53,7 @@ struct FungibleEntities {
     #[key]
     entity_id: u128,
     key: u128,
-    count: usize,
+    count: u32,
 }
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -63,7 +63,7 @@ struct OrderResource {
     #[key]
     fungible_entities_id: u128,
     #[key]
-    index: usize,
+    index: u32,
     resource_type: u8,
     balance: u128,
 }

@@ -14,7 +14,7 @@ struct ResourceCost {
     #[key]
     entity_id: u128,
     #[key]
-    index: usize,
+    index: u32,
     resource_type: u8,
     amount: u128
 }
