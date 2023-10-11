@@ -31,8 +31,6 @@ mod trade_systems {
 
     use core::poseidon::poseidon_hash_span;
 
-    use debug::PrintTrait;
-
 
     #[external(v0)]
     impl TradeSystemsImpl of ITradeSystems<ContractState> {

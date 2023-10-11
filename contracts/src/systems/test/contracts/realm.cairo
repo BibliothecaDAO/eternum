@@ -1,5 +1,5 @@
 #[system]
-mod realm_systems {
+mod test_realm_systems {
 
     use eternum::models::realm::Realm;
     use eternum::models::owner::Owner;

@@ -11,7 +11,7 @@ trait IResourceSystems<TContractState> {
 
 
 #[system]
-mod resource_systems {
+mod test_resource_systems {
     use eternum::models::resources::Resource;
     use eternum::constants::ResourceTypes;
     use eternum::alias::ID;

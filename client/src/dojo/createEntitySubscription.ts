@@ -61,7 +61,6 @@ export async function createEntitySubscription(contractComponents: Components): 
     {
       next: ({ data }) => {
         try {
-          console.log({ data });
           const entityUpdated = data?.entityUpdated as EntityUpdated;
           const componentNames = entityUpdated.modelNames.split(",");
           queryEntityInfoById(entityUpdated.id, componentNames, client, contractComponents).then((entityInfo) => {

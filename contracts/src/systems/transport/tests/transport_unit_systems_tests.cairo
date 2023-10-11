@@ -6,7 +6,7 @@ use eternum::models::owner::Owner;
 use eternum::models::metadata::MetaData;
 use eternum::models::quantity::{Quantity, QuantityTracker};
 
-use eternum::systems::test::contracts::realm::realm_systems;
+use eternum::systems::test::contracts::realm::test_realm_systems;
 use eternum::systems::test::interface::realm::{
     IRealmSystemsDispatcher,
     IRealmSystemsDispatcherTrait,
@@ -45,7 +45,7 @@ fn setup() -> (IWorldDispatcher, u128, ITransportUnitSystemsDispatcher) {
 
     // set realm entity
     let realm_systems_address 
-        = deploy_system(realm_systems::TEST_CLASS_HASH);
+        = deploy_system(test_realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
