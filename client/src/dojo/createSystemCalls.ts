@@ -178,6 +178,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
   const mint_resources = async (props: MintResourcesProps) => {
     const { entity_id, resources, signer } = props;
     const tx = await provider.execute(signer, RESOURCE_SYSTEMS, "mint", [
+      import.meta.env.VITE_WORLD_ADDRESS!,
       entity_id,
       resources.length / 2,
       ...resources,
