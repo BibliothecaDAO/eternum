@@ -454,6 +454,10 @@ export const SelectCaravanPanel = ({
     }
   }, [realm]);
 
+  const canCarry = (caravan: CaravanInterface, resourceWeight: number) => {
+    return caravan.capacity ? divideByPrecision(caravan.capacity) >= resourceWeight : false;
+  };
+
   let myAvailableCaravans = useMemo(
     () =>
       realmCaravans
@@ -465,14 +469,13 @@ export const SelectCaravanPanel = ({
                 !caravan.blocked &&
                 (!caravan.arrivalTime || caravan.arrivalTime <= nextBlockTimestamp);
               // capacity in gr (1kg = 1000gr)
-              const canCarry = caravan.capacity ? caravan.capacity / 1000 >= resourceWeight : false;
-              if (isIdle && canCarry) {
+              if (isIdle && canCarry(caravan, resourceWeight)) {
                 return caravan;
               }
             })
             .filter(Boolean) as CaravanInterface[])
         : [],
-    [realmCaravans],
+    [realmCaravans, resourceWeight],
   );
 
   return (
