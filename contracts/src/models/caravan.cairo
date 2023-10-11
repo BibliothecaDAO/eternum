@@ -10,5 +10,5 @@ struct CaravanMembers {
     #[key]
     entity_id: u128,
     key: u128,
-    count: usize,
+    count: u32,
 }
