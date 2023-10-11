@@ -10,7 +10,7 @@ trait IResourceSystems<TContractState> {
 }
 
 
-#[system]
+#[dojo::contract]
 mod test_resource_systems {
     use eternum::models::resources::Resource;
     use eternum::constants::ResourceTypes;

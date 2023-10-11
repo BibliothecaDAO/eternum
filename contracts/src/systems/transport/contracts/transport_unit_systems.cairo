@@ -1,4 +1,4 @@
-#[system]
+#[dojo::contract]
 mod transport_unit_systems {
     use eternum::alias::ID;
     use eternum::models::owner::Owner;

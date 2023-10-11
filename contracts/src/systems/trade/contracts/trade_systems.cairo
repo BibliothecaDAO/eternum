@@ -1,4 +1,4 @@
-#[system]
+#[dojo::contract]
 mod trade_systems {
     use eternum::alias::ID;
 

@@ -1,5 +1,5 @@
 // TODO for a later milestone
-// #[system]
+// #[dojo::contract]
 // mod BuildBuilding {
 //     use array::ArrayTrait;
 //     use traits::Into;

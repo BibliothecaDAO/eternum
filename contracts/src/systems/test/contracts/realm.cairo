@@ -1,4 +1,4 @@
-#[system]
+#[dojo::contract]
 mod test_realm_systems {
 
     use eternum::models::realm::Realm;

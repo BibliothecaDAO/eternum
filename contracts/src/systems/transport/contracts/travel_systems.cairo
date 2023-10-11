@@ -1,4 +1,4 @@
-#[system]
+#[dojo::contract]
 mod travel_systems {
     
     use eternum::alias::ID;

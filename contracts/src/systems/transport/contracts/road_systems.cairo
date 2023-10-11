@@ -1,4 +1,4 @@
-#[system]
+#[dojo::contract]
 mod road_systems {
     use eternum::models::position::{Coord};
     use eternum::models::resources::Resource;

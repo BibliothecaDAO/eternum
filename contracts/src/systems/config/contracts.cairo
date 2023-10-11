@@ -1,4 +1,4 @@
-#[system]
+#[dojo::contract]
 mod config_systems {
     use eternum::alias::ID;
 

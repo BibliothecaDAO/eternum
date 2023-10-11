@@ -1,4 +1,4 @@
-#[system]
+#[dojo::contract]
 mod hyperstructure_systems {
     use eternum::alias::ID;
     use eternum::models::hyperstructure::HyperStructure;
