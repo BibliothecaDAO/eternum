@@ -31,6 +31,8 @@ mod trade_systems {
 
     use core::poseidon::poseidon_hash_span;
 
+    use debug::PrintTrait;
+
 
     #[external(v0)]
     impl TradeSystemsImpl of ITradeSystems<ContractState> {
@@ -714,7 +716,7 @@ mod trade_systems {
             let caravan = TradeCaravanHelpersImpl::get(world, order_id, owner_id);
             assert(caravan.caravan_id == 0, 'caravan already attached');
 
-            let caravan_movable = get!(world, caravan.caravan_id, Movable);        
+            let caravan_movable = get!(world, caravan_id, Movable);        
             assert(caravan_movable.blocked == false, 'caravan already blocked');
 
             //q: should we check if caravan is attached to another order?
