@@ -129,6 +129,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     optimisticBuildLabor(
       nextBlockTimestamp || 0,
       costResources,
+      laborAuctionAverageCoefficient,
       buildLabor,
     )({
       signer: account,
