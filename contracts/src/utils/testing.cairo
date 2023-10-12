@@ -5,7 +5,7 @@ use eternum::models::resources::{resource, Resource};
 use eternum::models::resources::{resource_cost, ResourceCost};
 use eternum::models::position::{position, Position};
 use eternum::models::capacity::{capacity, Capacity};
-use eternum::models::metadata::{meta_data, EntityMetadata};
+use eternum::models::metadata::{entity_metadata, EntityMetadata};
 use eternum::models::age::{age, Age};
 use eternum::models::labor::{labor, Labor};
 use eternum::models::resources::{vault, Vault};
@@ -67,7 +67,7 @@ fn spawn_eternum() -> IWorldDispatcher {
         speed_config::TEST_CLASS_HASH,
         capacity_config::TEST_CLASS_HASH,
         world_config::TEST_CLASS_HASH,
-        meta_data::TEST_CLASS_HASH,
+        entity_metadata::TEST_CLASS_HASH,
         quantity_tracker::TEST_CLASS_HASH,
         position::TEST_CLASS_HASH,
         capacity::TEST_CLASS_HASH,
