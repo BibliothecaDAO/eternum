@@ -44,7 +44,7 @@ for (let row = 1; row < rows.length; row++) {
     const amount = rows[row][col];
     if (amount !== "") {
       resource_list.push(rows[0][col]); // push resource_id from header row
-      resource_amounts.push(parseInt(Number(amount) * 1000)); // push resource_amount from current row
+      resource_amounts.push(parseInt((Number(amount) * 1000) / 12)); // push resource_amount from current row
     }
   }
 

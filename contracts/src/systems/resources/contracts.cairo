@@ -1,4 +1,4 @@
-#[system]
+#[dojo::contract]
 mod resource_systems {
     use eternum::alias::ID;
     use eternum::models::resources::Resource;

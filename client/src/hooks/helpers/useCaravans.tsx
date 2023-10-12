@@ -5,11 +5,13 @@ import { useMemo, useState } from "react";
 import { getEntityIdFromKeys } from "../../utils/utils";
 import { useEntityQuery } from "@dojoengine/react";
 
+const FREE_TRANSPORT_ENTITY_TYPE = 256;
+
 export function useCaravan() {
   const {
     account: { account },
     setup: {
-      components: { ArrivalTime, Movable, Capacity, Position, OrderId, Owner },
+      components: { ArrivalTime, Movable, Capacity, Position, OrderId, Owner, QuantityTracker },
     },
   } = useDojo();
 
@@ -52,7 +54,15 @@ export function useCaravan() {
     }
   }
 
-  return { getCaravanInfo, calculateDistance };
+  function getRealmDonkeysCount(realmEntityId: number): number {
+    const donkeysQuantity = getComponentValue(
+      QuantityTracker,
+      getEntityIdFromKeys([BigInt(realmEntityId), BigInt(FREE_TRANSPORT_ENTITY_TYPE)]),
+    );
+
+    return donkeysQuantity?.count || 0;
+  }
+  return { getCaravanInfo, calculateDistance, getRealmDonkeysCount };
 }
 
 export function useGetPositionCaravans(x: number, y: number) {

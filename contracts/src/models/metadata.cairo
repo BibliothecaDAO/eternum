@@ -3,7 +3,7 @@ use eternum::alias::ID;
 // a way to store the type of the entity in addition
 // to the list of components which we already have
 #[derive(Model, Copy, Drop, Serde)]
-struct MetaData {
+struct EntityMetadata {
     #[key]
     entity_id: u128,
     entity_type: u128,

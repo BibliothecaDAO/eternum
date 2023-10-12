@@ -1,5 +1,5 @@
 
-#[system]
+#[dojo::contract]
 mod labor_systems {
 
     use cubit::f128::types::fixed::{Fixed, FixedTrait};

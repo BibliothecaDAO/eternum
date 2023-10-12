@@ -3,10 +3,10 @@ use eternum::models::position::Position;
 use eternum::models::movable::{Movable, ArrivalTime};
 use eternum::models::capacity::Capacity;
 use eternum::models::owner::Owner;
-use eternum::models::metadata::MetaData;
+use eternum::models::metadata::EntityMetadata;
 use eternum::models::quantity::{Quantity, QuantityTracker};
 
-use eternum::systems::test::contracts::realm::realm_systems;
+use eternum::systems::test::contracts::realm::test_realm_systems;
 use eternum::systems::test::interface::realm::{
     IRealmSystemsDispatcher,
     IRealmSystemsDispatcherTrait,
@@ -45,7 +45,7 @@ fn setup() -> (IWorldDispatcher, u128, ITransportUnitSystemsDispatcher) {
 
     // set realm entity
     let realm_systems_address 
-        = deploy_system(realm_systems::TEST_CLASS_HASH);
+        = deploy_system(test_realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -116,7 +116,7 @@ fn test_create_free_transport_unit() {
 
     // check that the free transport unit has been created
     let (quantity, position, metadata, owner, capacity, movable, arrival_time) 
-    = get!(world, free_transport_unit_id, (Quantity, Position, MetaData, Owner, Capacity, Movable, ArrivalTime));
+    = get!(world, free_transport_unit_id, (Quantity, Position, EntityMetadata, Owner, Capacity, Movable, ArrivalTime));
 
     assert(quantity.value == 10_u128, 'free transport unit not created');
 

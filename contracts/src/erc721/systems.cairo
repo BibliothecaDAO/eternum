@@ -1,4 +1,4 @@
-#[system]
+#[dojo::contract]
 mod ERC721Approve {
     use traits::{Into, TryInto};
     use starknet::contract_address::Felt252TryIntoContractAddress;
@@ -16,7 +16,7 @@ mod ERC721Approve {
     }
 }
 
-#[system]
+#[dojo::contract]
 mod ERC721TransferFrom {
     use zeroable::Zeroable;
     use traits::{Into, TryInto};
@@ -59,7 +59,7 @@ mod ERC721TransferFrom {
     }
 }
 
-#[system]
+#[dojo::contract]
 mod ERC721Mint {
     use traits::{Into, TryInto};
     use starknet::contract_address::Felt252TryIntoContractAddress;

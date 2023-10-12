@@ -1,4 +1,4 @@
-#[system]
+#[dojo::contract]
 mod caravan_systems {
     use eternum::alias::ID;
     use eternum::models::metadata::ForeignKey;

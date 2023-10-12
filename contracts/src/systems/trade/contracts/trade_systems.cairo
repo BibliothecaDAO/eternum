@@ -1,4 +1,4 @@
-#[system]
+#[dojo::contract]
 mod trade_systems {
     use eternum::alias::ID;
 
@@ -9,7 +9,7 @@ mod trade_systems {
     use eternum::models::realm::Realm;
     use eternum::models::trade::{Trade, Status, TradeStatus, OrderResource};
     use eternum::models::capacity::Capacity;
-    use eternum::models::metadata::MetaData;
+    use eternum::models::metadata::EntityMetadata;
     use eternum::models::caravan::Caravan;
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::road::{Road, RoadTrait, RoadImpl};
@@ -714,7 +714,7 @@ mod trade_systems {
             let caravan = TradeCaravanHelpersImpl::get(world, order_id, owner_id);
             assert(caravan.caravan_id == 0, 'caravan already attached');
 
-            let caravan_movable = get!(world, caravan.caravan_id, Movable);        
+            let caravan_movable = get!(world, caravan_id, Movable);        
             assert(caravan_movable.blocked == false, 'caravan already blocked');
 
             //q: should we check if caravan is attached to another order?

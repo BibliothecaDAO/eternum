@@ -75,6 +75,12 @@ export interface Position {
   y: number;
 }
 
+export interface UIPosition {
+  x: number;
+  y: number;
+  z: number;
+}
+
 export interface EntityData {
   entityId: number;
   entityType: Entity;

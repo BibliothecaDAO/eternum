@@ -37,9 +37,21 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
     account: { account },
     setup: {
       systemCalls: { transfer_resources, initialize_hyperstructure, travel },
-      components: { Resource },
+      components: { Resource, CaravanMembers, HomePosition, ForeignKey },
     },
   } = useDojo();
+
+  const returnPosition = useMemo(() => {
+    const caravanMembers = getComponentValue(CaravanMembers, getEntityIdFromKeys([BigInt(caravan.caravanId)]));
+    if (caravanMembers && caravanMembers.count > 0) {
+      let entity_id = getEntityIdFromKeys([BigInt(caravan.caravanId), BigInt(caravanMembers.key), BigInt(0)]);
+      let foreignKey = getComponentValue(ForeignKey, entity_id);
+      if (foreignKey) {
+        let homePosition = getComponentValue(HomePosition, getEntityIdFromKeys([BigInt(foreignKey.entity_id)]));
+        return homePosition;
+      }
+    }
+  }, [caravan]);
 
   const transferAndReturn = async () => {
     if (isInitialized) {
@@ -62,8 +74,8 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
     await travel({
       signer: account,
       travelling_entity_id: caravan.caravanId,
-      destination_coord_x: 0,
-      destination_coord_y: 0,
+      destination_coord_x: returnPosition?.x || 0,
+      destination_coord_y: returnPosition?.y || 0,
     });
   };
 
