@@ -2,7 +2,7 @@ import { Has, HasValue, getComponentValue } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import { CaravanInterface } from "../graphql/useGraphQLQueries";
 import { useMemo, useState } from "react";
-import { getEntityIdFromKeys } from "../../utils/utils";
+import { getEntityIdFromKeys, padAddress } from "../../utils/utils";
 import { useEntityQuery } from "@dojoengine/react";
 
 const FREE_TRANSPORT_ENTITY_TYPE = 256;
@@ -31,7 +31,7 @@ export function useCaravan() {
       capacity: capacity?.weight_gram,
       destination,
       owner: owner?.address,
-      isMine: owner?.address === account.address,
+      isMine: padAddress(owner?.address || "0x0") === padAddress(account.address),
     };
   };
 
