@@ -13,6 +13,13 @@ type LaborPanelProps = {
   type?: "all" | "food" | "mines";
 };
 
+// TODO: use config file
+export const LABOR_CONFIG = {
+  base_food_per_cycle: 14000,
+  base_labor_units: 7200,
+  base_resources_per_cycle: 21,
+};
+
 export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
   const [buildResource, setBuildResource] = useState<number | null>(null);
   const [buildLoadingStates, setBuildLoadingStates] = useState<{
@@ -103,6 +110,7 @@ export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
               }}
               resourceId={resourceId}
               realm={realm}
+              laborConfig={LABOR_CONFIG as LaborConfig}
               setBuildLoadingStates={setBuildLoadingStates}
               buildLoadingStates={buildLoadingStates}
             />

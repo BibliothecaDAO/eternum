@@ -13,7 +13,10 @@ import useUIStore from "../../hooks/store/useUIStore";
 import { useLocation } from "wouter";
 import useRealmStore from "../../hooks/store/useRealmStore";
 import { getRealm } from "../../utils/realms";
-
+import { FarmsRegionTooltip } from "./regions/FarmsRegionTooltip";
+import { extend } from "@react-three/fiber";
+import { FisheryRegionTooltip } from "./regions/FisheryRegionTooltip";
+extend({ FarmsRegionTooltip });
 type GLTFResult = GLTF & {
   nodes: {
     archer_tower: THREE.Mesh;
@@ -379,6 +382,7 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
           />
         </group>
         <mesh
+          onPointerEnter={() => setHoveredArea("farm")}
           name="crops"
           geometry={nodes.crops.geometry}
           material={materials.PaletteMaterial014}
@@ -609,11 +613,7 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
           name="floor_farm"
           position={[0, -0.002192, 0]}
         >
-          {hoveredArea === "farm" && (
-            <Html position={[-300, 75, -100]} distanceFactor={400}>
-              <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">Farms</div>
-            </Html>
-          )}
+          {hoveredArea === "farm" && <FarmsRegionTooltip />}
           <mesh name="terrain001" geometry={nodes.terrain001.geometry} material={materials.PaletteMaterial005} />
           <mesh name="terrain001_1" geometry={nodes.terrain001_1.geometry} material={materials.PaletteMaterial019} />
           <mesh name="terrain001_2" geometry={nodes.terrain001_2.geometry} material={materials.PaletteMaterial001} />
@@ -637,11 +637,7 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
           name="floor_fishery"
           position={[0, -0.002192, 0]}
         >
-          {hoveredArea === "fishery" && (
-            <Html position={[-195, 75, 150]} distanceFactor={400}>
-              <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">Fishery</div>
-            </Html>
-          )}
+          {hoveredArea === "fishery" && <FisheryRegionTooltip />}
           <mesh name="terrain002" geometry={nodes.terrain002.geometry} material={materials.PaletteMaterial005} />
           <mesh name="terrain002_1" geometry={nodes.terrain002_1.geometry} material={materials.PaletteMaterial019} />
           <mesh name="terrain002_2" geometry={nodes.terrain002_2.geometry} material={materials.PaletteMaterial001} />
