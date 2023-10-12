@@ -3,15 +3,16 @@ import { SetupNetworkResult } from "./setupNetwork";
 import { Account, Event, num } from "starknet";
 import { getEntityIdFromKeys, padAddress } from "../utils/utils";
 
-const LABOR_SYSTEMS = "0x2c96a033f4871ade10b83f17230beaf848bf1de62f202d00753d36b970a2202";
-const TRADE_SYSTEMS = "0x2d5178ac3bf7d6d5fc116f543f9c8ac7eba381d09f77d1d464d1f9ebfe81391";
-const HYPERSTRUCTURE_SYSTEMS = "0x32e7b7e9e21f2d02c6f030e624514eb55003e7d3a299cbb90cc97c9df91b333";
-const RESOURCE_SYSTEMS = "0x58e0f847a24a5905350bdd445db3f472442ed55fdfabff26cb400a1d13ba195";
-const CARAVAN_SYSTEMS = "0x6cbac984e419dd953e07bacb6a45da22cb0534ea1d73fcf9075abef4b1398dd";
-const ROAD_SYSTEMS = "0x24805155428a16f39f2959e59bfb0fedac5e83d31fbdf6e1776c27036efe7a3";
-const TRANSPORT_UNIT_SYSTEMS = "0x64d9dce7519c641e6eb269b69d045d96cf3cef1b9b723b8c7e1248646bfd066";
-const TRAVEL_SYSTEMS = "0x6da6277375679a626f8a362aa0659ccfd377163d08c3e5bf59db3a0fdb08c42";
-const REALM_SYSTEMS = "0x2bc672da1c2fdf17d509c543845784dbf93894a4c0b72aaee0aecd195a64405";
+const LABOR_SYSTEMS = "0x48a63a78935eed93c11840d767ecec8e2da670b73d45ef2a1a456dd6b397a3";
+const TRADE_SYSTEMS = "0x7ecd88ad84e350d1c10a794a5b1817908b4c45944ec6c988125f133b5992f2c";
+const HYPERSTRUCTURE_SYSTEMS = "0x847c900bea991e610bdf16ebd01fb87cf0cacc17cc41a12993f683195c9701";
+const RESOURCE_SYSTEMS = "0x3c18b5811ed97426f577c622b0355e0e649b8f5f1a0900c72ef17e6541e6ddf";
+const CARAVAN_SYSTEMS = "0x3a7f04c194ef3913f306a9b1567f79ee4f10f6b32714809489d85899bbb4ada";
+const ROAD_SYSTEMS = "0x2e2285aa32dfc8861593cfa3afdb2fd616793d7d94b11eae368dc9e230734f3";
+const TRANSPORT_UNIT_SYSTEMS = "0x3bf56bbe7883053a33472a8eec9bff61fb27922a91b92496f89b38db706cf42";
+const TRAVEL_SYSTEMS = "0x7c77f20d047f9ddaf5a7b7971d64b8fcedaf336c348c57b61576272e2362871";
+const TEST_REALM_SYSTEMS = "0x49da485d8242200eaead5679a6ce8e40c60e37fe38545b93e32168c8ec1f9e6";
+const TEST_RESOURCE_SYSTEMS = "0x7246eef3dab30c7d55ebb23d22501bd385cf667f726fca2513546c42e392f4a";
 
 interface SystemSigner {
   signer: Account;
@@ -176,7 +177,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
 
   const mint_resources = async (props: MintResourcesProps) => {
     const { entity_id, resources, signer } = props;
-    const tx = await provider.execute(signer, RESOURCE_SYSTEMS, "mint", [
+    const tx = await provider.execute(signer, TEST_RESOURCE_SYSTEMS, "mint", [
       import.meta.env.VITE_WORLD_ADDRESS!,
       entity_id,
       resources.length / 2,
@@ -309,7 +310,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
       signer,
     } = props;
 
-    const tx = await provider.execute(signer, REALM_SYSTEMS, "create", [
+    const tx = await provider.execute(signer, TEST_REALM_SYSTEMS, "create", [
       import.meta.env.VITE_WORLD_ADDRESS!,
       realm_id,
       owner,
