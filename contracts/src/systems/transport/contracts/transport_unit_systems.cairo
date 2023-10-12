@@ -5,7 +5,7 @@ mod transport_unit_systems {
     use eternum::models::position::{Position, HomePosition};
     use eternum::models::realm::Realm;
     use eternum::models::capacity::Capacity;
-    use eternum::models::metadata::MetaData;
+    use eternum::models::metadata::EntityMetadata;
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::config::{TravelConfig, SpeedConfig, CapacityConfig};
     use eternum::models::quantity::{Quantity, QuantityTracker};
@@ -92,7 +92,7 @@ mod transport_unit_systems {
                         x: position.x, 
                         y: position.y
                     }, 
-                    MetaData {
+                    EntityMetadata {
                         entity_id: id.into(), 
                         entity_type: FREE_TRANSPORT_ENTITY_TYPE
                     }, 

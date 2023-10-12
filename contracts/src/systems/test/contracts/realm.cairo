@@ -4,7 +4,7 @@ mod test_realm_systems {
     use eternum::models::realm::Realm;
     use eternum::models::owner::Owner;
     use eternum::models::position::Position;
-    use eternum::models::metadata::MetaData;
+    use eternum::models::metadata::EntityMetadata;
 
     use eternum::systems::test::interface::realm::IRealmSystems;
 
@@ -54,7 +54,7 @@ mod test_realm_systems {
                         x: position.x, 
                         y: position.y, 
                     }, 
-                    MetaData {
+                    EntityMetadata {
                         entity_id: entity_id.into(), 
                         entity_type: REALM_ENTITY_TYPE, 
                     },

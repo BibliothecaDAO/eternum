@@ -5,7 +5,7 @@ use eternum::models::resources::{resource, Resource};
 use eternum::models::resources::{resource_cost, ResourceCost};
 use eternum::models::position::{position, Position};
 use eternum::models::capacity::{capacity, Capacity};
-use eternum::models::metadata::{meta_data, MetaData};
+use eternum::models::metadata::{meta_data, EntityMetadata};
 use eternum::models::age::{age, Age};
 use eternum::models::labor::{labor, Labor};
 use eternum::models::resources::{vault, Vault};

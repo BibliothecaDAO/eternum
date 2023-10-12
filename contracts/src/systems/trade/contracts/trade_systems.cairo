@@ -9,7 +9,7 @@ mod trade_systems {
     use eternum::models::realm::Realm;
     use eternum::models::trade::{Trade, Status, TradeStatus, OrderResource};
     use eternum::models::capacity::Capacity;
-    use eternum::models::metadata::MetaData;
+    use eternum::models::metadata::EntityMetadata;
     use eternum::models::caravan::Caravan;
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::road::{Road, RoadTrait, RoadImpl};

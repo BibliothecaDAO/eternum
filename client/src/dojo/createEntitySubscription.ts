@@ -115,7 +115,8 @@ const createComponentQueries = (components: Components, componentNames: string[]
 
 const isEntityUpdate = (componentNames: string[]) => {
   // create realm
-  if (["Realm", "Owner", "MetaData", "Position"].every((element) => componentNames.includes(element))) return true;
+  if (["Realm", "Owner", "EntityMetadata", "Position"].every((element) => componentNames.includes(element)))
+    return true;
   // create resource
   else if (componentNames.length === 1 && componentNames[0] === "Resource") return true;
   else if (["Trade", "Status"].every((element) => componentNames.includes(element))) return true;

@@ -11,7 +11,7 @@
         "Owner",
         "Position",
         "HomePosition",
-        "MetaData",
+        "EntityMetadata",
         "Quantity",
         "Movable",
         "ArrivalTime",
