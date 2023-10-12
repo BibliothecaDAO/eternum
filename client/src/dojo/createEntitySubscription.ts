@@ -16,7 +16,7 @@ type EntityQuery = {
 
 type Entity = {
   __typename?: "Entity";
-  keys?: (string | null)[] | null | undefined;
+  keys?: string[] | null | undefined;
   models?: any | null[];
 };
 
@@ -65,6 +65,7 @@ export async function createEntitySubscription(contractComponents: Components): 
           const componentNames = entityUpdated.model_names.split(",");
           queryEntityInfoById(entityUpdated.id, componentNames, client, contractComponents).then((entityInfo) => {
             let { entity } = entityInfo as EntityQuery;
+            // note: remove that once fixed in torii
             componentNames.forEach((componentName: string) => {
               setComponentFromEntity(entity, componentName, contractComponents);
             });

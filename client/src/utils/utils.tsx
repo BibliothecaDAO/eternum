@@ -50,23 +50,28 @@ export function isValidArray(input: any): input is any[] {
 // export function extractAndCleanKey(keys: (string | null)[]): bigint[] {
 //   return keys.filter((value) => value !== null && value !== "").map((key) => BigInt(key as string));
 // }
-export function extractAndCleanKey(keys: string | null | undefined): bigint[] {
-  return (
-    keys
-      ?.split("/")
-      .slice(0, -1)
-      .map((key) => BigInt(key as string)) || []
-  );
+export function extractAndCleanKey(keys: string | null | undefined | string[]): bigint[] {
+  if (Array.isArray(keys) && keys.length > 0) {
+    return keys.map((key) => BigInt(key as string));
+  } else {
+    let stringKeys = keys as string | null | undefined;
+    return (
+      stringKeys
+        ?.split("/")
+        .slice(0, -1)
+        .map((key) => BigInt(key as string)) || []
+    );
+  }
 }
 
 export type Entity = {
   __typename?: "Entity";
   // keys?: (string | null)[] | null | undefined;
-  keys?: string | null | undefined;
+  keys?: string | null | undefined | string[];
   models?: any | null[];
 };
 
-export function setComponentFromEntity(entity: Entity | null, componentName: string, components: Components) {
+export function setComponentFromEntity(entity: Entity, componentName: string, components: Components) {
   if (entity) {
     let component = components[componentName];
     let rawComponentValues = entity?.models?.find((component: any) => {
