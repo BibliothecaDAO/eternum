@@ -3,16 +3,16 @@ import { SetupNetworkResult } from "./setupNetwork";
 import { Account, Event, num } from "starknet";
 import { getEntityIdFromKeys, padAddress } from "../utils/utils";
 
-const LABOR_SYSTEMS = "0x48a63a78935eed93c11840d767ecec8e2da670b73d45ef2a1a456dd6b397a3";
-const TRADE_SYSTEMS = "0x7ecd88ad84e350d1c10a794a5b1817908b4c45944ec6c988125f133b5992f2c";
-const HYPERSTRUCTURE_SYSTEMS = "0x847c900bea991e610bdf16ebd01fb87cf0cacc17cc41a12993f683195c9701";
-const RESOURCE_SYSTEMS = "0x3c18b5811ed97426f577c622b0355e0e649b8f5f1a0900c72ef17e6541e6ddf";
-const CARAVAN_SYSTEMS = "0x3a7f04c194ef3913f306a9b1567f79ee4f10f6b32714809489d85899bbb4ada";
-const ROAD_SYSTEMS = "0x2e2285aa32dfc8861593cfa3afdb2fd616793d7d94b11eae368dc9e230734f3";
-const TRANSPORT_UNIT_SYSTEMS = "0x3bf56bbe7883053a33472a8eec9bff61fb27922a91b92496f89b38db706cf42";
-const TRAVEL_SYSTEMS = "0x7c77f20d047f9ddaf5a7b7971d64b8fcedaf336c348c57b61576272e2362871";
-const TEST_REALM_SYSTEMS = "0x49da485d8242200eaead5679a6ce8e40c60e37fe38545b93e32168c8ec1f9e6";
-const TEST_RESOURCE_SYSTEMS = "0x7246eef3dab30c7d55ebb23d22501bd385cf667f726fca2513546c42e392f4a";
+const LABOR_SYSTEMS = "0x5c63bfbfd7e5e82c294cea149630d0ac3ea710e947f220fa48d7ccb58653731";
+const TRADE_SYSTEMS = "0x18f17b80dc7579827d8634ad26bf21c71886e95cd87abeb16a22663618e86ad";
+const HYPERSTRUCTURE_SYSTEMS = "0x28abfdeb45c0c2bbd9111a61d3a10bb56627790c44e7d697a358f72ae584111";
+const RESOURCE_SYSTEMS = "0x4359d4ce23debeaf72f8ccbae33ae3f7a7b25ad7128708be91348b1fae9b224";
+const CARAVAN_SYSTEMS = "0x44370a5641d318cef5ee539c446d23bcd60702d37c3a479ef9980e304f72b18";
+const ROAD_SYSTEMS = "0x623632e3533357e7a4c7702dde50be930fd2acfefea8736d9702a5cf1151193";
+const TRANSPORT_UNIT_SYSTEMS = "0x6dff75af583b322417f2cebb34251b97059d48e9b812bf0465cc2fa06d65b0a";
+const TRAVEL_SYSTEMS = "0x4b9dd6ed8f9c72d431326618cde6612088690d10a2f9f25f7afc45bdea6aa6f";
+const TEST_REALM_SYSTEMS = "0x705314a73b16263057854603f9110efa8674d405ec4f9cdc5be0eee0396a178";
+const TEST_RESOURCE_SYSTEMS = "0x1e5c3535f9ac613a1e8ea41db05cf4af404e98fc138c45afd85b92f99fc6c58";
 
 interface SystemSigner {
   signer: Account;
@@ -329,7 +329,6 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
 
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
-    console.log({ events });
     setComponentsFromEvents(contractComponents, events);
 
     let realm_entity_id: number = 0;
