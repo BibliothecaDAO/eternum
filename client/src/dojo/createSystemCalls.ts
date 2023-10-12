@@ -3,7 +3,6 @@ import { SetupNetworkResult } from "./setupNetwork";
 import { Account, Event, num } from "starknet";
 import { getEntityIdFromKeys, padAddress } from "../utils/utils";
 
-const CONFIG_SYSTEMS = "0x5a457e2ecf5f338c2122e35046becb5172ba3d3cf73c0de584e504ee895af65";
 const LABOR_SYSTEMS = "0x2c96a033f4871ade10b83f17230beaf848bf1de62f202d00753d36b970a2202";
 const TRADE_SYSTEMS = "0x2d5178ac3bf7d6d5fc116f543f9c8ac7eba381d09f77d1d464d1f9ebfe81391";
 const HYPERSTRUCTURE_SYSTEMS = "0x32e7b7e9e21f2d02c6f030e624514eb55003e7d3a299cbb90cc97c9df91b333";
