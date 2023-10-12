@@ -4,7 +4,7 @@ import { ReactComponent as RatioIcon } from "../../assets/icons/common/ratio.svg
 import { useDojo } from "../../DojoContext";
 import { getComponentValue } from "@latticexyz/recs";
 import { Badge } from "../../elements/Badge";
-import { currencyFormat, getEntityIdFromKeys } from "../../utils/utils";
+import { currencyFormat, extractAndCleanKey, getEntityIdFromKeys } from "../../utils/utils";
 import { useTrade } from "../helpers/useTrade";
 import { ResourceIcon } from "../../elements/ResourceIcon";
 import { findResourceById } from "../../constants/resources";
@@ -28,7 +28,7 @@ export const useTradeNotification = (
 
   const { getTradeResources } = useTrade();
 
-  let trade = getComponentValue(Trade, getEntityIdFromKeys(notification.keys.map((str) => BigInt(str))));
+  let trade = getComponentValue(Trade, getEntityIdFromKeys(extractAndCleanKey(notification.keys)));
 
   let makerId = trade ? trade.maker_id : undefined;
   let takerId = trade ? trade.taker_id : undefined;

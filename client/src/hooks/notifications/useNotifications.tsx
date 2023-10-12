@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDojo } from "../../DojoContext";
 import { Component, Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
-import { getEntityIdFromKeys, getPosition } from "../../utils/utils";
+import { extractAndCleanKey, getEntityIdFromKeys, getPosition } from "../../utils/utils";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { calculateNextHarvest } from "../../components/cityview/realm/labor/laborUtils";
 import useRealmStore from "../store/useRealmStore";
@@ -30,7 +30,7 @@ type realmsPosition = { realmId: number; position: Position }[];
 
 export type NotificationType = {
   eventType: EventType;
-  keys: string[];
+  keys: string[] | string;
   data?: HarvestData | ClaimOrderData;
 };
 
@@ -55,7 +55,6 @@ export const useNotifications = () => {
   const realmsResources = useRealmsResource(realmEntityIds);
   const realmPositions = useRealmsPosition(realmEntityIds);
 
-  // const [notifications, setNotifications] = useState<NotificationType[]>([]);
   const [notifications, setNotifications] = useState<NotificationType[]>([]);
 
   /**
@@ -168,7 +167,7 @@ const generateTradeNotifications = (entityUpdates: UpdatedEntity[], Status: Comp
   const notifications = entityUpdates
     .map((update) => {
       if (update.model_names.includes("Trade")) {
-        const status = getComponentValue(Status, getEntityIdFromKeys(update.entityKeys.map((str) => BigInt(str))));
+        const status = getComponentValue(Status, getEntityIdFromKeys(extractAndCleanKey(update.entityKeys)));
         switch (status?.value) {
           case 0:
             return { eventType: EventType.MakeOffer, keys: update.entityKeys };
@@ -351,5 +350,5 @@ const useRealmsPosition = (
  * @returns
  */
 export const generateUniqueId = (notification: NotificationType): string => {
-  return `${notification.eventType}_${notification.keys.join("_")}`;
+  return `${notification.eventType}_${extractAndCleanKey(notification.keys).join("_")}`;
 };
