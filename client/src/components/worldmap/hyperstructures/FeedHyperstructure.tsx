@@ -28,6 +28,7 @@ import { useGetPositionCaravans } from "../../../hooks/helpers/useCaravans";
 import { NumberInput } from "../../../elements/NumberInput";
 import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/arrow-separator.svg";
 import { WEIGHT_PER_DONKEY_KG } from "../../../constants/travel";
+import { ReactComponent as CloseIcon } from "../../../assets/icons/common/cross-circle.svg";
 
 type FeedHyperstructurePopupProps = {
   onClose: () => void;
@@ -63,7 +64,14 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
             </Tooltip>
           </div>
         ),
-        component: <BuildHyperstructurePanel order={order} onClose={onClose} hyperstructureData={hyperstructureData} />,
+        component: (
+          <BuildHyperstructurePanel
+            order={order}
+            onSendCaravan={() => setSelectedTab(1)}
+            onClose={onClose}
+            hyperstructureData={hyperstructureData}
+          />
+        ),
       },
       {
         key: "my",
@@ -92,6 +100,7 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
       <SecondaryPopup.Head>
         <div className="flex items-center space-x-1">
           <div className="mr-0.5 bg-gray">Manage Hyperstructure:</div>
+          <CloseIcon className="w-3 h-3 cursor-pointer fill-white" onClick={onClose} />
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"460px"}>
@@ -157,7 +166,8 @@ const SelectableRealm = ({ realm, selected = false, initialized = false, onClick
       <div className="text-gold ml-auto absolute right-2 top-2">24h:10m away</div>
       <div className="flex items-center mt-6 w-full">
         <div className="flex">
-          {realm.resources &&
+          {!initialized &&
+            realm.resources &&
             realm.resources.map((resource: any) => {
               return (
                 <ResourceCost
@@ -187,10 +197,12 @@ const SelectableRealm = ({ realm, selected = false, initialized = false, onClick
 const BuildHyperstructurePanel = ({
   order,
   onClose,
+  onSendCaravan,
   hyperstructureData,
 }: {
   order: number;
   onClose: () => void;
+  onSendCaravan: () => void;
   hyperstructureData: HyperStructureInterface | undefined;
 }) => {
   const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
@@ -265,7 +277,7 @@ const BuildHyperstructurePanel = ({
         });
       }
     }
-    onClose();
+    onSendCaravan();
   };
 
   const {
@@ -480,7 +492,7 @@ const BuildHyperstructurePanel = ({
         <>
           {hyperstructureData?.initialized && (
             <>
-              <div className="grid grid-cols-9 gap-2">
+              <div className="grid relative grid-cols-9 gap-2 max-h-[350px] overflow-auto">
                 <div className={clsx("flex flex-col items-center  space-y-2 h-min", "col-span-4")}>
                   <Headline className="mb-2">You Give</Headline>
                   {Object.keys(resourcesLeftToComplete).map((_id) => {
@@ -490,7 +502,7 @@ const BuildHyperstructurePanel = ({
                       getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]),
                     );
                     return (
-                      <div key={id} className="flex items-center w-full">
+                      <div key={id} className="flex items-center w-full h-8">
                         <NumberInput
                           max={resourcesLeftToComplete[id]}
                           min={1}
@@ -508,7 +520,7 @@ const BuildHyperstructurePanel = ({
                             onClick={() => {
                               setFeedResourcesGiveAmounts({
                                 ...feedResourcesGiveAmounts,
-                                [id]: resourcesLeftToComplete[id],
+                                [id]: Math.min(divideByPrecision(resource?.balance || 0), resourcesLeftToComplete[id]),
                               });
                             }}
                             resourceId={id}
@@ -520,7 +532,7 @@ const BuildHyperstructurePanel = ({
                   })}
                 </div>
                 <div className="flex items-center justify-center">
-                  <ArrowSeparator />
+                  <ArrowSeparator className="fixed top-1/2" />
                 </div>
                 <div className="flex flex-col col-span-4 space-y-2 h-min">
                   <Headline className="mb-2">Structure needs</Headline>

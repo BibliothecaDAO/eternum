@@ -6,6 +6,7 @@ import { getContractPositionFromRealPosition, getEntityIdFromKeys } from "../../
 
 export interface HyperStructureInterface {
   hyperstructureId: number;
+  orderId: number;
   progress: number;
   hyperstructureResources: {
     resourceId: number;
@@ -62,6 +63,7 @@ export const useHyperstructure = () => {
 
         return {
           hyperstructureId,
+          orderId,
           progress,
           hyperstructureResources,
           initialzationResources: hyperstructureData[orderId - 1].resources.initialization.map((resource) => {

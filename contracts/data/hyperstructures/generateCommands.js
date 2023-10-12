@@ -10,13 +10,13 @@ structures.forEach((structure) => {
   // Extracting values for initialization
   const numInitializationResources = initialization.length;
   const initializationStrings = initialization
-    .map((res) => `${res.resourceType},${res.amount}`)
+    .map((res) => `${res.resourceType},${parseInt(res.amount)}`)
     .join(",");
 
   // Extracting values for completion
   const numCompletionResources = completion.length;
   const completionStrings = completion
-    .map((res) => `${res.resourceType},${res.amount}`)
+    .map((res) => `${res.resourceType},${parseInt(res.amount)}`)
     .join(",");
 
   // Formatting the coords
