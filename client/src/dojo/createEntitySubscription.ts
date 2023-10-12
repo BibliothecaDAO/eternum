@@ -7,7 +7,7 @@ import { BehaviorSubject, Observable } from "rxjs";
 type EntityUpdated = {
   id: string[];
   keys: string[];
-  modelNames: string;
+  model_names: string;
 };
 
 type EntityQuery = {
@@ -22,13 +22,13 @@ type Entity = {
 
 export type UpdatedEntity = {
   entityKeys: string[];
-  modelNames: string[];
+  model_names: string[];
 };
 
 type GetLatestEntitiesQuery = {
   entities: {
     edges: {
-      node: Entity & { modelNames: string };
+      node: Entity & { model_names: string };
     }[];
   };
 };
@@ -53,7 +53,7 @@ export async function createEntitySubscription(contractComponents: Components): 
           entityUpdated {
             id
             keys
-            modelNames
+            model_names
           }
         }
       `,
@@ -62,7 +62,7 @@ export async function createEntitySubscription(contractComponents: Components): 
       next: ({ data }) => {
         try {
           const entityUpdated = data?.entityUpdated as EntityUpdated;
-          const componentNames = entityUpdated.modelNames.split(",");
+          const componentNames = entityUpdated.model_names.split(",");
           queryEntityInfoById(entityUpdated.id, componentNames, client, contractComponents).then((entityInfo) => {
             let { entity } = entityInfo as EntityQuery;
             componentNames.forEach((componentName: string) => {
@@ -73,7 +73,7 @@ export async function createEntitySubscription(contractComponents: Components): 
             const previousUpdate = lastUpdate$.getValue().slice(0, 15);
             if (isEntityUpdate(componentNames)) {
               lastUpdate$.next([
-                { entityKeys: entity.keys as string[], modelNames: componentNames },
+                { entityKeys: entity.keys as string[], model_names: componentNames },
                 ...previousUpdate,
               ]);
             }
@@ -160,14 +160,14 @@ export const getInitialData = async (
 
   const initialData = rawIntitialData.entities.edges
     .map((edge) => {
-      let componentNames = edge.node.modelNames.split(",");
+      let componentNames = edge.node.model_names.split(",");
       for (const component of componentNames) {
         setComponentFromEntity(edge.node.models, component, contractComponents);
       }
       if (isEntityUpdate(componentNames)) {
         return {
           entityKeys: edge.node.keys,
-          modelNames: edge.node.modelNames.split(","),
+          model_names: edge.node.model_names.split(","),
         };
       }
     })

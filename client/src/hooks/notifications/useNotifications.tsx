@@ -167,7 +167,7 @@ const addUniqueNotifications = (
 const generateTradeNotifications = (entityUpdates: UpdatedEntity[], Status: Component) => {
   const notifications = entityUpdates
     .map((update) => {
-      if (update.modelNames.includes("Trade")) {
+      if (update.model_names.includes("Trade")) {
         const status = getComponentValue(Status, getEntityIdFromKeys(update.entityKeys.map((str) => BigInt(str))));
         switch (status?.value) {
           case 0:

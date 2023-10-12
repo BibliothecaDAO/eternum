@@ -46,13 +46,23 @@ export function isValidArray(input: any): input is any[] {
   return Array.isArray(input) && input != null;
 }
 
-export function extractAndCleanKey(keys: (string | null)[]): bigint[] {
-  return keys.filter((value) => value !== null && value !== "").map((key) => BigInt(key as string));
+// note: temp change because waiting for torii fix
+// export function extractAndCleanKey(keys: (string | null)[]): bigint[] {
+//   return keys.filter((value) => value !== null && value !== "").map((key) => BigInt(key as string));
+// }
+export function extractAndCleanKey(keys: string | null | undefined): bigint[] {
+  return (
+    keys
+      ?.split("/")
+      .slice(0, -1)
+      .map((key) => BigInt(key as string)) || []
+  );
 }
 
 export type Entity = {
   __typename?: "Entity";
-  keys?: (string | null)[] | null | undefined;
+  // keys?: (string | null)[] | null | undefined;
+  keys?: string | null | undefined;
   models?: any | null[];
 };
 
@@ -173,7 +183,7 @@ export function setComponentFromEntitiesQuery(component: Component, entities: bi
 
 export function setComponentFromEntitiesGraphqlQuery(component: Component, entities: Entity[]) {
   entities.forEach((entity) => {
-    const keys = entity?.keys?.filter((key) => key !== null).map((key) => BigInt(key as string)) as bigint[];
+    const keys = extractAndCleanKey(entity.keys);
     const entityIndex = getEntityIdFromKeys(keys);
     entity.models.forEach((comp: any) => {
       if (comp.__typename === component.metadata?.name) {
