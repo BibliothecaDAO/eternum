@@ -34,7 +34,7 @@ export const HyperstructuresListComponent = ({}: HyperstructuresListComponentPro
       {chosenOrder && showFeedPopup && (
         <FeedHyperstructurePopup onClose={() => setShowFeedPopup(false)} order={chosenOrder} />
       )}
-      {chosenOrder && (
+      {chosenOrder && hyperstructures && (
         <div className="space-y-2 px-2 mb-2">
           <div className="text-xs text-gold">Hyperstructure of your order: </div>
           <HyperstructuresListItem

@@ -203,6 +203,7 @@ export function createOptimisticSystemCalls({
   function optimisticBuildLabor(
     ts: number,
     costResources: LaborCostInterface[],
+    laborAuctionAverageCoefficient: number,
     systemCall: (args: BuildLaborProps) => Promise<void>,
   ) {
     return async function (this: any, args: BuildLaborProps) {
@@ -217,7 +218,8 @@ export function createOptimisticSystemCalls({
           balance: 0,
         };
         let balance =
-          currentResource.balance - (laborUnits as number) * (multiplier as number) * costResources[i].amount;
+          currentResource.balance -
+          (laborUnits as number) * (multiplier as number) * costResources[i].amount * laborAuctionAverageCoefficient;
         Resource.addOverride(overrideId, {
           entity: costId,
           value: {
