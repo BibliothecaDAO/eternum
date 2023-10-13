@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { BaseRegionTooltip } from "../../../elements/BaseRegionTooltip";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
-import { Html } from "@react-three/drei";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import { useComponentValue } from "@dojoengine/react";
@@ -9,8 +8,8 @@ import { useDojo } from "../../../DojoContext";
 import { getEntityIdFromKeys } from "../../../utils/utils";
 import { ResourcesIds } from "../../../constants/resources";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
-import { LABOR_CONFIG } from "../realm/labor/LaborPanel";
 import { BuildingsCount } from "../../../elements/BuildingsCount";
+import { LABOR_CONFIG } from "../../../constants/labor";
 type FisheryRegionTooltipProps = {};
 
 export const FisheryRegionTooltip = ({}: FisheryRegionTooltipProps) => {
