@@ -85,7 +85,7 @@ mod ERC721 {
     use dojo::interfaces::IWorldDispatcher;
     use dojo::interfaces::IWorldDispatcherTrait;
 
-    use super::super::components::TokenApproval;
+    use super::super::models::TokenApproval;
 
     use eternum::utils::math::pow;
     use eternum::constants::REALMS_DATA_PACKED_SIZE;

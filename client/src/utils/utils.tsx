@@ -46,20 +46,35 @@ export function isValidArray(input: any): input is any[] {
   return Array.isArray(input) && input != null;
 }
 
-export function extractAndCleanKey(keys: (string | null)[]): bigint[] {
-  return keys.filter((value) => value !== null && value !== "").map((key) => BigInt(key as string));
+// note: temp change because waiting for torii fix
+// export function extractAndCleanKey(keys: (string | null)[]): bigint[] {
+//   return keys.filter((value) => value !== null && value !== "").map((key) => BigInt(key as string));
+// }
+export function extractAndCleanKey(keys: string | null | undefined | string[]): bigint[] {
+  if (Array.isArray(keys) && keys.length > 0) {
+    return keys.map((key) => BigInt(key as string));
+  } else {
+    let stringKeys = keys as string | null | undefined;
+    return (
+      stringKeys
+        ?.split("/")
+        .slice(0, -1)
+        .map((key) => BigInt(key as string)) || []
+    );
+  }
 }
 
 export type Entity = {
   __typename?: "Entity";
-  keys?: (string | null)[] | null | undefined;
-  components?: any | null[];
+  // keys?: (string | null)[] | null | undefined;
+  keys?: string | null | undefined | string[];
+  models?: any | null[];
 };
 
-export function setComponentFromEntity(entity: Entity | null, componentName: string, components: Components) {
+export function setComponentFromEntity(entity: Entity, componentName: string, components: Components) {
   if (entity) {
     let component = components[componentName];
-    let rawComponentValues = entity?.components?.find((component: any) => {
+    let rawComponentValues = entity?.models?.find((component: any) => {
       return component?.__typename === componentName;
     });
     if (rawComponentValues) {
@@ -84,12 +99,16 @@ export const numberToHex = (num: number) => {
   return "0x" + num.toString(16);
 };
 
-export function getFirstComponentByType(entities: any[] | null | undefined, typename: string): any | null {
+export const padAddress = (address: string) => {
+  return "0x" + address.substring(2).padStart(64, "0");
+};
+
+export function getFirstComponentByType(entities: Entity[] | null | undefined, typename: string): any | null {
   if (!isValidArray(entities)) return null;
 
   for (let entity of entities) {
-    if (isValidArray(entity?.components)) {
-      const foundComponent = entity.components.find((comp: any) => comp.__typename === typename);
+    if (isValidArray(entity?.models)) {
+      const foundComponent = entity.models.find((comp: any) => comp.__typename === typename);
       if (foundComponent) return foundComponent;
     }
   }
@@ -169,9 +188,9 @@ export function setComponentFromEntitiesQuery(component: Component, entities: bi
 
 export function setComponentFromEntitiesGraphqlQuery(component: Component, entities: Entity[]) {
   entities.forEach((entity) => {
-    const keys = entity?.keys?.filter((key) => key !== null).map((key) => BigInt(key as string)) as bigint[];
+    const keys = extractAndCleanKey(entity.keys);
     const entityIndex = getEntityIdFromKeys(keys);
-    entity.components.forEach((comp: any) => {
+    entity.models.forEach((comp: any) => {
       if (comp.__typename === component.metadata?.name) {
         const componentValues = Object.keys(component.schema).reduce((acc: Schema, key) => {
           const value = comp[key];

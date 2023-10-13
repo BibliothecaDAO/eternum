@@ -1,14 +1,14 @@
 // TODO for a later milestone
-// #[system]
+// #[dojo::contract]
 // mod BuildBuilding {
 //     use array::ArrayTrait;
 //     use traits::Into;
 
-//     use eternum::components::config::WorldConfig;
-//     use eternum::components::realm::Realm;
-//     use eternum::components::tick::Tick;
-//     use eternum::components::resources::Resource;
-//     use eternum::components::buildings::Building;
+//     use eternum::models::config::WorldConfig;
+//     use eternum::models::realm::Realm;
+//     use eternum::models::tick::Tick;
+//     use eternum::models::resources::Resource;
+//     use eternum::models::buildings::Building;
 
 //     use eternum::constants::Resources;
 //     use eternum::constants::BuildingTypes;

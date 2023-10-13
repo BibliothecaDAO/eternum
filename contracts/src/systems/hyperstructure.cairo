@@ -1,2 +1,4 @@
-mod initialize_hyperstructure;
-mod complete_hyperstructure;
+mod contracts;
+mod interface;
+#[cfg(test)]
+mod tests;

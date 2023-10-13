@@ -1,3 +1,2 @@
-mod create_realm;
-mod mint_resources;
-
+mod contracts;
+mod interface;

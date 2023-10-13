@@ -1,0 +1,57 @@
+{ 
+    "CARAVAN_SYSTEMS": [
+        "Movable",
+        "Capacity",
+        "CaravanMembers",
+        "Position",
+        "Owner",
+        "ForeignKey"
+    ],
+    "TRANSPORT_UNIT_SYSTEMS": [
+        "Owner",
+        "Position",
+        "HomePosition",
+        "EntityMetadata",
+        "Quantity",
+        "Movable",
+        "ArrivalTime",
+        "Capacity",
+        "QuantityTracker"
+    ],
+    "LABOR_SYSTEMS": [
+        "Labor",
+        "Resource",
+        "LaborAuction"
+    ],
+    "TRADE_SYSTEMS": [
+        "Caravan",
+        "Movable",
+        "OrderId",
+        "Trade",
+        "Resource",
+        "FungibleEntities",
+        "OrderResource",
+        "Status",
+        "ArrivalTime",
+        "Position",
+        "Road"
+    ],
+    "ROAD_SYSTEMS": [
+        "Road",
+        "Resource"
+    ],
+    "HYPERSTRUCTURE_SYSTEMS": [
+        "HyperStructure",
+        "Position",
+        "Resource",
+        "ResourceCost"
+    ],
+    "RESOURCE_SYSTEMS": [
+        "Resource"
+    ],
+    "TRAVEL_SYSTEMS": [
+        "ArrivalTime",
+        "Position",
+        "Road"
+    ]
+}

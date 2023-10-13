@@ -7,7 +7,7 @@ import { BehaviorSubject, Observable } from "rxjs";
 type EntityUpdated = {
   id: string[];
   keys: string[];
-  componentNames: string;
+  model_names: string;
 };
 
 type EntityQuery = {
@@ -16,26 +16,24 @@ type EntityQuery = {
 
 type Entity = {
   __typename?: "Entity";
-  keys?: (string | null)[] | null | undefined;
-  components?: any | null[];
+  keys?: string[] | null | undefined;
+  models?: any | null[];
 };
 
 export type UpdatedEntity = {
   entityKeys: string[];
-  componentNames: string[];
+  model_names: string[];
 };
 
 type GetLatestEntitiesQuery = {
   entities: {
     edges: {
-      node: Entity & { componentNames: string };
+      node: Entity & { model_names: string };
     }[];
   };
 };
 
-export async function createEntitySubscription(
-  contractComponents: Components,
-): Promise<Observable<UpdatedEntity[]>> {
+export async function createEntitySubscription(contractComponents: Components): Promise<Observable<UpdatedEntity[]>> {
   const wsClient = createClient({ url: import.meta.env.VITE_TORII_WS });
   const client = new GraphQLClient(import.meta.env.VITE_TORII_URL!);
 
@@ -55,7 +53,7 @@ export async function createEntitySubscription(
           entityUpdated {
             id
             keys
-            componentNames
+            model_names
           }
         }
       `,
@@ -64,14 +62,10 @@ export async function createEntitySubscription(
       next: ({ data }) => {
         try {
           const entityUpdated = data?.entityUpdated as EntityUpdated;
-          const componentNames = entityUpdated.componentNames.split(",");
-          queryEntityInfoById(
-            entityUpdated.id,
-            componentNames,
-            client,
-            contractComponents,
-          ).then((entityInfo) => {
+          const componentNames = entityUpdated.model_names.split(",");
+          queryEntityInfoById(entityUpdated.id, componentNames, client, contractComponents).then((entityInfo) => {
             let { entity } = entityInfo as EntityQuery;
+            // note: remove that once fixed in torii
             componentNames.forEach((componentName: string) => {
               setComponentFromEntity(entity, componentName, contractComponents);
             });
@@ -80,7 +74,7 @@ export async function createEntitySubscription(
             const previousUpdate = lastUpdate$.getValue().slice(0, 15);
             if (isEntityUpdate(componentNames)) {
               lastUpdate$.next([
-                { entityKeys: entity.keys as string[], componentNames },
+                { entityKeys: entity.keys as string[], model_names: componentNames },
                 ...previousUpdate,
               ]);
             }
@@ -103,16 +97,11 @@ export async function createEntitySubscription(
  * @param componentNames
  * @returns
  */
-const createComponentQueries = (
-  components: Components,
-  componentNames: string[],
-): string => {
+const createComponentQueries = (components: Components, componentNames: string[]): string => {
   let componentQueries = "";
   for (const componentName of componentNames) {
     const component = components[componentName];
-    componentQueries += `... on ${componentName} { ${Object.keys(
-      component.values,
-    ).join(",")} } `;
+    componentQueries += `... on ${componentName} { ${Object.keys(component.values).join(",")} } `;
   }
 
   return componentQueries;
@@ -127,19 +116,11 @@ const createComponentQueries = (
 
 const isEntityUpdate = (componentNames: string[]) => {
   // create realm
-  if (
-    ["Realm", "Owner", "MetaData", "Position"].every((element) =>
-      componentNames.includes(element),
-    )
-  )
+  if (["Realm", "Owner", "EntityMetadata", "Position"].every((element) => componentNames.includes(element)))
     return true;
   // create resource
-  else if (componentNames.length === 1 && componentNames[0] === "Resource")
-    return true;
-  else if (
-    ["Trade", "Status"].every((element) => componentNames.includes(element))
-  )
-    return true;
+  else if (componentNames.length === 1 && componentNames[0] === "Resource") return true;
+  else if (["Trade", "Status"].every((element) => componentNames.includes(element))) return true;
   else return false;
 };
 
@@ -158,10 +139,7 @@ export const getInitialData = async (
 ): Promise<UpdatedEntity[]> => {
   const componentNames = Object.keys(contractComponents);
 
-  const componentQueries = createComponentQueries(
-    contractComponents,
-    componentNames,
-  );
+  const componentQueries = createComponentQueries(contractComponents, componentNames);
 
   const rawIntitialData: GetLatestEntitiesQuery = await client.request(gql`
       query latestEntities {
@@ -183,18 +161,14 @@ export const getInitialData = async (
 
   const initialData = rawIntitialData.entities.edges
     .map((edge) => {
-      let componentNames = edge.node.componentNames.split(",");
+      let componentNames = edge.node.model_names.split(",");
       for (const component of componentNames) {
-        setComponentFromEntity(
-          edge.node.components,
-          component,
-          contractComponents,
-        );
+        setComponentFromEntity(edge.node.models, component, contractComponents);
       }
       if (isEntityUpdate(componentNames)) {
         return {
           entityKeys: edge.node.keys,
-          componentNames: edge.node.componentNames.split(","),
+          model_names: edge.node.model_names.split(","),
         };
       }
     })
@@ -210,10 +184,7 @@ const queryEntityInfoById = async (
   client: GraphQLClient,
   contractComponents: Components,
 ): Promise<any> => {
-  const componentQueries = createComponentQueries(
-    contractComponents,
-    componentNames,
-  );
+  const componentQueries = createComponentQueries(contractComponents, componentNames);
 
   // Construct the query with the GraphQL variables syntax
   const query = gql`
@@ -222,7 +193,7 @@ const queryEntityInfoById = async (
               id
               keys
               __typename
-              components {
+              models {
                   __typename
                   ${componentQueries}
               }

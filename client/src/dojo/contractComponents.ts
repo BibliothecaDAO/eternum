@@ -379,8 +379,8 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    MetaData: (() => {
-      const name = "MetaData";
+    EntityMetadata: (() => {
+      const name = "EntityMetadata";
       return defineComponent(
         world,
         {

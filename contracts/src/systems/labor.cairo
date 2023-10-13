@@ -1,7 +1,6 @@
-mod build_labor;
-mod harvest_labor;
-mod purchase_labor;
+mod contracts;
+mod interface;
+#[cfg(test)]
+mod tests;
+
 mod utils;
-// mod pillage;
-
-

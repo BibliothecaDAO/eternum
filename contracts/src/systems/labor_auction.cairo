@@ -1,1 +1,0 @@
-mod create_labor_auction;
