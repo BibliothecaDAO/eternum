@@ -27,7 +27,7 @@ import hyperStructures from "../data/hyperstructures.json";
 import { useHyperstructure } from "../hooks/helpers/useHyperstructure";
 
 export const World = () => {
-  const { loading } = useSyncWorld();
+  const { loading: worldLoading } = useSyncWorld();
 
   useFetchBlockchainData();
 
@@ -57,22 +57,22 @@ export const World = () => {
   const { getHyperstructure } = useHyperstructure();
 
   useEffect(() => {
-    if (!loading) {
+    if (!worldLoading) {
       setHyperstructures(
         hyperStructures.map((hyperstructure, index) =>
           getHyperstructure(index + 1, { x: hyperstructure.x, y: hyperstructure.y, z: hyperstructure.z }),
         ),
       );
     }
-  }, [loading]);
+  }, [worldLoading]);
 
   useEffect(() => {
-    if (progress === 100 && !loading) {
+    if (progress === 100 && !worldLoading) {
       setIsLoadingScreenEnabled(false);
     } else {
       setIsLoadingScreenEnabled(true);
     }
-  }, [progress, loading]);
+  }, [progress, worldLoading]);
 
   return (
     <div className="fixed top-0 left-0 z-0 w-screen h-screen p-2 overflow-hidden">
@@ -109,7 +109,7 @@ export const World = () => {
       </BottomRightContainer>
       <EpochCountdown />
       <BlurOverlayContainer>
-        <SignUpComponent />
+        <SignUpComponent worldLoading={worldLoading} />
       </BlurOverlayContainer>
       <Leva hidden={import.meta.env.PROD} />
       <Redirect to="/map" />
