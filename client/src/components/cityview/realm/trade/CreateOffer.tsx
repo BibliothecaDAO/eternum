@@ -535,7 +535,7 @@ export const SelectCaravanPanel = ({
         </div>
       ) : null}
       <div className="flex my-3 text-xs text-center text-white">
-        Items Weight <div className="ml-1 text-gold">{`${resourceWeight}kg`}</div>
+        Items Weight <div className="ml-1 text-gold">{`${divideByPrecision(resourceWeight)}kg`}</div>
       </div>
       {isNewCaravan && (
         <>
