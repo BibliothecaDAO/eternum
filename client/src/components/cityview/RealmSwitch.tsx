@@ -13,7 +13,6 @@ import { getRealm } from "../../utils/realms";
 import { useDojo } from "../../DojoContext";
 import { Has, HasValue, getComponentValue } from "@latticexyz/recs";
 import { useEntityQuery } from "@dojoengine/react";
-import { padAddress } from "../../utils/utils";
 
 type RealmSwitchProps = {} & ComponentPropsWithRef<"div">;
 
@@ -37,7 +36,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
 
   const { realmEntityId, realmId, setRealmId, setRealmEntityId, realmEntityIds, setRealmEntityIds } = useRealmStore();
 
-  const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: padAddress(account.address) })]);
+  const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: account.address })]);
 
   // set realm entity ids everytime the entity ids change
   useEffect(() => {

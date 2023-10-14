@@ -4,15 +4,15 @@
 STARKNET_RPC_URL="http://localhost:5050"
 DOJO_ACCOUNT_ADDRESS="0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973"
 DOJO_PRIVATE_KEY="0x1800000000300000180000000000030000000000003006001800006600"
-SOZO_WORLD="0x2b2aa8244bb6d318f128666874b8361bf2ffcb535ab1b3ff01a562c9cef79f8"
+SOZO_WORLD="0x62440ea5b77f1a4fad6e4a88383c750b9101a7bcc5d4de046dc0ae0628b6504"
 
 # Check if the first argument is provided and set it to "dev" or "prod"
 if [[ ! -z "$1" ]]; then
     if [[ "$1" == "prod" ]]; then
         echo "is prod"
-        STARKNET_RPC_URL="https://rinnegan.madara.zone"
-        DOJO_ACCOUNT_ADDRESS="0x2"
-        DOJO_PRIVATE_KEY="0xc1cf1490de1352865301bb8705143f3ef938f97fdf892f1090dcb5ac7bcd1d"
+        STARKNET_RPC_URL="https://api.cartridge.gg/x/eternum/katana"
+        DOJO_ACCOUNT_ADDRESS="0x3f0b949804d6677952974ab11a5b15b46bd0963d1d71ca573460027fc9302f5"
+        DOJO_PRIVATE_KEY="0x44a4d4b4c4ec9cf3720cdb47cad479c014e50a9b9b78f9cc23efc16c602c224"
     elif [[ "$1" != "dev" ]]; then
         echo "Invalid argument. Use 'dev' or 'prod'."
         exit 1

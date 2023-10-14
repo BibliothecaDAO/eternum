@@ -455,7 +455,7 @@ export const SelectCaravanPanel = ({
   }, [realm]);
 
   const canCarry = (caravan: CaravanInterface, resourceWeight: number) => {
-    return caravan.capacity ? divideByPrecision(caravan.capacity) >= resourceWeight : false;
+    return caravan.capacity ? caravan.capacity >= resourceWeight : false;
   };
 
   let myAvailableCaravans = useMemo(
