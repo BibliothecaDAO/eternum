@@ -7,9 +7,11 @@ import { useDojo } from "../DojoContext";
 import { displayAddress } from "../utils/utils";
 import ListSelect from "../elements/ListSelect";
 
-type SignUpComponentProps = {};
+type SignUpComponentProps = {
+  worldLoading: boolean;
+};
 
-export const SignUpComponent = ({}: SignUpComponentProps) => {
+export const SignUpComponent = ({ worldLoading }: SignUpComponentProps) => {
   const {
     account: { create, isDeploying, list, account, select, clear },
   } = useDojo();
@@ -64,12 +66,12 @@ export const SignUpComponent = ({}: SignUpComponentProps) => {
           />
           <Button
             // cannot use master account to sign in
-            disabled={!isWalletSelected}
+            disabled={!isWalletSelected || worldLoading}
             className="mt-2 !p-2"
-            variant={isWalletSelected ? "primary" : "outline"}
+            variant={worldLoading || isWalletSelected ? "primary" : "outline"}
             onClick={() => setShowSignupPopup(false)}
           >
-            {isWalletSelected ? "Start playing" : "No wallet selected"}
+            {worldLoading ? "World Loading" : isWalletSelected ? "Start playing" : "No wallet selected"}
           </Button>
           {/* <Headline size="big">Sign Up</Headline>
           <div className="flex flex-col w-full text-center text-xs text-white">
