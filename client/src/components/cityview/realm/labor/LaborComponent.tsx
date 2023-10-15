@@ -49,17 +49,17 @@ export const LaborComponent = ({
 
   const resource = useComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
 
-  // TODO: better way to stop loading, because this will stop it directly with optimistic rendering
-  useEffect(() => {
-    setBuildLoadingStates((prevStates: { [key: number]: boolean }) => ({
-      ...prevStates,
-      [resourceId!]: false,
-    }));
-  }, [labor]);
+  // note: removed loading with optimistic rendering
+  // useEffect(() => {
+  //   setBuildLoadingStates((prevStates: { [key: number]: boolean }) => ({
+  //     ...prevStates,
+  //     [resourceId!]: false,
+  //   }));
+  // }, [labor]);
 
-  useEffect(() => {
-    setIsHarvestLoading(false);
-  }, [resource]);
+  // useEffect(() => {
+  //   setIsHarvestLoading(false);
+  // }, [resource]);
 
   // time until the next possible harvest (that happens every 7200 seconds (2hrs))
   // if labor balance is less than current time, then there is no time to next harvest
@@ -76,7 +76,8 @@ export const LaborComponent = ({
   const { play: playHarvest } = useUiSounds(soundSelector.harvest);
 
   const onHarvest = () => {
-    setIsHarvestLoading(true);
+    // note: removed loading with optimistic rendering
+    // setIsHarvestLoading(true);
     playHarvest();
     optimisticHarvestLabor(
       nextBlockTimestamp || 0,

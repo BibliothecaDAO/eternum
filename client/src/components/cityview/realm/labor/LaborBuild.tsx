@@ -122,10 +122,11 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   }, [laborAmount, multiplier, costResources]);
 
   const onBuild = () => {
-    setBuildLoadingStates((prevStates: any) => ({
-      ...prevStates,
-      [resourceId]: true,
-    }));
+    // note: removed loading with optimistic rendering
+    // setBuildLoadingStates((prevStates: any) => ({
+    //   ...prevStates,
+    //   [resourceId]: true,
+    // }));
     optimisticBuildLabor(
       nextBlockTimestamp || 0,
       costResources,
