@@ -67,7 +67,10 @@ export async function createEntitySubscription(contractComponents: Components): 
             let { entity } = entityInfo as EntityQuery;
             // note: remove that once fixed in torii
             componentNames.forEach((componentName: string) => {
-              setComponentFromEntity(entity, componentName, contractComponents);
+              // note: quick fix until we know which component is updated in torii
+              if (componentName !== "Labor") {
+                setComponentFromEntity(entity, componentName, contractComponents);
+              }
             });
 
             // update the observable
