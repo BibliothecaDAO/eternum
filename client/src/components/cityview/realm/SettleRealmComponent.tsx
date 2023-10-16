@@ -21,7 +21,7 @@ export const SettleRealmComponent = () => {
 
   const {
     setup: {
-      systemCalls: { create_realm, mint_resources },
+      systemCalls: { create_realm },
     },
     account: { account, masterAccount },
   } = useDojo();
@@ -47,19 +47,20 @@ export const SettleRealmComponent = () => {
     let new_realm_id = getNextRealmIdForOrder(chosenOrder || selectedOrder);
     let realm = getRealm(new_realm_id);
     let position = getPosition(new_realm_id);
-    let entity_id = await create_realm({
+
+    // create array of initial resources
+    let resources: BigNumberish[] = [];
+    for (let i = 0; i < 22; i++) {
+      resources = [...resources, i + 1, multiplyByPrecision(initialResources[i]) * 10];
+    }
+
+    await create_realm({
       signer: masterAccount,
       owner: BigInt(account.address),
       ...realm,
       position,
+      resources,
     });
-    // create array of initial resources
-    let resources: BigNumberish[] = [];
-    for (let i = 0; i < 22; i++) {
-      resources = [...resources, i + 1, multiplyByPrecision(initialResources[i])];
-    }
-    // mint basic resources to start
-    await mint_resources({ signer: masterAccount, entity_id: entity_id, resources });
     setIsLoading(false);
     playSign();
   };

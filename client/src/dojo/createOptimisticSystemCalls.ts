@@ -8,7 +8,9 @@ import {
   ClaimFungibleOrderProps,
   CreateRoadProps,
   HarvestLaborProps,
-  MakeFungibleOrderProps,
+  CreateOrderProps,
+  CreateOrderWithExistingCaravanProps,
+  CreateOrderWithNewCaravanProps,
 } from "./createSystemCalls";
 import { Resource } from "../types";
 import { LaborCostInterface } from "../hooks/helpers/useLabor";
@@ -25,8 +27,11 @@ export function createOptimisticSystemCalls({
   OrderResource,
   Road,
 }: ClientComponents) {
-  function optimisticMakeFungibleOrder(systemCall: (args: MakeFungibleOrderProps) => Promise<number>) {
-    return async function (this: any, args: MakeFungibleOrderProps): Promise<number> {
+  function optimisticCreateOrder(systemCall: (args: any) => Promise<any>) {
+    return async function (
+      this: any,
+      args: CreateOrderProps | CreateOrderWithNewCaravanProps | CreateOrderWithExistingCaravanProps,
+    ): Promise<void | number> {
       const { maker_id, maker_entity_types, maker_quantities, taker_id, taker_entity_types, taker_quantities } = args;
 
       const expires_at = Math.floor(Date.now() / 1000 + 2628000);
@@ -85,14 +90,12 @@ export function createOptimisticSystemCalls({
         });
       }
 
-      let realTradeId = 0;
       try {
-        realTradeId = await systemCall(args);
+        return systemCall(args);
       } finally {
         Trade.removeOverride(overrideId);
         Status.removeOverride(overrideId);
       }
-      return realTradeId;
     };
   }
 
@@ -360,7 +363,7 @@ export function createOptimisticSystemCalls({
 
   return {
     optimisticClaimFungibleOrder,
-    optimisticMakeFungibleOrder,
+    optimisticCreateOrder,
     optimisticAcceptOffer,
     optimisticCancelOffer,
     optimisticBuildLabor,
