@@ -77,6 +77,7 @@ export interface IncomingOrderInterface {
   claimed: boolean | undefined;
   arrivalTime: number | undefined;
   origin: PositionInterface | undefined;
+  position: PositionInterface | undefined;
 }
 
 export interface IncomingOrdersInterface {
