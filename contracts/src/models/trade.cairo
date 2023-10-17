@@ -4,16 +4,15 @@ use eternum::alias::ID;
 struct Trade {
     #[key]
     trade_id: u128,
-    maker_id: u128,
-    taker_id: u128,
-    maker_order_id: u128,
-    taker_order_id: u128,
+    seller_id: u128,
+    seller_delivery_id: u128,
+    seller_caravan_id: u128,
+    buyer_id: u128,
+    buyer_delivery_id: u128,
+    buyer_caravan_id: u128,
     expires_at: u64,
-    claimed_by_maker: bool,
-    claimed_by_taker: bool,
-    // DISCUSS: maybe force to use caravan if the maker attaches caravan as well?
-    taker_needs_caravan: bool,
 }
+
 
 #[derive(Model, Copy, Drop, Serde)]
 struct Status {
@@ -21,6 +20,27 @@ struct Status {
     trade_id: u128,
     value: u128,
 }
+
+#[derive(Model, Copy, Drop, Serde)]
+struct Delivery {
+    #[key]
+    delivery_id: u128,
+    from_entity_id: u128,
+    to_entity_id: u128,
+    resources_count: u32,
+    resources_weight: u128
+}
+
+#[derive(Model, Copy, Drop, Serde)]
+struct DeliveryResource {
+    #[key]
+    delivery_id: u128,
+    #[key]
+    index: u32,
+    resource_type: u8,
+    resource_amount: u128
+}
+
 
 #[derive(Model, Copy, Drop, Serde)]
 struct OrderId {
