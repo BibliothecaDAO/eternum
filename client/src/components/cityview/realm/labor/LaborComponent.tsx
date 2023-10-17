@@ -9,7 +9,7 @@ import { useDojo } from "../../../../DojoContext";
 import { Realm } from "../../../../types";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { calculateNextHarvest, calculateProductivity, formatSecondsInHoursMinutes } from "./laborUtils";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useComponentValue } from "@dojoengine/react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
@@ -43,23 +43,9 @@ export const LaborComponent = ({
 
   const { realmEntityId } = useRealmStore();
 
-  const [isHarvestLoading, setIsHarvestLoading] = useState(false);
-
   const labor = useComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
 
   const resource = useComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
-
-  // TODO: better way to stop loading, because this will stop it directly with optimistic rendering
-  useEffect(() => {
-    setBuildLoadingStates((prevStates: { [key: number]: boolean }) => ({
-      ...prevStates,
-      [resourceId!]: false,
-    }));
-  }, [labor]);
-
-  useEffect(() => {
-    setIsHarvestLoading(false);
-  }, [resource]);
 
   // time until the next possible harvest (that happens every 7200 seconds (2hrs))
   // if labor balance is less than current time, then there is no time to next harvest
@@ -76,7 +62,6 @@ export const LaborComponent = ({
   const { play: playHarvest } = useUiSounds(soundSelector.harvest);
 
   const onHarvest = () => {
-    setIsHarvestLoading(true);
     playHarvest();
     optimisticHarvestLabor(
       nextBlockTimestamp || 0,
@@ -190,26 +175,14 @@ export const LaborComponent = ({
               <div className="mx-1 text-brilliance">{`+${divideByPrecision(nextHarvest)}`}</div>
             </>
             {/* // TODO: visual cue to show disabled? */}
-            {!isHarvestLoading && (
-              <Button
-                className="!px-[6px] !py-[2px] text-xxs"
-                variant="success"
-                disabled={nextHarvest === 0}
-                onClick={onHarvest}
-              >
-                Harvest
-              </Button>
-            )}
-            {isHarvestLoading && (
-              <Button
-                isLoading={true}
-                onClick={() => {}}
-                variant="danger"
-                className="ml-auto p-2 !h-4 text-xxs !rounded-md"
-              >
-                {}
-              </Button>
-            )}
+            <Button
+              className="!px-[6px] !py-[2px] text-xxs"
+              variant="success"
+              disabled={nextHarvest === 0}
+              onClick={onHarvest}
+            >
+              Harvest
+            </Button>
           </div>
         </div>
       </div>
