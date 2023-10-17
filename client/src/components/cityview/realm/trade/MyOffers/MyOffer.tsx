@@ -9,7 +9,6 @@ import { orderNameDict } from "../../../../../constants/orders";
 import * as realmsData from "../../../../../geodata/realms.json";
 import { MarketInterface } from "../../../../../hooks/helpers/useTrade";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
-import { Tooltip } from "../../../../../elements/Tooltip";
 import { currencyFormat } from "../../../../../utils/utils";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 

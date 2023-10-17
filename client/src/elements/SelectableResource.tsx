@@ -2,7 +2,6 @@ import React from "react";
 import { ResourcesIds, findResourceById } from "../constants/resources";
 import clsx from "clsx";
 import { ResourceIcon } from "./ResourceIcon";
-import { Tooltip } from "./Tooltip";
 import { soundSelector, useUiSounds } from "../hooks/useUISound";
 import { currencyFormat } from "../utils/utils";
 import useUIStore from "../hooks/store/useUIStore";

@@ -10,7 +10,6 @@ import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { ResourcesOffer } from "../../../../../types";
 import { MarketInterface } from "../../../../../hooks/helpers/useTrade";
-import { Tooltip } from "../../../../../elements/Tooltip";
 import { currencyFormat } from "../../../../../utils/utils";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 

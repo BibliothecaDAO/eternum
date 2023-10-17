@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { Tooltip } from "../../../elements/Tooltip";
 import { Tabs } from "../../../elements/tab";
 import { HyperstructuresListComponent } from "./HyperstructuresListComponent";
 import useUIStore from "../../../hooks/store/useUIStore";

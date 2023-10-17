@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { Tabs } from "../../elements/tab";
-import { Tooltip } from "../../elements/Tooltip";
 import { RealmsListComponent } from "./RealmsListComponent";
 import useUIStore from "../../hooks/store/useUIStore";
 

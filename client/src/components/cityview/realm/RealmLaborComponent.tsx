@@ -4,7 +4,6 @@ import { LaborPanel } from "./labor/LaborPanel";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useRoute, useLocation } from "wouter";
-import { Tooltip } from "../../../elements/Tooltip";
 
 type RealmLaborComponentProps = {};
 

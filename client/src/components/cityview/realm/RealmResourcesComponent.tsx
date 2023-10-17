@@ -13,7 +13,6 @@ import { SmallResource } from "./SmallResource";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../DojoContext";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
-import { Tooltip } from "../../../elements/Tooltip";
 import { LABOR_CONFIG } from "../../../constants/labor";
 import useUIStore from "../../../hooks/store/useUIStore";
 

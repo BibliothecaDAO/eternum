@@ -1,6 +1,5 @@
 import clsx from "clsx";
 import useUIStore from "../hooks/store/useUIStore";
-import { useEffect } from "react";
 
 type TooltipProps = {
   className?: string;

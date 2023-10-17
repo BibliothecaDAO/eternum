@@ -20,7 +20,6 @@ import { ResourceCost } from "../../../elements/ResourceCost";
 import clsx from "clsx";
 import { HyperStructureInterface, useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
 import { Tabs } from "../../../elements/tab";
-import { Tooltip } from "../../../elements/Tooltip";
 import ProgressBar from "../../../elements/ProgressBar";
 import { HyperStructureCaravansPanel } from "./HyperStructureCaravans/HyperStructureCaravansPanel";
 import hyperStructures from "../../../data/hyperstructures.json";
