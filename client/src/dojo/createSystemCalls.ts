@@ -135,17 +135,9 @@ export type SystemCalls = ReturnType<typeof createSystemCalls>;
 
 // NOTE: need to add waitForTransaction when connected to rinnigan
 export function createSystemCalls({ provider, contractComponents }: SetupNetworkResult) {
-  const purchase_labor = async (props: PurchaseLaborProps) => {
-    const { entity_id, resource_type, labor_units, signer } = props;
-    const tx = await provider.execute(signer, LABOR_SYSTEMS, "purchase", [
-      import.meta.env.VITE_WORLD_ADDRESS!,
-      entity_id,
-      resource_type,
-      labor_units,
-    ]);
-    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
 
-    setComponentsFromEvents(contractComponents, getEvents(receipt));
+  const purchase_labor = async (props: PurchaseLaborProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.purchase_labor(props)));
   };
 
   // Refactor the functions using the interfaces
