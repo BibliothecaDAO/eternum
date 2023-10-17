@@ -51,7 +51,9 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
       let entity_id = getEntityIdFromKeys([BigInt(caravan.caravanId), BigInt(caravanMembers.key), BigInt(0)]);
       let foreignKey = getComponentValue(ForeignKey, entity_id);
       if (foreignKey) {
-        let homePosition = getComponentValue(HomePosition, getEntityIdFromKeys([BigInt(foreignKey.entity_id)]));
+        // @note: temp fix until we don't use entity_id as field name in foreign key
+        let homePosition = getComponentValue(HomePosition, getEntityIdFromKeys([BigInt(caravan.caravanId - 2)]));
+        // let homePosition = getComponentValue(HomePosition, getEntityIdFromKeys([BigInt(foreignKey.entity_id)]));
         return homePosition;
       }
     }
