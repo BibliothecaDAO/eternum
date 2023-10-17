@@ -30,7 +30,7 @@ export interface TravelProps extends SystemSigner {
   destination_coord_y: num.BigNumberish;
 }
 
-interface CreateOrderProps {
+export interface CreateOrderProps {
   maker_id: num.BigNumberish;
   maker_entity_types: num.BigNumberish[];
   maker_quantities: num.BigNumberish[];

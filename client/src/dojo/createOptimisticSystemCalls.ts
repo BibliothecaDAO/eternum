@@ -6,11 +6,9 @@ import {
   BuildLaborProps,
   CancelFungibleOrderProps,
   ClaimFungibleOrderProps,
+  CreateOrderProps,
   CreateRoadProps,
   HarvestLaborProps,
-  CreateOrderProps,
-  CreateOrderWithExistingCaravanProps,
-  CreateOrderWithNewCaravanProps,
 } from "./createSystemCalls";
 import { Resource } from "../types";
 import { LaborCostInterface } from "../hooks/helpers/useLabor";
@@ -28,10 +26,7 @@ export function createOptimisticSystemCalls({
   Road,
 }: ClientComponents) {
   function optimisticCreateOrder(systemCall: (args: any) => Promise<any>) {
-    return async function (
-      this: any,
-      args: CreateOrderProps | CreateOrderWithNewCaravanProps | CreateOrderWithExistingCaravanProps,
-    ): Promise<void | number> {
+    return async function (this: any, args: CreateOrderProps): Promise<void | number> {
       const { maker_id, maker_entity_types, maker_quantities, taker_id, taker_entity_types, taker_quantities } = args;
 
       const expires_at = Math.floor(Date.now() / 1000 + 2628000);
