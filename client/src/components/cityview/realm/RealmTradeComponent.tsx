@@ -6,7 +6,6 @@ import { MyOffersPanel } from "./trade/MyOffers/MyOffersPanel";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useRoute, useLocation } from "wouter";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { Tooltip } from "../../../elements/Tooltip";
 import { RoadsPanel } from "./trade/Roads/RoadsPanel";
 
 export type Order = {
