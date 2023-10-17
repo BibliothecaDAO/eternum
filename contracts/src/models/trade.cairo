@@ -5,10 +5,10 @@ struct Trade {
     #[key]
     trade_id: u128,
     seller_id: u128,
-    seller_delivery_id: u128,
+    seller_burden_id: u128,
     seller_caravan_id: u128,
     buyer_id: u128,
-    buyer_delivery_id: u128,
+    buyer_burden_id: u128,
     buyer_caravan_id: u128,
     expires_at: u64,
 }
@@ -22,9 +22,9 @@ struct Status {
 }
 
 #[derive(Model, Copy, Drop, Serde)]
-struct Delivery {
+struct Burden {
     #[key]
-    delivery_id: u128,
+    burden_id: u128,
     from_entity_id: u128,
     to_entity_id: u128,
     resources_count: u32,
@@ -32,9 +32,9 @@ struct Delivery {
 }
 
 #[derive(Model, Copy, Drop, Serde)]
-struct DeliveryResource {
+struct BurdenResource {
     #[key]
-    delivery_id: u128,
+    burden_id: u128,
     #[key]
     index: u32,
     resource_type: u8,

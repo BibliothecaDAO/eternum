@@ -4,11 +4,11 @@ mod trade_systems {
 
     use eternum::models::trade::FungibleEntities;
     use eternum::models::resources::Resource;
-    use eternum::models::trade::{Delivery, DeliveryResource};
+    use eternum::models::trade::{Burden, BurdenResource};
     use eternum::models::owner::Owner;
     use eternum::models::position::{Position, PositionTrait};
     use eternum::models::realm::Realm;
-    use eternum::models::trade::{Trade, Status, TradeStatus, OrderResource};
+    use eternum::models::trade::{Trade, Status, TradeStatus};
     use eternum::models::capacity::Capacity;
     use eternum::models::metadata::EntityMetadata;
     use eternum::models::caravan::Caravan;
@@ -76,11 +76,11 @@ mod trade_systems {
             assert(seller_entity_types.len() == seller_quantities.len(), 'length not equal');
             assert(buyer_entity_types.len() == buyer_quantities.len(), 'length not equal');
 
-            // create buyer delivery 
+            // create buyer burden 
 
-            let buyer_delivery_id = world.uuid().into();
+            let buyer_burden_id = world.uuid().into();
 
-            // add buyer delivery resources and remove 
+            // add buyer burden resources and remove 
             // resources up for sale from seller's balance
             let mut index = 0;
             let mut sold_resources_weight = 0;
@@ -92,8 +92,8 @@ mod trade_systems {
                 let sold_resource_amount = *seller_quantities[index];
 
                 set!(world,(
-                        DeliveryResource {
-                            delivery_id: buyer_delivery_id,
+                        BurdenResource {
+                            burden_id: buyer_burden_id,
                             index: index,
                             resource_type: sold_resource_type,
                             resource_amount: sold_resource_amount
@@ -122,8 +122,8 @@ mod trade_systems {
 
 
             set!(world,(
-                    Delivery {
-                        delivery_id: buyer_delivery_id,
+                    Burden {
+                        burden_id: buyer_burden_id,
                         from_entity_id: seller_id,
                         to_entity_id: buyer_id,
                         resources_count: seller_entity_types.len(),
@@ -133,11 +133,11 @@ mod trade_systems {
             );
 
 
-            // create seller delivery
+            // create seller burden
 
-            let seller_delivery_id = world.uuid().into();
+            let seller_burden_id = world.uuid().into();
 
-            // add seller delivery resources
+            // add seller burden resources
             let mut index = 0;
             let mut bought_resources_weight = 0;
             loop {
@@ -149,8 +149,8 @@ mod trade_systems {
                 let bought_resource_amount = *buyer_quantities[index];
 
                 set!(world,(
-                    DeliveryResource {
-                        delivery_id: seller_delivery_id,
+                    BurdenResource {
+                        burden_id: seller_burden_id,
                         index: index,
                         resource_type: bought_resource_type,
                         resource_amount: bought_resource_amount
@@ -166,19 +166,19 @@ mod trade_systems {
             };
 
 
-            let seller_delivery 
-                = Delivery {
-                    delivery_id: seller_delivery_id,
+            let seller_burden 
+                = Burden {
+                    burden_id: seller_burden_id,
                     from_entity_id: buyer_id,
                     to_entity_id: seller_id,
                     resources_count: buyer_entity_types.len(),
                     resources_weight: bought_resources_weight
                 };
-            set!(world,(seller_delivery));
+            set!(world,(seller_burden));
 
-            // ensure caravan can be attached to delivery
+            // ensure caravan can be attached to burden
             TradeCaravanHelpersImpl::assert_can_be_attached(
-                world, seller_id, seller_caravan_id, seller_delivery
+                world, seller_id, seller_caravan_id, seller_burden
             );
 
 
@@ -188,10 +188,10 @@ mod trade_systems {
                     Trade {
                         trade_id,
                         seller_id,
-                        seller_delivery_id: seller_delivery_id.into(),
+                        seller_burden_id: seller_burden_id.into(),
                         seller_caravan_id,
                         buyer_id,
-                        buyer_delivery_id: buyer_delivery_id.into(),
+                        buyer_burden_id: buyer_burden_id.into(),
                         buyer_caravan_id: 0,
                         expires_at: expires_at,
                     },
@@ -235,10 +235,10 @@ mod trade_systems {
             } 
             trade_meta.buyer_id = buyer_id;
 
-            // attach buyer's caravan to delivery
-            let buyer_delivery = get!(world, trade_meta.buyer_delivery_id, Delivery);
+            // attach buyer's caravan to burden
+            let buyer_burden = get!(world, trade_meta.buyer_burden_id, Burden);
             TradeCaravanHelpersImpl::assert_can_be_attached(
-                world, buyer_id, buyer_caravan_id, buyer_delivery
+                world, buyer_id, buyer_caravan_id, buyer_burden
             );
             trade_meta.buyer_caravan_id = buyer_caravan_id;
 
@@ -268,7 +268,7 @@ mod trade_systems {
 
             set!(world, (
                     ArrivalTime {
-                        entity_id: trade_meta.seller_delivery_id,
+                        entity_id: trade_meta.seller_burden_id,
                         arrives_at: ts + round_trip_time
                     },
                     ArrivalTime {
@@ -279,7 +279,7 @@ mod trade_systems {
 
             set!(world, (
                     ArrivalTime {
-                        entity_id: trade_meta.buyer_delivery_id,
+                        entity_id: trade_meta.buyer_burden_id,
                         arrives_at: ts + round_trip_time
                     },
                     ArrivalTime {
@@ -292,19 +292,19 @@ mod trade_systems {
 
             // deduct the resources the buyer is giving seller from balance
             let mut index = 0;
-            let seller_delivery = get!(world, trade_meta.seller_delivery_id, Delivery);
+            let seller_burden = get!(world, trade_meta.seller_burden_id, Burden);
             loop {
-                if index == seller_delivery.resources_count {
+                if index == seller_burden.resources_count {
                     break ();
                 };
 
-                let seller_delivery_resource 
-                    = get!(world, (seller_delivery.delivery_id, index), DeliveryResource);
+                let seller_burden_resource 
+                    = get!(world, (seller_burden.burden_id, index), BurdenResource);
                 
                 let buyer_resource 
-                    = get!(world, (buyer_id, seller_delivery_resource.resource_type), Resource);
+                    = get!(world, (buyer_id, seller_burden_resource.resource_type), Resource);
                 assert(
-                    buyer_resource.balance >= seller_delivery_resource.resource_amount, 
+                    buyer_resource.balance >= seller_burden_resource.resource_amount, 
                         'not enough balance'
                 );
                     
@@ -312,7 +312,7 @@ mod trade_systems {
                     Resource {
                         entity_id: buyer_id, 
                         resource_type: buyer_resource.resource_type, 
-                        balance: buyer_resource.balance - seller_delivery_resource.resource_amount
+                        balance: buyer_resource.balance - seller_burden_resource.resource_amount
                     })
                 );
                 index += 1;
@@ -330,41 +330,41 @@ mod trade_systems {
 
 
 
-        fn claim_delivery(
+        fn claim_burden(
             self: @ContractState, world: IWorldDispatcher,
-            entity_id: u128, delivery_id: u128
+            entity_id: u128, burden_id: u128
         ) {
 
             let caller = starknet::get_caller_address();    
             let owner = get!(world, entity_id, Owner);
             assert(owner.address == caller, 'not owned by caller');
 
-            let delivery = get!(world, delivery_id, Delivery);
-            assert(delivery.to_entity_id == entity_id, 'not the receiver');
+            let burden = get!(world, burden_id, Burden);
+            assert(burden.to_entity_id == entity_id, 'not the receiver');
 
-            // ensure delivery has arrived
-            let delivery_arrival_time = get!(world, delivery_id, ArrivalTime);
+            // ensure burden has arrived
+            let burden_arrival_time = get!(world, burden_id, ArrivalTime);
             assert(
-                delivery_arrival_time.arrives_at > 0, 
-                        'delivery has not left'
+                burden_arrival_time.arrives_at > 0, 
+                        'burden has not left'
             );
             assert(
-                delivery_arrival_time.arrives_at <= starknet::get_block_timestamp(), 
-                        'delivery has not arrived'
+                burden_arrival_time.arrives_at <= starknet::get_block_timestamp(), 
+                        'burden has not arrived'
             );
 
 
-            // add delivery items to entity's balance
+            // add burden items to entity's balance
             let mut index = 0;
             loop {
-                if index == delivery.resources_count {
+                if index == burden.resources_count {
                     break ();
                 };
 
-                let delivery_resource = get!(world, (delivery.delivery_id, index), DeliveryResource);
-                let mut entity_resource = get!(world, (entity_id, delivery_resource.resource_type), Resource);
+                let burden_resource = get!(world, (burden.burden_id, index), BurdenResource);
+                let mut entity_resource = get!(world, (entity_id, burden_resource.resource_type), Resource);
                 
-                entity_resource.balance += delivery_resource.resource_amount;
+                entity_resource.balance += burden_resource.resource_amount;
                 set!(world,( entity_resource ));
 
                 index += 1;
@@ -381,19 +381,19 @@ mod trade_systems {
             assert(trade_status.value == TradeStatus::OPEN, 'trade must be open');
 
             // return resources to seller
-            let seller_delivery = get!(world, trade_meta.seller_delivery_id, Delivery);
+            let seller_burden = get!(world, trade_meta.seller_burden_id, Burden);
         
             let mut index = 0;
             loop {
-                if index == seller_delivery.resources_count {
+                if index == seller_burden.resources_count {
                     break ();
                 }
-                let seller_delivery_resource 
-                    = get!(world,(trade_meta.seller_delivery_id, index), DeliveryResource);
+                let seller_burden_resource 
+                    = get!(world,(trade_meta.seller_burden_id, index), BurdenResource);
                 let mut seller_resource 
-                    = get!(world, (trade_meta.seller_id, seller_delivery_resource.resource_type), Resource);
+                    = get!(world, (trade_meta.seller_id, seller_burden_resource.resource_type), Resource);
                 
-                seller_resource.balance += seller_delivery_resource.resource_amount;
+                seller_resource.balance += seller_burden_resource.resource_amount;
                 set!(world, ( seller_resource));
 
                 index += 1;
@@ -415,7 +415,7 @@ mod trade_systems {
     impl TradeCaravanHelpersImpl of TradeCaravanHelpersTrait {
 
         fn assert_can_be_attached(
-            world: IWorldDispatcher, entity_id: ID, caravan_id: ID, delivery: Delivery
+            world: IWorldDispatcher, entity_id: ID, caravan_id: ID, burden: Burden
             ) {
          
             let caravan_owner = get!(world, caravan_id, Owner);   
@@ -435,7 +435,7 @@ mod trade_systems {
             let caravan_quantity = get!(world, caravan_id, Quantity);
             let caravan_quantity = caravan_quantity.get_value();
             assert(
-                caravan_capacity.weight_gram * caravan_quantity >= delivery.resources_weight,
+                caravan_capacity.weight_gram * caravan_quantity >= burden.resources_weight,
                     'Caravan capacity is not enough'
             );
 

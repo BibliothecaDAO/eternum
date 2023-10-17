@@ -24,9 +24,9 @@ trait ITradeSystems<TContractState> {
 
     fn cancel_order(self: @TContractState, world: IWorldDispatcher, trade_id: u128);
 
-    fn claim_delivery(
+    fn claim_burden(
         self: @TContractState, world: IWorldDispatcher,
-        entity_id: u128, delivery_id: u128
+        entity_id: u128, burden_id: u128
     );
 
 }
