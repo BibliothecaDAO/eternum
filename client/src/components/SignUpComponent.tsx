@@ -6,6 +6,7 @@ import useUIStore from "../hooks/store/useUIStore";
 import { useDojo } from "../DojoContext";
 import { displayAddress } from "../utils/utils";
 import ListSelect from "../elements/ListSelect";
+import { ReactComponent as Danger } from "../assets/icons/common/danger.svg";
 
 type SignUpComponentProps = {
   worldLoading: boolean;
@@ -73,6 +74,10 @@ export const SignUpComponent = ({ worldLoading }: SignUpComponentProps) => {
           >
             {worldLoading ? "World Loading" : isWalletSelected ? "Start playing" : "No wallet selected"}
           </Button>
+          <div className="flex items-center mt-2 mb-1 text-xs text-center text-white">
+            <Danger />
+            <div className="ml-1 text-danger">Create new wallet if you played before October 14th</div>
+          </div>
           {/* <Headline size="big">Sign Up</Headline>
           <div className="flex flex-col w-full text-center text-xs text-white">
             <div className=" border border-gold my-3 w-full rounded-lg bg-black p-2 flex justify-between">
