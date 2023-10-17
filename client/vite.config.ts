@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import { resolve } from "path";
 import react from "@vitejs/plugin-react";
 import svgr from "vite-plugin-svgr";
 
@@ -13,7 +14,11 @@ export default defineConfig({
   build: {
     target: "esnext",
     rollupOptions: {
-      // external: ['micro-starknet']
+      input: {
+        main: resolve(__dirname, "index.html"),
+        map: resolve(__dirname, "map/index.html"),
+        realm: resolve(__dirname, "realm/index.html"),
+      },
     },
   },
   optimizeDeps: {
