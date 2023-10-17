@@ -37,7 +37,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   const {
     setup: {
       components: { Resource },
-      systemCalls: { build_labor, purchase_labor },
+      systemCalls: { purchase_and_build_labor },
       optimisticSystemCalls: { optimisticBuildLabor },
     },
     account: { account },
@@ -89,20 +89,28 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
 
   const buildLabor = async ({ realm_id, resource_type, labor_units, multiplier }: BuildLaborProps) => {
     let total_units = Number(labor_units) * Number(multiplier);
-    await purchase_labor({
+    await purchase_and_build_labor({
       signer: account,
       entity_id: realm_id,
-      resource_type,
-      labor_units: total_units,
-    });
-
-    await build_labor({
-      signer: account,
       realm_id,
       resource_type,
-      labor_units,
+      labor_units: total_units,
       multiplier,
     });
+    // await purchase_labor({
+    //   signer: account,
+    //   entity_id: realm_id,
+    //   resource_type,
+    //   labor_units: total_units,
+    // });
+
+    // await build_labor({
+    //   signer: account,
+    //   realm_id,
+    //   resource_type,
+    //   labor_units,
+    //   multiplier,
+    // });
   };
 
   useEffect(() => {
