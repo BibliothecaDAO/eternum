@@ -4,7 +4,6 @@ import { currencyFormat, getEntityIdFromKeys } from "../../../utils/utils";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../DojoContext";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { Tooltip } from "../../../elements/Tooltip";
 import useUIStore from "../../../hooks/store/useUIStore";
 
 export const SmallResource = ({ resourceId }: { resourceId: number }) => {
