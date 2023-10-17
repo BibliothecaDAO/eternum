@@ -38,7 +38,7 @@ Outlined below are the high-level objectives for Eternum, though they are subjec
 
 ## Getting Started
 
-You will need an understanding of the [dojo](https://book.dojoengine.org) and react. 
+You will need an understanding of the [dojo](https://book.dojoengine.org) and react.
 
 ## What we want to see built from 100 miles up
 - Guilds
@@ -46,7 +46,6 @@ You will need an understanding of the [dojo](https://book.dojoengine.org) and re
 - Player run casinos
 - Chaos and order
 - Additional resources outside Eternums
-
 
 ## Project structure
 
