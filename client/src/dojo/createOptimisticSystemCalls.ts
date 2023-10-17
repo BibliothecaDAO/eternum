@@ -134,7 +134,7 @@ export function createOptimisticSystemCalls({
           balance: 0,
         };
         let balance = currentResource.balance + resource.amount;
-        Resource.addOverride(overrideId, {
+        Resource.addOverride(overrideId + resource.resourceId, {
           entity: resource_id,
           value: {
             balance,
@@ -146,7 +146,9 @@ export function createOptimisticSystemCalls({
         await systemCall(args);
       } finally {
         Trade.removeOverride(overrideId);
-        Resource.removeOverride(overrideId);
+        for (let resource of resourcesGet) {
+          Resource.removeOverride(overrideId + resource.resourceId);
+        }
       }
     };
   }
