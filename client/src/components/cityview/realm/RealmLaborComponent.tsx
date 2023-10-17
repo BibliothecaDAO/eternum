@@ -14,6 +14,7 @@ export const RealmLaborComponent = ({}: RealmLaborComponentProps) => {
 
   const moveCameraToLaborView = useUIStore((state) => state.moveCameraToLaborView);
   const moveCameraToFoodView = useUIStore((state) => state.moveCameraToFoodView);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   // @ts-ignore
   const [location, setLocation] = useLocation();
@@ -40,13 +41,23 @@ export const RealmLaborComponent = ({}: RealmLaborComponentProps) => {
       {
         key: "labor",
         label: (
-          <div className="flex relative group flex-col items-center">
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Look at your current production,</p>
+                    <p className="whitespace-nowrap">or increase it by buying labour or buildings.</p>
+                    <p className="whitespace-nowrap">Don't forget to harvest your resources.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex relative group flex-col items-center"
+          >
             <div>All</div>
-            <Tooltip position="bottom">
-              <p className="whitespace-nowrap">Look at your current production,</p>
-              <p className="whitespace-nowrap">or increase it by buying labour or buildings.</p>
-              <p className="whitespace-nowrap">Don't forget to harvest your resources.</p>
-            </Tooltip>
           </div>
         ),
         component: <LaborPanel />,

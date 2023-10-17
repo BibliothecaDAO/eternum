@@ -5,6 +5,7 @@ import { ResourceIcon } from "./ResourceIcon";
 import { Tooltip } from "./Tooltip";
 import { soundSelector, useUiSounds } from "../hooks/useUISound";
 import { currencyFormat } from "../utils/utils";
+import useUIStore from "../hooks/store/useUIStore";
 
 type SelectableResourceProps = {
   resourceId: number;
@@ -14,8 +15,8 @@ type SelectableResourceProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const SelectableResource = ({ resourceId, amount, selected, disabled, onClick }: SelectableResourceProps) => {
-  const [showTooltip, setShowTooltip] = React.useState(false);
   const resource = findResourceById(resourceId);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const { play: playAddWood } = useUiSounds(soundSelector.addWood);
   const { play: playAddStone } = useUiSounds(soundSelector.addStone);
@@ -125,8 +126,20 @@ export const SelectableResource = ({ resourceId, amount, selected, disabled, onC
 
   return (
     <div
-      onMouseOver={() => setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
+      onMouseEnter={() =>
+        setTooltip({
+          position: "bottom",
+          content: (
+            <>
+              <div className="relative z-50 flex flex-col items-center justify-center mb-1 text-xs text-center text-lightest">
+                {resource?.trait}
+                <div className="mt-0.5 font-bold">{currencyFormat(amount || 0, 0)}</div>
+              </div>
+            </>
+          ),
+        })
+      }
+      onMouseLeave={() => setTooltip(null)}
       onClick={(e) => {
         if (!disabled && onClick) {
           onClick(e);
@@ -140,14 +153,6 @@ export const SelectableResource = ({ resourceId, amount, selected, disabled, onC
       )}
     >
       <ResourceIcon withTooltip={false} resource={resource?.trait || ""} size="xs" />
-      {showTooltip && (
-        <Tooltip>
-          <div className="relative z-50 flex flex-col items-center justify-center mb-1 text-xs text-center text-lightest">
-            {resource?.trait}
-            <div className="mt-0.5 font-bold">{currencyFormat(amount || 0, 0)}</div>
-          </div>
-        </Tooltip>
-      )}
     </div>
   );
 };

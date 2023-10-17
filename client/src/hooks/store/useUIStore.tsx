@@ -3,6 +3,7 @@ import { createPopupsSlice, PopupsStore } from "./_popups";
 import realmsJson from "../../geodata/realms.json";
 import { Vector3 } from "three";
 import { createDataStoreSlice, DataStore } from "./_dataStore";
+import React from "react";
 export type Background = "map" | "realmView" | "combat" | "bastion";
 
 interface UIStore {
@@ -19,6 +20,13 @@ interface UIStore {
   cameraPosition: any;
   setCameraPosition: (position: any) => void;
   cameraTarget: any;
+  tooltip: {
+    content: React.ReactNode;
+    position: "top" | "left" | "right" | "bottom";
+  } | null;
+  setTooltip: (tooltip: { content: React.ReactNode; position: "top" | "left" | "right" | "bottom" } | null) => void;
+  mouseCoords: { x: number; y: number };
+  setMouseCoords: (coords: { x: number; y: number }) => void;
   setCameraTarget: (target: any) => void;
   moveCameraToRealm: (realmId: number) => void;
   moveCameraToTarget: (target: { x: number; y: number; z: number }, distance?: number) => void;
@@ -59,6 +67,10 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   setCameraPosition: (position) => set({ cameraPosition: position }),
   cameraTarget: { x: 0, y: 0, z: 0 },
   setCameraTarget: (target) => set({ cameraTarget: target }),
+  tooltip: null,
+  setTooltip: (tooltip) => set({ tooltip }),
+  mouseCoords: { x: 0, y: 0 },
+  setMouseCoords: (coords) => set({ mouseCoords: coords }),
   moveCameraToRealm: (realmId) => {
     const x = realmsJson.features[realmId - 1].xy[0] * -1;
     const y = realmsJson.features[realmId - 1].xy[1] * -1;

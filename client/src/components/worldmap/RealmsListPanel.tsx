@@ -2,22 +2,34 @@ import { useMemo, useState } from "react";
 import { Tabs } from "../../elements/tab";
 import { Tooltip } from "../../elements/Tooltip";
 import { RealmsListComponent } from "./RealmsListComponent";
+import useUIStore from "../../hooks/store/useUIStore";
 
 type RealmsListPanelProps = {};
 
 export const RealmsListPanel = ({}: RealmsListPanelProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const tabs = useMemo(
     () => [
       {
         key: "all",
         label: (
-          <div className="flex relative group flex-col items-center">
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Browse all settled realms.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex relative group flex-col items-center"
+          >
             <div>All Realms</div>
-            <Tooltip position="bottom">
-              <p className="whitespace-nowrap">Browse all settled realms.</p>
-            </Tooltip>
           </div>
         ),
         component: <RealmsListComponent />,
@@ -25,11 +37,21 @@ export const RealmsListPanel = ({}: RealmsListPanelProps) => {
       {
         key: "my",
         label: (
-          <div className="flex group relative flex-col items-center">
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Browse your realms.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex group relative flex-col items-center"
+          >
             <div>My Realms</div>
-            <Tooltip position="bottom">
-              <p className="whitespace-nowrap">Browse your realms.</p>
-            </Tooltip>
           </div>
         ),
         component: <RealmsListComponent onlyMyRealms />,

@@ -23,6 +23,7 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
 
   const moveCameraToMarketView = useUIStore((state) => state.moveCameraToMarketView);
   const moveCameraToCaravansView = useUIStore((state) => state.moveCameraToCaravansView);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   // @ts-ignore
   const [location, setLocation] = useLocation();
@@ -49,14 +50,24 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
       {
         key: "my-offers",
         label: (
-          <div className="flex relative group flex-col items-center">
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Check offers made by you,</p>
+                    <p className="whitespace-nowrap">watch incoming caravans,</p>
+                    <p className="whitespace-nowrap">claim arrived resources,</p>
+                    <p className="whitespace-nowrap">or create new offers.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex relative group flex-col items-center"
+          >
             <div>My Offers</div>
-            <Tooltip position="bottom">
-              <p className="whitespace-nowrap">Check offers made by you,</p>
-              <p className="whitespace-nowrap">watch incoming caravans,</p>
-              <p className="whitespace-nowrap">claim arrived resources,</p>
-              <p className="whitespace-nowrap">or create new offers.</p>
-            </Tooltip>
           </div>
         ),
         component: <MyOffersPanel />,
@@ -64,12 +75,22 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
       {
         key: "open-offers",
         label: (
-          <div className="flex relative group flex-col items-center">
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Offers from all over the world are found here.</p>
+                    <p className="whitespace-nowrap">Trade with your fellow Lords</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex relative group flex-col items-center"
+          >
             <div>Open Offers</div>
-            <Tooltip position="bottom">
-              <p className="whitespace-nowrap">Offers from all over the world are found here.</p>
-              <p className="whitespace-nowrap">Trade with your fellow Lords</p>
-            </Tooltip>
           </div>
         ),
         component: <MarketPanel directOffers={false} />,
@@ -77,11 +98,21 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
       {
         key: "direct-offers",
         label: (
-          <div className="flex relative group flex-col items-center">
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Offers made specifically for you are found here.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex relative group flex-col items-center"
+          >
             <div>Direct Offers</div>
-            <Tooltip position="bottom">
-              <p className="whitespace-nowrap">Offers made specifically for you are found here.</p>
-            </Tooltip>
           </div>
         ),
         component: <MarketPanel directOffers={true} />,
@@ -89,12 +120,24 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
       {
         key: "caravans",
         label: (
-          <div className="flex relative group flex-col items-center">
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">
+                      You can only trade resources if there are Caravans to carry them.
+                    </p>
+                    <p className="whitespace-nowrap">Manage your Caravans here</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex relative group flex-col items-center"
+          >
             <div>Caravans</div>
-            <Tooltip position="bottom">
-              <p className="whitespace-nowrap">You can only trade resources if there are Caravans to carry them.</p>
-              <p className="whitespace-nowrap">Manage your Caravans here</p>
-            </Tooltip>
           </div>
         ),
         component: <CaravansPanel />,
@@ -102,12 +145,22 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
       {
         key: "roads",
         label: (
-          <div className="flex relative group flex-col items-center">
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Build roads to other Realms to</p>
+                    <p className="whitespace-nowrap">get faster travel time for orders.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex relative group flex-col items-center"
+          >
             <div>Roads</div>
-            <Tooltip position="bottom">
-              <p className="whitespace-nowrap">Build roads to other Realms to</p>
-              <p className="whitespace-nowrap">get faster travel time for orders.</p>
-            </Tooltip>
           </div>
         ),
         component: <RoadsPanel />,
