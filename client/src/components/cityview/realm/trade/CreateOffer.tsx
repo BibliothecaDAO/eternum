@@ -47,8 +47,8 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   const {
     account: { account },
     setup: {
-      optimisticSystemCalls: { optimisticMakeFungibleOrder },
-      systemCalls: { create_caravan, create_free_transport_unit, make_fungible_order, attach_caravan },
+      optimisticSystemCalls: { optimisticCreateOrder },
+      systemCalls: { create_order },
     },
   } = useDojo();
 
@@ -64,7 +64,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   const createOrder = async () => {
     setIsLoading(true);
     if (isNewCaravan) {
-      const trade_id = await optimisticMakeFungibleOrder(make_fungible_order)({
+      await optimisticCreateOrder(create_order)({
         signer: account,
         maker_id: realmEntityId,
         maker_entity_types: selectedResourceIdsGive,
@@ -72,24 +72,10 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
         taker_id: selectedRealmEntityId || 0,
         taker_entity_types: selectedResourceIdsGet,
         taker_quantities: Object.values(selectedResourcesGetAmounts).map((amount) => multiplyByPrecision(amount)),
-      });
-      const transport_units_id = await create_free_transport_unit({
-        signer: account,
-        realm_id: realmEntityId,
-        quantity: donkeysCount,
-      });
-      const caravan_id = await create_caravan({
-        signer: account,
-        entity_ids: [transport_units_id],
-      });
-      await attach_caravan({
-        signer: account,
-        realm_id: realmEntityId,
-        trade_id,
-        caravan_id,
+        donkeys_quantity: donkeysCount,
       });
     } else {
-      const trade_id = await make_fungible_order({
+      await optimisticCreateOrder(create_order)({
         signer: account,
         maker_id: realmEntityId,
         maker_entity_types: selectedResourceIdsGive,
@@ -97,11 +83,6 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
         taker_id: selectedRealmEntityId || 0,
         taker_entity_types: selectedResourceIdsGet,
         taker_quantities: Object.values(selectedResourcesGetAmounts).map((amount) => multiplyByPrecision(amount)),
-      });
-      await attach_caravan({
-        signer: account,
-        realm_id: realmEntityId,
-        trade_id,
         caravan_id: selectedCaravan,
       });
     }

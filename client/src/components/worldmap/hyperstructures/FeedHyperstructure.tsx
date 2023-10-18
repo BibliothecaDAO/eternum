@@ -215,7 +215,7 @@ const BuildHyperstructurePanel = ({
   const {
     account: { account },
     setup: {
-      systemCalls: { create_caravan, create_free_transport_unit, transfer_resources, travel, complete_hyperstructure },
+      systemCalls: { complete_hyperstructure, send_resources_to_hyperstructure },
     },
   } = useDojo();
 
@@ -234,46 +234,23 @@ const BuildHyperstructurePanel = ({
             .flatMap((id) => [Number(id), multiplyByPrecision(feedResourcesGiveAmounts[Number(id)])])
         : hyperstructureData?.initialzationResources.flatMap((resource) => [resource.resourceId, resource.amount]);
       if (isNewCaravan) {
-        const transport_units_id = await create_free_transport_unit({
-          signer: account,
-          realm_id: realmEntityId,
-          quantity: donkeysCount,
-        });
-        const caravan_id = await create_caravan({
-          signer: account,
-          entity_ids: [transport_units_id],
-        });
-
-        // transfer resources to caravan
-        await transfer_resources({
+        await send_resources_to_hyperstructure({
           signer: account,
           sending_entity_id: realmEntityId,
-          receiving_entity_id: caravan_id,
           resources: resourcesList || [],
-        });
-
-        // send caravan to hyperstructure
-        await travel({
-          signer: account,
-          travelling_entity_id: caravan_id,
           destination_coord_x: hyperstructureData.position.x,
           destination_coord_y: hyperstructureData.position.y,
+          donkeys_quantity: donkeysCount,
         });
       } else {
         // transfer resources to caravan
-        await transfer_resources({
+        await send_resources_to_hyperstructure({
           signer: account,
           sending_entity_id: realmEntityId,
-          receiving_entity_id: selectedCaravan,
           resources: resourcesList || [],
-        });
-
-        // send caravan to hyperstructure
-        await travel({
-          signer: account,
-          travelling_entity_id: selectedCaravan,
           destination_coord_x: hyperstructureData.position.x,
           destination_coord_y: hyperstructureData.position.y,
+          caravan_id: selectedCaravan,
         });
       }
     }
