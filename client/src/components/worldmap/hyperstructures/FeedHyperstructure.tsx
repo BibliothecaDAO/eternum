@@ -20,7 +20,6 @@ import { ResourceCost } from "../../../elements/ResourceCost";
 import clsx from "clsx";
 import { HyperStructureInterface, useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
 import { Tabs } from "../../../elements/tab";
-import { Tooltip } from "../../../elements/Tooltip";
 import ProgressBar from "../../../elements/ProgressBar";
 import { HyperStructureCaravansPanel } from "./HyperStructureCaravans/HyperStructureCaravansPanel";
 import hyperStructures from "../../../data/hyperstructures.json";
@@ -29,6 +28,7 @@ import { NumberInput } from "../../../elements/NumberInput";
 import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/arrow-separator.svg";
 import { WEIGHT_PER_DONKEY_KG } from "../../../constants/travel";
 import { ReactComponent as CloseIcon } from "../../../assets/icons/common/cross-circle.svg";
+import useUIStore from "../../../hooks/store/useUIStore";
 
 type FeedHyperstructurePopupProps = {
   onClose: () => void;
@@ -37,6 +37,7 @@ type FeedHyperstructurePopupProps = {
 
 export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePopupProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const hyperStructurePosition = useMemo(() => {
     const { x, z } = hyperStructures[order - 1];
@@ -57,11 +58,21 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
       {
         key: "all",
         label: (
-          <div className="flex relative group flex-col items-center">
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Initialize or feed Hyperstructure with resources.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex relative group flex-col items-center"
+          >
             <div>Build</div>
-            <Tooltip position="bottom">
-              <p className="whitespace-nowrap">Initialize or feed Hyperstructure with resources.</p>
-            </Tooltip>
           </div>
         ),
         component: (
@@ -77,12 +88,22 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
         key: "my",
         label: (
           // TODO: implement incoming caravans here
-          <div className="flex group relative flex-col items-center">
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Watch incoming caravans.</p>
+                    <p className="whitespace-nowrap">Pass resources to Hyperstructure on arriving.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex group relative flex-col items-center"
+          >
             <div>{`Caravans (${caravans.length})`}</div>
-            <Tooltip position="bottom">
-              <p className="whitespace-nowrap">Watch incoming caravans.</p>
-              <p className="whitespace-nowrap">Pass resources to Hyperstructure on arriving.</p>
-            </Tooltip>
           </div>
         ),
         component: hyperstructureData ? (

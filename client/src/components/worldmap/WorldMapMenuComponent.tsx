@@ -4,12 +4,13 @@ import { ReactComponent as City } from "../../assets/icons/common/city.svg";
 import { ReactComponent as World } from "../../assets/icons/common/world.svg";
 import { useLocation } from "wouter";
 import { Tabs } from "../../elements/tab";
-import { Tooltip } from "../../elements/Tooltip";
 import RealmsListPanel from "./RealmsListPanel";
 import { HyperstructuresPanel } from "./hyperstructures/HyperstructuresPanel";
+import useUIStore from "../../hooks/store/useUIStore";
 
 const WorldMapMenuComponent = () => {
   const [selectedTab, setSelectedTab] = useState(0);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   // @ts-ignore
   const [_location, setLocation] = useLocation();
@@ -19,13 +20,23 @@ const WorldMapMenuComponent = () => {
       {
         key: "realms",
         label: (
-          <div className="flex relative group flex-col items-center">
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className=" whitespace-nowrap">Search for all existing</p>
+                    <p className=" whitespace-nowrap">Realms here.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex relative group flex-col items-center"
+          >
             <City className="mb-2 fill-gold" />
             <div>Realms</div>
-            <Tooltip position="bottom">
-              <p className=" whitespace-nowrap">Search for all existing</p>
-              <p className=" whitespace-nowrap">Realms here.</p>
-            </Tooltip>
           </div>
         ),
         component: <RealmsListPanel />,
@@ -33,12 +44,22 @@ const WorldMapMenuComponent = () => {
       {
         key: "hyperstructures",
         label: (
-          <div className="flex relative group flex-col items-center">
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">See, build or feed</p>
+                    <p className="whitespace-nowrap">Hyperstructures.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex relative group flex-col items-center"
+          >
             <Relic className="mb-2 fill-gold" /> <div>Hyperstructures</div>
-            <Tooltip position="bottom">
-              <p className="whitespace-nowrap">See, build or feed</p>
-              <p className="whitespace-nowrap">Hyperstructures.</p>
-            </Tooltip>
           </div>
         ),
         component: <HyperstructuresPanel />,

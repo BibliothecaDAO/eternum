@@ -10,8 +10,8 @@ import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { ResourcesOffer } from "../../../../../types";
 import { MarketInterface } from "../../../../../hooks/helpers/useTrade";
-import { Tooltip } from "../../../../../elements/Tooltip";
 import { currencyFormat } from "../../../../../utils/utils";
+import useUIStore from "../../../../../hooks/store/useUIStore";
 
 type TradeOfferProps = {
   marketOffer: MarketInterface;
@@ -23,6 +23,7 @@ export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferPr
   const { hasRoad, distance, resourcesGet, resourcesGive, canAccept, ratio } = marketOffer;
 
   let { realm: makerRealm } = useGetRealm(marketOffer.makerId);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -43,20 +44,41 @@ export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferPr
         <div className=" text-gold flex">
           <div className=" text-right">{`${distance.toFixed(0)} km`}</div>
           {hasRoad ? (
-            <div className="text-order-brilliance relative group ml-2">
+            <div
+              onMouseEnter={() =>
+                setTooltip({
+                  position: "bottom",
+                  content: (
+                    <>
+                      <p className="whitespace-nowrap">This Realm has built road</p>
+                      <p className="whitespace-nowrap">to your Realm.</p>
+                    </>
+                  ),
+                })
+              }
+              onMouseLeave={() => setTooltip(null)}
+              className="text-order-brilliance relative group ml-2"
+            >
               (x2 speed)
-              <Tooltip position="left">
-                <p className="whitespace-nowrap">This Realm has built road</p>
-                <p className="whitespace-nowrap">to your Realm.</p>
-              </Tooltip>
             </div>
           ) : (
-            <div className="text-gold/50 decoration-dotted underline relative group ml-2" onClick={onBuildRoad}>
+            <div
+              onMouseEnter={() =>
+                setTooltip({
+                  position: "bottom",
+                  content: (
+                    <>
+                      <p className="whitespace-nowrap">Click to build road and</p>
+                      <p className="whitespace-nowrap">speed up trades with this Realm.</p>
+                    </>
+                  ),
+                })
+              }
+              onMouseLeave={() => setTooltip(null)}
+              className="text-gold/50 decoration-dotted underline relative group ml-2"
+              onClick={onBuildRoad}
+            >
               (Normal speed)
-              <Tooltip position="left">
-                <p className="whitespace-nowrap">Click to build road and</p>
-                <p className="whitespace-nowrap">speed up trades with this Realm.</p>
-              </Tooltip>
             </div>
           )}
         </div>
