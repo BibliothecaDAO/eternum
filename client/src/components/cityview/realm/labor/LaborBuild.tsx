@@ -18,7 +18,7 @@ import { getComponentValue } from "@latticexyz/recs";
 import { getEntityIdFromKeys, getPosition, getZone } from "../../../../utils/utils";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
-import { BuildLaborProps } from "../../../../dojo/createSystemCalls";
+import { PurchaseAndBuildLaborProps } from "../../../../dojo/createSystemCalls";
 import { useLabor } from "../../../../hooks/helpers/useLabor";
 
 let LABOR_CONFIG = {
@@ -37,7 +37,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   const {
     setup: {
       components: { Resource },
-      systemCalls: { build_labor, purchase_labor },
+      systemCalls: { purchase_and_build_labor },
       optimisticSystemCalls: { optimisticBuildLabor },
     },
     account: { account },
@@ -87,10 +87,10 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     return amount * multiplier * (isFood ? 12 : laborAmount) * laborCoefficient;
   };
 
-  const buildLabor = async ({ realm_id, resource_type, labor_units, multiplier }: BuildLaborProps) => {
+  const buildLabor = async ({ entity_id, resource_type, labor_units, multiplier }: PurchaseAndBuildLaborProps) => {
     await purchase_and_build_labor({
       signer: account,
-      entity_id: realm_id,
+      entity_id,
       resource_type,
       labor_units: labor_units,
       multiplier,
@@ -114,11 +114,6 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   }, [laborAmount, multiplier, costResources]);
 
   const onBuild = () => {
-    // note: removed loading with optimistic rendering
-    // setBuildLoadingStates((prevStates: any) => ({
-    //   ...prevStates,
-    //   [resourceId]: true,
-    // }));
     optimisticBuildLabor(
       nextBlockTimestamp || 0,
       costResources,
@@ -126,7 +121,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
       buildLabor,
     )({
       signer: account,
-      realm_id: realmEntityId,
+      entity_id: realmEntityId,
       resource_type: resourceId,
       labor_units: laborUnits,
       multiplier: multiplier,
@@ -347,10 +342,12 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
                 className="ml-2 mr-2"
                 value={multiplier}
                 onChange={setMultiplier}
-                max={resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0}
+                // max={resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0}
+                // note: need to limit for now because of gas issues
+                max={Math.min(resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0, 4)}
               />
               <div className="italic text-gold">
-                Max {resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0}
+                Max {Math.min(resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0, 4)}
               </div>
             </div>
           )}
