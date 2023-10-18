@@ -10,6 +10,7 @@ mod labor_systems {
     use eternum::models::resources::Resource;
     use eternum::models::labor::{Labor, LaborTrait};
     use eternum::models::labor_auction::{LaborAuction, LaborAuctionTrait};
+    use eternum::models::labor_auction::{LinearVRGDA, LinearVRGDATrait};
     use eternum::models::config::{WorldConfig, LaborConfig, LaborCostResources, LaborCostAmount};
 
     use eternum::systems::labor::utils::{assert_harvestable_resource, get_labor_resource_type};
@@ -320,45 +321,24 @@ mod labor_systems {
 
                 let zone = position.get_zone();
                 let mut labor_auction = get!(world, zone, (LaborAuction));
+                let mut labor_auction_vrgda = labor_auction.to_LinearVRGDA();
+                let mut labor_auction_time_since_start_fixed 
+                    = labor_auction.get_time_since_start_fixed();
+
                 assert(labor_auction.per_time_unit != 0, 'Labor auction not found');
 
-                let mut labor_units_remaining = labor_units;
-                let mut total_costs: Felt252Dict<u128> = Default::default();
 
-                let mut labor_cost_multiplier = labor_auction.get_price();
+                let zero_fixed = Fixed {sign: false, mag: 0};
 
-                loop {
-                    if labor_units_remaining == 0 {
-                        break;
-                    }
+                // array to cache labor price per price update interval
+                let mut labor_price_period_count = 0;
+                let mut labor_price_per_period: Array<Fixed> = array![];
 
-                    let mut index = 0_usize;
-
-                    loop {
-                        if index == labor_cost_resources.resource_types_count.into() {
-                            break ();
-                        }
-                        let labor_cost_resource_type = *labor_cost_resource_types[index];
-                        let labor_cost_per_unit = get!(
-                            world, (resource_type, labor_cost_resource_type).into(), LaborCostAmount
+                let first_labor_cost_multiplier 
+                        = labor_auction_vrgda.get_vrgda_price(
+                            labor_auction_time_since_start_fixed,
+                            FixedTrait::new_unscaled(labor_auction.sold, false)
                         );
-
-                        let cost_fixed = FixedTrait::new_unscaled(labor_cost_per_unit.value, false)
-                            * labor_cost_multiplier.into();
-                        let cost: u128 = cost_fixed.try_into().unwrap();
-
-                        let total_cost = total_costs.get(labor_cost_resource_type.into());
-                        total_costs.insert(labor_cost_resource_type.into(), total_cost + cost);
-
-                        index += 1;
-                    };
-
-                    labor_auction.sell();
-                    if (labor_auction.sold) % labor_auction.price_update_interval == 0 {
-                        labor_cost_multiplier = labor_auction.get_price();
-                    };
-                    labor_units_remaining -= 1;
-                };
 
                 let mut index = 0_usize;
                 loop {
@@ -367,13 +347,78 @@ mod labor_systems {
                     }
 
                     let labor_cost_resource_type = *labor_cost_resource_types[index];
-                    let total_cost = total_costs.get(labor_cost_resource_type.into());
+                    let labor_cost_per_unit = get!(
+                        world, (resource_type, labor_cost_resource_type).into(), LaborCostAmount
+                    );
+        
+                    let labor_cost_amount_per_unit_fixed 
+                        = FixedTrait::new_unscaled(labor_cost_per_unit.value, false);
+                    
+                    let mut total_cost = 0;
 
+
+
+                    let mut labor_cost 
+                        = (labor_cost_amount_per_unit_fixed * first_labor_cost_multiplier)
+                        .try_into().unwrap();
+
+                    let mut labor_units_remaining = labor_units;
+                    
+                    loop {
+                        if labor_units_remaining == 0 {
+                            break;
+                        }
+
+                        total_cost += labor_cost;
+
+                        labor_auction.sell();
+                        
+                        if (labor_auction.sold) % labor_auction.price_update_interval == 0 {
+
+                            if (labor_price_per_period.len() == labor_price_period_count) {
+
+                                // if labor cost multiplier has not been cached, calculate it
+                                let current_labor_cost_multiplier 
+                                    = labor_auction_vrgda.get_vrgda_price(
+                                        labor_auction_time_since_start_fixed,
+                                        FixedTrait::new_unscaled(labor_auction.sold, false)
+                                    );
+        
+                                labor_cost 
+                                    = (labor_cost_amount_per_unit_fixed * current_labor_cost_multiplier)
+                                        .try_into().unwrap();
+
+                                // cache data
+                                labor_price_per_period.append(current_labor_cost_multiplier);
+                                
+                            } else {
+
+                                // use cached data
+                                let current_labor_cost_multiplier 
+                                    = *labor_price_per_period[labor_price_period_count];
+                                labor_cost 
+                                    = (labor_cost_amount_per_unit_fixed * current_labor_cost_multiplier)
+                                        .try_into().unwrap();
+                            }
+                            
+                            labor_price_period_count += 1;
+                            
+                        };
+
+                        labor_units_remaining -= 1;
+                    };
+
+                    // reset labor price period count
+                    labor_price_period_count = 0;
+
+
+                    // deduct total labor cost for the current
+                    // resource from entity's balance
                     let current_resource: Resource = get!(
                         world, (entity_id, labor_cost_resource_type).into(), Resource
                     );
-
                     assert(current_resource.balance >= total_cost, 'Not enough resources');
+
                     set!(
                         world,
                         Resource {
@@ -383,13 +428,17 @@ mod labor_systems {
                         }
                     );
 
+                    // reset labor amount sold for next loop
+                    labor_auction.sold -= labor_units;
+
+                    // increment index
                     index += 1;
                 };
 
+                labor_auction.sold = labor_units;
                 set!(world, (labor_auction));
 
                 let labor_resource_type: u8 = get_labor_resource_type(resource_type);
-
                 // increment new labor resource in entity balance
                 let labor_resource = get!(world, (entity_id, labor_resource_type), Resource);
 
