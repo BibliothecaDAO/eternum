@@ -18,8 +18,8 @@ import { getComponentValue } from "@latticexyz/recs";
 import { getEntityIdFromKeys, getPosition, getZone } from "../../../../utils/utils";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
-import { BuildLaborProps } from "../../../../dojo/createSystemCalls";
 import { useLabor } from "../../../../hooks/helpers/useLabor";
+import { BuildLaborProps } from "@bibliothecadao/eternum";
 
 let LABOR_CONFIG = {
   base_food_per_cycle: 14000,

@@ -2,6 +2,9 @@ import { uuid } from "@latticexyz/utils";
 import { ClientComponents } from "./createClientComponents";
 import { getEntityIdFromKeys } from "../utils/utils";
 import { Type, getComponentValue } from "@latticexyz/recs";
+import { Resource } from "../types";
+import { LaborCostInterface } from "../hooks/helpers/useLabor";
+import { LABOR_CONFIG } from "../constants/labor";
 import {
   BuildLaborProps,
   CancelFungibleOrderProps,
@@ -9,10 +12,7 @@ import {
   CreateOrderProps,
   CreateRoadProps,
   HarvestLaborProps,
-} from "./createSystemCalls";
-import { Resource } from "../types";
-import { LaborCostInterface } from "../hooks/helpers/useLabor";
-import { LABOR_CONFIG } from "../constants/labor";
+} from "@bibliothecadao/eternum";
 
 export const HIGH_ENTITY_ID = 9999999999;
 
