@@ -11,7 +11,7 @@ import { formatSecondsInHoursMinutes } from "../../../cityview/realm/labor/labor
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import ProgressBar from "../../../../elements/ProgressBar";
 import { Dot } from "../../../../elements/Dot";
-import { CAPACITY_PER_DONKEY } from "../../../../constants/travel";
+import { CAPACITY_PER_DONKEY } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@latticexyz/recs";
 import { useDojo } from "../../../../DojoContext";
 import Button from "../../../../elements/Button";

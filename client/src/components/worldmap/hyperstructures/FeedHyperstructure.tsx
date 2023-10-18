@@ -15,7 +15,7 @@ import { useDojo } from "../../../DojoContext";
 import { Steps } from "../../../elements/Steps";
 import { Headline } from "../../../elements/Headline";
 import { OrderIcon } from "../../../elements/OrderIcon";
-import { orderNameDict, orders } from "../../../constants/orders";
+import { orderNameDict, orders } from "@bibliothecadao/eternum";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import clsx from "clsx";
 import { HyperStructureInterface, useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
@@ -26,7 +26,7 @@ import hyperStructures from "../../../data/hyperstructures.json";
 import { useGetPositionCaravans } from "../../../hooks/helpers/useCaravans";
 import { NumberInput } from "../../../elements/NumberInput";
 import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/arrow-separator.svg";
-import { WEIGHT_PER_DONKEY_KG } from "../../../constants/travel";
+import { WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 import { ReactComponent as CloseIcon } from "../../../assets/icons/common/cross-circle.svg";
 import useUIStore from "../../../hooks/store/useUIStore";
 

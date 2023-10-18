@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
-import { ResourcesIds, findResourceById, resources } from "../../../constants/resources";
+import { ResourcesIds, findResourceById, resources } from "@bibliothecadao/eternum";
 import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "../../../utils/utils.jsx";
 import clsx from "clsx";
 import { unpackResources } from "../../../utils/packedData";
@@ -13,7 +13,7 @@ import { SmallResource } from "./SmallResource";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../DojoContext";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
-import { LABOR_CONFIG } from "../../../constants/labor";
+import { LABOR_CONFIG } from "@bibliothecadao/eternum";
 import useUIStore from "../../../hooks/store/useUIStore";
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<"div">;

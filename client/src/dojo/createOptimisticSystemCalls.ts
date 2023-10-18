@@ -4,7 +4,7 @@ import { getEntityIdFromKeys } from "../utils/utils";
 import { Type, getComponentValue } from "@latticexyz/recs";
 import { Resource } from "../types";
 import { LaborCostInterface } from "../hooks/helpers/useLabor";
-import { LABOR_CONFIG } from "../constants/labor";
+import { LABOR_CONFIG } from "@bibliothecadao/eternum";
 import {
   BuildLaborProps,
   CancelFungibleOrderProps,

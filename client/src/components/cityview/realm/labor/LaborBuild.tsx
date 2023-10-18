@@ -4,7 +4,7 @@ import Button from "../../../../elements/Button";
 import { Headline } from "../../../../elements/Headline";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../elements/NumberInput";
-import { ResourcesIds, findResourceById } from "../../../../constants/resources";
+import { ResourcesIds, findResourceById, BuildLaborProps } from "@bibliothecadao/eternum";
 import { ReactComponent as FishingVillages } from "../../../../assets/icons/resources/FishingVillages.svg";
 import { ReactComponent as Farms } from "../../../../assets/icons/resources/Farms.svg";
 import { ResourceIcon } from "../../../../elements/ResourceIcon";
@@ -19,7 +19,6 @@ import { getEntityIdFromKeys, getPosition, getZone } from "../../../../utils/uti
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 import { useLabor } from "../../../../hooks/helpers/useLabor";
-import { BuildLaborProps } from "@bibliothecadao/eternum";
 
 let LABOR_CONFIG = {
   base_food_per_cycle: 14000,
