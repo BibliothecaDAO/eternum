@@ -4,7 +4,7 @@ import { currencyFormat, getEntityIdFromKeys } from "../../../utils/utils";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../DojoContext";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { Tooltip } from "../../../elements/Tooltip";
+import useUIStore from "../../../hooks/store/useUIStore";
 
 export const SmallResource = ({ resourceId }: { resourceId: number }) => {
   const {
@@ -14,11 +14,21 @@ export const SmallResource = ({ resourceId }: { resourceId: number }) => {
   } = useDojo();
 
   const { realmEntityId } = useRealmStore();
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const resource = useComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]));
 
   return (
-    <div className="flex relative group items-center">
+    <div
+      onMouseEnter={() =>
+        setTooltip({
+          position: "bottom",
+          content: <>{findResourceById(resourceId)?.trait}</>,
+        })
+      }
+      onMouseLeave={() => setTooltip(null)}
+      className="flex relative group items-center"
+    >
       <ResourceIcon
         withTooltip={false}
         resource={findResourceById(resourceId)?.trait || ""}
@@ -26,7 +36,6 @@ export const SmallResource = ({ resourceId }: { resourceId: number }) => {
         className="mr-1"
       />
       <div className="text-xxs">{currencyFormat(resource?.balance || 0, 2)}</div>
-      <Tooltip>{findResourceById(resourceId)?.trait}</Tooltip>
     </div>
   );
 };

@@ -40,7 +40,7 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
   const {
     account: { account },
     setup: {
-      systemCalls: { transfer_resources, initialize_hyperstructure, travel },
+      systemCalls: { initialize_hyperstructure_and_travel_back, feed_hyperstructure_and_travel_back },
       components: { Resource, CaravanMembers, HomePosition, ForeignKey },
     },
   } = useDojo();
@@ -51,7 +51,9 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
       let entity_id = getEntityIdFromKeys([BigInt(caravan.caravanId), BigInt(caravanMembers.key), BigInt(0)]);
       let foreignKey = getComponentValue(ForeignKey, entity_id);
       if (foreignKey) {
-        let homePosition = getComponentValue(HomePosition, getEntityIdFromKeys([BigInt(foreignKey.entity_id)]));
+        // @note: temp fix until we don't use entity_id as field name in foreign key
+        let homePosition = getComponentValue(HomePosition, getEntityIdFromKeys([BigInt(caravan.caravanId - 2)]));
+        // let homePosition = getComponentValue(HomePosition, getEntityIdFromKeys([BigInt(foreignKey.entity_id)]));
         return homePosition;
       }
     }
@@ -59,28 +61,23 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
 
   const transferAndReturn = async () => {
     if (isInitialized) {
-      await transfer_resources({
-        signer: account,
-        sending_entity_id: caravan.caravanId,
-        receiving_entity_id: hyperstructureData.hyperstructureId,
-        resources: resources.flatMap((resource) => Object.values(resource)),
-      });
-    } else {
-      await initialize_hyperstructure({
+      await feed_hyperstructure_and_travel_back({
         signer: account,
         entity_id: caravan.caravanId,
         hyperstructure_id: hyperstructureData.hyperstructureId,
+        resources: resources.flatMap((resource) => Object.values(resource)),
+        destination_coord_x: returnPosition?.x || 0,
+        destination_coord_y: returnPosition?.y || 0,
+      });
+    } else {
+      await initialize_hyperstructure_and_travel_back({
+        signer: account,
+        entity_id: caravan.caravanId,
+        hyperstructure_id: hyperstructureData.hyperstructureId,
+        destination_coord_x: returnPosition?.x || 0,
+        destination_coord_y: returnPosition?.y || 0,
       });
     }
-
-    // TODO: need to get position of the caravan realm (not possible for now, need to change contracts)
-    // or show a list of realms to which it can travel (realms owned by player)
-    await travel({
-      signer: account,
-      travelling_entity_id: caravan.caravanId,
-      destination_coord_x: returnPosition?.x || 0,
-      destination_coord_y: returnPosition?.y || 0,
-    });
   };
 
   const updateHyperStructure = () => {

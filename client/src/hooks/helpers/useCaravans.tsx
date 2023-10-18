@@ -86,7 +86,7 @@ export function useGetPositionCaravans(x: number, y: number) {
       .filter(Boolean)
       .sort((a, b) => b!.caravanId - a!.caravanId) as CaravanInterface[];
     // DISCUSS: can add sorting logic here
-    setCaravans(caravans);
+    setCaravans([...caravans]);
     // only recompute when different number of orders
   }, [entityIds.length]);
 
