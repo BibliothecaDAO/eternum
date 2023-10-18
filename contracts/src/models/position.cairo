@@ -58,6 +58,21 @@ impl CoordPrint of PrintTrait<Coord> {
     }
 }
 
+impl CoordZeroable of Zeroable<Coord> {
+    fn zero() -> Coord {
+        Coord { x: 0, y: 0 }
+    }
+    #[inline(always)]
+    fn is_zero(self: Coord) -> bool {
+        self.x == 0 && self.y == 0
+    }
+    
+    #[inline(always)]
+    fn is_non_zero(self: Coord) -> bool {
+        !self.is_zero()
+    }
+}
+
 impl PositionIntoCoord of Into<Position, Coord> {
     fn into(self: Position) -> Coord {
         return Coord {

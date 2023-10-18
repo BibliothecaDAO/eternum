@@ -1,5 +1,8 @@
 use eternum::alias::ID;
 use eternum::models::position::Coord;
+use eternum::models::config::{RoadConfig};
+
+use eternum::constants::ROAD_CONFIG_ID;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
@@ -30,6 +33,18 @@ impl RoadImpl of RoadTrait {
             road = get!(world, ( end_coord.x, end_coord.y, start_coord.x, start_coord.y,), Road);
         }
         road
+    }
+
+    #[inline(always)]
+    fn use_road(world: IWorldDispatcher, mut travel_time: u64, start_coord: Coord, end_coord: Coord){
+        let mut road = RoadImpl::get(world, start_coord, end_coord);
+        if road.usage_count > 0 {
+            let road_config = get!(world, ROAD_CONFIG_ID, RoadConfig);
+            
+            travel_time = travel_time / road_config.speed_up_by;
+            road.usage_count -= 1;
+            set!(world, (road));
+        }
     }
 
 }

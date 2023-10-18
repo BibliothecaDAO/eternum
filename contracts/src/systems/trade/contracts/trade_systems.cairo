@@ -2,70 +2,46 @@
 mod trade_systems {
     use eternum::alias::ID;
 
-    use eternum::models::trade::FungibleEntities;
     use eternum::models::resources::Resource;
-    use eternum::models::trade::{Burden, BurdenResource};
+    use eternum::models::caravan::{Caravan, CaravanBurden};
+    use eternum::models::resources::{Burden, BurdenResource};
     use eternum::models::owner::Owner;
     use eternum::models::position::{Position, PositionTrait};
     use eternum::models::realm::Realm;
     use eternum::models::trade::{Trade, Status, TradeStatus};
     use eternum::models::capacity::Capacity;
-    use eternum::models::metadata::EntityMetadata;
-    use eternum::models::caravan::Caravan;
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::road::{Road, RoadTrait, RoadImpl};
     use eternum::models::config::{WorldConfig, SpeedConfig, CapacityConfig};
     use eternum::models::config::WeightConfig;
     use eternum::models::config::RoadConfig;
     use eternum::models::quantity::{
-        Quantity,QuantityTrait, QuantityTracker
+        Quantity, QuantityTrait, QuantityTracker
     };
-    use eternum::models::trade::OrderId;
 
-
-
+    use eternum::systems::resources::contracts::resource_systems::InternalBurdenImpl;
     use eternum::systems::trade::interface::trade_systems_interface::{
         ITradeSystems, ITradeCaravanSystems
     };
 
     use eternum::constants::{REALM_ENTITY_TYPE, WORLD_CONFIG_ID, FREE_TRANSPORT_ENTITY_TYPE};
-    use eternum::constants::ROAD_CONFIG_ID;
 
     use core::poseidon::poseidon_hash_span;
 
 
     #[external(v0)]
     impl TradeSystemsImpl of ITradeSystems<ContractState> {
-        // creates a non fungible order
-        // if buyer_id is specified, the order can only be taken by a certain entity
-        // if buyer_id = 0, then can be taken by any entity
 
-
-        // TODO: create a function that takes also an array of strings as input, these 
-        // strings are names of components that have the {type, balance} fields.
-        // Using the name of the component, we can query and set component.
-
-        // seller_id: entity id of the seller
-        // seller_entity_types: array of entity types (resources or other) that the seller wants to trade
-        // DISCUSS: called entity_types and not resource_types because initial goal is to create a system
-        // that is not only for resources but for any other fungible entity type (like coins)
-        // seller_quantities: array of quantities of the entity types that the seller wants to trade
-        // buyer_id: entity id of the buyer
-        // DISCUSS: if buyer_id = 0, then the order can be taken by any entity, is there better way?
-        // buyer_entity_types: array of entity types (resources or other) that the buyer wants to trade
-        // buyer_quantities: array of quantities of the entity types that the buyer wants to trade
-        // buyer_needs_caravan: if true, the buyer needs to send a caravan to the seller
-        // expires_at: timestamp when the order expires
         fn create_order(
             self: @ContractState,
             world: IWorldDispatcher,
             seller_id: u128,
-            seller_entity_types: Span<u8>,
-            seller_quantities: Span<u128>,
+            seller_resource_types: Span<u8>,
+            seller_resource_amounts: Span<u128>,
             seller_caravan_id: ID,
             buyer_id: u128,
-            buyer_entity_types: Span<u8>,
-            buyer_quantities: Span<u128>,
+            buyer_resource_types: Span<u8>,
+            buyer_resource_amounts: Span<u128>,
             expires_at: u64
         ) -> ID {
             let caller = starknet::get_caller_address();
@@ -73,113 +49,24 @@ mod trade_systems {
             let seller_owner = get!(world, seller_id, Owner);
             assert(seller_owner.address == caller, 'Only owner can create order');
 
-            assert(seller_entity_types.len() == seller_quantities.len(), 'length not equal');
-            assert(buyer_entity_types.len() == buyer_quantities.len(), 'length not equal');
+            // create burden that buyer will collect
+            let buyer_collects_burden 
+                = InternalBurdenImpl::bundle(
+                    world, seller_id, Zeroable::zero(),
+                    seller_resource_types, seller_resource_amounts
+                    );
 
-            // create buyer burden 
+            // create burden that seller will collect
+            let seller_collects_burden 
+                = InternalBurdenImpl::bundle(
+                    world, Zeroable::zero(), Zeroable::zero(),
+                    buyer_resource_types, buyer_resource_amounts
+                    );
 
-            let buyer_burden_id = world.uuid().into();
-
-            // add buyer burden resources and remove 
-            // resources up for sale from seller's balance
-            let mut index = 0;
-            let mut sold_resources_weight = 0;
-            loop {
-                if index == seller_entity_types.len() {
-                    break ();
-                }
-                let sold_resource_type = *seller_entity_types[index];
-                let sold_resource_amount = *seller_quantities[index];
-
-                set!(world,(
-                        BurdenResource {
-                            burden_id: buyer_burden_id,
-                            index: index,
-                            resource_type: sold_resource_type,
-                            resource_amount: sold_resource_amount
-                        }
-                ));
-
-                // decrease balance of seller
-                let resource = get!(world, (seller_id, sold_resource_type), Resource);
-                assert(resource.balance >= sold_resource_amount, 'Balance too small');
-                set!(world,(
-                    Resource {
-                        entity_id: seller_id,
-                        resource_type: sold_resource_type,
-                        balance: resource.balance - sold_resource_amount
-                    },)
+            // attach burden to seller's caravan 
+            TradeCaravanHelpersImpl::attach(
+                world, seller_id, seller_caravan_id, seller_collects_burden
                 );
-
-
-                // update resources total weight
-                let resource_type_weight 
-                    = get!(world, (WORLD_CONFIG_ID, sold_resource_type), WeightConfig);
-                sold_resources_weight += resource_type_weight.weight_gram * sold_resource_amount;
-
-                index += 1;
-            };
-
-
-            set!(world,(
-                    Burden {
-                        burden_id: buyer_burden_id,
-                        from_entity_id: seller_id,
-                        to_entity_id: buyer_id,
-                        resources_count: seller_entity_types.len(),
-                        resources_weight: sold_resources_weight
-                    }
-                )
-            );
-
-
-            // create seller burden
-
-            let seller_burden_id = world.uuid().into();
-
-            // add seller burden resources
-            let mut index = 0;
-            let mut bought_resources_weight = 0;
-            loop {
-                if index == buyer_entity_types.len() {
-                    break ();
-                }
-
-                let bought_resource_type = *buyer_entity_types[index];
-                let bought_resource_amount = *buyer_quantities[index];
-
-                set!(world,(
-                    BurdenResource {
-                        burden_id: seller_burden_id,
-                        index: index,
-                        resource_type: bought_resource_type,
-                        resource_amount: bought_resource_amount
-                    }
-                ));
-
-                // update resources total weight
-                let resource_type_weight 
-                    = get!(world, (WORLD_CONFIG_ID, bought_resource_type), WeightConfig);
-                bought_resources_weight += resource_type_weight.weight_gram * bought_resource_amount;
-
-                index += 1;
-            };
-
-
-            let seller_burden 
-                = Burden {
-                    burden_id: seller_burden_id,
-                    from_entity_id: buyer_id,
-                    to_entity_id: seller_id,
-                    resources_count: buyer_entity_types.len(),
-                    resources_weight: bought_resources_weight
-                };
-            set!(world,(seller_burden));
-
-            // ensure caravan can be attached to burden
-            TradeCaravanHelpersImpl::assert_can_be_attached(
-                world, seller_id, seller_caravan_id, seller_burden
-            );
 
 
             // create trade entity
@@ -188,10 +75,10 @@ mod trade_systems {
                     Trade {
                         trade_id,
                         seller_id,
-                        seller_burden_id: seller_burden_id.into(),
+                        seller_collects_burden_id: seller_collects_burden.burden_id,
                         seller_caravan_id,
                         buyer_id,
-                        buyer_burden_id: buyer_burden_id.into(),
+                        buyer_collects_burden_id: buyer_collects_burden.burden_id,
                         buyer_caravan_id: 0,
                         expires_at: expires_at,
                     },
@@ -215,6 +102,11 @@ mod trade_systems {
             self: @ContractState, world: IWorldDispatcher,
             buyer_id: u128, buyer_caravan_id: u128, trade_id: u128
         ) {
+            // check that caller is buyer
+            let caller = starknet::get_caller_address();
+            let owner = get!(world, buyer_id, Owner);
+            assert(owner.address == caller, 'not owned by caller');
+
 
             let trade_status = get!(world, trade_id, Status);
             let mut trade_meta = get!(world, trade_id, Trade);
@@ -224,29 +116,39 @@ mod trade_systems {
             assert(trade_meta.expires_at > ts, 'trade expired');
             assert(trade_status.value == TradeStatus::OPEN, 'trade is not open');
 
-            // check that caller is buyer
-            let caller = starknet::get_caller_address();
-            let owner = get!(world, buyer_id, Owner);
-            assert(owner.address == caller, 'not owned by caller');
 
             // if it's a direct offer, verify that its the correct buyer 
             if trade_meta.buyer_id != 0 {
                 assert(trade_meta.buyer_id == buyer_id, 'not the buyer');
             } 
+
+            // attach burden to buyer's caravan 
+            let buyer_collects_burden = get!(world, trade_meta.buyer_collects_burden_id, Burden);
+            TradeCaravanHelpersImpl::attach(
+                world, buyer_id, buyer_caravan_id, buyer_collects_burden
+                );
+
+           // remove traded resources from the buyer's balance 
+            let mut seller_collects_burden = get!(world, trade_meta.seller_collects_burden_id, Burden);
+            InternalBurdenImpl::make_deposit(world, buyer_id, seller_collects_burden);
+
+
+            // update trade meta and status
             trade_meta.buyer_id = buyer_id;
-
-            // attach buyer's caravan to burden
-            let buyer_burden = get!(world, trade_meta.buyer_burden_id, Burden);
-            TradeCaravanHelpersImpl::assert_can_be_attached(
-                world, buyer_id, buyer_caravan_id, buyer_burden
-            );
             trade_meta.buyer_caravan_id = buyer_caravan_id;
+            set!(world, (trade_meta));
+            set!(world, (
+                    Status {
+                        trade_id,
+                        value: TradeStatus::ACCEPTED,
+                    }
+                ),
+            );
 
-
-
-            let buyer_position = get!(world, buyer_id, Position);
 
             // calculate trip time
+            let buyer_position = get!(world, buyer_id, Position);
+            let seller_position = get!(world, trade_meta.seller_id, Position);
             let (seller_caravan_movable, seller_caravan_position) 
                 = get!(world, trade_meta.seller_caravan_id, (Movable, Position));
             let one_way_trip_time 
@@ -254,121 +156,53 @@ mod trade_systems {
                     buyer_position, seller_caravan_movable.sec_per_km
                     );
             let mut round_trip_time: u64 = 2 * one_way_trip_time;
+            // reduce round trip time if there is a road
+            RoadImpl::use_road(
+                 world, round_trip_time, seller_caravan_position.into(), buyer_position.into()
+                );
 
-            // if a road exists, use it and get new travel time 
-            let mut road
-                = RoadImpl::get(world, seller_caravan_position.into(), buyer_position.into());
-            if road.usage_count > 0 {
-                let road_config = get!(world, ROAD_CONFIG_ID, RoadConfig);
-                
-                road.usage_count -= 1;
-                set!(world, (road));
-                round_trip_time /= road_config.speed_up_by; 
-            }
 
             set!(world, (
                     ArrivalTime {
-                        entity_id: trade_meta.seller_burden_id,
+                        entity_id: trade_meta.seller_collects_burden_id,
                         arrives_at: ts + round_trip_time
+                    },
+                    Position {
+                        entity_id: trade_meta.seller_collects_burden_id,
+                        x: seller_position.x,
+                        y: seller_position.y,
                     },
                     ArrivalTime {
                         entity_id: trade_meta.seller_caravan_id,
                         arrives_at: ts + round_trip_time
                     },
+                    Position {
+                        entity_id: trade_meta.seller_caravan_id,
+                        x: seller_position.x,
+                        y: seller_position.y,
+                    },
             ));
 
             set!(world, (
                     ArrivalTime {
-                        entity_id: trade_meta.buyer_burden_id,
+                        entity_id: trade_meta.buyer_collects_burden_id,
                         arrives_at: ts + round_trip_time
+                    },
+                    Position {
+                        entity_id: trade_meta.buyer_collects_burden_id,
+                        x: buyer_position.x,
+                        y: buyer_position.y,
                     },
                     ArrivalTime {
                         entity_id: trade_meta.buyer_caravan_id,
                         arrives_at: ts + round_trip_time
                     },
-            ));
-
-        
-
-            // deduct the resources the buyer is giving seller from balance
-            let mut index = 0;
-            let seller_burden = get!(world, trade_meta.seller_burden_id, Burden);
-            loop {
-                if index == seller_burden.resources_count {
-                    break ();
-                };
-
-                let seller_burden_resource 
-                    = get!(world, (seller_burden.burden_id, index), BurdenResource);
-                
-                let buyer_resource 
-                    = get!(world, (buyer_id, seller_burden_resource.resource_type), Resource);
-                assert(
-                    buyer_resource.balance >= seller_burden_resource.resource_amount, 
-                        'not enough balance'
-                );
-                    
-                set!(world,( 
-                    Resource {
-                        entity_id: buyer_id, 
-                        resource_type: buyer_resource.resource_type, 
-                        balance: buyer_resource.balance - seller_burden_resource.resource_amount
-                    })
-                );
-                index += 1;
-            };
-
-            set!(world, (
-                    trade_meta,
-                    Status {
-                        trade_id,
-                        value: TradeStatus::ACCEPTED
+                    Position {
+                        entity_id: trade_meta.buyer_caravan_id,
+                        x: buyer_position.x,
+                        y: buyer_position.y,
                     }
             ));
-        }
-
-
-
-
-        fn claim_burden(
-            self: @ContractState, world: IWorldDispatcher,
-            entity_id: u128, burden_id: u128
-        ) {
-
-            let caller = starknet::get_caller_address();    
-            let owner = get!(world, entity_id, Owner);
-            assert(owner.address == caller, 'not owned by caller');
-
-            let burden = get!(world, burden_id, Burden);
-            assert(burden.to_entity_id == entity_id, 'not the receiver');
-
-            // ensure burden has arrived
-            let burden_arrival_time = get!(world, burden_id, ArrivalTime);
-            assert(
-                burden_arrival_time.arrives_at > 0, 
-                        'burden has not left'
-            );
-            assert(
-                burden_arrival_time.arrives_at <= starknet::get_block_timestamp(), 
-                        'burden has not arrived'
-            );
-
-
-            // add burden items to entity's balance
-            let mut index = 0;
-            loop {
-                if index == burden.resources_count {
-                    break ();
-                };
-
-                let burden_resource = get!(world, (burden.burden_id, index), BurdenResource);
-                let mut entity_resource = get!(world, (entity_id, burden_resource.resource_type), Resource);
-                
-                entity_resource.balance += burden_resource.resource_amount;
-                set!(world,( entity_resource ));
-
-                index += 1;
-            };
         }
 
 
@@ -381,25 +215,10 @@ mod trade_systems {
             assert(trade_status.value == TradeStatus::OPEN, 'trade must be open');
 
             // return resources to seller
-            let seller_burden = get!(world, trade_meta.seller_burden_id, Burden);
-        
-            let mut index = 0;
-            loop {
-                if index == seller_burden.resources_count {
-                    break ();
-                }
-                let seller_burden_resource 
-                    = get!(world,(trade_meta.seller_burden_id, index), BurdenResource);
-                let mut seller_resource 
-                    = get!(world, (trade_meta.seller_id, seller_burden_resource.resource_type), Resource);
-                
-                seller_resource.balance += seller_burden_resource.resource_amount;
-                set!(world, ( seller_resource));
-
-                index += 1;
-            };
-
-            // cancel order
+            let seller_collects_burden 
+                = get!(world, trade_meta.seller_collects_burden_id, Burden);
+            InternalBurdenImpl::unbundle(world, trade_meta.seller_id, seller_collects_burden);
+    
             set!(world, (
                 Status { 
                     trade_id, 
@@ -414,7 +233,7 @@ mod trade_systems {
     #[generate_trait]
     impl TradeCaravanHelpersImpl of TradeCaravanHelpersTrait {
 
-        fn assert_can_be_attached(
+        fn attach(
             world: IWorldDispatcher, entity_id: ID, caravan_id: ID, burden: Burden
             ) {
          
@@ -426,25 +245,47 @@ mod trade_systems {
             
             let caravan_position = get!(world, caravan_id, Position);
             let entity_position = get!(world, entity_id, Position);
+            let burden_position = get!(world, burden.burden_id, Position);
 
             assert(caravan_position.x == entity_position.x, 'Not same position');
             assert(caravan_position.y == entity_position.y, 'Not same position');
 
+            let caravan_movable = get!(world, caravan_id, Movable);        
+            assert(caravan_movable.blocked == false, 'caravan already blocked');
+
+            let caravan_arrival_time = get!(world, caravan_id, ArrivalTime);
+            assert(caravan_arrival_time.arrives_at <= starknet::get_block_timestamp(),
+                         'caravan is in transit'
+            );
+     
+
             // ensure caravan can carry the weight
+            let caravan = get!(world, caravan_id, Caravan);
+            let caravan_burden_count = caravan.burden_count + 1;
+            let caravan_burden_weight = caravan.burden_weight + burden.resources_weight;
+
             let caravan_capacity = get!(world, caravan_id, Capacity);   
             let caravan_quantity = get!(world, caravan_id, Quantity);
             let caravan_quantity = caravan_quantity.get_value();
             assert(
-                caravan_capacity.weight_gram * caravan_quantity >= burden.resources_weight,
+                caravan_capacity.weight_gram * caravan_quantity >= caravan_burden_weight,
                     'Caravan capacity is not enough'
             );
 
 
-            let caravan_movable = get!(world, caravan_id, Movable);        
-            assert(caravan_movable.blocked == false, 'caravan already blocked');
-
-            // todo@credence check if caravan is in transit
-        
+            set!(world, (
+                Caravan {
+                    entity_id: caravan_id,
+                    burden_count: caravan_burden_count,
+                    burden_weight: caravan_burden_weight,
+                },
+                CaravanBurden {
+                    entity_id: caravan_id,
+                    index: caravan_burden_count,
+                    burden_id: burden.burden_id,
+                }
+            ));
+                     
         }
     }
 

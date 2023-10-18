@@ -3,15 +3,21 @@ mod resource_systems {
     use eternum::alias::ID;
     use eternum::models::resources::Resource;
     use eternum::models::owner::Owner;
-    use eternum::models::position::Position;
+    use eternum::models::position::{Position, Coord};
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::capacity::Capacity;
-    use eternum::models::config::WeightConfigImpl;
+    use eternum::models::config::{WeightConfig, WeightConfigImpl};
+    use eternum::models::resources::{Burden, BurdenResource};
+    use eternum::models::movable::{ArrivalTime};
 
-    use eternum::systems::resources::interface::IResourceSystems;
+    
+    use eternum::constants::{WORLD_CONFIG_ID};
+
+    use eternum::systems::resources::interface::{IResourceSystems, IBurdenSystems};
 
     #[external(v0)]
     impl ResourceSystemsImpl of IResourceSystems<ContractState> {
+
         /// Transfer resources from one entity to another.
         ///
         /// # Arguments
@@ -19,7 +25,7 @@ mod resource_systems {
         /// * `sending_entity_id` - The id of the entity sending the resources.
         /// * `receiving_entity_id` - The id of the entity receiving the resources.
         /// * `resources` - The resources to transfer.  
-        ///      
+        ///
         fn transfer(
             self: @ContractState, world: IWorldDispatcher, sending_entity_id: ID, 
             receiving_entity_id: ID, resources: Span<(u8, u128)>
@@ -94,5 +100,201 @@ mod resource_systems {
                 );
             }
         }   
+    }
+
+    #[external(v0)]
+    impl BurdenSystemsImpl of IBurdenSystems<ContractState> {
+
+        /// Bundle resources into a burden.
+        fn bundle(
+            self: @ContractState, world: IWorldDispatcher,
+            entity_id: ID, resource_types: Span<u8>, resource_amounts: Span<u128>
+        ) -> Burden {
+
+            let entity_owner = get!(world, entity_id, Owner);
+            assert(entity_owner.address == starknet::get_caller_address(), 
+                        'caller not owner'
+            );
+
+            let entity_position = get!(world, entity_id, Position);
+            
+            InternalBurdenImpl::bundle(
+                world, entity_id,entity_position.into(), 
+                resource_types, resource_amounts
+                )
+        }
+
+        /// Unbundle resources from a burden. (This'll also be used to claim orders)
+        fn unbundle(self: @ContractState, world: IWorldDispatcher, entity_id: ID, burden_id: ID) {
+
+            let entity_owner = get!(world, entity_id, Owner);
+            assert(entity_owner.address == starknet::get_caller_address(), 
+                        'not entity owner'
+            );
+
+            // ensure burden has arrived
+            let mut burden = get!(world, burden_id, Burden);
+            let burden_position = get!(world, burden_id, Position);
+            let entity_position = get!(world, entity_id, Position);
+
+            assert(burden_position.x == entity_position.x, 'burden position mismatch');
+            assert(burden_position.y == entity_position.y, 'burden position mismatch');
+            
+            let burden_arrival_time = get!(world, burden_id, ArrivalTime);
+            assert(
+                burden_arrival_time.arrives_at <= starknet::get_block_timestamp(), 
+                        'burden has not arrived'
+            );
+
+            InternalBurdenImpl::unbundle(world, entity_id, burden)
+        }
+    }
+
+
+
+    #[generate_trait]
+    impl InternalBurdenImpl of InternalBurdenTrait {
+
+        fn bundle( 
+                world: IWorldDispatcher, depositor_id: ID, coord: Coord,
+                resource_types: Span<u8>, resource_amounts: Span<u128>
+            ) -> Burden {
+
+            assert(resource_types.len() == resource_amounts.len(), 'length not equal');
+            
+            let burden_id = world.uuid().into();
+
+            // transfer resources to burden
+            let mut index = 0;
+            let mut resources_weight = 0;
+            loop {
+                if index == resource_types.len() {
+                    break ();
+                }
+                let resource_type = *resource_types[index];
+                let resource_amount = *resource_amounts[index];
+                set!(world,(
+                        BurdenResource {
+                            burden_id,
+                            index,
+                            resource_type,
+                            resource_amount
+                        }
+                ));
+
+                if depositor_id != 0 {
+                    // decrease balance of entity
+                    let mut entity_resource = get!(world, (depositor_id, resource_type), Resource);
+                    assert(entity_resource.balance >= resource_amount, 'balance too low');
+                    
+                    entity_resource.balance -= resource_amount;
+                    set!(world,(entity_resource));
+                }
+
+                // update resources total weight
+                let resource_type_weight 
+                    = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig);
+                resources_weight += resource_type_weight.weight_gram * resource_amount;
+                index += 1;
+            };
+
+            let burden 
+                = Burden {
+                    burden_id,
+                    depositor_id: depositor_id,
+                    resources_count: resource_types.len(),
+                    resources_weight: resources_weight
+                };
+
+            set!(world,(burden));
+                
+            set!(world,(
+                    Position {
+                        entity_id: burden_id,
+                        x: coord.x,
+                        y: coord.y
+                    }
+                )
+            );
+
+            burden
+        }
+
+
+
+        fn unbundle(world: IWorldDispatcher, receiving_entity_id: ID, mut burden: Burden) {
+            
+            assert(burden.resources_count != 0, 'does not exist');
+            assert(burden.depositor_id != 0, 'no deposit');
+
+            // return resources to the entity
+            let mut index = 0;
+            loop {
+                if index == burden.resources_count {
+                    break ();
+                };
+
+                let burden_resource 
+                    = get!(world, (burden.burden_id, index), BurdenResource);
+                
+                let mut entity_resource 
+                    = get!(world, (receiving_entity_id, burden_resource.resource_type), Resource);
+
+                entity_resource.balance += burden_resource.resource_amount;
+                set!(world,( entity_resource ));
+
+                index += 1;
+            };
+
+            // update burden
+            burden.resources_count = 0;
+            burden.resources_weight = 0;
+
+            set!(world,(burden));
+
+        }
+
+
+        /// Deposit resources to an existing burden. 
+        /// check trade_systems for usage
+        fn make_deposit(world: IWorldDispatcher, entity_id: ID, mut burden: Burden) {
+            
+            assert(burden.resources_count != 0, 'does not exist');
+            assert(burden.depositor_id == 0, 'burden has deposit');
+
+            let entity_owner = get!(world, entity_id, Owner);
+            assert(entity_owner.address == starknet::get_caller_address(), 
+                        'caller not owner'
+            );
+
+
+            // deduct resources from the entity
+            let mut index = 0;
+            loop {
+                if index == burden.resources_count {
+                    break ();
+                };
+
+                let burden_resource 
+                    = get!(world, (burden.burden_id, index), BurdenResource);
+                
+                let mut entity_resource 
+                    = get!(world, (entity_id, burden_resource.resource_type), Resource);
+                assert(
+                    entity_resource.balance >= burden_resource.resource_amount, 
+                        'not enough balance'
+                );
+                
+                entity_resource.balance -= burden_resource.resource_amount;
+                set!(world,( entity_resource));
+
+                index += 1;
+            };
+
+            // update burden
+            burden.depositor_id = entity_id;
+            set!(world,(burden));
+
+        }
     }
 }
