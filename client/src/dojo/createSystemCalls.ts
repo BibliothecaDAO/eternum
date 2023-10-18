@@ -2,6 +2,27 @@ import { Components, Schema, setComponent } from "@latticexyz/recs";
 import { SetupNetworkResult } from "./setupNetwork";
 import { Event } from "starknet";
 import { getEntityIdFromKeys, padAddress } from "../utils/utils";
+import {
+  AcceptOrderProps,
+  AttachCaravanProps,
+  BuildLaborProps,
+  CancelFungibleOrderProps,
+  ClaimFungibleOrderProps,
+  CompleteHyperStructureProps,
+  CreateCaravanProps,
+  CreateFreeTransportUnitProps,
+  CreateOrderProps,
+  CreateRealmProps,
+  CreateRoadProps,
+  FeedHyperstructureAndTravelBackPropos,
+  HarvestLaborProps,
+  InitializeHyperstructuresAndTravelProps,
+  MintResourcesProps,
+  PurchaseLaborProps,
+  SendResourcesToHyperstructureProps,
+  TransferResourcesProps,
+  TravelProps,
+} from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
 
@@ -36,11 +57,11 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.cancel_fungible_order(props)));
   };
 
-  const create_free_transport_unit = async (props: CreateFreeTransportUnitProps): Promise<number> => {
+  const create_free_transport_unit = async (props: CreateFreeTransportUnitProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.create_free_transport_unit(props)));
   };
 
-  const create_caravan = async (props: CreateCaravanProps): Promise<number> => {
+  const create_caravan = async (props: CreateCaravanProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.create_caravan(props)));
   };
 
@@ -79,7 +100,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     );
   };
 
-  const initialize_hyperstructure = async (props: InitializeHyperstructuresProps) => {
+  const initialize_hyperstructure = async (props: InitializeHyperstructuresAndTravelProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.initialize_hyperstructure(props)));
   };
 
