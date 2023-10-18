@@ -36,14 +36,14 @@ type LaborBuildPopupProps = {
 export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: LaborBuildPopupProps) => {
   const {
     setup: {
-      components: { Resource },
+      components: { Resource, Labor },
       systemCalls: { purchase_and_build_labor },
       optimisticSystemCalls: { optimisticBuildLabor },
     },
     account: { account },
   } = useDojo();
 
-  const [canBuild, setCanBuild] = useState(true);
+  const [hasEnoughResources, setHasEnoughResources] = useState(true);
   const [laborAmount, setLaborAmount] = useState(1);
   const [multiplier, setMultiplier] = useState(1);
 
@@ -61,6 +61,14 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   const resourceInfo = useMemo(() => findResourceById(resourceId), [resourceId]);
 
   const { getLaborCost, getLaborAuctionAverageCoefficient, getNextLaborAuctionCoefficient } = useLabor();
+
+  const labor = getComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
+  const hasLaborLeft = useMemo(() => {
+    if (nextBlockTimestamp && labor && labor.balance > nextBlockTimestamp) {
+      return true;
+    }
+    return false;
+  }, [nextBlockTimestamp, labor]);
 
   const position = realmId ? getPosition(realmId) : undefined;
   const zone = position ? getZone(position.x) : undefined;
@@ -98,8 +106,8 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   };
 
   useEffect(() => {
-    setCanBuild(false);
-    const canBuild = costResources.every(({ resourceId, amount }) => {
+    setHasEnoughResources(false);
+    const hasEnough = costResources.every(({ resourceId, amount }) => {
       const realmResource = getComponentValue(
         Resource,
         getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
@@ -110,7 +118,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
       );
     });
 
-    setCanBuild(canBuild);
+    setHasEnoughResources(hasEnough);
   }, [laborAmount, multiplier, costResources]);
 
   const onBuild = () => {
@@ -256,14 +264,15 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               {resourceId === 254 && (
                 <div className="flex items-center">
                   <Farms className="mr-1" />
-                  <span className="mr-1 font-bold">{`${multiplier}/${realm?.rivers || 0}`}</span> Farms
+                  <span className="mr-1 font-bold">{`${multiplier}/${Math.min(realm?.rivers || 0, 4)}`}</span> Farms
                 </div>
               )}
               {resourceId === 255 && (
                 <div className="flex items-center">
                   {/* // DISCUSS: can only be 0, because that is when you can build */}
                   <FishingVillages className="mr-1" />
-                  <span className="mr-1 font-bold">{`${multiplier}/${realm?.harbors || 0}`}</span> Fishing Villages
+                  <span className="mr-1 font-bold">{`${multiplier}/${Math.min(realm?.harbors || 0, 4)}`}</span> Fishing
+                  Villages
                 </div>
               )}
             </div>
@@ -283,7 +292,8 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
           {isFood && (
             <BuildingsCount
               count={multiplier}
-              maxCount={resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0}
+              // note: need to limit to 4 because of temp gas limit
+              maxCount={resourceId === 254 ? Math.min(realm?.rivers || 0, 4) : Math.min(realm?.harbors || 0, 4)}
               className="mt-2"
             />
           )}
@@ -354,14 +364,15 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
           <div className="flex flex-col items-center justify-center">
             <Button
               className="!px-[6px] !py-[2px] text-xxs ml-auto"
-              disabled={!canBuild}
+              disabled={!hasEnoughResources || (isFood && hasLaborLeft)}
               onClick={() => onBuild()}
               variant="outline"
               withoutSound
             >
               {isFood ? `Build` : `Buy Tools`}
             </Button>
-            {!canBuild && <div className="text-xxs text-order-giants/70">Insufficient resources</div>}
+            {!hasEnoughResources && <div className="text-xxs text-order-giants/70">Insufficient resources</div>}
+            {isFood && hasLaborLeft && <div className="text-xxs text-order-giants/70">Finish 24h cycle</div>}
           </div>
         </div>
       </SecondaryPopup.Body>
