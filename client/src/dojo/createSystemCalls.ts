@@ -42,6 +42,7 @@ export interface TransferResourcesProps extends SystemSigner {
 export interface PurchaseLaborProps extends SystemSigner {
   entity_id: num.BigNumberish;
   resource_type: num.BigNumberish;
+  multiplier: num.BigNumberish;
   labor_units: num.BigNumberish;
 }
 
@@ -136,16 +137,12 @@ export type SystemCalls = ReturnType<typeof createSystemCalls>;
 // NOTE: need to add waitForTransaction when connected to rinnigan
 export function createSystemCalls({ provider, contractComponents }: SetupNetworkResult) {
   const purchase_labor = async (props: PurchaseLaborProps) => {
-    const { entity_id, resource_type, labor_units, signer } = props;
-    const tx = await provider.execute(signer, LABOR_SYSTEMS, "purchase", [
-      import.meta.env.VITE_WORLD_ADDRESS!,
-      entity_id,
-      resource_type,
-      labor_units,
-    ]);
-    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-
-    setComponentsFromEvents(contractComponents, getEvents(receipt));
+    const { entity_id, resource_type, labor_units, multiplier, signer } = props;
+    await executeTransaction(signer, {
+      contractAddress: LABOR_SYSTEMS,
+      entrypoint: "purchase",
+      calldata: [WORLD_ADDRESS, entity_id, resource_type, (labor_units as number) * (multiplier as number)],
+    });
   };
 
   // Refactor the functions using the interfaces
@@ -284,10 +281,27 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
 
   const claim_fungible_order = async (props: ClaimFungibleOrderProps) => {
     const { entity_id, trade_id, signer } = props;
-    const tx = await provider.execute(signer, TRADE_SYSTEMS, "claim_order", [
-      import.meta.env.VITE_WORLD_ADDRESS!,
-      entity_id,
-      trade_id,
+    await executeTransaction(signer, {
+      contractAddress: TRADE_SYSTEMS,
+      entrypoint: "claim_order",
+      calldata: [WORLD_ADDRESS, entity_id, trade_id],
+    });
+  };
+
+  const purchase_and_build_labor = async (props: PurchaseLaborProps & BuildLaborProps) => {
+    const { entity_id, resource_type, labor_units, multiplier, signer } = props;
+    let total_units = (labor_units as number) * (multiplier as number);
+    await executeTransaction(signer, [
+      {
+        contractAddress: LABOR_SYSTEMS,
+        entrypoint: "purchase",
+        calldata: [WORLD_ADDRESS, entity_id, resource_type, total_units],
+      },
+      {
+        contractAddress: LABOR_SYSTEMS,
+        entrypoint: "build",
+        calldata: [WORLD_ADDRESS, entity_id, resource_type, labor_units, multiplier],
+      },
     ]);
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
