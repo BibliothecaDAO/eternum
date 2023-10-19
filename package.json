@@ -1,0 +1,8 @@
+{
+  "name": "eternum",
+  "version": "0.1.0",
+  "workspaces": [
+    "sdk/packages/eternum",
+    "client"
+  ]
+}
