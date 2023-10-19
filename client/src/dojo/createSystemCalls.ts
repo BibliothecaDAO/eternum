@@ -83,6 +83,7 @@ export interface TransferResourcesProps extends SystemSigner {
 export interface PurchaseLaborProps extends SystemSigner {
   entity_id: num.BigNumberish;
   resource_type: num.BigNumberish;
+  multiplier: num.BigNumberish;
   labor_units: num.BigNumberish;
 }
 
@@ -91,6 +92,13 @@ export interface BuildLaborProps extends SystemSigner {
   resource_type: num.BigNumberish;
   labor_units: num.BigNumberish;
   multiplier: num.BigNumberish;
+}
+
+export interface PurchaseAndBuildLaborProps extends SystemSigner {
+  entity_id: num.BigNumberish;
+  resource_type: num.BigNumberish;
+  multiplier: num.BigNumberish;
+  labor_units: num.BigNumberish;
 }
 
 export interface HarvestLaborProps extends SystemSigner {
@@ -171,11 +179,11 @@ export type SystemCalls = ReturnType<typeof createSystemCalls>;
 // NOTE: need to add waitForTransaction when connected to rinnigan
 export function createSystemCalls({ provider, contractComponents }: SetupNetworkResult) {
   const purchase_labor = async (props: PurchaseLaborProps) => {
-    const { entity_id, resource_type, labor_units, signer } = props;
+    const { entity_id, resource_type, labor_units, multiplier, signer } = props;
     await executeTransaction(signer, {
       contractAddress: LABOR_SYSTEMS,
       entrypoint: "purchase",
-      calldata: [WORLD_ADDRESS, entity_id, resource_type, labor_units],
+      calldata: [WORLD_ADDRESS, entity_id, resource_type, (labor_units as number) * (multiplier as number)],
     });
   };
 
@@ -369,13 +377,14 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     });
   };
 
-  const purchase_and_build_labor = async (props: PurchaseLaborProps & BuildLaborProps) => {
+  const purchase_and_build_labor = async (props: PurchaseAndBuildLaborProps) => {
     const { entity_id, resource_type, labor_units, multiplier, signer } = props;
+    let total_units = (labor_units as number) * (multiplier as number);
     await executeTransaction(signer, [
       {
         contractAddress: LABOR_SYSTEMS,
         entrypoint: "purchase",
-        calldata: [WORLD_ADDRESS, entity_id, resource_type, labor_units],
+        calldata: [WORLD_ADDRESS, entity_id, resource_type, total_units],
       },
       {
         contractAddress: LABOR_SYSTEMS,
