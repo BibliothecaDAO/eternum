@@ -68,10 +68,10 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
         signer: account,
         maker_id: realmEntityId,
         maker_entity_types: selectedResourceIdsGive,
-        maker_quantities: Object.values(selectedResourcesGiveAmounts).map((amount) => multiplyByPrecision(amount)),
+        maker_quantities: selectedResourceIdsGive.map((id) => multiplyByPrecision(selectedResourcesGiveAmounts[id])),
         taker_id: selectedRealmEntityId || 0,
         taker_entity_types: selectedResourceIdsGet,
-        taker_quantities: Object.values(selectedResourcesGetAmounts).map((amount) => multiplyByPrecision(amount)),
+        taker_quantities: selectedResourceIdsGet.map((id) => multiplyByPrecision(selectedResourcesGetAmounts[id])),
         donkeys_quantity: donkeysCount,
       });
     } else {
@@ -79,10 +79,10 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
         signer: account,
         maker_id: realmEntityId,
         maker_entity_types: selectedResourceIdsGive,
-        maker_quantities: Object.values(selectedResourcesGiveAmounts).map((amount) => multiplyByPrecision(amount)),
+        maker_quantities: selectedResourceIdsGive.map((id) => multiplyByPrecision(selectedResourcesGiveAmounts[id])),
         taker_id: selectedRealmEntityId || 0,
         taker_entity_types: selectedResourceIdsGet,
-        taker_quantities: Object.values(selectedResourcesGetAmounts).map((amount) => multiplyByPrecision(amount)),
+        taker_quantities: selectedResourceIdsGet.map((id) => multiplyByPrecision(selectedResourcesGetAmounts[id])),
         caravan_id: selectedCaravan,
       });
     }
