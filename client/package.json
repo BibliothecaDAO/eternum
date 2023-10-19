@@ -10,7 +10,7 @@
     "components": "npx @dojoengine/core ../contracts/target/dev/manifest.json src/dojo/contractComponents.ts"
   },
   "dependencies": {
-    "@bibliothecadao/eternum": "link:eternum/sdk/packages/eternum",
+    "@bibliothecadao/eternum": "../sdk/packages/eternum",
     "@dojoengine/core": "^0.1.21",
     "@dojoengine/create-burner": "^0.0.18",
     "@dojoengine/react": "^0.0.3",
