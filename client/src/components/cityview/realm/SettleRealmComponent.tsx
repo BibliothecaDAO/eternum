@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import Button from "../../../elements/Button";
 
 import { useDojo } from "../../../DojoContext";
-import { getOrderName, orders } from "../../../constants/orders";
+import { getOrderName, orders } from "@bibliothecadao/eternum";
 import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 import { getRealm } from "../../../utils/realms";
 import useRealmStore from "../../../hooks/store/useRealmStore";
@@ -10,7 +10,7 @@ import { OrderIcon } from "../../../elements/OrderIcon";
 import { useRealm } from "../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { getPosition, multiplyByPrecision } from "../../../utils/utils";
-import { initialResources } from "../../../constants/resources";
+import { initialResources } from "@bibliothecadao/eternum";
 import { BigNumberish } from "starknet";
 
 export const MAX_REALMS = 5;
@@ -21,7 +21,7 @@ export const SettleRealmComponent = () => {
 
   const {
     setup: {
-      systemCalls: { create_realm, mint_resources },
+      systemCalls: { create_realm },
     },
     account: { account, masterAccount },
   } = useDojo();
@@ -47,19 +47,20 @@ export const SettleRealmComponent = () => {
     let new_realm_id = getNextRealmIdForOrder(chosenOrder || selectedOrder);
     let realm = getRealm(new_realm_id);
     let position = getPosition(new_realm_id);
-    let entity_id = await create_realm({
-      signer: masterAccount,
-      owner: BigInt(account.address),
-      ...realm,
-      position,
-    });
+
     // create array of initial resources
     let resources: BigNumberish[] = [];
     for (let i = 0; i < 22; i++) {
       resources = [...resources, i + 1, multiplyByPrecision(initialResources[i])];
     }
-    // mint basic resources to start
-    await mint_resources({ signer: masterAccount, entity_id: entity_id, resources });
+
+    await create_realm({
+      signer: masterAccount,
+      owner: BigInt(account.address),
+      ...realm,
+      position,
+      resources,
+    });
     setIsLoading(false);
     playSign();
   };

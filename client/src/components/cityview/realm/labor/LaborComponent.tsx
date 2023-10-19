@@ -1,6 +1,6 @@
 import Button from "../../../../elements/Button";
 import { ResourceIcon } from "../../../../elements/ResourceIcon";
-import { ResourcesIds, findResourceById } from "../../../../constants/resources";
+import { ResourcesIds, findResourceById, LABOR_CONFIG } from "@bibliothecadao/eternum";
 import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "../../../../utils/utils.jsx";
 import { ReactComponent as Clock } from "../../../../assets/icons/common/clock.svg";
 import { ReactComponent as Village } from "../../../../assets/icons/common/village.svg";
@@ -13,7 +13,6 @@ import { useMemo } from "react";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useComponentValue } from "@dojoengine/react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { LABOR_CONFIG } from "../../../../constants/labor";
 
 type LaborComponentProps = {
   resourceId: number;

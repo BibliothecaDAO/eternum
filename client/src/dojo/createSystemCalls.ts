@@ -1,417 +1,129 @@
 import { Components, Schema, setComponent } from "@latticexyz/recs";
 import { SetupNetworkResult } from "./setupNetwork";
-import { Account, Event, num } from "starknet";
+import { Event } from "starknet";
 import { getEntityIdFromKeys, padAddress } from "../utils/utils";
-
-const LABOR_SYSTEMS = "0x49f2774476b6a119a5cf30927c0f4c88503c90659f6fccd2de2ed4ca8dfcce1";
-const TRADE_SYSTEMS = "0x484e890ec6628a7d099bc545be049fc62924ff6329ae20aa407ffd18be3ffba";
-const HYPERSTRUCTURE_SYSTEMS = "0x56aaf8eced85a21c3f4da811e57766f62907376fb32290b7b8f518b433dcfa8";
-const RESOURCE_SYSTEMS = "0x3aaa6ad1d188c320af8aacfdb43f59a00978c225ab8268ae6962a5cd6f4e1ff";
-const CARAVAN_SYSTEMS = "0x4a37f9e7e230616faee2a634bfce12ab4ccde30c166a6d9e8f60ab90fed7d14";
-const ROAD_SYSTEMS = "0x3e8d56fe6843cabc393363c0b871029a1799ff3754a93d63626adc316009bdf";
-const TRANSPORT_UNIT_SYSTEMS = "0x7fe4766dd6c4a161c09b612889f2f92a016e97a8964daabca07378cbb3606bd";
-const TRAVEL_SYSTEMS = "0x3315c2f50986e9fe9562cb73ec992cbddb8270b7747179d0919b54964e189c6";
-const TEST_REALM_SYSTEMS = "0x1996a879c5c85a15824d957865a95e3a94d097a09c19e97d93c46e713c0f75";
-const TEST_RESOURCE_SYSTEMS = "0x2ca9678b8934991b89f91e7092e4e56a8a585defddc494d3671b480a7eeb668";
-
-interface SystemSigner {
-  signer: Account;
-}
-
-export interface TravelProps extends SystemSigner {
-  travelling_entity_id: num.BigNumberish;
-  destination_coord_x: num.BigNumberish;
-  destination_coord_y: num.BigNumberish;
-}
-
-export interface InitializeHyperstructuresProps extends SystemSigner {
-  entity_id: num.BigNumberish;
-  hyperstructure_id: num.BigNumberish;
-}
-
-export interface CompleteHyperStructureProps extends SystemSigner {
-  hyperstructure_id: num.BigNumberish;
-}
-
-export interface TransferResourcesProps extends SystemSigner {
-  sending_entity_id: num.BigNumberish;
-  receiving_entity_id: num.BigNumberish;
-  resources: num.BigNumberish[];
-}
-
-export interface PurchaseLaborProps extends SystemSigner {
-  entity_id: num.BigNumberish;
-  resource_type: num.BigNumberish;
-  labor_units: num.BigNumberish;
-}
-
-export interface BuildLaborProps extends SystemSigner {
-  realm_id: num.BigNumberish;
-  resource_type: num.BigNumberish;
-  labor_units: num.BigNumberish;
-  multiplier: num.BigNumberish;
-}
-
-export interface HarvestLaborProps extends SystemSigner {
-  realm_id: num.BigNumberish; // TODO: this is entity id not realm id
-  resource_type: num.BigNumberish;
-}
-
-export interface MintResourcesProps extends SystemSigner {
-  entity_id: num.BigNumberish;
-  resources: num.BigNumberish[];
-}
-
-export interface TakeFungibleOrderProps extends SystemSigner {
-  taker_id: num.BigNumberish;
-  trade_id: num.BigNumberish;
-}
-
-export interface CancelFungibleOrderProps extends SystemSigner {
-  trade_id: num.BigNumberish;
-}
-
-export interface CreateFreeTransportUnitProps extends SystemSigner {
-  realm_id: num.BigNumberish;
-  quantity: num.BigNumberish;
-}
-
-export interface CreateCaravanProps extends SystemSigner {
-  entity_ids: num.BigNumberish[];
-}
-
-export interface AttachCaravanProps extends SystemSigner {
-  realm_id: num.BigNumberish;
-  trade_id: num.BigNumberish;
-  caravan_id: num.BigNumberish;
-}
-
-export interface CreateRoadProps extends SystemSigner {
-  creator_id: num.BigNumberish;
-  start_coord: {
-    x: num.BigNumberish;
-    y: num.BigNumberish;
-  };
-  end_coord: {
-    x: num.BigNumberish;
-    y: num.BigNumberish;
-  };
-  usage_count: num.BigNumberish;
-}
-
-export interface ClaimFungibleOrderProps extends SystemSigner {
-  entity_id: num.BigNumberish;
-  trade_id: num.BigNumberish;
-}
-
-// Interface definition
-export interface CreateRealmProps extends SystemSigner {
-  realm_id: num.BigNumberish;
-  owner: num.BigNumberish;
-  resource_types_packed: num.BigNumberish;
-  resource_types_count: num.BigNumberish;
-  cities: num.BigNumberish;
-  harbors: num.BigNumberish;
-  rivers: num.BigNumberish;
-  regions: num.BigNumberish;
-  wonder: num.BigNumberish;
-  order: num.BigNumberish;
-  position: {
-    x: num.BigNumberish;
-    y: num.BigNumberish;
-  };
-}
-
-export interface MakeFungibleOrderProps extends SystemSigner {
-  maker_id: num.BigNumberish;
-  maker_entity_types: num.BigNumberish[];
-  maker_quantities: num.BigNumberish[];
-  taker_id: num.BigNumberish;
-  taker_entity_types: num.BigNumberish[];
-  taker_quantities: num.BigNumberish[];
-}
+import {
+  AcceptOrderProps,
+  AttachCaravanProps,
+  BuildLaborProps,
+  CancelFungibleOrderProps,
+  ClaimFungibleOrderProps,
+  CompleteHyperStructureProps,
+  CreateCaravanProps,
+  CreateFreeTransportUnitProps,
+  CreateOrderProps,
+  CreateRealmProps,
+  CreateRoadProps,
+  FeedHyperstructureAndTravelBackPropos,
+  HarvestLaborProps,
+  InitializeHyperstructuresAndTravelProps,
+  MintResourcesProps,
+  PurchaseLaborProps,
+  SendResourcesToHyperstructureProps,
+  TransferResourcesProps,
+  TravelProps,
+} from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
 
 // NOTE: need to add waitForTransaction when connected to rinnigan
 export function createSystemCalls({ provider, contractComponents }: SetupNetworkResult) {
-
   const purchase_labor = async (props: PurchaseLaborProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.purchase_labor(props)));
   };
 
   // Refactor the functions using the interfaces
   const build_labor = async (props: BuildLaborProps) => {
-    const { realm_id, resource_type, labor_units, multiplier, signer } = props;
-    const tx = await provider.execute(signer, LABOR_SYSTEMS, "build", [
-      import.meta.env.VITE_WORLD_ADDRESS!,
-      realm_id,
-      resource_type,
-      labor_units,
-      multiplier,
-    ]);
-    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-
-    setComponentsFromEvents(contractComponents, getEvents(receipt));
+    setComponentsFromEvents(contractComponents, getEvents(await provider.build_labor(props)));
   };
 
   const harvest_labor = async (props: HarvestLaborProps) => {
-    const { realm_id, resource_type, signer } = props;
-    const tx = await provider.execute(signer, LABOR_SYSTEMS, "harvest", [
-      import.meta.env.VITE_WORLD_ADDRESS!,
-      realm_id,
-      resource_type,
-    ]);
-    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-
-    setComponentsFromEvents(contractComponents, getEvents(receipt));
+    setComponentsFromEvents(contractComponents, getEvents(await provider.harvest_labor(props)));
   };
 
   const mint_resources = async (props: MintResourcesProps) => {
-    const { entity_id, resources, signer } = props;
-    const tx = await provider.execute(signer, TEST_RESOURCE_SYSTEMS, "mint", [
-      import.meta.env.VITE_WORLD_ADDRESS!,
-      entity_id,
-      resources.length / 2,
-      ...resources,
-    ]);
-    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-
-    setComponentsFromEvents(contractComponents, getEvents(receipt));
+    setComponentsFromEvents(contractComponents, getEvents(await provider.mint_resources(props)));
   };
 
-  const make_fungible_order = async (props: MakeFungibleOrderProps): Promise<number> => {
-    const { maker_id, maker_entity_types, maker_quantities, taker_id, taker_entity_types, taker_quantities, signer } =
-      props;
-
-    const expires_at = Math.floor(Date.now() / 1000 + 2628000);
-
-    const tx = await provider.execute(signer, TRADE_SYSTEMS, "create_order", [
-      import.meta.env.VITE_WORLD_ADDRESS!,
-      maker_id,
-      maker_entity_types.length,
-      ...maker_entity_types,
-      maker_quantities.length,
-      ...maker_quantities,
-      taker_id,
-      taker_entity_types.length,
-      ...taker_entity_types,
-      taker_quantities.length,
-      ...taker_quantities,
-      1,
-      expires_at,
-    ]);
-    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-    const events = getEvents(receipt);
-    setComponentsFromEvents(contractComponents, events);
-    let trade_id = getEntityIdFromEvents(events, "Trade");
-    return trade_id;
+  const create_order = async (props: CreateOrderProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.create_order(props)));
   };
 
-  const take_fungible_order = async (props: TakeFungibleOrderProps) => {
-    const { taker_id, trade_id, signer } = props;
-    const tx = await provider.execute(signer, TRADE_SYSTEMS, "accept_order", [
-      import.meta.env.VITE_WORLD_ADDRESS!,
-      taker_id,
-      trade_id,
-    ]);
-    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-
-    setComponentsFromEvents(contractComponents, getEvents(receipt));
+  const accept_order = async (props: AcceptOrderProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.accept_order(props)));
   };
 
   const cancel_fungible_order = async (props: CancelFungibleOrderProps) => {
-    const { trade_id, signer } = props;
-    const tx = await provider.execute(signer, TRADE_SYSTEMS, "cancel_order", [
-      import.meta.env.VITE_WORLD_ADDRESS!,
-      trade_id,
-    ]);
-    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-    const events = getEvents(receipt);
-    setComponentsFromEvents(contractComponents, events);
+    setComponentsFromEvents(contractComponents, getEvents(await provider.cancel_fungible_order(props)));
   };
 
-  const create_free_transport_unit = async (props: CreateFreeTransportUnitProps): Promise<number> => {
-    const { realm_id, quantity, signer } = props;
-
-    const tx = await provider.execute(signer, TRANSPORT_UNIT_SYSTEMS, "create_free_unit", [
-      import.meta.env.VITE_WORLD_ADDRESS!,
-      realm_id,
-      quantity,
-    ]);
-    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-    const events = getEvents(receipt);
-    setComponentsFromEvents(contractComponents, events);
-    // TODO: use getEntityIdFromEvents
-    return parseInt(events[1].data[2]);
+  const create_free_transport_unit = async (props: CreateFreeTransportUnitProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.create_free_transport_unit(props)));
   };
 
-  const create_caravan = async (props: CreateCaravanProps): Promise<number> => {
-    const { entity_ids, signer } = props;
-    const tx = await provider.execute(signer, CARAVAN_SYSTEMS, "create", [
-      import.meta.env.VITE_WORLD_ADDRESS!,
-      entity_ids.length,
-      ...entity_ids,
-    ]);
-    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-    const events = getEvents(receipt);
-    setComponentsFromEvents(contractComponents, events);
-    // TODO: use getEntityIdFromEvents
-    const caravan_id = parseInt(events[2].data[2]);
-    return caravan_id;
+  const create_caravan = async (props: CreateCaravanProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.create_caravan(props)));
   };
 
   const attach_caravan = async (props: AttachCaravanProps) => {
-    const { realm_id, trade_id, caravan_id, signer } = props;
-    const tx = await provider.execute(signer, TRADE_SYSTEMS, "attach_caravan", [
-      import.meta.env.VITE_WORLD_ADDRESS!,
-      realm_id,
-      trade_id,
-      caravan_id,
-    ]);
-    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-    const events = getEvents(receipt);
-    setComponentsFromEvents(contractComponents, events);
+    setComponentsFromEvents(contractComponents, getEvents(await provider.attach_caravan(props)));
   };
 
   const claim_fungible_order = async (props: ClaimFungibleOrderProps) => {
-    const { entity_id, trade_id, signer } = props;
-    const tx = await provider.execute(signer, TRADE_SYSTEMS, "claim_order", [
-      import.meta.env.VITE_WORLD_ADDRESS!,
-      entity_id,
-      trade_id,
-    ]);
-    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-    const events = getEvents(receipt);
-    setComponentsFromEvents(contractComponents, events);
+    setComponentsFromEvents(contractComponents, getEvents(await provider.claim_fungible_order(props)));
   };
 
-  const create_realm = async (props: CreateRealmProps): Promise<number> => {
-    const {
-      realm_id,
-      owner,
-      resource_types_packed,
-      resource_types_count,
-      cities,
-      harbors,
-      rivers,
-      regions,
-      wonder,
-      order,
-      position,
-      signer,
-    } = props;
+  const purchase_and_build_labor = async (props: PurchaseLaborProps & BuildLaborProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.purchase_and_build_labor(props)));
+  };
 
-    const tx = await provider.execute(signer, TEST_REALM_SYSTEMS, "create", [
-      import.meta.env.VITE_WORLD_ADDRESS!,
-      realm_id,
-      owner,
-      resource_types_packed,
-      resource_types_count,
-      cities,
-      harbors,
-      rivers,
-      regions,
-      wonder,
-      order,
-      2,
-      position.x,
-      position.y,
-    ]);
-
-    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-    const events = getEvents(receipt);
-    setComponentsFromEvents(contractComponents, events);
-
-    let realm_entity_id: number = 0;
-    // TODO: use getEntityIdFromEvents
-    for (const event of events) {
-      // if component change is Realm (hex), take entity_id
-      if (event.data[0] === "0x5265616c6d") {
-        realm_entity_id = parseInt(event.data[2]);
-      }
-    }
-    return realm_entity_id;
+  const create_realm = async (props: CreateRealmProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.create_realm(props)));
   };
 
   const create_road = async (props: CreateRoadProps) => {
-    const { creator_id, start_coord, end_coord, usage_count, signer } = props;
-    const tx = await provider.execute(signer, ROAD_SYSTEMS, "create", [
-      import.meta.env.VITE_WORLD_ADDRESS!,
-      creator_id,
-      start_coord.x,
-      start_coord.y,
-      end_coord.x,
-      end_coord.y,
-      usage_count,
-    ]);
-    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-    const events = getEvents(receipt);
-    setComponentsFromEvents(contractComponents, events);
+    setComponentsFromEvents(contractComponents, getEvents(await provider.create_road(props)));
   };
 
   const transfer_resources = async (props: TransferResourcesProps) => {
-    const { sending_entity_id, receiving_entity_id, resources, signer } = props;
-    const tx = await provider.execute(signer, RESOURCE_SYSTEMS, "transfer", [
-      import.meta.env.VITE_WORLD_ADDRESS!,
-      sending_entity_id,
-      receiving_entity_id,
-      resources.length / 2,
-      ...resources,
-    ]);
-
-    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-    const events = getEvents(receipt);
-    setComponentsFromEvents(contractComponents, events);
+    setComponentsFromEvents(contractComponents, getEvents(await provider.transfer_resources(props)));
   };
 
-  const initialize_hyperstructure = async (props: InitializeHyperstructuresProps) => {
-    const { entity_id, hyperstructure_id, signer } = props;
-    const tx = await provider.execute(signer, HYPERSTRUCTURE_SYSTEMS, "initialize", [
-      import.meta.env.VITE_WORLD_ADDRESS!,
-      entity_id,
-      hyperstructure_id,
-    ]);
+  const feed_hyperstructure_and_travel_back = async (props: FeedHyperstructureAndTravelBackPropos) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.feed_hyperstructure_and_travel_back(props)));
+  };
 
-    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-    const events = getEvents(receipt);
-    setComponentsFromEvents(contractComponents, events);
+  const initialize_hyperstructure_and_travel_back = async (props: InitializeHyperstructuresAndTravelProps) => {
+    setComponentsFromEvents(
+      contractComponents,
+      getEvents(await provider.initialize_hyperstructure_and_travel_back(props)),
+    );
+  };
+
+  const initialize_hyperstructure = async (props: InitializeHyperstructuresAndTravelProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.initialize_hyperstructure(props)));
   };
 
   const complete_hyperstructure = async (props: CompleteHyperStructureProps) => {
-    const { hyperstructure_id, signer } = props;
-    const tx = await provider.execute(signer, HYPERSTRUCTURE_SYSTEMS, "complete", [
-      import.meta.env.VITE_WORLD_ADDRESS!,
-      hyperstructure_id,
-    ]);
+    setComponentsFromEvents(contractComponents, getEvents(await provider.complete_hyperstructure(props)));
+  };
 
-    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-    const events = getEvents(receipt);
-    setComponentsFromEvents(contractComponents, events);
+  const send_resources_to_hyperstructure = async (props: SendResourcesToHyperstructureProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.send_resources_to_hyperstructure(props)));
   };
 
   const travel = async (props: TravelProps) => {
-    const { travelling_entity_id, destination_coord_x, destination_coord_y, signer } = props;
-    // TODO: put coords
-    const tx = await provider.execute(signer, TRAVEL_SYSTEMS, "travel", [
-      import.meta.env.VITE_WORLD_ADDRESS!,
-      travelling_entity_id,
-      destination_coord_x,
-      destination_coord_y,
-    ]);
-
-    const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
-    const events = getEvents(receipt);
-    setComponentsFromEvents(contractComponents, events);
+    setComponentsFromEvents(contractComponents, getEvents(await provider.travel(props)));
   };
 
   return {
     purchase_labor,
     build_labor,
+    purchase_and_build_labor,
     harvest_labor,
     mint_resources,
-    make_fungible_order,
-    take_fungible_order,
+    create_order,
+    accept_order,
     claim_fungible_order,
     cancel_fungible_order,
     create_free_transport_unit,
@@ -420,6 +132,9 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     create_realm,
     create_road,
     transfer_resources,
+    send_resources_to_hyperstructure,
+    feed_hyperstructure_and_travel_back,
+    initialize_hyperstructure_and_travel_back,
     initialize_hyperstructure,
     complete_hyperstructure,
     travel,
@@ -483,24 +198,4 @@ function hexToAscii(hex: string) {
     str += String.fromCharCode(parseInt(hex.substr(n, 2), 16));
   }
   return str;
-}
-
-function asciiToHex(ascii: string) {
-  var hex = "";
-  for (var i = 0; i < ascii.length; i++) {
-    var charCode = ascii.charCodeAt(i);
-    hex += charCode.toString(16).padStart(2, "0");
-  }
-  return `0x${hex}`;
-}
-
-function getEntityIdFromEvents(events: Event[], componentName: string): number {
-  let entityId = 0;
-  const event = events.find((event) => {
-    return event.data[0] === asciiToHex(componentName);
-  });
-  if (event) {
-    entityId = parseInt(event.data[2]);
-  }
-  return entityId;
 }

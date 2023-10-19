@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
-import { ResourcesIds, findResourceById, resources } from "../../../constants/resources";
+import { ResourcesIds, findResourceById, resources } from "@bibliothecadao/eternum";
 import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "../../../utils/utils.jsx";
 import clsx from "clsx";
 import { unpackResources } from "../../../utils/packedData";
@@ -13,8 +13,8 @@ import { SmallResource } from "./SmallResource";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../DojoContext";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
-import { Tooltip } from "../../../elements/Tooltip";
-import { LABOR_CONFIG } from "../../../constants/labor";
+import { LABOR_CONFIG } from "@bibliothecadao/eternum";
+import useUIStore from "../../../hooks/store/useUIStore";
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<"div">;
 
@@ -93,6 +93,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
   } = useDojo();
 
   let { realmEntityId } = useRealmStore();
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const [productivity, setProductivity] = useState<number>(0);
@@ -123,7 +124,16 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
   return (
     <>
       <div className="flex flex-col">
-        <div className="flex relative group items-center p-3 text-xs font-bold text-white bg-black/60 rounded-xl h-11">
+        <div
+          onMouseEnter={() =>
+            setTooltip({
+              position: "bottom",
+              content: <>{findResourceById(resourceId)?.trait}</>,
+            })
+          }
+          onMouseLeave={() => setTooltip(null)}
+          className="flex relative group items-center p-3 text-xs font-bold text-white bg-black/60 rounded-xl h-11"
+        >
           <ResourceIcon
             withTooltip={false}
             resource={findResourceById(resourceId)?.trait as string}
@@ -131,7 +141,6 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
             className="mr-2"
           />
           <div className="text-xs">{currencyFormat(resource ? resource.balance : 0, 2)}</div>
-          <Tooltip>{findResourceById(resourceId)?.trait}</Tooltip>
         </div>
         {resourceId !== 253 && (
           <div

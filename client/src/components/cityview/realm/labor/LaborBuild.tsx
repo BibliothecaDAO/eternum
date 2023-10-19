@@ -4,7 +4,7 @@ import Button from "../../../../elements/Button";
 import { Headline } from "../../../../elements/Headline";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../elements/NumberInput";
-import { ResourcesIds, findResourceById } from "../../../../constants/resources";
+import { ResourcesIds, findResourceById, BuildLaborProps } from "@bibliothecadao/eternum";
 import { ReactComponent as FishingVillages } from "../../../../assets/icons/resources/FishingVillages.svg";
 import { ReactComponent as Farms } from "../../../../assets/icons/resources/Farms.svg";
 import { ResourceIcon } from "../../../../elements/ResourceIcon";
@@ -18,7 +18,6 @@ import { getComponentValue } from "@latticexyz/recs";
 import { getEntityIdFromKeys, getPosition, getZone } from "../../../../utils/utils";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
-import { BuildLaborProps } from "../../../../dojo/createSystemCalls";
 import { useLabor } from "../../../../hooks/helpers/useLabor";
 
 let LABOR_CONFIG = {
@@ -37,7 +36,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   const {
     setup: {
       components: { Resource },
-      systemCalls: { build_labor, purchase_labor },
+      systemCalls: { purchase_and_build_labor },
       optimisticSystemCalls: { optimisticBuildLabor },
     },
     account: { account },
@@ -89,20 +88,28 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
 
   const buildLabor = async ({ realm_id, resource_type, labor_units, multiplier }: BuildLaborProps) => {
     let total_units = Number(labor_units) * Number(multiplier);
-    await purchase_labor({
+    await purchase_and_build_labor({
       signer: account,
       entity_id: realm_id,
-      resource_type,
-      labor_units: total_units,
-    });
-
-    await build_labor({
-      signer: account,
       realm_id,
       resource_type,
-      labor_units,
+      labor_units: total_units,
       multiplier,
     });
+    // await purchase_labor({
+    //   signer: account,
+    //   entity_id: realm_id,
+    //   resource_type,
+    //   labor_units: total_units,
+    // });
+
+    // await build_labor({
+    //   signer: account,
+    //   realm_id,
+    //   resource_type,
+    //   labor_units,
+    //   multiplier,
+    // });
   };
 
   useEffect(() => {
