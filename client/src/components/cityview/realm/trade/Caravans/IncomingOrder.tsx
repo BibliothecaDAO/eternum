@@ -21,32 +21,17 @@ export const IncomingOrder = ({ incomingOrder, ...props }: IncomingOrderProps) =
 
   const { realmEntityId } = useRealmStore();
   const [isLoading, setIsLoading] = useState(false);
+  const { getTradeResources, claimOrder } = useTrade();
 
-  const {
-    setup: {
-      optimisticSystemCalls: { optimisticClaimFungibleOrder },
-      systemCalls: { claim_fungible_order },
-    },
-    account: { account },
-  } = useDojo();
-
-  const { getTradeResources } = useTrade();
   const resourcesGet = counterPartyOrderId ? getTradeResources(counterPartyOrderId) : [];
 
   useEffect(() => {
     setIsLoading(false);
   }, [incomingOrder.orderId]);
 
-  const claimOrder = async () => {
+  const claim = async () => {
     setIsLoading(true);
-    optimisticClaimFungibleOrder(
-      resourcesGet,
-      claim_fungible_order,
-    )({
-      signer: account,
-      entity_id: realmEntityId,
-      trade_id: incomingOrder.tradeId,
-    });
+    await claimOrder(realmEntityId, incomingOrder.tradeId, resourcesGet);
   };
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
@@ -88,6 +73,7 @@ export const IncomingOrder = ({ incomingOrder, ...props }: IncomingOrderProps) =
               (resource) =>
                 resource && (
                   <ResourceCost
+                    key={resource.resourceId}
                     type="vertical"
                     color="text-order-brilliance"
                     className="!w-5 mt-0.5"
@@ -101,7 +87,7 @@ export const IncomingOrder = ({ incomingOrder, ...props }: IncomingOrderProps) =
         {!isLoading && (
           <Button
             onClick={() => {
-              claimOrder();
+              claim();
             }}
             disabled={!hasArrived}
             variant={hasArrived ? "success" : "danger"}

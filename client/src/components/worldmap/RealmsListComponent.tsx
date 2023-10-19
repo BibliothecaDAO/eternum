@@ -38,7 +38,7 @@ export const RealmsListComponent = ({ onlyMyRealms = false }: RealmsListComponen
       </FiltersPanel>
       <div className="flex flex-col space-y-2 px-2 mb-2">
         {realmsList.map((realm) => {
-          return <RealmListItem key={realm.realm_id} realm={realm} />;
+          return <RealmListItem key={realm.entity_id} realm={realm} />;
         })}
       </div>
     </>
