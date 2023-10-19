@@ -13,9 +13,6 @@ cubit = { git = "https://github.com/influenceth/cubit" }
 # TODO: use dojo_defi when works with latest nightly
 #dojo_defi = { git = "https://github.com/dojoengine/dojo" }
 
-[[target.dojo]]
-initializer_class_hash = "0xbeef"
-
 [tool.dojo.env]
 ## dev
 account_address = "0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973"
