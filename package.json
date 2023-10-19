@@ -6,7 +6,7 @@
     "client"
   ],
   "scripts": {
-    "build": "cd sdk/packages/eternum && bun run build",
-    "start": "cd client && bun run build"
+    "build": "bun run --cwd sdk/packages/eternum build",
+    "start": "bun run --cwd ./client build"
   }
 }
