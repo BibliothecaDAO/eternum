@@ -17,7 +17,7 @@ export const useClaimOrderNotification = (
   type: string;
   time: string;
   title: React.ReactElement;
-  content: React.ReactElement;
+  content: (onClose: any) => React.ReactElement;
 } => {
   const orderId = notification.keys[0];
 
@@ -60,7 +60,7 @@ export const useClaimOrderNotification = (
       </div>
     ),
     // TODO: better layout for claimable resources?
-    content: (
+    content: (onClose: () => void) => (
       <div className="flex flex-col">
         <div className="mt-2 items-center italic">
           {claimableResources &&
@@ -78,7 +78,10 @@ export const useClaimOrderNotification = (
         </div>
         <Button
           isLoading={isLoading}
-          onClick={async () => await claim()}
+          onClick={async () => {
+            await claim();
+            onClose();
+          }}
           className="mt-2 w-full"
           variant="success"
           size="xs"
