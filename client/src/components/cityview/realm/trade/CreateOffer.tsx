@@ -575,9 +575,10 @@ export const SelectCaravanPanel = ({
         </div>
       )}
       {!isNewCaravan && (
-        <>
+        <div className="flex flex-col max-h-[450px] overflow-auto w-full">
           {myAvailableCaravans.map((caravan) => (
             <Caravan
+              key={caravan.caravanId}
               caravan={caravan}
               idleOnly={true}
               onClick={() => setSelectedCaravan(caravan.caravanId)}
@@ -586,7 +587,7 @@ export const SelectCaravanPanel = ({
               }`}
             />
           ))}
-        </>
+        </div>
       )}
     </div>
   );
