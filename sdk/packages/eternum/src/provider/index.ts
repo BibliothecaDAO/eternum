@@ -32,7 +32,7 @@ export class EternumProvider extends RPCProvider {
   public contracts: typeof DEV_CONTRACTS | typeof PROD_CONTRACTS;
 
   constructor(world_address: string, isDev: boolean, url?: string) {
-    super(world_address, url);
+    super(world_address, undefined, url);
     this.contracts = isDev ? DEV_CONTRACTS : PROD_CONTRACTS;
   }
 
