@@ -2,6 +2,7 @@ use integer::{u64_wrapping_sub};
 use dojo::database::schema::{
     Enum, Member, Ty, Struct, SchemaIntrospection, serialize_member, serialize_member_type
 };
+use debug::PrintTrait;
 
 // should do struct packing here
 #[derive(Drop, Copy, Serde, Print, Introspect)]
@@ -26,10 +27,20 @@ fn random_mood(block_number: u64) -> Mood {
     }
 }
 
-#[derive(Copy, Drop, Serde, Introspect)]
+#[derive(Copy, Drop, Serde, Introspect, Print, PartialEq)]
 enum Sex {
     Male,
     Female
+}
+
+impl SexPrint of PrintTrait<Sex> {
+	fn print(self: Sex) {
+		if (self == Sex::Male) {
+			'male'.print();
+		} else {
+			'female'.print();
+		}
+	}
 }
 
 #[derive(Model, Serde, Copy, Drop, Print)]
