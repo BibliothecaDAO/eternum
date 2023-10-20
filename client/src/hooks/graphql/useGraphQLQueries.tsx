@@ -113,8 +113,6 @@ export const useSyncWorld = (): { loading: boolean; progress: number } => {
 
   useMemo(() => {
     const syncData = async () => {
-      const startTime = performance.now(); // Start timing here
-
       try {
         let componentNames = Object.keys(components);
         for (let i = 0; i < componentNames.length; i += COMPONENT_INTERVAL) {
