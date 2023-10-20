@@ -5,6 +5,7 @@ import { ReactComponent as World } from "../../assets/icons/common/world.svg";
 import { useLocation } from "wouter";
 import { Tabs } from "../../elements/tab";
 import RealmsListPanel from "./RealmsListPanel";
+import { CCListPanel } from "./CCListPanel";
 import { HyperstructuresPanel } from "./hyperstructures/HyperstructuresPanel";
 import useUIStore from "../../hooks/store/useUIStore";
 
@@ -17,6 +18,28 @@ const WorldMapMenuComponent = () => {
 
   const tabs = useMemo(
     () => [
+        {
+            key: "cc",
+            label: (
+                <div
+                    onMouseEnter={() =>
+                        setTooltip({
+                            position: "bottom",
+                            content: (
+                                <>
+                                </>
+                            ),
+                        })
+                    }
+                    onMouseLeave={() => setTooltip(null)}
+                    className="flex relative group flex-col items-center"
+                >
+                    <img src="cc.png" className="mb-2 fill-gold" style={{height:'14px', width:'14px'}} />
+                    <div>CC</div>
+                </div>
+            ),
+            component: <CCListPanel />,
+        },
       {
         key: "realms",
         label: (
