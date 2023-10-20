@@ -14,6 +14,8 @@ cubit = { git = "https://github.com/influenceth/cubit" }
 #dojo_defi = { git = "https://github.com/dojoengine/dojo" }
 cc_starknet = { git = "https://github.com/CheDAOLabs/cryptsandcaverns.git", tag = "v0.1.0-rc0" }
 
+[[target.dojo]]
+
 [tool.dojo.env]
 ## dev
 account_address = "0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973"
