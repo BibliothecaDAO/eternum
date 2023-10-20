@@ -111,7 +111,7 @@ export const useSyncWorld = (): { loading: boolean; progress: number } => {
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
 
-  useMemo(() => {
+  useMemo((): any => {
     const syncData = async () => {
       try {
         let componentNames = Object.keys(components);

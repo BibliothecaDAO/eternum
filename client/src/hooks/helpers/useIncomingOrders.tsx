@@ -76,7 +76,7 @@ export function useGetIncomingOrders() {
     setEntityIds(entityIds);
   }, [set1, set2]);
 
-  useMemo(() => {
+  useMemo((): any => {
     const incomingOrders = entityIds
       .map((id) => {
         return getIncomingOrderInfo(realmEntityId, id);
