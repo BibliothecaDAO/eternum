@@ -14,3 +14,4 @@ mod trade;
 mod road;
 mod labor_auction;
 mod hyperstructure;
+mod cc_map;
