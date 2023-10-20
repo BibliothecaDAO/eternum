@@ -1,7 +1,7 @@
 import { Components, Schema, setComponent } from "@latticexyz/recs";
 import { SetupNetworkResult } from "./setupNetwork";
 import { Account, AllowArray, Call, Event, num } from "starknet";
-import { getEntityIdFromKeys, padAddress } from "../utils/utils";
+import { getEntityIdFromKeys } from "../utils/utils";
 
 const LABOR_SYSTEMS = "0x49f2774476b6a119a5cf30927c0f4c88503c90659f6fccd2de2ed4ca8dfcce1";
 const TRADE_SYSTEMS = "0x484e890ec6628a7d099bc545be049fc62924ff6329ae20aa407ffd18be3ffba";
@@ -83,6 +83,7 @@ export interface TransferResourcesProps extends SystemSigner {
 export interface PurchaseLaborProps extends SystemSigner {
   entity_id: num.BigNumberish;
   resource_type: num.BigNumberish;
+  multiplier: num.BigNumberish;
   labor_units: num.BigNumberish;
 }
 
@@ -91,6 +92,13 @@ export interface BuildLaborProps extends SystemSigner {
   resource_type: num.BigNumberish;
   labor_units: num.BigNumberish;
   multiplier: num.BigNumberish;
+}
+
+export interface PurchaseAndBuildLaborProps extends SystemSigner {
+  entity_id: num.BigNumberish;
+  resource_type: num.BigNumberish;
+  multiplier: num.BigNumberish;
+  labor_units: num.BigNumberish;
 }
 
 export interface HarvestLaborProps extends SystemSigner {
@@ -171,11 +179,11 @@ export type SystemCalls = ReturnType<typeof createSystemCalls>;
 // NOTE: need to add waitForTransaction when connected to rinnigan
 export function createSystemCalls({ provider, contractComponents }: SetupNetworkResult) {
   const purchase_labor = async (props: PurchaseLaborProps) => {
-    const { entity_id, resource_type, labor_units, signer } = props;
+    const { entity_id, resource_type, labor_units, multiplier, signer } = props;
     await executeTransaction(signer, {
       contractAddress: LABOR_SYSTEMS,
       entrypoint: "purchase",
-      calldata: [WORLD_ADDRESS, entity_id, resource_type, labor_units],
+      calldata: [WORLD_ADDRESS, entity_id, resource_type, (labor_units as number) * (multiplier as number)],
     });
   };
 
@@ -369,13 +377,14 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     });
   };
 
-  const purchase_and_build_labor = async (props: PurchaseLaborProps & BuildLaborProps) => {
+  const purchase_and_build_labor = async (props: PurchaseAndBuildLaborProps) => {
     const { entity_id, resource_type, labor_units, multiplier, signer } = props;
+    let total_units = (labor_units as number) * (multiplier as number);
     await executeTransaction(signer, [
       {
         contractAddress: LABOR_SYSTEMS,
         entrypoint: "purchase",
-        calldata: [WORLD_ADDRESS, entity_id, resource_type, labor_units],
+        calldata: [WORLD_ADDRESS, entity_id, resource_type, total_units],
       },
       {
         contractAddress: LABOR_SYSTEMS,
@@ -638,7 +647,7 @@ export function setComponentFromEvent(components: Components, eventData: string[
   const componentValues = componentFields.reduce((acc: Schema, key, index) => {
     const value = values[index];
     // @ts-ignore
-    acc[key] = key === "address" ? padAddress(value) : Number(value);
+    acc[key] = key === "address" ? value : Number(value);
     return acc;
   }, {});
 

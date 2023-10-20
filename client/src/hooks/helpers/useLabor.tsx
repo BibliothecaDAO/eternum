@@ -5,6 +5,7 @@ import { unpackResources } from "../../utils/packedData";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { useComponentValue } from "@dojoengine/react";
 import { useEffect, useState } from "react";
+import { PRICE_UPDATE_INTERVAL } from "../../constants/labor";
 
 export interface LaborCostInterface {
   resourceId: number;
@@ -104,7 +105,7 @@ function computeAverageCoefficient(
   let multiplier = computeCoefficient(startTimestamp, nextBlockTimestamp, sold);
   // start at number of units already sold and add 1 everytime
   for (let i = sold; i < sold + laborUnits; i++) {
-    if (i % 10 == 0) {
+    if (i % PRICE_UPDATE_INTERVAL == 0) {
       multiplier = computeCoefficient(startTimestamp, nextBlockTimestamp, i);
       sum += multiplier;
     } else {

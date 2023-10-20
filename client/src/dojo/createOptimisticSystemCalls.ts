@@ -3,12 +3,12 @@ import { ClientComponents } from "./createClientComponents";
 import { getEntityIdFromKeys } from "../utils/utils";
 import { Type, getComponentValue } from "@latticexyz/recs";
 import {
-  BuildLaborProps,
   CancelFungibleOrderProps,
   ClaimFungibleOrderProps,
   CreateOrderProps,
   CreateRoadProps,
   HarvestLaborProps,
+  PurchaseAndBuildLaborProps,
 } from "./createSystemCalls";
 import { Resource } from "../types";
 import { LaborCostInterface } from "../hooks/helpers/useLabor";
@@ -204,10 +204,10 @@ export function createOptimisticSystemCalls({
     ts: number,
     costResources: LaborCostInterface[],
     laborAuctionAverageCoefficient: number,
-    systemCall: (args: BuildLaborProps) => Promise<void>,
+    systemCall: (args: PurchaseAndBuildLaborProps) => Promise<void>,
   ) {
-    return async function (this: any, args: BuildLaborProps) {
-      const { realm_id: realmEntityId, resource_type: resourceId, labor_units: laborUnits, multiplier } = args;
+    return async function (this: any, args: PurchaseAndBuildLaborProps) {
+      const { entity_id: realmEntityId, resource_type: resourceId, labor_units: laborUnits, multiplier } = args;
 
       const overrideId = uuid();
       const resource_id = getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]);
