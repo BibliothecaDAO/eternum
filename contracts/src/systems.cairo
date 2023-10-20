@@ -64,3 +64,4 @@ mod bank {
     mod tests;
 }
 
+mod npc;
