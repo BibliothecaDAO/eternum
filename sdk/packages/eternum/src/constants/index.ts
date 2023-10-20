@@ -1,4 +1,4 @@
-export * as Contracts from "./contracts";
+export * from "./contracts";
 export * from "./labor";
 export * from "./orders";
 export * from "./resources";
