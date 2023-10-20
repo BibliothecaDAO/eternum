@@ -6,22 +6,9 @@ mod actions {
     use starknet::info::BlockInfo;
     use eternum::systems::npc::interface::INpc;
 
-    #[derive(Drop, starknet::Event)]
-    struct NpcSpawned {
-        npc: Npc,
-    }
-
-    #[derive(Drop, starknet::Event)]
-    struct NpcKilled {
-        npc: Npc,
-    }
-
-    // declaring custom event struct
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
-        NpcSpawned: NpcSpawned,
-        NpcKilled: NpcKilled
     }
 
     #[external(v0)]
