@@ -5,7 +5,7 @@ import { unpackResources } from "../../utils/packedData";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { useComponentValue } from "@dojoengine/react";
 import { useEffect, useState } from "react";
-import { PRICE_UPDATE_INTERVAL } from "../../constants/labor";
+import { PRICE_UPDATE_INTERVAL } from "@bibliothecadao/eternum";
 
 export interface LaborCostInterface {
   resourceId: number;

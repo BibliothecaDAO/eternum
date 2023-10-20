@@ -1,7 +1,7 @@
 import { Components, Schema, setComponent } from "@latticexyz/recs";
 import { SetupNetworkResult } from "./setupNetwork";
 import { Event } from "starknet";
-import { getEntityIdFromKeys, padAddress } from "../utils/utils";
+import { getEntityIdFromKeys } from "../utils/utils";
 import {
   AcceptOrderProps,
   AttachCaravanProps,
