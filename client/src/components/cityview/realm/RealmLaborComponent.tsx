@@ -7,7 +7,7 @@ import { useRoute, useLocation } from "wouter";
 
 type RealmLaborComponentProps = {};
 
-export const RealmLaborComponent = ({}: RealmLaborComponentProps) => {
+export const RealmLaborComponent = ({ }: RealmLaborComponentProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const { realmEntityId } = useRealmStore();
 
@@ -18,7 +18,7 @@ export const RealmLaborComponent = ({}: RealmLaborComponentProps) => {
   // @ts-ignore
   const [location, setLocation] = useLocation();
   // @ts-ignore
-  const [match, params] = useRoute("/realm/:id/:tab");
+  const [match, params]: any = useRoute("/realm/:id/:tab");
 
   useEffect(() => {
     let _tab: string = "";

@@ -34,7 +34,7 @@ export class EternumProvider extends RPCProvider {
   }
 
   public async purchase_labor(props: PurchaseLaborProps): Promise<any> {
-    const { signer, entity_id, resource_type, labor_units } = props;
+    const { signer, entity_id, resource_type, labor_units, multiplier } = props;
 
     const tx = await this.executeMulti(signer, {
       contractAddress: Contracts.LABOR_SYSTEMS,
@@ -42,7 +42,7 @@ export class EternumProvider extends RPCProvider {
         world: this.getWorldAddress(),
         entity_id,
         resource_type,
-        labor_units,
+        labor_units: (labor_units as number) * (multiplier as number),
       },
       entrypoint: "purchase",
     });
@@ -54,11 +54,11 @@ export class EternumProvider extends RPCProvider {
 
   // Refactor the functions using the interfaces
   public async build_labor(props: BuildLaborProps) {
-    const { realm_id, resource_type, labor_units, multiplier, signer } = props;
+    const { entity_id, resource_type, labor_units, multiplier, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: Contracts.LABOR_SYSTEMS,
       entrypoint: "build",
-      calldata: [Contracts.WORLD_ADDRESS, realm_id, resource_type, labor_units, multiplier],
+      calldata: [Contracts.WORLD_ADDRESS, entity_id, resource_type, labor_units, multiplier],
     });
 
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -278,7 +278,7 @@ export class EternumProvider extends RPCProvider {
       {
         contractAddress: Contracts.LABOR_SYSTEMS,
         entrypoint: "purchase",
-        calldata: [Contracts.WORLD_ADDRESS, entity_id, resource_type, labor_units],
+        calldata: [Contracts.WORLD_ADDRESS, entity_id, resource_type, (labor_units as number) * (multiplier as number)],
       },
       {
         contractAddress: Contracts.LABOR_SYSTEMS,

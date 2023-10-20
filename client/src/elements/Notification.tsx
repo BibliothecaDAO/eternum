@@ -2,10 +2,7 @@ import clsx from "clsx";
 import { ComponentPropsWithRef, useEffect, useState } from "react";
 import { Transition } from "@headlessui/react";
 import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
-import {
-  EventType,
-  NotificationType,
-} from "../hooks/notifications/useNotifications";
+import { EventType, NotificationType } from "../hooks/notifications/useNotifications";
 import { useTradeNotification } from "../hooks/notifications/useTradeNotification";
 import { useHarvestNotification } from "../hooks/notifications/useHarvestNotification";
 import { useClaimOrderNotification } from "../hooks/notifications/useClaimOrderNotification";
@@ -72,13 +69,9 @@ export const Notification = ({
             onClick={onClose}
           />
         }
-        {time && (
-          <div className="absolute bottom-2 right-2 fill-white opacity-30">
-            {time}
-          </div>
-        )}
+        {time && <div className="absolute bottom-2 right-2 fill-white opacity-30">{time}</div>}
         {title}
-        {content}
+        {typeof content === "function" ? content(onClose) : content}
       </div>
     </Transition>
   );

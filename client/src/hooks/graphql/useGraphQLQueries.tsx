@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { GraphQLClient } from "graphql-request";
 import { useDojo } from "../../DojoContext";
-import { setComponentFromEntity } from "../../utils/utils";
+import { setComponentsFromEntity } from "../../utils/utils";
 import { Components } from "@latticexyz/recs";
 
 export enum FetchStatus {
@@ -21,11 +21,10 @@ type Entity = {
 
 type getEntitiesQuery = {
   entities: {
+    total_count: number;
     edges: {
       cursor: string;
-      node: {
-        entity: Entity;
-      };
+      node: Entity;
     }[];
   };
 };
@@ -101,56 +100,74 @@ export interface ResourceInterface {
 }
 
 const OFFSET = 100;
+const COMPONENT_INTERVAL = 37;
 
-export const useSyncWorld = (): { loading: boolean } => {
+export const useSyncWorld = (): { loading: boolean; progress: number } => {
   // Added async since await is used inside
   const {
     setup: { components },
   } = useDojo();
 
   const [loading, setLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
 
-  useMemo(() => {
+  useMemo((): any => {
     const syncData = async () => {
       try {
-        for (const componentName of Object.keys(components)) {
-          let shouldContinue = true; // Renamed from continue to avoid reserved keyword
-          let component = (components as Components)[componentName];
-          let fields = Object.keys(component.schema).join(",");
+        let componentNames = Object.keys(components);
+        for (let i = 0; i < componentNames.length; i += COMPONENT_INTERVAL) {
+          let loops = 0;
+          if (componentNames.slice(i, i + COMPONENT_INTERVAL).length === 0) {
+            break;
+          }
+          let modelsQueryBuilder = "";
+          for (const componentName of componentNames.slice(i, i + COMPONENT_INTERVAL)) {
+            let component = (components as Components)[componentName];
+            let fields = Object.keys(component.schema).join(",");
+            modelsQueryBuilder += `... on ${componentName} {
+              __typename
+              ${fields}
+            }`;
+          }
+          let shouldContinue = true;
+
           let cursor: string | undefined;
           while (shouldContinue) {
-            // TODO: the first: 300 is only temp fix for now, need to do better pagination with new 0.3 features
             const queryBuilder = `
               query SyncWorld {
-                entities: ${componentName.toLowerCase()}Models(${cursor ? `after: "${cursor}"` : ""} first: ${OFFSET}) {
+                entities: entities(keys:["%"] ${cursor ? `after: "${cursor}"` : ""} first: ${OFFSET}) {
+                  total_count
                   edges {
                     cursor
                     node {
-                      entity {
-                        keys
-                        id
-                        models {
-                          ... on ${componentName} {
-                            __typename
-                            ${fields}
-                          }
-                        }
+                      keys
+                      id
+                      models {
+                        ${modelsQueryBuilder}
                       }
                     }
                   }
                 }
               }`;
 
-            const { entities }: getEntitiesQuery = await client.request(queryBuilder); // Assumed queryBuilder should be passed here
-            if (entities.edges.length === OFFSET) {
-              cursor = entities.edges[entities.edges.length - 1].cursor;
-            } else {
+            const { entities }: getEntitiesQuery = await client.request(queryBuilder);
+
+            // Update the progress
+            const processedCount = OFFSET * loops; // OFFSET multiplied by how many loops so far
+            const newProgress = Math.min((processedCount / entities.total_count) * 100, 100); // Convert it to percentage
+            setProgress(newProgress);
+
+            if (entities.edges.length < OFFSET) {
               shouldContinue = false;
+            } else {
+              cursor = entities.edges[entities.edges.length - 1].cursor;
             }
 
             entities.edges.forEach((edge) => {
-              setComponentFromEntity(edge.node.entity, componentName, components);
+              setComponentsFromEntity(edge.node, components);
             });
+
+            loops += 1;
           }
         }
       } catch (error) {
@@ -164,5 +181,6 @@ export const useSyncWorld = (): { loading: boolean } => {
 
   return {
     loading,
+    progress,
   };
 };

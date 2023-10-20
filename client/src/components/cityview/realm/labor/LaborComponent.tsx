@@ -114,11 +114,19 @@ export const LaborComponent = ({
             <div className="flex items-center ml-auto">
               {isFood && <Village />}
               {/* // DISCUSS: when there is no labor anymore, it means full decay of the buildings, so it should be multiplier 0 */}
+              {/* note: need to limit to 4 for now because of gas limit */}
               {resourceId == ResourcesIds["Wheat"] && (
-                <div className="px-2">{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${realm?.rivers}`}</div>
+                <div className="px-2">{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${Math.min(
+                  realm?.rivers,
+                  4,
+                )}`}</div>
               )}
+              {/* note: need to limit to 4 for now because of gas limit */}
               {resourceId == ResourcesIds["Fish"] && (
-                <div className="px-2">{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${realm?.harbors}`}</div>
+                <div className="px-2">{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${Math.min(
+                  realm?.harbors,
+                  4,
+                )}`}</div>
               )}
               {/* // TODO: show visual cue that it's disabled */}
               {!buildLoadingStates[resourceId] && (

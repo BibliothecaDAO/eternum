@@ -20,7 +20,8 @@ export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
   }>({});
 
   // @ts-ignore
-  const [match, params] = useRoute("/realm/:id/:tab");
+  // TODO remove any
+  const [match, params]: any = useRoute("/realm/:id/:tab");
 
   useEffect(() => {
     if (params?.tab == "fish" && buildResource != ResourcesIds["Fish"]) {

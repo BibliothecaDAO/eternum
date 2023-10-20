@@ -184,7 +184,7 @@ export function setComponentFromEvent(components: Components, eventData: string[
   const componentValues = componentFields.reduce((acc: Schema, key, index) => {
     const value = values[index];
     // @ts-ignore
-    acc[key] = key === "address" ? padAddress(value) : Number(value);
+    acc[key] = key === "address" ? value : Number(value);
     return acc;
   }, {});
 

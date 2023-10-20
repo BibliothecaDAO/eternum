@@ -4,7 +4,7 @@ import Button from "../../../../elements/Button";
 import { Headline } from "../../../../elements/Headline";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../elements/NumberInput";
-import { ResourcesIds, findResourceById, BuildLaborProps } from "@bibliothecadao/eternum";
+import { ResourcesIds, findResourceById, PurchaseLaborProps, BuildLaborProps } from "@bibliothecadao/eternum";
 import { ReactComponent as FishingVillages } from "../../../../assets/icons/resources/FishingVillages.svg";
 import { ReactComponent as Farms } from "../../../../assets/icons/resources/Farms.svg";
 import { ResourceIcon } from "../../../../elements/ResourceIcon";
@@ -35,14 +35,14 @@ type LaborBuildPopupProps = {
 export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: LaborBuildPopupProps) => {
   const {
     setup: {
-      components: { Resource },
+      components: { Resource, Labor },
       systemCalls: { purchase_and_build_labor },
       optimisticSystemCalls: { optimisticBuildLabor },
     },
     account: { account },
   } = useDojo();
 
-  const [canBuild, setCanBuild] = useState(true);
+  const [hasEnoughResources, setHasEnoughResources] = useState(true);
   const [laborAmount, setLaborAmount] = useState(1);
   const [multiplier, setMultiplier] = useState(1);
 
@@ -60,6 +60,14 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   const resourceInfo = useMemo(() => findResourceById(resourceId), [resourceId]);
 
   const { getLaborCost, getLaborAuctionAverageCoefficient, getNextLaborAuctionCoefficient } = useLabor();
+
+  const labor = getComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
+  const hasLaborLeft = useMemo(() => {
+    if (nextBlockTimestamp && labor && labor.balance > nextBlockTimestamp) {
+      return true;
+    }
+    return false;
+  }, [nextBlockTimestamp, labor]);
 
   const position = realmId ? getPosition(realmId) : undefined;
   const zone = position ? getZone(position.x) : undefined;
@@ -86,35 +94,19 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     return amount * multiplier * (isFood ? 12 : laborAmount) * laborCoefficient;
   };
 
-  const buildLabor = async ({ realm_id, resource_type, labor_units, multiplier }: BuildLaborProps) => {
-    let total_units = Number(labor_units) * Number(multiplier);
+  const buildLabor = async ({ entity_id, resource_type, labor_units, multiplier }: PurchaseLaborProps & BuildLaborProps) => {
     await purchase_and_build_labor({
       signer: account,
-      entity_id: realm_id,
-      realm_id,
+      entity_id,
       resource_type,
-      labor_units: total_units,
+      labor_units: labor_units,
       multiplier,
     });
-    // await purchase_labor({
-    //   signer: account,
-    //   entity_id: realm_id,
-    //   resource_type,
-    //   labor_units: total_units,
-    // });
-
-    // await build_labor({
-    //   signer: account,
-    //   realm_id,
-    //   resource_type,
-    //   labor_units,
-    //   multiplier,
-    // });
   };
 
   useEffect(() => {
-    setCanBuild(false);
-    const canBuild = costResources.every(({ resourceId, amount }) => {
+    setHasEnoughResources(false);
+    const hasEnough = costResources.every(({ resourceId, amount }) => {
       const realmResource = getComponentValue(
         Resource,
         getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
@@ -125,15 +117,10 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
       );
     });
 
-    setCanBuild(canBuild);
+    setHasEnoughResources(hasEnough);
   }, [laborAmount, multiplier, costResources]);
 
   const onBuild = () => {
-    // note: removed loading with optimistic rendering
-    // setBuildLoadingStates((prevStates: any) => ({
-    //   ...prevStates,
-    //   [resourceId]: true,
-    // }));
     optimisticBuildLabor(
       nextBlockTimestamp || 0,
       costResources,
@@ -141,7 +128,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
       buildLabor,
     )({
       signer: account,
-      realm_id: realmEntityId,
+      entity_id: realmEntityId,
       resource_type: resourceId,
       labor_units: laborUnits,
       multiplier: multiplier,
@@ -276,21 +263,21 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               {resourceId === 254 && (
                 <div className="flex items-center">
                   <Farms className="mr-1" />
-                  <span className="mr-1 font-bold">{`${multiplier}/${realm?.rivers || 0}`}</span> Farms
+                  <span className="mr-1 font-bold">{`${multiplier}/${Math.min(realm?.rivers || 0, 4)}`}</span> Farms
                 </div>
               )}
               {resourceId === 255 && (
                 <div className="flex items-center">
                   {/* // DISCUSS: can only be 0, because that is when you can build */}
                   <FishingVillages className="mr-1" />
-                  <span className="mr-1 font-bold">{`${multiplier}/${realm?.harbors || 0}`}</span> Fishing Villages
+                  <span className="mr-1 font-bold">{`${multiplier}/${Math.min(realm?.harbors || 0, 4)}`}</span> Fishing
+                  Villages
                 </div>
               )}
             </div>
             <div className="flex items-center">
-              {`+${isFood ? (LABOR_CONFIG.base_food_per_cycle * multiplier) / 2 : ""}${
-                isFood ? "" : LABOR_CONFIG.base_resources_per_cycle / 2
-              }`}
+              {`+${isFood ? (LABOR_CONFIG.base_food_per_cycle * multiplier) / 2 : ""}${isFood ? "" : LABOR_CONFIG.base_resources_per_cycle / 2
+                }`}
               <ResourceIcon
                 containerClassName="mx-0.5"
                 className="!w-[12px]"
@@ -303,7 +290,8 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
           {isFood && (
             <BuildingsCount
               count={multiplier}
-              maxCount={resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0}
+              // note: need to limit to 4 because of temp gas limit
+              maxCount={resourceId === 254 ? Math.min(realm?.rivers || 0, 4) : Math.min(realm?.harbors || 0, 4)}
               className="mt-2"
             />
           )}
@@ -362,24 +350,27 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
                 className="ml-2 mr-2"
                 value={multiplier}
                 onChange={setMultiplier}
-                max={resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0}
+                // max={resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0}
+                // note: need to limit for now because of gas issues
+                max={Math.min(resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0, 4)}
               />
               <div className="italic text-gold">
-                Max {resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0}
+                Max {Math.min(resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0, 4)}
               </div>
             </div>
           )}
           <div className="flex flex-col items-center justify-center">
             <Button
               className="!px-[6px] !py-[2px] text-xxs ml-auto"
-              disabled={!canBuild}
+              disabled={!hasEnoughResources || (isFood && hasLaborLeft)}
               onClick={() => onBuild()}
               variant="outline"
               withoutSound
             >
               {isFood ? `Build` : `Buy Tools`}
             </Button>
-            {!canBuild && <div className="text-xxs text-order-giants/70">Insufficient resources</div>}
+            {!hasEnoughResources && <div className="text-xxs text-order-giants/70">Insufficient resources</div>}
+            {isFood && hasLaborLeft && <div className="text-xxs text-order-giants/70">Finish 24h cycle</div>}
           </div>
         </div>
       </SecondaryPopup.Body>

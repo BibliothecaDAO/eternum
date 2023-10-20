@@ -64,10 +64,11 @@ export interface PurchaseLaborProps extends SystemSigner {
   entity_id: num.BigNumberish;
   resource_type: num.BigNumberish;
   labor_units: num.BigNumberish;
+  multiplier: num.BigNumberish;
 }
 
 export interface BuildLaborProps extends SystemSigner {
-  realm_id: num.BigNumberish;
+  entity_id: num.BigNumberish;
   resource_type: num.BigNumberish;
   labor_units: num.BigNumberish;
   multiplier: num.BigNumberish;

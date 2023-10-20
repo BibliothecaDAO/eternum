@@ -27,7 +27,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
   const { realm } = useGetRealm(realmEntityId);
 
   // unpack the resources
-  useMemo(() => {
+  useMemo((): any => {
     let realmResourceIds: number[] = [ResourcesIds["Shekels"], ResourcesIds["Wheat"], ResourcesIds["Fish"]];
     let unpackedResources: number[] = [];
 
@@ -113,10 +113,10 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
       // can have a small difference between block timestamp and actual block so make sure that laborLeft is more than 1 minute
       labor && laborLeft > 60
         ? calculateProductivity(
-            isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
-            labor.multiplier,
-            LABOR_CONFIG.base_labor_units,
-          )
+          isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
+          labor.multiplier,
+          LABOR_CONFIG.base_labor_units,
+        )
         : 0;
     setProductivity(productivity);
   }, [nextBlockTimestamp, labor]);

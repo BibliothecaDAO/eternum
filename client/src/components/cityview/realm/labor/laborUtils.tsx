@@ -9,8 +9,9 @@ export const formatSecondsLeftInDaysHours = (seconds: number) => {
   const days = Math.floor(seconds / 86400);
   const secondsLeft = seconds % 86400;
   const hours = Math.floor(secondsLeft / 3600);
+  const minutes = Math.floor((secondsLeft % 3600) / 60);
 
-  return `${days} days ${hours}h`;
+  return `${days} days ${hours}h ${minutes}m`;
 };
 
 export const calculateProductivity = (

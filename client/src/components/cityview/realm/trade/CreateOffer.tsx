@@ -68,10 +68,10 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
         signer: account,
         maker_id: realmEntityId,
         maker_entity_types: selectedResourceIdsGive,
-        maker_quantities: Object.values(selectedResourcesGiveAmounts).map((amount) => multiplyByPrecision(amount)),
+        maker_quantities: selectedResourceIdsGive.map((id) => multiplyByPrecision(selectedResourcesGiveAmounts[id])),
         taker_id: selectedRealmEntityId || 0,
         taker_entity_types: selectedResourceIdsGet,
-        taker_quantities: Object.values(selectedResourcesGetAmounts).map((amount) => multiplyByPrecision(amount)),
+        taker_quantities: selectedResourceIdsGet.map((id) => multiplyByPrecision(selectedResourcesGetAmounts[id])),
         donkeys_quantity: donkeysCount,
       });
     } else {
@@ -79,10 +79,10 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
         signer: account,
         maker_id: realmEntityId,
         maker_entity_types: selectedResourceIdsGive,
-        maker_quantities: Object.values(selectedResourcesGiveAmounts).map((amount) => multiplyByPrecision(amount)),
+        maker_quantities: selectedResourceIdsGive.map((id) => multiplyByPrecision(selectedResourcesGiveAmounts[id])),
         taker_id: selectedRealmEntityId || 0,
         taker_entity_types: selectedResourceIdsGet,
-        taker_quantities: Object.values(selectedResourcesGetAmounts).map((amount) => multiplyByPrecision(amount)),
+        taker_quantities: selectedResourceIdsGet.map((id) => multiplyByPrecision(selectedResourcesGetAmounts[id])),
         caravan_id: selectedCaravan,
       });
     }
@@ -100,7 +100,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   }, [step, selectedCaravan, hasEnoughDonkeys, selectedResourceIdsGet, selectedResourceIdsGive, isNewCaravan]);
 
   useEffect(() => {
-    setHasEnoughDonkeys(donkeysCount * WEIGHT_PER_DONKEY_KG >= resourceWeight);
+    setHasEnoughDonkeys(multiplyByPrecision(donkeysCount * WEIGHT_PER_DONKEY_KG) >= resourceWeight);
   }, [donkeysCount, resourceWeight]);
 
   return (
@@ -315,7 +315,7 @@ const SelectResourcesAmountPanel = ({
     for (const [_resourceId, amount] of Object.entries(selectedResourcesGiveAmounts)) {
       weight += amount * 1;
     }
-    setResourceWeight(weight);
+    setResourceWeight(multiplyByPrecision(weight));
   }, [selectedResourcesGiveAmounts]);
 
   return (
@@ -380,7 +380,7 @@ const SelectResourcesAmountPanel = ({
         </div>
       </div>
       <div className="flex text-xs text-center text-white">
-        Items Weight <div className="ml-1 text-gold">{`${resourceWeight}kg`}</div>
+        Items Weight <div className="ml-1 text-gold">{`${divideByPrecision(resourceWeight)}kg`}</div>
       </div>
       <SelectRealmPanel selectedRealmId={selectedRealmId} setSelectedRealmId={setSelectedRealmId}></SelectRealmPanel>
     </>
@@ -516,7 +516,7 @@ export const SelectCaravanPanel = ({
         </div>
       ) : null}
       <div className="flex my-3 text-xs text-center text-white">
-        Items Weight <div className="ml-1 text-gold">{`${resourceWeight}kg`}</div>
+        Items Weight <div className="ml-1 text-gold">{`${divideByPrecision(resourceWeight)}kg`}</div>
       </div>
       {isNewCaravan && (
         <>
