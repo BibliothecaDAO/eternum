@@ -5,7 +5,7 @@ import { Headline } from "../../../../elements/Headline";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../elements/NumberInput";
 import { SelectableResource } from "../../../../elements/SelectableResource";
-import { resources } from "../../../../constants/resources";
+import { resources } from "@bibliothecadao/eternum";
 import { ReactComponent as ArrowSeparator } from "../../../../assets/icons/common/arrow-separator.svg";
 import { ReactComponent as Danger } from "../../../../assets/icons/common/danger.svg";
 import { ReactComponent as Donkey } from "../../../../assets/icons/units/donkey-circle.svg";
@@ -22,7 +22,7 @@ import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 import { useTrade } from "../../../../hooks/helpers/useTrade";
 import { SelectRealmPanel } from "../SelectRealmPanel";
 import clsx from "clsx";
-import { DONKEYS_PER_CITY, WEIGHT_PER_DONKEY_KG } from "../../../../constants/travel";
+import { DONKEYS_PER_CITY, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 
 type CreateOfferPopupProps = {
   onClose: () => void;

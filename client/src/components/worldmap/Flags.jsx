@@ -9,7 +9,7 @@ import { useSpring, animated } from "@react-spring/three";
 import gsap from "gsap";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useControls } from "leva";
-import { orderNameDict } from "../../constants/orders";
+import { orderNameDict } from "@bibliothecadao/eternum";
 
 const count = realmsJson.features.length;
 

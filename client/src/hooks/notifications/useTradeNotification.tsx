@@ -7,7 +7,7 @@ import { Badge } from "../../elements/Badge";
 import { currencyFormat, extractAndCleanKey, getEntityIdFromKeys } from "../../utils/utils";
 import { useTrade } from "../helpers/useTrade";
 import { ResourceIcon } from "../../elements/ResourceIcon";
-import { findResourceById } from "../../constants/resources";
+import { findResourceById } from "@bibliothecadao/eternum";
 import { calculateRatio } from "../../components/cityview/realm/trade/Market/MarketOffer";
 import { EventType, NotificationType } from "./useNotifications";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
