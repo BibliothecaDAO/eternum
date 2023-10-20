@@ -1,7 +1,7 @@
 import { Components, Schema, setComponent } from "@latticexyz/recs";
 import { SetupNetworkResult } from "./setupNetwork";
 import { Account, AllowArray, Call, Event, num } from "starknet";
-import { getEntityIdFromKeys, padAddress } from "../utils/utils";
+import { getEntityIdFromKeys } from "../utils/utils";
 
 const LABOR_SYSTEMS = "0x49f2774476b6a119a5cf30927c0f4c88503c90659f6fccd2de2ed4ca8dfcce1";
 const TRADE_SYSTEMS = "0x484e890ec6628a7d099bc545be049fc62924ff6329ae20aa407ffd18be3ffba";
@@ -647,7 +647,7 @@ export function setComponentFromEvent(components: Components, eventData: string[
   const componentValues = componentFields.reduce((acc: Schema, key, index) => {
     const value = values[index];
     // @ts-ignore
-    acc[key] = key === "address" ? padAddress(value) : Number(value);
+    acc[key] = key === "address" ? value : Number(value);
     return acc;
   }, {});
 
