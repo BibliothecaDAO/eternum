@@ -110,7 +110,7 @@ export const useSyncWorld = (): { loading: boolean } => {
 
   const [loading, setLoading] = useState(true);
 
-  useMemo(() => {
+  useMemo((): any => {
     const syncData = async () => {
       try {
         for (const componentName of Object.keys(components)) {

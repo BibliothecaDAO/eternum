@@ -177,7 +177,7 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
   const { getHasRoad } = useRoads();
   const { calculateDistance } = useCaravan();
 
-  useMemo(() => {
+  useMemo((): any => {
     const optimisticTradeId = entityIds.indexOf(HIGH_ENTITY_ID as EntityIndex);
     const trades = entityIds
       // avoid having optimistic and real trade at the same time
