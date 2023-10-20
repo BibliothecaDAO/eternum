@@ -71,6 +71,28 @@ export type Entity = {
   models?: any | null[];
 };
 
+export function setComponentsFromEntity(entity: Entity, components: Components) {
+  if (!entity || !entity.models) return;
+
+  // Pre-calculate these to avoid redundancy
+  const keys = entity?.keys ? extractAndCleanKey(entity.keys) : [];
+  const entityId = getEntityIdFromKeys(keys);
+
+  for (const rawComponentValues of entity.models) {
+    if (rawComponentValues?.__typename) {
+      const component = components[rawComponentValues.__typename];
+      const componentValues = Object.keys(component.schema).reduce((acc: Schema, key) => {
+        const value = rawComponentValues[key];
+        // TODO: better way to do this? check the recs type
+        acc[key] = key === "address" ? value : Number(value);
+        return acc;
+      }, {});
+
+      setComponent(component, entityId, componentValues);
+    }
+  }
+}
+
 export function setComponentFromEntity(entity: Entity, componentName: string, components: Components) {
   if (entity) {
     let component = components[componentName];
