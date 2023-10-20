@@ -20,7 +20,7 @@
     "@react-spring/core": "^9.7.2",
     "@react-three/drei": "^9.50.3",
     "@react-three/fiber": "^8.9.2",
-    "@react-three/postprocessing": "^2.7.1",
+    "@react-three/postprocessing": "^2.15.5",
     "@web3mq/client": "^1.0.21",
     "clsx": "^1.2.1",
     "ethers": "5.7.2",
