@@ -4,7 +4,7 @@ import Button from "../../../../elements/Button";
 import { Headline } from "../../../../elements/Headline";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../elements/NumberInput";
-import { ResourcesIds, findResourceById } from "../../../../constants/resources";
+import { ResourcesIds, findResourceById, PurchaseLaborProps, BuildLaborProps } from "@bibliothecadao/eternum";
 import { ReactComponent as FishingVillages } from "../../../../assets/icons/resources/FishingVillages.svg";
 import { ReactComponent as Farms } from "../../../../assets/icons/resources/Farms.svg";
 import { ResourceIcon } from "../../../../elements/ResourceIcon";
@@ -18,7 +18,6 @@ import { getComponentValue } from "@latticexyz/recs";
 import { getEntityIdFromKeys, getPosition, getZone } from "../../../../utils/utils";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
-import { PurchaseAndBuildLaborProps } from "../../../../dojo/createSystemCalls";
 import { useLabor } from "../../../../hooks/helpers/useLabor";
 
 let LABOR_CONFIG = {
@@ -95,7 +94,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     return amount * multiplier * (isFood ? 12 : laborAmount) * laborCoefficient;
   };
 
-  const buildLabor = async ({ entity_id, resource_type, labor_units, multiplier }: PurchaseAndBuildLaborProps) => {
+  const buildLabor = async ({ entity_id, resource_type, labor_units, multiplier }: PurchaseLaborProps & BuildLaborProps) => {
     await purchase_and_build_labor({
       signer: account,
       entity_id,
@@ -277,9 +276,8 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               )}
             </div>
             <div className="flex items-center">
-              {`+${isFood ? (LABOR_CONFIG.base_food_per_cycle * multiplier) / 2 : ""}${
-                isFood ? "" : LABOR_CONFIG.base_resources_per_cycle / 2
-              }`}
+              {`+${isFood ? (LABOR_CONFIG.base_food_per_cycle * multiplier) / 2 : ""}${isFood ? "" : LABOR_CONFIG.base_resources_per_cycle / 2
+                }`}
               <ResourceIcon
                 containerClassName="mx-0.5"
                 className="!w-[12px]"

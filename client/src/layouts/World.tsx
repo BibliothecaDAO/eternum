@@ -28,7 +28,7 @@ import { useHyperstructure } from "../hooks/helpers/useHyperstructure";
 import { Tooltip } from "../elements/Tooltip";
 
 export const World = () => {
-  const { loading: worldLoading } = useSyncWorld();
+  const { loading: worldLoading, progress: worldProgress } = useSyncWorld();
 
   useFetchBlockchainData();
 
@@ -119,7 +119,7 @@ export const World = () => {
       </BottomRightContainer>
       <EpochCountdown />
       <BlurOverlayContainer>
-        <SignUpComponent worldLoading={worldLoading} />
+        <SignUpComponent worldLoading={worldLoading} worldProgress={worldProgress} />
       </BlurOverlayContainer>
       <Leva hidden={import.meta.env.PROD} />
       <Tooltip />

@@ -16,7 +16,7 @@ export type Order = {
 
 type RealmTradeComponentProps = {};
 
-export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
+export const RealmTradeComponent = ({ }: RealmTradeComponentProps) => {
   const [selectedTab, setSelectedTab] = useState(1);
   const { realmEntityId } = useRealmStore();
 
@@ -27,7 +27,7 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
   // @ts-ignore
   const [location, setLocation] = useLocation();
   // @ts-ignore
-  const [match, params] = useRoute("/realm/:id/:tab");
+  const [match, params]: any = useRoute("/realm/:id/:tab");
 
   useEffect(() => {
     if ([0, 1, 2].includes(selectedTab)) {

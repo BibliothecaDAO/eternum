@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FilterButton } from "../elements/FilterButton";
 import { SecondaryPopup } from "../elements/SecondaryPopup";
-import { orders } from "../constants/orders";
+import { orders } from "@bibliothecadao/eternum";
 import Button from "../elements/Button";
 import { OrderIcon } from "../elements/OrderIcon";
 import clsx from "clsx";

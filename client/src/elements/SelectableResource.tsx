@@ -1,5 +1,5 @@
 import React from "react";
-import { ResourcesIds, findResourceById } from "../constants/resources";
+import { ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { ResourceIcon } from "./ResourceIcon";
 import { soundSelector, useUiSounds } from "../hooks/useUISound";

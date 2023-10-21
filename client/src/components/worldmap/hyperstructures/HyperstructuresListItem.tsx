@@ -1,7 +1,7 @@
 import { OrderIcon } from "../../../elements/OrderIcon";
 import Button from "../../../elements/Button";
 import { ReactComponent as Map } from "../../../assets/icons/common/map.svg";
-import { orderNameDict, orders } from "../../../constants/orders";
+import { orderNameDict, orders } from "@bibliothecadao/eternum";
 import useUIStore from "../../../hooks/store/useUIStore";
 import ProgressBar from "../../../elements/ProgressBar";
 import { HyperStructureInterface } from "../../../hooks/helpers/useHyperstructure";

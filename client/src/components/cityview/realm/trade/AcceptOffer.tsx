@@ -6,7 +6,7 @@ import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { MarketInterface, useTrade } from "../../../../hooks/helpers/useTrade";
 import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
-import { WEIGHT_PER_DONKEY_KG } from "../../../../constants/travel";
+import { WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 
 type AcceptOfferPopupProps = {
   onClose: () => void;

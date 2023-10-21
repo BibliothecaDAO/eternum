@@ -6,7 +6,7 @@ import { Badge } from "../../elements/Badge";
 import { ResourceIcon } from "../../elements/ResourceIcon";
 import { getEntityIdFromKeys } from "../../utils/utils";
 import { NotificationType } from "./useNotifications";
-import { findResourceById } from "../../constants/resources";
+import { findResourceById } from "@bibliothecadao/eternum";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 
 export const useHarvestNotification = (

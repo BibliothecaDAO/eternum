@@ -1,7 +1,7 @@
 import { OrderIcon } from "../../../elements/OrderIcon";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import realmsNames from "../../../geodata/realms.json";
-import { orderNameDict } from "../../../constants/orders";
+import { orderNameDict } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
 
@@ -39,17 +39,12 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
             "relative rounded-t-xl transition-colors duration-300 text-sm shadow-lg shadow-black/25 flex items-center px-4 py-2 text-white h-[50px]",
           )}
           style={{
-            backgroundColor:
-              bgColorsByOrder[
-                orderNameDict[realm?.order] as keyof typeof bgColorsByOrder
-              ],
+            backgroundColor: bgColorsByOrder[orderNameDict[realm?.order] as keyof typeof bgColorsByOrder],
           }}
         >
           <div className="flex flex-col leading-4">
             <div className="text-xxs">0x...loaf</div>
-            <div className="font-bold">
-              {realmsNames.features[realm.realmId - 1].name}
-            </div>
+            <div className="font-bold">{realmsNames.features[realm.realmId - 1].name}</div>
           </div>
           <div className="flex items-center ml-auto capitalize">
             <OrderIcon order={orderNameDict[realm?.order]} size="xs" />

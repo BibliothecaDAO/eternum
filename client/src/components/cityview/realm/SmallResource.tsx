@@ -1,4 +1,4 @@
-import { findResourceById } from "../../../constants/resources";
+import { findResourceById } from "@bibliothecadao/eternum";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
 import { currencyFormat, getEntityIdFromKeys } from "../../../utils/utils";
 import { useComponentValue } from "@dojoengine/react";
