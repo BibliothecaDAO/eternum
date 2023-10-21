@@ -54,5 +54,4 @@ struct Npc {
     // resource_type: u8,
     mood: Mood,
     sex: Sex,
-
 }
