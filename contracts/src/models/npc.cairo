@@ -4,12 +4,8 @@ use dojo::database::schema::{
 };
 use debug::PrintTrait;
 
-// should do struct packing here
-#[derive(Drop, Copy, Serde, PartialEq, Print, Introspect)]
-struct Mood {
-    hunger: u8,
-    happiness: u8,
-}
+const two_pow_8: felt252 = 256;
+const two_pow_16: felt252 = 65536;
 
 fn random_sex(block_number: u64) -> Sex {
     let random = block_number % 2;
@@ -20,11 +16,15 @@ fn random_sex(block_number: u64) -> Sex {
     }
 }
 
-fn random_mood(block_number: u64) -> Mood {
-    Mood {
-        hunger: (block_number % 10).try_into().unwrap(),
-        happiness: (u64_wrapping_sub(block_number, 5) % 10).try_into().unwrap()
-    }
+fn random_mood(block_number: u64) -> felt252 {
+	let mut mood = 0;
+	let mood_hunger: felt252 = (block_number % 10).into();
+	let mood_happiness: felt252 = (u64_wrapping_sub(block_number, 3) % 10).into();
+	let mood_beligerent: felt252 = (u64_wrapping_sub(block_number, 3) % 10).into();
+	mood += mood_hunger;
+	mood += mood_happiness * two_pow_8;
+	mood += mood_beligerent * two_pow_16;
+	mood
 }
 
 #[derive(Copy, Drop, Serde, Introspect, Print, PartialEq)]
@@ -52,6 +52,9 @@ struct Npc {
     // Maybe we just pack 2-3-4-5 villagers inside one or two felt252, then we can just get the list of all villagers for one ressource type with get!(realm_id, ressource_type) 
     // #[key]
     // resource_type: u8,
-    mood: Mood,
+	// Should do struct packing in a felt252
+	mood: felt252,
+	// farmer or miner
+	role: u8, 
     sex: Sex,
 }

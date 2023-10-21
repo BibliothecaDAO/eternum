@@ -3,7 +3,7 @@ use eternum::constants::ResourceTypes;
 use eternum::models::resources::Resource;
 use eternum::models::labor::Labor;
 use eternum::models::position::Position;
-use eternum::models::npc::{Npc, Sex, Mood, random_mood, random_sex};
+use eternum::models::npc::{Npc, Sex};
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 use starknet::contract_address_const;
@@ -82,7 +82,8 @@ fn test_ownership() {
     };
 
       // naive call should work
-      let npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into());
+	//   
+      let npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into(), 0);
 
       realm_entity_id.print();
       let realm_entity_id: felt252 = realm_entity_id.into();
@@ -93,6 +94,6 @@ fn test_ownership() {
 
 	  starknet::testing::set_contract_address(contract_address_const::<'entity'>());
 	  // call should not work
-      let npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into());
+      let npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into(), 0);
 
 }

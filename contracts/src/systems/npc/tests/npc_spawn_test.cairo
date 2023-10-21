@@ -3,7 +3,7 @@ use eternum::constants::ResourceTypes;
 use eternum::models::resources::Resource;
 use eternum::models::labor::Labor;
 use eternum::models::position::Position;
-use eternum::models::npc::{Npc, Sex, Mood, random_mood, random_sex};
+use eternum::models::npc::{Npc, Sex};
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
@@ -79,7 +79,7 @@ fn test_spawning() {
         contract_address: npc_address
     };
 
-    let npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into());
+    let npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into(), 0);
     
 
     let realm_entity_id: felt252 = realm_entity_id.into();
@@ -88,20 +88,20 @@ fn test_spawning() {
 
     assert(npc.entity_id == npc_id, 'should allow npc spawning');
 
-    starknet::testing::set_block_timestamp(75);    
-    let maybe_new_npc = npc_dispatcher.spawn_npc(world, realm_entity_id.into());
+    starknet::testing::set_block_timestamp(75);
+    let maybe_new_npc = npc_dispatcher.spawn_npc(world, realm_entity_id.into(), 0);
 
     assert(maybe_new_npc == 0, 'should not allow npc spawning');
 
-    starknet::testing::set_block_timestamp(120);    
-    let new_npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into());
+    starknet::testing::set_block_timestamp(120);
+    let new_npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into(), 0);
     let new_npc = get!(world, (realm_entity_id, new_npc_id), (Npc));
 
     assert(new_npc.entity_id == new_npc_id, 'should allow npc spawning');
 
     let mut new_mood = new_npc.mood;
 
-    new_mood.hunger += 10;
+    new_mood += 10;
 
     // what's that? a change of mood?
     npc_dispatcher.change_mood(world, realm_entity_id.into(), new_npc.entity_id, new_mood);
