@@ -6,7 +6,7 @@ export const CCListPanel = ({}: any) => {
         alert(1)
     }
 
-    const [ccTokens, setCCTokens] = useState([
+    const [ccTokens/* , setCCTokens */] = useState([
         {id: 1, name: 'apple'},
         {id: 2, name: 'banana'},
         {id: 3, name: 'orange'}

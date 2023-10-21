@@ -2576,7 +2576,7 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     getRealmsCaravans(variables: GetRealmsCaravansQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetRealmsCaravansQuery; extensions?: any; headers: Headers; status: number; }> {
       return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmsCaravansQuery>(GetRealmsCaravansDocumentString, variables, { ...requestHeaders, ...wrappedRequestHeaders }), 'getRealmsCaravans', 'query');
     },
-    getCCMap(variables?: GetCcMapQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetCcMapQuery; extensions?: any; headers: Dom.Headers; status: number; }> {
+    getCCMap(variables?: GetCcMapQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetCcMapQuery; extensions?: any; headers: Headers; status: number; }> {
       return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetCcMapQuery>(GetCcMapDocumentString, variables, { ...requestHeaders, ...wrappedRequestHeaders }), 'getCCMap', 'query');
     }
   };

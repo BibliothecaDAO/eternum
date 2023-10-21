@@ -13,6 +13,7 @@ const TRANSPORT_UNIT_SYSTEMS = "0x7fe4766dd6c4a161c09b612889f2f92a016e97a8964daa
 const TRAVEL_SYSTEMS = "0x3315c2f50986e9fe9562cb73ec992cbddb8270b7747179d0919b54964e189c6";
 const TEST_REALM_SYSTEMS = "0x1996a879c5c85a15824d957865a95e3a94d097a09c19e97d93c46e713c0f75";
 const TEST_RESOURCE_SYSTEMS = "0x2ca9678b8934991b89f91e7092e4e56a8a585defddc494d3671b480a7eeb668";
+const CC_CONTRACT_ADDRESS = "";
 
 const WORLD_ADDRESS = import.meta.env.VITE_WORLD_ADDRESS;
 
@@ -22,6 +23,14 @@ const UUID_OFFSET_CREATE_CARAVAN = 2;
 
 interface SystemSigner {
   signer: Account;
+}
+
+export interface MintCC extends SystemSigner {
+
+}
+
+export interface GenerateMap extends SystemSigner {
+  token_id: num.BigNumberish;
 }
 
 export interface TravelProps extends SystemSigner {
@@ -184,6 +193,24 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
       contractAddress: LABOR_SYSTEMS,
       entrypoint: "purchase",
       calldata: [WORLD_ADDRESS, entity_id, resource_type, (labor_units as number) * (multiplier as number)],
+    });
+  };
+
+  const mint_cc = async (props: MintCC) => {
+    const signer = props;
+    await executeTransaction(signer, {
+      contractAddress: CC_CONTRACT_ADDRESS,
+      entrypoint: "mint",
+      calldata: [WORLD_ADDRESS],
+    });
+  };
+
+  const generate_map = async (props: GenerateMap) => {
+    const { signer, token_id } = props;
+    await executeTransaction(signer, {
+      contractAddress: CC_CONTRACT_ADDRESS,
+      entrypoint: "generate_map",
+      calldata: [WORLD_ADDRESS, token_id],
     });
   };
 
@@ -601,6 +628,8 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     initialize_hyperstructure,
     complete_hyperstructure,
     travel,
+    mint_cc,
+    generate_map
   };
 }
 
