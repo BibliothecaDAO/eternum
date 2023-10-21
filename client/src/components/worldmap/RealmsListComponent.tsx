@@ -33,10 +33,7 @@ export const RealmsListComponent = ({ onlyMyRealms = false }: RealmsListComponen
 
   return (
     <>
-      <FiltersPanel className="px-3 py-2">
-        <FilterButton active={false}>Filter</FilterButton>
-      </FiltersPanel>
-      <div className="flex flex-col space-y-2 px-2 mb-2">
+      <div className="flex flex-col space-y-2 px-2 my-2">
         {realmsList.map((realm) => {
           return <RealmListItem key={realm.entity_id} realm={realm} />;
         })}

@@ -54,7 +54,7 @@ export const HyperstructuresPanel = ({}: HyperstructuresPanelProps) => {
             <div>My Order</div>
           </div>
         ),
-        component: <></>,
+        component: <HyperstructuresListComponent showOnlyPlayerOrder />,
       },
     ],
     [selectedTab],
