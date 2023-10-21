@@ -37,11 +37,12 @@ mod npc_systems {
                 let mood = random_mood(block.block_number);
                 let role = random_role(block.block_number);
                 let entity_id = world.uuid().into();
-                
+
                 set!(world, (Npc { entity_id, realm_entity_id, mood, sex, role}));
                 let last_spawned_ts: u128 = starknet::get_block_timestamp().into();
+
                 set!(world, (LastSpawned {realm_entity_id, last_spawned_ts}));
-				entity_id
+				        entity_id
             } else {
                 0
             }
@@ -53,7 +54,7 @@ mod npc_systems {
             let old_npc = get!(world, (realm_entity_id, npc_id), (Npc));
             // necessary because macros
             let old_sex = old_npc.sex;
-			let old_role = old_npc.role;
+			      let old_role = old_npc.role;
             set!(world, (Npc { entity_id: npc_id, realm_entity_id, mood, role: old_role, sex: old_sex}));
         }
         
