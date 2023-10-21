@@ -79,7 +79,7 @@ fn test_spawning() {
         contract_address: npc_address
     };
 
-    let npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into(), 0);
+    let npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into());
     
 
     let realm_entity_id: felt252 = realm_entity_id.into();
@@ -89,12 +89,12 @@ fn test_spawning() {
     assert(npc.entity_id == npc_id, 'should allow npc spawning');
 
     starknet::testing::set_block_timestamp(75);
-    let maybe_new_npc = npc_dispatcher.spawn_npc(world, realm_entity_id.into(), 0);
+    let maybe_new_npc = npc_dispatcher.spawn_npc(world, realm_entity_id.into());
 
     assert(maybe_new_npc == 0, 'should not allow npc spawning');
 
     starknet::testing::set_block_timestamp(120);
-    let new_npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into(), 0);
+    let new_npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into());
     let new_npc = get!(world, (realm_entity_id, new_npc_id), (Npc));
 
     assert(new_npc.entity_id == new_npc_id, 'should allow npc spawning');

@@ -83,7 +83,7 @@ fn test_ownership() {
 
       // naive call should work
 	//   
-      let npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into(), 0);
+      let npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into());
 
       realm_entity_id.print();
       let realm_entity_id: felt252 = realm_entity_id.into();
@@ -94,6 +94,6 @@ fn test_ownership() {
 
 	  starknet::testing::set_contract_address(contract_address_const::<'entity'>());
 	  // call should not work
-      let npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into(), 0);
+      let npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into());
 
 }

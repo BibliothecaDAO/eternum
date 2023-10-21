@@ -5,7 +5,7 @@ mod npc_systems {
     use eternum::constants::NPC_CONFIG_ID;    
 
     use eternum::models::realm::{Realm, RealmTrait};
-    use eternum::models::npc::{Npc, Sex, random_mood, random_sex};
+    use eternum::models::npc::{Npc, Sex, random_mood, random_sex, random_role};
     use eternum::models::last_spawned::{LastSpawned, ShouldSpawnImpl};
     use eternum::systems::npc::utils::assert_ownership;
     use eternum::models::config::NpcConfig;
@@ -21,7 +21,7 @@ mod npc_systems {
 
     #[external(v0)]
     impl NpcImpl of INpc<ContractState> {
-        fn spawn_npc(self: @ContractState, world: IWorldDispatcher, realm_entity_id: felt252, role: u8) -> felt252 {
+        fn spawn_npc(self: @ContractState, world: IWorldDispatcher, realm_entity_id: felt252) -> felt252 {
             assert_ownership(world, realm_entity_id);
             
             let last_spawned = get!(world, realm_entity_id, (LastSpawned));
@@ -35,6 +35,7 @@ mod npc_systems {
             
                 let sex = random_sex(block.block_number);
                 let mood = random_mood(block.block_number);
+                let role = random_role(block.block_number);
                 let entity_id = world.uuid().into();
                 
                 set!(world, (Npc { entity_id, realm_entity_id, mood, sex, role}));

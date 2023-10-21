@@ -27,10 +27,25 @@ fn random_mood(block_number: u64) -> felt252 {
 	mood
 }
 
+fn random_role(block_number: u64) -> Role {
+    let random = block_number % 2;
+    if (random == 0) {
+        Role::Farmer
+    } else {
+        Role::Miner
+    }
+}
+
 #[derive(Copy, Drop, Serde, Introspect, Print, PartialEq)]
 enum Sex {
     Male,
     Female
+}
+
+#[derive(Copy, Drop, Serde, Introspect, Print, PartialEq)]
+enum Role {
+    Farmer,
+    Miner,
 }
 
 impl SexPrint of PrintTrait<Sex> {
@@ -39,6 +54,16 @@ impl SexPrint of PrintTrait<Sex> {
 			'male'.print();
 		} else {
 			'female'.print();
+		}
+	}
+}
+
+impl RolePrint of PrintTrait<Role> {
+	fn print(self: Role) {
+		if (self == Role::Farmer) {
+			'farmer'.print();
+		} else {
+			'miner'.print();
 		}
 	}
 }
@@ -55,6 +80,6 @@ struct Npc {
 	// Should do struct packing in a felt252
 	mood: felt252,
 	// farmer or miner
-	role: u8, 
+	role: Role, 
     sex: Sex,
 }
