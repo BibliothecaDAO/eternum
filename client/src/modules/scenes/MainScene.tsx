@@ -5,7 +5,7 @@ import useUIStore from "../../hooks/store/useUIStore";
 import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
 import { a } from "@react-spring/three";
-import { Sky, CameraShake, AdaptiveDpr, AdaptiveEvents } from "@react-three/drei";
+import { Sky, CameraShake, AdaptiveDpr } from "@react-three/drei";
 import { Suspense, useMemo } from "react";
 import { EffectComposer, Bloom, Noise, SMAA } from "@react-three/postprocessing";
 // @ts-ignore
