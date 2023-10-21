@@ -5,7 +5,7 @@ use dojo::database::schema::{
 use debug::PrintTrait;
 
 // should do struct packing here
-#[derive(Drop, Copy, Serde, Print, Introspect)]
+#[derive(Drop, Copy, Serde, PartialEq, Print, Introspect)]
 struct Mood {
     hunger: u8,
     happiness: u8,

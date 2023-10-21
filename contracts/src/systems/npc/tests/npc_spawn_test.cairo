@@ -79,13 +79,12 @@ fn test_spawning() {
         contract_address: npc_address
     };
 
-      // naive call should work
-      let npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into());
+    let npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into());
+    
 
-      realm_entity_id.print();
-      let realm_entity_id: felt252 = realm_entity_id.into();
+    let realm_entity_id: felt252 = realm_entity_id.into();
 
-      let npc = get!(world, (realm_entity_id, npc_id), (Npc));
+    let npc = get!(world, (realm_entity_id, npc_id), (Npc));
 
     assert(npc.entity_id == npc_id, 'should allow npc spawning');
 
@@ -96,11 +95,22 @@ fn test_spawning() {
 
     starknet::testing::set_block_timestamp(120);    
     let new_npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into());
-      let new_npc = get!(world, (realm_entity_id, new_npc_id), (Npc));
+    let new_npc = get!(world, (realm_entity_id, new_npc_id), (Npc));
 
     assert(new_npc.entity_id == new_npc_id, 'should allow npc spawning');
 
+    let mut new_mood = new_npc.mood;
 
+    new_mood.hunger += 10;
+
+    // what's that? a change of mood?
+    npc_dispatcher.change_mood(world, realm_entity_id.into(), new_npc.entity_id, new_mood);
+
+    // but did we... REALLY... change?
+    let changed_npc = get!(world, (realm_entity_id, new_npc.entity_id), (Npc));
+
+    assert(changed_npc.mood == new_mood, 'true change of mood brah');
+    
 
 
 }

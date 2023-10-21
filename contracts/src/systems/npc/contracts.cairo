@@ -3,10 +3,11 @@ mod npc_systems {
     
     use starknet::ContractAddress;
     use eternum::constants::NPC_CONFIG_ID;    
-    use eternum::models::owner::Owner;
+
     use eternum::models::realm::{Realm, RealmTrait};
     use eternum::models::npc::{Npc, Sex, Mood, random_mood, random_sex};
     use eternum::models::last_spawned::{LastSpawned, ShouldSpawnImpl};
+    use eternum::systems::npc::utils::assert_ownership;
     use eternum::models::config::NpcConfig;
     use starknet::info::BlockInfo;
 
@@ -21,11 +22,8 @@ mod npc_systems {
     #[external(v0)]
     impl NpcImpl of INpc<ContractState> {
         fn spawn_npc(self: @ContractState, world: IWorldDispatcher, realm_entity_id: felt252) -> felt252 {
-            // Check how much ressources the user has before creating a villager, start at 0 at the start
-			let player_id: ContractAddress = starknet::get_caller_address();
-			let (realm, owner) = get!(world, realm_entity_id, (Realm, Owner));
-			assert(owner.address == player_id, 'Realm does not belong to player');
-
+            assert_ownership(world, realm_entity_id);
+            
             let last_spawned = get!(world, realm_entity_id, (LastSpawned));
 
             let npc_config = get!(world, NPC_CONFIG_ID, (NpcConfig));
@@ -33,7 +31,6 @@ mod npc_systems {
             let should_spawn = last_spawned.should_spawn(npc_config.spawn_delay);
 
             if should_spawn {
-                'hey'.print();
                 let block: BlockInfo = starknet::get_block_info().unbox();
             
                 let sex = random_sex(block.block_number);
@@ -48,6 +45,15 @@ mod npc_systems {
                 0
             }
         }
-    // trigger the mood changes based on when the user clicks on the harvest weat/fish
+        // trigger the mood changes based on when the user clicks on the harvest weat/fish
+        fn change_mood(self: @ContractState, world: IWorldDispatcher, realm_entity_id: felt252, npc_id: felt252, mood: Mood) {
+            assert_ownership(world, realm_entity_id);
+
+            let old_npc = get!(world, (realm_entity_id, npc_id), (Npc));
+            // necessary because macros
+            let old_sex = old_npc.sex;
+            set!(world, (Npc { entity_id: npc_id, realm_entity_id, mood,  sex: old_sex}));
+        }
+        
     }
 }
