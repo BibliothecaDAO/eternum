@@ -2,8 +2,6 @@ import { useMemo } from "react";
 import { useDojo } from "../../DojoContext";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue } from "@latticexyz/recs";
-import { FiltersPanel } from "../../elements/FiltersPanel";
-import { FilterButton } from "../../elements/FilterButton";
 import { RealmListItem } from "./RealmListItem";
 import { useGetRealms } from "../../hooks/helpers/useRealm";
 

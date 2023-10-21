@@ -1,5 +1,3 @@
-import { FiltersPanel } from "../../../elements/FiltersPanel";
-import { FilterButton } from "../../../elements/FilterButton";
 import { HyperstructuresListItem } from "./HyperstructuresListItem";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useMemo, useState } from "react";
