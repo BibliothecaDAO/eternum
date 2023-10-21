@@ -276,3 +276,10 @@ struct HasClaimedStartingResources {
     config_id: u32,
     claimed: bool,
 }
+
+#[derive(Model, Copy, Drop, Serde)]
+struct NpcConfig {
+    #[key]
+    config_id: u128,
+    spawn_delay: u128,
+}

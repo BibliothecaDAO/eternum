@@ -1,5 +1,7 @@
+use dojo::world::IWorldDispatcher;
+
 #[starknet::interface]
-trait INpcSystems<TContractState> {
-    fn spawn_npc(self: @TContractState, realm_entity_id: felt252) -> felt252;
+trait INpc<TContractState> {
+    fn spawn_npc(self: @TContractState, world: IWorldDispatcher, realm_entity_id: felt252) -> felt252;
 }
 

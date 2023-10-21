@@ -100,6 +100,11 @@ trait IPopulationConfig {
     fn set_population_config(building_category: BuildingCategory, population: u32, capacity: u32);
 }
 
+#[dojo::interface]
+trait INpcConfig {
+    fn set_spawn_config(spawn_delay: u128);
+}
+
 
 #[dojo::contract]
 mod config_systems {
@@ -109,7 +114,7 @@ mod config_systems {
     use eternum::constants::{
         WORLD_CONFIG_ID, TRANSPORT_CONFIG_ID, ROAD_CONFIG_ID, COMBAT_CONFIG_ID,
         REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID,
-        BUILDING_CONFIG_ID, POPULATION_CONFIG_ID
+        BUILDING_CONFIG_ID, POPULATION_CONFIG_ID, NPC_CONFIG_ID
     };
     use eternum::models::bank::bank::{Bank};
     use eternum::models::buildings::{BuildingCategory};
@@ -117,7 +122,7 @@ mod config_systems {
     use eternum::models::config::{
         CapacityConfig, RoadConfig, SpeedConfig, WeightConfig, WorldConfig, LevelingConfig,
         RealmFreeMintConfig, MapExploreConfig, TickConfig, ProductionConfig, BankConfig,
-        TroopConfig, BuildingConfig, PopulationConfig
+        TroopConfig, BuildingConfig, PopulationConfig, NpcConfig
     };
 
     use eternum::models::hyperstructure::HyperStructure;
@@ -196,6 +201,12 @@ mod config_systems {
         }
     }
 
+    #[external(v0)]
+    impl NpcConfigImpl of INpcConfig<ContractState> {
+        fn set_spawn_config(self: @ContractState, world: IWorldDispatcher, spawn_delay: u128) {
+            set!(world, (NpcConfig { config_id: NPC_CONFIG_ID, spawn_delay }));
+        }
+    }
 
     #[abi(embed_v0)]
     impl MapConfigImpl of super::IMapConfig<ContractState> {
