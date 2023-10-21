@@ -51,14 +51,14 @@ export const HyperstructuresListComponent = ({}: HyperstructuresListComponentPro
       <div className="flex flex-col space-y-2 px-2 mb-2">
         <div className="text-xs text-gold">Other Hyperstructures: </div>
         {hyperstructures.map((hyperstructure, i) =>
-          chosenOrder && i + 1 !== chosenOrder ? (
+          chosenOrder && i + 1 === chosenOrder ? null : (
             <HyperstructuresListItem
               key={i}
               hyperstructure={hyperstructure}
               order={i + 1}
               coords={hyperstructure?.uiPosition as any}
             />
-          ) : null,
+          ),
         )}
       </div>
     </>
