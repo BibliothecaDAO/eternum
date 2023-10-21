@@ -64,9 +64,7 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
   }, [realm]);
 
   const spawnNpc = async () => {
-    console.log(account);
-    let npcId = await spawn_npc({ signer: account, realm_entity_id: realmEntityId });
-    console.log(npcId);
+    await spawn_npc({ signer: account, realm_entity_id: realmEntityId });
   };
 
   return (

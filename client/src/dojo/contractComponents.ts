@@ -515,17 +515,70 @@ export function defineContractComponents(world: World) {
       );
     })(),
     Npc: (() => {
-      const name = "Npc";
       return defineComponent(
         world,
         {
-          mood: RecsType.Number,
-          role: RecsType.Number,
-          sex: RecsType.Number,
+          entity_id: RecsType.BigInt,
+          current_realm_entity_id: RecsType.BigInt,
+          characteristics: RecsType.BigInt,
+          character_trait: RecsType.BigInt,
+          full_name: RecsType.BigInt,
         },
         {
           metadata: {
-            name: name,
+            name: "Npc",
+            types: ["u128", "u128", "felt252", "felt252", "felt252"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    NpcConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.BigInt,
+          spawn_delay: RecsType.BigInt,
+          pub_key: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            name: "NpcConfig",
+            types: ["u128", "u64", "felt252"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    RealmRegistry: (() => {
+      return defineComponent(
+        world,
+        {
+          realm_entity_id: RecsType.BigInt,
+          num_resident_npcs: RecsType.BigInt,
+          num_native_npcs: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            name: "RealmRegistry",
+            types: ["u128", "u8", "u8"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    LastSpawned: (() => {
+      return defineComponent(
+        world,
+        {
+          realm_entity_id: RecsType.BigInt,
+          last_spawned_ts: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            name: "LastSpawned",
+            types: ["u128", "u64"],
+            customTypes: [],
           },
         },
       );
