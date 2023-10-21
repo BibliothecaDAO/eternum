@@ -517,4 +517,44 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [config_id, realm_entity_id],
     });
   }
+
+  public async spawn_npc(props: SystemProps.SpawnNpcProps) {
+    const { realm_entity_id, characteristics, character_trait, full_name, signature } = props;
+    const tx = await this.executeMulti(props.signer, {
+      contractAddress: getContractByName(this.manifest, "npc_systems"),
+      entrypoint: "spawn_npc",
+      calldata: [realm_entity_id, characteristics, character_trait, full_name, signature],
+    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
+  }
+
+  public async npc_travel(props: SystemProps.NpcTravelProps) {
+    const { npc_entity_id, to_realm_entity_id } = props;
+    const tx = await this.executeMulti(props.signer, {
+      contractAddress: getContractByName(this.manifest, "npc_systems"),
+      entrypoint: "npc_travel",
+      calldata: [npc_entity_id, to_realm_entity_id],
+    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
+  }
+
+  public async welcome_npc(props: SystemProps.WelcomeNpcProps) {
+    const { npc_entity_id, into_realm_entity_id } = props;
+    const tx = await this.executeMulti(props.signer, {
+      contractAddress: getContractByName(this.manifest, "npc_systems"),
+      entrypoint: "welcome_npc",
+      calldata: [npc_entity_id, into_realm_entity_id],
+    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
+  }
+
+  public async kick_out_npc(props: SystemProps.KickOutNpcProps) {
+    const { npc_entity_id } = props;
+    const tx = await this.executeMulti(props.signer, {
+      contractAddress: getContractByName(this.manifest, "npc_systems"),
+      entrypoint: "kick_out_npc",
+      calldata: [npc_entity_id],
+    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
+  }
 }

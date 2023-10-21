@@ -134,6 +134,22 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     await provider.mint_starting_resources(props);
   };
 
+  const spawn_npc = async (props: SystemProps.SpawnNpcProps) => {
+    await provider.spawn_npc(props);
+  };
+
+  const npc_travel = async (props: SystemProps.NpcTravelProps) => {
+    await provider.npc_travel(props);
+  };
+
+  const welcome_npc = async (props: SystemProps.WelcomeNpcProps) => {
+    await provider.welcome_npc(props);
+  };
+
+  const kick_out_npc = async (props: SystemProps.KickOutNpcProps) => {
+    await provider.kick_out_npc(props);
+  };
+
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -172,7 +188,10 @@ export function createSystemCalls({ provider }: SetupNetworkResult) {
     create_army,
     uuid,
     mint_starting_resources,
-
+    spawn_npc,
+    npc_travel,
+    welcome_npc,
+    kick_out_npc,
     army_buy_troops,
     army_merge_troops,
   };

@@ -288,3 +288,25 @@ export interface CreateStartingResources extends SystemSigner {
   config_id: num.BigNumberish;
   realm_entity_id: num.BigNumberish;
 }
+
+export interface SpawnNpcProps extends SystemSigner {
+  realm_entity_id: num.BigNumberish;
+  characteristics: num.BigNumberish;
+  character_trait: num.BigNumberish;
+  full_name: num.BigNumberish;
+  signature: num.BigNumberish[];
+}
+
+export interface NpcTravelProps extends SystemSigner {
+  npc_entity_id: num.BigNumberish;
+  to_realm_entity_id: num.BigNumberish;
+}
+
+export interface WelcomeNpcProps extends SystemSigner {
+  npc_entity_id: num.BigNumberish;
+  into_realm_entity_id: num.BigNumberish;
+}
+
+export interface KickOutNpcProps extends SystemSigner {
+  npc_entity_id: num.BigNumberish;
+}

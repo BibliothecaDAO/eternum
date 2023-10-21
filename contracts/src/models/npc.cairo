@@ -1,7 +1,4 @@
 use debug::PrintTrait;
-use dojo::database::schema::{
-    serialize_member, serialize_member_type, Enum, Member, SchemaIntrospection, Struct, Ty,
-};
 use integer::u64_wrapping_sub;
 
 const two_pow_8: felt252 = 256;
@@ -15,21 +12,21 @@ fn flip(source: u128) -> bool {
 fn random_sex(source: u128) -> u8 {
     let random = flip(source);
     if random {
-       0 // read as male
+        0 // read as male
     } else {
-       1 // read as female
+        1 // read as female
     }
 }
 
 fn random_mood(block_number: u64) -> felt252 {
-	  let mut mood = 0;
-	  let mood_hunger: felt252 = (block_number % 10).into();
-	  let mood_happiness: felt252 = (u64_wrapping_sub(block_number, 3) % 10).into();
-	  let mood_beligerent: felt252 = (u64_wrapping_sub(block_number, 16) % 10).into();
-	  mood += mood_hunger;
-	  mood += mood_happiness * two_pow_8;
-	  mood += mood_beligerent * two_pow_16;
-	  mood
+    let mut mood = 0;
+    let mood_hunger: felt252 = (block_number % 10).into();
+    let mood_happiness: felt252 = (u64_wrapping_sub(block_number, 3) % 10).into();
+    let mood_beligerent: felt252 = (u64_wrapping_sub(block_number, 16) % 10).into();
+    mood += mood_hunger;
+    mood += mood_happiness * two_pow_8;
+    mood += mood_beligerent * two_pow_16;
+    mood
 }
 
 fn random_role(source: u128) -> u8 {
