@@ -112,21 +112,21 @@ mod resource_systems {
                     'not owner of entity'
             );
 
-            // update allownace
-            let mut resources = resources;
+            // update allowance
+            let mut resources_clone = resources.clone();
             loop {
-                match resources.pop_front() {
+                match resources_clone.pop_front() {
                     Option::Some((resource_type, resource_amount)) => {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
-                        let mut resource_allowance 
+                        let mut approved_allowance 
                             = get!(world, (owner_entity_id, approved_entity_id, resource_type), ResourceAllowance);
                         
-                        assert(resource_allowance.amount <= resource_amount, 'insufficient approval');
+                        assert(approved_allowance.amount >= resource_amount, 'insufficient approval');
 
-                        if (resource_allowance.amount != BoundedInt::max()){ 
-                            // spend allownace if they don't have infinite approval
-                            resource_allowance.amount -= resource_amount;
-                            set!(world, (resource_allowance));
+                        if (approved_allowance.amount != BoundedInt::max()){ 
+                            // spend allowance if they don't have infinite approval
+                            approved_allowance.amount -= resource_amount;
+                            set!(world, (approved_allowance));
                         }
                     },
                     Option::None(_) => {break;}
