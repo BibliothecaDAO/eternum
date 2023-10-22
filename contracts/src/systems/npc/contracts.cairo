@@ -32,17 +32,17 @@ mod npc_systems {
 
             if should_spawn {
                 let block: BlockInfo = starknet::get_block_info().unbox();
-            
-                let sex = random_sex(block.block_number);
+                let last_spawned_ts: u128 = starknet::get_block_timestamp().into();
+                let uuid = world.uuid().into();                
+                let sex = random_sex(last_spawned_ts);
                 let mood = random_mood(block.block_number);
-                let role = random_role(block.block_number);
-                let entity_id = world.uuid().into();
+                let role = random_role(uuid);
+                let entity_id: felt252 = uuid.into();
 
                 set!(world, (Npc { entity_id, realm_id, mood, sex, role}));
-                let last_spawned_ts: u128 = starknet::get_block_timestamp().into();
-
                 set!(world, (LastSpawned {realm_id, last_spawned_ts}));
-				        entity_id
+
+                entity_id
             } else {
                 0
             }
@@ -52,7 +52,8 @@ mod npc_systems {
             assert_ownership(world, realm_id);
 
             let old_npc = get!(world, (npc_id), (Npc));
-            // necessary because macros
+            // otherwise seeing this error on compilation
+            // let __set_macro_value__ = Npc { entity_id: npc_id, realm_id, mood, role: old_role.sex, sex: old_sex.role};
             let old_sex = old_npc.sex;
 			      let old_role = old_npc.role;
             set!(world, (Npc { entity_id: npc_id, realm_id, mood, role: old_role, sex: old_sex}));
