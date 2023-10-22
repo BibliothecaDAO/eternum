@@ -14,3 +14,5 @@ mod trade;
 mod road;
 mod labor_auction;
 mod hyperstructure;
+mod army;
+mod challenges;
