@@ -163,18 +163,39 @@ export class NpcPrompts {
         }
     }
 
-    // Possible to receive one npc only ?
-    generateHarvestPromt(npc) {        
-            const promptSystem = 
-                `Imagine yourself as a ${this.sex[npc.sex]} ${this.role[npc.role]} in the medieval realm of ${this.realmState.name}.
-                In this realm, your society is deeply involved in mining various minerals,
-                sustaining its population through agriculture and fishing, establishing prosperous trade routes,
-                and maintaining a robust military defense against potential threats from foreign realms.
-                Your realm's military defense is ${this.realmState.defense} and the general sentiment of the populace is ${this.realmState.happiness}.
-                Keep the answer under 50 words.`
-            ;
+    // v1 : When receiving single NPC object
+    // generateHarvestPromt(npc) {        
+    //     const promptSystem = 
+    //     `Imagine yourself as a ${this.sex[npc.sex]} ${this.role[npc.role]} in the medieval realm of ${this.realmState.name}.
+    //     In this realm, your society is deeply involved in mining various minerals,
+    //     sustaining its population through agriculture and fishing, establishing prosperous trade routes,
+    //     and maintaining a robust military defense against potential threats from foreign realms.
+    //     Your realm's military defense is ${this.realmState.defense} and the general sentiment of the populace is ${this.realmState.happiness}.
+    //     Keep the answer under 50 words.`
+    // ;
+    
+    // this.generatePrompt(promptSystem, this.HarvestRole(npc));
+    // }
+
+    // v2 : When parsing whole npcs array ?
+    generateHarvestPromt(npcs, harvestRole: number) { 
+        for (const npc of npcs) {
+            if (npc.role == harvestRole) {
+                const promptSystem = 
+                    `Imagine yourself as a ${this.sex[npc.sex]} ${this.role[npc.role]} in the medieval realm of ${this.realmState.name}.
+                    In this realm, your society is deeply involved in mining various minerals,
+                    sustaining its population through agriculture and fishing, establishing prosperous trade routes,
+                    and maintaining a robust military defense against potential threats from foreign realms.
+                    Your realm's military defense is ${this.realmState.defense} and the general sentiment of the populace is ${this.realmState.happiness}.
+                    Keep the answer under 50 words.`
+                ;
             
-            this.generatePrompt(promptSystem, this.HarvestRole(npc));
+                this.generatePrompt(promptSystem, this.HarvestRole(npc));
+                break ;
+            }
+        }
+
+            
         }
         
     generateBuildPrompt(npc) {
