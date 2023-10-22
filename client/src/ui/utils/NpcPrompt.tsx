@@ -20,28 +20,38 @@ export class NpcPrompts {
         5: "combative", 6: "antagonistic", 7: "belligerent", 8: "furious", 9: "enraged",
     };
 
-    private role: {[key: number]: string} = {
-        0: "farmer", 1: "miner"
-    };
-    
-    private roleLocation: {[key: number]: string} = {
-        0: "Wheat farms", 1: "mines"
-    };
-
     private sex: {[key: number]: string} = {
         0: "male", 1: "female"
     };
 
+    // Hardcoded ATM, can probably fetch realm state in the future
     private realmState = {
         "name": "REALM_NAME",
         "defense": "vulnerable",
         happiness: "happy",
     };
 
+    private role: {[key: number]: string} = {
+        0: "farmer", 1: "miner",
+        // 2: "fisherman",
+        // 3: "merchant",
+        // 4: "trader", // Caravans
+        // 5: "soldier",
+
+    };
+    
+    private roleLocation: {[key: number]: string} = {
+        0: "Wheat farms", 1: "mines", 
+        // 2: "fishery", 
+        // 3: "market",
+        // 4: "caravans",
+        // 5: "barracks"
+    };
+
     private harvest_descriptions: {[key: number]: string} = {
-        0: " begin harvesting the wheat fields.", // 
+        0: " begin harvesting the wheat fields.", 
         1: " begin extracting the earths' mines.",
-        2: " head out to the shores, cast your nets, and bring back the riches of the sea."
+        // 2: " head out to the shores, cast your nets, and bring back the riches of the sea.",
     };
 
     // Predefined Prompts taking NPC params into account
