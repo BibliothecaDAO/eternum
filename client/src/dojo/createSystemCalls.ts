@@ -198,14 +198,11 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
 
   const mint_cc = async (props: MintCC) => {
     const signer = props;
-    const uuid = await provider.uuid();
-    await executeTransaction(signer, [
-      {
+    await executeTransaction(signer, {
         contractAddress: CC_CONTRACT_ADDRESS,
         entrypoint: "mint",
-        calldata: [WORLD_ADDRESS, uuid],
-      },
-    ]);
+        calldata: [WORLD_ADDRESS],
+      });
   };
 
   const generate_map = async (props: GenerateMap) => {
@@ -603,6 +600,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
 
   async function executeTransaction(signer: any, calls: AllowArray<Call>) {
     const tx = await provider.execute(signer, calls);
+    console.log("tx hash:" + tx.transaction_hash);
     const receipt = await provider.provider.waitForTransaction(tx.transaction_hash, { retryInterval: 500 });
     const events = getEvents(receipt);
     setComponentsFromEvents(contractComponents, events);
