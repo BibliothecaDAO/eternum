@@ -2,7 +2,7 @@ export class NpcPrompts {
     
     // OPENAI API KEY FROM TIM, DELETE BEFORE PUSHING
     private OPENAI_API_KEY=""
-    
+
     private OPENAI_URL="https://api.openai.com/v1/chat/completions"
 
     private hunger: {[key: number]: string} = {
@@ -109,7 +109,7 @@ export class NpcPrompts {
                 
                 // OPTIONAL: Fine-tuning our prompts ?
                 // "max_tokens": 100, // May be used to limit size of generated prompts. Rough count = 3 words / 4 tokens. OR specify it inside given prompt
-                // "temperature": 1, // Between 0 and 2, defaults to 1. (0 -> focused and deterministic, 2 -> random and creative)
+                "temperature": 1.5, // Between 0 and 2, defaults to 1. (0 -> focused and deterministic, 2 -> random and creative)
                 // "top_p": 1, // !!use EITHER 'temperature' or 'top_p'!!. If I understood correctly, basically uses a % based calc for its choice of words. Lower value means less 'exotic' vocab basically
             
                 // Generated prompts during testing with:
