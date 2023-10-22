@@ -7,12 +7,15 @@ import * as realmsData from "../../geodata/realms.json";
 import clsx from "clsx";
 import useUIStore from "../../hooks/store/useUIStore";
 import { displayAddress, numberToHex } from "../../utils/utils";
+import { FightComponent } from '../FightComponent'
 
 type RealmListItemProps = {
   realm: any;
+  onlyMyRealms?: boolean;
+  army?: any;
 };
 
-export const RealmListItem = ({ realm }: RealmListItemProps) => {
+export const RealmListItem = ({ realm, onlyMyRealms = false, army }: RealmListItemProps) => {
   const moveCameraToRealm = useUIStore((state) => state.moveCameraToRealm);
 
   return (
@@ -37,6 +40,9 @@ export const RealmListItem = ({ realm }: RealmListItemProps) => {
             Show on map
           </Button>
         </div>
+        {
+          !onlyMyRealms && <FightComponent />
+        }
       </div>
       <div className="flex items-end mt-2">
         <div className={clsx("flex items-center justify-around flex-1")}>
@@ -63,6 +69,18 @@ export const RealmListItem = ({ realm }: RealmListItemProps) => {
         </div>
         <div className="text-gold inline-block">
           Regions: <span className="text-white">{realm.regions}</span>
+        </div>
+      </div>
+      Army:
+      <div className="mt-2 space-x-2">
+        <div className="text-gold inline-block">
+          infantry_qty: <span className="text-white">{army.infantry_qty}</span>
+        </div>
+        <div className="text-gold inline-block">
+          cavalry_qty: <span className="text-white">{army.cavalry_qty}</span>
+        </div>
+        <div className="text-gold inline-block">
+          mage_qty: <span className="text-white">{army.mage_qty}</span>
         </div>
       </div>
     </div>
