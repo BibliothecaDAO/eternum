@@ -84,8 +84,9 @@ fn test_spawning() {
 
     let realm_entity_id: felt252 = realm_entity_id.into();
 
-    let npc = get!(world, (realm_entity_id, npc_id), (Npc));
+    let npc = get!(world, (npc_id), (Npc));
 
+    npc.entity_id.print();
     assert(npc.entity_id == npc_id, 'should allow npc spawning');
 
     starknet::testing::set_block_timestamp(75);
@@ -95,7 +96,7 @@ fn test_spawning() {
 
     starknet::testing::set_block_timestamp(120);
     let new_npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into());
-    let new_npc = get!(world, (realm_entity_id, new_npc_id), (Npc));
+    let new_npc = get!(world, (new_npc_id), (Npc));
 
     assert(new_npc.entity_id == new_npc_id, 'should allow npc spawning');
 
@@ -107,7 +108,7 @@ fn test_spawning() {
     npc_dispatcher.change_mood(world, realm_entity_id.into(), new_npc.entity_id, new_mood);
 
     // but did we... REALLY... change?
-    let changed_npc = get!(world, (realm_entity_id, new_npc.entity_id), (Npc));
+    let changed_npc = get!(world, (new_npc.entity_id), (Npc));
 
     assert(changed_npc.mood == new_mood, 'true change of mood brah');
     

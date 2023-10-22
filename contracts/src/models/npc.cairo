@@ -71,15 +71,14 @@ impl RolePrint of PrintTrait<Role> {
 #[derive(Model, Serde, Copy, Drop, Print)]
 struct Npc {
     #[key]
-    realm_entity_id: felt252,
-    #[key]
     entity_id: felt252,
+    realm_id: felt252,    
     // Maybe we just pack 2-3-4-5 villagers inside one or two felt252, then we can just get the list of all villagers for one ressource type with get!(realm_id, ressource_type) 
     // #[key]
     // resource_type: u8,
 	// Should do struct packing in a felt252
-	mood: felt252,
+	  mood: felt252,
 	// farmer or miner
-	role: Role, 
+	  role: Role, 
     sex: Sex,
 }

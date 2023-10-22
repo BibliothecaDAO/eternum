@@ -21,10 +21,10 @@ mod npc_systems {
 
     #[external(v0)]
     impl NpcImpl of INpc<ContractState> {
-        fn spawn_npc(self: @ContractState, world: IWorldDispatcher, realm_entity_id: felt252) -> felt252 {
-            assert_ownership(world, realm_entity_id);
+        fn spawn_npc(self: @ContractState, world: IWorldDispatcher, realm_id: felt252) -> felt252 {
+            assert_ownership(world, realm_id);
             
-            let last_spawned = get!(world, realm_entity_id, (LastSpawned));
+            let last_spawned = get!(world, realm_id, (LastSpawned));
 
             let npc_config = get!(world, NPC_CONFIG_ID, (NpcConfig));
 
@@ -38,24 +38,24 @@ mod npc_systems {
                 let role = random_role(block.block_number);
                 let entity_id = world.uuid().into();
 
-                set!(world, (Npc { entity_id, realm_entity_id, mood, sex, role}));
+                set!(world, (Npc { entity_id, realm_id, mood, sex, role}));
                 let last_spawned_ts: u128 = starknet::get_block_timestamp().into();
 
-                set!(world, (LastSpawned {realm_entity_id, last_spawned_ts}));
+                set!(world, (LastSpawned {realm_id, last_spawned_ts}));
 				        entity_id
             } else {
                 0
             }
         }
         // trigger the mood changes based on when the user clicks on the harvest weat/fish
-        fn change_mood(self: @ContractState, world: IWorldDispatcher, realm_entity_id: felt252, npc_id: felt252, mood: felt252) {
-            assert_ownership(world, realm_entity_id);
+        fn change_mood(self: @ContractState, world: IWorldDispatcher, realm_id: felt252, npc_id: felt252, mood: felt252) {
+            assert_ownership(world, realm_id);
 
-            let old_npc = get!(world, (realm_entity_id, npc_id), (Npc));
+            let old_npc = get!(world, (npc_id), (Npc));
             // necessary because macros
             let old_sex = old_npc.sex;
 			      let old_role = old_npc.role;
-            set!(world, (Npc { entity_id: npc_id, realm_entity_id, mood, role: old_role, sex: old_sex}));
+            set!(world, (Npc { entity_id: npc_id, realm_id, mood, role: old_role, sex: old_sex}));
         }
         
     }
