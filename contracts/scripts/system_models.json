@@ -47,7 +47,8 @@
         "ResourceCost"
     ],
     "RESOURCE_SYSTEMS": [
-        "Resource"
+        "Resource",
+        "ResourceAllowance"
     ],
     "TRAVEL_SYSTEMS": [
         "ArrivalTime",
