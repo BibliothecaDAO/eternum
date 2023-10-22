@@ -42,10 +42,12 @@ const NpcChat = ({ npcs, genMsg, setGenMsg }: NpcChatProps) => {
       newMessages.push({ message: generatedPrompt, sender });
       setMessageList(newMessages);
       window.localStorage.setItem("npc_chat", JSON.stringify(newMessages));
-      if (bottomRef.current) {
-        bottomRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      }
-      setGenMsg(false);
+      setTimeout(() => {
+            if (bottomRef.current) {
+                bottomRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }
+       }, 1);        
+       setGenMsg(false);
     };
     if (!genMsg) {
       return;
