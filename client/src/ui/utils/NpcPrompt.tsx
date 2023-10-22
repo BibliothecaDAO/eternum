@@ -1,9 +1,8 @@
 export class NpcPrompts {
     
     // OPENAI API KEY FROM TIM, DELETE BEFORE PUSHING
-    private OPENAI_API_KEY=""
-
-    private OPENAI_URL="https://api.openai.com/v1/chat/completions"
+    private OPENAI_API_KEY=import.meta.env.OPENAI_API_KEY;
+    private OPENAI_URL="https://api.openai.com/v1/chat/completions";
 
     private hunger: {[key: number]: string} = {
         0: "starving", 1: "famished", 2: "ravenous", 3: "hungry", 4: "peckish", 
@@ -164,7 +163,7 @@ export class NpcPrompts {
     }
 
     // v1 : When receiving single NPC object
-    // generateHarvestPromt(npc) {        
+    // generateHarvestPrompt(npc) {        
     //     const promptSystem = 
     //     `Imagine yourself as a ${this.sex[npc.sex]} ${this.role[npc.role]} in the medieval realm of ${this.realmState.name}.
     //     In this realm, your society is deeply involved in mining various minerals,
@@ -178,7 +177,7 @@ export class NpcPrompts {
     // }
 
     // v2 : When parsing whole npcs array ?
-    generateHarvestPromt(npcs, harvestRole: number) { 
+    generateHarvestPrompt(npcs, harvestRole: number) { 
         for (const npc of npcs) {
             if (npc.role == harvestRole) {
                 const promptSystem = 
@@ -193,10 +192,8 @@ export class NpcPrompts {
                 this.generatePrompt(promptSystem, this.HarvestRole(npc));
                 break ;
             }
-        }
-
-            
-        }
+        }    
+    }
         
     generateBuildPrompt(npc) {
         const promptSystem = 
