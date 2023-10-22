@@ -201,7 +201,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     await executeTransaction(signer, {
       contractAddress: CC_CONTRACT_ADDRESS,
       entrypoint: "mint",
-      calldata: [WORLD_ADDRESS],
+      calldata: [],
     });
   };
 
