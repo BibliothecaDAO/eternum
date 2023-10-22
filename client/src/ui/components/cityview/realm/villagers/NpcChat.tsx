@@ -16,6 +16,11 @@ const NpcChat = ({ npcs, genMsg, setGenMsg }: NpcChatProps) => {
   const [messageList, setMessageList] = useState<NpcChatMessageProps[]>(
     JSON.parse(window.localStorage.getItem("npc_chat")),
   );
+
+  // repeating a comment that I saw above this line, somewhere else in the codebase
+  // this (also) should be moved
+  const [loadingMessages, setLoadingMessages] = useState<boolean>(false);
+    
   const [ready, setReady] = useState<boolean>(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -26,8 +31,12 @@ const NpcChat = ({ npcs, genMsg, setGenMsg }: NpcChatProps) => {
       if (npcs.length == 0) {
         return;
       }
+
+      // loading!  
+      setLoadingMessages(true);          
       const npc = npcs[random(npcs.length - 1, 0)];
       // call chatGTP here
+
       const response: Response = await gptInterface.generateGreetingPrompts(npc);
       console.log(npc);
       const data = await response.json();
@@ -46,7 +55,9 @@ const NpcChat = ({ npcs, genMsg, setGenMsg }: NpcChatProps) => {
     if (!genMsg) {
       return;
     }
-    generateMessages();
+      generateMessages();
+      // we are done loading!
+      setLoadingMessages(false);
   }, [genMsg]);
 
   useEffect(() => {
@@ -71,8 +82,17 @@ const NpcChat = ({ npcs, genMsg, setGenMsg }: NpcChatProps) => {
       <div className={"text-white text-xxs pr-2 mt-1"} style={{ position: "static", textAlign: "right" }}>
         NPCs: {npcs.length} / 5
       </div>
+
+      {loadingMessages && (
+                <div className="absolute  h-full bg-black w-full text-white text-center flex justify-center">
+                    <div className="self-center">
+                        <img src="/images/eternum-logo_animated.png" className=" invert scale-50" />
+                    </div>
+                </div>
+       )}
+      
       <div className="relative flex flex-col h-full overflow-auto relative top-3 flex flex-col h-full center mx-auto w-[96%] mb-3 overflow-auto border border-gold">
-        {messageList.map((message, index) => {
+        {messageList?.map((message, index) => {
           return <NpcChatMessage key={index} {...message} />;
         })}
         <span className="" ref={bottomRef}></span>

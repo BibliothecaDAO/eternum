@@ -104,7 +104,7 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
           onClick={() => spawnNpc()}
           variant="primary"
         >
-          {npcs.length > 5 ? "+ Village full" : "🥚 Spawn villager"}
+          {npcs.length > 5 ? "+ Village full" : "Spawn villager"}
         </Button>
         <Button
           className="mx-1 top-3 left-3 sticky w-32 bottom-2 !rounded-full"
@@ -120,7 +120,7 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
           onClick={() => randomizeMood()}
           variant="primary"
         >
-          🔀 Randomize mood
+          Randomize mood
         </Button>
       </div>
       <NpcChat npcs={npcs} genMsg={genMsg} setGenMsg={setGenMsg} />
