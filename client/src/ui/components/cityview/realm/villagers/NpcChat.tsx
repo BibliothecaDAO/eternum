@@ -1,34 +1,57 @@
 import { useEffect, useRef, useState } from "react";
-import ChatMessage, { ChatMessageProps } from "../../../../elements/ChatMessage";
-import Button from "../../../../elements/Button";
-
-type NpcClient = {
-  mood: Number;
-  role: Number;
-  sex: Number;
-  realm_id: Number;
-};
+import { ChatMessageProps } from "../../../../elements/ChatMessage";
+import { random } from "@latticexyz/utils";
+import { nameFromEntityId } from "./utils";
+import { Npc } from "./types";
+import NpcChatMessage from "./NpcChatMessage";
+import GptInterface from "../../../../utils/NpcPrompt";
 
 interface NpcChatProps {
-  npcs: NpcClient[];
+  npcs: Npc[];
+  genMsg: boolean;
+  setGenMsg: any;
 }
 
-const NpcChat = ({ npcs }: NpcChatProps) => {
-  const [messageList, setMessageList] = useState<ChatMessageProps[]>([]);
-
-  // this should be moved
-  const [loadingMessages, setLoadingMessages] = useState<boolean>(false);
-
+// Store chat history in this ;
+const NpcChat = ({ npcs, genMsg, setGenMsg }: NpcChatProps) => {
+  const [messageList, setMessageList] = useState<ChatMessageProps[]>(
+    JSON.parse(window.localStorage.getItem("npc_chat")),
+  );
+  const [ready, setReady] = useState<boolean>(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messageList]);
+  const gptInterface = new GptInterface();
 
-  // Temp world chat
-  const group = "group:aaa83cddb7d563d2847d56247060cec696f3d425";
+  useEffect(() => {
+    const generateMessages = async () => {
+      if (npcs.length == 0) {
+        return;
+      }
+      const npc = npcs[random(npcs.length - 1, 0)];
+      // call chatGTP here
+      const response: Response = await gptInterface.generateGreetingPrompts(npc);
+      const data = await response.json();
+      const generatedPrompt = data.choices[0].message.content.trim();
+      console.log(generatedPrompt);
+      const sender = nameFromEntityId(npc.entityId, npc.sex);
+      let newMessages = messageList;
+      newMessages.push({ message: generatedPrompt, sender });
+      setMessageList(newMessages);
+      window.localStorage.setItem("npc_chat", JSON.stringify(newMessages));
+      if (bottomRef.current) {
+        bottomRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+      setGenMsg(false);
+    };
+    if (!genMsg) {
+      return;
+    }
+    generateMessages();
+  }, [genMsg]);
+
+  useEffect(() => {
+    setReady(true);
+  }, []);
 
   // const createRoom = async (groupName: string) => {
   //     client?.channel.createRoom({
@@ -41,20 +64,19 @@ const NpcChat = ({ npcs }: NpcChatProps) => {
   //     })
   // }
 
-  const transform = (s: string) => s.replace("user:", "").slice(0, 2) + "..." + s.slice(-3);
-
   useEffect(() => {}, []);
 
   return (
-    <div className="relative top-3 flex flex-col h-full center mx-auto w-[96%] mb-3 overflow-auto border border-gold">
-      <div className={"text-white text-xxs right-0 pr-3 mt-2"} style={{ textAlign: "right" }}>
-        NPCs: {npcs.length} / ??
+    <div className="relative flex flex-col h-full overflow-auto">
+      <div className={"text-white text-xxs pr-2 mt-1"} style={{ position: "static", textAlign: "right" }}>
+        NPCs: {npcs.length} / 5
       </div>
-      &nbsp;
-      {messageList.map((message, index) => (
-        <ChatMessage key={index} {...message} />
-      ))}
-      {/* <Button onClick={() => createRoom('world')}>create</Button> */}
+      <div className="relative flex flex-col h-full overflow-auto relative top-3 flex flex-col h-full center mx-auto w-[96%] mb-3 overflow-auto border border-gold">
+        {messageList.map((message, index) => {
+          return <NpcChatMessage key={index} {...message} />;
+        })}
+        <span className="" ref={bottomRef}></span>
+      </div>
     </div>
   );
 };
