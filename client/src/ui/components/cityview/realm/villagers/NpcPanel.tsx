@@ -1,18 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-// import { SortPanel } from "../../../../elements/SortPanel";
-// import { SortButton, SortInterface } from "../../../../elements/SortButton";
 import { NpcComponent } from "./NpcComponent";
 import Button from "../../../../elements/Button";
-import { getEntityIdFromKeys } from "../../../../utils/utils.jsx";
+import NpcChat from "./NpcChat";
 
 import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { ResourcesIds } from "@bibliothecadao/eternum";
 import { useRoute } from "wouter";
 import { getRealm } from "../../../../utils/realms";
-import { HasValue, Has, getComponentValue, runQuery } from "@latticexyz/recs";
+import { HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../../../DojoContext";
-import { extractAndCleanKey } from "../../../../utils/utils";
-import { useComponentValue } from "@dojoengine/react";
+import { parseMoodFeltToStruct } from "./utils";
 
 type NpcPanelProps = {
   type?: "all" | "farmers" | "miners";
@@ -22,7 +18,7 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
   const {
     setup: {
       components: { Npc },
-      systemCalls: { spawn_npc },
+      systemCalls: { spawn_npc, change_mood },
       //   Not using this as the optimistic function isn't implemented
       //   optimisticSystemCalls: { optimisticSpawnNpc },
     },
@@ -34,20 +30,6 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
   const [match, params]: any = useRoute("/realm/:id/:tab");
 
   useEffect(() => {}, [params]);
-
-  //   const sortingParams = useMemo(() => {
-  //     return [
-  //       { label: "Number", sortKey: "number", className: "mr-auto" },
-  //       { label: "Balance", sortKey: "balance", className: "mr-auto" },
-  //       { label: "Expires", sortKey: "expires", className: "mr-auto" },
-  //       { label: "Harvested", sortKey: "harvested", className: "mr-auto" },
-  //     ];
-  //   }, []);
-
-  //   const [activeSort, setActiveSort] = useState<SortInterface>({
-  //     sortKey: "number",
-  //     sort: "none",
-  //   });
 
   const { realmEntityId } = useRealmStore();
 
@@ -61,7 +43,7 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
       const entityIds = runQuery([HasValue(Npc, { realm_id: realm.realm_id })]);
       let npcs = Array.from(entityIds).map((entityId) => {
         let npc = getComponentValue(Npc, entityId);
-        return npc;
+        return { ...npc, mood: parseMoodFeltToStruct(npc.mood) };
       });
       setSpawned(false);
       return npcs;
@@ -73,14 +55,20 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
   useEffect(() => {
     console.log(npcs);
   }, [npcs]);
+
   const spawnNpc = async () => {
-    console.log("waiting to spawn npc");
+    console.log("Spawning NPC");
     await spawn_npc({ signer: account, realm_id: realm.realm_id });
     setSpawned(true);
   };
 
+  const randomizeMood = async () => {
+    console.log("randomizing NPC");
+    // await change_mood()
+  };
+
   return (
-    <div className="flex flex-col min-h-[50px] relative pb-3">
+    <div className="flex flex-col min-h-[200px] h-[100%] relative pb-3">
       {/* <SortPanel className="px-3 py-2">
         {sortingParams.map(({ label, sortKey, className }) => (
           <SortButton
@@ -112,14 +100,23 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
             />
           </div>
         ))} */}
-      <div className="flex flex-col p-2 space-y-2"></div>
-      <Button
-        className="sticky w-32 -translate-x-1/2 bottom-2 left-1/2 !rounded-full"
-        onClick={() => spawnNpc()}
-        variant="primary"
-      >
-        + Spawn villager
-      </Button>
+      <div className="flex flex-row w-[100%] items-center space-y-2" style={{ justifyContent: "center" }}>
+        <Button
+          className="-translate-x-2 top-3 sticky w-32 bottom-2 !rounded-full"
+          onClick={() => spawnNpc()}
+          variant="primary"
+        >
+          + Spawn villager
+        </Button>
+        <Button
+          className="translate-x-2 top-3 left-3 sticky w-32 bottom-2 !rounded-full"
+          onClick={() => randomizeMood()}
+          variant="primary"
+        >
+          Randomize mood
+        </Button>
+      </div>
+      <NpcChat npcs={npcs} />
     </div>
   );
 };
