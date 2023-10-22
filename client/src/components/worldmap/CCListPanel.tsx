@@ -2,21 +2,21 @@ import { useState } from "react";
 import { useDojo } from "../../DojoContext";
 
 export const CCListPanel = ({ }: any) => {
+    const {
+        setup: {
+            systemCalls: { mint_cc},
+        },
+        account: { account },
+    } = useDojo();
 
-    const clickHandler = () => {
-        const {
-            setup: {
-                systemCalls: { mint_cc, generate_map },
-            },
-            account: { account },
-        } = useDojo();
+    const clickHandler = async () => {
 
-        mint_cc({ signer: account });
+        await mint_cc({ signer: account });
 
         alert("Minted");
     }
 
-    const [ccTokens, setCCTokens] = useState([
+    const [ccTokens] = useState([
         { id: 1, name: 'apple' },
         { id: 2, name: 'banana' },
         { id: 3, name: 'orange' }
