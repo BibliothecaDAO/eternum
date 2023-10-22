@@ -4,12 +4,15 @@ import { useDojo } from "../../DojoContext";
 export const CCListPanel = ({ }: any) => {
     const {
         setup: {
-            systemCalls: { mint_cc},
+            systemCalls: { mint_cc },
         },
         account: { account },
     } = useDojo();
 
+
     const clickHandler = async () => {
+
+        console.log(account);
 
         await mint_cc({ signer: account });
 

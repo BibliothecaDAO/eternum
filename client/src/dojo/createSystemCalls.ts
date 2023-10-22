@@ -197,12 +197,12 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
   };
 
   const mint_cc = async (props: MintCC) => {
-    const signer = props;
+    const { signer } = props;
     await executeTransaction(signer, {
-        contractAddress: CC_CONTRACT_ADDRESS,
-        entrypoint: "mint",
-        calldata: [WORLD_ADDRESS],
-      });
+      contractAddress: CC_CONTRACT_ADDRESS,
+      entrypoint: "mint",
+      calldata: [WORLD_ADDRESS],
+    });
   };
 
   const generate_map = async (props: GenerateMap) => {
