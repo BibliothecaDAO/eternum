@@ -3,14 +3,16 @@ import { useEffect, useMemo, useState } from "react";
 // import { SortButton, SortInterface } from "../../../../elements/SortButton";
 import { NpcComponent } from "./NpcComponent";
 import Button from "../../../../elements/Button";
+import { getEntityIdFromKeys } from "../../../../utils/utils.jsx";
 
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { ResourcesIds } from "@bibliothecadao/eternum";
 import { useRoute } from "wouter";
 import { getRealm } from "../../../../utils/realms";
-import { runQuery } from "@latticexyz/recs";
-import { HasValue } from "@latticexyz/recs";
+import { HasValue, Has, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../../../DojoContext";
+import { extractAndCleanKey } from "../../../../utils/utils";
+import { useComponentValue } from "@dojoengine/react";
 
 type NpcPanelProps = {
   type?: "all" | "farmers" | "miners";
@@ -26,7 +28,7 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
     },
     account: { account },
   } = useDojo();
-
+  const [spawned, setSpawned] = useState(false);
   // @ts-ignore
   // TODO remove any
   const [match, params]: any = useRoute("/realm/:id/:tab");
@@ -56,15 +58,25 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
   // unpack the resources
   let npcs = useMemo(() => {
     if (realm) {
-      let allNpcs = runQuery([HasValue(Npc, {})]);
-      console.log(allNpcs);
+      const entityIds = runQuery([HasValue(Npc, { realm_id: realm.realm_id })]);
+      let npcs = Array.from(entityIds).map((entityId) => {
+        let npc = getComponentValue(Npc, entityId);
+        return npc;
+      });
+      setSpawned(false);
+      return npcs;
     } else {
       return [];
     }
-  }, [realm]);
+  }, [spawned]);
 
+  useEffect(() => {
+    console.log(npcs);
+  }, [npcs]);
   const spawnNpc = async () => {
-    await spawn_npc({ signer: account, realm_entity_id: realmEntityId });
+    console.log("waiting to spawn npc");
+    await spawn_npc({ signer: account, realm_id: realm.realm_id });
+    setSpawned(true);
   };
 
   return (
