@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { ChatMessageProps } from "../../../../elements/ChatMessage";
 import { random } from "@latticexyz/utils";
 import { nameFromEntityId } from "./utils";
 import { Npc } from "./types";
 import NpcChatMessage from "./NpcChatMessage";
 import GptInterface from "../../../../utils/NpcPrompt";
-
+import { NpcChatMessageProps } from "./NpcChatMessage";
 interface NpcChatProps {
   npcs: Npc[];
   genMsg: boolean;
@@ -14,7 +13,7 @@ interface NpcChatProps {
 
 // Store chat history in this ;
 const NpcChat = ({ npcs, genMsg, setGenMsg }: NpcChatProps) => {
-  const [messageList, setMessageList] = useState<ChatMessageProps[]>(
+  const [messageList, setMessageList] = useState<NpcChatMessageProps[]>(
     JSON.parse(window.localStorage.getItem("npc_chat")),
   );
   const [ready, setReady] = useState<boolean>(false);
@@ -30,6 +29,7 @@ const NpcChat = ({ npcs, genMsg, setGenMsg }: NpcChatProps) => {
       const npc = npcs[random(npcs.length - 1, 0)];
       // call chatGTP here
       const response: Response = await gptInterface.generateGreetingPrompts(npc);
+      console.log(npc);
       const data = await response.json();
       const generatedPrompt = data.choices[0].message.content.trim();
       console.log(generatedPrompt);
