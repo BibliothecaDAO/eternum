@@ -2,6 +2,7 @@ import { BigNumberish } from "starknet";
 import commonMaleNameList from "./commonMaleNameList.json";
 import commonFemaleNameList from "./commonFemaleNameList.json";
 import { Mood } from "./types";
+import { random } from "@latticexyz/utils";
 
 const HUNGER_MASK = 0x0000ff;
 const HAPPINESS_MASK = 0x00ff00;
@@ -23,4 +24,8 @@ export const nameFromEntityId = (entityId: BigNumberish, sex: Number): string =>
     return commonMaleNameList[Number(entityId) % commonMaleNameList.length];
   }
   return commonFemaleNameList[Number(entityId) % commonFemaleNameList.length];
+};
+
+export const getRandomMood = (): BigNumberish => {
+  return (random(11, 0) + (random(11, 0) << 8) + random(11, 0)) << 16;
 };

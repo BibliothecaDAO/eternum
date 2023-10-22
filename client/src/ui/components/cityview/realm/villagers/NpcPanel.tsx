@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import Button from "../../../../elements/Button";
 import NpcChat from "./NpcChat";
 import { Npc } from "./types";
-import { ChatMessageProps } from "../../../../elements/ChatMessage";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { useRoute } from "wouter";
 import { getRealm } from "../../../../utils/realms";
 import { HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../../../DojoContext";
-import { parseMoodFeltToStruct } from "./utils";
+import { getRandomMood, parseMoodFeltToStruct } from "./utils";
+import { random } from "@latticexyz/utils";
 
 type NpcPanelProps = {
   type?: "all" | "farmers" | "miners";
@@ -61,7 +61,14 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
 
   const randomizeMood = async () => {
     console.log("randomizing NPC");
-    // await change_mood()
+    const npc = npcs[random(npcs.length - 1, 0)];
+	// Should we do optimistic call? 
+    await change_mood({
+      realm_id: npc.realm_id.valueOf(),
+      npc_id: npc.entityId,
+      mood: getRandomMood(),
+      signer: account,
+    });
   };
 
   return (
