@@ -5,7 +5,7 @@ mod npc_systems {
     use eternum::constants::NPC_CONFIG_ID;    
 
     use eternum::models::realm::{Realm, RealmTrait};
-    use eternum::models::npc::{Npc, Sex, random_mood, random_sex, random_role};
+    use eternum::models::npc::{Npc, random_mood, random_sex, random_role};
     use eternum::models::last_spawned::{LastSpawned, ShouldSpawnImpl};
     use eternum::systems::npc::utils::assert_ownership;
     use eternum::models::config::NpcConfig;

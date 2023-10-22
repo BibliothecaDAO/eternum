@@ -3,7 +3,7 @@ use eternum::constants::ResourceTypes;
 use eternum::models::resources::Resource;
 use eternum::models::labor::Labor;
 use eternum::models::position::Position;
-use eternum::models::npc::{Npc, Sex};
+use eternum::models::npc::{Npc};
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
@@ -86,7 +86,6 @@ fn test_spawning() {
 
     let npc = get!(world, (npc_id), (Npc));
 
-    npc.entity_id.print();
     assert(npc.entity_id == npc_id, 'should allow npc spawning');
 
     starknet::testing::set_block_timestamp(75);

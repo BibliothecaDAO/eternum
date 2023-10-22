@@ -3,7 +3,7 @@ use eternum::constants::ResourceTypes;
 use eternum::models::resources::Resource;
 use eternum::models::labor::Labor;
 use eternum::models::position::Position;
-use eternum::models::npc::{Npc, Sex};
+use eternum::models::npc::{Npc};
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 use starknet::contract_address_const;
@@ -85,7 +85,6 @@ fn test_ownership() {
 	//   
       let npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into());
 
-      realm_entity_id.print();
       let realm_entity_id: felt252 = realm_entity_id.into();
 
       let npc = get!(world, (realm_entity_id, npc_id), (Npc));
