@@ -58,6 +58,7 @@ Our development journey is dynamic, but here are our current objectives (+ some 
     - [ ] Trading resources
     - [ ] Army stuff
 6. [ ] Allow NPCS to travel to other realms (Suggested by loaf1337)
-(7. [ ] Politics tab)
-(8. [ ] Religion tab)
+7. [ ] Implement Townhall
+(8. [ ] Politics tab)
+(9. [ ] Religion tab)
 
