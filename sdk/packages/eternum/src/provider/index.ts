@@ -20,6 +20,8 @@ import {
   SendResourcesToHyperstructureProps,
   TransferResourcesProps,
   TravelProps,
+  MintCC,
+  GenerateMap,
 } from "../types";
 import { Call } from "starknet";
 import { DEV_CONTRACTS, PROD_CONTRACTS } from "../constants";
@@ -524,4 +526,22 @@ export class EternumProvider extends RPCProvider {
       retryInterval: 500,
     });
   }
+  public async mint_cc(props: MintCC) {
+    const { signer } = props;
+    await this.executeMulti(signer, {
+      contractAddress: this.contracts.CC_CONTRACT_ADDRESS,
+      entrypoint: "mint",
+      calldata: [],
+    });
+  };
+
+  public async generate_map(props: GenerateMap) {
+    const { signer, token_id } = props;
+    await this.executeMulti(signer, {
+      contractAddress: this.contracts.CC_CONTRACT_ADDRESS,
+      entrypoint: "generate_map",
+      calldata: [token_id],
+    });
+  };
+
 }

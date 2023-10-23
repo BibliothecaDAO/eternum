@@ -32,7 +32,7 @@ export const CCListPanel = ({ }: any) => {
                 role="tablist" aria-orientation="horizontal">
                 <button
                     className="text-xxs px-3 !outline-none border border-transparent transition-color duration-200 border !border-white rounded-md text-white"
-                    id="headlessui-tabs-tab-:r26:" role="tab" type="button" aria-selected="true" tabIndex="0"
+                    id="headlessui-tabs-tab-:r26:" role="tab" type="button" aria-selected="true"
                     data-headlessui-state="selected" aria-controls="headlessui-tabs-panel-:r2a:">
                     <div className="flex relative group flex-col items-center">
                         <div onClick={clickHandler}>Mint</div>
