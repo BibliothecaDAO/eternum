@@ -11,10 +11,6 @@
 
 ![background](./bg.webp)
 
-Here's an improved flow of your document with a table of contents and links for easier navigation:
-
----
-
 # Realms: Eternum
 
 ## Table of Contents
