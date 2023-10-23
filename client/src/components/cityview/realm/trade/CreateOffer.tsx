@@ -222,7 +222,7 @@ const SelectResourcesPanel = ({
   const { realmEntityId } = useRealmStore();
 
   return (
-    <div className="grid grid-cols-9 gap-2 p-2">
+    <div className="grid grid-cols-9 gap-2 p-2 relative">
       <div className="flex flex-col items-center col-span-4">
         <Headline className="mb-2">You Give</Headline>
         <div className="grid grid-cols-4 gap-2">
@@ -248,7 +248,7 @@ const SelectResourcesPanel = ({
         </div>
       </div>
       <div className="flex items-center justify-center">
-        <ArrowSeparator />
+        <ArrowSeparator className="fixed top-1/2 -translate-y-full" />
       </div>
       <div className="flex flex-col items-center col-span-4">
         <Headline className="mb-2">You Get</Headline>
@@ -320,7 +320,7 @@ const SelectResourcesAmountPanel = ({
 
   return (
     <>
-      <div className="grid grid-cols-9 gap-2 p-2">
+      <div className="grid grid-cols-9 gap-2 p-2 max-h-[350px] overflow-auto relative">
         <div className="flex flex-col items-center col-span-4 space-y-2">
           <Headline className="mb-2">You Give</Headline>
           {selectedResourceIdsGive.map((id) => {
@@ -355,7 +355,7 @@ const SelectResourcesAmountPanel = ({
           })}
         </div>
         <div className="flex items-center justify-center">
-          <ArrowSeparator />
+          <ArrowSeparator className="fixed top-1/2 -translate-y-full" />
         </div>
         <div className="flex flex-col items-center col-span-4 space-y-2">
           <Headline className="mb-2">You Get</Headline>
@@ -462,7 +462,7 @@ export const SelectCaravanPanel = ({
   return (
     <div className={clsx("flex flex-col items-center w-full p-2", className)}>
       {selectedResourceIdsGive.length > 0 || selectedResourceIdsGet.length > 0 ? (
-        <div className="grid grid-cols-9 gap-2">
+        <div className="grid grid-cols-9 gap-2 relative">
           {selectedResourceIdsGive.length > 0 && (
             <>
               <div
@@ -474,11 +474,11 @@ export const SelectCaravanPanel = ({
                 <Headline className="mb-2" size="big">
                   {headline}
                 </Headline>
-                <div className="flex items-center justify-center w-full">
+                <div className="flex items-center justify-center w-full flex-wrap">
                   {selectedResourceIdsGive.map((id) => (
                     <ResourceCost
                       key={id}
-                      className="!w-min mx-2"
+                      className="!w-min mb-2 mx-1"
                       resourceId={id}
                       color="text-gold"
                       type="vertical"
@@ -492,17 +492,17 @@ export const SelectCaravanPanel = ({
           {selectedResourceIdsGet.length > 0 && (
             <>
               <div className="flex items-center justify-center">
-                <ArrowSeparator />
+                <ArrowSeparator className="fixed top-1/2 -translate-y-full" />
               </div>
               <div className="flex flex-col items-center col-span-4 space-y-2 h-min">
                 <Headline className="mb-2" size="big">
                   You Get
                 </Headline>
-                <div className="flex items-center justify-center w-full">
+                <div className="flex items-center justify-center w-full flex-wrap">
                   {selectedResourceIdsGet.map((id) => (
                     <ResourceCost
                       key={id}
-                      className="!w-min mx-2"
+                      className="!w-min  mb-2 mx-1"
                       type="vertical"
                       color="text-brilliance"
                       resourceId={id}
@@ -575,9 +575,10 @@ export const SelectCaravanPanel = ({
         </div>
       )}
       {!isNewCaravan && (
-        <>
+        <div className="flex flex-col max-h-[350px] overflow-auto w-full">
           {myAvailableCaravans.map((caravan) => (
             <Caravan
+              key={caravan.caravanId}
               caravan={caravan}
               idleOnly={true}
               onClick={() => setSelectedCaravan(caravan.caravanId)}
@@ -586,7 +587,7 @@ export const SelectCaravanPanel = ({
               }`}
             />
           ))}
-        </>
+        </div>
       )}
     </div>
   );
