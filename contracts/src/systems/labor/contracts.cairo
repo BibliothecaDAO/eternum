@@ -4,6 +4,8 @@ mod labor_systems {
 
     use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
+    use debug::PrintTrait;
+
     use eternum::models::owner::Owner;
     use eternum::models::realm::{Realm, RealmTrait};
     use eternum::models::position::{Position, PositionTrait};
@@ -345,7 +347,7 @@ mod labor_systems {
                         = FixedTrait::new_unscaled(labor_cost_per_unit.value, false);
                     
     
-                    let mut total_resource_labor_cost = 0;
+                    let mut total_resource_labor_cost_fixed = FixedTrait::new_unscaled(0, false);
 
                     let mut labor_units_remaining = labor_units;
                     
@@ -359,14 +361,18 @@ mod labor_systems {
                                 labor_auction_time_since_start_fixed,
                                 FixedTrait::new_unscaled(labor_auction.sold, false)
                             );
+                        //'labor_cost_multiplier'.print();
+                        //labor_cost_multiplier.print();
 
-                        let mut labor_unit_cost: u128 
-                            = (labor_cost_per_unit_fixed * labor_cost_multiplier)
-                            .try_into().unwrap();
-                        
                         let mut labor_unit_count 
                             = labor_auction.price_update_interval - 
                                 (labor_auction.sold % labor_auction.price_update_interval);
+
+                        let mut resource_labor_cost
+                            = labor_cost_per_unit_fixed * labor_cost_multiplier * FixedTrait::new_unscaled(labor_unit_count, false);
+
+                        //'labor_unit_count'.print();
+                        //labor_unit_count.print();
 
                         if labor_units_remaining < labor_unit_count {
                             labor_unit_count = labor_units_remaining;
@@ -374,10 +380,21 @@ mod labor_systems {
 
                         labor_units_remaining -= labor_unit_count;
                         labor_auction.sold += labor_unit_count;
-                        total_resource_labor_cost += labor_unit_cost * labor_unit_count;
+                        //'labor_auction_sold'.print();
+                        //labor_auction.sold.print();
+                        //'resource_labor_cost'.print();
+                        //resource_labor_cost.print();
+                        total_resource_labor_cost_fixed += resource_labor_cost;
+                        //'total_resource_labor_cost'.print();
+                        //total_resource_labor_cost.print();
                         
                     };
 
+                    //'total_resource_labor_cost_fixed'.print();
+                    //total_resource_labor_cost_fixed.print();
+                    let total_resource_labor_cost: u128 = total_resource_labor_cost_fixed.try_into().unwrap();
+                    //'total_resource_labor_cost'.print();
+                    //total_resource_labor_cost.print();
 
                     // deduct total labor cost for the current
                     // resource from entity's balance
