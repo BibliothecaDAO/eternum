@@ -47,6 +47,11 @@ const NpcChat = ({ npcs, realmId }: NpcChatProps) => {
         const farmers = npcs.filter((npc) => npc.role === Role.Farmer);
         if (farmers.length === 0) {
           setGenMsg(false);
+          let newMessages = messageList || [];
+          systemMessage.message = `No farmer in your village can talk to you.`;
+          newMessages.push(systemMessage);
+          setMessageList(newMessages);
+          window.localStorage.setItem(chatIdentifier, JSON.stringify(newMessages));
           return;
         }
         console.log(farmers);
