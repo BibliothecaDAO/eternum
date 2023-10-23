@@ -161,11 +161,11 @@ export default class GptInterface {
   generateGreetingsPrompts(npcs) {
     // Iterate over every NPC ?
     return npcs.map((npc) => {
-      return this.generateGreetingPrompts(npc);
+      return this.generateGreetingsPrompt(npc);
     });
   }
 
-  generateGreetingPrompts(npc) {
+  generateGreetingsPrompt(npc) {
     // Iterate over every NPC ?
     const promptSystem = `Imagine yourself as a ${this.sex[npc.sex]} ${this.role[npc.role]} in the medieval realm of ${
       this.realmState.name
@@ -195,7 +195,7 @@ export default class GptInterface {
   // }
 
   // v2 : When parsing whole npcs array ?
-  generateHarvestPrompt(npcs, harvestRole: number) {
+  generateHarvestPrompts(npcs, harvestRole: number) {
     for (const npc of npcs) {
       if (npc.role == harvestRole) {
         const promptSystem = `Imagine yourself as a ${this.sex[npc.sex]} ${
@@ -212,6 +212,20 @@ export default class GptInterface {
         break;
       }
     }
+  }
+
+  generateHarvestPrompt(npc) {
+    const promptSystem = `Imagine yourself as a ${this.sex[npc.sex]} ${this.role[npc.role]} in the medieval realm of ${
+      this.realmState.name
+    }.
+                    In this realm, your society is deeply involved in mining various minerals,
+                    sustaining its population through agriculture and fishing, establishing prosperous trade routes,
+                    and maintaining a robust military defense against potential threats from foreign realms.
+                    Your realm's military defense is ${
+                      this.realmState.defense
+                    } and the general sentiment of the populace is ${this.realmState.happiness}.
+                    Keep the answer under 50 words.`;
+    return this.generatePrompt(promptSystem, this.HarvestRole(npc));
   }
 
   generateBuildPrompt(npc) {

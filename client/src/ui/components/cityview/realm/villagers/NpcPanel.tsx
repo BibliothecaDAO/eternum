@@ -9,6 +9,7 @@ import { HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../../../DojoContext";
 import { getRandomMood, parseMoodFeltToStruct } from "./utils";
 import { random } from "@latticexyz/utils";
+import { useNpcs } from "../../../../NpcContext";
 
 type NpcPanelProps = {
   type?: "all" | "farmers" | "miners";
@@ -24,8 +25,9 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
     },
     account: { account },
   } = useDojo();
+
   const [spawned, setSpawned] = useState(false);
-  const [genMsg, setGenMsg] = useState(false);
+  const { setGenMsg, setType } = useNpcs();
   // @ts-ignore
   // TODO remove any
   const [match, params]: any = useRoute("/realm/:id/:tab");
@@ -69,6 +71,11 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
       mood: getRandomMood(),
       signer: account,
     });
+  };
+
+  const generateVillagerMessage = () => {
+    setGenMsg(true);
+    setType("random");
   };
 
   return (
@@ -115,9 +122,7 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
         </Button>
         <Button
           className="mx-1 top-3 left-3 sticky w-32 bottom-2 !rounded-full"
-          onClick={() => {
-            setGenMsg(true);
-          }}
+          onClick={generateVillagerMessage}
           disabled={npcs.length == 0}
           variant="primary"
         >
@@ -131,7 +136,7 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
           Randomize mood
         </Button>
       </div>
-      <NpcChat npcs={npcs} realmId={realm.realm_id} genMsg={genMsg} setGenMsg={setGenMsg} />
+      <NpcChat npcs={npcs} realmId={realm.realm_id} />
     </div>
   );
 };
