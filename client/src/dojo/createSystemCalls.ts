@@ -375,7 +375,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
       {
         contractAddress: LABOR_SYSTEMS,
         entrypoint: "purchase",
-        calldata: [WORLD_ADDRESS, entity_id, resource_type, labor_units],
+        calldata: [WORLD_ADDRESS, entity_id, resource_type, (labor_units as number) * (multiplier as number)],
       },
       {
         contractAddress: LABOR_SYSTEMS,

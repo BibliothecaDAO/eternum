@@ -88,13 +88,12 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   };
 
   const buildLabor = async ({ realm_id, resource_type, labor_units, multiplier }: BuildLaborProps) => {
-    let total_units = Number(labor_units) * Number(multiplier);
     await purchase_and_build_labor({
       signer: account,
       entity_id: realm_id,
       realm_id,
       resource_type,
-      labor_units: total_units,
+      labor_units,
       multiplier,
     });
     // await purchase_labor({

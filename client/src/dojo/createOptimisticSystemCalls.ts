@@ -219,7 +219,9 @@ export function createOptimisticSystemCalls({
         };
         let balance =
           currentResource.balance -
-          (laborUnits as number) * (multiplier as number) * costResources[i].amount * laborAuctionAverageCoefficient;
+          Math.floor(
+            (laborUnits as number) * (multiplier as number) * costResources[i].amount * laborAuctionAverageCoefficient,
+          );
         Resource.addOverride(overrideId, {
           entity: costId,
           value: {
