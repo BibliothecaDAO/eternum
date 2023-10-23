@@ -12,7 +12,7 @@ import {
   CreateRoadProps,
   HarvestLaborProps,
   PurchaseLaborProps,
-  BuildLaborProps
+  BuildLaborProps,
 } from "@bibliothecadao/eternum";
 
 export const HIGH_ENTITY_ID = 9999999999;
@@ -223,7 +223,7 @@ export function createOptimisticSystemCalls({
           Math.floor(
             (laborUnits as number) * (multiplier as number) * costResources[i].amount * laborAuctionAverageCoefficient,
           );
-        Resource.addOverride(overrideId, {
+        Resource.addOverride(overrideId + i, {
           entity: costId,
           value: {
             balance,
@@ -263,7 +263,9 @@ export function createOptimisticSystemCalls({
         // remove overrides
         Labor.removeOverride(overrideId);
         // remove resource overrides
-        Resource.removeOverride(overrideId);
+        for (let i = 0; i < costResources.length; i++) {
+          Resource.removeOverride(overrideId + i);
+        }
       }
     };
   }

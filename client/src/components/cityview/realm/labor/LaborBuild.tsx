@@ -343,7 +343,8 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
           {!isFood && (
             <div className="flex items-center">
               <div className="italic text-light-pink">Amount</div>
-              <NumberInput className="ml-2 mr-2" value={laborAmount} step={5} onChange={setLaborAmount} max={9999} />
+              {/* note: max 76 for now because of gas, can remove after new contract deployment */}
+              <NumberInput className="ml-2 mr-2" value={laborAmount} step={5} onChange={setLaborAmount} max={76} />
               <div className="italic text-gold">
                 {formatSecondsLeftInDaysHours(laborAmount * (LABOR_CONFIG?.base_labor_units || 0))}
               </div>
