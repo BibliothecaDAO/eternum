@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 CONFIG_SYSTEMS="0xd81a66847b86b0aca0d66053b731e701f745e42c1ed40d59ae3221b1a52711";
 LABOR_SYSTEMS="0x4c171c6de260a9865743d05ba27771b9c758fa176a88982982facaca188cf65";
 TRADE_SYSTEMS="0x2139d726bf9c34b3d0f68e740a16233604993534ad809329ac5788fa136adf1";
@@ -11,6 +12,7 @@ TRANSPORT_UNIT_SYSTEMS="0x155b8cbe4b8c2464ab60db85411dffdd57d28320c93246dd3c02bd
 TRAVEL_SYSTEMS="0x70717be365c143d9f4ae207e420d0c3525a7c79197a20e6e63e4dec0b1b26cd";
 TEST_REALM_SYSTEMS="0xee850f8d8ded18763d23e35d3592f9549081124bee0c32ffb2ef355deb1b68";
 TEST_RESOURCE_SYSTEMS="0x17505387265fa24a4846cb3b3207aa92c3e6f918f74883a43be959265d19e44";
+CC_CONTRACT_ADDRESS="0x66f875b933680247ec0b12e325d51952ef6cd5182ba0ec15561d4c7c7b24a7d";
 
 resource_precision=1000
 
@@ -225,6 +227,7 @@ commands+=(
 )
 
 
+
 # Read the System to Components JSON file
 system_models_json=$(cat ./scripts/system_models.json)
 
@@ -261,3 +264,27 @@ for cmd in "${commands[@]}"; do
     fi
 done
 
+#!/bin/bash
+set -euo pipefail
+pushd $(dirname "$0")/..
+
+export RPC_URL="http://localhost:5050";
+
+export WORLD_ADDRESS=$(cat ./target/dev/manifest.json | jq -r '.world.address')
+
+export ACTIONS_ADDRESS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "cc" ).address')
+
+echo "---------------------------------------------------------------------------"
+echo world : $WORLD_ADDRESS
+echo " "
+echo actions : $ACTIONS_ADDRESS
+echo "---------------------------------------------------------------------------"
+
+# enable system -> component authorizations
+COMPONENTS=("Map")
+
+for component in ${COMPONENTS[@]}; do
+    sozo auth writer $component $ACTIONS_ADDRESS --world $WORLD_ADDRESS --rpc-url $RPC_URL
+done
+
+echo "CC authorizations have been successfully set."

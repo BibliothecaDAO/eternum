@@ -9,6 +9,7 @@ export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: 
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
 export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
+export type GetCcMapQueryVariables = Exact<{ [key: string]: never; }>;
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
   ID: { input: string | number; output: string; }
@@ -2060,6 +2061,8 @@ export type GetRealmsCaravansQueryVariables = Exact<{
 
 export type GetRealmsCaravansQuery = { __typename?: 'Query', positionComponents?: { __typename?: 'PositionConnection', edges?: Array<{ __typename?: 'PositionEdge', node?: { __typename?: 'Position', entity?: { __typename?: 'Entity', keys?: Array<string | null> | null, components?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime', arrives_at?: any | null } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity', weight_gram?: any | null } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers', key?: any | null, count?: any | null } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'Labor' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'MetaData' } | { __typename: 'Movable', blocked?: any | null } | { __typename: 'OrderId', id?: any | null } | { __typename: 'OrderResource' } | { __typename: 'Owner' } | { __typename: 'Position', x?: any | null, y?: any | null } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null } | null> | null } | null };
 
+export type GetCcMapQuery = { __typename?: 'Query', entities?: { __typename?: 'EntityConnection', edges?: Array<{ __typename?: 'EntityEdge', node?: { __typename?: 'Entity', keys?: Array<string | null> | null, models?: Array<{ __typename: 'Age' } | { __typename: 'ArrivalTime' } | { __typename: 'BuildingConfig' } | { __typename: 'BuildingCost' } | { __typename: 'BuildingTypeConfig' } | { __typename: 'Capacity' } | { __typename: 'CapacityConfig' } | { __typename: 'Caravan' } | { __typename: 'CaravanMembers' } | { __typename: 'EntityMetadata' } | { __typename: 'ForeignKey' } | { __typename: 'FungibleEntities' } | { __typename: 'HomePosition' } | { __typename: 'HyperStructure' } | { __typename: 'Labor' } | { __typename: 'LaborAuction' } | { __typename: 'LaborConfig' } | { __typename: 'LaborCostAmount' } | { __typename: 'LaborCostResources' } | { __typename: 'Map', token_id?: any | null, size?: any | null, environment?: any | null, structure?: any | null, legendary?: any | null, layout1?: any | null, layout2?: any | null, layout3?: any | null, doors1?: any | null, doors2?: any | null, doors3?: any | null, points1?: any | null, points2?: any | null, points3?: any | null, affinity?: any | null, dungeon_name1?: any | null, dungeon_name2?: any | null, dungeon_name3?: any | null, dungeon_name4?: any | null, dungeon_name5?: any | null, owner?: any | null } | { __typename: 'Movable' } | { __typename: 'OrderId' } | { __typename: 'OrderResource' } | { __typename: 'Owner' } | { __typename: 'Position' } | { __typename: 'Quantity' } | { __typename: 'QuantityTracker' } | { __typename: 'Realm' } | { __typename: 'Resource' } | { __typename: 'ResourceCost' } | { __typename: 'Road' } | { __typename: 'RoadConfig' } | { __typename: 'SpeedConfig' } | { __typename: 'Status' } | { __typename: 'Trade' } | { __typename: 'TravelConfig' } | { __typename: 'Vault' } | { __typename: 'WeightConfig' } | { __typename: 'WorldConfig' } | null> | null } | null } | null> | null } | null };
+
 export const TradeFragmentFragmentDoc = gql`
     fragment TradeFragment on Trade {
   maker_id
@@ -2476,8 +2479,45 @@ export const GetRealmsCaravansDocument = gql`
   }
 }
     `;
+export const GetCcMapDocument = gql`
+  query getCCMap {
+entities(keys: ["%"]) {
+  edges {
+    node {
+      keys
+      models {
+        __typename
+        ... on Map {
+          token_id
+          size
+          environment
+          structure
+          legendary
+          layout1
+          layout2
+          layout3
+          doors1
+          doors2
+          doors3
+          points1
+          points2
+          points3
+          affinity
+          dungeon_name1
+          dungeon_name2
+          dungeon_name3
+          dungeon_name4
+          dungeon_name5
+          owner
+        }
+      }
+    }
+  }
+}
+}
+`;
 
-export type SdkFunctionWrapper = <T>(action: (requestHeaders?:Record<string, string>) => Promise<T>, operationName: string, operationType?: string) => Promise<T>;
+export type SdkFunctionWrapper = <T>(action: (requestHeaders?: Record<string, string>) => Promise<T>, operationName: string, operationType?: string) => Promise<T>;
 
 
 const defaultWrapper: SdkFunctionWrapper = (action, _operationName, _operationType) => action();
@@ -2494,46 +2534,50 @@ const GetMyOffersDocumentString = print(GetMyOffersDocument);
 const GetTradeResourcesDocumentString = print(GetTradeResourcesDocument);
 const GetCaravanInfoDocumentString = print(GetCaravanInfoDocument);
 const GetRealmsCaravansDocumentString = print(GetRealmsCaravansDocument);
+const GetCcMapDocumentString = print(GetCcMapDocument);
 export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = defaultWrapper) {
   return {
     getRealmLabor(variables: GetRealmLaborQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetRealmLaborQuery; extensions?: any; headers: Headers; status: number; }> {
-        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmLaborQuery>(GetRealmLaborDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRealmLabor', 'query');
+      return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmLaborQuery>(GetRealmLaborDocumentString, variables, { ...requestHeaders, ...wrappedRequestHeaders }), 'getRealmLabor', 'query');
     },
     getRealmResources(variables: GetRealmResourcesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetRealmResourcesQuery; extensions?: any; headers: Headers; status: number; }> {
-        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmResourcesQuery>(GetRealmResourcesDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRealmResources', 'query');
+      return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmResourcesQuery>(GetRealmResourcesDocumentString, variables, { ...requestHeaders, ...wrappedRequestHeaders }), 'getRealmResources', 'query');
     },
     getRealm(variables: GetRealmQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetRealmQuery; extensions?: any; headers: Headers; status: number; }> {
-        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmQuery>(GetRealmDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRealm', 'query');
+      return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmQuery>(GetRealmDocumentString, variables, { ...requestHeaders, ...wrappedRequestHeaders }), 'getRealm', 'query');
     },
     getRealmIds(variables?: GetRealmIdsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetRealmIdsQuery; extensions?: any; headers: Headers; status: number; }> {
-        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmIdsQuery>(GetRealmIdsDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRealmIds', 'query');
+      return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmIdsQuery>(GetRealmIdsDocumentString, variables, { ...requestHeaders, ...wrappedRequestHeaders }), 'getRealmIds', 'query');
     },
     getRealms(variables?: GetRealmsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetRealmsQuery; extensions?: any; headers: Headers; status: number; }> {
-        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmsQuery>(GetRealmsDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRealms', 'query');
+      return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmsQuery>(GetRealmsDocumentString, variables, { ...requestHeaders, ...wrappedRequestHeaders }), 'getRealms', 'query');
     },
     getCounterpartyOrderId(variables: GetCounterpartyOrderIdQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetCounterpartyOrderIdQuery; extensions?: any; headers: Headers; status: number; }> {
-        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetCounterpartyOrderIdQuery>(GetCounterpartyOrderIdDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getCounterpartyOrderId', 'query');
+      return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetCounterpartyOrderIdQuery>(GetCounterpartyOrderIdDocumentString, variables, { ...requestHeaders, ...wrappedRequestHeaders }), 'getCounterpartyOrderId', 'query');
     },
     getIncomingOrderInfo(variables: GetIncomingOrderInfoQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetIncomingOrderInfoQuery; extensions?: any; headers: Headers; status: number; }> {
-        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetIncomingOrderInfoQuery>(GetIncomingOrderInfoDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getIncomingOrderInfo', 'query');
+      return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetIncomingOrderInfoQuery>(GetIncomingOrderInfoDocumentString, variables, { ...requestHeaders, ...wrappedRequestHeaders }), 'getIncomingOrderInfo', 'query');
     },
     getIncomingOrders(variables: GetIncomingOrdersQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetIncomingOrdersQuery; extensions?: any; headers: Headers; status: number; }> {
-        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetIncomingOrdersQuery>(GetIncomingOrdersDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getIncomingOrders', 'query');
+      return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetIncomingOrdersQuery>(GetIncomingOrdersDocumentString, variables, { ...requestHeaders, ...wrappedRequestHeaders }), 'getIncomingOrders', 'query');
     },
     getMarket(variables?: GetMarketQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetMarketQuery; extensions?: any; headers: Headers; status: number; }> {
-        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetMarketQuery>(GetMarketDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getMarket', 'query');
+      return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetMarketQuery>(GetMarketDocumentString, variables, { ...requestHeaders, ...wrappedRequestHeaders }), 'getMarket', 'query');
     },
     getMyOffers(variables: GetMyOffersQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetMyOffersQuery; extensions?: any; headers: Headers; status: number; }> {
-        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetMyOffersQuery>(GetMyOffersDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getMyOffers', 'query');
+      return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetMyOffersQuery>(GetMyOffersDocumentString, variables, { ...requestHeaders, ...wrappedRequestHeaders }), 'getMyOffers', 'query');
     },
     getTradeResources(variables: GetTradeResourcesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetTradeResourcesQuery; extensions?: any; headers: Headers; status: number; }> {
-        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetTradeResourcesQuery>(GetTradeResourcesDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getTradeResources', 'query');
+      return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetTradeResourcesQuery>(GetTradeResourcesDocumentString, variables, { ...requestHeaders, ...wrappedRequestHeaders }), 'getTradeResources', 'query');
     },
     getCaravanInfo(variables: GetCaravanInfoQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetCaravanInfoQuery; extensions?: any; headers: Headers; status: number; }> {
-        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetCaravanInfoQuery>(GetCaravanInfoDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getCaravanInfo', 'query');
+      return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetCaravanInfoQuery>(GetCaravanInfoDocumentString, variables, { ...requestHeaders, ...wrappedRequestHeaders }), 'getCaravanInfo', 'query');
     },
     getRealmsCaravans(variables: GetRealmsCaravansQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetRealmsCaravansQuery; extensions?: any; headers: Headers; status: number; }> {
-        return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmsCaravansQuery>(GetRealmsCaravansDocumentString, variables, {...requestHeaders, ...wrappedRequestHeaders}), 'getRealmsCaravans', 'query');
+      return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetRealmsCaravansQuery>(GetRealmsCaravansDocumentString, variables, { ...requestHeaders, ...wrappedRequestHeaders }), 'getRealmsCaravans', 'query');
+    },
+    getCCMap(variables?: GetCcMapQueryVariables, requestHeaders?: GraphQLClientRequestHeaders): Promise<{ data: GetCcMapQuery; extensions?: any; headers: Headers; status: number; }> {
+      return withWrapper((wrappedRequestHeaders) => client.rawRequest<GetCcMapQuery>(GetCcMapDocumentString, variables, { ...requestHeaders, ...wrappedRequestHeaders }), 'getCCMap', 'query');
     }
   };
 }

@@ -575,5 +575,39 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Map: (() => {
+      const name = "Map";
+      return defineComponent(
+        world,
+        {
+          tokenId: RecsType.Number,
+          size: RecsType.Number,
+          environment: RecsType.Number,
+          structure: RecsType.Number,
+          legendary: RecsType.Number,
+          layout1: RecsType.Number,
+          layout2: RecsType.Number,
+          layout3: RecsType.Number,
+          doors1: RecsType.Number,
+          doors2: RecsType.Number,
+          doors3: RecsType.Number,
+          points1: RecsType.Number,
+          points2: RecsType.Number,
+          points3: RecsType.Number,
+          affinity: RecsType.Number,
+          dungeon_name1: RecsType.String,
+          dungeon_name2: RecsType.String,
+          dungeon_name3: RecsType.String,
+          dungeon_name4: RecsType.String,
+          dungeon_name5: RecsType.String,
+          owner: RecsType.String,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })()
   };
 }

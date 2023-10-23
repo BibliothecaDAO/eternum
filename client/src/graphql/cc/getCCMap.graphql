@@ -1,0 +1,35 @@
+query getCCMap {
+  entities(keys: ["%"]) {
+    edges {
+      node {
+        keys
+        models {
+          __typename
+          ... on Map{
+            token_id
+            size
+            environment
+            structure
+            legendary
+            layout1
+            layout2
+            layout3
+            doors1
+            doors2
+            doors3
+            points1
+            points2
+            points3
+            affinity
+            dungeon_name1
+            dungeon_name2
+            dungeon_name3
+            dungeon_name4
+            dungeon_name5
+            owner
+          }
+        }
+      }
+    }
+  }
+}

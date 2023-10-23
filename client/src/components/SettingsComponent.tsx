@@ -7,6 +7,7 @@ import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle
 import { SecondaryPopup } from "../elements/SecondaryPopup";
 import { Headline } from "../elements/Headline";
 import SettleRealmComponent from "./cityview/realm/SettleRealmComponent";
+import MintCryptsAndCavernsComponent from "./cityview/realm/MintCryptsAndCavernsComponent";
 import Button from "../elements/Button";
 import { Checkbox } from "../elements/Checkbox";
 import { RangeInput } from "../elements/RangeInput";
@@ -72,6 +73,9 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
               <Headline size="big">Testnet Menu</Headline>
               <div className="flex justify-center">
                 <SettleRealmComponent />
+              </div>
+              <div className="flex justify-center">
+                <MintCryptsAndCavernsComponent />
               </div>
               <Button onClick={() => setShowSettings(false)} variant="outline" className="text-xxs !py-1 !px-2 mr-auto">
                 Done

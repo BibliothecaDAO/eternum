@@ -91,3 +91,27 @@ export interface QueryResult<T> {
   loading: boolean;
   error: any;
 }
+
+export interface Map {
+  tokenId: number;
+  size: number;
+  environment: number;
+  structure: number;
+  legendary: number;
+  layout1: number;
+  layout2: number;
+  layout3: number;
+  doors1: number;
+  doors2: number;
+  doors3: number;
+  points1: number;
+  points2: number;
+  points3: number;
+  affinity: number;
+  dungeon_name1: string;
+  dungeon_name2: string;
+  dungeon_name3: string;
+  dungeon_name4: string;
+  dungeon_name5: string;
+  owner: string;
+}
