@@ -6,7 +6,7 @@ import { Badge } from "../../elements/Badge";
 import { RealmBadge } from "../../elements/RealmBadge";
 import { useLocation } from "wouter";
 import useRealmStore from "../../hooks/store/useRealmStore";
-import { orderNameDict } from "../../constants/orders";
+import { orderNameDict } from "@bibliothecadao/eternum";
 import realmsNames from "../../geodata/realms.json";
 import useUIStore from "../../hooks/store/useUIStore";
 import { getRealm } from "../../utils/realms";

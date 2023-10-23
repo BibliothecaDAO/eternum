@@ -3,7 +3,7 @@ import { OrderIcon } from "../../elements/OrderIcon";
 import { Badge } from "../../elements/Badge";
 import { ResourceIcon } from "../../elements/ResourceIcon";
 import { NotificationType } from "./useNotifications";
-import { findResourceById } from "../../constants/resources";
+import { findResourceById } from "@bibliothecadao/eternum";
 import { useTrade } from "../helpers/useTrade";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 import { currencyFormat } from "../../utils/utils";

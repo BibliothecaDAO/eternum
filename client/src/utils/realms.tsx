@@ -2,9 +2,8 @@ import realmsCoordsJson from "../geodata/coords.json";
 import realmsJson from "../geodata/realms.json";
 import realms from "../data/realms.json";
 import realmsOrdersJson from "../geodata/realms_raw.json";
-import { findResourceIdByTrait } from "../constants/resources";
+import { findResourceIdByTrait, orders } from "@bibliothecadao/eternum";
 import { packResources } from "../utils/packedData";
-import { orders } from "../constants/orders";
 import { Realm } from "../types";
 
 interface Attribute {

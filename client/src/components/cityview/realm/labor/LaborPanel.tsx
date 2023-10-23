@@ -4,7 +4,7 @@ import { SortButton, SortInterface } from "../../../../elements/SortButton";
 import { LaborComponent } from "./LaborComponent";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { unpackResources } from "../../../../utils/packedData";
-import { ResourcesIds } from "../../../../constants/resources";
+import { ResourcesIds } from "@bibliothecadao/eternum";
 import { LaborBuildPopup } from "./LaborBuild";
 import { useRoute } from "wouter";
 import { getRealm } from "../../../../utils/realms";
