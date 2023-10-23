@@ -62,7 +62,7 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
   const randomizeMood = async () => {
     console.log("randomizing NPC");
     const npc = npcs[random(npcs.length - 1, 0)];
-	// Should we do optimistic call? 
+    // Should we do optimistic call?
     await change_mood({
       realm_id: npc.realm_id.valueOf(),
       npc_id: npc.entityId,
@@ -118,6 +118,7 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
           onClick={() => {
             setGenMsg(true);
           }}
+          disabled={npcs.length == 0}
           variant="primary"
         >
           👋 Greet villagers!
@@ -130,7 +131,7 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
           Randomize mood
         </Button>
       </div>
-      <NpcChat npcs={npcs} genMsg={genMsg} setGenMsg={setGenMsg} />
+      <NpcChat npcs={npcs} realmId={realm.realm_id} genMsg={genMsg} setGenMsg={setGenMsg} />
     </div>
   );
 };
