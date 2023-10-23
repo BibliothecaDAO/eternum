@@ -10,6 +10,17 @@ struct Resource {
 }
 
 #[derive(Model, Copy, Drop, Serde)]
+struct ResourceAllowance {
+    #[key]
+    owner_entity_id: u128,
+    #[key]
+    approved_entity_id: u128,
+    #[key]
+    resource_type: u8,
+    amount: u128,
+}
+
+#[derive(Model, Copy, Drop, Serde)]
 struct ResourceCost {
     #[key]
     entity_id: u128,

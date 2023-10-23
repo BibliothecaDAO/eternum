@@ -1,6 +1,6 @@
 import Button from "../../../../elements/Button";
 import { ResourceIcon } from "../../../../elements/ResourceIcon";
-import { ResourcesIds, findResourceById } from "../../../../constants/resources";
+import { ResourcesIds, findResourceById, LABOR_CONFIG } from "@bibliothecadao/eternum";
 import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "../../../../utils/utils.jsx";
 import { ReactComponent as Clock } from "../../../../assets/icons/common/clock.svg";
 import { ReactComponent as Village } from "../../../../assets/icons/common/village.svg";
@@ -13,7 +13,6 @@ import { useMemo } from "react";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useComponentValue } from "@dojoengine/react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { LABOR_CONFIG } from "../../../../constants/labor";
 
 type LaborComponentProps = {
   resourceId: number;
@@ -115,11 +114,19 @@ export const LaborComponent = ({
             <div className="flex items-center ml-auto">
               {isFood && <Village />}
               {/* // DISCUSS: when there is no labor anymore, it means full decay of the buildings, so it should be multiplier 0 */}
+              {/* note: need to limit to 4 for now because of gas limit */}
               {resourceId == ResourcesIds["Wheat"] && (
-                <div className="px-2">{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${realm?.rivers}`}</div>
+                <div className="px-2">{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${Math.min(
+                  realm?.rivers,
+                  4,
+                )}`}</div>
               )}
+              {/* note: need to limit to 4 for now because of gas limit */}
               {resourceId == ResourcesIds["Fish"] && (
-                <div className="px-2">{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${realm?.harbors}`}</div>
+                <div className="px-2">{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${Math.min(
+                  realm?.harbors,
+                  4,
+                )}`}</div>
               )}
               {/* // TODO: show visual cue that it's disabled */}
               {!buildLoadingStates[resourceId] && (

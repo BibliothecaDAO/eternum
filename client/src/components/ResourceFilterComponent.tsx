@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FilterButton } from "../elements/FilterButton";
 import { SecondaryPopup } from "../elements/SecondaryPopup";
-import { resources } from "../constants/resources";
+import { resources } from "@bibliothecadao/eternum";
 import { SelectBox } from "../elements/SelectBox";
 import { ResourceIcon } from "../elements/ResourceIcon";
 import Button from "../elements/Button";

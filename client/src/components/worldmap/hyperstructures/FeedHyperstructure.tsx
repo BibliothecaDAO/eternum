@@ -15,7 +15,7 @@ import { useDojo } from "../../../DojoContext";
 import { Steps } from "../../../elements/Steps";
 import { Headline } from "../../../elements/Headline";
 import { OrderIcon } from "../../../elements/OrderIcon";
-import { orderNameDict, orders } from "../../../constants/orders";
+import { orderNameDict, orders } from "@bibliothecadao/eternum";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import clsx from "clsx";
 import { HyperStructureInterface, useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
@@ -26,7 +26,7 @@ import hyperStructures from "../../../data/hyperstructures.json";
 import { useGetPositionCaravans } from "../../../hooks/helpers/useCaravans";
 import { NumberInput } from "../../../elements/NumberInput";
 import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/arrow-separator.svg";
-import { WEIGHT_PER_DONKEY_KG } from "../../../constants/travel";
+import { WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 import { ReactComponent as CloseIcon } from "../../../assets/icons/common/cross-circle.svg";
 import useUIStore from "../../../hooks/store/useUIStore";
 
@@ -314,17 +314,18 @@ const BuildHyperstructurePanel = ({
 
   const isComplete = hyperstructureData && hyperstructureData?.progress >= 100;
 
+  // TODO: use same precision everywhere
   const resourceWeight = useMemo(() => {
     let _resourceWeight = 0;
     if (!hyperstructureData?.initialized) {
       for (const [_, amount] of Object.entries(
         hyperstructureData?.initialzationResources.map((resource) => resource.amount) || {},
       )) {
-        _resourceWeight += divideByPrecision(amount) * 1;
+        _resourceWeight += amount * 1;
       }
     } else {
       for (const amount of Object.values(feedResourcesGiveAmounts || {})) {
-        _resourceWeight += amount;
+        _resourceWeight += multiplyByPrecision(amount * 1);
       }
     }
     return _resourceWeight;
@@ -379,7 +380,7 @@ const BuildHyperstructurePanel = ({
   }, [step, selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
 
   useEffect(() => {
-    if (donkeysCount * WEIGHT_PER_DONKEY_KG >= resourceWeight) {
+    if (donkeysCount * WEIGHT_PER_DONKEY_KG >= divideByPrecision(resourceWeight)) {
       setHasEnoughDonkeys(true);
     } else {
       setHasEnoughDonkeys(false);

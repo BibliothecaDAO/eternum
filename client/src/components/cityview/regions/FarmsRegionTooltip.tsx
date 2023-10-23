@@ -6,10 +6,9 @@ import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../DojoContext";
 import { getEntityIdFromKeys } from "../../../utils/utils";
-import { ResourcesIds } from "../../../constants/resources";
+import { ResourcesIds, LABOR_CONFIG } from "@bibliothecadao/eternum";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { BuildingsCount } from "../../../elements/BuildingsCount";
-import { LABOR_CONFIG } from "../../../constants/labor";
 type FarmsRegionTooltipProps = {};
 
 export const FarmsRegionTooltip = ({}: FarmsRegionTooltipProps) => {

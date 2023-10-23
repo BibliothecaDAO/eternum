@@ -60,7 +60,7 @@ export const HyperStructureCaravansPanel = ({ caravans, hyperstructureData }: Ca
         <CaravanDetails caravan={selectedCaravan} onClose={() => setShowCaravanDetails(false)} />
       )}
       {caravans && (
-        <div className="flex flex-col p-2 space-y-2">
+        <div className="flex flex-col p-2 space-y-2 max-h-[500px] overflow-auto">
           {caravans.map((caravan) => (
             <HyperStructureCaravan
               onClick={() => setSelectedCaravan(caravan)}

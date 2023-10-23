@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
-import { orderNameDict } from "../../../../../constants/orders";
+import { orderNameDict } from "@bibliothecadao/eternum";
 import { RoadInterface } from "../../../../../hooks/helpers/useRoads";
 import clsx from "clsx";
 

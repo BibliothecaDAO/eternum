@@ -3,7 +3,7 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useTrade } from "../../../hooks/helpers/useTrade";
 import { useCaravan } from "../../../hooks/helpers/useCaravans";
 import { getRealm } from "../../../utils/realms";
-import { getOrderName } from "../../../constants/orders";
+import { getOrderName } from "@bibliothecadao/eternum";
 import { OrderIcon } from "../../../elements/OrderIcon";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";

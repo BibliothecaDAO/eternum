@@ -78,7 +78,7 @@ export function useGetPositionCaravans(x: number, y: number) {
 
   const { getCaravanInfo } = useCaravan();
 
-  useMemo(() => {
+  useMemo((): any => {
     const caravans = entityIds
       .map((id) => {
         return getCaravanInfo(id);

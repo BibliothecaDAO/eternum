@@ -8,12 +8,12 @@ import { getEntityIdFromKeys } from "../../utils/utils";
 import { HIGH_ENTITY_ID } from "../../dojo/createOptimisticSystemCalls";
 import { calculateRatio } from "../../components/cityview/realm/trade/Market/MarketOffer";
 import { HasOrders, HasResources, QueryFragment, useTradeQuery } from "./useTradeQueries";
-import { resources } from "../../constants/resources";
-import { orders } from "../../constants/orders";
+import { resources, orders } from "@bibliothecadao/eternum";
 import { SortInterface } from "../../elements/SortButton";
 import { useCaravan } from "./useCaravans";
 import { getRealm } from "../../utils/realms";
 import { useRoads } from "./useRoads";
+import { BigNumberish } from "starknet";
 
 export interface MarketInterface {
   tradeId: number;
@@ -47,7 +47,10 @@ export function useTrade() {
   const {
     setup: {
       components: { OrderResource, FungibleEntities, Resource, Trade, Realm },
+      optimisticSystemCalls: { optimisticClaimFungibleOrder },
+      systemCalls: { claim_fungible_order },
     },
+    account: { account },
   } = useDojo();
 
   const getTradeResources = (orderId: number): Resource[] => {
@@ -108,7 +111,31 @@ export function useTrade() {
     }
   };
 
-  return { getTradeResources, getCounterpartyOrderId, canAcceptOffer, getRealmEntityIdFromRealmId };
+  /* Claim Order
+   * @param entity_id: entity id of realm
+   * @param trade_id: id of the trade
+   * @param [optimisticResourcesGet]: resources to display in case of optimistic rendering
+   * @returns: void
+   */
+  const claimOrder = async (entity_id: BigNumberish, trade_id: BigNumberish, optimisticResourcesGet?: Resource[]) => {
+    if (optimisticResourcesGet) {
+      return await optimisticClaimFungibleOrder(
+        optimisticResourcesGet,
+        claim_fungible_order,
+      )({
+        signer: account,
+        entity_id,
+        trade_id,
+      });
+    }
+    return await claim_fungible_order({
+      signer: account,
+      entity_id,
+      trade_id,
+    });
+  };
+
+  return { getTradeResources, getCounterpartyOrderId, canAcceptOffer, getRealmEntityIdFromRealmId, claimOrder };
 }
 
 export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): MarketInterface[] {
@@ -149,7 +176,7 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
   const { getHasRoad } = useRoads();
   const { calculateDistance } = useCaravan();
 
-  useMemo(() => {
+  useMemo((): any => {
     const optimisticTradeId = entityIds.indexOf(HIGH_ENTITY_ID as EntityIndex);
     const trades = entityIds
       // avoid having optimistic and real trade at the same time

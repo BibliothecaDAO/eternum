@@ -2,17 +2,18 @@ import { uuid } from "@latticexyz/utils";
 import { ClientComponents } from "./createClientComponents";
 import { getEntityIdFromKeys } from "../utils/utils";
 import { Type, getComponentValue } from "@latticexyz/recs";
+import { Resource } from "../types";
+import { LaborCostInterface } from "../hooks/helpers/useLabor";
+import { LABOR_CONFIG } from "@bibliothecadao/eternum";
 import {
-  BuildLaborProps,
   CancelFungibleOrderProps,
   ClaimFungibleOrderProps,
   CreateOrderProps,
   CreateRoadProps,
   HarvestLaborProps,
-} from "./createSystemCalls";
-import { Resource } from "../types";
-import { LaborCostInterface } from "../hooks/helpers/useLabor";
-import { LABOR_CONFIG } from "../constants/labor";
+  PurchaseLaborProps,
+  BuildLaborProps
+} from "@bibliothecadao/eternum";
 
 export const HIGH_ENTITY_ID = 9999999999;
 
@@ -204,10 +205,10 @@ export function createOptimisticSystemCalls({
     ts: number,
     costResources: LaborCostInterface[],
     laborAuctionAverageCoefficient: number,
-    systemCall: (args: BuildLaborProps) => Promise<void>,
+    systemCall: (args: PurchaseLaborProps & BuildLaborProps) => Promise<void>,
   ) {
-    return async function (this: any, args: BuildLaborProps) {
-      const { realm_id: realmEntityId, resource_type: resourceId, labor_units: laborUnits, multiplier } = args;
+    return async function (this: any, args: PurchaseLaborProps & BuildLaborProps) {
+      const { entity_id: realmEntityId, resource_type: resourceId, labor_units: laborUnits, multiplier } = args;
 
       const overrideId = uuid();
       const resource_id = getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]);

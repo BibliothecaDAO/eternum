@@ -5,19 +5,9 @@ import useUIStore from "../../hooks/store/useUIStore";
 import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
 import { a } from "@react-spring/three";
-import {
-  Sky,
-  CameraShake,
-  AdaptiveDpr,
-  AdaptiveEvents,
-} from "@react-three/drei";
+import { Sky, CameraShake, AdaptiveDpr } from "@react-three/drei";
 import { Suspense, useMemo } from "react";
-import {
-  EffectComposer,
-  Bloom,
-  Noise,
-  SMAA,
-} from "@react-three/postprocessing";
+import { EffectComposer, Bloom, Noise, SMAA } from "@react-three/postprocessing";
 // @ts-ignore
 import { Sobel } from "../../utils/effects.jsx";
 import { useControls } from "leva";
@@ -71,7 +61,11 @@ export const MainScene = () => {
       raycaster={{ params: { Points: { threshold: 0.2 } } }}
       className="rounded-xl"
       camera={{ fov: 15, position: [0, 700, 0], far: 3500 }}
-      dpr={[1, 2]}
+      dpr={[0.5, 2]}
+      performance={{
+        min: 0.5,
+        max: 2,
+      }}
       gl={{
         powerPreference: "high-performance",
         antialias: false,
@@ -84,10 +78,7 @@ export const MainScene = () => {
       <Sky azimuth={0.1} inclination={0.6} distance={1000} />
       <ambientLight />
       <Camera />
-      <directionalLight
-        castShadow
-        position={[lightPosition.x, lightPosition.y, lightPosition.z]}
-      />
+      <directionalLight castShadow position={[lightPosition.x, lightPosition.y, lightPosition.z]} />
       <CameraShake {...shakeConfig} />
       <Suspense fallback={null}>
         <a.group>
@@ -103,15 +94,10 @@ export const MainScene = () => {
       </Suspense>
       <EffectComposer multisampling={0}>
         <Bloom luminanceThreshold={0} intensity={0.1} mipmapBlur />
-        <Noise
-          premultiply
-          blendFunction={BlendFunction.SOFT_LIGHT}
-          opacity={0.3}
-        />
+        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.3} />
         <SMAA />
       </EffectComposer>
-      <AdaptiveDpr />
-      <AdaptiveEvents />
+      <AdaptiveDpr pixelated />
       {/* <fog attach="fog" color="skyblue" near={250} far={350} /> */}
     </Canvas>
   );

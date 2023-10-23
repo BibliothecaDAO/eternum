@@ -34,7 +34,7 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
 
   return (
     // TODO: handle overflow of the notifications
-    <div className={clsx("flex flex-col space-y-2 absolute right-0", className)}>
+    <div className={clsx("flex flex-col space-y-2 absolute right-0 h-[90vw] top-0 overflow-hidden", className)}>
       <Button variant="primary" onClick={() => setShowNotifications((prev) => !prev)}>
         {showNotifications ? "Hide notifications" : "Show notifications"}
       </Button>

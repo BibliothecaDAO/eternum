@@ -6,7 +6,7 @@ import useBlockchainStore from "../store/useBlockchainStore";
 import { calculateNextHarvest } from "../../components/cityview/realm/labor/laborUtils";
 import useRealmStore from "../store/useRealmStore";
 import { unpackResources } from "../../utils/packedData";
-import { ResourcesIds } from "../../constants/resources";
+import { ResourcesIds } from "@bibliothecadao/eternum";
 import { UpdatedEntity } from "../../dojo/createEntitySubscription";
 import { Position } from "../../types";
 import { getRealm } from "../../utils/realms";
@@ -40,13 +40,15 @@ type HarvestData = {
 
 type ClaimOrderData = {
   destinationRealmId: number;
+  tradeId: number;
+  realmEntityId: number;
 };
 
 export const useNotifications = () => {
   const {
     setup: {
       entityUpdates,
-      components: { Status, Labor, ArrivalTime, Position, Trade, FungibleEntities },
+      components: { Status, Realm, Labor, ArrivalTime, Position, Trade, FungibleEntities },
     },
   } = useDojo();
 
@@ -107,6 +109,7 @@ export const useNotifications = () => {
             Position,
             ArrivalTime,
             Trade,
+            Realm,
             nextBlockTimestamp,
           )
         : [];
@@ -260,6 +263,7 @@ const generateClaimableOrdersNotifications = (
   Position: Component,
   ArrivalTime: Component,
   Trade: Component,
+  Realm: Component,
   nextBlockTimestamp: number,
 ) => {
   let notifications: NotificationType[] = [];
@@ -271,11 +275,14 @@ const generateClaimableOrdersNotifications = (
     ]);
 
     for (const orderId of orderIds) {
-      let claimed =
-        runQuery([HasValue(Trade, { maker_order_id: orderId, claimed_by_maker: 0 })]).size === 0 &&
-        runQuery([HasValue(Trade, { taker_order_id: orderId, claimed_by_taker: 0 })]).size === 0;
+      const makerTrade = runQuery([HasValue(Trade, { maker_order_id: orderId, claimed_by_maker: 0 })]);
+      const takerTrade = runQuery([HasValue(Trade, { taker_order_id: orderId, claimed_by_taker: 0 })]);
+      let claimed = makerTrade.size === 0 && takerTrade.size === 0;
 
       if (!claimed) {
+        const realms = runQuery([HasValue(Realm, { realm_id: realmId })]);
+        const realmEntityId = Number(realms.values().next().value);
+        const tradeId = makerTrade.size > 0 ? makerTrade.values().next().value : takerTrade.values().next().value;
         const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([BigInt(orderId)])) as
           | { arrives_at: number }
           | undefined;
@@ -286,6 +293,8 @@ const generateClaimableOrdersNotifications = (
             keys: [orderId.toString()],
             data: {
               destinationRealmId: realmId,
+              realmEntityId,
+              tradeId,
             },
           });
         }

@@ -9,7 +9,7 @@ import clsx from "clsx";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import { CaravanInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
-import { CAPACITY_PER_DONKEY } from "../../../../../constants/travel";
+import { CAPACITY_PER_DONKEY } from "@bibliothecadao/eternum";
 import { useTrade } from "../../../../../hooks/helpers/useTrade";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";

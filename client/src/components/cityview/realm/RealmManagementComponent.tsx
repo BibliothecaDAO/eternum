@@ -22,7 +22,7 @@ const RealmManagementComponent = () => {
 
   const [_location, setLocation] = useLocation();
   // @ts-ignore
-  const [match, params] = useRoute("/realm/:id/:tab");
+  const [match, params]: any = useRoute("/realm/:id/:tab");
 
   const moveCameraToMarketView = useUIStore((state) => state.moveCameraToMarketView);
   const moveCameraToLaborView = useUIStore((state) => state.moveCameraToLaborView);
