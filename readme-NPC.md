@@ -8,7 +8,7 @@ This project, born during the Dojo Game Jam #2, brings fresh, interactive conten
 
 ## How-to
 
-- Add the openAI api key to the .env file in the VITE_OPENAI_API_KEY variable. We will DM you one on request for local demoing
+Add the openAI api key to the .env file in the VITE_OPENAI_API_KEY variable. We will DM you one on request for local demoing
 
 ## Team
 
