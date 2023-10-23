@@ -70,7 +70,14 @@ function computeAverageCoefficient(
 }
 
 const laborUnits = 90;
-const averageCoefficient = computeAverageCoefficient(0, 0, 0, laborUnits, 100);
+const interval = 20;
+const averageCoefficient = computeAverageCoefficient(
+  0,
+  0,
+  0,
+  laborUnits,
+  interval
+);
 const totalCost = Math.floor(1000 * laborUnits * averageCoefficient);
 
 // Example usage
