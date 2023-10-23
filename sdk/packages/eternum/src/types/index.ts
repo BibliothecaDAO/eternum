@@ -3,6 +3,13 @@ import { Account, num } from "starknet";
 interface SystemSigner {
   signer: Account;
 }
+export interface MintCC extends SystemSigner {
+
+};
+
+export interface GenerateMap extends SystemSigner {
+  token_id: num.BigNumberish;
+};
 
 export interface TravelProps extends SystemSigner {
   travelling_entity_id: num.BigNumberish;
@@ -144,5 +151,6 @@ export interface CreateRealmProps extends SystemSigner {
     x: num.BigNumberish;
     y: num.BigNumberish;
   };
+
   resources: num.BigNumberish[];
 }
