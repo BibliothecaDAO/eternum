@@ -542,7 +542,7 @@ export class EternumProvider extends RPCProvider {
     const { signer, token_id } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: this.contracts.CC_CONTRACT_ADDRESS,
-      entrypoint: "generate_map",
+      entrypoint: "generate_dungeon",
       calldata: [token_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
