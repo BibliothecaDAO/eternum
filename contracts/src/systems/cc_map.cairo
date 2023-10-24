@@ -2,7 +2,7 @@
 // mod interface;
 
 #[dojo::contract]
-mod cc_dojo {
+mod crypts_and_caverns {
     use cc_dojo_map::systems::cc::cc;
 
     #[constructor]
