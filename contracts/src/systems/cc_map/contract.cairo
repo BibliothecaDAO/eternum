@@ -1,5 +1,3 @@
-// ---------------------------------------- contract --------------------------------------
-
 #[dojo::contract]
 mod cc {
     // events would be emitted twice
