@@ -68,6 +68,7 @@ To build the client locally:
 4. From the main directory:
    - Install dependencies: `bun install`
    - Build the packages: `bun run build-packages`
+   - Build the client: `bun run build-client`
    - Run the client: `cd client && bun run dev`
 
 ## Local Contracts Building Instructions
