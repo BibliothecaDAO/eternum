@@ -22,7 +22,7 @@ import {
   SendResourcesToHyperstructureProps,
   TransferResourcesProps,
   TravelProps,
-  MintCC,
+  SystemSigner,
   GenerateMap
 } from "@bibliothecadao/eternum";
 
@@ -35,7 +35,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.purchase_labor(props)));
   };
 
-  const mint_cc = async (props: MintCC) => {
+  const mint_cc = async (props: SystemSigner) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.mint_cc(props)));
   };
 

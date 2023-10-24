@@ -1,11 +1,8 @@
 import { Account, num } from "starknet";
 
-interface SystemSigner {
+export interface SystemSigner {
   signer: Account;
 }
-export interface MintCC extends SystemSigner {
-
-};
 
 export interface GenerateMap extends SystemSigner {
   token_id: num.BigNumberish;
