@@ -6,7 +6,7 @@ import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { MarketInterface, useTrade } from "../../../../hooks/helpers/useTrade";
 import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
-import { WEIGHT_PER_DONKEY_KG } from "../../../../constants/travel";
+import { WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 
 type AcceptOfferPopupProps = {
   onClose: () => void;
@@ -105,7 +105,7 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
           <div className="mr-0.5">Accept Offer:</div>
         </div>
       </SecondaryPopup.Head>
-      <SecondaryPopup.Body>
+      <SecondaryPopup.Body width={"476px"}>
         <div className="flex flex-col items-center pt-2">
           <SelectCaravanPanel
             donkeysCount={donkeysCount}

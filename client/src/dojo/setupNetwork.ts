@@ -1,11 +1,16 @@
 import { defineContractComponents } from "./contractComponents";
 import { world } from "./world";
-import { RPCProvider, Query } from "@dojoengine/core";
+import { EternumProvider } from "@bibliothecadao/eternum";
+import { Query } from "@dojoengine/core";
 
 export type SetupNetworkResult = Awaited<ReturnType<typeof setupNetwork>>;
 
 export async function setupNetwork() {
-  const provider = new RPCProvider(import.meta.env.VITE_WORLD_ADDRESS!, import.meta.env.VITE_KATANA_URL);
+  const provider = new EternumProvider(
+    import.meta.env.VITE_WORLD_ADDRESS!,
+    import.meta.env.DEV,
+    import.meta.env.VITE_KATANA_URL,
+  );
 
   return {
     contractComponents: defineContractComponents(world),

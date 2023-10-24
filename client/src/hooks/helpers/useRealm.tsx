@@ -3,7 +3,7 @@ import { RealmInterface } from "../graphql/useGraphQLQueries";
 import { Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import { getEntityIdFromKeys } from "../../utils/utils";
-import { getOrderName } from "../../constants/orders";
+import { getOrderName } from "@bibliothecadao/eternum";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
 import realmsData from "../../geodata/realms.json";
 import { unpackResources } from "../../utils/packedData";
@@ -55,7 +55,7 @@ export function useGetRealm(realmEntityId: number | undefined) {
 
   const [realm, setRealm] = useState<RealmInterface | undefined>(undefined);
 
-  useMemo(() => {
+  useMemo((): any => {
     if (realmEntityId) {
       let entityId = getEntityIdFromKeys([BigInt(realmEntityId)]);
       const realm = getComponentValue(Realm, entityId);

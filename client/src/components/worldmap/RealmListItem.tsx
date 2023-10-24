@@ -1,9 +1,8 @@
 import { OrderIcon } from "../../elements/OrderIcon";
 import Button from "../../elements/Button";
 import { ResourceIcon } from "../../elements/ResourceIcon";
-import { findResourceById } from "../../constants/resources";
+import { findResourceById, orderNameDict } from "@bibliothecadao/eternum";
 import { ReactComponent as Map } from "../../assets/icons/common/map.svg";
-import { orderNameDict } from "../../constants/orders";
 import * as realmsData from "../../geodata/realms.json";
 import clsx from "clsx";
 import useUIStore from "../../hooks/store/useUIStore";

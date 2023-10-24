@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import Button from "../../../elements/Button";
 
 import { useDojo } from "../../../DojoContext";
-import { getOrderName, orders } from "../../../constants/orders";
+import { getOrderName, orders } from "@bibliothecadao/eternum";
 import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 import { getRealm } from "../../../utils/realms";
 import useRealmStore from "../../../hooks/store/useRealmStore";
@@ -10,7 +10,7 @@ import { OrderIcon } from "../../../elements/OrderIcon";
 import { useRealm } from "../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { getPosition, multiplyByPrecision } from "../../../utils/utils";
-import { initialResources } from "../../../constants/resources";
+import { initialResources } from "@bibliothecadao/eternum";
 import { BigNumberish } from "starknet";
 
 export const MAX_REALMS = 5;

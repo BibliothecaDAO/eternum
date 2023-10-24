@@ -25,9 +25,10 @@ import { useSyncWorld } from "../hooks/graphql/useGraphQLQueries";
 import WorldMapMenuModule from "../modules/WorldMapMenuModule";
 import hyperStructures from "../data/hyperstructures.json";
 import { useHyperstructure } from "../hooks/helpers/useHyperstructure";
+import { Tooltip } from "../elements/Tooltip";
 
 export const World = () => {
-  const { loading: worldLoading } = useSyncWorld();
+  const { loading: worldLoading, progress: worldProgress } = useSyncWorld();
 
   useFetchBlockchainData();
 
@@ -39,6 +40,7 @@ export const World = () => {
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const setHyperstructures = useUIStore((state) => state.setHyperstructures);
+  const setMouseCoords = useUIStore((state) => state.setMouseCoords);
 
   const [playBackground, { stop }] = useSound("/sound/music/happy_realm.mp3", {
     soundEnabled: isSoundOn,
@@ -75,7 +77,15 @@ export const World = () => {
   }, [progress, worldLoading]);
 
   return (
-    <div className="fixed top-0 left-0 z-0 w-screen h-screen p-2 overflow-hidden">
+    <div
+      onMouseMove={(e) =>
+        setMouseCoords({
+          x: e.clientX,
+          y: e.clientY,
+        })
+      }
+      className="fixed antialiased top-0 left-0 z-0 w-screen h-screen p-2 overflow-hidden"
+    >
       <BackgroundContainer className="border-2 border-[#E0AF65] rounded-xl relative">
         <div className="absolute top-0 left-0 z-10 w-full pointer-events-none rounded-xl h-44 bg-gradient-to-b from-black to-transparent opacity-90" />
         <MainScene />
@@ -109,9 +119,10 @@ export const World = () => {
       </BottomRightContainer>
       <EpochCountdown />
       <BlurOverlayContainer>
-        <SignUpComponent worldLoading={worldLoading} />
+        <SignUpComponent worldLoading={worldLoading} worldProgress={worldProgress} />
       </BlurOverlayContainer>
       <Leva hidden={import.meta.env.PROD} />
+      <Tooltip />
       <Redirect to="/map" />
     </div>
   );

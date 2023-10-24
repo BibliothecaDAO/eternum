@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { findResourceById } from "../constants/resources";
+import { findResourceById } from "@bibliothecadao/eternum";
 import { ResourceIcon } from "./ResourceIcon";
 import clsx from "clsx";
 import { currencyFormat } from "../utils/utils";

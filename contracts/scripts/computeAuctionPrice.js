@@ -36,7 +36,7 @@ function getTotalPrice(
 // console.log("resource left", balance - price);
 
 const DECAY = 0.1;
-const UNITS_PER_DAY = 960;
+const UNITS_PER_DAY = 50;
 const SECONDS_PER_DAY = 86400;
 
 function computeCoefficient(startTimestamp, nextBlockTimestamp, sold) {
@@ -58,7 +58,7 @@ function computeAverageCoefficient(
   let multiplier = computeCoefficient(startTimestamp, nextBlockTimestamp, sold);
   // start at number of units already sold and add 1 everytime
   for (let i = sold; i < sold + laborUnits; i++) {
-    console.log({ multiplier });
+    // console.log({ multiplier });
     if (i % interval == 0) {
       multiplier = computeCoefficient(startTimestamp, nextBlockTimestamp, i);
       sum += multiplier;
@@ -69,9 +69,18 @@ function computeAverageCoefficient(
   return sum / laborUnits; // Return the average coefficient
 }
 
-const averageCoefficient = computeAverageCoefficient(0, 0, 0, 1566, 10);
+const laborUnits = 90;
+const interval = 20;
+const averageCoefficient = computeAverageCoefficient(
+  0,
+  0,
+  0,
+  laborUnits,
+  interval
+);
+const totalCost = Math.floor(1000 * laborUnits * averageCoefficient);
 
 // Example usage
-// console.log({ averageCoefficient });
+console.log({ averageCoefficient });
 // console.log({ totalCost: 1000 * 16 * averageCoefficient });
-// console.log({ remainder: 100000 - 1000 * 20 * averageCoefficient });
+console.log({ remainder: 100000 - totalCost });

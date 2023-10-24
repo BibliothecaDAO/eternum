@@ -1,23 +1,34 @@
 import { useMemo, useState } from "react";
-import { Tooltip } from "../../../elements/Tooltip";
 import { Tabs } from "../../../elements/tab";
 import { HyperstructuresListComponent } from "./HyperstructuresListComponent";
+import useUIStore from "../../../hooks/store/useUIStore";
 
 type HyperstructuresPanelProps = {};
 
 export const HyperstructuresPanel = ({}: HyperstructuresPanelProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const tabs = useMemo(
     () => [
       {
         key: "all",
         label: (
-          <div className="flex relative group flex-col items-center">
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Browse all Hyperstructures.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex relative group flex-col items-center"
+          >
             <div>All Hyperstructures</div>
-            <Tooltip position="bottom">
-              <p className="whitespace-nowrap">Browse all Hyperstructures.</p>
-            </Tooltip>
           </div>
         ),
         component: <HyperstructuresListComponent />,
@@ -25,15 +36,25 @@ export const HyperstructuresPanel = ({}: HyperstructuresPanelProps) => {
       {
         key: "my",
         label: (
-          <div className="flex group relative flex-col items-center">
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Look at Hyperstructure of your order.</p>
+                    <p className="whitespace-nowrap">Initialize or feed it with resources.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex group relative flex-col items-center"
+          >
             <div>My Order</div>
-            <Tooltip position="bottom">
-              <p className="whitespace-nowrap">Look at Hyperstructure of your order.</p>
-              <p className="whitespace-nowrap">Initialize or feed it with resources.</p>
-            </Tooltip>
           </div>
         ),
-        component: <></>,
+        component: <HyperstructuresListComponent showOnlyPlayerOrder />,
       },
     ],
     [selectedTab],

@@ -12,7 +12,6 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import RealmStatusComponent from "./RealmStatusComponent";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
-import { Tooltip } from "../../../elements/Tooltip";
 import { LaborAuction } from "./labor/LaborAuction";
 
 const RealmManagementComponent = () => {
@@ -23,7 +22,7 @@ const RealmManagementComponent = () => {
 
   const [_location, setLocation] = useLocation();
   // @ts-ignore
-  const [match, params] = useRoute("/realm/:id/:tab");
+  const [match, params]: any = useRoute("/realm/:id/:tab");
 
   const moveCameraToMarketView = useUIStore((state) => state.moveCameraToMarketView);
   const moveCameraToLaborView = useUIStore((state) => state.moveCameraToLaborView);
@@ -31,6 +30,7 @@ const RealmManagementComponent = () => {
   const moveCameraToRealm = useUIStore((state) => state.moveCameraToRealm);
   const moveCameraToWorldMapView = useUIStore((state) => state.moveCameraToWorldMapView);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   useEffect(() => {
     if (selectedTab == 0) {
@@ -54,13 +54,23 @@ const RealmManagementComponent = () => {
       {
         key: "labor",
         label: (
-          <div className="flex relative group flex-col items-center">
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className=" whitespace-nowrap">Manage all of your Realm</p>
+                    <p className=" whitespace-nowrap"> resource production here.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex relative group flex-col items-center"
+          >
             <PickAxeSecond className="mb-2 fill-gold" />
             <div>Labor</div>
-            <Tooltip position="bottom">
-              <p className=" whitespace-nowrap">Manage all of your Realm</p>
-              <p className=" whitespace-nowrap"> resource production here.</p>
-            </Tooltip>
           </div>
         ),
         component: <RealmLaborComponent />,
@@ -68,13 +78,23 @@ const RealmManagementComponent = () => {
       {
         key: "open-offers",
         label: (
-          <div className="flex relative group flex-col items-center">
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">No Realm is self-sufficient.</p>
+                    <p className="whitespace-nowrap">Trade with other Lords</p>
+                    <p className="whitespace-nowrap">to get the resources you need.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex relative group flex-col items-center"
+          >
             <Coin className="mb-2 fill-gold" /> <div>Trade</div>
-            <Tooltip position="bottom">
-              <p className="whitespace-nowrap">No Realm is self-sufficient.</p>
-              <p className="whitespace-nowrap">Trade with other Lords</p>
-              <p className="whitespace-nowrap">to get the resources you need.</p>
-            </Tooltip>
           </div>
         ),
         component: <RealmTradeComponent />,

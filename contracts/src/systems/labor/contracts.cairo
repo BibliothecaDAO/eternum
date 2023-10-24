@@ -10,6 +10,7 @@ mod labor_systems {
     use eternum::models::resources::Resource;
     use eternum::models::labor::{Labor, LaborTrait};
     use eternum::models::labor_auction::{LaborAuction, LaborAuctionTrait};
+    use eternum::models::labor_auction::{LinearVRGDA, LinearVRGDATrait};
     use eternum::models::config::{WorldConfig, LaborConfig, LaborCostResources, LaborCostAmount};
 
     use eternum::systems::labor::utils::{assert_harvestable_resource, get_labor_resource_type};
@@ -320,45 +321,14 @@ mod labor_systems {
 
                 let zone = position.get_zone();
                 let mut labor_auction = get!(world, zone, (LaborAuction));
+                let mut labor_auction_vrgda = labor_auction.to_LinearVRGDA();
+                let mut labor_auction_time_since_start_fixed 
+                    = labor_auction.get_time_since_start_fixed();
+
                 assert(labor_auction.per_time_unit != 0, 'Labor auction not found');
 
-                let mut labor_units_remaining = labor_units;
-                let mut total_costs: Felt252Dict<u128> = Default::default();
 
-                let mut labor_cost_multiplier = labor_auction.get_price();
-
-                loop {
-                    if labor_units_remaining == 0 {
-                        break;
-                    }
-
-                    let mut index = 0_usize;
-
-                    loop {
-                        if index == labor_cost_resources.resource_types_count.into() {
-                            break ();
-                        }
-                        let labor_cost_resource_type = *labor_cost_resource_types[index];
-                        let labor_cost_per_unit = get!(
-                            world, (resource_type, labor_cost_resource_type).into(), LaborCostAmount
-                        );
-
-                        let cost_fixed = FixedTrait::new_unscaled(labor_cost_per_unit.value, false)
-                            * labor_cost_multiplier.into();
-                        let cost: u128 = cost_fixed.try_into().unwrap();
-
-                        let total_cost = total_costs.get(labor_cost_resource_type.into());
-                        total_costs.insert(labor_cost_resource_type.into(), total_cost + cost);
-
-                        index += 1;
-                    };
-
-                    labor_auction.sell();
-                    if (labor_auction.sold) % labor_auction.price_update_interval == 0 {
-                        labor_cost_multiplier = labor_auction.get_price();
-                    };
-                    labor_units_remaining -= 1;
-                };
+                let zero_fixed = Fixed {sign: false, mag: 0};
 
                 let mut index = 0_usize;
                 loop {
@@ -367,29 +337,75 @@ mod labor_systems {
                     }
 
                     let labor_cost_resource_type = *labor_cost_resource_types[index];
-                    let total_cost = total_costs.get(labor_cost_resource_type.into());
+                    let labor_cost_per_unit = get!(
+                        world, (resource_type, labor_cost_resource_type).into(), LaborCostAmount
+                    );
+        
+                    let labor_cost_per_unit_fixed 
+                        = FixedTrait::new_unscaled(labor_cost_per_unit.value, false);
+                    
+    
+                    let mut total_resource_labor_cost_fixed = FixedTrait::new_unscaled(0, false);
 
+                    let mut labor_units_remaining = labor_units;
+                    
+                    loop {
+                        if labor_units_remaining == 0 {
+                            break;
+                        }
+
+                        let labor_cost_multiplier
+                            = labor_auction_vrgda.get_vrgda_price(
+                                labor_auction_time_since_start_fixed,
+                                FixedTrait::new_unscaled(labor_auction.sold, false)
+                            );
+
+                        let mut labor_unit_count 
+                            = labor_auction.price_update_interval - 
+                                (labor_auction.sold % labor_auction.price_update_interval);
+
+                        if labor_units_remaining < labor_unit_count {
+                            labor_unit_count = labor_units_remaining;
+                        }
+
+                        let mut resource_labor_cost
+                            = labor_cost_per_unit_fixed * labor_cost_multiplier * FixedTrait::new_unscaled(labor_unit_count, false);
+
+                        labor_units_remaining -= labor_unit_count;
+                        labor_auction.sold += labor_unit_count;
+                        total_resource_labor_cost_fixed += resource_labor_cost;
+                        
+                    };
+
+                    let total_resource_labor_cost: u128 = total_resource_labor_cost_fixed.try_into().unwrap();
+
+                    // deduct total labor cost for the current
+                    // resource from entity's balance
                     let current_resource: Resource = get!(
                         world, (entity_id, labor_cost_resource_type).into(), Resource
                     );
+                    assert(current_resource.balance >= total_resource_labor_cost, 'Not enough resources');
 
-                    assert(current_resource.balance >= total_cost, 'Not enough resources');
                     set!(
                         world,
                         Resource {
                             entity_id,
                             resource_type: labor_cost_resource_type,
-                            balance: current_resource.balance - total_cost
+                            balance: current_resource.balance - total_resource_labor_cost
                         }
                     );
 
+                    // reset labor amount sold for next loop
+                    labor_auction.sold -= labor_units;
+
+                    // increment index
                     index += 1;
                 };
 
+                labor_auction.sold = labor_units;
                 set!(world, (labor_auction));
 
                 let labor_resource_type: u8 = get_labor_resource_type(resource_type);
-
                 // increment new labor resource in entity balance
                 let labor_resource = get!(world, (entity_id, labor_resource_type), Resource);
 
