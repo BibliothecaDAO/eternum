@@ -23,7 +23,7 @@ import {
   TransferResourcesProps,
   TravelProps,
   SystemSigner,
-  GenerateMap
+  GenerateMapProps
 } from "@bibliothecadao/eternum";
 
 
@@ -39,7 +39,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.mint_cc(props)));
   };
 
-  const generate_map = async (props: GenerateMap) => {
+  const generate_map = async (props: GenerateMapProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.generate_map(props)));
   };
 
