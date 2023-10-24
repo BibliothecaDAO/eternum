@@ -4,7 +4,7 @@ export interface SystemSigner {
   signer: Account;
 }
 
-export interface GenerateMap extends SystemSigner {
+export interface GenerateMapProps extends SystemSigner {
   token_id: num.BigNumberish;
 };
 
