@@ -1,6 +1,6 @@
 ## Quickly Build
 
-in root package
+in root path
 
 ```
  bun install
