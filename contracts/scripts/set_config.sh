@@ -43,7 +43,7 @@ commands=(
     # # fee resource type = 2 # Stone
     # # fee amount = 10
     # # speed up transit by 2x = 2
-    "sozo execute $CONFIG_SYSTEMS set_road_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2,10,2"
+    "sozo execute $CONFIG_SYSTEMS set_road_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2,$((10 * resource_precision)),2"
 
 )
 

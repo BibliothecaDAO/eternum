@@ -4,7 +4,7 @@ import { getEntityIdFromKeys } from "../utils/utils";
 import { Type, getComponentValue } from "@latticexyz/recs";
 import { Resource } from "../types";
 import { LaborCostInterface } from "../hooks/helpers/useLabor";
-import { LABOR_CONFIG } from "@bibliothecadao/eternum";
+import { LABOR_CONFIG, ROAD_COST_PER_USAGE } from "@bibliothecadao/eternum";
 import {
   CancelFungibleOrderProps,
   ClaimFungibleOrderProps,
@@ -347,7 +347,7 @@ export function createOptimisticSystemCalls({
         entity: getEntityIdFromKeys([BigInt(creator_id), BigInt(2)]),
         value: {
           // 10 stone per usage
-          balance: balance - usageCount * 10,
+          balance: balance - usageCount * ROAD_COST_PER_USAGE,
         },
       });
 
