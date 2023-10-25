@@ -249,21 +249,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    OrderResource: (() => {
-      const name = "OrderResource";
-      return defineComponent(
-        world,
-        {
-          resource_type: RecsType.Number,
-          balance: RecsType.Number,
-        },
-        {
-          metadata: {
-            name: name,
-          },
-        },
-      );
-    })(),
     Vault: (() => {
       const name = "Vault";
       return defineComponent(
@@ -329,6 +314,55 @@ export function defineContractComponents(world: World) {
         {
           sec_per_km: RecsType.Number,
           blocked: RecsType.Boolean,
+          roundtrip: RecsType.Boolean,
+          intermediate_postion_x: RecsType.Number,
+          intermediate_postion_y: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
+    Inventory: (() => {
+      const name = "Inventory";
+      return defineComponent(
+        world,
+        {
+          key: RecsType.Number,
+          count: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
+    ResourcesChest: (() => {
+      const name = "ResourcesChest";
+      return defineComponent(
+        world,
+        {
+          key: RecsType.Number,
+          resources_count: RecsType.Number,
+          locked_until: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
+    ResourceDetached: (() => {
+      const name = "ResourceDetached";
+      return defineComponent(
+        world,
+        {
+          resource_type: RecsType.Number,
+          resource_amount: RecsType.Number,
         },
         {
           metadata: {
@@ -407,20 +441,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    Caravan: (() => {
-      const name = "Caravan";
-      return defineComponent(
-        world,
-        {
-          caravan_id: RecsType.Number,
-        },
-        {
-          metadata: {
-            name: name,
-          },
-        },
-      );
-    })(),
     CaravanMembers: (() => {
       const name = "CaravanMembers";
       return defineComponent(
@@ -463,35 +483,6 @@ export function defineContractComponents(world: World) {
         world,
         {
           value: RecsType.Number,
-        },
-        {
-          metadata: {
-            name: name,
-          },
-        },
-      );
-    })(),
-    FungibleEntities: (() => {
-      const name = "FungibleEntities";
-      return defineComponent(
-        world,
-        {
-          key: RecsType.Number,
-          count: RecsType.Number,
-        },
-        {
-          metadata: {
-            name: name,
-          },
-        },
-      );
-    })(),
-    OrderId: (() => {
-      const name = "OrderId";
-      return defineComponent(
-        world,
-        {
-          id: RecsType.Number,
         },
         {
           metadata: {
