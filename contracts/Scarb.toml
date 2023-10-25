@@ -13,7 +13,7 @@ cubit = { git = "https://github.com/influenceth/cubit" }
 # TODO: use dojo_defi when works with latest nightly
 #dojo_defi = { git = "https://github.com/dojoengine/dojo" }
 cc_starknet = { git = "https://github.com/CheDAOLabs/cryptsandcaverns.git", tag = "v0.1.0-rc0" }
-cc_dojo_map = { git = "https://github.com/CheDAOLabs/cc-dojo-map.git", tag = "v0.1.0-rc0" }
+cc_dojo_map = { git = "https://github.com/CheDAOLabs/cc-dojo-map.git", tag = "v0.3.1" }
 
 [[target.dojo]]
 
