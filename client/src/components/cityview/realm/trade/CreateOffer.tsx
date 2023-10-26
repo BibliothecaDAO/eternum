@@ -67,13 +67,13 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
       await optimisticCreateOrder(create_order)({
         signer: account,
         maker_id: realmEntityId,
-        maker_resource_types: selectedResourceIdsGive,
-        maker_resource_amounts: selectedResourceIdsGive.map((id) =>
+        maker_gives_resource_types: selectedResourceIdsGive,
+        maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
           multiplyByPrecision(selectedResourcesGiveAmounts[id]),
         ),
         taker_id: selectedRealmEntityId || 0,
-        taker_resource_types: selectedResourceIdsGet,
-        taker_resource_amounts: selectedResourceIdsGet.map((id) =>
+        taker_gives_resource_types: selectedResourceIdsGet,
+        taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
           multiplyByPrecision(selectedResourcesGetAmounts[id]),
         ),
         donkeys_quantity: donkeysCount,
@@ -82,13 +82,13 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
       await optimisticCreateOrder(create_order)({
         signer: account,
         maker_id: realmEntityId,
-        maker_resource_types: selectedResourceIdsGive,
-        maker_resource_amounts: selectedResourceIdsGive.map((id) =>
+        maker_gives_resource_types: selectedResourceIdsGive,
+        maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
           multiplyByPrecision(selectedResourcesGiveAmounts[id]),
         ),
         taker_id: selectedRealmEntityId || 0,
-        taker_resource_types: selectedResourceIdsGet,
-        taker_resource_amounts: selectedResourceIdsGet.map((id) =>
+        taker_gives_resource_types: selectedResourceIdsGet,
+        taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
           multiplyByPrecision(selectedResourcesGetAmounts[id]),
         ),
       });

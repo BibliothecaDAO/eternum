@@ -77,10 +77,6 @@ export interface IncomingOrderInterface {
   position: PositionInterface | undefined;
 }
 
-export interface IncomingOrdersInterface {
-  incomingOrders: IncomingOrderInterface[];
-}
-
 export interface CaravanInterface {
   caravanId: number;
   resourcesChestId: number | undefined;

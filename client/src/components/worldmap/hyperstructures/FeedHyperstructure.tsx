@@ -87,7 +87,6 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
       {
         key: "my",
         label: (
-          // TODO: implement incoming caravans here
           <div
             onMouseEnter={() =>
               setTooltip({

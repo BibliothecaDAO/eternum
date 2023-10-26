@@ -10,7 +10,7 @@ import Button from "../../../../../elements/Button";
 import { MyOffer } from "./MyOffer";
 import { sortTrades, useGetMyOffers } from "../../../../../hooks/helpers/useTrade";
 import { IncomingOrder } from "../Caravans/IncomingOrder";
-import { useGetCaravansWithResourcesChest } from "../../../../../hooks/helpers/useIncomingOrders";
+import { useGetCaravansWithResourcesChest } from "../../../../../hooks/helpers/useResources";
 import { RoadBuildPopup } from "../Roads/RoadBuildPopup";
 
 type MarketPanelProps = {};

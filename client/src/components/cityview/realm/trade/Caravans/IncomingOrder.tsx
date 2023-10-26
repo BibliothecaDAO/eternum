@@ -8,7 +8,7 @@ import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
-import { useIncomingOrders } from "../../../../../hooks/helpers/useIncomingOrders";
+import { useResources } from "../../../../../hooks/helpers/useResources";
 import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
 
 type IncomingOrderProps = {
@@ -18,7 +18,7 @@ type IncomingOrderProps = {
 export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const [isLoading, setIsLoading] = useState(false);
-  const { getResourcesChestFromInventory, emptyResourceChest } = useIncomingOrders();
+  const { getResourcesChestFromInventory, emptyResourceChest } = useResources();
   const { getCaravanInfo } = useCaravan();
 
   const { resourcesChestId, destination, arrivalTime } = getCaravanInfo(caravanId);

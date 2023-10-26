@@ -31,13 +31,13 @@ export function createOptimisticSystemCalls({
     return async function (this: any, args: CreateOrderProps): Promise<void | number> {
       const {
         maker_id,
-        maker_resource_types,
-        maker_resource_amounts,
+        maker_gives_resource_types,
+        maker_gives_resource_amounts,
         maker_transport_id: transport_id,
         taker_id,
         // donkeys_quantity,
-        taker_resource_types,
-        taker_resource_amounts,
+        taker_gives_resource_types,
+        taker_gives_resource_amounts,
       } = args;
 
       const expires_at = Math.floor(Date.now() / 1000 + 2628000);
@@ -67,27 +67,27 @@ export function createOptimisticSystemCalls({
       });
       ResourcesChest.addOverride(overrideId, {
         entity: maker_resources_chest_id,
-        value: { resources_count: maker_resource_types.length },
+        value: { resources_count: maker_gives_resource_types.length },
       });
       ResourcesChest.addOverride(overrideId, {
         entity: taker_resources_chest_id,
-        value: { resources_count: taker_resource_types.length },
+        value: { resources_count: taker_gives_resource_types.length },
       });
-      for (let i = 0; i < maker_resource_amounts.length; i++) {
+      for (let i = 0; i < maker_gives_resource_amounts.length; i++) {
         ResourceDetached.addOverride(overrideId, {
           entity: getEntityIdFromKeys([BigInt(maker_resources_chest_id), BigInt(i)]),
           value: {
-            resource_type: maker_resource_types[i] as Type.Number,
-            resource_amount: maker_resource_amounts[i] as Type.Number,
+            resource_type: maker_gives_resource_types[i] as Type.Number,
+            resource_amount: maker_gives_resource_amounts[i] as Type.Number,
           },
         });
       }
-      for (let i = 0; i < taker_resource_amounts.length; i++) {
+      for (let i = 0; i < taker_gives_resource_amounts.length; i++) {
         ResourceDetached.addOverride(overrideId, {
           entity: getEntityIdFromKeys([BigInt(taker_resources_chest_id), BigInt(i)]),
           value: {
-            resource_type: taker_resource_types[i] as Type.Number,
-            resource_amount: taker_resource_amounts[i] as Type.Number,
+            resource_type: taker_gives_resource_types[i] as Type.Number,
+            resource_amount: taker_gives_resource_amounts[i] as Type.Number,
           },
         });
       }

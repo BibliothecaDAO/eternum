@@ -12,11 +12,11 @@ export interface TravelProps extends SystemSigner {
 
 export interface CreateOrderProps {
   maker_id: num.BigNumberish;
-  maker_resource_types: num.BigNumberish[];
-  maker_resource_amounts: num.BigNumberish[];
+  maker_gives_resource_types: num.BigNumberish[];
+  maker_gives_resource_amounts: num.BigNumberish[];
   taker_id: num.BigNumberish;
-  taker_resource_types: num.BigNumberish[];
-  taker_resource_amounts: num.BigNumberish[];
+  taker_gives_resource_types: num.BigNumberish[];
+  taker_gives_resource_amounts: num.BigNumberish[];
   signer: any;
   maker_transport_id?: num.BigNumberish;
   donkeys_quantity?: num.BigNumberish;

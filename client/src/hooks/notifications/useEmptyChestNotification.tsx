@@ -8,7 +8,7 @@ import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 import { currencyFormat } from "../../utils/utils";
 import { useState } from "react";
 import Button from "../../elements/Button";
-import { useIncomingOrders } from "../helpers/useIncomingOrders";
+import { useResources } from "../helpers/useResources";
 
 export const useEmptyChestNotification = (
   notification: NotificationType,
@@ -18,7 +18,7 @@ export const useEmptyChestNotification = (
   title: React.ReactElement;
   content: (onClose: any) => React.ReactElement;
 } => {
-  const { getResourcesChestFromInventory, emptyResourceChest } = useIncomingOrders();
+  const { getResourcesChestFromInventory, emptyResourceChest } = useResources();
 
   const [isLoading, setIsLoading] = useState(false);
 
