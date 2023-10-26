@@ -233,7 +233,7 @@ const SelectResourcesPanel = ({
                 key={id}
                 resourceId={id}
                 amount={resource?.balance || 0}
-                disabled={(resource?.balance || 0) === 0}
+                disabled={(resource?.balance || 0) === 0 || selectedResourceIdsGet.includes(id)}
                 selected={selectedResourceIdsGive.includes(id)}
                 onClick={() => {
                   if (selectedResourceIdsGive.includes(id)) {
@@ -248,7 +248,7 @@ const SelectResourcesPanel = ({
         </div>
       </div>
       <div className="flex items-center justify-center">
-        <ArrowSeparator className="fixed top-1/2 -translate-y-full" />
+        <ArrowSeparator className="sticky top-1/2 -translate-y-1/2" />
       </div>
       <div className="flex flex-col items-center col-span-4">
         <Headline className="mb-2">You Get</Headline>
@@ -355,7 +355,7 @@ const SelectResourcesAmountPanel = ({
           })}
         </div>
         <div className="flex items-center justify-center">
-          <ArrowSeparator className="fixed top-1/2 -translate-y-full" />
+          <ArrowSeparator className="sticky top-1/2 -translate-y-1/2" />
         </div>
         <div className="flex flex-col items-center col-span-4 space-y-2">
           <Headline className="mb-2">You Get</Headline>
@@ -492,7 +492,7 @@ export const SelectCaravanPanel = ({
           {selectedResourceIdsGet.length > 0 && (
             <>
               <div className="flex items-center justify-center">
-                <ArrowSeparator className="fixed top-1/2 -translate-y-full" />
+                <ArrowSeparator className="sticky top-1/2 -translate-y-1/2" />
               </div>
               <div className="flex flex-col items-center col-span-4 space-y-2 h-min">
                 <Headline className="mb-2" size="big">
