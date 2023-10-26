@@ -7,13 +7,12 @@ import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys } from "../../utils/utils";
 import { HIGH_ENTITY_ID } from "../../dojo/createOptimisticSystemCalls";
 import { calculateRatio } from "../../components/cityview/realm/trade/Market/MarketOffer";
-import { HasOrders, HasResources, QueryFragment, useTradeQuery } from "./useTradeQueries";
-import { resources, orders } from "@bibliothecadao/eternum";
+import { HasOrders, QueryFragment, useTradeQuery } from "./useTradeQueries";
+import { orders } from "@bibliothecadao/eternum";
 import { SortInterface } from "../../elements/SortButton";
 import { useCaravan } from "./useCaravans";
 import { getRealm } from "../../utils/realms";
 import { useRoads } from "./useRoads";
-import { BigNumberish } from "starknet";
 
 export interface MarketInterface {
   tradeId: number;
@@ -21,8 +20,6 @@ export interface MarketInterface {
   takerId: number;
   // brillance, reflection, ...
   makerOrder: number;
-  makerOrderId: number;
-  takerOrderId: number;
   expiresAt: number;
   resourcesGet: Resource[];
   resourcesGive: Resource[];
@@ -43,42 +40,75 @@ type useGetMyOffersProps = {
   selectedOrders: string[];
 };
 
+type TradeResources = {
+  resourcesGet: Resource[];
+  resourcesGive: Resource[];
+};
+
 export function useTrade() {
   const {
     setup: {
-      components: { OrderResource, FungibleEntities, Resource, Trade, Realm },
-      optimisticSystemCalls: { optimisticClaimFungibleOrder },
-      systemCalls: { claim_fungible_order },
+      components: { Resource, Trade, Realm, ResourcesChest, ResourceDetached },
     },
-    account: { account },
   } = useDojo();
 
-  const getTradeResources = (orderId: number): Resource[] => {
-    const fungibleEntities = getComponentValue(FungibleEntities, orderId as EntityIndex);
-    if (!fungibleEntities) return [];
+  const getChestResources = (resourcesChestId: number): Resource[] => {
+    const resourcesChest = getComponentValue(ResourcesChest, resourcesChestId as EntityIndex);
+    if (!resourcesChest) return [];
     let resources: Resource[] = [];
-    for (let i = 0; i < fungibleEntities.count; i++) {
-      let entityId = getEntityIdFromKeys([BigInt(orderId), BigInt(fungibleEntities.key), BigInt(i)]);
-      const resource = getComponentValue(OrderResource, entityId);
+    let { resources_count } = resourcesChest;
+    for (let i = 0; i < resources_count; i++) {
+      let entityId = getEntityIdFromKeys([BigInt(resourcesChestId), BigInt(i)]);
+      const resource = getComponentValue(ResourceDetached, entityId);
       if (resource) {
         resources.push({
           resourceId: resource.resource_type,
-          amount: resource.balance,
+          amount: resource.resource_amount,
         });
       }
     }
     return resources;
   };
 
-  const getCounterpartyOrderId = (orderId: number): number | undefined => {
-    const tradeIfMaker = Array.from(runQuery([HasValue(Trade, { maker_order_id: orderId })]));
-    const tradeIfTaker = Array.from(runQuery([HasValue(Trade, { taker_order_id: orderId })]));
+  const getTradeResources = (entityId: number, tradeId: number): TradeResources => {
+    let trade = getComponentValue(Trade, getEntityIdFromKeys([BigInt(tradeId)]));
+
+    let resourcesGet =
+      trade.maker_id === entityId
+        ? getChestResources(trade.taker_resources_chest_id)
+        : getChestResources(trade.maker_resources_chest_id);
+
+    let resourcesGive =
+      trade.maker_id === entityId
+        ? getChestResources(trade.maker_resources_chest_id)
+        : getChestResources(trade.taker_resources_chest_id);
+
+    return { resourcesGet, resourcesGive };
+  };
+
+  // const getCounterpartyResourcesId = (resourcesChestId: number): number | undefined => {
+  //   const tradeIfMaker = Array.from(runQuery([HasValue(Trade, { maker_resources_id: resourcesChestId })]));
+  //   const tradeIfTaker = Array.from(runQuery([HasValue(Trade, { taker_resources_id: resourcesChestId })]));
+  //   if (tradeIfMaker.length > 0) {
+  //     let trade = getComponentValue(Trade, tradeIfMaker[0]);
+  //     return trade?.taker_resources_id;
+  //   } else if (tradeIfTaker.length > 0) {
+  //     let trade = getComponentValue(Trade, tradeIfTaker[0]);
+  //     return trade?.maker_resources_id;
+  //   } else {
+  //     return undefined;
+  //   }
+  // };
+
+  const getTradeIdFromResourcesChestId = (resourcesChestId: number): number | undefined => {
+    const tradeIfMaker = Array.from(runQuery([HasValue(Trade, { maker_resources_chest_id: resourcesChestId })]));
+    const tradeIfTaker = Array.from(runQuery([HasValue(Trade, { taker_resources_chest_id: resourcesChestId })]));
     if (tradeIfMaker.length > 0) {
       let trade = getComponentValue(Trade, tradeIfMaker[0]);
-      return trade?.taker_order_id;
+      return trade?.trade_id;
     } else if (tradeIfTaker.length > 0) {
       let trade = getComponentValue(Trade, tradeIfTaker[0]);
-      return trade?.maker_order_id;
+      return trade?.trade_id;
     } else {
       return undefined;
     }
@@ -111,37 +141,19 @@ export function useTrade() {
     }
   };
 
-  /* Claim Order
-   * @param entity_id: entity id of realm
-   * @param trade_id: id of the trade
-   * @param [optimisticResourcesGet]: resources to display in case of optimistic rendering
-   * @returns: void
-   */
-  const claimOrder = async (entity_id: BigNumberish, trade_id: BigNumberish, optimisticResourcesGet?: Resource[]) => {
-    if (optimisticResourcesGet) {
-      return await optimisticClaimFungibleOrder(
-        optimisticResourcesGet,
-        claim_fungible_order,
-      )({
-        signer: account,
-        entity_id,
-        trade_id,
-      });
-    }
-    return await claim_fungible_order({
-      signer: account,
-      entity_id,
-      trade_id,
-    });
+  return {
+    getTradeResources,
+    getTradeIdFromResourcesChestId,
+    getChestResources,
+    canAcceptOffer,
+    getRealmEntityIdFromRealmId,
   };
-
-  return { getTradeResources, getCounterpartyOrderId, canAcceptOffer, getRealmEntityIdFromRealmId, claimOrder };
 }
 
 export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): MarketInterface[] {
   const {
     setup: {
-      components: { Status, Trade, FungibleEntities, OrderResource },
+      components: { Status, Trade },
     },
   } = useDojo();
 
@@ -155,17 +167,18 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
       HasValue(Trade, { maker_id: realmEntityId }),
     ];
 
-    if (selectedResources.length > 0)
-      baseFragments.push(
-        HasResources(
-          Trade,
-          FungibleEntities,
-          OrderResource,
-          selectedResources
-            .map((resource) => resources.find((r) => r.trait === resource)?.id)
-            .filter(Boolean) as number[],
-        ),
-      );
+    // TODO: create filters
+    // if (selectedResources.length > 0)
+    //   baseFragments.push(
+    //     HasResources(
+    //       Trade,
+    //       FungibleEntities,
+    //       OrderResource,
+    //       selectedResources
+    //         .map((resource) => resources.find((r) => r.trait === resource)?.id)
+    //         .filter(Boolean) as number[],
+    //     ),
+    //   );
 
     return baseFragments;
   }, [selectedResources, realmEntityId]);
@@ -184,8 +197,7 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
       .map((tradeId) => {
         let trade = getComponentValue(Trade, tradeId);
         if (trade) {
-          const resourcesGet = getTradeResources(trade.taker_order_id);
-          const resourcesGive = getTradeResources(trade.maker_order_id);
+          const { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, tradeId);
           const hasRoad = getHasRoad(realmEntityId, trade.taker_id);
           const distance = calculateDistance(trade.taker_id, realmEntityId);
           return {
@@ -193,8 +205,6 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
             makerId: trade.maker_id,
             takerId: trade.taker_id,
             makerOrder: getRealm(trade.maker_id).order,
-            makerOrderId: trade.maker_order_id,
-            takerOrderId: trade.taker_order_id,
             expiresAt: trade.expires_at,
             resourcesGet,
             resourcesGive,
@@ -220,7 +230,7 @@ export function useGetMarket({
 }: useGetMarketProps): MarketInterface[] {
   const {
     setup: {
-      components: { Status, Trade, FungibleEntities, OrderResource, Realm },
+      components: { Status, Trade, Realm },
     },
   } = useDojo();
 
@@ -251,18 +261,18 @@ export function useGetMarket({
       );
     }
 
-    if (selectedResources.length > 0) {
-      baseFragments.push(
-        HasResources(
-          Trade,
-          FungibleEntities,
-          OrderResource,
-          selectedResources
-            .map((resource) => resources.find((r) => r.trait === resource)?.id)
-            .filter(Boolean) as number[],
-        ),
-      );
-    }
+    // if (selectedResources.length > 0) {
+    //   baseFragments.push(
+    //     HasResources(
+    //       Trade,
+    //       FungibleEntities,
+    //       OrderResource,
+    //       selectedResources
+    //         .map((resource) => resources.find((r) => r.trait === resource)?.id)
+    //         .filter(Boolean) as number[],
+    //     ),
+    //   );
+    // }
 
     return baseFragments;
   }, [selectedOrders, selectedResources, realmEntityId]);
@@ -278,8 +288,7 @@ export function useGetMarket({
       .map((tradeId) => {
         let trade = getComponentValue(Trade, tradeId);
         if (trade) {
-          const resourcesGet = getTradeResources(trade.maker_order_id);
-          const resourcesGive = getTradeResources(trade.taker_order_id);
+          const { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, tradeId);
           const distance = calculateDistance(trade.maker_id, realmEntityId);
           const hasRoad = getHasRoad(realmEntityId, trade.maker_id);
           return {
@@ -287,8 +296,6 @@ export function useGetMarket({
             makerId: trade.maker_id,
             takerId: trade.taker_id,
             makerOrder: getRealm(trade.maker_id).order,
-            makerOrderId: trade.maker_order_id,
-            takerOrderId: trade.taker_order_id,
             expiresAt: trade.expires_at,
             resourcesGet,
             resourcesGive,

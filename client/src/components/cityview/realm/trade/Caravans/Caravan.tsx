@@ -15,6 +15,7 @@ import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 import { getTotalResourceWeight } from "../TradeUtils";
 import { divideByPrecision } from "../../../../../utils/utils";
+import useRealmStore from "../../../../../hooks/store/useRealmStore";
 
 type CaravanProps = {
   caravan: CaravanInterface;
@@ -23,11 +24,15 @@ type CaravanProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Caravan = ({ caravan, ...props }: CaravanProps) => {
-  const { orderId, arrivalTime, destination, blocked, capacity } = caravan;
+  const { resourcesChestId, arrivalTime, destination, blocked, capacity } = caravan;
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const { getTradeResources } = useTrade();
-  let resourcesGive = orderId ? getTradeResources(orderId) : [];
+  const { getTradeResources, getTradeIdFromResourcesChestId } = useTrade();
+
+  const tradeId = resourcesChestId ? getTradeIdFromResourcesChestId(resourcesChestId) : undefined;
+
+  let { resourcesGive } = tradeId ? getTradeResources(realmEntityId, tradeId) : { resourcesGive: [] };
 
   // capacity
   let resourceWeight = useMemo(() => {

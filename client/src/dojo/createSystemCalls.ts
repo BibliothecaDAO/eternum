@@ -7,7 +7,7 @@ import {
   AttachCaravanProps,
   BuildLaborProps,
   CancelFungibleOrderProps,
-  ClaimFungibleOrderProps,
+  EmptyResourcesChestProps,
   CompleteHyperStructureProps,
   CreateCaravanProps,
   CreateFreeTransportUnitProps,
@@ -69,8 +69,8 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.attach_caravan(props)));
   };
 
-  const claim_fungible_order = async (props: ClaimFungibleOrderProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.claim_fungible_order(props)));
+  const empty_resources_chest = async (props: EmptyResourcesChestProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.empty_resources_chest(props)));
   };
 
   const purchase_and_build_labor = async (props: PurchaseLaborProps & BuildLaborProps) => {
@@ -124,7 +124,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     mint_resources,
     create_order,
     accept_order,
-    claim_fungible_order,
+    empty_resources_chest,
     cancel_fungible_order,
     create_free_transport_unit,
     create_caravan,

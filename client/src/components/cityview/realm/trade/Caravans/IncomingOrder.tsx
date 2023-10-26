@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
 
@@ -6,36 +6,37 @@ import clsx from "clsx";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
-import { IncomingOrderInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
-import { useTrade } from "../../../../../hooks/helpers/useTrade";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
+import { useIncomingOrders } from "../../../../../hooks/helpers/useIncomingOrders";
+import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
 
 type IncomingOrderProps = {
-  incomingOrder: IncomingOrderInterface;
+  caravanId: number;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const IncomingOrder = ({ incomingOrder, ...props }: IncomingOrderProps) => {
-  const { counterPartyOrderId, arrivalTime, origin: originPosition } = incomingOrder;
-
-  const { realmEntityId } = useRealmStore();
+export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const [isLoading, setIsLoading] = useState(false);
-  const { getTradeResources, claimOrder } = useTrade();
+  const { getResourcesChestFromInventory, emptyResourceChest } = useIncomingOrders();
+  const { getCaravanInfo } = useCaravan();
 
-  const resourcesGet = counterPartyOrderId ? getTradeResources(counterPartyOrderId) : [];
+  const { resourcesChestId, destination, arrivalTime } = getCaravanInfo(caravanId);
 
-  useEffect(() => {
-    setIsLoading(false);
-  }, [incomingOrder.orderId]);
+  const resourcesGet = getResourcesChestFromInventory(caravanId);
 
-  const claim = async () => {
+  // useEffect(() => {
+  //   setIsLoading(false);
+  // }, [incomingOrder.orderId]);
+
+  const emptyChest = async () => {
     setIsLoading(true);
-    await claimOrder(realmEntityId, incomingOrder.tradeId, resourcesGet);
+    await emptyResourceChest(realmEntityId, caravanId, resourcesChestId, resourcesGet);
   };
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const startRealmId = originPosition && getRealmIdByPosition({ x: originPosition.x, y: originPosition.y });
+  const startRealmId = destination && getRealmIdByPosition({ x: destination.x, y: destination.y });
   const startRealmName = startRealmId && getRealmNameById(startRealmId);
   const hasArrived = arrivalTime !== undefined && nextBlockTimestamp !== undefined && arrivalTime <= nextBlockTimestamp;
 
@@ -46,7 +47,7 @@ export const IncomingOrder = ({ incomingOrder, ...props }: IncomingOrderProps) =
     >
       <div className="flex items-center text-xxs">
         <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
-          #{incomingOrder.orderId}
+          #{caravanId}
         </div>
         {!hasArrived && startRealmName && (
           <div className="flex items-center ml-1 -mt-2">
@@ -86,7 +87,7 @@ export const IncomingOrder = ({ incomingOrder, ...props }: IncomingOrderProps) =
         {!isLoading && (
           <Button
             onClick={() => {
-              claim();
+              emptyChest();
             }}
             disabled={!hasArrived}
             variant={hasArrived ? "success" : "danger"}

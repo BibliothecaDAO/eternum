@@ -33,7 +33,7 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
     },
   } = useDojo();
 
-  const { realmEntityId } = useRealmStore();
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const acceptOffer = async () => {
     if (isNewCaravan) {
@@ -62,8 +62,7 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
   const { getTradeResources } = useTrade();
 
   // TODO: how to avoid getting at every render but also getting after data sync is done
-  let resourcesGet = getTradeResources(selectedTrade.takerOrderId);
-  let resourcesGive = getTradeResources(selectedTrade.makerOrderId);
+  let { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, selectedTrade.tradeId);
 
   let resourceWeight = 0;
   for (const [_, amount] of Object.entries(resourcesGet.map((resource) => resource.amount) || {})) {

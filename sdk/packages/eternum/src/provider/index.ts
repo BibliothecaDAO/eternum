@@ -4,7 +4,7 @@ import {
   AttachCaravanProps,
   BuildLaborProps,
   CancelFungibleOrderProps,
-  ClaimFungibleOrderProps,
+  EmptyResourcesChestProps,
   CompleteHyperStructureProps,
   CreateCaravanProps,
   CreateFreeTransportUnitProps,
@@ -97,13 +97,13 @@ export class EternumProvider extends RPCProvider {
     const uuid = await this.uuid();
     const {
       maker_id,
-      maker_entity_types,
-      maker_quantities,
+      maker_resource_types,
+      maker_resource_amounts,
       taker_id,
-      taker_entity_types,
-      taker_quantities,
+      taker_resource_types,
+      taker_resource_amounts,
       signer,
-      caravan_id,
+      maker_transport_id,
       donkeys_quantity,
     } = props;
 
@@ -119,23 +119,23 @@ export class EternumProvider extends RPCProvider {
       calldata: [
         this.contracts.WORLD_ADDRESS,
         maker_id,
-        maker_entity_types.length,
-        ...maker_entity_types,
-        maker_quantities.length,
-        ...maker_quantities,
+        maker_resource_types.length,
+        ...maker_resource_types,
+        maker_resource_amounts.length,
+        ...maker_resource_amounts,
         taker_id,
-        taker_entity_types.length,
-        ...taker_entity_types,
-        taker_quantities.length,
-        ...taker_quantities,
+        taker_resource_types.length,
+        ...taker_resource_types,
+        taker_resource_amounts.length,
+        ...taker_resource_amounts,
         1,
         expires_at,
       ],
     });
 
     // If no caravan_id is provided, create a new caravan
-    let final_caravan_id = caravan_id;
-    if (!caravan_id && donkeys_quantity) {
+    let final_caravan_id = maker_transport_id;
+    if (!maker_transport_id && donkeys_quantity) {
       const transport_unit_ids = trade_id + UUID_OFFSET_CREATE_TRANSPORT_UNIT;
       final_caravan_id = transport_unit_ids + UUID_OFFSET_CREATE_CARAVAN;
 
@@ -263,12 +263,12 @@ export class EternumProvider extends RPCProvider {
     });
   }
 
-  public async claim_fungible_order(props: ClaimFungibleOrderProps) {
-    const { entity_id, trade_id, signer } = props;
+  public async empty_resources_chest(props: EmptyResourcesChestProps) {
+    const { receiver_id, carrier_id, resources_chest_id, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: this.contracts.TRADE_SYSTEMS,
-      entrypoint: "claim_order",
-      calldata: [this.contracts.WORLD_ADDRESS, entity_id, trade_id],
+      entrypoint: "empty_resources_chest",
+      calldata: [this.contracts.WORLD_ADDRESS, receiver_id, carrier_id, resources_chest_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,

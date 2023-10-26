@@ -71,8 +71,6 @@ export interface LaborInterface {
 }
 export interface IncomingOrderInterface {
   tradeId: number;
-  orderId?: number | undefined;
-  counterPartyOrderId: number | undefined;
   claimed: boolean | undefined;
   arrivalTime: number | undefined;
   origin: PositionInterface | undefined;
@@ -85,7 +83,7 @@ export interface IncomingOrdersInterface {
 
 export interface CaravanInterface {
   caravanId: number;
-  orderId: number | undefined;
+  resourcesChestId: number | undefined;
   blocked: boolean | undefined;
   arrivalTime: number | undefined;
   capacity: number | undefined;

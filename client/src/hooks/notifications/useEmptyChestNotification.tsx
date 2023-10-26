@@ -4,14 +4,13 @@ import { Badge } from "../../elements/Badge";
 import { ResourceIcon } from "../../elements/ResourceIcon";
 import { NotificationType } from "./useNotifications";
 import { findResourceById } from "@bibliothecadao/eternum";
-import { useTrade } from "../helpers/useTrade";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 import { currencyFormat } from "../../utils/utils";
 import { useState } from "react";
-import { BigNumberish } from "starknet";
 import Button from "../../elements/Button";
+import { useIncomingOrders } from "../helpers/useIncomingOrders";
 
-export const useClaimOrderNotification = (
+export const useEmptyChestNotification = (
   notification: NotificationType,
 ): {
   type: string;
@@ -19,27 +18,27 @@ export const useClaimOrderNotification = (
   title: React.ReactElement;
   content: (onClose: any) => React.ReactElement;
 } => {
-  const orderId = notification.keys[0];
-
-  const { getTradeResources, claimOrder } = useTrade();
+  const { getResourcesChestFromInventory, emptyResourceChest } = useIncomingOrders();
 
   const [isLoading, setIsLoading] = useState(false);
 
   const realmId =
     notification.data && "destinationRealmId" in notification.data ? notification.data.destinationRealmId : undefined;
 
-  const tradeId = notification.data && "tradeId" in notification.data ? notification.data.tradeId : undefined;
+  const caravanId = notification.data && "caravanId" in notification.data ? notification.data.caravanId : undefined;
+  const resouurcesChestId =
+    notification.data && "resourcesChestId" in notification.data ? notification.data.resourcesChestId : undefined;
   const realmEntityId =
     notification.data && "realmEntityId" in notification.data ? notification.data.realmEntityId : undefined;
 
   const realmName = realmId ? getRealmNameById(realmId) : "";
   const realmOrderName = realmId ? getRealmOrderNameById(realmId) : "";
 
-  let claimableResources = orderId ? getTradeResources(parseInt(orderId)) : undefined;
+  let claimableResources = getResourcesChestFromInventory(caravanId);
 
-  const claim = async () => {
+  const emptyChest = async () => {
     setIsLoading(true);
-    await claimOrder(realmEntityId as BigNumberish, tradeId as BigNumberish, claimableResources);
+    await emptyResourceChest(realmEntityId, caravanId, resouurcesChestId, claimableResources);
     setIsLoading(false);
   };
 
@@ -79,7 +78,7 @@ export const useClaimOrderNotification = (
         <Button
           isLoading={isLoading}
           onClick={async () => {
-            await claim();
+            await emptyChest();
             onClose();
           }}
           className="mt-2 w-full"

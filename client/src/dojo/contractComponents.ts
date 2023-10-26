@@ -345,7 +345,6 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
-          key: RecsType.Number,
           resources_count: RecsType.Number,
           locked_until: RecsType.Number,
         },
@@ -461,14 +460,14 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
+          trade_id: RecsType.Number,
           maker_id: RecsType.Number,
+          maker_resources_chest_id: RecsType.Number,
+          maker_transport_id: RecsType.Number,
           taker_id: RecsType.Number,
-          maker_order_id: RecsType.Number,
-          taker_order_id: RecsType.Number,
+          taker_resources_chest_id: RecsType.Number,
+          taker_transport_id: RecsType.Number,
           expires_at: RecsType.Number,
-          claimed_by_maker: RecsType.Boolean,
-          claimed_by_taker: RecsType.Boolean,
-          taker_needs_caravan: RecsType.Boolean,
         },
         {
           metadata: {

@@ -67,23 +67,30 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
       await optimisticCreateOrder(create_order)({
         signer: account,
         maker_id: realmEntityId,
-        maker_entity_types: selectedResourceIdsGive,
-        maker_quantities: selectedResourceIdsGive.map((id) => multiplyByPrecision(selectedResourcesGiveAmounts[id])),
+        maker_resource_types: selectedResourceIdsGive,
+        maker_resource_amounts: selectedResourceIdsGive.map((id) =>
+          multiplyByPrecision(selectedResourcesGiveAmounts[id]),
+        ),
         taker_id: selectedRealmEntityId || 0,
-        taker_entity_types: selectedResourceIdsGet,
-        taker_quantities: selectedResourceIdsGet.map((id) => multiplyByPrecision(selectedResourcesGetAmounts[id])),
+        taker_resource_types: selectedResourceIdsGet,
+        taker_resource_amounts: selectedResourceIdsGet.map((id) =>
+          multiplyByPrecision(selectedResourcesGetAmounts[id]),
+        ),
         donkeys_quantity: donkeysCount,
       });
     } else {
       await optimisticCreateOrder(create_order)({
         signer: account,
         maker_id: realmEntityId,
-        maker_entity_types: selectedResourceIdsGive,
-        maker_quantities: selectedResourceIdsGive.map((id) => multiplyByPrecision(selectedResourcesGiveAmounts[id])),
+        maker_resource_types: selectedResourceIdsGive,
+        maker_resource_amounts: selectedResourceIdsGive.map((id) =>
+          multiplyByPrecision(selectedResourcesGiveAmounts[id]),
+        ),
         taker_id: selectedRealmEntityId || 0,
-        taker_entity_types: selectedResourceIdsGet,
-        taker_quantities: selectedResourceIdsGet.map((id) => multiplyByPrecision(selectedResourcesGetAmounts[id])),
-        caravan_id: selectedCaravan,
+        taker_resource_types: selectedResourceIdsGet,
+        taker_resource_amounts: selectedResourceIdsGet.map((id) =>
+          multiplyByPrecision(selectedResourcesGetAmounts[id]),
+        ),
       });
     }
     onClose();

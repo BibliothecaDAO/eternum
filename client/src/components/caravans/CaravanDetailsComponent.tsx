@@ -8,6 +8,7 @@ import useBlockchainStore from "../../hooks/store/useBlockchainStore";
 import { CaravanInterface } from "../../hooks/graphql/useGraphQLQueries";
 import { useTrade } from "../../hooks/helpers/useTrade";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
+import useRealmStore from "../../hooks/store/useRealmStore";
 
 type CaravanDetailsProps = {
   caravan: CaravanInterface;
@@ -15,15 +16,17 @@ type CaravanDetailsProps = {
 };
 
 export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
-  const { orderId, destination, arrivalTime, capacity } = caravan;
+  const { resourcesChestId, destination, arrivalTime, capacity } = caravan;
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const { getCounterpartyOrderId, getTradeResources } = useTrade();
+  const { getTradeResources, getTradeIdFromResourcesChestId } = useTrade();
 
-  const counterPartyOrderId = orderId && getCounterpartyOrderId(orderId);
+  let tradeId = resourcesChestId ? getTradeIdFromResourcesChestId(resourcesChestId) : undefined;
 
-  let resourcesGive = orderId ? getTradeResources(orderId) : [];
-  let resourcesGet = counterPartyOrderId ? getTradeResources(counterPartyOrderId) : [];
+  let { resourcesGive, resourcesGet } = tradeId
+    ? getTradeResources(realmEntityId, tradeId)
+    : { resourcesGive: [], resourcesGet: [] };
 
   // TODO: change that with realm value
   let resourceWeight = 0;
