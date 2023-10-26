@@ -28,7 +28,6 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
     ? getTradeResources(realmEntityId, tradeId)
     : { resourcesGive: [], resourcesGet: [] };
 
-  // TODO: change that with realm value
   let resourceWeight = 0;
 
   const destinationRealmId = useMemo(() => {

@@ -87,6 +87,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
           multiplyByPrecision(selectedResourcesGiveAmounts[id]),
         ),
         taker_id: selectedRealmEntityId || 0,
+        maker_transport_id: selectedCaravan,
         taker_gives_resource_types: selectedResourceIdsGet,
         taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
           multiplyByPrecision(selectedResourcesGetAmounts[id]),
@@ -319,11 +320,11 @@ const SelectResourcesAmountPanel = ({
   useEffect(() => {
     // set resource weight in kg
     let weight = 0;
-    for (const [_resourceId, amount] of Object.entries(selectedResourcesGiveAmounts)) {
+    for (const [_resourceId, amount] of Object.entries(selectedResourcesGetAmounts)) {
       weight += amount * 1;
     }
     setResourceWeight(multiplyByPrecision(weight));
-  }, [selectedResourcesGiveAmounts]);
+  }, [selectedResourcesGetAmounts]);
 
   return (
     <>

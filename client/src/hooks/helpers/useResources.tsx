@@ -5,6 +5,7 @@ import { getEntityIdFromKeys } from "../../utils/utils";
 import { useEntityQuery } from "@dojoengine/react";
 import { BigNumberish } from "starknet";
 import { Resource } from "../../types";
+import useBlockchainStore from "../store/useBlockchainStore";
 
 export function useResources() {
   const {
@@ -16,8 +17,10 @@ export function useResources() {
     },
   } = useDojo();
 
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+
   // for any entity that has a resourceChest in its inventory,
-  const getResourcesChestFromInventory = (entityId: number): Resource[] => {
+  const getResourcesFromInventory = (entityId: number): Resource[] => {
     let inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(entityId)]));
     let foreignKey = inventory
       ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(inventory.key), BigInt(0)]))
@@ -27,6 +30,7 @@ export function useResources() {
       : undefined;
 
     if (!resourcesChest) return [];
+    if (resourcesChest.locked_until < nextBlockTimestamp) return [];
     let resources: Resource[] = [];
     let { resources_count } = resourcesChest;
     for (let i = 0; i < resources_count; i++) {
@@ -43,8 +47,9 @@ export function useResources() {
   };
 
   /* Empty Resource Chest
-   * @param entity_id: entity id of realm
-   * @param trade_id: id of the trade
+   * @param receiver_id: entity id of entity that will add resources to balance
+   * @param carrier_id: id of the entity that carries the resource chest
+   * @param resources_chest_id: id of the resources chest
    * @param [optimisticResourcesGet]: resources to display in case of optimistic rendering
    * @returns: void
    */
@@ -73,7 +78,7 @@ export function useResources() {
     });
   };
 
-  return { getResourcesChestFromInventory, emptyResourceChest };
+  return { getResourcesFromInventory, emptyResourceChest };
 }
 
 //  caravans coming your way with a resource chest in their inventory

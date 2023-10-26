@@ -18,12 +18,12 @@ type IncomingOrderProps = {
 export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const [isLoading, setIsLoading] = useState(false);
-  const { getResourcesChestFromInventory, emptyResourceChest } = useResources();
+  const { getResourcesFromInventory, emptyResourceChest } = useResources();
   const { getCaravanInfo } = useCaravan();
 
   const { resourcesChestId, destination, arrivalTime } = getCaravanInfo(caravanId);
 
-  const resourcesGet = getResourcesChestFromInventory(caravanId);
+  const resourcesGet = getResourcesFromInventory(caravanId);
 
   // useEffect(() => {
   //   setIsLoading(false);

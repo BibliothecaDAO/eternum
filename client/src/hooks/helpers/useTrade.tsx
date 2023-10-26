@@ -86,20 +86,6 @@ export function useTrade() {
     return { resourcesGet, resourcesGive };
   };
 
-  // const getCounterpartyResourcesId = (resourcesChestId: number): number | undefined => {
-  //   const tradeIfMaker = Array.from(runQuery([HasValue(Trade, { maker_resources_id: resourcesChestId })]));
-  //   const tradeIfTaker = Array.from(runQuery([HasValue(Trade, { taker_resources_id: resourcesChestId })]));
-  //   if (tradeIfMaker.length > 0) {
-  //     let trade = getComponentValue(Trade, tradeIfMaker[0]);
-  //     return trade?.taker_resources_id;
-  //   } else if (tradeIfTaker.length > 0) {
-  //     let trade = getComponentValue(Trade, tradeIfTaker[0]);
-  //     return trade?.maker_resources_id;
-  //   } else {
-  //     return undefined;
-  //   }
-  // };
-
   const getTradeIdFromResourcesChestId = (resourcesChestId: number): number | undefined => {
     const tradeIfMaker = Array.from(runQuery([HasValue(Trade, { maker_resources_chest_id: resourcesChestId })]));
     const tradeIfTaker = Array.from(runQuery([HasValue(Trade, { taker_resources_chest_id: resourcesChestId })]));

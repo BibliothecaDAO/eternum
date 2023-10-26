@@ -15,7 +15,7 @@ import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 import { getTotalResourceWeight } from "../TradeUtils";
 import { divideByPrecision } from "../../../../../utils/utils";
-import useRealmStore from "../../../../../hooks/store/useRealmStore";
+import { useResources } from "../../../../../hooks/helpers/useResources";
 
 type CaravanProps = {
   caravan: CaravanInterface;
@@ -24,20 +24,17 @@ type CaravanProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Caravan = ({ caravan, ...props }: CaravanProps) => {
-  const { resourcesChestId, arrivalTime, destination, blocked, capacity } = caravan;
+  const { caravanId, arrivalTime, destination, blocked, capacity } = caravan;
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const { getTradeResources, getTradeIdFromResourcesChestId } = useTrade();
+  const { getResourcesFromInventory } = useResources();
 
-  const tradeId = resourcesChestId ? getTradeIdFromResourcesChestId(resourcesChestId) : undefined;
-
-  let { resourcesGive } = tradeId ? getTradeResources(realmEntityId, tradeId) : { resourcesGive: [] };
+  const resourcesGet = getResourcesFromInventory(caravanId);
 
   // capacity
   let resourceWeight = useMemo(() => {
-    return getTotalResourceWeight([...resourcesGive]);
-  }, [resourcesGive]);
+    return getTotalResourceWeight([...resourcesGet]);
+  }, [resourcesGet]);
 
   const destinationRealmId = destination && getRealmIdByPosition(destination);
   const destinationRealmName = destinationRealmId && getRealmNameById(destinationRealmId);
@@ -101,8 +98,8 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
       </div>
       <div className="flex justify-center items-center space-x-2 flex-wrap mt-2">
         {!isIdle &&
-          resourcesGive &&
-          resourcesGive.map(
+          resourcesGet &&
+          resourcesGet.map(
             (resource) =>
               resource && (
                 <ResourceCost

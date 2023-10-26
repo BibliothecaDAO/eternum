@@ -61,7 +61,6 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
 
   const { getTradeResources } = useTrade();
 
-  // TODO: how to avoid getting at every render but also getting after data sync is done
   let { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, selectedTrade.tradeId);
 
   let resourceWeight = 0;
