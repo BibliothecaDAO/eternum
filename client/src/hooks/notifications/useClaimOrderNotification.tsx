@@ -8,6 +8,7 @@ import { useState } from "react";
 import { BigNumberish } from "starknet";
 import Button from "../../elements/Button";
 import { ResourceCost } from "../../elements/ResourceCost";
+import { divideByPrecision } from "../../utils/utils";
 
 export const useClaimOrderNotification = (
   notification: NotificationType,
@@ -69,7 +70,7 @@ export const useClaimOrderNotification = (
                 key={resourceId}
                 resourceId={resourceId}
                 color="text-order-brilliance"
-                amount={amount}
+                amount={divideByPrecision(amount)}
               />
             ))}
         </div>

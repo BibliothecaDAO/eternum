@@ -8,6 +8,11 @@ import { getEntityIdFromKeys } from "../../utils/utils";
 import { NotificationType } from "./useNotifications";
 import { findResourceById } from "@bibliothecadao/eternum";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
+import Button from "../../elements/Button";
+import { ResourceCost } from "../../elements/ResourceCost";
+import useBlockchainStore from "../store/useBlockchainStore";
+import { soundSelector, useUiSounds } from "../useUISound";
+import { useEffect, useState } from "react";
 
 export const useHarvestNotification = (
   notification: NotificationType,
@@ -15,24 +20,45 @@ export const useHarvestNotification = (
   type: string;
   time: string;
   title: React.ReactElement;
-  content: React.ReactElement;
+  content: (onClose: any) => React.ReactElement;
 } => {
   const {
     setup: {
       components: { Realm },
+      systemCalls: { harvest_labor },
+      optimisticSystemCalls: { optimisticHarvestLabor },
     },
+    account: { account },
   } = useDojo();
 
-  const realmEntityId = notification.keys[0];
+  const [isLoading, setIsLoading] = useState(false);
 
+  const realmEntityId = notification.keys[0];
+  const { play: playHarvest } = useUiSounds(soundSelector.harvest);
+
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
 
   const realmName = realm ? getRealmNameById(realm.realm_id) : "";
   const realmOrderName = realm ? getRealmOrderNameById(realm?.realm_id) : "";
 
-  const resource = findResourceById(parseInt(notification.keys[1]))?.trait || "";
-
   const harvestAmount = notification.data && "harvestAmount" in notification.data ? notification.data.harvestAmount : 0;
+
+  useEffect(() => console.log("harvest", harvestAmount), [harvestAmount]);
+
+  const onHarvest = async () => {
+    setIsLoading(true);
+    await optimisticHarvestLabor(
+      nextBlockTimestamp || 0,
+      harvest_labor,
+    )({
+      signer: account,
+      realm_id: realmEntityId,
+      resource_type: parseInt(notification.keys[1]),
+    });
+    playHarvest();
+    setIsLoading(false);
+  };
 
   return {
     type: "success",
@@ -50,12 +76,27 @@ export const useHarvestNotification = (
         </div>
       </div>
     ),
-    content: (
-      <div className="mt-2 items-center italic">
-        <div className="flex items-center">
-          <ResourceIcon containerClassName="mx-0.5" className="!w-[12px]" resource={resource} size="xs" />
-          {`+${harvestAmount} `}
+    content: (onClose: () => void) => (
+      <div className="flex flex-col">
+        <div className="mt-2 flex items-center">
+          <ResourceCost
+            resourceId={parseInt(notification.keys[1])}
+            amount={harvestAmount}
+            color="text-order-brilliance"
+          />
         </div>
+        <Button
+          isLoading={isLoading}
+          onClick={async () => {
+            await onHarvest();
+            onClose();
+          }}
+          className="mt-2 w-full"
+          variant="success"
+          size="xs"
+        >
+          Harvest
+        </Button>
       </div>
     ),
   };

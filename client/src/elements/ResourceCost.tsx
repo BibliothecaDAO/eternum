@@ -40,7 +40,7 @@ export const ResourceCost = ({
           {Intl.NumberFormat("en-US", {
             notation: "compact",
             maximumFractionDigits: 1,
-          }).format(divideByPrecision(props.amount) || 0)}
+          }).format(props.amount || 0)}
         </div>
         {type === "horizontal" && <div className="text-xxs leading-[10px] self-start relative">{trait}</div>}
       </div>
