@@ -44,8 +44,6 @@ export const useHarvestNotification = (
 
   const harvestAmount = notification.data && "harvestAmount" in notification.data ? notification.data.harvestAmount : 0;
 
-  useEffect(() => console.log("harvest", harvestAmount), [harvestAmount]);
-
   const onHarvest = async () => {
     setIsLoading(true);
     await optimisticHarvestLabor(
