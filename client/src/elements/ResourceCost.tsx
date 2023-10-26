@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { findResourceById } from "@bibliothecadao/eternum";
 import { ResourceIcon } from "./ResourceIcon";
 import clsx from "clsx";
-import { currencyFormat } from "../utils/utils";
+import { divideByPrecision } from "../utils/utils";
 
 type ResourceCostProps = {
   resourceId: number;
@@ -25,7 +25,7 @@ export const ResourceCost = ({
   return (
     <div
       className={clsx(
-        "relative flex items-center w-full gap-1 px-1 rounded text-lightest",
+        "relative flex items-center gap-1 px-1 rounded text-lightest",
         type === "horizontal" ? "flex-row justify-start" : "flex-col justify-center",
         className,
       )}
@@ -37,7 +37,10 @@ export const ResourceCost = ({
       >
         <div className={clsx("relative text-xs", props.color)}>
           {props.color && props.amount > 0 ? "+" : ""}
-          {currencyFormat(props.amount, 0)}
+          {Intl.NumberFormat("en-US", {
+            notation: "compact",
+            maximumFractionDigits: 1,
+          }).format(divideByPrecision(props.amount) || 0)}
         </div>
         {type === "horizontal" && <div className="text-xxs leading-[10px] self-start relative">{trait}</div>}
       </div>

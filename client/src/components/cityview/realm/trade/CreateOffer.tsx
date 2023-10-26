@@ -359,24 +359,28 @@ const SelectResourcesAmountPanel = ({
         </div>
         <div className="flex flex-col items-center col-span-4 space-y-2">
           <Headline className="mb-2">You Get</Headline>
-          {selectedResourceIdsGet.map((id) => (
-            <div key={id} className="flex items-center w-full">
-              <NumberInput
-                max={100000}
-                min={1}
-                value={selectedResourcesGetAmounts[id]}
-                onChange={(value) => {
-                  setSelectedResourcesGetAmounts({
-                    ...selectedResourcesGetAmounts,
-                    [id]: value,
-                  });
-                }}
-              />
-              <div className="ml-2">
-                <ResourceCost resourceId={id} amount={multiplyByPrecision(selectedResourcesGetAmounts[id])} />
+          {selectedResourceIdsGet.map((id) => {
+            let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
+
+            return (
+              <div key={id} className="flex items-center w-full">
+                <NumberInput
+                  max={100000}
+                  min={1}
+                  value={selectedResourcesGetAmounts[id]}
+                  onChange={(value) => {
+                    setSelectedResourcesGetAmounts({
+                      ...selectedResourcesGetAmounts,
+                      [id]: value,
+                    });
+                  }}
+                />
+                <div className="ml-2">
+                  <ResourceCost resourceId={id} amount={resource?.balance || 0} />
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
       <div className="flex text-xs text-center text-white">
