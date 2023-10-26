@@ -22,6 +22,8 @@ import {
   SendResourcesToHyperstructureProps,
   TransferResourcesProps,
   TravelProps,
+  CasinoGamblePropos,
+  CasinoGetWinnerPropos,
 } from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -112,6 +114,18 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.send_resources_to_hyperstructure(props)));
   };
 
+  const send_resources_to_destination = async (props: SendResourcesToHyperstructureProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.send_resources_to_destination(props)));
+  };
+
+  const casino_gamble_and_travel_back = async (props: CasinoGamblePropos) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.casino_gamble_and_travel_back(props)));
+  };
+
+  const casino_get_winner = async (props: CasinoGetWinnerPropos) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.casino_get_winner(props)));
+  };
+
   const travel = async (props: TravelProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.travel(props)));
   };
@@ -133,11 +147,14 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     create_road,
     transfer_resources,
     send_resources_to_hyperstructure,
+    send_resources_to_destination,
     feed_hyperstructure_and_travel_back,
     initialize_hyperstructure_and_travel_back,
     initialize_hyperstructure,
     complete_hyperstructure,
     travel,
+    casino_gamble_and_travel_back,
+    casino_get_winner,
   };
 }
 

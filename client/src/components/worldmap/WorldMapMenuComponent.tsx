@@ -2,10 +2,12 @@ import { useMemo, useState } from "react";
 import { ReactComponent as Relic } from "../../assets/icons/common/relic.svg";
 import { ReactComponent as City } from "../../assets/icons/common/city.svg";
 import { ReactComponent as World } from "../../assets/icons/common/world.svg";
+import { ReactComponent as CrownCircle } from "../../assets/icons/common/crown-circle-outline.svg";
 import { useLocation } from "wouter";
 import { Tabs } from "../../elements/tab";
 import RealmsListPanel from "./RealmsListPanel";
 import { HyperstructuresPanel } from "./hyperstructures/HyperstructuresPanel";
+import { CasinosPanel } from "./casinos/CasinosPanel";
 import useUIStore from "../../hooks/store/useUIStore";
 
 const WorldMapMenuComponent = () => {
@@ -64,6 +66,29 @@ const WorldMapMenuComponent = () => {
         ),
         component: <HyperstructuresPanel />,
       },
+      {
+      key: "casinos",
+      label: (
+        <div
+          onMouseEnter={() =>
+            setTooltip({
+              position: "bottom",
+              content: (
+                <>
+                  <p className="whitespace-nowrap">Lets see how lucky you are</p>
+                  <p className="whitespace-nowrap">Casinos.</p>
+                </>
+              ),
+            })
+          }
+          onMouseLeave={() => setTooltip(null)}
+          className="flex relative group flex-col items-center"
+        >
+          <CrownCircle className="mb-2 fill-gold" /> <div>Casino</div>
+        </div>
+      ),
+      component: <CasinosPanel />,
+    },
     ],
     [selectedTab],
   );

@@ -16,7 +16,11 @@ body {
 }
 
 .container-bg-gradient-secondary {
-  background: linear-gradient(180deg, #b0b8ae 3.09%, rgba(72, 53, 47, 0.6) 100%);
+  background: linear-gradient(
+    180deg,
+    #b0b8ae 3.09%,
+    rgba(72, 53, 47, 0.6) 100%
+  );
 }
 
 @layer base {
@@ -51,12 +55,4 @@ body {
   background-color: #e0af65;
   border-radius: 8px;
   border: 1px solid var(--gray-gold, #776756);
-}
-
-.root-container {
-  pointer-events: none;
-}
-
-.root-container > * {
-  pointer-events: auto;
 }

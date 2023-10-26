@@ -1,0 +1,45 @@
+[
+  {
+    "x": -17.97911593658031,
+    "y": 0.528415243525413,
+    "z": -3.5918721344570272,
+    "resources": {
+      "minimum_deposit": [
+        {
+          "resourceType": 1,
+          "amount": 10000
+        },
+        {
+          "resourceType": 2,
+          "amount": 10000
+        },
+        {
+          "resourceType": 3,
+          "amount": 10000
+        },
+        {
+          "resourceType": 4,
+          "amount": 10000
+        }
+      ],
+      "minimum_completion": [
+        {
+          "resourceType": 1,
+          "amount": 100000
+        },
+        {
+          "resourceType": 2,
+          "amount": 100000
+        },
+        {
+          "resourceType": 3,
+          "amount": 100000
+        },
+        {
+          "resourceType": 4,
+          "amount": 100000
+        }
+      ]
+    }
+  }
+]

@@ -2,6 +2,8 @@ import { useMemo } from "react";
 import { useDojo } from "../../DojoContext";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has, HasValue } from "@latticexyz/recs";
+import { FiltersPanel } from "../../elements/FiltersPanel";
+import { FilterButton } from "../../elements/FilterButton";
 import { RealmListItem } from "./RealmListItem";
 import { useGetRealms } from "../../hooks/helpers/useRealm";
 
@@ -31,7 +33,10 @@ export const RealmsListComponent = ({ onlyMyRealms = false }: RealmsListComponen
 
   return (
     <>
-      <div className="flex flex-col space-y-2 px-2 my-2">
+      <FiltersPanel className="px-3 py-2">
+        <FilterButton active={false}>Filter</FilterButton>
+      </FiltersPanel>
+      <div className="flex flex-col space-y-2 px-2 mb-2">
         {realmsList.map((realm) => {
           return <RealmListItem key={realm.entity_id} realm={realm} />;
         })}

@@ -41,6 +41,18 @@ export interface FeedHyperstructureAndTravelBackPropos extends SystemSigner {
   hyperstructure_id: num.BigNumberish;
 }
 
+
+export interface CasinoGamblePropos extends SystemSigner {
+  entity_id: num.BigNumberish;
+  caravan_id: num.BigNumberish;
+  casino_id: num.BigNumberish;
+  destination_coord_x: num.BigNumberish;
+  destination_coord_y: num.BigNumberish;
+}
+export interface CasinoGetWinnerPropos extends SystemSigner {
+  casino_id: num.BigNumberish;
+}
+
 export interface SendResourcesToHyperstructureProps extends SystemSigner {
   sending_entity_id: num.BigNumberish;
   resources: num.BigNumberish[];
@@ -49,6 +61,16 @@ export interface SendResourcesToHyperstructureProps extends SystemSigner {
   donkeys_quantity?: num.BigNumberish;
   caravan_id?: num.BigNumberish;
 }
+
+export interface SendResourcesToDestinationProps extends SystemSigner {
+  sending_entity_id: num.BigNumberish;
+  resources: num.BigNumberish[];
+  destination_coord_x: num.BigNumberish;
+  destination_coord_y: num.BigNumberish;
+  donkeys_quantity?: num.BigNumberish;
+  caravan_id?: num.BigNumberish;
+}
+
 
 export interface CompleteHyperStructureProps extends SystemSigner {
   hyperstructure_id: num.BigNumberish;

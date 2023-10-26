@@ -24,7 +24,9 @@ import { NotificationsComponent } from "../components/NotificationsComponent";
 import { useSyncWorld } from "../hooks/graphql/useGraphQLQueries";
 import WorldMapMenuModule from "../modules/WorldMapMenuModule";
 import hyperStructures from "../data/hyperstructures.json";
+import casinos from "../data/casinos.json";
 import { useHyperstructure } from "../hooks/helpers/useHyperstructure";
+import { useCasino } from "../hooks/helpers/useCasino";
 import { Tooltip } from "../elements/Tooltip";
 
 export const World = () => {
@@ -40,6 +42,8 @@ export const World = () => {
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const setHyperstructures = useUIStore((state) => state.setHyperstructures);
+  const setCasinos = useUIStore((state) => state.setCasinos);
+  const setCasinoRounds = useUIStore((state) => state.setCasinoRounds);
   const setMouseCoords = useUIStore((state) => state.setMouseCoords);
 
   const [playBackground, { stop }] = useSound("/sound/music/happy_realm.mp3", {
@@ -57,14 +61,25 @@ export const World = () => {
   }, [isSoundOn]);
 
   const { getHyperstructure } = useHyperstructure();
+  const { getCasino, getCasinoRounds } = useCasino();
 
   useEffect(() => {
     if (!worldLoading) {
       setHyperstructures(
         hyperStructures.map((hyperstructure, index) =>
-          getHyperstructure(index + 1, { x: hyperstructure.x, y: hyperstructure.y, z: hyperstructure.z }),
+          
+            getHyperstructure(index + 1, { x: hyperstructure.x, y: hyperstructure.y, z: hyperstructure.z }),
         ),
+        
       );
+
+      setCasinos(
+        casinos.map((casino, index) =>
+          getCasino(index + 1, { x: casino.x, y: casino.y, z: casino.z }),
+        )
+      );
+
+      setCasinoRounds(getCasinoRounds());
     }
   }, [worldLoading]);
 

@@ -5,15 +5,15 @@ import { FiltersPanel } from "../../../../elements/FiltersPanel";
 import { FilterButton } from "../../../../elements/FilterButton";
 import { SortPanel } from "../../../../elements/SortPanel";
 import { CaravanDetails } from "../../../caravans/CaravanDetailsComponent";
-import { HyperStructureCaravan } from "./HyperStructureCaravan";
-import { HyperStructureInterface } from "../../../../hooks/helpers/useHyperstructure";
+import { CasinoCaravan } from "./CasinoCaravan";
+import { CasinoInterface } from "../../../../hooks/helpers/useCasino";
 
 type CaravansPanelProps = {
   caravans: CaravanInterface[];
-  hyperstructureData: HyperStructureInterface;
+  casinoData: CasinoInterface;
 };
 
-export const HyperStructureCaravansPanel = ({ caravans, hyperstructureData }: CaravansPanelProps) => {
+export const CasinoCaravansPanel = ({ caravans, casinoData }: CaravansPanelProps) => {
   const [activeFilter, setActiveFilter] = useState(false);
   const [showCaravanDetails, setShowCaravanDetails] = useState(false);
   const [selectedCaravan, setSelectedCaravan] = useState<CaravanInterface | null>(null);
@@ -62,11 +62,11 @@ export const HyperStructureCaravansPanel = ({ caravans, hyperstructureData }: Ca
       {caravans && (
         <div className="flex flex-col p-2 space-y-2">
           {caravans.map((caravan) => (
-            <HyperStructureCaravan
+            <CasinoCaravan
               onClick={() => setSelectedCaravan(caravan)}
               key={caravan.caravanId}
               caravan={caravan}
-              hyperstructureData={hyperstructureData}
+              casinoData={casinoData}
             />
           ))}
         </div>

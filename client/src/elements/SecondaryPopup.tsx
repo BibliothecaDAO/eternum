@@ -20,12 +20,6 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
     }
   };
 
-  const handleDrag = (e: any, data: any) => {
-    if (data.y < -200 || data.y > window.innerHeight - 220 || data.x < -450 || data.x > window.innerWidth - 520) {
-      return false as false;
-    }
-  };
-
   const moveToTopZIndex = () => {
     let maxZIndex = 50;
     document.querySelectorAll(".popup").forEach((popup) => {
@@ -72,13 +66,7 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
   return (
     <>
       {loaded && (
-        <Draggable
-          handle=".handle"
-          defaultPosition={position}
-          nodeRef={nodeRef}
-          onDrag={handleDrag}
-          onStop={handleStop}
-        >
+        <Draggable handle=".handle" defaultPosition={position} nodeRef={nodeRef} onStop={handleStop}>
           <div
             onClick={handleClick}
             ref={nodeRef}

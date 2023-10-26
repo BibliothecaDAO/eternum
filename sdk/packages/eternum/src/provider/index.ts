@@ -20,6 +20,8 @@ import {
   SendResourcesToHyperstructureProps,
   TransferResourcesProps,
   TravelProps,
+  CasinoGamblePropos,
+  CasinoGetWinnerPropos
 } from "../types";
 import { Call } from "starknet";
 import { DEV_CONTRACTS, PROD_CONTRACTS } from "../constants";
@@ -388,6 +390,68 @@ export class EternumProvider extends RPCProvider {
     });
   }
 
+  public async send_resources_to_destination(props: SendResourcesToHyperstructureProps) {
+    const {
+      sending_entity_id,
+      resources,
+      donkeys_quantity,
+      destination_coord_x,
+      destination_coord_y,
+      signer,
+      caravan_id,
+    } = props;
+
+    let transactions: Call[] = [];
+    let final_caravan_id = caravan_id;
+
+    // If no caravan_id, create a new caravan
+    if (!caravan_id && donkeys_quantity) {
+      const transport_unit_ids = await this.uuid();
+      final_caravan_id = transport_unit_ids + UUID_OFFSET_CREATE_CARAVAN;
+
+      transactions.push(
+        {
+          contractAddress: this.contracts.TRANSPORT_UNIT_SYSTEMS,
+          entrypoint: "create_free_unit",
+          calldata: [this.contracts.WORLD_ADDRESS, sending_entity_id, donkeys_quantity],
+        },
+        {
+          contractAddress: this.contracts.CARAVAN_SYSTEMS,
+          entrypoint: "create",
+          calldata: [this.contracts.WORLD_ADDRESS, [transport_unit_ids].length, ...[transport_unit_ids]],
+        },
+      );
+    }
+
+    if (final_caravan_id) {
+      // Common transactions
+      transactions.push(
+        {
+          contractAddress: this.contracts.RESOURCE_SYSTEMS,
+          entrypoint: "transfer",
+          calldata: [
+            this.contracts.WORLD_ADDRESS,
+            sending_entity_id,
+            final_caravan_id,
+            resources.length / 2,
+            ...resources,
+          ],
+        },
+        {
+          contractAddress: this.contracts.TRAVEL_SYSTEMS,
+          entrypoint: "travel",
+          calldata: [this.contracts.WORLD_ADDRESS, final_caravan_id, destination_coord_x, destination_coord_y],
+        },
+      );
+    }
+
+    const tx = await this.executeMulti(signer, transactions);
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+
   public async send_resources_to_hyperstructure(props: SendResourcesToHyperstructureProps) {
     const {
       sending_entity_id,
@@ -512,6 +576,43 @@ export class EternumProvider extends RPCProvider {
       retryInterval: 500,
     });
   }
+
+
+  public casino_gamble_and_travel_back = async (props: CasinoGamblePropos) => {
+    const { entity_id, casino_id, caravan_id,destination_coord_x, destination_coord_y, signer } = props;
+
+    const tx = await this.executeMulti(signer, [
+      {
+        contractAddress: this.contracts.CASINO_SYSTEMS,
+        entrypoint: "gamble",
+        calldata: [this.contracts.WORLD_ADDRESS, entity_id, caravan_id, casino_id],
+      },
+      {
+        contractAddress: this.contracts.TRAVEL_SYSTEMS,
+        entrypoint: "travel",
+        calldata: [this.contracts.WORLD_ADDRESS, caravan_id, destination_coord_x, destination_coord_y],
+      },
+    ]);
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  };
+
+  public casino_get_winner = async (props: CasinoGetWinnerPropos) => {
+    const { casino_id, signer } = props;
+
+    const tx = await this.executeMulti(signer, [
+      {
+        contractAddress: this.contracts.CASINO_SYSTEMS,
+        entrypoint: "get_winner",
+        calldata: [this.contracts.WORLD_ADDRESS,this.contracts.RESOURCE_SYSTEMS, casino_id],
+      },
+    ]);
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  };
+
 
   public async travel(props: TravelProps) {
     const { travelling_entity_id, destination_coord_x, destination_coord_y, signer } = props;

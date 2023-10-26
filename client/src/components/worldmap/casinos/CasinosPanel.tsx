@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { Tabs } from "../../../elements/tab";
-import { HyperstructuresListComponent } from "./HyperstructuresListComponent";
+import { CasinoComponent } from "./CasinoComponent";
 import useUIStore from "../../../hooks/store/useUIStore";
+import { CasinoWinnerComponent } from "./CasinoWinnerComponent";
 
-type HyperstructuresPanelProps = {};
+type CasinosPanelProps = {};
 
-export const HyperstructuresPanel = ({}: HyperstructuresPanelProps) => {
+export const CasinosPanel = ({}: CasinosPanelProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -20,7 +21,7 @@ export const HyperstructuresPanel = ({}: HyperstructuresPanelProps) => {
                 position: "bottom",
                 content: (
                   <>
-                    <p className="whitespace-nowrap">Browse all Hyperstructures.</p>
+                    <p className="whitespace-nowrap">The Casino</p>
                   </>
                 ),
               })
@@ -28,10 +29,10 @@ export const HyperstructuresPanel = ({}: HyperstructuresPanelProps) => {
             onMouseLeave={() => setTooltip(null)}
             className="flex relative group flex-col items-center"
           >
-            <div>All Hyperstructures</div>
+            <div>The Casino</div>
           </div>
         ),
-        component: <HyperstructuresListComponent />,
+        component: <CasinoComponent />,
       },
       {
         key: "my",
@@ -42,8 +43,7 @@ export const HyperstructuresPanel = ({}: HyperstructuresPanelProps) => {
                 position: "bottom",
                 content: (
                   <>
-                    <p className="whitespace-nowrap">Look at Hyperstructure of your order.</p>
-                    <p className="whitespace-nowrap">Initialize or feed it with resources.</p>
+                    <p className="whitespace-nowrap">View Past Winners</p>
                   </>
                 ),
               })
@@ -51,10 +51,10 @@ export const HyperstructuresPanel = ({}: HyperstructuresPanelProps) => {
             onMouseLeave={() => setTooltip(null)}
             className="flex group relative flex-col items-center"
           >
-            <div>My Order</div>
+            <div>Winners</div>
           </div>
         ),
-        component: <></>,
+        component: <CasinoWinnerComponent />,
       },
     ],
     [selectedTab],
