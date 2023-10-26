@@ -100,7 +100,7 @@ export interface ResourceInterface {
 }
 
 const OFFSET = 100;
-const COMPONENT_INTERVAL = 37;
+const COMPONENT_INTERVAL = 41;
 
 export const useSyncWorld = (): { loading: boolean; progress: number } => {
   // Added async since await is used inside
