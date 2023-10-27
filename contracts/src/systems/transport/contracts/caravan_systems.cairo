@@ -197,7 +197,7 @@ mod caravan_systems {
             // update one way trip time incase round_trip_time was reduced
             one_way_trip_time = round_trip_time / 2; 
 
-            (one_way_trip_time, round_trip_time)
+            (round_trip_time, one_way_trip_time)
         }
 
 
