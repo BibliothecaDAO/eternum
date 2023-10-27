@@ -3,6 +3,7 @@ mod caravan_systems {
     use eternum::alias::ID;
     use eternum::models::metadata::ForeignKey;
     use eternum::models::caravan::CaravanMembers;
+    use eternum::models::inventory::Inventory;
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::position::{Position, PositionTrait, Coord, CoordTrait};
     use eternum::models::movable::{Movable, ArrivalTime};
@@ -132,6 +133,11 @@ mod caravan_systems {
                         entity_id: caravan_id, 
                         key: entities_key.into(), 
                         count: length
+                    }, 
+                    Inventory {
+                        entity_id: caravan_id, 
+                        items_key: world.uuid().into(), 
+                        items_count: 0
                     }, 
                     Position {
                         entity_id: caravan_id, 
