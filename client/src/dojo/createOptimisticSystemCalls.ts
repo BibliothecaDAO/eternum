@@ -23,8 +23,8 @@ export function createOptimisticSystemCalls({
   Labor,
   Resource,
   Road,
-  ResourceDetached,
-  ResourcesChest,
+  DetachedResource,
+  ResourceChest,
   Inventory,
 }: ClientComponents) {
   function optimisticCreateOrder(systemCall: (args: any) => Promise<any>) {
@@ -45,8 +45,8 @@ export function createOptimisticSystemCalls({
       // optimisitc rendering of trade
       const overrideId = uuid();
       const trade_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID)]);
-      const maker_resources_chest_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 1)]);
-      const taker_resources_chest_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 2)]);
+      const maker_resource_chest_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 1)]);
+      const taker_resource_chest_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 2)]);
       const maker_transport_id = transport_id || getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 3)]);
       // const key = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 4)]);
 
@@ -55,8 +55,8 @@ export function createOptimisticSystemCalls({
         value: {
           maker_id: maker_id as Type.Number,
           taker_id: taker_id as Type.Number,
-          maker_resources_chest_id,
-          taker_resources_chest_id,
+          maker_resource_chest_id,
+          taker_resource_chest_id,
           maker_transport_id: maker_transport_id as Type.Number,
           expires_at,
         },
@@ -65,17 +65,17 @@ export function createOptimisticSystemCalls({
         entity: trade_id,
         value: { value: 0 },
       });
-      ResourcesChest.addOverride(overrideId, {
-        entity: maker_resources_chest_id,
+      ResourceChest.addOverride(overrideId, {
+        entity: maker_resource_chest_id,
         value: { resources_count: maker_gives_resource_types.length },
       });
-      ResourcesChest.addOverride(overrideId, {
-        entity: taker_resources_chest_id,
+      ResourceChest.addOverride(overrideId, {
+        entity: taker_resource_chest_id,
         value: { resources_count: taker_gives_resource_types.length },
       });
       for (let i = 0; i < maker_gives_resource_amounts.length; i++) {
-        ResourceDetached.addOverride(overrideId, {
-          entity: getEntityIdFromKeys([BigInt(maker_resources_chest_id), BigInt(i)]),
+        DetachedResource.addOverride(overrideId, {
+          entity: getEntityIdFromKeys([BigInt(maker_resource_chest_id), BigInt(i)]),
           value: {
             resource_type: maker_gives_resource_types[i] as Type.Number,
             resource_amount: maker_gives_resource_amounts[i] as Type.Number,
@@ -83,8 +83,8 @@ export function createOptimisticSystemCalls({
         });
       }
       for (let i = 0; i < taker_gives_resource_amounts.length; i++) {
-        ResourceDetached.addOverride(overrideId, {
-          entity: getEntityIdFromKeys([BigInt(taker_resources_chest_id), BigInt(i)]),
+        DetachedResource.addOverride(overrideId, {
+          entity: getEntityIdFromKeys([BigInt(taker_resource_chest_id), BigInt(i)]),
           value: {
             resource_type: taker_gives_resource_types[i] as Type.Number,
             resource_amount: taker_gives_resource_amounts[i] as Type.Number,
@@ -115,12 +115,12 @@ export function createOptimisticSystemCalls({
       Inventory.addOverride(overrideId, {
         entity: getEntityIdFromKeys([BigInt(carrier_id)]),
         value: {
-          count: 0,
+          items_count: 0,
         },
       });
 
       // remove resources from chest
-      ResourcesChest.addOverride(overrideId, {
+      ResourceChest.addOverride(overrideId, {
         entity: getEntityIdFromKeys([BigInt(resources_chest_id)]),
         value: {
           resources_count: 0,

@@ -13,7 +13,7 @@ export function createClientComponents({ contractComponents }: SetupNetworkResul
     Labor: overridableComponent(contractComponents.Labor),
     Road: overridableComponent(contractComponents.Road),
     Inventory: overridableComponent(contractComponents.Inventory),
-    ResourcesChest: overridableComponent(contractComponents.ResourcesChest),
-    ResourceDetached: overridableComponent(contractComponents.ResourceDetached),
+    ResourceChest: overridableComponent(contractComponents.ResourceChest),
+    DetachedResource: overridableComponent(contractComponents.DetachedResource),
   };
 }

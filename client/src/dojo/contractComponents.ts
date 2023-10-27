@@ -315,8 +315,8 @@ export function defineContractComponents(world: World) {
           sec_per_km: RecsType.Number,
           blocked: RecsType.Boolean,
           roundtrip: RecsType.Boolean,
-          intermediate_postion_x: RecsType.Number,
-          intermediate_postion_y: RecsType.Number,
+          intermediate_coord_x: RecsType.Number,
+          intermediate_coord_y: RecsType.Number,
         },
         {
           metadata: {
@@ -330,8 +330,8 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
-          key: RecsType.Number,
-          count: RecsType.Number,
+          items_key: RecsType.Number,
+          items_count: RecsType.Number,
         },
         {
           metadata: {
@@ -340,13 +340,13 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    ResourcesChest: (() => {
-      const name = "ResourcesChest";
+    ResourceChest: (() => {
+      const name = "ResourceChest";
       return defineComponent(
         world,
         {
-          resources_count: RecsType.Number,
           locked_until: RecsType.Number,
+          resources_count: RecsType.Number,
         },
         {
           metadata: {
@@ -355,8 +355,8 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    ResourceDetached: (() => {
-      const name = "ResourceDetached";
+    DetachedResource: (() => {
+      const name = "DetachedResource";
       return defineComponent(
         world,
         {
@@ -462,10 +462,10 @@ export function defineContractComponents(world: World) {
         {
           trade_id: RecsType.Number,
           maker_id: RecsType.Number,
-          maker_resources_chest_id: RecsType.Number,
+          maker_resource_chest_id: RecsType.Number,
           maker_transport_id: RecsType.Number,
           taker_id: RecsType.Number,
-          taker_resources_chest_id: RecsType.Number,
+          taker_resource_chest_id: RecsType.Number,
           taker_transport_id: RecsType.Number,
           expires_at: RecsType.Number,
         },
