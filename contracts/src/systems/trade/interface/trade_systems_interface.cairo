@@ -27,33 +27,21 @@ trait ITradeSystems<TContractState> {
     fn create_order(
         self: @TContractState,
         world: IWorldDispatcher,
-        seller_id: u128,
-        seller_resource_types: Span<u8>,
-        seller_resource_amounts: Span<u128>,
-        seller_caravan_id: ID,
-        buyer_id: u128,
-        buyer_resource_types: Span<u8>,
-        buyer_resource_amounts: Span<u128>,
+        maker_id: u128,
+        maker_gives_resource_types: Span<u8>,
+        maker_gives_resource_amounts: Span<u128>,
+        maker_transport_id: ID,
+        taker_id: u128,
+        taker_gives_resource_types: Span<u8>,
+        taker_gives_resource_amounts: Span<u128>,
         expires_at: u64
     ) -> ID;
 
     fn accept_order(
         self: @TContractState, world: IWorldDispatcher,
-        buyer_id: u128, buyer_caravan_id: u128, trade_id: u128
+        taker_id: u128, taker_transport_id: u128, trade_id: u128
     );
 
     fn cancel_order(self: @TContractState, world: IWorldDispatcher, trade_id: u128);
 
-}
-
-
-#[starknet::interface]
-trait ITradeCaravanSystems<TContractState> {
-    fn attach_caravan(
-        self: @TContractState, 
-        world: IWorldDispatcher, 
-        entity_id: u128, 
-        trade_id: u128, 
-        caravan_id: u128
-    );
 }

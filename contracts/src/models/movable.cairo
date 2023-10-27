@@ -1,3 +1,5 @@
+use eternum::models::position::Coord;
+
 // speed seconds per km
 #[derive(Model, Copy, Drop, Serde)]
 struct Movable {
@@ -5,6 +7,8 @@ struct Movable {
     entity_id: u128,
     sec_per_km: u16,
     blocked: bool,
+    round_trip: bool,
+    intermediate_coord: Coord 
 }
 
 // DISCUSS: separated from the Movable component because

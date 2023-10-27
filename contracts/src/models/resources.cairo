@@ -30,26 +30,18 @@ struct ResourceCost {
     amount: u128
 }
 
-// a burden is a bundle of resources
-//
-// It can be a free burden (i.e a burden with no depositor_id) or not.
-// When it is a free burden, no resources can be withdrawn from it as no 
-// deposit has been made to it. It's just a shadow of the resources that'll
-// be in it when a deposit is made. E.gin trade,  it's to hold items that
-// a buyer would need to provide before they can accept a trade
 #[derive(Model, Copy, Drop, Serde)]
-struct Burden {
+struct ResourceChest {
     #[key]
-    burden_id: u128,
-    depositor_id: u128,
+    entity_id: u128,
+    locked_until: u64,
     resources_count: u32,
-    resources_weight: u128
 }
 
 #[derive(Model, Copy, Drop, Serde)]
-struct BurdenResource {
+struct DetachedResource {
     #[key]
-    burden_id: u128,
+    entity_id: u128,
     #[key]
     index: u32,
     resource_type: u8,

@@ -14,7 +14,7 @@ const HIGHEST_Y: u32 = 2412800;
 // lowest y = -618996 + 1800000 = 1181004
 const LOWEST_Y: u32 = 1181004;
 
-#[derive(Copy, Drop, PartialEq, Serde)]
+#[derive(Copy, Drop, PartialEq, Serde, Print, Introspect)]
 struct Coord {
     x: u32,
     y: u32
@@ -51,12 +51,6 @@ impl CoordImpl of CoordTrait {
 }
 
 
-impl CoordPrint of PrintTrait<Coord> {
-    fn print(self: Coord) {
-        self.x.print();
-        self.y.print();
-    }
-}
 
 impl CoordZeroable of Zeroable<Coord> {
     fn zero() -> Coord {

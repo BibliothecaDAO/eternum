@@ -2,18 +2,25 @@
 mod resource_systems {
     use eternum::alias::ID;
     use eternum::models::resources::{Resource, ResourceAllowance};
+    use eternum::models::inventory::{Inventory, InventoryCategory, InventoryItem};
     use eternum::models::owner::Owner;
     use eternum::models::position::{Position, Coord};
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::capacity::Capacity;
     use eternum::models::config::{WeightConfig, WeightConfigImpl};
-    use eternum::models::resources::{Burden, BurdenResource};
+    use eternum::models::resources::{ResourceChest, DetachedResource};
     use eternum::models::movable::{ArrivalTime};
+    use eternum::models::weight::Weight;
+    use eternum::models::road::RoadImpl;
 
     
+    use eternum::systems::transport::contracts::caravan_systems::caravan_systems::{
+        InternalCaravanSystemsImpl as caravan
+    };
+
     use eternum::constants::{WORLD_CONFIG_ID};
 
-    use eternum::systems::resources::interface::{IResourceSystems, IBurdenSystems};
+    use eternum::systems::resources::interface::{IResourceSystems, IResourceChestSystems};
 
     use core::integer::BoundedInt;
 
@@ -215,69 +222,45 @@ mod resource_systems {
         }
     }
 
+
+
+
     #[external(v0)]
-    impl BurdenSystemsImpl of IBurdenSystems<ContractState> {
+    impl ResourceChestSystemsImpl of IResourceChestSystems<ContractState> {
 
-        /// Bundle resources into a burden.
-        fn bundle(
-            self: @ContractState, world: IWorldDispatcher,
-            entity_id: ID, resource_types: Span<u8>, resource_amounts: Span<u128>
-        ) -> Burden {
+        /// Offload resources in a resource_chest from a caravan
+        fn offload(
+            self: @ContractState, world: IWorldDispatcher, 
+            entity_id: ID, entity_index_in_inventory: u128, 
+            receiving_entity_id: ID, transport_id: ID
+            ) {
 
-            let entity_owner = get!(world, entity_id, Owner);
-            assert(entity_owner.address == starknet::get_caller_address(), 
-                        'caller not owner'
-            );
+            caravan::check_owner(world, transport_id, starknet::get_caller_address());
+            caravan::check_position(world, transport_id, receiving_entity_id);
+            caravan::check_arrival_time(world, transport_id);
 
-            let entity_position = get!(world, entity_id, Position);
-            
-            InternalBurdenImpl::bundle(
-                world, entity_id,entity_position.into(), 
-                resource_types, resource_amounts
-                )
-        }
-
-        /// Unbundle resources from a burden. (This'll also be used to claim orders)
-        fn unbundle(self: @ContractState, world: IWorldDispatcher, entity_id: ID, burden_id: ID) {
-
-            let entity_owner = get!(world, entity_id, Owner);
-            assert(entity_owner.address == starknet::get_caller_address(), 
-                        'not entity owner'
-            );
-
-            // ensure burden has arrived
-            let mut burden = get!(world, burden_id, Burden);
-            let burden_position = get!(world, burden_id, Position);
-            let entity_position = get!(world, entity_id, Position);
-
-            assert(burden_position.x == entity_position.x, 'burden position mismatch');
-            assert(burden_position.y == entity_position.y, 'burden position mismatch');
-            
-            let burden_arrival_time = get!(world, burden_id, ArrivalTime);
-            assert(
-                burden_arrival_time.arrives_at <= starknet::get_block_timestamp(), 
-                        'burden has not arrived'
-            );
-
-            InternalBurdenImpl::unbundle(world, entity_id, burden)
+            InternalResourceChestImpl::offload(world, entity_id, receiving_entity_id);
+            InternalInventorySystemsImpl::delete(
+                world, transport_id, 
+                InventoryCategory::RESOURCE_CHEST, entity_index_in_inventory, entity_id
+                );
         }
     }
 
 
 
     #[generate_trait]
-    impl InternalBurdenImpl of InternalBurdenTrait {
+    impl InternalResourceChestImpl of InternalResourceChestTrait {
 
-        fn bundle( 
-                world: IWorldDispatcher, depositor_id: ID, coord: Coord,
-                resource_types: Span<u8>, resource_amounts: Span<u128>
-            ) -> Burden {
+        fn create( 
+                world: IWorldDispatcher, resource_types: Span<u8>, resource_amounts: Span<u128>
+            ) -> ResourceChest {
 
             assert(resource_types.len() == resource_amounts.len(), 'length not equal');
             
-            let burden_id = world.uuid().into();
+            let resource_chest_id = world.uuid().into();
 
-            // transfer resources to burden
+            // create the chest
             let mut index = 0;
             let mut resources_weight = 0;
             loop {
@@ -287,23 +270,15 @@ mod resource_systems {
                 let resource_type = *resource_types[index];
                 let resource_amount = *resource_amounts[index];
                 set!(world,(
-                        BurdenResource {
-                            burden_id,
-                            index,
-                            resource_type,
-                            resource_amount
-                        }
+                    DetachedResource {
+                        entity_id: resource_chest_id,
+                        index,
+                        resource_type,
+                        resource_amount
+                    }
                 ));
 
-                if depositor_id != 0 {
-                    // decrease balance of entity
-                    let mut entity_resource = get!(world, (depositor_id, resource_type), Resource);
-                    assert(entity_resource.balance >= resource_amount, 'balance too low');
-                    
-                    entity_resource.balance -= resource_amount;
-                    set!(world,(entity_resource));
-                }
-
+              
                 // update resources total weight
                 let resource_type_weight 
                     = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig);
@@ -311,103 +286,180 @@ mod resource_systems {
                 index += 1;
             };
 
-            let burden 
-                = Burden {
-                    burden_id,
-                    depositor_id: depositor_id,
+            let resource_chest 
+                = ResourceChest {
+                    entity_id:resource_chest_id,
+                    locked_until: 0,
                     resources_count: resource_types.len(),
-                    resources_weight: resources_weight
                 };
 
-            set!(world,(burden));
-                
+            set!(world,(resource_chest));
             set!(world,(
-                    Position {
-                        entity_id: burden_id,
-                        x: coord.x,
-                        y: coord.y
+                    Weight {
+                        entity_id: resource_chest_id,
+                        value: resources_weight
                     }
                 )
             );
 
-            burden
+            resource_chest
+        }
+
+        fn fill(world: IWorldDispatcher, entity_id: u128, donor_id: u128 ) {
+            
+            let resource_chest = get!(world, entity_id, ResourceChest);
+            let mut resource_chest_weight = get!(world, entity_id, Weight);
+            assert(resource_chest_weight.value == 0, 'chest is not empty');
+
+            // create the chest
+            let mut index = 0;
+            let mut resources_weight = 0;
+            loop {
+                if index == resource_chest.resources_count {
+                    break ();
+                }
+                let detached_resource = get!(world, (entity_id, index), DetachedResource);
+                let mut donor_resource = get!(world, (donor_id, detached_resource.resource_type), Resource);
+                
+                // remove resources from donor's balance
+                donor_resource.balance -= detached_resource.resource_amount;
+                set!(world, (donor_resource));
+            
+                // update resources total weight
+                let resource_type_weight 
+                    = get!(world, (WORLD_CONFIG_ID, detached_resource.resource_type), WeightConfig);
+                resources_weight += resource_type_weight.weight_gram * detached_resource.resource_amount;
+                index += 1;
+            };
+
+            // update chest weight
+            resource_chest_weight.value = resources_weight;
+            set!(world,(resource_chest_weight));
+
         }
 
 
+        fn lock_until(world: IWorldDispatcher, entity_id: u128, ts: u64) {
 
-        fn unbundle(world: IWorldDispatcher, receiving_entity_id: ID, mut burden: Burden) {
+            let mut resource_chest = get!(world, entity_id, ResourceChest);
             
-            assert(burden.resources_count != 0, 'does not exist');
-            assert(burden.depositor_id != 0, 'no deposit');
+            // update locked time
+            resource_chest.locked_until = ts;
+            set!(world, (resource_chest));
+        }
+
+
+        fn offload(world: IWorldDispatcher, entity_id: ID, receiving_entity_id: ID) {
+            let mut resource_chest = get!(world, entity_id, ResourceChest);
+            let resource_chest_weight = get!(world, entity_id, Weight);
+            assert(resource_chest_weight.value != 0, 'chest is empty');
+     
+            // todo@credence ensure that receiver has capacity
 
             // return resources to the entity
             let mut index = 0;
             loop {
-                if index == burden.resources_count {
+                if index == resource_chest.resources_count {
                     break ();
                 };
 
-                let burden_resource 
-                    = get!(world, (burden.burden_id, index), BurdenResource);
+                let resource_chest_resource 
+                    = get!(world, (resource_chest.entity_id, index), DetachedResource);
                 
-                let mut entity_resource 
-                    = get!(world, (receiving_entity_id, burden_resource.resource_type), Resource);
+                let mut receiving_entity_resource 
+                    = get!(world, (receiving_entity_id, resource_chest_resource.resource_type), Resource);
 
-                entity_resource.balance += burden_resource.resource_amount;
-                set!(world,( entity_resource ));
+                // update entity balance
+                receiving_entity_resource.balance += resource_chest_resource.resource_amount;
+                set!(world,( receiving_entity_resource ));
 
                 index += 1;
             };
 
-            // update burden
-            burden.resources_count = 0;
-            burden.resources_weight = 0;
+            // reset resource chest
+            resource_chest.resources_count = 0;
+            resource_chest.locked_until = 0;
 
-            set!(world,(burden));
+            set!(world,(resource_chest));
+            set!(world, (
+                Owner {
+                    entity_id,
+                    address: Zeroable::zero()
+                },
+                Weight {
+                    entity_id,
+                    value: 0
+                }
+            ));
 
         }
 
-
-        /// Deposit resources to an existing burden. 
-        /// check trade_systems for usage
-        fn make_deposit(world: IWorldDispatcher, entity_id: ID, mut burden: Burden) {
-            
-            assert(burden.resources_count != 0, 'does not exist');
-            assert(burden.depositor_id == 0, 'burden has deposit');
-
-            let entity_owner = get!(world, entity_id, Owner);
-            assert(entity_owner.address == starknet::get_caller_address(), 
-                        'caller not owner'
-            );
+    }
 
 
-            // deduct resources from the entity
-            let mut index = 0;
-            loop {
-                if index == burden.resources_count {
-                    break ();
-                };
 
-                let burden_resource 
-                    = get!(world, (burden.burden_id, index), BurdenResource);
+    #[generate_trait]
+    impl InternalInventorySystemsImpl of InternalInventorySystemsTrait {
+
+        fn add(
+            world: IWorldDispatcher, entity_id: ID, inventory_category: u128, item_id: ID
+            ) {
+                // ensure entity can carry the weight
+                let item_weight = get!(world, item_id, Weight);
+                assert(item_weight.value > 0, 'item is empty');
+
+                let mut entity_weight = get!(world, entity_id, Weight);
+                entity_weight.value += item_weight.value;
+
+                let entity_capacity = get!(world, entity_id, Capacity); 
+                if entity_capacity.weight_gram != 0  {
+                    let entity_quantity = get!(world, entity_id, Quantity);
+                    let entity_quantity = entity_quantity.get_value();
+                    assert(
+                        entity_capacity.weight_gram * entity_quantity 
+                            >= entity_weight.value,
+                            'capacity is not enough'
+                    );
+                }  
+                set!(world, (entity_weight));
+
+
+                // update entity's inventory
+                let mut inventory
+                    = get!(world, (entity_id, inventory_category), Inventory);
+                inventory.items_count += 1;
                 
-                let mut entity_resource 
-                    = get!(world, (entity_id, burden_resource.resource_type), Resource);
-                assert(
-                    entity_resource.balance >= burden_resource.resource_amount, 
-                        'not enough balance'
-                );
-                
-                entity_resource.balance -= burden_resource.resource_amount;
-                set!(world,( entity_resource));
+                set!(world, (inventory));
+                set!(world, (
+                    InventoryItem {
+                        entity_id: entity_id,
+                        category: inventory_category,
+                        index: inventory.items_count - 1,
+                        item_id: item_id
+                    }
+                ));
+        }
 
-                index += 1;
-            };
+        /// Delete an item in an inventory
+        fn delete(
+            world: IWorldDispatcher, entity_id: ID, inventory_category: u128, index: u128, item_id: ID
+        ) {
+            let mut inventory
+                = get!(world, (entity_id, inventory_category), Inventory);
+            assert(inventory.items_count > 0, 'inventory is empty');
 
-            // update burden
-            burden.depositor_id = entity_id;
-            set!(world,(burden));
+            let mut current_inventory_item 
+                 = get!(world, (entity_id, inventory_category, index), InventoryItem);
 
+            let last_inventory_item 
+                = get!(world, (entity_id, inventory_category, inventory.items_count - 1), InventoryItem);
+ 
+            current_inventory_item.item_id = last_inventory_item.item_id;
+            inventory.items_count -= 1;
+
+            set!(world, (current_inventory_item));
+            set!(world, (inventory));
         }
     }
+    
 }
