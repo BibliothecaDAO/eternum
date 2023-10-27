@@ -249,20 +249,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    Vault: (() => {
-      const name = "Vault";
-      return defineComponent(
-        world,
-        {
-          balance: RecsType.Number,
-        },
-        {
-          metadata: {
-            name: name,
-          },
-        },
-      );
-    })(),
     Labor: (() => {
       const name = "Labor";
       return defineComponent(
@@ -314,7 +300,7 @@ export function defineContractComponents(world: World) {
         {
           sec_per_km: RecsType.Number,
           blocked: RecsType.Boolean,
-          roundtrip: RecsType.Boolean,
+          round_trip: RecsType.Boolean,
           intermediate_coord_x: RecsType.Number,
           intermediate_coord_y: RecsType.Number,
         },

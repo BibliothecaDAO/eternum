@@ -24,8 +24,7 @@ import {
 import { Call } from "starknet";
 import { DEV_CONTRACTS, PROD_CONTRACTS } from "../constants";
 
-const UUID_OFFSET_CREATE_ORDER = 3;
-const UUID_OFFSET_CREATE_TRANSPORT_UNIT = 1;
+// const UUID_OFFSET_CREATE_ORDER = 3;
 const UUID_OFFSET_CREATE_CARAVAN = 2;
 
 export class EternumProvider extends RPCProvider {
@@ -108,36 +107,12 @@ export class EternumProvider extends RPCProvider {
     } = props;
 
     const expires_at = Math.floor(Date.now() / 1000 + 2628000);
-    const trade_id = uuid + UUID_OFFSET_CREATE_ORDER;
-
     let transactions: Call[] = [];
 
-    // Common transaction for creating an order
-    transactions.push({
-      contractAddress: this.contracts.TRADE_SYSTEMS,
-      entrypoint: "create_order",
-      calldata: [
-        this.contracts.WORLD_ADDRESS,
-        maker_id,
-        maker_gives_resource_types.length,
-        ...maker_gives_resource_types,
-        maker_gives_resource_amounts.length,
-        ...maker_gives_resource_amounts,
-        taker_id,
-        taker_gives_resource_types.length,
-        ...taker_gives_resource_types,
-        taker_gives_resource_amounts.length,
-        ...taker_gives_resource_amounts,
-        1,
-        expires_at,
-      ],
-    });
-
     // If no caravan_id is provided, create a new caravan
-    let final_caravan_id = maker_transport_id;
+    let final_caravan_id = 0;
     if (!maker_transport_id && donkeys_quantity) {
-      const transport_unit_ids = trade_id + UUID_OFFSET_CREATE_TRANSPORT_UNIT;
-      final_caravan_id = transport_unit_ids + UUID_OFFSET_CREATE_CARAVAN;
+      final_caravan_id = uuid + UUID_OFFSET_CREATE_CARAVAN;
 
       transactions.push(
         {
@@ -148,19 +123,31 @@ export class EternumProvider extends RPCProvider {
         {
           contractAddress: this.contracts.CARAVAN_SYSTEMS,
           entrypoint: "create",
-          calldata: [this.contracts.WORLD_ADDRESS, [transport_unit_ids].length, ...[transport_unit_ids]],
+          calldata: [this.contracts.WORLD_ADDRESS, [uuid].length, ...[uuid]],
         },
       );
     }
 
-    if (final_caravan_id) {
-      // Common transaction for attaching a caravan
-      transactions.push({
-        contractAddress: this.contracts.TRADE_SYSTEMS,
-        entrypoint: "attach_caravan",
-        calldata: [this.contracts.WORLD_ADDRESS, maker_id, trade_id, final_caravan_id],
-      });
-    }
+    // // Common transaction for creating an order
+    transactions.push({
+      contractAddress: this.contracts.TRADE_SYSTEMS,
+      entrypoint: "create_order",
+      calldata: [
+        this.contracts.WORLD_ADDRESS,
+        maker_id,
+        maker_gives_resource_types.length,
+        ...maker_gives_resource_types,
+        maker_gives_resource_amounts.length,
+        ...maker_gives_resource_amounts,
+        final_caravan_id,
+        taker_id,
+        taker_gives_resource_types.length,
+        ...taker_gives_resource_types,
+        taker_gives_resource_amounts.length,
+        ...taker_gives_resource_amounts,
+        expires_at,
+      ],
+    });
 
     const tx = await this.executeMulti(signer, transactions);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -195,18 +182,11 @@ export class EternumProvider extends RPCProvider {
 
     if (final_caravan_id) {
       // Common transactions
-      transactions.push(
-        {
-          contractAddress: this.contracts.TRADE_SYSTEMS,
-          entrypoint: "attach_caravan",
-          calldata: [this.contracts.WORLD_ADDRESS, taker_id, trade_id, final_caravan_id],
-        },
-        {
-          contractAddress: this.contracts.TRADE_SYSTEMS,
-          entrypoint: "accept_order",
-          calldata: [this.contracts.WORLD_ADDRESS, taker_id, trade_id],
-        },
-      );
+      transactions.push({
+        contractAddress: this.contracts.TRADE_SYSTEMS,
+        entrypoint: "accept_order",
+        calldata: [this.contracts.WORLD_ADDRESS, taker_id, final_caravan_id, trade_id],
+      });
     }
 
     const tx = await this.executeMulti(signer, transactions);

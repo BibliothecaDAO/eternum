@@ -48,18 +48,18 @@ type TradeResources = {
 export function useTrade() {
   const {
     setup: {
-      components: { Resource, Trade, Realm, ResourcesChest, ResourceDetached },
+      components: { Resource, Trade, Realm, ResourceChest, DetachedResource },
     },
   } = useDojo();
 
   const getChestResources = (resourcesChestId: number): Resource[] => {
-    const resourcesChest = getComponentValue(ResourcesChest, resourcesChestId as EntityIndex);
+    const resourcesChest = getComponentValue(ResourceChest, resourcesChestId as EntityIndex);
     if (!resourcesChest) return [];
     let resources: Resource[] = [];
     let { resources_count } = resourcesChest;
     for (let i = 0; i < resources_count; i++) {
       let entityId = getEntityIdFromKeys([BigInt(resourcesChestId), BigInt(i)]);
-      const resource = getComponentValue(ResourceDetached, entityId);
+      const resource = getComponentValue(DetachedResource, entityId);
       if (resource) {
         resources.push({
           resourceId: resource.resource_type,
@@ -75,20 +75,20 @@ export function useTrade() {
 
     let resourcesGet =
       trade.maker_id === entityId
-        ? getChestResources(trade.taker_resources_chest_id)
-        : getChestResources(trade.maker_resources_chest_id);
+        ? getChestResources(trade.taker_resource_chest_id)
+        : getChestResources(trade.maker_resource_chest_id);
 
     let resourcesGive =
       trade.maker_id === entityId
-        ? getChestResources(trade.maker_resources_chest_id)
-        : getChestResources(trade.taker_resources_chest_id);
+        ? getChestResources(trade.maker_resource_chest_id)
+        : getChestResources(trade.taker_resource_chest_id);
 
     return { resourcesGet, resourcesGive };
   };
 
   const getTradeIdFromResourcesChestId = (resourcesChestId: number): number | undefined => {
-    const tradeIfMaker = Array.from(runQuery([HasValue(Trade, { maker_resources_chest_id: resourcesChestId })]));
-    const tradeIfTaker = Array.from(runQuery([HasValue(Trade, { taker_resources_chest_id: resourcesChestId })]));
+    const tradeIfMaker = Array.from(runQuery([HasValue(Trade, { maker_resource_chest_id: resourcesChestId })]));
+    const tradeIfTaker = Array.from(runQuery([HasValue(Trade, { taker_resource_chest_id: resourcesChestId })]));
     if (tradeIfMaker.length > 0) {
       let trade = getComponentValue(Trade, tradeIfMaker[0]);
       return trade?.trade_id;

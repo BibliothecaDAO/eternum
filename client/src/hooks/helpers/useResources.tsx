@@ -11,7 +11,7 @@ export function useResources() {
   const {
     account: { account },
     setup: {
-      components: { Inventory, ForeignKey, ResourcesChest, ResourceDetached },
+      components: { Inventory, ForeignKey, ResourceChest, DetachedResource },
       optimisticSystemCalls: { optimisticEmptyResourcesChest },
       systemCalls: { empty_resources_chest },
     },
@@ -23,10 +23,10 @@ export function useResources() {
   const getResourcesFromInventory = (entityId: number): Resource[] => {
     let inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(entityId)]));
     let foreignKey = inventory
-      ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(inventory.key), BigInt(0)]))
+      ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(inventory.items_key), BigInt(0)]))
       : undefined;
     let resourcesChest = foreignKey
-      ? getComponentValue(ResourcesChest, getEntityIdFromKeys([BigInt(foreignKey.entity_id)]))
+      ? getComponentValue(ResourceChest, getEntityIdFromKeys([BigInt(foreignKey.entity_id)]))
       : undefined;
 
     if (!resourcesChest) return [];
@@ -35,7 +35,7 @@ export function useResources() {
     let { resources_count } = resourcesChest;
     for (let i = 0; i < resources_count; i++) {
       let entityId = getEntityIdFromKeys([BigInt(foreignKey.entity_id), BigInt(i)]);
-      const resource = getComponentValue(ResourceDetached, entityId);
+      const resource = getComponentValue(DetachedResource, entityId);
       if (resource) {
         resources.push({
           resourceId: resource.resource_type,
@@ -95,7 +95,7 @@ export function useGetCaravansWithResourcesChest() {
   const caravansAtPositionWithInventory = useEntityQuery([
     Has(CaravanMembers),
     HasValue(Inventory, {
-      count: 1,
+      items_count: 1,
     }),
     HasValue(Position, {
       x: realmPosition?.x,

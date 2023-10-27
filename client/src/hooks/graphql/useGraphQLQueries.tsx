@@ -129,7 +129,7 @@ export const useSyncWorld = (): { loading: boolean; progress: number } => {
           while (shouldContinue) {
             const queryBuilder = `
               query SyncWorld {
-                entities: entities(keys:["%"] ${cursor ? `after: "${cursor}"` : ""} first: ${OFFSET}) {
+                entities: entities(keys:["*"] ${cursor ? `after: "${cursor}"` : ""} first: ${OFFSET}) {
                   total_count
                   edges {
                     cursor
