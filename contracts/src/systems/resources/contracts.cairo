@@ -426,12 +426,8 @@ mod resource_systems {
                 }  
                 set!(world, (entity_weight));
 
-
-                // update entity's inventory
+                // add item to inventory
                 let mut inventory = get!(world, entity_id, Inventory);
-                inventory.items_count += 1;
-                set!(world, (inventory));
-
                 let foreign_key 
                     = InternalInventorySystemsImpl::get_foreign_key(inventory, inventory.items_count);
                 set!(world, (
@@ -440,6 +436,10 @@ mod resource_systems {
                         entity_id: item_id
                     }
                 ));
+
+                // update entity's inventory
+                inventory.items_count += 1;
+                set!(world, (inventory));
         }
 
         /// Delete an item from an inventory
