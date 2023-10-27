@@ -4,15 +4,19 @@ mod caravan_systems {
     use eternum::models::metadata::ForeignKey;
     use eternum::models::caravan::CaravanMembers;
     use eternum::models::quantity::{Quantity, QuantityTrait};
-    use eternum::models::position::Position;
-    use eternum::models::movable::Movable;
+    use eternum::models::position::{Position, PositionTrait, Coord, CoordTrait};
+    use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::capacity::Capacity;
     use eternum::models::owner::Owner;
+    use eternum::models::road::RoadImpl;
     use eternum::systems::transport::interface::caravan_systems_interface::{
         ICaravanSystems
     };
 
+    use starknet::ContractAddress;
+
     use core::poseidon::poseidon_hash_span;
+
 
     #[external(v0)]
     impl CaravanSystemsImpl of ICaravanSystems<ContractState>{
@@ -84,7 +88,9 @@ mod caravan_systems {
                     Movable { 
                         entity_id, 
                         sec_per_km: movable.sec_per_km, 
-                        blocked: true,  
+                        blocked: true,
+                        round_trip: false,
+                        intermediate_coord: Zeroable::zero()  
                     })
                 );
 
@@ -115,6 +121,8 @@ mod caravan_systems {
                         entity_id: caravan_id, 
                         sec_per_km: average_speed, 
                         blocked: false, 
+                        round_trip: false,
+                        intermediate_coord: Zeroable::zero()  
                     }, 
                     Capacity {
                         entity_id: caravan_id, 
@@ -133,6 +141,83 @@ mod caravan_systems {
                 )
             );
             caravan_id
+        }
+    }
+
+
+    #[generate_trait]
+    impl InternalCaravanSystemsImpl of InternalCaravanSystemsTrait {
+
+        fn check_owner(world: IWorldDispatcher, transport_id: ID, addr: ContractAddress) {
+            let transport_owner = get!(world, transport_id, Owner);
+            assert(transport_owner.address == addr, 'not caravan owner');
+        }
+
+
+        fn check_position(world: IWorldDispatcher, transport_id: ID, owner_id: ID) {
+            let transport_position = get!(world, transport_id, Position);
+            let owner_position = get!(world, owner_id, Position);
+            assert(transport_position.x == owner_position.x, 'mismatched positions');
+            assert(transport_position.y == owner_position.y, 'mismatched positions');
+        }
+
+        fn check_arrival_time(world: IWorldDispatcher, transport_id: ID) {
+            let transport_arrival_time = get!(world, transport_id, ArrivalTime);
+            assert(
+                transport_arrival_time.arrives_at <= starknet::get_block_timestamp(), 
+                        'transport has not arrived'
+            );
+        }
+
+
+        fn get_travel_time(
+            world: IWorldDispatcher, transport_id: ID, from_pos: Position, to_pos: Position, 
+            ) -> (u64, u64) {
+
+            let (caravan_movable, caravan_position) 
+                = get!(world, transport_id, (Movable, Position));
+            let mut one_way_trip_time 
+                = from_pos.calculate_travel_time(
+                    to_pos, caravan_movable.sec_per_km
+                    );
+                    
+            let mut round_trip_time: u64 = 2 * one_way_trip_time;
+            // reduce round trip time if there is a road
+            RoadImpl::use_road(
+                 world, round_trip_time, caravan_position.into(), to_pos.into()
+                );
+            // update one way trip time incase round_trip_time was reduced
+            one_way_trip_time = round_trip_time / 2; 
+
+            (one_way_trip_time, round_trip_time)
+        }
+
+
+        fn block(world: IWorldDispatcher, transport_id: ID) {
+            let mut transport_movable = get!(world, transport_id, Movable);
+            assert(transport_movable.blocked == false, 'transport is blocked');
+
+            let transport_arrival_time = get!(world, transport_id, ArrivalTime);
+            assert(transport_arrival_time.arrives_at <= starknet::get_block_timestamp(),
+                         'transport in transit'
+            );
+            
+            // update transport movable
+            transport_movable.blocked = true;
+            set!(world, (transport_movable))
+
+        }
+
+
+        fn unblock(world: IWorldDispatcher, transport_id: ID) {
+
+            let mut transport_movable = get!(world, transport_id, Movable);
+            assert(transport_movable.blocked == true, 'transport not blocked');
+            
+            // update transport movable
+            transport_movable.blocked = false;
+            set!(world, (transport_movable))
+
         }
     }
 }

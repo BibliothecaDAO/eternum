@@ -4,12 +4,12 @@ use eternum::alias::ID;
 struct Trade {
     #[key]
     trade_id: u128,
-    seller_id: u128,
-    seller_collects_burden_id: u128,
-    seller_caravan_id: u128,
-    buyer_id: u128,
-    buyer_collects_burden_id: u128,
-    buyer_caravan_id: u128,
+    maker_id: u128,
+    maker_resource_chest_id: u128,
+    maker_transport_id: u128,
+    taker_id: u128,
+    taker_resource_chest_id: u128,
+    taker_transport_id: u128,
     expires_at: u64,
 }
 

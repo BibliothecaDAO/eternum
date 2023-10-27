@@ -108,6 +108,8 @@ mod transport_unit_systems {
                         entity_id: id.into(), 
                         sec_per_km: speed.sec_per_km, 
                         blocked: false, 
+                        round_trip: false,
+                        intermediate_coord: Zeroable::zero()  
                     }, 
                     ArrivalTime {
                         entity_id: id.into(), 
