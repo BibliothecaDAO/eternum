@@ -177,7 +177,8 @@ mod trade_systems {
             caravan::unblock(world, trade.maker_transport_id);
 
             let mut maker_transport_movable = get!(world, trade.maker_transport_id, Movable);
-            maker_transport_movable.intermediate_coord = taker_position.into();
+            maker_transport_movable.intermediate_coord_x = taker_position.x;
+            maker_transport_movable.intermediate_coord_y = taker_position.y;
             maker_transport_movable.round_trip = true;
             
             set!(world, (maker_transport_movable));
@@ -218,7 +219,8 @@ mod trade_systems {
                 );
 
                 let mut taker_transport_movable = get!(world, trade.taker_transport_id, Movable);
-                taker_transport_movable.intermediate_coord = maker_position.into();
+                taker_transport_movable.intermediate_coord_x = maker_position.x;
+                taker_transport_movable.intermediate_coord_y = maker_position.y;
                 taker_transport_movable.round_trip = true;
                 
                 set!(world, (taker_transport_movable));

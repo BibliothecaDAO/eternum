@@ -91,7 +91,8 @@ mod caravan_systems {
                         sec_per_km: movable.sec_per_km, 
                         blocked: true,
                         round_trip: false,
-                        intermediate_coord: Zeroable::zero()  
+                        intermediate_coord_x: 0,  
+                        intermediate_coord_y: 0,  
                     })
                 );
 
@@ -123,7 +124,8 @@ mod caravan_systems {
                         sec_per_km: average_speed, 
                         blocked: false, 
                         round_trip: false,
-                        intermediate_coord: Zeroable::zero()  
+                        intermediate_coord_x: 0,  
+                        intermediate_coord_y: 0,  
                     }, 
                     Capacity {
                         entity_id: caravan_id, 
