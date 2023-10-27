@@ -53,7 +53,7 @@ mod trade_systems {
             let caller = starknet::get_caller_address();
 
             let maker_owner = get!(world, maker_id, Owner);
-            assert(maker_owner.address == caller, 'only owner can create order');
+            assert(maker_owner.address == caller, 'caller not maker');
 
             // check that transport id is valid
             caravan::check_owner(world, maker_transport_id, caller);
@@ -204,7 +204,7 @@ mod trade_systems {
             if (taker_transport_id != 0 ){
                 let (taker_transport_round_trip_time, taker_transport_one_way_trip_time) 
                     = caravan::get_travel_time(
-                        world, trade.taker_transport_id, taker_position, maker_position
+                        world, taker_transport_id, taker_position, maker_position
                         ); 
                 // lock chest until the taker has picked it up
                 resource_chest::lock_until(
@@ -214,11 +214,11 @@ mod trade_systems {
                 // attach taker's resource chest to taker's transport inventory
                 inventory::add(
                     world, 
-                    trade.taker_transport_id,
+                    taker_transport_id,
                     trade.taker_resource_chest_id
                 );
 
-                let mut taker_transport_movable = get!(world, trade.taker_transport_id, Movable);
+                let mut taker_transport_movable = get!(world, taker_transport_id, Movable);
                 taker_transport_movable.intermediate_coord_x = maker_position.x;
                 taker_transport_movable.intermediate_coord_y = maker_position.y;
                 taker_transport_movable.round_trip = true;
@@ -226,11 +226,11 @@ mod trade_systems {
                 set!(world, (taker_transport_movable));
                 set!(world, (
                     ArrivalTime {
-                        entity_id: trade.taker_transport_id,
+                        entity_id: taker_transport_id,
                         arrives_at: ts + taker_transport_round_trip_time
                     },
                     Position {
-                        entity_id: trade.taker_transport_id,
+                        entity_id: taker_transport_id,
                         x: taker_position.x,
                         y: taker_position.y,
                     }
