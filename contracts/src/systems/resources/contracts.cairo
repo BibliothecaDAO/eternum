@@ -2,7 +2,8 @@
 mod resource_systems {
     use eternum::alias::ID;
     use eternum::models::resources::{Resource, ResourceAllowance};
-    use eternum::models::inventory::{Inventory, InventoryCategory, InventoryItem};
+    use eternum::models::inventory::Inventory;
+    use eternum::models::metadata::ForeignKey;
     use eternum::models::owner::Owner;
     use eternum::models::position::{Position, Coord};
     use eternum::models::quantity::{Quantity, QuantityTrait};
@@ -23,6 +24,7 @@ mod resource_systems {
     use eternum::systems::resources::interface::{IResourceSystems, IResourceChestSystems};
 
     use core::integer::BoundedInt;
+    use core::poseidon::poseidon_hash_span;
 
 
     #[external(v0)]
@@ -241,8 +243,7 @@ mod resource_systems {
 
             InternalResourceChestImpl::offload(world, entity_id, receiving_entity_id);
             InternalInventorySystemsImpl::delete(
-                world, transport_id, 
-                InventoryCategory::RESOURCE_CHEST, entity_index_in_inventory, entity_id
+                world, transport_id, entity_index_in_inventory, entity_id
                 );
         }
     }
@@ -401,9 +402,18 @@ mod resource_systems {
     #[generate_trait]
     impl InternalInventorySystemsImpl of InternalInventorySystemsTrait {
 
-        fn add(
-            world: IWorldDispatcher, entity_id: ID, inventory_category: u128, item_id: ID
-            ) {
+        fn get_foreign_key(inventory: Inventory, index: u128) -> felt252 {
+                let foreign_key_arr 
+                    = array![
+                        inventory.entity_id.into(), 
+                        inventory.items_key.into(), 
+                        index.into()
+                    ];
+               return poseidon_hash_span(foreign_key_arr.span());
+        }
+
+        fn add(world: IWorldDispatcher, entity_id: ID, item_id: ID) {
+
                 // ensure entity can carry the weight
                 let item_weight = get!(world, item_id, Weight);
                 assert(item_weight.value > 0, 'item is empty');
@@ -425,36 +435,40 @@ mod resource_systems {
 
 
                 // update entity's inventory
-                let mut inventory
-                    = get!(world, (entity_id, inventory_category), Inventory);
+                let mut inventory = get!(world, entity_id, Inventory);
                 inventory.items_count += 1;
-                
                 set!(world, (inventory));
+
+                let foreign_key 
+                    = InternalInventorySystemsImpl::get_foreign_key(inventory, inventory.items_count);
                 set!(world, (
-                    InventoryItem {
-                        entity_id: entity_id,
-                        category: inventory_category,
-                        index: inventory.items_count - 1,
-                        item_id: item_id
+                    ForeignKey {
+                        foreign_key: foreign_key,
+                        entity_id: item_id
                     }
                 ));
         }
 
-        /// Delete an item in an inventory
+        /// Delete an item from an inventory
         fn delete(
-            world: IWorldDispatcher, entity_id: ID, inventory_category: u128, index: u128, item_id: ID
+            world: IWorldDispatcher, entity_id: ID, index: u128, item_id: ID
         ) {
-            let mut inventory
-                = get!(world, (entity_id, inventory_category), Inventory);
+            let mut inventory = get!(world, entity_id, Inventory);
             assert(inventory.items_count > 0, 'inventory is empty');
 
-            let mut current_inventory_item 
-                 = get!(world, (entity_id, inventory_category, index), InventoryItem);
-
-            let last_inventory_item 
-                = get!(world, (entity_id, inventory_category, inventory.items_count - 1), InventoryItem);
+            let last_inventory_item_foreign_key 
+                = InternalInventorySystemsImpl::get_foreign_key(inventory, inventory.items_count);
+            let last_inventory_item = get!(world, last_inventory_item_foreign_key, ForeignKey);
  
-            current_inventory_item.item_id = last_inventory_item.item_id;
+                
+            let current_inventory_item_foreign_key 
+                = InternalInventorySystemsImpl::get_foreign_key(inventory, index);
+            let mut current_inventory_item 
+                = get!(world, current_inventory_item_foreign_key, ForeignKey);
+            // ensure that the index maps to the item id 
+            assert(current_inventory_item.entity_id == item_id, 'inventory: wrong index');
+
+            current_inventory_item.entity_id = last_inventory_item.entity_id;
             inventory.items_count -= 1;
 
             set!(world, (current_inventory_item));

@@ -4,7 +4,6 @@ mod trade_systems {
 
     use eternum::models::resources::Resource;
     use eternum::models::resources::{ResourceChest, DetachedResource};
-    use eternum::models::inventory::{InventoryCategory};
     use eternum::models::owner::Owner;
     use eternum::models::position::{Position, PositionTrait, Coord, CoordTrait};
     use eternum::models::realm::Realm;
@@ -172,7 +171,6 @@ mod trade_systems {
             inventory::add(
                 world, 
                 trade.maker_transport_id,
-                InventoryCategory::RESOURCE_CHEST, 
                 trade.maker_resource_chest_id
             );
             // unblock maker's caravan
@@ -216,7 +214,6 @@ mod trade_systems {
                 inventory::add(
                     world, 
                     trade.taker_transport_id,
-                    InventoryCategory::RESOURCE_CHEST, 
                     trade.taker_resource_chest_id
                 );
 
