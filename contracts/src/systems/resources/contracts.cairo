@@ -295,13 +295,6 @@ mod resource_systems {
                 };
 
             set!(world,(resource_chest));
-            set!(world,(
-                    Weight {
-                        entity_id: resource_chest_id,
-                        value: resources_weight
-                    }
-                )
-            );
 
             resource_chest
         }
