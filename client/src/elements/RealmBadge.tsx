@@ -15,14 +15,16 @@ export const RealmBadge = ({ active, realm, className, ...props }: RealmBadgePro
   const [hovered, setHovered] = useState(false);
 
   const hoveredOrActive = hovered || active;
-  const name = hoveredOrActive ? realm.name : realm.name[0];
+
+  const firstLetter = realm.name[0];
+  const otherLetters = realm.name.slice(1);
 
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className={clsx(
-        "flex h-8 p-2 w-auto transition-all duration-200 items-center text-xs text-white border rounded-[10px] cursor-pointer border-gold bg-brown whitespace-nowrap",
+        "flex h-8 p-2 w-auto transition-all duration-200 items-center text-xs overflow-hidden text-white border rounded-[10px] cursor-pointer border-gold bg-brown whitespace-nowrap",
         hoveredOrActive ? "max-w-[150px] border-white text-white" : "max-w-[40px]",
         active && `bg-order-${realm.order}`,
         className,
@@ -36,7 +38,10 @@ export const RealmBadge = ({ active, realm, className, ...props }: RealmBadgePro
         withTooltip={false}
         className="mr-1"
       />
-      {name}
+      <span>{firstLetter}</span>
+      <span className={clsx("transition-colors duration-200 text-brown", hoveredOrActive && "!text-white")}>
+        {otherLetters}
+      </span>
     </div>
   );
 };
