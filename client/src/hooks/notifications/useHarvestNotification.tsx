@@ -3,16 +3,14 @@ import { OrderIcon } from "../../elements/OrderIcon";
 import { useDojo } from "../../DojoContext";
 import { getComponentValue } from "@latticexyz/recs";
 import { Badge } from "../../elements/Badge";
-import { ResourceIcon } from "../../elements/ResourceIcon";
 import { getEntityIdFromKeys } from "../../utils/utils";
 import { NotificationType } from "./useNotifications";
-import { findResourceById } from "@bibliothecadao/eternum";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 import Button from "../../elements/Button";
 import { ResourceCost } from "../../elements/ResourceCost";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { soundSelector, useUiSounds } from "../useUISound";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export const useHarvestNotification = (
   notification: NotificationType,
