@@ -12,25 +12,22 @@ export function useResources() {
     account: { account },
     setup: {
       components: { Inventory, ForeignKey, ResourceChest, DetachedResource },
-      optimisticSystemCalls: { optimisticEmptyResourcesChest },
-      systemCalls: { empty_resources_chest },
+      optimisticSystemCalls: { optimisticOffloadResources },
+      systemCalls: { offload_resources },
     },
   } = useDojo();
-
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   // for any entity that has a resourceChest in its inventory,
   const getResourcesFromInventory = (entityId: number): Resource[] => {
     let inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(entityId)]));
     let foreignKey = inventory
-      ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(inventory.items_key), BigInt(0)]))
+      ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(entityId), BigInt(inventory.items_key), BigInt(1)]))
       : undefined;
     let resourcesChest = foreignKey
       ? getComponentValue(ResourceChest, getEntityIdFromKeys([BigInt(foreignKey.entity_id)]))
       : undefined;
 
     if (!resourcesChest) return [];
-    if (resourcesChest.locked_until < nextBlockTimestamp) return [];
     let resources: Resource[] = [];
     let { resources_count } = resourcesChest;
     for (let i = 0; i < resources_count; i++) {
@@ -53,32 +50,35 @@ export function useResources() {
    * @param [optimisticResourcesGet]: resources to display in case of optimistic rendering
    * @returns: void
    */
-  const emptyResourceChest = async (
-    receiver_id: BigNumberish,
-    carrier_id: BigNumberish,
-    resources_chest_id: BigNumberish,
+  const offloadResources = async (
+    receiving_entity_id: BigNumberish,
+    transport_id: BigNumberish,
+    resource_chest_id: BigNumberish,
+    entity_index_in_inventory: BigNumberish,
     optimisticResourcesGet?: Resource[],
   ) => {
     if (optimisticResourcesGet) {
-      return await optimisticEmptyResourcesChest(
+      return await optimisticOffloadResources(
         optimisticResourcesGet,
-        empty_resources_chest,
+        offload_resources,
       )({
         signer: account,
-        receiver_id,
-        carrier_id,
-        resources_chest_id,
+        receiving_entity_id,
+        transport_id,
+        entity_id: resource_chest_id,
+        entity_index_in_inventory,
       });
     }
-    return await empty_resources_chest({
+    return await offload_resources({
       signer: account,
-      receiver_id,
-      carrier_id,
-      resources_chest_id,
+      receiving_entity_id,
+      transport_id,
+      entity_id: resource_chest_id,
+      entity_index_in_inventory,
     });
   };
 
-  return { getResourcesFromInventory, emptyResourceChest };
+  return { getResourcesFromInventory, offloadResources };
 }
 
 //  caravans coming your way with a resource chest in their inventory

@@ -11,7 +11,17 @@ export function useCaravan() {
   const {
     account: { account },
     setup: {
-      components: { ArrivalTime, Movable, Capacity, Position, Owner, QuantityTracker, Inventory, ForeignKey },
+      components: {
+        ArrivalTime,
+        Movable,
+        Capacity,
+        Position,
+        Owner,
+        QuantityTracker,
+        Inventory,
+        ForeignKey,
+        ResourceChest,
+      },
     },
   } = useDojo();
 
@@ -21,12 +31,16 @@ export function useCaravan() {
     const capacity = getComponentValue(Capacity, getEntityIdFromKeys([BigInt(caravanId)]));
     const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(caravanId)]));
     const resourcesChestId = getInventoryResourcesChestId(caravanId);
+    const resourceChest = resourcesChestId
+      ? getComponentValue(ResourceChest, getEntityIdFromKeys([BigInt(resourcesChestId)]))
+      : undefined;
     // const resources_chest_id =
     const rawDestination = movable ? { x: movable.intermediate_coord_x, y: movable.intermediate_coord_y } : undefined;
     let destination = rawDestination ? { x: rawDestination.x, y: rawDestination.y } : undefined;
     return {
       caravanId,
       arrivalTime: arrivalTime?.arrives_at,
+      pickupArrivalTime: resourceChest?.locked_until,
       resourcesChestId,
       blocked: movable?.blocked,
       capacity: capacity?.weight_gram,
@@ -39,7 +53,7 @@ export function useCaravan() {
   const getInventoryResourcesChestId = (caravanId: number): number | undefined => {
     const inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(caravanId)]));
     let foreignKey = inventory
-      ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(inventory.items_key), BigInt(0)]))
+      ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(caravanId), BigInt(inventory.items_key), BigInt(1)]))
       : undefined;
     return foreignKey?.entity_id;
   };

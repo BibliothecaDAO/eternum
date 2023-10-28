@@ -82,6 +82,7 @@ export interface CaravanInterface {
   resourcesChestId: number | undefined;
   blocked: boolean | undefined;
   arrivalTime: number | undefined;
+  pickupArrivalTime: number | undefined;
   capacity: number | undefined;
   destination: PositionInterface | undefined;
   owner: string | undefined;

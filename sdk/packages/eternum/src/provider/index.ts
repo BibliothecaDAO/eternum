@@ -4,7 +4,6 @@ import {
   AttachCaravanProps,
   BuildLaborProps,
   CancelFungibleOrderProps,
-  EmptyResourcesChestProps,
   CompleteHyperStructureProps,
   CreateCaravanProps,
   CreateFreeTransportUnitProps,
@@ -20,6 +19,7 @@ import {
   SendResourcesToHyperstructureProps,
   TransferResourcesProps,
   TravelProps,
+  OffloadResourcesProps,
 } from "../types";
 import { Call } from "starknet";
 import { DEV_CONTRACTS, PROD_CONTRACTS } from "../constants";
@@ -110,7 +110,7 @@ export class EternumProvider extends RPCProvider {
     let transactions: Call[] = [];
 
     // If no caravan_id is provided, create a new caravan
-    let final_caravan_id = 0;
+    let final_caravan_id = maker_transport_id || 0;
     if (!maker_transport_id && donkeys_quantity) {
       final_caravan_id = uuid + UUID_OFFSET_CREATE_CARAVAN;
 
@@ -207,6 +207,18 @@ export class EternumProvider extends RPCProvider {
     });
   }
 
+  public async offload_resources(props: OffloadResourcesProps) {
+    const { entity_id, entity_index_in_inventory, receiving_entity_id, transport_id, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: this.contracts.RESOURCE_SYSTEMS,
+      entrypoint: "offload",
+      calldata: [this.contracts.WORLD_ADDRESS, entity_id, entity_index_in_inventory, receiving_entity_id, transport_id],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
   public async create_free_transport_unit(props: CreateFreeTransportUnitProps) {
     const { realm_id, quantity, signer } = props;
     const tx = await this.executeMulti(signer, {
@@ -237,18 +249,6 @@ export class EternumProvider extends RPCProvider {
       contractAddress: this.contracts.TRADE_SYSTEMS,
       entrypoint: "attach_caravan",
       calldata: [this.contracts.WORLD_ADDRESS, realm_id, trade_id, caravan_id],
-    });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
-  }
-
-  public async empty_resources_chest(props: EmptyResourcesChestProps) {
-    const { receiver_id, carrier_id, resources_chest_id, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: this.contracts.TRADE_SYSTEMS,
-      entrypoint: "empty_resources_chest",
-      calldata: [this.contracts.WORLD_ADDRESS, receiver_id, carrier_id, resources_chest_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,

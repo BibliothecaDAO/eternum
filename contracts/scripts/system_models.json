@@ -37,7 +37,8 @@
         "ForeignKey",
         "ResourceChest",
         "DetachedResource",
-        "Weight"
+        "Weight",
+        "Owner"
     ],
     "ROAD_SYSTEMS": [
         "Road",
@@ -51,7 +52,13 @@
     ],
     "RESOURCE_SYSTEMS": [
         "Resource",
-        "ResourceAllowance"
+        "ResourceAllowance",
+        "Owner",
+        "Weight",
+        "ResourceChest",
+        "DetachedResource",
+        "ForeignKey",
+        "Inventory"
     ],
     "TRAVEL_SYSTEMS": [
         "ArrivalTime",

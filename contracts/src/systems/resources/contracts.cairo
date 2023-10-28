@@ -347,7 +347,7 @@ mod resource_systems {
             let mut resource_chest = get!(world, entity_id, ResourceChest);
             let resource_chest_weight = get!(world, entity_id, Weight);
             assert(resource_chest_weight.value != 0, 'chest is empty');
-     
+
             // todo@credence ensure that receiver has capacity
 
             // return resources to the entity
@@ -448,6 +448,12 @@ mod resource_systems {
         ) {
             let mut inventory = get!(world, entity_id, Inventory);
             assert(inventory.items_count > 0, 'inventory is empty');
+
+            // remove weight
+            let mut entity_weight = get!(world, entity_id, Weight);
+            let mut item_weight = get!(world, item_id, Weight);
+            entity_weight.value -= item_weight.value;
+            set!(world, (entity_weight));
 
             let last_inventory_item_foreign_key 
                 = InternalInventorySystemsImpl::get_foreign_key(inventory, inventory.items_count);

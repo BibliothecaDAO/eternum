@@ -16,7 +16,7 @@ type CaravanDetailsProps = {
 };
 
 export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
-  const { resourcesChestId, destination, arrivalTime, capacity } = caravan;
+  const { resourcesChestId, destination, arrivalTime, capacity, pickupArrivalTime } = caravan;
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
@@ -34,6 +34,8 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
     return destination && getRealmIdByPosition(destination);
   }, [destination]);
   const destinationRealmName = destinationRealmId && getRealmNameById(destinationRealmId);
+  const hasArrivedPickupPosition =
+    pickupArrivalTime !== undefined && nextBlockTimestamp !== undefined && pickupArrivalTime <= nextBlockTimestamp;
 
   const isTravelling = nextBlockTimestamp && arrivalTime && arrivalTime > nextBlockTimestamp;
   return (
@@ -51,12 +53,12 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
       <SecondaryPopup.Body>
         {isTravelling && destinationRealmName && (
           <div className="flex items-center mt-2 ml-2 text-xxs">
-            <span className="italic text-light-pink">Traveling to</span>
+            <span className="italic text-light-pink">Traveling {hasArrivedPickupPosition ? "from" : "to"}</span>
             <div className="flex items-center ml-1 mr-1 text-gold">
               <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xs" />
               {destinationRealmName}
             </div>
-            <span className="italic text-light-pink">with</span>
+            <span className="italic text-light-pink">{hasArrivedPickupPosition ? "with" : "to pick up"}</span>
           </div>
         )}
         <div className="flex justify-center items-center flex-wrap space-x-2 px-2 py-1 mt-1">
@@ -68,7 +70,7 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
           )}
         </div>
         <div className="flex items-center mt-3 ml-2 text-xxs">
-          <span className="italic text-light-pink">You will get</span>
+          <span className="italic text-light-pink">They will get</span>
         </div>
         <div className="flex justify-center items-center flex-wrap space-x-2 px-2 py-1">
           {resourcesGet.map(

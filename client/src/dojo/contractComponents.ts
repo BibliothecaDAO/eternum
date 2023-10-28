@@ -169,6 +169,20 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Weight: (() => {
+      const name = "Weight";
+      return defineComponent(
+        world,
+        {
+          value: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
     Age: (() => {
       const name = "Age";
       return defineComponent(

@@ -23,7 +23,7 @@ type CaravanProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Caravan = ({ caravan, ...props }: CaravanProps) => {
-  const { caravanId, arrivalTime, destination, blocked, capacity } = caravan;
+  const { caravanId, arrivalTime, destination, blocked, capacity, pickupArrivalTime } = caravan;
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const { getResourcesFromInventory } = useResources();
@@ -34,13 +34,17 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
   let resourceWeight = useMemo(() => {
     return getTotalResourceWeight([...resourcesGet]);
   }, [resourcesGet]);
+  console.log({ resourcesGet, resourceWeight });
 
   const destinationRealmId = destination && getRealmIdByPosition(destination);
   const destinationRealmName = destinationRealmId && getRealmNameById(destinationRealmId);
 
   const isTraveling = !blocked && nextBlockTimestamp && arrivalTime && arrivalTime > nextBlockTimestamp;
   const isWaitingForDeparture = blocked;
-  const isIdle = !isTraveling && !isWaitingForDeparture;
+  const isIdle = !isTraveling && !isWaitingForDeparture && !resourceWeight;
+  const isWaitingToOffload = !blocked && !isTraveling && resourceWeight;
+  const hasArrivedPickupPosition =
+    pickupArrivalTime !== undefined && nextBlockTimestamp !== undefined && pickupArrivalTime <= nextBlockTimestamp;
 
   if ((blocked || isTraveling) && props.idleOnly) {
     return null;
@@ -58,7 +62,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
         <div className="flex items-center ml-1 -mt-2">
           {isTraveling && destinationRealmName && (
             <div className="flex items-center ml-1">
-              <span className="italic text-light-pink">Traveling to</span>
+              <span className="italic text-light-pink">Traveling {hasArrivedPickupPosition ? "from" : "to"}</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
                 <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xxs" />
                 {destinationRealmName}
@@ -68,7 +72,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
           )}
           {capacity && resourceWeight !== undefined && capacity && (
             <div className="flex items-center ml-1 text-gold">
-              {isTraveling || isWaitingForDeparture ? divideByPrecision(resourceWeight) : 0}
+              {!isIdle && hasArrivedPickupPosition ? divideByPrecision(resourceWeight) : 0}
               <div className="mx-0.5 italic text-light-pink">/</div>
               {`${capacity / 1000} kg`}
               <CaretDownFill className="ml-1 fill-current" />
@@ -83,6 +87,11 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
             </div>
           )
         }
+        {isWaitingToOffload && (
+          <div className="flex ml-auto -mt-2 italic text-gold">
+            Waiting to claim <Pen className="ml-1 fill-gold" />
+          </div>
+        )}
         {isIdle && (
           <div className="flex ml-auto -mt-2 italic text-gold">
             Idle

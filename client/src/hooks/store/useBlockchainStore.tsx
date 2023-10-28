@@ -38,36 +38,10 @@ export const useFetchBlockchainData = () => {
 };
 
 const fetchBlockTimestamp = async (): Promise<number | undefined> => {
-  try {
-    // NOTE: if we are using Katana in dev, we should use next block timestmamp because of
-    // the advance_time functionality
-    // TODO: make sure this is still the case
-    if (import.meta.env.DEV) {
-      const response = await fetch(import.meta.env.VITE_KATANA_URL!, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          method: "katana_nextBlockTimestamp",
-          params: {},
-          id: 1,
-        }),
-      });
-      const data = await response.json();
-      return data.result;
-    } else {
-      // NOTE: if we are using Katana in dev, we should use next block timestmamp because
-      // it allows us to advance time. But current issue with next_block_timestamp is that
-      // it does not get updated in katana until someone mints a new block. Since in prod we should
-      // not be able to use advance time, we should use current block timestamp
-      return Date.now() / 1000;
-    }
-  } catch (error) {
-    console.error("Error fetching block timestamp:", error);
-    return undefined;
-  }
+  // NOTE: if we are using Katana in dev, we should use next block timestmamp because of
+  // the advance_time functionality
+  // TODO: make sure this is still the case
+  return Date.now() / 1000;
 };
 
 export default useBlockchainStore;

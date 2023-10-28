@@ -18,27 +18,26 @@ type IncomingOrderProps = {
 export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const [isLoading, setIsLoading] = useState(false);
-  const { getResourcesFromInventory, emptyResourceChest } = useResources();
+  const { getResourcesFromInventory, offloadResources } = useResources();
   const { getCaravanInfo } = useCaravan();
 
-  const { resourcesChestId, destination, arrivalTime } = getCaravanInfo(caravanId);
+  const { resourcesChestId, destination, arrivalTime, pickupArrivalTime } = getCaravanInfo(caravanId);
 
   const resourcesGet = getResourcesFromInventory(caravanId);
 
-  // useEffect(() => {
-  //   setIsLoading(false);
-  // }, [incomingOrder.orderId]);
-
-  const emptyChest = async () => {
+  const offload = async () => {
     setIsLoading(true);
-    await emptyResourceChest(realmEntityId, caravanId, resourcesChestId, resourcesGet);
+    await offloadResources(realmEntityId, caravanId, resourcesChestId, 1, resourcesGet);
   };
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const startRealmId = destination && getRealmIdByPosition({ x: destination.x, y: destination.y });
-  const startRealmName = startRealmId && getRealmNameById(startRealmId);
-  const hasArrived = arrivalTime !== undefined && nextBlockTimestamp !== undefined && arrivalTime <= nextBlockTimestamp;
+  const pickupRealmId = destination && getRealmIdByPosition({ x: destination.x, y: destination.y });
+  const pickupRealmName = pickupRealmId && getRealmNameById(pickupRealmId);
+  const hasArrivedOriginalPosition =
+    arrivalTime !== undefined && nextBlockTimestamp !== undefined && arrivalTime <= nextBlockTimestamp;
+  const hasArrivedPickupPosition =
+    pickupArrivalTime !== undefined && nextBlockTimestamp !== undefined && pickupArrivalTime <= nextBlockTimestamp;
 
   return (
     <div
@@ -49,22 +48,22 @@ export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
         <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
           #{caravanId}
         </div>
-        {!hasArrived && startRealmName && (
+        {!hasArrivedOriginalPosition && pickupRealmName && (
           <div className="flex items-center ml-1 -mt-2">
-            <span className="italic text-light-pink">Traveling from</span>
+            <span className="italic text-light-pink">Traveling {hasArrivedPickupPosition ? "from" : "to"}</span>
             <div className="flex items-center ml-1 mr-1 text-gold">
-              <OrderIcon order={getRealmOrderNameById(startRealmId)} className="mr-1" size="xxs" />
-              {startRealmName}
+              <OrderIcon order={getRealmOrderNameById(pickupRealmId)} className="mr-1" size="xxs" />
+              {pickupRealmName}
             </div>
             <span className="italic text-light-pink"></span>
           </div>
         )}
-        {!hasArrived && nextBlockTimestamp && arrivalTime && (
+        {!hasArrivedOriginalPosition && nextBlockTimestamp && arrivalTime && (
           <div className="flex ml-auto -mt-2 italic text-light-pink">
             {formatSecondsLeftInDaysHours(arrivalTime - nextBlockTimestamp)}
           </div>
         )}
-        {hasArrived && <div className="flex ml-auto -mt-2 italic text-order-brilliance">Arrived!</div>}
+        {hasArrivedOriginalPosition && <div className="flex ml-auto -mt-2 italic text-order-brilliance">Arrived!</div>}
       </div>
       <div className="flex mt-1">
         {resourcesGet && (
@@ -87,13 +86,13 @@ export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
         {!isLoading && (
           <Button
             onClick={() => {
-              emptyChest();
+              offload();
             }}
-            disabled={!hasArrived}
-            variant={hasArrived ? "success" : "danger"}
+            disabled={!hasArrivedOriginalPosition}
+            variant={hasArrivedOriginalPosition ? "success" : "danger"}
             className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
           >
-            {hasArrived ? `Claim` : "On the way"}
+            {hasArrivedOriginalPosition ? `Claim` : "On the way"}
           </Button>
         )}
         {isLoading && (

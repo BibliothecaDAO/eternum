@@ -23,6 +23,7 @@ import { useTrade } from "../../../../hooks/helpers/useTrade";
 import { SelectRealmPanel } from "../SelectRealmPanel";
 import clsx from "clsx";
 import { DONKEYS_PER_CITY, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
+import { useResources } from "../../../../hooks/helpers/useResources";
 
 type CreateOfferPopupProps = {
   onClose: () => void;
@@ -431,6 +432,7 @@ export const SelectCaravanPanel = ({
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const { getRealmDonkeysCount } = useCaravan();
+  const { getResourcesFromInventory } = useResources();
   const { realm } = useGetRealm(realmEntityId);
   const { caravans: realmCaravans } = useGetPositionCaravans(realm?.position.x || 0, realm?.position.y || 0);
 
@@ -452,11 +454,13 @@ export const SelectCaravanPanel = ({
       realmCaravans
         ? (realmCaravans
             .map((caravan) => {
+              const resourcesCarried = getResourcesFromInventory(caravan.caravanId);
               const isIdle =
                 caravan &&
                 nextBlockTimestamp &&
                 !caravan.blocked &&
-                (!caravan.arrivalTime || caravan.arrivalTime <= nextBlockTimestamp);
+                (!caravan.arrivalTime || caravan.arrivalTime <= nextBlockTimestamp) &&
+                resourcesCarried.length == 0;
               // capacity in gr (1kg = 1000gr)
               if (isIdle && canCarry(caravan, resourceWeight)) {
                 return caravan;

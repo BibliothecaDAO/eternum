@@ -4,7 +4,7 @@ import { getEntityIdFromKeys } from "../utils/utils";
 import { Type, getComponentValue } from "@latticexyz/recs";
 import { Resource } from "../types";
 import { LaborCostInterface } from "../hooks/helpers/useLabor";
-import { LABOR_CONFIG, ROAD_COST_PER_USAGE } from "@bibliothecadao/eternum";
+import { LABOR_CONFIG, OffloadResourcesProps, ROAD_COST_PER_USAGE } from "@bibliothecadao/eternum";
 import {
   CancelFungibleOrderProps,
   EmptyResourcesChestProps,
@@ -35,7 +35,6 @@ export function createOptimisticSystemCalls({
         maker_gives_resource_amounts,
         maker_transport_id: transport_id,
         taker_id,
-        // donkeys_quantity,
         taker_gives_resource_types,
         taker_gives_resource_amounts,
       } = args;
@@ -102,18 +101,18 @@ export function createOptimisticSystemCalls({
   }
 
   // note: claim fungible order is actually transferring from the resourceschest to the realm
-  function optimisticEmptyResourcesChest(
+  function optimisticOffloadResources(
     resourcesGet: Resource[],
-    systemCall: (args: EmptyResourcesChestProps) => Promise<void>,
+    systemCall: (args: OffloadResourcesProps) => Promise<void>,
   ) {
-    return async function (this: any, args: EmptyResourcesChestProps) {
-      const { receiver_id, carrier_id, resources_chest_id } = args;
+    return async function (this: any, args: OffloadResourcesProps) {
+      const { receiving_entity_id, transport_id, entity_id: resources_chest_id } = args;
 
       let overrideId = uuid();
 
       // remove resources from inventory
       Inventory.addOverride(overrideId, {
-        entity: getEntityIdFromKeys([BigInt(carrier_id)]),
+        entity: getEntityIdFromKeys([BigInt(transport_id)]),
         value: {
           items_count: 0,
         },
@@ -129,7 +128,7 @@ export function createOptimisticSystemCalls({
 
       // add resources to balance
       for (let resource of resourcesGet) {
-        let resource_id = getEntityIdFromKeys([BigInt(receiver_id), BigInt(resource.resourceId)]);
+        let resource_id = getEntityIdFromKeys([BigInt(receiving_entity_id), BigInt(resource.resourceId)]);
         let currentResource = getComponentValue(Resource, resource_id) || {
           balance: 0,
         };
@@ -363,7 +362,7 @@ export function createOptimisticSystemCalls({
   }
 
   return {
-    optimisticEmptyResourcesChest,
+    optimisticOffloadResources,
     optimisticCreateOrder,
     optimisticAcceptOffer,
     optimisticCancelOffer,
