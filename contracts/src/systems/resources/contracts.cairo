@@ -7,7 +7,7 @@ mod resource_systems {
     use eternum::models::owner::Owner;
     use eternum::models::position::{Position, Coord};
     use eternum::models::quantity::{Quantity, QuantityTrait};
-    use eternum::models::capacity::Capacity;
+    use eternum::models::capacity::{Capacity, CapacityTrait};
     use eternum::models::config::{WeightConfig, WeightConfigImpl};
     use eternum::models::resources::{ResourceChest, DetachedResource};
     use eternum::models::movable::{ArrivalTime};
@@ -255,7 +255,7 @@ mod resource_systems {
 
         fn create( 
                 world: IWorldDispatcher, resource_types: Span<u8>, resource_amounts: Span<u128>
-            ) -> ResourceChest {
+            ) -> (ResourceChest, u128) {
 
             assert(resource_types.len() == resource_amounts.len(), 'length not equal');
             
@@ -296,7 +296,7 @@ mod resource_systems {
 
             set!(world,(resource_chest));
 
-            resource_chest
+            (resource_chest, resources_weight)
         }
 
         fn fill(world: IWorldDispatcher, entity_id: u128, donor_id: u128 ) {
@@ -345,10 +345,24 @@ mod resource_systems {
 
         fn offload(world: IWorldDispatcher, entity_id: ID, receiving_entity_id: ID) {
             let mut resource_chest = get!(world, entity_id, ResourceChest);
-            let resource_chest_weight = get!(world, entity_id, Weight);
+            let mut resource_chest_weight = get!(world, entity_id, Weight);
             assert(resource_chest_weight.value != 0, 'chest is empty');
-     
-            // todo@credence ensure that receiver has capacity
+            
+            // ensure that receiver has enough weight capacity
+            let receiver_weight = get!(world, receiving_entity_id, Weight);
+
+            let receiver_capacity = get!(world, receiving_entity_id, Capacity);
+            let receiver_quantity = get!(world, receiving_entity_id, Quantity);
+
+            assert(
+                receiver_capacity
+                    .can_carry_weight(
+                            receiving_entity_id, 
+                            receiver_quantity.get_value(), 
+                            receiver_weight.value + resource_chest_weight.value
+                        ),
+                'not enough capacity'
+            );
 
             // return resources to the entity
             let mut index = 0;
@@ -373,18 +387,11 @@ mod resource_systems {
             // reset resource chest
             resource_chest.resources_count = 0;
             resource_chest.locked_until = 0;
-
             set!(world,(resource_chest));
-            set!(world, (
-                Owner {
-                    entity_id,
-                    address: Zeroable::zero()
-                },
-                Weight {
-                    entity_id,
-                    value: 0
-                }
-            ));
+
+            // reset resource chest weight
+            resource_chest_weight.value = 0;
+            set!(world,(resource_chest_weight));
 
         }
 
@@ -466,6 +473,12 @@ mod resource_systems {
 
             set!(world, (current_inventory_item));
             set!(world, (inventory));
+
+            // remove weight from entity
+            let mut entity_weight = get!(world, entity_id, Weight);
+            let mut item_weight = get!(world, item_id, Weight);
+            entity_weight.value -= item_weight.value;
+            set!(world, (entity_weight));
         }
     }
     

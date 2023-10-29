@@ -4,10 +4,11 @@ mod caravan_systems {
     use eternum::models::metadata::ForeignKey;
     use eternum::models::caravan::CaravanMembers;
     use eternum::models::inventory::Inventory;
+    use eternum::models::weight::Weight;
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::position::{Position, PositionTrait, Coord, CoordTrait};
     use eternum::models::movable::{Movable, ArrivalTime};
-    use eternum::models::capacity::Capacity;
+    use eternum::models::capacity::{Capacity, CapacityTrait};
     use eternum::models::owner::Owner;
     use eternum::models::road::RoadImpl;
     use eternum::systems::transport::interface::caravan_systems_interface::{
@@ -174,6 +175,24 @@ mod caravan_systems {
             assert(
                 transport_arrival_time.arrives_at <= starknet::get_block_timestamp(), 
                         'transport has not arrived'
+            );
+        }
+
+        fn check_capacity( world: IWorldDispatcher, transport_id: ID, weight: u128) {
+
+            let transport_weight = get!(world, transport_id, Weight);
+
+            let transport_capacity = get!(world, transport_id, Capacity);
+            let transport_quantity = get!(world, transport_id, Quantity);
+
+            assert(
+                transport_capacity
+                    .can_carry_weight(
+                            transport_id, 
+                            transport_quantity.get_value(), 
+                            transport_weight.value + weight
+                        ),
+                'not enough capacity'
             );
         }
 
