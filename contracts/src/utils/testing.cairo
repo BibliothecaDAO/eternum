@@ -8,9 +8,7 @@ use eternum::models::capacity::{capacity, Capacity};
 use eternum::models::metadata::{entity_metadata, EntityMetadata};
 use eternum::models::age::{age, Age};
 use eternum::models::labor::{labor, Labor};
-use eternum::models::resources::{vault, Vault};
 use eternum::models::metadata::{foreign_key, ForeignKey};
-use eternum::models::trade::{fungible_entities, FungibleEntities};
 use eternum::models::road::{road, Road};
 use eternum::models::labor_auction::{labor_auction, LaborAuction};
 use eternum::models::hyperstructure::{hyper_structure, HyperStructure};
@@ -37,13 +35,11 @@ use eternum::models::movable::{
     arrival_time, ArrivalTime
 };
 use eternum::models::caravan::{
-    caravan, Caravan,
     caravan_members, CaravanMembers,
 };
 use eternum::models::trade::{
     status, Status, 
     trade, Trade,
-    order_resource, OrderResource,
 };
 
 
@@ -73,11 +69,8 @@ fn spawn_eternum() -> IWorldDispatcher {
         capacity::TEST_CLASS_HASH,
         arrival_time::TEST_CLASS_HASH,
         caravan_members::TEST_CLASS_HASH,
-        caravan::TEST_CLASS_HASH,
         foreign_key::TEST_CLASS_HASH,
         trade::TEST_CLASS_HASH,
-        fungible_entities::TEST_CLASS_HASH,
-        order_resource::TEST_CLASS_HASH,
         resource::TEST_CLASS_HASH,
         resource_cost::TEST_CLASS_HASH,
         status::TEST_CLASS_HASH,
@@ -87,7 +80,6 @@ fn spawn_eternum() -> IWorldDispatcher {
         labor_config::TEST_CLASS_HASH,
         labor_cost_amount::TEST_CLASS_HASH,
         labor_cost_resources::TEST_CLASS_HASH,
-        vault::TEST_CLASS_HASH,
         weight_config::TEST_CLASS_HASH,
         road::TEST_CLASS_HASH,
         labor_auction::TEST_CLASS_HASH,

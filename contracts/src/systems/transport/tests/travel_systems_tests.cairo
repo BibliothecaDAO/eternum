@@ -83,7 +83,10 @@ fn test_travel() {
         Movable {
             entity_id: travelling_entity_id.into(),
             sec_per_km: 10,
-            blocked: false
+            blocked: false,
+            round_trip: false,
+            intermediate_coord_x: 0,  
+            intermediate_coord_y: 0,          
         }
     ));
 
@@ -135,7 +138,10 @@ fn test_travel_with_road(){
         Movable {
             entity_id: travelling_entity_id.into(),
             sec_per_km: 10,
-            blocked: false
+            blocked: false,
+            round_trip: false,
+            intermediate_coord_x: 0,  
+            intermediate_coord_y: 0  
         }
 
     ));
@@ -222,7 +228,10 @@ fn test_blocked() {
         Movable {
             entity_id: travelling_entity_id.into(),
             sec_per_km: 10,
-            blocked: true
+            blocked: true,
+            round_trip: false,
+            intermediate_coord_x: 0,  
+            intermediate_coord_y: 0,  
         }
     ));
 
@@ -250,7 +259,10 @@ fn test_in_transit() {
         Movable {
             entity_id: travelling_entity_id.into(),
             sec_per_km: 10,
-            blocked: false
+            blocked: false,
+            round_trip: false,
+              intermediate_coord_x: 0,  
+            intermediate_coord_y: 0,  
         },
         ArrivalTime {
             entity_id: travelling_entity_id.into(),
