@@ -36,15 +36,18 @@ impl RoadImpl of RoadTrait {
     }
 
     #[inline(always)]
-    fn use_road(world: IWorldDispatcher, mut travel_time: u64, start_coord: Coord, end_coord: Coord){
+    fn use_road(world: IWorldDispatcher, travel_time: u64, start_coord: Coord, end_coord: Coord) -> u64 {
+        let mut new_travel_time = travel_time;
         let mut road = RoadImpl::get(world, start_coord, end_coord);
         if road.usage_count > 0 {
             let road_config = get!(world, ROAD_CONFIG_ID, RoadConfig);
             
-            travel_time = travel_time / road_config.speed_up_by;
+            new_travel_time = travel_time / road_config.speed_up_by;
             road.usage_count -= 1;
             set!(world, (road));
         }
+        
+        new_travel_time
     }
 
 }

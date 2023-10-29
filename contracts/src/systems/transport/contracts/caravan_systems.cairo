@@ -189,9 +189,9 @@ mod caravan_systems {
                     to_pos, caravan_movable.sec_per_km
                     );
                     
-            let mut round_trip_time: u64 = 2 * one_way_trip_time;
+            let round_trip_time: u64 = 2 * one_way_trip_time;
             // reduce round trip time if there is a road
-            RoadImpl::use_road(
+            let round_trip_time = RoadImpl::use_road(
                  world, round_trip_time, caravan_position.into(), to_pos.into()
                 );
             // update one way trip time incase round_trip_time was reduced
