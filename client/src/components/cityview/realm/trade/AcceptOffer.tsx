@@ -82,7 +82,7 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
 
   const selectedResourcesGetAmounts = useMemo(() => {
     let selectedResourcesGetAmounts: { [resourceId: number]: number } = {};
-    resourcesGive.forEach((resource) => {
+    resourcesGet.forEach((resource) => {
       selectedResourcesGetAmounts[resource.resourceId] = divideByPrecision(resource.amount);
     });
     return selectedResourcesGetAmounts;
@@ -90,7 +90,7 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
 
   const selectedResourcesGiveAmounts = useMemo(() => {
     let selectedResourcesGiveAmounts: { [resourceId: number]: number } = {};
-    resourcesGet.forEach((resource) => {
+    resourcesGive.forEach((resource) => {
       selectedResourcesGiveAmounts[resource.resourceId] = divideByPrecision(resource.amount);
     });
     return selectedResourcesGiveAmounts;
@@ -112,9 +112,9 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
             setIsNewCaravan={setIsNewCaravan}
             selectedCaravan={selectedCaravan}
             setSelectedCaravan={setSelectedCaravan}
-            selectedResourceIdsGet={resourcesGive.map((resource) => resource.resourceId) || []}
+            selectedResourceIdsGet={resourcesGet.map((resource) => resource.resourceId) || []}
             selectedResourcesGetAmounts={selectedResourcesGetAmounts}
-            selectedResourceIdsGive={resourcesGet.map((resource) => resource.resourceId) || []}
+            selectedResourceIdsGive={resourcesGive.map((resource) => resource.resourceId) || []}
             selectedResourcesGiveAmounts={selectedResourcesGiveAmounts}
             resourceWeight={resourceWeight}
             hasEnoughDonkeys={hasEnoughDonkeys}

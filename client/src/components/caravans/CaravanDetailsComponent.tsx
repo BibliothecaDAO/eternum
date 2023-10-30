@@ -70,9 +70,11 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
               ),
           )}
         </div>
-        <div className="flex items-center mt-3 ml-2 text-xxs">
-          <span className="italic text-light-pink">They will get</span>
-        </div>
+        {resourcesGive.length > 0 && (
+          <div className="flex items-center mt-3 ml-2 text-xxs">
+            <span className="italic text-light-pink">They will get</span>
+          </div>
+        )}
         <div className="flex justify-center items-center flex-wrap space-x-2 px-2 py-1">
           {resourcesGive.map(
             (resource) =>
