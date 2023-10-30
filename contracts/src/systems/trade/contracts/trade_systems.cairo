@@ -20,7 +20,7 @@ mod trade_systems {
     };
 
     use eternum::systems::resources::contracts::resource_systems::{
-        InternalResourceChestImpl as resource_chest, 
+        InternalResourceChestSystemsImpl as resource_chest, 
         InternalInventorySystemsImpl as inventory
     };
     use eternum::systems::transport::contracts::caravan_systems::caravan_systems::{

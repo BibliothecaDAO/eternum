@@ -231,7 +231,7 @@ mod resource_systems {
     impl ResourceChestSystemsImpl of IResourceChestSystems<ContractState> {
 
         /// Offload resources in a resource_chest from a caravan
-        fn offload(
+        fn offload_chest(
             self: @ContractState, world: IWorldDispatcher, 
             entity_id: ID, entity_index_in_inventory: u128, 
             receiving_entity_id: ID, transport_id: ID
@@ -241,17 +241,18 @@ mod resource_systems {
             caravan::check_position(world, transport_id, receiving_entity_id);
             caravan::check_arrival_time(world, transport_id);
 
-            InternalResourceChestImpl::offload(world, entity_id, receiving_entity_id);
-            InternalInventorySystemsImpl::delete(
+            InternalInventorySystemsImpl::remove(
                 world, transport_id, entity_index_in_inventory, entity_id
                 );
+            InternalResourceChestSystemsImpl::offload(world, entity_id, receiving_entity_id);
+            
         }
     }
 
 
 
     #[generate_trait]
-    impl InternalResourceChestImpl of InternalResourceChestTrait {
+    impl InternalResourceChestSystemsImpl of InternalResourceChestTrait {
 
         fn create( 
                 world: IWorldDispatcher, resource_types: Span<u8>, resource_amounts: Span<u128>
@@ -314,6 +315,7 @@ mod resource_systems {
                 }
                 let detached_resource = get!(world, (entity_id, index), DetachedResource);
                 let mut donor_resource = get!(world, (donor_id, detached_resource.resource_type), Resource);
+                assert(donor_resource.balance >= detached_resource.resource_amount, 'insufficient balance');
                 
                 // remove resources from donor's balance
                 donor_resource.balance -= detached_resource.resource_amount;
@@ -449,8 +451,8 @@ mod resource_systems {
                 set!(world, (inventory));
         }
 
-        /// Delete an item from an inventory
-        fn delete(
+        /// Remove an item from an inventory
+        fn remove(
             world: IWorldDispatcher, entity_id: ID, index: u128, item_id: ID
         ) {
             let mut inventory = get!(world, entity_id, Inventory);
