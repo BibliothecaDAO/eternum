@@ -4,10 +4,11 @@ mod caravan_systems {
     use eternum::models::metadata::ForeignKey;
     use eternum::models::caravan::CaravanMembers;
     use eternum::models::inventory::Inventory;
+    use eternum::models::weight::Weight;
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::position::{Position, PositionTrait, Coord, CoordTrait};
     use eternum::models::movable::{Movable, ArrivalTime};
-    use eternum::models::capacity::Capacity;
+    use eternum::models::capacity::{Capacity, CapacityTrait};
     use eternum::models::owner::Owner;
     use eternum::models::road::RoadImpl;
     use eternum::systems::transport::interface::caravan_systems_interface::{
@@ -177,6 +178,24 @@ mod caravan_systems {
             );
         }
 
+        fn check_capacity( world: IWorldDispatcher, transport_id: ID, weight: u128) {
+
+            let transport_weight = get!(world, transport_id, Weight);
+
+            let transport_capacity = get!(world, transport_id, Capacity);
+            let transport_quantity = get!(world, transport_id, Quantity);
+
+            assert(
+                transport_capacity
+                    .can_carry_weight(
+                            transport_id, 
+                            transport_quantity.get_value(), 
+                            transport_weight.value + weight
+                        ),
+                'not enough capacity'
+            );
+        }
+
 
         fn get_travel_time(
             world: IWorldDispatcher, transport_id: ID, from_pos: Position, to_pos: Position, 
@@ -189,15 +208,15 @@ mod caravan_systems {
                     to_pos, caravan_movable.sec_per_km
                     );
                     
-            let mut round_trip_time: u64 = 2 * one_way_trip_time;
+            let round_trip_time: u64 = 2 * one_way_trip_time;
             // reduce round trip time if there is a road
-            RoadImpl::use_road(
+            let round_trip_time = RoadImpl::use_road(
                  world, round_trip_time, caravan_position.into(), to_pos.into()
                 );
             // update one way trip time incase round_trip_time was reduced
             one_way_trip_time = round_trip_time / 2; 
 
-            (one_way_trip_time, round_trip_time)
+            (round_trip_time, one_way_trip_time)
         }
 
 
