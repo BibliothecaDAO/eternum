@@ -9,6 +9,7 @@ import { CaravanInterface } from "../../hooks/graphql/useGraphQLQueries";
 import { useTrade } from "../../hooks/helpers/useTrade";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 import useRealmStore from "../../hooks/store/useRealmStore";
+import { divideByPrecision } from "../../utils/utils";
 
 type CaravanDetailsProps = {
   caravan: CaravanInterface;
@@ -44,7 +45,7 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
         <div className="flex items-center space-x-1">
           {capacity && (
             <div className="mr-0.5">
-              Caravan #{caravan.caravanId} {resourceWeight} / {capacity}
+              Caravan #{caravan.caravanId} {divideByPrecision(resourceWeight)} / {divideByPrecision(capacity)}
             </div>
           )}
           <CloseIcon onClick={onClose} className="w-3 h-3 cursor-pointer fill-white" />
@@ -62,7 +63,7 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
           </div>
         )}
         <div className="flex justify-center items-center flex-wrap space-x-2 px-2 py-1 mt-1">
-          {resourcesGive.map(
+          {resourcesGet.map(
             (resource) =>
               resource && (
                 <ResourceCost key={resource.resourceId} resourceId={resource.resourceId} amount={resource.amount} />
@@ -73,7 +74,7 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
           <span className="italic text-light-pink">They will get</span>
         </div>
         <div className="flex justify-center items-center flex-wrap space-x-2 px-2 py-1">
-          {resourcesGet.map(
+          {resourcesGive.map(
             (resource) =>
               resource && (
                 <ResourceCost key={resource.resourceId} resourceId={resource.resourceId} amount={resource.amount} />

@@ -5,7 +5,6 @@ import { getEntityIdFromKeys } from "../../utils/utils";
 import { useEntityQuery } from "@dojoengine/react";
 import { BigNumberish } from "starknet";
 import { Resource } from "../../types";
-import useBlockchainStore from "../store/useBlockchainStore";
 
 export function useResources() {
   const {
@@ -13,7 +12,7 @@ export function useResources() {
     setup: {
       components: { Inventory, ForeignKey, ResourceChest, DetachedResource },
       optimisticSystemCalls: { optimisticOffloadResources },
-      systemCalls: { offload_resources },
+      systemCalls: { offload_chest },
     },
   } = useDojo();
 
@@ -21,8 +20,9 @@ export function useResources() {
   const getResourcesFromInventory = (entityId: number): Resource[] => {
     let inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(entityId)]));
     let foreignKey = inventory
-      ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(entityId), BigInt(inventory.items_key), BigInt(1)]))
+      ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(entityId), BigInt(inventory.items_key), BigInt(0)]))
       : undefined;
+
     let resourcesChest = foreignKey
       ? getComponentValue(ResourceChest, getEntityIdFromKeys([BigInt(foreignKey.entity_id)]))
       : undefined;
@@ -50,7 +50,7 @@ export function useResources() {
    * @param [optimisticResourcesGet]: resources to display in case of optimistic rendering
    * @returns: void
    */
-  const offloadResources = async (
+  const offloadChest = async (
     receiving_entity_id: BigNumberish,
     transport_id: BigNumberish,
     resource_chest_id: BigNumberish,
@@ -60,7 +60,7 @@ export function useResources() {
     if (optimisticResourcesGet) {
       return await optimisticOffloadResources(
         optimisticResourcesGet,
-        offload_resources,
+        offload_chest,
       )({
         signer: account,
         receiving_entity_id,
@@ -69,7 +69,7 @@ export function useResources() {
         entity_index_in_inventory,
       });
     }
-    return await offload_resources({
+    return await offload_chest({
       signer: account,
       receiving_entity_id,
       transport_id,
@@ -78,7 +78,7 @@ export function useResources() {
     });
   };
 
-  return { getResourcesFromInventory, offloadResources };
+  return { getResourcesFromInventory, offloadChest };
 }
 
 //  caravans coming your way with a resource chest in their inventory

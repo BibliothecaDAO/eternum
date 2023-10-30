@@ -58,8 +58,8 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.cancel_fungible_order(props)));
   };
 
-  const offload_resources = async (props: OffloadResourcesProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.offload_resources(props)));
+  const offload_chest = async (props: OffloadResourcesProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.offload_chest(props)));
   };
 
   const create_free_transport_unit = async (props: CreateFreeTransportUnitProps) => {
@@ -126,7 +126,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     create_order,
     accept_order,
     cancel_fungible_order,
-    offload_resources,
+    offload_chest,
     create_free_transport_unit,
     create_caravan,
     attach_caravan,

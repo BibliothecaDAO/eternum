@@ -18,16 +18,16 @@ type IncomingOrderProps = {
 export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const [isLoading, setIsLoading] = useState(false);
-  const { getResourcesFromInventory, offloadResources } = useResources();
+  const { getResourcesFromInventory, offloadChest } = useResources();
   const { getCaravanInfo } = useCaravan();
 
-  const { resourcesChestId, destination, arrivalTime, pickupArrivalTime } = getCaravanInfo(caravanId);
+  const { resourcesChestId, destination, arrivalTime } = getCaravanInfo(caravanId);
 
   const resourcesGet = getResourcesFromInventory(caravanId);
 
   const offload = async () => {
     setIsLoading(true);
-    await offloadResources(realmEntityId, caravanId, resourcesChestId, 1, resourcesGet);
+    await offloadChest(realmEntityId, caravanId, resourcesChestId, 0, resourcesGet);
   };
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
@@ -36,8 +36,6 @@ export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
   const pickupRealmName = pickupRealmId && getRealmNameById(pickupRealmId);
   const hasArrivedOriginalPosition =
     arrivalTime !== undefined && nextBlockTimestamp !== undefined && arrivalTime <= nextBlockTimestamp;
-  const hasArrivedPickupPosition =
-    pickupArrivalTime !== undefined && nextBlockTimestamp !== undefined && pickupArrivalTime <= nextBlockTimestamp;
 
   return (
     <div
@@ -50,7 +48,7 @@ export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
         </div>
         {!hasArrivedOriginalPosition && pickupRealmName && (
           <div className="flex items-center ml-1 -mt-2">
-            <span className="italic text-light-pink">Traveling {hasArrivedPickupPosition ? "from" : "to"}</span>
+            <span className="italic text-light-pink">Coming from</span>
             <div className="flex items-center ml-1 mr-1 text-gold">
               <OrderIcon order={getRealmOrderNameById(pickupRealmId)} className="mr-1" size="xxs" />
               {pickupRealmName}

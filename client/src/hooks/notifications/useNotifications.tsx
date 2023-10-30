@@ -294,7 +294,7 @@ const generateEmptyChestNotifications = (
         | { key: number; count: number }
         | undefined;
       const foreignKey = inventory
-        ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(inventory.key), BigInt(0)]))
+        ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(caravanId), BigInt(inventory.key), BigInt(0)]))
         : undefined;
 
       const resourcesChestId = foreignKey?.entity_id as number;

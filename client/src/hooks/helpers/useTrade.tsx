@@ -48,7 +48,7 @@ type TradeResources = {
 export function useTrade() {
   const {
     setup: {
-      components: { Resource, Trade, Realm, ResourceChest, DetachedResource },
+      components: { Resource, Trade, Realm, ResourceChest, DetachedResource, Status },
     },
   } = useDojo();
 
@@ -75,13 +75,13 @@ export function useTrade() {
 
     let resourcesGet =
       trade.maker_id === entityId
-        ? getChestResources(trade.taker_resource_chest_id)
-        : getChestResources(trade.maker_resource_chest_id);
+        ? getChestResources(trade.maker_resource_chest_id)
+        : getChestResources(trade.taker_resource_chest_id);
 
     let resourcesGive =
       trade.maker_id === entityId
-        ? getChestResources(trade.maker_resource_chest_id)
-        : getChestResources(trade.taker_resource_chest_id);
+        ? getChestResources(trade.taker_resource_chest_id)
+        : getChestResources(trade.maker_resource_chest_id);
 
     return { resourcesGet, resourcesGive };
   };
@@ -98,6 +98,21 @@ export function useTrade() {
     } else {
       return undefined;
     }
+  };
+
+  const getTradeIdFromTransportId = (transportId: number): number | undefined => {
+    const makerTradeIds = runQuery([
+      HasValue(Status, { value: 0 }),
+      HasValue(Trade, { maker_transport_id: transportId }),
+    ]);
+    const takerTradeIds = runQuery([
+      HasValue(Status, { value: 0 }),
+      HasValue(Trade, { taker_transport_id: transportId }),
+    ]);
+
+    const tradeId = Array.from(new Set([...makerTradeIds, ...takerTradeIds]))[0];
+
+    return tradeId;
   };
 
   const canAcceptOffer = ({
@@ -133,6 +148,7 @@ export function useTrade() {
     getChestResources,
     canAcceptOffer,
     getRealmEntityIdFromRealmId,
+    getTradeIdFromTransportId,
   };
 }
 

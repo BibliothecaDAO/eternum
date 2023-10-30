@@ -207,11 +207,11 @@ export class EternumProvider extends RPCProvider {
     });
   }
 
-  public async offload_resources(props: OffloadResourcesProps) {
+  public async offload_chest(props: OffloadResourcesProps) {
     const { entity_id, entity_index_in_inventory, receiving_entity_id, transport_id, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: this.contracts.RESOURCE_SYSTEMS,
-      entrypoint: "offload",
+      entrypoint: "offload_chest",
       calldata: [this.contracts.WORLD_ADDRESS, entity_id, entity_index_in_inventory, receiving_entity_id, transport_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {

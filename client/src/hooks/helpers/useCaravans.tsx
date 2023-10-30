@@ -37,6 +37,7 @@ export function useCaravan() {
     // const resources_chest_id =
     const rawDestination = movable ? { x: movable.intermediate_coord_x, y: movable.intermediate_coord_y } : undefined;
     let destination = rawDestination ? { x: rawDestination.x, y: rawDestination.y } : undefined;
+
     return {
       caravanId,
       arrivalTime: arrivalTime?.arrives_at,
@@ -53,7 +54,7 @@ export function useCaravan() {
   const getInventoryResourcesChestId = (caravanId: number): number | undefined => {
     const inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(caravanId)]));
     let foreignKey = inventory
-      ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(caravanId), BigInt(inventory.items_key), BigInt(1)]))
+      ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(caravanId), BigInt(inventory.items_key), BigInt(0)]))
       : undefined;
     return foreignKey?.entity_id;
   };

@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { Dispatch, SetStateAction, useMemo } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import { ReactComponent as Pen } from "../../../../../assets/icons/common/pen.svg";
 import { ReactComponent as CaretDownFill } from "../../../../../assets/icons/common/caret-down-fill.svg";
@@ -34,7 +34,6 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
   let resourceWeight = useMemo(() => {
     return getTotalResourceWeight([...resourcesGet]);
   }, [resourcesGet]);
-  console.log({ resourcesGet, resourceWeight });
 
   const destinationRealmId = destination && getRealmIdByPosition(destination);
   const destinationRealmName = destinationRealmId && getRealmNameById(destinationRealmId);
@@ -83,7 +82,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
           // isWaitingForDeparture is '0' instead of false, need to fix that
           isWaitingForDeparture == true && (
             <div className="flex ml-auto -mt-2 italic text-gold">
-              Waiting departure <Pen className="ml-1 fill-gold" />
+              Trade Bound <Pen className="ml-1 fill-gold" />
             </div>
           )
         }
@@ -106,6 +105,8 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
       </div>
       <div className="flex justify-center items-center space-x-2 flex-wrap mt-2">
         {!isIdle &&
+          !isWaitingForDeparture &&
+          hasArrivedPickupPosition &&
           resourcesGet &&
           resourcesGet.map(
             (resource) =>
