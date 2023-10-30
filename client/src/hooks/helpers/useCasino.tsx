@@ -22,7 +22,7 @@ export interface CasinoInterface {
   uiPosition: UIPosition;
 }
 
-export interface CasinoRoundInterface {
+export interface BettingRoundInterface {
   roundIndex: number;
   winnerId: number;
   participantCount: number;
@@ -31,19 +31,19 @@ export interface CasinoRoundInterface {
 export const useCasino = () => {
   const {
     setup: {
-      components: { CasinoMetaData, Resource, Position, CasinoRound },
+      components: { BettingHouse, Resource, Position, BettingRound },
     },
   } = useDojo();
 
   const getCasino = (count: number, uiPosition: UIPosition): CasinoInterface | undefined => {
     const position = getContractPositionFromRealPosition({ x: uiPosition.x, y: uiPosition.z });
-    const casinoMetaDatas = runQuery([Has(CasinoMetaData), HasValue(Position, { x: position.x, y: position.y })]);
+    const casinoMetaDatas = runQuery([Has(BettingHouse), HasValue(Position, { x: position.x, y: position.y })]);
     if (casinoMetaDatas.size > 0) {
       let casinoId = Array.from(casinoMetaDatas)[
         Array.from(casinoMetaDatas).length - 1
       ];
 
-      let casino = getComponentValue(CasinoMetaData, casinoId);
+      let casino = getComponentValue(BettingHouse, casinoId);
 
       if (casino) {
         let casinoCurrentRoundResources: { resourceId: number; currentAmount: number; completeAmount: number }[] = [];
@@ -89,13 +89,13 @@ export const useCasino = () => {
 
 
 
-  const getCasinoRounds = (): Array<CasinoRoundInterface | undefined> | undefined => {
-    const casinoRounds = runQuery([Has(CasinoRound)]);
+  const getBettingRounds = (): Array<BettingRoundInterface | undefined> | undefined => {
+    const casinoRounds = runQuery([Has(BettingRound)]);
     let result = [];
     for (let i = 0; i < casinoRounds.size; i++) {
       let casinoRoundId = Array.from(casinoRounds)[i]
 
-      let casinoRound = getComponentValue(CasinoRound, casinoRoundId);
+      let casinoRound = getComponentValue(BettingRound, casinoRoundId);
 
       result.push({
         roundIndex: casinoRound.round_index,
@@ -112,6 +112,6 @@ export const useCasino = () => {
 
   return {
     getCasino,
-    getCasinoRounds,
+    getBettingRounds,
   };
 };

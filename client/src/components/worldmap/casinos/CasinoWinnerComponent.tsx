@@ -10,16 +10,16 @@ type CasinoWinnerComponentProps = {};
 
 export const CasinoWinnerComponent = ({ }: CasinoWinnerComponentProps) => {
   const [showFeedPopup, setShowFeedPopup] = useState(false);
-  const setCasinoRounds = useUIStore((state) => state.setCasinoRounds);
-  const { getCasinoRounds } = useCasino();
+  const setBettingRounds = useUIStore((state) => state.setBettingRounds);
+  const { getBettingRounds } = useCasino();
 
   let realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   let ownedRealms = realmEntityIds.map((x) => x.realmEntityId);
 
   console.log(realmEntityIds.map((x) => x.realmEntityId))
 
-  const casinoRounds = getCasinoRounds();
-  setCasinoRounds(casinoRounds);
+  const casinoRounds = getBettingRounds();
+  setBettingRounds(casinoRounds);
 
   const count = casinoRounds.length;
 

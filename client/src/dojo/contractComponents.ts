@@ -575,8 +575,8 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    CasinoMetaData: (() => {
-      const name = "CasinoMetaData";
+    BettingHouse: (() => {
+      const name = "BettingHouse";
       return defineComponent(
         world,
         {
@@ -594,8 +594,8 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    CasinoRound: (() => {
-      const name = "CasinoRound";
+    BettingRound: (() => {
+      const name = "BettingRound";
       return defineComponent(
         world,
         {
@@ -610,8 +610,8 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    CasinoRoundParticipant: (() => {
-      const name = "CasinoRoundParticipant";
+    BettingRoundParticipant: (() => {
+      const name = "BettingRoundParticipant";
       return defineComponent(
         world,
         {

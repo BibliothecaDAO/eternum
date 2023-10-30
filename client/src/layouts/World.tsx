@@ -43,7 +43,7 @@ export const World = () => {
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const setHyperstructures = useUIStore((state) => state.setHyperstructures);
   const setCasinos = useUIStore((state) => state.setCasinos);
-  const setCasinoRounds = useUIStore((state) => state.setCasinoRounds);
+  const setBettingRounds = useUIStore((state) => state.setBettingRounds);
   const setMouseCoords = useUIStore((state) => state.setMouseCoords);
 
   const [playBackground, { stop }] = useSound("/sound/music/happy_realm.mp3", {
@@ -61,7 +61,7 @@ export const World = () => {
   }, [isSoundOn]);
 
   const { getHyperstructure } = useHyperstructure();
-  const { getCasino, getCasinoRounds } = useCasino();
+  const { getCasino, getBettingRounds } = useCasino();
 
   useEffect(() => {
     if (!worldLoading) {
@@ -79,7 +79,7 @@ export const World = () => {
         )
       );
 
-      setCasinoRounds(getCasinoRounds());
+      setBettingRounds(getBettingRounds());
     }
   }, [worldLoading]);
 

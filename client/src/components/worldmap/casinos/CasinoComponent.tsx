@@ -36,7 +36,7 @@ export const CasinoComponent = ({ }: CasinoComponentProps) => {
     setCasinos([...casinos]);
   };
 
-  const closeCasinoRoundAndPickWinner = async () => {
+  const closeBettingRoundAndPickWinner = async () => {
     setIsLoading(true);
     await casino_get_winner({
       signer: account,
@@ -79,7 +79,7 @@ export const CasinoComponent = ({ }: CasinoComponentProps) => {
                       className="p-3 !h-4 text-xxs !rounded-md"
                       variant="success"
                     onClick={() => {
-                      closeCasinoRoundAndPickWinner();
+                      closeBettingRoundAndPickWinner();
                     }}
                   >
                       GET WINNER OF CURRENT ROUND
