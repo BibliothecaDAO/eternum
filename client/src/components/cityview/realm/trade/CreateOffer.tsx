@@ -356,7 +356,7 @@ const SelectResourcesAmountPanel = ({
                       });
                     }}
                     resourceId={id}
-                    amount={resource?.balance || 0}
+                    amount={divideByPrecision(resource?.balance || 0)}
                   />
                 </div>
               </div>
@@ -385,7 +385,7 @@ const SelectResourcesAmountPanel = ({
                   }}
                 />
                 <div className="ml-2">
-                  <ResourceCost resourceId={id} amount={resource?.balance || 0} />
+                  <ResourceCost resourceId={id} amount={divideByPrecision(resource?.balance || 0)} />
                 </div>
               </div>
             );
@@ -498,7 +498,7 @@ export const SelectCaravanPanel = ({
                       resourceId={id}
                       color="text-gold"
                       type="vertical"
-                      amount={-multiplyByPrecision(selectedResourcesGiveAmounts[id])}
+                      amount={-selectedResourcesGiveAmounts[id]}
                     />
                   ))}
                 </div>
@@ -522,7 +522,7 @@ export const SelectCaravanPanel = ({
                       type="vertical"
                       color="text-brilliance"
                       resourceId={id}
-                      amount={multiplyByPrecision(selectedResourcesGetAmounts[id])}
+                      amount={selectedResourcesGetAmounts[id]}
                     />
                   ))}
                 </div>

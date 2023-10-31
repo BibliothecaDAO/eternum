@@ -274,7 +274,7 @@ const generateEmptyChestNotifications = (
     const caravansAtPositionWithInventory = runQuery([
       Has(CaravanMembers),
       HasValue(Inventory, {
-        count: 1,
+        items_count: 1,
       }),
       HasValue(Position, {
         x: realmPosition?.x,
@@ -291,10 +291,13 @@ const generateEmptyChestNotifications = (
         | undefined;
 
       const inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(caravanId)])) as
-        | { key: number; count: number }
+        | { items_key: number; items_count: number }
         | undefined;
       const foreignKey = inventory
-        ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(caravanId), BigInt(inventory.key), BigInt(0)]))
+        ? getComponentValue(
+            ForeignKey,
+            getEntityIdFromKeys([BigInt(caravanId), BigInt(inventory.items_key), BigInt(0)]),
+          )
         : undefined;
 
       const resourcesChestId = foreignKey?.entity_id as number;

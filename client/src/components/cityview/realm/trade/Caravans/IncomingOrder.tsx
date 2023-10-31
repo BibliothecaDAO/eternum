@@ -10,6 +10,7 @@ import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 import { useResources } from "../../../../../hooks/helpers/useResources";
 import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
+import { divideByPrecision } from "../../../../../utils/utils";
 
 type IncomingOrderProps = {
   caravanId: number;
@@ -75,7 +76,7 @@ export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
                     color="text-order-brilliance"
                     className="!w-5 mt-0.5"
                     resourceId={resource.resourceId}
-                    amount={resource.amount}
+                    amount={divideByPrecision(resource.amount)}
                   />
                 ),
             )}

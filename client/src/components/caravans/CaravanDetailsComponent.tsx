@@ -66,7 +66,11 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
           {resourcesGet.map(
             (resource) =>
               resource && (
-                <ResourceCost key={resource.resourceId} resourceId={resource.resourceId} amount={resource.amount} />
+                <ResourceCost
+                  key={resource.resourceId}
+                  resourceId={resource.resourceId}
+                  amount={divideByPrecision(resource.amount)}
+                />
               ),
           )}
         </div>
@@ -79,7 +83,11 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
           {resourcesGive.map(
             (resource) =>
               resource && (
-                <ResourceCost key={resource.resourceId} resourceId={resource.resourceId} amount={resource.amount} />
+                <ResourceCost
+                  key={resource.resourceId}
+                  resourceId={resource.resourceId}
+                  amount={divideByPrecision(resource.amount)}
+                />
               ),
           )}
         </div>

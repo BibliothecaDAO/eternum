@@ -116,7 +116,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
                   className="!text-gold !w-5 mt-0.5"
                   type="vertical"
                   resourceId={resource.resourceId}
-                  amount={resource.amount}
+                  amount={divideByPrecision(resource.amount)}
                 />
               ),
           )}
