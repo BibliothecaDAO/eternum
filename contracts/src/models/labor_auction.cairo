@@ -77,19 +77,25 @@ impl LaborAuctionImpl of LaborAuctionTrait {
         }
     }
 
-    fn get_price(self: LaborAuction) -> Fixed {
-        // time since auction start
+    fn get_time_since_start_fixed(self: LaborAuction) -> Fixed {
+        // time that has passed since auction start
+        // 1 period = 1 day
         let time_since_start: u128 = get_block_timestamp().into() - self.start_time.into();
+        FixedTrait::new_unscaled(time_since_start / 86400, false)
+    }
+
+    fn get_price(self: LaborAuction) -> Fixed {
         // get current price
         self
             .to_LinearVRGDA()
             .get_vrgda_price(
                 // 1 period = 1 day
-                FixedTrait::new_unscaled(time_since_start / 86400, false), // time since start
+                self.get_time_since_start_fixed(), // time since start
                 FixedTrait::new_unscaled(self.sold, false), // amount sold
             )
     }
 
+    #[inline(always)]
     fn sell(ref self: LaborAuction) {
         self.sold += 1;
     }

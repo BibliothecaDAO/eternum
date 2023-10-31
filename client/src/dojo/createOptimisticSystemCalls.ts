@@ -4,7 +4,7 @@ import { getEntityIdFromKeys } from "../utils/utils";
 import { Type, getComponentValue } from "@latticexyz/recs";
 import { Resource } from "../types";
 import { LaborCostInterface } from "../hooks/helpers/useLabor";
-import { LABOR_CONFIG } from "@bibliothecadao/eternum";
+import { LABOR_CONFIG, ROAD_COST_PER_USAGE } from "@bibliothecadao/eternum";
 import {
   CancelFungibleOrderProps,
   ClaimFungibleOrderProps,
@@ -12,7 +12,7 @@ import {
   CreateRoadProps,
   HarvestLaborProps,
   PurchaseLaborProps,
-  BuildLaborProps
+  BuildLaborProps,
 } from "@bibliothecadao/eternum";
 
 export const HIGH_ENTITY_ID = 9999999999;
@@ -220,8 +220,10 @@ export function createOptimisticSystemCalls({
         };
         let balance =
           currentResource.balance -
-          (laborUnits as number) * (multiplier as number) * costResources[i].amount * laborAuctionAverageCoefficient;
-        Resource.addOverride(overrideId, {
+          Math.floor(
+            (laborUnits as number) * (multiplier as number) * costResources[i].amount * laborAuctionAverageCoefficient,
+          );
+        Resource.addOverride(overrideId + i, {
           entity: costId,
           value: {
             balance,
@@ -261,7 +263,9 @@ export function createOptimisticSystemCalls({
         // remove overrides
         Labor.removeOverride(overrideId);
         // remove resource overrides
-        Resource.removeOverride(overrideId);
+        for (let i = 0; i < costResources.length; i++) {
+          Resource.removeOverride(overrideId + i);
+        }
       }
     };
   }
@@ -343,7 +347,7 @@ export function createOptimisticSystemCalls({
         entity: getEntityIdFromKeys([BigInt(creator_id), BigInt(2)]),
         value: {
           // 10 stone per usage
-          balance: balance - usageCount * 10,
+          balance: balance - usageCount * ROAD_COST_PER_USAGE,
         },
       });
 

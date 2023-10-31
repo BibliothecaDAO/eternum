@@ -10,6 +10,7 @@ import { getComponentValue } from "@latticexyz/recs";
 import { getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import * as realmsData from "../../../../../geodata/realms.json";
+import { ROAD_COST_PER_USAGE } from "@bibliothecadao/eternum";
 
 type RoadBuildPopupProps = {
   toEntityId: number;
@@ -40,9 +41,8 @@ export const RoadBuildPopup = ({ toEntityId, onClose }: RoadBuildPopupProps) => 
   let costResources: { resourceId: number; amount: number }[] = [];
 
   for (const resourceIdCost of [2]) {
-    const amount = 10;
-    const totalAmount = amount * usageAmount;
-    amount && costResources.push({ resourceId: resourceIdCost, amount: totalAmount });
+    const totalAmount = ROAD_COST_PER_USAGE * usageAmount;
+    costResources.push({ resourceId: resourceIdCost, amount: totalAmount });
   }
 
   const onBuild = () => {

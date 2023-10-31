@@ -94,12 +94,17 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     return amount * multiplier * (isFood ? 12 : laborAmount) * laborCoefficient;
   };
 
-  const buildLabor = async ({ entity_id, resource_type, labor_units, multiplier }: PurchaseLaborProps & BuildLaborProps) => {
+  const buildLabor = async ({
+    entity_id,
+    resource_type,
+    labor_units,
+    multiplier,
+  }: PurchaseLaborProps & BuildLaborProps) => {
     await purchase_and_build_labor({
       signer: account,
       entity_id,
       resource_type,
-      labor_units: labor_units,
+      labor_units,
       multiplier,
     });
   };
@@ -276,8 +281,9 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               )}
             </div>
             <div className="flex items-center">
-              {`+${isFood ? (LABOR_CONFIG.base_food_per_cycle * multiplier) / 2 : ""}${isFood ? "" : LABOR_CONFIG.base_resources_per_cycle / 2
-                }`}
+              {`+${isFood ? (LABOR_CONFIG.base_food_per_cycle * multiplier) / 2 : ""}${
+                isFood ? "" : LABOR_CONFIG.base_resources_per_cycle / 2
+              }`}
               <ResourceIcon
                 containerClassName="mx-0.5"
                 className="!w-[12px]"
@@ -337,7 +343,8 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
           {!isFood && (
             <div className="flex items-center">
               <div className="italic text-light-pink">Amount</div>
-              <NumberInput className="ml-2 mr-2" value={laborAmount} step={5} onChange={setLaborAmount} max={9999} />
+              {/* note: max 76 for now because of gas, can remove after new contract deployment */}
+              <NumberInput className="ml-2 mr-2" value={laborAmount} step={5} onChange={setLaborAmount} max={76} />
               <div className="italic text-gold">
                 {formatSecondsLeftInDaysHours(laborAmount * (LABOR_CONFIG?.base_labor_units || 0))}
               </div>
