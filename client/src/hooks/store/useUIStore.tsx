@@ -40,6 +40,8 @@ interface UIStore {
   moveCameraToFoodView: () => void;
   isLoadingScreenEnabled: boolean;
   setIsLoadingScreenEnabled: (enabled: boolean) => void;
+  setPlugins: (plugins: React.ReactNode[]) => void;
+  plugins: React.ReactNode[];
 }
 
 const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
@@ -176,6 +178,13 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
   ...createPopupsSlice(set),
   ...createDataStoreSlice(set),
+  setPlugins: (plugins: any[]) => {
+    set({ plugins });
+  },
+  registerPluginByName: (plugin: any) => {
+    // sets name of plugin
+  },
+  plugins: [],
 }));
 
 export default useUIStore;

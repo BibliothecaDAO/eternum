@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "workspaces": [
     "sdk/packages/eternum",
+    "sdk/packages/eternum-ui",
     "client"
   ],
   "scripts": {

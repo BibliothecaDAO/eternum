@@ -1,11 +1,13 @@
-## Eternum SDK
+## Eternum UI SDK
 
-These packages are designed to allow for easy client integration into the Eternum world
+Milestones:
+
+- [] Elements Moved here and imported into main client
+- [] Example plugin structure
 
 ### Packages
 
 - [eternum](./packages/eternum)
-
 
 ### Enviroment setup
 
@@ -18,9 +20,10 @@ curl -fsSL https://bun.sh/install | bash
 ### Development
 
 From the root to install all the packages deps
+
 ```
 bun install
-``` 
+```
 
 ### Building packages
 

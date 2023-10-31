@@ -27,6 +27,10 @@ import hyperStructures from "../data/hyperstructures.json";
 import { useHyperstructure } from "../hooks/helpers/useHyperstructure";
 import { Tooltip } from "../elements/Tooltip";
 
+// global state of modules
+// select boxes
+// layout loops over selected modules and renders them in their containers
+
 export const World = () => {
   const { loading: worldLoading, progress: worldProgress } = useSyncWorld();
 
