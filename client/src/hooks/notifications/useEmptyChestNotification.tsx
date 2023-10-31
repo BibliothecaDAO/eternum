@@ -18,7 +18,7 @@ export const useEmptyChestNotification = (
   title: React.ReactElement;
   content: (onClose: any) => React.ReactElement;
 } => {
-  const { getResourcesFromInventory, emptyResourceChest } = useResources();
+  const { getResourcesFromInventory, offloadChest } = useResources();
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -26,7 +26,7 @@ export const useEmptyChestNotification = (
     notification.data && "destinationRealmId" in notification.data ? notification.data.destinationRealmId : undefined;
 
   const caravanId = notification.data && "caravanId" in notification.data ? notification.data.caravanId : undefined;
-  const resouurcesChestId =
+  const resourcesChestId =
     notification.data && "resourcesChestId" in notification.data ? notification.data.resourcesChestId : undefined;
   const realmEntityId =
     notification.data && "realmEntityId" in notification.data ? notification.data.realmEntityId : undefined;
@@ -38,7 +38,7 @@ export const useEmptyChestNotification = (
 
   const emptyChest = async () => {
     setIsLoading(true);
-    await emptyResourceChest(realmEntityId, caravanId, resouurcesChestId, claimableResources);
+    await offloadChest(realmEntityId, caravanId, resourcesChestId, 0, claimableResources);
     setIsLoading(false);
   };
 

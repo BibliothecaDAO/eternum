@@ -4,10 +4,10 @@ import { getEntityIdFromKeys } from "../utils/utils";
 import { Type, getComponentValue } from "@latticexyz/recs";
 import { Resource } from "../types";
 import { LaborCostInterface } from "../hooks/helpers/useLabor";
-import { LABOR_CONFIG, OffloadResourcesProps, ROAD_COST_PER_USAGE } from "@bibliothecadao/eternum";
+import { LABOR_CONFIG, ROAD_COST_PER_USAGE } from "@bibliothecadao/eternum";
 import {
   CancelFungibleOrderProps,
-  EmptyResourcesChestProps,
+  OffloadResourcesProps,
   CreateOrderProps,
   CreateRoadProps,
   HarvestLaborProps,
