@@ -64,7 +64,7 @@ export const MainScene = () => {
       dpr={[0.5, 2]}
       performance={{
         min: 0.5,
-        max: 2,
+        max: 1,
       }}
       gl={{
         powerPreference: "high-performance",
