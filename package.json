@@ -7,7 +7,7 @@
     "client"
   ],
   "scripts": {
-    "build-packages": "bun run --cwd sdk/packages/eternum build",
+    "build-packages": "bun run --cwd sdk/packages/eternum build && bun run --cwd sdk/packages/eternum-ui build",
     "build-client": "bun run --cwd ./client build"
   }
 }

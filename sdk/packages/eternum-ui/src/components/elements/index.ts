@@ -1,1 +1,1 @@
-export { CircleButton } from "./CircleButton";
+export * from "./CircleButton";

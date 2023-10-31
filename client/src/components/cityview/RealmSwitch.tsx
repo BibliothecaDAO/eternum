@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { ComponentPropsWithRef, useEffect, useMemo, useState } from "react";
-import CircleButton from "../../elements/CircleButton";
+import { CircleButton } from "@bibliothecadao/eternum-ui";
 import { OrderIcon } from "../../elements/OrderIcon";
 import { Badge } from "../../elements/Badge";
 import { RealmBadge } from "../../elements/RealmBadge";

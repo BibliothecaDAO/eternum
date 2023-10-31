@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@bibliothecadao/eternum": "../sdk/packages/eternum",
+    "@bibliothecadao/eternum-ui": "../sdk/packages/eternum-ui",
     "@dojoengine/core": "^0.1.21",
     "@dojoengine/create-burner": "^0.0.18",
     "@dojoengine/react": "^0.0.3",

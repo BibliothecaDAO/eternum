@@ -1,4 +1,4 @@
-### Casino plugin
+### Plugin
 
 Is this on main client? or on alt client?
 
