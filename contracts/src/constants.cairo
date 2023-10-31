@@ -59,6 +59,8 @@ mod ResourceTypes {
 // Using FREE_TRANSPORT_ENTITY_TYPE I can look up the speed and capacity of that entity when creating it
 const FREE_TRANSPORT_ENTITY_TYPE: u128 = 256;
 const REALM_ENTITY_TYPE: u128 = 257;
+const SOLDIER_ENTITY_TYPE: u128 = 256;
+
 
 // TODO: change to consts
 enum BuildingTypes {

@@ -14,3 +14,6 @@ mod trade;
 mod road;
 mod labor_auction;
 mod hyperstructure;
+mod weight;
+mod inventory;
+mod combat;
