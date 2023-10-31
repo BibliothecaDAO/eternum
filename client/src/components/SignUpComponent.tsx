@@ -22,6 +22,11 @@ export const SignUpComponent = ({ worldLoading, worldProgress }: SignUpComponent
   const setShowBlurOverlay = useUIStore((state) => state.setShowBlurOverlay);
   const toggleSound = useUIStore((state) => state.toggleSound);
 
+  let disableStart = true;
+  if (import.meta.env.DEV) {
+    disableStart = false;
+  }
+
   const isWalletSelected = useMemo(() => account.address !== import.meta.env.VITE_KATANA_ACCOUNT_1_ADDRESS!, [account]);
 
   useEffect(() => {
@@ -67,9 +72,8 @@ export const SignUpComponent = ({ worldLoading, worldProgress }: SignUpComponent
             onChange={select}
           />
           <Button
-            // @note: currently disabled, enable back when new version is ready
-            // disabled={!isWalletSelected || worldLoading}
-            disabled={true}
+            // @note: currently disabled for prod, enable back when new version is ready
+            disabled={!isWalletSelected || worldLoading || disableStart}
             className="mt-2 !p-2"
             variant={worldLoading || isWalletSelected ? "primary" : "outline"}
             onClick={() => setShowSignupPopup(false)}
