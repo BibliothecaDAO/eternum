@@ -11,6 +11,7 @@ import { findResourceById } from "@bibliothecadao/eternum";
 import { calculateRatio } from "../../components/cityview/realm/trade/Market/MarketOffer";
 import { EventType, NotificationType } from "./useNotifications";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
+import useRealmStore from "../store/useRealmStore";
 
 export const useTradeNotification = (
   notification: NotificationType,
@@ -27,6 +28,7 @@ export const useTradeNotification = (
   } = useDojo();
 
   const { getTradeResources } = useTrade();
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   let trade = getComponentValue(Trade, getEntityIdFromKeys(extractAndCleanKey(notification.keys)));
 
@@ -45,8 +47,10 @@ export const useTradeNotification = (
 
   const takerOrderName = takerRealm ? getRealmOrderNameById(takerRealm?.realm_id) : "";
 
-  let orderResources1 = getTradeResources(trade?.maker_order_id || 0);
-  let orderResources2 = getTradeResources(trade?.taker_order_id || 0);
+  let { resourcesGet: orderResources1, resourcesGive: orderResources2 } = getTradeResources(
+    realmEntityId,
+    trade?.trade_id || 0,
+  );
 
   let type: "primary" | "success" | "danger";
   let msg: string;

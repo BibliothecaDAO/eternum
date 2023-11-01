@@ -87,7 +87,6 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
       {
         key: "my",
         label: (
-          // TODO: implement incoming caravans here
           <div
             onMouseEnter={() =>
               setTooltip({
@@ -196,7 +195,7 @@ const SelectableRealm = ({ realm, selected = false, initialized = false, onClick
                   withTooltip
                   key={resource.id}
                   resourceId={resource.id}
-                  amount={resource.balance}
+                  amount={divideByPrecision(resource.balance)}
                   color={resource.balance >= costById[resource.id] ? "" : "text-order-giants"}
                 />
               );
@@ -433,7 +432,7 @@ const BuildHyperstructurePanel = ({
                           type="vertical"
                           key={resourceId}
                           resourceId={resourceId}
-                          amount={amount}
+                          amount={divideByPrecision(amount)}
                         />
                       ))
                     : resourcesLeftToComplete &&
@@ -443,7 +442,7 @@ const BuildHyperstructurePanel = ({
                           type="vertical"
                           key={id}
                           resourceId={Number(id)}
-                          amount={multiplyByPrecision(resourcesLeftToComplete[id])}
+                          amount={resourcesLeftToComplete[id]}
                         />
                       ))}
                 </div>
@@ -523,7 +522,7 @@ const BuildHyperstructurePanel = ({
                               });
                             }}
                             resourceId={id}
-                            amount={resource?.balance || 0}
+                            amount={divideByPrecision(resource?.balance || 0)}
                           />
                         </div>
                       </div>
@@ -540,7 +539,7 @@ const BuildHyperstructurePanel = ({
                       key={id}
                       className="!w-min h-8 cursor-pointer"
                       resourceId={Number(id)}
-                      amount={multiplyByPrecision(resourcesLeftToComplete[id])}
+                      amount={resourcesLeftToComplete[id]}
                       onClick={() => {
                         setFeedResourcesGiveAmounts({
                           ...feedResourcesGiveAmounts,

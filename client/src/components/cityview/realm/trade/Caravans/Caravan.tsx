@@ -10,11 +10,11 @@ import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import { CaravanInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
 import { CAPACITY_PER_DONKEY } from "@bibliothecadao/eternum";
-import { useTrade } from "../../../../../hooks/helpers/useTrade";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 import { getTotalResourceWeight } from "../TradeUtils";
 import { divideByPrecision } from "../../../../../utils/utils";
+import { useResources } from "../../../../../hooks/helpers/useResources";
 
 type CaravanProps = {
   caravan: CaravanInterface;
@@ -23,23 +23,27 @@ type CaravanProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Caravan = ({ caravan, ...props }: CaravanProps) => {
-  const { orderId, arrivalTime, destination, blocked, capacity } = caravan;
+  const { caravanId, arrivalTime, destination, blocked, capacity, pickupArrivalTime } = caravan;
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const { getTradeResources } = useTrade();
-  let resourcesGive = orderId ? getTradeResources(orderId) : [];
+  const { getResourcesFromInventory } = useResources();
+
+  const resourcesGet = getResourcesFromInventory(caravanId);
 
   // capacity
   let resourceWeight = useMemo(() => {
-    return getTotalResourceWeight([...resourcesGive]);
-  }, [resourcesGive]);
+    return getTotalResourceWeight([...resourcesGet]);
+  }, [resourcesGet]);
 
   const destinationRealmId = destination && getRealmIdByPosition(destination);
   const destinationRealmName = destinationRealmId && getRealmNameById(destinationRealmId);
 
   const isTraveling = !blocked && nextBlockTimestamp && arrivalTime && arrivalTime > nextBlockTimestamp;
   const isWaitingForDeparture = blocked;
-  const isIdle = !isTraveling && !isWaitingForDeparture;
+  const isIdle = !isTraveling && !isWaitingForDeparture && !resourceWeight;
+  const isWaitingToOffload = !blocked && !isTraveling && resourceWeight;
+  const hasArrivedPickupPosition =
+    pickupArrivalTime !== undefined && nextBlockTimestamp !== undefined && pickupArrivalTime <= nextBlockTimestamp;
 
   if ((blocked || isTraveling) && props.idleOnly) {
     return null;
@@ -57,7 +61,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
         <div className="flex items-center ml-1 -mt-2">
           {isTraveling && destinationRealmName && (
             <div className="flex items-center ml-1">
-              <span className="italic text-light-pink">Traveling to</span>
+              <span className="italic text-light-pink">Traveling {hasArrivedPickupPosition ? "from" : "to"}</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
                 <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xxs" />
                 {destinationRealmName}
@@ -67,7 +71,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
           )}
           {capacity && resourceWeight !== undefined && capacity && (
             <div className="flex items-center ml-1 text-gold">
-              {isTraveling || isWaitingForDeparture ? divideByPrecision(resourceWeight) : 0}
+              {!isIdle && hasArrivedPickupPosition ? divideByPrecision(resourceWeight) : 0}
               <div className="mx-0.5 italic text-light-pink">/</div>
               {`${capacity / 1000} kg`}
               <CaretDownFill className="ml-1 fill-current" />
@@ -78,10 +82,15 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
           // isWaitingForDeparture is '0' instead of false, need to fix that
           isWaitingForDeparture == true && (
             <div className="flex ml-auto -mt-2 italic text-gold">
-              Waiting departure <Pen className="ml-1 fill-gold" />
+              Trade Bound <Pen className="ml-1 fill-gold" />
             </div>
           )
         }
+        {isWaitingToOffload && (
+          <div className="flex ml-auto -mt-2 italic text-gold">
+            Waiting to claim <Pen className="ml-1 fill-gold" />
+          </div>
+        )}
         {isIdle && (
           <div className="flex ml-auto -mt-2 italic text-gold">
             Idle
@@ -96,8 +105,10 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
       </div>
       <div className="flex justify-center items-center space-x-2 flex-wrap mt-2">
         {!isIdle &&
-          resourcesGive &&
-          resourcesGive.map(
+          !isWaitingForDeparture &&
+          hasArrivedPickupPosition &&
+          resourcesGet &&
+          resourcesGet.map(
             (resource) =>
               resource && (
                 <ResourceCost
@@ -105,7 +116,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
                   className="!text-gold !w-5 mt-0.5"
                   type="vertical"
                   resourceId={resource.resourceId}
-                  amount={resource.amount}
+                  amount={divideByPrecision(resource.amount)}
                 />
               ),
           )}

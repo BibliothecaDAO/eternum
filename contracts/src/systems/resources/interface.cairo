@@ -19,3 +19,12 @@ trait IResourceSystems<TContractState> {
         receiving_entity_id: ID, resources: Span<(u8, u128)>
     );
 }
+
+#[starknet::interface]
+trait IResourceChestSystems<TContractState> {
+    fn offload_chest(
+        self: @TContractState, world: IWorldDispatcher, 
+        entity_id: ID, entity_index_in_inventory: u128, 
+        receiving_entity_id: ID, transport_id: ID
+    );
+}

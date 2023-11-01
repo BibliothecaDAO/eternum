@@ -22,6 +22,11 @@ export const SignUpComponent = ({ worldLoading, worldProgress }: SignUpComponent
   const setShowBlurOverlay = useUIStore((state) => state.setShowBlurOverlay);
   const toggleSound = useUIStore((state) => state.toggleSound);
 
+  let disableStart = true;
+  if (import.meta.env.DEV) {
+    disableStart = false;
+  }
+
   const isWalletSelected = useMemo(() => account.address !== import.meta.env.VITE_KATANA_ACCOUNT_1_ADDRESS!, [account]);
 
   useEffect(() => {
@@ -67,8 +72,8 @@ export const SignUpComponent = ({ worldLoading, worldProgress }: SignUpComponent
             onChange={select}
           />
           <Button
-            // cannot use master account to sign in
-            disabled={!isWalletSelected || worldLoading}
+            // @note: currently disabled for prod, enable back when new version is ready
+            disabled={!isWalletSelected || worldLoading || disableStart}
             className="mt-2 !p-2"
             variant={worldLoading || isWalletSelected ? "primary" : "outline"}
             onClick={() => setShowSignupPopup(false)}
@@ -81,7 +86,7 @@ export const SignUpComponent = ({ worldLoading, worldProgress }: SignUpComponent
           )}
           <div className="flex items-center mt-2 mb-1 text-xs text-center text-white">
             <Danger />
-            <div className="ml-1 text-danger">Create new wallet if you played before October 14th</div>
+            <div className="ml-1 text-danger">Eternum in maintenance. Next update November 7th</div>
           </div>
           {/* <Headline size="big">Sign Up</Headline>
           <div className="flex flex-col w-full text-center text-xs text-white">

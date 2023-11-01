@@ -23,7 +23,7 @@ export const CaravansPanel = ({}: CaravansPanelProps) => {
 
   const onClick = (caravan: CaravanInterface) => {
     // way to find if caravan has currently resources inside
-    if ((caravan?.arrivalTime && nextBlockTimestamp && caravan.arrivalTime > nextBlockTimestamp) || caravan.blocked) {
+    if (caravan?.arrivalTime && nextBlockTimestamp && caravan.arrivalTime > nextBlockTimestamp) {
       setShowCaravanDetails(true);
     } else {
     }
