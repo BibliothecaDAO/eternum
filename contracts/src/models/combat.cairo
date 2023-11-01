@@ -34,9 +34,9 @@ enum Duty {
     Defence
 }
 
-// #[generate_trait]
-// impl AttackImpl of AttackTrait {
-//     fn success_probability(self: Attack, defence: u128)  -> u128 {
-//         self.value * 100 / (self.value + defence)
-//     }
-// }
+#[generate_trait]
+impl AttackImpl of AttackTrait {
+    fn get_success_probability(self: Attack, defence: u128)  -> u128 {
+        self.value * 100 / (self.value + defence)
+    }
+}
