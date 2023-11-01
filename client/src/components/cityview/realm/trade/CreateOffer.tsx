@@ -182,7 +182,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
               }}
               variant={canGoToNextStep ? "success" : "danger"}
             >
-              {step == 3 ? "Create Offer" : "Next Step"}
+              {step == 3 ? (selectedRealmId ? "Create Direct Offer" : "Create Public Offer") : "Next Step"}
             </Button>
           )}
           {isLoading && (
