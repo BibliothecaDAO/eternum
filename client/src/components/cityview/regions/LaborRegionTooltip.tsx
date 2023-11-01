@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { BaseRegionTooltip } from "../../../elements/BaseRegionTooltip";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../DojoContext";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../utils/utils";
@@ -18,7 +17,6 @@ type LaborRegionTooltipProps = {
 
 export const LaborRegionTooltip = ({ position, resourceId }: LaborRegionTooltipProps) => {
   let { realmEntityId } = useRealmStore();
-  const { realm } = useGetRealm(realmEntityId);
 
   const {
     setup: {
