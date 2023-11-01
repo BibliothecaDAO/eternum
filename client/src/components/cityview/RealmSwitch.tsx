@@ -90,8 +90,6 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
 
   return (
     <div className={clsx("flex", className)}>
-      {/* IDK why, but tailwind cant handle dynamic custom classes if they wasnt used before */}
-      <div className="hidden bg-order-power bg-order-giants bg-order-titans bg-order-brilliance bg-order-skill bg-order-perfection bg-order-twins bg-order-reflection bg-order-detection bg-order-fox bg-order-vitriol bg-order-enlightenment bg-order-protection bg-order-fury bg-order-rage bg-order-anger fill-order-power fill-order-giants fill-order-titans fill-order-brilliance fill-order-skill fill-order-perfection fill-order-twins fill-order-reflection fill-order-detection fill-order-fox fill-order-vitriol fill-order-enlightenment fill-order-protection fill-order-fury fill-order-rage fill-order-anger stroke-order-power stroke-order-giants stroke-order-titans stroke-order-brilliance stroke-order-skill stroke-order-perfection stroke-order-twins stroke-order-reflection stroke-order-detection stroke-order-fox stroke-order-vitriol stroke-order-enlightenment stroke-order-protection stroke-order-fury stroke-order-rage stroke-order-anger"></div>
       <CircleButton className={`bg-order-${orderName} text-gold`} size="md" onClick={() => setShowRealms(!showRealms)}>
         <OrderIcon
           order={orderName.toString()}
