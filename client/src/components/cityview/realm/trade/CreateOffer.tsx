@@ -347,7 +347,7 @@ const SelectResourcesAmountPanel = ({
                       });
                     }}
                     resourceId={id}
-                    amount={resource?.balance || 0}
+                    amount={divideByPrecision(resource?.balance || 0)}
                   />
                 </div>
               </div>
@@ -376,7 +376,7 @@ const SelectResourcesAmountPanel = ({
                   }}
                 />
                 <div className="ml-2">
-                  <ResourceCost resourceId={id} amount={resource?.balance || 0} />
+                  <ResourceCost resourceId={id} amount={divideByPrecision(resource?.balance || 0)} />
                 </div>
               </div>
             );
