@@ -15,7 +15,7 @@ import { useDojo } from "../../../../DojoContext";
 import { formatSecondsLeftInDaysHours } from "./laborUtils";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { getComponentValue } from "@latticexyz/recs";
-import { getEntityIdFromKeys, getPosition, getZone } from "../../../../utils/utils";
+import { divideByPrecision, getEntityIdFromKeys, getPosition, getZone } from "../../../../utils/utils";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 import { useLabor } from "../../../../hooks/helpers/useLabor";
@@ -321,9 +321,11 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
                     key={resourceId}
                     type="vertical"
                     resourceId={resourceId}
-                    amount={Number(
-                      getTotalAmount(amount, isFood, multiplier, laborAmount, laborAuctionAverageCoefficient).toFixed(
-                        2,
+                    amount={divideByPrecision(
+                      Number(
+                        getTotalAmount(amount, isFood, multiplier, laborAmount, laborAuctionAverageCoefficient).toFixed(
+                          2,
+                        ),
                       ),
                     )}
                   />
