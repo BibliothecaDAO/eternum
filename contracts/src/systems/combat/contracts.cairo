@@ -68,6 +68,8 @@ mod combat_systems {
             // todo@credence add payment here
 
             let entity_position = get!(world, entity_id, Position);
+            let soldier_carry_capacity 
+                =  InternalSoldierSystemsImpl::get_carry_capacity_per_soldier(world);
 
             let mut index = 0;
             loop {
@@ -107,6 +109,11 @@ mod combat_systems {
                         x: entity_position.x,
                         y: entity_position.y
                     },
+                    Inventory {
+                        entity_id: soldier_id,
+                        items_key: world.uuid().into(),
+                        items_count: 0
+                    },
                     Movable {
                         entity_id: soldier_id, 
                         sec_per_km: InternalSoldierSystemsImpl::get_speed_per_soldier(world),
@@ -114,7 +121,11 @@ mod combat_systems {
                         round_trip: false,
                         intermediate_coord_x: 0,  
                         intermediate_coord_y: 0,  
-                    }
+                    },
+                    Capacity {
+                        entity_id: soldier_id,
+                        weight_gram: soldier_carry_capacity 
+                    },
                 ));
 
                  index += 1;
@@ -124,7 +135,7 @@ mod combat_systems {
         ///  Create a group of soldiers and deploy them
         ///  assign them a duty.
         ///
-        ///  What differentiates 
+        /// Note: no soldier should hold any resources in their inventory
         ///
         /// # Arguments
         ///
@@ -193,6 +204,10 @@ mod combat_systems {
                 // check that soldier_id is owned by caller
                 let soldier_owner = get!(world, soldier_id, Owner);
                 assert(soldier_owner.address == caller, 'not soldier owner');
+
+                // check that soldier inventory is empty
+                let soldier_inventory = get!(world, soldier_id, Inventory);
+                assert(soldier_inventory.items_count == 0, 'soldier inventory not empty');
 
                 // check that it is a single soldier
                 let soldier_quantity = get!(world, soldier_id, Quantity);
