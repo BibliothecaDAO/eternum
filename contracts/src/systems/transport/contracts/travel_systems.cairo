@@ -53,30 +53,42 @@ mod travel_systems {
             let travelling_entity_position = get!(world, travelling_entity_id, Position);
             let travelling_entity_coord: Coord = travelling_entity_position.into();
             assert(travelling_entity_coord != destination_coord, 'entity is at destination');
-
-
-            let travel_time = travelling_entity_coord.calculate_travel_time(
-                destination_coord, travelling_entity_movable.sec_per_km
+            
+            InternalTravelSystemsImpl::travel(world,
+                travelling_entity_id, travelling_entity_movable, 
+                travelling_entity_coord, destination_coord
             );
+        }        
+    }
+
+    #[generate_trait]
+    impl InternalTravelSystemsImpl of InternalTravelSystemsTrait {
+
+        fn travel(
+            world: IWorldDispatcher, transport_id: ID, transport_movable: Movable, 
+            from_coord: Coord, to_coord: Coord
+        ){
+            let travel_time = from_coord.calculate_travel_time(
+                to_coord, transport_movable.sec_per_km
+            );
+
             // reduce travel time if there is a road
             let travel_time = RoadImpl::use_road(
-                world, travel_time, travelling_entity_coord, destination_coord
+                world, travel_time, from_coord, to_coord
                 );
-
-
-        
+    
             set!(world,(
                 ArrivalTime {
-                    entity_id: travelling_entity_id,
-                    arrives_at: ts + travel_time
+                    entity_id: transport_id,
+                    arrives_at: starknet::get_block_timestamp() + travel_time
                 },
                 Position {
-                    entity_id: travelling_entity_id,
-                    x: destination_coord.x,
-                    y: destination_coord.y
+                    entity_id: transport_id,
+                    x: to_coord.x,
+                    y: to_coord.y
                 }
             ));
+        }
 
-        }        
     }
 }
