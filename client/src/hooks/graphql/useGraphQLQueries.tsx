@@ -71,23 +71,18 @@ export interface LaborInterface {
 }
 export interface IncomingOrderInterface {
   tradeId: number;
-  orderId?: number | undefined;
-  counterPartyOrderId: number | undefined;
   claimed: boolean | undefined;
   arrivalTime: number | undefined;
   origin: PositionInterface | undefined;
   position: PositionInterface | undefined;
 }
 
-export interface IncomingOrdersInterface {
-  incomingOrders: IncomingOrderInterface[];
-}
-
 export interface CaravanInterface {
   caravanId: number;
-  orderId: number | undefined;
+  resourcesChestId: number | undefined;
   blocked: boolean | undefined;
   arrivalTime: number | undefined;
+  pickupArrivalTime: number | undefined;
   capacity: number | undefined;
   destination: PositionInterface | undefined;
   owner: string | undefined;
@@ -135,7 +130,7 @@ export const useSyncWorld = (): { loading: boolean; progress: number } => {
           while (shouldContinue) {
             const queryBuilder = `
               query SyncWorld {
-                entities: entities(keys:["%"] ${cursor ? `after: "${cursor}"` : ""} first: ${OFFSET}) {
+                entities: entities(keys:["*"] ${cursor ? `after: "${cursor}"` : ""} first: ${OFFSET}) {
                   total_count
                   edges {
                     cursor

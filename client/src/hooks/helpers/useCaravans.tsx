@@ -11,28 +11,52 @@ export function useCaravan() {
   const {
     account: { account },
     setup: {
-      components: { ArrivalTime, Movable, Capacity, Position, OrderId, Owner, QuantityTracker },
+      components: {
+        ArrivalTime,
+        Movable,
+        Capacity,
+        Position,
+        Owner,
+        QuantityTracker,
+        Inventory,
+        ForeignKey,
+        ResourceChest,
+      },
     },
   } = useDojo();
 
   const getCaravanInfo = (caravanId: number): CaravanInterface => {
-    const orderId = getComponentValue(OrderId, getEntityIdFromKeys([BigInt(caravanId)]));
     const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([BigInt(caravanId)]));
     const movable = getComponentValue(Movable, getEntityIdFromKeys([BigInt(caravanId)]));
     const capacity = getComponentValue(Capacity, getEntityIdFromKeys([BigInt(caravanId)]));
     const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(caravanId)]));
-    const rawDestination = orderId ? getComponentValue(Position, getEntityIdFromKeys([BigInt(orderId.id)])) : undefined;
+    const resourcesChestId = getInventoryResourcesChestId(caravanId);
+    const resourceChest = resourcesChestId
+      ? getComponentValue(ResourceChest, getEntityIdFromKeys([BigInt(resourcesChestId)]))
+      : undefined;
+    // const resources_chest_id =
+    const rawDestination = movable ? { x: movable.intermediate_coord_x, y: movable.intermediate_coord_y } : undefined;
     let destination = rawDestination ? { x: rawDestination.x, y: rawDestination.y } : undefined;
+
     return {
       caravanId,
-      orderId: orderId?.id,
       arrivalTime: arrivalTime?.arrives_at,
+      pickupArrivalTime: resourceChest?.locked_until,
+      resourcesChestId,
       blocked: movable?.blocked,
       capacity: capacity?.weight_gram,
       destination,
       owner: owner?.address,
       isMine: padAddress(owner?.address || "0x0") === padAddress(account.address),
     };
+  };
+
+  const getInventoryResourcesChestId = (caravanId: number): number | undefined => {
+    const inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(caravanId)]));
+    let foreignKey = inventory
+      ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(caravanId), BigInt(inventory.items_key), BigInt(0)]))
+      : undefined;
+    return foreignKey?.entity_id;
   };
 
   function calculateDistance(startId: number, destinationId: number): number | undefined {
@@ -62,7 +86,7 @@ export function useCaravan() {
 
     return donkeysQuantity?.count || 0;
   }
-  return { getCaravanInfo, calculateDistance, getRealmDonkeysCount };
+  return { getCaravanInfo, calculateDistance, getRealmDonkeysCount, getInventoryResourcesChestId };
 }
 
 export function useGetPositionCaravans(x: number, y: number) {

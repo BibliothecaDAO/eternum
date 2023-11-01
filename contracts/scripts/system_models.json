@@ -5,7 +5,8 @@
         "CaravanMembers",
         "Position",
         "Owner",
-        "ForeignKey"
+        "ForeignKey",
+        "Inventory"
     ],
     "TRANSPORT_UNIT_SYSTEMS": [
         "Owner",
@@ -26,15 +27,18 @@
     "TRADE_SYSTEMS": [
         "Caravan",
         "Movable",
-        "OrderId",
         "Trade",
         "Resource",
-        "FungibleEntities",
-        "OrderResource",
         "Status",
         "ArrivalTime",
         "Position",
-        "Road"
+        "Road",
+        "Inventory",
+        "ForeignKey",
+        "ResourceChest",
+        "DetachedResource",
+        "Weight",
+        "Owner"
     ],
     "ROAD_SYSTEMS": [
         "Road",
@@ -48,7 +52,13 @@
     ],
     "RESOURCE_SYSTEMS": [
         "Resource",
-        "ResourceAllowance"
+        "ResourceAllowance",
+        "Owner",
+        "Weight",
+        "ResourceChest",
+        "DetachedResource",
+        "ForeignKey",
+        "Inventory"
     ],
     "TRAVEL_SYSTEMS": [
         "ArrivalTime",

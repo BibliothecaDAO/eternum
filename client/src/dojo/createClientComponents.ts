@@ -9,10 +9,11 @@ export function createClientComponents({ contractComponents }: SetupNetworkResul
     Position: overridableComponent(contractComponents.Position),
     Trade: overridableComponent(contractComponents.Trade),
     Status: overridableComponent(contractComponents.Status),
-    FungibleEntities: overridableComponent(contractComponents.FungibleEntities),
     Resource: overridableComponent(contractComponents.Resource),
     Labor: overridableComponent(contractComponents.Labor),
-    OrderResource: overridableComponent(contractComponents.OrderResource),
     Road: overridableComponent(contractComponents.Road),
+    Inventory: overridableComponent(contractComponents.Inventory),
+    ResourceChest: overridableComponent(contractComponents.ResourceChest),
+    DetachedResource: overridableComponent(contractComponents.DetachedResource),
   };
 }

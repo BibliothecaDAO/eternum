@@ -12,13 +12,13 @@ export interface TravelProps extends SystemSigner {
 
 export interface CreateOrderProps {
   maker_id: num.BigNumberish;
-  maker_entity_types: num.BigNumberish[];
-  maker_quantities: num.BigNumberish[];
+  maker_gives_resource_types: num.BigNumberish[];
+  maker_gives_resource_amounts: num.BigNumberish[];
   taker_id: num.BigNumberish;
-  taker_entity_types: num.BigNumberish[];
-  taker_quantities: num.BigNumberish[];
+  taker_gives_resource_types: num.BigNumberish[];
+  taker_gives_resource_amounts: num.BigNumberish[];
   signer: any;
-  caravan_id?: num.BigNumberish;
+  maker_transport_id?: num.BigNumberish;
   donkeys_quantity?: num.BigNumberish;
 }
 
@@ -123,11 +123,6 @@ export interface CreateRoadProps extends SystemSigner {
   usage_count: num.BigNumberish;
 }
 
-export interface ClaimFungibleOrderProps extends SystemSigner {
-  entity_id: num.BigNumberish;
-  trade_id: num.BigNumberish;
-}
-
 // Interface definition
 export interface CreateRealmProps extends SystemSigner {
   realm_id: num.BigNumberish;
@@ -145,4 +140,11 @@ export interface CreateRealmProps extends SystemSigner {
     y: num.BigNumberish;
   };
   resources: num.BigNumberish[];
+}
+
+export interface OffloadResourcesProps extends SystemSigner {
+  entity_id: num.BigNumberish;
+  entity_index_in_inventory: num.BigNumberish;
+  receiving_entity_id: num.BigNumberish;
+  transport_id: num.BigNumberish;
 }
