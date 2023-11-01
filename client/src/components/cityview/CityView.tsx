@@ -16,6 +16,7 @@ import { getRealm } from "../../utils/realms";
 import { FarmsRegionTooltip } from "./regions/FarmsRegionTooltip";
 import { extend } from "@react-three/fiber";
 import { FisheryRegionTooltip } from "./regions/FisheryRegionTooltip";
+import Farms from "./Farms";
 extend({ FarmsRegionTooltip });
 type GLTFResult = GLTF & {
   nodes: {
@@ -381,13 +382,7 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
             material={materials.PaletteMaterial006}
           />
         </group>
-        <mesh
-          onPointerEnter={() => setHoveredArea("farm")}
-          name="crops"
-          geometry={nodes.crops.geometry}
-          material={materials.PaletteMaterial014}
-          position={[-209.282944, 0, -42.59145]}
-        />
+        <Farms />
         <mesh
           name="ocean"
           geometry={nodes.ocean.geometry}
