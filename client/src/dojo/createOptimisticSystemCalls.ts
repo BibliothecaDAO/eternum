@@ -7,7 +7,7 @@ import { LaborCostInterface } from "../hooks/helpers/useLabor";
 import { LABOR_CONFIG, ROAD_COST_PER_USAGE } from "@bibliothecadao/eternum";
 import {
   CancelFungibleOrderProps,
-  ClaimFungibleOrderProps,
+  OffloadResourcesProps,
   CreateOrderProps,
   CreateRoadProps,
   HarvestLaborProps,
@@ -22,66 +22,71 @@ export function createOptimisticSystemCalls({
   Status,
   Labor,
   Resource,
-  FungibleEntities,
-  OrderResource,
   Road,
+  DetachedResource,
+  ResourceChest,
+  Inventory,
 }: ClientComponents) {
   function optimisticCreateOrder(systemCall: (args: any) => Promise<any>) {
     return async function (this: any, args: CreateOrderProps): Promise<void | number> {
-      const { maker_id, maker_entity_types, maker_quantities, taker_id, taker_entity_types, taker_quantities } = args;
+      const {
+        maker_id,
+        maker_gives_resource_types,
+        maker_gives_resource_amounts,
+        maker_transport_id: transport_id,
+        taker_id,
+        taker_gives_resource_types,
+        taker_gives_resource_amounts,
+      } = args;
 
       const expires_at = Math.floor(Date.now() / 1000 + 2628000);
 
       // optimisitc rendering of trade
       const overrideId = uuid();
       const trade_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID)]);
-      const maker_order_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 1)]);
-      const taker_order_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 2)]);
-      const key = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 3)]);
-
-      const numberMakerId = maker_id as Type.Number;
-      const numberTakerId = taker_id as Type.Number;
+      const maker_resource_chest_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 1)]);
+      const taker_resource_chest_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 2)]);
+      const maker_transport_id = transport_id || getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 3)]);
+      // const key = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 4)]);
 
       Trade.addOverride(overrideId, {
         entity: trade_id,
         value: {
-          maker_id: numberMakerId,
-          taker_id: numberTakerId,
-          maker_order_id,
-          taker_order_id,
+          maker_id: maker_id as Type.Number,
+          taker_id: taker_id as Type.Number,
+          maker_resource_chest_id,
+          taker_resource_chest_id,
+          maker_transport_id: maker_transport_id as Type.Number,
           expires_at,
-          claimed_by_maker: false,
-          claimed_by_taker: false,
-          taker_needs_caravan: true,
         },
       });
       Status.addOverride(overrideId, {
         entity: trade_id,
         value: { value: 0 },
       });
-      FungibleEntities.addOverride(overrideId, {
-        entity: maker_order_id,
-        value: { key, count: maker_quantities.length },
+      ResourceChest.addOverride(overrideId, {
+        entity: maker_resource_chest_id,
+        value: { resources_count: maker_gives_resource_types.length },
       });
-      FungibleEntities.addOverride(overrideId, {
-        entity: taker_order_id,
-        value: { key, count: taker_quantities.length },
+      ResourceChest.addOverride(overrideId, {
+        entity: taker_resource_chest_id,
+        value: { resources_count: taker_gives_resource_types.length },
       });
-      for (let i = 0; i < maker_quantities.length; i++) {
-        OrderResource.addOverride(overrideId, {
-          entity: getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 1), BigInt(HIGH_ENTITY_ID + 3), BigInt(i)]),
+      for (let i = 0; i < maker_gives_resource_amounts.length; i++) {
+        DetachedResource.addOverride(overrideId, {
+          entity: getEntityIdFromKeys([BigInt(maker_resource_chest_id), BigInt(i)]),
           value: {
-            resource_type: maker_entity_types[i] as Type.Number,
-            balance: maker_quantities[i] as Type.Number,
+            resource_type: maker_gives_resource_types[i] as Type.Number,
+            resource_amount: maker_gives_resource_amounts[i] as Type.Number,
           },
         });
       }
-      for (let i = 0; i < taker_quantities.length; i++) {
-        OrderResource.addOverride(overrideId, {
-          entity: getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 2), BigInt(HIGH_ENTITY_ID + 3), BigInt(i)]),
+      for (let i = 0; i < taker_gives_resource_amounts.length; i++) {
+        DetachedResource.addOverride(overrideId, {
+          entity: getEntityIdFromKeys([BigInt(taker_resource_chest_id), BigInt(i)]),
           value: {
-            resource_type: taker_entity_types[i] as Type.Number,
-            balance: taker_quantities[i] as Type.Number,
+            resource_type: taker_gives_resource_types[i] as Type.Number,
+            resource_amount: taker_gives_resource_amounts[i] as Type.Number,
           },
         });
       }
@@ -95,40 +100,35 @@ export function createOptimisticSystemCalls({
     };
   }
 
-  function optimisticClaimFungibleOrder(
+  // note: claim fungible order is actually transferring from the resourceschest to the realm
+  function optimisticOffloadResources(
     resourcesGet: Resource[],
-    systemCall: (args: ClaimFungibleOrderProps) => Promise<void>,
+    systemCall: (args: OffloadResourcesProps) => Promise<void>,
   ) {
-    return async function (this: any, args: ClaimFungibleOrderProps) {
-      const { entity_id: realmEntityId, trade_id: tradeId } = args;
+    return async function (this: any, args: OffloadResourcesProps) {
+      const { receiving_entity_id, transport_id, entity_id: resources_chest_id } = args;
 
       let overrideId = uuid();
 
-      // change trade to claimed by taker or maker
-      let trade_id = getEntityIdFromKeys([BigInt(tradeId)]);
-      let trade = getComponentValue(Trade, trade_id);
-      let isMaker = trade?.maker_id === realmEntityId;
+      // remove resources from inventory
+      Inventory.addOverride(overrideId, {
+        entity: getEntityIdFromKeys([BigInt(transport_id)]),
+        value: {
+          items_count: 0,
+        },
+      });
 
-      // set claimed
-      if (isMaker) {
-        Trade.addOverride(overrideId, {
-          entity: trade_id,
-          value: {
-            claimed_by_maker: true,
-          },
-        });
-      } else {
-        Trade.addOverride(overrideId, {
-          entity: trade_id,
-          value: {
-            claimed_by_taker: true,
-          },
-        });
-      }
+      // remove resources from chest
+      ResourceChest.addOverride(overrideId, {
+        entity: getEntityIdFromKeys([BigInt(resources_chest_id)]),
+        value: {
+          resources_count: 0,
+        },
+      });
 
       // add resources to balance
       for (let resource of resourcesGet) {
-        let resource_id = getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resource.resourceId)]);
+        let resource_id = getEntityIdFromKeys([BigInt(receiving_entity_id), BigInt(resource.resourceId)]);
         let currentResource = getComponentValue(Resource, resource_id) || {
           balance: 0,
         };
@@ -362,7 +362,7 @@ export function createOptimisticSystemCalls({
   }
 
   return {
-    optimisticClaimFungibleOrder,
+    optimisticOffloadResources,
     optimisticCreateOrder,
     optimisticAcceptOffer,
     optimisticCancelOffer,

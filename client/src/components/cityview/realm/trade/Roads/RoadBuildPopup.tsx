@@ -7,7 +7,7 @@ import { NumberInput } from "../../../../../elements/NumberInput";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../DojoContext";
 import { getComponentValue } from "@latticexyz/recs";
-import { getEntityIdFromKeys } from "../../../../../utils/utils";
+import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import * as realmsData from "../../../../../geodata/realms.json";
 import { ROAD_COST_PER_USAGE } from "@bibliothecadao/eternum";
@@ -91,7 +91,12 @@ export const RoadBuildPopup = ({ toEntityId, onClose }: RoadBuildPopupProps) => 
               <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
               <div className="grid grid-cols-4 gap-2">
                 {costResources.map(({ resourceId, amount }) => (
-                  <ResourceCost key={resourceId} type="vertical" resourceId={resourceId} amount={amount} />
+                  <ResourceCost
+                    key={resourceId}
+                    type="vertical"
+                    resourceId={resourceId}
+                    amount={divideByPrecision(amount)}
+                  />
                 ))}
               </div>
             </div>

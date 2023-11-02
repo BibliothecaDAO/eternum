@@ -55,20 +55,14 @@ mod travel_systems {
             assert(travelling_entity_coord != destination_coord, 'entity is at destination');
 
 
-            let mut travel_time = travelling_entity_coord.calculate_travel_time(
+            let travel_time = travelling_entity_coord.calculate_travel_time(
                 destination_coord, travelling_entity_movable.sec_per_km
             );
-            
-            // reduce travel time if a road exists
-            let mut road = RoadImpl::get(world, travelling_entity_coord, destination_coord);
-            if road.usage_count > 0 {
-                let road_config = get!(world, ROAD_CONFIG_ID, RoadConfig);
-                
-                travel_time = travel_time / road_config.speed_up_by;
-                road.usage_count -= 1;
+            // reduce travel time if there is a road
+            let travel_time = RoadImpl::use_road(
+                world, travel_time, travelling_entity_coord, destination_coord
+                );
 
-                set!(world, (road));
-            }
 
         
             set!(world,(

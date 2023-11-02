@@ -5,14 +5,14 @@ import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle
 import { EventType, NotificationType } from "../hooks/notifications/useNotifications";
 import { useTradeNotification } from "../hooks/notifications/useTradeNotification";
 import { useHarvestNotification } from "../hooks/notifications/useHarvestNotification";
-import { useClaimOrderNotification } from "../hooks/notifications/useClaimOrderNotification";
+import { useEmptyChestNotification } from "../hooks/notifications/useEmptyChestNotification";
 
 const notificationHandlers = {
   [EventType.AcceptOffer]: useTradeNotification,
   [EventType.MakeOffer]: useTradeNotification,
   [EventType.CancelOffer]: useTradeNotification,
   [EventType.Harvest]: useHarvestNotification,
-  [EventType.OrderClaimable]: useClaimOrderNotification,
+  [EventType.OrderClaimable]: useEmptyChestNotification,
 };
 
 type NotificationProps = {
