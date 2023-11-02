@@ -5,13 +5,14 @@
         "CaravanMembers",
         "Position",
         "Owner",
+        "EntityOwner",
         "ForeignKey",
         "Inventory"
     ],
     "TRANSPORT_UNIT_SYSTEMS": [
         "Owner",
         "Position",
-        "HomePosition",
+        "EntityOwner",
         "EntityMetadata",
         "Quantity",
         "Movable",
