@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Tabs } from "../../../elements/tab";
 import { HyperstructuresListComponent } from "./HyperstructuresListComponent";
 import useUIStore from "../../../hooks/store/useUIStore";
+import { HyperstructureLeaderboard } from "./HyperstructureLeaderboard";
 
 type HyperstructuresPanelProps = {};
 
@@ -55,6 +56,29 @@ export const HyperstructuresPanel = ({}: HyperstructuresPanelProps) => {
           </div>
         ),
         component: <HyperstructuresListComponent showOnlyPlayerOrder />,
+      },
+      {
+        key: "leaderboard",
+        label: (
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Leaderboard based on Hyperstructure feeding.</p>
+                    <p className="whitespace-nowrap">Resources give points based on rarity.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex group relative flex-col items-center"
+          >
+            <div>Leaderboard</div>
+          </div>
+        ),
+        component: <HyperstructureLeaderboard />,
       },
     ],
     [selectedTab],

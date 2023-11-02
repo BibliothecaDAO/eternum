@@ -10,7 +10,6 @@ import RealmTradeComponent from "./RealmTradeComponent";
 import RealmLaborComponent from "./RealmLaborComponent";
 import useUIStore from "../../../hooks/store/useUIStore";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import RealmStatusComponent from "./RealmStatusComponent";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import { LaborAuction } from "./labor/LaborAuction";
 
@@ -136,8 +135,8 @@ const RealmManagementComponent = () => {
 
   return (
     <>
-      <div className="flex justify-between items-center p-2">
-        <RealmStatusComponent />
+      <div className="flex justify-between items-center p-3">
+        <LaborAuction />
         <button
           onClick={showOnMap}
           className="flex items-center hover:bg-gold/20 transition-bg duration-200 z-10 px-2 py-1 ml-auto text-xxs border rounded-md text-gold border-gold"
@@ -146,7 +145,6 @@ const RealmManagementComponent = () => {
           Show on map
         </button>
       </div>
-      <LaborAuction />
       <Tabs
         selectedIndex={selectedTab}
         onChange={(index: any) => setLocation(`/realm/${realmEntityId}/${tabs[index].key}`)}

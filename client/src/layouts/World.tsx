@@ -10,7 +10,6 @@ import TopContainer from "../containers/TopContainer";
 import NavigationModule from "../modules/NavigationModule";
 import ContentContainer from "../containers/ContentContainer";
 import RealmManagementModule from "../modules/RealmManagementModule";
-import EpochCountdown from "../components/network/EpochCountdown";
 import RealmResourcesComponent from "../components/cityview/realm/RealmResourcesComponent";
 import { useFetchBlockchainData } from "../hooks/store/useBlockchainStore";
 import { useEffect } from "react";
@@ -26,6 +25,7 @@ import WorldMapMenuModule from "../modules/WorldMapMenuModule";
 import hyperStructures from "../data/hyperstructures.json";
 import { useHyperstructure } from "../hooks/helpers/useHyperstructure";
 import { Tooltip } from "../elements/Tooltip";
+import useLeaderBoardStore from "../hooks/store/useLeaderBoardStore";
 
 export const World = () => {
   const { loading: worldLoading, progress: worldProgress } = useSyncWorld();
@@ -41,6 +41,14 @@ export const World = () => {
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const setHyperstructures = useUIStore((state) => state.setHyperstructures);
   const setMouseCoords = useUIStore((state) => state.setMouseCoords);
+
+  const { getHyperstructureIds } = useHyperstructure();
+  const syncData = useLeaderBoardStore((state) => state.syncData);
+
+  useEffect(() => {
+    let ids = getHyperstructureIds();
+    syncData(ids);
+  }, [worldLoading]);
 
   const [playBackground, { stop }] = useSound("/sound/music/happy_realm.mp3", {
     soundEnabled: isSoundOn,
@@ -117,7 +125,6 @@ export const World = () => {
       <BottomRightContainer>
         <ChatModule />
       </BottomRightContainer>
-      <EpochCountdown />
       <BlurOverlayContainer>
         <SignUpComponent worldLoading={worldLoading} worldProgress={worldProgress} />
       </BlurOverlayContainer>

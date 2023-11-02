@@ -191,7 +191,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
               }}
               variant={canGoToNextStep ? "success" : "danger"}
             >
-              {step == 3 ? "Create Offer" : "Next Step"}
+              {step == 3 ? (selectedRealmId ? "Create Direct Offer" : "Create Public Offer") : "Next Step"}
             </Button>
           )}
           {isLoading && (
@@ -329,7 +329,7 @@ const SelectResourcesAmountPanel = ({
 
   return (
     <>
-      <div className="grid grid-cols-9 gap-2 p-2 max-h-[350px] overflow-auto relative">
+      <div className="grid grid-cols-9 gap-2 p-2 max-h-[250px] overflow-y-auto overflow-x-hidden relative">
         <div className="flex flex-col items-center col-span-4 space-y-2">
           <Headline className="mb-2">You Give</Headline>
           {selectedResourceIdsGive.map((id) => {
