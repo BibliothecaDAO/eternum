@@ -1,12 +1,9 @@
 use starknet::ContractAddress;
+
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 use eternum::models::realm::Realm;
-    
-// todo: cannot get it to import: error: Identifier not found. 
-// testing
-// use eternum::utils::testing::spawn_eternum;
-
+ 
 // contract address owning an entity
 #[derive(Model, Copy, Drop, Serde)]
 struct Owner {
@@ -31,31 +28,41 @@ impl EntityOwnerImpl of EntityOwnerTrait {
     }
 }
 
-//#[test]
-//#[available_gas(30000000)]
-//fn test_entity_owner_get_realm_id() {
-    //let world = spawn_eternum();
+#[cfg(test)]
+mod tests {
+    use eternum::utils::testing::spawn_eternum;
+    use eternum::models::realm::Realm;
+    use eternum::models::owner::{EntityOwner, EntityOwnerTrait};
 
-    //set!(world, Realm {
-            //entity_id: 1,
-            //realm_id: 3,
-            //resource_types_packed: 0,
-            //resource_types_count: 0,
-            //cities: 0,
-            //harbors: 0,
-            //rivers: 0,
-            //regions: 0,
-            //wonder: 0,
-            //order: 0,
-    //});
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-    //set!(world, EntityOwner {
-        //entity_id: 2,
-        //entity_owner_id: 1
-    //});
+    #[test]
+    #[available_gas(30000000)]
+    fn test_entity_owner_get_realm_id() {
+        let world = spawn_eternum();
 
-    //let entity_owner = get!(world, (2), EntityOwner);
-    //let realm_id = entity_owner.get_realm_id(world);
+        set!(world, Realm {
+                entity_id: 1,
+                realm_id: 3,
+                resource_types_packed: 0,
+                resource_types_count: 0,
+                cities: 0,
+                harbors: 0,
+                rivers: 0,
+                regions: 0,
+                wonder: 0,
+                order: 0,
+        });
 
-    //assert(realm_id == 3, 'wrong realm id');
-//}
+        set!(world, EntityOwner {
+            entity_id: 2,
+            entity_owner_id: 1
+        });
+
+        let entity_owner = get!(world, (2), EntityOwner);
+        let realm_id = entity_owner.get_realm_id(world);
+
+        assert(realm_id == 3, 'wrong realm id');
+    }
+
+}
