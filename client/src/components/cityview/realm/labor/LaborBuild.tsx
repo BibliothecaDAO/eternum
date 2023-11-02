@@ -51,6 +51,14 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     setMultiplier(1); // Reset the multiplier to 1 when the resourceId changes
   }, [resourceId]);
 
+  const onMultiplierChange = (value: number) => {
+    if (resourceId === 254) {
+      setMultiplier(Math.min(value, realm?.rivers || 0));
+    } else {
+      setMultiplier(Math.min(value, realm?.harbors || 0));
+    }
+  };
+
   let { realmEntityId, realmId } = useRealmStore();
   const { realm } = useGetRealm(realmEntityId);
 
@@ -348,7 +356,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               <NumberInput
                 className="ml-2 mr-2"
                 value={multiplier}
-                onChange={setMultiplier}
+                onChange={onMultiplierChange}
                 max={resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0}
               />
               <div className="italic text-gold">
