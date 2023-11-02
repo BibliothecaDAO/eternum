@@ -30,8 +30,8 @@ const UUID_OFFSET_CREATE_CARAVAN = 2;
 export class EternumProvider extends RPCProvider {
   public contracts: typeof DEV_CONTRACTS | typeof PROD_CONTRACTS;
 
-  constructor(world_address: string, isDev: boolean, url?: string) {
-    super(world_address, undefined, url);
+  constructor(world_address: string, isDev: boolean, url?: string, manifest: any = undefined) {
+    super(world_address, manifest, url);
     this.contracts = isDev ? DEV_CONTRACTS : PROD_CONTRACTS;
   }
 

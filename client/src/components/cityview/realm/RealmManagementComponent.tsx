@@ -12,6 +12,7 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import { LaborAuction } from "./labor/LaborAuction";
+import RealmCombatComponent from "./RealmCombatComponent";
 
 const RealmManagementComponent = () => {
   const { realmEntityId } = useRealmStore();
@@ -99,19 +100,19 @@ const RealmManagementComponent = () => {
         component: <RealmTradeComponent />,
       },
       {
+        key: "military",
+        label: (
+          <div className="flex flex-col items-center " title="Military">
+            <CrossSwords className="mb-2 fill-gold" /> <div>Military</div>
+          </div>
+        ),
+        component: <RealmCombatComponent />,
+      },
+      {
         key: "civilians",
         label: (
           <div className="flex flex-col items-center blur-sm cursor-not-allowed" title="Not implemented">
             <City className="mb-2 fill-gold" /> <div>Civilians</div>
-          </div>
-        ),
-        component: <div></div>,
-      },
-      {
-        key: "military",
-        label: (
-          <div className="flex flex-col items-center blur-sm cursor-not-allowed" title="Not implemented">
-            <CrossSwords className="mb-2 fill-gold" /> <div>Military</div>
           </div>
         ),
         component: <div></div>,
@@ -126,6 +127,8 @@ const RealmManagementComponent = () => {
       _tab = "open-offers";
     } else if (["labor", "food", "mines", "farm", "fish"].includes(params?.tab as string)) {
       _tab = "labor";
+    } else if (["military", "army", "defense", "siege"].includes(params?.tab as string)) {
+      _tab = "military";
     }
     const tabIndex = tabs.findIndex((tab) => tab.key === _tab);
     if (tabIndex >= 0) {
