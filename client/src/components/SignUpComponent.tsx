@@ -7,6 +7,7 @@ import { useDojo } from "../DojoContext";
 import { displayAddress } from "../utils/utils";
 import ListSelect from "../elements/ListSelect";
 import { ReactComponent as Danger } from "../assets/icons/common/danger.svg";
+import { ReactComponent as Copy } from "../assets/icons/common/copy.svg";
 
 type SignUpComponentProps = {
   worldLoading: boolean;
@@ -21,11 +22,20 @@ export const SignUpComponent = ({ worldLoading, worldProgress }: SignUpComponent
   const [showSignupPopup, setShowSignupPopup] = useState(true);
   const setShowBlurOverlay = useUIStore((state) => state.setShowBlurOverlay);
   const toggleSound = useUIStore((state) => state.toggleSound);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   let disableStart = true;
   if (import.meta.env.DEV) {
     disableStart = false;
   }
+
+  const onCopy = () => {
+    const burners = localStorage.getItem("burners");
+    const burner = JSON.parse(burners)[account.address];
+    navigator.clipboard.writeText(
+      JSON.stringify({ address: account.address, privateKey: burner.privateKey, publicKey: burner.publicKey }),
+    );
+  };
 
   const isWalletSelected = useMemo(() => account.address !== import.meta.env.VITE_KATANA_ACCOUNT_1_ADDRESS!, [account]);
 
@@ -61,6 +71,31 @@ export const SignUpComponent = ({ worldLoading, worldProgress }: SignUpComponent
             >
               {"Delete all wallets"}
             </Button>
+            <Copy
+              onClick={onCopy}
+              onMouseEnter={() =>
+                setTooltip({
+                  position: "top",
+                  content: (
+                    <>
+                      <p className="whitespace-nowrap">Export Account</p>
+                    </>
+                  ),
+                })
+              }
+              onMouseLeave={() => setTooltip(null)}
+              onMouseDown={() => {
+                setTooltip({
+                  position: "top",
+                  content: (
+                    <>
+                      <p className="whitespace-nowrap">Copied!</p>
+                    </>
+                  ),
+                });
+              }}
+              className="cursor-pointer text-gold"
+            ></Copy>
           </div>
           <ListSelect
             title="Active Wallet: "
