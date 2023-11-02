@@ -10,7 +10,6 @@ import TopContainer from "../containers/TopContainer";
 import NavigationModule from "../modules/NavigationModule";
 import ContentContainer from "../containers/ContentContainer";
 import RealmManagementModule from "../modules/RealmManagementModule";
-import EpochCountdown from "../components/network/EpochCountdown";
 import RealmResourcesComponent from "../components/cityview/realm/RealmResourcesComponent";
 import { useFetchBlockchainData } from "../hooks/store/useBlockchainStore";
 import { useEffect } from "react";
@@ -117,7 +116,6 @@ export const World = () => {
       <BottomRightContainer>
         <ChatModule />
       </BottomRightContainer>
-      <EpochCountdown />
       <BlurOverlayContainer>
         <SignUpComponent worldLoading={worldLoading} worldProgress={worldProgress} />
       </BlurOverlayContainer>

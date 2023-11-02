@@ -13,9 +13,12 @@ import useUIStore from "../../hooks/store/useUIStore";
 import { useLocation } from "wouter";
 import useRealmStore from "../../hooks/store/useRealmStore";
 import { getRealm } from "../../utils/realms";
+import { unpackResources } from "../../utils/packedData";
 import { FarmsRegionTooltip } from "./regions/FarmsRegionTooltip";
 import { extend } from "@react-three/fiber";
 import { FisheryRegionTooltip } from "./regions/FisheryRegionTooltip";
+import Farms from "./Farms";
+import { LaborRegionTooltip } from "./regions/LaborRegionTooltip";
 extend({ FarmsRegionTooltip });
 type GLTFResult = GLTF & {
   nodes: {
@@ -197,6 +200,7 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
   const { nodes, materials } = useGLTF("/models/realm-city_20-transformed.glb") as GLTFResult;
 
   const [hoveredArea, setHoveredArea] = useState<string | null>(null);
+  const [realmResourceIds, setRealmResourceIds] = useState<number[]>([]);
 
   const { realmEntityId, realmId } = useRealmStore();
 
@@ -255,6 +259,10 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
       // @ts-ignore
       statuses[id] = true;
     }
+
+    const unpackedResources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
+    setRealmResourceIds(unpackedResources);
+
     setEnabledMines(statuses);
     setTimeout(() => {
       setIsLoadingScreenEnabled(false);
@@ -381,13 +389,7 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
             material={materials.PaletteMaterial006}
           />
         </group>
-        <mesh
-          onPointerEnter={() => setHoveredArea("farm")}
-          name="crops"
-          geometry={nodes.crops.geometry}
-          material={materials.PaletteMaterial014}
-          position={[-209.282944, 0, -42.59145]}
-        />
+        <Farms />
         <mesh
           name="ocean"
           geometry={nodes.ocean.geometry}
@@ -585,11 +587,6 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
           name="floor_labor"
           position={[0, -0.002192, 0]}
         >
-          {hoveredArea === "labor" && (
-            <Html position={[350, 75, -200]} distanceFactor={400}>
-              <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">Labor</div>
-            </Html>
-          )}
           <mesh name="floor_labor_1" geometry={nodes.floor_labor_1.geometry} material={materials.PaletteMaterial005} />
           <mesh name="floor_labor_2" geometry={nodes.floor_labor_2.geometry} material={materials.PaletteMaterial019} />
           <mesh name="floor_labor_3" geometry={nodes.floor_labor_3.geometry} material={materials.PaletteMaterial001} />
@@ -990,6 +987,27 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
           />
         </group>
         <group>
+          {realmResourceIds[0] && hoveredArea === "labor" && (
+            <LaborRegionTooltip position={[225, 40, -300]} resourceId={realmResourceIds[0]} />
+          )}
+          {realmResourceIds[1] && hoveredArea === "labor" && (
+            <LaborRegionTooltip position={[325, 40, -300]} resourceId={realmResourceIds[1]} />
+          )}
+          {realmResourceIds[2] && hoveredArea === "labor" && (
+            <LaborRegionTooltip position={[415, 40, -300]} resourceId={realmResourceIds[2]} />
+          )}
+          {realmResourceIds[3] && hoveredArea === "labor" && (
+            <LaborRegionTooltip position={[300, 40, -225]} resourceId={realmResourceIds[3]} />
+          )}
+          {realmResourceIds[4] && hoveredArea === "labor" && (
+            <LaborRegionTooltip position={[180, 40, -215]} resourceId={realmResourceIds[4]} />
+          )}
+          {realmResourceIds[5] && hoveredArea === "labor" && (
+            <LaborRegionTooltip position={[330, 40, -150]} resourceId={realmResourceIds[5]} />
+          )}
+          {realmResourceIds[6] && hoveredArea === "labor" && (
+            <LaborRegionTooltip position={[415, 40, -115]} resourceId={realmResourceIds[6]} />
+          )}
           <instancedMesh
             args={[nodes.mine.geometry, materials.PaletteMaterial004, 7]}
             name="mine"

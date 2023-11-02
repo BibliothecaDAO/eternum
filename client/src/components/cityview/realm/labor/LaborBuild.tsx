@@ -19,6 +19,7 @@ import { divideByPrecision, getEntityIdFromKeys, getPosition, getZone } from "..
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 import { useLabor } from "../../../../hooks/helpers/useLabor";
+import { LaborAuction } from "./LaborAuction";
 
 let LABOR_CONFIG = {
   base_food_per_cycle: 14000,
@@ -59,7 +60,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   const laborUnits = useMemo(() => (isFood ? 12 : laborAmount), [laborAmount]);
   const resourceInfo = useMemo(() => findResourceById(resourceId), [resourceId]);
 
-  const { getLaborCost, getLaborAuctionAverageCoefficient, getNextLaborAuctionCoefficient } = useLabor();
+  const { getLaborCost, getLaborAuctionAverageCoefficient } = useLabor();
 
   const labor = getComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
   const hasLaborLeft = useMemo(() => {
@@ -76,11 +77,6 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     let coefficient = zone ? getLaborAuctionAverageCoefficient(zone, laborUnits * multiplier) : undefined;
     return coefficient || 1;
   }, [zone, laborUnits, multiplier]);
-
-  const nextLaborAuctionCoefficient = useMemo(
-    () => (zone ? getNextLaborAuctionCoefficient(zone, laborUnits * multiplier) : undefined),
-    [zone, laborUnits, multiplier],
-  );
 
   const costResources = useMemo(() => getLaborCost(resourceId), [resourceId]);
 
@@ -314,7 +310,10 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
             {!isFood && (
               <img src={`/images/resources/${resourceId}.jpg`} className="object-cover w-full h-full rounded-[10px]" />
             )}
-            <div className="fle flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
+            <div className="absolute top-2 left-2 bg-black/60 rounded-[10px] p-3 hover:bg-black">
+              <LaborAuction />
+            </div>
+            <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
               <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
               <div className="grid grid-cols-4 gap-2">
                 {costResources.map(({ resourceId, amount }) => (
@@ -332,12 +331,6 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               </div>
             </div>
           </div>
-        </div>
-        <div className={"flex items-center text-white text-xxs space-x-4 mx-2"}>
-          <div className="">Labor Average Price: </div>
-          {<div className="">x {laborAuctionAverageCoefficient.toFixed(3)}</div>}
-          <div className="">Labor Next Price: </div>
-          {<div className="">x {nextLaborAuctionCoefficient?.toFixed(3)}</div>}
         </div>
         <div className="flex justify-between m-2 text-xxs">
           {!isFood && (
