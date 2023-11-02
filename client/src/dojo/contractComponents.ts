@@ -198,21 +198,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    HomePosition: (() => {
-      const name = "HomePosition";
-      return defineComponent(
-        world,
-        {
-          x: RecsType.Number,
-          y: RecsType.Number,
-        },
-        {
-          metadata: {
-            name: name,
-          },
-        },
-      );
-    })(),
     Realm: (() => {
       const name = "Realm";
       return defineComponent(
@@ -300,6 +285,20 @@ export function defineContractComponents(world: World) {
         world,
         {
           address: RecsType.String,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
+    EntityOwner: (() => {
+      const name = "EntityOwner";
+      return defineComponent(
+        world,
+        {
+          entity_owner_id: RecsType.Number,
         },
         {
           metadata: {

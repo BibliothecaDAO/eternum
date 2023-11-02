@@ -1,4 +1,4 @@
-import { HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
+import { Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import { Position, UIPosition } from "../../types";
 import hyperstructureData from "../../data/hyperstructures.json";
@@ -26,7 +26,7 @@ export interface HyperStructureInterface {
 export const useHyperstructure = () => {
   const {
     setup: {
-      components: { HyperStructure, Resource },
+      components: { HyperStructure, Resource, Position },
     },
   } = useDojo();
 
@@ -81,7 +81,12 @@ export const useHyperstructure = () => {
     }
   };
 
+  const getHyperstructureIds = (): number[] => {
+    return Array.from(runQuery([Has(HyperStructure), Has(Position)]));
+  };
+
   return {
     getHyperstructure,
+    getHyperstructureIds,
   };
 };

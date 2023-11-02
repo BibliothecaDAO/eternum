@@ -26,6 +26,7 @@ import WorldMapMenuModule from "../modules/WorldMapMenuModule";
 import hyperStructures from "../data/hyperstructures.json";
 import { useHyperstructure } from "../hooks/helpers/useHyperstructure";
 import { Tooltip } from "../elements/Tooltip";
+import useLeaderBoardStore from "../hooks/store/useLeaderBoardStore";
 
 export const World = () => {
   const { loading: worldLoading, progress: worldProgress } = useSyncWorld();
@@ -41,6 +42,14 @@ export const World = () => {
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const setHyperstructures = useUIStore((state) => state.setHyperstructures);
   const setMouseCoords = useUIStore((state) => state.setMouseCoords);
+
+  const { getHyperstructureIds } = useHyperstructure();
+  const syncData = useLeaderBoardStore((state) => state.syncData);
+
+  useEffect(() => {
+    let ids = getHyperstructureIds();
+    syncData(ids);
+  }, [worldLoading]);
 
   const [playBackground, { stop }] = useSound("/sound/music/happy_realm.mp3", {
     soundEnabled: isSoundOn,

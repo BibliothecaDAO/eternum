@@ -41,7 +41,7 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
     account: { account },
     setup: {
       systemCalls: { initialize_hyperstructure_and_travel_back, feed_hyperstructure_and_travel_back },
-      components: { Resource, CaravanMembers, HomePosition, ForeignKey },
+      components: { Resource, CaravanMembers, EntityOwner, ForeignKey, Position },
     },
   } = useDojo();
 
@@ -52,8 +52,10 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
       let foreignKey = getComponentValue(ForeignKey, entity_id);
       if (foreignKey) {
         // @note: temp fix until we don't use entity_id as field name in foreign key
-        let homePosition = getComponentValue(HomePosition, getEntityIdFromKeys([BigInt(caravan.caravanId - 2)]));
-        // let homePosition = getComponentValue(HomePosition, getEntityIdFromKeys([BigInt(foreignKey.entity_id)]));
+        let ownerRealmEntityId = getComponentValue(EntityOwner, getEntityIdFromKeys([BigInt(caravan.caravanId - 2)]));
+        let homePosition = ownerRealmEntityId
+          ? getComponentValue(Position, getEntityIdFromKeys([BigInt(ownerRealmEntityId.entity_owner_id)]))
+          : undefined;
         return homePosition;
       }
     }
