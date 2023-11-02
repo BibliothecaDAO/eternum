@@ -5,7 +5,6 @@ mod resource_systems {
     use eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
     use eternum::models::inventory::Inventory;
     use eternum::models::metadata::ForeignKey;
-    use eternum::models::owner::Owner;
     use eternum::models::position::{Position, Coord};
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::capacity::{Capacity, CapacityTrait};
