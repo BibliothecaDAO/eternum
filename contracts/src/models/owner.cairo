@@ -1,8 +1,9 @@
 use starknet::ContractAddress;
+
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 use eternum::models::realm::Realm;
-    
+ 
 // contract address owning an entity
 #[derive(Model, Copy, Drop, Serde)]
 struct Owner {
@@ -30,6 +31,10 @@ impl EntityOwnerImpl of EntityOwnerTrait {
 #[cfg(test)]
 mod tests {
     use eternum::utils::testing::spawn_eternum;
+    use eternum::models::realm::Realm;
+    use eternum::models::owner::{EntityOwner, EntityOwnerTrait};
+
+    use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     #[test]
     #[available_gas(30000000)]
