@@ -264,15 +264,14 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               {resourceId === 254 && (
                 <div className="flex items-center">
                   <Farms className="mr-1" />
-                  <span className="mr-1 font-bold">{`${multiplier}/${Math.min(realm?.rivers || 0, 4)}`}</span> Farms
+                  <span className="mr-1 font-bold">{`${multiplier}/${realm?.rivers || 0}`}</span> Farms
                 </div>
               )}
               {resourceId === 255 && (
                 <div className="flex items-center">
                   {/* // DISCUSS: can only be 0, because that is when you can build */}
                   <FishingVillages className="mr-1" />
-                  <span className="mr-1 font-bold">{`${multiplier}/${Math.min(realm?.harbors || 0, 4)}`}</span> Fishing
-                  Villages
+                  <span className="mr-1 font-bold">{`${multiplier}/${realm?.harbors || 0}`}</span> Fishing Villages
                 </div>
               )}
             </div>
@@ -293,7 +292,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
             <BuildingsCount
               count={multiplier}
               // note: need to limit to 4 because of temp gas limit
-              maxCount={resourceId === 254 ? Math.min(realm?.rivers || 0, 4) : Math.min(realm?.harbors || 0, 4)}
+              maxCount={resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0}
               className="mt-2"
             />
           )}
@@ -350,12 +349,10 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
                 className="ml-2 mr-2"
                 value={multiplier}
                 onChange={setMultiplier}
-                // max={resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0}
-                // note: need to limit for now because of gas issues
-                max={Math.min(resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0, 4)}
+                max={resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0}
               />
               <div className="italic text-gold">
-                Max {Math.min(resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0, 4)}
+                Max {resourceId === 254 ? realm?.rivers || 0 : realm?.harbors || 0}
               </div>
             </div>
           )}
