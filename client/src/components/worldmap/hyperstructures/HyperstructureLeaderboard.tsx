@@ -49,7 +49,7 @@ export const HyperstructureLeaderboard = () => {
             total_points: leaderboard[key].total_points,
           };
         })
-        .sort((a, b) => parseInt(a.total_amount) - parseInt(b.total_amount)),
+        .sort((a, b) => parseInt(b.total_points) - parseInt(a.total_points)),
     );
   }, [loading]);
 
