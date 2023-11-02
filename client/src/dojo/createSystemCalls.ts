@@ -7,7 +7,6 @@ import {
   AttachCaravanProps,
   BuildLaborProps,
   CancelFungibleOrderProps,
-  ClaimFungibleOrderProps,
   CompleteHyperStructureProps,
   CreateCaravanProps,
   CreateFreeTransportUnitProps,
@@ -22,6 +21,7 @@ import {
   SendResourcesToHyperstructureProps,
   TransferResourcesProps,
   TravelProps,
+  OffloadResourcesProps,
 } from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -57,6 +57,10 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.cancel_fungible_order(props)));
   };
 
+  const offload_chest = async (props: OffloadResourcesProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.offload_chest(props)));
+  };
+
   const create_free_transport_unit = async (props: CreateFreeTransportUnitProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.create_free_transport_unit(props)));
   };
@@ -67,10 +71,6 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
 
   const attach_caravan = async (props: AttachCaravanProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.attach_caravan(props)));
-  };
-
-  const claim_fungible_order = async (props: ClaimFungibleOrderProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.claim_fungible_order(props)));
   };
 
   const purchase_and_build_labor = async (props: PurchaseLaborProps & BuildLaborProps) => {
@@ -124,8 +124,8 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     mint_resources,
     create_order,
     accept_order,
-    claim_fungible_order,
     cancel_fungible_order,
+    offload_chest,
     create_free_transport_unit,
     create_caravan,
     attach_caravan,

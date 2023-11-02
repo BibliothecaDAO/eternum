@@ -10,7 +10,7 @@ import Button from "../../../../../elements/Button";
 import { MyOffer } from "./MyOffer";
 import { sortTrades, useGetMyOffers } from "../../../../../hooks/helpers/useTrade";
 import { IncomingOrder } from "../Caravans/IncomingOrder";
-import { useGetIncomingOrders } from "../../../../../hooks/helpers/useIncomingOrders";
+import { useGetCaravansWithResourcesChest } from "../../../../../hooks/helpers/useResources";
 import { RoadBuildPopup } from "../Roads/RoadBuildPopup";
 
 type MarketPanelProps = {};
@@ -29,7 +29,7 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
 
   const myOffers = useGetMyOffers({ selectedResources, selectedOrders });
 
-  const { incomingOrders } = useGetIncomingOrders();
+  const { caravansAtPositionWithInventory: caravanIds } = useGetCaravansWithResourcesChest();
 
   const sortingParams = useMemo(() => {
     return [
@@ -73,8 +73,8 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
         <RoadBuildPopup onClose={() => setBuildRoadToEntityId(undefined)} toEntityId={buildRoadToEntityId} />
       )}
       <div className="flex flex-col p-2 space-y-2">
-        {incomingOrders.map((incomingOrder) => (
-          <IncomingOrder key={incomingOrder.tradeId} incomingOrder={incomingOrder} />
+        {caravanIds.map((caravanId) => (
+          <IncomingOrder key={caravanId} caravanId={caravanId} />
         ))}
         {myOffers.length > 0 &&
           sortTrades(myOffers, activeSort).map((myOffer) => (

@@ -23,6 +23,7 @@ import { useTrade } from "../../../../hooks/helpers/useTrade";
 import { SelectRealmPanel } from "../SelectRealmPanel";
 import clsx from "clsx";
 import { DONKEYS_PER_CITY, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
+import { useResources } from "../../../../hooks/helpers/useResources";
 
 type CreateOfferPopupProps = {
   onClose: () => void;
@@ -67,23 +68,31 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
       await optimisticCreateOrder(create_order)({
         signer: account,
         maker_id: realmEntityId,
-        maker_entity_types: selectedResourceIdsGive,
-        maker_quantities: selectedResourceIdsGive.map((id) => multiplyByPrecision(selectedResourcesGiveAmounts[id])),
+        maker_gives_resource_types: selectedResourceIdsGive,
+        maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
+          multiplyByPrecision(selectedResourcesGiveAmounts[id]),
+        ),
         taker_id: selectedRealmEntityId || 0,
-        taker_entity_types: selectedResourceIdsGet,
-        taker_quantities: selectedResourceIdsGet.map((id) => multiplyByPrecision(selectedResourcesGetAmounts[id])),
+        taker_gives_resource_types: selectedResourceIdsGet,
+        taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
+          multiplyByPrecision(selectedResourcesGetAmounts[id]),
+        ),
         donkeys_quantity: donkeysCount,
       });
     } else {
       await optimisticCreateOrder(create_order)({
         signer: account,
         maker_id: realmEntityId,
-        maker_entity_types: selectedResourceIdsGive,
-        maker_quantities: selectedResourceIdsGive.map((id) => multiplyByPrecision(selectedResourcesGiveAmounts[id])),
+        maker_gives_resource_types: selectedResourceIdsGive,
+        maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
+          multiplyByPrecision(selectedResourcesGiveAmounts[id]),
+        ),
         taker_id: selectedRealmEntityId || 0,
-        taker_entity_types: selectedResourceIdsGet,
-        taker_quantities: selectedResourceIdsGet.map((id) => multiplyByPrecision(selectedResourcesGetAmounts[id])),
-        caravan_id: selectedCaravan,
+        maker_transport_id: selectedCaravan,
+        taker_gives_resource_types: selectedResourceIdsGet,
+        taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
+          multiplyByPrecision(selectedResourcesGetAmounts[id]),
+        ),
       });
     }
     onClose();
@@ -312,11 +321,11 @@ const SelectResourcesAmountPanel = ({
   useEffect(() => {
     // set resource weight in kg
     let weight = 0;
-    for (const [_resourceId, amount] of Object.entries(selectedResourcesGiveAmounts)) {
+    for (const [_resourceId, amount] of Object.entries(selectedResourcesGetAmounts)) {
       weight += amount * 1;
     }
     setResourceWeight(multiplyByPrecision(weight));
-  }, [selectedResourcesGiveAmounts]);
+  }, [selectedResourcesGetAmounts]);
 
   return (
     <>
@@ -427,6 +436,7 @@ export const SelectCaravanPanel = ({
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const { getRealmDonkeysCount } = useCaravan();
+  const { getResourcesFromInventory } = useResources();
   const { realm } = useGetRealm(realmEntityId);
   const { caravans: realmCaravans } = useGetPositionCaravans(realm?.position.x || 0, realm?.position.y || 0);
 
@@ -448,11 +458,13 @@ export const SelectCaravanPanel = ({
       realmCaravans
         ? (realmCaravans
             .map((caravan) => {
+              const resourcesCarried = getResourcesFromInventory(caravan.caravanId);
               const isIdle =
                 caravan &&
                 nextBlockTimestamp &&
                 !caravan.blocked &&
-                (!caravan.arrivalTime || caravan.arrivalTime <= nextBlockTimestamp);
+                (!caravan.arrivalTime || caravan.arrivalTime <= nextBlockTimestamp) &&
+                resourcesCarried.length == 0;
               // capacity in gr (1kg = 1000gr)
               if (isIdle && canCarry(caravan, resourceWeight)) {
                 return caravan;
@@ -486,7 +498,7 @@ export const SelectCaravanPanel = ({
                       resourceId={id}
                       color="text-gold"
                       type="vertical"
-                      amount={-multiplyByPrecision(selectedResourcesGiveAmounts[id])}
+                      amount={-selectedResourcesGiveAmounts[id]}
                     />
                   ))}
                 </div>
@@ -510,7 +522,7 @@ export const SelectCaravanPanel = ({
                       type="vertical"
                       color="text-brilliance"
                       resourceId={id}
-                      amount={multiplyByPrecision(selectedResourcesGetAmounts[id])}
+                      amount={selectedResourcesGetAmounts[id]}
                     />
                   ))}
                 </div>

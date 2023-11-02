@@ -154,7 +154,7 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
                     className="!text-gold !w-5 mt-0.5"
                     type="vertical"
                     resourceId={resource.resourceId}
-                    amount={resource.amount}
+                    amount={divideByPrecision(resource.amount)}
                   />
                 ),
             )}

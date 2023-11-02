@@ -1,7 +1,6 @@
 #[derive(Model, Copy, Drop, Serde)]
-struct CaravanMembers {
+struct Weight {
     #[key]
     entity_id: u128,
-    key: u128,
-    count: u32,
+    value: u128,
 }

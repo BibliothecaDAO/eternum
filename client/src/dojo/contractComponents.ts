@@ -169,6 +169,20 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Weight: (() => {
+      const name = "Weight";
+      return defineComponent(
+        world,
+        {
+          value: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
     Age: (() => {
       const name = "Age";
       return defineComponent(
@@ -249,35 +263,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    OrderResource: (() => {
-      const name = "OrderResource";
-      return defineComponent(
-        world,
-        {
-          resource_type: RecsType.Number,
-          balance: RecsType.Number,
-        },
-        {
-          metadata: {
-            name: name,
-          },
-        },
-      );
-    })(),
-    Vault: (() => {
-      const name = "Vault";
-      return defineComponent(
-        world,
-        {
-          balance: RecsType.Number,
-        },
-        {
-          metadata: {
-            name: name,
-          },
-        },
-      );
-    })(),
     Labor: (() => {
       const name = "Labor";
       return defineComponent(
@@ -329,6 +314,54 @@ export function defineContractComponents(world: World) {
         {
           sec_per_km: RecsType.Number,
           blocked: RecsType.Boolean,
+          round_trip: RecsType.Boolean,
+          intermediate_coord_x: RecsType.Number,
+          intermediate_coord_y: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
+    Inventory: (() => {
+      const name = "Inventory";
+      return defineComponent(
+        world,
+        {
+          items_key: RecsType.Number,
+          items_count: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
+    ResourceChest: (() => {
+      const name = "ResourceChest";
+      return defineComponent(
+        world,
+        {
+          locked_until: RecsType.Number,
+          resources_count: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
+    DetachedResource: (() => {
+      const name = "DetachedResource";
+      return defineComponent(
+        world,
+        {
+          resource_type: RecsType.Number,
+          resource_amount: RecsType.Number,
         },
         {
           metadata: {
@@ -407,20 +440,6 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    Caravan: (() => {
-      const name = "Caravan";
-      return defineComponent(
-        world,
-        {
-          caravan_id: RecsType.Number,
-        },
-        {
-          metadata: {
-            name: name,
-          },
-        },
-      );
-    })(),
     CaravanMembers: (() => {
       const name = "CaravanMembers";
       return defineComponent(
@@ -441,14 +460,14 @@ export function defineContractComponents(world: World) {
       return defineComponent(
         world,
         {
+          trade_id: RecsType.Number,
           maker_id: RecsType.Number,
+          maker_resource_chest_id: RecsType.Number,
+          maker_transport_id: RecsType.Number,
           taker_id: RecsType.Number,
-          maker_order_id: RecsType.Number,
-          taker_order_id: RecsType.Number,
+          taker_resource_chest_id: RecsType.Number,
+          taker_transport_id: RecsType.Number,
           expires_at: RecsType.Number,
-          claimed_by_maker: RecsType.Boolean,
-          claimed_by_taker: RecsType.Boolean,
-          taker_needs_caravan: RecsType.Boolean,
         },
         {
           metadata: {
@@ -463,35 +482,6 @@ export function defineContractComponents(world: World) {
         world,
         {
           value: RecsType.Number,
-        },
-        {
-          metadata: {
-            name: name,
-          },
-        },
-      );
-    })(),
-    FungibleEntities: (() => {
-      const name = "FungibleEntities";
-      return defineComponent(
-        world,
-        {
-          key: RecsType.Number,
-          count: RecsType.Number,
-        },
-        {
-          metadata: {
-            name: name,
-          },
-        },
-      );
-    })(),
-    OrderId: (() => {
-      const name = "OrderId";
-      return defineComponent(
-        world,
-        {
-          id: RecsType.Number,
         },
         {
           metadata: {

@@ -321,12 +321,10 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
                     key={resourceId}
                     type="vertical"
                     resourceId={resourceId}
-                    amount={divideByPrecision(
-                      Number(
-                        getTotalAmount(amount, isFood, multiplier, laborAmount, laborAuctionAverageCoefficient).toFixed(
-                          2,
-                        ),
-                      ),
+                    amount={Number(
+                      divideByPrecision(
+                        getTotalAmount(amount, isFood, multiplier, laborAmount, laborAuctionAverageCoefficient),
+                      ).toFixed(2),
                     )}
                   />
                 ))}

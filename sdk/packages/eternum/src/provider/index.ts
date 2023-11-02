@@ -4,7 +4,6 @@ import {
   AttachCaravanProps,
   BuildLaborProps,
   CancelFungibleOrderProps,
-  ClaimFungibleOrderProps,
   CompleteHyperStructureProps,
   CreateCaravanProps,
   CreateFreeTransportUnitProps,
@@ -20,12 +19,12 @@ import {
   SendResourcesToHyperstructureProps,
   TransferResourcesProps,
   TravelProps,
+  OffloadResourcesProps,
 } from "../types";
 import { Call } from "starknet";
 import { DEV_CONTRACTS, PROD_CONTRACTS } from "../constants";
 
-const UUID_OFFSET_CREATE_ORDER = 3;
-const UUID_OFFSET_CREATE_TRANSPORT_UNIT = 1;
+// const UUID_OFFSET_CREATE_ORDER = 3;
 const UUID_OFFSET_CREATE_CARAVAN = 2;
 
 export class EternumProvider extends RPCProvider {
@@ -97,47 +96,23 @@ export class EternumProvider extends RPCProvider {
     const uuid = await this.uuid();
     const {
       maker_id,
-      maker_entity_types,
-      maker_quantities,
+      maker_gives_resource_types,
+      maker_gives_resource_amounts,
       taker_id,
-      taker_entity_types,
-      taker_quantities,
+      taker_gives_resource_types,
+      taker_gives_resource_amounts,
       signer,
-      caravan_id,
+      maker_transport_id,
       donkeys_quantity,
     } = props;
 
     const expires_at = Math.floor(Date.now() / 1000 + 2628000);
-    const trade_id = uuid + UUID_OFFSET_CREATE_ORDER;
-
     let transactions: Call[] = [];
 
-    // Common transaction for creating an order
-    transactions.push({
-      contractAddress: this.contracts.TRADE_SYSTEMS,
-      entrypoint: "create_order",
-      calldata: [
-        this.contracts.WORLD_ADDRESS,
-        maker_id,
-        maker_entity_types.length,
-        ...maker_entity_types,
-        maker_quantities.length,
-        ...maker_quantities,
-        taker_id,
-        taker_entity_types.length,
-        ...taker_entity_types,
-        taker_quantities.length,
-        ...taker_quantities,
-        1,
-        expires_at,
-      ],
-    });
-
     // If no caravan_id is provided, create a new caravan
-    let final_caravan_id = caravan_id;
-    if (!caravan_id && donkeys_quantity) {
-      const transport_unit_ids = trade_id + UUID_OFFSET_CREATE_TRANSPORT_UNIT;
-      final_caravan_id = transport_unit_ids + UUID_OFFSET_CREATE_CARAVAN;
+    let final_caravan_id = maker_transport_id || 0;
+    if (!maker_transport_id && donkeys_quantity) {
+      final_caravan_id = uuid + UUID_OFFSET_CREATE_CARAVAN;
 
       transactions.push(
         {
@@ -148,19 +123,31 @@ export class EternumProvider extends RPCProvider {
         {
           contractAddress: this.contracts.CARAVAN_SYSTEMS,
           entrypoint: "create",
-          calldata: [this.contracts.WORLD_ADDRESS, [transport_unit_ids].length, ...[transport_unit_ids]],
+          calldata: [this.contracts.WORLD_ADDRESS, [uuid].length, ...[uuid]],
         },
       );
     }
 
-    if (final_caravan_id) {
-      // Common transaction for attaching a caravan
-      transactions.push({
-        contractAddress: this.contracts.TRADE_SYSTEMS,
-        entrypoint: "attach_caravan",
-        calldata: [this.contracts.WORLD_ADDRESS, maker_id, trade_id, final_caravan_id],
-      });
-    }
+    // // Common transaction for creating an order
+    transactions.push({
+      contractAddress: this.contracts.TRADE_SYSTEMS,
+      entrypoint: "create_order",
+      calldata: [
+        this.contracts.WORLD_ADDRESS,
+        maker_id,
+        maker_gives_resource_types.length,
+        ...maker_gives_resource_types,
+        maker_gives_resource_amounts.length,
+        ...maker_gives_resource_amounts,
+        final_caravan_id,
+        taker_id,
+        taker_gives_resource_types.length,
+        ...taker_gives_resource_types,
+        taker_gives_resource_amounts.length,
+        ...taker_gives_resource_amounts,
+        expires_at,
+      ],
+    });
 
     const tx = await this.executeMulti(signer, transactions);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -195,18 +182,11 @@ export class EternumProvider extends RPCProvider {
 
     if (final_caravan_id) {
       // Common transactions
-      transactions.push(
-        {
-          contractAddress: this.contracts.TRADE_SYSTEMS,
-          entrypoint: "attach_caravan",
-          calldata: [this.contracts.WORLD_ADDRESS, taker_id, trade_id, final_caravan_id],
-        },
-        {
-          contractAddress: this.contracts.TRADE_SYSTEMS,
-          entrypoint: "accept_order",
-          calldata: [this.contracts.WORLD_ADDRESS, taker_id, trade_id],
-        },
-      );
+      transactions.push({
+        contractAddress: this.contracts.TRADE_SYSTEMS,
+        entrypoint: "accept_order",
+        calldata: [this.contracts.WORLD_ADDRESS, taker_id, final_caravan_id, trade_id],
+      });
     }
 
     const tx = await this.executeMulti(signer, transactions);
@@ -221,6 +201,18 @@ export class EternumProvider extends RPCProvider {
       contractAddress: this.contracts.TRADE_SYSTEMS,
       entrypoint: "cancel_order",
       calldata: [this.contracts.WORLD_ADDRESS, trade_id],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async offload_chest(props: OffloadResourcesProps) {
+    const { entity_id, entity_index_in_inventory, receiving_entity_id, transport_id, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: this.contracts.RESOURCE_SYSTEMS,
+      entrypoint: "offload_chest",
+      calldata: [this.contracts.WORLD_ADDRESS, entity_id, entity_index_in_inventory, receiving_entity_id, transport_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -257,18 +249,6 @@ export class EternumProvider extends RPCProvider {
       contractAddress: this.contracts.TRADE_SYSTEMS,
       entrypoint: "attach_caravan",
       calldata: [this.contracts.WORLD_ADDRESS, realm_id, trade_id, caravan_id],
-    });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
-  }
-
-  public async claim_fungible_order(props: ClaimFungibleOrderProps) {
-    const { entity_id, trade_id, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: this.contracts.TRADE_SYSTEMS,
-      entrypoint: "claim_order",
-      calldata: [this.contracts.WORLD_ADDRESS, entity_id, trade_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
