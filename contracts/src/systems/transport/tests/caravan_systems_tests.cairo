@@ -6,7 +6,7 @@ use eternum::models::caravan::CaravanMembers;
 use eternum::models::metadata::ForeignKey;
 use eternum::models::movable::Movable;
 use eternum::models::capacity::Capacity;
-use eternum::models::owner::Owner;
+use eternum::models::owner::{Owner, EntityOwner};
 
 use eternum::systems::test::contracts::realm::test_realm_systems;
 use eternum::systems::test::interface::realm::{
@@ -48,7 +48,7 @@ use core::clone::Clone;
 
 
 
-fn setup() -> (IWorldDispatcher, Array<u128>, ICaravanSystemsDispatcher) {
+fn setup() -> (IWorldDispatcher, Array<u128>, ICaravanSystemsDispatcher, u128) {
     let world = spawn_eternum();
 
     // set realm entity
@@ -130,7 +130,7 @@ fn setup() -> (IWorldDispatcher, Array<u128>, ICaravanSystemsDispatcher) {
         contract_address: caravan_systems_address
     };
 
-    (world, transport_units, caravan_systems_dispatcher)
+    (world, transport_units, caravan_systems_dispatcher, realm_entity_id)
 }
 
 
@@ -139,7 +139,7 @@ fn setup() -> (IWorldDispatcher, Array<u128>, ICaravanSystemsDispatcher) {
 #[available_gas(300000000000)]
 fn test_create_caravan() {
 
-    let (world, transport_units, caravan_systems_dispatcher) 
+    let (world, transport_units, caravan_systems_dispatcher, realm_entity_id) 
         = setup();
     
     // create caravan
@@ -148,10 +148,10 @@ fn test_create_caravan() {
 
 
     // verify that the caravan has been created
-    let (caravan_members, caravan_movable, caravan_capacity, caravan_position, caravan_owner) 
-    = get!(world, caravan_id, (CaravanMembers, Movable, Capacity, Position, Owner));
-
+    let (caravan_members, caravan_movable, caravan_capacity, caravan_position, caravan_owner, caravan_entity_owner) 
+    = get!(world, caravan_id, (CaravanMembers, Movable, Capacity, Position, Owner, EntityOwner));
             
+    assert(caravan_entity_owner.entity_owner_id == realm_entity_id, 'not right entity_owner_id');
     assert(caravan_members.count == 2, 'count should be 2');
     assert(caravan_members.key != 0, 'member key should be set');
     assert(caravan_movable.sec_per_km == 10, 'average speed should be 10');
@@ -181,7 +181,7 @@ fn test_create_caravan() {
 #[should_panic(expected: ('entity is not owned by caller','ENTRYPOINT_FAILED' ))]
 fn test_not_owner() {
 
-    let (world, transport_units, caravan_systems_dispatcher) 
+    let (world, transport_units, caravan_systems_dispatcher, realm_entity_id) 
         = setup();
     
     // create caravan
@@ -194,7 +194,7 @@ fn test_not_owner() {
 #[available_gas(300000000000)]
 #[should_panic(expected: ('entity is blocked','ENTRYPOINT_FAILED' ))]
 fn test_blocked_entity() {
-    let (world, mut transport_units, caravan_systems_dispatcher) 
+    let (world, mut transport_units, caravan_systems_dispatcher, realm_entity_id) 
         = setup();
     
     

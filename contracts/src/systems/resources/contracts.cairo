@@ -2,7 +2,7 @@
 mod resource_systems {
     use eternum::alias::ID;
     use eternum::models::resources::{Resource, ResourceAllowance};
-    use eternum::models::owner::Owner;
+    use eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
     use eternum::models::position::Position;
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::capacity::Capacity;
@@ -12,6 +12,21 @@ mod resource_systems {
 
     use core::integer::BoundedInt;
 
+    #[derive(Drop, starknet::Event)]
+    struct Transfer {
+        #[key]
+        receiving_entity_id: u128,
+        #[key]
+        sending_realm_id: u128,
+        sending_entity_id: u128,
+        resources: Span<(u8, u128)>
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        Transfer: Transfer,
+    }
 
     #[external(v0)]
     impl ResourceSystemsImpl of IResourceSystems<ContractState> {
@@ -80,9 +95,15 @@ mod resource_systems {
                     'not owner of entity id'
             );
 
+            let sending_entity_owner = get!(world, sending_entity_id, EntityOwner);
+            let sending_realm_id = sending_entity_owner.get_realm_id(world);
+
+            emit!(world, Transfer { receiving_entity_id, sending_realm_id, sending_entity_id, resources });
+
             InternalResourceSystemsImpl::transfer(
                 world, sending_entity_id, receiving_entity_id, resources
             )
+
         }   
 
 

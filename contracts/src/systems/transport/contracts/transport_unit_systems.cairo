@@ -1,8 +1,8 @@
 #[dojo::contract]
 mod transport_unit_systems {
     use eternum::alias::ID;
-    use eternum::models::owner::Owner;
-    use eternum::models::position::{Position, HomePosition};
+    use eternum::models::owner::{Owner, EntityOwner};
+    use eternum::models::position::Position;
     use eternum::models::realm::Realm;
     use eternum::models::capacity::Capacity;
     use eternum::models::metadata::EntityMetadata;
@@ -82,10 +82,9 @@ mod transport_unit_systems {
             // Instantiate the new transport unit
             let id = world.uuid();
             set!(world, (
-                    HomePosition {
+                    EntityOwner {
                         entity_id: id.into(),
-                        x: position.x,
-                        y: position.y
+                        entity_owner_id: entity_id
                     },
                     Position {
                         entity_id: id.into(), 

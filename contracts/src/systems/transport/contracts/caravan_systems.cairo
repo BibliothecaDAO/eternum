@@ -7,7 +7,7 @@ mod caravan_systems {
     use eternum::models::position::Position;
     use eternum::models::movable::Movable;
     use eternum::models::capacity::Capacity;
-    use eternum::models::owner::Owner;
+    use eternum::models::owner::{Owner, EntityOwner};
     use eternum::systems::transport::interface::caravan_systems_interface::{
         ICaravanSystems
     };
@@ -36,6 +36,8 @@ mod caravan_systems {
 
             let mut entity_position: Position = Position { entity_id: caravan_id, x: 0, y: 0 };
 
+            let entity_owner_id = get!(world, (*entity_ids[0]), EntityOwner);
+
             let caller = starknet::get_caller_address();
 
             let mut index = 0;
@@ -63,6 +65,10 @@ mod caravan_systems {
                 if index != 0 {
                     assert(entity_position.x == position.x, 'entities not same position');
                     assert(entity_position.y == position.y, 'entities not same position');
+                    
+                    // check owner entity_id is the same for all
+                    let entity_owner = get!(world, (entity_id), EntityOwner); 
+                    assert(entity_owner_id.entity_owner_id == entity_owner.entity_owner_id, 'entities not same entity owner');
                 } else {
                     entity_position = position;
                 }
@@ -111,6 +117,10 @@ mod caravan_systems {
                         entity_id: caravan_id, 
                         address: caller, 
                     }, 
+                    EntityOwner {
+                        entity_id: caravan_id,
+                        entity_owner_id: entity_owner_id.entity_owner_id,
+                    },
                     Movable {
                         entity_id: caravan_id, 
                         sec_per_km: average_speed, 
