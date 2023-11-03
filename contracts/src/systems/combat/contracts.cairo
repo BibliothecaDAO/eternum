@@ -54,9 +54,13 @@ mod combat_systems {
         fn create_soldiers( 
             self: @ContractState, world: IWorldDispatcher, 
             realm_entity_id: u128, quantity: u128
-        ) {
+        ) -> Span<ID> {
 
+            // check that entity is a realm
+            let realm = get!(world, realm_entity_id, Realm);
+            assert(realm.realm_id != 0, 'not a realm');
 
+            // check realm ownership
             let caller = starknet::get_caller_address();
             let realm_owner = get!(world, realm_entity_id, Owner);
             assert(
@@ -64,15 +68,14 @@ mod combat_systems {
                     'not realm owner'
             );
 
-            // check that entity is a realm
-            let realm = get!(world, realm_entity_id, Realm);
-            assert(realm.realm_id != 0, 'not a realm');
+
 
 
             // check that realm has enough resources to pay for the soldiers
 
             let soldier_config: SoldierConfig = get!(world, SOLDIER_CONFIG_ID, SoldierConfig);
             let mut index = 0;
+            let mut soldier_ids = array![];
             loop {
                 if index == soldier_config.resource_cost_count {
                     break;
@@ -101,11 +104,11 @@ mod combat_systems {
             let soldier_speed 
                 = get!(world, (WORLD_CONFIG_ID, SOLDIER_CONFIG_ID), SpeedConfig).sec_per_km; 
             let soldier_health_value
-                = get!(world, (WORLD_CONFIG_ID, SOLDIER_CONFIG_ID), HealthConfig).value;
+                = get!(world, SOLDIER_CONFIG_ID, HealthConfig).value;
             let soldier_attack_value
-                = get!(world, (WORLD_CONFIG_ID, SOLDIER_CONFIG_ID), AttackConfig).value;
+                = get!(world, SOLDIER_CONFIG_ID, AttackConfig).value;
             let soldier_defense_value
-                = get!(world, (WORLD_CONFIG_ID, SOLDIER_CONFIG_ID), DefenceConfig).value;
+                = get!(world, SOLDIER_CONFIG_ID, DefenceConfig).value;
 
 
             let mut index = 0;
@@ -164,8 +167,12 @@ mod combat_systems {
                     },
                 ));
 
+                soldier_ids.append(soldier_id);
+
                  index += 1;
             };
+
+            soldier_ids.span()
         }
 
         ///  Create soldier(s) and assign them a duty.

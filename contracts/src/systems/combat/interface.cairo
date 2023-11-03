@@ -16,7 +16,7 @@ trait ISoldierSystems<TContractState> {
     fn create_soldiers( 
             self: @TContractState, world: IWorldDispatcher, 
             realm_entity_id: u128, quantity: u128
-    );
+    ) -> Span<ID>;
     ///  Create a group of soldiers and deploy them
     ///  assign them a duty.
     ///
