@@ -51,6 +51,8 @@ impl LaborImpl of LaborTrait {
 
 #[cfg(test)]
 mod tests {
+    use super::{Labor, LaborTrait};
+
     #[test]
     fn test_get_labor_generated_is_complete() {
         let labor = Labor { entity_id: 0, resource_type: 0, balance: 100, last_harvest: 0, multiplier: 1,  };

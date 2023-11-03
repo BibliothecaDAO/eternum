@@ -101,6 +101,7 @@ impl PositionImpl of PositionTrait {
 
 #[cfg(test)]
 mod tests {
+    use super::{Position, PositionTrait};
 
     #[test]
     #[available_gas(30000000)]
