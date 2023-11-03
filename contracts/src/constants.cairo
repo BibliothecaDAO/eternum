@@ -55,45 +55,45 @@ mod ResourceTypes {
 }
 
 /// Get resource occurence probabilities
-fn get_zipped_resource_probabilities() -> Span<(u128, u128)> {
+fn get_zipped_resource_probabilities() -> Span<(u8, u128)> {
 
     return array![
-        (ResourceTypes::WOOD.into(), 8900),
-        (ResourceTypes::STONE.into(), 1000),
-        (ResourceTypes::COAL.into(), 200),
-        (ResourceTypes::COPPER.into(), 100),
-        (ResourceTypes::OBSIDIAN.into(), 100),
-        (ResourceTypes::SILVER.into(), 100),
-        (ResourceTypes::IRONWOOD.into(), 100),
-        (ResourceTypes::COLD_IRON.into(), 100),
-        (ResourceTypes::GOLD.into(), 100),
-        (ResourceTypes::HARTWOOD.into(), 100),
-        (ResourceTypes::DIAMONDS.into(), 100),
-        (ResourceTypes::SAPPHIRE.into(), 100),
-        (ResourceTypes::RUBY.into(), 100),
-        (ResourceTypes::DEEP_CRYSTAL.into(), 100),
-        (ResourceTypes::IGNIUM.into(), 100),
-        (ResourceTypes::ETHEREAL_SILICA.into(), 100),
-        (ResourceTypes::TRUE_ICE.into(), 100),
-        (ResourceTypes::TWILIGHT_QUARTZ.into(), 44),
-        (ResourceTypes::ALCHEMICAL_SILVER.into(), 100),
-        (ResourceTypes::ADAMANTINE.into(), 100),
-        (ResourceTypes::MITHRAL.into(), 100),
-        (ResourceTypes::DRAGONHIDE.into(), 5),
-        (ResourceTypes::DESERT_GLASS.into(), 100),
-        (ResourceTypes::DIVINE_CLOTH.into(), 100),
-        (ResourceTypes::CURIOUS_SPORE.into(), 100),
-        (ResourceTypes::UNREFINED_ORE.into(), 100),
-        (ResourceTypes::SUNKEN_SHEKEL.into(), 100),
-        (ResourceTypes::DEMONHIDE.into(), 2),
-        (ResourceTypes::SHEKELS.into(), 100),
-        (ResourceTypes::WHEAT.into(), 1500),
-        (ResourceTypes::FISH.into(), 800),
+        (ResourceTypes::WOOD, 8900),
+        (ResourceTypes::STONE, 1000),
+        (ResourceTypes::COAL, 200),
+        (ResourceTypes::COPPER, 100),
+        (ResourceTypes::OBSIDIAN, 100),
+        (ResourceTypes::SILVER, 100),
+        (ResourceTypes::IRONWOOD, 100),
+        (ResourceTypes::COLD_IRON, 100),
+        (ResourceTypes::GOLD, 100),
+        (ResourceTypes::HARTWOOD, 100),
+        (ResourceTypes::DIAMONDS, 100),
+        (ResourceTypes::SAPPHIRE, 100),
+        (ResourceTypes::RUBY, 100),
+        (ResourceTypes::DEEP_CRYSTAL, 100),
+        (ResourceTypes::IGNIUM, 100),
+        (ResourceTypes::ETHEREAL_SILICA, 100),
+        (ResourceTypes::TRUE_ICE, 100),
+        (ResourceTypes::TWILIGHT_QUARTZ, 44),
+        (ResourceTypes::ALCHEMICAL_SILVER, 100),
+        (ResourceTypes::ADAMANTINE, 100),
+        (ResourceTypes::MITHRAL, 100),
+        (ResourceTypes::DRAGONHIDE, 5),
+        (ResourceTypes::DESERT_GLASS, 100),
+        (ResourceTypes::DIVINE_CLOTH, 100),
+        (ResourceTypes::CURIOUS_SPORE, 100),
+        (ResourceTypes::UNREFINED_ORE, 100),
+        (ResourceTypes::SUNKEN_SHEKEL, 100),
+        (ResourceTypes::DEMONHIDE, 2),
+        (ResourceTypes::SHEKELS, 100),
+        (ResourceTypes::WHEAT, 1500),
+        (ResourceTypes::FISH, 800),
     ].span();   
 }
 
 
-fn get_unzipped_resource_probabilities() -> (Span<u128>, Span<u128>) {
+fn get_unzipped_resource_probabilities() -> (Span<u8>, Span<u128>) {
     let zipped = get_zipped_resource_probabilities();
     let mut resource_types = array![];
     let mut probabilities = array![];

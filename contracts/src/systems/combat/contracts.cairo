@@ -687,7 +687,7 @@ mod combat_systems {
                         break;
                     }
 
-                    let resource_type: u128 = *random::choices(
+                    let resource_type: u8 = *random::choices(
                         resource_types, resource_type_probabilities, 
                         array![].span(), 1
                     )[0];
@@ -715,7 +715,7 @@ mod combat_systems {
                             attacker_remaining_weight
                                  -= stolen_resource_amount * resource_weight;
 
-                            stolen_resource_types.append(resource_type.try_into().unwrap());
+                            stolen_resource_types.append(resource_type);
                             stolen_resource_amounts.append(stolen_resource_amount);
                         }
                     }
