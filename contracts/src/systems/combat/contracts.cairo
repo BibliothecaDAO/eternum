@@ -34,7 +34,7 @@ mod combat_systems {
     };
 
     use eternum::constants::{
-        WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE,
+        WORLD_CONFIG_ID, SOLDIER_CONFIG_ID,
         get_unzipped_resource_probabilities
     };
 
@@ -71,7 +71,7 @@ mod combat_systems {
 
             // check that realm has enough resources to pay for the soldiers
 
-            let soldier_config: SoldierConfig = get!(world, SOLDIER_ENTITY_TYPE, SoldierConfig);
+            let soldier_config: SoldierConfig = get!(world, SOLDIER_CONFIG_ID, SoldierConfig);
             let mut index = 0;
             loop {
                 if index == soldier_config.resource_cost_count {
@@ -97,15 +97,15 @@ mod combat_systems {
             let realm_position = get!(world, realm_entity_id, Position);
 
             let soldier_carry_capacity 
-                =  get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), CapacityConfig).weight_gram;
+                =  get!(world, (WORLD_CONFIG_ID, SOLDIER_CONFIG_ID), CapacityConfig).weight_gram;
             let soldier_speed 
-                = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), SpeedConfig).sec_per_km; 
+                = get!(world, (WORLD_CONFIG_ID, SOLDIER_CONFIG_ID), SpeedConfig).sec_per_km; 
             let soldier_health_value
-                = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), HealthConfig).value;
+                = get!(world, (WORLD_CONFIG_ID, SOLDIER_CONFIG_ID), HealthConfig).value;
             let soldier_attack_value
-                = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), AttackConfig).value;
+                = get!(world, (WORLD_CONFIG_ID, SOLDIER_CONFIG_ID), AttackConfig).value;
             let soldier_defense_value
-                = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), DefenceConfig).value;
+                = get!(world, (WORLD_CONFIG_ID, SOLDIER_CONFIG_ID), DefenceConfig).value;
 
 
             let mut index = 0;
@@ -336,7 +336,7 @@ mod combat_systems {
                         // raider speed is the avaerage speed of all soldiers
                         let raider_speed = (total_speed / total_quantity).try_into().unwrap();
                         let raider_capacity = 
-                            get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), CapacityConfig).weight_gram;
+                            get!(world, (WORLD_CONFIG_ID, SOLDIER_CONFIG_ID), CapacityConfig).weight_gram;
 
                         set!(world, (
                             Inventory {
@@ -476,7 +476,7 @@ mod combat_systems {
             let soldier_individual_attack = group_attack.value / group_quantity.value;
             let soldier_individual_defense = group_defense.value / group_quantity.value;
             let soldier_individual_speed   
-                = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), SpeedConfig).sec_per_km;
+                = get!(world, (WORLD_CONFIG_ID, SOLDIER_CONFIG_ID), SpeedConfig).sec_per_km;
             
             let mut index = 0;
             loop {
