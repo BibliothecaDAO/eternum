@@ -15,7 +15,7 @@ trait ISoldierSystems<TContractState> {
     ///
     fn create_soldiers( 
             self: @TContractState, world: IWorldDispatcher, 
-            entity_id: u128, quantity: u128
+            realm_entity_id: u128, quantity: u128
     );
     ///  Create a group of soldiers and deploy them
     ///  assign them a duty.
@@ -36,7 +36,7 @@ trait ISoldierSystems<TContractState> {
     ///
     fn group_and_deploy_soldiers( 
         self: @TContractState, world: IWorldDispatcher, 
-        entity_id: u128, soldier_ids: Span<ID>, duty: Duty
+        realm_entity_id: u128, soldier_ids: Span<ID>, duty: Duty
     );
     /// Remove all soldiers from a group and make them individual soldiers
     ///

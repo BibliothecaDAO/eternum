@@ -124,6 +124,37 @@ struct SpeedConfig {
     sec_per_km: u16,
 }
 
+#[derive(Model, Copy, Drop, Serde)]
+struct SoldierConfig {
+    #[key]
+    config_id: u128,
+    resource_cost_id: u128,
+    resource_cost_count: u32
+}
+
+#[derive(Model, Copy, Drop, Serde)]
+struct HealthConfig {
+    #[key]
+    config_id: u128,
+    value: u128,
+}
+
+
+#[derive(Model, Copy, Drop, Serde)]
+struct AttackConfig {
+    #[key]
+    config_id: u128,
+    value: u128,
+}
+
+
+#[derive(Model, Copy, Drop, Serde)]
+struct DefenceConfig {
+    #[key]
+    config_id: u128,
+    value: u128,
+}
+
 // weight
 #[derive(Model, Copy, Drop, Serde)]
 struct WeightConfig {

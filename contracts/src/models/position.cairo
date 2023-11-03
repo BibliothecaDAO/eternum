@@ -76,14 +76,6 @@ impl PositionIntoCoord of Into<Position, Coord> {
     }
 }
 
-impl HomePositionIntoCoord of Into<HomePosition, Coord> {
-    fn into(self: HomePosition) -> Coord {
-        return Coord {
-            x: self.x,
-            y: self.y
-        };
-    }
-}
 
 #[derive(Model, PartialEq, Copy, Drop, Serde)]
 struct Position {

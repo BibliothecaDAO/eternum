@@ -3,13 +3,16 @@ mod combat_systems {
     use eternum::alias::ID;
 
     use eternum::models::resources::{Resource, ResourceCost};
-    use eternum::models::position::{Position, HomePosition};
-    use eternum::models::config::{SpeedConfig, WeightConfig, CapacityConfig};
+    use eternum::models::position::{Position};
+    use eternum::models::config::{
+        SpeedConfig, WeightConfig, CapacityConfig, 
+        SoldierConfig, HealthConfig, AttackConfig, DefenceConfig
+    };
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::inventory::Inventory;
     use eternum::models::capacity::Capacity;
     use eternum::models::weight::Weight;
-    use eternum::models::owner::Owner;
+    use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::realm::Realm;
     use eternum::models::quantity::{Quantity, QuantityTrait};    
     use eternum::models::combat::{
@@ -31,10 +34,11 @@ mod combat_systems {
     };
 
     use eternum::constants::{
-        WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE
+        WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE,
+        get_unzipped_resource_probabilities
     };
 
-    use eternum::utils::random::random;
+    use eternum::utils::random;
 
 
     #[external(v0)]
@@ -49,27 +53,60 @@ mod combat_systems {
         ///
         fn create_soldiers( 
             self: @ContractState, world: IWorldDispatcher, 
-            entity_id: u128, quantity: u128
+            realm_entity_id: u128, quantity: u128
         ) {
 
 
             let caller = starknet::get_caller_address();
-            let entity_owner = get!(world, entity_id, Owner);
+            let realm_owner = get!(world, realm_entity_id, Owner);
             assert(
-                entity_owner.address == caller,
-                    'not entity owner'
+                realm_owner.address == caller,
+                    'not realm owner'
             );
 
             // check that entity is a realm
-            let entity_realm = get!(world, entity_id, Realm);
-            assert(entity_realm.realm_id != 0, 'not a realm');
+            let realm = get!(world, realm_entity_id, Realm);
+            assert(realm.realm_id != 0, 'not a realm');
 
 
-            // todo@credence add payment here
+            // check that realm has enough resources to pay for the soldiers
 
-            let entity_position = get!(world, entity_id, Position);
+            let soldier_config: SoldierConfig = get!(world, SOLDIER_ENTITY_TYPE, SoldierConfig);
+            let mut index = 0;
+            loop {
+                if index == soldier_config.resource_cost_count {
+                    break;
+                }
+
+                let resource_cost 
+                    = get!(world, (soldier_config.resource_cost_id, index), ResourceCost);
+                let mut realm_resource 
+                    = get!(world, (realm_entity_id, resource_cost.resource_type), Resource);
+
+                assert(
+                    realm_resource.balance >= resource_cost.amount * quantity,
+                        'insufficient resources'
+                );
+
+                realm_resource.balance -= resource_cost.amount * quantity;
+                set!(world, (realm_resource));
+
+                index += 1;
+            };
+
+            let realm_position = get!(world, realm_entity_id, Position);
+
             let soldier_carry_capacity 
-                =  InternalSoldierSystemsImpl::get_carry_capacity_per_soldier(world);
+                =  get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), CapacityConfig).weight_gram;
+            let soldier_speed 
+                = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), SpeedConfig).sec_per_km; 
+            let soldier_health_value
+                = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), HealthConfig).value;
+            let soldier_attack_value
+                = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), AttackConfig).value;
+            let soldier_defense_value
+                = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), DefenceConfig).value;
+
 
             let mut index = 0;
             loop {
@@ -83,31 +120,30 @@ mod combat_systems {
                         entity_id: soldier_id,
                         address: caller
                     },
+                    EntityOwner {
+                        entity_id: soldier_id,
+                        entity_owner_id: realm_entity_id
+                    },
                     Health {
                         entity_id: soldier_id,
-                        value: 100
+                        value: soldier_health_value
                     },
                     Attack {
                         entity_id: soldier_id,
-                        value: 100
+                        value: soldier_attack_value
                     },
                     Defence {
                         entity_id: soldier_id,
-                        value: 100
+                        value: soldier_defense_value
                     },
                     Quantity {
                         entity_id: soldier_id,
                         value: 1
                     },
-                    HomePosition {
-                        entity_id: soldier_id,
-                        x: entity_position.x,
-                        y: entity_position.y
-                    },
                     Position {
                         entity_id: soldier_id,
-                        x: entity_position.x,
-                        y: entity_position.y
+                        x: realm_position.x,
+                        y: realm_position.y
                     },
                     Inventory {
                         entity_id: soldier_id,
@@ -116,7 +152,7 @@ mod combat_systems {
                     },
                     Movable {
                         entity_id: soldier_id, 
-                        sec_per_km: InternalSoldierSystemsImpl::get_speed_per_soldier(world),
+                        sec_per_km: soldier_speed,
                         blocked: false,
                         round_trip: false,
                         intermediate_coord_x: 0,  
@@ -132,10 +168,11 @@ mod combat_systems {
             };
         }
 
-        ///  Create a group of soldiers and deploy them
-        ///  assign them a duty.
+        ///  Create soldier(s) and assign them a duty.
         ///
-        /// Note: no soldier should hold any resources in their inventory
+        ///  Note: no soldier should have any resource in their inventory
+        ///        when calling this function. if they do, they must dispose
+        ///        of the items before calling this function.
         ///
         /// # Arguments
         ///
@@ -151,27 +188,23 @@ mod combat_systems {
         ///
         fn group_and_deploy_soldiers( 
             self: @ContractState, world: IWorldDispatcher, 
-            entity_id: u128, soldier_ids: Span<ID>, duty: Duty
+            realm_entity_id: u128, soldier_ids: Span<ID>, duty: Duty
         ) {
-            assert(soldier_ids.len() > 1, 'single soldier group');
 
             let caller = starknet::get_caller_address();
+
             
-            let entity_owner = get!(world, entity_id, Owner);
+            let realm_owner = get!(world, realm_entity_id, Owner);
             assert(
-                entity_owner.address == caller,
+                realm_owner.address == caller,
                     'not entity owner'
             );
 
+
             // check that entity is a realm
-            let entity_realm = get!(world, entity_id, Realm);
-            assert(entity_realm.realm_id != 0, 'not a realm');
+            let realm = get!(world, realm_entity_id, Realm);
+            assert(realm.realm_id != 0, 'not a realm');
 
-
-            let entity_position = get!(world, entity_id, Position);
-            let group_position = get!(world, *soldier_ids[0], Position);
-
-            let ts = starknet::get_block_timestamp();
 
             let mut index = 0;
             let mut total_attack = 0;
@@ -179,6 +212,9 @@ mod combat_systems {
             let mut total_health = 0;
             let mut total_quantity = 0;
             let mut total_speed: u128 = 0;
+
+            let ts = starknet::get_block_timestamp();
+            let group_position = get!(world, *soldier_ids[0], Position);
 
             loop {
                 if index == soldier_ids.len() {
@@ -204,6 +240,13 @@ mod combat_systems {
                 // check that soldier_id is owned by caller
                 let soldier_owner = get!(world, soldier_id, Owner);
                 assert(soldier_owner.address == caller, 'not soldier owner');
+
+                // check that soldier belongs to same realm
+                let soldier_entity_owner = get!(world, soldier_id, EntityOwner);
+                assert(
+                    soldier_entity_owner.entity_owner_id == realm_entity_id,
+                        'soldier wrong realm'
+                );
 
                 // check that soldier inventory is empty
                 let soldier_inventory = get!(world, soldier_id, Inventory);
@@ -238,6 +281,10 @@ mod combat_systems {
                         entity_id: soldier_id,
                         address: Zeroable::zero()
                     },
+                    EntityOwner {
+                        entity_id: soldier_id,
+                        entity_owner_id: 0
+                    },
                     Health {
                         entity_id: soldier_id,
                         value: 0
@@ -253,11 +300,6 @@ mod combat_systems {
                     Quantity {
                         entity_id: soldier_id,
                         value: 0
-                    },
-                    HomePosition {
-                        entity_id: soldier_id,
-                        x: 0,
-                        y: 0
                     },
                     Position {
                         entity_id: soldier_id,
@@ -275,7 +317,7 @@ mod combat_systems {
                     ArrivalTime {
                         entity_id: soldier_id,
                         arrives_at: 0 
-                    }
+                    },
                 ));
 
                 index += 1;
@@ -290,7 +332,11 @@ mod combat_systems {
                         // create a new raiding unit
 
                         let raider_id: u128 = world.uuid().into();
+
+                        // raider speed is the avaerage speed of all soldiers
                         let raider_speed = (total_speed / total_quantity).try_into().unwrap();
+                        let raider_capacity = 
+                            get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), CapacityConfig).weight_gram;
 
                         set!(world, (
                             Inventory {
@@ -300,7 +346,7 @@ mod combat_systems {
                             },
                             Capacity {
                                 entity_id: raider_id,
-                                weight_gram: InternalSoldierSystemsImpl::get_carry_capacity_per_soldier(world)
+                                weight_gram: raider_capacity
                             },
                             Movable {
                                 entity_id: raider_id, 
@@ -315,12 +361,14 @@ mod combat_systems {
                         raider_id
                     },
                     Duty::Defence => {
+
+                        let realm_position = get!(world, realm_entity_id, Position);
                         assert(
-                            entity_position.x == group_position.x
-                                && entity_position.y == group_position.y,
+                            realm_position.x == group_position.x
+                                && realm_position.y == group_position.y,
                                     'group outside realm'
                         );
-                        let entity_town_watch = get!(world, entity_id, TownWatch);
+                        let entity_town_watch = get!(world, realm_entity_id, TownWatch);
                         let town_watch_id = entity_town_watch.town_watch_id;
 
                         set!(world, (
@@ -351,6 +399,10 @@ mod combat_systems {
                     entity_id: group_id,
                     address: caller
                 },
+                EntityOwner {
+                    entity_id: group_id,
+                    entity_owner_id: realm_entity_id
+                },
                 Health {
                     entity_id: group_id,
                     value: total_health
@@ -366,11 +418,6 @@ mod combat_systems {
                 Quantity {
                     entity_id: group_id,
                     value: total_quantity
-                },
-                HomePosition {
-                    entity_id: group_id,
-                    x: entity_position.x,
-                    y: entity_position.y
                 },
                 Position {
                     entity_id: group_id,
@@ -419,15 +466,17 @@ mod combat_systems {
             );
 
 
+            let group_entity_owner = get!(world, group_id, EntityOwner);
             let group_attack = get!(world, group_id, Attack);
             let group_defense = get!(world, group_id, Defence);
             let group_position = get!(world, group_id, Position);
             let group_arrival = get!(world, group_id, ArrivalTime);
-            let group_home_position = get!(world, group_id, HomePosition);
 
             let soldier_individual_health = group_health.value / group_quantity.value;
             let soldier_individual_attack = group_attack.value / group_quantity.value;
             let soldier_individual_defense = group_defense.value / group_quantity.value;
+            let soldier_individual_speed   
+                = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), SpeedConfig).sec_per_km;
             
             let mut index = 0;
             loop {
@@ -440,6 +489,10 @@ mod combat_systems {
                     Owner {
                         entity_id: soldier_id,
                         address: caller
+                    },
+                    EntityOwner {
+                        entity_id: soldier_id,
+                        entity_owner_id: group_entity_owner.entity_owner_id
                     },
                     Health {
                         entity_id: soldier_id,
@@ -459,16 +512,11 @@ mod combat_systems {
                     },
                     Movable {
                         entity_id: soldier_id, 
-                        sec_per_km: InternalSoldierSystemsImpl::get_speed_per_soldier(world),
+                        sec_per_km: soldier_individual_speed,
                         blocked: false,
                         round_trip: group_movable.round_trip,
                         intermediate_coord_x: group_movable.intermediate_coord_x,  
                         intermediate_coord_y: group_movable.intermediate_coord_y,  
-                    },
-                    HomePosition {
-                        entity_id: soldier_id,
-                        x: group_home_position.x,
-                        y: group_home_position.y
                     },
                     Position {
                         entity_id: soldier_id,
@@ -486,18 +534,6 @@ mod combat_systems {
         }
     }
 
-
-    #[generate_trait]
-    impl InternalSoldierSystemsImpl of InternalSoldierSystemsTrait {
-
-        fn get_speed_per_soldier(world: IWorldDispatcher) -> u16 {
-            get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), SpeedConfig).sec_per_km
-        }
-
-        fn get_carry_capacity_per_soldier(world: IWorldDispatcher) -> u128 {
-            get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), CapacityConfig).weight_gram
-        }
-    }
 
 
     #[external(v0)]
@@ -544,17 +580,19 @@ mod combat_systems {
                 = attacker_attack
                     .get_success_probability(target_defense.value);
 
+            let attack_successful: bool = *random::choices(
+                array![true, false].span(), 
+                array![attack_success_probability, 100 - attack_success_probability].span(), 
+                array![].span(), 1
+            )[0];
 
-            // todo@credence calculate randomness with probability
-
-            // get random value between 0 and 100
-            let salt: u128 = starknet::get_block_timestamp().into();
-            let random_value = random(salt, 100 + 1 );
-
-            if random_value >= 50 {
+            if attack_successful {
                 // attack was a success 
 
-                let damage = (attacker_attack.value * random_value) / 100;
+                // get random damage
+                let salt: u128 = starknet::get_block_timestamp().into();
+                let damage_percent = random::random(salt, 100 + 1 );
+                let damage = (attacker_attack.value * damage_percent) / 100;
                 let mut target_health = get!(world, target_id, Health);
 
                 target_health.value -= damage;
@@ -564,7 +602,10 @@ mod combat_systems {
 
                 // attack failed and target dealt damage to attacker
 
-                let damage = (target_attack.value * (100 - random_value)) / 100;
+                // get random damage
+                let salt: u128 = starknet::get_block_timestamp().into();
+                let damage_percent = random::random(salt, 100 + 1 );
+                let damage = (target_attack.value * damage_percent) / 100;
                 let mut attacker_health = get!(world, attacker_id, Health);
 
                 attacker_health.value -= damage;
@@ -615,16 +656,14 @@ mod combat_systems {
                     .get_success_probability(target_defense.value);
 
 
-            // todo@credence calculate randomness with probability
+            let attack_successful: bool = *random::choices(
+                array![true, false].span(), 
+                array![attack_success_probability, 100 - attack_success_probability].span(), 
+                array![].span(), 1
+            )[0];
+            
 
-            // get random value between 0 and 100
-            let salt: u128 = starknet::get_block_timestamp().into();
-            let random_value = random(salt, 100 + 1 );
-
-            let attacker_inventory = get!(world, attacker_id, Inventory);
-
-            if random_value >= 50 {
-
+            if attack_successful {
                 // attack was a success 
 
                 let mut stolen_resource_types: Array<u8> = array![];
@@ -641,15 +680,18 @@ mod combat_systems {
 
                 let trials = 5;
                 let mut index = 0;
+                let (resource_types, resource_type_probabilities) 
+                    = get_unzipped_resource_probabilities();
                 loop {
                     if index == trials {
                         break;
                     }
 
-                    // todo@credence calculate resource with probability
+                    let resource_type: u128 = *random::choices(
+                        resource_types, resource_type_probabilities, 
+                        array![].span(), 1
+                    )[0];
 
-                    let random_1000 = random(salt, 1000 + 1);
-                    let resource_type = random_1000 % 28;
                     let resource_weight 
                         = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig).weight_gram;
 
@@ -704,8 +746,12 @@ mod combat_systems {
                 
                 // attack failed 
 
+                // get random damage
+                let salt: u128 = starknet::get_block_timestamp().into();
+                let damage_percent = random::random(salt, 100 + 1 );
+
                 // target deals damage to attacker
-                let damage = (target_attack.value * (100 - random_value)) / 100;
+                let damage = (target_attack.value * damage_percent) / 100;
                 let mut attacker_health = get!(world, attacker_id, Health);
 
                 attacker_health.value -= damage;
@@ -713,7 +759,9 @@ mod combat_systems {
 
                 // send attacker back to home realm
                 let attacker_movable = get!(world, attacker_id, Movable);
-                let attacker_home_position = get!(world, attacker_id, HomePosition);
+                let attacker_entity_owner = get!(world, attacker_id, EntityOwner);
+                let attacker_home_position 
+                    = get!(world, attacker_entity_owner.entity_owner_id, Position);
                 InternalTravelSystemsImpl::travel(
                     world, attacker_id, attacker_movable, 
                     attacker_position.into(), attacker_home_position.into()
