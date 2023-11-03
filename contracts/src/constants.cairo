@@ -12,13 +12,12 @@ const BUILDING_CONFIG_ID: u128 = 999999999999999998;
 const LABOR_CONFIG_ID: u128 = 999999999999999997;
 const TRANSPORT_CONFIG_ID: u128 = 999999999999999996;
 const ROAD_CONFIG_ID: u128 = 999999999999999995;
+const SOLDIER_CONFIG_ID: u128 = 999999999999999994;
 
 // 8 bits
 const RESOURCE_IDS_PACKED_SIZE: usize = 8_usize;
 const REALMS_DATA_PACKED_SIZE: usize = 8_usize;
 
-// LORDS
-const LORDS_ID: u128 = 999999999999999996;
 
 mod ResourceTypes {
     const WOOD: u8 = 1;
@@ -54,11 +53,71 @@ mod ResourceTypes {
     const FISH: u8 = 255;
 }
 
+/// Get resource occurence probabilities
+fn get_zipped_resource_probabilities() -> Span<(u8, u128)> {
+
+    return array![
+        (ResourceTypes::WOOD, 8900),
+        (ResourceTypes::STONE, 1000),
+        (ResourceTypes::COAL, 200),
+        (ResourceTypes::COPPER, 100),
+        (ResourceTypes::OBSIDIAN, 100),
+        (ResourceTypes::SILVER, 100),
+        (ResourceTypes::IRONWOOD, 100),
+        (ResourceTypes::COLD_IRON, 100),
+        (ResourceTypes::GOLD, 100),
+        (ResourceTypes::HARTWOOD, 100),
+        (ResourceTypes::DIAMONDS, 100),
+        (ResourceTypes::SAPPHIRE, 100),
+        (ResourceTypes::RUBY, 100),
+        (ResourceTypes::DEEP_CRYSTAL, 100),
+        (ResourceTypes::IGNIUM, 100),
+        (ResourceTypes::ETHEREAL_SILICA, 100),
+        (ResourceTypes::TRUE_ICE, 100),
+        (ResourceTypes::TWILIGHT_QUARTZ, 44),
+        (ResourceTypes::ALCHEMICAL_SILVER, 100),
+        (ResourceTypes::ADAMANTINE, 100),
+        (ResourceTypes::MITHRAL, 100),
+        (ResourceTypes::DRAGONHIDE, 5),
+        (ResourceTypes::DESERT_GLASS, 100),
+        (ResourceTypes::DIVINE_CLOTH, 100),
+        (ResourceTypes::CURIOUS_SPORE, 100),
+        (ResourceTypes::UNREFINED_ORE, 100),
+        (ResourceTypes::SUNKEN_SHEKEL, 100),
+        (ResourceTypes::DEMONHIDE, 2),
+        (ResourceTypes::SHEKELS, 100),
+        (ResourceTypes::WHEAT, 1500),
+        (ResourceTypes::FISH, 800),
+    ].span();   
+}
+
+
+fn get_unzipped_resource_probabilities() -> (Span<u8>, Span<u128>) {
+    let zipped = get_zipped_resource_probabilities();
+    let mut resource_types = array![];
+    let mut probabilities = array![];
+    let mut index = 0;
+    loop {
+        if index >= zipped.len() {
+            break;
+        }
+        let (resource_type, probability) = *zipped.at(index);
+        resource_types.append(resource_type);
+        probabilities.append(probability);    
+        index += 1;
+    };
+
+    return (resource_types.span(), probabilities.span());
+
+}
+
+
 // DISCUSS: instead of using constants for entity_type, store the entity_type in the storage
 // DISCUSS: register each new entity_type to the system by creating an entity containing the config components
 // Using FREE_TRANSPORT_ENTITY_TYPE I can look up the speed and capacity of that entity when creating it
 const FREE_TRANSPORT_ENTITY_TYPE: u128 = 256;
 const REALM_ENTITY_TYPE: u128 = 257;
+
 
 // TODO: change to consts
 enum BuildingTypes {

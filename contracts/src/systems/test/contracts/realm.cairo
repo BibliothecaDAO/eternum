@@ -5,6 +5,7 @@ mod test_realm_systems {
     use eternum::models::owner::Owner;
     use eternum::models::position::Position;
     use eternum::models::metadata::EntityMetadata;
+    use eternum::models::combat::TownWatch;
 
     use eternum::systems::test::interface::realm::IRealmSystems;
 
@@ -58,6 +59,10 @@ mod test_realm_systems {
                         entity_id: entity_id.into(), 
                         entity_type: REALM_ENTITY_TYPE, 
                     },
+                    TownWatch {
+                        entity_id: entity_id.into(),
+                        town_watch_id: world.uuid().into(),
+                    }
                 )
             );
             entity_id.into()

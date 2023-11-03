@@ -76,6 +76,7 @@ impl PositionIntoCoord of Into<Position, Coord> {
     }
 }
 
+
 #[derive(Model, PartialEq, Copy, Drop, Serde)]
 struct Position {
     #[key]
