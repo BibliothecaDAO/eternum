@@ -157,7 +157,7 @@ fn test_create_soldier() {
         contract_address_const::<'caller'>()
     );
 
-    // buy 5 soldiers
+    // buy x soldiers
     let num_soldiers_bought = 2;
     let mut soldier_ids: Span<u128>
         = soldier_systems_dispatcher.create_soldiers(

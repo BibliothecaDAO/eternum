@@ -196,21 +196,21 @@ mod combat_systems {
         fn group_and_deploy_soldiers( 
             self: @ContractState, world: IWorldDispatcher, 
             realm_entity_id: u128, soldier_ids: Span<ID>, duty: Duty
-        ) {
-
-            let caller = starknet::get_caller_address();
-
-            
-            let realm_owner = get!(world, realm_entity_id, Owner);
-            assert(
-                realm_owner.address == caller,
-                    'not entity owner'
-            );
+        ) -> ID {
 
 
             // check that entity is a realm
             let realm = get!(world, realm_entity_id, Realm);
             assert(realm.realm_id != 0, 'not a realm');
+
+            // check realm ownership
+            let caller = starknet::get_caller_address();
+            let realm_owner = get!(world, realm_entity_id, Owner);
+            assert(
+                realm_owner.address == caller,
+                    'not realm owner'
+            );
+
 
 
             let mut index = 0;
@@ -431,7 +431,9 @@ mod combat_systems {
                     x: group_position.x,
                     y: group_position.y
                 }
-            ));            
+            ));  
+
+            group_id          
         }
 
 

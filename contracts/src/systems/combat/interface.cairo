@@ -37,7 +37,7 @@ trait ISoldierSystems<TContractState> {
     fn group_and_deploy_soldiers( 
         self: @TContractState, world: IWorldDispatcher, 
         realm_entity_id: u128, soldier_ids: Span<ID>, duty: Duty
-    );
+    ) -> ID;
     /// Remove all soldiers from a group and make them individual soldiers
     ///
     /// Note: If the group is a raiding unit, they must not hold any resources

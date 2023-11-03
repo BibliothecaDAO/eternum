@@ -1,1 +1,2 @@
 mod soldier_create_systems_tests;
+mod soldier_group_systems_tests;
