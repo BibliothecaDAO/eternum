@@ -50,7 +50,7 @@ trait ISoldierSystems<TContractState> {
     ///
     fn ungroup_soldiers(
         self: @TContractState, world: IWorldDispatcher, group_id: ID
-    );
+    ) -> Span<ID>;
 }
 
 #[starknet::interface]

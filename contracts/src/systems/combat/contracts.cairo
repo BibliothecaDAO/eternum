@@ -449,7 +449,7 @@ mod combat_systems {
         ///
         fn ungroup_soldiers(
             self: @ContractState, world: IWorldDispatcher, group_id: ID
-        ){
+        ) -> Span<ID> {
 
             let caller = starknet::get_caller_address();
 
@@ -486,8 +486,12 @@ mod combat_systems {
             let soldier_individual_defense = group_defense.value / group_quantity.value;
             let soldier_individual_speed   
                 = get!(world, (WORLD_CONFIG_ID, SOLDIER_CONFIG_ID), SpeedConfig).sec_per_km;
-            
+            let soldier_individual_carry_capacity 
+                =  get!(world, (WORLD_CONFIG_ID, SOLDIER_CONFIG_ID), CapacityConfig).weight_gram;
+ 
             let mut index = 0;
+
+            let mut soldier_ids = array![];
             loop {
                 if index == group_quantity.value {
                     break;
@@ -519,6 +523,15 @@ mod combat_systems {
                         entity_id: soldier_id,
                         value: 1
                     },
+                    Inventory {
+                        entity_id: soldier_id,
+                        items_key: world.uuid().into(),
+                        items_count: 0
+                    },
+                    Capacity {
+                        entity_id: soldier_id,
+                        weight_gram: soldier_individual_carry_capacity 
+                    },
                     Movable {
                         entity_id: soldier_id, 
                         sec_per_km: soldier_individual_speed,
@@ -538,9 +551,14 @@ mod combat_systems {
                     }
                 ));
 
+                soldier_ids.append(soldier_id);
+
                 index += 1;
             };
+    
+            soldier_ids.span()
         }
+
     }
 
 
