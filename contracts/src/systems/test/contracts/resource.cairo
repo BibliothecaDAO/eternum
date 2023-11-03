@@ -1,5 +1,6 @@
 use dojo::world::IWorldDispatcher;
 
+#[starknet::interface]
 trait IResourceSystems<TContractState> {
     fn mint(
         self: @TContractState, 
