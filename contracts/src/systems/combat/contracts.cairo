@@ -39,6 +39,7 @@ mod combat_systems {
     };
 
     use eternum::utils::random;
+    use eternum::utils::math::{min};
 
 
     #[external(v0)]
@@ -616,22 +617,27 @@ mod combat_systems {
             if attack_successful {
                 // attack was a success && attacker dealt damage to target
 
-                // get damage which is <= target_health.value 
+                
+                // get damage to target based on the attacker's attack value 
                 let salt: u128 = starknet::get_block_timestamp().into();
-                let damage = random::random(salt, target_health.value + 1);
+                let damage_percent = random::random(salt, 100 + 1 );
+                let damage = (attacker_attack.value * damage_percent) / 100;
 
-                target_health.value -= damage;
+                target_health.value -= min(damage, target_health.value);
+                
                 set!(world, (target_health));
 
             } else {
 
                 // attack failed && target dealt damage to attacker
                 
-                // get damage which is <= attacker_health.value 
+                // get damage to attacker based on the target's attack value 
                 let salt: u128 = starknet::get_block_timestamp().into();
-                let damage = random::random(salt, attacker_health.value + 1);
+                let damage_percent = random::random(salt, 100 + 1 );
+                let damage = (target_attack.value * damage_percent) / 100;
 
-                attacker_health.value -= damage;
+                attacker_health.value -= min(damage, attacker_health.value);
+
                 set!(world, (attacker_health));
             }
         }
@@ -770,11 +776,12 @@ mod combat_systems {
                 // attack failed && target deals damage to attacker
                  
                 
-                 // get damage which is <= attacker_health.value 
+                // get damage to attacker based on the target's attack value 
                 let salt: u128 = starknet::get_block_timestamp().into();
-                let damage = random::random(salt, attacker_health.value + 1);                
+                let damage_percent = random::random(salt, 100 + 1 );
+                let damage = (target_attack.value * damage_percent) / 100;
 
-                attacker_health.value -= damage;
+                attacker_health.value -= min(damage, attacker_health.value);
                 set!(world, (attacker_health));
 
                 // send attacker back to home realm
