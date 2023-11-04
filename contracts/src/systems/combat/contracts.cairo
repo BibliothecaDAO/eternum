@@ -573,9 +573,9 @@ mod combat_systems {
             let caller = starknet::get_caller_address();
 
             let attacker_owner = get!(world, attacker_id, Owner);
-            assert(attacker_owner.address == caller, 'no attacker owner');
+            assert(attacker_owner.address == caller, 'not attacker owner');
 
-            let attacker_health = get!(world, attacker_id, Health);
+            let mut attacker_health = get!(world, attacker_id, Health);
             assert(attacker_health.value > 0, 'attacker is dead');
 
             let attacker_arrival = get!(world, attacker_id, ArrivalTime);
@@ -584,7 +584,7 @@ mod combat_systems {
                     'attacker is travelling'
             );
 
-            let target_health = get!(world, target_id, Health);
+            let mut target_health = get!(world, target_id, Health);
             assert(target_health.value > 0, 'target is dead');
 
             let attacker_position = get!(world, attacker_id, Position);
@@ -614,26 +614,22 @@ mod combat_systems {
             )[0];
 
             if attack_successful {
-                // attack was a success 
+                // attack was a success && attacker dealt damage to target
 
-                // get random damage
+                // get damage which is <= target_health.value 
                 let salt: u128 = starknet::get_block_timestamp().into();
-                let damage_percent = random::random(salt, 100 + 1 );
-                let damage = (attacker_attack.value * damage_percent) / 100;
-                let mut target_health = get!(world, target_id, Health);
+                let damage = random::random(salt, target_health.value + 1);
 
                 target_health.value -= damage;
                 set!(world, (target_health));
 
             } else {
 
-                // attack failed and target dealt damage to attacker
-
-                // get random damage
+                // attack failed && target dealt damage to attacker
+                
+                // get damage which is <= attacker_health.value 
                 let salt: u128 = starknet::get_block_timestamp().into();
-                let damage_percent = random::random(salt, 100 + 1 );
-                let damage = (target_attack.value * damage_percent) / 100;
-                let mut attacker_health = get!(world, attacker_id, Health);
+                let damage = random::random(salt, attacker_health.value + 1);
 
                 attacker_health.value -= damage;
                 set!(world, (attacker_health));
@@ -652,7 +648,7 @@ mod combat_systems {
             let attacker_owner = get!(world, attacker_id, Owner);
             assert(attacker_owner.address == caller, 'no attacker owner');
                                     
-            let attacker_health = get!(world, attacker_id, Health);
+            let mut attacker_health = get!(world, attacker_id, Health);
             assert(attacker_health.value > 0, 'attacker is dead');
 
             let attacker_arrival = get!(world, attacker_id, ArrivalTime);
@@ -771,15 +767,12 @@ mod combat_systems {
             
             } else {
                 
-                // attack failed 
-
-                // get random damage
+                // attack failed && target deals damage to attacker
+                 
+                
+                 // get damage which is <= attacker_health.value 
                 let salt: u128 = starknet::get_block_timestamp().into();
-                let damage_percent = random::random(salt, 100 + 1 );
-
-                // target deals damage to attacker
-                let damage = (target_attack.value * damage_percent) / 100;
-                let mut attacker_health = get!(world, attacker_id, Health);
+                let damage = random::random(salt, attacker_health.value + 1);                
 
                 attacker_health.value -= damage;
                 set!(world, (attacker_health));
