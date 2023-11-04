@@ -306,6 +306,11 @@ fn test_single_soldier_ungroup() {
             }
         ));
     
+
+        starknet::testing::set_contract_address(
+            contract_address_const::<'caller'>()
+        );
+
         // ungroup soldiers 
         soldier_systems_dispatcher
             .ungroup_soldiers(world, group_id);
@@ -333,6 +338,10 @@ fn test_group_movable_blocked() {
         }
     ));
 
+    starknet::testing::set_contract_address(
+        contract_address_const::<'caller'>()
+    );
+
     // ungroup soldiers 
     soldier_systems_dispatcher
         .ungroup_soldiers(world, group_id);
@@ -355,6 +364,10 @@ fn test_group_travelling() {
             arrives_at: 1
         }
     ));
+
+    starknet::testing::set_contract_address(
+        contract_address_const::<'caller'>()
+    );
 
     // ungroup soldiers 
     soldier_systems_dispatcher
@@ -380,6 +393,10 @@ fn test_group_has_items_in_inventory() {
             items_count: 1
         }
     ));
+
+    starknet::testing::set_contract_address(
+        contract_address_const::<'caller'>()
+    );
 
     // ungroup soldiers 
     soldier_systems_dispatcher
