@@ -9,3 +9,14 @@ fn pow(base: felt252, exp: felt252) -> felt252 {
         _ => base * pow(base, exp - 1),
     }
 }
+
+
+fn min<T, impl TPartialOrd: PartialOrd<T>, impl TCopy: Copy<T>, impl TDrop: Drop<T>>
+        (a: T, b: T ) -> T {
+    return if (a < b){return a;} else {return b;};
+}
+
+fn max<T, impl TPartialOrd: PartialOrd<T>,impl TCopy: Copy<T>, impl TDrop: Drop<T>>
+        (a: T, b: T ) -> T {
+    return if (a > b){return a;} else {return b;};
+}
