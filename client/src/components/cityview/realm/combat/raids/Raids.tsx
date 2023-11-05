@@ -23,7 +23,7 @@ type IncomingOrderProps = {
   battalion: CombatInfo;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const Battalion = ({ battalion, ...props }: IncomingOrderProps) => {
+export const Raid = ({ battalion, ...props }: IncomingOrderProps) => {
   const { entityId, health, quantity, capacity } = battalion;
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);

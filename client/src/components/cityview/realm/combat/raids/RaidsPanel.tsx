@@ -7,15 +7,15 @@ import { ResourceFilter } from "../../../../ResourceFilterComponent";
 import { OrdersFilter } from "../../../../OrdersFilterComponent";
 // import { CreateOfferPopup } from "../CreateOffer";
 import Button from "../../../../../elements/Button";
-import { Battalion } from "./Battalion";
+import { Battalion } from "./Raids";
 import { useGetCaravansWithResourcesChest } from "../../../../../hooks/helpers/useResources";
 import { useCombat } from "../../../../../hooks/helpers/useCombat";
-import { CreateBattalionPopup } from "./CreateBattalionPopup";
+import { CreateBattalionPopup } from "./CreateRaidsPopup";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 
 type MarketPanelProps = {};
 
-export const BattalionsPanel = ({}: MarketPanelProps) => {
+export const RaidsPanel = ({}: MarketPanelProps) => {
   const [activeFilter, setActiveFilter] = useState(false);
   const [showBuildBattalion, setShowBuildBattalion] = useState(false);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
