@@ -1,16 +1,18 @@
 #!/bin/bash
 
-CONFIG_SYSTEMS="0xd81a66847b86b0aca0d66053b731e701f745e42c1ed40d59ae3221b1a52711";
-LABOR_SYSTEMS="0x4c171c6de260a9865743d05ba27771b9c758fa176a88982982facaca188cf65";
-TRADE_SYSTEMS="0x2139d726bf9c34b3d0f68e740a16233604993534ad809329ac5788fa136adf1";
-HYPERSTRUCTURE_SYSTEMS="0xca23e4b5195bc2560bd537b35b9ef45f6e49a0923d8ecd36c515a423ae269";
-RESOURCE_SYSTEMS="0x3515736afe8663c5e673df2a7db08ed55b90c79b9a81e71d537d6962de6fd98";
-CARAVAN_SYSTEMS="0x693a6c8b9643cfcdb3e3eb63c3b76aca7b80eaec17d46662714ca6d2bfe8c26";
-ROAD_SYSTEMS="0x489761647ff04e1163659537e9b4967a67ddbfc3be73aa60f8039e69c3ee74d";
-TRANSPORT_UNIT_SYSTEMS="0x155b8cbe4b8c2464ab60db85411dffdd57d28320c93246dd3c02bdee2d18479";
-TRAVEL_SYSTEMS="0x70717be365c143d9f4ae207e420d0c3525a7c79197a20e6e63e4dec0b1b26cd";
-TEST_REALM_SYSTEMS="0xee850f8d8ded18763d23e35d3592f9549081124bee0c32ffb2ef355deb1b68";
-TEST_RESOURCE_SYSTEMS="0x17505387265fa24a4846cb3b3207aa92c3e6f918f74883a43be959265d19e44";
+WORLD_ADDRESS="0x4d79c99ce9b489b77461e3491970ea5ede1f1966f4d2ff65ee76cd8701d6dad"
+CONFIG_SYSTEMS="0x74c3dd7b64a0c8ad6a27276b9ec6a628774028734ea46cf3970ef185e35247d"
+LABOR_SYSTEMS="0x5b3b02ba50cfb46af86c20d1eca1bbff5fe82ff2f8985aefc413267a5d05b00"
+TRADE_SYSTEMS="0x7b54643f42a1c4298fe5e465105ccbee30ba505f3bedaa90f4951f9f15be8f0"
+HYPERSTRUCTURE_SYSTEMS="0xfdcafc26f1d866ad585cadfb0fb177e4512d03f6020e67adadb5c66690d9c2"
+RESOURCE_SYSTEMS="0x2dab8013b2dea3f5b37f31db94a5136843408efa04a966a6587f65056b1ef40"
+CARAVAN_SYSTEMS="0x384fd2bf241ffc48425ed1fed389495e8066079cdb16865a73e6d3849d32c4f"
+ROAD_SYSTEMS="0x46e8cc4deb048fed25465e134ebbfa962137daaf0bb52a63d41940af3638e4d"
+TRANSPORT_UNIT_SYSTEMS="0x75eb7b6012dbb91d59aa20808de28666f8207478e08f4e4ee101bdb0ac89e63"
+TRAVEL_SYSTEMS="0x8fa2df40a28c2ffb7a99267c1a67318451da3a5d39cadb18577a2d09856b0e"
+TEST_REALM_SYSTEMS="0x141b54c5560368787c28e61f9c9542e3aaf26a3f426263cb0dcde36339eec30"
+TEST_RESOURCE_SYSTEMS="0x5e2e8d20bc9f4c02050b2b6b7442a1ce06bbd9c0729716a7c5a478069c9b354"
+COMBAT_SYSTEMS="0x778fd3e137dc0e58d94d599167aa431332b8529f9bfc8efd70a7ea4e9c74247"
 
 resource_precision=1000
 
@@ -47,12 +49,45 @@ commands=(
 
 )
 
+
+### SOLDIERS CONFIG ###
+commands+=(
+    ## soldier weight 
+    ## 80 kg = 80000 gr
+    "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999994,80000"
+
+    ## soldier capacity
+    "sozo execute $CONFIG_SYSTEMS set_capacity_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999994,$((100 * resource_precision))"
+
+    ## soldier speed
+    ## 800 sec per km = 4.5 km/h
+    "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999994,800"
+
+    ## soldier cost
+    ## 10 silver (6)
+    ## 1000 wheat (254)
+    ## 1000 fish (255)
+    "sozo execute $CONFIG_SYSTEMS set_soldier_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,3,6,10000,254,1000000,255,1000000"
+
+    ## soldier health
+    ## 10 
+    "sozo execute $CONFIG_SYSTEMS set_health_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999994,10"
+
+    ## soldier attack
+    ## 10 
+    "sozo execute $CONFIG_SYSTEMS set_attack_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999994,10"
+
+    ## soldier defence
+    ## 10 
+    "sozo execute $CONFIG_SYSTEMS set_defence_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999994,10"
+)
+
 ### WEIGHT ###
 # Loop for resource types 1 to 28
 for resource_type in {1..28}
 do
     commands+=(
-        # 1 g per resource
+        # 1 g per 1/1000th of a resource (resource precision = 1000)
         "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,$resource_type,1"
     )
 done
