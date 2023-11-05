@@ -29,7 +29,6 @@ import {
 import { Call } from "starknet";
 import { DEV_CONTRACTS, PROD_CONTRACTS } from "../constants";
 
-// const UUID_OFFSET_CREATE_ORDER = 3;
 const UUID_OFFSET_CREATE_CARAVAN = 2;
 
 export class EternumProvider extends RPCProvider {

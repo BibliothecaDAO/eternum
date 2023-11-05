@@ -1,12 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Tabs } from "../../../elements/tab";
-import { CaravansPanel } from "./trade/Caravans/CaravansPanel";
-import { MarketPanel } from "./trade/Market/MarketPanel";
-import { MyOffersPanel } from "./trade/MyOffers/MyOffersPanel";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useRoute, useLocation } from "wouter";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { RoadsPanel } from "./trade/Roads/RoadsPanel";
+import { BattalionsPanel } from "./combat/battalions/BattalionsPanel";
 
 export type Order = {
   orderId: number;
@@ -47,7 +44,7 @@ export const RealmCombatComponent = ({}: RealmTradeComponentProps) => {
   const tabs = useMemo(
     () => [
       {
-        key: "attack",
+        key: "raids",
         label: (
           <div
             onMouseEnter={() =>
@@ -63,13 +60,35 @@ export const RealmCombatComponent = ({}: RealmTradeComponentProps) => {
             onMouseLeave={() => setTooltip(null)}
             className="flex relative group flex-col items-center"
           >
-            <div>Attack</div>
+            <div>Raids</div>
           </div>
         ),
         component: <div></div>,
       },
       {
-        key: "defend",
+        key: "battalions",
+        label: (
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Check your Raiders</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex relative group flex-col items-center"
+          >
+            <div>Battalions</div>
+          </div>
+        ),
+        component: <BattalionsPanel />,
+      },
+      {
+        key: "defence",
         label: (
           <div
             onMouseEnter={() =>
@@ -85,7 +104,7 @@ export const RealmCombatComponent = ({}: RealmTradeComponentProps) => {
             onMouseLeave={() => setTooltip(null)}
             className="flex relative group flex-col items-center"
           >
-            <div>Defend</div>
+            <div>Defence</div>
           </div>
         ),
         component: <div></div>,
