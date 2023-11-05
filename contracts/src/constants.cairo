@@ -12,7 +12,7 @@ const BUILDING_CONFIG_ID: u128 = 999999999999999998;
 const LABOR_CONFIG_ID: u128 = 999999999999999997;
 const TRANSPORT_CONFIG_ID: u128 = 999999999999999996;
 const ROAD_CONFIG_ID: u128 = 999999999999999995;
-const SOLDIER_CONFIG_ID: u128 = 999999999999999994;
+const COMBAT_CONFIG_ID: u128 = 999999999999999994;
 
 // 8 bits
 const RESOURCE_IDS_PACKED_SIZE: usize = 8_usize;
@@ -57,8 +57,8 @@ mod ResourceTypes {
 fn get_zipped_resource_probabilities() -> Span<(u8, u128)> {
 
     return array![
-        (ResourceTypes::WOOD, 8900),
-        (ResourceTypes::STONE, 1000),
+        (ResourceTypes::WOOD, 300),
+        (ResourceTypes::STONE, 600),
         (ResourceTypes::COAL, 200),
         (ResourceTypes::COPPER, 100),
         (ResourceTypes::OBSIDIAN, 100),
@@ -117,6 +117,7 @@ fn get_unzipped_resource_probabilities() -> (Span<u8>, Span<u128>) {
 // Using FREE_TRANSPORT_ENTITY_TYPE I can look up the speed and capacity of that entity when creating it
 const FREE_TRANSPORT_ENTITY_TYPE: u128 = 256;
 const REALM_ENTITY_TYPE: u128 = 257;
+const SOLDIER_ENTITY_TYPE: u128 = 258;
 
 
 // TODO: change to consts

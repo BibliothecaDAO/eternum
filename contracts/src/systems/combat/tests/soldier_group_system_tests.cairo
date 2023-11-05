@@ -39,7 +39,7 @@ use eternum::systems::combat::interface::{
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
 use eternum::constants::ResourceTypes;
-use eternum::constants::SOLDIER_CONFIG_ID;
+use eternum::constants::SOLDIER_ENTITY_TYPE;
 
 use dojo::world::{ IWorldDispatcher, IWorldDispatcherTrait};
 
@@ -70,25 +70,25 @@ fn setup() -> (IWorldDispatcher, u128, Span<u128>, ISoldierSystemsDispatcher) {
 
     // set soldiers starting attack, defence and health
     combat_config_dispatcher.set_attack_config(
-        world, SOLDIER_CONFIG_ID, 100
+        world, SOLDIER_ENTITY_TYPE, 100
     );
     combat_config_dispatcher.set_defence_config(
-        world, SOLDIER_CONFIG_ID, 100
+        world, SOLDIER_ENTITY_TYPE, 100
     );
     combat_config_dispatcher.set_health_config(
-        world, SOLDIER_CONFIG_ID, 100
+        world, SOLDIER_ENTITY_TYPE, 100
     );
 
     // set soldier speed configuration 
     ITransportConfigDispatcher {
         contract_address: config_systems_address
-    }.set_speed_config(world, SOLDIER_CONFIG_ID, 55); // 10km per sec
+    }.set_speed_config(world, SOLDIER_ENTITY_TYPE, 55); // 10km per sec
     
 
     // set soldier carry capacity configuration 
     ICapacityConfigDispatcher {
         contract_address: config_systems_address
-    }.set_capacity_config(world, SOLDIER_CONFIG_ID, 44); 
+    }.set_capacity_config(world, SOLDIER_ENTITY_TYPE, 44); 
 
 
 

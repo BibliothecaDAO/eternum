@@ -4,14 +4,14 @@ use eternum::models::config::{
     SpeedConfig, WeightConfig, CapacityConfig, 
     SoldierConfig, HealthConfig, AttackConfig, DefenceConfig
 };
-use eternum::models::movable::{Movable};
+use eternum::models::movable::{Movable, ArrivalTime};
 use eternum::models::inventory::Inventory;
 use eternum::models::capacity::Capacity;
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::quantity::{Quantity, QuantityTrait};    
 use eternum::models::combat::{
     Attack, AttackTrait, 
-    Health, Defence
+    Health, Defence, Duty, TownWatch
 };
 
 use eternum::systems::config::contracts::config_systems;
@@ -39,7 +39,7 @@ use eternum::systems::combat::interface::{
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
 use eternum::constants::ResourceTypes;
-use eternum::constants::SOLDIER_CONFIG_ID;
+use eternum::constants::SOLDIER_ENTITY_TYPE;
 
 use dojo::world::{ IWorldDispatcher, IWorldDispatcherTrait};
 
@@ -49,7 +49,7 @@ use core::array::{ArrayTrait, SpanTrait};
 use core::traits::Into;
 
 
-fn setup() -> (IWorldDispatcher, u128, ISoldierSystemsDispatcher) {
+fn setup(duty: Duty) -> (IWorldDispatcher, u128, u128, ISoldierSystemsDispatcher) {
     let world = spawn_eternum();
 
     let config_systems_address 
@@ -70,27 +70,25 @@ fn setup() -> (IWorldDispatcher, u128, ISoldierSystemsDispatcher) {
 
     // set soldiers starting attack, defence and health
     combat_config_dispatcher.set_attack_config(
-        world, SOLDIER_CONFIG_ID, 100
+        world, SOLDIER_ENTITY_TYPE, 100
     );
     combat_config_dispatcher.set_defence_config(
-        world, SOLDIER_CONFIG_ID, 100
+        world, SOLDIER_ENTITY_TYPE, 100
     );
     combat_config_dispatcher.set_health_config(
-        world, SOLDIER_CONFIG_ID, 100
+        world, SOLDIER_ENTITY_TYPE, 100
     );
 
     // set soldier speed configuration 
     ITransportConfigDispatcher {
         contract_address: config_systems_address
-    }.set_speed_config(world, SOLDIER_CONFIG_ID, 55); // 10km per sec
+    }.set_speed_config(world, SOLDIER_ENTITY_TYPE, 55); // 10km per sec
     
 
     // set soldier carry capacity configuration 
     ICapacityConfigDispatcher {
         contract_address: config_systems_address
-    }.set_capacity_config(world, SOLDIER_CONFIG_ID, 44); 
-
-
+    }.set_capacity_config(world, SOLDIER_ENTITY_TYPE, 44); 
 
 
 
@@ -137,9 +135,27 @@ fn setup() -> (IWorldDispatcher, u128, ISoldierSystemsDispatcher) {
     let soldier_systems_dispatcher = ISoldierSystemsDispatcher {
         contract_address: combat_systems_address
     };
+
+    // buy 2 soldiers
+    let num_soldiers_bought = 2;
+    let soldier_ids: Span<u128>
+        = soldier_systems_dispatcher.create_soldiers(
+            world, caller_id, num_soldiers_bought
+        );
+
+    
+    // deploy soldiers with duty
+    let group_id 
+        = soldier_systems_dispatcher
+            .group_and_deploy_soldiers(
+                world, caller_id, 
+                soldier_ids, 
+                duty
+            );
+
     
 
-    (world, caller_id, soldier_systems_dispatcher) 
+    (world, caller_id, group_id, soldier_systems_dispatcher) 
 
 }
 
@@ -149,38 +165,52 @@ fn setup() -> (IWorldDispatcher, u128, ISoldierSystemsDispatcher) {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_create_soldier() {
+fn test_ungroup_soldiers() {
 
-    let (world, caller_id, soldier_systems_dispatcher) = setup();
+    let (world, caller_id, group_id, soldier_systems_dispatcher) 
+        = setup(Duty::Attack);
 
     starknet::testing::set_contract_address(
         contract_address_const::<'caller'>()
     );
 
-    // buy x soldiers
-    let num_soldiers_bought = 2;
-    let mut soldier_ids: Span<u128>
-        = soldier_systems_dispatcher.create_soldiers(
-            world, caller_id, num_soldiers_bought
-        );
+    // get group position before it is deleted
+    let group_position = get!(world, group_id, Position);
 
-    assert(soldier_ids.len().into() == num_soldiers_bought, 'wrong num soldiers');
+    // ungroup soldiers 
+    let mut soldier_ids
+        = soldier_systems_dispatcher
+            .ungroup_soldiers(world, group_id);
+    assert(soldier_ids.len() == 2, 'wrong num soldiers');
 
-    // check that payment works correctly
-    let caller_wheat_resource = get!(world, (caller_id, ResourceTypes::WHEAT), Resource);
-    assert(caller_wheat_resource.balance == 5000 - 40 * num_soldiers_bought, 'wrong wheat balance');
+    // ensure group is deleted by checking some of its components
 
-    let caller_wood_resource = get!(world, (caller_id, ResourceTypes::WOOD), Resource);
-    assert(caller_wood_resource.balance == 5000 - 40 * num_soldiers_bought, 'wrong wood balance');
+    let group_owner = get!(world, group_id, Owner);
+    let group_quantity = get!(world, group_id, Quantity);
+    let group_health = get!(world, group_id, Health);
+    assert(
+        group_owner.address == Zeroable::zero(), 
+            'wrong owner'
+    );
 
+    assert(
+        group_quantity.value == 0, 
+            'wrong quantity'
+    );
 
-    let caller_position = get!(world, caller_id, Position);
+    assert(
+        group_health.value == 0, 
+            'wrong health'
+    );
+
+    // ensure individual soldiers are created
 
     loop {
         match soldier_ids.pop_front() {
             Option::Some(soldier_id) => {
+             
                 
-                let soldier_id = * soldier_id;
+                let soldier_id = *soldier_id;
                 let soldier_owner = get!(world, soldier_id, Owner);
                 assert(
                     soldier_owner.address == contract_address_const::<'caller'>(), 
@@ -207,8 +237,8 @@ fn test_create_soldier() {
 
                 let soldier_position = get!(world, soldier_id, Position);
                 assert(
-                        soldier_position.x == caller_position.x 
-                            && soldier_position.y == caller_position.y,
+                        soldier_position.x == group_position.x 
+                            && soldier_position.y == group_position.y,
                                 'wrong position'
                 );
 
@@ -230,47 +260,172 @@ fn test_create_soldier() {
 
             Option::None => {break;}
         };
-    };
+    };  
 }
+
+
 
 
 #[test]
 #[available_gas(3000000000000)]
-#[should_panic(expected: ('not realm owner','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected: ('not group owner','ENTRYPOINT_FAILED' ))]
 fn test_not_owner() {
 
-    let (world, caller_id, soldier_systems_dispatcher) = setup();
+    let (world, caller_id, group_id, soldier_systems_dispatcher) 
+        = setup(Duty::Attack);
 
     // set unknown caller
     starknet::testing::set_contract_address(
         contract_address_const::<'unknown'>()
     );
 
-    // try to buy soldiers
-    let num_soldiers_bought = 5;
-    soldier_systems_dispatcher.create_soldiers(
-        world, caller_id, num_soldiers_bought
-    );
+    soldier_systems_dispatcher
+        .ungroup_soldiers(world, group_id);
 }
 
 
 
 #[test]
 #[available_gas(3000000000000)]
-#[should_panic(expected: ('not a realm','ENTRYPOINT_FAILED' ))]
-fn test_not_realm() {
+#[should_panic(expected: ('group is dead','ENTRYPOINT_FAILED' ))]
+fn test_group_dead() {
 
-    let (world, _, soldier_systems_dispatcher) = setup();
+    let (world, caller_id, group_id, soldier_systems_dispatcher) 
+        = setup(Duty::Attack);
 
-    let caller_id = 99999;
+    // set group health to 0
+    starknet::testing::set_contract_address(world.executor());
+    set!(world, (
+        Health { 
+            entity_id: group_id, 
+            value: 0 
+        }
+    ));
+
+
     starknet::testing::set_contract_address(
         contract_address_const::<'caller'>()
     );
 
-    // try to buy soldiers
-    let num_soldiers_bought = 5;
-    soldier_systems_dispatcher.create_soldiers(
-        world, caller_id, num_soldiers_bought
-    );
+    soldier_systems_dispatcher
+        .ungroup_soldiers(world, group_id);
+
 }
+
+
+#[test]
+#[available_gas(3000000000000)]
+#[should_panic(expected: ('not a group','ENTRYPOINT_FAILED' ))]
+fn test_single_soldier_ungroup() {
+    
+        let (world, caller_id, group_id, soldier_systems_dispatcher) 
+            = setup(Duty::Attack);
+
+        starknet::testing::set_contract_address(world.executor());
+        set!(world, (
+            Quantity { 
+                entity_id: group_id, 
+                value: 1
+            }
+        ));
+    
+
+        starknet::testing::set_contract_address(
+            contract_address_const::<'caller'>()
+        );
+
+        // ungroup soldiers 
+        soldier_systems_dispatcher
+            .ungroup_soldiers(world, group_id);
+    
+}
+
+
+#[test]
+#[available_gas(3000000000000)]
+#[should_panic(expected: ('group is blocked','ENTRYPOINT_FAILED' ))]
+fn test_group_movable_blocked() {
+        
+    let (world, caller_id, group_id, soldier_systems_dispatcher) 
+        = setup(Duty::Attack);
+
+    starknet::testing::set_contract_address(world.executor());
+    set!(world, (
+        Movable { 
+            entity_id: group_id, 
+            blocked: true,
+            sec_per_km: 55,
+            round_trip: false,
+            intermediate_coord_x: 0,
+            intermediate_coord_y: 0
+        }
+    ));
+
+    starknet::testing::set_contract_address(
+        contract_address_const::<'caller'>()
+    );
+
+    // ungroup soldiers 
+    soldier_systems_dispatcher
+        .ungroup_soldiers(world, group_id);
+    
+}
+
+
+#[test]
+#[available_gas(3000000000000)]
+#[should_panic(expected: ('group is travelling','ENTRYPOINT_FAILED' ))]
+fn test_group_travelling() {
+            
+    let (world, caller_id, group_id, soldier_systems_dispatcher) 
+        = setup(Duty::Attack);
+
+    starknet::testing::set_contract_address(world.executor());
+    set!(world, (
+        ArrivalTime {
+            entity_id: group_id,
+            arrives_at: 1
+        }
+    ));
+
+    starknet::testing::set_contract_address(
+        contract_address_const::<'caller'>()
+    );
+
+    // ungroup soldiers 
+    soldier_systems_dispatcher
+        .ungroup_soldiers(world, group_id);
+    
+}
+        
+
+
+#[test]
+#[available_gas(3000000000000)]
+#[should_panic(expected: ('group inventory not empty','ENTRYPOINT_FAILED' ))]
+fn test_group_has_items_in_inventory() {
+            
+    let (world, caller_id, group_id, soldier_systems_dispatcher) 
+        = setup(Duty::Attack);
+
+    starknet::testing::set_contract_address(world.executor());
+    set!(world, (
+        Inventory {
+            entity_id: group_id,
+            items_key: 1,
+            items_count: 1
+        }
+    ));
+
+    starknet::testing::set_contract_address(
+        contract_address_const::<'caller'>()
+    );
+
+    // ungroup soldiers 
+    soldier_systems_dispatcher
+        .ungroup_soldiers(world, group_id);
+    
+}
+        
+
 
