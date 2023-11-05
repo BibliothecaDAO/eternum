@@ -22,6 +22,11 @@ import {
   TransferResourcesProps,
   TravelProps,
   OffloadResourcesProps,
+  CreateSoldiersProps,
+  GroupAndDeploySoldiersProps,
+  UngroupSoldiersProps,
+  AttackProps,
+  StealProps,
 } from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -116,7 +121,32 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.travel(props)));
   };
 
+  const create_soldiers = async (props: CreateSoldiersProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.create_soldiers(props)));
+  };
+
+  const group_and_deploy_soldiers = async (props: GroupAndDeploySoldiersProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.group_and_deploy_soldiers(props)));
+  };
+
+  const ungroup_soldiers = async (props: UngroupSoldiersProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.ungroup_soldiers(props)));
+  };
+
+  const attack = async (props: AttackProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.attack(props)));
+  };
+
+  const steal = async (props: StealProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.steal(props)));
+  };
+
   return {
+    create_soldiers,
+    group_and_deploy_soldiers,
+    ungroup_soldiers,
+    attack,
+    steal,
     purchase_labor,
     build_labor,
     purchase_and_build_labor,

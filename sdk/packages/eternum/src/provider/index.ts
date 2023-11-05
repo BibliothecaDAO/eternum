@@ -20,6 +20,11 @@ import {
   TransferResourcesProps,
   TravelProps,
   OffloadResourcesProps,
+  CreateSoldiersProps,
+  GroupAndDeploySoldiersProps,
+  UngroupSoldiersProps,
+  AttackProps,
+  StealProps,
 } from "../types";
 import { Call } from "starknet";
 import { DEV_CONTRACTS, PROD_CONTRACTS } from "../constants";
@@ -499,6 +504,66 @@ export class EternumProvider extends RPCProvider {
       contractAddress: this.contracts.TRAVEL_SYSTEMS,
       entrypoint: "travel",
       calldata: [this.contracts.WORLD_ADDRESS, travelling_entity_id, destination_coord_x, destination_coord_y],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async create_soldiers(props: CreateSoldiersProps) {
+    const { realm_entity_id, quantity, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: this.contracts.COMBAT_SYSTEMS,
+      entrypoint: "create_soldiers",
+      calldata: [this.contracts.WORLD_ADDRESS, realm_entity_id, quantity],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async group_and_deploy_soldiers(props: GroupAndDeploySoldiersProps) {
+    const { realm_entity_id, soldier_ids, duty, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: this.contracts.COMBAT_SYSTEMS,
+      entrypoint: "group_and_deploy_soldiers",
+      calldata: [this.contracts.WORLD_ADDRESS, realm_entity_id, soldier_ids, duty],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async ungroup_soldiers(props: UngroupSoldiersProps) {
+    const { group_id, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: this.contracts.COMBAT_SYSTEMS,
+      entrypoint: "ungroup_soldiers",
+      calldata: [this.contracts.WORLD_ADDRESS, group_id],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async attack(props: AttackProps) {
+    const { attacker_id, target_id, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: this.contracts.COMBAT_SYSTEMS,
+      entrypoint: "attack",
+      calldata: [this.contracts.WORLD_ADDRESS, attacker_id, target_id],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async steal(props: StealProps) {
+    const { attacker_id, target_id, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: this.contracts.COMBAT_SYSTEMS,
+      entrypoint: "steal",
+      calldata: [this.contracts.WORLD_ADDRESS, attacker_id, target_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
