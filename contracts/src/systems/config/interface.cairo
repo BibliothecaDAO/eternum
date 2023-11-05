@@ -28,6 +28,38 @@ trait ICapacityConfig<TContractState> {
     );
 }
 
+
+#[starknet::interface]
+trait ICombatConfig<TContractState> {
+    fn set_soldier_config(
+        self: @TContractState, 
+        world: IWorldDispatcher, 
+        resource_costs: Span<(u8, u128)>
+    );
+
+    fn set_health_config(
+        self: @TContractState, 
+        world: IWorldDispatcher, 
+        config_id: u128, 
+        value: u128
+    );
+
+    fn set_attack_config(
+        self: @TContractState, 
+        world: IWorldDispatcher, 
+        config_id: u128, 
+        value: u128
+    );
+
+    fn set_defence_config(
+        self: @TContractState, 
+        world: IWorldDispatcher, 
+        config_id: u128, 
+        value: u128
+    );
+}
+
+
 #[starknet::interface]
 trait ILaborConfig<TContractState> {
     fn set_labor_cost_resources(

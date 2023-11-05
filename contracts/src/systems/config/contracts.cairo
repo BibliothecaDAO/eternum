@@ -6,15 +6,17 @@ mod config_systems {
     use eternum::models::config::{
         LaborCostResources, LaborCostAmount, LaborConfig,CapacityConfig, 
         RoadConfig, SpeedConfig, TravelConfig, WeightConfig,WorldConfig,
+        SoldierConfig, HealthConfig, AttackConfig, DefenceConfig
     };
 
     use eternum::systems::config::interface::{
         IWorldConfig, IWeightConfig, ICapacityConfig, ILaborConfig, 
-        ITransportConfig, IHyperstructureConfig
+        ITransportConfig, IHyperstructureConfig, ICombatConfig
     };
 
     use eternum::constants::{
-        WORLD_CONFIG_ID, LABOR_CONFIG_ID, TRANSPORT_CONFIG_ID, ROAD_CONFIG_ID
+        WORLD_CONFIG_ID, LABOR_CONFIG_ID, TRANSPORT_CONFIG_ID,
+        ROAD_CONFIG_ID, SOLDIER_CONFIG_ID
     };
 
     use eternum::models::hyperstructure::HyperStructure;
@@ -81,6 +83,91 @@ mod config_systems {
         }
     }
 
+
+    
+    #[external(v0)]
+    impl CombatConfigImpl of ICombatConfig<ContractState> {
+        fn set_soldier_config(
+            self: @ContractState, 
+            world: IWorldDispatcher, 
+            resource_costs: Span<(u8, u128)>
+        ) {
+            let resource_cost_id = world.uuid().into();
+            let mut index = 0;
+            loop {
+               
+                if index == resource_costs.len() {
+                    break;
+                }
+                let (resource_type, resource_amount) 
+                    = *resource_costs.at(index);
+                set!(world, (
+                    ResourceCost {
+                        entity_id: resource_cost_id,
+                        index,
+                        resource_type,
+                        amount: resource_amount
+                    }
+                ));
+
+                index += 1;
+            };
+            set!(
+                world,
+                (SoldierConfig {
+                    config_id: SOLDIER_CONFIG_ID,
+                    resource_cost_id,
+                    resource_cost_count: resource_costs.len()
+                })
+            );
+        }
+
+        fn set_health_config(
+            self: @ContractState, 
+            world: IWorldDispatcher, 
+            config_id: u128, 
+            value: u128
+        ) {
+            set!(
+                world,
+                (HealthConfig {
+                    config_id,
+                    value
+                })
+            );
+        }
+
+        fn set_attack_config(
+            self: @ContractState, 
+            world: IWorldDispatcher, 
+            config_id: u128, 
+            value: u128
+        ) {
+            set!(
+                world,
+                (AttackConfig {
+                    config_id,
+                    value
+                })
+            );
+        }
+
+
+        fn set_defence_config(
+            self: @ContractState, 
+            world: IWorldDispatcher, 
+            config_id: u128, 
+            value: u128
+        ) {
+            set!(
+                world,
+                (DefenceConfig {
+                    config_id,
+                    value
+                })
+            );
+        }
+    }
 
 
 
