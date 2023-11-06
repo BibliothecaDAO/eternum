@@ -14,6 +14,10 @@ export interface CombatInfo {
   sec_per_km?: number;
   blocked?: boolean;
   capacity?: number;
+  arrivalTime?: number;
+  position?: Position;
+  homePosition?: Position;
+  entityOwnerId?: number;
 }
 
 export function useCombat() {
@@ -57,6 +61,11 @@ export function useCombat() {
       const movable = getComponentValue(Movable, entityIndex);
       const capacity = getComponentValue(Capacity, entityIndex);
       const arrivalTime = getComponentValue(ArrivalTime, entityIndex);
+      const position = getComponentValue(Position, entityIndex);
+      const entityOwner = getComponentValue(EntityOwner, entityIndex);
+      const homePosition = entityOwner
+        ? getComponentValue(Position, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]))
+        : undefined;
 
       return {
         entityId,
@@ -68,6 +77,9 @@ export function useCombat() {
         blocked: movable?.blocked,
         capacity: capacity?.weight_gram,
         arrivalTime: arrivalTime?.arrives_at,
+        position,
+        entityOwnerId: entityOwner?.entity_owner_id,
+        homePosition,
       };
     });
   };
