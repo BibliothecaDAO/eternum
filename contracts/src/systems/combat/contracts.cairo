@@ -5,7 +5,7 @@ mod combat_systems {
     use eternum::models::resources::{Resource, ResourceCost};
     use eternum::models::position::{Position};
     use eternum::models::config::{
-        SpeedConfig, WeightConfig, CapacityConfig, 
+        SpeedConfig, WeightConfig, CapacityConfig, CombatConfig,
         SoldierConfig, HealthConfig, AttackConfig, DefenceConfig
     };
     use eternum::models::movable::{Movable, ArrivalTime};
@@ -34,7 +34,7 @@ mod combat_systems {
     };
 
     use eternum::constants::{
-        WORLD_CONFIG_ID, SOLDIER_CONFIG_ID,
+        WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE, COMBAT_CONFIG_ID,
         get_unzipped_resource_probabilities
     };
 
@@ -74,7 +74,7 @@ mod combat_systems {
 
             // check that realm has enough resources to pay for the soldiers
 
-            let soldier_config: SoldierConfig = get!(world, SOLDIER_CONFIG_ID, SoldierConfig);
+            let soldier_config: SoldierConfig = get!(world, SOLDIER_ENTITY_TYPE, SoldierConfig);
             let mut index = 0;
             let mut soldier_ids = array![];
             loop {
@@ -101,15 +101,15 @@ mod combat_systems {
             let realm_position = get!(world, realm_entity_id, Position);
 
             let soldier_carry_capacity 
-                =  get!(world, (WORLD_CONFIG_ID, SOLDIER_CONFIG_ID), CapacityConfig).weight_gram;
+                =  get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), CapacityConfig).weight_gram;
             let soldier_speed 
-                = get!(world, (WORLD_CONFIG_ID, SOLDIER_CONFIG_ID), SpeedConfig).sec_per_km; 
+                = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), SpeedConfig).sec_per_km; 
             let soldier_health_value
-                = get!(world, SOLDIER_CONFIG_ID, HealthConfig).value;
+                = get!(world, SOLDIER_ENTITY_TYPE, HealthConfig).value;
             let soldier_attack_value
-                = get!(world, SOLDIER_CONFIG_ID, AttackConfig).value;
+                = get!(world, SOLDIER_ENTITY_TYPE, AttackConfig).value;
             let soldier_defense_value
-                = get!(world, SOLDIER_CONFIG_ID, DefenceConfig).value;
+                = get!(world, SOLDIER_ENTITY_TYPE, DefenceConfig).value;
 
 
             let mut index = 0;
@@ -282,51 +282,8 @@ mod combat_systems {
                 total_health += soldier_health.value.into();
                 total_quantity += soldier_quantity.value.into();
 
-
                 // delete soldier
-                set!(world, (
-                    Owner {
-                        entity_id: soldier_id,
-                        address: Zeroable::zero()
-                    },
-                    EntityOwner {
-                        entity_id: soldier_id,
-                        entity_owner_id: 0
-                    },
-                    Health {
-                        entity_id: soldier_id,
-                        value: 0
-                    },
-                    Attack {
-                        entity_id: soldier_id,
-                        value: 0
-                    },
-                    Defence {
-                        entity_id: soldier_id,
-                        value: 0
-                    },
-                    Quantity {
-                        entity_id: soldier_id,
-                        value: 0
-                    },
-                    Position {
-                        entity_id: soldier_id,
-                        x: 0,
-                        y: 0
-                    },
-                    Movable {
-                        entity_id: soldier_id, 
-                        sec_per_km: 0,
-                        blocked: false,
-                        round_trip: false,
-                        intermediate_coord_x: 0,  
-                        intermediate_coord_y: 0,  
-                    },
-                    ArrivalTime {
-                        entity_id: soldier_id,
-                        arrives_at: 0 
-                    },
-                ));
+                InternalSoldierSystemsImpl::delete(world, soldier_id);
 
                 index += 1;
             };
@@ -344,7 +301,7 @@ mod combat_systems {
                         // raider speed is the avaerage speed of all soldiers
                         let raider_speed = (total_speed / total_quantity).try_into().unwrap();
                         let raider_capacity = 
-                            get!(world, (WORLD_CONFIG_ID, SOLDIER_CONFIG_ID), CapacityConfig).weight_gram;
+                            get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), CapacityConfig).weight_gram;
 
                         set!(world, (
                             Inventory {
@@ -486,9 +443,9 @@ mod combat_systems {
             let soldier_individual_attack = group_attack.value / group_quantity.value;
             let soldier_individual_defense = group_defense.value / group_quantity.value;
             let soldier_individual_speed   
-                = get!(world, (WORLD_CONFIG_ID, SOLDIER_CONFIG_ID), SpeedConfig).sec_per_km;
+                = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), SpeedConfig).sec_per_km;
             let soldier_individual_carry_capacity 
-                =  get!(world, (WORLD_CONFIG_ID, SOLDIER_CONFIG_ID), CapacityConfig).weight_gram;
+                =  get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), CapacityConfig).weight_gram;
  
             let mut index = 0;
 
@@ -556,12 +513,64 @@ mod combat_systems {
 
                 index += 1;
             };
+
+            // delete group
+
+            InternalSoldierSystemsImpl::delete(world, group_id);
     
             soldier_ids.span()
         }
 
     }
 
+    #[generate_trait]
+    impl InternalSoldierSystemsImpl of InternalSoldierSystemsTrait {
+        fn delete(world: IWorldDispatcher, unit_id: u128 ){
+            set!(world, (
+                    Owner {
+                        entity_id: unit_id,
+                        address: Zeroable::zero()
+                    },
+                    EntityOwner {
+                        entity_id: unit_id,
+                        entity_owner_id: 0
+                    },
+                    Health {
+                        entity_id: unit_id,
+                        value: 0
+                    },
+                    Attack {
+                        entity_id: unit_id,
+                        value: 0
+                    },
+                    Defence {
+                        entity_id: unit_id,
+                        value: 0
+                    },
+                    Quantity {
+                        entity_id: unit_id,
+                        value: 0
+                    },
+                    Position {
+                        entity_id: unit_id,
+                        x: 0,
+                        y: 0
+                    },
+                    Movable {
+                        entity_id: unit_id, 
+                        sec_per_km: 0,
+                        blocked: false,
+                        round_trip: false,
+                        intermediate_coord_x: 0,  
+                        intermediate_coord_y: 0,  
+                    },
+                    ArrivalTime {
+                        entity_id: unit_id,
+                        arrives_at: 0 
+                    },
+                ))
+        }
+    }
 
 
     #[external(v0)]
@@ -646,13 +655,16 @@ mod combat_systems {
 
         fn steal(
             self: @ContractState, world: IWorldDispatcher,
-            attacker_id: u128, target_id: u128
+            attacker_id: u128, target_realm_entity_id: u128
         ) {
+            // check that target is a realm
+            let target_realm = get!(world, target_realm_entity_id, Realm);
+            assert(target_realm.realm_id != 0, 'target not realm');
 
             let caller = starknet::get_caller_address();
 
             let attacker_owner = get!(world, attacker_id, Owner);
-            assert(attacker_owner.address == caller, 'no attacker owner');
+            assert(attacker_owner.address == caller, 'not attacker owner');
                                     
             let mut attacker_health = get!(world, attacker_id, Health);
             assert(attacker_health.value > 0, 'attacker is dead');
@@ -663,26 +675,31 @@ mod combat_systems {
                     'attacker is travelling'
             );
 
+
+         
             
             let attacker_position = get!(world, attacker_id, Position);
-            let target_position = get!(world, target_id, Position);
+            let target_realm_position = get!(world, target_realm_entity_id, Position);
 
             assert(
-                attacker_position.x == target_position.x
-                    && attacker_position.y == target_position.y,
+                attacker_position.x == target_realm_position.x
+                    && attacker_position.y == target_realm_position.y,
                         'position mismatch'
             );
             
 
             let attacker_attack = get!(world, attacker_id, Attack);
             let attacker_defence = get!(world, attacker_id, Defence);
+            
+            let target_town_watch_id 
+                = get!(world, target_realm_entity_id, TownWatch).town_watch_id;
 
-            let target_attack = get!(world, target_id, Attack);
-            let target_defense = get!(world, target_id, Defence);
+            let target_town_watch_attack = get!(world, target_town_watch_id, Attack);
+            let target_town_watch_defense = get!(world, target_town_watch_id, Defence);
 
             let attack_success_probability 
                 = attacker_attack
-                    .get_success_probability(target_defense.value);
+                    .get_success_probability(target_town_watch_defense.value);
 
 
             let attack_successful: bool = *random::choices(
@@ -707,24 +724,32 @@ mod combat_systems {
                 let mut attacker_remaining_weight 
                     = attacker_total_weight_capacity - attacker_current_weight; 
 
-                let trials = 5;
-                let mut index = 0;
                 let (resource_types, resource_type_probabilities) 
                     = get_unzipped_resource_probabilities();
+
+                let mut index = 0;
+
+                // here we choose x number of resources (with replacement)
+                // that the attacker can get away with 
+                let combat_config = get!(world, COMBAT_CONFIG_ID, CombatConfig);
+                let chosen_resource_types: Span<u8> = random::choices(
+                    resource_types, resource_type_probabilities, 
+                    array![].span(), combat_config.stealing_trial_count.into()
+                );
+
                 loop {
-                    if index == trials {
+
+                    if index == chosen_resource_types.len() {
                         break;
                     }
 
-                    let resource_type: u8 = *random::choices(
-                        resource_types, resource_type_probabilities, 
-                        array![].span(), 1
-                    )[0];
+                    let resource_type: u8 = *chosen_resource_types.at(index);
 
                     let resource_weight 
                         = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig).weight_gram;
 
-                    let target_resource = get!(world, (target_id, resource_type), Resource);
+                    let target_resource 
+                        = get!(world, (target_realm_entity_id, resource_type), Resource);
                     let target_resource_weight = resource_weight * target_resource.balance;
 
                     if target_resource_weight > 0 {
@@ -759,7 +784,7 @@ mod combat_systems {
                             stolen_resource_types.span(), stolen_resource_amounts.span()
                         );
                     InternalResourceChestSystemsImpl::fill(
-                        world, attacker_resource_chest.entity_id, target_id
+                        world, attacker_resource_chest.entity_id, target_realm_entity_id
                     );
 
                     // add the resource chest to the attacker's inventory
@@ -779,7 +804,7 @@ mod combat_systems {
                 // get damage to attacker based on the target's attack value 
                 let salt: u128 = starknet::get_block_timestamp().into();
                 let damage_percent = random::random(salt, 100 + 1 );
-                let damage = (target_attack.value * damage_percent) / 100;
+                let damage = (target_town_watch_attack.value * damage_percent) / 100;
 
                 attacker_health.value -= min(damage, attacker_health.value);
                 set!(world, (attacker_health));

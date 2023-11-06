@@ -61,6 +61,6 @@ trait ICombatSystems<TContractState> {
     );
     fn steal( 
             self: @TContractState, world: IWorldDispatcher, 
-            attacker_id:u128, target_id: u128
+            attacker_id:u128, target_realm_entity_id: u128
     );
 }
