@@ -1,36 +1,32 @@
 import { useEffect, useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
 import Button from "../../../../../elements/Button";
-import { Headline } from "../../../../../elements/Headline";
-import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../../elements/NumberInput";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../DojoContext";
 import { getComponentValue } from "@latticexyz/recs";
-import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
+import { getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
-import * as realmsData from "../../../../../geodata/realms.json";
-import { Duty, ROAD_COST_PER_USAGE } from "@bibliothecadao/eternum";
+import { Duty } from "@bibliothecadao/eternum";
 import { getResourceCost } from "../../../../../utils/combat";
-import { useCombat } from "../../../../../hooks/helpers/useCombat";
+import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
 
 type RoadBuildPopupProps = {
-  //   toEntityId: number;
+  selectedRaiders: CombatInfo;
   onClose: () => void;
 };
 
-export const CreateRaidsPopup = ({ onClose }: RoadBuildPopupProps) => {
+export const ManageRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupProps) => {
   const {
     setup: {
-      components: { Resource },
-      systemCalls: { group_and_deploy_soldiers },
+      systemCalls: { ungroup_and_regroup_soldiers },
     },
     account: { account },
   } = useDojo();
 
-  const [canBuild, setCanBuild] = useState(true);
+  //   const [canBuild, setCanBuild] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [soldierAmount, setSoldierAmount] = useState(2);
+  const [soldierAmount, setSoldierAmount] = useState(0);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
@@ -45,41 +41,50 @@ export const CreateRaidsPopup = ({ onClose }: RoadBuildPopupProps) => {
   // @ts-ignore
   const { realm } = useGetRealm(realmEntityId);
 
-  // TODO: get info from contract config file
-  // calculate the costs of building/buying tools
-  let costResources = useMemo(() => {
-    return getResourceCost(soldierAmount);
-  }, [soldierAmount]);
-
-  const onBuild = async () => {
+  const onChangeRaidersAmount = async () => {
     setLoading(true);
-    await group_and_deploy_soldiers({
+    const newAmount = soldierAmount + selectedRaiders.quantity;
+    let new_soldier_ids = [];
+    if (soldierAmount > 0) {
+      for (let i = 0; i < newAmount - selectedRaiders.quantity; i++) {
+        new_soldier_ids.push(realmBattalions[i]);
+      }
+    }
+    await ungroup_and_regroup_soldiers({
       signer: account,
-      realm_entity_id: BigInt(realmEntityId),
-      soldier_ids: realmBattalions.slice(0, soldierAmount).map((battalionId) => BigInt(battalionId)),
+      group_id: selectedRaiders.entityId,
+      realm_entity_id: realmEntityId,
+      new_total_quantity: newAmount,
+      new_soldier_ids,
       duty: Duty.ATTACK,
     });
     setLoading(false);
     onClose();
   };
 
-  // check if can build
-  useEffect(() => {
-    let canBuild = true;
+  // TODO: get info from contract config file
+  // calculate the costs of building/buying tools
+  //   let costResources = useMemo(() => {
+  //     return getResourceCost(soldierAmount);
+  //   }, [soldierAmount]);
 
-    costResources.forEach(({ resourceId, amount }) => {
-      const realmResource = getComponentValue(
-        Resource,
-        getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
-      );
+  //   // check if can build
+  //   useEffect(() => {
+  //     let canBuild = true;
 
-      if (!realmResource || realmResource.balance < amount) {
-        canBuild = false;
-      }
-    });
+  //     costResources.forEach(({ resourceId, amount }) => {
+  //       const realmResource = getComponentValue(
+  //         Resource,
+  //         getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
+  //       );
 
-    setCanBuild(canBuild);
-  }, [costResources]);
+  //       if (!realmResource || realmResource.balance < amount) {
+  //         canBuild = false;
+  //       }
+  //     });
+
+  //     setCanBuild(canBuild);
+  //   }, [costResources]);
 
   return (
     <SecondaryPopup>
@@ -123,14 +128,18 @@ export const CreateRaidsPopup = ({ onClose }: RoadBuildPopupProps) => {
         </div>
         <div className="flex justify-between m-2 text-xxs">
           <div className="flex items-center">
-            <div className="italic text-light-pink">Amount</div>
+            <div className="italic text-gold">Min {-selectedRaiders.quantity}</div>
             <NumberInput
               className="ml-2 mr-2"
               value={soldierAmount}
-              onChange={(value) => setSoldierAmount(Math.min(realmBattalions.length, value))}
-              min={2}
-              max={999}
-              step={2}
+              onChange={(value) => {
+                const boundedValue = Math.max(-selectedRaiders.quantity, value);
+                const finalValue = Math.min(boundedValue, realmBattalions.length);
+                setSoldierAmount(finalValue);
+              }}
+              min={-selectedRaiders.quantity}
+              max={realmBattalions.length}
+              step={1}
             />
             <div className="italic text-gold">Max {realmBattalions.length}</div>
           </div>
@@ -149,8 +158,8 @@ export const CreateRaidsPopup = ({ onClose }: RoadBuildPopupProps) => {
               {!loading && (
                 <Button
                   className="!px-[6px] !py-[2px] text-xxs ml-auto"
-                  disabled={!canBuild}
-                  onClick={onBuild}
+                  //   disabled={!canBuild}
+                  onClick={onChangeRaidersAmount}
                   variant="outline"
                   withoutSound
                 >
@@ -161,7 +170,6 @@ export const CreateRaidsPopup = ({ onClose }: RoadBuildPopupProps) => {
                 <Button
                   className="!px-[6px] !py-[2px] text-xxs ml-auto"
                   onClick={() => {}}
-                  disabled={!canBuild}
                   isLoading={true}
                   variant="outline"
                   withoutSound
@@ -170,7 +178,7 @@ export const CreateRaidsPopup = ({ onClose }: RoadBuildPopupProps) => {
                 </Button>
               )}
             </div>
-            {!canBuild && <div className="text-xxs text-order-giants/70">Insufficient resources</div>}
+            {/* {!canBuild && <div className="text-xxs text-order-giants/70">Insufficient resources</div>} */}
           </div>
         </div>
       </SecondaryPopup.Body>

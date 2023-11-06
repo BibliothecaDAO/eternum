@@ -24,7 +24,7 @@ type IncomingOrderProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Battalion = ({ battalion, ...props }: IncomingOrderProps) => {
-  const { entityId, health, quantity, capacity } = battalion;
+  const { entityId, health, quantity, capacity, attack, defence } = battalion;
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const [isLoading, setIsLoading] = useState(false);
@@ -104,11 +104,11 @@ export const Battalion = ({ battalion, ...props }: IncomingOrderProps) => {
                 </div>
                 <div className="flex flex-col items-center">
                   <Dot colorClass="bg-orange" />
-                  <div className="mt-1 text-orange">{0}</div>
+                  <div className="mt-1 text-orange">{attack}</div>
                 </div>
                 <div className="flex flex-col items-center">
                   <Dot colorClass="bg-red" />
-                  <div className="mt-1 text-red">{0}</div>
+                  <div className="mt-1 text-red">{defence}</div>
                 </div>
                 <div className="flex flex-col items-center">
                   <Dot colorClass="bg-light-pink" />

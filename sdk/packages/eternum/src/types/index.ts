@@ -24,6 +24,15 @@ export interface UngroupSoldiersProps extends SystemSigner {
   group_id: num.BigNumberish;
 }
 
+export interface UngroupAndRegroupSoldiersProps extends SystemSigner {
+  group_id: num.BigNumberish;
+  realm_entity_id: num.BigNumberish;
+  new_total_quantity: num.BigNumberish;
+  // if empty, no new soldier in the group
+  new_soldier_ids: num.BigNumberish[];
+  duty: Duty;
+}
+
 export interface AttackProps extends SystemSigner {
   attacker_id: num.BigNumberish;
   target_id: num.BigNumberish;

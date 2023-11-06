@@ -12,14 +12,14 @@ import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import * as realmsData from "../../../../../geodata/realms.json";
 import { Duty, ROAD_COST_PER_USAGE } from "@bibliothecadao/eternum";
 import { getResourceCost } from "../../../../../utils/combat";
-import { useCombat } from "../../../../../hooks/helpers/useCombat";
+import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
 
 type RoadBuildPopupProps = {
-  //   toEntityId: number;
+  selectedRaiders: CombatInfo;
   onClose: () => void;
 };
 
-export const CreateRaidsPopup = ({ onClose }: RoadBuildPopupProps) => {
+export const TravelRaidsPopup = ({ onClose }: RoadBuildPopupProps) => {
   const {
     setup: {
       components: { Resource },

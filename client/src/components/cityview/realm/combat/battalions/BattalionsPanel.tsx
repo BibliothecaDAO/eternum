@@ -33,8 +33,8 @@ export const BattalionsPanel = ({}: MarketPanelProps) => {
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const { getRealmBattalions, getEntitiesCombatInfo } = useCombat();
-  const entities = getRealmBattalions(realmEntityId);
+  const { useRealmBattalions, getEntitiesCombatInfo } = useCombat();
+  const entities = useRealmBattalions(realmEntityId);
 
   const battalions = useMemo(() => {
     return getEntitiesCombatInfo(entities);
@@ -78,7 +78,7 @@ export const BattalionsPanel = ({}: MarketPanelProps) => {
       </SortPanel>
       {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
       {showBuildBattalion && <CreateBattalionPopup onClose={() => setShowBuildBattalion(false)} />}
-      {!showDetails && (
+      {!showDetails && battalions.length > 0 && (
         <div className="flex flex-col p-2 space-y-2">
           <Battalion
             battalion={{
@@ -101,10 +101,12 @@ export const BattalionsPanel = ({}: MarketPanelProps) => {
           ))}
         </div>
       )}
-      <div className="sticky w-32 -translate-x-1/2 bottom-2 left-1/2 !rounded-full flex flex-col items-center">
-        <Button className="mb-2" onClick={onClickDetails} variant="primary">
-          {showDetails ? "+ Hide Details" : "+ Show Details"}
-        </Button>
+      <div className="sticky w-32 -translate-x-1/2 bottom-2 left-1/2 !rounded-full flex flex-col items-center mt-4 mb-1">
+        {battalions.length > 0 && (
+          <Button className="mb-2" onClick={onClickDetails} variant="primary">
+            {showDetails ? "+ Hide Details" : "+ Show Details"}
+          </Button>
+        )}
         <Button className="" onClick={() => setShowBuildBattalion(true)} variant="primary">
           + Create new battalions
         </Button>

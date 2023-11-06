@@ -7,36 +7,38 @@ import { ResourceFilter } from "../../../../ResourceFilterComponent";
 import { OrdersFilter } from "../../../../OrdersFilterComponent";
 // import { CreateOfferPopup } from "../CreateOffer";
 import Button from "../../../../../elements/Button";
-import { Battalion } from "./Raids";
-import { useGetCaravansWithResourcesChest } from "../../../../../hooks/helpers/useResources";
-import { useCombat } from "../../../../../hooks/helpers/useCombat";
-import { CreateBattalionPopup } from "./CreateRaidsPopup";
+import { Raid } from "./Raids";
+import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
+import { CreateRaidsPopup } from "./CreateRaidsPopup";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
+import { ManageRaidsPopup } from "./ManageRaidsPopup";
+import { AttackRaidsPopup } from "./AttackRaidsPopup";
+import { TravelRaidsPopup } from "./TravelRaidsPopup";
 
 type MarketPanelProps = {};
 
 export const RaidsPanel = ({}: MarketPanelProps) => {
   const [activeFilter, setActiveFilter] = useState(false);
-  const [showBuildBattalion, setShowBuildBattalion] = useState(false);
+  const [showBuildRaiders, setShowBuildRaiders] = useState(false);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
-  const [showDetails, setShowDetails] = useState(false);
+  const [selectedRaiders, setSelectedRaiders] = useState<CombatInfo>(null);
+
+  const [showTravelRaid, setShowTravelRaid] = useState(false);
+  const [showAttackRaid, setShowAttackRaid] = useState(false);
+  const [showManageRaid, setShowManageRaid] = useState(false);
 
   const [activeSort, setActiveSort] = useState<SortInterface>({
     sortKey: "number",
     sort: "none",
   });
 
-  const onClickDetails = () => {
-    setShowDetails((prev) => !prev);
-  };
-
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const { getRealmBattalions, getEntitiesCombatInfo } = useCombat();
-  const entities = getRealmBattalions(realmEntityId);
+  const { useRealmRaiders, getEntitiesCombatInfo } = useCombat();
+  const entities = useRealmRaiders(realmEntityId);
 
-  const battalions = useMemo(() => {
+  const raiders = useMemo(() => {
     return getEntitiesCombatInfo(entities);
   }, [entities]);
 
@@ -77,36 +79,41 @@ export const RaidsPanel = ({}: MarketPanelProps) => {
         ))}
       </SortPanel>
       {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
-      {showBuildBattalion && <CreateBattalionPopup onClose={() => setShowBuildBattalion(false)} />}
-      {!showDetails && (
-        <div className="flex flex-col p-2 space-y-2">
-          <Battalion
-            battalion={{
-              entityId: undefined,
-              health: battalions.reduce((acc, battalion) => acc + battalion.health, 0),
-              quantity: battalions.reduce((acc, battalion) => acc + battalion.quantity, 0),
-              attack: battalions.reduce((acc, battalion) => acc + battalion.attack, 0),
-              defence: battalions.reduce((acc, battalion) => acc + battalion.defence, 0),
-              sec_per_km: battalions.reduce((acc, battalion) => acc + battalion.sec_per_km, 0),
-              blocked: false,
-              capacity: battalions.reduce((acc, battalion) => acc + battalion.capacity, 0),
+      {showBuildRaiders && <CreateRaidsPopup onClose={() => setShowBuildRaiders(false)} />}
+      {showManageRaid && (
+        <ManageRaidsPopup selectedRaiders={selectedRaiders} onClose={() => setShowManageRaid(false)} />
+      )}
+      {showAttackRaid && (
+        <AttackRaidsPopup selectedRaiders={selectedRaiders} onClose={() => setShowAttackRaid(false)} />
+      )}
+      {showTravelRaid && (
+        <TravelRaidsPopup selectedRaiders={selectedRaiders} onClose={() => setShowTravelRaid(false)} />
+      )}
+
+      <div className="flex flex-col p-2 space-y-2">
+        {raiders.map((raider) => (
+          <Raid
+            key={raider.entityId}
+            raider={raider}
+            setShowTravelRaid={() => {
+              setShowTravelRaid(true);
+              setSelectedRaiders(raider);
+            }}
+            setShowAttackRaid={() => {
+              setShowAttackRaid(true);
+              setSelectedRaiders(raider);
+            }}
+            setShowManageRaid={() => {
+              setShowManageRaid(true);
+              setSelectedRaiders(raider);
             }}
           />
-        </div>
-      )}
-      {showDetails && (
-        <div className="flex flex-col p-2 space-y-2">
-          {battalions.map((battalion) => (
-            <Battalion key={battalion.entityId} battalion={battalion} />
-          ))}
-        </div>
-      )}
+        ))}
+      </div>
+
       <div className="sticky w-32 -translate-x-1/2 bottom-2 left-1/2 !rounded-full flex flex-col items-center">
-        <Button className="mb-2" onClick={onClickDetails} variant="primary">
-          {showDetails ? "+ Hide Details" : "+ Show Details"}
-        </Button>
-        <Button className="" onClick={() => setShowBuildBattalion(true)} variant="primary">
-          + Create new battalions
+        <Button className="" onClick={() => setShowBuildRaiders(true)} variant="primary">
+          + New raiding party
         </Button>
       </div>
     </div>

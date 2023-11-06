@@ -24,6 +24,7 @@ import {
   OffloadResourcesProps,
   CreateSoldiersProps,
   GroupAndDeploySoldiersProps,
+  UngroupAndRegroupSoldiersProps,
   UngroupSoldiersProps,
   AttackProps,
   StealProps,
@@ -141,6 +142,10 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.steal(props)));
   };
 
+  const ungroup_and_regroup_soldiers = async (props: UngroupAndRegroupSoldiersProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.ungroup_and_regroup_soldiers(props)));
+  };
+
   return {
     create_soldiers,
     group_and_deploy_soldiers,
@@ -168,6 +173,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     initialize_hyperstructure,
     complete_hyperstructure,
     travel,
+    ungroup_and_regroup_soldiers,
   };
 }
 

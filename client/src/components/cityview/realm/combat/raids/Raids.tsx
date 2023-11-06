@@ -20,11 +20,15 @@ import ProgressBar from "../../../../../elements/ProgressBar";
 // import { divideByPrecision } from "../../../../../utils/utils";
 
 type IncomingOrderProps = {
-  battalion: CombatInfo;
+  raider: CombatInfo;
+  setShowTravelRaid: (show: boolean) => void;
+  setShowAttackRaid: (show: boolean) => void;
+  setShowManageRaid: (show: boolean) => void;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const Raid = ({ battalion, ...props }: IncomingOrderProps) => {
-  const { entityId, health, quantity, capacity } = battalion;
+export const Raid = ({ raider, ...props }: IncomingOrderProps) => {
+  const { entityId, health, quantity, capacity, attack, defence } = raider;
+  const { setShowAttackRaid, setShowManageRaid, setShowTravelRaid } = props;
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const [isLoading, setIsLoading] = useState(false);
@@ -91,29 +95,68 @@ export const Raid = ({ battalion, ...props }: IncomingOrderProps) => {
                 <ProgressBar containerClassName="col-span-12" rounded progress={(health / (10 * quantity)) * 100} />
               </div>
             )}
-            <div className="flex items-center justify-between mt-[6px] text-xxs">
-              <DonkeyIcon />
-              <div className="flex items-center space-x-[6px]">
-                <div className="flex flex-col items-center">
-                  <Dot colorClass="bg-green" />
-                  <div className="mt-1 text-green">{quantity}</div>
+            <div className="flex items-center justify-between mt-[8px] text-xxs">
+              <div className="flex flex-rows">
+                <DonkeyIcon />
+                <div className="flex items-center space-x-[6px] ml-2">
+                  <div className="flex flex-col items-center">
+                    <Dot colorClass="bg-green" />
+                    <div className="mt-1 text-green">{quantity}</div>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <Dot colorClass="bg-yellow" />
+                    <div className="mt-1 text-dark">{0}</div>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <Dot colorClass="bg-orange" />
+                    <div className="mt-1 text-orange">{attack}</div>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <Dot colorClass="bg-red" />
+                    <div className="mt-1 text-red">{defence}</div>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <Dot colorClass="bg-light-pink" />
+                    <div className="mt-1 text-dark">{0}</div>
+                  </div>
                 </div>
-                <div className="flex flex-col items-center">
-                  <Dot colorClass="bg-yellow" />
-                  <div className="mt-1 text-dark">{0}</div>
+              </div>
+              <div className="flex flex-col items-center justify-center">
+                <div className="flex">
+                  <Button
+                    className="!px-[6px] mr-2 !py-[2px] text-xxs ml-auto"
+                    onClick={() => {
+                      setShowTravelRaid(true);
+                    }}
+                    variant="outline"
+                    withoutSound
+                  >
+                    {`Travel`}
+                  </Button>
+                  <Button
+                    className="!px-[6px] mr-2 !py-[2px] text-xxs ml-auto"
+                    disabled={false}
+                    onClick={() => {
+                      setShowAttackRaid(true);
+                    }}
+                    variant="outline"
+                    withoutSound
+                  >
+                    {`Attack`}
+                  </Button>
+                  <Button
+                    className="!px-[6px] !py-[2px] text-xxs ml-auto"
+                    disabled={false}
+                    onClick={() => {
+                      setShowManageRaid(true);
+                    }}
+                    variant="outline"
+                    withoutSound
+                  >
+                    {`Manage`}
+                  </Button>
                 </div>
-                <div className="flex flex-col items-center">
-                  <Dot colorClass="bg-orange" />
-                  <div className="mt-1 text-orange">{0}</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <Dot colorClass="bg-red" />
-                  <div className="mt-1 text-red">{0}</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <Dot colorClass="bg-light-pink" />
-                  <div className="mt-1 text-dark">{0}</div>
-                </div>
+                {/* {!canBuild && <div className="text-xxs text-order-giants/70">Insufficient resources</div>} */}
               </div>
             </div>
           </div>

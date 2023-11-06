@@ -1,4 +1,4 @@
-import { Has, HasValue, getComponentValue } from "@latticexyz/recs";
+import { Has, HasValue, NotValue, getComponentValue } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import { Position } from "../../types";
 import { useEntityQuery } from "@dojoengine/react";
@@ -33,8 +33,14 @@ export function useCombat() {
     ]);
   };
 
-  const getRealmBattalions = (realmEntityId: number) => {
-    return useEntityQuery([Has(Health), HasValue(EntityOwner, { entity_owner_id: realmEntityId })]);
+  // todo: need to find better ways to differentiate
+  const useRealmBattalions = (realmEntityId: number) => {
+    return useEntityQuery([HasValue(Attack, { value: 10 }), HasValue(EntityOwner, { entity_owner_id: realmEntityId })]);
+  };
+
+  // todo: need to find better ways to differentiate
+  const useRealmRaiders = (realmEntityId: number) => {
+    return useEntityQuery([HasValue(EntityOwner, { entity_owner_id: realmEntityId }), NotValue(Attack, { value: 10 })]);
   };
 
   const getDefenceOnPosition = (position: Position) => {};
@@ -60,7 +66,7 @@ export function useCombat() {
         defence: defence?.value,
         sec_per_km: movable?.sec_per_km,
         blocked: movable?.blocked,
-        capacity: capacity.weight_gram,
+        capacity: capacity?.weight_gram,
         arrivalTime: arrivalTime?.arrives_at,
       };
     });
@@ -68,8 +74,9 @@ export function useCombat() {
 
   return {
     getBattalionsOnPosition,
-    getRealmBattalions,
+    useRealmBattalions,
     getDefenceOnPosition,
+    useRealmRaiders,
     getRaidersOnPosition,
     getEntitiesCombatInfo,
   };

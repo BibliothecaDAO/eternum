@@ -23,6 +23,7 @@ import {
   CreateSoldiersProps,
   GroupAndDeploySoldiersProps,
   UngroupSoldiersProps,
+  UngroupAndRegroupSoldiersProps,
   AttackProps,
   StealProps,
 } from "../types";
@@ -564,6 +565,47 @@ export class EternumProvider extends RPCProvider {
       entrypoint: "steal",
       calldata: [this.contracts.WORLD_ADDRESS, attacker_id, target_id],
     });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async ungroup_and_regroup_soldiers(props: UngroupAndRegroupSoldiersProps) {
+    const { signer, group_id, realm_entity_id, new_total_quantity, new_soldier_ids, duty } = props;
+
+    if ((new_total_quantity as number) < 0) {
+      throw new Error("new_total_quantity must be positive");
+    }
+
+    const soldier_number_from_previous = (new_total_quantity as number) - new_soldier_ids.length;
+
+    if (soldier_number_from_previous < 0) {
+      throw new Error("new_soldier_ids must be less than new_total_quantity");
+    }
+
+    // new soldiers ids is empty if we remove soldiers from a group
+    const uuid = await this.uuid();
+
+    const soldier_ids = [];
+    for (let i = 0; i < soldier_number_from_previous; i++) {
+      soldier_ids.push(uuid + i * 2);
+    }
+
+    // append new_soldier_ids to soldier_ids
+    new_soldier_ids.forEach((id) => soldier_ids.push(id));
+
+    const tx = await this.executeMulti(signer, [
+      {
+        contractAddress: this.contracts.COMBAT_SYSTEMS,
+        entrypoint: "ungroup_soldiers",
+        calldata: [this.contracts.WORLD_ADDRESS, group_id],
+      },
+      {
+        contractAddress: this.contracts.COMBAT_SYSTEMS,
+        entrypoint: "group_and_deploy_soldiers",
+        calldata: [this.contracts.WORLD_ADDRESS, realm_entity_id, soldier_ids, duty],
+      },
+    ]);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
     });
