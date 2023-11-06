@@ -54,14 +54,14 @@ commands=(
 commands+=(
     ## soldier weight 
     ## 80 kg = 80000 gr
-    "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999994,80000"
+    "sozo execute $CONFIG_SYSTEMS set_weight_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,258,80000"
 
     ## soldier capacity
-    "sozo execute $CONFIG_SYSTEMS set_capacity_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999994,$((100 * resource_precision))"
+    "sozo execute $CONFIG_SYSTEMS set_capacity_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,258,$((100 * resource_precision))"
 
     ## soldier speed
     ## 800 sec per km = 4.5 km/h
-    "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999994,800"
+    "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,258,800"
 
     ## soldier cost
     ## 10 silver (6)
@@ -71,15 +71,19 @@ commands+=(
 
     ## soldier health
     ## 10 
-    "sozo execute $CONFIG_SYSTEMS set_health_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999994,10"
+    "sozo execute $CONFIG_SYSTEMS set_health_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,258,10"
 
     ## soldier attack
     ## 10 
-    "sozo execute $CONFIG_SYSTEMS set_attack_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999994,10"
+    "sozo execute $CONFIG_SYSTEMS set_attack_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,258,10"
 
     ## soldier defence
     ## 10 
-    "sozo execute $CONFIG_SYSTEMS set_defence_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999994,10"
+    "sozo execute $CONFIG_SYSTEMS set_defence_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,258,10"
+
+    ## combat config
+    ## stealing_trial_count
+    "sozo execute $CONFIG_SYSTEMS set_combat_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999994,22"
 )
 
 ### WEIGHT ###
