@@ -1,7 +1,5 @@
 import React from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
-
-import clsx from "clsx";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 import { ReactComponent as Pen } from "../../../../../assets/icons/common/pen.svg";
@@ -12,11 +10,31 @@ import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 
+type RoadBuildPopupProps = {
+  //   toEntityId: number;
+  selectedRaiders: CombatInfo[];
+  attackingRaiders: CombatInfo[];
+  setSelectedRaiders: (raiders: CombatInfo[]) => void;
+};
+
+export const SelectRaiders = ({ attackingRaiders, selectedRaiders, setSelectedRaiders }: RoadBuildPopupProps) => {
+  return attackingRaiders.map((raider, i) => (
+    <SelectableRaider
+      key={i}
+      raider={raider}
+      selectedRaiders={selectedRaiders}
+      setSelectedRaiders={setSelectedRaiders}
+    ></SelectableRaider>
+  ));
+};
+
 type IncomingOrderProps = {
   raider: CombatInfo;
+  selectedRaiders: CombatInfo[];
+  setSelectedRaiders: (raiders: CombatInfo[]) => void;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const EnemyRaid = ({ raider, ...props }: IncomingOrderProps) => {
+export const SelectableRaider = ({ raider, selectedRaiders, setSelectedRaiders, ...props }: IncomingOrderProps) => {
   const { entityId, health, quantity, capacity, attack, defence, originRealmId, arrivalTime } = raider;
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
@@ -26,8 +44,18 @@ export const EnemyRaid = ({ raider, ...props }: IncomingOrderProps) => {
 
   return (
     <div
-      className={clsx("flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold", props.className)}
-      onClick={props.onClick}
+      className={`flex cursor-pointer flex-col p-2 bg-black border border-gray-gold transition-all duration-200 rounded-md ${
+        selectedRaiders.map((raider) => raider.entityId).includes(entityId) ? "!border-order-brilliance" : ""
+      } text-xxs text-gold`}
+      onClick={() => {
+        if (!selectedRaiders.map((raider) => raider.entityId).includes(entityId)) {
+          // add raider to selected raiders
+          setSelectedRaiders([...selectedRaiders, raider]);
+        } else {
+          // remove raider from selected
+          setSelectedRaiders(selectedRaiders.filter((raider) => raider.entityId !== entityId));
+        }
+      }}
     >
       <div className="flex items-center text-xxs">
         {entityId && (

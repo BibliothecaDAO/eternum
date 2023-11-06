@@ -78,6 +78,11 @@
         "Inventory",
         "Movable",
         "Capacity",
-        "ArrivalTime"
+        "ArrivalTime",
+        "Weight",
+        "ResourceChest",
+        "DetachedResource",
+        "ForeignKey",
+        "Inventory"
     ]
 }

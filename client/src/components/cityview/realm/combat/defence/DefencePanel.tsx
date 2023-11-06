@@ -5,17 +5,12 @@ import { SortPanel } from "../../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../../elements/SortButton";
 import { ResourceFilter } from "../../../../ResourceFilterComponent";
 import { OrdersFilter } from "../../../../OrdersFilterComponent";
-// import { CreateOfferPopup } from "../CreateOffer";
 import Button from "../../../../../elements/Button";
-// import { Raid } from "./Raids";
 import { useCombat } from "../../../../../hooks/helpers/useCombat";
 import { CreateDefencePopup } from "./CreateDefencePopup";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
-// import { ManageRaidsPopup } from "./ManageRaidsPopup";
-// import { AttackRaidsPopup } from "./AttackRaidsPopup";
-// import { TravelRaidsPopup } from "./TravelRaidsPopup";
 import { getEntityIdFromKeys, getPosition } from "../../../../../utils/utils";
-import { EnnemyRaid } from "./EnnemyRaid";
+import { EnemyRaid } from "./EnnemyRaid";
 import { Defence } from "./Defence";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../../../DojoContext";
@@ -33,11 +28,6 @@ export const DefencePanel = ({}: MarketPanelProps) => {
   const [showBuildDefence, setShowBuildDefence] = useState(false);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
-  // const [selectedRaiders, setSelectedRaiders] = useState<CombatInfo>(null);
-
-  // const [showTravelRaid, setShowTravelRaid] = useState(false);
-  // const [showAttackRaid, setShowAttackRaid] = useState(false);
-  // const [showManageRaid, setShowManageRaid] = useState(false);
 
   const [activeSort, setActiveSort] = useState<SortInterface>({
     sortKey: "number",
@@ -104,15 +94,6 @@ export const DefencePanel = ({}: MarketPanelProps) => {
       </SortPanel>
       {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
       {showBuildDefence && <CreateDefencePopup onClose={() => setShowBuildDefence(false)} />}
-      {/* {showManageRaid && (
-        <ManageRaidsPopup selectedRaiders={selectedRaiders} onClose={() => setShowManageRaid(false)} />
-      )}
-      {showAttackRaid && (
-        <AttackRaidsPopup selectedRaiders={selectedRaiders} onClose={() => setShowAttackRaid(false)} />
-      )}
-      {showTravelRaid && (
-        <TravelRaidsPopup selectedRaiders={selectedRaiders} onClose={() => setShowTravelRaid(false)} />
-      )} */}
       {watchTower.health && (
         <div className="flex flex-col p-2 space-y-2">
           <Defence watchTower={watchTower} />
@@ -122,7 +103,7 @@ export const DefencePanel = ({}: MarketPanelProps) => {
       <div className="flex flex-col p-2 space-y-2">
         <div className="font-bold text-white text-xs ml-1">Raid Attacks</div>
         {attackingRaiders.map((raider) => (
-          <EnnemyRaid key={raider.entityId} raider={raider} />
+          <EnemyRaid key={raider.entityId} raider={raider} />
         ))}
       </div>
 

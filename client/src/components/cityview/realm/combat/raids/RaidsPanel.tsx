@@ -5,7 +5,6 @@ import { SortPanel } from "../../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../../elements/SortButton";
 import { ResourceFilter } from "../../../../ResourceFilterComponent";
 import { OrdersFilter } from "../../../../OrdersFilterComponent";
-// import { CreateOfferPopup } from "../CreateOffer";
 import Button from "../../../../../elements/Button";
 import { Raid } from "./Raids";
 import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
@@ -22,7 +21,7 @@ export const RaidsPanel = ({}: MarketPanelProps) => {
   const [showBuildRaiders, setShowBuildRaiders] = useState(false);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
-  const [selectedRaiders, setSelectedRaiders] = useState<CombatInfo>(null);
+  const [selectedRaider, setSelectedRaider] = useState<CombatInfo>(null);
 
   const [showTravelRaid, setShowTravelRaid] = useState(false);
   const [showAttackRaid, setShowAttackRaid] = useState(false);
@@ -80,15 +79,9 @@ export const RaidsPanel = ({}: MarketPanelProps) => {
       </SortPanel>
       {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
       {showBuildRaiders && <CreateRaidsPopup onClose={() => setShowBuildRaiders(false)} />}
-      {showManageRaid && (
-        <ManageRaidsPopup selectedRaiders={selectedRaiders} onClose={() => setShowManageRaid(false)} />
-      )}
-      {showAttackRaid && (
-        <AttackRaidsPopup selectedRaiders={selectedRaiders} onClose={() => setShowAttackRaid(false)} />
-      )}
-      {showTravelRaid && (
-        <TravelRaidsPopup selectedRaiders={selectedRaiders} onClose={() => setShowTravelRaid(false)} />
-      )}
+      {showManageRaid && <ManageRaidsPopup selectedRaiders={selectedRaider} onClose={() => setShowManageRaid(false)} />}
+      {showAttackRaid && <AttackRaidsPopup selectedRaider={selectedRaider} onClose={() => setShowAttackRaid(false)} />}
+      {showTravelRaid && <TravelRaidsPopup selectedRaiders={selectedRaider} onClose={() => setShowTravelRaid(false)} />}
 
       <div className="flex flex-col p-2 space-y-2">
         {raiders.map((raider) => (
@@ -97,15 +90,15 @@ export const RaidsPanel = ({}: MarketPanelProps) => {
             raider={raider}
             setShowTravelRaid={() => {
               setShowTravelRaid(true);
-              setSelectedRaiders(raider);
+              setSelectedRaider(raider);
             }}
             setShowAttackRaid={() => {
               setShowAttackRaid(true);
-              setSelectedRaiders(raider);
+              setSelectedRaider(raider);
             }}
             setShowManageRaid={() => {
               setShowManageRaid(true);
-              setSelectedRaiders(raider);
+              setSelectedRaider(raider);
             }}
           />
         ))}

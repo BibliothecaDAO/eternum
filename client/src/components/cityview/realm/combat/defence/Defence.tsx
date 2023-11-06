@@ -1,38 +1,16 @@
-import React, { useState } from "react";
-import { OrderIcon } from "../../../../../elements/OrderIcon";
-import Button from "../../../../../elements/Button";
-
+import React from "react";
 import clsx from "clsx";
-import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
-import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
-import { ReactComponent as Pen } from "../../../../../assets/icons/common/pen.svg";
-import { ReactComponent as CaretDownFill } from "../../../../../assets/icons/common/caret-down-fill.svg";
 import { ReactComponent as DonkeyIcon } from "../../../../../assets/icons/units/donkey-circle.svg";
 import { Dot } from "../../../../../elements/Dot";
 import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
-import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
-import { useDojo } from "../../../../../DojoContext";
 
 type IncomingOrderProps = {
   watchTower: CombatInfo;
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Defence = ({ watchTower, ...props }: IncomingOrderProps) => {
-  const { entityId, health, quantity, capacity, attack, defence } = watchTower;
-
-  //   const {
-  //     account: { account },
-  //     setup: {
-  //       systemCalls: { travel },
-  //     },
-  //   } = useDojo();
-
-  //   const realmId = useRealmStore((state) => state.realmId);
-  //   const [isLoading, setIsLoading] = useState(false);
-
-  //   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const { health, quantity, attack, defence } = watchTower;
 
   return (
     <div
@@ -40,7 +18,7 @@ export const Defence = ({ watchTower, ...props }: IncomingOrderProps) => {
       onClick={props.onClick}
     >
       <div className="flex items-center text-xxs"></div>
-      <div className="flex justify-center items-center space-x-2 flex-wrap"></div>
+      <div className="flex justify-center items-center flex-wrap"></div>
       <div className="flex">
         <div className="flex flex-row">
           <img src={`/images/buildings/watchtower.png`} className="object-cover rounded-[10px] w-[50%]" />
@@ -79,7 +57,6 @@ export const Defence = ({ watchTower, ...props }: IncomingOrderProps) => {
               </div>
               <div className="flex flex-col items-center justify-center">
                 <div className="flex"></div>
-                {/* {!canBuild && <div className="text-xxs text-order-giants/70">Insufficient resources</div>} */}
               </div>
             </div>
           </div>

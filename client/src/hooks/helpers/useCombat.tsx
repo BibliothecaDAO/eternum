@@ -18,6 +18,7 @@ export interface CombatInfo {
   position?: Position;
   homePosition?: Position;
   entityOwnerId?: number;
+  locationRealmEntityId?: number;
   originRealmId?: number;
 }
 
@@ -103,6 +104,14 @@ export function useCombat() {
     ]);
   };
 
+  const useRealmRaidersOnPosition = (realmEntityId: number, position: Position) => {
+    return useEntityQuery([
+      Has(Attack),
+      HasValue(Position, position),
+      HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
+    ]);
+  };
+
   const getEntitiesCombatInfo = (entityIds: number[]): CombatInfo[] => {
     return entityIds.map((entityId) => {
       let entityIndex = getEntityIdFromKeys([BigInt(entityId)]);
@@ -115,6 +124,7 @@ export function useCombat() {
       const arrivalTime = getComponentValue(ArrivalTime, entityIndex);
       const position = getComponentValue(Position, entityIndex);
       const entityOwner = getComponentValue(EntityOwner, entityIndex);
+      const locationRealmEntityIds = Array.from(runQuery([Has(Realm), HasValue(Position, position)]));
       const originRealm = entityOwner
         ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]))
         : undefined;
@@ -125,7 +135,7 @@ export function useCombat() {
       return {
         entityId,
         health: health?.value,
-        quantity: quantity?.value || 1,
+        quantity: quantity?.value || 0,
         attack: attack?.value,
         defence: defence?.value,
         sec_per_km: movable?.sec_per_km,
@@ -135,6 +145,7 @@ export function useCombat() {
         position,
         entityOwnerId: entityOwner?.entity_owner_id,
         homePosition,
+        locationRealmEntityId: locationRealmEntityIds.length === 1 ? locationRealmEntityIds[0] : undefined,
         originRealmId: originRealm?.realm_id,
       };
     });
@@ -147,6 +158,7 @@ export function useCombat() {
     getDefenceOnRealm,
     getDefenceOnPosition,
     useRealmRaiders,
+    useRealmRaidersOnPosition,
     useEnemyRaidersOnPosition,
     getEntitiesCombatInfo,
   };
