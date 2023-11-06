@@ -10,6 +10,8 @@ import { useDojo } from "../../../../../DojoContext";
 import TextInput from "../../../../../elements/TextInput";
 import { SortPanel } from "../../../../../elements/SortPanel";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
+import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
+// import { ReactComponent as Shield } from "../../../../../assets/icons/units/shield.svg";
 
 export interface SelectRealmInterface {
   entityId: number;
@@ -17,6 +19,7 @@ export interface SelectRealmInterface {
   name: string;
   order: string;
   distance: number;
+  defence: CombatInfo;
 }
 
 export const SelectRealmPanel = ({
@@ -38,6 +41,7 @@ export const SelectRealmPanel = ({
   } = useDojo();
 
   const { realmId, realmEntityId } = useRealmStore();
+  const { getDefenceOnRealm } = useCombat();
 
   const { getRealmEntityIdFromRealmId } = useTrade();
 
@@ -49,6 +53,7 @@ export const SelectRealmPanel = ({
       { label: "Realm ID", sortKey: "id", className: "ml-4" },
       { label: "Name", sortKey: "name", className: "ml-4 mr-4" },
       { label: "Distance", sortKey: "distance", className: "ml-auto" },
+      { label: "Defence", sortKey: "defence", className: "ml-auto" },
     ];
   }, []);
 
@@ -67,12 +72,14 @@ export const SelectRealmPanel = ({
             const { name, order, realm_id: takerRealmId } = getRealm(realm.realm_id);
             const takerEntityId = getRealmEntityIdFromRealmId(takerRealmId);
             const distance = takerEntityId ? calculateDistance(realmEntityId, takerEntityId) ?? 0 : 0;
+            const defence = takerEntityId ? getDefenceOnRealm(takerEntityId) : undefined;
             return {
               entityId,
               realmId: realm.realm_id,
               name,
               order: getOrderName(order),
               distance,
+              defence,
             };
           }
         })
@@ -126,7 +133,7 @@ export const SelectRealmPanel = ({
             </SortPanel>
             <div className="flex flex-col px-1 mb-1 space-y-2 max-h-40 overflow-y-auto">
               {sortedRealms.map(
-                ({ order, name, realmId: destinationRealmId, distance, entityId: destinationEntityId }, i) => {
+                ({ order, name, realmId: destinationRealmId, distance, entityId: destinationEntityId, defence }, i) => {
                   return (
                     <div
                       key={i}
@@ -148,7 +155,12 @@ export const SelectRealmPanel = ({
 
                         <div className="flex-grow">{name}</div>
 
-                        <div className="flex-none w-16 text-right">{`${distance.toFixed(0)} km`}</div>
+                        <div className="flex-grow">{`${distance.toFixed(0)} km`}</div>
+
+                        <div className="flex-none w-16 text-right">
+                          {/* <Shield className="text-gold" /> */}
+                          <div>{defence.defence ? defence.defence : 0}</div>
+                        </div>
                       </div>
                     </div>
                   );

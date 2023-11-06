@@ -78,6 +78,7 @@ export const TravelRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
                 <Button
                   className="!px-[6px] !py-[2px] text-xxs ml-auto"
                   onClick={onTravel}
+                  disabled={!selectedEntityId}
                   variant="outline"
                   withoutSound
                 >
@@ -92,7 +93,7 @@ export const TravelRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
                   variant="outline"
                   withoutSound
                 >
-                  {`Build Battalion`}
+                  {}
                 </Button>
               )}
             </div>
