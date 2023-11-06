@@ -9,8 +9,9 @@ import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from ".
 import { ReactComponent as Pen } from "../../../../../assets/icons/common/pen.svg";
 import { ReactComponent as CaretDownFill } from "../../../../../assets/icons/common/caret-down-fill.svg";
 import { ReactComponent as DonkeyIcon } from "../../../../../assets/icons/units/donkey-circle.svg";
+import { ReactComponent as Shield } from "../../../../../assets/icons/units/shield.svg";
 import { Dot } from "../../../../../elements/Dot";
-import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
+import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import { useDojo } from "../../../../../DojoContext";
@@ -36,6 +37,8 @@ export const Raid = ({ raider, ...props }: IncomingOrderProps) => {
   const realmId = useRealmStore((state) => state.realmId);
   const [isLoading, setIsLoading] = useState(false);
 
+  const { getDefenceOnPosition } = useCombat();
+
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   // const hasArrivedOriginalPosition =
@@ -58,6 +61,8 @@ export const Raid = ({ raider, ...props }: IncomingOrderProps) => {
   const destinationRealmId = raider.position ? getRealmIdByPosition(raider.position) : undefined;
   const destinationRealmName = destinationRealmId ? getRealmNameById(destinationRealmId) : undefined;
   const isHome = destinationRealmId === realmId;
+
+  const destinationDefence = getDefenceOnPosition(raider.position);
 
   return (
     <div
@@ -160,6 +165,33 @@ export const Raid = ({ raider, ...props }: IncomingOrderProps) => {
                   </div>
                 </div>
               </div>
+              {!isHome && destinationDefence && (
+                <div className="flex flex-rows">
+                  <Shield className="text-gold mt-1" />
+                  <div className="flex items-center space-x-[6px] ml-2">
+                    <div className="flex flex-col items-center">
+                      <Dot colorClass="bg-green" />
+                      <div className="mt-1 text-green">{destinationDefence.quantity}</div>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <Dot colorClass="bg-yellow" />
+                      <div className="mt-1 text-dark">{0}</div>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <Dot colorClass="bg-orange" />
+                      <div className="mt-1 text-orange">{destinationDefence.attack}</div>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <Dot colorClass="bg-red" />
+                      <div className="mt-1 text-red">{destinationDefence.defence}</div>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <Dot colorClass="bg-light-pink" />
+                      <div className="mt-1 text-dark">{0}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="flex flex-col items-center justify-center">
                 <div className="flex">
                   {!isTraveling && isHome && (

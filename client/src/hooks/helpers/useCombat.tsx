@@ -1,4 +1,4 @@
-import { Has, HasValue, NotValue, getComponentValue } from "@latticexyz/recs";
+import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import { Position } from "../../types";
 import { useEntityQuery } from "@dojoengine/react";
@@ -18,23 +18,42 @@ export interface CombatInfo {
   position?: Position;
   homePosition?: Position;
   entityOwnerId?: number;
+  originRealmId?: number;
 }
 
 export function useCombat() {
   const {
     setup: {
-      components: { Position, EntityOwner, Health, Quantity, Attack, Defence, Movable, Capacity, ArrivalTime },
+      components: {
+        Position,
+        EntityOwner,
+        Health,
+        Quantity,
+        Attack,
+        Defence,
+        Movable,
+        Capacity,
+        ArrivalTime,
+        TownWatch,
+        Realm,
+      },
     },
   } = useDojo();
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const getBattalionsOnPosition = (position: Position) => {
+  const useBattalionsOnPosition = (position: Position) => {
     return useEntityQuery([
       Has(Health),
       HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
       HasValue(Position, position),
     ]);
+  };
+
+  const getRealmWatchTower = (realmEntityId: number): number | undefined => {
+    // find realm watchtower
+    const townWatch = getComponentValue(TownWatch, getEntityIdFromKeys([BigInt(realmEntityId)]));
+    return townWatch?.town_watch_id;
   };
 
   // todo: need to find better ways to differentiate
@@ -44,12 +63,45 @@ export function useCombat() {
 
   // todo: need to find better ways to differentiate
   const useRealmRaiders = (realmEntityId: number) => {
-    return useEntityQuery([HasValue(EntityOwner, { entity_owner_id: realmEntityId }), NotValue(Attack, { value: 10 })]);
+    return useEntityQuery([
+      HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
+      NotValue(Attack, { value: 10 }),
+      NotValue(Movable, { sec_per_km: 0 }),
+    ]);
   };
 
-  const getDefenceOnPosition = (position: Position) => {};
+  // const getDefenceOnPosition = (position: Position) => {
+  //   const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
+  // };
 
-  const getRaidersOnPosition = (position: Position) => {};
+  const getDefenceOnRealm = (realmEntityId: number): CombatInfo | undefined => {
+    const watchTower = getComponentValue(TownWatch, getEntityIdFromKeys([BigInt(realmEntityId)]));
+    if (watchTower) {
+      const watchTowerInfo = getEntitiesCombatInfo([watchTower.town_watch_id]);
+      if (watchTowerInfo.length === 1) {
+        return watchTowerInfo[0];
+      }
+    }
+  };
+
+  const getDefenceOnPosition = (position: Position): CombatInfo | undefined => {
+    const realmEntityIds = Array.from(runQuery([HasValue(Position, position), Has(Realm)]));
+    const watchTower = realmEntityIds.length === 1 ? getComponentValue(TownWatch, realmEntityIds[0]) : undefined;
+    if (watchTower) {
+      const watchTowerInfo = getEntitiesCombatInfo([watchTower.town_watch_id]);
+      if (watchTowerInfo.length === 1 && watchTowerInfo[0].health > 0) {
+        return watchTowerInfo[0];
+      }
+    }
+  };
+
+  const useEnemyRaidersOnPosition = (position: Position) => {
+    return useEntityQuery([
+      Has(Attack),
+      HasValue(Position, position),
+      NotValue(EntityOwner, { entity_owner_id: realmEntityId }),
+    ]);
+  };
 
   const getEntitiesCombatInfo = (entityIds: number[]): CombatInfo[] => {
     return entityIds.map((entityId) => {
@@ -63,6 +115,9 @@ export function useCombat() {
       const arrivalTime = getComponentValue(ArrivalTime, entityIndex);
       const position = getComponentValue(Position, entityIndex);
       const entityOwner = getComponentValue(EntityOwner, entityIndex);
+      const originRealm = entityOwner
+        ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]))
+        : undefined;
       const homePosition = entityOwner
         ? getComponentValue(Position, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]))
         : undefined;
@@ -80,16 +135,19 @@ export function useCombat() {
         position,
         entityOwnerId: entityOwner?.entity_owner_id,
         homePosition,
+        originRealmId: originRealm?.realm_id,
       };
     });
   };
 
   return {
-    getBattalionsOnPosition,
+    getBattalionsOnPosition: useBattalionsOnPosition,
     useRealmBattalions,
+    getRealmWatchTower,
+    getDefenceOnRealm,
     getDefenceOnPosition,
     useRealmRaiders,
-    getRaidersOnPosition,
+    useEnemyRaidersOnPosition,
     getEntitiesCombatInfo,
   };
 }

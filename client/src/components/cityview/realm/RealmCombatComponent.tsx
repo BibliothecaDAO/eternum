@@ -5,6 +5,7 @@ import { useRoute, useLocation } from "wouter";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { BattalionsPanel } from "./combat/battalions/BattalionsPanel";
 import { RaidsPanel } from "./combat/raids/RaidsPanel";
+import { DefencePanel } from "./combat/defence/DefencePanel";
 
 export type Order = {
   orderId: number;
@@ -108,7 +109,7 @@ export const RealmCombatComponent = ({}: RealmTradeComponentProps) => {
             <div>Defence</div>
           </div>
         ),
-        component: <></>,
+        component: <DefencePanel></DefencePanel>,
       },
     ],
     [selectedTab],
