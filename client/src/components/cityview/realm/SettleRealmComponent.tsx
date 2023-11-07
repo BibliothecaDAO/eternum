@@ -50,9 +50,14 @@ export const SettleRealmComponent = () => {
 
     // create array of initial resources
     let resources: BigNumberish[] = [];
-    const dev_multiplier = import.meta.env.VITE_DEV === "true" ? 10 : 1;
+    const isDev = import.meta.env.VITE_DEV === "true";
+    const dev_multiplier = isDev ? 10 : 1;
     for (let i = 0; i < 22; i++) {
       resources = [...resources, i + 1, multiplyByPrecision(initialResources[i]) * dev_multiplier];
+    }
+    if (isDev) {
+      resources = [...resources, 254, multiplyByPrecision(1000000)];
+      resources = [...resources, 255, multiplyByPrecision(1000000)];
     }
 
     await create_realm({

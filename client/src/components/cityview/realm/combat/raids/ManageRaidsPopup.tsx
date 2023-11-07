@@ -90,14 +90,14 @@ export const ManageRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
     <SecondaryPopup>
       <SecondaryPopup.Head>
         <div className="flex items-center space-x-1">
-          <div className="mr-0.5">Build Battalion:</div>
+          <div className="mr-0.5">Manage Raiders:</div>
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"376px"}>
         <div className="flex flex-col items-center p-2">
           {/* {toRealm && <Headline size="big">Build road to {realmsData["features"][toRealm.realmId - 1].name}</Headline>} */}
           <div className={"relative w-full mt-3"}>
-            <img src={`/images/road.jpg`} className="object-cover w-full h-full rounded-[10px]" />
+            <img src={`/images/avatars/3.png`} className="object-cover w-full h-full rounded-[10px]" />
             {/* <div className="flex flex-col p-2 left-2 bottom-2 rounded-[10px] bg-black/60">
               <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
               <div className="grid grid-cols-4 gap-2">
@@ -128,16 +128,16 @@ export const ManageRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
         </div>
         <div className="flex justify-between m-2 text-xxs">
           <div className="flex items-center">
-            <div className="italic text-gold">Min {-selectedRaiders.quantity}</div>
+            <div className="italic text-gold">Min {-selectedRaiders.quantity + 2}</div>
             <NumberInput
               className="ml-2 mr-2"
               value={soldierAmount}
               onChange={(value) => {
-                const boundedValue = Math.max(-selectedRaiders.quantity, value);
+                const boundedValue = Math.max(-selectedRaiders.quantity + 2, value);
                 const finalValue = Math.min(boundedValue, realmBattalions.length);
                 setSoldierAmount(finalValue);
               }}
-              min={-selectedRaiders.quantity}
+              min={-selectedRaiders.quantity + 2}
               max={realmBattalions.length}
               step={1}
             />
@@ -163,7 +163,7 @@ export const ManageRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
                   variant="outline"
                   withoutSound
                 >
-                  {`Build Raiders`}
+                  {`Modify Raiders`}
                 </Button>
               )}
               {loading && (

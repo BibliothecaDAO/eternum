@@ -30,7 +30,7 @@ export const CreateDefencePopup = ({ onClose }: RoadBuildPopupProps) => {
 
   const [canBuild, setCanBuild] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [soldierAmount, setSoldierAmount] = useState(2);
+  const [soldierAmount, setSoldierAmount] = useState(0);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
@@ -85,14 +85,14 @@ export const CreateDefencePopup = ({ onClose }: RoadBuildPopupProps) => {
     <SecondaryPopup>
       <SecondaryPopup.Head>
         <div className="flex items-center space-x-1">
-          <div className="mr-0.5">Build Battalion:</div>
+          <div className="mr-0.5">Build Defence:</div>
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"376px"}>
         <div className="flex flex-col items-center p-2">
           {/* {toRealm && <Headline size="big">Build road to {realmsData["features"][toRealm.realmId - 1].name}</Headline>} */}
           <div className={"relative w-full mt-3"}>
-            <img src={`/images/road.jpg`} className="object-cover w-full h-full rounded-[10px]" />
+            <img src={`/images/avatars/5.png`} className="object-cover w-full h-full rounded-[10px]" />
             {/* <div className="flex flex-col p-2 left-2 bottom-2 rounded-[10px] bg-black/60">
               <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
               <div className="grid grid-cols-4 gap-2">
