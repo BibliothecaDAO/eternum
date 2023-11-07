@@ -607,11 +607,11 @@ mod combat_systems {
             );
             
 
-            let attacker_attack = get!(world, attacker_id, Attack);
-            let attacker_defence = get!(world, attacker_id, Defence);
+            let mut attacker_attack = get!(world, attacker_id, Attack);
+            let mut attacker_defence = get!(world, attacker_id, Defence);
 
-            let target_attack = get!(world, target_id, Attack);
-            let target_defense = get!(world, target_id, Defence);
+            let mut target_attack = get!(world, target_id, Attack);
+            let mut target_defense = get!(world, target_id, Defence);
 
             let attack_success_probability 
                 = attacker_attack
@@ -632,9 +632,12 @@ mod combat_systems {
                 let damage_percent = random::random(salt, 100 + 1 );
                 let damage = (attacker_attack.value * damage_percent) / 100;
 
+                target_attack.value -= min(damage, target_attack.value);
+                target_defense.value -= min(damage, target_defense.value);
                 target_health.value -= min(damage, target_health.value);
-                
-                set!(world, (target_health));
+
+                set!(world, (target_attack, target_defense, target_health));
+
 
             } else {
 
@@ -645,9 +648,12 @@ mod combat_systems {
                 let damage_percent = random::random(salt, 100 + 1 );
                 let damage = (target_attack.value * damage_percent) / 100;
 
+                attacker_attack.value -= min(damage, attacker_attack.value);
+                attacker_defence.value -= min(damage, attacker_defence.value);
                 attacker_health.value -= min(damage, attacker_health.value);
 
-                set!(world, (attacker_health));
+                set!(world, (attacker_attack, attacker_defence, attacker_health));
+
             }
         }
 
@@ -688,8 +694,8 @@ mod combat_systems {
             );
             
 
-            let attacker_attack = get!(world, attacker_id, Attack);
-            let attacker_defence = get!(world, attacker_id, Defence);
+            let mut attacker_attack = get!(world, attacker_id, Attack);
+            let mut attacker_defence = get!(world, attacker_id, Defence);
             
             let target_town_watch_id 
                 = get!(world, target_realm_entity_id, TownWatch).town_watch_id;
@@ -806,8 +812,11 @@ mod combat_systems {
                 let damage_percent = random::random(salt, 100 + 1 );
                 let damage = (target_town_watch_attack.value * damage_percent) / 100;
 
+                attacker_attack.value -= min(damage, attacker_attack.value);
+                attacker_defence.value -= min(damage, attacker_defence.value);
                 attacker_health.value -= min(damage, attacker_health.value);
-                set!(world, (attacker_health));
+
+                set!(world, (attacker_attack, attacker_defence, attacker_health));
 
                 // send attacker back to home realm
                 let attacker_movable = get!(world, attacker_id, Movable);
