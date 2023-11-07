@@ -26,7 +26,7 @@ export const ManageRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
 
   //   const [canBuild, setCanBuild] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [soldierAmount, setSoldierAmount] = useState(0);
+  const [soldierAmount, setSoldierAmount] = useState(selectedRaiders.quantity || 0);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
@@ -43,7 +43,7 @@ export const ManageRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
 
   const onChangeRaidersAmount = async () => {
     setLoading(true);
-    const newAmount = soldierAmount + selectedRaiders.quantity;
+    const newAmount = soldierAmount;
     let new_soldier_ids = [];
     if (soldierAmount > 0) {
       for (let i = 0; i < newAmount - selectedRaiders.quantity; i++) {
@@ -62,29 +62,9 @@ export const ManageRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
     onClose();
   };
 
-  // TODO: get info from contract config file
-  // calculate the costs of building/buying tools
-  //   let costResources = useMemo(() => {
-  //     return getResourceCost(soldierAmount);
-  //   }, [soldierAmount]);
-
-  //   // check if can build
-  //   useEffect(() => {
-  //     let canBuild = true;
-
-  //     costResources.forEach(({ resourceId, amount }) => {
-  //       const realmResource = getComponentValue(
-  //         Resource,
-  //         getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
-  //       );
-
-  //       if (!realmResource || realmResource.balance < amount) {
-  //         canBuild = false;
-  //       }
-  //     });
-
-  //     setCanBuild(canBuild);
-  //   }, [costResources]);
+  const canModify = () => {
+    return soldierAmount === selectedRaiders.quantity ? false : true;
+  };
 
   return (
     <SecondaryPopup>
@@ -95,22 +75,8 @@ export const ManageRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"376px"}>
         <div className="flex flex-col items-center p-2">
-          {/* {toRealm && <Headline size="big">Build road to {realmsData["features"][toRealm.realmId - 1].name}</Headline>} */}
           <div className={"relative w-full mt-3"}>
             <img src={`/images/avatars/3.png`} className="object-cover w-full h-full rounded-[10px]" />
-            {/* <div className="flex flex-col p-2 left-2 bottom-2 rounded-[10px] bg-black/60">
-              <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
-              <div className="grid grid-cols-4 gap-2">
-                {costResources.map(({ resourceId, amount }) => (
-                  <ResourceCost
-                    key={resourceId}
-                    type="vertical"
-                    resourceId={resourceId}
-                    amount={divideByPrecision(amount)}
-                  />
-                ))}
-              </div>
-            </div> */}
             <div className="flex flex-col p-2 left-2 bottom-2 rounded-[10px] bg-black/60">
               <div className="mb-1 ml-1 italic text-light-pink text-xxs">Stats:</div>
               <div className="grid grid-cols-4 gap-2">
@@ -128,20 +94,20 @@ export const ManageRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
         </div>
         <div className="flex justify-between m-2 text-xxs">
           <div className="flex items-center">
-            <div className="italic text-gold">Min {-selectedRaiders.quantity + 2}</div>
+            <div className="italic text-gold">Min {2}</div>
             <NumberInput
               className="ml-2 mr-2"
               value={soldierAmount}
               onChange={(value) => {
-                const boundedValue = Math.max(-selectedRaiders.quantity + 2, value);
-                const finalValue = Math.min(boundedValue, realmBattalions.length);
+                const boundedValue = Math.max(2, value);
+                const finalValue = Math.min(boundedValue, selectedRaiders.quantity + realmBattalions.length);
                 setSoldierAmount(finalValue);
               }}
-              min={-selectedRaiders.quantity + 2}
-              max={realmBattalions.length}
+              min={2}
+              max={selectedRaiders.quantity + realmBattalions.length}
               step={1}
             />
-            <div className="italic text-gold">Max {realmBattalions.length}</div>
+            <div className="italic text-gold">Max {selectedRaiders.quantity + realmBattalions.length}</div>
           </div>
           <div className="flex flex-col items-center justify-center">
             <div className="flex">
@@ -158,8 +124,8 @@ export const ManageRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
               {!loading && (
                 <Button
                   className="!px-[6px] !py-[2px] text-xxs ml-auto"
-                  //   disabled={!canBuild}
                   onClick={onChangeRaidersAmount}
+                  disabled={!canModify()}
                   variant="outline"
                   withoutSound
                 >
@@ -178,7 +144,7 @@ export const ManageRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
                 </Button>
               )}
             </div>
-            {/* {!canBuild && <div className="text-xxs text-order-giants/70">Insufficient resources</div>} */}
+            {!canModify() && <div className="text-xxs text-order-giants/70">Must be different</div>}
           </div>
         </div>
       </SecondaryPopup.Body>
