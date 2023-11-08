@@ -4,11 +4,8 @@ import Button from "../../../../../elements/Button";
 import { NumberInput } from "../../../../../elements/NumberInput";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../DojoContext";
-import { getComponentValue } from "@latticexyz/recs";
-import { getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import { Duty } from "@bibliothecadao/eternum";
-import { getResourceCost } from "../../../../../utils/combat";
 import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
 
 type RoadBuildPopupProps = {
@@ -24,7 +21,7 @@ export const ManageRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
     account: { account },
   } = useDojo();
 
-  //   const [canBuild, setCanBuild] = useState(true);
+  const [canBuild, setCanBuild] = useState(true);
   const [loading, setLoading] = useState(false);
   const [soldierAmount, setSoldierAmount] = useState(selectedRaiders.quantity || 0);
 
@@ -41,7 +38,7 @@ export const ManageRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
   // @ts-ignore
   const { realm } = useGetRealm(realmEntityId);
 
-  const onChangeRaidersAmount = async () => {
+  const onModifyRaidersAmount = async () => {
     setLoading(true);
     const newAmount = soldierAmount;
     let new_soldier_ids = [];
@@ -62,9 +59,9 @@ export const ManageRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
     onClose();
   };
 
-  const canModify = () => {
-    return soldierAmount === selectedRaiders.quantity ? false : true;
-  };
+  useEffect(() => {
+    setCanBuild(soldierAmount !== selectedRaiders.quantity);
+  }, [soldierAmount]);
 
   return (
     <SecondaryPopup>
@@ -124,8 +121,8 @@ export const ManageRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
               {!loading && (
                 <Button
                   className="!px-[6px] !py-[2px] text-xxs ml-auto"
-                  onClick={onChangeRaidersAmount}
-                  disabled={!canModify()}
+                  onClick={onModifyRaidersAmount}
+                  disabled={!canBuild}
                   variant="outline"
                   withoutSound
                 >
@@ -144,7 +141,7 @@ export const ManageRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
                 </Button>
               )}
             </div>
-            {!canModify() && <div className="text-xxs text-order-giants/70">Must be different</div>}
+            {!canBuild && <div className="text-xxs text-order-giants/70">Must be different</div>}
           </div>
         </div>
       </SecondaryPopup.Body>

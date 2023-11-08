@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
 
@@ -8,13 +8,18 @@ import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 import { ReactComponent as Pen } from "../../../../../assets/icons/common/pen.svg";
 import { ReactComponent as CaretDownFill } from "../../../../../assets/icons/common/caret-down-fill.svg";
-import { ReactComponent as DonkeyIcon } from "../../../../../assets/icons/units/donkey-circle.svg";
+import { ReactComponent as PremiumIcon } from "../../../../../assets/icons/units/premium.svg";
 import { ReactComponent as Shield } from "../../../../../assets/icons/units/shield.svg";
 import { Dot } from "../../../../../elements/Dot";
 import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import { useDojo } from "../../../../../DojoContext";
+import { useResources } from "../../../../../hooks/helpers/useResources";
+import { getTotalResourceWeight } from "../../trade/TradeUtils";
+import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
+import { divideByPrecision } from "../../../../../utils/utils";
+import { ResourceCost } from "../../../../../elements/ResourceCost";
 
 type IncomingOrderProps = {
   raider: CombatInfo;
@@ -34,15 +39,28 @@ export const Raid = ({ raider, ...props }: IncomingOrderProps) => {
     },
   } = useDojo();
 
-  const realmId = useRealmStore((state) => state.realmId);
+  const { realmId, realmEntityId } = useRealmStore();
   const [isLoading, setIsLoading] = useState(false);
 
   const { getDefenceOnPosition } = useCombat();
+  const { getResourcesFromInventory, offloadChest } = useResources();
+  const { getInventoryResourcesChestId } = useCaravan();
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  // const hasArrivedOriginalPosition =
-  //   arrivalTime !== undefined && nextBlockTimestamp !== undefined && arrivalTime <= nextBlockTimestamp;
+  const inventoryResources = raider.entityId ? getResourcesFromInventory(raider.entityId) : undefined;
+  const resourceChestId = raider.entityId ? getInventoryResourcesChestId(raider.entityId) : undefined;
+
+  // capacity
+  let resourceWeight = useMemo(() => {
+    return getTotalResourceWeight([...inventoryResources]);
+  }, [inventoryResources]);
+
+  // offload
+  const onOffload = async () => {
+    setIsLoading(true);
+    await offloadChest(realmEntityId, raider.entityId, resourceChestId, 0, inventoryResources);
+  };
 
   const onReturn = async () => {
     if (raider.homePosition) {
@@ -57,6 +75,7 @@ export const Raid = ({ raider, ...props }: IncomingOrderProps) => {
     }
   };
 
+  const hasResources = inventoryResources && inventoryResources.length > 0;
   const isTraveling = raider.arrivalTime ? raider.arrivalTime > nextBlockTimestamp : false;
   const destinationRealmId = raider.position ? getRealmIdByPosition(raider.position) : undefined;
   const destinationRealmName = destinationRealmId ? getRealmNameById(destinationRealmId) : undefined;
@@ -111,9 +130,9 @@ export const Raid = ({ raider, ...props }: IncomingOrderProps) => {
           )}
           {capacity && (
             <div className="flex items-center ml-1 text-gold">
-              {0}
+              {divideByPrecision(resourceWeight)}
               <div className="mx-0.5 italic text-light-pink">/</div>
-              {`${capacity / 1000} kg`}
+              {`${divideByPrecision(capacity * quantity)} kg`}
               <CaretDownFill className="ml-1 fill-current" />
             </div>
           )}
@@ -141,7 +160,7 @@ export const Raid = ({ raider, ...props }: IncomingOrderProps) => {
             )}
             <div className="flex items-center justify-between mt-[8px] text-xxs">
               <div className="flex flex-rows">
-                <DonkeyIcon />
+                <PremiumIcon />
                 <div className="flex items-center space-x-[6px] ml-2">
                   <div className="flex flex-col items-center">
                     <Dot colorClass="bg-green" />
@@ -192,9 +211,26 @@ export const Raid = ({ raider, ...props }: IncomingOrderProps) => {
                   </div>
                 </div>
               )}
+              {inventoryResources && (
+                <div className="flex justify-center items-center space-x-2 flex-wrap">
+                  {inventoryResources.map(
+                    (resource) =>
+                      resource && (
+                        <ResourceCost
+                          key={resource.resourceId}
+                          type="vertical"
+                          color="text-order-brilliance"
+                          className="!w-5 mt-0.5"
+                          resourceId={resource.resourceId}
+                          amount={divideByPrecision(resource.amount)}
+                        />
+                      ),
+                  )}
+                </div>
+              )}
               <div className="flex flex-col items-center justify-center">
                 <div className="flex">
-                  {!isTraveling && isHome && (
+                  {!hasResources && !isTraveling && isHome && (
                     <Button
                       className="!px-[6px] mr-2 !py-[2px] text-xxs ml-auto"
                       onClick={() => {
@@ -227,7 +263,7 @@ export const Raid = ({ raider, ...props }: IncomingOrderProps) => {
                       {`Return`}
                     </Button>
                   )}
-                  {!isTraveling && !isHome && (
+                  {!isTraveling && !isHome && !isLoading && (
                     <Button
                       className="!px-[6px] mr-2 !py-[2px] text-xxs ml-auto"
                       disabled={false}
@@ -240,9 +276,9 @@ export const Raid = ({ raider, ...props }: IncomingOrderProps) => {
                       {`Attack`}
                     </Button>
                   )}
-                  {!isTraveling && isHome && (
+                  {!hasResources && !isTraveling && isHome && (
                     <Button
-                      className="!px-[6px] !py-[2px] text-xxs ml-auto"
+                      className="!px-[6px] mr-2 !py-[2px] text-xxs ml-auto"
                       disabled={false}
                       onClick={() => {
                         setShowManageRaid(true);
@@ -251,6 +287,17 @@ export const Raid = ({ raider, ...props }: IncomingOrderProps) => {
                       withoutSound
                     >
                       {`Manage`}
+                    </Button>
+                  )}
+                  {hasResources && isHome && (
+                    <Button
+                      className="!px-[6px] mr-2 !py-[2px] text-xxs ml-auto"
+                      disabled={isTraveling}
+                      onClick={onOffload}
+                      variant={isTraveling ? "danger" : "success"}
+                      withoutSound
+                    >
+                      {`Claim`}
                     </Button>
                   )}
                 </div>

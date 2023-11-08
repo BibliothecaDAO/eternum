@@ -67,8 +67,6 @@ const AttackResultPanel = ({ selectedRaiders, onClose }: { selectedRaiders: Comb
 
   const [loading, setLoading] = useState(false);
 
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
-
   const { getRealmWatchTower, getEntitiesCombatInfo } = useCombat();
 
   const watchTowerId = getRealmWatchTower(selectedRaiders[0].locationRealmEntityId);
@@ -118,25 +116,18 @@ const StealResultPanel = ({ selectedRaiders, onClose }: { selectedRaiders: Comba
     },
   } = useDojo();
 
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
-
-  const { getRealmWatchTower, getEntitiesCombatInfo } = useCombat();
-
-  const watchTowerId = getRealmWatchTower(realmEntityId);
-
-  const watchTowerHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(watchTowerId)]));
   const attackerHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(selectedRaiders[0].entityId)]));
 
   return (
     <div className="text-white">
-      <div>{"Watchtower Health:"}</div>
-      <div>{watchTowerHealth.value}</div>
-      <div>{"Attacker Health:"}</div>
+      <div>{"Previous Attacker Health:"}</div>
+      <div>{selectedRaiders[0].health}</div>
+      <div>{"New Attacker Health:"}</div>
       <div>{attackerHealth.value}</div>
       <div className="flex justify-between m-2 text-xxs w-full">
         <div className="flex flex-col items-center justify-center w-full">
           <div className="flex justify-between w-full">
-            {!loading && (
+            {
               <Button
                 className="!px-[6px] mr-2 !py-[2px] text-xxs ml-auto"
                 onClick={onClose}
@@ -145,7 +136,7 @@ const StealResultPanel = ({ selectedRaiders, onClose }: { selectedRaiders: Comba
               >
                 {`Cancel`}
               </Button>
-            )}
+            }
           </div>
         </div>
       </div>
@@ -169,10 +160,12 @@ const SelectRaidersPanel = ({
   const {
     account: { account },
     setup: {
-      components: { Health, Position },
+      components: { Health },
       systemCalls: { attack, steal },
     },
   } = useDojo();
+
+  if (attackingRaiders.length === 0) return null;
 
   const [loading, setLoading] = useState(false);
 
@@ -189,9 +182,10 @@ const SelectRaidersPanel = ({
     ];
   }, [selectedRaiders]);
 
-  const watchTowerId = attackingRaiders[0]?.locationRealmEntityId
-    ? getRealmWatchTower(attackingRaiders[0].locationRealmEntityId)
-    : undefined;
+  const watchTowerId =
+    attackingRaiders.length > 0 && attackingRaiders[0]?.locationRealmEntityId
+      ? getRealmWatchTower(attackingRaiders[0].locationRealmEntityId)
+      : undefined;
 
   const watchTowerHealth = watchTowerId
     ? useComponentValue(Health, getEntityIdFromKeys([BigInt(watchTowerId)]))
@@ -258,7 +252,7 @@ const SelectRaidersPanel = ({
         <div className={"relative w-full mt-3"}>
           <div className="flex flex-cols justify-center mb-3">
             <Defence className={"mr-2"} watchTower={watchTower}></Defence>
-            <div className="ml-2 space-y-2 overflow-y-auto">
+            <div className="ml-2 space-y-2 overflow-y-auto w-[400px]">
               <div className="font-bold text-white text-xs mb-2">Select Raiders</div>
               <SelectRaiders
                 attackingRaiders={attackingRaiders}
@@ -279,9 +273,9 @@ const SelectRaidersPanel = ({
               </div>
               <div>
                 <div> Total WatchTower Attack: </div>
-                <div> {watchTower.attack}</div>
+                <div> {watchTower.attack || 0}</div>
                 <div> Total WatchTower Defence: </div>
-                <div> {watchTower.defence}</div>
+                <div> {watchTower.defence || 0}</div>
               </div>
               <div>
                 <div> Prob Successful Attack: </div>
@@ -293,7 +287,7 @@ const SelectRaidersPanel = ({
           </div>
         </div>
       </div>
-      <div className="flex justify-between m-2 text-xxs w-full">
+      <div className="flex justify-between p-2 text-xxs w-full">
         <div className="flex flex-col items-center justify-center w-full">
           <div className="flex justify-between w-full">
             {!loading && (

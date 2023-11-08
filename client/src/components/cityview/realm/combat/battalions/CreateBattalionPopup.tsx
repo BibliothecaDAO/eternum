@@ -117,7 +117,7 @@ export const CreateBattalionPopup = ({ onClose }: RoadBuildPopupProps) => {
               onChange={(value) => setSoldierAmount(Math.max(value, 1))}
               min={1}
               max={999}
-              step={2}
+              step={1}
             />
           </div>
           <div className="flex flex-col items-center justify-center">

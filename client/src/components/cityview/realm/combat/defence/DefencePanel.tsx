@@ -93,7 +93,7 @@ export const DefencePanel = ({}: MarketPanelProps) => {
         ))}
       </SortPanel>
       {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
-      {showBuildDefence && <CreateDefencePopup onClose={() => setShowBuildDefence(false)} />}
+      {showBuildDefence && <CreateDefencePopup watchTower={watchTower} onClose={() => setShowBuildDefence(false)} />}
       {watchTower.health && (
         <div className="flex flex-col p-2 space-y-2">
           <Defence watchTower={watchTower} />
