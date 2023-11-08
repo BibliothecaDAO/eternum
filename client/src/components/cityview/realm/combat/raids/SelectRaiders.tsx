@@ -27,13 +27,13 @@ export const SelectRaiders = ({ attackingRaiders, selectedRaiders, setSelectedRa
   ));
 };
 
-type IncomingOrderProps = {
+type SelectableRaiderProps = {
   raider: CombatInfo;
   selectedRaiders: CombatInfo[];
   setSelectedRaiders: (raiders: CombatInfo[]) => void;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const SelectableRaider = ({ raider, selectedRaiders, setSelectedRaiders, ...props }: IncomingOrderProps) => {
+export const SelectableRaider = ({ raider, selectedRaiders, setSelectedRaiders, ...props }: SelectableRaiderProps) => {
   const { entityId, health, quantity, capacity, attack, defence, originRealmId, arrivalTime } = raider;
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);

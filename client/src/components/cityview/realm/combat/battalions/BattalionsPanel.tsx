@@ -8,7 +8,6 @@ import { OrdersFilter } from "../../../../OrdersFilterComponent";
 // import { CreateOfferPopup } from "../CreateOffer";
 import Button from "../../../../../elements/Button";
 import { Battalion } from "./Battalion";
-import { useGetCaravansWithResourcesChest } from "../../../../../hooks/helpers/useResources";
 import { useCombat } from "../../../../../hooks/helpers/useCombat";
 import { CreateBattalionPopup } from "./CreateBattalionPopup";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";

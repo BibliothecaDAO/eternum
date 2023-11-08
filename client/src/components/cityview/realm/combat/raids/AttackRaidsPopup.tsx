@@ -65,23 +65,21 @@ const AttackResultPanel = ({ selectedRaiders, onClose }: { selectedRaiders: Comb
     },
   } = useDojo();
 
-  const [loading, setLoading] = useState(false);
-
-  const { getRealmWatchTower, getEntitiesCombatInfo } = useCombat();
+  const { getRealmWatchTower } = useCombat();
 
   const watchTowerId = getRealmWatchTower(selectedRaiders[0].locationRealmEntityId);
 
   const watchTowerHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(watchTowerId)]));
   const attackerHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(selectedRaiders[0].entityId)]));
 
-  const watchTower = useMemo(() => {
-    const info = watchTowerId ? getEntitiesCombatInfo([watchTowerId]) : undefined;
-    if (info?.length === 1) {
-      return info[0];
-    } else {
-      return undefined;
-    }
-  }, [watchTowerId, watchTowerHealth]);
+  // const watchTower = useMemo(() => {
+  //   const info = watchTowerId ? getEntitiesCombatInfo([watchTowerId]) : undefined;
+  //   if (info?.length === 1) {
+  //     return info[0];
+  //   } else {
+  //     return undefined;
+  //   }
+  // }, [watchTowerId, watchTowerHealth]);
 
   return (
     <div className="text-white">
@@ -92,7 +90,7 @@ const AttackResultPanel = ({ selectedRaiders, onClose }: { selectedRaiders: Comb
       <div className="flex justify-between m-2 text-xxs w-full">
         <div className="flex flex-col items-center justify-center w-full">
           <div className="flex justify-between w-full">
-            {!loading && (
+            {
               <Button
                 className="!px-[6px] mr-2 !py-[2px] text-xxs ml-auto"
                 onClick={onClose}
@@ -101,7 +99,7 @@ const AttackResultPanel = ({ selectedRaiders, onClose }: { selectedRaiders: Comb
               >
                 {`Cancel`}
               </Button>
-            )}
+            }
           </div>
         </div>
       </div>

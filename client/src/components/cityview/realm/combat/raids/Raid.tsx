@@ -21,14 +21,14 @@ import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
 import { divideByPrecision } from "../../../../../utils/utils";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 
-type IncomingOrderProps = {
+type RaidProps = {
   raider: CombatInfo;
   setShowTravelRaid: (show: boolean) => void;
   setShowAttackRaid: (show: boolean) => void;
   setShowManageRaid: (show: boolean) => void;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const Raid = ({ raider, ...props }: IncomingOrderProps) => {
+export const Raid = ({ raider, ...props }: RaidProps) => {
   const { entityId, health, quantity, capacity, attack, defence } = raider;
   const { setShowAttackRaid, setShowManageRaid, setShowTravelRaid } = props;
 

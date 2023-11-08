@@ -5,11 +5,11 @@ import { Dot } from "../../../../../elements/Dot";
 import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 
-type IncomingOrderProps = {
+type DefenceProps = {
   watchTower: CombatInfo;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const Defence = ({ watchTower, ...props }: IncomingOrderProps) => {
+export const Defence = ({ watchTower, ...props }: DefenceProps) => {
   const { health, quantity, attack, defence } = watchTower;
 
   return (
