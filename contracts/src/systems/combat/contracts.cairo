@@ -721,7 +721,11 @@ mod combat_systems {
             } else {
                 Winner::Target
             };
+
+            let attacker_realm_entity_id 
+                = get!(world, *attacker_ids.at(0), EntityOwner).entity_owner_id;
             emit!(world, Combat { 
+                    attacker_realm_entity_id,
                     attacking_entity_ids: attacker_ids,
                     target_realm_entity_id,
                     winner,
@@ -876,7 +880,11 @@ mod combat_systems {
                 }
 
         
+       
+                let attacker_realm_entity_id 
+                    = get!(world, attacker_id, EntityOwner).entity_owner_id;
                 emit!(world, Combat { 
+                        attacker_realm_entity_id,
                         attacking_entity_ids: array![attacker_id].span(),
                         target_realm_entity_id,
                         winner: Winner::Attacker,
@@ -912,7 +920,10 @@ mod combat_systems {
                 );
 
 
+                let attacker_realm_entity_id 
+                    = get!(world, attacker_id, EntityOwner).entity_owner_id;
                 emit!(world, Combat { 
+                        attacker_realm_entity_id,
                         attacking_entity_ids: array![attacker_id].span(),
                         target_realm_entity_id,
                         winner: Winner::Target,
