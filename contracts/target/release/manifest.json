@@ -970,7 +970,7 @@
     {
       "name": "combat_systems",
       "address": "0x778fd3e137dc0e58d94d599167aa431332b8529f9bfc8efd70a7ea4e9c74247",
-      "class_hash": "0x41dc4b1d113a41a242d86e1c773a7ba3fcfe5492ff80a604caee198fdc9cac3",
+      "class_hash": "0x1f8dcebae6fbe20f49bf8887b1a60bba1fda22846507d345af94565b7083d60",
       "abi": [
         {
           "type": "impl",
@@ -1130,11 +1130,11 @@
                   "type": "dojo::world::IWorldDispatcher"
                 },
                 {
-                  "name": "attacker_id",
-                  "type": "core::integer::u128"
+                  "name": "attacker_ids",
+                  "type": "core::array::Span::<core::integer::u128>"
                 },
                 {
-                  "name": "target_id",
+                  "name": "target_realm_entity_id",
                   "type": "core::integer::u128"
                 }
               ],
@@ -1175,10 +1175,77 @@
           "state_mutability": "view"
         },
         {
+          "type": "enum",
+          "name": "eternum::systems::combat::contracts::combat_systems::Winner",
+          "variants": [
+            {
+              "name": "Attacker",
+              "type": "()"
+            },
+            {
+              "name": "Target",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::combat::contracts::combat_systems::Combat",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "attacker_realm_entity_id",
+              "type": "core::integer::u128",
+              "kind": "key"
+            },
+            {
+              "name": "target_realm_entity_id",
+              "type": "core::integer::u128",
+              "kind": "key"
+            },
+            {
+              "name": "attacking_entity_ids",
+              "type": "core::array::Span::<core::integer::u128>",
+              "kind": "data"
+            },
+            {
+              "name": "winner",
+              "type": "eternum::systems::combat::contracts::combat_systems::Winner",
+              "kind": "data"
+            },
+            {
+              "name": "stolen_resource_types",
+              "type": "core::array::Span::<core::integer::u8>",
+              "kind": "data"
+            },
+            {
+              "name": "stolen_resource_amounts",
+              "type": "core::array::Span::<core::integer::u128>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
           "type": "event",
           "name": "eternum::systems::combat::contracts::combat_systems::Event",
           "kind": "enum",
-          "variants": []
+          "variants": [
+            {
+              "name": "Combat",
+              "type": "eternum::systems::combat::contracts::combat_systems::Combat",
+              "kind": "nested"
+            }
+          ]
         }
       ],
       "reads": [
