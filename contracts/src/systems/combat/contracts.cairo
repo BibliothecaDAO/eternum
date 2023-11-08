@@ -16,8 +16,7 @@ mod combat_systems {
     use eternum::models::realm::Realm;
     use eternum::models::quantity::{Quantity, QuantityTrait};    
     use eternum::models::combat::{
-        Attack, AttackTrait, 
-        Health, Defence, Duty, TownWatch
+        Attack, Health, Defence, Duty, TownWatch
     };
     
 
@@ -578,44 +577,60 @@ mod combat_systems {
 
         fn attack(
             self: @ContractState, world: IWorldDispatcher,
-            attacker_id: u128, target_id: u128
+            attacker_ids: Span<u128>, target_id: u128
         ) {
             let caller = starknet::get_caller_address();
-
-            let attacker_owner = get!(world, attacker_id, Owner);
-            assert(attacker_owner.address == caller, 'not attacker owner');
-
-            let mut attacker_health = get!(world, attacker_id, Health);
-            assert(attacker_health.value > 0, 'attacker is dead');
-
-            let attacker_arrival = get!(world, attacker_id, ArrivalTime);
-            assert(
-                attacker_arrival.arrives_at <= starknet::get_block_timestamp(),
-                    'attacker is travelling'
-            );
 
             let mut target_health = get!(world, target_id, Health);
             assert(target_health.value > 0, 'target is dead');
 
-            let attacker_position = get!(world, attacker_id, Position);
+
+            let mut index = 0;
+            let mut attackers_total_attack = 0;
+            let mut attackers_total_defence = 0;
             let target_position = get!(world, target_id, Position);
+            loop {
+                if index == attacker_ids.len() {
+                    break;
+                }
+                let attacker_id = *attacker_ids.at(index);
 
-            assert(
-                attacker_position.x == target_position.x
-                    && attacker_position.y == target_position.y,
-                        'position mismatch'
-            );
+                let attacker_owner = get!(world, attacker_id, Owner);
+                assert(attacker_owner.address == caller, 'not attacker owner');
+
+                let mut attacker_health = get!(world, attacker_id, Health);
+                assert(attacker_health.value > 0, 'attacker is dead');
+
+                let attacker_arrival = get!(world, attacker_id, ArrivalTime);
+                assert(
+                    attacker_arrival.arrives_at <= starknet::get_block_timestamp(),
+                        'attacker is travelling'
+                );
+
+
+                let attacker_position = get!(world, attacker_id, Position);
+
+                assert(
+                    attacker_position.x == target_position.x
+                        && attacker_position.y == target_position.y,
+                            'position mismatch'
+                );
+                
+
+                attackers_total_attack += get!(world, attacker_id, Attack).value;
+                attackers_total_defence += get!(world, attacker_id, Defence).value;
+
+                index +=1;
+            };
+
             
-
-            let mut attacker_attack = get!(world, attacker_id, Attack);
-            let mut attacker_defence = get!(world, attacker_id, Defence);
 
             let mut target_attack = get!(world, target_id, Attack);
             let mut target_defense = get!(world, target_id, Defence);
 
             let attack_success_probability 
-                = attacker_attack
-                    .get_success_probability(target_defense.value);
+                = attackers_total_attack * 100 / (attackers_total_attack + target_defense.value);
+                
 
             let attack_successful: bool = *random::choices(
                 array![true, false].span(), 
@@ -626,11 +641,10 @@ mod combat_systems {
             if attack_successful {
                 // attack was a success && attacker dealt damage to target
 
-                
                 // get damage to target based on the attacker's attack value 
                 let salt: u128 = starknet::get_block_timestamp().into();
                 let damage_percent = random::random(salt, 100 + 1 );
-                let damage = (attacker_attack.value * damage_percent) / 100;
+                let damage = (attackers_total_attack * damage_percent) / 100;
 
                 target_attack.value -= min(damage, target_attack.value);
                 target_defense.value -= min(damage, target_defense.value);
@@ -642,18 +656,36 @@ mod combat_systems {
             } else {
 
                 // attack failed && target dealt damage to attacker
-                
+
                 // get damage to attacker based on the target's attack value 
                 let salt: u128 = starknet::get_block_timestamp().into();
                 let damage_percent = random::random(salt, 100 + 1 );
-                let damage = (target_attack.value * damage_percent) / 100;
+                let mut damage = (target_attack.value * damage_percent) / 100;
 
-                attacker_attack.value -= min(damage, attacker_attack.value);
-                attacker_defence.value -= min(damage, attacker_defence.value);
-                attacker_health.value -= min(damage, attacker_health.value);
+                // share damage between attackers
+                damage = damage / attacker_ids.len().into();
 
-                set!(world, (attacker_attack, attacker_defence, attacker_health));
+                let mut index = 0;
+                loop {
+                    if index == attacker_ids.len() {
+                        break;
+                    }
 
+                    let attacker_id = *attacker_ids.at(index);
+                    
+                    let mut attacker_attack = get!(world, attacker_id, Attack);
+                    let mut attacker_defence = get!(world, attacker_id, Defence);
+                    let mut attacker_health = get!(world, attacker_id, Health);
+
+
+                    attacker_attack.value -= min(damage, attacker_attack.value);
+                    attacker_defence.value -= min(damage, attacker_defence.value);
+                    attacker_health.value -= min(damage, attacker_health.value);
+
+                    set!(world, (attacker_attack, attacker_defence, attacker_health));
+
+                    index += 1;
+                };
             }
         }
 
@@ -704,8 +736,8 @@ mod combat_systems {
             let target_town_watch_defense = get!(world, target_town_watch_id, Defence);
 
             let attack_success_probability 
-                = attacker_attack
-                    .get_success_probability(target_town_watch_defense.value);
+                = attacker_attack.value * 100 / (attacker_attack.value + target_town_watch_defense.value);
+                
 
 
             let attack_successful: bool = *random::choices(

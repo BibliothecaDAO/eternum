@@ -12,7 +12,7 @@ use eternum::models::weight::Weight;
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::quantity::{Quantity, QuantityTrait};    
 use eternum::models::combat::{
-    Attack, AttackTrait, 
+    Attack,   
     Health, Defence, Duty, TownWatch
 };
 use eternum::systems::resources::contracts::resource_systems::{
