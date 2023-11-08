@@ -10,7 +10,7 @@ use eternum::models::capacity::Capacity;
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::quantity::{Quantity, QuantityTrait};    
 use eternum::models::combat::{
-    Attack, AttackTrait, 
+    Attack,   
     Health, Defence, Duty, TownWatch
 };
 
@@ -224,11 +224,14 @@ fn test_attack() {
     // attack target
     combat_systems_dispatcher
         .attack(
-            world, attacker_group_id, target_town_watch_id
-            );
+            world, 
+            array![attacker_group_id].span(), 
+            target_realm_entity_id
+        );
 
     let attacker_group_health = get!(world, attacker_group_id, Health);
     let target_group_health = get!(world, target_town_watch_id, Health);
+   
 
     assert(
         attacker_group_health.value < 100 * ATTACKER_SOLDIER_COUNT 
@@ -259,8 +262,10 @@ fn test_not_owner() {
     // attack target
     combat_systems_dispatcher
         .attack(
-            world, attacker_group_id, target_town_watch_id
-            );
+            world, 
+            array![attacker_group_id].span(), 
+            target_realm_entity_id
+        );
 
 }
 
@@ -297,8 +302,10 @@ fn test_attacker_in_transit() {
     // attack target
     combat_systems_dispatcher
         .attack(
-            world, attacker_group_id, target_town_watch_id
-            );
+            world, 
+            array![attacker_group_id].span(), 
+            target_realm_entity_id
+        );
 
 }
 
@@ -333,8 +340,10 @@ fn test_attacker_dead() {
     // attack target
     combat_systems_dispatcher
         .attack(
-            world, attacker_group_id, target_town_watch_id
-            );
+            world, 
+            array![attacker_group_id].span(), 
+            target_realm_entity_id
+        );
 
 }
 
@@ -369,8 +378,10 @@ fn test_target_dead() {
     // attack target
     combat_systems_dispatcher
         .attack(
-            world, attacker_group_id, target_town_watch_id
-            );
+            world, 
+            array![attacker_group_id].span(), 
+            target_realm_entity_id
+        );
 
 }
 
@@ -406,8 +417,10 @@ fn test_wrong_position() {
     // attack target
     combat_systems_dispatcher
         .attack(
-            world, attacker_group_id, target_town_watch_id
-            );
+            world, 
+            array![attacker_group_id].span(), 
+            target_realm_entity_id
+        );
 
 }
 

@@ -12,7 +12,7 @@ use eternum::models::weight::Weight;
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::quantity::{Quantity, QuantityTrait};    
 use eternum::models::combat::{
-    Attack, AttackTrait, 
+    Attack,   
     Health, Defence, Duty, TownWatch
 };
 use eternum::systems::resources::contracts::resource_systems::{
@@ -362,7 +362,20 @@ fn test_steal_success() {
             );
 
         index += 1;
-    }
+    };
+
+
+    // ensure attacker is sent back home
+
+    let attacker_realm_position = get!(world, attacker_realm_entity_id, Position);
+    let attacker_group_position = get!(world, attacker_group_id, Position);
+    assert(attacker_realm_position.x == attacker_group_position.x 
+            && attacker_realm_position.y == attacker_group_position.y,
+                'wrong position' 
+    );
+
+    let attacker_group_arrival = get!(world, attacker_group_id, ArrivalTime);
+    assert(attacker_group_arrival.arrives_at > 0, 'wrong arrival time');
 
 }
 
@@ -401,12 +414,13 @@ fn test_steal_failure() {
             );
 
     let attacker_group_health = get!(world, attacker_group_id, Health);
-    
+
     // ensure attacker's health is reduced
     assert(
         attacker_group_health.value < 100 * ATTACKER_SOLDIER_COUNT,
                 'wrong health value'
     );
+
 
     // ensure attacker is sent back home
 

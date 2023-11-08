@@ -10,7 +10,7 @@ use eternum::models::capacity::Capacity;
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::quantity::{Quantity, QuantityTrait};    
 use eternum::models::combat::{
-    Attack, AttackTrait, 
+    Attack,   
     Health, Defence, Duty, TownWatch
 };
 
