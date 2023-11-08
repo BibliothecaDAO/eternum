@@ -96,7 +96,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
         world, SOLDIER_ENTITY_TYPE, 100
     );
     combat_config_dispatcher.set_health_config(
-        world, SOLDIER_ENTITY_TYPE, 100
+        world, SOLDIER_ENTITY_TYPE, array![].span(), 100
     );
 
     // set soldier speed configuration 

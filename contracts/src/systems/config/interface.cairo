@@ -48,21 +48,22 @@ trait ICombatConfig<TContractState> {
         self: @TContractState, 
         world: IWorldDispatcher, 
         entity_type: u128, 
-        value: u128
+        resource_costs: Span<(u8, u128)>,
+        max_value: u128
     );
 
     fn set_attack_config(
         self: @TContractState, 
         world: IWorldDispatcher, 
         entity_type: u128, 
-        value: u128
+        max_value: u128
     );
 
     fn set_defence_config(
         self: @TContractState, 
         world: IWorldDispatcher, 
         entity_type: u128, 
-        value: u128
+        max_value: u128
     );
 }
 

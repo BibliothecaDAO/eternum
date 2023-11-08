@@ -143,13 +143,37 @@ mod config_systems {
             self: @ContractState, 
             world: IWorldDispatcher, 
             entity_type: u128, 
-            value: u128
+            resource_costs: Span<(u8, u128)>,
+            max_value: u128
         ) {
+            let resource_cost_id = world.uuid().into();
+            let mut index = 0;
+            loop {
+               
+                if index == resource_costs.len() {
+                    break;
+                }
+                let (resource_type, resource_amount) 
+                    = *resource_costs.at(index);
+                set!(world, (
+                    ResourceCost {
+                        entity_id: resource_cost_id,
+                        index,
+                        resource_type,
+                        amount: resource_amount
+                    }
+                ));
+
+                index += 1;
+            };
+
             set!(
                 world,
                 (HealthConfig {
                     entity_type,
-                    value
+                    resource_cost_id,
+                    resource_cost_count: resource_costs.len(),
+                    max_value
                 })
             );
         }
@@ -158,13 +182,13 @@ mod config_systems {
             self: @ContractState, 
             world: IWorldDispatcher, 
             entity_type: u128, 
-            value: u128
+            max_value: u128
         ) {
             set!(
                 world,
                 (AttackConfig {
                     entity_type,
-                    value
+                    max_value
                 })
             );
         }
@@ -174,13 +198,13 @@ mod config_systems {
             self: @ContractState, 
             world: IWorldDispatcher, 
             entity_type: u128, 
-            value: u128
+            max_value: u128
         ) {
             set!(
                 world,
                 (DefenceConfig {
                     entity_type,
-                    value
+                    max_value
                 })
             );
         }

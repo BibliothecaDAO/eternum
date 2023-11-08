@@ -51,6 +51,10 @@ trait ISoldierSystems<TContractState> {
     fn ungroup_soldiers(
         self: @TContractState, world: IWorldDispatcher, group_id: ID
     ) -> Span<ID>;
+
+    fn heal_soldiers( 
+        self: @TContractState, world: IWorldDispatcher, unit_id: ID, health_amount: u128
+    );
 }
 
 #[starknet::interface]

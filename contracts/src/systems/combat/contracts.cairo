@@ -129,11 +129,11 @@ mod combat_systems {
             let soldier_speed 
                 = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), SpeedConfig).sec_per_km; 
             let soldier_health_value
-                = get!(world, SOLDIER_ENTITY_TYPE, HealthConfig).value;
+                = get!(world, SOLDIER_ENTITY_TYPE, HealthConfig).max_value;
             let soldier_attack_value
-                = get!(world, SOLDIER_ENTITY_TYPE, AttackConfig).value;
+                = get!(world, SOLDIER_ENTITY_TYPE, AttackConfig).max_value;
             let soldier_defense_value
-                = get!(world, SOLDIER_ENTITY_TYPE, DefenceConfig).value;
+                = get!(world, SOLDIER_ENTITY_TYPE, DefenceConfig).max_value;
 
 
             let mut index = 0;
@@ -545,6 +545,69 @@ mod combat_systems {
             soldier_ids.span()
         }
 
+
+        /// Heal soldiers
+        ///
+        /// # Arguments
+        ///
+        /// * `world` - The world address
+        /// * `unit_id` - The soldier or group's entity id
+        /// * `health_amount` - The amount of health you want to purchase.
+        ///                     a unit's health ranges from 0 <= health <= max_health
+        ///                     where max_health = max_health_value_per_soldier * quantity
+        ///
+        fn heal_soldiers( 
+            self: @ContractState, world: IWorldDispatcher, unit_id: ID, health_amount: u128
+        )  {
+
+            let caller = starknet::get_caller_address();
+
+            let unit_owner = get!(world, unit_id, Owner);
+            assert(unit_owner.address == caller, 'not unit owner');
+
+            let unit_realm_entity_id = get!(world, unit_id, EntityOwner).entity_owner_id;
+            assert(unit_realm_entity_id != 0, 'invalid unit id');
+
+            // check that entity owner is a realm
+            let realm = get!(world, unit_realm_entity_id, Realm);
+            assert(realm.realm_id != 0, 'not a realm');
+
+            let mut unit_health = get!(world, unit_id, Health);
+            let unit_quantity = get!(world, unit_id, Quantity);
+            
+            let soldier_health_config = get!(world, SOLDIER_ENTITY_TYPE, HealthConfig);
+
+            let unit_max_health = soldier_health_config.max_value * unit_quantity.value;
+            assert(unit_health.value + health_amount <= unit_max_health, 'max health exceeeded');
+
+            // pay for the healing from the realm's resources
+            let mut index = 0;
+            loop {
+                if index == soldier_health_config.resource_cost_count {
+                    break;
+                };
+
+                let resource_cost 
+                    = get!(world, (soldier_health_config.resource_cost_id, index), ResourceCost);
+                let mut realm_resource 
+                    = get!(world, (unit_realm_entity_id, resource_cost.resource_type), Resource);
+
+                assert(
+                    realm_resource.balance >= resource_cost.amount * health_amount,
+                        'insufficient resources'
+                );
+
+                realm_resource.balance -= resource_cost.amount * health_amount;
+                set!(world, (realm_resource));
+
+                index += 1;
+            };
+
+            // heal the unit
+            unit_health.value += health_amount;
+            set!(world, (unit_health));
+
+        }
     }
 
     #[generate_trait]
