@@ -2,7 +2,6 @@ import React from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
-import { ReactComponent as Pen } from "../../../../../assets/icons/common/pen.svg";
 import { ReactComponent as CaretDownFill } from "../../../../../assets/icons/common/caret-down-fill.svg";
 import { ReactComponent as DonkeyIcon } from "../../../../../assets/icons/units/donkey-circle.svg";
 import { Dot } from "../../../../../elements/Dot";
@@ -28,13 +27,13 @@ export const SelectRaiders = ({ attackingRaiders, selectedRaiders, setSelectedRa
   ));
 };
 
-type IncomingOrderProps = {
+type SelectableRaiderProps = {
   raider: CombatInfo;
   selectedRaiders: CombatInfo[];
   setSelectedRaiders: (raiders: CombatInfo[]) => void;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const SelectableRaider = ({ raider, selectedRaiders, setSelectedRaiders, ...props }: IncomingOrderProps) => {
+export const SelectableRaider = ({ raider, selectedRaiders, setSelectedRaiders, ...props }: SelectableRaiderProps) => {
   const { entityId, health, quantity, capacity, attack, defence, originRealmId, arrivalTime } = raider;
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
@@ -88,17 +87,11 @@ export const SelectableRaider = ({ raider, selectedRaiders, setSelectedRaiders, 
             <div className="flex items-center ml-1 text-gold">
               {0}
               <div className="mx-0.5 italic text-light-pink">/</div>
-              {`${capacity / 1000} kg`}
+              {`${(capacity * quantity) / 1000} kg`}
               <CaretDownFill className="ml-1 fill-current" />
             </div>
           )}
         </div>
-        {!isTraveling && (
-          <div className="flex ml-auto -mt-2 italic text-gold">
-            Idle
-            <Pen className="ml-1 fill-gold" />
-          </div>
-        )}
         {raider.arrivalTime && isTraveling && nextBlockTimestamp && (
           <div className="flex ml-auto -mt-2 italic text-light-pink">
             {formatSecondsLeftInDaysHours(raider.arrivalTime - nextBlockTimestamp)}

@@ -1,10 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
-import Button from "../../../../../elements/Button";
 
 import clsx from "clsx";
-import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { getRealmOrderNameById } from "../../../../../utils/realms";
 import { ReactComponent as Pen } from "../../../../../assets/icons/common/pen.svg";
 import { ReactComponent as CaretDownFill } from "../../../../../assets/icons/common/caret-down-fill.svg";
@@ -12,27 +9,13 @@ import { ReactComponent as DonkeyIcon } from "../../../../../assets/icons/units/
 import { Dot } from "../../../../../elements/Dot";
 import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
-// import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
-// import { ResourceCost } from "../../../../../elements/ResourceCost";
-// import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
-// import { useResources } from "../../../../../hooks/helpers/useResources";
-// import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
-// import { divideByPrecision } from "../../../../../utils/utils";
 
-type IncomingOrderProps = {
+type BattalionProps = {
   battalion: CombatInfo;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const Battalion = ({ battalion, ...props }: IncomingOrderProps) => {
+export const Battalion = ({ battalion, ...props }: BattalionProps) => {
   const { entityId, health, quantity, capacity, attack, defence } = battalion;
-
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-
-  // const hasArrivedOriginalPosition =
-  //   arrivalTime !== undefined && nextBlockTimestamp !== undefined && arrivalTime <= nextBlockTimestamp;
 
   const isTraveling = false;
   const destinationRealmId = undefined;
@@ -76,11 +59,6 @@ export const Battalion = ({ battalion, ...props }: IncomingOrderProps) => {
             <Pen className="ml-1 fill-gold" />
           </div>
         )}
-        {/* {arrivalTime && isTraveling && nextBlockTimestamp && (
-          <div className="flex ml-auto -mt-2 italic text-light-pink">
-            {formatSecondsLeftInDaysHours(arrivalTime - nextBlockTimestamp)}
-          </div>
-        )} */}
       </div>
       <div className="flex justify-center items-center space-x-2 flex-wrap mt-2"></div>
       <div className="flex mt-2">

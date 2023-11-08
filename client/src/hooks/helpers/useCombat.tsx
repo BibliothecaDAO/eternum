@@ -6,20 +6,20 @@ import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys } from "../../utils/utils";
 
 export interface CombatInfo {
-  entityId?: number;
-  health?: number;
-  quantity?: number;
-  attack?: number;
-  defence?: number;
-  sec_per_km?: number;
-  blocked?: boolean;
-  capacity?: number;
-  arrivalTime?: number;
-  position?: Position;
-  homePosition?: Position;
-  entityOwnerId?: number;
-  locationRealmEntityId?: number;
-  originRealmId?: number;
+  entityId?: number | undefined;
+  health?: number | undefined;
+  quantity?: number | undefined;
+  attack?: number | undefined;
+  defence?: number | undefined;
+  sec_per_km?: number | undefined;
+  blocked?: boolean | undefined;
+  capacity?: number | undefined;
+  arrivalTime?: number | undefined;
+  position?: Position | undefined;
+  homePosition?: Position | undefined;
+  entityOwnerId?: number | undefined;
+  locationRealmEntityId?: number | undefined;
+  originRealmId?: number | undefined;
 }
 
 export function useCombat() {
@@ -46,6 +46,8 @@ export function useCombat() {
   const useBattalionsOnPosition = (position: Position) => {
     return useEntityQuery([
       Has(Health),
+      NotValue(Health, { value: 0 }),
+      HasValue(Attack, { value: 10 }),
       HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
       HasValue(Position, position),
     ]);
@@ -65,15 +67,13 @@ export function useCombat() {
   // todo: need to find better ways to differentiate
   const useRealmRaiders = (realmEntityId: number) => {
     return useEntityQuery([
+      Has(Attack),
       HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
+      NotValue(Health, { value: 0 }),
       NotValue(Attack, { value: 10 }),
       NotValue(Movable, { sec_per_km: 0 }),
     ]);
   };
-
-  // const getDefenceOnPosition = (position: Position) => {
-  //   const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
-  // };
 
   const getDefenceOnRealm = (realmEntityId: number): CombatInfo | undefined => {
     const watchTower = getComponentValue(TownWatch, getEntityIdFromKeys([BigInt(realmEntityId)]));

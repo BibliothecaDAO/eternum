@@ -12,11 +12,11 @@ import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 
-type IncomingOrderProps = {
+type EnemyRaidProps = {
   raider: CombatInfo;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const EnemyRaid = ({ raider, ...props }: IncomingOrderProps) => {
+export const EnemyRaid = ({ raider, ...props }: EnemyRaidProps) => {
   const { entityId, health, quantity, capacity, attack, defence, originRealmId, arrivalTime } = raider;
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);

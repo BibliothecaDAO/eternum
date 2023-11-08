@@ -1,17 +1,20 @@
 // note: placeholder
 export const calculateStealSuccess = (raiders: number, defence: number) => {
+  if (!defence) return 1;
   const success = raiders / (raiders + defence);
   return success;
 };
 
 // note: placeholder
-export const calculateCombatSuccess = (attackers: number, defenders: number) => {
+export const calculateCombatSuccess = (attackers: number, defenders: number | undefined) => {
+  if (!defenders) return 1;
   const success = attackers / (attackers + defenders);
   return success;
 };
 
 // note: placeholder
-export const calculateDamages = (attackers: number, defenders: number) => {
+export const calculateDamages = (attackers: number, defenders: number | undefined) => {
+  if (!defenders) return 0;
   const success = calculateCombatSuccess(attackers, defenders);
   const damages = success * attackers;
   return damages;

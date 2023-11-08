@@ -10,9 +10,9 @@ SOZO_WORLD="0x4d79c99ce9b489b77461e3491970ea5ede1f1966f4d2ff65ee76cd8701d6dad"
 if [[ ! -z "$1" ]]; then
     if [[ "$1" == "prod" ]]; then
         echo "is prod"
-        STARKNET_RPC_URL="https://api.cartridge.gg/x/eternum/katana"
-        DOJO_ACCOUNT_ADDRESS="0x3f0b949804d6677952974ab11a5b15b46bd0963d1d71ca573460027fc9302f5"
-        DOJO_PRIVATE_KEY="0x44a4d4b4c4ec9cf3720cdb47cad479c014e50a9b9b78f9cc23efc16c602c224"
+        STARKNET_RPC_URL="https://api.cartridge.gg/x/eternum2/katana"
+        DOJO_ACCOUNT_ADDRESS="0x4011e376fe0e8be617470fc8c3ccb11a0f88e383e42ed6af9d934f7d3af8091"
+        DOJO_PRIVATE_KEY="0x7318b1bb2c88be4d85f7df34eed7f3bfcc396e7cadae945fe6465cf8f589055"
     elif [[ "$1" != "dev" ]]; then
         echo "Invalid argument. Use 'dev' or 'prod'."
         exit 1

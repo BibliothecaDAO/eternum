@@ -6,7 +6,7 @@ import { SortButton, SortInterface } from "../../../../../elements/SortButton";
 import { ResourceFilter } from "../../../../ResourceFilterComponent";
 import { OrdersFilter } from "../../../../OrdersFilterComponent";
 import Button from "../../../../../elements/Button";
-import { Raid } from "./Raids";
+import { Raid } from "./Raid";
 import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
 import { CreateRaidsPopup } from "./CreateRaidsPopup";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";

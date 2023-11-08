@@ -5,11 +5,11 @@ import { Dot } from "../../../../../elements/Dot";
 import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 
-type IncomingOrderProps = {
+type DefenceProps = {
   watchTower: CombatInfo;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const Defence = ({ watchTower, ...props }: IncomingOrderProps) => {
+export const Defence = ({ watchTower, ...props }: DefenceProps) => {
   const { health, quantity, attack, defence } = watchTower;
 
   return (
@@ -35,7 +35,7 @@ export const Defence = ({ watchTower, ...props }: IncomingOrderProps) => {
                 <div className="flex items-center space-x-[6px] ml-2">
                   <div className="flex flex-col items-center">
                     <Dot colorClass="bg-green" />
-                    <div className="mt-1 text-green">{quantity}</div>
+                    <div className="mt-1 text-green">{quantity || 0}</div>
                   </div>
                   <div className="flex flex-col items-center">
                     <Dot colorClass="bg-yellow" />
@@ -43,11 +43,11 @@ export const Defence = ({ watchTower, ...props }: IncomingOrderProps) => {
                   </div>
                   <div className="flex flex-col items-center">
                     <Dot colorClass="bg-orange" />
-                    <div className="mt-1 text-orange">{attack}</div>
+                    <div className="mt-1 text-orange">{attack || 0}</div>
                   </div>
                   <div className="flex flex-col items-center">
                     <Dot colorClass="bg-red" />
-                    <div className="mt-1 text-red">{defence}</div>
+                    <div className="mt-1 text-red">{defence || 0}</div>
                   </div>
                   <div className="flex flex-col items-center">
                     <Dot colorClass="bg-light-pink" />
