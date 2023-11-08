@@ -29,10 +29,11 @@ export const SignUpComponent = ({ worldLoading, worldProgress }: SignUpComponent
   const [importMessage, setImportMessage] = useState(null);
   const [copyMessage, setCopyMessage] = useState(null);
 
-  let disableStart = true;
-  if (import.meta.env.DEV) {
-    disableStart = false;
-  }
+  let disableStart = false;
+  // let disableStart = true;
+  // if (import.meta.env.DEV) {
+  //   disableStart = false;
+  // }
 
   const onCopy = () => {
     const burners = localStorage.getItem("burners");

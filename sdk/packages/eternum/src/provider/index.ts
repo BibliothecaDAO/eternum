@@ -526,11 +526,11 @@ export class EternumProvider extends RPCProvider {
   }
 
   public async attack(props: AttackProps) {
-    const { attacker_id, target_id, signer } = props;
+    const { attacker_ids, target_id, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
       entrypoint: "attack",
-      calldata: [this.getWorldAddress(), attacker_id, target_id],
+      calldata: [this.getWorldAddress(), attacker_ids.length, ...attacker_ids, target_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,

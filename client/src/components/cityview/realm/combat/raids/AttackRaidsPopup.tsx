@@ -5,7 +5,7 @@ import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../DojoContext";
 import { getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
-import { calculateCombatSuccess, calculateStealSuccess } from "../../../../../utils/combat";
+import { calculateSuccess } from "../../../../../utils/combat";
 import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
 import { Defence } from "../defence/Defence";
 import { useComponentValue } from "@dojoengine/react";
@@ -17,20 +17,24 @@ type RoadBuildPopupProps = {
 };
 
 export const AttackRaidsPopup = ({ selectedRaider, onClose }: RoadBuildPopupProps) => {
-  const { position } = selectedRaider;
+  const { position: attackPosition } = selectedRaider;
 
   const [step, setStep] = useState<number>(1);
   const [selectedRaiders, setSelectedRaiders] = useState([]);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const { getEntitiesCombatInfo, useRealmRaidersOnPosition } = useCombat();
+  const { getEntitiesCombatInfo, getRealmRaidersOnPosition, getDefenceOnPosition } = useCombat();
 
-  const attackingEntities = useRealmRaidersOnPosition(realmEntityId, position);
+  const attackingEntities = getRealmRaidersOnPosition(realmEntityId, attackPosition);
 
   const attackingRaiders = useMemo(() => {
     return getEntitiesCombatInfo(attackingEntities);
   }, [attackingEntities]);
+
+  const watchTower = useMemo(() => {
+    return getDefenceOnPosition(attackPosition);
+  }, []);
 
   return (
     <SecondaryPopup>
@@ -43,6 +47,7 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: RoadBuildPopupProp
         <div className="flex flex-col items-center p-2">
           {step == 1 && (
             <SelectRaidersPanel
+              watchTower={watchTower}
               setStep={setStep}
               onClose={onClose}
               attackingRaiders={attackingRaiders}
@@ -50,43 +55,66 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: RoadBuildPopupProp
               setSelectedRaiders={setSelectedRaiders}
             ></SelectRaidersPanel>
           )}
-          {step == 2 && <AttackResultPanel onClose={onClose} selectedRaiders={selectedRaiders}></AttackResultPanel>}
-          {step == 3 && <StealResultPanel onClose={onClose} selectedRaiders={selectedRaiders}></StealResultPanel>}
+          {step == 2 && (
+            <AttackResultPanel
+              watchTower={watchTower}
+              onClose={onClose}
+              selectedRaiders={selectedRaiders}
+            ></AttackResultPanel>
+          )}
+          {step == 3 && (
+            <StealResultPanel
+              watchTower={watchTower}
+              onClose={onClose}
+              selectedRaiders={selectedRaiders}
+            ></StealResultPanel>
+          )}
         </div>
       </SecondaryPopup.Body>
     </SecondaryPopup>
   );
 };
 
-const AttackResultPanel = ({ selectedRaiders, onClose }: { selectedRaiders: CombatInfo[]; onClose: () => void }) => {
+const AttackResultPanel = ({
+  watchTower,
+  selectedRaiders,
+  onClose,
+}: {
+  watchTower: CombatInfo;
+  selectedRaiders: CombatInfo[];
+  onClose: () => void;
+}) => {
   const {
     setup: {
       components: { Health },
     },
   } = useDojo();
 
-  const { getRealmWatchTower } = useCombat();
-
-  const watchTowerId = getRealmWatchTower(selectedRaiders[0].locationRealmEntityId);
-
-  const watchTowerHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(watchTowerId)]));
-  const attackerHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(selectedRaiders[0].entityId)]));
-
-  // const watchTower = useMemo(() => {
-  //   const info = watchTowerId ? getEntitiesCombatInfo([watchTowerId]) : undefined;
-  //   if (info?.length === 1) {
-  //     return info[0];
-  //   } else {
-  //     return undefined;
-  //   }
-  // }, [watchTowerId, watchTowerHealth]);
+  const newWatchTowerHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(watchTower.entityId)]));
+  const success = newWatchTowerHealth.value !== watchTower.health;
 
   return (
     <div className="text-white">
-      <div>{"Watchtower Health:"}</div>
-      <div>{watchTowerHealth.value}</div>
-      <div>{"Attacker Health:"}</div>
-      <div>{attackerHealth.value}</div>
+      <div>{"------ WORK IN PROGRESS ------"}</div>
+      {success && (
+        <div>
+          <div>Success!!!</div>
+          <div>{"Watchtower Health:"}</div>
+          <div>{"Watchtower Old Health:"}</div>
+          <div>{watchTower.health}</div>
+          <div>{"Watchtower New Health:"}</div>
+          <div>{newWatchTowerHealth.value}</div>
+        </div>
+      )}
+      {!success && (
+        <div>
+          <div>Failed !!!</div>
+          <div>{"Attacker Health:"}</div>
+          {selectedRaiders.map((raider, i) => (
+            <AttackerHealthChange selectedRaider={raider} key={raider.entityId} />
+          ))}
+        </div>
+      )}
       <div className="flex justify-between m-2 text-xxs w-full">
         <div className="flex flex-col items-center justify-center w-full">
           <div className="flex justify-between w-full">
@@ -107,7 +135,35 @@ const AttackResultPanel = ({ selectedRaiders, onClose }: { selectedRaiders: Comb
   );
 };
 
-const StealResultPanel = ({ selectedRaiders, onClose }: { selectedRaiders: CombatInfo[]; onClose: () => void }) => {
+const AttackerHealthChange = ({ selectedRaider }: { selectedRaider: CombatInfo }) => {
+  const {
+    setup: {
+      components: { Health },
+    },
+  } = useDojo();
+
+  const newHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(selectedRaider.entityId)]));
+
+  return (
+    <div>
+      <div>{`Raider #${selectedRaider.entityId}`}</div>
+      <div>Old Health</div>
+      <div>{selectedRaider.health}</div>
+      <div>New Health</div>
+      <div>{newHealth.value}</div>
+    </div>
+  );
+};
+
+const StealResultPanel = ({
+  watchTower,
+  selectedRaiders,
+  onClose,
+}: {
+  watchTower: CombatInfo;
+  selectedRaiders: CombatInfo[];
+  onClose: () => void;
+}) => {
   const {
     setup: {
       components: { Health },
@@ -116,12 +172,21 @@ const StealResultPanel = ({ selectedRaiders, onClose }: { selectedRaiders: Comba
 
   const attackerHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(selectedRaiders[0].entityId)]));
 
+  const success = attackerHealth.value === selectedRaiders[0].health;
+
   return (
     <div className="text-white">
-      <div>{"Previous Attacker Health:"}</div>
-      <div>{selectedRaiders[0].health}</div>
-      <div>{"New Attacker Health:"}</div>
-      <div>{attackerHealth.value}</div>
+      <div>{"------ WORK IN PROGRESS ------"}</div>
+      {success && <div>Success!!!</div>}
+      {!success && (
+        <div>
+          <div>Failed!!!</div>
+          <div>{"Previous Attacker Health:"}</div>
+          <div>{selectedRaiders[0].health}</div>
+          <div>{"New Attacker Health:"}</div>
+          <div>{attackerHealth.value}</div>
+        </div>
+      )}
       <div className="flex justify-between m-2 text-xxs w-full">
         <div className="flex flex-col items-center justify-center w-full">
           <div className="flex justify-between w-full">
@@ -143,12 +208,14 @@ const StealResultPanel = ({ selectedRaiders, onClose }: { selectedRaiders: Comba
 };
 
 const SelectRaidersPanel = ({
+  watchTower,
   attackingRaiders,
   selectedRaiders,
   setSelectedRaiders,
   onClose,
   setStep,
 }: {
+  watchTower: CombatInfo | undefined;
   attackingRaiders: CombatInfo[];
   selectedRaiders: CombatInfo[];
   setSelectedRaiders: (raiders: CombatInfo[]) => void;
@@ -158,7 +225,6 @@ const SelectRaidersPanel = ({
   const {
     account: { account },
     setup: {
-      components: { Health },
       systemCalls: { attack, steal },
     },
   } = useDojo();
@@ -169,9 +235,7 @@ const SelectRaidersPanel = ({
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const { getRealmWatchTower, getEntitiesCombatInfo } = useCombat();
-
-  const [attackerTotalAttack, attackerTotalDefence, _] = useMemo(() => {
+  const [attackerTotalAttack, attackerTotalDefence, attackerTotalHealth] = useMemo(() => {
     // sum attack of the list
     return [
       selectedRaiders.reduce((acc, battalion) => acc + battalion.attack, 0),
@@ -180,45 +244,25 @@ const SelectRaidersPanel = ({
     ];
   }, [selectedRaiders]);
 
-  const watchTowerId =
-    attackingRaiders.length > 0 && attackingRaiders[0]?.locationRealmEntityId
-      ? getRealmWatchTower(attackingRaiders[0].locationRealmEntityId)
-      : undefined;
-
-  const watchTowerHealth = watchTowerId
-    ? useComponentValue(Health, getEntityIdFromKeys([BigInt(watchTowerId)]))
-    : undefined;
-
-  const watchTower = useMemo(() => {
-    const info = watchTowerId ? getEntitiesCombatInfo([watchTowerId]) : undefined;
-    if (info?.length === 1) {
-      return info[0];
-    } else {
-      return undefined;
-    }
-  }, [watchTowerId, watchTowerHealth]);
-
-  const attackSuccessProb = useMemo(() => {
-    return calculateCombatSuccess(attackerTotalAttack, watchTower.defence);
-  }, [attackerTotalAttack]);
-
-  const stealSuccessProb = useMemo(() => {
-    return calculateStealSuccess(attackerTotalAttack, watchTower.defence);
+  const succesProb = useMemo(() => {
+    return calculateSuccess(
+      { attack: attackerTotalAttack, health: attackerTotalHealth },
+      watchTower ? { defence: watchTower.defence, health: watchTower.health } : undefined,
+    );
   }, [attackerTotalAttack]);
 
   // @ts-ignore
   const { realm } = useGetRealm(realmEntityId);
 
   const onAttack = async () => {
-    if (!selectedRaiders[0].entityId) return;
     // set is loading
     setLoading(true);
 
     // call contract
     await attack({
       signer: account,
-      attacker_id: selectedRaiders[0].entityId,
-      target_id: watchTower.entityId,
+      attacker_ids: selectedRaiders.map((raider) => raider.entityId),
+      target_id: watchTower.locationRealmEntityId,
     });
     // when contract finished setloading false
     setLoading(false);
@@ -227,6 +271,7 @@ const SelectRaidersPanel = ({
   };
 
   const onSteal = async () => {
+    // only 1 raider can steal at a time
     if (!selectedRaiders[0]?.entityId || !selectedRaiders[0]?.locationRealmEntityId) return;
     // set is loading
     setLoading(true);
@@ -249,7 +294,7 @@ const SelectRaidersPanel = ({
         {/* {toRealm && <Headline size="big">Build road to {realmsData["features"][toRealm.realmId - 1].name}</Headline>} */}
         <div className={"relative w-full mt-3"}>
           <div className="flex flex-cols justify-center mb-3">
-            <Defence className={"mr-2"} watchTower={watchTower}></Defence>
+            {watchTower && <Defence className={"mr-2"} watchTower={watchTower}></Defence>}
             <div className="ml-2 space-y-2 overflow-y-auto w-[400px]">
               <div className="font-bold text-white text-xs mb-2">Select Raiders</div>
               <SelectRaiders
@@ -271,15 +316,19 @@ const SelectRaidersPanel = ({
               </div>
               <div>
                 <div> Total WatchTower Attack: </div>
-                <div> {watchTower.attack || 0}</div>
+                <div> {watchTower?.attack || 0}</div>
                 <div> Total WatchTower Defence: </div>
-                <div> {watchTower.defence || 0}</div>
+                <div> {watchTower?.defence || 0}</div>
               </div>
-              <div>
-                <div> Prob Successful Attack: </div>
-                <div> {attackSuccessProb}</div>
-                <div> Prob Successful Stealing: </div>
-                <div> {stealSuccessProb}</div>
+              <div className="ml-10">
+                <div> Prob Success: </div>
+                <div> {succesProb}</div>
+                {/* <div> Formula: </div>
+                <div>
+                  {
+                    "(Attacker Attack * Attacker Health) / (Attacker Attack * Attacker Health + Defender Defence * Defender Health)"
+                  }
+                </div> */}
               </div>
             </div>
           </div>
@@ -302,7 +351,7 @@ const SelectRaidersPanel = ({
             {!loading && (
               <Button
                 className="!px-[6px] mr-2 !py-[2px] text-xxs ml-auto"
-                disabled={!(selectedRaiders.length > 0)}
+                disabled={selectedRaiders.length !== 1}
                 onClick={onSteal}
                 variant="outline"
                 withoutSound
@@ -313,7 +362,7 @@ const SelectRaidersPanel = ({
             {!loading && (
               <Button
                 className="!px-[6px] !py-[2px] text-xxs ml-auto"
-                disabled={!(selectedRaiders.length > 0 && watchTower.health > 0)}
+                disabled={!(selectedRaiders.length > 0 && watchTower?.health > 0)}
                 onClick={onAttack}
                 variant="outline"
                 withoutSound
@@ -335,6 +384,9 @@ const SelectRaidersPanel = ({
           </div>
           {!(selectedRaiders.length > 0) && (
             <div className="text-xxs text-order-giants/70">Select at least 1 Raiders Group</div>
+          )}
+          {selectedRaiders.length > 0 && selectedRaiders.length !== 1 && (
+            <div className="text-xxs text-order-giants/70">Can only steal with 1 Raiders Group</div>
           )}
         </div>
       </div>

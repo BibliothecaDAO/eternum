@@ -3,14 +3,13 @@ import { OrderIcon } from "../../../../../elements/OrderIcon";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 import { ReactComponent as CaretDownFill } from "../../../../../assets/icons/common/caret-down-fill.svg";
-import { ReactComponent as DonkeyIcon } from "../../../../../assets/icons/units/donkey-circle.svg";
+import { ReactComponent as PremiumIcon } from "../../../../../assets/icons/units/premium.svg";
 import { Dot } from "../../../../../elements/Dot";
 import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 
 type RoadBuildPopupProps = {
-  //   toEntityId: number;
   selectedRaiders: CombatInfo[];
   attackingRaiders: CombatInfo[];
   setSelectedRaiders: (raiders: CombatInfo[]) => void;
@@ -109,7 +108,7 @@ export const SelectableRaider = ({ raider, selectedRaiders, setSelectedRaiders, 
             )}
             <div className="flex items-center justify-between mt-[8px] text-xxs">
               <div className="flex flex-rows">
-                <DonkeyIcon />
+                <PremiumIcon />
                 <div className="flex items-center space-x-[6px] ml-2">
                   <div className="flex flex-col items-center">
                     <Dot colorClass="bg-green" />

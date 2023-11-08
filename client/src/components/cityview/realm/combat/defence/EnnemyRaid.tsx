@@ -11,6 +11,7 @@ import { Dot } from "../../../../../elements/Dot";
 import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
+import { divideByPrecision } from "../../../../../utils/utils";
 
 type EnemyRaidProps = {
   raider: CombatInfo;
@@ -60,7 +61,7 @@ export const EnemyRaid = ({ raider, ...props }: EnemyRaidProps) => {
             <div className="flex items-center ml-1 text-gold">
               {0}
               <div className="mx-0.5 italic text-light-pink">/</div>
-              {`${capacity / 1000} kg`}
+              {`${divideByPrecision(capacity * quantity)} kg`}
               <CaretDownFill className="ml-1 fill-current" />
             </div>
           )}
