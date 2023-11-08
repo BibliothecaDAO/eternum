@@ -42,7 +42,7 @@ const fetchBlockTimestamp = async (): Promise<number | undefined> => {
     // NOTE: if we are using Katana in dev, we should use next block timestmamp because of
     // the advance_time functionality
     // TODO: make sure this is still the case
-    if (import.meta.env.DEV) {
+    if (import.meta.env.VITE_DEV === "true") {
       const response = await fetch(import.meta.env.VITE_KATANA_URL!, {
         method: "POST",
         headers: {

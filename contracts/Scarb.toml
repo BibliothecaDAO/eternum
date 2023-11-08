@@ -19,10 +19,16 @@ account_address = "0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f816
 private_key = "0x1800000000300000180000000000030000000000003006001800006600"
 
 ## prod
-#account_address = "0x3f0b949804d6677952974ab11a5b15b46bd0963d1d71ca573460027fc9302f5"
-#private_key = "0x44a4d4b4c4ec9cf3720cdb47cad479c014e50a9b9b78f9cc23efc16c602c224"
-#world_address = "0x62440ea5b77f1a4fad6e4a88383c750b9101a7bcc5d4de046dc0ae0628b6504"
+#account_address = "0x4011e376fe0e8be617470fc8c3ccb11a0f88e383e42ed6af9d934f7d3af8091"
+#private_key = "0x7318b1bb2c88be4d85f7df34eed7f3bfcc396e7cadae945fe6465cf8f589055"
+#world_address = "0x4d79c99ce9b489b77461e3491970ea5ede1f1966f4d2ff65ee76cd8701d6dad"
 
 [[target.dojo]]
 
 [lib]
+
+[tool.dojo.world]
+name = "Realms: Eternum"
+description = "Rule the Realms"
+cover_uri = "file://assets/bg.webp"
+website = "https://alpha-eternum.realms.world/"
