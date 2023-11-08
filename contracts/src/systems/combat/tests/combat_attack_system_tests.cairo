@@ -230,29 +230,13 @@ fn test_attack() {
         );
 
     let attacker_group_health = get!(world, attacker_group_id, Health);
-    let attacker_group_attack = get!(world, attacker_group_id, Attack);
-    let attacker_group_defence = get!(world, attacker_group_id, Defence);
-
     let target_group_health = get!(world, target_town_watch_id, Health);
-    let target_group_attack = get!(world, target_town_watch_id, Attack);
-    let target_group_defence = get!(world, target_town_watch_id, Defence);
+   
 
     assert(
         attacker_group_health.value < 100 * ATTACKER_SOLDIER_COUNT 
             || target_group_health.value < 100 * TARGET_SOLDIER_COUNT,
                 'wrong health value'
-    );
-
-    assert(
-        attacker_group_attack.value < 100 * ATTACKER_SOLDIER_COUNT 
-            || target_group_attack.value < 100 * TARGET_SOLDIER_COUNT,
-                'wrong attack value'
-    );
-
-    assert(
-        attacker_group_defence.value < 100 * ATTACKER_SOLDIER_COUNT 
-            || target_group_defence.value < 100 * TARGET_SOLDIER_COUNT,
-                'wrong defence value'
     );
 
 }

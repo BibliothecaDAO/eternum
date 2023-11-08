@@ -49,9 +49,10 @@ mod combat_systems {
     #[derive(Drop, starknet::Event)]
     struct Combat {
         #[key]
-        attacking_entity_ids: Span<u128>,
+        attacker_realm_entity_id: u128,
         #[key]
         target_realm_entity_id: u128,
+        attacking_entity_ids: Span<u128>,
         winner: Winner,
         stolen_resource_types: Span<u8>,
         stolen_resource_amounts: Span<u128>
@@ -615,6 +616,7 @@ mod combat_systems {
             let mut index = 0;
             let mut attackers_total_attack = 0;
             let mut attackers_total_defence = 0;
+            let mut attackers_total_health = 0;
             let target_realm_position = get!(world, target_realm_entity_id, Position);
             loop {
                 if index == attacker_ids.len() {
@@ -646,6 +648,7 @@ mod combat_systems {
 
                 attackers_total_attack += get!(world, attacker_id, Attack).value;
                 attackers_total_defence += get!(world, attacker_id, Defence).value;
+                attackers_total_health += get!(world, attacker_id, Health).value;
 
                 index +=1;
             };
@@ -655,13 +658,12 @@ mod combat_systems {
             let mut target_town_watch_attack = get!(world, target_town_watch_id, Attack);
             let mut target_town_watch_defense = get!(world, target_town_watch_id, Defence);
 
-            let attack_success_probability 
-                = attackers_total_attack * 100 / (attackers_total_attack + target_town_watch_defense.value);
-                
-
             let attack_successful: bool = *random::choices(
                 array![true, false].span(), 
-                array![attack_success_probability, 100 - attack_success_probability].span(), 
+                array![
+                    attackers_total_attack * attackers_total_health, 
+                    target_town_watch_defense.value * target_town_watch_health.value
+                ].span(), 
                 array![].span(), 1
             )[0];
 
@@ -673,8 +675,7 @@ mod combat_systems {
                 let damage_percent = random::random(salt, 100 + 1 );
                 let damage = (attackers_total_attack * damage_percent) / 100;
 
-                target_town_watch_attack.value -= min(damage, target_town_watch_attack.value);
-                target_town_watch_defense.value -= min(damage, target_town_watch_defense.value);
+                
                 target_town_watch_health.value -= min(damage, target_town_watch_health.value);
 
                 set!(world, (target_town_watch_attack, target_town_watch_defense, target_town_watch_health));
@@ -704,9 +705,6 @@ mod combat_systems {
                     let mut attacker_defence = get!(world, attacker_id, Defence);
                     let mut attacker_health = get!(world, attacker_id, Health);
 
-
-                    attacker_attack.value -= min(damage, attacker_attack.value);
-                    attacker_defence.value -= min(damage, attacker_defence.value);
                     attacker_health.value -= min(damage, attacker_health.value);
 
                     set!(world, (attacker_attack, attacker_defence, attacker_health));
@@ -778,17 +776,17 @@ mod combat_systems {
             let target_town_watch_id 
                 = get!(world, target_realm_entity_id, TownWatch).town_watch_id;
 
+            let target_town_watch_health = get!(world, target_town_watch_id, Health);
             let target_town_watch_attack = get!(world, target_town_watch_id, Attack);
             let target_town_watch_defense = get!(world, target_town_watch_id, Defence);
 
-            let attack_success_probability 
-                = attacker_attack.value * 100 / (attacker_attack.value + target_town_watch_defense.value);
-                
-
-
+            
             let attack_successful: bool = *random::choices(
                 array![true, false].span(), 
-                array![attack_success_probability, 100 - attack_success_probability].span(), 
+                array![
+                    attacker_attack.value * attacker_health.value, 
+                    target_town_watch_defense.value * target_town_watch_health.value
+                ].span(), 
                 array![].span(), 1
             )[0];
             
@@ -903,11 +901,9 @@ mod combat_systems {
                 let damage_percent = random::random(salt, 100 + 1 );
                 let damage = (target_town_watch_attack.value * damage_percent) / 100;
 
-                attacker_attack.value -= min(damage, attacker_attack.value);
-                attacker_defence.value -= min(damage, attacker_defence.value);
                 attacker_health.value -= min(damage, attacker_health.value);
 
-                set!(world, (attacker_attack, attacker_defence, attacker_health));
+                set!(world, (attacker_health));
 
                 // send attacker back to home realm
                 let attacker_movable = get!(world, attacker_id, Movable);
