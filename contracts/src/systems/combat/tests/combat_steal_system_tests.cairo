@@ -362,7 +362,20 @@ fn test_steal_success() {
             );
 
         index += 1;
-    }
+    };
+
+
+    // ensure attacker is sent back home
+
+    let attacker_realm_position = get!(world, attacker_realm_entity_id, Position);
+    let attacker_group_position = get!(world, attacker_group_id, Position);
+    assert(attacker_realm_position.x == attacker_group_position.x 
+            && attacker_realm_position.y == attacker_group_position.y,
+                'wrong position' 
+    );
+
+    let attacker_group_arrival = get!(world, attacker_group_id, ArrivalTime);
+    assert(attacker_group_arrival.arrives_at > 0, 'wrong arrival time');
 
 }
 

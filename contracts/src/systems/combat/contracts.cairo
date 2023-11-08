@@ -905,16 +905,6 @@ mod combat_systems {
 
                 set!(world, (attacker_health));
 
-                // send attacker back to home realm
-                let attacker_movable = get!(world, attacker_id, Movable);
-                let attacker_entity_owner = get!(world, attacker_id, EntityOwner);
-                let attacker_home_position 
-                    = get!(world, attacker_entity_owner.entity_owner_id, Position);
-                InternalTravelSystemsImpl::travel(
-                    world, attacker_id, attacker_movable, 
-                    attacker_position.into(), attacker_home_position.into()
-                );
-
 
                 let attacker_realm_entity_id 
                     = get!(world, attacker_id, EntityOwner).entity_owner_id;
@@ -927,6 +917,17 @@ mod combat_systems {
                         stolen_resource_amounts: array![].span()
                 });
             }    
+
+
+            // send attacker back to home realm
+            let attacker_movable = get!(world, attacker_id, Movable);
+            let attacker_entity_owner = get!(world, attacker_id, EntityOwner);
+            let attacker_home_position 
+                = get!(world, attacker_entity_owner.entity_owner_id, Position);
+            InternalTravelSystemsImpl::travel(
+                world, attacker_id, attacker_movable, 
+                attacker_position.into(), attacker_home_position.into()
+            );
         }
     }
 }
