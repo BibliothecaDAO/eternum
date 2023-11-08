@@ -40,6 +40,30 @@ mod combat_systems {
     use eternum::utils::random;
     use eternum::utils::math::{min};
 
+    #[derive(Serde, Copy, Drop)]
+    enum Winner {
+        Attacker,
+        Target
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct Combat {
+        #[key]
+        attacking_entity_ids: Span<u128>,
+        #[key]
+        target_realm_entity_id: u128,
+        winner: Winner,
+        stolen_resource_types: Span<u8>,
+        stolen_resource_amounts: Span<u128>
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        Combat: Combat,
+    }
+
+
 
     #[external(v0)]
     impl SoldierSystemsImpl of ISoldierSystems<ContractState> {
@@ -577,18 +601,21 @@ mod combat_systems {
 
         fn attack(
             self: @ContractState, world: IWorldDispatcher,
-            attacker_ids: Span<u128>, target_id: u128
+            attacker_ids: Span<u128>, target_realm_entity_id: u128
         ) {
             let caller = starknet::get_caller_address();
 
-            let mut target_health = get!(world, target_id, Health);
-            assert(target_health.value > 0, 'target is dead');
+            let target_town_watch_id 
+                = get!(world, target_realm_entity_id, TownWatch).town_watch_id;
+
+            let mut target_town_watch_health = get!(world, target_town_watch_id, Health);
+            assert(target_town_watch_health.value > 0, 'target is dead');
 
 
             let mut index = 0;
             let mut attackers_total_attack = 0;
             let mut attackers_total_defence = 0;
-            let target_position = get!(world, target_id, Position);
+            let target_realm_position = get!(world, target_realm_entity_id, Position);
             loop {
                 if index == attacker_ids.len() {
                     break;
@@ -611,8 +638,8 @@ mod combat_systems {
                 let attacker_position = get!(world, attacker_id, Position);
 
                 assert(
-                    attacker_position.x == target_position.x
-                        && attacker_position.y == target_position.y,
+                    attacker_position.x == target_realm_position.x
+                        && attacker_position.y == target_realm_position.y,
                             'position mismatch'
                 );
                 
@@ -625,11 +652,11 @@ mod combat_systems {
 
             
 
-            let mut target_attack = get!(world, target_id, Attack);
-            let mut target_defense = get!(world, target_id, Defence);
+            let mut target_town_watch_attack = get!(world, target_town_watch_id, Attack);
+            let mut target_town_watch_defense = get!(world, target_town_watch_id, Defence);
 
             let attack_success_probability 
-                = attackers_total_attack * 100 / (attackers_total_attack + target_defense.value);
+                = attackers_total_attack * 100 / (attackers_total_attack + target_town_watch_defense.value);
                 
 
             let attack_successful: bool = *random::choices(
@@ -646,11 +673,11 @@ mod combat_systems {
                 let damage_percent = random::random(salt, 100 + 1 );
                 let damage = (attackers_total_attack * damage_percent) / 100;
 
-                target_attack.value -= min(damage, target_attack.value);
-                target_defense.value -= min(damage, target_defense.value);
-                target_health.value -= min(damage, target_health.value);
+                target_town_watch_attack.value -= min(damage, target_town_watch_attack.value);
+                target_town_watch_defense.value -= min(damage, target_town_watch_defense.value);
+                target_town_watch_health.value -= min(damage, target_town_watch_health.value);
 
-                set!(world, (target_attack, target_defense, target_health));
+                set!(world, (target_town_watch_attack, target_town_watch_defense, target_town_watch_health));
 
 
             } else {
@@ -660,7 +687,7 @@ mod combat_systems {
                 // get damage to attacker based on the target's attack value 
                 let salt: u128 = starknet::get_block_timestamp().into();
                 let damage_percent = random::random(salt, 100 + 1 );
-                let mut damage = (target_attack.value * damage_percent) / 100;
+                let mut damage = (target_town_watch_attack.value * damage_percent) / 100;
 
                 // share damage between attackers
                 damage = damage / attacker_ids.len().into();
@@ -687,6 +714,21 @@ mod combat_systems {
                     index += 1;
                 };
             }
+
+            // emit combat event
+            let winner = if attack_successful {
+                Winner::Attacker
+            } else {
+                Winner::Target
+            };
+            emit!(world, Combat { 
+                    attacking_entity_ids: attacker_ids,
+                    target_realm_entity_id,
+                    winner,
+                    stolen_resource_types: array![].span(),
+                    stolen_resource_amounts: array![].span()
+             });
+
         }
 
 
@@ -833,6 +875,15 @@ mod combat_systems {
                     );
                 }
 
+        
+                emit!(world, Combat { 
+                        attacking_entity_ids: array![attacker_id].span(),
+                        target_realm_entity_id,
+                        winner: Winner::Attacker,
+                        stolen_resource_types: stolen_resource_types.span(),
+                        stolen_resource_amounts: stolen_resource_amounts.span()
+                });
+
             
             } else {
                 
@@ -859,6 +910,15 @@ mod combat_systems {
                     world, attacker_id, attacker_movable, 
                     attacker_position.into(), attacker_home_position.into()
                 );
+
+
+                emit!(world, Combat { 
+                        attacking_entity_ids: array![attacker_id].span(),
+                        target_realm_entity_id,
+                        winner: Winner::Target,
+                        stolen_resource_types: array![].span(),
+                        stolen_resource_amounts: array![].span()
+                });
             }    
         }
     }
