@@ -5,7 +5,7 @@ import useUIStore from "../../hooks/store/useUIStore";
 import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
 import { a } from "@react-spring/three";
-import { Sky, CameraShake, AdaptiveDpr } from "@react-three/drei";
+import { Sky, AdaptiveDpr } from "@react-three/drei";
 import { Suspense, useMemo } from "react";
 import { EffectComposer, Bloom, Noise, SMAA } from "@react-three/postprocessing";
 // @ts-ignore
@@ -61,7 +61,7 @@ export const MainScene = () => {
       raycaster={{ params: { Points: { threshold: 0.2 } } }}
       className="rounded-xl"
       camera={{ fov: 15, position: [0, 700, 0], far: 3500 }}
-      dpr={[0.5, 2]}
+      dpr={[0.5, 1]}
       performance={{
         min: 0.5,
         max: 1,
@@ -79,7 +79,7 @@ export const MainScene = () => {
       <ambientLight />
       <Camera />
       <directionalLight castShadow position={[lightPosition.x, lightPosition.y, lightPosition.z]} />
-      <CameraShake {...shakeConfig} />
+      {/* <CameraShake {...shakeConfig} /> */}
       <Suspense fallback={null}>
         <a.group>
           <Switch location={locationType}>
