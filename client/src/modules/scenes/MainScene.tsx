@@ -67,7 +67,7 @@ export const MainScene = () => {
         max: 1,
       }}
       gl={{
-        powerPreference: "high-performance",
+        powerPreference: "low-power",
         antialias: false,
         stencil: false,
         depth: false,
