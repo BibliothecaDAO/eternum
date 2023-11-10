@@ -12,7 +12,7 @@ import ContentContainer from "../containers/ContentContainer";
 import RealmManagementModule from "../modules/RealmManagementModule";
 import RealmResourcesComponent from "../components/cityview/realm/RealmResourcesComponent";
 import { useFetchBlockchainData } from "../hooks/store/useBlockchainStore";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { Redirect } from "wouter";
 import { useProgress } from "@react-three/drei";
@@ -26,8 +26,24 @@ import hyperStructures from "../data/hyperstructures.json";
 import { useHyperstructure } from "../hooks/helpers/useHyperstructure";
 import { Tooltip } from "../elements/Tooltip";
 import useLeaderBoardStore from "../hooks/store/useLeaderBoardStore";
+import { useDojo } from "../DojoContext";
 
 export const World = () => {
+  const {
+    setup: {
+      systemCalls: { isLive },
+    },
+  } = useDojo();
+
+  const [isWorldLive, setIsWorldLive] = useState(false);
+
+  useEffect(() => {
+    const checkWorldLive = async () => {
+      setIsWorldLive(await isLive());
+    };
+    checkWorldLive();
+  }, []);
+
   const { loading: worldLoading, progress: worldProgress } = useSyncWorld();
 
   useFetchBlockchainData();
@@ -126,7 +142,7 @@ export const World = () => {
         <ChatModule />
       </BottomRightContainer>
       <BlurOverlayContainer>
-        <SignUpComponent worldLoading={worldLoading} worldProgress={worldProgress} />
+        <SignUpComponent isWorldLive={isWorldLive} worldLoading={worldLoading} worldProgress={worldProgress} />
       </BlurOverlayContainer>
       <Leva hidden={import.meta.env.PROD} />
       <Tooltip />
