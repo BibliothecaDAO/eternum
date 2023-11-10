@@ -2,14 +2,10 @@ import React from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 
 import clsx from "clsx";
-import { getRealmOrderNameById } from "../../../../../utils/realms";
-import { ReactComponent as DonkeyIcon } from "../../../../../assets/icons/units/donkey-circle.svg";
-import { Dot } from "../../../../../elements/Dot";
 import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import Button from "../../../../../elements/Button";
 import { getResourceCost } from "../../../../../utils/combat";
 import useUIStore from "../../../../../hooks/store/useUIStore";
-import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { divideByPrecision } from "../../../../../utils/utils";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
 import { findResourceById } from "@bibliothecadao/eternum";
@@ -20,12 +16,8 @@ type BattalionProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Battalion = ({ battalion, onBuild, ...props }: BattalionProps) => {
-  const { health, quantity, capacity, attack, defence } = battalion;
+  const { quantity, attack, defence } = battalion;
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const isTraveling = false;
-  const destinationRealmId = undefined;
-  const destinationRealmName = "";
-  const hasArrivedPickupPosition = false;
 
   const costPerUnit = getResourceCost(1);
 
@@ -37,21 +29,9 @@ export const Battalion = ({ battalion, onBuild, ...props }: BattalionProps) => {
       )}
       onClick={props.onClick}
     >
-      <div className="flex items-center absolute top-0 left-0 right-0 text-xxs">
+      <div className="flex items-center absolute top-0 left-0 right-0 pointer-events-none text-xxs">
         <div className="flex items-center py-[1px] px-[6px] italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold bg-black/60">
           Battalions
-        </div>
-        <div className="flex items-center ml-1">
-          {isTraveling && destinationRealmName && (
-            <div className="flex items-center ml-1">
-              <span className="italic text-light-pink">Traveling {hasArrivedPickupPosition ? "from" : "to"}</span>
-              <div className="flex items-center ml-1 mr-1 text-gold">
-                <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xxs" />
-                {destinationRealmName}
-                <span className="italic text-light-pink ml-1">with</span>
-              </div>
-            </div>
-          )}
         </div>
       </div>
       <div className="flex h-full">
