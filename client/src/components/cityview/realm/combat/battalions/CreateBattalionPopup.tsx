@@ -9,6 +9,8 @@ import { getComponentValue } from "@latticexyz/recs";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import { getResourceCost } from "../../../../../utils/combat";
+import { Headline } from "../../../../../elements/Headline";
+import useUIStore from "../../../../../hooks/store/useUIStore";
 
 type RoadBuildPopupProps = {
   //   toEntityId: number;
@@ -27,7 +29,7 @@ export const CreateBattalionPopup = ({ onClose }: RoadBuildPopupProps) => {
   const [canBuild, setCanBuild] = useState(true);
   const [loading, setLoading] = useState(false);
   const [soldierAmount, setSoldierAmount] = useState(1);
-
+  const setTooltip = useUIStore((state) => state.setTooltip);
   let { realmEntityId } = useRealmStore();
 
   const [totalAttack, totalDefence, totalHealth] = useMemo(() => {
@@ -77,10 +79,61 @@ export const CreateBattalionPopup = ({ onClose }: RoadBuildPopupProps) => {
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"376px"}>
         <div className="flex flex-col items-center p-2">
-          {/* {toRealm && <Headline size="big">Build road to {realmsData["features"][toRealm.realmId - 1].name}</Headline>} */}
+          <Headline size="big">Military units</Headline>
+          <div className="flex relative mt-1 justify-between text-xxs text-lightest w-full">
+            <div className="flex items-center">
+              <div className="flex items-center h-6 mr-2">
+                <img src="/images/units/troop-icon.png" className="h-[28px]" />
+                <div className="flex flex-col ml-1 text-center">
+                  <div className="bold">Warrior</div>
+                </div>
+              </div>
+            </div>
+            <div className="flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center">
+              <div
+                className="flex items-center h-6 mr-2"
+                onMouseEnter={() =>
+                  setTooltip({
+                    position: "top",
+                    content: (
+                      <>
+                        <p className="whitespace-nowrap">Attack power</p>
+                      </>
+                    ),
+                  })
+                }
+                onMouseLeave={() => setTooltip(null)}
+              >
+                <img src="/images/icons/attack.png" className="h-full" />
+                <div className="flex flex-col ml-1 text-center">
+                  <div className="bold ">{totalAttack}</div>
+                </div>
+              </div>
+              <div
+                className="flex items-center h-6 mr-2"
+                onMouseEnter={() =>
+                  setTooltip({
+                    position: "top",
+                    content: (
+                      <>
+                        <p className="whitespace-nowrap">Defence power</p>
+                      </>
+                    ),
+                  })
+                }
+                onMouseLeave={() => setTooltip(null)}
+              >
+                <img src="/images/icons/defence.png" className="h-full" />
+                <div className="flex flex-col ml-1 text-center">
+                  <div className="bold ">{totalDefence}</div>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center">{totalHealth} HP</div>
+          </div>
           <div className={"relative w-full mt-3"}>
-            <img src={`/images/avatars/4.png`} className="object-cover w-full h-full rounded-[10px]" />
-            <div className="flex flex-col p-2 left-2 bottom-2 rounded-[10px] bg-black/60">
+            <img src={`/images/units/troop.png`} className="object-cover w-full h-full rounded-[10px]" />
+            <div className="flex absolute flex-col p-2 left-2 bottom-2 rounded-[10px] bg-black/60">
               <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
               <div className="grid grid-cols-4 gap-2">
                 {costResources.map(({ resourceId, amount }) => (
@@ -91,19 +144,6 @@ export const CreateBattalionPopup = ({ onClose }: RoadBuildPopupProps) => {
                     amount={divideByPrecision(amount)}
                   />
                 ))}
-              </div>
-            </div>
-            <div className="flex flex-col p-2 left-2 bottom-2 rounded-[10px] bg-black/60">
-              <div className="mb-1 ml-1 italic text-light-pink text-xxs">Stats:</div>
-              <div className="grid grid-cols-4 gap-2">
-                <div className="mb-1 ml-1 italic text-light-pink text-xxs">
-                  <div> Attack: </div>
-                  <div> {totalAttack}</div>
-                  <div> Defence: </div>
-                  <div> {totalDefence}</div>
-                  <div> Health: </div>
-                  <div> {totalHealth}</div>
-                </div>
               </div>
             </div>
           </div>
