@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import Button from "../../../../../elements/Button";
 import { useCombat } from "../../../../../hooks/helpers/useCombat";
 import { CreateDefencePopup } from "./CreateDefencePopup";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
@@ -8,6 +7,7 @@ import { EnemyRaid } from "./EnnemyRaid";
 import { Defence } from "./Defence";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../../../DojoContext";
+import { ReactComponent as CrossSwords } from "../../../../../assets/icons/common/cross-swords.svg";
 
 type MarketPanelProps = {};
 
@@ -44,7 +44,7 @@ export const DefencePanel = ({}: MarketPanelProps) => {
   return (
     <div className="relative flex flex-col p-2 min-h-[120px]">
       {showBuildDefence && <CreateDefencePopup watchTower={watchTower} onClose={() => setShowBuildDefence(false)} />}
-      <div className="flex flex-col p-2 space-y-2">
+      <div className="flex flex-col p-2">
         {watchTower && (
           <Defence
             onReinforce={() => setShowBuildDefence(!showBuildDefence)}
@@ -53,10 +53,17 @@ export const DefencePanel = ({}: MarketPanelProps) => {
           />
         )}
 
-        <div className="font-bold text-white text-xs ml-1">Raid Attacks</div>
-        {attackingRaiders.map((raider) => (
-          <EnemyRaid key={raider.entityId} raider={raider} />
-        ))}
+        {attackingRaiders.length > 0 && (
+          <>
+            <div className="font-bold text-white text-xs flex justify-center mt-4">
+              <CrossSwords className="fill-white mr-2" />
+              Raid Attacks
+            </div>
+            {attackingRaiders.map((raider) => (
+              <EnemyRaid key={raider.entityId} raider={raider} />
+            ))}
+          </>
+        )}
       </div>
     </div>
   );
