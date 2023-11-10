@@ -14,7 +14,7 @@ interface ButtonProps {
 
 const STYLES = {
   baseStyle:
-    "inline-flex whitespace-nowrap white transition-all duration-300 items-center justify-center p-2 text-xs font-medium rounded-md",
+    "inline-flex whitespace-nowrap cursor-pointer white transition-all duration-300 items-center justify-center p-2 text-xs font-medium rounded-md",
   primary: "rounded-full py-1 bg-gold hover:bg-gold/50 focus:outline-none",
   default: "text-white/90 border border-transparent shadow-sm",
   enabledStyle: "bg-black/10 hover:bg-black/30 focus:outline-none",
