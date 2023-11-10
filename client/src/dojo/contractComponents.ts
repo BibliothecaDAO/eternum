@@ -4,6 +4,62 @@ import { defineComponent, Type as RecsType, World } from "@latticexyz/recs";
 
 export function defineContractComponents(world: World) {
   return {
+    Attack: (() => {
+      const name = "Attack";
+      return defineComponent(
+        world,
+        {
+          value: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
+    Health: (() => {
+      const name = "Health";
+      return defineComponent(
+        world,
+        {
+          value: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
+    Defence: (() => {
+      const name = "Defence";
+      return defineComponent(
+        world,
+        {
+          value: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
+    TownWatch: (() => {
+      const name = "TownWatch";
+      return defineComponent(
+        world,
+        {
+          town_watch_id: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
     WorldConfig: (() => {
       const name = "WorldConfig";
       return defineComponent(

@@ -4,6 +4,45 @@ interface SystemSigner {
   signer: Account;
 }
 
+export interface CreateSoldiersProps extends SystemSigner {
+  realm_entity_id: num.BigNumberish;
+  quantity: num.BigNumberish;
+}
+
+export enum Duty {
+  ATTACK = 0,
+  DEFEND = 1,
+}
+
+export interface GroupAndDeploySoldiersProps extends SystemSigner {
+  realm_entity_id: num.BigNumberish;
+  soldier_ids: num.BigNumberish[];
+  duty: Duty;
+}
+
+export interface UngroupSoldiersProps extends SystemSigner {
+  group_id: num.BigNumberish;
+}
+
+export interface UngroupAndRegroupSoldiersProps extends SystemSigner {
+  group_id: num.BigNumberish;
+  realm_entity_id: num.BigNumberish;
+  new_total_quantity: num.BigNumberish;
+  // if empty, no new soldier in the group
+  new_soldier_ids: num.BigNumberish[];
+  duty: Duty;
+}
+
+export interface AttackProps extends SystemSigner {
+  attacker_ids: num.BigNumberish[];
+  target_id: num.BigNumberish;
+}
+
+export interface StealProps extends SystemSigner {
+  attacker_id: num.BigNumberish;
+  target_id: num.BigNumberish;
+}
+
 export interface TravelProps extends SystemSigner {
   travelling_entity_id: num.BigNumberish;
   destination_coord_x: num.BigNumberish;

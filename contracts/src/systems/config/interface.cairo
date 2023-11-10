@@ -31,6 +31,13 @@ trait ICapacityConfig<TContractState> {
 
 #[starknet::interface]
 trait ICombatConfig<TContractState> {
+    fn set_combat_config(
+        self: @TContractState, 
+        world: IWorldDispatcher, 
+        config_id: u128, 
+        stealing_trial_count: u32
+    );
+
     fn set_soldier_config(
         self: @TContractState, 
         world: IWorldDispatcher, 
@@ -40,21 +47,21 @@ trait ICombatConfig<TContractState> {
     fn set_health_config(
         self: @TContractState, 
         world: IWorldDispatcher, 
-        config_id: u128, 
+        entity_type: u128, 
         value: u128
     );
 
     fn set_attack_config(
         self: @TContractState, 
         world: IWorldDispatcher, 
-        config_id: u128, 
+        entity_type: u128, 
         value: u128
     );
 
     fn set_defence_config(
         self: @TContractState, 
         world: IWorldDispatcher, 
-        config_id: u128, 
+        entity_type: u128, 
         value: u128
     );
 }

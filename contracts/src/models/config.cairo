@@ -125,6 +125,13 @@ struct SpeedConfig {
 }
 
 #[derive(Model, Copy, Drop, Serde)]
+struct CombatConfig {
+    #[key]
+    config_id: u128,
+    stealing_trial_count: u32
+}
+
+#[derive(Model, Copy, Drop, Serde)]
 struct SoldierConfig {
     #[key]
     config_id: u128,
@@ -135,7 +142,7 @@ struct SoldierConfig {
 #[derive(Model, Copy, Drop, Serde)]
 struct HealthConfig {
     #[key]
-    config_id: u128,
+    entity_type: u128,
     value: u128,
 }
 
@@ -143,7 +150,7 @@ struct HealthConfig {
 #[derive(Model, Copy, Drop, Serde)]
 struct AttackConfig {
     #[key]
-    config_id: u128,
+    entity_type: u128,
     value: u128,
 }
 
@@ -151,7 +158,7 @@ struct AttackConfig {
 #[derive(Model, Copy, Drop, Serde)]
 struct DefenceConfig {
     #[key]
-    config_id: u128,
+    entity_type: u128,
     value: u128,
 }
 

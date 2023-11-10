@@ -6,7 +6,7 @@ mod config_systems {
     use eternum::models::config::{
         LaborCostResources, LaborCostAmount, LaborConfig,CapacityConfig, 
         RoadConfig, SpeedConfig, TravelConfig, WeightConfig,WorldConfig,
-        SoldierConfig, HealthConfig, AttackConfig, DefenceConfig
+        SoldierConfig, HealthConfig, AttackConfig, DefenceConfig, CombatConfig
     };
 
     use eternum::systems::config::interface::{
@@ -16,7 +16,7 @@ mod config_systems {
 
     use eternum::constants::{
         WORLD_CONFIG_ID, LABOR_CONFIG_ID, TRANSPORT_CONFIG_ID,
-        ROAD_CONFIG_ID, SOLDIER_CONFIG_ID
+        ROAD_CONFIG_ID, SOLDIER_ENTITY_TYPE, COMBAT_CONFIG_ID
     };
 
     use eternum::models::hyperstructure::HyperStructure;
@@ -87,6 +87,23 @@ mod config_systems {
     
     #[external(v0)]
     impl CombatConfigImpl of ICombatConfig<ContractState> {
+
+        fn set_combat_config(
+            self: @ContractState, 
+            world: IWorldDispatcher, 
+            config_id: u128, 
+            stealing_trial_count: u32
+        ) {
+            set!(
+                world,
+                (CombatConfig {
+                    config_id,
+                    stealing_trial_count
+                })
+            );
+        }
+
+
         fn set_soldier_config(
             self: @ContractState, 
             world: IWorldDispatcher, 
@@ -115,7 +132,7 @@ mod config_systems {
             set!(
                 world,
                 (SoldierConfig {
-                    config_id: SOLDIER_CONFIG_ID,
+                    config_id: SOLDIER_ENTITY_TYPE,
                     resource_cost_id,
                     resource_cost_count: resource_costs.len()
                 })
@@ -125,13 +142,13 @@ mod config_systems {
         fn set_health_config(
             self: @ContractState, 
             world: IWorldDispatcher, 
-            config_id: u128, 
+            entity_type: u128, 
             value: u128
         ) {
             set!(
                 world,
                 (HealthConfig {
-                    config_id,
+                    entity_type,
                     value
                 })
             );
@@ -140,13 +157,13 @@ mod config_systems {
         fn set_attack_config(
             self: @ContractState, 
             world: IWorldDispatcher, 
-            config_id: u128, 
+            entity_type: u128, 
             value: u128
         ) {
             set!(
                 world,
                 (AttackConfig {
-                    config_id,
+                    entity_type,
                     value
                 })
             );
@@ -156,13 +173,13 @@ mod config_systems {
         fn set_defence_config(
             self: @ContractState, 
             world: IWorldDispatcher, 
-            config_id: u128, 
+            entity_type: u128, 
             value: u128
         ) {
             set!(
                 world,
                 (DefenceConfig {
-                    config_id,
+                    entity_type,
                     value
                 })
             );

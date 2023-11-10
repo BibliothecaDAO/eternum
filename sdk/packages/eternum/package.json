@@ -17,7 +17,7 @@
   "license": "MIT",
   "main": "./dist/index.js",
   "dependencies": {
-    "@dojoengine/core": "^0.1.21",
+    "@dojoengine/core": "^0.1.31",
     "starknet": "^5.19.5"
   },
   "devDependencies": {

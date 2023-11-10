@@ -1,4 +1,4 @@
-import { RPCProvider } from "@dojoengine/core";
+import { RPCProvider, getContractByName } from "@dojoengine/core";
 import {
   AcceptOrderProps,
   AttachCaravanProps,
@@ -20,28 +20,29 @@ import {
   TransferResourcesProps,
   TravelProps,
   OffloadResourcesProps,
+  CreateSoldiersProps,
+  GroupAndDeploySoldiersProps,
+  UngroupSoldiersProps,
+  UngroupAndRegroupSoldiersProps,
+  AttackProps,
+  StealProps,
 } from "../types";
 import { Call } from "starknet";
-import { DEV_CONTRACTS, PROD_CONTRACTS } from "../constants";
 
-// const UUID_OFFSET_CREATE_ORDER = 3;
 const UUID_OFFSET_CREATE_CARAVAN = 2;
 
 export class EternumProvider extends RPCProvider {
-  public contracts: typeof DEV_CONTRACTS | typeof PROD_CONTRACTS;
-
-  constructor(world_address: string, isDev: boolean, url?: string) {
-    super(world_address, undefined, url);
-    this.contracts = isDev ? DEV_CONTRACTS : PROD_CONTRACTS;
+  constructor(world_address: string, url?: string, manifest: any = undefined) {
+    super(world_address, manifest, url);
   }
 
   public async purchase_labor(props: PurchaseLaborProps): Promise<any> {
     const { signer, entity_id, resource_type, labor_units, multiplier } = props;
 
     const tx = await this.executeMulti(signer, {
-      contractAddress: this.contracts.LABOR_SYSTEMS,
+      contractAddress: getContractByName(this.manifest, "labor_systems"),
       calldata: {
-        world: this.contracts.WORLD_ADDRESS,
+        world: this.getWorldAddress(),
         entity_id,
         resource_type,
         labor_units: (labor_units as number) * (multiplier as number),
@@ -58,9 +59,9 @@ export class EternumProvider extends RPCProvider {
   public async build_labor(props: BuildLaborProps) {
     const { entity_id, resource_type, labor_units, multiplier, signer } = props;
     const tx = await this.executeMulti(signer, {
-      contractAddress: this.contracts.LABOR_SYSTEMS,
+      contractAddress: getContractByName(this.manifest, "labor_systems"),
       entrypoint: "build",
-      calldata: [this.contracts.WORLD_ADDRESS, entity_id, resource_type, labor_units, multiplier],
+      calldata: [this.getWorldAddress(), entity_id, resource_type, labor_units, multiplier],
     });
 
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -71,9 +72,9 @@ export class EternumProvider extends RPCProvider {
   public async harvest_labor(props: HarvestLaborProps) {
     const { realm_id, resource_type, signer } = props;
     const tx = await this.executeMulti(signer, {
-      contractAddress: this.contracts.LABOR_SYSTEMS,
+      contractAddress: getContractByName(this.manifest, "labor_systems"),
       entrypoint: "harvest",
-      calldata: [this.contracts.WORLD_ADDRESS, realm_id, resource_type],
+      calldata: [this.getWorldAddress(), realm_id, resource_type],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -83,9 +84,9 @@ export class EternumProvider extends RPCProvider {
   public async mint_resources(props: MintResourcesProps) {
     const { entity_id, resources, signer } = props;
     const tx = await this.executeMulti(signer, {
-      contractAddress: this.contracts.TEST_RESOURCE_SYSTEMS,
+      contractAddress: getContractByName(this.manifest, "test_resource_systems"),
       entrypoint: "mint",
-      calldata: [this.contracts.WORLD_ADDRESS, entity_id, resources.length / 2, ...resources],
+      calldata: [this.getWorldAddress(), entity_id, resources.length / 2, ...resources],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -116,24 +117,24 @@ export class EternumProvider extends RPCProvider {
 
       transactions.push(
         {
-          contractAddress: this.contracts.TRANSPORT_UNIT_SYSTEMS,
+          contractAddress: getContractByName(this.manifest, "transport_unit_systems"),
           entrypoint: "create_free_unit",
-          calldata: [this.contracts.WORLD_ADDRESS, maker_id, donkeys_quantity],
+          calldata: [this.getWorldAddress(), maker_id, donkeys_quantity],
         },
         {
-          contractAddress: this.contracts.CARAVAN_SYSTEMS,
+          contractAddress: getContractByName(this.manifest, "caravan_systems"),
           entrypoint: "create",
-          calldata: [this.contracts.WORLD_ADDRESS, [uuid].length, ...[uuid]],
+          calldata: [this.getWorldAddress(), [uuid].length, ...[uuid]],
         },
       );
     }
 
     // // Common transaction for creating an order
     transactions.push({
-      contractAddress: this.contracts.TRADE_SYSTEMS,
+      contractAddress: getContractByName(this.manifest, "trade_systems"),
       entrypoint: "create_order",
       calldata: [
-        this.contracts.WORLD_ADDRESS,
+        this.getWorldAddress(),
         maker_id,
         maker_gives_resource_types.length,
         ...maker_gives_resource_types,
@@ -168,14 +169,14 @@ export class EternumProvider extends RPCProvider {
 
       transactions.push(
         {
-          contractAddress: this.contracts.TRANSPORT_UNIT_SYSTEMS,
+          contractAddress: getContractByName(this.manifest, "transport_unit_systems"),
           entrypoint: "create_free_unit",
-          calldata: [this.contracts.WORLD_ADDRESS, taker_id, donkeys_quantity],
+          calldata: [this.getWorldAddress(), taker_id, donkeys_quantity],
         },
         {
-          contractAddress: this.contracts.CARAVAN_SYSTEMS,
+          contractAddress: getContractByName(this.manifest, "caravan_systems"),
           entrypoint: "create",
-          calldata: [this.contracts.WORLD_ADDRESS, [transport_unit_ids].length, ...[transport_unit_ids]],
+          calldata: [this.getWorldAddress(), [transport_unit_ids].length, ...[transport_unit_ids]],
         },
       );
     }
@@ -183,9 +184,9 @@ export class EternumProvider extends RPCProvider {
     if (final_caravan_id) {
       // Common transactions
       transactions.push({
-        contractAddress: this.contracts.TRADE_SYSTEMS,
+        contractAddress: getContractByName(this.manifest, "trade_systems"),
         entrypoint: "accept_order",
-        calldata: [this.contracts.WORLD_ADDRESS, taker_id, final_caravan_id, trade_id],
+        calldata: [this.getWorldAddress(), taker_id, final_caravan_id, trade_id],
       });
     }
 
@@ -198,9 +199,9 @@ export class EternumProvider extends RPCProvider {
   public async cancel_fungible_order(props: CancelFungibleOrderProps) {
     const { trade_id, signer } = props;
     const tx = await this.executeMulti(signer, {
-      contractAddress: this.contracts.TRADE_SYSTEMS,
+      contractAddress: getContractByName(this.manifest, "trade_systems"),
       entrypoint: "cancel_order",
-      calldata: [this.contracts.WORLD_ADDRESS, trade_id],
+      calldata: [this.getWorldAddress(), trade_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -210,9 +211,9 @@ export class EternumProvider extends RPCProvider {
   public async offload_chest(props: OffloadResourcesProps) {
     const { entity_id, entity_index_in_inventory, receiving_entity_id, transport_id, signer } = props;
     const tx = await this.executeMulti(signer, {
-      contractAddress: this.contracts.RESOURCE_SYSTEMS,
+      contractAddress: getContractByName(this.manifest, "resource_systems"),
       entrypoint: "offload_chest",
-      calldata: [this.contracts.WORLD_ADDRESS, entity_id, entity_index_in_inventory, receiving_entity_id, transport_id],
+      calldata: [this.getWorldAddress(), entity_id, entity_index_in_inventory, receiving_entity_id, transport_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -222,9 +223,9 @@ export class EternumProvider extends RPCProvider {
   public async create_free_transport_unit(props: CreateFreeTransportUnitProps) {
     const { realm_id, quantity, signer } = props;
     const tx = await this.executeMulti(signer, {
-      contractAddress: this.contracts.TRANSPORT_UNIT_SYSTEMS,
+      contractAddress: getContractByName(this.manifest, "transport_unit_systems"),
       entrypoint: "create_free_unit",
-      calldata: [this.contracts.WORLD_ADDRESS, realm_id, quantity],
+      calldata: [this.getWorldAddress(), realm_id, quantity],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -234,9 +235,9 @@ export class EternumProvider extends RPCProvider {
   public async create_caravan(props: CreateCaravanProps) {
     const { entity_ids, signer } = props;
     const tx = await this.executeMulti(signer, {
-      contractAddress: this.contracts.CARAVAN_SYSTEMS,
+      contractAddress: getContractByName(this.manifest, "caravan_systems"),
       entrypoint: "create",
-      calldata: [this.contracts.WORLD_ADDRESS, entity_ids.length, ...entity_ids],
+      calldata: [this.getWorldAddress(), entity_ids.length, ...entity_ids],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -246,9 +247,9 @@ export class EternumProvider extends RPCProvider {
   public async attach_caravan(props: AttachCaravanProps) {
     const { realm_id, trade_id, caravan_id, signer } = props;
     const tx = await this.executeMulti(signer, {
-      contractAddress: this.contracts.TRADE_SYSTEMS,
+      contractAddress: getContractByName(this.manifest, "trade_systems"),
       entrypoint: "attach_caravan",
-      calldata: [this.contracts.WORLD_ADDRESS, realm_id, trade_id, caravan_id],
+      calldata: [this.getWorldAddress(), realm_id, trade_id, caravan_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -259,19 +260,14 @@ export class EternumProvider extends RPCProvider {
     const { entity_id, resource_type, labor_units, multiplier, signer } = props;
     const tx = await this.executeMulti(signer, [
       {
-        contractAddress: this.contracts.LABOR_SYSTEMS,
+        contractAddress: getContractByName(this.manifest, "labor_systems"),
         entrypoint: "purchase",
-        calldata: [
-          this.contracts.WORLD_ADDRESS,
-          entity_id,
-          resource_type,
-          (labor_units as number) * (multiplier as number),
-        ],
+        calldata: [this.getWorldAddress(), entity_id, resource_type, (labor_units as number) * (multiplier as number)],
       },
       {
-        contractAddress: this.contracts.LABOR_SYSTEMS,
+        contractAddress: getContractByName(this.manifest, "labor_systems"),
         entrypoint: "build",
-        calldata: [this.contracts.WORLD_ADDRESS, entity_id, resource_type, labor_units, multiplier],
+        calldata: [this.getWorldAddress(), entity_id, resource_type, labor_units, multiplier],
       },
     ]);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -300,10 +296,10 @@ export class EternumProvider extends RPCProvider {
 
     const tx = await this.executeMulti(signer, [
       {
-        contractAddress: this.contracts.TEST_REALM_SYSTEMS,
+        contractAddress: getContractByName(this.manifest, "test_realm_systems"),
         entrypoint: "create",
         calldata: [
-          this.contracts.WORLD_ADDRESS,
+          this.getWorldAddress(),
           realm_id,
           owner,
           resource_types_packed,
@@ -320,9 +316,9 @@ export class EternumProvider extends RPCProvider {
         ],
       },
       {
-        contractAddress: this.contracts.TEST_RESOURCE_SYSTEMS,
+        contractAddress: getContractByName(this.manifest, "test_resource_systems"),
         entrypoint: "mint",
-        calldata: [this.contracts.WORLD_ADDRESS, uuid, resources.length / 2, ...resources],
+        calldata: [this.getWorldAddress(), uuid, resources.length / 2, ...resources],
       },
     ]);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -333,10 +329,10 @@ export class EternumProvider extends RPCProvider {
   public async create_road(props: CreateRoadProps) {
     const { creator_id, start_coord, end_coord, usage_count, signer } = props;
     const tx = await this.executeMulti(signer, {
-      contractAddress: this.contracts.ROAD_SYSTEMS,
+      contractAddress: getContractByName(this.manifest, "road_systems"),
       entrypoint: "create",
       calldata: [
-        this.contracts.WORLD_ADDRESS,
+        this.getWorldAddress(),
         creator_id,
         start_coord.x,
         start_coord.y,
@@ -353,15 +349,9 @@ export class EternumProvider extends RPCProvider {
   public async transfer_resources(props: TransferResourcesProps) {
     const { sending_entity_id, receiving_entity_id, resources, signer } = props;
     const tx = await this.executeMulti(signer, {
-      contractAddress: this.contracts.RESOURCE_SYSTEMS,
+      contractAddress: getContractByName(this.manifest, "resource_systems"),
       entrypoint: "transfer",
-      calldata: [
-        this.contracts.WORLD_ADDRESS,
-        sending_entity_id,
-        receiving_entity_id,
-        resources.length / 2,
-        ...resources,
-      ],
+      calldata: [this.getWorldAddress(), sending_entity_id, receiving_entity_id, resources.length / 2, ...resources],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -389,14 +379,14 @@ export class EternumProvider extends RPCProvider {
 
       transactions.push(
         {
-          contractAddress: this.contracts.TRANSPORT_UNIT_SYSTEMS,
+          contractAddress: getContractByName(this.manifest, "transport_unit_systems"),
           entrypoint: "create_free_unit",
-          calldata: [this.contracts.WORLD_ADDRESS, sending_entity_id, donkeys_quantity],
+          calldata: [this.getWorldAddress(), sending_entity_id, donkeys_quantity],
         },
         {
-          contractAddress: this.contracts.CARAVAN_SYSTEMS,
+          contractAddress: getContractByName(this.manifest, "caravan_systems"),
           entrypoint: "create",
-          calldata: [this.contracts.WORLD_ADDRESS, [transport_unit_ids].length, ...[transport_unit_ids]],
+          calldata: [this.getWorldAddress(), [transport_unit_ids].length, ...[transport_unit_ids]],
         },
       );
     }
@@ -405,20 +395,14 @@ export class EternumProvider extends RPCProvider {
       // Common transactions
       transactions.push(
         {
-          contractAddress: this.contracts.RESOURCE_SYSTEMS,
+          contractAddress: getContractByName(this.manifest, "resource_systems"),
           entrypoint: "transfer",
-          calldata: [
-            this.contracts.WORLD_ADDRESS,
-            sending_entity_id,
-            final_caravan_id,
-            resources.length / 2,
-            ...resources,
-          ],
+          calldata: [this.getWorldAddress(), sending_entity_id, final_caravan_id, resources.length / 2, ...resources],
         },
         {
-          contractAddress: this.contracts.TRAVEL_SYSTEMS,
+          contractAddress: getContractByName(this.manifest, "travel_systems"),
           entrypoint: "travel",
-          calldata: [this.contracts.WORLD_ADDRESS, final_caravan_id, destination_coord_x, destination_coord_y],
+          calldata: [this.getWorldAddress(), final_caravan_id, destination_coord_x, destination_coord_y],
         },
       );
     }
@@ -434,14 +418,14 @@ export class EternumProvider extends RPCProvider {
 
     const tx = await this.executeMulti(signer, [
       {
-        contractAddress: this.contracts.RESOURCE_SYSTEMS,
+        contractAddress: getContractByName(this.manifest, "resource_systems"),
         entrypoint: "transfer",
-        calldata: [this.contracts.WORLD_ADDRESS, entity_id, hyperstructure_id, resources.length / 2, ...resources],
+        calldata: [this.getWorldAddress(), entity_id, hyperstructure_id, resources.length / 2, ...resources],
       },
       {
-        contractAddress: this.contracts.TRAVEL_SYSTEMS,
+        contractAddress: getContractByName(this.manifest, "travel_systems"),
         entrypoint: "travel",
-        calldata: [this.contracts.WORLD_ADDRESS, entity_id, destination_coord_x, destination_coord_y],
+        calldata: [this.getWorldAddress(), entity_id, destination_coord_x, destination_coord_y],
       },
     ]);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -454,14 +438,14 @@ export class EternumProvider extends RPCProvider {
 
     const tx = await this.executeMulti(signer, [
       {
-        contractAddress: this.contracts.HYPERSTRUCTURE_SYSTEMS,
+        contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
         entrypoint: "initialize",
-        calldata: [this.contracts.WORLD_ADDRESS, entity_id, hyperstructure_id],
+        calldata: [this.getWorldAddress(), entity_id, hyperstructure_id],
       },
       {
-        contractAddress: this.contracts.TRAVEL_SYSTEMS,
+        contractAddress: getContractByName(this.manifest, "travel_systems"),
         entrypoint: "travel",
-        calldata: [this.contracts.WORLD_ADDRESS, entity_id, destination_coord_x, destination_coord_y],
+        calldata: [this.getWorldAddress(), entity_id, destination_coord_x, destination_coord_y],
       },
     ]);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -472,9 +456,9 @@ export class EternumProvider extends RPCProvider {
   public async initialize_hyperstructure(props: InitializeHyperstructuresProps) {
     const { entity_id, hyperstructure_id, signer } = props;
     const tx = await this.executeMulti(signer, {
-      contractAddress: this.contracts.HYPERSTRUCTURE_SYSTEMS,
+      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
       entrypoint: "initialize",
-      calldata: [this.contracts.WORLD_ADDRESS, entity_id, hyperstructure_id],
+      calldata: [this.getWorldAddress(), entity_id, hyperstructure_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -484,9 +468,9 @@ export class EternumProvider extends RPCProvider {
   public async complete_hyperstructure(props: CompleteHyperStructureProps) {
     const { hyperstructure_id, signer } = props;
     const tx = await this.executeMulti(signer, {
-      contractAddress: this.contracts.HYPERSTRUCTURE_SYSTEMS,
+      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
       entrypoint: "complete",
-      calldata: [this.contracts.WORLD_ADDRESS, hyperstructure_id],
+      calldata: [this.getWorldAddress(), hyperstructure_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -496,10 +480,111 @@ export class EternumProvider extends RPCProvider {
   public async travel(props: TravelProps) {
     const { travelling_entity_id, destination_coord_x, destination_coord_y, signer } = props;
     const tx = await this.executeMulti(signer, {
-      contractAddress: this.contracts.TRAVEL_SYSTEMS,
+      contractAddress: getContractByName(this.manifest, "travel_systems"),
       entrypoint: "travel",
-      calldata: [this.contracts.WORLD_ADDRESS, travelling_entity_id, destination_coord_x, destination_coord_y],
+      calldata: [this.getWorldAddress(), travelling_entity_id, destination_coord_x, destination_coord_y],
     });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async create_soldiers(props: CreateSoldiersProps) {
+    const { realm_entity_id, quantity, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      entrypoint: "create_soldiers",
+      calldata: [this.getWorldAddress(), realm_entity_id, quantity],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async group_and_deploy_soldiers(props: GroupAndDeploySoldiersProps) {
+    const { realm_entity_id, soldier_ids, duty, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      entrypoint: "group_and_deploy_soldiers",
+      calldata: [this.getWorldAddress(), realm_entity_id, soldier_ids, duty],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async ungroup_soldiers(props: UngroupSoldiersProps) {
+    const { group_id, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      entrypoint: "ungroup_soldiers",
+      calldata: [this.getWorldAddress(), group_id],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async attack(props: AttackProps) {
+    const { attacker_ids, target_id, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      entrypoint: "attack",
+      calldata: [this.getWorldAddress(), attacker_ids.length, ...attacker_ids, target_id],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async steal(props: StealProps) {
+    const { attacker_id, target_id, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      entrypoint: "steal",
+      calldata: [this.getWorldAddress(), attacker_id, target_id],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async ungroup_and_regroup_soldiers(props: UngroupAndRegroupSoldiersProps) {
+    const { signer, group_id, realm_entity_id, new_total_quantity, new_soldier_ids, duty } = props;
+
+    if ((new_total_quantity as number) < 0) {
+      throw new Error("new_total_quantity must be positive");
+    }
+
+    const soldier_number_from_previous = (new_total_quantity as number) - new_soldier_ids.length;
+
+    if (soldier_number_from_previous < 0) {
+      throw new Error("new_soldier_ids must be less than new_total_quantity");
+    }
+
+    // new soldiers ids is empty if we remove soldiers from a group
+    const uuid = await this.uuid();
+
+    const soldier_ids = [];
+    for (let i = 0; i < soldier_number_from_previous; i++) {
+      soldier_ids.push(uuid + i * 2);
+    }
+
+    // append new_soldier_ids to soldier_ids
+    new_soldier_ids.forEach((id) => soldier_ids.push(id));
+
+    const tx = await this.executeMulti(signer, [
+      {
+        contractAddress: getContractByName(this.manifest, "combat_systems"),
+        entrypoint: "ungroup_soldiers",
+        calldata: [this.getWorldAddress(), group_id],
+      },
+      {
+        contractAddress: getContractByName(this.manifest, "combat_systems"),
+        entrypoint: "group_and_deploy_soldiers",
+        calldata: [this.getWorldAddress(), realm_entity_id, soldier_ids, duty],
+      },
+    ]);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
     });

@@ -65,5 +65,24 @@
         "ArrivalTime",
         "Position",
         "Road"
+    ],
+    "COMBAT_SYSTEMS": [
+        "Resource",
+        "Owner",
+        "EntityOwner",
+        "Health",
+        "Attack",
+        "Defence",
+        "Quantity",
+        "Position",
+        "Inventory",
+        "Movable",
+        "Capacity",
+        "ArrivalTime",
+        "Weight",
+        "ResourceChest",
+        "DetachedResource",
+        "ForeignKey",
+        "Inventory"
     ]
 }

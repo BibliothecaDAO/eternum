@@ -4,15 +4,15 @@
 STARKNET_RPC_URL="http://localhost:5050"
 DOJO_ACCOUNT_ADDRESS="0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973"
 DOJO_PRIVATE_KEY="0x1800000000300000180000000000030000000000003006001800006600"
-SOZO_WORLD="0x57abdb7a9b7d35a4c628ba0a0d1209bd5793b78f1efce4bb3a405ef3f9ad383"
+SOZO_WORLD="0x4d79c99ce9b489b77461e3491970ea5ede1f1966f4d2ff65ee76cd8701d6dad"
 
 # Check if the first argument is provided and set it to "dev" or "prod"
 if [[ ! -z "$1" ]]; then
     if [[ "$1" == "prod" ]]; then
         echo "is prod"
-        STARKNET_RPC_URL="https://api.cartridge.gg/x/eternum/katana"
-        DOJO_ACCOUNT_ADDRESS="0x3f0b949804d6677952974ab11a5b15b46bd0963d1d71ca573460027fc9302f5"
-        DOJO_PRIVATE_KEY="0x44a4d4b4c4ec9cf3720cdb47cad479c014e50a9b9b78f9cc23efc16c602c224"
+        STARKNET_RPC_URL="https://api.cartridge.gg/x/eternum2/katana"
+        DOJO_ACCOUNT_ADDRESS="0x4011e376fe0e8be617470fc8c3ccb11a0f88e383e42ed6af9d934f7d3af8091"
+        DOJO_PRIVATE_KEY="0x7318b1bb2c88be4d85f7df34eed7f3bfcc396e7cadae945fe6465cf8f589055"
     elif [[ "$1" != "dev" ]]; then
         echo "Invalid argument. Use 'dev' or 'prod'."
         exit 1
