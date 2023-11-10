@@ -20,7 +20,7 @@ export const Defence = ({ watchTower, onReinforce, onHeal, ...props }: DefencePr
         <div className="flex  text-white items-center mb-2">
           <div className="font-bold text-xs">City Tower</div>
           <div className="flex items-center text-xxs ml-auto">
-            <div className="text-order-brilliance">{health.toLocaleString()}</div>&nbsp;/ {10 * quantity} HP
+            <div className="text-order-brilliance">{health && health.toLocaleString()}</div>&nbsp;/ {10 * quantity} HP
           </div>
           {onHeal && (
             <Button onClick={onHeal} className="ml-2" variant="success" size="xs">

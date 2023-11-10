@@ -162,39 +162,18 @@ export const CreateBattalionPopup = ({ onClose }: RoadBuildPopupProps) => {
           </div>
           <div className="flex flex-col items-center justify-center">
             <div className="flex">
-              {!loading && (
-                <Button
-                  className="!px-[6px] mr-2 !py-[2px] text-xxs ml-auto"
-                  onClick={onClose}
-                  variant="outline"
-                  withoutSound
-                >
-                  {`Cancel`}
-                </Button>
-              )}
-              {!loading && (
-                <Button
-                  className="!px-[6px] !py-[2px] text-xxs ml-auto"
-                  disabled={!canBuild}
-                  onClick={onBuild}
-                  variant="outline"
-                  withoutSound
-                >
-                  {`Build Battalions`}
-                </Button>
-              )}
-              {loading && (
-                <Button
-                  onClick={() => {}}
-                  className="!px-[6px] !py-[2px] text-xxs ml-auto"
-                  disabled={!canBuild}
-                  isLoading={true}
-                  variant="outline"
-                  withoutSound
-                >
-                  {}
-                </Button>
-              )}
+              <Button className="!px-[6px] mr-2 !py-[2px] text-xxs ml-auto" onClick={onClose} variant="outline">
+                {`Cancel`}
+              </Button>
+              <Button
+                className="!px-[6px] !py-[2px] text-xxs ml-auto"
+                disabled={!canBuild}
+                onClick={onBuild}
+                variant="outline"
+                isLoading={loading}
+              >
+                {`Build Battalions`}
+              </Button>
             </div>
             {!canBuild && <div className="text-xxs text-order-giants/70">Insufficient resources</div>}
           </div>
