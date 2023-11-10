@@ -11,11 +11,12 @@ import { ReactComponent as Copy } from "../assets/icons/common/copy.svg";
 import { ReactComponent as Import } from "../assets/icons/common/import.svg";
 
 type SignUpComponentProps = {
+  isWorldLive: boolean;
   worldLoading: boolean;
   worldProgress: number;
 };
 
-export const SignUpComponent = ({ worldLoading, worldProgress }: SignUpComponentProps) => {
+export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: SignUpComponentProps) => {
   const {
     account: { create, isDeploying, list, account, select, clear },
   } = useDojo();
@@ -177,12 +178,18 @@ export const SignUpComponent = ({ worldLoading, worldProgress }: SignUpComponent
           />
           <Button
             // @note: currently disabled for prod, enable back when new version is ready
-            disabled={!isWalletSelected || worldLoading || disableStart}
+            disabled={!isWalletSelected || worldLoading || disableStart || !isWorldLive}
             className="mt-2 !p-2"
             variant={worldLoading || isWalletSelected ? "primary" : "outline"}
             onClick={() => setShowSignupPopup(false)}
           >
-            {worldLoading ? "World Loading" : isWalletSelected ? "Start playing" : "No wallet selected"}
+            {!isWorldLive
+              ? "No World"
+              : worldLoading
+              ? "World Loading"
+              : isWalletSelected
+              ? "Start playing"
+              : "No wallet selected"}
           </Button>
           {/* Progress text */}
           {worldLoading && (
@@ -190,7 +197,7 @@ export const SignUpComponent = ({ worldLoading, worldProgress }: SignUpComponent
           )}
           <div className="flex items-center mt-2 mb-1 text-xs text-center text-white">
             <Danger />
-            <div className="ml-1 text-danger">Eternum in maintenance. Next update November 7th</div>
+            <div className="ml-1 text-danger">Eternum in maintenance. Next update soon.</div>
           </div>
           {/* <Headline size="big">Sign Up</Headline>
           <div className="flex flex-col w-full text-center text-xs text-white">

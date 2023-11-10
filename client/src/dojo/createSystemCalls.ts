@@ -146,7 +146,17 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.ungroup_and_regroup_soldiers(props)));
   };
 
+  const isLive = async () => {
+    try {
+      await provider.uuid();
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   return {
+    isLive,
     create_soldiers,
     group_and_deploy_soldiers,
     ungroup_soldiers,
