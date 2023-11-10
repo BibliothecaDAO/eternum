@@ -1,7 +1,5 @@
 import React from "react";
 import clsx from "clsx";
-import { ReactComponent as DonkeyIcon } from "../../../../../assets/icons/units/donkey-circle.svg";
-import { Dot } from "../../../../../elements/Dot";
 import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import Button from "../../../../../elements/Button";
