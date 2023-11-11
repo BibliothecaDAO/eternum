@@ -30,8 +30,7 @@ export const Defence = ({ watchTower, onReinforce, onHeal, ...props }: DefencePr
         </div>
         <div className="grid grid-cols-12 gap-0.5">
           <ProgressBar
-            containerClassName="col-span-12 !h-1 !bg-order-giants"
-            className="!h-1"
+            containerClassName="col-span-12 !bg-order-giants"
             rounded
             progress={health ? (health / (10 * quantity)) * 100 : 0}
           />
