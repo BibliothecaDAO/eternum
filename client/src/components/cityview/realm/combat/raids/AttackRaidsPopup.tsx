@@ -10,6 +10,7 @@ import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
 import { Defence } from "../defence/Defence";
 import { useComponentValue } from "@dojoengine/react";
 import { SelectRaiders } from "./SelectRaiders";
+import clsx from "clsx";
 
 type RoadBuildPopupProps = {
   selectedRaider: CombatInfo;
@@ -37,13 +38,13 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: RoadBuildPopupProp
   }, []);
 
   return (
-    <SecondaryPopup>
+    <SecondaryPopup name="attack">
       <SecondaryPopup.Head>
         <div className="flex items-center space-x-1">
           <div className="mr-0.5">Attack Realm:</div>
         </div>
       </SecondaryPopup.Head>
-      <SecondaryPopup.Body width={"800px"}>
+      <SecondaryPopup.Body width={"410px"}>
         <div className="flex flex-col items-center p-2">
           {step == 1 && (
             <SelectRaidersPanel
@@ -289,107 +290,69 @@ const SelectRaidersPanel = ({
   };
 
   return (
-    <div>
-      <div className="flex flex-col items-center p-2">
+    <>
+      <div className="flex flex-col items-center w-full">
         {/* {toRealm && <Headline size="big">Build road to {realmsData["features"][toRealm.realmId - 1].name}</Headline>} */}
-        <div className={"relative w-full mt-3"}>
-          <div className="flex flex-cols justify-center mb-3">
-            {watchTower && <Defence className={"mr-2"} watchTower={watchTower}></Defence>}
-            <div className="ml-2 space-y-2 overflow-y-auto w-[400px]">
-              <div className="font-bold text-white text-xs mb-2">Select Raiders</div>
-              <SelectRaiders
-                attackingRaiders={attackingRaiders}
-                selectedRaiders={selectedRaiders}
-                setSelectedRaiders={setSelectedRaiders}
-              ></SelectRaiders>
-            </div>
-          </div>
-
-          <div className="flex flex-col p-2 left-2 bottom-2 rounded-[10px] bg-black/60">
-            <div className="mb-1 ml-1 italic text-light-pink text-xs">Stats:</div>
-            <div className="mb-1 ml-1 italic text-light-pink text-xs flex flex-row justify-start">
-              <div>
-                <div> Total Raiders Attack: </div>
-                <div> {attackerTotalAttack}</div>
-                <div> Total Raiders Defence: </div>
-                <div> {attackerTotalDefence}</div>
-              </div>
-              <div>
-                <div> Total WatchTower Attack: </div>
-                <div> {watchTower?.attack || 0}</div>
-                <div> Total WatchTower Defence: </div>
-                <div> {watchTower?.defence || 0}</div>
-              </div>
-              <div className="ml-10">
-                <div> Prob Success: </div>
-                <div> {succesProb}</div>
-                {/* <div> Formula: </div>
-                <div>
-                  {
-                    "(Attacker Attack * Attacker Health) / (Attacker Attack * Attacker Health + Defender Defence * Defender Health)"
-                  }
-                </div> */}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="flex justify-between p-2 text-xxs w-full">
-        <div className="flex flex-col items-center justify-center w-full">
-          <div className="flex justify-between w-full">
-            {!loading && (
+        <div className="p-2 rounded border border-gold w-full flex flex-col">
+          {watchTower && <Defence watchTower={watchTower}></Defence>}
+          <div className="flex mt-2 flex-col items-center justify-center w-full">
+            <div className="grid mb-1 grid-cols-2 gap-2 w-full">
               <Button
-                className="!px-[6px] mr-2 !py-[2px] text-xxs ml-auto"
-                onClick={onClose}
-                variant="outline"
-                withoutSound
-              >
-                {`Cancel`}
-              </Button>
-            )}
-            <div className="flex-grow"></div> {/* This will push the remaining buttons to the far right */}
-            {!loading && (
-              <Button
-                className="!px-[6px] mr-2 !py-[2px] text-xxs ml-auto"
+                className="w-full text-xxs h-[18px]"
                 disabled={selectedRaiders.length !== 1}
                 onClick={onSteal}
-                variant="outline"
-                withoutSound
+                isLoading={loading}
+                variant="primary"
               >
                 {`Steal Resources`}
               </Button>
-            )}
-            {!loading && (
               <Button
-                className="!px-[6px] !py-[2px] text-xxs ml-auto"
+                className="w-full text-xxs h-[18px]"
                 disabled={!(selectedRaiders.length > 0 && watchTower?.health > 0)}
                 onClick={onAttack}
+                isLoading={loading}
                 variant="outline"
-                withoutSound
               >
                 {`Attack Realm`}
               </Button>
-            )}
-            {loading && (
-              <Button
-                className="!px-[6px] !py-[2px] text-xxs ml-auto"
-                onClick={() => {}}
-                isLoading={true}
-                variant="outline"
-                withoutSound
+            </div>
+            {selectedRaiders.length > 0 && (
+              <div
+                className={clsx(
+                  "text-xxs flex justify-around w-full",
+                  succesProb > 0.5 ? "text-order-brilliance/70" : "text-order-giants/70",
+                )}
               >
-                {}
-              </Button>
+                <div className="">{(succesProb * 100).toFixed(0)}% success rate</div>
+                <div className="">{(succesProb * 100).toFixed(0)}% success rate</div>
+              </div>
+            )}
+            {!(selectedRaiders.length > 0) && (
+              <div className="text-xxs text-order-giants/70">Select at least 1 Raiders Group</div>
+            )}
+            {selectedRaiders.length > 0 && selectedRaiders.length !== 1 && (
+              <div className="text-xxs text-order-giants/70">Can only steal with 1 Raiders Group</div>
             )}
           </div>
-          {!(selectedRaiders.length > 0) && (
-            <div className="text-xxs text-order-giants/70">Select at least 1 Raiders Group</div>
-          )}
-          {selectedRaiders.length > 0 && selectedRaiders.length !== 1 && (
-            <div className="text-xxs text-order-giants/70">Can only steal with 1 Raiders Group</div>
-          )}
         </div>
+
+        <div className={"relative w-full mt-3"}>
+          <div className="font-bold text-center text-white text-xs mb-2">Select Raiders</div>
+          <SelectRaiders
+            attackingRaiders={attackingRaiders}
+            selectedRaiders={selectedRaiders}
+            setSelectedRaiders={setSelectedRaiders}
+          ></SelectRaiders>
+        </div>
+        <Button
+          className="!px-[6px] mt-2 !py-[2px] text-xxs mr-auto"
+          onClick={onClose}
+          isLoading={loading}
+          variant="outline"
+        >
+          {`Cancel`}
+        </Button>
       </div>
-    </div>
+    </>
   );
 };

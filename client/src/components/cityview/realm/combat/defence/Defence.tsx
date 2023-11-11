@@ -14,9 +14,9 @@ export const Defence = ({ watchTower, onReinforce, onHeal, ...props }: DefencePr
   const { health, quantity, attack, defence } = watchTower;
 
   return (
-    <div className={clsx("flex", props.className)}>
-      <img src={`/images/buildings/defence_tower.png`} className="object-cover rounded-md w-[130px]" />
-      <div className="flex flex-col w-full h-full ml-2">
+    <div className={clsx("flex flex-1 w-full", props.className)}>
+      <img src={`/images/buildings/defence_tower.png`} className="object-cover rounded-md w-[107px]" />
+      <div className="flex flex-col w-full min-w-[244px] h-full ml-2">
         <div className="flex  text-white items-center mb-2">
           <div className="font-bold text-xs">City Tower</div>
           <div className="flex items-center text-xxs ml-auto">
