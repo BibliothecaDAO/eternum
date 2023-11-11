@@ -336,7 +336,7 @@ const SelectRaidersPanel = ({
           </div>
         </div>
 
-        <div className={"relative w-full mt-3"}>
+        <div className={"relative w-full mt-2"}>
           <div className="font-bold text-center text-white text-xs mb-2">Select Raiders</div>
           <SelectRaiders
             attackingRaiders={attackingRaiders}
