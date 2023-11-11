@@ -17,20 +17,12 @@ import { TravelRaidsPopup } from "./TravelRaidsPopup";
 type MarketPanelProps = {};
 
 export const RaidsPanel = ({}: MarketPanelProps) => {
-  const [activeFilter, setActiveFilter] = useState(false);
   const [showBuildRaiders, setShowBuildRaiders] = useState(false);
-  const [selectedResources, setSelectedResources] = useState<string[]>([]);
-  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [selectedRaider, setSelectedRaider] = useState<CombatInfo>(null);
 
   const [showTravelRaid, setShowTravelRaid] = useState(false);
   const [showAttackRaid, setShowAttackRaid] = useState(false);
   const [showManageRaid, setShowManageRaid] = useState(false);
-
-  const [activeSort, setActiveSort] = useState<SortInterface>({
-    sortKey: "number",
-    sort: "none",
-  });
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
@@ -41,42 +33,8 @@ export const RaidsPanel = ({}: MarketPanelProps) => {
     return getEntitiesCombatInfo(entities);
   }, [entities]);
 
-  const sortingParams = useMemo(() => {
-    return [
-      { label: "Realm", sortKey: "realm" },
-      { label: "Give", sortKey: "give", className: "ml-4" },
-      { label: "Exchange rate", sortKey: "ratio", className: "ml-auto mr-4" },
-      { label: "Get", sortKey: "get", className: "ml-auto mr-4" },
-      { label: "Travel time", sortKey: "time", className: "ml-auto mr-4" },
-    ];
-  }, []);
-
   return (
     <div className="relative flex flex-col pb-3 min-h-[120px]">
-      <FiltersPanel className="px-3 py-2">
-        <FilterButton active={activeFilter} onClick={() => setActiveFilter(!activeFilter)}>
-          Filter
-        </FilterButton>
-        <ResourceFilter selectedResources={selectedResources} setSelectedResources={setSelectedResources} />
-        <OrdersFilter selectedOrders={selectedOrders} setSelectedOrders={setSelectedOrders} />
-      </FiltersPanel>
-      <SortPanel className="px-3 py-2">
-        {sortingParams.map(({ label, sortKey, className }) => (
-          <SortButton
-            className={className}
-            key={sortKey}
-            label={label}
-            sortKey={sortKey}
-            activeSort={activeSort}
-            onChange={(_sortKey, _sort) => {
-              setActiveSort({
-                sortKey: _sortKey,
-                sort: _sort,
-              });
-            }}
-          />
-        ))}
-      </SortPanel>
       {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
       {showBuildRaiders && <CreateRaidsPopup onClose={() => setShowBuildRaiders(false)} />}
       {showManageRaid && <ManageRaidsPopup selectedRaiders={selectedRaider} onClose={() => setShowManageRaid(false)} />}
