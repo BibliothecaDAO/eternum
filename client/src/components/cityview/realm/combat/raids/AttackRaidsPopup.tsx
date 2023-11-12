@@ -1,16 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
 import Button from "../../../../../elements/Button";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../DojoContext";
-import { getEntityIdFromKeys } from "../../../../../utils/utils";
+import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import { calculateSuccess } from "../../../../../utils/combat";
 import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
 import { Defence } from "../defence/Defence";
 import { useComponentValue } from "@dojoengine/react";
 import { SelectRaiders } from "./SelectRaiders";
+import { useResources } from "../../../../../hooks/helpers/useResources";
 import clsx from "clsx";
+import { ResourceCost } from "../../../../../elements/ResourceCost";
+import { ResourceIcon } from "../../../../../elements/ResourceIcon";
+import { findResourceById } from "@bibliothecadao/eternum";
 
 type AttackRaidsPopupProps = {
   selectedRaider: CombatInfo;
@@ -180,10 +184,7 @@ const AttackResultPanel = ({
             </svg>
           </div>
           <div className="italic text-light-pink text-xxs my-2">Your raid group was defeated by the defence army.</div>
-          <img
-            src={`/images/lost_raid.png`}
-            className="object-cover  border border-gold w-full h-full rounded-[10px]"
-          />
+          <img src={`/images/lost_raid.png`} className="object-cover w-full h-full rounded-[10px]" />
           <div className="flex flex-col mt-2 w-full">
             <div className="text-light-pink text-xs">{"Battle losses:"}</div>
             {selectedRaiders.map((raider, i) => (
@@ -236,9 +237,12 @@ const StealResultPanel = ({
     },
   } = useDojo();
 
+  const { getResourcesFromInventory } = useResources();
   const [openedChest, setOpenedChest] = useState(false);
   const attackerHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(selectedRaiders[0].entityId)]));
-
+  const inventoryResources = useMemo(() => {
+    return selectedRaiders[0].entityId ? getResourcesFromInventory(selectedRaiders[0].entityId) : undefined;
+  }, [openedChest]);
   const success = attackerHealth.value === selectedRaiders[0].health;
 
   return (
@@ -278,27 +282,76 @@ const StealResultPanel = ({
             </svg>
           </div>
           <div className="italic text-light-pink text-xxs my-2">You’ve got a golden chest:</div>
-          {!openedChest && (
-            <img src={`/images/chest.png`} className="object-cover border border-gold w-full h-full rounded-[10px]" />
-          )}
+          {!openedChest && <img src={`/images/chest.png`} className="object-cover w-full h-full rounded-[10px]" />}
           {openedChest && (
             <div className="flex relative">
-              <img
-                src={`/images/opened_chest.png`}
-                className="object-cover border border-gold w-full h-full rounded-[10px]"
-              />
+              <img src={`/images/opened_chest.png`} className="object-cover w-full h-full rounded-[10px]" />
+              {inventoryResources && (
+                <div className="flex justify-center items-center space-x-1 flex-wrap p-2 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                  <div className="text-light-pink text-lg w-full mb-2 text-center italic">You won!</div>
+                  {inventoryResources.map(
+                    (resource) =>
+                      resource && (
+                        <div key={resource.resourceId} className="flex flex-col items-center justify-center">
+                          <ResourceIcon size="md" resource={findResourceById(resource.resourceId).trait} />
+                          <div className="text-sm mt-1 text-order-brilliance">
+                            +
+                            {Intl.NumberFormat("en-US", {
+                              notation: "compact",
+                              maximumFractionDigits: 1,
+                            }).format(divideByPrecision(resource.amount) || 0)}
+                          </div>
+                        </div>
+                      ),
+                  )}
+                </div>
+              )}
             </div>
           )}
         </>
       )}
       {!success && (
-        <div>
-          <div>Failed!!!</div>
-          <div>{"Previous Attacker Health:"}</div>
-          <div>{selectedRaiders[0].health}</div>
-          <div>{"New Attacker Health:"}</div>
-          <div>{attackerHealth.value}</div>
-        </div>
+        <>
+          <div className="flex w-full items-center">
+            <svg width="142" height="12" viewBox="0 0 142 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M141.887 6L139 8.88675L136.113 6L139 3.11325L141.887 6ZM139 6.5L1.23874 6.50001L1.23874 5.50001L139 5.5L139 6.5Z"
+                fill="#C84444"
+              />
+              <path
+                d="M17.5986 1L22.2782 4L28.5547 6.00003L22.2782 8L17.5986 11L11 6.5C11 6.5 7.41876 8 5.95938 8C4.5 8 0.999649 6.00003 0.999649 6.00003C0.999649 6.00003 4.5 4 5.95938 4C7.41876 4 11 5.5 11 5.5L17.5986 1Z"
+                fill="#C84444"
+                stroke="#C84444"
+                stroke-linejoin="round"
+              />
+              <circle cx="17.5" cy="6" r="1.5" fill="#1B1B1B" />
+              <circle cx="6" cy="6" r="1" fill="#1B1B1B" />
+            </svg>
+            <div className="text-order-giants text-xs mx-2 flex-1 text-center">Steal failed!</div>
+            <svg width="142" height="12" viewBox="0 0 142 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M0.113249 6L3 8.88675L5.88675 6L3 3.11325L0.113249 6ZM3 6.5L140.761 6.50001L140.761 5.50001L3 5.5L3 6.5Z"
+                fill="#C84444"
+              />
+              <path
+                d="M124.401 1L119.722 4L113.445 6.00003L119.722 8L124.401 11L131 6.5C131 6.5 134.581 8 136.041 8C137.5 8 141 6.00003 141 6.00003C141 6.00003 137.5 4 136.041 4C134.581 4 131 5.5 131 5.5L124.401 1Z"
+                fill="#C84444"
+                stroke="#C84444"
+                stroke-linejoin="round"
+              />
+              <circle cx="1.5" cy="1.5" r="1.5" transform="matrix(-1 0 0 1 126 4.5)" fill="#1B1B1B" />
+              <circle cx="1" cy="1" r="1" transform="matrix(-1 0 0 1 137 5)" fill="#1B1B1B" />
+            </svg>
+          </div>
+          <div className="italic text-light-pink text-xxs my-2">
+            Your raid group was defeated and sent back to home realm.
+          </div>
+          <img src={`/images/lost_raid.png`} className="object-cover w-full h-full rounded-[10px]" />
+          <div className="flex flex-col mt-2 w-full">
+            <div className="text-light-pink text-xs">{"Battle losses:"}</div>
+            <AttackerHealthChange selectedRaider={selectedRaiders[0]} />
+          </div>
+        </>
       )}
       <div className="flex justify-center mt-2 text-xxs w-full">
         <Button
@@ -312,7 +365,7 @@ const StealResultPanel = ({
           }}
           variant="outline"
         >
-          {success ? `Open Chest` : "Close"}
+          {success && !openedChest ? `Open Chest` : "Close"}
         </Button>
       </div>
     </div>

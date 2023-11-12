@@ -8,9 +8,6 @@ import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 import { ReactComponent as Pen } from "../../../../../assets/icons/common/pen.svg";
 import { ReactComponent as CaretDownFill } from "../../../../../assets/icons/common/caret-down-fill.svg";
-import { ReactComponent as PremiumIcon } from "../../../../../assets/icons/units/premium.svg";
-import { ReactComponent as Shield } from "../../../../../assets/icons/units/shield.svg";
-import { Dot } from "../../../../../elements/Dot";
 import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
@@ -230,7 +227,7 @@ export const Raid = ({ raider, ...props }: RaidProps) => {
         )}
         <div className="flex items-center justify-between mt-[8px] text-xxs">
           {inventoryResources && (
-            <div className="flex justify-center items-center space-x-2 flex-wrap">
+            <div className="flex justify-center items-center space-x-1 flex-wrap">
               {inventoryResources.map(
                 (resource) =>
                   resource && (
@@ -238,7 +235,6 @@ export const Raid = ({ raider, ...props }: RaidProps) => {
                       key={resource.resourceId}
                       type="vertical"
                       color="text-order-brilliance"
-                      className="!w-5 mt-0.5"
                       resourceId={resource.resourceId}
                       amount={divideByPrecision(resource.amount)}
                     />
