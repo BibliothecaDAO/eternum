@@ -411,7 +411,7 @@ const SelectRaidersPanel = ({
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const [attackerTotalAttack, attackerTotalDefence, attackerTotalHealth] = useMemo(() => {
+  const [attackerTotalAttack, attackerTotalHealth] = useMemo(() => {
     // sum attack of the list
     return [
       selectedRaiders.reduce((acc, battalion) => acc + battalion.attack, 0),

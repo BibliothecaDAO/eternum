@@ -1,14 +1,13 @@
 import React, { useMemo, useState } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
-
 import clsx from "clsx";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 import { ReactComponent as Pen } from "../../../../../assets/icons/common/pen.svg";
 import { ReactComponent as CaretDownFill } from "../../../../../assets/icons/common/caret-down-fill.svg";
-import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
+import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import { useDojo } from "../../../../../DojoContext";
@@ -40,7 +39,6 @@ export const Raid = ({ raider, ...props }: RaidProps) => {
   const { realmId, realmEntityId } = useRealmStore();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { getDefenceOnPosition } = useCombat();
   const { getResourcesFromInventory, offloadChest } = useResources();
   const { getInventoryResourcesChestId } = useCaravan();
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -80,7 +78,7 @@ export const Raid = ({ raider, ...props }: RaidProps) => {
   const destinationRealmName = destinationRealmId ? getRealmNameById(destinationRealmId) : undefined;
   const isHome = destinationRealmId === realmId;
 
-  const destinationDefence = getDefenceOnPosition(raider.position);
+  // const destinationDefence = getDefenceOnPosition(raider.position);
 
   return (
     <div

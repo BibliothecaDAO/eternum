@@ -1,14 +1,11 @@
 import React from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
-import { getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
-import { ReactComponent as CaretDownFill } from "../../../../../assets/icons/common/caret-down-fill.svg";
-import { ReactComponent as PremiumIcon } from "../../../../../assets/icons/units/premium.svg";
-import { Dot } from "../../../../../elements/Dot";
 import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import useUIStore from "../../../../../hooks/store/useUIStore";
+import { getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 
 type RoadBuildPopupProps = {
   selectedRaiders: CombatInfo[];
@@ -34,7 +31,7 @@ type SelectableRaiderProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const SelectableRaider = ({ raider, selectedRaiders, setSelectedRaiders, ...props }: SelectableRaiderProps) => {
-  const { entityId, health, quantity, capacity, attack, defence, originRealmId, arrivalTime } = raider;
+  const { entityId, health, quantity, attack, defence, originRealmId, arrivalTime } = raider;
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const setTooltip = useUIStore((state) => state.setTooltip);

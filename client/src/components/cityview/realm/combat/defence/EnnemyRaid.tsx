@@ -1,17 +1,12 @@
 import React from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
-
 import clsx from "clsx";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 import { ReactComponent as Pen } from "../../../../../assets/icons/common/pen.svg";
-import { ReactComponent as CaretDownFill } from "../../../../../assets/icons/common/caret-down-fill.svg";
-import { ReactComponent as DonkeyIcon } from "../../../../../assets/icons/units/donkey-circle.svg";
-import { Dot } from "../../../../../elements/Dot";
 import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
-import { divideByPrecision } from "../../../../../utils/utils";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 
 type EnemyRaidProps = {
@@ -19,7 +14,7 @@ type EnemyRaidProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const EnemyRaid = ({ raider, ...props }: EnemyRaidProps) => {
-  const { entityId, health, quantity, capacity, attack, defence, originRealmId, arrivalTime } = raider;
+  const { entityId, health, quantity, attack, defence, originRealmId, arrivalTime } = raider;
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const setTooltip = useUIStore((state) => state.setTooltip);

@@ -1,20 +1,13 @@
 import { useMemo, useState } from "react";
-import { FiltersPanel } from "../../../../../elements/FiltersPanel";
-import { FilterButton } from "../../../../../elements/FilterButton";
-import { SortPanel } from "../../../../../elements/SortPanel";
-import { SortButton, SortInterface } from "../../../../../elements/SortButton";
-import { ResourceFilter } from "../../../../ResourceFilterComponent";
-import { OrdersFilter } from "../../../../OrdersFilterComponent";
-// import { CreateOfferPopup } from "../CreateOffer";
 import Button from "../../../../../elements/Button";
 import { Battalion } from "./Battalion";
 import { useCombat } from "../../../../../hooks/helpers/useCombat";
 import { CreateBattalionPopup } from "./CreateBattalionPopup";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 
-type MarketPanelProps = {};
+type BattalionsPanelProps = {};
 
-export const BattalionsPanel = ({}: MarketPanelProps) => {
+export const BattalionsPanel = ({}: BattalionsPanelProps) => {
   const [showBuildBattalion, setShowBuildBattalion] = useState(false);
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 

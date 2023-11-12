@@ -42,19 +42,19 @@ export const MainScene = () => {
     }
   }, [location]);
 
-  const shakeConfig = useMemo(
-    () => ({
-      maxYaw: 0.01, // Max amount camera can yaw in either direction
-      maxPitch: 0, // Max amount camera can pitch in either direction
-      maxRoll: 0, // Max amount camera can roll in either direction
-      yawFrequency: 0.04, // Frequency of the the yaw rotation
-      pitchFrequency: 0, // Frequency of the pitch rotation
-      rollFrequency: 0, // Frequency of the roll rotation
-      intensity: 1, // initial intensity of the shake
-      controls: undefined, // if using orbit controls, pass a ref here so we can update the rotation
-    }),
-    [],
-  );
+  // const shakeConfig = useMemo(
+  //   () => ({
+  //     maxYaw: 0.01, // Max amount camera can yaw in either direction
+  //     maxPitch: 0, // Max amount camera can pitch in either direction
+  //     maxRoll: 0, // Max amount camera can roll in either direction
+  //     yawFrequency: 0.04, // Frequency of the the yaw rotation
+  //     pitchFrequency: 0, // Frequency of the pitch rotation
+  //     rollFrequency: 0, // Frequency of the roll rotation
+  //     intensity: 1, // initial intensity of the shake
+  //     controls: undefined, // if using orbit controls, pass a ref here so we can update the rotation
+  //   }),
+  //   [],
+  // );
 
   return (
     <Canvas

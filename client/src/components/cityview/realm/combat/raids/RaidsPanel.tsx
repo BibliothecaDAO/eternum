@@ -1,10 +1,4 @@
 import { useMemo, useState } from "react";
-import { FiltersPanel } from "../../../../../elements/FiltersPanel";
-import { FilterButton } from "../../../../../elements/FilterButton";
-import { SortPanel } from "../../../../../elements/SortPanel";
-import { SortButton, SortInterface } from "../../../../../elements/SortButton";
-import { ResourceFilter } from "../../../../ResourceFilterComponent";
-import { OrdersFilter } from "../../../../OrdersFilterComponent";
 import Button from "../../../../../elements/Button";
 import { Raid } from "./Raid";
 import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
@@ -14,9 +8,9 @@ import { ManageRaidsPopup } from "./ManageRaidsPopup";
 import { AttackRaidsPopup } from "./AttackRaidsPopup";
 import { TravelRaidsPopup } from "./TravelRaidsPopup";
 
-type MarketPanelProps = {};
+type RaidsPanelProps = {};
 
-export const RaidsPanel = ({}: MarketPanelProps) => {
+export const RaidsPanel = ({}: RaidsPanelProps) => {
   const [showBuildRaiders, setShowBuildRaiders] = useState(false);
   const [selectedRaider, setSelectedRaider] = useState<CombatInfo>(null);
 

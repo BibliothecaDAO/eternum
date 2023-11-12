@@ -1,6 +1,4 @@
 import React from "react";
-import { OrderIcon } from "../../../../../elements/OrderIcon";
-
 import clsx from "clsx";
 import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import Button from "../../../../../elements/Button";
