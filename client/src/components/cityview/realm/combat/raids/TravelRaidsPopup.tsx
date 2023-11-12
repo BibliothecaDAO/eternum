@@ -56,13 +56,13 @@ export const TravelRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
           <div className="mr-0.5">Travel Raiders:</div>
         </div>
       </SecondaryPopup.Head>
-      <SecondaryPopup.Body width={"376px"}>
+      <SecondaryPopup.Body width={"450px"}>
         <div className="flex flex-col items-center p-2">
           <SelectRealmPanel
             selectedEntityId={selectedEntityId}
             setSelectedEntityId={setSelectedEntityId}
           ></SelectRealmPanel>
-          <div className="flex flex-col items-center justify-center">
+          <div className="flex mt-2 flex-col items-center justify-center">
             <div className="flex">
               {!loading && (
                 <Button

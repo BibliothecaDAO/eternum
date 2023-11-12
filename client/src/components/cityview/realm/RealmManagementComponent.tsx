@@ -102,7 +102,22 @@ const RealmManagementComponent = () => {
       {
         key: "military",
         label: (
-          <div className="flex flex-col items-center " title="Military">
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "top",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Build military troops,</p>
+                    <p className="whitespace-nowrap">Defend your Realm, raid other Realms.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex flex-col items-center "
+            title="Military"
+          >
             <CrossSwords className="mb-2 fill-gold" /> <div>Military</div>
           </div>
         ),

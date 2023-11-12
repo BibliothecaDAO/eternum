@@ -104,72 +104,70 @@ export const SelectRealmPanel = ({
   }, [originalRealms, activeSort, deferredNameFilter]);
 
   return (
-    <div className="flex flex-col items-center w-full p-2">
-      <div className="flex flex-col p-1 rounded border-gold border w-full">
-        {realmEntityId && (
-          <div className="flex flex-col">
-            <TextInput
-              className="border border-gold mx-1 !w-auto !text-light-pink"
-              placeholder="Search by ID or name"
-              value={nameFilter}
-              onChange={setNameFilter}
-            />
-            <SortPanel className="px-2 py-2 border-b-0">
-              {sortingParams.map(({ label, sortKey, className }) => (
-                <SortButton
-                  className={className}
-                  key={sortKey}
-                  label={label}
-                  sortKey={sortKey}
-                  activeSort={activeSort}
-                  onChange={(_sortKey, _sort) => {
-                    setActiveSort({
-                      sortKey: _sortKey,
-                      sort: _sort,
-                    });
-                  }}
-                />
-              ))}
-            </SortPanel>
-            <div className="flex flex-col px-1 mb-1 space-y-2 max-h-40 overflow-y-auto">
-              {sortedRealms.map(
-                ({ order, name, realmId: destinationRealmId, distance, entityId: destinationEntityId, defence }, i) => {
-                  return (
-                    <div
-                      key={i}
-                      className={`flex cursor-pointer flex-col p-2 bg-black border border-transparent transition-all duration-200 rounded-md ${
-                        selectedEntityId === destinationEntityId ? "!border-order-brilliance" : ""
-                      } text-xxs text-gold`}
-                      onClick={() => {
-                        if (selectedEntityId !== destinationEntityId) {
-                          setSelectedEntityId(destinationEntityId);
-                        }
-                      }}
-                    >
-                      <div className="flex items-center justify-between text-xxs">
-                        <div className="flex-none mr-10">
-                          <OrderIcon order={order} size="xs" />
-                        </div>
+    <div className="flex flex-col p-1 rounded border-gold border w-full">
+      {realmEntityId && (
+        <div className="flex flex-col">
+          <TextInput
+            className="border border-gold mx-1 !w-auto !text-light-pink"
+            placeholder="Search by ID or name"
+            value={nameFilter}
+            onChange={setNameFilter}
+          />
+          <SortPanel className="px-2 py-2 border-b-0">
+            {sortingParams.map(({ label, sortKey, className }) => (
+              <SortButton
+                className={className}
+                key={sortKey}
+                label={label}
+                sortKey={sortKey}
+                activeSort={activeSort}
+                onChange={(_sortKey, _sort) => {
+                  setActiveSort({
+                    sortKey: _sortKey,
+                    sort: _sort,
+                  });
+                }}
+              />
+            ))}
+          </SortPanel>
+          <div className="flex flex-col px-1 mb-1 space-y-2 max-h-40 overflow-y-auto">
+            {sortedRealms.map(
+              ({ order, name, realmId: destinationRealmId, distance, entityId: destinationEntityId, defence }, i) => {
+                return (
+                  <div
+                    key={i}
+                    className={`flex cursor-pointer flex-col p-2 bg-black border border-transparent transition-all duration-200 rounded-md ${
+                      selectedEntityId === destinationEntityId ? "!border-order-brilliance" : ""
+                    } text-xxs text-gold`}
+                    onClick={() => {
+                      if (selectedEntityId !== destinationEntityId) {
+                        setSelectedEntityId(destinationEntityId);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center justify-between text-xxs">
+                      <div className="flex-none mr-10">
+                        <OrderIcon order={order} size="xs" />
+                      </div>
 
-                        <div className="flex-none w-20">{destinationRealmId}</div>
+                      <div className="flex-none w-20">{destinationRealmId}</div>
 
-                        <div className="flex-grow">{name}</div>
+                      <div className="flex-grow">{name}</div>
 
-                        <div className="flex-grow">{`${distance.toFixed(0)} km`}</div>
+                      <div className="flex-grow">{`${distance.toFixed(0)} km`}</div>
 
-                        <div className="flex-none w-16 text-right">
-                          {/* <Shield className="text-gold" /> */}
-                          <div>{defence.defence ? defence.defence : 0}</div>
-                        </div>
+                      <div className="flex-none w-16 text-right">
+                        {/* <Shield className="text-gold" /> */}
+                        <div>{defence.defence ? defence.defence : 0}</div>
                       </div>
                     </div>
-                  );
-                },
-              )}
-            </div>
+                  </div>
+                );
+              },
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

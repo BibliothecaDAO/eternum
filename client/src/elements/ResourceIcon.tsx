@@ -51,43 +51,43 @@ const Components: { [key: string]: Resource } = Object.freeze({
     component: <AlchemicalSilver />,
     name: "Alchemical Silver",
   },
-  Coal: { component: <Coal />, name: "Coal" },
-  ColdIron: { component: <ColdIron />, name: "Cold Iron" },
-  Copper: { component: <Copper />, name: "Copper" },
-  DeepCrystal: { component: <DeepCrystal />, name: "Deep Crystal" },
-  Diamonds: { component: <Diamonds />, name: "Diamonds" },
-  Dragonhide: { component: <Dragonhide />, name: "Dragonhide" },
-  EtherealSilica: { component: <EtherealSilica />, name: "Ethereal Silica" },
-  Gold: { component: <Gold />, name: "Gold" },
-  Hartwood: { component: <Hartwood />, name: "Hartwood" },
-  Ignium: { component: <Ignium />, name: "Ignium" },
-  Ironwood: { component: <Ironwood />, name: "Ironwood" },
-  Mithral: { component: <Mithral />, name: "Mithral" },
-  Obsidian: { component: <Obsidian />, name: "Obsidian" },
-  Ruby: { component: <Ruby />, name: "Ruby" },
-  Sapphire: { component: <Sapphire />, name: "Sapphire" },
-  Silver: { component: <Silver />, name: "Silver" },
-  Stone: { component: <Stone />, name: "Stone" },
-  TrueIce: { component: <TrueIce />, name: "TrueIce" },
-  TwilightQuartz: { component: <TwilightQuartz />, name: "Twilight Quartz" },
-  Wood: { component: <Wood />, name: "Wood" },
-  EmbersGlow: { component: <DemonHide />, name: "Demon Hide" },
-  StoneTemple: { component: <Cloth />, name: "Cloth" },
-  DesertOasis: { component: <DesertGlass />, name: "Desert Glass" },
-  MountainDeep: { component: <Ore />, name: "Ore" },
-  UnderwaterKeep: { component: <Shekels />, name: "Shekels" },
-  ForestRuins: { component: <Spores />, name: "Spores" },
-  Shekels: { component: <Shekels />, name: "Shekels" },
-  Fish: { component: <Fish />, name: "Fish" },
-  Wheat: { component: <Wheat />, name: "Wheat" },
+  Coal: { component: <Coal className="w-full h-full" />, name: "Coal" },
+  ColdIron: { component: <ColdIron className="w-full h-full" />, name: "Cold Iron" },
+  Copper: { component: <Copper className="w-full h-full" />, name: "Copper" },
+  DeepCrystal: { component: <DeepCrystal className="w-full h-full" />, name: "Deep Crystal" },
+  Diamonds: { component: <Diamonds className="w-full h-full" />, name: "Diamonds" },
+  Dragonhide: { component: <Dragonhide className="w-full h-full" />, name: "Dragonhide" },
+  EtherealSilica: { component: <EtherealSilica className="w-full h-full" />, name: "Ethereal Silica" },
+  Gold: { component: <Gold className="w-full h-full" />, name: "Gold" },
+  Hartwood: { component: <Hartwood className="w-full h-full" />, name: "Hartwood" },
+  Ignium: { component: <Ignium className="w-full h-full" />, name: "Ignium" },
+  Ironwood: { component: <Ironwood className="w-full h-full" />, name: "Ironwood" },
+  Mithral: { component: <Mithral className="w-full h-full" />, name: "Mithral" },
+  Obsidian: { component: <Obsidian className="w-full h-full" />, name: "Obsidian" },
+  Ruby: { component: <Ruby className="w-full h-full" />, name: "Ruby" },
+  Sapphire: { component: <Sapphire className="w-full h-full" />, name: "Sapphire" },
+  Silver: { component: <Silver className="w-full h-full" />, name: "Silver" },
+  Stone: { component: <Stone className="w-full h-full" />, name: "Stone" },
+  TrueIce: { component: <TrueIce className="w-full h-full" />, name: "TrueIce" },
+  TwilightQuartz: { component: <TwilightQuartz className="w-full h-full" />, name: "Twilight Quartz" },
+  Wood: { component: <Wood className="w-full h-full" />, name: "Wood" },
+  EmbersGlow: { component: <DemonHide className="w-full h-full" />, name: "Demon Hide" },
+  StoneTemple: { component: <Cloth className="w-full h-full" />, name: "Cloth" },
+  DesertOasis: { component: <DesertGlass className="w-full h-full" />, name: "Desert Glass" },
+  MountainDeep: { component: <Ore className="w-full h-full" />, name: "Ore" },
+  UnderwaterKeep: { component: <Shekels className="w-full h-full" />, name: "Shekels" },
+  ForestRuins: { component: <Spores className="w-full h-full" />, name: "Spores" },
+  Shekels: { component: <Shekels className="w-full h-full" />, name: "Shekels" },
+  Fish: { component: <Fish className="w-full h-full" />, name: "Fish" },
+  Wheat: { component: <Wheat className="w-full h-full" />, name: "Wheat" },
 });
 
 const STYLES = {
   size: {
-    xs: "w-2 md:w-4",
-    sm: "w-4 md:w-6",
-    md: "w-6 md:w-8",
-    lg: "w-8 md:w-12",
+    xs: "w-2 h-2 md:w-4 md:h-4",
+    sm: "w-4 h-4 md:w-6 md:h-6",
+    md: "w-6 h-6 md:w-8 md:h-8",
+    lg: "w-8 h-8 md:w-12 md:h-16",
   },
 } as const;
 
@@ -96,9 +96,9 @@ export const ResourceIcon = ({ withTooltip = true, ...props }: Props) => {
     <div
       className={`flex self-center w-min paper relative group rounded-xl justify-center w-full ${props.containerClassName}`}
     >
-      <span className={` mx-auto ${clsx(STYLES.size[props.size], props.className)} `}>
+      <div className={` mx-auto ${clsx(STYLES.size[props.size], props.className)} `}>
         {Components[props.resource.replace(" ", "").replace("'", "")]?.component}
-      </span>
+      </div>
 
       {props.label && (
         <span className="self-center ml-4 text-center">

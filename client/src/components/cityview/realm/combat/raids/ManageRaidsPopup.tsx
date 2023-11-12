@@ -7,6 +7,8 @@ import { useDojo } from "../../../../../DojoContext";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import { Duty } from "@bibliothecadao/eternum";
 import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
+import useUIStore from "../../../../../hooks/store/useUIStore";
+import { Headline } from "../../../../../elements/Headline";
 
 type RoadBuildPopupProps = {
   selectedRaiders: CombatInfo;
@@ -26,6 +28,7 @@ export const ManageRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
   const [soldierAmount, setSoldierAmount] = useState(selectedRaiders.quantity || 0);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const { useRealmBattalions } = useCombat();
 
@@ -72,19 +75,68 @@ export const ManageRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"376px"}>
         <div className="flex flex-col items-center p-2">
-          <div className={"relative w-full mt-3"}>
-            <img src={`/images/avatars/3.png`} className="object-cover w-full h-full rounded-[10px]" />
-            <div className="flex flex-col p-2 left-2 bottom-2 rounded-[10px] bg-black/60">
-              <div className="mb-1 ml-1 italic text-light-pink text-xxs">Stats:</div>
-              <div className="grid grid-cols-4 gap-2">
-                <div className="mb-1 ml-1 italic text-light-pink text-xxs">
-                  <div> Attack: </div>
-                  <div> {totalAttack}</div>
-                  <div> Defence: </div>
-                  <div> {totalDefence}</div>
-                  <div> Health: </div>
-                  <div> {totalHealth}</div>
+          <Headline size="big">Manage raid group</Headline>
+          <div className="flex relative mt-1 justify-between text-xxs text-lightest w-full">
+            <div className="flex items-center">
+              <div className="flex items-center h-6 mr-2">
+                <img src="/images/units/troop-icon.png" className="h-[28px]" />
+                <div className="flex flex-col ml-1 text-center">
+                  <div className="bold">Warrior</div>
                 </div>
+              </div>
+            </div>
+            <div className="flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center">
+              <div
+                className="flex items-center h-6 mr-2"
+                onMouseEnter={() =>
+                  setTooltip({
+                    position: "top",
+                    content: (
+                      <>
+                        <p className="whitespace-nowrap">Attack power</p>
+                      </>
+                    ),
+                  })
+                }
+                onMouseLeave={() => setTooltip(null)}
+              >
+                <img src="/images/icons/attack.png" className="h-full" />
+                <div className="flex flex-col ml-1 text-center">
+                  <div className="bold ">{totalAttack}</div>
+                </div>
+              </div>
+              <div
+                className="flex items-center h-6 mr-2"
+                onMouseEnter={() =>
+                  setTooltip({
+                    position: "top",
+                    content: (
+                      <>
+                        <p className="whitespace-nowrap">Defence power</p>
+                      </>
+                    ),
+                  })
+                }
+                onMouseLeave={() => setTooltip(null)}
+              >
+                <img src="/images/icons/defence.png" className="h-full" />
+                <div className="flex flex-col ml-1 text-center">
+                  <div className="bold ">{totalDefence}</div>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center">{totalHealth} HP</div>
+          </div>
+          <div className={"relative w-full mt-3"}>
+            <img src={`/images/units/troop.png`} className="object-cover w-full h-full rounded-[10px]" />
+            <div className="flex absolute flex-col p-2 left-2 bottom-2 rounded-[10px] bg-black/60">
+              <div className="mb-1 ml-1 italic text-light-pink text-xxs">Available</div>
+              <div className="flex items-center">
+                <div className="flex flex-col text-xxs items-center text-white">
+                  <div className="font-bold">x{realmBattalions.length}</div>
+                  Battalions
+                </div>
+                <img src="/images/units/troop-icon.png" className="h-[40px]" />
               </div>
             </div>
           </div>
@@ -118,28 +170,15 @@ export const ManageRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
                   {`Cancel`}
                 </Button>
               )}
-              {!loading && (
-                <Button
-                  className="!px-[6px] !py-[2px] text-xxs ml-auto"
-                  onClick={onModifyRaidersAmount}
-                  disabled={!canBuild}
-                  variant="outline"
-                  withoutSound
-                >
-                  {`Modify Raiders`}
-                </Button>
-              )}
-              {loading && (
-                <Button
-                  className="!px-[6px] !py-[2px] text-xxs ml-auto"
-                  onClick={() => {}}
-                  isLoading={true}
-                  variant="outline"
-                  withoutSound
-                >
-                  {`Build Battalion`}
-                </Button>
-              )}
+              <Button
+                className="!px-[6px] !py-[2px] text-xxs ml-auto"
+                onClick={onModifyRaidersAmount}
+                disabled={!canBuild}
+                variant="outline"
+                isLoading={loading}
+              >
+                {`Modify group`}
+              </Button>
             </div>
             {!canBuild && <div className="text-xxs text-order-giants/70">Must be different</div>}
           </div>
