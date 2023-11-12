@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
 import Button from "../../../../../elements/Button";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
@@ -236,6 +236,7 @@ const StealResultPanel = ({
     },
   } = useDojo();
 
+  const [openedChest, setOpenedChest] = useState(false);
   const attackerHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(selectedRaiders[0].entityId)]));
 
   const success = attackerHealth.value === selectedRaiders[0].health;
@@ -277,7 +278,17 @@ const StealResultPanel = ({
             </svg>
           </div>
           <div className="italic text-light-pink text-xxs my-2">You’ve got a golden chest:</div>
-          <img src={`/images/chest.png`} className="object-cover border border-gold w-full h-full rounded-[10px]" />
+          {!openedChest && (
+            <img src={`/images/chest.png`} className="object-cover border border-gold w-full h-full rounded-[10px]" />
+          )}
+          {openedChest && (
+            <div className="flex relative">
+              <img
+                src={`/images/opened_chest.png`}
+                className="object-cover border border-gold w-full h-full rounded-[10px]"
+              />
+            </div>
+          )}
         </>
       )}
       {!success && (
@@ -290,7 +301,17 @@ const StealResultPanel = ({
         </div>
       )}
       <div className="flex justify-center mt-2 text-xxs w-full">
-        <Button size="xs" onClick={onClose} variant="outline">
+        <Button
+          size="xs"
+          onClick={() => {
+            if (success && !openedChest) {
+              setOpenedChest(true);
+            } else {
+              onClose();
+            }
+          }}
+          variant="outline"
+        >
           {success ? `Open Chest` : "Close"}
         </Button>
       </div>
