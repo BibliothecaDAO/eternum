@@ -6,7 +6,7 @@ import useUIStore from "../hooks/store/useUIStore";
 import { useDojo } from "../DojoContext";
 import { displayAddress } from "../utils/utils";
 import ListSelect from "../elements/ListSelect";
-import { ReactComponent as Danger } from "../assets/icons/common/danger.svg";
+// import { ReactComponent as Danger } from "../assets/icons/common/danger.svg";
 import { ReactComponent as Copy } from "../assets/icons/common/copy.svg";
 import { ReactComponent as Import } from "../assets/icons/common/import.svg";
 
