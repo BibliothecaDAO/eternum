@@ -195,10 +195,10 @@ export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: Si
           {worldLoading && (
             <div className="mt-2 text-center text-xs text-white">Loading: {worldProgress.toFixed(2)}%</div>
           )}
-          <div className="flex items-center mt-2 mb-1 text-xs text-center text-white">
+          {/* <div className="flex items-center mt-2 mb-1 text-xs text-center text-white">
             <Danger />
             <div className="ml-1 text-danger">Eternum in maintenance. Next update soon.</div>
-          </div>
+          </div> */}
           {/* <Headline size="big">Sign Up</Headline>
           <div className="flex flex-col w-full text-center text-xs text-white">
             <div className=" border border-gold my-3 w-full rounded-lg bg-black p-2 flex justify-between">

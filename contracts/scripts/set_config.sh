@@ -24,8 +24,8 @@ commands=(
     # ### LABOR ###
     # # base_labor_units 7200
     # # base_resources_per_cycle 21
-    # # base_food_per_cycle 14000
-    "sozo execute $CONFIG_SYSTEMS set_labor_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,7200,$((21 * resource_precision)),$((14000 * resource_precision))"
+    # # base_food_per_cycle 21
+    "sozo execute $CONFIG_SYSTEMS set_labor_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,7200,$((21 * resource_precision)),$((21 * resource_precision))"
 
     # ### SPEED ###
     # # entity type FREE_TRANSPORT_ENTITY_TYPE = 256
@@ -64,10 +64,9 @@ commands+=(
     "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,258,800"
 
     ## soldier cost
-    ## 10 silver (6)
-    ## 1000 wheat (254)
-    ## 1000 fish (255)
-    "sozo execute $CONFIG_SYSTEMS set_soldier_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,3,6,10000,254,1000000,255,1000000"
+    ## 7560 wheat (254)
+    ## 2520 fish (255)
+    "sozo execute $CONFIG_SYSTEMS set_soldier_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2,254,7560000,255,2520000"
 
     ## soldier health
     ## 10 
