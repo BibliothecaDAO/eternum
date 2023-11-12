@@ -12,12 +12,12 @@ import { useComponentValue } from "@dojoengine/react";
 import { SelectRaiders } from "./SelectRaiders";
 import clsx from "clsx";
 
-type RoadBuildPopupProps = {
+type AttackRaidsPopupProps = {
   selectedRaider: CombatInfo;
   onClose: () => void;
 };
 
-export const AttackRaidsPopup = ({ selectedRaider, onClose }: RoadBuildPopupProps) => {
+export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupProps) => {
   const { position: attackPosition } = selectedRaider;
 
   const [step, setStep] = useState<number>(1);
@@ -95,42 +95,101 @@ const AttackResultPanel = ({
   const success = newWatchTowerHealth.value !== watchTower.health;
 
   return (
-    <div className="text-white">
-      <div>{"------ WORK IN PROGRESS ------"}</div>
+    <div className="flex flex-col items-center w-full">
       {success && (
-        <div>
-          <div>Success!!!</div>
-          <div>{"Watchtower Health:"}</div>
-          <div>{"Watchtower Old Health:"}</div>
-          <div>{watchTower.health}</div>
-          <div>{"Watchtower New Health:"}</div>
-          <div>{newWatchTowerHealth.value}</div>
-        </div>
+        <>
+          <div className="flex w-full items-center">
+            <svg width="132" height="12" viewBox="0 0 132 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M131.887 6L129 8.88675L126.113 6L129 3.11325L131.887 6ZM129 6.5L1.23874 6.50001L1.23874 5.50001L129 5.5L129 6.5Z"
+                fill="#86C16A"
+              />
+              <path
+                d="M17.5986 1L22.2782 4L28.5547 6.00003L22.2782 8L17.5986 11L11 6.5C11 6.5 7.41876 8 5.95938 8C4.5 8 0.999649 6.00003 0.999649 6.00003C0.999649 6.00003 4.5 4 5.95938 4C7.41876 4 11 5.5 11 5.5L17.5986 1Z"
+                fill="#86C16A"
+                stroke="#86C16A"
+                stroke-linejoin="round"
+              />
+              <circle cx="17.5" cy="6" r="1.5" fill="#1B1B1B" />
+              <circle cx="6" cy="6" r="1" fill="#1B1B1B" />
+            </svg>
+
+            <div className="text-[#86C16A] text-xs mx-2 flex-1 text-center">Succesfull attack!</div>
+            <svg width="132" height="12" viewBox="0 0 132 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M0.113249 6L3 8.88675L5.88675 6L3 3.11325L0.113249 6ZM3 6.5L130.761 6.50001L130.761 5.50001L3 5.5L3 6.5Z"
+                fill="#86C16A"
+              />
+              <path
+                d="M114.401 1L109.722 4L103.445 6.00003L109.722 8L114.401 11L121 6.5C121 6.5 124.581 8 126.041 8C127.5 8 131 6.00003 131 6.00003C131 6.00003 127.5 4 126.041 4C124.581 4 121 5.5 121 5.5L114.401 1Z"
+                fill="#86C16A"
+                stroke="#86C16A"
+                stroke-linejoin="round"
+              />
+              <circle cx="1.5" cy="1.5" r="1.5" transform="matrix(-1 0 0 1 116 4.5)" fill="#1B1B1B" />
+              <circle cx="1" cy="1" r="1" transform="matrix(-1 0 0 1 127 5)" fill="#1B1B1B" />
+            </svg>
+          </div>
+          <div className="italic text-light-pink text-xxs my-2">Watch tower was damaged by your raid group!</div>
+          <img src={`/images/lost_raid.png`} className="object-cover w-full h-full rounded-[10px]" />
+          <div className="flex flex-col mt-2 w-full">
+            <div className="text-light-pink text-xs">{"Damage dealt:"}</div>
+            <div className="p-2 mb-2 rounded flex bg-black/20 text-white text-xxs space-x-2">
+              <div>{"Watchtower Old Health:"}</div>
+              <div className="text-order-brilliance">{watchTower.health}</div>
+              <div>{"Watchtower New Health:"}</div>
+              <div className="text-order-giants">{newWatchTowerHealth.value}</div>
+            </div>
+          </div>
+        </>
       )}
       {!success && (
-        <div>
-          <div>Failed !!!</div>
-          <div>{"Attacker Health:"}</div>
-          {selectedRaiders.map((raider, i) => (
-            <AttackerHealthChange selectedRaider={raider} key={raider.entityId} />
-          ))}
-        </div>
-      )}
-      <div className="flex justify-between m-2 text-xxs w-full">
-        <div className="flex flex-col items-center justify-center w-full">
-          <div className="flex justify-between w-full">
-            {
-              <Button
-                className="!px-[6px] mr-2 !py-[2px] text-xxs ml-auto"
-                onClick={onClose}
-                variant="outline"
-                withoutSound
-              >
-                {`Cancel`}
-              </Button>
-            }
+        <>
+          <div className="flex w-full items-center">
+            <svg width="142" height="12" viewBox="0 0 142 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M141.887 6L139 8.88675L136.113 6L139 3.11325L141.887 6ZM139 6.5L1.23874 6.50001L1.23874 5.50001L139 5.5L139 6.5Z"
+                fill="#C84444"
+              />
+              <path
+                d="M17.5986 1L22.2782 4L28.5547 6.00003L22.2782 8L17.5986 11L11 6.5C11 6.5 7.41876 8 5.95938 8C4.5 8 0.999649 6.00003 0.999649 6.00003C0.999649 6.00003 4.5 4 5.95938 4C7.41876 4 11 5.5 11 5.5L17.5986 1Z"
+                fill="#C84444"
+                stroke="#C84444"
+                stroke-linejoin="round"
+              />
+              <circle cx="17.5" cy="6" r="1.5" fill="#1B1B1B" />
+              <circle cx="6" cy="6" r="1" fill="#1B1B1B" />
+            </svg>
+            <div className="text-order-giants text-xs mx-2 flex-1 text-center">Attack failed!</div>
+            <svg width="142" height="12" viewBox="0 0 142 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M0.113249 6L3 8.88675L5.88675 6L3 3.11325L0.113249 6ZM3 6.5L140.761 6.50001L140.761 5.50001L3 5.5L3 6.5Z"
+                fill="#C84444"
+              />
+              <path
+                d="M124.401 1L119.722 4L113.445 6.00003L119.722 8L124.401 11L131 6.5C131 6.5 134.581 8 136.041 8C137.5 8 141 6.00003 141 6.00003C141 6.00003 137.5 4 136.041 4C134.581 4 131 5.5 131 5.5L124.401 1Z"
+                fill="#C84444"
+                stroke="#C84444"
+                stroke-linejoin="round"
+              />
+              <circle cx="1.5" cy="1.5" r="1.5" transform="matrix(-1 0 0 1 126 4.5)" fill="#1B1B1B" />
+              <circle cx="1" cy="1" r="1" transform="matrix(-1 0 0 1 137 5)" fill="#1B1B1B" />
+            </svg>
           </div>
-        </div>
+          <div className="italic text-light-pink text-xxs my-2">Your raid group was defeated by the defence army.</div>
+          <img src={`/images/lost_raid.png`} className="object-cover w-full h-full rounded-[10px]" />
+          <div className="flex flex-col mt-2 w-full">
+            <div className="text-light-pink text-xs">{"Battle losses:"}</div>
+            {selectedRaiders.map((raider, i) => (
+              <AttackerHealthChange selectedRaider={raider} key={raider.entityId} />
+            ))}
+          </div>
+        </>
+      )}
+      <div className="flex justify-center w-full">
+        <Button size="xs" onClick={onClose} variant="outline">
+          {`Close`}
+        </Button>
       </div>
     </div>
   );
@@ -146,12 +205,12 @@ const AttackerHealthChange = ({ selectedRaider }: { selectedRaider: CombatInfo }
   const newHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(selectedRaider.entityId)]));
 
   return (
-    <div>
-      <div>{`Raider #${selectedRaider.entityId}`}</div>
+    <div className="p-2 mb-2 rounded flex bg-black/20 text-white text-xxs space-x-2">
+      <div>{`Group #${selectedRaider.entityId}`}:</div>
       <div>Old Health</div>
-      <div>{selectedRaider.health}</div>
+      <div className="text-order-brilliance">{selectedRaider.health}</div>
       <div>New Health</div>
-      <div>{newHealth.value}</div>
+      <div className="text-order-giants">{newHealth.value}</div>
     </div>
   );
 };
