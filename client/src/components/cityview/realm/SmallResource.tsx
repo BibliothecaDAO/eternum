@@ -1,12 +1,25 @@
 import { findResourceById } from "@bibliothecadao/eternum";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
-import { currencyFormat, getEntityIdFromKeys } from "../../../utils/utils";
+import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "../../../utils/utils";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../DojoContext";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import useUIStore from "../../../hooks/store/useUIStore";
+import clsx from "clsx";
 
-export const SmallResource = ({ resourceId }: { resourceId: number }) => {
+export const SmallResource = ({
+  resourceId,
+  entity_id,
+  vertical,
+  intlFormat,
+  hideIfZero,
+}: {
+  resourceId: number;
+  entity_id?: number;
+  vertical?: boolean;
+  intlFormat?: boolean;
+  hideIfZero?: boolean;
+}) => {
   const {
     setup: {
       components: { Resource },
@@ -15,10 +28,10 @@ export const SmallResource = ({ resourceId }: { resourceId: number }) => {
 
   const { realmEntityId } = useRealmStore();
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const _entity_id = entity_id || realmEntityId;
+  const resource = useComponentValue(Resource, getEntityIdFromKeys([BigInt(_entity_id ?? 0), BigInt(resourceId)]));
 
-  const resource = useComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]));
-
-  return (
+  return resource?.balance ? (
     <div
       onMouseEnter={() =>
         setTooltip({
@@ -27,15 +40,17 @@ export const SmallResource = ({ resourceId }: { resourceId: number }) => {
         })
       }
       onMouseLeave={() => setTooltip(null)}
-      className="flex relative group items-center"
+      className={clsx("flex relative group items-center", vertical && "flex-col space-y-1", !vertical && "space-x-1")}
     >
-      <ResourceIcon
-        withTooltip={false}
-        resource={findResourceById(resourceId)?.trait || ""}
-        size="xs"
-        className="mr-1"
-      />
-      <div className="text-xxs">{currencyFormat(resource?.balance || 0, 2)}</div>
+      <ResourceIcon withTooltip={false} resource={findResourceById(resourceId)?.trait || ""} size="xs" />
+      <div className="text-xxs">
+        {intlFormat
+          ? Intl.NumberFormat("en-US", {
+              notation: "compact",
+              maximumFractionDigits: 1,
+            }).format(divideByPrecision(resource?.balance || 0))
+          : currencyFormat(resource?.balance || 0, 2)}
+      </div>
     </div>
-  );
+  ) : null;
 };

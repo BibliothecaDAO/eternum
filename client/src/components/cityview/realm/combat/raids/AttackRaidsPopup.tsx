@@ -12,9 +12,10 @@ import { useComponentValue } from "@dojoengine/react";
 import { SelectRaiders } from "./SelectRaiders";
 import { useResources } from "../../../../../hooks/helpers/useResources";
 import clsx from "clsx";
-import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
-import { findResourceById } from "@bibliothecadao/eternum";
+import { findResourceById, resources } from "@bibliothecadao/eternum";
+import { getRealmIdByPosition, getRealmNameById } from "../../../../../utils/realms";
+import { SmallResource } from "../../SmallResource";
 
 type AttackRaidsPopupProps = {
   selectedRaider: CombatInfo;
@@ -39,13 +40,23 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
 
   const watchTower = useMemo(() => {
     return getDefenceOnPosition(attackPosition);
-  }, []);
+  }, [attackPosition]);
+
+  const defendingRealmId = useMemo(() => {
+    return getRealmIdByPosition(attackPosition);
+  }, [attackPosition]);
+
+  const defendingRealmName = useMemo(() => {
+    return getRealmNameById(defendingRealmId);
+  }, [defendingRealmId]);
 
   return (
     <SecondaryPopup name="attack">
       <SecondaryPopup.Head>
         <div className="flex items-center space-x-1">
-          <div className="mr-0.5">Attack Realm:</div>
+          <div className="mr-0.5">
+            Attacking {defendingRealmName} (#{defendingRealmId}):
+          </div>
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"410px"}>
@@ -459,6 +470,20 @@ const SelectRaidersPanel = ({
         {/* {toRealm && <Headline size="big">Build road to {realmsData["features"][toRealm.realmId - 1].name}</Headline>} */}
         <div className="p-2 rounded border border-gold w-full flex flex-col">
           {watchTower && <Defence watchTower={watchTower}></Defence>}
+          <div className="flex mt-2 flex-col items-center w-full text-xxs">
+            <div className="text-light-pink italic w-full">Available resources:</div>
+            <div className="grid grid-cols-12 text-lightest gap-2 w-full mt-1 flex-wrap">
+              {resources.map((resource) => (
+                <SmallResource
+                  resourceId={resource.id}
+                  vertical
+                  intlFormat
+                  hideIfZero
+                  entity_id={attackingRaiders[0].locationRealmEntityId}
+                />
+              ))}
+            </div>
+          </div>
           <div className="flex mt-2 flex-col items-center justify-center w-full">
             <div className="grid mb-1 grid-cols-2 gap-2 w-full">
               <Button
@@ -508,12 +533,7 @@ const SelectRaidersPanel = ({
             setSelectedRaiders={setSelectedRaiders}
           ></SelectRaiders>
         </div>
-        <Button
-          className="!px-[6px] mt-2 !py-[2px] text-xxs mr-auto"
-          onClick={onClose}
-          isLoading={loading}
-          variant="outline"
-        >
+        <Button className="!px-[6px] mt-2 !py-[2px] text-xxs mr-auto" onClick={onClose} variant="outline">
           {`Cancel`}
         </Button>
       </div>
