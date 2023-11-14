@@ -41,7 +41,7 @@ export const WorldMapScene = () => {
             );
           }
         }
-        return <></>;
+        return null;
       })}
       {/* <TransformControls mode="translate" onObjectChange={(e) => console.log(e?.target.object.position)}>
         <Hyperstructure />
