@@ -11,7 +11,7 @@ use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::quantity::{Quantity, QuantityTrait};    
 use eternum::models::combat::{
     Attack,   
-    Health, Defence, Duty, TownWatch
+    Health, Defence, Duty, Combat
 };
 
 use eternum::systems::config::contracts::config_systems;
@@ -115,7 +115,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
 
     // create attacker's realm
     let attacker_realm_entity_id = realm_systems_dispatcher.create(
-        world, realm_id, starknet::get_contract_address(), // owner
+        world, realm_id, contract_address_const::<'attacker'>(), // owner
         resource_types_packed, resource_types_count, cities,
         harbors, rivers, regions, wonder, order, attacker_realm_entity_position.clone(),
     );
@@ -124,7 +124,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     // note: we are setting the same position for both realms
     //        for ease of testing
     let target_realm_entity_id = realm_systems_dispatcher.create(
-        world, realm_id, starknet::get_contract_address(), // owner
+        world, realm_id, contract_address_const::<'target'>(), // owner
         resource_types_packed, resource_types_count, cities,
         harbors, rivers, regions, wonder, order, attacker_realm_entity_position.clone(),
     );
@@ -152,42 +152,60 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     starknet::testing::set_contract_address(
         contract_address_const::<'attacker'>()
     );
+    
+    let attacker_combat = get!(world, attacker_realm_entity_id, Combat);
+    let attacker_soldiers_reserve_id = attacker_combat.soldiers_reserve_id;
+    let attacker_town_watch_id = attacker_combat.town_watch_id;
+    
 
     // buy soldiers for attacker
-    let soldier_ids: Span<u128>
-        = soldier_systems_dispatcher.create_soldiers(
-            world, attacker_realm_entity_id, ATTACKER_SOLDIER_COUNT
-        );
+    soldier_systems_dispatcher.create_soldiers(
+         world, attacker_realm_entity_id, ATTACKER_SOLDIER_COUNT
+    );
 
     
-    // deploy attacker soldiers for attacking
-    let attacker_group_id 
+    // detach attacker soldiers from reserve
+    let attacker_unit_id 
         = soldier_systems_dispatcher
-            .group_and_deploy_soldiers(
-                world, attacker_realm_entity_id, 
-                soldier_ids, 
-                Duty::Attack
+            .detach_soldiers(
+                world, attacker_soldiers_reserve_id, 
+                ATTACKER_SOLDIER_COUNT
             );
+
+    
+        
 
     starknet::testing::set_contract_address(
         contract_address_const::<'target'>()
     );
 
+    let target_combat = get!(world, target_realm_entity_id, Combat);
+    let target_soldiers_reserve_id = target_combat.soldiers_reserve_id;
+    let target_town_watch_id = target_combat.town_watch_id;
+    
     // buy soldiers for target
-    let soldier_ids: Span<u128>
-        = soldier_systems_dispatcher.create_soldiers(
-            world, target_realm_entity_id, TARGET_SOLDIER_COUNT
-        );
+    soldier_systems_dispatcher.create_soldiers(
+         world, target_realm_entity_id, TARGET_SOLDIER_COUNT
+    );
 
-
-    // deploy target's soldiers for defence
-    let target_town_watch_id 
+    
+    // detach target soldiers from reserve
+    let target_unit_id 
         = soldier_systems_dispatcher
-                .group_and_deploy_soldiers(
-                    world, target_realm_entity_id, 
-                    soldier_ids, 
-                    Duty::Defence
-                );
+            .detach_soldiers(
+                world, target_soldiers_reserve_id, 
+                TARGET_SOLDIER_COUNT
+            );
+
+    // add target unit to town watch
+    soldier_systems_dispatcher
+        .merge_soldiers(
+            world, 
+            target_town_watch_id, 
+            array![
+                (target_unit_id, TARGET_SOLDIER_COUNT),
+            ].span()
+        );
 
     
     let combat_systems_dispatcher = ICombatSystemsDispatcher {
@@ -195,7 +213,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     };
     (
         world, 
-        attacker_realm_entity_id, attacker_group_id, 
+        attacker_realm_entity_id, attacker_unit_id, 
         target_realm_entity_id, target_town_watch_id, 
         combat_systems_dispatcher
     ) 
@@ -212,7 +230,7 @@ fn test_attack() {
 
     let (
         world, 
-        attacker_realm_entity_id, attacker_group_id, 
+        attacker_realm_entity_id, attacker_unit_id, 
         target_realm_entity_id, target_town_watch_id, 
         combat_systems_dispatcher
     ) = setup();
@@ -225,17 +243,17 @@ fn test_attack() {
     combat_systems_dispatcher
         .attack(
             world, 
-            array![attacker_group_id].span(), 
+            array![attacker_unit_id].span(), 
             target_realm_entity_id
         );
 
-    let attacker_group_health = get!(world, attacker_group_id, Health);
-    let target_group_health = get!(world, target_town_watch_id, Health);
+    let attacker_unit_health = get!(world, attacker_unit_id, Health);
+    let target_unit_health = get!(world, target_town_watch_id, Health);
    
 
     assert(
-        attacker_group_health.value < 100 * ATTACKER_SOLDIER_COUNT 
-            || target_group_health.value < 100 * TARGET_SOLDIER_COUNT,
+        attacker_unit_health.value < 100 * ATTACKER_SOLDIER_COUNT 
+            || target_unit_health.value < 100 * TARGET_SOLDIER_COUNT,
                 'wrong health value'
     );
 
@@ -249,7 +267,7 @@ fn test_not_owner() {
 
     let (
         world, 
-        attacker_realm_entity_id, attacker_group_id, 
+        attacker_realm_entity_id, attacker_unit_id, 
         target_realm_entity_id, target_town_watch_id, 
         combat_systems_dispatcher
     ) = setup();
@@ -263,7 +281,7 @@ fn test_not_owner() {
     combat_systems_dispatcher
         .attack(
             world, 
-            array![attacker_group_id].span(), 
+            array![attacker_unit_id].span(), 
             target_realm_entity_id
         );
 
@@ -279,7 +297,7 @@ fn test_attacker_in_transit() {
 
     let (
         world, 
-        attacker_realm_entity_id, attacker_group_id, 
+        attacker_realm_entity_id, attacker_unit_id, 
         target_realm_entity_id, target_town_watch_id, 
         combat_systems_dispatcher
     ) = setup();
@@ -288,7 +306,7 @@ fn test_attacker_in_transit() {
     starknet::testing::set_contract_address(world.executor());
     set!(world, (
         ArrivalTime { 
-            entity_id: attacker_group_id, 
+            entity_id: attacker_unit_id, 
             arrives_at: 1 
         }
     ));
@@ -303,7 +321,7 @@ fn test_attacker_in_transit() {
     combat_systems_dispatcher
         .attack(
             world, 
-            array![attacker_group_id].span(), 
+            array![attacker_unit_id].span(), 
             target_realm_entity_id
         );
 
@@ -317,7 +335,7 @@ fn test_attacker_dead() {
 
     let (
         world, 
-        attacker_realm_entity_id, attacker_group_id, 
+        attacker_realm_entity_id, attacker_unit_id, 
         target_realm_entity_id, target_town_watch_id, 
         combat_systems_dispatcher
     ) = setup();
@@ -326,7 +344,7 @@ fn test_attacker_dead() {
     starknet::testing::set_contract_address(world.executor());
     set!(world, (
         Health { 
-            entity_id: attacker_group_id, 
+            entity_id: attacker_unit_id, 
             value: 0 
         }
     ));
@@ -341,7 +359,7 @@ fn test_attacker_dead() {
     combat_systems_dispatcher
         .attack(
             world, 
-            array![attacker_group_id].span(), 
+            array![attacker_unit_id].span(), 
             target_realm_entity_id
         );
 
@@ -355,7 +373,7 @@ fn test_target_dead() {
 
     let (
         world, 
-        attacker_realm_entity_id, attacker_group_id, 
+        attacker_realm_entity_id, attacker_unit_id, 
         target_realm_entity_id, target_town_watch_id, 
         combat_systems_dispatcher
     ) = setup();
@@ -379,7 +397,7 @@ fn test_target_dead() {
     combat_systems_dispatcher
         .attack(
             world, 
-            array![attacker_group_id].span(), 
+            array![attacker_unit_id].span(), 
             target_realm_entity_id
         );
 
@@ -394,7 +412,7 @@ fn test_wrong_position() {
 
     let (
         world, 
-        attacker_realm_entity_id, attacker_group_id, 
+        attacker_realm_entity_id, attacker_unit_id, 
         target_realm_entity_id, target_town_watch_id, 
         combat_systems_dispatcher
     ) = setup();
@@ -403,7 +421,7 @@ fn test_wrong_position() {
     starknet::testing::set_contract_address(world.executor());
     set!(world, (
         Position { 
-            entity_id: attacker_group_id, 
+            entity_id: attacker_unit_id, 
             x: 100, y: 200 
         }
     ));
@@ -418,7 +436,7 @@ fn test_wrong_position() {
     combat_systems_dispatcher
         .attack(
             world, 
-            array![attacker_group_id].span(), 
+            array![attacker_unit_id].span(), 
             target_realm_entity_id
         );
 

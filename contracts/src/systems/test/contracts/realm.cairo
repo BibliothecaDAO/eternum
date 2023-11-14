@@ -2,10 +2,10 @@
 mod test_realm_systems {
 
     use eternum::models::realm::Realm;
-    use eternum::models::owner::Owner;
+    use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::Position;
     use eternum::models::metadata::EntityMetadata;
-    use eternum::models::combat::TownWatch;
+    use eternum::models::combat::Combat;
 
     use eternum::systems::test::interface::realm::IRealmSystems;
 
@@ -58,13 +58,48 @@ mod test_realm_systems {
                     EntityMetadata {
                         entity_id: entity_id.into(), 
                         entity_type: REALM_ENTITY_TYPE, 
-                    },
-                    TownWatch {
-                        entity_id: entity_id.into(),
-                        town_watch_id: world.uuid().into(),
                     }
                 )
             );
+
+
+            // setup combat 
+            let combat_town_watch_id = world.uuid().into();
+            let combat_soldiers_reserve_id = world.uuid().into();
+                    
+            set!(world, (
+                Combat {
+                    entity_id: entity_id.into(),
+                    town_watch_id: combat_town_watch_id,
+                    soldiers_reserve_id: combat_soldiers_reserve_id
+                },
+                Owner {
+                    entity_id: combat_soldiers_reserve_id,
+                    address: owner
+                },
+                EntityOwner {
+                    entity_id: combat_soldiers_reserve_id,
+                    entity_owner_id: entity_id.into()
+                },
+                Position {
+                    entity_id: combat_soldiers_reserve_id,
+                    x: position.x,
+                    y: position.y
+                },
+                Owner {
+                    entity_id: combat_town_watch_id,
+                    address: owner
+                },
+                EntityOwner {
+                    entity_id: combat_town_watch_id,
+                    entity_owner_id: entity_id.into()
+                },
+                Position {
+                    entity_id: combat_town_watch_id,
+                    x: position.x,
+                    y: position.y
+                },
+            ));
             entity_id.into()
         }
 

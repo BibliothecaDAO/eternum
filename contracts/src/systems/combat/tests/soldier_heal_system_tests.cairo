@@ -3,7 +3,7 @@ use eternum::models::resources::{Resource};
 
 use eternum::models::owner::{Owner};
 use eternum::models::combat::{
-    Health
+    Health, Combat, Duty
 };
 
 use eternum::systems::config::contracts::config_systems;
@@ -41,7 +41,7 @@ use core::array::{ArrayTrait, SpanTrait};
 use core::traits::Into;
 
 
-fn setup() -> (IWorldDispatcher, u128, Span<u128>, ISoldierSystemsDispatcher) {
+fn setup() -> (IWorldDispatcher, u128, u128, ISoldierSystemsDispatcher) {
     let world = spawn_eternum();
 
     let config_systems_address 
@@ -109,7 +109,7 @@ fn setup() -> (IWorldDispatcher, u128, Span<u128>, ISoldierSystemsDispatcher) {
 
     // create caller's realm
     let caller_realm_entity_id = realm_systems_dispatcher.create(
-        world, realm_id, starknet::get_contract_address(), // owner
+        world, realm_id, contract_address_const::<'caller'>(), // owner
         resource_types_packed, resource_types_count, cities,
         harbors, rivers, regions, wonder, order, caller_position.clone(),
     );
@@ -137,12 +137,24 @@ fn setup() -> (IWorldDispatcher, u128, Span<u128>, ISoldierSystemsDispatcher) {
 
     // buy x soldiers
     let num_soldiers_bought = 2;
-    let mut soldier_ids: Span<u128>
-        = soldier_systems_dispatcher.create_soldiers(
-            world, caller_id, num_soldiers_bought
-        );
+    soldier_systems_dispatcher.create_soldiers(
+        world, caller_id, num_soldiers_bought
+    );
 
-    (world, caller_id, soldier_ids, soldier_systems_dispatcher) 
+    // detach 1 soldier from reserve
+    let entity_combat = get!(world, caller_id, Combat);
+    let realm_soldiers_reserve_id = entity_combat.soldiers_reserve_id;
+
+
+    let num_detached_soldiers = 1;
+    let detached_unit_id 
+        = soldier_systems_dispatcher
+            .detach_soldiers(
+                world, realm_soldiers_reserve_id, 
+                num_detached_soldiers
+            );
+
+    (world, caller_id, detached_unit_id, soldier_systems_dispatcher) 
 
 }
 
@@ -154,15 +166,15 @@ fn setup() -> (IWorldDispatcher, u128, Span<u128>, ISoldierSystemsDispatcher) {
 #[available_gas(3000000000000)]
 fn test_heal_soldier() {
 
-    let (world, caller_id, soldier_ids, soldier_systems_dispatcher) = setup();
+    let (world, caller_id, detached_unit_id, soldier_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(world.executor());
 
     // reduce the health of the first soldier by 40
-    let soldier_id = *soldier_ids.at(0);
+
     set!(world, (
         Health { 
-            entity_id: soldier_id, 
+            entity_id: detached_unit_id, 
             value: 60 
     }));
 
@@ -175,12 +187,12 @@ fn test_heal_soldier() {
 
     let health_bought = 40;
     soldier_systems_dispatcher.heal_soldiers(
-        world, soldier_id, health_bought
+        world, detached_unit_id, health_bought
     );
 
 
     // check that the soldier's health has been increased
-    let soldier_health = get!(world, soldier_id, Health);
+    let soldier_health = get!(world, detached_unit_id, Health);
     assert(soldier_health.value == 100, 'wrong soldier health');
 
     // check that the caller's demonhide balance has been reduced
@@ -199,7 +211,7 @@ fn test_heal_soldier() {
 #[should_panic(expected: ('not unit owner','ENTRYPOINT_FAILED' ))]
 fn test_not_unit_owner() {
 
-    let (world, caller_id, soldier_ids, soldier_systems_dispatcher) = setup();
+    let (world, caller_id, detached_unit_id, soldier_systems_dispatcher) = setup();
 
     // set unknown caller
     starknet::testing::set_contract_address(
@@ -208,9 +220,8 @@ fn test_not_unit_owner() {
 
     // reduce the health of the first soldier 
     let health_bought = 40;
-    let soldier_id = *soldier_ids.at(0);
     soldier_systems_dispatcher.heal_soldiers(
-        world, soldier_id, health_bought
+        world, detached_unit_id, health_bought
     );
 
 }
@@ -221,7 +232,7 @@ fn test_not_unit_owner() {
 #[should_panic(expected: ('max health exceeeded','ENTRYPOINT_FAILED' ))]
 fn test_purchase_exceeds_max_health() {
 
-    let (world, caller_id, soldier_ids, soldier_systems_dispatcher) = setup();
+    let (world, caller_id, detached_unit_id, soldier_systems_dispatcher) = setup();
 
     // set unknown caller
     starknet::testing::set_contract_address(
@@ -234,9 +245,8 @@ fn test_purchase_exceeds_max_health() {
     // and the current health is 100 so buying 
     // one more health will exceed the max health
     let health_bought = 1;
-    let soldier_id = *soldier_ids.at(0);
     soldier_systems_dispatcher.heal_soldiers(
-        world, soldier_id, health_bought
+        world, detached_unit_id, health_bought
     );
 
 }

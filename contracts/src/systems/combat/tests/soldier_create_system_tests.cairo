@@ -10,8 +10,7 @@ use eternum::models::capacity::Capacity;
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::quantity::{Quantity, QuantityTrait};    
 use eternum::models::combat::{
-    Attack,   
-    Health, Defence
+    Attack, Health, Defence, Combat
 };
 
 use eternum::systems::config::contracts::config_systems;
@@ -158,13 +157,11 @@ fn test_create_soldier() {
     );
 
     // buy x soldiers
-    let num_soldiers_bought = 2;
-    let mut soldier_ids: Span<u128>
-        = soldier_systems_dispatcher.create_soldiers(
-            world, caller_id, num_soldiers_bought
-        );
+    let num_soldiers_bought = 15;
+    soldier_systems_dispatcher.create_soldiers(
+         world, caller_id, num_soldiers_bought
+    );
 
-    assert(soldier_ids.len().into() == num_soldiers_bought, 'wrong num soldiers');
 
     // check that payment works correctly
     let caller_wheat_resource = get!(world, (caller_id, ResourceTypes::WHEAT), Resource);
@@ -174,63 +171,29 @@ fn test_create_soldier() {
     assert(caller_wood_resource.balance == 5000 - 40 * num_soldiers_bought, 'wrong wood balance');
 
 
+
+    // check that the soldiers were created correctly
     let caller_position = get!(world, caller_id, Position);
 
-    loop {
-        match soldier_ids.pop_front() {
-            Option::Some(soldier_id) => {
-                
-                let soldier_id = * soldier_id;
-                let soldier_owner = get!(world, soldier_id, Owner);
-                assert(
-                    soldier_owner.address == contract_address_const::<'caller'>(), 
-                        'wrong owner'
-                );
-
-                let soldier_entity_owner = get!(world, soldier_id, EntityOwner);
-                assert(
-                    soldier_entity_owner.entity_owner_id == caller_id,
-                      'wrong entity owner'
-                );
-
-                let soldier_health = get!(world, soldier_id, Health);
-                assert(soldier_health.value == 100, 'wrong health');
-
-                let soldier_attack = get!(world, soldier_id, Attack);
-                assert(soldier_attack.value == 100, 'wrong attack');
-
-                let soldier_defence = get!(world, soldier_id, Defence);
-                assert(soldier_defence.value == 100, 'wrong defence');
-
-                let soldier_quantity = get!(world, soldier_id, Quantity);
-                assert(soldier_quantity.value == 1, 'wrong quantity');
-
-                let soldier_position = get!(world, soldier_id, Position);
-                assert(
-                        soldier_position.x == caller_position.x 
-                            && soldier_position.y == caller_position.y,
-                                'wrong position'
-                );
+    let entity_combat = get!(world, caller_id, Combat);
+    let realm_soldiers_reserve_id = entity_combat.soldiers_reserve_id;
 
 
-                let soldier_inventory = get!(world, soldier_id, Inventory);
-                assert(soldier_inventory.items_key != 0, 'wrong inventory key');
+    let realm_reserve_soldier_health = get!(world, realm_soldiers_reserve_id, Health);
+    assert(realm_reserve_soldier_health.value == 100 * num_soldiers_bought, 'wrong health');
 
-                let soldier_movable = get!(world, soldier_id, Movable);
-                assert(soldier_movable.blocked == false, 'soldier blocked');
-                assert(soldier_movable.sec_per_km == 55, 'wrong speed');
-                assert(soldier_movable.round_trip == false, 'wrong round_trip');
-                assert(soldier_movable.intermediate_coord_x == 0, 'wrong coord x');
-                assert(soldier_movable.intermediate_coord_y == 0, 'wrong coord y');
+    let realm_reserve_soldier_attack = get!(world, realm_soldiers_reserve_id, Attack);
+    assert(realm_reserve_soldier_attack.value == 100 * num_soldiers_bought, 'wrong attack');
 
+    let realm_reserve_soldier_defence = get!(world, realm_soldiers_reserve_id, Defence);
+    assert(realm_reserve_soldier_defence.value == 100 * num_soldiers_bought, 'wrong defence');
 
-                let soldier_carry_capacity = get!(world, soldier_id, Capacity);
-                assert(soldier_carry_capacity.weight_gram == 44, 'wrong capacity');  
-            },
+    let realm_reserve_soldier_quantity = get!(world, realm_soldiers_reserve_id, Quantity);
+    assert(realm_reserve_soldier_quantity.value == num_soldiers_bought, 'wrong quantity');
 
-            Option::None => {break;}
-        };
-    };
+    let realm_reserve_soldier_movable = get!(world, realm_soldiers_reserve_id, Movable);
+    assert(realm_reserve_soldier_movable.sec_per_km == 0, 'wrong speed');
+
 }
 
 
