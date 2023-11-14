@@ -325,6 +325,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               <div className="grid grid-cols-4 gap-2">
                 {costResources.map(({ resourceId, amount }) => (
                   <ResourceCost
+                    withTooltip
                     key={resourceId}
                     type="vertical"
                     resourceId={resourceId}
