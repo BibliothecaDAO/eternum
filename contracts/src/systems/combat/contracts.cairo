@@ -69,7 +69,8 @@ mod combat_systems {
     #[external(v0)]
     impl SoldierSystemsImpl of ISoldierSystems<ContractState> {
         /// Create a number of soldiers for a realm
-        /// and add them to the realms reserve unit
+        /// 
+        /// These newly created soldiers are added to the realm's reserve unit
         ///
         /// # Arguments
         ///
@@ -151,22 +152,23 @@ mod combat_systems {
             set!(world, (unit_health, unit_attack, unit_defence, unit_quantity));
         }
 
-        ///  Create soldier(s) and assign them a duty.
+        ///  Detach soldiers from a unit
         ///
         ///  Note: no soldier should have any resource in their inventory
         ///        when calling this function. if they do, they must dispose
         ///        of the items before calling this function.
         ///
+        ///  When new units are formed using this function,
+        ///  they are free to roam the map and wage war irrespective of
+        ///  of where they were detached from. E.g when you detach some soldiers from
+        ///  the reserve unit, they are free to roam the map even though reserve's can't
+        ///
         /// # Arguments
         ///
         /// * `world` - The world address
-        /// * `entity_id` - The realm's entity id of the realm
-        /// * `soldier_ids` - The ids of the soldiers that'll make up the unit
-        /// * `duty` - The duty of the unit which can be either attack or defence.
-        ///             Those assigned to attack will be deployed to raid other realms
-        ///             while those assigned to defence will be deployed to defend the realm.
-        ///             This means those attacking can travel and hold resources in inventory
-        ///             while those defending cannot as they are deployed to the realm's town watch.      
+        /// * `unit_id` - The unit you want to remove soldiers from to form another group 
+        /// * `detached_quantity` - The number of soldiers you want to 
+        ///                         remove from unit_id to form another group   
         ///             
         ///
         fn detach_soldiers( 
@@ -202,8 +204,6 @@ mod combat_systems {
             );
 
 
-
-
             // create a new unit 
             let mut unit_health = get!(world, unit_id, Health);
             let mut unit_attack = get!(world, unit_id, Attack);
@@ -213,14 +213,12 @@ mod combat_systems {
             let new_unit_attack = (unit_attack.value * detached_quantity ) / unit_quantity.value;
             let new_unit_defence = (unit_defence.value * detached_quantity ) / unit_quantity.value;
 
-            let individual_capacity = 
-                get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), CapacityConfig).weight_gram;
-
-            let individual_speed   
+            let combat_unit_speed   
                 = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), SpeedConfig).sec_per_km;
 
             let new_unit_id: u128 = world.uuid().into();
 
+            let unit_capacity = get!(world, unit_id, Capacity);
             let unit_position = get!(world, unit_id, Position);
 
 
@@ -261,12 +259,12 @@ mod combat_systems {
                 },
                 Capacity {
                     entity_id: new_unit_id,
-                    weight_gram: individual_capacity
+                    weight_gram: unit_capacity.weight_gram
                 },
                 Movable {
                     entity_id: new_unit_id, 
-                    sec_per_km: individual_speed, 
-                    blocked: false,
+                    sec_per_km: combat_unit_speed, 
+                    blocked: unit_movable.blocked,
                     round_trip: unit_movable.round_trip,
                     intermediate_coord_x: unit_movable.intermediate_coord_x,  
                     intermediate_coord_y: unit_movable.intermediate_coord_y,  
@@ -295,15 +293,24 @@ mod combat_systems {
 
 
 
-        /// Remove all soldiers from a unit and make them individual soldiers
+        /// Merge soldier units together
         ///
-        /// Note: If the unit is a raiding unit, they must not hold any resources
-        ///       in their inventory.
+        /// This function would be useful, for example, if you want to 
+        /// add some soldiers to the town watch after detaching them from 
+        /// the realm's reserve unit.
         ///
+        /// It could also be used to merge soldiers from a raiding unit
+        /// into the town watch and vice versa
+        ///
+        /// It could also be used to merge two raiding units together
+        /// 
         /// # Arguments
         ///
         /// * `world` - The world address
-        /// * `unit_id` - The unit's entity id
+        /// * `merge_into_unit_id` - The unit you want to merge the other units into
+        /// * `units` - The other units (unit ids and quantity) what would be merged
+        ///
+        /// Note: the `units` must not hold any resources in their inventory.
         ///
         fn merge_soldiers(
             self: @ContractState, world: IWorldDispatcher, 
@@ -323,6 +330,14 @@ mod combat_systems {
             let merge_into_unit_realm 
                 = get!(world, merge_into_unit_entity_owner.entity_owner_id, Realm);
             assert(merge_into_unit_realm.realm_id != 0, 'not owned by realm');
+
+
+            // ensure unit is not blocked
+            let merge_into_unit_movable = get!(world, merge_into_unit_id, Movable);
+            assert(
+                merge_into_unit_movable.blocked == false,
+                    'unit is blocked'
+            );
 
 
             // ensure unit is not travelling 
@@ -371,6 +386,13 @@ mod combat_systems {
                 assert(unit_inventory.items_count == 0, 'inventory not empty');
 
 
+                // ensure units is not blocked 
+                let unit_movable = get!(world, unit_id, Movable);
+                assert(
+                    unit_movable.blocked == false,
+                        'unit is blocked'
+                );
+
                 // ensure units are not travelling 
                 let unit_arrival = get!(world, unit_id, ArrivalTime);
                 assert(
@@ -418,28 +440,12 @@ mod combat_systems {
 
                 index += 1;
             };
-
-
-            let individual_capacity = 
-                get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), CapacityConfig).weight_gram;
-
-            let individual_speed   
-                = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), SpeedConfig).sec_per_km;
-
-            let mut merge_into_unit_movable = get!(world, merge_into_unit_id, Movable);
-            let mut merge_into_unit_capacity = get!(world, merge_into_unit_id, Capacity);
-            merge_into_unit_capacity.weight_gram = individual_capacity;
-            merge_into_unit_movable.sec_per_km = individual_speed;
-
             
             set!(world, (
                 merge_into_unit_health,
                 merge_into_unit_attack,
                 merge_into_unit_defence,
-                merge_into_unit_quantity,
-
-                merge_into_unit_capacity,
-                merge_into_unit_movable,
+                merge_into_unit_quantity
             ));
 
         }

@@ -277,7 +277,8 @@ fn test_merge_to_town_watch() {
 
     let unit_movable = get!(world, caller_town_watch_id, Movable);
     assert(
-        unit_movable.sec_per_km == 55 ,
+        // the speed would still be 0 because town watch can't move
+        unit_movable.sec_per_km == 0, 
          'wrong speed'
         );
 

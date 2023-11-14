@@ -2,10 +2,14 @@
 mod test_realm_systems {
 
     use eternum::models::realm::Realm;
+    use eternum::models::movable::Movable;
+    use eternum::models::capacity::Capacity;
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::Position;
     use eternum::models::metadata::EntityMetadata;
     use eternum::models::combat::Combat;
+    use eternum::models::config::{ CapacityConfig };
+    use eternum::constants::{ WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE };
 
     use eternum::systems::test::interface::realm::IRealmSystems;
 
@@ -66,6 +70,9 @@ mod test_realm_systems {
             // setup combat 
             let combat_town_watch_id = world.uuid().into();
             let combat_soldiers_reserve_id = world.uuid().into();
+
+            let combat_unit_capacity
+                = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), CapacityConfig).weight_gram;
                     
             set!(world, (
                 Combat {
@@ -73,6 +80,8 @@ mod test_realm_systems {
                     town_watch_id: combat_town_watch_id,
                     soldiers_reserve_id: combat_soldiers_reserve_id
                 },
+
+
                 Owner {
                     entity_id: combat_soldiers_reserve_id,
                     address: owner
@@ -86,6 +95,20 @@ mod test_realm_systems {
                     x: position.x,
                     y: position.y
                 },
+                Capacity {
+                    entity_id: combat_soldiers_reserve_id,
+                    weight_gram: combat_unit_capacity
+                },
+                Movable {
+                    entity_id: combat_soldiers_reserve_id, 
+                    sec_per_km: 0, 
+                    blocked: false,
+                    round_trip: false,
+                    intermediate_coord_x: 0,  
+                    intermediate_coord_y: 0,  
+                },
+
+
                 Owner {
                     entity_id: combat_town_watch_id,
                     address: owner
@@ -98,6 +121,18 @@ mod test_realm_systems {
                     entity_id: combat_town_watch_id,
                     x: position.x,
                     y: position.y
+                },
+                Capacity {
+                    entity_id: combat_town_watch_id,
+                    weight_gram: combat_unit_capacity
+                },
+                Movable {
+                    entity_id: combat_town_watch_id, 
+                    sec_per_km: 0, 
+                    blocked: false,
+                    round_trip: false,
+                    intermediate_coord_x: 0,  
+                    intermediate_coord_y: 0,  
                 },
             ));
             entity_id.into()
