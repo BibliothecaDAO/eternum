@@ -144,7 +144,7 @@ export const World = () => {
       <BlurOverlayContainer>
         <SignUpComponent isWorldLive={isWorldLive} worldLoading={worldLoading} worldProgress={worldProgress} />
       </BlurOverlayContainer>
-      <Leva hidden={import.meta.env.PROD} />
+      <Leva hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU} />
       <Tooltip />
       <Redirect to="/map" />
     </div>
