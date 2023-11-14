@@ -11,6 +11,8 @@ interface UIStore {
   setTheme: (theme: string) => void;
   showBlurOverlay: boolean;
   setShowBlurOverlay: (show: boolean) => void;
+  sideMenuOpen: boolean;
+  setSideMenuOpen: (open: boolean) => void;
   isSoundOn: boolean;
   toggleSound: () => void;
   musicLevel: number;
@@ -47,8 +49,14 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   setTheme: (theme) => set({ theme }),
   showBlurOverlay: true,
   setShowBlurOverlay: (show) => set({ showBlurOverlay: show }),
+  sideMenuOpen: false,
+  setSideMenuOpen: (open) => set({ sideMenuOpen: open }),
   isSoundOn: false,
-  toggleSound: () => set((state) => ({ isSoundOn: !state.isSoundOn })),
+  toggleSound: () =>
+    set((state) => {
+      localStorage.setItem("soundEnabled", String(!state.isSoundOn));
+      return { isSoundOn: !state.isSoundOn };
+    }),
   musicLevel: localStorage.getItem("musicLevel") ? parseInt(localStorage.getItem("musicLevel") as string) : 50,
   setMusicLevel: (level) => {
     set({ musicLevel: level });

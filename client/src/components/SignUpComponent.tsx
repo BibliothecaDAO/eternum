@@ -87,9 +87,6 @@ export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: Si
 
   useEffect(() => {
     setShowBlurOverlay(showSignupPopup);
-    if (!showSignupPopup) {
-      toggleSound();
-    }
   }, [showSignupPopup]);
 
   useEffect(() => {
@@ -181,7 +178,12 @@ export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: Si
             disabled={!isWalletSelected || worldLoading || disableStart || !isWorldLive}
             className="mt-2 !p-2"
             variant={worldLoading || isWalletSelected ? "primary" : "outline"}
-            onClick={() => setShowSignupPopup(false)}
+            onClick={() => {
+              setShowSignupPopup(false);
+              if (!localStorage.getItem("soundEnabled") || localStorage.getItem("soundEnabled") === "true") {
+                toggleSound();
+              }
+            }}
           >
             {!isWorldLive
               ? "No World"
