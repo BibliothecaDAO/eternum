@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDojo } from "../../DojoContext";
 import { Component, Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
-import { extractAndCleanKey, getEntityIdFromKeys, getPosition } from "../../utils/utils";
+import { divideByPrecision, extractAndCleanKey, getEntityIdFromKeys, getPosition } from "../../utils/utils";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { calculateNextHarvest } from "../../components/cityview/realm/labor/laborUtils";
 import useRealmStore from "../store/useRealmStore";
@@ -10,12 +10,7 @@ import { ResourcesIds } from "@bibliothecadao/eternum";
 import { UpdatedEntity } from "../../dojo/createEntitySubscription";
 import { Position } from "../../types";
 import { getRealm } from "../../utils/realms";
-
-const LABOR_CONFIG = {
-  base_food_per_cycle: 21,
-  base_labor_units: 7200,
-  base_resources_per_cycle: 21,
-};
+import { LABOR_CONFIG } from "@bibliothecadao/eternum";
 
 export enum EventType {
   MakeOffer,
@@ -239,7 +234,7 @@ const generateLaborNotifications = (
           eventType: EventType.Harvest,
           keys: [realmEntityId.toString(), resourceId.toString()],
           data: {
-            harvestAmount: harvest,
+            harvestAmount: divideByPrecision(harvest),
           },
         });
       }

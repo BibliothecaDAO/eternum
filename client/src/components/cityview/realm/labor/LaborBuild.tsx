@@ -20,12 +20,7 @@ import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 import { useLabor } from "../../../../hooks/helpers/useLabor";
 import { LaborAuction } from "./LaborAuction";
-
-let LABOR_CONFIG = {
-  base_food_per_cycle: 21,
-  base_labor_units: 7200,
-  base_resources_per_cycle: 21,
-};
+import { LABOR_CONFIG } from "@bibliothecadao/eternum";
 
 type LaborBuildPopupProps = {
   resourceId: number;
@@ -284,8 +279,8 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               )}
             </div>
             <div className="flex items-center">
-              {`+${isFood ? (LABOR_CONFIG.base_food_per_cycle * multiplier) / 2 : ""}${
-                isFood ? "" : LABOR_CONFIG.base_resources_per_cycle / 2
+              {`+${isFood ? divideByPrecision(LABOR_CONFIG.base_food_per_cycle * multiplier) / 2 : ""}${
+                isFood ? "" : divideByPrecision(LABOR_CONFIG.base_resources_per_cycle) / 2
               }`}
               <ResourceIcon
                 containerClassName="mx-0.5"
@@ -346,7 +341,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               {/* note: max 76 for now because of gas, can remove after new contract deployment */}
               <NumberInput className="ml-2 mr-2" value={laborAmount} step={5} onChange={setLaborAmount} max={76} />
               <div className="italic text-gold">
-                {formatSecondsLeftInDaysHours(laborAmount * (LABOR_CONFIG?.base_labor_units || 0))}
+                {formatSecondsLeftInDaysHours(laborAmount * divideByPrecision(LABOR_CONFIG?.base_labor_units || 0))}
               </div>
             </div>
           )}
