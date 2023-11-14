@@ -50,10 +50,9 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
       )}
       {showSettings && (
         <SecondaryPopup className="top-1/3" name="settings">
-          <SecondaryPopup.Head>
+          <SecondaryPopup.Head onClose={() => setShowSettings(!showSettings)}>
             <div className="flex items-center">
               <div className="mr-0.5">Settings</div>
-              <CloseIcon className="w-3 h-3 cursor-pointer fill-white" onClick={() => setShowSettings(!showSettings)} />
             </div>
           </SecondaryPopup.Head>
           <SecondaryPopup.Body width="400px">

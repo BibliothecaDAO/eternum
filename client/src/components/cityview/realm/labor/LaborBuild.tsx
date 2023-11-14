@@ -254,7 +254,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
 
   return (
     <SecondaryPopup name="labor">
-      <SecondaryPopup.Head>
+      <SecondaryPopup.Head onClose={onClose}>
         <div className="flex items-center space-x-1">
           <div className="mr-0.5">Build Labor:</div>
         </div>

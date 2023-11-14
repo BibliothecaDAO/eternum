@@ -41,14 +41,13 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
   const isTravelling = nextBlockTimestamp && arrivalTime && arrivalTime > nextBlockTimestamp;
   return (
     <SecondaryPopup>
-      <SecondaryPopup.Head>
+      <SecondaryPopup.Head onClose={onClose}>
         <div className="flex items-center space-x-1">
           {capacity && (
             <div className="mr-0.5">
               Caravan #{caravan.caravanId} {divideByPrecision(resourceWeight)} / {divideByPrecision(capacity)}
             </div>
           )}
-          <CloseIcon onClick={onClose} className="w-3 h-3 cursor-pointer fill-white" />
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body>

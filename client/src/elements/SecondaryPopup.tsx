@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { useEffect, useState, useRef } from "react";
 import Draggable from "react-draggable";
+import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
 
 type FilterPopupProps = {
   children: React.ReactNode;
@@ -92,14 +93,23 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
   );
 };
 
-SecondaryPopup.Head = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+SecondaryPopup.Head = ({
+  children,
+  className,
+  onClose,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  onClose?: () => void;
+}) => (
   <div
     className={clsx(
-      "text-xxs relative cursor-move -mb-[1px] z-30 bg-gray px-1 py-0.5 rounded-t-[4px] border-t border-x border-white text-white w-min whitespace-nowrap handle",
+      "text-xxs flex items-center relative cursor-move -mb-[1px] z-30 bg-gray px-1 py-0.5 rounded-t-[4px] border-t border-x border-white text-white w-min whitespace-nowrap handle",
       className,
     )}
   >
     {children}
+    {onClose && <CloseIcon className="w-3 h-3 ml-1 cursor-pointer fill-white" onClick={onClose} />}
   </div>
 );
 

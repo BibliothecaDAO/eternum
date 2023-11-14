@@ -51,7 +51,7 @@ export const TravelRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
 
   return (
     <SecondaryPopup>
-      <SecondaryPopup.Head>
+      <SecondaryPopup.Head onClose={onClose}>
         <div className="flex items-center space-x-1">
           <div className="mr-0.5">Travel Raiders:</div>
         </div>
