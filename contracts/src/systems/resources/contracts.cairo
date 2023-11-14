@@ -458,7 +458,6 @@ mod resource_systems {
 
                 // add item to inventory
                 let mut inventory = get!(world, entity_id, Inventory);
-                assert(inventory.items_key != 0, 'entity has no inventory');
 
                 let foreign_key 
                     = InternalInventorySystemsImpl::get_foreign_key(inventory, inventory.items_count);
