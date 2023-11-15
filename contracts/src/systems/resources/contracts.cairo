@@ -393,20 +393,8 @@ mod resource_systems {
             assert(resource_chest_weight.value != 0, 'chest is empty');
             
             // ensure that receiver has enough weight capacity
-            let receiver_weight = get!(world, receiving_entity_id, Weight);
-
             let receiver_capacity = get!(world, receiving_entity_id, Capacity);
-            let receiver_quantity = get!(world, receiving_entity_id, Quantity);
-
-            assert(
-                receiver_capacity
-                    .can_carry_weight(
-                            receiving_entity_id, 
-                            receiver_quantity.get_value(), 
-                            receiver_weight.value + resource_chest_weight.value
-                        ),
-                'not enough capacity'
-            );
+            assert(receiver_capacity.is_capped() == false, 'invalid recepient');
 
             // return resources to the entity
             let mut index = 0;
