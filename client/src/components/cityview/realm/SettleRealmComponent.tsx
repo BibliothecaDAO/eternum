@@ -58,6 +58,9 @@ export const SettleRealmComponent = () => {
     if (isDev) {
       resources = [...resources, 254, multiplyByPrecision(1000000)];
       resources = [...resources, 255, multiplyByPrecision(1000000)];
+    } else {
+      resources = [...resources, 254, multiplyByPrecision(7560)];
+      resources = [...resources, 255, multiplyByPrecision(2520)];
     }
 
     await create_realm({
