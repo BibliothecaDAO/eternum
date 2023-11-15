@@ -42,12 +42,10 @@ mod trade_systems {
             self: @ContractState,
             world: IWorldDispatcher,
             maker_id: u128,
-            maker_gives_resource_types: Span<u8>,
-            maker_gives_resource_amounts: Span<u128>,
+            maker_gives_resources: Span<(u8, u128)>,
             maker_transport_id: ID,
             taker_id: u128,
-            taker_gives_resource_types: Span<u8>,
-            taker_gives_resource_amounts: Span<u128>,
+            taker_gives_resources: Span<(u8, u128)>,
             expires_at: u64
         ) -> ID {
             let caller = starknet::get_caller_address();
@@ -66,7 +64,7 @@ mod trade_systems {
             // create resource chest that maker will collect
             let (maker_resource_chest, maker_resources_weight) 
                 = resource_chest::create(
-                    world, taker_gives_resource_types, taker_gives_resource_amounts
+                    world, taker_gives_resources
                 );
 
             // check that maker's transport can carry 
@@ -79,7 +77,7 @@ mod trade_systems {
             // create resource chest that taker will collect
             let (taker_resource_chest, _) 
                 = resource_chest::create(
-                    world, maker_gives_resource_types, maker_gives_resource_amounts
+                    world, maker_gives_resources
                 );
 
             // fill the taker's chest with the maker's resources

@@ -21,10 +21,9 @@ trait IResourceSystems<TContractState> {
 }
 
 #[starknet::interface]
-trait IResourceChestSystems<TContractState> {
-    fn offload_chest(
+trait IInventorySystems<TContractState> {
+    fn transfer_item(
         self: @TContractState, world: IWorldDispatcher, 
-        entity_id: ID, entity_index_in_inventory: u128, 
-        receiving_entity_id: ID, transport_id: ID
+        sender_id: ID, index: u128, receiver_id: ID
     );
 }
