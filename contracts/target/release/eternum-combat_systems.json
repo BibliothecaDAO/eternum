@@ -39151,7 +39151,7 @@
     "user_func_names": [
       [
         0,
-        "eternum::systems::combat::contracts::combat_systems::__wrapper__name"
+        "eternum::systems::combat::contracts::combat_systems::__wrapper__dojo_resource"
       ],
       [
         1,
@@ -39871,12 +39871,12 @@
         "function_idx": 4
       },
       {
-        "selector": "0x361458367e696363fbcc70777d07ebbd2394e89fd0adcaf147faccd1d294d60",
-        "function_idx": 0
-      },
-      {
         "selector": "0x36f79e6fd1b26dae54d9487dbd10be2e80eae5f8d06d1704e6b24d551f6d6f6",
         "function_idx": 6
+      },
+      {
+        "selector": "0x38f2d91dabc7079b6f336cc00f874d17cbb7463674c7d3edfd04668fbdb6f6a",
+        "function_idx": 0
       }
     ],
     "L1_HANDLER": [],
@@ -40076,7 +40076,7 @@
     },
     {
       "type": "function",
-      "name": "name",
+      "name": "dojo_resource",
       "inputs": [],
       "outputs": [
         {

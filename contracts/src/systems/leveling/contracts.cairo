@@ -2,31 +2,14 @@
 mod leveling_systems {
     use eternum::alias::ID;
     use eternum::models::resources::{Resource, ResourceCost};
-    use eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
-    use eternum::models::inventory::Inventory;
-    use eternum::models::metadata::ForeignKey;
-    use eternum::models::position::{Position, Coord};
-    use eternum::models::quantity::{Quantity, QuantityTrait};
-    use eternum::models::capacity::{Capacity, CapacityTrait};
+    use eternum::models::owner::{Owner};
     use eternum::models::config::{LevelingConfig};
-    use eternum::models::resources::{ResourceChest, DetachedResource};
-    use eternum::models::movable::{ArrivalTime};
-    use eternum::models::weight::Weight;
-    use eternum::models::road::RoadImpl;
     use eternum::models::realm::{Realm};
     use eternum::models::level::{Level, LevelTrait};
-
-    
-    use eternum::systems::transport::contracts::caravan_systems::caravan_systems::{
-        InternalCaravanSystemsImpl as caravan
-    };
 
     use eternum::constants::{LEVELING_CONFIG_ID};
 
     use eternum::systems::leveling::interface::{ILevelingSystems};
-
-    use core::integer::BoundedInt;
-    use core::poseidon::poseidon_hash_span;
 
     #[external(v0)]
     impl LevelingSystemsImpl of ILevelingSystems<ContractState> {
@@ -69,7 +52,7 @@ mod leveling_systems {
                     = get!(world, (realm_entity_id, resource_cost.resource_type), Resource);
 
                 assert(
-                    realm_resource.balance >= resource_cost.amount * (level.get_level() + 1).into(),
+                    realm_resource.balance >= resource_cost.amount,
                         'insufficient resources'
                 );
 

@@ -238,18 +238,7 @@ mod labor_systems {
 
                 // get level bonus
                 let level = get!(world, (realm_id), Level);
-                let current_level: u64 = level.get_level();
-                let level_bonus = if current_level == 0 {
-                    100
-                } else if current_level == 1 {
-                    125
-                } else if current_level == 2 {
-                    150
-                } else if current_level == 3 {
-                    200
-                } else {
-                    100
-                };
+                let level_bonus = level.get_level_multiplier();
 
                 // update resources with multiplier
                 // and with level bonus

@@ -8,7 +8,7 @@ import { useDojo } from "../../../../DojoContext";
 import { getComponentValue } from "@latticexyz/recs";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../utils/utils";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
-import { getLevelingCost } from "@bibliothecadao/eternum";
+import { getLevelingCost } from "./utils";
 
 type LevelingPopupProps = {
   onClose: () => void;
