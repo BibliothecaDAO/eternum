@@ -119,3 +119,11 @@ trait IHyperstructureConfig<TContractState> {
     ) -> ID;
 
 }
+
+#[starknet::interface]
+trait ILevelingConfig<TContractState> {
+    fn set_leveling_config(
+        self: @TContractState, world: IWorldDispatcher,
+        resource_costs: Span<(u8, u128)>
+    );
+}

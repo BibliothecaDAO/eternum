@@ -49,6 +49,12 @@ commands=(
 
 )
 
+### LEVELING CONFIG ###
+commands+=(
+    ## leveling cost
+    "sozo execute $CONFIG_SYSTEMS set_leveling_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,22,1,872170,2,685390,3,666610,4,459650,5,385390,6,302780,7,205040,8,166430,9,158960,10,103300,11,52170,12,42960,13,41570,14,41570,15,29910,16,28170,17,24170,18,19300,19,16170,20,9570,21,6430,22,4000"
+)
+
 
 ### SOLDIERS CONFIG ###
 commands+=(
