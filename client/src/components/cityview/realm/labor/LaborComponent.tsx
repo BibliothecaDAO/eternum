@@ -61,10 +61,14 @@ export const LaborComponent = ({
 
   const { play: playHarvest } = useUiSounds(soundSelector.harvest);
 
+  const { getRealmLevel } = useRealm();
+  const level = getRealmLevel(realmEntityId)?.level || 0;
+
   const onHarvest = () => {
     playHarvest();
     optimisticHarvestLabor(
       nextBlockTimestamp || 0,
+      level,
       harvest_labor,
     )({
       signer: account,
@@ -84,9 +88,6 @@ export const LaborComponent = ({
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 
-  const { getRealmLevel } = useRealm();
-  const level = getRealmLevel(realmEntityId)?.level || 0;
-
   const nextHarvest = useMemo(() => {
     if (labor && nextBlockTimestamp) {
       return calculateNextHarvest(
@@ -96,6 +97,7 @@ export const LaborComponent = ({
         LABOR_CONFIG.base_labor_units,
         isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
         nextBlockTimestamp,
+        level,
       );
     } else {
       return 0;

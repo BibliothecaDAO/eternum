@@ -272,7 +272,7 @@ export function createOptimisticSystemCalls({
     };
   }
 
-  function optimisticHarvestLabor(ts: number, systemCall: (args: HarvestLaborProps) => Promise<void>) {
+  function optimisticHarvestLabor(ts: number, level: number, systemCall: (args: HarvestLaborProps) => Promise<void>) {
     return async function (this: any, args: HarvestLaborProps) {
       const { realm_id, resource_type } = args;
 
@@ -285,7 +285,6 @@ export function createOptimisticSystemCalls({
         last_harvest: ts,
         multiplier: 1,
       };
-      let level = getComponentValue(Level, getEntityIdFromKeys([BigInt(realm_id)]))?.level || 0;
       let levelMultiplier = calculateLevelMultiplier(level);
       let laborGenerated = labor.balance <= ts ? labor.balance - labor.last_harvest : ts - labor.last_harvest;
       let laborUnharvested = labor.balance <= ts ? 0 : labor.balance - ts;

@@ -1959,7 +1959,7 @@
     {
       "name": "labor_systems",
       "address": "0x5b3b02ba50cfb46af86c20d1eca1bbff5fe82ff2f8985aefc413267a5d05b00",
-      "class_hash": "0x863e4af08db7966a8da287cc99c336654a9e013f8df2feac6a3e909b9c0c3b",
+      "class_hash": "0x60484da6757dabd1720a685d2c7f0baf81483cb183b6b1e0a671770301cf43c",
       "abi": [
         {
           "type": "impl",
@@ -2117,7 +2117,7 @@
     {
       "name": "leveling_systems",
       "address": "0x81edcebc0097b53ae8db567565eb5c5d9e8a9190a8a80411547676f24361ca",
-      "class_hash": "0x114c5d4a31e3ba69697a246d4fa7adeabc8f55d01e167ebb880b70c32529bca",
+      "class_hash": "0x58607b49749c308fb0ba8899bbc3a1330b1cd1ef3b2931d91daf09de6cf9d75",
       "abi": [
         {
           "type": "impl",

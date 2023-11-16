@@ -60,6 +60,7 @@ export const LaborRegionTooltip = ({ position, resourceId }: LaborRegionTooltipP
         LABOR_CONFIG.base_labor_units,
         LABOR_CONFIG.base_resources_per_cycle,
         nextBlockTimestamp,
+        level,
       );
     } else {
       return 0;

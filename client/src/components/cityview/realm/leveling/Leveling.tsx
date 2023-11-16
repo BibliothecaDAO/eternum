@@ -16,8 +16,7 @@ export const Leveling = () => {
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const progress = useMemo(() => {
-    const timeLeft = Math.max(level.validUntil - nextBlockTimestamp, 0);
-    return (timeLeft / 604800) * 100;
+    return (level.timeLeft / 604800) * 100;
   }, [level, nextBlockTimestamp]);
 
   const timeLeftColors = useMemo(() => {
