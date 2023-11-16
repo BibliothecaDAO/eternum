@@ -31,7 +31,7 @@ mod leveling_systems {
     #[external(v0)]
     impl LevelingSystemsImpl of ILevelingSystems<ContractState> {
         
-        fn levelUp(
+        fn level_up(
             self: @ContractState, world: IWorldDispatcher, 
             realm_entity_id: ID,
         ) {
