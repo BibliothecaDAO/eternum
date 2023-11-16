@@ -7819,24 +7819,17 @@
       },
       {
         "selector": "0x35644e047c8b85e9ea22abfe2265bc6b4330912b355c393b781fa662bc9974d",
-<<<<<<< HEAD
-        "function_idx": 14
-=======
         "function_idx": 15
->>>>>>> main
       },
       {
         "selector": "0x36554faa50139a6ffd6245baba05258e2dd2b491e363c6fcde0763274c4c16a",
         "function_idx": 8
       },
       {
-<<<<<<< HEAD
-=======
         "selector": "0x368e7e81fbd6181bc69e00a849c4868d144012c073cce735421370769e36359",
         "function_idx": 10
       },
       {
->>>>>>> main
         "selector": "0x38f2d91dabc7079b6f336cc00f874d17cbb7463674c7d3edfd04668fbdb6f6a",
         "function_idx": 0
       },
