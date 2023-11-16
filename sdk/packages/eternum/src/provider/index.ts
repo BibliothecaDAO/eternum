@@ -26,6 +26,7 @@ import {
   UngroupAndRegroupSoldiersProps,
   AttackProps,
   StealProps,
+  LevelUpProps,
 } from "../types";
 import { Call } from "starknet";
 
@@ -543,6 +544,18 @@ export class EternumProvider extends RPCProvider {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
       entrypoint: "steal",
       calldata: [this.getWorldAddress(), attacker_id, target_id],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async level_up(props: LevelUpProps) {
+    const { realm_entity_id, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "leveling_systems"),
+      entrypoint: "level_up",
+      calldata: [this.getWorldAddress(), realm_entity_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,

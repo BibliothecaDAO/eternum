@@ -43,6 +43,10 @@ export interface StealProps extends SystemSigner {
   target_id: num.BigNumberish;
 }
 
+export interface LevelUpProps extends SystemSigner {
+  realm_entity_id: num.BigNumberish;
+}
+
 export interface TravelProps extends SystemSigner {
   travelling_entity_id: num.BigNumberish;
   destination_coord_x: num.BigNumberish;

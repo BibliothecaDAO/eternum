@@ -8,13 +8,16 @@ import realmIdsByOrder from "../../data/realmids_by_order.json";
 import realmsData from "../../geodata/realms.json";
 import { unpackResources } from "../../utils/packedData";
 import { useEntityQuery } from "@dojoengine/react";
+import useBlockchainStore from "../store/useBlockchainStore";
 
 export function useRealm() {
   const {
     setup: {
-      components: { Realm },
+      components: { Realm, Level },
     },
   } = useDojo();
+
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const getNextRealmIdForOrder = (order: number) => {
     const orderName = getOrderName(order);
@@ -41,8 +44,48 @@ export function useRealm() {
     }
   };
 
+  const getRealmLevel = (
+    realmEntityId: number,
+  ): { level: number; timeLeft: number; percentage: number } | undefined => {
+    const level = getComponentValue(Level, getEntityIdFromKeys([BigInt(realmEntityId)])) || {
+      level: 0,
+      valid_until: nextBlockTimestamp,
+    };
+
+    let trueLevel = level.level;
+    // calculate true level
+    if (level.valid_until > nextBlockTimestamp) {
+      trueLevel = level.level;
+    } else {
+      const weeksPassed = Math.floor((nextBlockTimestamp - level.valid_until) / 604800) + 1;
+      trueLevel = Math.max(0, level.level - weeksPassed);
+    }
+
+    let timeLeft: number;
+    if (trueLevel === 0) {
+      timeLeft = 0;
+    } else {
+      if (nextBlockTimestamp >= level.valid_until) {
+        timeLeft = 604800 - ((nextBlockTimestamp - level.valid_until) % 604800);
+      } else {
+        timeLeft = level.valid_until - nextBlockTimestamp;
+      }
+    }
+
+    let percentage = 100;
+    if (trueLevel === 1) {
+      percentage = 125;
+    } else if (trueLevel === 2) {
+      percentage = 150;
+    } else if (trueLevel === 3) {
+      percentage = 200;
+    }
+    return { level: trueLevel, timeLeft, percentage };
+  };
+
   return {
     getNextRealmIdForOrder,
+    getRealmLevel,
   };
 }
 

@@ -5,5 +5,6 @@ mod hyperstructure;
 mod resources;
 mod transport;
 mod combat;
+mod leveling;
 
 mod test;
