@@ -52,7 +52,7 @@ mod leveling_systems {
             let mut level = get!(world, (realm_entity_id), Level);
 
             // assert that level is not 3 already
-            assert(level.level != 3, 'max level reached');
+            assert(level.get_level() != 3, 'max level reached');
 
             // check that realm has enough resources to level up
             let leveling_config: LevelingConfig = get!(world, LEVELING_CONFIG_ID, LevelingConfig);
