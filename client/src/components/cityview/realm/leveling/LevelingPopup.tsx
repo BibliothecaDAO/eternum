@@ -54,16 +54,18 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
   };
 
   useEffect(() => {
-    setCanBuild(false);
+    let canBuild = true;
     costResources.forEach(({ resourceId, amount }) => {
       const realmResource = getComponentValue(
         Resource,
         getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
       );
-      if (realmResource && realmResource.balance >= amount) {
-        setCanBuild(true);
+
+      if (!realmResource || realmResource.balance < amount) {
+        canBuild = false;
       }
     });
+    setCanBuild(canBuild);
   }, []);
 
   return (

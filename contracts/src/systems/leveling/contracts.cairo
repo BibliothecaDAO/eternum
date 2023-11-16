@@ -56,7 +56,7 @@ mod leveling_systems {
                         'insufficient resources'
                 );
 
-                realm_resource.balance -= resource_cost.amount * (level.get_level() + 1).into();
+                realm_resource.balance -= resource_cost.amount;
                 set!(world, (realm_resource));
 
                 index += 1;

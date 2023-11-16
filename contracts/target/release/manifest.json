@@ -2117,7 +2117,7 @@
     {
       "name": "leveling_systems",
       "address": "0x81edcebc0097b53ae8db567565eb5c5d9e8a9190a8a80411547676f24361ca",
-      "class_hash": "0x4398362ebef2a4d16d75c2f80d2a5efd7139cc66d0471aeb2ae4bfbe18d5963",
+      "class_hash": "0x3e35cf90aadf51c415e9e978d04c21400576f6990a0701da16df7a31e964992",
       "abi": [
         {
           "type": "impl",
