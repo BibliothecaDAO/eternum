@@ -11,6 +11,7 @@ import { UpdatedEntity } from "../../dojo/createEntitySubscription";
 import { Position } from "../../types";
 import { getRealm } from "../../utils/realms";
 import { LABOR_CONFIG } from "@bibliothecadao/eternum";
+import { useRealm } from "../helpers/useRealm";
 
 export enum EventType {
   MakeOffer,
@@ -49,9 +50,12 @@ export const useNotifications = () => {
   } = useDojo();
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const { realmEntityIds } = useRealmStore();
+  const { realmEntityIds, realmEntityId } = useRealmStore();
   const realmsResources = useRealmsResource(realmEntityIds);
   const realmPositions = useRealmsPosition(realmEntityIds);
+
+  const { getRealmLevel } = useRealm();
+  const level = getRealmLevel(realmEntityId)?.level || 0;
 
   const [notifications, setNotifications] = useState<NotificationType[]>([]);
 
@@ -75,7 +79,7 @@ export const useNotifications = () => {
   useEffect(() => {
     const updateNotifications = () => {
       const notifications = nextBlockTimestamp
-        ? generateLaborNotifications(realmsResources, nextBlockTimestamp, Labor)
+        ? generateLaborNotifications(realmsResources, nextBlockTimestamp, level, Labor)
         : [];
       // add only add if not already in there
       addUniqueNotifications(notifications, setNotifications);
@@ -208,6 +212,7 @@ const generateTradeNotifications = (entityUpdates: UpdatedEntity[], Status: Comp
 const generateLaborNotifications = (
   resourcesPerRealm: { realmEntityId: number; resourceIds: number[] }[],
   nextBlockTimestamp: number,
+  level: number,
   Labor: Component,
 ) => {
   const notifications: NotificationType[] = [];
@@ -226,6 +231,7 @@ const generateLaborNotifications = (
               LABOR_CONFIG.base_labor_units,
               isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
               nextBlockTimestamp,
+              level,
             )
           : 0;
 

@@ -620,5 +620,20 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Level: (() => {
+      const name = "Level";
+      return defineComponent(
+        world,
+        {
+          level: RecsType.Number,
+          valid_until: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
   };
 }
