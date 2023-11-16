@@ -85,9 +85,6 @@ fn get_zipped_resource_probabilities() -> Span<(u8, u128)> {
         (ResourceTypes::UNREFINED_ORE, 100),
         (ResourceTypes::SUNKEN_SHEKEL, 100),
         (ResourceTypes::DEMONHIDE, 2),
-        (ResourceTypes::SHEKELS, 100),
-        (ResourceTypes::WHEAT, 1500),
-        (ResourceTypes::FISH, 800),
     ].span();   
 }
 

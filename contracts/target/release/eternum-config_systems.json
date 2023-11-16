@@ -7176,7 +7176,7 @@
     "user_func_names": [
       [
         0,
-        "eternum::systems::config::contracts::config_systems::__wrapper__name"
+        "eternum::systems::config::contracts::config_systems::__wrapper__dojo_resource"
       ],
       [
         1,
@@ -7556,12 +7556,12 @@
         "function_idx": 14
       },
       {
-        "selector": "0x361458367e696363fbcc70777d07ebbd2394e89fd0adcaf147faccd1d294d60",
-        "function_idx": 0
-      },
-      {
         "selector": "0x36554faa50139a6ffd6245baba05258e2dd2b491e363c6fcde0763274c4c16a",
         "function_idx": 8
+      },
+      {
+        "selector": "0x38f2d91dabc7079b6f336cc00f874d17cbb7463674c7d3edfd04668fbdb6f6a",
+        "function_idx": 0
       },
       {
         "selector": "0x3deac4502a0a113bcea9ea4450d4a45633283f786d2eeb5119964d37b0c92ce",
@@ -8048,7 +8048,7 @@
     },
     {
       "type": "function",
-      "name": "name",
+      "name": "dojo_resource",
       "inputs": [],
       "outputs": [
         {

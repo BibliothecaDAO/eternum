@@ -1,7 +1,7 @@
 {
   "world": {
     "name": "world",
-    "address": "0x4d79c99ce9b489b77461e3491970ea5ede1f1966f4d2ff65ee76cd8701d6dad",
+    "address": null,
     "class_hash": "0x6441e7fc96d795ec94fca66634e6d87edf84362e564ef80eb13f459914b8b",
     "abi": [
       {
@@ -735,7 +735,8 @@
       }
     ],
     "reads": [],
-    "writes": []
+    "writes": [],
+    "computed": []
   },
   "executor": {
     "name": "executor",
@@ -795,7 +796,8 @@
       }
     ],
     "reads": [],
-    "writes": []
+    "writes": [],
+    "computed": []
   },
   "base": {
     "name": "base",
@@ -861,8 +863,8 @@
   "contracts": [
     {
       "name": "caravan_systems",
-      "address": "0x384fd2bf241ffc48425ed1fed389495e8066079cdb16865a73e6d3849d32c4f",
-      "class_hash": "0x346cb5ba60a0bd26eb1a1b80ef0b7a42f84beb5cbb17f433ff0a7493a09e906",
+      "address": null,
+      "class_hash": "0x7246ad54863b0d32f574265081ed83f5d8842428bf175b5d3ed39a0863c373b",
       "abi": [
         {
           "type": "impl",
@@ -930,7 +932,7 @@
         },
         {
           "type": "function",
-          "name": "name",
+          "name": "dojo_resource",
           "inputs": [],
           "outputs": [
             {
@@ -965,12 +967,13 @@
         "Movable",
         "Owner",
         "Position"
-      ]
+      ],
+      "computed": []
     },
     {
       "name": "combat_systems",
-      "address": "0x778fd3e137dc0e58d94d599167aa431332b8529f9bfc8efd70a7ea4e9c74247",
-      "class_hash": "0x1f8dcebae6fbe20f49bf8887b1a60bba1fda22846507d345af94565b7083d60",
+      "address": null,
+      "class_hash": "0x69b5a41f75120438274c6f790549c7c1d22305daf210a23c976745c21762a73",
       "abi": [
         {
           "type": "impl",
@@ -1165,7 +1168,7 @@
         },
         {
           "type": "function",
-          "name": "name",
+          "name": "dojo_resource",
           "inputs": [],
           "outputs": [
             {
@@ -1286,12 +1289,13 @@
         "Owner",
         "Position",
         "Quantity"
-      ]
+      ],
+      "computed": []
     },
     {
       "name": "config_systems",
-      "address": "0x74c3dd7b64a0c8ad6a27276b9ec6a628774028734ea46cf3970ef185e35247d",
-      "class_hash": "0x38954efdf4acfe6983f8a679e548c8e872fafa698cb8510bb71f05f95705d78",
+      "address": null,
+      "class_hash": "0x2354da2176b6e0087c735fe2c271a7de53fbf57d5aa82740f6acf90c287058b",
       "abi": [
         {
           "type": "impl",
@@ -1769,7 +1773,7 @@
         },
         {
           "type": "function",
-          "name": "name",
+          "name": "dojo_resource",
           "inputs": [],
           "outputs": [
             {
@@ -1804,12 +1808,13 @@
         "TravelConfig",
         "WeightConfig",
         "WorldConfig"
-      ]
+      ],
+      "computed": []
     },
     {
       "name": "hyperstructure_systems",
-      "address": "0xfdcafc26f1d866ad585cadfb0fb177e4512d03f6020e67adadb5c66690d9c2",
-      "class_hash": "0x74978b36da8bfe27aed805d0c75dbba69796d208c591166a40accde6e098bd1",
+      "address": null,
+      "class_hash": "0x2270543d25a4aba5b0fd5f1adb280bb34dc67564f999c6d2155aca455ba287b",
       "abi": [
         {
           "type": "impl",
@@ -1893,7 +1898,7 @@
         },
         {
           "type": "function",
-          "name": "name",
+          "name": "dojo_resource",
           "inputs": [],
           "outputs": [
             {
@@ -1920,12 +1925,13 @@
         "HyperStructure",
         "Position",
         "Resource"
-      ]
+      ],
+      "computed": []
     },
     {
       "name": "labor_systems",
-      "address": "0x5b3b02ba50cfb46af86c20d1eca1bbff5fe82ff2f8985aefc413267a5d05b00",
-      "class_hash": "0x2daf5444b2a20f90f5df656b84a2b3882ddc85c29f29639110c1d469fc75392",
+      "address": null,
+      "class_hash": "0x54d02151843b8ac0a993fd0464dfcc2923d4086eb6d59ad5b04f8184171821",
       "abi": [
         {
           "type": "impl",
@@ -2045,7 +2051,7 @@
         },
         {
           "type": "function",
-          "name": "name",
+          "name": "dojo_resource",
           "inputs": [],
           "outputs": [
             {
@@ -2076,12 +2082,13 @@
         "Labor",
         "LaborAuction",
         "Resource"
-      ]
+      ],
+      "computed": []
     },
     {
       "name": "resource_systems",
-      "address": "0x2dab8013b2dea3f5b37f31db94a5136843408efa04a966a6587f65056b1ef40",
-      "class_hash": "0x78ba977feb4d21c2e86ebf51a4b0244e9a06bde551d8717d02cd1d0d625af6b",
+      "address": null,
+      "class_hash": "0x1e054d3a41a9818cab6820a40005e0f89e9943b5ee15b58f60b58ecf807d2d1",
       "abi": [
         {
           "type": "impl",
@@ -2254,7 +2261,7 @@
         },
         {
           "type": "function",
-          "name": "name",
+          "name": "dojo_resource",
           "inputs": [],
           "outputs": [
             {
@@ -2326,12 +2333,13 @@
         "ResourceAllowance",
         "ResourceChest",
         "Weight"
-      ]
+      ],
+      "computed": []
     },
     {
       "name": "road_systems",
-      "address": "0x46e8cc4deb048fed25465e134ebbfa962137daaf0bb52a63d41940af3638e4d",
-      "class_hash": "0x2d4dd6971759e6c6be46e22f46c28fe0e3b625b141b250b003056f85b90caaa",
+      "address": null,
+      "class_hash": "0x7d0376077bb24e151510d6200867b03a514708b42b010d892e88b79f1ec3696",
       "abi": [
         {
           "type": "impl",
@@ -2421,7 +2429,7 @@
         },
         {
           "type": "function",
-          "name": "name",
+          "name": "dojo_resource",
           "inputs": [],
           "outputs": [
             {
@@ -2445,12 +2453,13 @@
       "writes": [
         "Resource",
         "Road"
-      ]
+      ],
+      "computed": []
     },
     {
       "name": "test_realm_systems",
-      "address": "0x141b54c5560368787c28e61f9c9542e3aaf26a3f426263cb0dcde36339eec30",
-      "class_hash": "0x122232b3675ebe3f1b6900c8e5309cd11cdb5e3bf8048e7114ceae71eb8199b",
+      "address": null,
+      "class_hash": "0x7f33d1102a9119c17543d110008c50ece9f15a55567102fa2950778ea28ee2d",
       "abi": [
         {
           "type": "impl",
@@ -2576,7 +2585,7 @@
         },
         {
           "type": "function",
-          "name": "name",
+          "name": "dojo_resource",
           "inputs": [],
           "outputs": [
             {
@@ -2599,12 +2608,13 @@
         "Position",
         "Realm",
         "TownWatch"
-      ]
+      ],
+      "computed": []
     },
     {
       "name": "test_resource_systems",
-      "address": "0x5e2e8d20bc9f4c02050b2b6b7442a1ce06bbd9c0729716a7c5a478069c9b354",
-      "class_hash": "0x1ca2b34f933d66d8e13c04a653235f3bdc09c785a9060f73222af9db4e99140",
+      "address": null,
+      "class_hash": "0x1ad4fa3240e5f3c25d221d4ce96db8ac88c5e2946b83f2e28c5fce18543ad86",
       "abi": [
         {
           "type": "impl",
@@ -2682,7 +2692,7 @@
         },
         {
           "type": "function",
-          "name": "name",
+          "name": "dojo_resource",
           "inputs": [],
           "outputs": [
             {
@@ -2703,12 +2713,13 @@
       ],
       "writes": [
         "Resource"
-      ]
+      ],
+      "computed": []
     },
     {
       "name": "trade_systems",
-      "address": "0x7b54643f42a1c4298fe5e465105ccbee30ba505f3bedaa90f4951f9f15be8f0",
-      "class_hash": "0x2b65e008c71798c7c5beea8f219843ab1a87c82bd344c84d27aec58f61e00a7",
+      "address": null,
+      "class_hash": "0x7f8555b6afa833b0d51af0dc7c57917e7b5342c344a1280b03250cef8a168f",
       "abi": [
         {
           "type": "impl",
@@ -2864,7 +2875,7 @@
         },
         {
           "type": "function",
-          "name": "name",
+          "name": "dojo_resource",
           "inputs": [],
           "outputs": [
             {
@@ -2894,12 +2905,13 @@
         "Position",
         "Status",
         "Trade"
-      ]
+      ],
+      "computed": []
     },
     {
       "name": "transport_unit_systems",
-      "address": "0x75eb7b6012dbb91d59aa20808de28666f8207478e08f4e4ee101bdb0ac89e63",
-      "class_hash": "0x27e36dbf13f33331154d6bda5b9654c7d559c3e757d3e179692fdf3b23933b",
+      "address": null,
+      "class_hash": "0x7830200083cda593f82cb1f196d6c3d70771b6b082a87249ae0f4f6a6ba219b",
       "abi": [
         {
           "type": "impl",
@@ -2971,7 +2983,7 @@
         },
         {
           "type": "function",
-          "name": "name",
+          "name": "dojo_resource",
           "inputs": [],
           "outputs": [
             {
@@ -3006,12 +3018,13 @@
         "Position",
         "Quantity",
         "QuantityTracker"
-      ]
+      ],
+      "computed": []
     },
     {
       "name": "travel_systems",
-      "address": "0x8fa2df40a28c2ffb7a99267c1a67318451da3a5d39cadb18577a2d09856b0e",
-      "class_hash": "0x49bb400a3126938530159589cb6db3ef236e0cdaf6d65a9d33e8b9ef1de5909",
+      "address": null,
+      "class_hash": "0x1a4882b76ddbd273be8730f30b9c685bd477ff8708e11317b62324ef5dd6d37",
       "abi": [
         {
           "type": "impl",
@@ -3093,7 +3106,7 @@
         },
         {
           "type": "function",
-          "name": "name",
+          "name": "dojo_resource",
           "inputs": [],
           "outputs": [
             {
@@ -3118,7 +3131,8 @@
       "writes": [
         "ArrivalTime",
         "Position"
-      ]
+      ],
+      "computed": []
     }
   ],
   "models": [
