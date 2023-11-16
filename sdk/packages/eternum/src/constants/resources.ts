@@ -306,3 +306,15 @@ export const resourceProb = [
   0.0120724, 0.0099396, 0.0096177, 0.0096177, 0.0069215, 0.0065191, 0.0055936, 0.0044668, 0.0037425, 0.0022133,
   0.0014889, 0.0009256,
 ];
+
+export const getLevelingCost = (newLevel: number): { resourceId: number; amount: number }[] => {
+  const costResources = [];
+  let multiplier = newLevel;
+  for (let i = 0; i < initialResources.length; i++) {
+    costResources.push({
+      resourceId: i + 1,
+      amount: initialResources[i] * multiplier * 1000,
+    });
+  }
+  return costResources;
+};

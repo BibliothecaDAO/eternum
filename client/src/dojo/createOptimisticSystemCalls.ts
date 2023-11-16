@@ -14,6 +14,7 @@ import {
   PurchaseLaborProps,
   BuildLaborProps,
 } from "@bibliothecadao/eternum";
+import { calculateLevelMultiplier } from "../components/cityview/realm/labor/laborUtils";
 
 export const HIGH_ENTITY_ID = 9999999999;
 
@@ -21,6 +22,7 @@ export function createOptimisticSystemCalls({
   Trade,
   Status,
   Labor,
+  Level,
   Resource,
   Road,
   DetachedResource,
@@ -283,6 +285,8 @@ export function createOptimisticSystemCalls({
         last_harvest: ts,
         multiplier: 1,
       };
+      let level = getComponentValue(Level, getEntityIdFromKeys([BigInt(realm_id)]))?.level || 0;
+      let levelMultiplier = calculateLevelMultiplier(level);
       let laborGenerated = labor.balance <= ts ? labor.balance - labor.last_harvest : ts - labor.last_harvest;
       let laborUnharvested = labor.balance <= ts ? 0 : labor.balance - ts;
       let laborUnitsGenerated = Math.floor(laborGenerated / LABOR_CONFIG.base_labor_units);
@@ -303,8 +307,8 @@ export function createOptimisticSystemCalls({
         balance: 0,
       };
       let resourceBalance = isFood
-        ? laborUnitsGenerated * LABOR_CONFIG.base_food_per_cycle * labor.multiplier
-        : laborUnitsGenerated * LABOR_CONFIG.base_resources_per_cycle;
+        ? laborUnitsGenerated * LABOR_CONFIG.base_food_per_cycle * labor.multiplier * levelMultiplier
+        : laborUnitsGenerated * LABOR_CONFIG.base_resources_per_cycle * levelMultiplier;
       Resource.addOverride(overrideId, {
         entity: resource_id,
         value: {

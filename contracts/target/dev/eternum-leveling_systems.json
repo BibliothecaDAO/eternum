@@ -4208,7 +4208,7 @@
       ],
       [
         72,
-        "function_call<user@eternum::systems::leveling::contracts::leveling_systems::LevelingSystemsImpl::levelUp>"
+        "function_call<user@eternum::systems::leveling::contracts::leveling_systems::LevelingSystemsImpl::level_up>"
       ],
       [
         73,
@@ -4792,7 +4792,7 @@
       ],
       [
         218,
-        "function_call<user@eternum::systems::leveling::contracts::leveling_systems::LevelingSystemsImpl::levelUp[expr355]>"
+        "function_call<user@eternum::systems::leveling::contracts::leveling_systems::LevelingSystemsImpl::level_up[expr355]>"
       ],
       [
         219,
@@ -6102,7 +6102,7 @@
       ],
       [
         2,
-        "eternum::systems::leveling::contracts::leveling_systems::__wrapper__LevelingSystemsImpl__levelUp"
+        "eternum::systems::leveling::contracts::leveling_systems::__wrapper__LevelingSystemsImpl__level_up"
       ],
       [
         3,
@@ -6126,7 +6126,7 @@
       ],
       [
         8,
-        "eternum::systems::leveling::contracts::leveling_systems::LevelingSystemsImpl::levelUp"
+        "eternum::systems::leveling::contracts::leveling_systems::LevelingSystemsImpl::level_up"
       ],
       [
         9,
@@ -6182,7 +6182,7 @@
       ],
       [
         22,
-        "eternum::systems::leveling::contracts::leveling_systems::LevelingSystemsImpl::levelUp[expr355]"
+        "eternum::systems::leveling::contracts::leveling_systems::LevelingSystemsImpl::level_up[expr355]"
       ],
       [
         23,
@@ -6342,7 +6342,7 @@
         "function_idx": 1
       },
       {
-        "selector": "0x16cffdfecb952b1a0146d7d0caecff58697b1e105be0e29504c6ca18ed7babf",
+        "selector": "0x2a54a24241af14e07aeed40eb5f5d46f9e71318be8293f99a0cbdef4e82a5af",
         "function_idx": 2
       },
       {
@@ -6398,7 +6398,7 @@
       "items": [
         {
           "type": "function",
-          "name": "levelUp",
+          "name": "level_up",
           "inputs": [
             {
               "name": "world",

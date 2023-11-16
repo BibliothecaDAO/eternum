@@ -13,6 +13,7 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import { LaborAuction } from "./labor/LaborAuction";
 import RealmCombatComponent from "./RealmCombatComponent";
+import { Leveling } from "./leveling/Leveling";
 
 const RealmManagementComponent = () => {
   const { realmEntityId } = useRealmStore();
@@ -154,7 +155,14 @@ const RealmManagementComponent = () => {
   return (
     <>
       <div className="flex justify-between items-center p-3">
-        <LaborAuction />
+        <div className="flex flex-row ">
+          <div className="mr-2">
+            <LaborAuction />
+          </div>
+          <div>
+            <Leveling />
+          </div>
+        </div>
         <button
           onClick={showOnMap}
           className="flex items-center hover:bg-gold/20 transition-bg duration-200 z-10 px-2 py-1 ml-auto text-xxs border rounded-md text-gold border-gold"

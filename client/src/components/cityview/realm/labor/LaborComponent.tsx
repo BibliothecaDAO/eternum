@@ -13,6 +13,7 @@ import { useMemo } from "react";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useComponentValue } from "@dojoengine/react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
+import { useRealm } from "../../../../hooks/helpers/useRealm";
 
 type LaborComponentProps = {
   resourceId: number;
@@ -82,6 +83,9 @@ export const LaborComponent = ({
   }, [nextBlockTimestamp, labor]);
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
+
+  const { getRealmLevel } = useRealm();
+  const level = getRealmLevel(realmEntityId)?.level || 0;
 
   const nextHarvest = useMemo(() => {
     if (labor && nextBlockTimestamp) {
@@ -158,6 +162,7 @@ export const LaborComponent = ({
                       isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
                       labor.multiplier,
                       LABOR_CONFIG.base_labor_units,
+                      level,
                     ),
                   ).toFixed(0)}`
                 : "+0"}

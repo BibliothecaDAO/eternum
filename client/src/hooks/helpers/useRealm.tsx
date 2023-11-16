@@ -12,7 +12,7 @@ import { useEntityQuery } from "@dojoengine/react";
 export function useRealm() {
   const {
     setup: {
-      components: { Realm },
+      components: { Realm, Level },
     },
   } = useDojo();
 
@@ -41,8 +41,24 @@ export function useRealm() {
     }
   };
 
+  const getRealmLevel = (
+    realmEntityId: number,
+  ): { level: number; validUntil: number; percentage: number } | undefined => {
+    const level = getComponentValue(Level, getEntityIdFromKeys([BigInt(realmEntityId)]));
+    let percentage = 100;
+    if (level?.level === 1) {
+      percentage = 125;
+    } else if (level?.level === 2) {
+      percentage = 150;
+    } else if (level?.level === 3) {
+      percentage = 200;
+    }
+    return { level: level?.level || 0, validUntil: level?.valid_until || 0, percentage };
+  };
+
   return {
     getNextRealmIdForOrder,
+    getRealmLevel,
   };
 }
 

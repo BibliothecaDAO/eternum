@@ -2117,7 +2117,7 @@
     {
       "name": "leveling_systems",
       "address": "0x81edcebc0097b53ae8db567565eb5c5d9e8a9190a8a80411547676f24361ca",
-      "class_hash": "0x6ef3adf8cc8db5d16bcf0150e9c7d612d40686273925866e33e9e033d6fb86f",
+      "class_hash": "0x114c5d4a31e3ba69697a246d4fa7adeabc8f55d01e167ebb880b70c32529bca",
       "abi": [
         {
           "type": "impl",
@@ -2163,7 +2163,7 @@
           "items": [
             {
               "type": "function",
-              "name": "levelUp",
+              "name": "level_up",
               "inputs": [
                 {
                   "name": "world",
