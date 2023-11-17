@@ -80,12 +80,6 @@ fn get_zipped_resource_probabilities() -> Span<(u8, u128)> {
         (ResourceTypes::ADAMANTINE, 100),
         (ResourceTypes::MITHRAL, 100),
         (ResourceTypes::DRAGONHIDE, 5),
-        (ResourceTypes::DESERT_GLASS, 100),
-        (ResourceTypes::DIVINE_CLOTH, 100),
-        (ResourceTypes::CURIOUS_SPORE, 100),
-        (ResourceTypes::UNREFINED_ORE, 100),
-        (ResourceTypes::SUNKEN_SHEKEL, 100),
-        (ResourceTypes::DEMONHIDE, 2),
     ].span();   
 }
 
