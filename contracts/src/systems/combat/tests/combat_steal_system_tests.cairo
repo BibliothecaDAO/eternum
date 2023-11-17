@@ -510,7 +510,7 @@ fn test_attacker_in_transit() {
     set!(world, (
         ArrivalTime { 
             entity_id: attacker_group_id, 
-            arrives_at: 1 
+            arrives_at: 1001 
         }
     ));
 
