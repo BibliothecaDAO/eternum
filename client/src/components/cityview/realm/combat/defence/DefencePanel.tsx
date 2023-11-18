@@ -2,13 +2,11 @@ import { useMemo, useState } from "react";
 import { useCombat } from "../../../../../hooks/helpers/useCombat";
 import { CreateDefencePopup } from "./CreateDefencePopup";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import { getEntityIdFromKeys, getPosition } from "../../../../../utils/utils";
-import { EnemyRaid } from "./EnnemyRaid";
+import { getEntityIdFromKeys } from "../../../../../utils/utils";
 import { Defence } from "./Defence";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../../../DojoContext";
-import { ReactComponent as CrossSwords } from "../../../../../assets/icons/common/cross-swords.svg";
-import useUIStore from "../../../../../hooks/store/useUIStore";
+import AttacksComponent from "./AttacksComponent";
 
 type MarketPanelProps = {};
 
@@ -20,16 +18,9 @@ export const DefencePanel = ({}: MarketPanelProps) => {
   } = useDojo();
 
   const [showBuildDefence, setShowBuildDefence] = useState(false);
-  const { realmId, realmEntityId } = useRealmStore();
-  const realmPosition = getPosition(realmId);
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const { realmEntityId } = useRealmStore();
 
-  const { useEnemyRaidersOnPosition, getEntitiesCombatInfo, getRealmWatchTower } = useCombat();
-  const attackingEntities = useEnemyRaidersOnPosition(realmPosition);
-
-  const attackingRaiders = useMemo(() => {
-    return getEntitiesCombatInfo(attackingEntities);
-  }, [attackingEntities]);
+  const { getEntitiesCombatInfo, getRealmWatchTower } = useCombat();
 
   const watchTowerId = getRealmWatchTower(realmEntityId);
   const watchTowerHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(watchTowerId)]));
@@ -54,32 +45,8 @@ export const DefencePanel = ({}: MarketPanelProps) => {
             watchTower={watchTower}
           />
         )}
-
-        {attackingRaiders.length > 0 && (
-          <>
-            <div
-              className="font-bold text-white text-xs flex justify-center mt-3"
-              onMouseEnter={() =>
-                setTooltip({
-                  position: "top",
-                  content: (
-                    <>
-                      <p className="whitespace-nowrap">Foreign raid groups arrived at your Realm</p>
-                    </>
-                  ),
-                })
-              }
-              onMouseLeave={() => setTooltip(null)}
-            >
-              <CrossSwords className="fill-white mr-2 mb-3" />
-              Raid Attacks
-            </div>
-            {attackingRaiders.map((raider) => (
-              <EnemyRaid key={raider.entityId} raider={raider} />
-            ))}
-          </>
-        )}
       </div>
+      <AttacksComponent />
     </div>
   );
 };

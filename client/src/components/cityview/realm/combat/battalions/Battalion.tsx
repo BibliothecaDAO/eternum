@@ -117,7 +117,12 @@ export const Battalion = ({ battalion, onBuild, ...props }: BattalionProps) => {
           >
             {costPerUnit.map((cost, index) => (
               <div className="flex text-lightest mt-2">
-                <ResourceIcon resource={findResourceById(cost.resourceId).trait} size="xs" className="mr-1" />
+                <ResourceIcon
+                  key={index}
+                  resource={findResourceById(cost.resourceId).trait}
+                  size="xs"
+                  className="mr-1"
+                />
                 {divideByPrecision(cost.amount).toLocaleString("en-US")}
               </div>
             ))}
