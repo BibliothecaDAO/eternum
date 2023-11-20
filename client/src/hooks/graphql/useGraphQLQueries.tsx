@@ -180,3 +180,27 @@ export const useSyncWorld = (): { loading: boolean; progress: number } => {
     progress,
   };
 };
+
+export const fetchAddressName = async (address: string): Promise<string> => {
+  const queryBuilder = `
+      query addressName {
+        entities(keys: ["${address}"]) {
+          edges {
+            node {
+              models {
+                ... on AddressName {
+                  __typename
+                  name
+                }
+              }
+            }
+          }
+        }
+      }`;
+
+  const { entities }: getEntitiesQuery = await client.request(queryBuilder);
+
+  if (entities.edges.length === 1) {
+    return entities.edges[0].node.models.find((model) => model.__typename === "AddressName")?.name;
+  }
+};

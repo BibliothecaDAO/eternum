@@ -121,6 +121,19 @@ export const numberToHex = (num: number) => {
   return "0x" + num.toString(16);
 };
 
+export const hexToAscii = (str1: string) => {
+  var hex = str1.toString();
+  var str = "";
+  for (var n = 0; n < hex.length; n += 2) {
+    var asciiCode = parseInt(hex.substr(n, 2), 16);
+    if (!isNaN(asciiCode)) {
+      // Check if the parsed value is a number
+      str += String.fromCharCode(asciiCode);
+    }
+  }
+  return str;
+};
+
 export const padAddress = (address: string) => {
   return "0x" + address.substring(2).padStart(64, "0");
 };

@@ -3,7 +3,8 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import realmsNames from "../../../geodata/realms.json";
 import { orderNameDict } from "@bibliothecadao/eternum";
 import clsx from "clsx";
-import { useGetRealm } from "../../../hooks/helpers/useRealm";
+import { useGetRealm, useRealm } from "../../../hooks/helpers/useRealm";
+import { useDojo } from "../../../DojoContext";
 
 type RealmInfoComponentProps = {};
 
@@ -27,8 +28,14 @@ const bgColorsByOrder = {
 };
 
 export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
-  const { realmEntityId } = useRealmStore();
+  const {
+    account: { accountDisplay, account },
+  } = useDojo();
 
+  const { getAddressName } = useRealm();
+  const addressName = getAddressName(account.address);
+
+  const { realmEntityId } = useRealmStore();
   const { realm } = useGetRealm(realmEntityId);
 
   return (
@@ -43,7 +50,10 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
           }}
         >
           <div className="flex flex-col leading-4">
-            <div className="text-xxs">0x...loaf</div>
+            <div className="flex">
+              <div className="text-xxs mr-2">{accountDisplay}</div>
+              <div className="text-xxs">{addressName}</div>
+            </div>
             <div className="font-bold">{realmsNames.features[realm.realmId - 1].name}</div>
           </div>
           <div className="flex items-center ml-auto capitalize">

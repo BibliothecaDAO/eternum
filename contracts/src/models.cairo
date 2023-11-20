@@ -18,3 +18,4 @@ mod weight;
 mod inventory;
 mod combat;
 mod level;
+mod name;

@@ -33,6 +33,10 @@ export interface UngroupAndRegroupSoldiersProps extends SystemSigner {
   duty: Duty;
 }
 
+export interface SetAddressNameProps extends SystemSigner {
+  name: string;
+}
+
 export interface AttackProps extends SystemSigner {
   attacker_ids: num.BigNumberish[];
   target_id: num.BigNumberish;
