@@ -133,16 +133,11 @@ fn setup() -> (IWorldDispatcher, u128, u128, ISoldierSystemsDispatcher) {
 
     // buy 10 soldiers
     let num_soldiers_bought = 10;
-    soldier_systems_dispatcher.create_soldiers(
+    let new_unit_id = soldier_systems_dispatcher.create_soldiers(
         world, caller_id, num_soldiers_bought
     );
 
-
-    let entity_combat = get!(world, caller_id, Combat);
-    let realm_soldiers_reserve_id = entity_combat.soldiers_reserve_id;
-
-
-    (world, caller_id, realm_soldiers_reserve_id, soldier_systems_dispatcher) 
+    (world, caller_id, new_unit_id, soldier_systems_dispatcher) 
 
 }
 

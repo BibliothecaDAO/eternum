@@ -68,20 +68,18 @@ mod combat_systems {
 
     #[external(v0)]
     impl SoldierSystemsImpl of ISoldierSystems<ContractState> {
-        /// Create a number of soldiers for a realm
+        /// Create a raider unit for a realm
         /// 
-        /// These newly created soldiers are added to the realm's reserve unit
-        ///
         /// # Arguments
         ///
         /// * `world` - The world address
         /// * `realm_entity_id` - The realm's entity id of the realm
-        /// * `quantity` - The number of soldiers to create
+        /// * `quantity` - The number of soldiers in the new unit
         ///
         fn create_soldiers( 
             self: @ContractState, world: IWorldDispatcher, 
             realm_entity_id: u128, quantity: u128
-        ) {
+        ) -> ID {
 
             // check that entity is a realm
             let realm = get!(world, realm_entity_id, Realm);
@@ -95,8 +93,11 @@ mod combat_systems {
                     'not realm owner'
             );
 
+            assert(quantity > 0, 'invalid quantity value');
+
 
             // check that realm has enough resources to pay for the quantity
+            // and subtract from balance if they do
 
             let soldier_config: SoldierConfig = get!(world, SOLDIER_ENTITY_TYPE, SoldierConfig);
             let mut index = 0;
@@ -122,34 +123,74 @@ mod combat_systems {
             };
 
 
-
+            let realm_position = get!(world, realm_entity_id, Position);
+            
             let individual_max_health_value
                 = get!(world, SOLDIER_ENTITY_TYPE, HealthConfig).max_value;
             let individual_max_attack_value
                 = get!(world, SOLDIER_ENTITY_TYPE, AttackConfig).max_value;
             let individual_max_defence_value
                 = get!(world, SOLDIER_ENTITY_TYPE, DefenceConfig).max_value;
-
+            let individual_capacity
+                = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), CapacityConfig).weight_gram;
+            let individual_speed   
+                = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), SpeedConfig).sec_per_km;
 
                                     
-            let entity_combat = get!(world, realm_entity_id, Combat);
-            let soldiers_reserve_id = entity_combat.soldiers_reserve_id;
+            let new_unit_id = world.uuid().into();
 
 
-            let mut unit_quantity = get!(world, soldiers_reserve_id, Quantity);
-            unit_quantity.value += quantity;
+            set!(world, (
+                Owner {
+                    entity_id: new_unit_id,
+                    address: realm_owner.address
+                },
+                EntityOwner {
+                    entity_id: new_unit_id,
+                    entity_owner_id: realm_entity_id
+                },
+                Health {
+                    entity_id: new_unit_id,
+                    value: individual_max_health_value * quantity
+                },
+                Attack {
+                    entity_id: new_unit_id,
+                    value: individual_max_attack_value * quantity
+                },
+                Defence {
+                    entity_id: new_unit_id,
+                    value: individual_max_defence_value * quantity 
+                },
+                Quantity { 
+                    entity_id: new_unit_id,
+                    value: quantity
+                },
+                Position {
+                    entity_id: new_unit_id,
+                    x: realm_position.x,
+                    y: realm_position.y
+                },
+                Inventory {
+                    entity_id: new_unit_id,
+                    items_key: world.uuid().into(),
+                    items_count: 0
+                },
+                Capacity {
+                    entity_id: new_unit_id,
+                    weight_gram: individual_capacity
+                },
+                Movable {
+                    entity_id: new_unit_id, 
+                    sec_per_km: individual_speed, 
+                    blocked: false,
+                    round_trip: false,
+                    intermediate_coord_x: 0,  
+                    intermediate_coord_y: 0,  
+                }
+            ));  
 
-            let mut unit_health = get!(world, soldiers_reserve_id, Health);
-            unit_health.value += individual_max_health_value * quantity;
+            new_unit_id
 
-            let mut unit_attack = get!(world, soldiers_reserve_id, Attack);
-            unit_attack.value += individual_max_attack_value * quantity;
-
-            let mut unit_defence = get!(world, soldiers_reserve_id, Defence);
-            unit_defence.value += individual_max_defence_value * quantity;
-
-
-            set!(world, (unit_health, unit_attack, unit_defence, unit_quantity));
         }
 
         ///  Detach soldiers from a unit

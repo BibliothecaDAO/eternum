@@ -8,7 +8,7 @@ trait ISoldierSystems<TContractState> {
     fn create_soldiers( 
         self: @TContractState, world: IWorldDispatcher, 
         realm_entity_id: u128, quantity: u128
-    );
+    ) -> ID;
 
     fn detach_soldiers( 
         self: @TContractState, world: IWorldDispatcher, 

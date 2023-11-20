@@ -138,41 +138,24 @@ fn setup() -> (IWorldDispatcher, u128, Span<u128>, ISoldierSystemsDispatcher) {
         contract_address: combat_systems_address
     };
 
-    // buy 5 soldiers
-    let num_soldiers_bought = 5;
-    soldier_systems_dispatcher.create_soldiers(
-        world, caller_id, num_soldiers_bought
+    // create 2 soldiers
+    let new_unit_id_1 = soldier_systems_dispatcher.create_soldiers(
+        world, caller_id, 2
     );
 
-    // detach 2 soldiers from reserve
-    let entity_combat = get!(world, caller_id, Combat);
-    let realm_soldiers_reserve_id = entity_combat.soldiers_reserve_id;
-
-    let num_detached_soldiers = 2;
-    let detached_unit_id_1
-        = soldier_systems_dispatcher
-            .detach_soldiers(
-                world, realm_soldiers_reserve_id, 
-                num_detached_soldiers
-            );
-
-    // detach another 2 soldiers from reserve
-    let num_detached_soldiers = 2;
-    let detached_unit_id_2 
-        = soldier_systems_dispatcher
-            .detach_soldiers(
-                world, realm_soldiers_reserve_id, 
-                num_detached_soldiers
-            );
+    // create another 2 soldiers
+    let new_unit_id_2 = soldier_systems_dispatcher.create_soldiers(
+        world, caller_id, 2
+    );
 
 
-    let detached_units = array![
-        detached_unit_id_1,
-        detached_unit_id_2
+    let new_units = array![
+        new_unit_id_1,
+        new_unit_id_2
     ];
 
 
-    (world, caller_id, detached_units.span(), soldier_systems_dispatcher) 
+    (world, caller_id, new_units.span(), soldier_systems_dispatcher) 
 
 }
 
@@ -184,7 +167,7 @@ fn setup() -> (IWorldDispatcher, u128, Span<u128>, ISoldierSystemsDispatcher) {
 #[available_gas(3000000000000)]
 fn test_merge_to_town_watch() {
 
-    let (world, caller_id, detached_units, soldier_systems_dispatcher) = setup();
+    let (world, caller_id, new_units, soldier_systems_dispatcher) = setup();
 
     let entity_combat = get!(world, caller_id, Combat);
     let caller_town_watch_id = entity_combat.town_watch_id;
@@ -200,7 +183,7 @@ fn test_merge_to_town_watch() {
             world, 
             caller_town_watch_id, 
             array![
-                (*detached_units.at(0), 2),
+                (*new_units.at(0), 2),
             ].span()
         );
 
@@ -209,36 +192,36 @@ fn test_merge_to_town_watch() {
             world, 
             caller_town_watch_id, 
             array![
-                (*detached_units.at(1), 2),
+                (*new_units.at(1), 2),
             ].span()
         );
 
 
-    let first_detached_unit_health = get!(world, *detached_units.at(0), Health);
-    assert(first_detached_unit_health.value == 0, 'wrong health');
+    let first_new_unit_health = get!(world, *new_units.at(0), Health);
+    assert(first_new_unit_health.value == 0, 'wrong health');
 
-    let first_detached_unit_attack = get!(world, *detached_units.at(0), Attack);
-    assert(first_detached_unit_attack.value == 0, 'wrong attack');
+    let first_new_unit_attack = get!(world, *new_units.at(0), Attack);
+    assert(first_new_unit_attack.value == 0, 'wrong attack');
 
-    let first_detached_unit_defence = get!(world, *detached_units.at(0), Defence);
-    assert(first_detached_unit_defence.value == 0, 'wrong defence');
+    let first_new_unit_defence = get!(world, *new_units.at(0), Defence);
+    assert(first_new_unit_defence.value == 0, 'wrong defence');
 
-    let first_detached_unit_quantity = get!(world, *detached_units.at(0), Quantity);
-    assert(first_detached_unit_quantity.value == 0, 'wrong quantity');
+    let first_new_unit_quantity = get!(world, *new_units.at(0), Quantity);
+    assert(first_new_unit_quantity.value == 0, 'wrong quantity');
 
 
 
-    let second_detached_unit_health = get!(world, *detached_units.at(1), Health);
-    assert(second_detached_unit_health.value == 0, 'wrong health');
+    let second_new_unit_health = get!(world, *new_units.at(1), Health);
+    assert(second_new_unit_health.value == 0, 'wrong health');
 
-    let second_detached_unit_attack = get!(world, *detached_units.at(1), Attack);
-    assert(second_detached_unit_attack.value == 0, 'wrong attack');
+    let second_new_unit_attack = get!(world, *new_units.at(1), Attack);
+    assert(second_new_unit_attack.value == 0, 'wrong attack');
 
-    let second_detached_unit_defence = get!(world, *detached_units.at(1), Defence);
-    assert(second_detached_unit_defence.value == 0, 'wrong defence');
+    let second_new_unit_defence = get!(world, *new_units.at(1), Defence);
+    assert(second_new_unit_defence.value == 0, 'wrong defence');
 
-    let second_detached_unit_quantity = get!(world, *detached_units.at(1), Quantity);
-    assert(second_detached_unit_quantity.value == 0, 'wrong quantity');
+    let second_new_unit_quantity = get!(world, *new_units.at(1), Quantity);
+    assert(second_new_unit_quantity.value == 0, 'wrong quantity');
 
 
     // check that the merged unit has the correct values 
@@ -292,7 +275,7 @@ fn test_merge_to_town_watch() {
 #[available_gas(3000000000000)]
 fn test_merge_to_raider() {
 
-    let (world, caller_id, detached_units, soldier_systems_dispatcher) = setup();
+    let (world, caller_id, new_units, soldier_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(
         contract_address_const::<'caller'>()
@@ -302,54 +285,54 @@ fn test_merge_to_raider() {
     soldier_systems_dispatcher
         .merge_soldiers(
             world, 
-            *detached_units.at(0), 
+            *new_units.at(0), 
             array![
-                (*detached_units.at(1), 2),
+                (*new_units.at(1), 2),
             ].span()
         );
 
 
 
-    let second_detached_unit_health = get!(world, *detached_units.at(1), Health);
-    assert(second_detached_unit_health.value == 0, 'wrong health');
+    let second_new_unit_health = get!(world, *new_units.at(1), Health);
+    assert(second_new_unit_health.value == 0, 'wrong health');
 
-    let second_detached_unit_attack = get!(world, *detached_units.at(1), Attack);
-    assert(second_detached_unit_attack.value == 0, 'wrong attack');
+    let second_new_unit_attack = get!(world, *new_units.at(1), Attack);
+    assert(second_new_unit_attack.value == 0, 'wrong attack');
 
-    let second_detached_unit_defence = get!(world, *detached_units.at(1), Defence);
-    assert(second_detached_unit_defence.value == 0, 'wrong defence');
+    let second_new_unit_defence = get!(world, *new_units.at(1), Defence);
+    assert(second_new_unit_defence.value == 0, 'wrong defence');
 
-    let second_detached_unit_quantity = get!(world, *detached_units.at(1), Quantity);
-    assert(second_detached_unit_quantity.value == 0, 'wrong quantity');
+    let second_new_unit_quantity = get!(world, *new_units.at(1), Quantity);
+    assert(second_new_unit_quantity.value == 0, 'wrong quantity');
 
 
         // check that the merged unit has the correct values 
     let caller_position = get!(world, caller_id, Position);
-    let unit_owner = get!(world, *detached_units.at(0), Owner);
+    let unit_owner = get!(world, *new_units.at(0), Owner);
     assert(
         unit_owner.address == contract_address_const::<'caller'>(), 
             'wrong owner'
     );
 
-    let unit_entity_owner = get!(world, *detached_units.at(0), EntityOwner);
+    let unit_entity_owner = get!(world, *new_units.at(0), EntityOwner);
     assert(
         unit_entity_owner.entity_owner_id == caller_id,
             'wrong entity owner'
     );
 
-    let unit_health = get!(world, *detached_units.at(0), Health);
+    let unit_health = get!(world, *new_units.at(0), Health);
     assert(unit_health.value == 100 * 2 * 2, 'wrong health');
 
-    let unit_attack = get!(world, *detached_units.at(0), Attack);
+    let unit_attack = get!(world, *new_units.at(0), Attack);
     assert(unit_attack.value == 100 * 2 * 2, 'wrong attack');
 
-    let unit_defence = get!(world, *detached_units.at(0), Defence);
+    let unit_defence = get!(world, *new_units.at(0), Defence);
     assert(unit_defence.value == 100 * 2 * 2, 'wrong defence');
 
-    let unit_quantity = get!(world, *detached_units.at(0), Quantity);
+    let unit_quantity = get!(world, *new_units.at(0), Quantity);
     assert(unit_quantity.value == 2 * 2, 'wrong quantity');
 
-    let unit_position = get!(world, *detached_units.at(0), Position);
+    let unit_position = get!(world, *new_units.at(0), Position);
     assert(
             unit_position.x == caller_position.x 
                 && unit_position.y == caller_position.y,
@@ -357,13 +340,13 @@ fn test_merge_to_raider() {
     );
 
 
-    let unit_movable = get!(world, *detached_units.at(0), Movable);
+    let unit_movable = get!(world, *new_units.at(0), Movable);
     assert(
         unit_movable.sec_per_km == 55 ,
          'wrong speed'
         );
 
-    let unit_carry_capacity = get!(world, *detached_units.at(0), Capacity);
+    let unit_carry_capacity = get!(world, *new_units.at(0), Capacity);
     assert(unit_carry_capacity.weight_gram == 44, 'wrong capacity');  
 }
 
@@ -374,7 +357,7 @@ fn test_merge_to_raider() {
 #[should_panic(expected: ('not unit owner','ENTRYPOINT_FAILED' ))]
 fn test_not_owner() {
 
-    let (world, caller_id, detached_units, soldier_systems_dispatcher) = setup();
+    let (world, caller_id, new_units, soldier_systems_dispatcher) = setup();
 
     // set unknown caller
     starknet::testing::set_contract_address(
@@ -385,9 +368,9 @@ fn test_not_owner() {
     soldier_systems_dispatcher
         .merge_soldiers(
             world, 
-            *detached_units.at(0), 
+            *new_units.at(0), 
             array![
-                (*detached_units.at(1), 2),
+                (*new_units.at(1), 2),
             ].span()
         );
 }
@@ -399,12 +382,12 @@ fn test_not_owner() {
 #[should_panic(expected: ('not owned by realm','ENTRYPOINT_FAILED' ))]
 fn test_not_realm() {
 
-    let (world, caller_id, detached_units, soldier_systems_dispatcher) = setup();
+    let (world, caller_id, new_units, soldier_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(world.executor());
     set!(world, (
         EntityOwner {
-            entity_id: *detached_units.at(0),
+            entity_id: *new_units.at(0),
             entity_owner_id: 9999999
 
         }
@@ -418,9 +401,9 @@ fn test_not_realm() {
     soldier_systems_dispatcher
         .merge_soldiers(
             world, 
-            *detached_units.at(0), 
+            *new_units.at(0), 
             array![
-                (*detached_units.at(1), 2),
+                (*new_units.at(1), 2),
             ].span()
         );
 }
@@ -431,12 +414,12 @@ fn test_not_realm() {
 #[should_panic(expected: ('unit is travelling','ENTRYPOINT_FAILED' ))]
 fn test_travelling_unit() {
 
-    let (world, caller_id, detached_units, soldier_systems_dispatcher) = setup();
+    let (world, caller_id, new_units, soldier_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(world.executor());
     set!(world, (
         ArrivalTime {
-            entity_id: *detached_units.at(0),
+            entity_id: *new_units.at(0),
             arrives_at: 1
         }
     ));
@@ -449,9 +432,9 @@ fn test_travelling_unit() {
     soldier_systems_dispatcher
         .merge_soldiers(
             world, 
-            *detached_units.at(0), 
+            *new_units.at(0), 
             array![
-                (*detached_units.at(1), 2),
+                (*new_units.at(1), 2),
             ].span()
         );
 }

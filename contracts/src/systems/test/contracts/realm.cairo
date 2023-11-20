@@ -67,10 +67,8 @@ mod test_realm_systems {
             );
 
 
-            // setup combat 
+            // setup realm's town watch 
             let combat_town_watch_id = world.uuid().into();
-            let combat_soldiers_reserve_id = world.uuid().into();
-
             let combat_unit_capacity
                 = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), CapacityConfig).weight_gram;
                     
@@ -78,37 +76,7 @@ mod test_realm_systems {
                 Combat {
                     entity_id: entity_id.into(),
                     town_watch_id: combat_town_watch_id,
-                    soldiers_reserve_id: combat_soldiers_reserve_id
                 },
-
-
-                Owner {
-                    entity_id: combat_soldiers_reserve_id,
-                    address: owner
-                },
-                EntityOwner {
-                    entity_id: combat_soldiers_reserve_id,
-                    entity_owner_id: entity_id.into()
-                },
-                Position {
-                    entity_id: combat_soldiers_reserve_id,
-                    x: position.x,
-                    y: position.y
-                },
-                Capacity {
-                    entity_id: combat_soldiers_reserve_id,
-                    weight_gram: combat_unit_capacity
-                },
-                Movable {
-                    entity_id: combat_soldiers_reserve_id, 
-                    sec_per_km: 0, 
-                    blocked: false,
-                    round_trip: false,
-                    intermediate_coord_x: 0,  
-                    intermediate_coord_y: 0,  
-                },
-
-
                 Owner {
                     entity_id: combat_town_watch_id,
                     address: owner

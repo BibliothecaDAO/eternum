@@ -154,23 +154,14 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     );
     
     let attacker_combat = get!(world, attacker_realm_entity_id, Combat);
-    let attacker_soldiers_reserve_id = attacker_combat.soldiers_reserve_id;
     let attacker_town_watch_id = attacker_combat.town_watch_id;
     
 
     // buy soldiers for attacker
-    soldier_systems_dispatcher.create_soldiers(
+    let attacker_unit_id = soldier_systems_dispatcher.create_soldiers(
          world, attacker_realm_entity_id, ATTACKER_SOLDIER_COUNT
     );
 
-    
-    // detach attacker soldiers from reserve
-    let attacker_unit_id 
-        = soldier_systems_dispatcher
-            .detach_soldiers(
-                world, attacker_soldiers_reserve_id, 
-                ATTACKER_SOLDIER_COUNT
-            );
 
     
         
@@ -180,23 +171,14 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     );
 
     let target_combat = get!(world, target_realm_entity_id, Combat);
-    let target_soldiers_reserve_id = target_combat.soldiers_reserve_id;
     let target_town_watch_id = target_combat.town_watch_id;
     
     // buy soldiers for target
-    soldier_systems_dispatcher.create_soldiers(
+    let target_unit_id = soldier_systems_dispatcher.create_soldiers(
          world, target_realm_entity_id, TARGET_SOLDIER_COUNT
     );
 
     
-    // detach target soldiers from reserve
-    let target_unit_id 
-        = soldier_systems_dispatcher
-            .detach_soldiers(
-                world, target_soldiers_reserve_id, 
-                TARGET_SOLDIER_COUNT
-            );
-
     // add target unit to town watch
     soldier_systems_dispatcher
         .merge_soldiers(

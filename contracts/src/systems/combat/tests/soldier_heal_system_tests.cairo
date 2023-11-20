@@ -136,25 +136,13 @@ fn setup() -> (IWorldDispatcher, u128, u128, ISoldierSystemsDispatcher) {
     
 
     // buy x soldiers
-    let num_soldiers_bought = 2;
-    soldier_systems_dispatcher.create_soldiers(
+    let num_soldiers_bought = 1;
+    let new_unit_id = soldier_systems_dispatcher.create_soldiers(
         world, caller_id, num_soldiers_bought
     );
 
-    // detach 1 soldier from reserve
-    let entity_combat = get!(world, caller_id, Combat);
-    let realm_soldiers_reserve_id = entity_combat.soldiers_reserve_id;
 
-
-    let num_detached_soldiers = 1;
-    let detached_unit_id 
-        = soldier_systems_dispatcher
-            .detach_soldiers(
-                world, realm_soldiers_reserve_id, 
-                num_detached_soldiers
-            );
-
-    (world, caller_id, detached_unit_id, soldier_systems_dispatcher) 
+    (world, caller_id, new_unit_id, soldier_systems_dispatcher) 
 
 }
 
@@ -166,7 +154,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, ISoldierSystemsDispatcher) {
 #[available_gas(3000000000000)]
 fn test_heal_soldier() {
 
-    let (world, caller_id, detached_unit_id, soldier_systems_dispatcher) = setup();
+    let (world, caller_id, new_unit_id, soldier_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(world.executor());
 
@@ -174,7 +162,7 @@ fn test_heal_soldier() {
 
     set!(world, (
         Health { 
-            entity_id: detached_unit_id, 
+            entity_id: new_unit_id, 
             value: 60 
     }));
 
@@ -187,12 +175,12 @@ fn test_heal_soldier() {
 
     let health_bought = 40;
     soldier_systems_dispatcher.heal_soldiers(
-        world, detached_unit_id, health_bought
+        world, new_unit_id, health_bought
     );
 
 
     // check that the soldier's health has been increased
-    let soldier_health = get!(world, detached_unit_id, Health);
+    let soldier_health = get!(world, new_unit_id, Health);
     assert(soldier_health.value == 100, 'wrong soldier health');
 
     // check that the caller's demonhide balance has been reduced
@@ -211,7 +199,7 @@ fn test_heal_soldier() {
 #[should_panic(expected: ('not unit owner','ENTRYPOINT_FAILED' ))]
 fn test_not_unit_owner() {
 
-    let (world, caller_id, detached_unit_id, soldier_systems_dispatcher) = setup();
+    let (world, caller_id, new_unit_id, soldier_systems_dispatcher) = setup();
 
     // set unknown caller
     starknet::testing::set_contract_address(
@@ -221,7 +209,7 @@ fn test_not_unit_owner() {
     // reduce the health of the first soldier 
     let health_bought = 40;
     soldier_systems_dispatcher.heal_soldiers(
-        world, detached_unit_id, health_bought
+        world, new_unit_id, health_bought
     );
 
 }
@@ -232,7 +220,7 @@ fn test_not_unit_owner() {
 #[should_panic(expected: ('max health exceeeded','ENTRYPOINT_FAILED' ))]
 fn test_purchase_exceeds_max_health() {
 
-    let (world, caller_id, detached_unit_id, soldier_systems_dispatcher) = setup();
+    let (world, caller_id, new_unit_id, soldier_systems_dispatcher) = setup();
 
     // set unknown caller
     starknet::testing::set_contract_address(
@@ -246,7 +234,7 @@ fn test_purchase_exceeds_max_health() {
     // one more health will exceed the max health
     let health_bought = 1;
     soldier_systems_dispatcher.heal_soldiers(
-        world, detached_unit_id, health_bought
+        world, new_unit_id, health_bought
     );
 
 }

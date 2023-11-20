@@ -80,7 +80,7 @@
     "0x29",
     "0x3ab802bcce3a9ca953b0e1f31a5b29eb27a9b727c891e24300e1b5cc57387ba",
     "0x2b",
-    "0x3175308a6099832cb0b70c1cc114a316efedde36d4d22f08b4093189efed057",
+    "0xd37d8e7962304fbc5406b865b660fcb6204f1c2d9f08b110c3f1663d24b7dc",
     "0x4275696c74696e436f737473",
     "0x53797374656d",
     "0x9931c641b913035ae674b400b61a51476d506bbe8bba2ff8a6272790aba9e6",
@@ -110,7 +110,7 @@
     "0x6765745f6275696c74696e5f636f737473",
     "0x2f",
     "0x77697468647261775f6761735f616c6c",
-    "0x446566656e6365436f6e666967",
+    "0x436f6d626174",
     "0x66756e6374696f6e5f63616c6c",
     "0x4f7574206f6620676173",
     "0x7533325f746f5f66656c74323532",
@@ -124,11 +124,11 @@
     "0x27",
     "0x28",
     "0x6b6579",
-    "0x656e746974795f74797065",
+    "0x656e746974795f6964",
     "0x75313238",
     "0x26",
     "0x73746f72655f6c6f63616c",
-    "0x6d61785f76616c7565",
+    "0x746f776e5f77617463685f6964",
     "0x64697361626c655f61705f747261636b696e67",
     "0x75385f636f6e7374",
     "0x80",
@@ -1102,7 +1102,7 @@
       ],
       [
         45,
-        "eternum::models::config::defence_config::ContractState"
+        "eternum::models::combat::combat::ContractState"
       ],
       [
         46,
@@ -1228,7 +1228,7 @@
       ],
       [
         25,
-        "felt252_const<5418896826390850323348504078695>"
+        "felt252_const<74145855594868>"
       ],
       [
         26,
@@ -1288,23 +1288,23 @@
       ],
       [
         40,
-        "struct_construct<eternum::models::config::defence_config::ContractState>"
+        "struct_construct<eternum::models::combat::combat::ContractState>"
       ],
       [
         41,
-        "snapshot_take<eternum::models::config::defence_config::ContractState>"
+        "snapshot_take<eternum::models::combat::combat::ContractState>"
       ],
       [
         42,
-        "drop<eternum::models::config::defence_config::ContractState>"
+        "drop<eternum::models::combat::combat::ContractState>"
       ],
       [
         43,
-        "store_temp<eternum::models::config::defence_config::ContractState>"
+        "store_temp<eternum::models::combat::combat::ContractState>"
       ],
       [
         44,
-        "function_call<user@eternum::models::config::defence_config::packed_size>"
+        "function_call<user@eternum::models::combat::combat::packed_size>"
       ],
       [
         45,
@@ -1316,7 +1316,7 @@
       ],
       [
         47,
-        "function_call<user@eternum::models::config::defence_config::layout>"
+        "function_call<user@eternum::models::combat::combat::layout>"
       ],
       [
         48,
@@ -1372,7 +1372,7 @@
       ],
       [
         61,
-        "felt252_const<122623115515337680090656869>"
+        "felt252_const<1871080253835108641124>"
       ],
       [
         62,
@@ -1424,7 +1424,7 @@
       ],
       [
         74,
-        "felt252_const<2017718572615270692197>"
+        "felt252_const<9224964071138722691748275906916>"
       ],
       [
         75,
@@ -2010,23 +2010,23 @@
     "user_func_names": [
       [
         0,
-        "eternum::models::config::defence_config::__wrapper__name"
+        "eternum::models::combat::combat::__wrapper__name"
       ],
       [
         1,
-        "eternum::models::config::defence_config::__wrapper__unpacked_size"
+        "eternum::models::combat::combat::__wrapper__unpacked_size"
       ],
       [
         2,
-        "eternum::models::config::defence_config::__wrapper__packed_size"
+        "eternum::models::combat::combat::__wrapper__packed_size"
       ],
       [
         3,
-        "eternum::models::config::defence_config::__wrapper__layout"
+        "eternum::models::combat::combat::__wrapper__layout"
       ],
       [
         4,
-        "eternum::models::config::defence_config::__wrapper__schema"
+        "eternum::models::combat::combat::__wrapper__schema"
       ],
       [
         5,
@@ -2034,11 +2034,11 @@
       ],
       [
         6,
-        "eternum::models::config::defence_config::packed_size"
+        "eternum::models::combat::combat::packed_size"
       ],
       [
         7,
-        "eternum::models::config::defence_config::layout"
+        "eternum::models::combat::combat::layout"
       ],
       [
         8,
@@ -2297,7 +2297,7 @@
     },
     {
       "type": "event",
-      "name": "eternum::models::config::defence_config::Event",
+      "name": "eternum::models::combat::combat::Event",
       "kind": "enum",
       "variants": []
     }
