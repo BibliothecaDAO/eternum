@@ -5,6 +5,7 @@
 //   return success;
 // };
 
+import { EventType, NotificationType } from "../hooks/notifications/useNotifications";
 import { CombatResultInterface, Winner } from "../hooks/store/useCombatHistoryStore";
 import { Event } from "../services/eventPoller";
 import { Resource } from "../types";
@@ -65,5 +66,18 @@ export const parseCombatEvent = (event: Event): CombatResultInterface => {
     stolenResources: stolen_resources,
     damage,
     attackTimestamp,
+  };
+};
+
+export const createCombatNotification = (result: CombatResultInterface): NotificationType => {
+  let eventType = EventType.Attacked;
+  if (result.stolenResources.length > 0) {
+    eventType = EventType.StolenResource;
+  }
+  return {
+    eventType,
+    // to have a unique key for each notification
+    keys: [result.attackTimestamp.toString()],
+    data: result,
   };
 };

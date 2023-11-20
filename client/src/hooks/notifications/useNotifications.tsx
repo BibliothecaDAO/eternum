@@ -19,7 +19,7 @@ import { getRealm } from "../../utils/realms";
 import { LABOR_CONFIG } from "@bibliothecadao/eternum";
 import { useRealm } from "../helpers/useRealm";
 import { CombatResultInterface } from "../store/useCombatHistoryStore";
-import { parseCombatEvent } from "../../utils/combat";
+import { createCombatNotification, parseCombatEvent } from "../../utils/combat";
 import { Event, pollForEvents } from "../../services/eventPoller";
 
 export enum EventType {
@@ -55,7 +55,10 @@ type EmptyChestData = {
 export const useNotifications = () => {
   const {
     setup: {
-      entityUpdates,
+      updates: {
+        entityUpdates,
+        eventUpdates: { createCombatEvents },
+      },
       components: { Status, Realm, Labor, ArrivalTime, Position, CaravanMembers, Inventory, ForeignKey },
     },
   } = useDojo();
@@ -111,19 +114,9 @@ export const useNotifications = () => {
    * Combat notifications
    */
   const setCombatNotificationsFromEvents = (event: Event) => {
-    const result = parseCombatEvent(event);
-    let eventType = EventType.Attacked;
-    if (result.stolenResources.length > 0) {
-      eventType = EventType.StolenResource;
-    }
-    const notification = {
-      eventType,
-      // to have a unique key for each notification
-      keys: [result.attackTimestamp.toString()],
-      data: result,
-    };
-
-    setNotifications((prev) => [notification, ...prev]);
+    const notification = createCombatNotification(parseCombatEvent(event));
+    // setNotifications((prev) => [notification, ...prev]);
+    addUniqueNotifications([notification], setNotifications);
   };
 
   useEffect(() => {
@@ -133,6 +126,25 @@ export const useNotifications = () => {
       pollForEvents([COMBAT_EVENT, "*", numberToHex(realmEntityId.realmEntityId)], setCombatNotificationsFromEvents, 5);
     }
   }, [realmEntityIds]);
+
+  /**
+   * New Combat notifications
+   */
+  // New combat notitications from createCombatEvents (subscription)
+  useEffect(() => {
+    const subscribeToCombatEvents = async () => {
+      for (const { realmEntityId } of realmEntityIds) {
+        const observable = await createCombatEvents(realmEntityId);
+        observable.subscribe((event) => {
+          if (event) {
+            const notification = createCombatNotification(parseCombatEvent(event));
+            addUniqueNotifications([notification], setNotifications);
+          }
+        });
+      }
+    };
+    subscribeToCombatEvents();
+  }, [realmEntityId]);
 
   /**
    * Claimable orders notifications

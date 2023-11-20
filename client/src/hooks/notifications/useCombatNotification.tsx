@@ -57,7 +57,6 @@ export const useAttackedNotification = (
         </div>
       </div>
     ),
-    // TODO: better layout for claimable resources?
     content: (onClose: () => void) => (
       <div className="flex flex-col">
         {damage && damage > 0 && (
@@ -117,7 +116,6 @@ export const useStolenResourcesNotification = (
         </div>
       </div>
     ),
-    // TODO: better layout for claimable resources?
     content: (onClose: () => void) => (
       <div className="flex flex-col">
         <div className="flex mt-2 w-full items-center flex-wrap space-x-2 space-y-1">
