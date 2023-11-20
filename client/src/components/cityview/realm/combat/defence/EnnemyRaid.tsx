@@ -24,7 +24,10 @@ export const EnemyRaid = ({ raider, ...props }: EnemyRaidProps) => {
 
   return (
     <div
-      className={clsx("flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold", props.className)}
+      className={clsx(
+        "flex flex-col p-2 mb-1 border rounded-md border-gray-gold text-xxs text-gray-gold",
+        props.className,
+      )}
       onClick={props.onClick}
     >
       <div className="flex items-center text-xxs">

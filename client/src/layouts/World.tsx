@@ -26,7 +26,9 @@ import hyperStructures from "../data/hyperstructures.json";
 import { useHyperstructure } from "../hooks/helpers/useHyperstructure";
 import { Tooltip } from "../elements/Tooltip";
 import useLeaderBoardStore from "../hooks/store/useLeaderBoardStore";
+import useCombatHistoryStore from "../hooks/store/useCombatHistoryStore";
 import { useDojo } from "../DojoContext";
+import useRealmStore from "../hooks/store/useRealmStore";
 
 export const World = () => {
   const {
@@ -60,11 +62,17 @@ export const World = () => {
 
   const { getHyperstructureIds } = useHyperstructure();
   const syncData = useLeaderBoardStore((state) => state.syncData);
+  const syncCombatHistory = useCombatHistoryStore((state) => state.syncData);
 
   useEffect(() => {
     let ids = getHyperstructureIds();
     syncData(ids);
   }, [worldLoading]);
+
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  useEffect(() => {
+    syncCombatHistory(realmEntityId);
+  }, [worldLoading, realmEntityId]);
 
   const [playBackground, { stop }] = useSound("/sound/music/happy_realm.mp3", {
     soundEnabled: isSoundOn,

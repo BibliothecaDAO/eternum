@@ -973,7 +973,7 @@
     {
       "name": "combat_systems",
       "address": "0x778fd3e137dc0e58d94d599167aa431332b8529f9bfc8efd70a7ea4e9c74247",
-      "class_hash": "0x7aa23ed560a8ab67c80a8ce293b6cdfd1d785e453bd386126d64a1339e67f25",
+      "class_hash": "0x8fd1e8b6cf9304080a34a7591cdb011420cd58813135578a914ec0d0f6ef4",
       "abi": [
         {
           "type": "impl",
@@ -1234,6 +1234,16 @@
             {
               "name": "stolen_resource_amounts",
               "type": "core::array::Span::<core::integer::u128>",
+              "kind": "data"
+            },
+            {
+              "name": "damage",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "ts",
+              "type": "core::integer::u64",
               "kind": "data"
             }
           ]
