@@ -14,14 +14,20 @@ type RoadBuildPopupProps = {
 };
 
 export const SelectRaiders = ({ attackingRaiders, selectedRaiders, setSelectedRaiders }: RoadBuildPopupProps) => {
-  return attackingRaiders.map((raider, i) => (
-    <SelectableRaider
-      key={i}
-      raider={raider}
-      selectedRaiders={selectedRaiders}
-      setSelectedRaiders={setSelectedRaiders}
-    ></SelectableRaider>
-  ));
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+
+  return attackingRaiders
+    .filter((raider) => {
+      return raider.arrivalTime <= nextBlockTimestamp;
+    })
+    .map((raider, i) => (
+      <SelectableRaider
+        key={i}
+        raider={raider}
+        selectedRaiders={selectedRaiders}
+        setSelectedRaiders={setSelectedRaiders}
+      ></SelectableRaider>
+    ));
 };
 
 type SelectableRaiderProps = {
