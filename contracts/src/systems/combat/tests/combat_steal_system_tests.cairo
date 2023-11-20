@@ -60,8 +60,8 @@ const TARGET_SOLDIER_COUNT: u128 = 5;
 const INITIAL_RESOURCE_BALANCE: u128 = 5000;
 
 const ATTACKER_STOLEN_RESOURCE_COUNT: u32 = 2;
-const PRECALCULATED_STOLEN_RESOURCE_TYPE_ONE: u8 = 25;
-const PRECALCULATED_STOLEN_RESOURCE_TYPE_TWO: u8 = 4;
+const PRECALCULATED_STOLEN_RESOURCE_TYPE_ONE: u8 = 6;
+const PRECALCULATED_STOLEN_RESOURCE_TYPE_TWO: u8 = 3;
 
 fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatcher) {
     let world = spawn_eternum();
@@ -159,6 +159,8 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     );
 
     starknet::testing::set_contract_address(world.executor());
+
+    starknet::testing::set_block_timestamp(1000);
 
     // set up attacker
     set!(world, (
@@ -508,7 +510,7 @@ fn test_attacker_in_transit() {
     set!(world, (
         ArrivalTime { 
             entity_id: attacker_group_id, 
-            arrives_at: 1 
+            arrives_at: 1001 
         }
     ));
 
