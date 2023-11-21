@@ -4,13 +4,12 @@ import Button from "../elements/Button";
 import { useEffect, useMemo, useState } from "react";
 import useUIStore from "../hooks/store/useUIStore";
 import { useDojo } from "../DojoContext";
-import { displayAddress, hexToAscii } from "../utils/utils";
+import { displayAddress } from "../utils/utils";
 import ListSelect from "../elements/ListSelect";
-// import { ReactComponent as Danger } from "../assets/icons/common/danger.svg";
 import { ReactComponent as Copy } from "../assets/icons/common/copy.svg";
 import { ReactComponent as Import } from "../assets/icons/common/import.svg";
 import TextInput from "../elements/TextInput";
-import { fetchAddressName } from "../hooks/graphql/useGraphQLQueries";
+import { useAddressStore, useFetchAddressName } from "../hooks/store/useAddressStore";
 
 type SignUpComponentProps = {
   isWorldLive: boolean;
@@ -34,23 +33,23 @@ export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: Si
   // import export account
   const [importMessage, setImportMessage] = useState(null);
   const [copyMessage, setCopyMessage] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [inputName, setInputName] = useState("");
-  const [currentName, setCurrentName] = useState(undefined);
-  const [hasName, setHasName] = useState(true);
 
-  useEffect(() => {
-    const fetchName = async () => {
-      const name = await fetchAddressName(account.address);
-      if (name) {
-        setCurrentName(hexToAscii(name));
-        setHasName(true);
-      } else {
-        setHasName(false);
-      }
-    };
-    fetchName();
-  }, [account.address, loading]);
+  const { loading, setLoading, addressName, setAddressName } = useAddressStore();
+  useFetchAddressName(account.address);
+
+  // useEffect(() => {
+  //   const fetchName = async () => {
+  //     const name = await fetchAddressName(account.address);
+  //     if (name) {
+  //       setCurrentName(hexToAscii(name));
+  //       setHasName(true);
+  //     } else {
+  //       setHasName(false);
+  //     }
+  //   };
+  //   fetchName();
+  // }, [account.address, loading]);
 
   let disableStart = false;
   // let disableStart = true;
@@ -61,6 +60,7 @@ export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: Si
   const onSetName = async () => {
     setLoading(true);
     await set_address_name({ name: inputName, signer: account });
+    setAddressName(inputName);
     setLoading(false);
   };
 
@@ -205,32 +205,39 @@ export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: Si
             onChange={select}
           />
           <div className="flex flex-cols m-2 items-center justify-center">
-            {hasName && (
+            {/* {(loading || addressName) && (
               <TextInput
-                placeholder="Attack Name to Address"
+                placeholder="Attach Name to Address"
                 className={"border !py-1 !my-1 mr-2"}
-                value={currentName || ""}
+                value={addressName || ""}
                 onChange={() => {}}
               ></TextInput>
+            )} */}
+            {(loading || addressName) && (
+              <span className="text-white border-gold border text-xs rounded-lg p-2">
+                {addressName ? `👑 ${addressName}` : ""}
+              </span>
             )}
-            {!hasName && (
+            {!loading && !addressName && (
               <TextInput
-                placeholder="Attack Name to Address"
+                placeholder="Attach Name to Address"
                 className={"border !py-1 !my-1 mr-2"}
                 maxLength={12}
                 value={inputName}
                 onChange={setInputName}
               ></TextInput>
             )}
-            <Button
-              isLoading={loading}
-              onClick={onSetName}
-              className={"!py-2 !my-1"}
-              variant={"primary"}
-              disabled={hasName}
-            >
-              Set Name
-            </Button>
+            {!(loading || addressName) && (
+              <Button
+                isLoading={loading}
+                onClick={onSetName}
+                className={"!py-2 !my-1"}
+                variant={"primary"}
+                disabled={loading || addressName !== undefined}
+              >
+                Set Name
+              </Button>
+            )}
           </div>
           <Button
             // @note: currently disabled for prod, enable back when new version is ready

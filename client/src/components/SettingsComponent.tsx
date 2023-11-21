@@ -13,15 +13,15 @@ import { RangeInput } from "../elements/RangeInput";
 import useUIStore from "../hooks/store/useUIStore";
 import useScreenOrientation from "../hooks/useScreenOrientation";
 import { useDojo } from "../DojoContext";
-import { useRealm } from "../hooks/helpers/useRealm";
+import { useAddressStore } from "../hooks/store/useAddressStore";
 type SettingsComponentProps = {};
 
 export const SettingsComponent = ({}: SettingsComponentProps) => {
   const {
-    account: { accountDisplay, account },
+    account: { accountDisplay },
   } = useDojo();
 
-  const { getAddressName } = useRealm();
+  const addressName = useAddressStore((state) => state.addressName);
   const [showSettings, setShowSettings] = useState(false);
   const musicLevel = useUIStore((state) => state.musicLevel);
   const effectsLevel = useUIStore((state) => state.effectsLevel);
@@ -37,8 +37,6 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
     setFullScreen(!fullScreen);
     toggleFullScreen();
   };
-
-  const addressName = getAddressName(account.address);
 
   return (
     <div className="flex items-center text-white">

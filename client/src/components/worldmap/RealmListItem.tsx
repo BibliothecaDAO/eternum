@@ -7,13 +7,18 @@ import * as realmsData from "../../geodata/realms.json";
 import clsx from "clsx";
 import useUIStore from "../../hooks/store/useUIStore";
 import { displayAddress, numberToHex } from "../../utils/utils";
+import { RealmExtended, useRealm } from "../../hooks/helpers/useRealm";
 
 type RealmListItemProps = {
-  realm: any;
+  realm: RealmExtended;
 };
 
 export const RealmListItem = ({ realm }: RealmListItemProps) => {
   const moveCameraToRealm = useUIStore((state) => state.moveCameraToRealm);
+
+  const { getRealmAddressName } = useRealm();
+
+  const addressName = getRealmAddressName(realm.entity_id);
 
   return (
     <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold">
@@ -25,7 +30,11 @@ export const RealmListItem = ({ realm }: RealmListItemProps) => {
           </div>
         )}
         <div className="-mt-2 ml-2 italic">
-          owned by <span className="text-gold">{displayAddress(numberToHex(realm?.owner?.address || 0))}</span>
+          owned by
+          {!addressName && (
+            <span className="text-gold ml-1 mr-1">{displayAddress(numberToHex(realm?.owner?.address || 0))}</span>
+          )}
+          {addressName && <span className="text-gold ml-1 mr-1">{addressName}</span>}
         </div>
         <div className=" text-gold flex ml-auto ">
           <Button
