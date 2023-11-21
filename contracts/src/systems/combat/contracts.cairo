@@ -55,7 +55,9 @@ mod combat_systems {
         attacking_entity_ids: Span<u128>,
         winner: Winner,
         stolen_resource_types: Span<u8>,
-        stolen_resource_amounts: Span<u128>
+        stolen_resource_amounts: Span<u128>,
+        damage: u128,
+        ts: u64,
     }
 
     #[event]
@@ -573,6 +575,7 @@ mod combat_systems {
             let mut target_town_watch_health = get!(world, target_town_watch_id, Health);
             assert(target_town_watch_health.value > 0, 'target is dead');
 
+            let ts = starknet::get_block_timestamp();
 
             let mut index = 0;
             let mut attackers_total_attack = 0;
@@ -593,7 +596,7 @@ mod combat_systems {
 
                 let attacker_arrival = get!(world, attacker_id, ArrivalTime);
                 assert(
-                    attacker_arrival.arrives_at <= starknet::get_block_timestamp(),
+                    attacker_arrival.arrives_at <= ts,
                         'attacker is travelling'
                 );
 
@@ -614,7 +617,7 @@ mod combat_systems {
                 index +=1;
             };
 
-            
+            let mut damage: u128 = 0; 
 
             let mut target_town_watch_attack = get!(world, target_town_watch_id, Attack);
             let mut target_town_watch_defense = get!(world, target_town_watch_id, Defence);
@@ -632,9 +635,9 @@ mod combat_systems {
                 // attack was a success && attacker dealt damage to target
 
                 // get damage to target based on the attacker's attack value 
-                let salt: u128 = starknet::get_block_timestamp().into();
+                let salt: u128 = ts.into();
                 let damage_percent = random::random(salt, 100 + 1 );
-                let damage = (attackers_total_attack * damage_percent) / 100;
+                damage = (attackers_total_attack * damage_percent) / 100;
 
                 
                 target_town_watch_health.value -= min(damage, target_town_watch_health.value);
@@ -647,9 +650,9 @@ mod combat_systems {
                 // attack failed && target dealt damage to attacker
 
                 // get damage to attacker based on the target's attack value 
-                let salt: u128 = starknet::get_block_timestamp().into();
+                let salt: u128 = ts.into();
                 let damage_percent = random::random(salt, 100 + 1 );
-                let mut damage = (target_town_watch_attack.value * damage_percent) / 100;
+                damage = (target_town_watch_attack.value * damage_percent) / 100;
 
                 // share damage between attackers
                 damage = damage / attacker_ids.len().into();
@@ -689,7 +692,9 @@ mod combat_systems {
                     target_realm_entity_id,
                     winner,
                     stolen_resource_types: array![].span(),
-                    stolen_resource_amounts: array![].span()
+                    stolen_resource_amounts: array![].span(),
+                    damage,
+                    ts
              });
 
         }
@@ -705,6 +710,7 @@ mod combat_systems {
             assert(target_realm.realm_id != 0, 'target not realm');
 
             let caller = starknet::get_caller_address();
+            let ts = starknet::get_block_timestamp();
 
             let attacker_owner = get!(world, attacker_id, Owner);
             assert(attacker_owner.address == caller, 'not attacker owner');
@@ -714,7 +720,7 @@ mod combat_systems {
 
             let attacker_arrival = get!(world, attacker_id, ArrivalTime);
             assert(
-                attacker_arrival.arrives_at <= starknet::get_block_timestamp(),
+                attacker_arrival.arrives_at <= ts,
                     'attacker is travelling'
             );
 
@@ -848,7 +854,9 @@ mod combat_systems {
                         target_realm_entity_id,
                         winner: Winner::Attacker,
                         stolen_resource_types: stolen_resource_types.span(),
-                        stolen_resource_amounts: stolen_resource_amounts.span()
+                        stolen_resource_amounts: stolen_resource_amounts.span(),
+                        damage: 0,
+                        ts
                 });
 
             
@@ -858,7 +866,7 @@ mod combat_systems {
                  
                 
                 // get damage to attacker based on the target's attack value 
-                let salt: u128 = starknet::get_block_timestamp().into();
+                let salt: u128 = ts.into();
                 let damage_percent = random::random(salt, 100 + 1 );
                 let damage = (target_town_watch_attack.value * damage_percent) / 100;
 
@@ -875,7 +883,9 @@ mod combat_systems {
                         target_realm_entity_id,
                         winner: Winner::Target,
                         stolen_resource_types: array![].span(),
-                        stolen_resource_amounts: array![].span()
+                        stolen_resource_amounts: array![].span(),
+                        damage,
+                        ts
                 });
             }    
 

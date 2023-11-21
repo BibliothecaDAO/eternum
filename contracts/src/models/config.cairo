@@ -188,3 +188,11 @@ impl WeightConfigImpl of WeightConfigTrait {
         return resource_weight_config.weight_gram * amount;
     }
 }
+
+#[derive(Model, Copy, Drop, Serde)]
+struct LevelingConfig {
+    #[key]
+    config_id: u128,
+    resource_cost_id: u128,
+    resource_cost_count: u32
+}

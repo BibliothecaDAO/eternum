@@ -34,7 +34,7 @@ export const ResourceCost = ({
       <div
         className={clsx("relative flex flex-col shrink-0", type === "horizontal" ? "ml-1 font-bold" : "items-center")}
       >
-        <div className={clsx("relative text-xs", props.color)}>
+        <div className={clsx("relative text-xxs", props.color)}>
           {props.color && props.amount > 0 ? "+" : ""}
           {Intl.NumberFormat("en-US", {
             notation: "compact",

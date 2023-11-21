@@ -28,6 +28,7 @@ import {
   UngroupSoldiersProps,
   AttackProps,
   StealProps,
+  LevelUpProps,
 } from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -146,7 +147,22 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.ungroup_and_regroup_soldiers(props)));
   };
 
+  const level_up = async (props: LevelUpProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.level_up(props)));
+  };
+
+  const isLive = async () => {
+    try {
+      await provider.uuid();
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   return {
+    level_up,
+    isLive,
     create_soldiers,
     group_and_deploy_soldiers,
     ungroup_soldiers,

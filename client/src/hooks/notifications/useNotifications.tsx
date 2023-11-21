@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDojo } from "../../DojoContext";
 import { Component, Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
-import { extractAndCleanKey, getEntityIdFromKeys, getPosition } from "../../utils/utils";
+import { divideByPrecision, extractAndCleanKey, getEntityIdFromKeys, getPosition } from "../../utils/utils";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { calculateNextHarvest } from "../../components/cityview/realm/labor/laborUtils";
 import useRealmStore from "../store/useRealmStore";
@@ -10,12 +10,8 @@ import { ResourcesIds } from "@bibliothecadao/eternum";
 import { UpdatedEntity } from "../../dojo/createEntitySubscription";
 import { Position } from "../../types";
 import { getRealm } from "../../utils/realms";
-
-const LABOR_CONFIG = {
-  base_food_per_cycle: 14000,
-  base_labor_units: 7200,
-  base_resources_per_cycle: 21,
-};
+import { LABOR_CONFIG } from "@bibliothecadao/eternum";
+import { useRealm } from "../helpers/useRealm";
 
 export enum EventType {
   MakeOffer,
@@ -54,9 +50,12 @@ export const useNotifications = () => {
   } = useDojo();
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const { realmEntityIds } = useRealmStore();
+  const { realmEntityIds, realmEntityId } = useRealmStore();
   const realmsResources = useRealmsResource(realmEntityIds);
   const realmPositions = useRealmsPosition(realmEntityIds);
+
+  const { getRealmLevel } = useRealm();
+  const level = getRealmLevel(realmEntityId)?.level || 0;
 
   const [notifications, setNotifications] = useState<NotificationType[]>([]);
 
@@ -80,7 +79,7 @@ export const useNotifications = () => {
   useEffect(() => {
     const updateNotifications = () => {
       const notifications = nextBlockTimestamp
-        ? generateLaborNotifications(realmsResources, nextBlockTimestamp, Labor)
+        ? generateLaborNotifications(realmsResources, nextBlockTimestamp, level, Labor)
         : [];
       // add only add if not already in there
       addUniqueNotifications(notifications, setNotifications);
@@ -213,6 +212,7 @@ const generateTradeNotifications = (entityUpdates: UpdatedEntity[], Status: Comp
 const generateLaborNotifications = (
   resourcesPerRealm: { realmEntityId: number; resourceIds: number[] }[],
   nextBlockTimestamp: number,
+  level: number,
   Labor: Component,
 ) => {
   const notifications: NotificationType[] = [];
@@ -231,6 +231,7 @@ const generateLaborNotifications = (
               LABOR_CONFIG.base_labor_units,
               isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
               nextBlockTimestamp,
+              level,
             )
           : 0;
 
@@ -239,7 +240,7 @@ const generateLaborNotifications = (
           eventType: EventType.Harvest,
           keys: [realmEntityId.toString(), resourceId.toString()],
           data: {
-            harvestAmount: harvest,
+            harvestAmount: divideByPrecision(harvest),
           },
         });
       }

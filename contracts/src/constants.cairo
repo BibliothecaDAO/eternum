@@ -13,6 +13,7 @@ const LABOR_CONFIG_ID: u128 = 999999999999999997;
 const TRANSPORT_CONFIG_ID: u128 = 999999999999999996;
 const ROAD_CONFIG_ID: u128 = 999999999999999995;
 const COMBAT_CONFIG_ID: u128 = 999999999999999994;
+const LEVELING_CONFIG_ID: u128 = 999999999999999993;
 
 // 8 bits
 const RESOURCE_IDS_PACKED_SIZE: usize = 8_usize;
@@ -57,37 +58,28 @@ mod ResourceTypes {
 fn get_zipped_resource_probabilities() -> Span<(u8, u128)> {
 
     return array![
-        (ResourceTypes::WOOD, 300),
-        (ResourceTypes::STONE, 600),
-        (ResourceTypes::COAL, 200),
-        (ResourceTypes::COPPER, 100),
-        (ResourceTypes::OBSIDIAN, 100),
-        (ResourceTypes::SILVER, 100),
-        (ResourceTypes::IRONWOOD, 100),
-        (ResourceTypes::COLD_IRON, 100),
-        (ResourceTypes::GOLD, 100),
-        (ResourceTypes::HARTWOOD, 100),
-        (ResourceTypes::DIAMONDS, 100),
-        (ResourceTypes::SAPPHIRE, 100),
-        (ResourceTypes::RUBY, 100),
-        (ResourceTypes::DEEP_CRYSTAL, 100),
-        (ResourceTypes::IGNIUM, 100),
-        (ResourceTypes::ETHEREAL_SILICA, 100),
-        (ResourceTypes::TRUE_ICE, 100),
-        (ResourceTypes::TWILIGHT_QUARTZ, 44),
-        (ResourceTypes::ALCHEMICAL_SILVER, 100),
-        (ResourceTypes::ADAMANTINE, 100),
-        (ResourceTypes::MITHRAL, 100),
-        (ResourceTypes::DRAGONHIDE, 5),
-        (ResourceTypes::DESERT_GLASS, 100),
-        (ResourceTypes::DIVINE_CLOTH, 100),
-        (ResourceTypes::CURIOUS_SPORE, 100),
-        (ResourceTypes::UNREFINED_ORE, 100),
-        (ResourceTypes::SUNKEN_SHEKEL, 100),
-        (ResourceTypes::DEMONHIDE, 2),
-        (ResourceTypes::SHEKELS, 100),
-        (ResourceTypes::WHEAT, 1500),
-        (ResourceTypes::FISH, 800),
+        (ResourceTypes::WOOD, 2018108),
+        (ResourceTypes::STONE, 1585915),
+        (ResourceTypes::COAL, 1542455),
+        (ResourceTypes::COPPER, 1063581),
+        (ResourceTypes::OBSIDIAN, 891750),
+        (ResourceTypes::SILVER, 700604),
+        (ResourceTypes::IRONWOOD, 474447),
+        (ResourceTypes::COLD_IRON, 385111),
+        (ResourceTypes::GOLD, 367807),
+        (ResourceTypes::HARTWOOD, 239034),
+        (ResourceTypes::DIAMONDS, 120724),
+        (ResourceTypes::SAPPHIRE, 99396),
+        (ResourceTypes::RUBY, 96177),
+        (ResourceTypes::DEEP_CRYSTAL, 96177),
+        (ResourceTypes::IGNIUM, 69215),
+        (ResourceTypes::ETHEREAL_SILICA, 65191),
+        (ResourceTypes::TRUE_ICE, 55936),
+        (ResourceTypes::TWILIGHT_QUARTZ, 44668),
+        (ResourceTypes::ALCHEMICAL_SILVER, 37425),
+        (ResourceTypes::ADAMANTINE, 22133),
+        (ResourceTypes::MITHRAL, 14889),
+        (ResourceTypes::DRAGONHIDE, 9256),
     ].span();   
 }
 

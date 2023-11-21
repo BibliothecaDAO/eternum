@@ -13,6 +13,7 @@ TRAVEL_SYSTEMS="0x8fa2df40a28c2ffb7a99267c1a67318451da3a5d39cadb18577a2d09856b0e
 TEST_REALM_SYSTEMS="0x141b54c5560368787c28e61f9c9542e3aaf26a3f426263cb0dcde36339eec30"
 TEST_RESOURCE_SYSTEMS="0x5e2e8d20bc9f4c02050b2b6b7442a1ce06bbd9c0729716a7c5a478069c9b354"
 COMBAT_SYSTEMS="0x778fd3e137dc0e58d94d599167aa431332b8529f9bfc8efd70a7ea4e9c74247"
+LEVELING_SYSTEMS="0x81edcebc0097b53ae8db567565eb5c5d9e8a9190a8a80411547676f24361ca"
 
 resource_precision=1000
 
@@ -24,8 +25,8 @@ commands=(
     # ### LABOR ###
     # # base_labor_units 7200
     # # base_resources_per_cycle 21
-    # # base_food_per_cycle 14000
-    "sozo execute $CONFIG_SYSTEMS set_labor_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,7200,$((21 * resource_precision)),$((14000 * resource_precision))"
+    # # base_food_per_cycle 21
+    "sozo execute $CONFIG_SYSTEMS set_labor_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,7200,$((21 * resource_precision)),$((21 * resource_precision))"
 
     # ### SPEED ###
     # # entity type FREE_TRANSPORT_ENTITY_TYPE = 256
@@ -49,6 +50,12 @@ commands=(
 
 )
 
+### LEVELING CONFIG ###
+commands+=(
+    ## leveling cost
+    "sozo execute $CONFIG_SYSTEMS set_leveling_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,22,1,218042,2,171347,3,166652,4,114912,5,96347,6,75695,7,51260,8,41607,9,39740,10,25825,11,13042,12,10740,13,10392,14,10392,15,7477,16,7042,17,6042,18,4825,19,4042,20,2392,21,1607,22,100"
+)
+
 
 ### SOLDIERS CONFIG ###
 commands+=(
@@ -64,10 +71,9 @@ commands+=(
     "sozo execute $CONFIG_SYSTEMS set_speed_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,258,800"
 
     ## soldier cost
-    ## 10 silver (6)
-    ## 1000 wheat (254)
-    ## 1000 fish (255)
-    "sozo execute $CONFIG_SYSTEMS set_soldier_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,3,6,10000,254,1000000,255,1000000"
+    ## 7560 wheat (254)
+    ## 2520 fish (255)
+    "sozo execute $CONFIG_SYSTEMS set_soldier_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2,254,1512000,255,504000"
 
     ## soldier health
     ## 10 

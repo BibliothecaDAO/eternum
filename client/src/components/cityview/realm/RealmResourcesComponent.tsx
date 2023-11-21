@@ -12,7 +12,7 @@ import Button from "../../../elements/Button";
 import { SmallResource } from "./SmallResource";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../DojoContext";
-import { useGetRealm } from "../../../hooks/helpers/useRealm";
+import { useGetRealm, useRealm } from "../../../hooks/helpers/useRealm";
 import { LABOR_CONFIG } from "@bibliothecadao/eternum";
 import useUIStore from "../../../hooks/store/useUIStore";
 
@@ -98,6 +98,9 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const [productivity, setProductivity] = useState<number>(0);
 
+  const { getRealmLevel } = useRealm();
+  const level = getRealmLevel(realmEntityId)?.level || 0;
+
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 
   const labor = useComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]));
@@ -113,10 +116,11 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
       // can have a small difference between block timestamp and actual block so make sure that laborLeft is more than 1 minute
       labor && laborLeft > 60
         ? calculateProductivity(
-          isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
-          labor.multiplier,
-          LABOR_CONFIG.base_labor_units,
-        )
+            isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
+            labor.multiplier,
+            LABOR_CONFIG.base_labor_units,
+            level,
+          )
         : 0;
     setProductivity(productivity);
   }, [nextBlockTimestamp, labor]);

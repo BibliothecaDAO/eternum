@@ -11,6 +11,7 @@ mod labor_systems {
     use eternum::models::labor::{Labor, LaborTrait};
     use eternum::models::labor_auction::{LaborAuction, LaborAuctionTrait};
     use eternum::models::labor_auction::{LinearVRGDA, LinearVRGDATrait};
+    use eternum::models::level::{Level, LevelTrait};
     use eternum::models::config::{WorldConfig, LaborConfig, LaborCostResources, LaborCostAmount};
 
     use eternum::systems::labor::utils::{assert_harvestable_resource, get_labor_resource_type};
@@ -235,7 +236,12 @@ mod labor_systems {
                 // remainder is what is left from division by base labor units
                 let remainder = labor_generated % labor_config.base_labor_units;
 
+                // get level bonus
+                let level = get!(world, (realm_id), Level);
+                let level_bonus = level.get_level_multiplier();
+
                 // update resources with multiplier
+                // and with level bonus
                 set!(
                     world,
                     Resource {
@@ -244,7 +250,7 @@ mod labor_systems {
                         balance: resource.balance
                             + (labor_units_generated.into()
                                 * base_production_per_cycle
-                                * labor.multiplier.into()),
+                                * labor.multiplier.into() * level_bonus) / 100,
                     }
                 );
 

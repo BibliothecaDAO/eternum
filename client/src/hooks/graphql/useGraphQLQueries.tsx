@@ -95,13 +95,14 @@ export interface ResourceInterface {
 }
 
 const OFFSET = 100;
-const COMPONENT_INTERVAL = 40;
 
 export const useSyncWorld = (): { loading: boolean; progress: number } => {
   // Added async since await is used inside
   const {
     setup: { components },
   } = useDojo();
+
+  const component_interval = Object.keys(components).length;
 
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
@@ -110,13 +111,13 @@ export const useSyncWorld = (): { loading: boolean; progress: number } => {
     const syncData = async () => {
       try {
         let componentNames = Object.keys(components);
-        for (let i = 0; i < componentNames.length; i += COMPONENT_INTERVAL) {
+        for (let i = 0; i < componentNames.length; i += component_interval) {
           let loops = 0;
-          if (componentNames.slice(i, i + COMPONENT_INTERVAL).length === 0) {
+          if (componentNames.slice(i, i + component_interval).length === 0) {
             break;
           }
           let modelsQueryBuilder = "";
-          for (const componentName of componentNames.slice(i, i + COMPONENT_INTERVAL)) {
+          for (const componentName of componentNames.slice(i, i + component_interval)) {
             let component = (components as Components)[componentName];
             let fields = Object.keys(component.schema).join(",");
             modelsQueryBuilder += `... on ${componentName} {

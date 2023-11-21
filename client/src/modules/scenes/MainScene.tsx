@@ -5,7 +5,7 @@ import useUIStore from "../../hooks/store/useUIStore";
 import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
 import { a } from "@react-spring/three";
-import { Sky, CameraShake, AdaptiveDpr } from "@react-three/drei";
+import { Sky, AdaptiveDpr } from "@react-three/drei";
 import { Suspense, useMemo } from "react";
 import { EffectComposer, Bloom, Noise, SMAA } from "@react-three/postprocessing";
 // @ts-ignore
@@ -42,32 +42,32 @@ export const MainScene = () => {
     }
   }, [location]);
 
-  const shakeConfig = useMemo(
-    () => ({
-      maxYaw: 0.01, // Max amount camera can yaw in either direction
-      maxPitch: 0, // Max amount camera can pitch in either direction
-      maxRoll: 0, // Max amount camera can roll in either direction
-      yawFrequency: 0.04, // Frequency of the the yaw rotation
-      pitchFrequency: 0, // Frequency of the pitch rotation
-      rollFrequency: 0, // Frequency of the roll rotation
-      intensity: 1, // initial intensity of the shake
-      controls: undefined, // if using orbit controls, pass a ref here so we can update the rotation
-    }),
-    [],
-  );
+  // const shakeConfig = useMemo(
+  //   () => ({
+  //     maxYaw: 0.01, // Max amount camera can yaw in either direction
+  //     maxPitch: 0, // Max amount camera can pitch in either direction
+  //     maxRoll: 0, // Max amount camera can roll in either direction
+  //     yawFrequency: 0.04, // Frequency of the the yaw rotation
+  //     pitchFrequency: 0, // Frequency of the pitch rotation
+  //     rollFrequency: 0, // Frequency of the roll rotation
+  //     intensity: 1, // initial intensity of the shake
+  //     controls: undefined, // if using orbit controls, pass a ref here so we can update the rotation
+  //   }),
+  //   [],
+  // );
 
   return (
     <Canvas
       raycaster={{ params: { Points: { threshold: 0.2 } } }}
       className="rounded-xl"
       camera={{ fov: 15, position: [0, 700, 0], far: 3500 }}
-      dpr={[0.5, 2]}
+      dpr={[0.5, 1]}
       performance={{
         min: 0.5,
         max: 1,
       }}
       gl={{
-        powerPreference: "high-performance",
+        powerPreference: "low-power",
         antialias: false,
         stencil: false,
         depth: false,
@@ -79,7 +79,7 @@ export const MainScene = () => {
       <ambientLight />
       <Camera />
       <directionalLight castShadow position={[lightPosition.x, lightPosition.y, lightPosition.z]} />
-      <CameraShake {...shakeConfig} />
+      {/* <CameraShake {...shakeConfig} /> */}
       <Suspense fallback={null}>
         <a.group>
           <Switch location={locationType}>

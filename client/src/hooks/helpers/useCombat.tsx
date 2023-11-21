@@ -61,7 +61,11 @@ export function useCombat() {
 
   // todo: need to find better ways to differentiate
   const useRealmBattalions = (realmEntityId: number) => {
-    return useEntityQuery([HasValue(Attack, { value: 10 }), HasValue(EntityOwner, { entity_owner_id: realmEntityId })]);
+    return useEntityQuery([
+      HasValue(Attack, { value: 10 }),
+      NotValue(Health, { value: 0 }),
+      HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
+    ]);
   };
 
   // todo: need to find better ways to differentiate
@@ -99,6 +103,7 @@ export function useCombat() {
   const useEnemyRaidersOnPosition = (position: Position) => {
     return useEntityQuery([
       Has(Attack),
+      NotValue(Health, { value: 0 }),
       HasValue(Position, position),
       NotValue(EntityOwner, { entity_owner_id: realmEntityId }),
     ]);
@@ -110,6 +115,17 @@ export function useCombat() {
       HasValue(Position, position),
       HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
     ]);
+  };
+
+  const getRealmRaidersOnPosition = (realmEntityId: number, position: Position) => {
+    return Array.from(
+      runQuery([
+        Has(Attack),
+        NotValue(Health, { value: 0 }),
+        HasValue(Position, position),
+        HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
+      ]),
+    );
   };
 
   const getEntitiesCombatInfo = (entityIds: number[]): CombatInfo[] => {
@@ -159,6 +175,7 @@ export function useCombat() {
     getDefenceOnPosition,
     useRealmRaiders,
     useRealmRaidersOnPosition,
+    getRealmRaidersOnPosition,
     useEnemyRaidersOnPosition,
     getEntitiesCombatInfo,
   };

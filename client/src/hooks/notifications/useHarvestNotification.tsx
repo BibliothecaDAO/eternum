@@ -11,6 +11,7 @@ import { ResourceCost } from "../../elements/ResourceCost";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { soundSelector, useUiSounds } from "../useUISound";
 import { useState } from "react";
+import { useRealm } from "../helpers/useRealm";
 
 export const useHarvestNotification = (
   notification: NotificationType,
@@ -42,10 +43,14 @@ export const useHarvestNotification = (
 
   const harvestAmount = notification.data && "harvestAmount" in notification.data ? notification.data.harvestAmount : 0;
 
+  const { getRealmLevel } = useRealm();
+  const level = getRealmLevel(parseInt(realmEntityId))?.level || 0;
+
   const onHarvest = async () => {
     setIsLoading(true);
     await optimisticHarvestLabor(
       nextBlockTimestamp || 0,
+      level,
       harvest_labor,
     )({
       signer: account,

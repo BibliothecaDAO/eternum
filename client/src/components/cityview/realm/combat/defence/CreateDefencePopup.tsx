@@ -3,10 +3,12 @@ import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
 import Button from "../../../../../elements/Button";
 import { NumberInput } from "../../../../../elements/NumberInput";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
+import useUIStore from "../../../../../hooks/store/useUIStore";
 import { useDojo } from "../../../../../DojoContext";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import { Duty } from "@bibliothecadao/eternum";
 import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
+import { Headline } from "../../../../../elements/Headline";
 
 type RoadBuildPopupProps = {
   watchTower: CombatInfo;
@@ -26,6 +28,7 @@ export const CreateDefencePopup = ({ watchTower, onClose }: RoadBuildPopupProps)
   const [soldierAmount, setSoldierAmount] = useState(0);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const { useRealmBattalions } = useCombat();
 
@@ -63,19 +66,68 @@ export const CreateDefencePopup = ({ watchTower, onClose }: RoadBuildPopupProps)
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"376px"}>
         <div className="flex flex-col items-center p-2">
-          <div className={"relative w-full mt-3"}>
-            <img src={`/images/avatars/5.png`} className="object-cover w-full h-full rounded-[10px]" />
-            <div className="flex flex-col p-2 left-2 bottom-2 rounded-[10px] bg-black/60">
-              <div className="mb-1 ml-1 italic text-light-pink text-xxs">Stats:</div>
-              <div className="grid grid-cols-4 gap-2">
-                <div className="mb-1 ml-1 italic text-light-pink text-xxs">
-                  <div> New Attack: </div>
-                  <div> {watchTower.attack || 0 + totalAttack}</div>
-                  <div> New Defence: </div>
-                  <div> {watchTower.defence || 0 + totalDefence}</div>
-                  <div> New Health: </div>
-                  <div> {watchTower.health || 0 + totalHealth}</div>
+          <Headline size="big">Military units</Headline>
+          <div className="flex relative mt-1 justify-between text-xxs text-lightest w-full">
+            <div className="flex items-center">
+              <div className="flex items-center h-6 mr-2">
+                <img src="/images/units/troop-icon.png" className="h-[28px]" />
+                <div className="flex flex-col ml-1 text-center">
+                  <div className="bold">Warrior</div>
                 </div>
+              </div>
+            </div>
+            <div className="flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center">
+              <div
+                className="flex items-center h-6 mr-2"
+                onMouseEnter={() =>
+                  setTooltip({
+                    position: "top",
+                    content: (
+                      <>
+                        <p className="whitespace-nowrap">Attack power</p>
+                      </>
+                    ),
+                  })
+                }
+                onMouseLeave={() => setTooltip(null)}
+              >
+                <img src="/images/icons/attack.png" className="h-full" />
+                <div className="flex flex-col ml-1 text-center">
+                  <div className="bold ">{(watchTower.attack || 0) + totalAttack}</div>
+                </div>
+              </div>
+              <div
+                className="flex items-center h-6 mr-2"
+                onMouseEnter={() =>
+                  setTooltip({
+                    position: "top",
+                    content: (
+                      <>
+                        <p className="whitespace-nowrap">Defence power</p>
+                      </>
+                    ),
+                  })
+                }
+                onMouseLeave={() => setTooltip(null)}
+              >
+                <img src="/images/icons/defence.png" className="h-full" />
+                <div className="flex flex-col ml-1 text-center">
+                  <div className="bold ">{(watchTower.defence || 0) + totalDefence}</div>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center">{(watchTower.health || 0) + totalHealth} HP</div>
+          </div>
+          <div className={"relative w-full mt-3"}>
+            <img src={`/images/units/troop.png`} className="object-cover w-full h-full rounded-[10px]" />
+            <div className="flex absolute flex-col p-2 left-2 bottom-2 rounded-[10px] bg-black/60">
+              <div className="mb-1 ml-1 italic text-light-pink text-xxs">Available</div>
+              <div className="flex items-center">
+                <div className="flex flex-col text-xxs items-center text-white">
+                  <div className="font-bold">x{realmBattalions.length}</div>
+                  Battalions
+                </div>
+                <img src="/images/units/troop-icon.png" className="h-[40px]" />
               </div>
             </div>
           </div>
@@ -86,49 +138,29 @@ export const CreateDefencePopup = ({ watchTower, onClose }: RoadBuildPopupProps)
             <NumberInput
               className="ml-2 mr-2"
               value={soldierAmount}
-              onChange={(value) => setSoldierAmount(Math.min(realmBattalions.length, value))}
+              onChange={(value) => setSoldierAmount(value)}
               min={0}
-              max={999}
+              max={realmBattalions.length}
               step={1}
             />
             <div className="italic text-gold">Max {realmBattalions.length}</div>
           </div>
           <div className="flex flex-col items-center justify-center">
             <div className="flex">
-              {!loading && (
-                <Button
-                  className="!px-[6px] mr-2 !py-[2px] text-xxs ml-auto"
-                  onClick={onClose}
-                  variant="outline"
-                  withoutSound
-                >
-                  {`Cancel`}
-                </Button>
-              )}
-              {!loading && (
-                <Button
-                  className="!px-[6px] !py-[2px] text-xxs ml-auto"
-                  disabled={!canBuild}
-                  onClick={onBuild}
-                  variant="outline"
-                  withoutSound
-                >
-                  {`Reinforce Defence`}
-                </Button>
-              )}
-              {loading && (
-                <Button
-                  className="!px-[6px] !py-[2px] text-xxs ml-auto"
-                  onClick={() => {}}
-                  isLoading={true}
-                  variant="outline"
-                  withoutSound
-                >
-                  {`Build Battalion`}
-                </Button>
-              )}
+              <Button className="!px-[6px] mr-2 !py-[2px] text-xxs ml-auto" onClick={onClose} variant="outline">
+                {`Cancel`}
+              </Button>
+              <Button
+                className="!px-[6px] !py-[2px] text-xxs ml-auto"
+                disabled={!canBuild}
+                onClick={onBuild}
+                variant="outline"
+                isLoading={loading}
+              >
+                {`Reinforce Defence`}
+              </Button>
             </div>
-            {!canBuild && <div className="text-xxs text-order-giants/70">Add at least 1 battalion</div>}
+            {!canBuild && <div className="text-xxs mt-1 text-order-giants/70">Add at least 1 battalion</div>}
           </div>
         </div>
       </SecondaryPopup.Body>

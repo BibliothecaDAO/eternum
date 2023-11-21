@@ -12,7 +12,7 @@ import ContentContainer from "../containers/ContentContainer";
 import RealmManagementModule from "../modules/RealmManagementModule";
 import RealmResourcesComponent from "../components/cityview/realm/RealmResourcesComponent";
 import { useFetchBlockchainData } from "../hooks/store/useBlockchainStore";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { Redirect } from "wouter";
 import { useProgress } from "@react-three/drei";
@@ -26,8 +26,26 @@ import hyperStructures from "../data/hyperstructures.json";
 import { useHyperstructure } from "../hooks/helpers/useHyperstructure";
 import { Tooltip } from "../elements/Tooltip";
 import useLeaderBoardStore from "../hooks/store/useLeaderBoardStore";
+import useCombatHistoryStore from "../hooks/store/useCombatHistoryStore";
+import { useDojo } from "../DojoContext";
+import useRealmStore from "../hooks/store/useRealmStore";
 
 export const World = () => {
+  const {
+    setup: {
+      systemCalls: { isLive },
+    },
+  } = useDojo();
+
+  const [isWorldLive, setIsWorldLive] = useState(false);
+
+  useEffect(() => {
+    const checkWorldLive = async () => {
+      setIsWorldLive(await isLive());
+    };
+    checkWorldLive();
+  }, []);
+
   const { loading: worldLoading, progress: worldProgress } = useSyncWorld();
 
   useFetchBlockchainData();
@@ -44,11 +62,17 @@ export const World = () => {
 
   const { getHyperstructureIds } = useHyperstructure();
   const syncData = useLeaderBoardStore((state) => state.syncData);
+  const syncCombatHistory = useCombatHistoryStore((state) => state.syncData);
 
   useEffect(() => {
     let ids = getHyperstructureIds();
     syncData(ids);
   }, [worldLoading]);
+
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  useEffect(() => {
+    syncCombatHistory(realmEntityId);
+  }, [worldLoading, realmEntityId]);
 
   const [playBackground, { stop }] = useSound("/sound/music/happy_realm.mp3", {
     soundEnabled: isSoundOn,
@@ -126,7 +150,7 @@ export const World = () => {
         <ChatModule />
       </BottomRightContainer>
       <BlurOverlayContainer>
-        <SignUpComponent worldLoading={worldLoading} worldProgress={worldProgress} />
+        <SignUpComponent isWorldLive={isWorldLive} worldLoading={worldLoading} worldProgress={worldProgress} />
       </BlurOverlayContainer>
       <Leva hidden={import.meta.env.PROD} />
       <Tooltip />

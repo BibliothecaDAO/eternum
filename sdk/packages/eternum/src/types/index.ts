@@ -34,13 +34,17 @@ export interface UngroupAndRegroupSoldiersProps extends SystemSigner {
 }
 
 export interface AttackProps extends SystemSigner {
-  attacker_id: num.BigNumberish;
+  attacker_ids: num.BigNumberish[];
   target_id: num.BigNumberish;
 }
 
 export interface StealProps extends SystemSigner {
   attacker_id: num.BigNumberish;
   target_id: num.BigNumberish;
+}
+
+export interface LevelUpProps extends SystemSigner {
+  realm_entity_id: num.BigNumberish;
 }
 
 export interface TravelProps extends SystemSigner {
