@@ -2222,7 +2222,7 @@
     },
     {
       "name": "name_systems",
-      "address": null,
+      "address": "0x2a9ee652fb9ce9812e9d06ec05429b6e27254b37d0ef0eaca6a1e4533d5c244",
       "class_hash": "0x7ab8e9771a066df89edfabd3c6a461715fffe4ba86e95f293db61c92452f222",
       "abi": [
         {
