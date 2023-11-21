@@ -6,6 +6,7 @@ import { EventType, NotificationType } from "../hooks/notifications/useNotificat
 import { useTradeNotification } from "../hooks/notifications/useTradeNotification";
 import { useHarvestNotification } from "../hooks/notifications/useHarvestNotification";
 import { useEmptyChestNotification } from "../hooks/notifications/useEmptyChestNotification";
+import { useAttackedNotification, useStolenResourcesNotification } from "../hooks/notifications/useCombatNotification";
 
 const notificationHandlers = {
   [EventType.AcceptOffer]: useTradeNotification,
@@ -13,6 +14,8 @@ const notificationHandlers = {
   [EventType.CancelOffer]: useTradeNotification,
   [EventType.Harvest]: useHarvestNotification,
   [EventType.OrderClaimable]: useEmptyChestNotification,
+  [EventType.StolenResource]: useStolenResourcesNotification,
+  [EventType.Attacked]: useAttackedNotification,
 };
 
 type NotificationProps = {

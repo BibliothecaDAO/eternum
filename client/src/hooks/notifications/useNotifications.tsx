@@ -1,17 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDojo } from "../../DojoContext";
 import { Component, Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
-import { divideByPrecision, extractAndCleanKey, getEntityIdFromKeys, getPosition } from "../../utils/utils";
+import {
+  divideByPrecision,
+  extractAndCleanKey,
+  getEntityIdFromKeys,
+  getPosition,
+  numberToHex,
+} from "../../utils/utils";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { calculateNextHarvest } from "../../components/cityview/realm/labor/laborUtils";
 import useRealmStore from "../store/useRealmStore";
 import { unpackResources } from "../../utils/packedData";
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { COMBAT_EVENT, ResourcesIds } from "@bibliothecadao/eternum";
 import { UpdatedEntity } from "../../dojo/createEntitySubscription";
 import { Position } from "../../types";
 import { getRealm } from "../../utils/realms";
 import { LABOR_CONFIG } from "@bibliothecadao/eternum";
 import { useRealm } from "../helpers/useRealm";
+import { CombatResultInterface } from "../store/useCombatHistoryStore";
+import { createCombatNotification, parseCombatEvent } from "../../utils/combat";
+import { Event, pollForEvents } from "../../services/eventPoller";
 
 export enum EventType {
   MakeOffer,
@@ -19,6 +28,8 @@ export enum EventType {
   CancelOffer,
   Harvest,
   OrderClaimable,
+  StolenResource,
+  Attacked,
 }
 
 type realmsResources = { realmEntityId: number; resourceIds: number[] }[];
@@ -26,8 +37,8 @@ type realmsPosition = { realmId: number; position: Position }[];
 
 export type NotificationType = {
   eventType: EventType;
-  keys: string[] | string;
-  data?: HarvestData | EmptyChestData;
+  keys: string[] | string | undefined;
+  data?: HarvestData | EmptyChestData | CombatResultInterface;
 };
 
 type HarvestData = {
@@ -44,7 +55,10 @@ type EmptyChestData = {
 export const useNotifications = () => {
   const {
     setup: {
-      entityUpdates,
+      updates: {
+        entityUpdates,
+        eventUpdates: { createCombatEvents },
+      },
       components: { Status, Realm, Labor, ArrivalTime, Position, CaravanMembers, Inventory, ForeignKey },
     },
   } = useDojo();
@@ -95,6 +109,42 @@ export const useNotifications = () => {
     // Clear interval on component unmount
     return () => clearInterval(intervalId);
   }, [nextBlockTimestamp]);
+
+  /**
+   * Combat notifications
+   */
+  const setCombatNotificationsFromEvents = (event: Event) => {
+    const notification = createCombatNotification(parseCombatEvent(event));
+    // setNotifications((prev) => [notification, ...prev]);
+    addUniqueNotifications([notification], setNotifications);
+  };
+
+  useEffect(() => {
+    // poll for each of the realmEntityIds
+    for (const realmEntityId of realmEntityIds) {
+      // Keccak for Combat event
+      pollForEvents([COMBAT_EVENT, "*", numberToHex(realmEntityId.realmEntityId)], setCombatNotificationsFromEvents, 5);
+    }
+  }, [realmEntityIds]);
+
+  /**
+   * New Combat notifications
+   */
+  // New combat notitications from createCombatEvents (subscription)
+  useEffect(() => {
+    const subscribeToCombatEvents = async () => {
+      for (const { realmEntityId } of realmEntityIds) {
+        const observable = await createCombatEvents(realmEntityId);
+        observable.subscribe((event) => {
+          if (event) {
+            const notification = createCombatNotification(parseCombatEvent(event));
+            addUniqueNotifications([notification], setNotifications);
+          }
+        });
+      }
+    };
+    subscribeToCombatEvents();
+  }, [realmEntityId]);
 
   /**
    * Claimable orders notifications
