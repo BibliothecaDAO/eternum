@@ -512,7 +512,7 @@ fn test_attacker_in_transit() {
     starknet::testing::set_contract_address(world.executor());
     set!(world, (
         ArrivalTime { 
-            entity_id: attacker_group_id, 
+            entity_id: attacker_unit_id, 
             arrives_at: 1001 
         }
     ));
