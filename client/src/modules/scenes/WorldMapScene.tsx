@@ -1,5 +1,5 @@
 // @ts-ignore
-import { Model as WorldMap } from "../../components/worldmap/WorldMap.jsx";
+import WorldMap from "../../components/worldmap/WorldMap.jsx";
 // @ts-ignore
 import { Flags } from "../../components/worldmap/Flags.jsx";
 import HyperstructureStarted from "../../components/worldmap/hyperstructures/models/HyperstructureStarted";
@@ -9,13 +9,15 @@ import useUIStore from "../../hooks/store/useUIStore.js";
 // import { TransformControls } from "@react-three/drei";
 import Arcs from "../../components/worldmap/Arcs.jsx";
 import { useGetCaravansWithResourcesChest } from "../../hooks/helpers/useResources.js";
-import { useEffect, useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useCaravan } from "../../hooks/helpers/useCaravans.js";
 import useRealmStore from "../../hooks/store/useRealmStore.js";
 import { useGetRealm } from "../../hooks/helpers/useRealm.js";
 import { getRealmPositionFromContractPosition } from "../../utils/utils.js";
 
 export const WorldMapScene = () => {
+  const worldRef = useRef();
+
   const hyperstructures = useUIStore((state) => state.hyperstructures);
   const { getCaravanInfo } = useCaravan();
   const { caravansAtPositionWithInventory: caravanIds } = useGetCaravansWithResourcesChest();
@@ -36,7 +38,7 @@ export const WorldMapScene = () => {
   return (
     <>
       <Flags />
-      <WorldMap />
+      <WorldMap ref={worldRef} />
       {hyperstructures.map((hyperstructure, i) => {
         if (hyperstructure) {
           if (hyperstructure.progress == 100) {

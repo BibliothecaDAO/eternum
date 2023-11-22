@@ -29,49 +29,36 @@ const WaterModel = () => {
     textureWidth: 1024,
     textureHeight: 1024,
   });
-  return (
-    <primitive
-      object={water}
-      rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, 0, 0]}
-    />
-  );
+  return <primitive object={water} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} />;
 };
-export function Model(props) {
+const Model = React.forwardRef((props, worldMapRef) => {
   const { nodes, materials } = useGLTF("/models/world_map_13-transformed.glb");
-  const { nodes: nodes2, materials: materials2 } = useGLTF(
-    "/models/world_map_8-transformed.glb",
-  );
-  const worldMapRef = useRef();
+  const { nodes: nodes2, materials: materials2 } = useGLTF("/models/world_map_8-transformed.glb");
 
-  const { worldmapPosition, worldmapScale, metalness, roughness } = useControls(
-    {
-      worldmapPosition: {
-        value: { x: 0, z: 0, y: 0 },
-        step: 0.01,
-      },
-      worldmapScale: {
-        value: 201.05,
-        step: 0.05,
-      },
-      metalness: {
-        value: 0.63,
-        step: 0.001,
-        max: 1,
-        min: 0,
-      },
-      roughness: {
-        value: 0.71,
-        step: 0.001,
-        max: 1,
-        min: 0,
-      },
+  const { worldmapPosition, worldmapScale, metalness, roughness } = useControls({
+    worldmapPosition: {
+      value: { x: 0, z: 0, y: 0 },
+      step: 0.01,
     },
-  );
+    worldmapScale: {
+      value: 201.05,
+      step: 0.05,
+    },
+    metalness: {
+      value: 0.63,
+      step: 0.001,
+      max: 1,
+      min: 0,
+    },
+    roughness: {
+      value: 0.71,
+      step: 0.001,
+      max: 1,
+      min: 0,
+    },
+  });
 
-  const setIsLoadingScreenEnabled = useUIStore(
-    (state) => state.setIsLoadingScreenEnabled,
-  );
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
   useEffect(() => {
     setTimeout(() => {
@@ -83,17 +70,8 @@ export function Model(props) {
 
   const targetGeometry = nodes.continents.geometry;
 
-  const gradient = [
-    "#fafafa",
-    "#ebd09b",
-    "#42613e",
-    "#778741",
-    "#fafafa",
-    "#fafafa",
-  ];
-  const geometryColors = new Float32Array(
-    targetGeometry.attributes.position.count * 3,
-  );
+  const gradient = ["#fafafa", "#ebd09b", "#42613e", "#778741", "#fafafa", "#fafafa"];
+  const geometryColors = new Float32Array(targetGeometry.attributes.position.count * 3);
 
   useEffect(() => {
     let maxYPosition = 0;
@@ -111,53 +89,43 @@ export function Model(props) {
     for (let i = 0; i < geometryColors.length; i += 3) {
       const yPosition = targetGeometry.attributes.position.array[i + 1];
       const colorIndex = Math.floor(
-        ((yPosition - minYPosition) / (maxYPosition - minYPosition)) *
-          (gradient.length - 1),
+        ((yPosition - minYPosition) / (maxYPosition - minYPosition)) * (gradient.length - 1),
       );
       color.set(gradient[colorIndex]);
       geometryColors[i] = color.r;
       geometryColors[i + 1] = color.g;
       geometryColors[i + 2] = color.b;
     }
-    targetGeometry.setAttribute(
-      "color",
-      new THREE.BufferAttribute(geometryColors, 3),
-    );
+    targetGeometry.setAttribute("color", new THREE.BufferAttribute(geometryColors, 3));
     worldMapRef.current.updateMatrix();
   }, []);
 
   return (
-    <>
-      <group {...props} dispose={null}>
-        {/* <WaterModel /> */}
-        <mesh
-          geometry={nodes2.ocean.geometry}
-          material={materials2.Ocean}
-          position={[0, -0.01, 0]}
-          scale={[worldmapScale, worldmapScale, worldmapScale]}
-        />
-        <mesh
-          ref={worldMapRef}
-          matrixAutoUpdate={false}
-          geometry={nodes.continents.geometry}
-          scale={[worldmapScale, worldmapScale, worldmapScale]}
-          position={[
-            worldmapPosition.x,
-            worldmapPosition.y,
-            worldmapPosition.z,
-          ]}
-        >
-          <meshStandardMaterial
-            flatShading
-            vertexColors
-            metalness={metalness}
-            roughness={roughness}
-          ></meshStandardMaterial>
-        </mesh>
-      </group>
-    </>
+    <group {...props} dispose={null}>
+      {/* <WaterModel /> */}
+      <mesh
+        geometry={nodes2.ocean.geometry}
+        material={materials2.Ocean}
+        position={[0, -0.01, 0]}
+        scale={[worldmapScale, worldmapScale, worldmapScale]}
+      />
+      <mesh
+        ref={worldMapRef}
+        matrixAutoUpdate={false}
+        geometry={nodes.continents.geometry}
+        scale={[worldmapScale, worldmapScale, worldmapScale]}
+        position={[worldmapPosition.x, worldmapPosition.y, worldmapPosition.z]}
+      >
+        <meshStandardMaterial
+          flatShading
+          vertexColors
+          metalness={metalness}
+          roughness={roughness}
+        ></meshStandardMaterial>
+      </mesh>
+    </group>
   );
-}
+});
 
+export default Model;
 useGLTF.preload("/models/world_map_13-transformed.glb");
-useGLTF.preload("/models/world_map_8-transformed.glb");

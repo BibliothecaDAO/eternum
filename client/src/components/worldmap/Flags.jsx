@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useGLTF, Html } from "@react-three/drei";
 import realmsJson from "../../geodata/realms.json";
+import flagsHeights from "../../geodata/flags_heights.json";
 import realmsOrders from "../../geodata/realms_raw.json";
 import * as THREE from "three";
 import useUIStore from "../../hooks/store/useUIStore";
@@ -172,7 +173,7 @@ export function Flags(props) {
       orderRealms.forEach((realm, i) => {
         const x = realmsJson.features[realm.realm_id - 1].xy[0];
         const y = realmsJson.features[realm.realm_id - 1].xy[1];
-        const z = -0.7;
+        const z = -0.92 - flagsHeights[realm.realm_id - 1];
         _position.set(x, y, z);
         dummy.position.copy(_position);
         dummy.rotateZ(
