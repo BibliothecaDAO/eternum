@@ -3,7 +3,6 @@ import { ReactComponent as Crown } from "../assets/icons/common/crown-circle-out
 import { ReactComponent as Settings } from "../assets/icons/common/settings.svg";
 import { ReactComponent as Muted } from "../assets/icons/common/muted.svg";
 import { ReactComponent as Unmuted } from "../assets/icons/common/unmuted.svg";
-import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
 import { SecondaryPopup } from "../elements/SecondaryPopup";
 import { Headline } from "../elements/Headline";
 import SettleRealmComponent from "./cityview/realm/SettleRealmComponent";

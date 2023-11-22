@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { SecondaryPopup } from "../../elements/SecondaryPopup";
-import { ReactComponent as CloseIcon } from "../../assets/icons/common/cross.svg";
 import Button from "../../elements/Button";
 import { OrderIcon } from "../../elements/OrderIcon";
 import { ResourceCost } from "../../elements/ResourceCost";

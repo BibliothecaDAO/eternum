@@ -1,4 +1,4 @@
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas } from "@react-three/fiber";
 import { WorldMapScene } from "./WorldMapScene";
 import { RealmCityViewScene } from "./RealmCityViewScene";
 import useUIStore from "../../hooks/store/useUIStore";
