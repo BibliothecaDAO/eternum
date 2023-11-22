@@ -3,7 +3,7 @@ use eternum::models::resources::{Resource};
 
 use eternum::models::owner::{Owner};
 use eternum::models::combat::{
-    Health, Combat, Duty
+    Health, TownWatch, Duty
 };
 
 use eternum::systems::config::contracts::config_systems;

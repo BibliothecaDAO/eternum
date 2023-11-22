@@ -16,7 +16,7 @@ mod combat_systems {
     use eternum::models::realm::Realm;
     use eternum::models::quantity::{Quantity, QuantityTrait};    
     use eternum::models::combat::{
-        Attack, Health, Defence, Duty, Combat
+        Attack, Health, Defence, Duty, TownWatch
     };
     
 
@@ -570,7 +570,7 @@ mod combat_systems {
             let caller = starknet::get_caller_address();
 
             let target_town_watch_id 
-                = get!(world, target_realm_entity_id, Combat).town_watch_id;
+                = get!(world, target_realm_entity_id, TownWatch).town_watch_id;
 
             let mut target_town_watch_health = get!(world, target_town_watch_id, Health);
             assert(target_town_watch_health.value > 0, 'target is dead');
@@ -741,7 +741,7 @@ mod combat_systems {
             let mut attacker_defence = get!(world, attacker_id, Defence);
             
             let target_town_watch_id 
-                = get!(world, target_realm_entity_id, Combat).town_watch_id;
+                = get!(world, target_realm_entity_id, TownWatch).town_watch_id;
 
             let target_town_watch_health = get!(world, target_town_watch_id, Health);
             let target_town_watch_attack = get!(world, target_town_watch_id, Attack);

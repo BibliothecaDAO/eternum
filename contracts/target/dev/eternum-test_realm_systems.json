@@ -103,7 +103,7 @@
     "0x31",
     "0x314f6a24aae61d8fad27f1a6eaf6d5e2bc26f6bd81e169a615c6f0547e1209e",
     "0x5f33a7875d002e78c0d3209994c6742e90b81ecf315ab8f7c7df9798043e7b",
-    "0x25ddfe5b24ccb0385d21107e9f75b54257580da1ecc170ad2729e68d13c8a6e",
+    "0x153e4f2f70901a1e384af7f3a87088d37c6c936a5ae897ced4c4704e0230e8",
     "0x232a419c7409b0ca526a5d8e3577ebc21187f51cdbf260afcb3c0ac7a816987",
     "0x26db025c32b7d76a8c54a2c6aff96dc80be0b2ff4448277abbc04e5ee2b4f38",
     "0x36",
@@ -264,7 +264,7 @@
     "0x39",
     "0x37",
     "0x35",
-    "0x436f6d626174",
+    "0x546f776e5761746368",
     "0x34",
     "0x456e746974794f776e6572",
     "0x33",
@@ -3148,7 +3148,7 @@
       ],
       [
         53,
-        "eternum::models::combat::Combat"
+        "eternum::models::combat::TownWatch"
       ],
       [
         54,
@@ -4342,23 +4342,23 @@
       ],
       [
         245,
-        "struct_construct<eternum::models::combat::Combat>"
+        "struct_construct<eternum::models::combat::TownWatch>"
       ],
       [
         246,
-        "snapshot_take<eternum::models::combat::Combat>"
+        "snapshot_take<eternum::models::combat::TownWatch>"
       ],
       [
         247,
-        "drop<eternum::models::combat::Combat>"
+        "drop<eternum::models::combat::TownWatch>"
       ],
       [
         248,
-        "struct_deconstruct<eternum::models::combat::Combat>"
+        "struct_deconstruct<eternum::models::combat::TownWatch>"
       ],
       [
         249,
-        "felt252_const<74145855594868>"
+        "felt252_const<1557558511973617132392>"
       ],
       [
         250,

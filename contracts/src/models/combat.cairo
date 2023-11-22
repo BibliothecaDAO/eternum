@@ -21,7 +21,7 @@ struct Defence {
 }
 
 #[derive(Model, Copy, Drop, Serde)]
-struct Combat {
+struct TownWatch {
     #[key]
     entity_id: u128,
     town_watch_id: u128

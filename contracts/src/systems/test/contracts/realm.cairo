@@ -7,7 +7,7 @@ mod test_realm_systems {
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::Position;
     use eternum::models::metadata::EntityMetadata;
-    use eternum::models::combat::Combat;
+    use eternum::models::combat::TownWatch;
     use eternum::models::config::{ CapacityConfig };
     use eternum::constants::{ WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE };
 
@@ -73,7 +73,7 @@ mod test_realm_systems {
                 = get!(world, (WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE), CapacityConfig).weight_gram;
                     
             set!(world, (
-                Combat {
+                TownWatch {
                     entity_id: entity_id.into(),
                     town_watch_id: combat_town_watch_id,
                 },

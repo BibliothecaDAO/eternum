@@ -7,7 +7,7 @@ use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::quantity::{Quantity, QuantityTrait};    
 use eternum::models::combat::{
     Attack,   
-    Health, Defence, Duty, Combat
+    Health, Defence, Duty, TownWatch
 };
 
 use eternum::systems::config::contracts::config_systems;

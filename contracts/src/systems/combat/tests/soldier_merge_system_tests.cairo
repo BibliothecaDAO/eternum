@@ -11,7 +11,7 @@ use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::quantity::{Quantity, QuantityTrait};    
 use eternum::models::combat::{
     Attack,   
-    Health, Defence, Duty, Combat
+    Health, Defence, Duty, TownWatch
 };
 
 use eternum::systems::config::contracts::config_systems;
@@ -169,7 +169,7 @@ fn test_merge_to_town_watch() {
 
     let (world, caller_id, new_units, soldier_systems_dispatcher) = setup();
 
-    let entity_combat = get!(world, caller_id, Combat);
+    let entity_combat = get!(world, caller_id, TownWatch);
     let caller_town_watch_id = entity_combat.town_watch_id;
 
 

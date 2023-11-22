@@ -11,7 +11,7 @@ use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::quantity::{Quantity, QuantityTrait};    
 use eternum::models::combat::{
     Attack,   
-    Health, Defence, Duty, Combat
+    Health, Defence, Duty, TownWatch
 };
 
 use eternum::systems::config::contracts::config_systems;
@@ -153,7 +153,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
         contract_address_const::<'attacker'>()
     );
     
-    let attacker_combat = get!(world, attacker_realm_entity_id, Combat);
+    let attacker_combat = get!(world, attacker_realm_entity_id, TownWatch);
     let attacker_town_watch_id = attacker_combat.town_watch_id;
     
 
@@ -170,7 +170,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
         contract_address_const::<'target'>()
     );
 
-    let target_combat = get!(world, target_realm_entity_id, Combat);
+    let target_combat = get!(world, target_realm_entity_id, TownWatch);
     let target_town_watch_id = target_combat.town_watch_id;
     
     // buy soldiers for target
