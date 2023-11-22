@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useRef } from "react";
+import { useMemo, useRef } from "react";
 import { Trail } from "@react-three/drei";
 
 const material = new THREE.MeshBasicMaterial({ color: "orangered" });
@@ -8,21 +8,22 @@ const sphere = new THREE.SphereGeometry(0.1, 32, 32);
 
 const Arcs = ({ paths }) => {
   const spheresRefs = useRef([]);
-  const curves = [];
-  useEffect(() => {
-    paths.forEach((path, i) => {
-      const point_1 = new THREE.Vector3(-path.from.x, -0.3, -path.from.y);
-      const point_2 = new THREE.Vector3(-path.to.x, -0.3, -path.to.y);
-      const pathLength = point_1.distanceTo(point_2);
-      const pointBetweenFromAndTo = new THREE.Vector3(
-        (-path.from.x + -path.to.x) / 2,
-        Math.max(pathLength / 2, 3),
-        (-path.from.y + -path.to.y) / 2,
-      );
-      const curve = new THREE.QuadraticBezierCurve3(point_1, pointBetweenFromAndTo, point_2);
-      curves.push(curve);
-    });
-  }, [paths]);
+
+  const curves = useMemo(
+    () =>
+      paths.map((path, i) => {
+        const point_1 = new THREE.Vector3(-path.from.x, -0.3, -path.from.y);
+        const point_2 = new THREE.Vector3(-path.to.x, -0.3, -path.to.y);
+        const pathLength = point_1.distanceTo(point_2);
+        const pointBetweenFromAndTo = new THREE.Vector3(
+          (-path.from.x + -path.to.x) / 2,
+          Math.max(pathLength / 2, 3),
+          (-path.from.y + -path.to.y) / 2,
+        );
+        return new THREE.QuadraticBezierCurve3(point_1, pointBetweenFromAndTo, point_2);
+      }),
+    [paths],
+  );
 
   let t = 0;
   useFrame(() => {
@@ -35,7 +36,7 @@ const Arcs = ({ paths }) => {
 
   return (
     <>
-      {paths.map((path, i) => {
+      {curves.map((curve, i) => {
         return (
           <Trail
             key={i}
