@@ -20,7 +20,9 @@ export const Camera = () => {
   const cameraTarget = useUIStore((state) => state.cameraTarget);
 
   const dLightRef = useRef<any>();
-  useHelper(dLightRef, THREE.DirectionalLightHelper, 50, "hotpink");
+  if (import.meta.env.DEV) {
+    useHelper(dLightRef, THREE.DirectionalLightHelper, 50, "hotpink");
+  }
 
   const { lightPosition, bias } = useControls({
     lightPosition: {
