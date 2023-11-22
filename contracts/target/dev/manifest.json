@@ -973,7 +973,7 @@
     {
       "name": "combat_systems",
       "address": null,
-      "class_hash": "0x581724d521b6c84a590f9ab222af5feb258c0e20c66b4a3c3660fc4eaa7e61b",
+      "class_hash": "0x3517436f66c614424454f59dc9ef618736179141a1d2c443beafc9ee7a21f87",
       "abi": [
         {
           "type": "impl",

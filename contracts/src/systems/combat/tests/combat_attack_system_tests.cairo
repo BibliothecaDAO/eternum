@@ -67,7 +67,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
         array![ 
             // pay for each soldier with the following
             (ResourceTypes::WOOD, 40),
-            (ResourceTypes::COAL, 40),
+            (ResourceTypes::WHEAT, 40),
         ].span(),
         100,
         200
@@ -135,15 +135,13 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
 
     // set up attacker
     set!(world, (Owner { entity_id: attacker_realm_entity_id, address: contract_address_const::<'attacker'>()}));
-    set!(world, (Resource { entity_id: attacker_realm_entity_id, resource_type: ResourceTypes::COAL, balance: 5000 }));
+    set!(world, (Resource { entity_id: attacker_realm_entity_id, resource_type: ResourceTypes::WHEAT, balance: 5000 }));
     set!(world, (Resource { entity_id: attacker_realm_entity_id, resource_type: ResourceTypes::WOOD, balance: 5000 }));
 
 
     // set up target
     set!(world, (Owner { entity_id: target_realm_entity_id, address: contract_address_const::<'target'>()}));
-    set!(world, (Resource { entity_id: target_realm_entity_id, resource_type: ResourceTypes::WHEAT, balance: 9000 }));
-    set!(world, (Resource { entity_id: target_realm_entity_id, resource_type: ResourceTypes::FISH, balance: 9000 }));
-    set!(world, (Resource { entity_id: target_realm_entity_id, resource_type: ResourceTypes::COAL, balance: 5000 }));
+    set!(world, (Resource { entity_id: target_realm_entity_id, resource_type: ResourceTypes::WHEAT, balance: 5000 }));
     set!(world, (Resource { entity_id: target_realm_entity_id, resource_type: ResourceTypes::WOOD, balance: 5000 }));
 
 
@@ -241,19 +239,6 @@ fn test_attack() {
         attacker_unit_health.value < 100 * ATTACKER_SOLDIER_COUNT 
             || target_unit_health.value < 100 * TARGET_SOLDIER_COUNT,
                 'wrong health value'
-    );
-
-
-    let target_realm_wheat_resource = get!(world, (target_realm_entity_id, ResourceTypes::WHEAT), Resource);
-    assert(
-        target_realm_wheat_resource.balance == 9000 - (100 * ATTACKER_SOLDIER_COUNT),
-                'wrong wheat value'
-    );
-
-    let target_realm_fish_resource = get!(world, (target_realm_entity_id, ResourceTypes::FISH), Resource);
-    assert(
-        target_realm_fish_resource.balance == 9000 - (200 * ATTACKER_SOLDIER_COUNT),
-                'wrong fish value'
     );
 
 }

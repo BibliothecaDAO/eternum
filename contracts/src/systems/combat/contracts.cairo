@@ -580,7 +580,6 @@ mod combat_systems {
             let mut attackers_total_attack = 0;
             let mut attackers_total_defence = 0;
             let mut attackers_total_health = 0;
-            let mut attackers_total_quantity = 0;
             let target_realm_position = get!(world, target_realm_entity_id, Position);
             loop {
                 if index == attacker_ids.len() {
@@ -613,7 +612,6 @@ mod combat_systems {
                 attackers_total_attack += get!(world, attacker_id, Attack).value;
                 attackers_total_defence += get!(world, attacker_id, Defence).value;
                 attackers_total_health += get!(world, attacker_id, Health).value;
-                attackers_total_quantity += get!(world, attacker_id, Quantity).value;
 
                 index +=1;
             };
@@ -644,22 +642,6 @@ mod combat_systems {
                 target_town_watch_health.value -= min(damage, target_town_watch_health.value);
 
                 set!(world, (target_town_watch_attack, target_town_watch_defense, target_town_watch_health));
-
-                // burn target's food (fish and wheat)
-
-                let soldier_config: SoldierConfig = get!(world, SOLDIER_ENTITY_TYPE, SoldierConfig);
-
-                let wheat_burn_amount = soldier_config.wheat_burn_per_soldier * attackers_total_quantity;
-                let mut target_wheat_resource
-                    = get!(world, (target_realm_entity_id, ResourceTypes::WHEAT), Resource);
-                target_wheat_resource.balance -= min(wheat_burn_amount, target_wheat_resource.balance);
-
-                let fish_burn_amount = soldier_config.fish_burn_per_soldier * attackers_total_quantity;
-                let mut target_fish_resource 
-                    = get!(world, (target_realm_entity_id, ResourceTypes::FISH), Resource);
-                target_fish_resource.balance -= min(fish_burn_amount, target_fish_resource.balance);
-
-                set!(world, (target_fish_resource, target_wheat_resource));
 
             } else {
 
@@ -772,13 +754,29 @@ mod combat_systems {
             
 
             if attack_successful {
-                // attack was a success 
 
+                // burn target's food (fish and wheat)
+                let attacker_quantity = get!(world, attacker_id, Quantity);
+                let soldier_config: SoldierConfig = get!(world, SOLDIER_ENTITY_TYPE, SoldierConfig);
+
+                let wheat_burn_amount = soldier_config.wheat_burn_per_soldier * attacker_quantity.value;
+                let mut target_wheat_resource
+                    = get!(world, (target_realm_entity_id, ResourceTypes::WHEAT), Resource);
+                target_wheat_resource.balance -= min(wheat_burn_amount, target_wheat_resource.balance);
+
+                let fish_burn_amount = soldier_config.fish_burn_per_soldier * attacker_quantity.value;
+                let mut target_fish_resource 
+                    = get!(world, (target_realm_entity_id, ResourceTypes::FISH), Resource);
+                target_fish_resource.balance -= min(fish_burn_amount, target_fish_resource.balance);
+
+                set!(world, (target_fish_resource, target_wheat_resource));
+
+
+                // steal resources
                 let mut stolen_resource_types: Array<u8> = array![];
                 let mut stolen_resource_amounts: Array<u128> = array![];
 
                 let attacker_capacity = get!(world, attacker_id, Capacity);
-                let attacker_quantity = get!(world, attacker_id, Quantity);
                 let attacker_total_weight_capacity 
                             = attacker_capacity.weight_gram * attacker_quantity.get_value();
 
