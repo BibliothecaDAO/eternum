@@ -312,6 +312,8 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
     <group {...props} dispose={null}>
       <group name="Scene">
         <mesh
+          castShadow
+          receiveShadow
           name="archer_tower"
           geometry={nodes.archer_tower.geometry}
           material={materials.PaletteMaterial004}
@@ -319,8 +321,16 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
           rotation={[0.011296, 0.828387, -0.004794]}
           scale={[35.000004, 35, 35]}
         />
-        <mesh name="barracks" geometry={nodes.barracks.geometry} material={materials.PaletteMaterial004} />
         <mesh
+          castShadow
+          receiveShadow
+          name="barracks"
+          geometry={nodes.barracks.geometry}
+          material={materials.PaletteMaterial004}
+        />
+        <mesh
+          castShadow
+          receiveShadow
           name="mage_tower"
           geometry={nodes.mage_tower.geometry}
           material={materials.PaletteMaterial004}
@@ -328,6 +338,8 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
           scale={31.884161}
         />
         <mesh
+          castShadow
+          receiveShadow
           name="castle"
           geometry={nodes.castle.geometry}
           material={materials.PaletteMaterial004}
@@ -335,11 +347,15 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         />
         <group name="market-tent">
           <mesh
+            castShadow
+            receiveShadow
             name="army-tent-big001"
             geometry={nodes["army-tent-big001"].geometry}
             material={materials.PaletteMaterial001}
           />
           <mesh
+            castShadow
+            receiveShadow
             name="army-tent-big001_1"
             geometry={nodes["army-tent-big001_1"].geometry}
             material={materials.PaletteMaterial006}
@@ -347,11 +363,15 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <group name="market-tent001" position={[132.23587, 7.119616, 80.059448]} rotation={[0, -1.343678, 0]}>
           <mesh
+            castShadow
+            receiveShadow
             name="army-tent-big001"
             geometry={nodes["army-tent-big001"].geometry}
             material={materials.PaletteMaterial001}
           />
           <mesh
+            castShadow
+            receiveShadow
             name="army-tent-big001_1"
             geometry={nodes["army-tent-big001_1"].geometry}
             material={materials.PaletteMaterial006}
@@ -363,11 +383,15 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
           rotation={[Math.PI, -0.878875, Math.PI]}
         >
           <mesh
+            castShadow
+            receiveShadow
             name="army-tent-big001"
             geometry={nodes["army-tent-big001"].geometry}
             material={materials.PaletteMaterial001}
           />
           <mesh
+            castShadow
+            receiveShadow
             name="army-tent-big001_1"
             geometry={nodes["army-tent-big001_1"].geometry}
             material={materials.PaletteMaterial006}
@@ -379,11 +403,15 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
           rotation={[Math.PI, -0.193094, Math.PI]}
         >
           <mesh
+            castShadow
+            receiveShadow
             name="army-tent-big001"
             geometry={nodes["army-tent-big001"].geometry}
             material={materials.PaletteMaterial001}
           />
           <mesh
+            castShadow
+            receiveShadow
             name="army-tent-big001_1"
             geometry={nodes["army-tent-big001_1"].geometry}
             material={materials.PaletteMaterial006}
@@ -391,12 +419,16 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <Farms />
         <mesh
+          castShadow
+          receiveShadow
           name="ocean"
           geometry={nodes.ocean.geometry}
           material={materials.PaletteMaterial015}
           scale={[100, 1, 100]}
         />
         <mesh
+          castShadow
+          receiveShadow
           name="rivers"
           geometry={nodes.rivers.geometry}
           material={materials.PaletteMaterial016}
@@ -404,12 +436,20 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
           scale={35}
         />
         <mesh
+          castShadow
+          receiveShadow
           name="ocean_small"
           geometry={nodes.ocean_small.geometry}
           material={materials.PaletteMaterial015}
           scale={[1, 0.01, 1]}
         />
-        <mesh name="forest" geometry={nodes.forest.geometry} material={materials.PaletteMaterial018} />
+        <mesh
+          castShadow
+          receiveShadow
+          name="forest"
+          geometry={nodes.forest.geometry}
+          material={materials.PaletteMaterial018}
+        />
         <group
           name="deciduous-tree189"
           position={[494.866547, 4.604025, 284.570831]}
@@ -417,11 +457,15 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
           scale={[0.602762, 0.776755, 0.602762]}
         >
           <mesh
+            castShadow
+            receiveShadow
             name="deciduous-tree001"
             geometry={nodes["deciduous-tree001"].geometry}
             material={materials.PaletteMaterial018}
           />
           <mesh
+            castShadow
+            receiveShadow
             name="deciduous-tree001_1"
             geometry={nodes["deciduous-tree001_1"].geometry}
             material={materials.PaletteMaterial006}
@@ -434,19 +478,31 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
           scale={[0.602762, 0.776755, 0.602762]}
         >
           <mesh
+            castShadow
+            receiveShadow
             name="deciduous-tree001"
             geometry={nodes["deciduous-tree001"].geometry}
             material={materials.PaletteMaterial018}
           />
           <mesh
+            castShadow
+            receiveShadow
             name="deciduous-tree001_1"
             geometry={nodes["deciduous-tree001_1"].geometry}
             material={materials.PaletteMaterial006}
           />
         </group>
-        <mesh name="forest-labor" geometry={nodes["forest-labor"].geometry} material={materials.PaletteMaterial018} />
+        <mesh
+          castShadow
+          receiveShadow
+          name="forest-labor"
+          geometry={nodes["forest-labor"].geometry}
+          material={materials.PaletteMaterial018}
+        />
         {!enabledMines[0] && (
           <mesh
+            castShadow
+            receiveShadow
             name="forest-labor_mine-1"
             geometry={nodes["forest-labor_mine-1"].geometry}
             material={materials.PaletteMaterial018}
@@ -455,6 +511,8 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         )}
         {!enabledMines[1] && (
           <mesh
+            castShadow
+            receiveShadow
             name="forest-labor_mine-2"
             geometry={nodes["forest-labor_mine-2"].geometry}
             material={materials.PaletteMaterial018}
@@ -464,6 +522,8 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         )}
         {!enabledMines[2] && (
           <mesh
+            castShadow
+            receiveShadow
             name="forest-labor_mine-3"
             geometry={nodes["forest-labor_mine-3"].geometry}
             material={materials.PaletteMaterial018}
@@ -473,6 +533,8 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         )}
         {!enabledMines[3] && (
           <mesh
+            castShadow
+            receiveShadow
             name="forest-labor_mine-4"
             geometry={nodes["forest-labor_mine-4"].geometry}
             material={materials.PaletteMaterial018}
@@ -482,6 +544,8 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         )}
         {!enabledMines[4] && (
           <mesh
+            castShadow
+            receiveShadow
             name="forest-labor_mine-5"
             geometry={nodes["forest-labor_mine-5"].geometry}
             material={materials.PaletteMaterial018}
@@ -491,6 +555,8 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         )}
         {!enabledMines[5] && (
           <mesh
+            castShadow
+            receiveShadow
             name="forest-labor_mine-6"
             geometry={nodes["forest-labor_mine-6"].geometry}
             material={materials.PaletteMaterial018}
@@ -500,6 +566,8 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         )}
         {!enabledMines[6] && (
           <mesh
+            castShadow
+            receiveShadow
             name="forest-labor_mine-7"
             geometry={nodes["forest-labor_mine-7"].geometry}
             material={materials.PaletteMaterial018}
@@ -508,13 +576,55 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
           />
         )}
         <group name="terrain" position={[0, -0.002192, 0]}>
-          <mesh name="terrain_1" geometry={nodes.terrain_1.geometry} material={materials.PaletteMaterial017} />
-          <mesh name="terrain_2" geometry={nodes.terrain_2.geometry} material={materials.PaletteMaterial005} />
-          <mesh name="terrain_3" geometry={nodes.terrain_3.geometry} material={materials.PaletteMaterial019} />
-          <mesh name="terrain_4" geometry={nodes.terrain_4.geometry} material={materials.PaletteMaterial001} />
-          <mesh name="terrain_5" geometry={nodes.terrain_5.geometry} material={materials.PaletteMaterial003} />
-          <mesh name="terrain_6" geometry={nodes.terrain_6.geometry} material={materials.PaletteMaterial004} />
-          <mesh name="terrain_7" geometry={nodes.terrain_7.geometry} material={materials.PaletteMaterial018} />
+          <mesh
+            castShadow
+            receiveShadow
+            name="terrain_1"
+            geometry={nodes.terrain_1.geometry}
+            material={materials.PaletteMaterial017}
+          />
+          <mesh
+            castShadow
+            receiveShadow
+            name="terrain_2"
+            geometry={nodes.terrain_2.geometry}
+            material={materials.PaletteMaterial005}
+          />
+          <mesh
+            castShadow
+            receiveShadow
+            name="terrain_3"
+            geometry={nodes.terrain_3.geometry}
+            material={materials.PaletteMaterial019}
+          />
+          <mesh
+            castShadow
+            receiveShadow
+            name="terrain_4"
+            geometry={nodes.terrain_4.geometry}
+            material={materials.PaletteMaterial001}
+          />
+          <mesh
+            castShadow
+            receiveShadow
+            name="terrain_5"
+            geometry={nodes.terrain_5.geometry}
+            material={materials.PaletteMaterial003}
+          />
+          <mesh
+            castShadow
+            receiveShadow
+            name="terrain_6"
+            geometry={nodes.terrain_6.geometry}
+            material={materials.PaletteMaterial004}
+          />
+          <mesh
+            castShadow
+            receiveShadow
+            name="terrain_7"
+            geometry={nodes.terrain_7.geometry}
+            material={materials.PaletteMaterial018}
+          />
         </group>
         <group
           onPointerEnter={() => setHoveredArea("market")}
@@ -529,21 +639,24 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
             </Html>
           )}
           <mesh
+            receiveShadow
             name="floor_market_1"
             geometry={nodes.floor_market_1.geometry}
             material={materials.PaletteMaterial017}
           />
           <mesh
+            receiveShadow
             name="floor_market_2"
             geometry={nodes.floor_market_2.geometry}
             material={materials.PaletteMaterial001}
           />
           <mesh
+            receiveShadow
             name="floor_market_3"
             geometry={nodes.floor_market_3.geometry}
             material={materials.PaletteMaterial003}
           />
-          <mesh geometry={nodes.floor_market_3.geometry}>
+          <mesh receiveShadow geometry={nodes.floor_market_3.geometry}>
             <meshStandardMaterial
               transparent={true}
               color="#806a53"
@@ -566,10 +679,25 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
               <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">Ranch</div>
             </Html>
           )}
-          <mesh name="floor_ranch_1" geometry={nodes.floor_ranch_1.geometry} material={materials.PaletteMaterial005} />
-          <mesh name="floor_ranch_2" geometry={nodes.floor_ranch_2.geometry} material={materials.PaletteMaterial019} />
-          <mesh name="floor_ranch_3" geometry={nodes.floor_ranch_3.geometry} material={materials.PaletteMaterial001} />
-          <mesh geometry={nodes.floor_ranch_3.geometry}>
+          <mesh
+            receiveShadow
+            name="floor_ranch_1"
+            geometry={nodes.floor_ranch_1.geometry}
+            material={materials.PaletteMaterial005}
+          />
+          <mesh
+            receiveShadow
+            name="floor_ranch_2"
+            geometry={nodes.floor_ranch_2.geometry}
+            material={materials.PaletteMaterial019}
+          />
+          <mesh
+            receiveShadow
+            name="floor_ranch_3"
+            geometry={nodes.floor_ranch_3.geometry}
+            material={materials.PaletteMaterial001}
+          />
+          <mesh receiveShadow geometry={nodes.floor_ranch_3.geometry}>
             <meshStandardMaterial
               transparent={true}
               color="#806a53"
@@ -587,10 +715,25 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
           name="floor_labor"
           position={[0, -0.002192, 0]}
         >
-          <mesh name="floor_labor_1" geometry={nodes.floor_labor_1.geometry} material={materials.PaletteMaterial005} />
-          <mesh name="floor_labor_2" geometry={nodes.floor_labor_2.geometry} material={materials.PaletteMaterial019} />
-          <mesh name="floor_labor_3" geometry={nodes.floor_labor_3.geometry} material={materials.PaletteMaterial001} />
-          <mesh geometry={nodes.floor_labor_2.geometry}>
+          <mesh
+            receiveShadow
+            name="floor_labor_1"
+            geometry={nodes.floor_labor_1.geometry}
+            material={materials.PaletteMaterial005}
+          />
+          <mesh
+            receiveShadow
+            name="floor_labor_2"
+            geometry={nodes.floor_labor_2.geometry}
+            material={materials.PaletteMaterial019}
+          />
+          <mesh
+            receiveShadow
+            name="floor_labor_3"
+            geometry={nodes.floor_labor_3.geometry}
+            material={materials.PaletteMaterial001}
+          />
+          <mesh receiveShadow geometry={nodes.floor_labor_2.geometry}>
             <meshStandardMaterial
               transparent={true}
               color="#806a53"
@@ -611,10 +754,25 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
           position={[0, -0.002192, 0]}
         >
           {hoveredArea === "farm" && <FarmsRegionTooltip />}
-          <mesh name="terrain001" geometry={nodes.terrain001.geometry} material={materials.PaletteMaterial005} />
-          <mesh name="terrain001_1" geometry={nodes.terrain001_1.geometry} material={materials.PaletteMaterial019} />
-          <mesh name="terrain001_2" geometry={nodes.terrain001_2.geometry} material={materials.PaletteMaterial001} />
-          <mesh geometry={nodes.terrain001.geometry}>
+          <mesh
+            receiveShadow
+            name="terrain001"
+            geometry={nodes.terrain001.geometry}
+            material={materials.PaletteMaterial005}
+          />
+          <mesh
+            receiveShadow
+            name="terrain001_1"
+            geometry={nodes.terrain001_1.geometry}
+            material={materials.PaletteMaterial019}
+          />
+          <mesh
+            receiveShadow
+            name="terrain001_2"
+            geometry={nodes.terrain001_2.geometry}
+            material={materials.PaletteMaterial001}
+          />
+          <mesh receiveShadow geometry={nodes.terrain001.geometry}>
             <meshStandardMaterial
               transparent={true}
               color="#806a53"
@@ -635,10 +793,25 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
           position={[0, -0.002192, 0]}
         >
           {hoveredArea === "fishery" && <FisheryRegionTooltip />}
-          <mesh name="terrain002" geometry={nodes.terrain002.geometry} material={materials.PaletteMaterial005} />
-          <mesh name="terrain002_1" geometry={nodes.terrain002_1.geometry} material={materials.PaletteMaterial019} />
-          <mesh name="terrain002_2" geometry={nodes.terrain002_2.geometry} material={materials.PaletteMaterial001} />
-          <mesh geometry={nodes.terrain002.geometry}>
+          <mesh
+            receiveShadow
+            name="terrain002"
+            geometry={nodes.terrain002.geometry}
+            material={materials.PaletteMaterial005}
+          />
+          <mesh
+            receiveShadow
+            name="terrain002_1"
+            geometry={nodes.terrain002_1.geometry}
+            material={materials.PaletteMaterial019}
+          />
+          <mesh
+            receiveShadow
+            name="terrain002_2"
+            geometry={nodes.terrain002_2.geometry}
+            material={materials.PaletteMaterial001}
+          />
+          <mesh receiveShadow geometry={nodes.terrain002.geometry}>
             <meshStandardMaterial
               transparent={true}
               color="#806a53"
@@ -651,11 +824,13 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <group>
           <instancedMesh
+            castShadow
             args={[nodes.tower.geometry, materials.PaletteMaterial001, 27]}
             name="tower"
             instanceMatrix={nodes.tower.instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes.tower_1.geometry, materials.PaletteMaterial002, 27]}
             name="tower_1"
             instanceMatrix={nodes.tower_1.instanceMatrix}
@@ -663,16 +838,19 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <group>
           <instancedMesh
+            castShadow
             args={[nodes["wall-straight"].geometry, materials.PaletteMaterial001, 134]}
             name="wall-straight"
             instanceMatrix={nodes["wall-straight"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["wall-straight_1"].geometry, materials.PaletteMaterial002, 134]}
             name="wall-straight_1"
             instanceMatrix={nodes["wall-straight_1"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["wall-straight_2"].geometry, materials.PaletteMaterial003, 134]}
             name="wall-straight_2"
             instanceMatrix={nodes["wall-straight_2"].instanceMatrix}
@@ -680,11 +858,13 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <group>
           <instancedMesh
+            castShadow
             args={[nodes.bridge.geometry, materials.PaletteMaterial004, 6]}
             name="bridge"
             instanceMatrix={nodes.bridge.instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes.bridge_1.geometry, materials.PaletteMaterial005, 6]}
             name="bridge_1"
             instanceMatrix={nodes.bridge_1.instanceMatrix}
@@ -692,28 +872,33 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <group>
           <instancedMesh
+            castShadow
             args={[nodes["army-tent-big"].geometry, materials.PaletteMaterial001, 13]}
             name="army-tent-big"
             instanceMatrix={nodes["army-tent-big"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["army-tent-big_1"].geometry, materials.PaletteMaterial006, 13]}
             name="army-tent-big_1"
             instanceMatrix={nodes["army-tent-big_1"].instanceMatrix}
           />
         </group>
         <instancedMesh
+          castShadow
           args={[nodes["tent-small"].geometry, materials.PaletteMaterial001, 27]}
           name="tent-small"
           instanceMatrix={nodes["tent-small"].instanceMatrix}
         />
         <group>
           <instancedMesh
+            castShadow
             args={[nodes.banner.geometry, materials.PaletteMaterial006, 12]}
             name="banner"
             instanceMatrix={nodes.banner.instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes.banner_1.geometry, materials.PaletteMaterial001, 12]}
             name="banner_1"
             instanceMatrix={nodes.banner_1.instanceMatrix}
@@ -721,16 +906,19 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <group>
           <instancedMesh
+            castShadow
             args={[nodes["timber-wall"].geometry, materials.PaletteMaterial006, 50]}
             name="timber-wall"
             instanceMatrix={nodes["timber-wall"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["timber-wall_1"].geometry, materials.PaletteMaterial007, 50]}
             name="timber-wall_1"
             instanceMatrix={nodes["timber-wall_1"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["timber-wall_2"].geometry, materials.PaletteMaterial002, 50]}
             name="timber-wall_2"
             instanceMatrix={nodes["timber-wall_2"].instanceMatrix}
@@ -738,21 +926,25 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <group>
           <instancedMesh
+            castShadow
             args={[nodes.granary.geometry, materials.PaletteMaterial002, 11]}
             name="granary"
             instanceMatrix={nodes.granary.instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes.granary_1.geometry, materials.PaletteMaterial008, 11]}
             name="granary_1"
             instanceMatrix={nodes.granary_1.instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes.granary_2.geometry, materials.PaletteMaterial009, 11]}
             name="granary_2"
             instanceMatrix={nodes.granary_2.instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes.granary_3.geometry, materials.PaletteMaterial006, 11]}
             name="granary_3"
             instanceMatrix={nodes.granary_3.instanceMatrix}
@@ -760,33 +952,39 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <group>
           <instancedMesh
+            castShadow
             args={[nodes["covered-boxes"].geometry, materials.PaletteMaterial001, 9]}
             name="covered-boxes"
             instanceMatrix={nodes["covered-boxes"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["covered-boxes_1"].geometry, materials.PaletteMaterial006, 9]}
             name="covered-boxes_1"
             instanceMatrix={nodes["covered-boxes_1"].instanceMatrix}
           />
         </group>
         <instancedMesh
+          castShadow
           args={[nodes["box-pile"].geometry, materials.PaletteMaterial007, 12]}
           name="box-pile"
           instanceMatrix={nodes["box-pile"].instanceMatrix}
         />
         <instancedMesh
+          castShadow
           args={[nodes["army-tent-big002"].geometry, materials.PaletteMaterial009, 13]}
           name="army-tent-big002"
           instanceMatrix={nodes["army-tent-big002"].instanceMatrix}
         />
         <group>
           <instancedMesh
+            castShadow
             args={[nodes["market-stall"].geometry, materials.PaletteMaterial006, 99]}
             name="market-stall"
             instanceMatrix={nodes["market-stall"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["market-stall_1"].geometry, materials.PaletteMaterial001, 99]}
             name="market-stall_1"
             instanceMatrix={nodes["market-stall_1"].instanceMatrix}
@@ -794,11 +992,13 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <group>
           <instancedMesh
+            castShadow
             args={[nodes.caravan.geometry, materials.PaletteMaterial010, 23]}
             name="caravan"
             instanceMatrix={nodes.caravan.instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes.caravan_1.geometry, materials.PaletteMaterial006, 23]}
             name="caravan_1"
             instanceMatrix={nodes.caravan_1.instanceMatrix}
@@ -806,16 +1006,19 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <group>
           <instancedMesh
+            castShadow
             args={[nodes["store-square"].geometry, materials.PaletteMaterial009, 18]}
             name="store-square"
             instanceMatrix={nodes["store-square"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["store-square_1"].geometry, materials.PaletteMaterial011, 18]}
             name="store-square_1"
             instanceMatrix={nodes["store-square_1"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["store-square_2"].geometry, materials.PaletteMaterial006, 18]}
             name="store-square_2"
             instanceMatrix={nodes["store-square_2"].instanceMatrix}
@@ -823,11 +1026,13 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <group>
           <instancedMesh
+            castShadow
             args={[nodes["roofed-market"].geometry, materials.PaletteMaterial009, 23]}
             name="roofed-market"
             instanceMatrix={nodes["roofed-market"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["roofed-market_1"].geometry, materials.PaletteMaterial006, 23]}
             name="roofed-market_1"
             instanceMatrix={nodes["roofed-market_1"].instanceMatrix}
@@ -835,65 +1040,77 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <group>
           <instancedMesh
+            castShadow
             args={[nodes["triangular-market"].geometry, materials.PaletteMaterial009, 12]}
             name="triangular-market"
             instanceMatrix={nodes["triangular-market"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["triangular-market_1"].geometry, materials.PaletteMaterial006, 12]}
             name="triangular-market_1"
             instanceMatrix={nodes["triangular-market_1"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["triangular-market_2"].geometry, materials.PaletteMaterial011, 12]}
             name="triangular-market_2"
             instanceMatrix={nodes["triangular-market_2"].instanceMatrix}
           />
         </group>
         <instancedMesh
+          castShadow
           args={[nodes.stable.geometry, materials.PaletteMaterial006, 22]}
           name="stable"
           instanceMatrix={nodes.stable.instanceMatrix}
         />
         <instancedMesh
+          castShadow
           args={[nodes["mount-rest"].geometry, materials.PaletteMaterial006, 36]}
           name="mount-rest"
           instanceMatrix={nodes["mount-rest"].instanceMatrix}
         />
         <instancedMesh
+          castShadow
           args={[nodes.fence.geometry, materials.PaletteMaterial006, 700]}
           name="fence"
           instanceMatrix={nodes.fence.instanceMatrix}
         />
         <group>
           <instancedMesh
+            castShadow
             args={[nodes["hay-stack"].geometry, materials.PaletteMaterial012, 37]}
             name="hay-stack"
             instanceMatrix={nodes["hay-stack"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["hay-stack_1"].geometry, materials.PaletteMaterial013, 37]}
             name="hay-stack_1"
             instanceMatrix={nodes["hay-stack_1"].instanceMatrix}
           />
         </group>
         <instancedMesh
+          castShadow
           args={[nodes.crop.geometry, materials.PaletteMaterial014, 54]}
           name="crop"
           instanceMatrix={nodes.crop.instanceMatrix}
         />
         <group>
           <instancedMesh
+            castShadow
             args={[nodes["house-1"].geometry, materials.PaletteMaterial009, 44]}
             name="house-1"
             instanceMatrix={nodes["house-1"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["house-1_1"].geometry, materials.PaletteMaterial011, 44]}
             name="house-1_1"
             instanceMatrix={nodes["house-1_1"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["house-1_2"].geometry, materials.PaletteMaterial006, 44]}
             name="house-1_2"
             instanceMatrix={nodes["house-1_2"].instanceMatrix}
@@ -901,16 +1118,19 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <group>
           <instancedMesh
+            castShadow
             args={[nodes["house-2"].geometry, materials.PaletteMaterial009, 14]}
             name="house-2"
             instanceMatrix={nodes["house-2"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["house-2_1"].geometry, materials.PaletteMaterial011, 14]}
             name="house-2_1"
             instanceMatrix={nodes["house-2_1"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["house-2_2"].geometry, materials.PaletteMaterial006, 14]}
             name="house-2_2"
             instanceMatrix={nodes["house-2_2"].instanceMatrix}
@@ -918,16 +1138,19 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <group>
           <instancedMesh
+            castShadow
             args={[nodes["house-3"].geometry, materials.PaletteMaterial009, 10]}
             name="house-3"
             instanceMatrix={nodes["house-3"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["house-3_1"].geometry, materials.PaletteMaterial011, 10]}
             name="house-3_1"
             instanceMatrix={nodes["house-3_1"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["house-3_2"].geometry, materials.PaletteMaterial006, 10]}
             name="house-3_2"
             instanceMatrix={nodes["house-3_2"].instanceMatrix}
@@ -935,11 +1158,13 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <group>
           <instancedMesh
+            castShadow
             args={[nodes["house-4"].geometry, materials.PaletteMaterial009, 22]}
             name="house-4"
             instanceMatrix={nodes["house-4"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["house-4_1"].geometry, materials.PaletteMaterial011, 22]}
             name="house-4_1"
             instanceMatrix={nodes["house-4_1"].instanceMatrix}
@@ -947,11 +1172,13 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <group>
           <instancedMesh
+            castShadow
             args={[nodes["house-5"].geometry, materials.PaletteMaterial009, 44]}
             name="house-5"
             instanceMatrix={nodes["house-5"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["house-5_1"].geometry, materials.PaletteMaterial006, 44]}
             name="house-5_1"
             instanceMatrix={nodes["house-5_1"].instanceMatrix}
@@ -959,28 +1186,33 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <group>
           <instancedMesh
+            castShadow
             args={[nodes.pier.geometry, materials.PaletteMaterial006, 17]}
             name="pier"
             instanceMatrix={nodes.pier.instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes.pier_1.geometry, materials.PaletteMaterial002, 17]}
             name="pier_1"
             instanceMatrix={nodes.pier_1.instanceMatrix}
           />
         </group>
         <instancedMesh
+          castShadow
           args={[nodes["pier-small"].geometry, materials.PaletteMaterial006, 22]}
           name="pier-small"
           instanceMatrix={nodes["pier-small"].instanceMatrix}
         />
         <group>
           <instancedMesh
+            castShadow
             args={[nodes.boat.geometry, materials.PaletteMaterial006, 27]}
             name="boat"
             instanceMatrix={nodes.boat.instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes.boat_1.geometry, materials.PaletteMaterial001, 27]}
             name="boat_1"
             instanceMatrix={nodes.boat_1.instanceMatrix}
@@ -1009,11 +1241,13 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
             <LaborRegionTooltip position={[415, 40, -115]} resourceId={realmResourceIds[6]} />
           )}
           <instancedMesh
+            castShadow
             args={[nodes.mine.geometry, materials.PaletteMaterial004, 7]}
             name="mine"
             instanceMatrix={nodes.mine.instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes.mine_1.geometry, materials.PaletteMaterial005, 7]}
             name="mine_1"
             instanceMatrix={nodes.mine_1.instanceMatrix}
@@ -1023,11 +1257,13 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         <primitive object={deposit} />
         <group>
           <instancedMesh
+            castShadow
             args={[nodes["mining-hut"].geometry, materials.PaletteMaterial009, 18]}
             name="mining-hut"
             instanceMatrix={nodes["mining-hut"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["mining-hut_1"].geometry, materials.PaletteMaterial006, 18]}
             name="mining-hut_1"
             instanceMatrix={nodes["mining-hut_1"].instanceMatrix}
@@ -1035,17 +1271,20 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <primitive object={smoke} />
         <instancedMesh
+          castShadow
           args={[nodes["water-fall"].geometry, materials.PaletteMaterial017, 35]}
           name="water-fall"
           instanceMatrix={nodes["water-fall"].instanceMatrix}
         />
         <group>
           <instancedMesh
+            castShadow
             args={[nodes["deciduous-tree"].geometry, materials.PaletteMaterial018, 261]}
             name="deciduous-tree"
             instanceMatrix={nodes["deciduous-tree"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["deciduous-tree_1"].geometry, materials.PaletteMaterial006, 261]}
             name="deciduous-tree_1"
             instanceMatrix={nodes["deciduous-tree_1"].instanceMatrix}
@@ -1053,11 +1292,13 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <group>
           <instancedMesh
+            castShadow
             args={[nodes["evergreen-tree"].geometry, materials.PaletteMaterial001, 81]}
             name="evergreen-tree"
             instanceMatrix={nodes["evergreen-tree"].instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes["evergreen-tree_1"].geometry, materials.PaletteMaterial006, 81]}
             name="evergreen-tree_1"
             instanceMatrix={nodes["evergreen-tree_1"].instanceMatrix}
@@ -1065,11 +1306,13 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
         </group>
         <group>
           <instancedMesh
+            castShadow
             args={[nodes.rock.geometry, materials.PaletteMaterial004, 181]}
             name="rock"
             instanceMatrix={nodes.rock.instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes.rock_1.geometry, materials.PaletteMaterial019, 181]}
             name="rock_1"
             instanceMatrix={nodes.rock_1.instanceMatrix}

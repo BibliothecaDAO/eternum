@@ -27,7 +27,6 @@ import { useGetPositionCaravans } from "../../../hooks/helpers/useCaravans";
 import { NumberInput } from "../../../elements/NumberInput";
 import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/arrow-separator.svg";
 import { WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
-import { ReactComponent as CloseIcon } from "../../../assets/icons/common/cross-circle.svg";
 import useUIStore from "../../../hooks/store/useUIStore";
 
 type FeedHyperstructurePopupProps = {
@@ -117,10 +116,9 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
 
   return (
     <SecondaryPopup name="hyperstructure">
-      <SecondaryPopup.Head>
+      <SecondaryPopup.Head onClose={onClose}>
         <div className="flex items-center space-x-1">
           <div className="mr-0.5 bg-gray">Manage Hyperstructure:</div>
-          <CloseIcon className="w-3 h-3 cursor-pointer fill-white" onClick={onClose} />
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"460px"}>

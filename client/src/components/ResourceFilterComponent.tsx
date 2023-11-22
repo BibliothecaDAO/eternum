@@ -29,7 +29,7 @@ export const ResourceFilter = ({ selectedResources, setSelectedResources }: Reso
       </FilterButton>
       {popupOpened && (
         <SecondaryPopup>
-          <SecondaryPopup.Head>
+          <SecondaryPopup.Head onClose={() => setPopupOpened(false)}>
             <div className="flex items-center space-x-1">
               <div className="mr-0.5">Resources:</div>
               {selectedResources.map((resource, index) => (

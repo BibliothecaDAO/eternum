@@ -1,8 +1,8 @@
-import { orderNameDict, resourceProb } from "@bibliothecadao/eternum";
+import { TRANSFER_EVENT, orderNameDict, resourceProb } from "@bibliothecadao/eternum";
 import { create } from "zustand";
 import { divideByPrecision, numberToHex } from "../../utils/utils";
 import { getRealm } from "../../utils/realms";
-import { Event, pollForEvents } from "../graphql/useLeaderboard";
+import { pollForEvents, Event } from "../../services/eventPoller";
 
 export interface LeaderboardInterface {
   realmId: number;
@@ -59,7 +59,7 @@ const useLeaderBoardStore = create<LeaderboardStore>((set, get) => ({
     set({ loading: true });
     set({ leaderboard: {} });
 
-    const syncDataInternal = async (hyperstructureId) => {
+    const syncDataInternal = async (hyperstructureId: number) => {
       const processEvents = (event: Event) => {
         const resources_len = parseInt(event.data[1]);
         for (let i = 0; i < resources_len; i += 1) {
@@ -71,10 +71,7 @@ const useLeaderBoardStore = create<LeaderboardStore>((set, get) => ({
       };
 
       // Keccak for Transfer event
-      await pollForEvents(
-        ["0x99cd8bde557814842a3121e8ddfd433a539b8c9f14bf31ebf108d12e6196e9", numberToHex(hyperstructureId), "*"],
-        processEvents,
-      );
+      await pollForEvents([TRANSFER_EVENT, numberToHex(hyperstructureId), "*"], processEvents);
     };
 
     await Promise.all(hyperstructureIds.map(syncDataInternal)).finally(() => {

@@ -98,7 +98,7 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
 
   return (
     <SecondaryPopup name="accept-offer">
-      <SecondaryPopup.Head>
+      <SecondaryPopup.Head onClose={onClose}>
         <div className="flex items-center space-x-1">
           <div className="mr-0.5">Accept Offer:</div>
         </div>
@@ -124,29 +124,15 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
           <Button className="!px-[6px] !py-[2px] text-xxs" onClick={onClose} variant="outline">
             Cancel
           </Button>
-          <div>
-            {!isLoading && (
-              <Button
-                disabled={!canAcceptOffer}
-                className="!px-[6px] !py-[2px] text-xxs"
-                onClick={onAccept}
-                variant={canAcceptOffer ? "success" : "danger"}
-              >
-                Accept Offer
-              </Button>
-            )}
-            {isLoading && (
-              <Button
-                isLoading={true}
-                onClick={() => {}}
-                variant="danger"
-                className="ml-auto p-2 !h-4 text-xxs !rounded-md"
-              >
-                {" "}
-                {}{" "}
-              </Button>
-            )}
-          </div>
+          <Button
+            disabled={!canAcceptOffer}
+            className="!px-[6px] !py-[2px] text-xxs"
+            onClick={onAccept}
+            variant={canAcceptOffer ? "success" : "danger"}
+            isLoading={isLoading}
+          >
+            Accept Offer
+          </Button>
         </div>
       </SecondaryPopup.Body>
     </SecondaryPopup>

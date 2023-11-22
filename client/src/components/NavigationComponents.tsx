@@ -11,6 +11,8 @@ const NavgationComponent = () => {
   const moveCameraToWorldMapView = useUIStore((state) => state.moveCameraToWorldMapView);
 
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const isSideMenuOpened = useUIStore((state) => state.isSideMenuOpened);
+  const toggleSideMenu = useUIStore((state) => state.toggleSideMenu);
 
   const [location] = useLocation();
 
@@ -32,8 +34,14 @@ const NavgationComponent = () => {
         </CircleButton>
       </Link>
 
-      <CircleButton size="md" className={clsx("absolute z-0 text-[10px]", "top-16 mt-3")}>
-        <ForwardBurgerIcon className="fill-current" />
+      <CircleButton
+        onClick={() => toggleSideMenu()}
+        size="md"
+        className={clsx("absolute z-0 text-[10px]", "top-16 mt-3")}
+      >
+        <ForwardBurgerIcon
+          className={clsx("fill-current duration-300 transition-transform", isSideMenuOpened && "rotate-180")}
+        />
       </CircleButton>
       <RealmSwitch className={clsx("absolute z-0 text-[10px]", "top-20 left-16 -ml-2 -mt-5")} />
     </div>
