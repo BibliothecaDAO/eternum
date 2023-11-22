@@ -7,6 +7,7 @@ import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../../../DojoContext";
 import AttacksComponent from "./AttacksComponent";
 import { ManageSoldiersPopupTabs } from "../raids/ManageSoldiersPopupTabs";
+import { HealPopup } from "../HealPopup";
 
 type DefencePanelProps = {};
 
@@ -19,6 +20,8 @@ export const DefencePanel = ({}: DefencePanelProps) => {
 
   const [showBuildDefence, setShowBuildDefence] = useState(false);
   const { realmEntityId } = useRealmStore();
+
+  const [showHeal, setShowHeal] = useState(false);
 
   const { getEntitiesCombatInfo, getRealmWatchTowerId } = useCombat();
 
@@ -43,11 +46,12 @@ export const DefencePanel = ({}: DefencePanelProps) => {
           onClose={() => setShowBuildDefence(false)}
         />
       )}
+      {showHeal && <HealPopup selectedRaider={watchTower} onClose={() => setShowHeal(false)} />}
       <div className="flex flex-col p-2">
         {watchTower && (
           <Defence
             onReinforce={() => setShowBuildDefence(!showBuildDefence)}
-            onHeal={() => {}}
+            setShowHeal={setShowHeal}
             watchTower={watchTower}
           />
         )}

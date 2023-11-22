@@ -45,7 +45,9 @@ export const ManageSoldiersPopupTabs = ({ headline, selectedRaider, onClose }: M
   useEffect(() => {
     const tabIndex = tabs.findIndex((tab) => tab.key === params?.tab);
     if (tabIndex >= 0) {
-      if (selectedRaider.quantity < 2 && tabIndex === 2) {
+      if (selectedRaider.quantity === 0) {
+        setSelectedTab(0);
+      } else if (selectedRaider.quantity < 2 && tabIndex === 2) {
         setSelectedTab(1);
       } else {
         setSelectedTab(tabIndex);
@@ -64,7 +66,7 @@ export const ManageSoldiersPopupTabs = ({ headline, selectedRaider, onClose }: M
                 position: "bottom",
                 content: (
                   <>
-                    <p className="whitespace-nowrap">Check your Raiders</p>
+                    <p className="whitespace-nowrap">Add new soldiers to your unit</p>
                   </>
                 ),
               })
@@ -92,7 +94,7 @@ export const ManageSoldiersPopupTabs = ({ headline, selectedRaider, onClose }: M
                 position: "bottom",
                 content: (
                   <>
-                    <p className="whitespace-nowrap">Build your town watch</p>
+                    <p className="whitespace-nowrap">Merge soldiers from different units into selected unit</p>
                   </>
                 ),
               })
@@ -120,7 +122,7 @@ export const ManageSoldiersPopupTabs = ({ headline, selectedRaider, onClose }: M
                 position: "bottom",
                 content: (
                   <>
-                    <p className="whitespace-nowrap">Build your town watch</p>
+                    <p className="whitespace-nowrap">Separate unit in 2 different units</p>
                   </>
                 ),
               })

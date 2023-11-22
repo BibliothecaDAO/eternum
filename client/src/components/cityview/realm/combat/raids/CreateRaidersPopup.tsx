@@ -8,7 +8,7 @@ import { useDojo } from "../../../../../DojoContext";
 import { getComponentValue } from "@latticexyz/recs";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
-import { getResourceCost } from "../../../../../utils/combat";
+import { getBuildResourceCost } from "../../../../../utils/combat";
 import { Headline } from "../../../../../elements/Headline";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 
@@ -40,7 +40,7 @@ export const CreateRaidersPopup = ({ onClose }: CreateRaidersPopupProps) => {
 
   // TODO: get info from contract config file
   let costResources = useMemo(() => {
-    return getResourceCost(soldierAmount);
+    return getBuildResourceCost(soldierAmount);
   }, [soldierAmount]);
 
   const onBuild = async () => {

@@ -9,6 +9,11 @@ export interface CreateSoldiersProps extends SystemSigner {
   quantity: num.BigNumberish;
 }
 
+export interface HealSoldiersProps extends SystemSigner {
+  unit_id: num.BigNumberish;
+  health_amount: num.BigNumberish;
+}
+
 export interface DetachSoldiersProps extends SystemSigner {
   unit_id: num.BigNumberish;
   detached_quantity: num.BigNumberish;

@@ -29,6 +29,7 @@ import {
   LevelUpProps,
   MergeSoldiersProps,
   CreateAndMergeSoldiersProps,
+  HealSoldiersProps,
 } from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -151,6 +152,10 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.create_and_merge_soldiers(props)));
   };
 
+  const heal_soldiers = async (props: HealSoldiersProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.heal_soldiers(props)));
+  };
+
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -190,6 +195,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     complete_hyperstructure,
     travel,
     merge_soldiers,
+    heal_soldiers,
   };
 }
 

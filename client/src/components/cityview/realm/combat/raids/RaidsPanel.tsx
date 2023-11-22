@@ -7,6 +7,7 @@ import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { ManageSoldiersPopupTabs } from "./ManageSoldiersPopupTabs";
 import { AttackRaidsPopup } from "./AttackRaidsPopup";
 import { TravelRaidsPopup } from "./TravelRaidsPopup";
+import { HealPopup } from "../HealPopup";
 
 type RaidsPanelProps = {};
 
@@ -17,6 +18,7 @@ export const RaidsPanel = ({}: RaidsPanelProps) => {
   const [showTravelRaid, setShowTravelRaid] = useState(false);
   const [showAttackRaid, setShowAttackRaid] = useState(false);
   const [showManageRaid, setShowManageRaid] = useState(false);
+  const [showHealRaid, setShowHealRaid] = useState(false);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
@@ -32,6 +34,7 @@ export const RaidsPanel = ({}: RaidsPanelProps) => {
     setShowTravelRaid(false);
     setShowAttackRaid(false);
     setShowManageRaid(false);
+    setShowHealRaid(false);
     setSelectedRaider(null);
   };
 
@@ -43,7 +46,8 @@ export const RaidsPanel = ({}: RaidsPanelProps) => {
         <ManageSoldiersPopupTabs headline={"Manage Raiders"} selectedRaider={selectedRaider} onClose={onClose} />
       )}
       {showAttackRaid && <AttackRaidsPopup selectedRaider={selectedRaider} onClose={onClose} />}
-      {showTravelRaid && <TravelRaidsPopup selectedRaiders={selectedRaider} onClose={onClose} />}
+      {showTravelRaid && <TravelRaidsPopup selectedRaider={selectedRaider} onClose={onClose} />}
+      {showHealRaid && <HealPopup selectedRaider={selectedRaider} onClose={onClose} />}
       <div className="flex flex-col p-2 space-y-2">
         {raiders.map((raider) => (
           <Raid
@@ -52,6 +56,10 @@ export const RaidsPanel = ({}: RaidsPanelProps) => {
             isSelected={selectedRaider?.entityId === raider.entityId}
             setShowTravelRaid={() => {
               setShowTravelRaid(true);
+              setSelectedRaider(raider);
+            }}
+            setShowHealRaid={() => {
+              setShowHealRaid(true);
               setSelectedRaider(raider);
             }}
             setShowAttackRaid={() => {

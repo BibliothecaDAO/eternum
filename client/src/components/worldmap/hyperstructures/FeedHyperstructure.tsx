@@ -28,6 +28,7 @@ import { NumberInput } from "../../../elements/NumberInput";
 import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/arrow-separator.svg";
 import { WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 import useUIStore from "../../../hooks/store/useUIStore";
+import { PercentageSelection } from "../../../elements/PercentageSelection";
 
 type FeedHyperstructurePopupProps = {
   onClose: () => void;
@@ -208,19 +209,6 @@ const SelectableRealm = ({ realm, selected = false, initialized = false, onClick
           {initialized ? `Set the amounts` : `Initialize construction`}
         </Button>
       </div>
-    </div>
-  );
-};
-
-const PercentageSelection = ({ setPercentage }: { setPercentage: (percentage: number) => void }) => {
-  const percentages = [0, 25, 50, 75, 100];
-  return (
-    <div className="w-[80%] flex flex-row items-center justify-center">
-      {percentages.map((percentage) => (
-        <Button variant={"outline"} className={"!p-1 my-2 mr-3 w-20"} onClick={() => setPercentage(percentage)}>
-          {`${percentage}%`}
-        </Button>
-      ))}
     </div>
   );
 };
@@ -583,7 +571,7 @@ const BuildHyperstructurePanel = ({
               </div>
             </>
           )}
-          <PercentageSelection setPercentage={setPercentage}></PercentageSelection>
+          <PercentageSelection percentages={[0, 25, 50, 75, 100]} setPercentage={setPercentage}></PercentageSelection>
           <SelectCaravanPanel
             className="!p-0"
             donkeysCount={donkeysCount}

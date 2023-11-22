@@ -27,6 +27,7 @@ import {
   LevelUpProps,
   MergeSoldiersProps,
   CreateAndMergeSoldiersProps,
+  HealSoldiersProps,
 } from "../types";
 import { Call } from "starknet";
 
@@ -579,6 +580,19 @@ export class EternumProvider extends RPCProvider {
         calldata: [this.getWorldAddress(), merge_into_unit_id, units.length / 2, ...units],
       },
     ]);
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async heal_soldiers(props: HealSoldiersProps) {
+    const { unit_id, health_amount, signer } = props;
+
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      entrypoint: "heal_soldiers",
+      calldata: [this.getWorldAddress(), unit_id, health_amount],
+    });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
     });

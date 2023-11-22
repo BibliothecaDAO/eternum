@@ -24,11 +24,12 @@ type RaidProps = {
   setShowTravelRaid: (show: boolean) => void;
   setShowAttackRaid: (show: boolean) => void;
   setShowManageRaid: (show: boolean) => void;
+  setShowHealRaid: (show: boolean) => void;
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
   const { entityId, health, quantity, capacity, attack, defence } = raider;
-  const { setShowAttackRaid, setShowManageRaid, setShowTravelRaid } = props;
+  const { setShowAttackRaid, setShowManageRaid, setShowTravelRaid, setShowHealRaid } = props;
 
   const {
     account: { account },
@@ -75,6 +76,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
 
   const hasResources = inventoryResources && inventoryResources.length > 0;
   const isTraveling = raider.arrivalTime ? raider.arrivalTime > nextBlockTimestamp : false;
+  const hasMaxHealth = health === 10 * quantity;
   const destinationRealmId = raider.position ? getRealmIdByPosition(raider.position) : undefined;
   const destinationRealmName = destinationRealmId ? getRealmNameById(destinationRealmId) : undefined;
   const isHome = destinationRealmId === realmId;
@@ -293,6 +295,20 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
                 withoutSound
               >
                 {`Manage`}
+              </Button>
+            )}
+            {!isTraveling && isHome && !hasMaxHealth && (
+              <Button
+                size="xs"
+                className="ml-auto"
+                disabled={false}
+                onClick={() => {
+                  setShowHealRaid(true);
+                }}
+                variant="success"
+                withoutSound
+              >
+                {`Heal`}
               </Button>
             )}
             {hasResources && isHome && (
