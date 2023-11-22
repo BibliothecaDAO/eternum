@@ -52,7 +52,7 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
 
   return (
     <SecondaryPopup name="attack">
-      <SecondaryPopup.Head>
+      <SecondaryPopup.Head onClose={onClose}>
         <div className="flex items-center space-x-1">
           <div className="mr-0.5">
             Attacking {defendingRealmName} (#{defendingRealmId}):

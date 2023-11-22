@@ -67,44 +67,31 @@ export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
         {takerRealm && (
           <div className=" text-gold flex">
             <div className=" text-right">{`${distance.toFixed(0)} km`}</div>
-            {hasRoad ? (
-              <div
-                onMouseEnter={() =>
-                  setTooltip({
-                    position: "bottom",
-                    content: (
-                      <>
-                        <p className="whitespace-nowrap">This Realm has built road</p>
-                        <p className="whitespace-nowrap">to your Realm.</p>
-                      </>
-                    ),
-                  })
-                }
-                onMouseLeave={() => setTooltip(null)}
-                className="text-order-brilliance relative group ml-2"
-              >
-                (x2 speed)
-              </div>
-            ) : (
-              <div
-                onMouseEnter={() =>
-                  setTooltip({
-                    position: "bottom",
-                    content: (
-                      <>
-                        <p className="whitespace-nowrap">Click to build road and</p>
-                        <p className="whitespace-nowrap">speed up trades with this Realm.</p>
-                      </>
-                    ),
-                  })
-                }
-                onMouseLeave={() => setTooltip(null)}
-                className="text-gold/50 decoration-dotted underline relative group ml-2"
-                onClick={onBuildRoad}
-              >
-                (Normal speed)
-              </div>
-            )}
+            <Button
+              onMouseEnter={() =>
+                setTooltip({
+                  position: "bottom",
+                  content: hasRoad ? (
+                    <>
+                      <p className="whitespace-nowrap">A road has been built to this realm.</p>
+                      <p className="whitespace-nowrap">You have +100% speed boost.</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="whitespace-nowrap">Click to build road and</p>
+                      <p className="whitespace-nowrap">speed up trades with this Realm.</p>
+                    </>
+                  ),
+                })
+              }
+              size="xs"
+              variant="outline"
+              onMouseLeave={() => setTooltip(null)}
+              className="text-gold/50 relative group ml-2"
+              onClick={onBuildRoad}
+            >
+              {hasRoad ? "x2 speed" : "Normal speed"}
+            </Button>
           </div>
         )}
       </div>

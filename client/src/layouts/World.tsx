@@ -12,9 +12,9 @@ import ContentContainer from "../containers/ContentContainer";
 import RealmManagementModule from "../modules/RealmManagementModule";
 import RealmResourcesComponent from "../components/cityview/realm/RealmResourcesComponent";
 import { useFetchBlockchainData } from "../hooks/store/useBlockchainStore";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
-import { Redirect } from "wouter";
+import { Redirect, Route, Switch, useLocation } from "wouter";
 import { useProgress } from "@react-three/drei";
 import { BlurOverlayContainer } from "../containers/BlurOverlayContainer";
 import { SignUpComponent } from "../components/SignUpComponent";
@@ -108,6 +108,16 @@ export const World = () => {
     }
   }, [progress, worldLoading]);
 
+  const [location] = useLocation();
+  // location type
+  const locationType = useMemo(() => {
+    if (location === "/map" || location === "/") {
+      return "map";
+    } else {
+      return "realm";
+    }
+  }, [location]);
+
   return (
     <div
       onMouseMove={(e) =>
@@ -142,8 +152,14 @@ export const World = () => {
         {/* <ContextsModule /> */}
       </TopContainer>
       <ContentContainer>
-        <RealmManagementModule />
-        <WorldMapMenuModule />
+        <Switch location={locationType}>
+          <Route path="map">
+            <WorldMapMenuModule />
+          </Route>
+          <Route path="realm">
+            <RealmManagementModule />
+          </Route>
+        </Switch>
       </ContentContainer>
       <BottomMiddleContainer>{/* <WolrdMapLayersModule /> */}</BottomMiddleContainer>
       <BottomRightContainer>
@@ -152,7 +168,7 @@ export const World = () => {
       <BlurOverlayContainer>
         <SignUpComponent isWorldLive={isWorldLive} worldLoading={worldLoading} worldProgress={worldProgress} />
       </BlurOverlayContainer>
-      <Leva hidden={import.meta.env.PROD} />
+      <Leva hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU} />
       <Tooltip />
       <Redirect to="/map" />
     </div>

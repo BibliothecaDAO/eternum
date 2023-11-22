@@ -3,7 +3,6 @@ import { ReactComponent as Crown } from "../assets/icons/common/crown-circle-out
 import { ReactComponent as Settings } from "../assets/icons/common/settings.svg";
 import { ReactComponent as Muted } from "../assets/icons/common/muted.svg";
 import { ReactComponent as Unmuted } from "../assets/icons/common/unmuted.svg";
-import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
 import { SecondaryPopup } from "../elements/SecondaryPopup";
 import { Headline } from "../elements/Headline";
 import SettleRealmComponent from "./cityview/realm/SettleRealmComponent";
@@ -50,10 +49,9 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
       )}
       {showSettings && (
         <SecondaryPopup className="top-1/3" name="settings">
-          <SecondaryPopup.Head>
+          <SecondaryPopup.Head onClose={() => setShowSettings(!showSettings)}>
             <div className="flex items-center">
               <div className="mr-0.5">Settings</div>
-              <CloseIcon className="w-3 h-3 cursor-pointer fill-white" onClick={() => setShowSettings(!showSettings)} />
             </div>
           </SecondaryPopup.Head>
           <SecondaryPopup.Body width="400px">

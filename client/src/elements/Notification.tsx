@@ -65,7 +65,7 @@ export const Notification = ({
       leaveFrom="opacity-100 translate-y-0"
       leaveTo="opacity-0 translate-y-full"
     >
-      <div className={clsx(" p-", STYLES.base, STYLES[type], className)}>
+      <div className={clsx(" pointer-events-auto p-", STYLES.base, STYLES[type], className)}>
         {
           <CloseIcon
             className="absolute w-4 h-4 cursor-pointer top-2 right-2 fill-white opacity-30"

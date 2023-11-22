@@ -29,7 +29,7 @@ export const OrdersFilter = ({ selectedOrders, setSelectedOrders }: OrdersFilter
       </FilterButton>
       {popupOpened && (
         <SecondaryPopup>
-          <SecondaryPopup.Head>
+          <SecondaryPopup.Head onClose={() => setPopupOpened(false)}>
             <div className="flex items-center space-x-1">
               <div className="mr-0.5">Orders:</div>
               {selectedOrders.map((order, index) => (
@@ -42,7 +42,7 @@ export const OrdersFilter = ({ selectedOrders, setSelectedOrders }: OrdersFilter
               )}
             </div>
           </SecondaryPopup.Head>
-          <SecondaryPopup.Body width={"w-[284px]"}>
+          <SecondaryPopup.Body width={"284px"}>
             <div className="grid grid-cols-4 gap-2 p-2">
               {orders.map((order, index) => (
                 <div
