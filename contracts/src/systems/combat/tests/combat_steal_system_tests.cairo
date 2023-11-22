@@ -85,7 +85,9 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
             // pay for each soldier with the following
             (ResourceTypes::DRAGONHIDE, 40),
             (ResourceTypes::DEMONHIDE, 40),
-        ].span()
+        ].span(),
+        100,
+        200
     );
 
     // set soldiers starting attack, defence and health

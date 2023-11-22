@@ -67,7 +67,7 @@ commands+=(
     ## 10 silver (6)
     ## 1000 wheat (254)
     ## 1000 fish (255)
-    "sozo execute $CONFIG_SYSTEMS set_soldier_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,3,6,10000,254,1000000,255,1000000"
+    "sozo execute $CONFIG_SYSTEMS set_soldier_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,3,6,10000,254,1000000,255,1000000,1000000,500000"
 
     ## soldier health
     ## 10 

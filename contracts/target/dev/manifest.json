@@ -973,7 +973,7 @@
     {
       "name": "combat_systems",
       "address": null,
-      "class_hash": "0x58ce9078c686c1713baaf01ba7032e4d68315f3ec2cbd6fa3bda84afaf7d6f1",
+      "class_hash": "0x581724d521b6c84a590f9ab222af5feb258c0e20c66b4a3c3660fc4eaa7e61b",
       "abi": [
         {
           "type": "impl",
@@ -1044,7 +1044,11 @@
                   "type": "core::integer::u128"
                 }
               ],
-              "outputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u128"
+                }
+              ],
               "state_mutability": "view"
             },
             {
@@ -1295,14 +1299,15 @@
         "Movable",
         "Owner",
         "Position",
-        "Quantity"
+        "Quantity",
+        "Resource"
       ],
       "computed": []
     },
     {
       "name": "config_systems",
       "address": null,
-      "class_hash": "0x3f74023362deba64a46f6805dcde70b05700b872f782b9ab7a48afe314b601e",
+      "class_hash": "0x3018d91779e799e6d3d26f7a3b279b4f91ee84959315b84e64d416d24169339",
       "abi": [
         {
           "type": "impl",
@@ -1476,6 +1481,14 @@
                 {
                   "name": "resource_costs",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                },
+                {
+                  "name": "wheat_burn_per_soldier",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "fish_burn_per_soldier",
+                  "type": "core::integer::u128"
                 }
               ],
               "outputs": [],
@@ -10367,9 +10380,19 @@
           "name": "resource_cost_count",
           "type": "u32",
           "key": false
+        },
+        {
+          "name": "wheat_burn_per_soldier",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "fish_burn_per_soldier",
+          "type": "u128",
+          "key": false
         }
       ],
-      "class_hash": "0x39e0a6a5d1286bfc186f1d5fd6319d65a40cde3f14706a280b973ac085843c7",
+      "class_hash": "0x2e85dc798eeb6bf3b7dd200ee1b843840548d6adf388b0687045f608a59539c",
       "abi": [
         {
           "type": "function",
