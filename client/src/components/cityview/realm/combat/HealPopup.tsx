@@ -3,7 +3,6 @@ import { SecondaryPopup } from "../../../../elements/SecondaryPopup";
 import Button from "../../../../elements/Button";
 import { Headline } from "../../../../elements/Headline";
 import { ResourceCost } from "../../../../elements/ResourceCost";
-// import { NumberInput } from "../../../../elements/NumberInput";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../DojoContext";
 import { getComponentValue } from "@latticexyz/recs";
@@ -75,7 +74,7 @@ export const HealPopup = ({ selectedRaider, onClose }: HealPopupProps) => {
         <div className="flex flex-col items-center p-2">
           <Headline size="big">Heal Units</Headline>
           <div className={"relative w-full mt-3"}>
-            <img src={`/images/road.jpg`} className="object-cover w-full h-full rounded-[10px]" />
+            <img src={`/images/units/troop-heal.png`} className="object-cover w-full h-full rounded-[10px]" />
             <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
               <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
               <div className="grid grid-cols-4 gap-2">
@@ -93,15 +92,6 @@ export const HealPopup = ({ selectedRaider, onClose }: HealPopupProps) => {
         </div>
         <div className="flex flex-col m-2 text-xxs">
           <div className="flex items-center w-full">
-            {/* <div className="italic text-light-pink">Amount</div> */}
-            {/* <NumberInput
-              className="ml-2 mr-2"
-              value={healthAmount}
-              onChange={(value) => setHealthAmount(Math.max(value, 0))}
-              min={10}
-              max={maxHealth}
-              step={10}
-            /> */}
             <PercentageSelection
               percentages={[25, 50, 75, 100]}
               className={"ml-2 w-full"}
