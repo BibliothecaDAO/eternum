@@ -78,6 +78,12 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
               <Button onClick={() => setShowSettings(false)} variant="outline" className="text-xxs !py-1 !px-2 mr-auto">
                 Done
               </Button>
+              <div className="text-xs text-white/40">
+                This client is open source on{" "}
+                <a className="underline" href="https://github.com/BibliothecaDAO/eternum">
+                  Github
+                </a>
+              </div>
             </div>
           </SecondaryPopup.Body>
         </SecondaryPopup>
