@@ -55,6 +55,8 @@ use core::array::{ArrayTrait, SpanTrait};
 use core::traits::Into;
 
 
+const WHEAT_BURN_PER_SOLDIER_DURING_ATTACK: u128 = 100;
+const FISH_BURN_PER_SOLDIER_DURING_ATTACK: u128 = 200;
 const ATTACKER_SOLDIER_COUNT: u128 = 15;
 const TARGET_SOLDIER_COUNT: u128 = 5;
 const INITIAL_RESOURCE_BALANCE: u128 = 5000;
@@ -85,7 +87,9 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
             // pay for each soldier with the following
             (ResourceTypes::DRAGONHIDE, 40),
             (ResourceTypes::DEMONHIDE, 40),
-        ].span()
+        ].span(),
+        WHEAT_BURN_PER_SOLDIER_DURING_ATTACK,
+        FISH_BURN_PER_SOLDIER_DURING_ATTACK
     );
 
     // set soldiers starting attack, defence and health
@@ -206,6 +210,16 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
             entity_id: target_realm_entity_id, 
             resource_type: PRECALCULATED_STOLEN_RESOURCE_TYPE_TWO, 
             balance: INITIAL_RESOURCE_BALANCE 
+        },
+        Resource { 
+            entity_id: target_realm_entity_id, 
+            resource_type: ResourceTypes::WHEAT, 
+            balance: INITIAL_RESOURCE_BALANCE
+        },
+        Resource { 
+            entity_id: target_realm_entity_id, 
+            resource_type: ResourceTypes::FISH, 
+            balance: INITIAL_RESOURCE_BALANCE
         }
     ));
 
@@ -328,6 +342,19 @@ fn test_steal_success() {
     assert(
         attacker_unit_health.value == 100 * ATTACKER_SOLDIER_COUNT,
                 'wrong health value'
+    );
+
+    // ensure that food was burned
+    let target_realm_wheat_resource = get!(world, (target_realm_entity_id, ResourceTypes::WHEAT), Resource);
+    assert(
+        target_realm_wheat_resource.balance == INITIAL_RESOURCE_BALANCE - ( WHEAT_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT),
+                'wrong wheat value'
+    );
+
+    let target_realm_fish_resource = get!(world, (target_realm_entity_id, ResourceTypes::FISH), Resource);
+    assert(
+        target_realm_fish_resource.balance == INITIAL_RESOURCE_BALANCE - ( FISH_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT),
+                'wrong fish value'
     );
 
     // ensure stolen resources are added to attacker's inventory

@@ -39,6 +39,8 @@ mod combat_systems {
 
     use eternum::utils::random;
     use eternum::utils::math::{min};
+    use eternum::constants::ResourceTypes;    
+
 
     #[derive(Serde, Copy, Drop)]
     enum Winner {
@@ -644,7 +646,6 @@ mod combat_systems {
 
                 set!(world, (target_town_watch_attack, target_town_watch_defense, target_town_watch_health));
 
-
             } else {
 
                 // attack failed && target dealt damage to attacker
@@ -759,13 +760,29 @@ mod combat_systems {
             
 
             if attack_successful {
-                // attack was a success 
 
+                // burn target's food (fish and wheat)
+                let attacker_quantity = get!(world, attacker_id, Quantity);
+                let soldier_config: SoldierConfig = get!(world, SOLDIER_ENTITY_TYPE, SoldierConfig);
+
+                let wheat_burn_amount = soldier_config.wheat_burn_per_soldier * attacker_quantity.value;
+                let mut target_wheat_resource
+                    = get!(world, (target_realm_entity_id, ResourceTypes::WHEAT), Resource);
+                target_wheat_resource.balance -= min(wheat_burn_amount, target_wheat_resource.balance);
+
+                let fish_burn_amount = soldier_config.fish_burn_per_soldier * attacker_quantity.value;
+                let mut target_fish_resource 
+                    = get!(world, (target_realm_entity_id, ResourceTypes::FISH), Resource);
+                target_fish_resource.balance -= min(fish_burn_amount, target_fish_resource.balance);
+
+                set!(world, (target_fish_resource, target_wheat_resource));
+
+
+                // steal resources
                 let mut stolen_resource_types: Array<u8> = array![];
                 let mut stolen_resource_amounts: Array<u128> = array![];
 
                 let attacker_capacity = get!(world, attacker_id, Capacity);
-                let attacker_quantity = get!(world, attacker_id, Quantity);
                 let attacker_total_weight_capacity 
                             = attacker_capacity.weight_gram * attacker_quantity.get_value();
 
