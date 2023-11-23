@@ -10,7 +10,7 @@ export function useResources() {
   const {
     account: { account },
     setup: {
-      components: { Inventory, ForeignKey, ResourceChest, DetachedResource },
+      components: { Inventory, ForeignKey, ResourceChest, DetachedResource, Resource },
       optimisticSystemCalls: { optimisticOffloadResources },
       systemCalls: { offload_chest },
     },
@@ -41,6 +41,19 @@ export function useResources() {
       }
     }
     return resources;
+  };
+
+  const getFoodResources = (entityId: number): Resource[] => {
+    const wheat = getComponentValue(Resource, getEntityIdFromKeys([BigInt(entityId), BigInt(254)]));
+    const fish = getComponentValue(Resource, getEntityIdFromKeys([BigInt(entityId), BigInt(255)]));
+
+    return [
+      {
+        resourceId: 254,
+        amount: wheat?.balance,
+      },
+      { resourceId: 255, amount: fish?.balance },
+    ];
   };
 
   /* Empty Resource Chest
@@ -78,7 +91,7 @@ export function useResources() {
     });
   };
 
-  return { getResourcesFromInventory, offloadChest };
+  return { getResourcesFromInventory, offloadChest, getFoodResources };
 }
 
 //  caravans coming your way with a resource chest in their inventory
