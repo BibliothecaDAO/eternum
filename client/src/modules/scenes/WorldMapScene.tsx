@@ -14,11 +14,15 @@ import { useCaravan } from "../../hooks/helpers/useCaravans.js";
 import useRealmStore from "../../hooks/store/useRealmStore.js";
 import { useGetRealm } from "../../hooks/helpers/useRealm.js";
 import { getRealmPositionFromContractPosition } from "../../utils/utils.js";
+import Bank from "../../components/worldmap/banks/models/Banks.js";
+import banks from "../../data/banks.json";
 
 export const WorldMapScene = () => {
   const worldRef = useRef();
 
   const hyperstructures = useUIStore((state) => state.hyperstructures);
+
+  console.log({ len: banks.length });
   const { getCaravanInfo } = useCaravan();
   const { caravansAtPositionWithInventory: caravanIds } = useGetCaravansWithResourcesChest();
   const { realmEntityId } = useRealmStore();
@@ -35,9 +39,17 @@ export const WorldMapScene = () => {
     });
   }, [caravanIds, realm]);
 
+  console.log({ banks });
+
   return (
     <>
       <Flags />
+      {/* <TransformControls mode="translate" onChange={(e) => console.log(e?.target?.object?.position)}>
+        <mesh>
+          <boxGeometry args={[10, 10, 10]} />
+          <meshBasicMaterial color="red" />
+        </mesh>
+      </TransformControls> */}
       <WorldMap ref={worldRef} />
       {hyperstructures.map((hyperstructure, i) => {
         if (hyperstructure) {
@@ -66,6 +78,9 @@ export const WorldMapScene = () => {
           }
         }
         return null;
+      })}
+      {banks.map((bank, i) => {
+        return <Bank key={i} position={[bank.x, bank.y, bank.z]} />;
       })}
       <Arcs paths={destinations} />
     </>

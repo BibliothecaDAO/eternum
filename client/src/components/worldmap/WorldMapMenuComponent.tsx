@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { ReactComponent as Relic } from "../../assets/icons/common/relic.svg";
+import { ReactComponent as Bank } from "../../assets/icons/common/bank.svg";
 import { ReactComponent as City } from "../../assets/icons/common/city.svg";
 import { ReactComponent as World } from "../../assets/icons/common/world.svg";
 import { useLocation } from "wouter";
@@ -7,6 +8,7 @@ import { Tabs } from "../../elements/tab";
 import RealmsListPanel from "./RealmsListPanel";
 import { HyperstructuresPanel } from "./hyperstructures/HyperstructuresPanel";
 import useUIStore from "../../hooks/store/useUIStore";
+import { BanksPanel } from "./banks/BanksPanel";
 
 const WorldMapMenuComponent = () => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -63,6 +65,29 @@ const WorldMapMenuComponent = () => {
           </div>
         ),
         component: <HyperstructuresPanel />,
+      },
+      {
+        key: "banks",
+        label: (
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Swap food for Lords</p>
+                    <p className="whitespace-nowrap">Banks.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex relative group flex-col items-center"
+          >
+            <Bank className="mb-2 fill-gold" /> <div>Banks</div>
+          </div>
+        ),
+        component: <BanksPanel />,
       },
     ],
     [selectedTab],
