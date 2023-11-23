@@ -1,19 +1,27 @@
 import { useMemo, useState } from "react";
 import { RealmInterface } from "../graphql/useGraphQLQueries";
-import { Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
+import { EntityIndex, Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
-import { getEntityIdFromKeys } from "../../utils/utils";
+import { getEntityIdFromKeys, hexToAscii, numberToHex } from "../../utils/utils";
 import { getOrderName } from "@bibliothecadao/eternum";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
 import realmsData from "../../geodata/realms.json";
 import { unpackResources } from "../../utils/packedData";
 import { useEntityQuery } from "@dojoengine/react";
 import useBlockchainStore from "../store/useBlockchainStore";
+import { Realm } from "../../types";
+
+export type RealmExtended = Realm & {
+  entity_id: EntityIndex;
+  name: string;
+  owner?: { address: number };
+  resources: number[];
+};
 
 export function useRealm() {
   const {
     setup: {
-      components: { Realm, Level },
+      components: { Realm, Level, AddressName, Owner },
     },
   } = useDojo();
 
@@ -83,9 +91,27 @@ export function useRealm() {
     return { level: trueLevel, timeLeft, percentage };
   };
 
+  const getAddressName = (address: string) => {
+    const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]));
+    return addressName ? hexToAscii(numberToHex(addressName.name)) : undefined;
+  };
+
+  const getRealmAddressName = (realmEntityId: number) => {
+    const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(realmEntityId)]));
+    const addressName = owner
+      ? getComponentValue(AddressName, getEntityIdFromKeys([BigInt(owner.address)]))
+      : undefined;
+
+    if (addressName) {
+      return hexToAscii(numberToHex(addressName.name));
+    }
+  };
+
   return {
     getNextRealmIdForOrder,
     getRealmLevel,
+    getAddressName,
+    getRealmAddressName,
   };
 }
 
@@ -140,7 +166,7 @@ export function useGetRealm(realmEntityId: number | undefined) {
   };
 }
 
-export function useGetRealms() {
+export function useGetRealms(): { realms: RealmExtended[] } {
   const {
     setup: {
       components: { Realm, Owner },
@@ -149,7 +175,7 @@ export function useGetRealms() {
 
   const realmEntityIds = useEntityQuery([Has(Realm)]);
 
-  const realms: any[] = useMemo(
+  const realms: RealmExtended[] = useMemo(
     () =>
       Array.from(realmEntityIds).map((entityId) => {
         const realm = getComponentValue(Realm, entityId) as any;

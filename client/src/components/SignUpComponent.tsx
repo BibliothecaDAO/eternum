@@ -6,9 +6,10 @@ import useUIStore from "../hooks/store/useUIStore";
 import { useDojo } from "../DojoContext";
 import { displayAddress } from "../utils/utils";
 import ListSelect from "../elements/ListSelect";
-// import { ReactComponent as Danger } from "../assets/icons/common/danger.svg";
 import { ReactComponent as Copy } from "../assets/icons/common/copy.svg";
 import { ReactComponent as Import } from "../assets/icons/common/import.svg";
+import TextInput from "../elements/TextInput";
+import { useAddressStore, useFetchAddressName } from "../hooks/store/useAddressStore";
 
 type SignUpComponentProps = {
   isWorldLive: boolean;
@@ -19,6 +20,9 @@ type SignUpComponentProps = {
 export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: SignUpComponentProps) => {
   const {
     account: { create, isDeploying, list, account, select, clear },
+    setup: {
+      systemCalls: { set_address_name },
+    },
   } = useDojo();
 
   const [showSignupPopup, setShowSignupPopup] = useState(true);
@@ -29,12 +33,36 @@ export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: Si
   // import export account
   const [importMessage, setImportMessage] = useState(null);
   const [copyMessage, setCopyMessage] = useState(null);
+  const [inputName, setInputName] = useState("");
+
+  const { loading, setLoading, addressName, setAddressName } = useAddressStore();
+  useFetchAddressName(account.address);
+
+  // useEffect(() => {
+  //   const fetchName = async () => {
+  //     const name = await fetchAddressName(account.address);
+  //     if (name) {
+  //       setCurrentName(hexToAscii(name));
+  //       setHasName(true);
+  //     } else {
+  //       setHasName(false);
+  //     }
+  //   };
+  //   fetchName();
+  // }, [account.address, loading]);
 
   let disableStart = false;
   // let disableStart = true;
   // if (import.meta.env.DEV) {
   //   disableStart = false;
   // }
+
+  const onSetName = async () => {
+    setLoading(true);
+    await set_address_name({ name: inputName, signer: account });
+    setAddressName(inputName);
+    setLoading(false);
+  };
 
   const onCopy = () => {
     const burners = localStorage.getItem("burners");
@@ -173,6 +201,41 @@ export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: Si
             value={account.address}
             onChange={select}
           />
+          <div className="flex flex-cols m-2 items-center justify-center">
+            {/* {(loading || addressName) && (
+              <TextInput
+                placeholder="Attach Name to Address"
+                className={"border !py-1 !my-1 mr-2"}
+                value={addressName || ""}
+                onChange={() => {}}
+              ></TextInput>
+            )} */}
+            {(loading || addressName) && (
+              <span className="text-white border-gold border text-xs rounded-lg p-2">
+                {addressName ? `👑 ${addressName}` : ""}
+              </span>
+            )}
+            {!loading && !addressName && (
+              <TextInput
+                placeholder="Attach Name to Address"
+                className={"border !py-1 !my-1 mr-2"}
+                maxLength={12}
+                value={inputName}
+                onChange={setInputName}
+              ></TextInput>
+            )}
+            {!(loading || addressName) && (
+              <Button
+                isLoading={loading}
+                onClick={onSetName}
+                className={"!py-2 !my-1"}
+                variant={"primary"}
+                disabled={loading || addressName !== undefined}
+              >
+                Set Name
+              </Button>
+            )}
+          </div>
           <Button
             // @note: currently disabled for prod, enable back when new version is ready
             disabled={!isWalletSelected || worldLoading || disableStart || !isWorldLive}

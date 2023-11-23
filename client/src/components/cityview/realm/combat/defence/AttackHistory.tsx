@@ -11,6 +11,7 @@ import useUIStore from "../../../../../hooks/store/useUIStore";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
+import { useRealm } from "../../../../../hooks/helpers/useRealm";
 
 type AttackHistoryProps = {
   combatResult: CombatResultInterface;
@@ -28,9 +29,11 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const { getRealmAddressName } = useRealm();
 
   let { realm_id: attackerRealmId } = getComponentValue(Realm, getEntityIdFromKeys([BigInt(attackerRealmEntityId)]));
   let attackerName = attackerRealmId ? getRealmNameById(attackerRealmId) : undefined;
+  let attackerAddressName = getRealmAddressName(attackerRealmEntityId);
 
   const attackerTotalSoldiers = useMemo(() => {
     let total = 0;
@@ -91,8 +94,9 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
         )}
         <div className="flex items-center pt-1 ml-1 -mt-2">
           {stolenResources.length === 0 && attackerRealmId && (
-            <div className="flex items-center ml-1">
+            <div className="flex items-center">
               <div className="flex items-center ml-1 mr-1 text-gold">
+                <span className={"mr-1"}>{attackerAddressName.slice(0, 10)}</span>
                 <OrderIcon order={getRealmOrderNameById(attackerRealmId)} className="mr-1" size="xxs" />
                 {attackerName}
               </div>
@@ -105,8 +109,9 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
             </div>
           )}
           {stolenResources.length > 0 && attackerRealmId && (
-            <div className="flex items-center ml-1">
+            <div className="flex items-center">
               <div className="flex items-center ml-1 mr-1 text-gold">
+                <span className={"mr-1"}>{attackerAddressName.slice(0, 10)}</span>
                 <OrderIcon order={getRealmOrderNameById(attackerRealmId)} className="mr-1" size="xxs" />
                 {attackerName}
               </div>

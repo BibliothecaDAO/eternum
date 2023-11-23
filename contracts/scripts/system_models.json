@@ -88,5 +88,8 @@
     "LEVELING_SYSTEMS": [
         "Level",
         "Resource"
+    ],
+    "NAME_SYSTEMS": [
+        "AddressName"
     ]
 }

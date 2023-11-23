@@ -29,6 +29,7 @@ import {
   AttackProps,
   StealProps,
   LevelUpProps,
+  SetAddressNameProps,
 } from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -151,6 +152,10 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.level_up(props)));
   };
 
+  const set_address_name = async (props: SetAddressNameProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.set_address_name(props)));
+  };
+
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -161,6 +166,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
   };
 
   return {
+    set_address_name,
     level_up,
     isLive,
     create_soldiers,
