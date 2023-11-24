@@ -174,5 +174,4 @@ export const World = () => {
       <div className="absolute bottom-4 right-6 text-white text-xs text-white/60">v0.3.0</div>
     </div>
   );
-  return <div></div>;
 };
