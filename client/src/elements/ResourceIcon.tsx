@@ -1,35 +1,12 @@
 import type { ReactElement } from "react";
 import clsx from "clsx";
-import { ReactComponent as Adamantine } from "../assets/icons/resources/Adamantine.svg";
-import { ReactComponent as AlchemicalSilver } from "../assets/icons/resources/AlchemicalSilver.svg";
+
 import { ReactComponent as Cloth } from "../assets/icons/resources/Cloth.svg";
-import { ReactComponent as Coal } from "../assets/icons/resources/Coal.svg";
-import { ReactComponent as ColdIron } from "../assets/icons/resources/ColdIron.svg";
-import { ReactComponent as Copper } from "../assets/icons/resources/Copper.svg";
-import { ReactComponent as DeepCrystal } from "../assets/icons/resources/DeepCrystal.svg";
 import { ReactComponent as DemonHide } from "../assets/icons/resources/DemonHide.svg";
 import { ReactComponent as DesertGlass } from "../assets/icons/resources/DesertGlass.svg";
-import { ReactComponent as Diamonds } from "../assets/icons/resources/Diamonds.svg";
-import { ReactComponent as Dragonhide } from "../assets/icons/resources/Dragonhide.svg";
-import { ReactComponent as EtherealSilica } from "../assets/icons/resources/EtherealSilica.svg";
-import { ReactComponent as Fish } from "../assets/icons/resources/fish.svg";
-import { ReactComponent as Gold } from "../assets/icons/resources/Gold.svg";
-import { ReactComponent as Hartwood } from "../assets/icons/resources/Hartwood.svg";
-import { ReactComponent as Ignium } from "../assets/icons/resources/Ignium.svg";
-import { ReactComponent as Ironwood } from "../assets/icons/resources/Ironwood.svg";
-import { ReactComponent as Mithral } from "../assets/icons/resources/Mithral.svg";
-import { ReactComponent as Obsidian } from "../assets/icons/resources/Obsidian.svg";
 import { ReactComponent as Ore } from "../assets/icons/resources/Ore.svg";
-import { ReactComponent as Ruby } from "../assets/icons/resources/Ruby.svg";
-import { ReactComponent as Sapphire } from "../assets/icons/resources/Sapphire.svg";
 import { ReactComponent as Shekels } from "../assets/icons/resources/Shekels.svg";
-import { ReactComponent as Silver } from "../assets/icons/resources/Silver.svg";
 import { ReactComponent as Spores } from "../assets/icons/resources/Spores.svg";
-import { ReactComponent as Stone } from "../assets/icons/resources/Stone.svg";
-import { ReactComponent as TrueIce } from "../assets/icons/resources/TrueIce.svg";
-import { ReactComponent as TwilightQuartz } from "../assets/icons/resources/TwilightQuartz.svg";
-import { ReactComponent as Wheat } from "../assets/icons/resources/wheat.svg";
-import { ReactComponent as Wood } from "../assets/icons/resources/Wood.svg";
 
 export type Props = {
   resource: string;
