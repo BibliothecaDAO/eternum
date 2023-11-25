@@ -1,5 +1,4 @@
 import Button from "../../../../elements/Button";
-import { ResourceIcon } from "../../../../elements/ResourceIcon";
 import { ResourcesIds, findResourceById, LABOR_CONFIG } from "@bibliothecadao/eternum";
 import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "../../../../utils/utils.jsx";
 import { ReactComponent as Clock } from "../../../../assets/icons/common/clock.svg";
