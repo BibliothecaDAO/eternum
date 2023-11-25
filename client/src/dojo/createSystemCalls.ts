@@ -23,13 +23,14 @@ import {
   TravelProps,
   OffloadResourcesProps,
   CreateSoldiersProps,
-  GroupAndDeploySoldiersProps,
-  UngroupAndRegroupSoldiersProps,
-  UngroupSoldiersProps,
+  DetachSoldiersProps,
   AttackProps,
   StealProps,
   LevelUpProps,
   SetAddressNameProps,
+  MergeSoldiersProps,
+  CreateAndMergeSoldiersProps,
+  HealSoldiersProps,
 } from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -128,14 +129,6 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.create_soldiers(props)));
   };
 
-  const group_and_deploy_soldiers = async (props: GroupAndDeploySoldiersProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.group_and_deploy_soldiers(props)));
-  };
-
-  const ungroup_soldiers = async (props: UngroupSoldiersProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.ungroup_soldiers(props)));
-  };
-
   const attack = async (props: AttackProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.attack(props)));
   };
@@ -144,8 +137,8 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.steal(props)));
   };
 
-  const ungroup_and_regroup_soldiers = async (props: UngroupAndRegroupSoldiersProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.ungroup_and_regroup_soldiers(props)));
+  const detach_soldiers = async (props: DetachSoldiersProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.detach_soldiers(props)));
   };
 
   const level_up = async (props: LevelUpProps) => {
@@ -154,6 +147,17 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
 
   const set_address_name = async (props: SetAddressNameProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.set_address_name(props)));
+  }
+  const merge_soldiers = async (props: MergeSoldiersProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.merge_soldiers(props)));
+  };
+
+  const create_and_merge_soldiers = async (props: CreateAndMergeSoldiersProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.create_and_merge_soldiers(props)));
+  };
+
+  const heal_soldiers = async (props: HealSoldiersProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.heal_soldiers(props)));
   };
 
   const isLive = async () => {
@@ -167,11 +171,11 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
 
   return {
     set_address_name,
+    create_and_merge_soldiers,
     level_up,
     isLive,
     create_soldiers,
-    group_and_deploy_soldiers,
-    ungroup_soldiers,
+    detach_soldiers,
     attack,
     steal,
     purchase_labor,
@@ -195,7 +199,8 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     initialize_hyperstructure,
     complete_hyperstructure,
     travel,
-    ungroup_and_regroup_soldiers,
+    merge_soldiers,
+    heal_soldiers,
   };
 }
 
@@ -245,7 +250,7 @@ export function setComponentFromEvent(components: Components, eventData: string[
     acc[key] = key === "address" ? value : Number(value);
     return acc;
   }, {});
-
+ 
   // set component
   setComponent(component, entityIndex, componentValues);
 }

@@ -43,29 +43,10 @@ export function useCombat() {
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const useBattalionsOnPosition = (position: Position) => {
-    return useEntityQuery([
-      Has(Health),
-      NotValue(Health, { value: 0 }),
-      HasValue(Attack, { value: 10 }),
-      HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
-      HasValue(Position, position),
-    ]);
-  };
-
-  const getRealmWatchTower = (realmEntityId: number): number | undefined => {
+  const getRealmWatchTowerId = (realmEntityId: number): number | undefined => {
     // find realm watchtower
     const townWatch = getComponentValue(TownWatch, getEntityIdFromKeys([BigInt(realmEntityId)]));
     return townWatch?.town_watch_id;
-  };
-
-  // todo: need to find better ways to differentiate
-  const useRealmBattalions = (realmEntityId: number) => {
-    return useEntityQuery([
-      HasValue(Attack, { value: 10 }),
-      NotValue(Health, { value: 0 }),
-      HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
-    ]);
   };
 
   // todo: need to find better ways to differentiate
@@ -74,7 +55,6 @@ export function useCombat() {
       Has(Attack),
       HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
       NotValue(Health, { value: 0 }),
-      NotValue(Attack, { value: 10 }),
       NotValue(Movable, { sec_per_km: 0 }),
     ]);
   };
@@ -123,6 +103,7 @@ export function useCombat() {
         Has(Attack),
         NotValue(Health, { value: 0 }),
         HasValue(Position, position),
+        NotValue(Movable, { sec_per_km: 0 }),
         HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
       ]),
     );
@@ -168,9 +149,7 @@ export function useCombat() {
   };
 
   return {
-    getBattalionsOnPosition: useBattalionsOnPosition,
-    useRealmBattalions,
-    getRealmWatchTower,
+    getRealmWatchTowerId,
     getDefenceOnRealm,
     getDefenceOnPosition,
     useRealmRaiders,

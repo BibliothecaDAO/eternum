@@ -1,7 +1,7 @@
 {
   "world": {
     "name": "world",
-    "address": "0x4d79c99ce9b489b77461e3491970ea5ede1f1966f4d2ff65ee76cd8701d6dad",
+    "address": null,
     "class_hash": "0x6441e7fc96d795ec94fca66634e6d87edf84362e564ef80eb13f459914b8b",
     "abi": [
       {
@@ -863,7 +863,7 @@
   "contracts": [
     {
       "name": "caravan_systems",
-      "address": "0x384fd2bf241ffc48425ed1fed389495e8066079cdb16865a73e6d3849d32c4f",
+      "address": null,
       "class_hash": "0x7246ad54863b0d32f574265081ed83f5d8842428bf175b5d3ed39a0863c373b",
       "abi": [
         {
@@ -972,8 +972,8 @@
     },
     {
       "name": "combat_systems",
-      "address": "0x778fd3e137dc0e58d94d599167aa431332b8529f9bfc8efd70a7ea4e9c74247",
-      "class_hash": "0xbda34a7ec7cbdecfd9eb892264bd58ae49eaea4806baa917e8a860342bfdb8",
+      "address": null,
+      "class_hash": "0x1c400a30cd1c5e022f32f5393aa8c12b7798477966964593f0acb5e02daab4d",
       "abi": [
         {
           "type": "impl",
@@ -1015,25 +1015,11 @@
         },
         {
           "type": "struct",
-          "name": "core::array::Span::<core::integer::u128>",
+          "name": "core::array::Span::<(core::integer::u128, core::integer::u128)>",
           "members": [
             {
               "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u128>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "eternum::models::combat::Duty",
-          "variants": [
-            {
-              "name": "Attack",
-              "type": "()"
-            },
-            {
-              "name": "Defence",
-              "type": "()"
+              "type": "@core::array::Array::<(core::integer::u128, core::integer::u128)>"
             }
           ]
         },
@@ -1060,30 +1046,26 @@
               ],
               "outputs": [
                 {
-                  "type": "core::array::Span::<core::integer::u128>"
+                  "type": "core::integer::u128"
                 }
               ],
               "state_mutability": "view"
             },
             {
               "type": "function",
-              "name": "group_and_deploy_soldiers",
+              "name": "detach_soldiers",
               "inputs": [
                 {
                   "name": "world",
                   "type": "dojo::world::IWorldDispatcher"
                 },
                 {
-                  "name": "realm_entity_id",
+                  "name": "unit_id",
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "soldier_ids",
-                  "type": "core::array::Span::<core::integer::u128>"
-                },
-                {
-                  "name": "duty",
-                  "type": "eternum::models::combat::Duty"
+                  "name": "detached_quantity",
+                  "type": "core::integer::u128"
                 }
               ],
               "outputs": [
@@ -1095,22 +1077,42 @@
             },
             {
               "type": "function",
-              "name": "ungroup_soldiers",
+              "name": "merge_soldiers",
               "inputs": [
                 {
                   "name": "world",
                   "type": "dojo::world::IWorldDispatcher"
                 },
                 {
-                  "name": "group_id",
+                  "name": "merge_into_unit_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "units",
+                  "type": "core::array::Span::<(core::integer::u128, core::integer::u128)>"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "heal_soldiers",
+              "inputs": [
+                {
+                  "name": "world",
+                  "type": "dojo::world::IWorldDispatcher"
+                },
+                {
+                  "name": "unit_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "health_amount",
                   "type": "core::integer::u128"
                 }
               ],
-              "outputs": [
-                {
-                  "type": "core::array::Span::<core::integer::u128>"
-                }
-              ],
+              "outputs": [],
               "state_mutability": "view"
             }
           ]
@@ -1119,6 +1121,16 @@
           "type": "impl",
           "name": "CombatSystemsImpl",
           "interface_name": "eternum::systems::combat::interface::ICombatSystems"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u128>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u128>"
+            }
+          ]
         },
         {
           "type": "interface",
@@ -1203,7 +1215,7 @@
         },
         {
           "type": "event",
-          "name": "eternum::systems::combat::contracts::combat_systems::Combat",
+          "name": "eternum::systems::combat::contracts::combat_systems::CombatOutcome",
           "kind": "struct",
           "members": [
             {
@@ -1254,8 +1266,8 @@
           "kind": "enum",
           "variants": [
             {
-              "name": "Combat",
-              "type": "eternum::systems::combat::contracts::combat_systems::Combat",
+              "name": "CombatOutcome",
+              "type": "eternum::systems::combat::contracts::combat_systems::CombatOutcome",
               "kind": "nested"
             }
           ]
@@ -1288,7 +1300,6 @@
         "WeightConfig"
       ],
       "writes": [
-        "ArrivalTime",
         "Attack",
         "Capacity",
         "Defence",
@@ -1298,14 +1309,15 @@
         "Movable",
         "Owner",
         "Position",
-        "Quantity"
+        "Quantity",
+        "Resource"
       ],
       "computed": []
     },
     {
       "name": "config_systems",
-      "address": "0x74c3dd7b64a0c8ad6a27276b9ec6a628774028734ea46cf3970ef185e35247d",
-      "class_hash": "0x232a2b59d48db0a19aba5e921569fb03931788c694785017ab53d9d5bb75f36",
+      "address": null,
+      "class_hash": "0xc154b7c178196c1acf0020612232911bfdd0f6902d5b92505ef9f1af67bb48",
       "abi": [
         {
           "type": "impl",
@@ -1479,6 +1491,14 @@
                 {
                   "name": "resource_costs",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                },
+                {
+                  "name": "wheat_burn_per_soldier",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "fish_burn_per_soldier",
+                  "type": "core::integer::u128"
                 }
               ],
               "outputs": [],
@@ -1497,7 +1517,11 @@
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "value",
+                  "name": "resource_costs",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                },
+                {
+                  "name": "max_value",
                   "type": "core::integer::u128"
                 }
               ],
@@ -1517,7 +1541,7 @@
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "value",
+                  "name": "max_value",
                   "type": "core::integer::u128"
                 }
               ],
@@ -1537,7 +1561,7 @@
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "value",
+                  "name": "max_value",
                   "type": "core::integer::u128"
                 }
               ],
@@ -1787,10 +1811,6 @@
                   "type": "core::integer::u8"
                 },
                 {
-                  "name": "initialization_resources",
-                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
-                },
-                {
                   "name": "construction_resources",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                 },
@@ -1860,8 +1880,8 @@
     },
     {
       "name": "hyperstructure_systems",
-      "address": "0xfdcafc26f1d866ad585cadfb0fb177e4512d03f6020e67adadb5c66690d9c2",
-      "class_hash": "0x4e692c77f8af3a817137301365a5f87ec9085fbee0d72bf7e05e1542d41c9a4",
+      "address": null,
+      "class_hash": "0xb20a25b80ca612cbba01c743e5bdef1abb22bc62e852b28fd1dc04d294c53",
       "abi": [
         {
           "type": "impl",
@@ -1969,7 +1989,7 @@
     },
     {
       "name": "labor_systems",
-      "address": "0x5b3b02ba50cfb46af86c20d1eca1bbff5fe82ff2f8985aefc413267a5d05b00",
+      "address": null,
       "class_hash": "0x1842dbbbebd71d8c247f6d15981a49ed2aee5e81bd2899b140bb1a0d7d871f6",
       "abi": [
         {
@@ -2127,7 +2147,7 @@
     },
     {
       "name": "leveling_systems",
-      "address": "0x81edcebc0097b53ae8db567565eb5c5d9e8a9190a8a80411547676f24361ca",
+      "address": null,
       "class_hash": "0x3e35cf90aadf51c415e9e978d04c21400576f6990a0701da16df7a31e964992",
       "abi": [
         {
@@ -2223,7 +2243,7 @@
     },
     {
       "name": "name_systems",
-      "address": "0x2a9ee652fb9ce9812e9d06ec05429b6e27254b37d0ef0eaca6a1e4533d5c244",
+      "address": null,
       "class_hash": "0x7ab8e9771a066df89edfabd3c6a461715fffe4ba86e95f293db61c92452f222",
       "abi": [
         {
@@ -2314,7 +2334,7 @@
     },
     {
       "name": "resource_systems",
-      "address": "0x2dab8013b2dea3f5b37f31db94a5136843408efa04a966a6587f65056b1ef40",
+      "address": null,
       "class_hash": "0x1e054d3a41a9818cab6820a40005e0f89e9943b5ee15b58f60b58ecf807d2d1",
       "abi": [
         {
@@ -2565,7 +2585,7 @@
     },
     {
       "name": "road_systems",
-      "address": "0x46e8cc4deb048fed25465e134ebbfa962137daaf0bb52a63d41940af3638e4d",
+      "address": null,
       "class_hash": "0x7d0376077bb24e151510d6200867b03a514708b42b010d892e88b79f1ec3696",
       "abi": [
         {
@@ -2685,8 +2705,8 @@
     },
     {
       "name": "test_realm_systems",
-      "address": "0x141b54c5560368787c28e61f9c9542e3aaf26a3f426263cb0dcde36339eec30",
-      "class_hash": "0x7f33d1102a9119c17543d110008c50ece9f15a55567102fa2950778ea28ee2d",
+      "address": null,
+      "class_hash": "0x786015ab1f9bd8e8c2e2175ca8c6d52d415d252a000e274db115dbba9699e4",
       "abi": [
         {
           "type": "impl",
@@ -2828,9 +2848,14 @@
           "variants": []
         }
       ],
-      "reads": [],
+      "reads": [
+        "CapacityConfig"
+      ],
       "writes": [
+        "Capacity",
         "EntityMetadata",
+        "EntityOwner",
+        "Movable",
         "Owner",
         "Position",
         "Realm",
@@ -2840,7 +2865,7 @@
     },
     {
       "name": "test_resource_systems",
-      "address": "0x5e2e8d20bc9f4c02050b2b6b7442a1ce06bbd9c0729716a7c5a478069c9b354",
+      "address": null,
       "class_hash": "0x1ad4fa3240e5f3c25d221d4ce96db8ac88c5e2946b83f2e28c5fce18543ad86",
       "abi": [
         {
@@ -2945,7 +2970,7 @@
     },
     {
       "name": "trade_systems",
-      "address": "0x7b54643f42a1c4298fe5e465105ccbee30ba505f3bedaa90f4951f9f15be8f0",
+      "address": null,
       "class_hash": "0x7f8555b6afa833b0d51af0dc7c57917e7b5342c344a1280b03250cef8a168f",
       "abi": [
         {
@@ -3137,7 +3162,7 @@
     },
     {
       "name": "transport_unit_systems",
-      "address": "0x75eb7b6012dbb91d59aa20808de28666f8207478e08f4e4ee101bdb0ac89e63",
+      "address": null,
       "class_hash": "0x7830200083cda593f82cb1f196d6c3d70771b6b082a87249ae0f4f6a6ba219b",
       "abi": [
         {
@@ -3250,7 +3275,7 @@
     },
     {
       "name": "travel_systems",
-      "address": "0x8fa2df40a28c2ffb7a99267c1a67318451da3a5d39cadb18577a2d09856b0e",
+      "address": null,
       "class_hash": "0x1a4882b76ddbd273be8730f30b9c685bd477ff8708e11317b62324ef5dd6d37",
       "abi": [
         {
@@ -4080,12 +4105,12 @@
           "key": true
         },
         {
-          "name": "value",
+          "name": "max_value",
           "type": "u128",
           "key": false
         }
       ],
-      "class_hash": "0x4ae412fe270fe2d3f5acb27defe3b19ab94933b3d910e38979105b876e81d3f",
+      "class_hash": "0x552cd9e127e6ebcd5f950385a3a425e67c4e3df8760d65edbd63270e218e2ec",
       "abi": [
         {
           "type": "function",
@@ -5723,12 +5748,12 @@
           "key": true
         },
         {
-          "name": "value",
+          "name": "max_value",
           "type": "u128",
           "key": false
         }
       ],
-      "class_hash": "0x4a76b2acb0ee7a19e820a50663cf11bb12227a3af6c0b80bb7ed0f921fe2b80",
+      "class_hash": "0x425d44029a1861b8abdc95f08911689f9140f0efd9322467c44bd75664f202b",
       "abi": [
         {
           "type": "function",
@@ -6795,12 +6820,22 @@
           "key": true
         },
         {
-          "name": "value",
+          "name": "resource_cost_id",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "resource_cost_count",
+          "type": "u32",
+          "key": false
+        },
+        {
+          "name": "max_value",
           "type": "u128",
           "key": false
         }
       ],
-      "class_hash": "0x10873200782e604d9879f0effbac76111365f09e8680383b337cfe8f23a015d",
+      "class_hash": "0x7c7412cb264ccc8091d6dfd83c66a323de29fe55592767d6a8ce55625349466",
       "abi": [
         {
           "type": "function",
@@ -10917,9 +10952,19 @@
           "name": "resource_cost_count",
           "type": "u32",
           "key": false
+        },
+        {
+          "name": "wheat_burn_per_soldier",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "fish_burn_per_soldier",
+          "type": "u128",
+          "key": false
         }
       ],
-      "class_hash": "0x39e0a6a5d1286bfc186f1d5fd6319d65a40cde3f14706a280b973ac085843c7",
+      "class_hash": "0x2e85dc798eeb6bf3b7dd200ee1b843840548d6adf388b0687045f608a59539c",
       "abi": [
         {
           "type": "function",

@@ -80,7 +80,7 @@ export const EnemyRaid = ({ raider, ...props }: EnemyRaidProps) => {
               <img src="/images/units/troop-icon.png" className="h-[28px]" />
               <div className="flex ml-1 text-center">
                 <div className="bold mr-1">x{quantity}</div>
-                Battalions
+                Raiders
               </div>
             </div>
           </div>

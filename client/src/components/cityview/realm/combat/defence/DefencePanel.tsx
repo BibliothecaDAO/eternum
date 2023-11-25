@@ -1,16 +1,17 @@
 import { useMemo, useState } from "react";
 import { useCombat } from "../../../../../hooks/helpers/useCombat";
-import { CreateDefencePopup } from "./CreateDefencePopup";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { getEntityIdFromKeys } from "../../../../../utils/utils";
 import { Defence } from "./Defence";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../../../DojoContext";
 import AttacksComponent from "./AttacksComponent";
+import { ManageSoldiersPopupTabs } from "../raids/ManageSoldiersPopupTabs";
+import { HealPopup } from "../HealPopup";
 
-type MarketPanelProps = {};
+type DefencePanelProps = {};
 
-export const DefencePanel = ({}: MarketPanelProps) => {
+export const DefencePanel = ({}: DefencePanelProps) => {
   const {
     setup: {
       components: { Health },
@@ -20,9 +21,11 @@ export const DefencePanel = ({}: MarketPanelProps) => {
   const [showBuildDefence, setShowBuildDefence] = useState(false);
   const { realmEntityId } = useRealmStore();
 
-  const { getEntitiesCombatInfo, getRealmWatchTower } = useCombat();
+  const [showHeal, setShowHeal] = useState(false);
 
-  const watchTowerId = getRealmWatchTower(realmEntityId);
+  const { getEntitiesCombatInfo, getRealmWatchTowerId } = useCombat();
+
+  const watchTowerId = getRealmWatchTowerId(realmEntityId);
   const watchTowerHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(watchTowerId)]));
 
   const watchTower = useMemo(() => {
@@ -36,12 +39,19 @@ export const DefencePanel = ({}: MarketPanelProps) => {
 
   return (
     <div className="relative flex flex-col p-2 min-h-[120px]">
-      {showBuildDefence && <CreateDefencePopup watchTower={watchTower} onClose={() => setShowBuildDefence(false)} />}
+      {showBuildDefence && (
+        <ManageSoldiersPopupTabs
+          headline={"Reinforce Defence"}
+          selectedRaider={watchTower}
+          onClose={() => setShowBuildDefence(false)}
+        />
+      )}
+      {showHeal && <HealPopup selectedRaider={watchTower} onClose={() => setShowHeal(false)} />}
       <div className="flex flex-col p-2">
         {watchTower && (
           <Defence
             onReinforce={() => setShowBuildDefence(!showBuildDefence)}
-            onHeal={() => {}}
+            setShowHeal={setShowHeal}
             watchTower={watchTower}
           />
         )}
