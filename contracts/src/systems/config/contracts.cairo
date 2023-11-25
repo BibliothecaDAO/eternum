@@ -391,42 +391,14 @@ mod config_systems {
             self: @ContractState,
             world: IWorldDispatcher,
             hyperstructure_type: u8,
-            initialization_resources: Span<(u8, u128)>,
             construction_resources: Span<(u8, u128)>,
-            coord: Coord
+            coord: Coord,
+            order: u32,
+            max_level: u32
         ) -> ID {
-            let mut initialization_resources = initialization_resources;
             let mut construction_resources = construction_resources;
-        
-            let initialization_resource_count = initialization_resources.len();
-            assert(initialization_resource_count > 0, 'resources must not be empty');
-
             let construction_resource_count = construction_resources.len();
             assert(construction_resource_count > 0, 'resources must not be empty');
-
-            // create initialization resource cost components
-            let initialization_resource_id: ID = world.uuid().into();
-            let mut index = 0;
-            loop {
-                match initialization_resources.pop_front() {
-                    Option::Some((resource_type, resource_amount)) => {
-                        assert(*resource_amount > 0, 'amount must not be 0');
-
-                        set!(world, (
-                            ResourceCost {
-                                entity_id: initialization_resource_id,
-                                index,
-                                resource_type: *resource_type,
-                                amount: *resource_amount
-                            }
-                        ));
-
-                        index += 1;
-                    },
-                    Option::None => {break;}
-                };
-            };
-
 
             // create construction resource cost components
             let construction_resource_id: ID = world.uuid().into();
@@ -458,14 +430,16 @@ mod config_systems {
                 HyperStructure {
                     entity_id: hyperstructure_id,
                     hyperstructure_type,
-                    initialization_resource_id,
-                    initialization_resource_count,
                     construction_resource_id,
                     construction_resource_count,
-                    initialized_at: 0,
-                    completed_at: 0,
-                    coord_x: coord.x,
-                    coord_y: coord.y
+                    order,
+                    level: 0,
+                    max_level,
+                },
+                Position {
+                    entity_id: hyperstructure_id,
+                    x: coord.x,
+                    y: coord.y
                 }
             ));  
 

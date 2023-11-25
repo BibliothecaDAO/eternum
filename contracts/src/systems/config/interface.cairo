@@ -114,8 +114,8 @@ trait ITransportConfig<TContractState> {
 trait IHyperstructureConfig<TContractState> {
     fn create_hyperstructure(
         self: @TContractState, world: IWorldDispatcher, 
-        hyperstructure_type: u8, initialization_resources: Span<(u8, u128)>, 
-        construction_resources: Span<(u8, u128)>, coord: Coord
+        hyperstructure_type: u8, construction_resources: Span<(u8, u128)>, 
+        coord: Coord, order: u32, max_level: u32
     ) -> ID;
 
 }

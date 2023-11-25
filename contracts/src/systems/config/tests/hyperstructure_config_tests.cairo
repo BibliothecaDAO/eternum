@@ -43,50 +43,40 @@ fn test_create_hyperstructure() {
     );
 
     let hyperstructure_type = 1_u8;
-    let initialization_resources = array![
-        (ResourceTypes::STONE, 10_u128), // 10 stone
-        (ResourceTypes::WOOD, 13_u128)  // 13 wood
-    ];
+
     let construction_resources = array![
         (ResourceTypes::STONE, 40_u128), // 40 stone
         (ResourceTypes::WOOD, 50_u128)  // 50 wood
     ];
     let hyperstructure_coord = Coord{ x:20, y:30 };
+    let hyperstructure_order = 3;
+    let hyperstructure_max_level = 4;
 
 
+    // let world.uuid start from 1
+    world.uuid();
+    
     let hyperstructure_id 
         = hyperstructure_config_dispatcher.create_hyperstructure(
             world,
             hyperstructure_type,
-            initialization_resources.span(),
             construction_resources.span(),
-            hyperstructure_coord
+            hyperstructure_coord,
+            hyperstructure_order,
+            hyperstructure_max_level
         );
 
 
     let hyperstructure = get!(world, hyperstructure_id, HyperStructure);
     assert(hyperstructure.hyperstructure_type == hyperstructure_type, 
-            'wrong hyperstructure_type value'
+            'wrong hyperstructure type value'
     );
-    assert(hyperstructure.initialized_at == 0, 'wrong initialized_at value');
-    assert(hyperstructure.completed_at == 0, 'wrong completed_at value');
-    assert(hyperstructure.initialization_resource_count == 2, 'wrong resource count');
+    assert(hyperstructure.order == 3, 'wrong order');
+    assert(hyperstructure.max_level == 4, 'wrong max level');
+
+
+    assert(hyperstructure.construction_resource_id != 0, 'wrong resource id');
     assert(hyperstructure.construction_resource_count == 2, 'wrong resource count');
-
-    let hyperstructure = get!(world, hyperstructure_id, HyperStructure);
-
-    let hyperstructure_initialization_stone_cost = get!(world, (hyperstructure.initialization_resource_id, 0), ResourceCost);
-    assert(hyperstructure_initialization_stone_cost.amount == 10, 'wrong amount value');
-    assert(hyperstructure_initialization_stone_cost.resource_type == ResourceTypes::STONE, 
-            'wrong resource_type value'
-    );
-
-
-    let hyperstructure_initialization_wood_cost = get!(world, (hyperstructure.initialization_resource_id, 1), ResourceCost);
-    assert(hyperstructure_initialization_wood_cost.amount == 13, 'wrong amount value');
-    assert(hyperstructure_initialization_wood_cost.resource_type == ResourceTypes::WOOD, 
-            'wrong resource_type value'
-    );
 
     let hyperstructure_construction_stone_cost = get!(world, (hyperstructure.construction_resource_id, 0), ResourceCost);
     assert(hyperstructure_construction_stone_cost.amount == 40, 'wrong amount value');
@@ -102,8 +92,10 @@ fn test_create_hyperstructure() {
     );
 
 
-    assert(hyperstructure.coord_x == hyperstructure_coord.x, 'wrong x value');
-    assert(hyperstructure.coord_y == hyperstructure_coord.y, 'wrong y value');
+    // check that hyperstructure is in the right position
+    let hyperstructure_position = get!(world, hyperstructure_id, Position);
+    assert(hyperstructure_position.x == hyperstructure_coord.x, 'wrong x value');
+    assert(hyperstructure_position.y == hyperstructure_coord.y, 'wrong y value');
 }
 
 

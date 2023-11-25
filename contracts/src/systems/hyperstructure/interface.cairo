@@ -5,6 +5,14 @@ use dojo::world::IWorldDispatcher;
 
 #[starknet::interface]
 trait IHyperstructureSystems<TContractState> {
-    fn initialize(self: @TContractState, world: IWorldDispatcher, entity_id:ID, hyperstructure_id: ID);
-    fn complete(self: @TContractState, world: IWorldDispatcher, hyperstructure_id: ID);
+    fn upgrade_level(
+        self: @TContractState,
+        world: IWorldDispatcher,
+        hyperstructure_id: u128
+    );
+    fn downgrade_level(
+        self: @TContractState,
+        world: IWorldDispatcher,
+        hyperstructure_id: u128
+    );
 }
