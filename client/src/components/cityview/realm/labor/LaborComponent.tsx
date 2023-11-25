@@ -110,7 +110,7 @@ export const LaborComponent = ({
         {findResourceById(resourceId)?.trait}
       </div>
       <div className="grid grid-cols-6">
-        <img src={`/images/resources/${resourceId}.jpg`} className="object-cover w-full h-full rounded-md" />
+        <img src={`/images/resource_buildings/${resourceId}.png`} className="object-cover w-full h-full rounded-md" />
         <div className="flex flex-col w-full h-full col-span-5 p-2 text-white/70">
           <div className="flex items-center mb-2">
             <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="sm" />
