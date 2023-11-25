@@ -1,35 +1,12 @@
 import type { ReactElement } from "react";
 import clsx from "clsx";
-import { ReactComponent as Adamantine } from "../assets/icons/resources/Adamantine.svg";
-import { ReactComponent as AlchemicalSilver } from "../assets/icons/resources/AlchemicalSilver.svg";
+
 import { ReactComponent as Cloth } from "../assets/icons/resources/Cloth.svg";
-import { ReactComponent as Coal } from "../assets/icons/resources/Coal.svg";
-import { ReactComponent as ColdIron } from "../assets/icons/resources/ColdIron.svg";
-import { ReactComponent as Copper } from "../assets/icons/resources/Copper.svg";
-import { ReactComponent as DeepCrystal } from "../assets/icons/resources/DeepCrystal.svg";
 import { ReactComponent as DemonHide } from "../assets/icons/resources/DemonHide.svg";
 import { ReactComponent as DesertGlass } from "../assets/icons/resources/DesertGlass.svg";
-import { ReactComponent as Diamonds } from "../assets/icons/resources/Diamonds.svg";
-import { ReactComponent as Dragonhide } from "../assets/icons/resources/Dragonhide.svg";
-import { ReactComponent as EtherealSilica } from "../assets/icons/resources/EtherealSilica.svg";
-import { ReactComponent as Fish } from "../assets/icons/resources/fish.svg";
-import { ReactComponent as Gold } from "../assets/icons/resources/Gold.svg";
-import { ReactComponent as Hartwood } from "../assets/icons/resources/Hartwood.svg";
-import { ReactComponent as Ignium } from "../assets/icons/resources/Ignium.svg";
-import { ReactComponent as Ironwood } from "../assets/icons/resources/Ironwood.svg";
-import { ReactComponent as Mithral } from "../assets/icons/resources/Mithral.svg";
-import { ReactComponent as Obsidian } from "../assets/icons/resources/Obsidian.svg";
 import { ReactComponent as Ore } from "../assets/icons/resources/Ore.svg";
-import { ReactComponent as Ruby } from "../assets/icons/resources/Ruby.svg";
-import { ReactComponent as Sapphire } from "../assets/icons/resources/Sapphire.svg";
 import { ReactComponent as Shekels } from "../assets/icons/resources/Shekels.svg";
-import { ReactComponent as Silver } from "../assets/icons/resources/Silver.svg";
 import { ReactComponent as Spores } from "../assets/icons/resources/Spores.svg";
-import { ReactComponent as Stone } from "../assets/icons/resources/Stone.svg";
-import { ReactComponent as TrueIce } from "../assets/icons/resources/TrueIce.svg";
-import { ReactComponent as TwilightQuartz } from "../assets/icons/resources/TwilightQuartz.svg";
-import { ReactComponent as Wheat } from "../assets/icons/resources/wheat.svg";
-import { ReactComponent as Wood } from "../assets/icons/resources/Wood.svg";
 
 export type Props = {
   resource: string;
@@ -46,31 +23,34 @@ type Resource = {
 };
 
 const Components: { [key: string]: Resource } = Object.freeze({
-  Adamantine: { component: <Adamantine />, name: "Adamantine" },
+  Adamantine: {
+    component: <img src={`/images/resources/20.png`} />,
+    name: "Adamantine",
+  },
   AlchemicalSilver: {
-    component: <AlchemicalSilver />,
+    component: <img src={`/images/resources/19.png`} />,
     name: "Alchemical Silver",
   },
-  Coal: { component: <Coal className="w-full h-full" />, name: "Coal" },
-  ColdIron: { component: <ColdIron className="w-full h-full" />, name: "Cold Iron" },
-  Copper: { component: <Copper className="w-full h-full" />, name: "Copper" },
-  DeepCrystal: { component: <DeepCrystal className="w-full h-full" />, name: "Deep Crystal" },
-  Diamonds: { component: <Diamonds className="w-full h-full" />, name: "Diamonds" },
-  Dragonhide: { component: <Dragonhide className="w-full h-full" />, name: "Dragonhide" },
-  EtherealSilica: { component: <EtherealSilica className="w-full h-full" />, name: "Ethereal Silica" },
-  Gold: { component: <Gold className="w-full h-full" />, name: "Gold" },
-  Hartwood: { component: <Hartwood className="w-full h-full" />, name: "Hartwood" },
-  Ignium: { component: <Ignium className="w-full h-full" />, name: "Ignium" },
-  Ironwood: { component: <Ironwood className="w-full h-full" />, name: "Ironwood" },
-  Mithral: { component: <Mithral className="w-full h-full" />, name: "Mithral" },
-  Obsidian: { component: <Obsidian className="w-full h-full" />, name: "Obsidian" },
-  Ruby: { component: <Ruby className="w-full h-full" />, name: "Ruby" },
-  Sapphire: { component: <Sapphire className="w-full h-full" />, name: "Sapphire" },
-  Silver: { component: <Silver className="w-full h-full" />, name: "Silver" },
-  Stone: { component: <Stone className="w-full h-full" />, name: "Stone" },
-  TrueIce: { component: <TrueIce className="w-full h-full" />, name: "TrueIce" },
-  TwilightQuartz: { component: <TwilightQuartz className="w-full h-full" />, name: "Twilight Quartz" },
-  Wood: { component: <Wood className="w-full h-full" />, name: "Wood" },
+  Coal: { component: <img src={`/images/resources/3.png`} />, name: "Coal" },
+  ColdIron: { component: <img src={`/images/resources/8.png`} />, name: "Cold Iron" },
+  Copper: { component: <img src={`/images/resources/4.png`} />, name: "Copper" },
+  DeepCrystal: { component: <img src={`/images/resources/14.png`} />, name: "Deep Crystal" },
+  Diamonds: { component: <img src={`/images/resources/11.png`} />, name: "Diamonds" },
+  Dragonhide: { component: <img src={`/images/resources/22.png`} />, name: "Dragonhide" },
+  EtherealSilica: { component: <img src={`/images/resources/16.png`} />, name: "Ethereal Silica" },
+  Gold: { component: <img src={`/images/resources/9.png`} />, name: "Gold" },
+  Hartwood: { component: <img src={`/images/resources/10.png`} />, name: "Hartwood" },
+  Ignium: { component: <img src={`/images/resources/15.png`} />, name: "Ignium" },
+  Ironwood: { component: <img src={`/images/resources/7.png`} />, name: "Ironwood" },
+  Mithral: { component: <img src={`/images/resources/21.png`} />, name: "Mithral" },
+  Obsidian: { component: <img src={`/images/resources/5.png`} />, name: "Obsidian" },
+  Ruby: { component: <img src={`/images/resources/13.png`} />, name: "Ruby" },
+  Sapphire: { component: <img src={`/images/resources/12.png`} />, name: "Sapphire" },
+  Silver: { component: <img src={`/images/resources/6.png`} />, name: "Silver" },
+  Stone: { component: <img src={`/images/resources/2.png`} />, name: "Stone" },
+  TrueIce: { component: <img src={`/images/resources/17.png`} />, name: "TrueIce" },
+  TwilightQuartz: { component: <img src={`/images/resources/18.png`} />, name: "Twilight Quartz" },
+  Wood: { component: <img src={`/images/resources/1.png`} />, name: "Wood" },
   EmbersGlow: { component: <DemonHide className="w-full h-full" />, name: "Demon Hide" },
   StoneTemple: { component: <Cloth className="w-full h-full" />, name: "Cloth" },
   DesertOasis: { component: <DesertGlass className="w-full h-full" />, name: "Desert Glass" },
@@ -78,8 +58,8 @@ const Components: { [key: string]: Resource } = Object.freeze({
   UnderwaterKeep: { component: <Shekels className="w-full h-full" />, name: "Shekels" },
   ForestRuins: { component: <Spores className="w-full h-full" />, name: "Spores" },
   Shekels: { component: <Shekels className="w-full h-full" />, name: "Shekels" },
-  Fish: { component: <Fish className="w-full h-full" />, name: "Fish" },
-  Wheat: { component: <Wheat className="w-full h-full" />, name: "Wheat" },
+  Fish: { component: <img src={`/images/resources/255.png`} />, name: "Fish" },
+  Wheat: { component: <img src={`/images/resources/254.png`} />, name: "Wheat" },
 });
 
 const STYLES = {
