@@ -116,7 +116,7 @@ export const LaborComponent = ({
             <div className="ml-2 text-sm font-bold text-white">
               {currencyFormat(resource ? resource.balance : 0, 2)}
 
-              <span className="ml-3">
+              <span className={`ml-3  ${labor && laborLeft > 0 ? "text-gold" : "text-gray-gold"}`}>
                 [
                 {labor && laborLeft > 0
                   ? `+${divideByPrecision(
