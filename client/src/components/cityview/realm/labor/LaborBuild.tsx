@@ -310,7 +310,10 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               />
             )}
             {!isFood && (
-              <img src={`/images/resources/${resourceId}.jpg`} className="object-cover w-full h-full rounded-[10px]" />
+              <img
+                src={`/images/resource_buildings/${resourceId}.png`}
+                className="object-cover w-full h-full rounded-[10px]"
+              />
             )}
             <div className="absolute top-2 left-2 bg-black/60 rounded-[10px] p-3 hover:bg-black">
               <LaborAuction />
