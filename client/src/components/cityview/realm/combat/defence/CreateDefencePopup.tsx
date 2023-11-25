@@ -70,7 +70,7 @@ export const CreateDefencePopup = ({ watchTower, onClose }: RoadBuildPopupProps)
           <div className="flex relative mt-1 justify-between text-xxs text-lightest w-full">
             <div className="flex items-center">
               <div className="flex items-center h-6 mr-2">
-                <img src="/images/units/troop-icon.png" className="h-[28px]" />
+                <img src="/images/icons/troop.png" className="h-[28px]" />
                 <div className="flex flex-col ml-1 text-center">
                   <div className="bold">Warrior</div>
                 </div>
