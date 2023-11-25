@@ -30,7 +30,7 @@ export const ResourceCost = ({
       )}
       onClick={onClick}
     >
-      <ResourceIcon withTooltip={withTooltip} resource={trait || ""} size="xs" />
+      <ResourceIcon withTooltip={withTooltip} resource={trait || ""} size="md" />
       <div
         className={clsx("relative flex flex-col shrink-0", type === "horizontal" ? "ml-1 font-bold" : "items-center")}
       >

@@ -172,6 +172,7 @@ export const World = () => {
       <Tooltip />
       <Redirect to="/map" />
       <div className="absolute bottom-4 right-6 text-white text-xs text-white/60">v0.3.0</div>
+      {/* <div className="absolute h-screen w-screen bg-black top-0"></div> */}
     </div>
   );
 };
