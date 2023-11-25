@@ -110,12 +110,27 @@ export const LaborComponent = ({
         {findResourceById(resourceId)?.trait}
       </div>
       <div className="grid grid-cols-6">
-        <img src={`/images/resource_buildings/${resourceId}.png`} className="object-cover w-full h-full rounded-md" />
+        <img src={`/images/resources/${resourceId}.png`} className="object-cover w-full h-full rounded-md" />
         <div className="flex flex-col w-full h-full col-span-5 p-2 text-white/70">
           <div className="flex items-center mb-2">
-            <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="sm" />
-            <div className="ml-2 text-xs font-bold text-white">
+            {/* <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="sm" /> */}
+            <div className="ml-2 text-sm font-bold text-white">
               {currencyFormat(resource ? resource.balance : 0, 2)}
+
+              <span className="ml-3">
+                [
+                {labor && laborLeft > 0
+                  ? `+${divideByPrecision(
+                      calculateProductivity(
+                        isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
+                        labor.multiplier,
+                        LABOR_CONFIG.base_labor_units,
+                        level,
+                      ),
+                    ).toFixed(0)}`
+                  : "+0"}
+                /h]
+              </span>
             </div>
             <div className="flex items-center ml-auto">
               {isFood && <Village />}
@@ -157,7 +172,7 @@ export const LaborComponent = ({
               </div>
             </>
 
-            <div className="flex items-center mx-auto text-white/70">
+            {/* <div className="flex items-center mx-auto text-white/70">
               {labor && laborLeft > 0
                 ? `+${divideByPrecision(
                     calculateProductivity(
@@ -175,10 +190,10 @@ export const LaborComponent = ({
                 size="xs"
               />
               /h
-            </div>
+            </div> */}
             <>
-              <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="xs" className="!w-[12px]" />
-              <div className="mx-1 text-brilliance">{`+${divideByPrecision(nextHarvest)}`}</div>
+              {/* <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="xs" className="!w-[12px]" /> */}
+              <div className="ml-auto text-brilliance px-2">{`+${divideByPrecision(nextHarvest)}`}</div>
             </>
             {/* // TODO: visual cue to show disabled? */}
             <Button

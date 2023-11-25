@@ -49,11 +49,11 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
             onClick={() => {
               !showAllResources && setShowAllResources(true);
             }}
-            className="absolute flex items-center p-3 text-xs font-bold text-white translate-x-full cursor-pointer -right-2 min-h-10 bg-black/60 rounded-xl"
+            className="absolute flex items-center p-3 text-xs font-bold text-white translate-x-full cursor-pointer -right-2 min-h-10 bg-black/90 rounded-xl"
           >
             {showAllResources ? (
               <div className="flex flex-col">
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {resources.map((resource) => (
                     <SmallResource key={resource.id} resourceId={resource.id}></SmallResource>
                   ))}
@@ -136,12 +136,12 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
             })
           }
           onMouseLeave={() => setTooltip(null)}
-          className="flex relative group items-center p-3 text-xs font-bold text-white bg-black/60 rounded-xl h-11"
+          className="flex relative group items-center p-3 text-xs font-bold text-white bg-black/90 rounded-xl h-11"
         >
           <ResourceIcon
             withTooltip={false}
             resource={findResourceById(resourceId)?.trait as string}
-            size="xs"
+            size="sm"
             className="mr-2"
           />
           <div className="text-xs">{currencyFormat(resource ? resource.balance : 0, 2)}</div>

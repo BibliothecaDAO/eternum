@@ -42,7 +42,7 @@ export const SmallResource = ({
       onMouseLeave={() => setTooltip(null)}
       className={clsx("flex relative group items-center", vertical && "flex-col space-y-1", !vertical && "space-x-1")}
     >
-      <ResourceIcon withTooltip={false} resource={findResourceById(resourceId)?.trait || ""} size="xs" />
+      <ResourceIcon withTooltip={false} resource={findResourceById(resourceId)?.trait || ""} size="md" />
       <div className="text-xxs">
         {intlFormat
           ? Intl.NumberFormat("en-US", {
