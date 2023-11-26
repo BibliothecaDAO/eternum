@@ -136,29 +136,31 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
             })
           }
           onMouseLeave={() => setTooltip(null)}
-          className="flex relative group items-center p-3 text-xs font-bold text-white bg-black/90 rounded-xl h-11"
+          className="flex relative group items-center p-2 px-4 text-xs font-bold text-white bg-black/90 rounded-xl"
         >
           <ResourceIcon
             withTooltip={false}
             resource={findResourceById(resourceId)?.trait as string}
-            size="sm"
+            size="md"
             className="mr-2"
           />
-          <div className="text-xs">{currencyFormat(resource ? resource.balance : 0, 2)}</div>
-        </div>
-        {resourceId !== 253 && (
-          <div
-            className={clsx(
-              "text-xxs mt-2 rounded-[5px] px-2 h-4 w-min",
-              productivity > 0 && "text-order-vitriol bg-dark-green",
-              (productivity === 0 || productivity === undefined) && "text-gold bg-brown",
+          <div className="text-xs">
+            {resourceId !== 253 && (
+              <div
+                className={clsx(
+                  "text-xxs mb-1 rounded-[5px] px-1 w-min ",
+                  productivity > 0 && "text-order-vitriol bg-dark-green",
+                  (productivity === 0 || productivity === undefined) && "text-gold bg-brown",
+                )}
+              >
+                {productivity === 0 || productivity === undefined
+                  ? "IDLE"
+                  : `${divideByPrecision(productivity).toFixed(0)}/h`}
+              </div>
             )}
-          >
-            {productivity === 0 || productivity === undefined
-              ? "IDLE"
-              : `${divideByPrecision(productivity).toFixed(0)}/h`}
+            {currencyFormat(resource ? resource.balance : 0, 2)}
           </div>
-        )}
+        </div>
       </div>
       {(resourceId === ResourcesIds["Fish"] || resourceId === ResourcesIds["Shekels"]) && (
         <div className="flex items-center mx-3 -translate-y-2 scale-y-[2]">|</div>

@@ -75,9 +75,9 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
           <div className="mr-0.5">Level up:</div>
         </div>
       </SecondaryPopup.Head>
-      <SecondaryPopup.Body width={"376px"}>
+      <SecondaryPopup.Body width={"500px"}>
         <div className="flex flex-col items-center p-2">
-          <Headline size="big">Level up to level {newLevel}</Headline>
+          <Headline size="big">Level Realm to {newLevel}</Headline>
           <div className={"relative w-full mt-3"}>
             <img
               src={`/images/levels/level${newLevel.toString()}.png`}

@@ -105,7 +105,7 @@ export const LaborComponent = ({
 
   return (
     <div className="relative flex flex-col border rounded-md border-gray-gold text-xxs text-gray-gold">
-      <div className="absolute top-0 left-0 flex items-center px-1 italic border border-t-0 border-l-0 text-white/70 rounded-tl-md bg-black/60 rounded-br-md border-gray-gold">
+      <div className="absolute top-0 left-0 flex items-center px-1 italic font-bold border border-t-0 border-l-0 text-white/70 rounded-tl-md bg-black/90 rounded-br-md border-gray-gold">
         {findResourceById(resourceId)?.trait}
       </div>
       <div className="grid grid-cols-6">
@@ -114,10 +114,9 @@ export const LaborComponent = ({
           <div className="flex items-center mb-2">
             {/* <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="sm" /> */}
             <div className="ml-2 text-sm font-bold text-white">
-              {currencyFormat(resource ? resource.balance : 0, 2)}
+              <span className="opacity-60">{currencyFormat(resource ? resource.balance : 0, 2)}</span>
 
               <span className={`ml-3  ${labor && laborLeft > 0 ? "text-gold" : "text-gray-gold"}`}>
-                [
                 {labor && laborLeft > 0
                   ? `+${divideByPrecision(
                       calculateProductivity(
@@ -128,7 +127,7 @@ export const LaborComponent = ({
                       ),
                     ).toFixed(0)}`
                   : "+0"}
-                /h]
+                /h
               </span>
             </div>
             <div className="flex items-center ml-auto">
@@ -143,7 +142,7 @@ export const LaborComponent = ({
               {/* // TODO: show visual cue that it's disabled */}
               {!buildLoadingStates[resourceId] && (
                 <Button variant="outline" className="px-2 py-1" onClick={onBuild} disabled={isFood && laborLeft > 0}>
-                  {isFood ? `Build` : `Buy Tools`}
+                  {isFood ? `Build` : `Add Production`}
                 </Button>
               )}
               {buildLoadingStates[resourceId] && (
@@ -161,35 +160,15 @@ export const LaborComponent = ({
           <ProgressBar
             rounded
             progress={timeLeftToHarvest ? 100 - (timeLeftToHarvest / LABOR_CONFIG.base_labor_units) * 100 : 0}
-            className="bg-white"
+            className="bg-white animate-pulse"
           />
           <div className="flex items-center mt-2">
             <>
               <Clock />
-              <div className="ml-1 italic text-white/70">
+              <div className="ml-1 italic text-white/90">
                 {laborLeft > 60 ? `${formatSecondsInHoursMinutes(laborLeft)} left` : "No Labor"}
               </div>
             </>
-
-            {/* <div className="flex items-center mx-auto text-white/70">
-              {labor && laborLeft > 0
-                ? `+${divideByPrecision(
-                    calculateProductivity(
-                      isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
-                      labor.multiplier,
-                      LABOR_CONFIG.base_labor_units,
-                      level,
-                    ),
-                  ).toFixed(0)}`
-                : "+0"}
-              <ResourceIcon
-                containerClassName="mx-0.5"
-                className="!w-[12px]"
-                resource={findResourceById(resourceId)?.trait as any}
-                size="xs"
-              />
-              /h
-            </div> */}
             <>
               {/* <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="xs" className="!w-[12px]" /> */}
               <div className="ml-auto text-brilliance px-2">{`+${divideByPrecision(nextHarvest)}`}</div>
