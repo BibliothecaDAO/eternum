@@ -114,7 +114,7 @@ export const LaborComponent = ({
           <div className="flex items-center mb-2">
             {/* <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="sm" /> */}
             <div className="ml-2 text-sm font-bold text-white">
-              {currencyFormat(resource ? resource.balance : 0, 2)}
+              <span className="opacity-60">{currencyFormat(resource ? resource.balance : 0, 2)}</span>
 
               <span className={`ml-3  ${labor && laborLeft > 0 ? "text-gold" : "text-gray-gold"}`}>
                 [
@@ -143,7 +143,7 @@ export const LaborComponent = ({
               {/* // TODO: show visual cue that it's disabled */}
               {!buildLoadingStates[resourceId] && (
                 <Button variant="outline" className="px-2 py-1" onClick={onBuild} disabled={isFood && laborLeft > 0}>
-                  {isFood ? `Build` : `Buy Tools`}
+                  {isFood ? `Build` : `Increase Production`}
                 </Button>
               )}
               {buildLoadingStates[resourceId] && (
@@ -161,7 +161,7 @@ export const LaborComponent = ({
           <ProgressBar
             rounded
             progress={timeLeftToHarvest ? 100 - (timeLeftToHarvest / LABOR_CONFIG.base_labor_units) * 100 : 0}
-            className="bg-white"
+            className="bg-white animate-pulse"
           />
           <div className="flex items-center mt-2">
             <>
@@ -170,26 +170,6 @@ export const LaborComponent = ({
                 {laborLeft > 60 ? `${formatSecondsInHoursMinutes(laborLeft)} left` : "No Labor"}
               </div>
             </>
-
-            {/* <div className="flex items-center mx-auto text-white/70">
-              {labor && laborLeft > 0
-                ? `+${divideByPrecision(
-                    calculateProductivity(
-                      isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
-                      labor.multiplier,
-                      LABOR_CONFIG.base_labor_units,
-                      level,
-                    ),
-                  ).toFixed(0)}`
-                : "+0"}
-              <ResourceIcon
-                containerClassName="mx-0.5"
-                className="!w-[12px]"
-                resource={findResourceById(resourceId)?.trait as any}
-                size="xs"
-              />
-              /h
-            </div> */}
             <>
               {/* <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="xs" className="!w-[12px]" /> */}
               <div className="ml-auto text-brilliance px-2">{`+${divideByPrecision(nextHarvest)}`}</div>
