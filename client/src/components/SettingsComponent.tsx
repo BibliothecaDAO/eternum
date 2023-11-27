@@ -71,10 +71,10 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
               <Headline size="big">Sound</Headline>
               <RangeInput value={musicLevel} fromTitle="Mute" onChange={setMusicLevel} title="Music" />
               <RangeInput value={effectsLevel} fromTitle="Mute" onChange={setEffectsLevel} title="Effects" />
-              <Headline size="big">Testnet Menu</Headline>
-              <div className="flex justify-center">
+              {/* <Headline size="big">Testnet Menu</Headline> */}
+              {/* <div className="flex justify-center">
                 <SettleRealmComponent />
-              </div>
+              </div> */}
               <Button onClick={() => setShowSettings(false)} variant="outline" className="text-xxs !py-1 !px-2 mr-auto">
                 Done
               </Button>

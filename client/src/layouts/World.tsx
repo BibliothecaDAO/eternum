@@ -29,13 +29,26 @@ import useLeaderBoardStore from "../hooks/store/useLeaderBoardStore";
 import useCombatHistoryStore from "../hooks/store/useCombatHistoryStore";
 import { useDojo } from "../DojoContext";
 import useRealmStore from "../hooks/store/useRealmStore";
+import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
+import { Onboarding } from "../plugins/onboarding/components/Onboarding";
 
 export const World = () => {
   const {
+    account: { account, list },
     setup: {
       systemCalls: { isLive },
     },
   } = useDojo();
+
+  const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+
+  useEffect(() => {
+    if (list().length > 0) {
+      showBlankOverlay(false);
+    } else {
+      showBlankOverlay(true);
+    }
+  }, []);
 
   const [isWorldLive, setIsWorldLive] = useState(false);
 
@@ -165,14 +178,16 @@ export const World = () => {
       <BottomRightContainer>
         <ChatModule />
       </BottomRightContainer>
+      <BlankOverlayContainer>
+        <Onboarding />
+      </BlankOverlayContainer>
       <BlurOverlayContainer>
-        <SignUpComponent isWorldLive={isWorldLive} worldLoading={worldLoading} worldProgress={worldProgress} />
+        {/* <SignUpComponent isWorldLive={isWorldLive} worldLoading={worldLoading} worldProgress={worldProgress} /> */}
       </BlurOverlayContainer>
       <Leva hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU} />
       <Tooltip />
       <Redirect to="/map" />
       <div className="absolute bottom-4 right-6 text-white text-xs text-white/60">v0.3.0</div>
-      {/* <div className="absolute h-screen w-screen bg-black top-0"></div> */}
     </div>
   );
 };
