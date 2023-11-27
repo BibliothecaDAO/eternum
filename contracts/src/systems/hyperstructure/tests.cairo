@@ -65,7 +65,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, IHyperstructureSystemsDispatcher) {
     ];
     let hyperstructure_coord = Coord{ x:20, y:30 };
     let hyperstructure_order = 3;
-    let hyperstructure_max_level = 4;
 
 
     // set labor configuration entity
@@ -84,7 +83,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, IHyperstructureSystemsDispatcher) {
                 construction_resources.span(),
                 hyperstructure_coord,
                 hyperstructure_order,
-                hyperstructure_max_level
             );
 
     let hyperstructure_systems_address 
@@ -113,12 +111,12 @@ fn test_upgrade_by_two_levels() {
         Resource {
             entity_id: hyperstructure_id,
             resource_type: ResourceTypes::STONE,
-            balance: 20
+            balance: 30
         },
         Resource {
             entity_id: hyperstructure_id,
             resource_type: ResourceTypes::WOOD,
-            balance: 25
+            balance: 40
         }   
     ));
 
@@ -179,8 +177,7 @@ fn test_upgrade_past_max_level() {
 
     
     
-    // upgrade by 5 levels
-    hyperstructure_systems_dispatcher.upgrade_level(world, hyperstructure_id);
+    // upgrade by 4 levels
     hyperstructure_systems_dispatcher.upgrade_level(world, hyperstructure_id);
     hyperstructure_systems_dispatcher.upgrade_level(world, hyperstructure_id);
     hyperstructure_systems_dispatcher.upgrade_level(world, hyperstructure_id);
@@ -201,12 +198,12 @@ fn test_downgrade_by_two_levels() {
         Resource {
             entity_id: hyperstructure_id,
             resource_type: ResourceTypes::STONE,
-            balance: 20
+            balance: 30
         },
         Resource {
             entity_id: hyperstructure_id,
             resource_type: ResourceTypes::WOOD,
-            balance: 25
+            balance: 40
         }   
     ));
 
@@ -254,12 +251,12 @@ fn test_downgrade_by_one_level_fail() {
         Resource {
             entity_id: hyperstructure_id,
             resource_type: ResourceTypes::STONE,
-            balance: 20
+            balance: 30
         },
         Resource {
             entity_id: hyperstructure_id,
             resource_type: ResourceTypes::WOOD,
-            balance: 25
+            balance: 40
         }   
     ));
 

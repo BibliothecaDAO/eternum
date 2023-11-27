@@ -973,7 +973,7 @@
     {
       "name": "combat_systems",
       "address": null,
-      "class_hash": "0x1c400a30cd1c5e022f32f5393aa8c12b7798477966964593f0acb5e02daab4d",
+      "class_hash": "0x17f40bf592a03511aa2500d831daefd8bba2a6db203f0810f4b6b7b2105badd",
       "abi": [
         {
           "type": "impl",
@@ -1169,6 +1169,10 @@
                   "type": "core::integer::u128"
                 },
                 {
+                  "name": "attacker_order_hyperstructure_id",
+                  "type": "core::integer::u128"
+                },
+                {
                   "name": "target_realm_entity_id",
                   "type": "core::integer::u128"
                 }
@@ -1285,6 +1289,7 @@
         "EntityOwner",
         "Health",
         "HealthConfig",
+        "HyperStructure",
         "Inventory",
         "Movable",
         "Owner",
@@ -1317,7 +1322,7 @@
     {
       "name": "config_systems",
       "address": null,
-      "class_hash": "0xc154b7c178196c1acf0020612232911bfdd0f6902d5b92505ef9f1af67bb48",
+      "class_hash": "0x53e662d05fa06419b436919f5cadadf1fbbbcebb3e6e13d449bd72622777c3d",
       "abi": [
         {
           "type": "impl",
@@ -1475,6 +1480,26 @@
                 {
                   "name": "stealing_trial_count",
                   "type": "core::integer::u32"
+                },
+                {
+                  "name": "steal_chance_percentage_boost",
+                  "type": "core::integer::u32"
+                },
+                {
+                  "name": "wheat_burn_per_soldier",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "wheat_burn_percent_boost",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "fish_burn_per_soldier",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "fish_burn_percent_boost",
+                  "type": "core::integer::u128"
                 }
               ],
               "outputs": [],
@@ -1491,14 +1516,6 @@
                 {
                   "name": "resource_costs",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
-                },
-                {
-                  "name": "wheat_burn_per_soldier",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "fish_burn_per_soldier",
-                  "type": "core::integer::u128"
                 }
               ],
               "outputs": [],
@@ -1820,7 +1837,7 @@
                 },
                 {
                   "name": "order",
-                  "type": "core::integer::u32"
+                  "type": "core::integer::u8"
                 },
                 {
                   "name": "max_level",
@@ -1881,7 +1898,7 @@
     {
       "name": "hyperstructure_systems",
       "address": null,
-      "class_hash": "0xb20a25b80ca612cbba01c743e5bdef1abb22bc62e852b28fd1dc04d294c53",
+      "class_hash": "0x3f57b43861b4a64299926a72884c157e0d8e24edd1295e64147eb6a26d3d2cb",
       "abi": [
         {
           "type": "impl",
@@ -5397,9 +5414,34 @@
           "name": "stealing_trial_count",
           "type": "u32",
           "key": false
+        },
+        {
+          "name": "steal_chance_percentage_boost",
+          "type": "u32",
+          "key": false
+        },
+        {
+          "name": "wheat_burn_per_soldier",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "wheat_burn_percent_boost",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "fish_burn_per_soldier",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "fish_burn_percent_boost",
+          "type": "u128",
+          "key": false
         }
       ],
-      "class_hash": "0x44afeaa5041700755966dccdcc38e70d2c3add8324d26b5acb8d8e8ff056ded",
+      "class_hash": "0x5a0d6e7ef8eda0129cde09ebd197bb0c952f79a254e3ba570ff0b00c818c84d",
       "abi": [
         {
           "type": "function",
@@ -7023,7 +7065,7 @@
         },
         {
           "name": "order",
-          "type": "u32",
+          "type": "u8",
           "key": false
         },
         {
@@ -7037,7 +7079,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x2b70104a3a74451d1dcdc84d9e371e49d76e18196aacf06aa27ade0a7713018",
+      "class_hash": "0x2f0fa5a144e1f21dd31a87c7ec37bde42ae8d1b224c6d06931c7e46e501e0db",
       "abi": [
         {
           "type": "function",
@@ -10952,19 +10994,9 @@
           "name": "resource_cost_count",
           "type": "u32",
           "key": false
-        },
-        {
-          "name": "wheat_burn_per_soldier",
-          "type": "u128",
-          "key": false
-        },
-        {
-          "name": "fish_burn_per_soldier",
-          "type": "u128",
-          "key": false
         }
       ],
-      "class_hash": "0x2e85dc798eeb6bf3b7dd200ee1b843840548d6adf388b0687045f608a59539c",
+      "class_hash": "0x39e0a6a5d1286bfc186f1d5fd6319d65a40cde3f14706a280b973ac085843c7",
       "abi": [
         {
           "type": "function",

@@ -95,13 +95,38 @@ mod config_systems {
             self: @ContractState, 
             world: IWorldDispatcher, 
             config_id: u128, 
-            stealing_trial_count: u32
+            stealing_trial_count: u32,
+            steal_chance_percentage_boost: u32,
+            wheat_burn_per_soldier: u128,
+            wheat_burn_percent_boost: u128,
+            fish_burn_per_soldier: u128,
+            fish_burn_percent_boost: u128
         ) {
+            assert(
+                steal_chance_percentage_boost > 0,
+                    'incorrect steal chance value'
+            );
+
+            assert(
+                wheat_burn_percent_boost > 0,
+                    'incorrect wheat boost value'
+            );
+
+            assert(
+                fish_burn_percent_boost > 0,
+                     'incorrect fish boost value'
+            );
+
             set!(
                 world,
                 (CombatConfig {
                     config_id,
-                    stealing_trial_count
+                    stealing_trial_count,
+                    steal_chance_percentage_boost,
+                    wheat_burn_per_soldier,
+                    wheat_burn_percent_boost,
+                    fish_burn_per_soldier,
+                    fish_burn_percent_boost
                 })
             );
         }
@@ -110,9 +135,7 @@ mod config_systems {
         fn set_soldier_config(
             self: @ContractState, 
             world: IWorldDispatcher, 
-            resource_costs: Span<(u8, u128)>,
-            wheat_burn_per_soldier: u128,
-            fish_burn_per_soldier: u128
+            resource_costs: Span<(u8, u128)>
         ) {
             let resource_cost_id = world.uuid().into();
             let mut index = 0;
@@ -139,9 +162,7 @@ mod config_systems {
                 (SoldierConfig {
                     config_id: SOLDIER_ENTITY_TYPE,
                     resource_cost_id,
-                    resource_cost_count: resource_costs.len(),
-                    wheat_burn_per_soldier,
-                    fish_burn_per_soldier
+                    resource_cost_count: resource_costs.len()
                 })
             );
         }
@@ -421,8 +442,7 @@ mod config_systems {
             hyperstructure_type: u8,
             construction_resources: Span<(u8, u128)>,
             coord: Coord,
-            order: u32,
-            max_level: u32
+            order: u8,
         ) -> ID {
             let mut construction_resources = construction_resources;
             let construction_resource_count = construction_resources.len();
@@ -462,7 +482,7 @@ mod config_systems {
                     construction_resource_count,
                     order,
                     level: 0,
-                    max_level,
+                    max_level: 3,
                 },
                 Position {
                     entity_id: hyperstructure_id,

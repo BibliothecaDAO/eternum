@@ -35,15 +35,18 @@ trait ICombatConfig<TContractState> {
         self: @TContractState, 
         world: IWorldDispatcher, 
         config_id: u128, 
-        stealing_trial_count: u32
+        stealing_trial_count: u32,
+        steal_chance_percentage_boost: u32,
+        wheat_burn_per_soldier: u128,
+        wheat_burn_percent_boost: u128,
+        fish_burn_per_soldier: u128,
+        fish_burn_percent_boost: u128
     );
 
     fn set_soldier_config(
         self: @TContractState, 
         world: IWorldDispatcher, 
-        resource_costs: Span<(u8, u128)>,
-        wheat_burn_per_soldier: u128,
-        fish_burn_per_soldier: u128
+        resource_costs: Span<(u8, u128)>
     );
 
     fn set_health_config(
@@ -118,7 +121,7 @@ trait IHyperstructureConfig<TContractState> {
     fn create_hyperstructure(
         self: @TContractState, world: IWorldDispatcher, 
         hyperstructure_type: u8, construction_resources: Span<(u8, u128)>, 
-        coord: Coord, order: u32, max_level: u32
+        coord: Coord, order: u8
     ) -> ID;
 
 }

@@ -68,9 +68,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
             // pay for each soldier with the following
             (ResourceTypes::WOOD, 40),
             (ResourceTypes::WHEAT, 40),
-        ].span(),
-        100,
-        200
+        ].span()
     );
 
     // set soldiers starting attack, defence and health

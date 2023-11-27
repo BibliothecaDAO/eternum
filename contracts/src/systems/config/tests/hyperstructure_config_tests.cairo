@@ -50,7 +50,6 @@ fn test_create_hyperstructure() {
     ];
     let hyperstructure_coord = Coord{ x:20, y:30 };
     let hyperstructure_order = 3;
-    let hyperstructure_max_level = 4;
 
 
     // let world.uuid start from 1
@@ -63,7 +62,6 @@ fn test_create_hyperstructure() {
             construction_resources.span(),
             hyperstructure_coord,
             hyperstructure_order,
-            hyperstructure_max_level
         );
 
 
@@ -72,7 +70,6 @@ fn test_create_hyperstructure() {
             'wrong hyperstructure type value'
     );
     assert(hyperstructure.order == 3, 'wrong order');
-    assert(hyperstructure.max_level == 4, 'wrong max level');
 
 
     assert(hyperstructure.construction_resource_id != 0, 'wrong resource id');

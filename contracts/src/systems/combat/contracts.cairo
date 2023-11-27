@@ -14,6 +14,7 @@ mod combat_systems {
     use eternum::models::weight::Weight;
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::realm::Realm;
+    use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::quantity::{Quantity, QuantityTrait};    
     use eternum::models::combat::{
         Attack, Health, Defence, Duty, TownWatch
@@ -39,7 +40,7 @@ mod combat_systems {
 
     use eternum::utils::random;
     use eternum::utils::math::{min};
-    use eternum::constants::ResourceTypes;    
+    use eternum::constants::ResourceTypes;
 
 
     #[derive(Serde, Copy, Drop)]
@@ -704,7 +705,7 @@ mod combat_systems {
 
         fn steal(
             self: @ContractState, world: IWorldDispatcher,
-            attacker_id: u128, target_realm_entity_id: u128
+            attacker_id: u128, attacker_order_hyperstructure_id: u128, target_realm_entity_id: u128
         ) {
             // check that target is a realm
             let target_realm = get!(world, target_realm_entity_id, Realm);
@@ -749,10 +750,34 @@ mod combat_systems {
             let target_town_watch_defense = get!(world, target_town_watch_id, Defence);
 
             
+            let attacker_entity_owner = get!(world, attacker_id, EntityOwner);
+            let attacker_realm = get!(world,attacker_entity_owner.entity_owner_id, Realm );
+            let combat_config = get!(world, COMBAT_CONFIG_ID, CombatConfig);
+
+            let mut attack_boost_level = 0;
+            
+            if attacker_realm.realm_id != 0 {
+                let attacker_order_hyperstructure 
+                    = get!(world, attacker_order_hyperstructure_id, HyperStructure);
+                assert(
+                    attacker_order_hyperstructure.order == attacker_realm.order, 
+                        'wrong hyperstructure id'
+                );
+
+                attack_boost_level = attacker_order_hyperstructure.level;
+            }
+
+            // increase chance of successful attack if level is boosted
+            let mut chance_of_successful_attack = attacker_attack.value * attacker_health.value;
+            if attack_boost_level == 2 || attack_boost_level == 3 {
+                chance_of_successful_attack 
+                    += (combat_config.steal_chance_percentage_boost.into() * chance_of_successful_attack ) 
+                        / 100
+            }
             let attack_successful: bool = *random::choices(
                 array![true, false].span(), 
                 array![
-                    attacker_attack.value * attacker_health.value, 
+                    chance_of_successful_attack, 
                     target_town_watch_defense.value * target_town_watch_health.value
                 ].span(), 
                 array![].span(), 1
@@ -761,16 +786,29 @@ mod combat_systems {
 
             if attack_successful {
 
+
                 // burn target's food (fish and wheat)
                 let attacker_quantity = get!(world, attacker_id, Quantity);
-                let soldier_config: SoldierConfig = get!(world, SOLDIER_ENTITY_TYPE, SoldierConfig);
 
-                let wheat_burn_amount = soldier_config.wheat_burn_per_soldier * attacker_quantity.value;
+                let mut wheat_burn_amount = combat_config.wheat_burn_per_soldier * attacker_quantity.value;
+                let mut fish_burn_amount = combat_config.fish_burn_per_soldier * attacker_quantity.value;
+                
+                if attack_boost_level == 1 || attack_boost_level == 3 {
+                    // boost burn amount is hyperstructure level is boosted
+                    wheat_burn_amount 
+                        += combat_config.wheat_burn_percent_boost * wheat_burn_amount 
+                            / 100;
+
+                    fish_burn_amount 
+                        += combat_config.fish_burn_percent_boost * fish_burn_amount
+                            / 100;
+                } 
+
+
                 let mut target_wheat_resource
                     = get!(world, (target_realm_entity_id, ResourceTypes::WHEAT), Resource);
                 target_wheat_resource.balance -= min(wheat_burn_amount, target_wheat_resource.balance);
 
-                let fish_burn_amount = soldier_config.fish_burn_per_soldier * attacker_quantity.value;
                 let mut target_fish_resource 
                     = get!(world, (target_realm_entity_id, ResourceTypes::FISH), Resource);
                 target_fish_resource.balance -= min(fish_burn_amount, target_fish_resource.balance);
@@ -797,7 +835,6 @@ mod combat_systems {
 
                 // here we choose x number of resources (with replacement)
                 // that the attacker can get away with 
-                let combat_config = get!(world, COMBAT_CONFIG_ID, CombatConfig);
                 let chosen_resource_types: Span<u8> = random::choices(
                     resource_types, resource_type_probabilities, 
                     array![].span(), combat_config.stealing_trial_count.into()

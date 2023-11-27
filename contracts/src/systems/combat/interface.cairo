@@ -32,8 +32,9 @@ trait ICombatSystems<TContractState> {
         self: @TContractState, world: IWorldDispatcher, 
         attacker_ids:Span<u128>, target_realm_entity_id: u128
     );
-    fn steal( 
-        self: @TContractState, world: IWorldDispatcher, 
-        attacker_id:u128, target_realm_entity_id: u128
+    
+    fn steal(
+        self: @TContractState, world: IWorldDispatcher,
+        attacker_id: u128, attacker_order_hyperstructure_id: u128, target_realm_entity_id: u128
     );
 }
