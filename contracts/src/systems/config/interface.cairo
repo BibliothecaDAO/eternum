@@ -119,9 +119,8 @@ trait ITransportConfig<TContractState> {
 #[starknet::interface]
 trait IHyperstructureConfig<TContractState> {
     fn create_hyperstructure(
-        self: @TContractState, world: IWorldDispatcher, 
-        hyperstructure_type: u8, construction_resources: Span<(u8, u128)>, 
-        coord: Coord, order: u8
+        self: @TContractState, world: IWorldDispatcher, hyperstructure_type: u8,
+        levels_construction_resources: Span<Span<(u8, u128)>>, coord: Coord, order: u8
     ) -> ID;
 
 }

@@ -973,7 +973,7 @@
     {
       "name": "combat_systems",
       "address": null,
-      "class_hash": "0x17f40bf592a03511aa2500d831daefd8bba2a6db203f0810f4b6b7b2105badd",
+      "class_hash": "0x264e9c30fe289f111a0aef405754c9617a7f184e39d023847eaefeab3f0e62c",
       "abi": [
         {
           "type": "impl",
@@ -1322,7 +1322,7 @@
     {
       "name": "config_systems",
       "address": null,
-      "class_hash": "0x53e662d05fa06419b436919f5cadadf1fbbbcebb3e6e13d449bd72622777c3d",
+      "class_hash": "0x1b8a546fbf4b2e0fcb2ce9cd0d5d292ee45315e935c6daaec3aaba130d95bd0",
       "abi": [
         {
           "type": "impl",
@@ -1799,6 +1799,16 @@
         },
         {
           "type": "struct",
+          "name": "core::array::Span::<core::array::Span::<(core::integer::u8, core::integer::u128)>>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::array::Span::<(core::integer::u8, core::integer::u128)>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
           "name": "eternum::models::position::Coord",
           "members": [
             {
@@ -1828,8 +1838,8 @@
                   "type": "core::integer::u8"
                 },
                 {
-                  "name": "construction_resources",
-                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                  "name": "levels_construction_resources",
+                  "type": "core::array::Span::<core::array::Span::<(core::integer::u8, core::integer::u128)>>"
                 },
                 {
                   "name": "coord",
@@ -1838,10 +1848,6 @@
                 {
                   "name": "order",
                   "type": "core::integer::u8"
-                },
-                {
-                  "name": "max_level",
-                  "type": "core::integer::u32"
                 }
               ],
               "outputs": [
@@ -1884,6 +1890,7 @@
         "LaborCostAmount",
         "LaborCostResources",
         "LevelingConfig",
+        "LevelingConfig",
         "Position",
         "ResourceCost",
         "RoadConfig",
@@ -1898,7 +1905,7 @@
     {
       "name": "hyperstructure_systems",
       "address": null,
-      "class_hash": "0x3f57b43861b4a64299926a72884c157e0d8e24edd1295e64147eb6a26d3d2cb",
+      "class_hash": "0x68f13693ab15abe11fa7223fb8ac6ce6030f238b715672730c2fb6389a2f9ad",
       "abi": [
         {
           "type": "impl",
@@ -1996,6 +2003,7 @@
       ],
       "reads": [
         "HyperStructure",
+        "LevelingConfig",
         "Resource",
         "ResourceCost"
       ],
@@ -5441,7 +5449,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x5a0d6e7ef8eda0129cde09ebd197bb0c952f79a254e3ba570ff0b00c818c84d",
+      "class_hash": "0xacbd6c5ec75ad434e170df42106edd353459bfa749370b68b217ded81b0c67",
       "abi": [
         {
           "type": "function",
@@ -7054,16 +7062,6 @@
           "key": false
         },
         {
-          "name": "construction_resource_id",
-          "type": "u128",
-          "key": false
-        },
-        {
-          "name": "construction_resource_count",
-          "type": "u32",
-          "key": false
-        },
-        {
           "name": "order",
           "type": "u8",
           "key": false
@@ -7079,7 +7077,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x2f0fa5a144e1f21dd31a87c7ec37bde42ae8d1b224c6d06931c7e46e501e0db",
+      "class_hash": "0x4c99ee3ae8aed3cd70ba39aa2f2f50a50760407a72ead7989bf46653c3935c5",
       "abi": [
         {
           "type": "function",
@@ -8925,6 +8923,193 @@
         {
           "type": "event",
           "name": "eternum::models::movable::movable::Event",
+          "kind": "enum",
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "LevelingConfig",
+      "members": [
+        {
+          "name": "config_id",
+          "type": "u128",
+          "key": true
+        },
+        {
+          "name": "index",
+          "type": "u32",
+          "key": true
+        },
+        {
+          "name": "resource_cost_id",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "resource_cost_count",
+          "type": "u32",
+          "key": false
+        }
+      ],
+      "class_hash": "0x6cdbf60c4c36f12bfe15afb33b373acad1b9e1e39283b5079a232eedcd5a506",
+      "abi": [
+        {
+          "type": "function",
+          "name": "name",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::felt252"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "unpacked_size",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "packed_size",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
+          "type": "function",
+          "name": "layout",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::array::Span::<core::integer::u8>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::felt252>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::felt252>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::schema::Struct",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::schema::Enum",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "dojo::database::schema::Ty",
+          "variants": [
+            {
+              "name": "Primitive",
+              "type": "core::felt252"
+            },
+            {
+              "name": "Struct",
+              "type": "dojo::database::schema::Struct"
+            },
+            {
+              "name": "Enum",
+              "type": "dojo::database::schema::Enum"
+            },
+            {
+              "name": "Tuple",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "function",
+          "name": "schema",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "dojo::database::schema::Ty"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::config::multi_leveling_config::Event",
           "kind": "enum",
           "variants": []
         }

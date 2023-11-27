@@ -7,7 +7,7 @@ mod leveling_systems {
     use eternum::models::realm::{Realm};
     use eternum::models::level::{Level, LevelTrait};
 
-    use eternum::constants::{LEVELING_CONFIG_ID};
+    use eternum::constants::{REALM_LEVELING_CONFIG_ID};
 
     use eternum::systems::leveling::interface::{ILevelingSystems};
 
@@ -38,7 +38,8 @@ mod leveling_systems {
             assert(level.get_level() != 3, 'max level reached');
 
             // check that realm has enough resources to level up
-            let leveling_config: LevelingConfig = get!(world, LEVELING_CONFIG_ID, LevelingConfig);
+            let leveling_config: LevelingConfig 
+                = get!(world, (REALM_LEVELING_CONFIG_ID, 0), LevelingConfig);
 
             let mut index = 0;
             loop {

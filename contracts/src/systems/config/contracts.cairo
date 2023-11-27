@@ -7,7 +7,7 @@ mod config_systems {
         LaborCostResources, LaborCostAmount, LaborConfig,CapacityConfig, 
         RoadConfig, SpeedConfig, TravelConfig, WeightConfig,WorldConfig,
         SoldierConfig, HealthConfig, AttackConfig, DefenceConfig, CombatConfig,
-        LevelingConfig
+        LevelingConfig,
     };
 
     use eternum::systems::config::interface::{
@@ -19,7 +19,7 @@ mod config_systems {
     use eternum::constants::{
         WORLD_CONFIG_ID, LABOR_CONFIG_ID, TRANSPORT_CONFIG_ID,
         ROAD_CONFIG_ID, SOLDIER_ENTITY_TYPE, COMBAT_CONFIG_ID, 
-        LEVELING_CONFIG_ID
+        REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_CONFIG_ID
     };
 
     use eternum::models::hyperstructure::HyperStructure;
@@ -268,7 +268,8 @@ mod config_systems {
             set!(
                 world,
                 (LevelingConfig {
-                    config_id: LEVELING_CONFIG_ID,
+                    config_id: REALM_LEVELING_CONFIG_ID,
+                    index: 0,
                     resource_cost_id,
                     resource_cost_count: resource_costs.len()
                 })
@@ -440,36 +441,67 @@ mod config_systems {
             self: @ContractState,
             world: IWorldDispatcher,
             hyperstructure_type: u8,
-            construction_resources: Span<(u8, u128)>,
+            levels_construction_resources: Span<Span<(u8, u128)>>,
             coord: Coord,
             order: u8,
         ) -> ID {
-            let mut construction_resources = construction_resources;
-            let construction_resource_count = construction_resources.len();
-            assert(construction_resource_count > 0, 'resources must not be empty');
 
-            // create construction resource cost components
-            let construction_resource_id: ID = world.uuid().into();
-            let mut index = 0;
+            // note: it is important that for each subsequent level, the resources
+            //         needed must be at least what was required by the previous level, then more
+            //         e.g if you require 14 stone to be on level 1, you must require at least 14 stones
+            //         to be on level 2 also.
+            // 
+            //         This isn't checked by the smart contract for now but is necessary to prevent unexpected
+            //         behaviour when hyperstructure level is being ugraded and downgraded
+
+            let mut levels_construction_resources = levels_construction_resources;
+            assert(levels_construction_resources.len() == 3, '3 construction resources ');
+
+            // create construction resource cost components for each level
+            let mut level = 1;
             loop {
-                match construction_resources.pop_front() {
-                    Option::Some((resource_type, resource_amount)) => {
-                        assert(*resource_amount > 0, 'amount must not be 0');
+                match levels_construction_resources.pop_front() {
+                    Option::Some(current_level_construction_resources) => {
+                        let mut current_level_construction_resources = * current_level_construction_resources;
+                        let current_level_construction_resource_id: ID = world.uuid().into();
+                        let current_level_construction_resource_count: u32 = current_level_construction_resources.len();
+                        let mut index = 0;
+                        loop {
+                            match current_level_construction_resources.pop_front() {
+                                Option::Some((resource_type, resource_amount)) => {
+                                    assert(*resource_amount > 0, 'amount must not be 0');
+
+                                    set!(world, (
+                                        ResourceCost {
+                                            entity_id: current_level_construction_resource_id,
+                                            index,
+                                            resource_type: *resource_type,
+                                            amount: *resource_amount
+                                        }
+                                    ));
+
+                                    index += 1;
+                                },
+                                Option::None => {break;}
+                            };
+                        };
 
                         set!(world, (
-                            ResourceCost {
-                                entity_id: construction_resource_id,
-                                index,
-                                resource_type: *resource_type,
-                                amount: *resource_amount
+                            LevelingConfig {
+                                config_id: HYPERSTRUCTURE_CONFIG_ID,
+                                index: level -1,
+                                resource_cost_id: current_level_construction_resource_id,
+                                resource_cost_count: current_level_construction_resource_count,
                             }
                         ));
 
-                        index += 1;
+                        level += 1;
+
                     },
                     Option::None => {break;}
-                };
+                }
             };
+            
 
 
             let hyperstructure_id: ID = world.uuid().into();
@@ -478,8 +510,6 @@ mod config_systems {
                 HyperStructure {
                     entity_id: hyperstructure_id,
                     hyperstructure_type,
-                    construction_resource_id,
-                    construction_resource_count,
                     order,
                     level: 0,
                     max_level: 3,

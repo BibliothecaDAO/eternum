@@ -59,9 +59,22 @@ fn setup() -> (IWorldDispatcher, u128, u128, IHyperstructureSystemsDispatcher) {
 
     let hyperstructure_type = 1_u8;
 
-    let construction_resources = array![
-        (ResourceTypes::STONE, 40_u128), // 40 stone
-        (ResourceTypes::WOOD, 50_u128)  // 50 wood
+    let level_construction_resources = array![
+        array![
+            // resources needed to be on level 1
+            (ResourceTypes::STONE, 10_u128), 
+        ].span(),
+        array![
+            // resources needed to be on level 2
+            (ResourceTypes::STONE, 20_u128), 
+            (ResourceTypes::WOOD, 30_u128)
+        ].span(),
+        array![
+            // resources needed to be on level 3
+            (ResourceTypes::STONE, 30_u128), 
+            (ResourceTypes::WOOD, 40_u128),
+            (ResourceTypes::COAL, 50_u128)
+        ].span(),
     ];
     let hyperstructure_coord = Coord{ x:20, y:30 };
     let hyperstructure_order = 3;
@@ -80,7 +93,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, IHyperstructureSystemsDispatcher) {
         = hyperstructure_config_dispatcher.create_hyperstructure(
                 world,
                 hyperstructure_type,
-                construction_resources.span(),
+                level_construction_resources.span(),
                 hyperstructure_coord,
                 hyperstructure_order,
             );
@@ -95,6 +108,29 @@ fn setup() -> (IWorldDispatcher, u128, u128, IHyperstructureSystemsDispatcher) {
 
 }
 
+#[test]
+#[available_gas(3000000000000)]  
+fn test_upgrade_by_one_level() {
+    let (
+        world, entity_id, hyperstructure_id, 
+        hyperstructure_systems_dispatcher
+    ) = setup();
+
+    starknet::testing::set_contract_address(world.executor());
+    set!(world, ( 
+        Resource {
+            entity_id: hyperstructure_id,
+            resource_type: ResourceTypes::STONE,
+            balance: 10
+        }
+    ));
+    
+    // upgrade by 1 levels
+    hyperstructure_systems_dispatcher.upgrade_level(world, hyperstructure_id);
+
+    let hyperstructure = get!(world, hyperstructure_id, HyperStructure);
+    assert(hyperstructure.level == 1, 'incorrect level');
+}
 
 
 
@@ -111,12 +147,12 @@ fn test_upgrade_by_two_levels() {
         Resource {
             entity_id: hyperstructure_id,
             resource_type: ResourceTypes::STONE,
-            balance: 30
+            balance: 20
         },
         Resource {
             entity_id: hyperstructure_id,
             resource_type: ResourceTypes::WOOD,
-            balance: 40
+            balance: 30
         }   
     ));
 
@@ -126,9 +162,47 @@ fn test_upgrade_by_two_levels() {
     hyperstructure_systems_dispatcher.upgrade_level(world, hyperstructure_id);
     hyperstructure_systems_dispatcher.upgrade_level(world, hyperstructure_id);
 
-
     let hyperstructure = get!(world, hyperstructure_id, HyperStructure);
     assert(hyperstructure.level == 2, 'incorrect level');
+}
+
+
+#[test]
+#[available_gas(3000000000000)]  
+fn test_upgrade_by_three_levels() {
+    let (
+        world, entity_id, hyperstructure_id, 
+        hyperstructure_systems_dispatcher) = setup();
+
+    starknet::testing::set_contract_address(world.executor());
+    set!(world, ( 
+        Resource {
+            entity_id: hyperstructure_id,
+            resource_type: ResourceTypes::STONE,
+            balance: 30
+        },
+        Resource {
+            entity_id: hyperstructure_id,
+            resource_type: ResourceTypes::WOOD,
+            balance: 40
+        },
+        Resource {
+            entity_id: hyperstructure_id,
+            resource_type: ResourceTypes::COAL,
+            balance: 50
+        },
+    ));
+
+    
+    
+    // upgrade by 3 levels
+    hyperstructure_systems_dispatcher.upgrade_level(world, hyperstructure_id);
+    hyperstructure_systems_dispatcher.upgrade_level(world, hyperstructure_id);
+    hyperstructure_systems_dispatcher.upgrade_level(world, hyperstructure_id);
+
+
+    let hyperstructure = get!(world, hyperstructure_id, HyperStructure);
+    assert(hyperstructure.level == 3, 'incorrect level');
 }
 
 
@@ -144,7 +218,6 @@ fn test_upgrade_by_one_level_fail() {
         hyperstructure_systems_dispatcher
     ) = setup();
 
-    
     
     // upgrade by 1 level
     hyperstructure_systems_dispatcher.upgrade_level(world, hyperstructure_id);
@@ -166,13 +239,18 @@ fn test_upgrade_past_max_level() {
         Resource {
             entity_id: hyperstructure_id,
             resource_type: ResourceTypes::STONE,
-            balance: 40
+            balance: 30
         },
         Resource {
             entity_id: hyperstructure_id,
             resource_type: ResourceTypes::WOOD,
+            balance: 40
+        }, 
+        Resource {
+            entity_id: hyperstructure_id,
+            resource_type: ResourceTypes::COAL,
             balance: 50
-        }   
+        }, 
     ));
 
     
@@ -198,12 +276,12 @@ fn test_downgrade_by_two_levels() {
         Resource {
             entity_id: hyperstructure_id,
             resource_type: ResourceTypes::STONE,
-            balance: 30
+            balance: 20
         },
         Resource {
             entity_id: hyperstructure_id,
             resource_type: ResourceTypes::WOOD,
-            balance: 40
+            balance: 30
         }   
     ));
 
@@ -251,12 +329,12 @@ fn test_downgrade_by_one_level_fail() {
         Resource {
             entity_id: hyperstructure_id,
             resource_type: ResourceTypes::STONE,
-            balance: 30
+            balance: 20
         },
         Resource {
             entity_id: hyperstructure_id,
             resource_type: ResourceTypes::WOOD,
-            balance: 40
+            balance: 30
         }   
     ));
 

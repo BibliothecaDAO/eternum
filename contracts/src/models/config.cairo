@@ -198,6 +198,9 @@ impl WeightConfigImpl of WeightConfigTrait {
 struct LevelingConfig {
     #[key]
     config_id: u128,
+    #[key]
+    index: u32,
     resource_cost_id: u128,
     resource_cost_count: u32
 }
+

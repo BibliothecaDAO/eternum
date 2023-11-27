@@ -142,8 +142,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, u128, ICombatSystemsDis
         HyperStructure { 
                 entity_id: attacker_order_hyperstructure_id,
                 hyperstructure_type: 1,
-                construction_resource_id: 1,
-                construction_resource_count: 1,
                 order: 1,
                 level: 0,
                 max_level: 3
