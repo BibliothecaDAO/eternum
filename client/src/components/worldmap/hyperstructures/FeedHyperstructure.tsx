@@ -115,7 +115,7 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
   );
 
   return (
-    <SecondaryPopup name="hyperstructure">
+    <SecondaryPopup>
       <SecondaryPopup.Head onClose={onClose}>
         <div className="flex items-center space-x-1">
           <div className="mr-0.5 bg-gray">Manage Hyperstructure:</div>
@@ -454,7 +454,7 @@ const BuildHyperstructurePanel = ({
         <>
           <div className="flex flex-col space-y-2 text-xs">
             <div className="relative w-full">
-              <img src={`/images/buildings/hyperstructure.jpg`} className="object-cover w-full h-full rounded-[10px]" />
+              <img src={`/images/buildings/hyperstructure.jpg`} className="object-cover w-full h-64 rounded-[10px]" />
               <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
                 <div className="mb-1 ml-1 italic text-light-pink text-xxs">
                   {hyperstructureData?.initialized ? "Resources need to complete:" : "Initialization cost:"}
@@ -506,19 +506,21 @@ const BuildHyperstructurePanel = ({
               ? `Press "Set the amounts" on any Realm with required resources, to set amounts and send caravan to Hyperstructure.`
               : `Press "Initialize construction" on any Realm with enough resources, to send caravan to Hyperstructure.`}
           </div>
-          {realms.map((realm) => (
-            <SelectableRealm
-              key={realm.realm_id}
-              realm={realm}
-              onClick={() => {
-                setRealmEntityId(realm.entity_id);
-                setStep(step + 1);
-              }}
-              costs={hyperstructureData?.initialzationResources}
-              selected={realmEntityId === realm.entity_id}
-              initialized={hyperstructureData?.initialized}
-            />
-          ))}
+          <div className="h-72 flex flex-col w-full space-y-2 overflow-y-scroll">
+            {realms.map((realm) => (
+              <SelectableRealm
+                key={realm.realm_id}
+                realm={realm}
+                onClick={() => {
+                  setRealmEntityId(realm.entity_id);
+                  setStep(step + 1);
+                }}
+                costs={hyperstructureData?.initialzationResources}
+                selected={realmEntityId === realm.entity_id}
+                initialized={hyperstructureData?.initialized}
+              />
+            ))}
+          </div>
         </div>
       )}
       {step == 3 && (
