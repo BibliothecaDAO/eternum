@@ -10,8 +10,7 @@ use eternum::models::capacity::Capacity;
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::quantity::{Quantity, QuantityTrait};    
 use eternum::models::combat::{
-    Attack,   
-    Health, Defence
+    Attack, Health, Defence, TownWatch
 };
 
 use eternum::systems::config::contracts::config_systems;
@@ -65,7 +64,9 @@ fn setup() -> (IWorldDispatcher, u128, ISoldierSystemsDispatcher) {
             // pay for each soldier with the following
             (ResourceTypes::WOOD, 40),
             (ResourceTypes::WHEAT, 40),
-        ].span()
+        ].span(),
+        100,
+        200
     );
 
     // set soldiers starting attack, defence and health
@@ -76,7 +77,7 @@ fn setup() -> (IWorldDispatcher, u128, ISoldierSystemsDispatcher) {
         world, SOLDIER_ENTITY_TYPE, 100
     );
     combat_config_dispatcher.set_health_config(
-        world, SOLDIER_ENTITY_TYPE, 100
+        world, SOLDIER_ENTITY_TYPE, array![].span(), 100
     );
 
     // set soldier speed configuration 
@@ -113,7 +114,7 @@ fn setup() -> (IWorldDispatcher, u128, ISoldierSystemsDispatcher) {
     let order = 1;
 
     // create caller's realm
-    let caller_realm_entity_id = realm_systems_dispatcher.create(
+    let realm_entity_id = realm_systems_dispatcher.create(
         world, realm_id, starknet::get_contract_address(), // owner
         resource_types_packed, resource_types_count, cities,
         harbors, rivers, regions, wonder, order, caller_position.clone(),
@@ -121,12 +122,11 @@ fn setup() -> (IWorldDispatcher, u128, ISoldierSystemsDispatcher) {
 
     starknet::testing::set_contract_address(world.executor());
 
-    let caller_id = caller_realm_entity_id;
     
-    set!(world, (Owner { entity_id: caller_id, address: contract_address_const::<'caller'>()}));
+    set!(world, (Owner { entity_id: realm_entity_id, address: contract_address_const::<'caller'>()}));
 
-    set!(world, (Resource { entity_id: caller_id, resource_type: ResourceTypes::WHEAT, balance: 5000 }));
-    set!(world, (Resource { entity_id: caller_id, resource_type: ResourceTypes::WOOD, balance: 5000 }));
+    set!(world, (Resource { entity_id: realm_entity_id, resource_type: ResourceTypes::WHEAT, balance: 5000 }));
+    set!(world, (Resource { entity_id: realm_entity_id, resource_type: ResourceTypes::WOOD, balance: 5000 }));
 
     starknet::testing::set_contract_address(
         contract_address_const::<'caller'>()
@@ -139,7 +139,7 @@ fn setup() -> (IWorldDispatcher, u128, ISoldierSystemsDispatcher) {
     };
     
 
-    (world, caller_id, soldier_systems_dispatcher) 
+    (world, realm_entity_id, soldier_systems_dispatcher) 
 
 }
 
@@ -151,86 +151,63 @@ fn setup() -> (IWorldDispatcher, u128, ISoldierSystemsDispatcher) {
 #[available_gas(3000000000000)]
 fn test_create_soldier() {
 
-    let (world, caller_id, soldier_systems_dispatcher) = setup();
+    let (world, realm_entity_id, soldier_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(
         contract_address_const::<'caller'>()
     );
 
     // buy x soldiers
-    let num_soldiers_bought = 2;
-    let mut soldier_ids: Span<u128>
-        = soldier_systems_dispatcher.create_soldiers(
-            world, caller_id, num_soldiers_bought
-        );
+    let num_soldiers_bought = 15;
+    let new_unit_id = soldier_systems_dispatcher.create_soldiers(
+         world, realm_entity_id, num_soldiers_bought
+    );
 
-    assert(soldier_ids.len().into() == num_soldiers_bought, 'wrong num soldiers');
 
     // check that payment works correctly
-    let caller_wheat_resource = get!(world, (caller_id, ResourceTypes::WHEAT), Resource);
+    let caller_wheat_resource = get!(world, (realm_entity_id, ResourceTypes::WHEAT), Resource);
     assert(caller_wheat_resource.balance == 5000 - 40 * num_soldiers_bought, 'wrong wheat balance');
 
-    let caller_wood_resource = get!(world, (caller_id, ResourceTypes::WOOD), Resource);
+    let caller_wood_resource = get!(world, (realm_entity_id, ResourceTypes::WOOD), Resource);
     assert(caller_wood_resource.balance == 5000 - 40 * num_soldiers_bought, 'wrong wood balance');
 
 
-    let caller_position = get!(world, caller_id, Position);
 
-    loop {
-        match soldier_ids.pop_front() {
-            Option::Some(soldier_id) => {
-                
-                let soldier_id = * soldier_id;
-                let soldier_owner = get!(world, soldier_id, Owner);
-                assert(
-                    soldier_owner.address == contract_address_const::<'caller'>(), 
-                        'wrong owner'
-                );
+    // check that the soldiers were created correctly
+    let caller_position = get!(world, realm_entity_id, Position);
+    
+    let realm_new_unit_owner = get!(world, new_unit_id, Owner);
+    assert(realm_new_unit_owner.address == contract_address_const::<'caller'>(), 'wrong owner');
 
-                let soldier_entity_owner = get!(world, soldier_id, EntityOwner);
-                assert(
-                    soldier_entity_owner.entity_owner_id == caller_id,
-                      'wrong entity owner'
-                );
-
-                let soldier_health = get!(world, soldier_id, Health);
-                assert(soldier_health.value == 100, 'wrong health');
-
-                let soldier_attack = get!(world, soldier_id, Attack);
-                assert(soldier_attack.value == 100, 'wrong attack');
-
-                let soldier_defence = get!(world, soldier_id, Defence);
-                assert(soldier_defence.value == 100, 'wrong defence');
-
-                let soldier_quantity = get!(world, soldier_id, Quantity);
-                assert(soldier_quantity.value == 1, 'wrong quantity');
-
-                let soldier_position = get!(world, soldier_id, Position);
-                assert(
-                        soldier_position.x == caller_position.x 
-                            && soldier_position.y == caller_position.y,
-                                'wrong position'
-                );
+    let realm_new_unit_entity_owner = get!(world, new_unit_id, EntityOwner);
+    assert(
+        realm_new_unit_entity_owner.entity_owner_id == realm_entity_id,
+        'wrong owner'
+    );
 
 
-                let soldier_inventory = get!(world, soldier_id, Inventory);
-                assert(soldier_inventory.items_key != 0, 'wrong inventory key');
+    let realm_new_unit_health = get!(world, new_unit_id, Health);
+    assert(realm_new_unit_health.value == 100 * num_soldiers_bought, 'wrong health');
 
-                let soldier_movable = get!(world, soldier_id, Movable);
-                assert(soldier_movable.blocked == false, 'soldier blocked');
-                assert(soldier_movable.sec_per_km == 55, 'wrong speed');
-                assert(soldier_movable.round_trip == false, 'wrong round_trip');
-                assert(soldier_movable.intermediate_coord_x == 0, 'wrong coord x');
-                assert(soldier_movable.intermediate_coord_y == 0, 'wrong coord y');
+    let realm_new_unit_attack = get!(world, new_unit_id, Attack);
+    assert(realm_new_unit_attack.value == 100 * num_soldiers_bought, 'wrong attack');
 
+    let realm_new_unit_defence = get!(world, new_unit_id, Defence);
+    assert(realm_new_unit_defence.value == 100 * num_soldiers_bought, 'wrong defence');
 
-                let soldier_carry_capacity = get!(world, soldier_id, Capacity);
-                assert(soldier_carry_capacity.weight_gram == 44, 'wrong capacity');  
-            },
+    let realm_new_unit_quantity = get!(world, new_unit_id, Quantity);
+    assert(realm_new_unit_quantity.value == num_soldiers_bought, 'wrong quantity');
 
-            Option::None => {break;}
-        };
-    };
+    let realm_new_unit_movable = get!(world, new_unit_id, Movable);
+    assert(realm_new_unit_movable.sec_per_km == 55, 'wrong speed');
+
+    let realm_new_unit_capacity = get!(world, new_unit_id, Capacity);
+    assert(realm_new_unit_capacity.weight_gram == 44, 'wrong capacity');
+
+    let realm_new_unit_position = get!(world, new_unit_id, Position);
+    assert(realm_new_unit_position.x == caller_position.x, 'wrong position x');
+    assert(realm_new_unit_position.y == caller_position.y, 'wrong position y');
+
 }
 
 
@@ -239,7 +216,7 @@ fn test_create_soldier() {
 #[should_panic(expected: ('not realm owner','ENTRYPOINT_FAILED' ))]
 fn test_not_owner() {
 
-    let (world, caller_id, soldier_systems_dispatcher) = setup();
+    let (world, realm_entity_id, soldier_systems_dispatcher) = setup();
 
     // set unknown caller
     starknet::testing::set_contract_address(
@@ -249,7 +226,7 @@ fn test_not_owner() {
     // try to buy soldiers
     let num_soldiers_bought = 5;
     soldier_systems_dispatcher.create_soldiers(
-        world, caller_id, num_soldiers_bought
+        world, realm_entity_id, num_soldiers_bought
     );
 }
 
@@ -262,7 +239,7 @@ fn test_not_realm() {
 
     let (world, _, soldier_systems_dispatcher) = setup();
 
-    let caller_id = 99999;
+    let realm_entity_id = 99999;
     starknet::testing::set_contract_address(
         contract_address_const::<'caller'>()
     );
@@ -270,7 +247,7 @@ fn test_not_realm() {
     // try to buy soldiers
     let num_soldiers_bought = 5;
     soldier_systems_dispatcher.create_soldiers(
-        world, caller_id, num_soldiers_bought
+        world, realm_entity_id, num_soldiers_bought
     );
 }
 

@@ -136,14 +136,18 @@ struct SoldierConfig {
     #[key]
     config_id: u128,
     resource_cost_id: u128,
-    resource_cost_count: u32
+    resource_cost_count: u32,
+    wheat_burn_per_soldier: u128,
+    fish_burn_per_soldier: u128,
 }
 
 #[derive(Model, Copy, Drop, Serde)]
 struct HealthConfig {
     #[key]
     entity_type: u128,
-    value: u128,
+    resource_cost_id: u128,
+    resource_cost_count: u32,
+    max_value: u128, // max value for a single unit
 }
 
 
@@ -151,7 +155,7 @@ struct HealthConfig {
 struct AttackConfig {
     #[key]
     entity_type: u128,
-    value: u128,
+    max_value: u128, // max value for a single unit
 }
 
 
@@ -159,7 +163,7 @@ struct AttackConfig {
 struct DefenceConfig {
     #[key]
     entity_type: u128,
-    value: u128,
+    max_value: u128, // max value for a single unit
 }
 
 // weight

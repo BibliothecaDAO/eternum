@@ -10,11 +10,11 @@ import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import { SelectRealmPanel } from "./SelectRealmPanel";
 
 type RoadBuildPopupProps = {
-  selectedRaiders: CombatInfo;
+  selectedRaider: CombatInfo;
   onClose: () => void;
 };
 
-export const TravelRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupProps) => {
+export const TravelRaidsPopup = ({ selectedRaider, onClose }: RoadBuildPopupProps) => {
   const {
     setup: {
       components: { Position },
@@ -40,7 +40,7 @@ export const TravelRaidsPopup = ({ selectedRaiders, onClose }: RoadBuildPopupPro
       setLoading(true);
       await travel({
         signer: account,
-        travelling_entity_id: selectedRaiders.entityId,
+        travelling_entity_id: selectedRaider.entityId,
         destination_coord_x: destinationPosition.x,
         destination_coord_y: destinationPosition.y,
       });

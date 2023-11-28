@@ -21,12 +21,13 @@ import {
   TravelProps,
   OffloadResourcesProps,
   CreateSoldiersProps,
-  GroupAndDeploySoldiersProps,
-  UngroupSoldiersProps,
-  UngroupAndRegroupSoldiersProps,
+  DetachSoldiersProps,
   AttackProps,
   StealProps,
   LevelUpProps,
+  MergeSoldiersProps,
+  CreateAndMergeSoldiersProps,
+  HealSoldiersProps,
   SetAddressNameProps,
 } from "../types";
 import { Call } from "starknet";
@@ -503,24 +504,12 @@ export class EternumProvider extends RPCProvider {
     });
   }
 
-  public async group_and_deploy_soldiers(props: GroupAndDeploySoldiersProps) {
-    const { realm_entity_id, soldier_ids, duty, signer } = props;
+  public async detach_soldiers(props: DetachSoldiersProps) {
+    const { unit_id, detached_quantity, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
-      entrypoint: "group_and_deploy_soldiers",
-      calldata: [this.getWorldAddress(), realm_entity_id, soldier_ids, duty],
-    });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
-  }
-
-  public async ungroup_soldiers(props: UngroupSoldiersProps) {
-    const { group_id, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "combat_systems"),
-      entrypoint: "ungroup_soldiers",
-      calldata: [this.getWorldAddress(), group_id],
+      entrypoint: "detach_soldiers",
+      calldata: [this.getWorldAddress(), unit_id, detached_quantity],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -563,42 +552,49 @@ export class EternumProvider extends RPCProvider {
     });
   }
 
-  public async ungroup_and_regroup_soldiers(props: UngroupAndRegroupSoldiersProps) {
-    const { signer, group_id, realm_entity_id, new_total_quantity, new_soldier_ids, duty } = props;
+  public async merge_soldiers(props: MergeSoldiersProps) {
+    const { merge_into_unit_id, units, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      entrypoint: "merge_soldiers",
+      calldata: [this.getWorldAddress(), merge_into_unit_id, units.length / 2, ...units],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
 
-    if ((new_total_quantity as number) < 0) {
-      throw new Error("new_total_quantity must be positive");
-    }
-
-    const soldier_number_from_previous = (new_total_quantity as number) - new_soldier_ids.length;
-
-    if (soldier_number_from_previous < 0) {
-      throw new Error("new_soldier_ids must be less than new_total_quantity");
-    }
-
-    // new soldiers ids is empty if we remove soldiers from a group
+  public async create_and_merge_soldiers(props: CreateAndMergeSoldiersProps) {
+    const { realm_entity_id, quantity, merge_into_unit_id, signer } = props;
     const uuid = await this.uuid();
 
-    const soldier_ids = [];
-    for (let i = 0; i < soldier_number_from_previous; i++) {
-      soldier_ids.push(uuid + i * 2);
-    }
-
-    // append new_soldier_ids to soldier_ids
-    new_soldier_ids.forEach((id) => soldier_ids.push(id));
-
+    const units = [uuid, quantity];
     const tx = await this.executeMulti(signer, [
       {
         contractAddress: getContractByName(this.manifest, "combat_systems"),
-        entrypoint: "ungroup_soldiers",
-        calldata: [this.getWorldAddress(), group_id],
+        entrypoint: "create_soldiers",
+        calldata: [this.getWorldAddress(), realm_entity_id, quantity],
       },
       {
         contractAddress: getContractByName(this.manifest, "combat_systems"),
-        entrypoint: "group_and_deploy_soldiers",
-        calldata: [this.getWorldAddress(), realm_entity_id, soldier_ids, duty],
+        entrypoint: "merge_soldiers",
+        calldata: [this.getWorldAddress(), merge_into_unit_id, units.length / 2, ...units],
       },
     ]);
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async heal_soldiers(props: HealSoldiersProps) {
+    const { unit_id, health_amount, signer } = props;
+
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "combat_systems"),
+      entrypoint: "heal_soldiers",
+      calldata: [this.getWorldAddress(), unit_id, health_amount],
+    });
+
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
     });

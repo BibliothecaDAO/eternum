@@ -7,10 +7,10 @@ import Button from "../../../../../elements/Button";
 type DefenceProps = {
   watchTower: CombatInfo;
   onReinforce?: () => void;
-  onHeal?: () => void;
+  setShowHeal?: (show: boolean) => void;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const Defence = ({ watchTower, onReinforce, onHeal, ...props }: DefenceProps) => {
+export const Defence = ({ watchTower, onReinforce, setShowHeal, ...props }: DefenceProps) => {
   const { health, quantity, attack, defence } = watchTower;
 
   return (
@@ -22,8 +22,16 @@ export const Defence = ({ watchTower, onReinforce, onHeal, ...props }: DefencePr
           <div className="flex items-center text-xxs ml-auto">
             <div className="text-order-brilliance">{health && health.toLocaleString()}</div>&nbsp;/ {10 * quantity} HP
           </div>
-          {onHeal && (
-            <Button onClick={onHeal} className="ml-2" variant="success" size="xs">
+          {setShowHeal && (
+            <Button
+              onClick={() => {
+                watchTower.quantity > 0 && setShowHeal(true);
+              }}
+              disabled={watchTower.quantity === 0 || watchTower.health === 10 * watchTower.quantity}
+              className="ml-2"
+              variant="success"
+              size="xs"
+            >
               Heal
             </Button>
           )}
