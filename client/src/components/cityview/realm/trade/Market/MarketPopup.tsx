@@ -411,7 +411,6 @@ const ResourceOfferRow = ({
   onClick: () => void;
 }) => {
   const resource = findResourceById(isBuy ? offer.resourcesGet[0].resourceId : offer.resourcesGive[0].resourceId);
-  const [isLoading, setIsLoading] = useState(false);
   const { realm: makerRealm } = useGetRealm(offer.makerId);
 
   useEffect(() => {
