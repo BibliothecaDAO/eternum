@@ -6,19 +6,24 @@ import Button from "../../../../../elements/Button";
 
 type DefenceProps = {
   watchTower: CombatInfo;
+  levelBonus: number;
   onReinforce?: () => void;
   setShowHeal?: (show: boolean) => void;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const Defence = ({ watchTower, onReinforce, setShowHeal, ...props }: DefenceProps) => {
+export const Defence = ({ watchTower, levelBonus, onReinforce, setShowHeal, ...props }: DefenceProps) => {
   const { health, quantity, attack, defence } = watchTower;
 
   return (
     <div className={clsx("flex flex-1 w-full", props.className)}>
       <img src={`/images/buildings/defence_tower.png`} className="object-cover rounded-md w-[107px]" />
       <div className="flex flex-col w-full min-w-[244px] h-full ml-2">
-        <div className="flex  text-white items-center mb-2">
-          <div className="font-bold text-xs">City Tower</div>
+        <div className="font-bold text-white text-xs mb-1">City Tower</div>
+        <div className="flex text-white items-end mb-2">
+          <div className="flex flex-row text-xxs justify-center">
+            <span className="mr-1 text-gold">{`Combat Bonus: `}</span>
+            <span className="text-order-brilliance">{`+${levelBonus - 100}%`}</span>
+          </div>
           <div className="flex items-center text-xxs ml-auto">
             <div className="text-order-brilliance">{health && health.toLocaleString()}</div>&nbsp;/ {10 * quantity} HP
           </div>
