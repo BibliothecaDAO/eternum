@@ -41,6 +41,14 @@ export const World = () => {
 
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
+  const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const setHyperstructures = useUIStore((state) => state.setHyperstructures);
+  const setMouseCoords = useUIStore((state) => state.setMouseCoords);
+  const syncData = useLeaderBoardStore((state) => state.syncData);
+  const syncCombatHistory = useCombatHistoryStore((state) => state.syncData);
+  const isSoundOn = useUIStore((state) => state.isSoundOn);
+  const musicLevel = useUIStore((state) => state.musicLevel);
 
   useEffect(() => {
     if (list().length > 0) {
@@ -65,17 +73,7 @@ export const World = () => {
 
   const { progress } = useProgress();
 
-  const isSoundOn = useUIStore((state) => state.isSoundOn);
-  const musicLevel = useUIStore((state) => state.musicLevel);
-
-  const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const setHyperstructures = useUIStore((state) => state.setHyperstructures);
-  const setMouseCoords = useUIStore((state) => state.setMouseCoords);
-
   const { getHyperstructureIds } = useHyperstructure();
-  const syncData = useLeaderBoardStore((state) => state.syncData);
-  const syncCombatHistory = useCombatHistoryStore((state) => state.syncData);
 
   useEffect(() => {
     let ids = getHyperstructureIds();
