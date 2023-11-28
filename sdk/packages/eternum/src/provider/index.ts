@@ -29,6 +29,7 @@ import {
   CreateAndMergeSoldiersProps,
   HealSoldiersProps,
   SetAddressNameProps,
+  HarvestAllLaborProps,
 } from "../types";
 import { Call } from "starknet";
 
@@ -79,6 +80,25 @@ export class EternumProvider extends RPCProvider {
       entrypoint: "harvest",
       calldata: [this.getWorldAddress(), realm_id, resource_type],
     });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async harvest_all_labor(props: HarvestAllLaborProps) {
+    const { entity_ids, signer } = props;
+
+    const calldata = entity_ids.map((entity_id) => {
+      return {
+        contractAddress: getContractByName(this.manifest, "labor_systems"),
+        entrypoint: "harvest",
+        calldata: [this.getWorldAddress(), ...entity_id],
+      };
+    });
+
+    console.log({ calldata });
+
+    const tx = await this.executeMulti(signer, calldata);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
     });
