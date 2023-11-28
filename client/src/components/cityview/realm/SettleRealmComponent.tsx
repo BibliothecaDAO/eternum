@@ -12,6 +12,7 @@ import clsx from "clsx";
 import { getPosition, multiplyByPrecision } from "../../../utils/utils";
 import { initialResources } from "@bibliothecadao/eternum";
 import { BigNumberish } from "starknet";
+import { order_statments } from "../../../data/orders";
 
 export const MAX_REALMS = 5;
 
@@ -64,7 +65,7 @@ export const SettleRealmComponent = () => {
     }
 
     await create_realm({
-      signer: masterAccount,
+      signer: masterAccount as any,
       owner: BigInt(account.address),
       ...realm,
       position,
@@ -74,18 +75,21 @@ export const SettleRealmComponent = () => {
     playSign();
   };
 
+  const mintMultipleRealms = async (times) => {
+    for (let i = 0; i < times; i++) {
+      await settleRealm();
+    }
+  };
+
   return (
     <>
       <div className="flex flex-col h-min">
-        <div className="text-xxs mb-2 italic text-gold">
-          {`Choose Order of your Realms. You can only select one Order per wallet. You can settle up to ${MAX_REALMS} Realms per wallet.`}
-        </div>
-        <div className="grid grid-cols-8 gap-2">
+        <div className="grid grid-cols-8 gap-2 pt-4">
           {orders.map(({ orderId }) => (
             <div
               key={orderId}
               className={clsx(
-                " flex relative group items-center justify-center  w-11 h-11 bg-black rounded-xl border",
+                " flex relative group items-center justify-center  w-16 h-16 bg-black rounded-xl border",
                 selectedOrder == orderId && !chosenOrder ? "border-gold !cursor-pointer" : "border-transparent",
                 chosenOrder && chosenOrder == orderId && "!border-gold",
                 chosenOrder && chosenOrder !== orderId && "opacity-30 cursor-not-allowed",
@@ -94,21 +98,24 @@ export const SettleRealmComponent = () => {
               onClick={() => (!chosenOrder ? setSelectedOrder(orderId) : null)}
             >
               <OrderIcon
-                size={"xs"}
+                size={"md"}
                 withTooltip={!chosenOrder || chosenOrder == orderId}
                 order={getOrderName(orderId)}
               ></OrderIcon>
             </div>
           ))}
         </div>
+        <div>
+          <div className="text-lg mt-2 italic text-gold">{order_statments[selectedOrder - 1]}</div>
+        </div>
         <Button
           disabled={!canSettle}
           isLoading={isLoading}
-          onClick={() => (!isLoading ? settleRealm() : null)}
-          className="mr-auto !h-6 mt-2 text-xxs !rounded-md !p-2"
+          onClick={() => (!isLoading ? mintMultipleRealms(5) : null)}
+          className="mx-auto mt-4 text-xl"
           variant={!isLoading ? "success" : "danger"}
         >
-          {!isLoading ? "Settle Realm" : ""}
+          {!isLoading ? "Settle Empire" : ""}
         </Button>
       </div>
     </>
