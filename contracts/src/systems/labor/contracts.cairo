@@ -12,16 +12,17 @@ mod labor_systems {
     use eternum::models::labor_auction::{LaborAuction, LaborAuctionTrait};
     use eternum::models::labor_auction::{LinearVRGDA, LinearVRGDATrait};
     use eternum::models::level::{Level, LevelTrait};
-    use eternum::models::config::{WorldConfig, LaborConfig, LaborCostResources, LaborCostAmount};
+    use eternum::models::config::{LevelingConfig, WorldConfig, LaborConfig, LaborCostResources, LaborCostAmount};
 
     use eternum::systems::labor::utils::{assert_harvestable_resource, get_labor_resource_type};
-    use eternum::constants::{LABOR_CONFIG_ID,WORLD_CONFIG_ID, ResourceTypes};
+    use eternum::constants::{LABOR_CONFIG_ID,WORLD_CONFIG_ID, ResourceTypes, LevelIndex};
     use eternum::utils::unpack::unpack_resource_types;
 
     use starknet::ContractAddress;
 
     use eternum::systems::labor::interface::ILaborSystems;
-    
+
+    use eternum::constants::{LEVELING_CONFIG_ID};
     
     #[external(v0)]
     impl LaborSystemsImpl of ILaborSystems<ContractState> {
@@ -202,7 +203,7 @@ mod labor_systems {
 
                 // get production per cycle
                 let mut base_production_per_cycle: u128 = labor_config.base_resources_per_cycle;
-                if (is_food) {
+                if is_food {
                     base_production_per_cycle = labor_config.base_food_per_cycle;
                 }
 
@@ -237,8 +238,16 @@ mod labor_systems {
                 let remainder = labor_generated % labor_config.base_labor_units;
 
                 // get level bonus
+                let leveling_config: LevelingConfig = get!(world, LEVELING_CONFIG_ID, LevelingConfig);
                 let level = get!(world, (realm_id), Level);
-                let level_bonus = level.get_level_multiplier();
+                
+                let level_index = if is_food {
+                    LevelIndex::FOOD
+                } else {
+                    LevelIndex::RESOURCE
+                };
+
+                let level_bonus = level.get_index_multiplier(leveling_config, level_index);
 
                 // update resources with multiplier
                 // and with level bonus

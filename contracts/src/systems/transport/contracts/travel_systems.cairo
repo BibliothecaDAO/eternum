@@ -4,11 +4,12 @@ mod travel_systems {
     use eternum::alias::ID;
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::position::{Coord, CoordTrait, Position};
-    use eternum::models::owner::Owner;
+    use eternum::models::owner::{Owner, EntityOwner};
+    use eternum::models::level::{Level, LevelTrait};
     use eternum::models::road::RoadImpl;
-    use eternum::models::config::RoadConfig;
+    use eternum::models::config::{RoadConfig, LevelingConfig};
 
-    use eternum::constants::ROAD_CONFIG_ID;
+    use eternum::constants::{ROAD_CONFIG_ID, LEVELING_CONFIG_ID, LevelIndex};
     
     use eternum::systems::transport::interface::travel_systems_interface::{
         ITravelSystems
@@ -68,8 +69,16 @@ mod travel_systems {
             world: IWorldDispatcher, transport_id: ID, transport_movable: Movable, 
             from_coord: Coord, to_coord: Coord
         ){
+            // get level bonus
+            let entity_owner = get!(world, (transport_id), EntityOwner);
+            let level = get!(world, (entity_owner), Level);
+            let leveling_config: LevelingConfig = get!(world, LEVELING_CONFIG_ID, LevelingConfig);
+            let level_bonus = level.get_index_multiplier(leveling_config, LevelIndex::TRAVEL);
+
+            let speed: u16 = ((transport_movable.sec_per_km.into() * level_bonus) / 100).try_into().unwrap();
+
             let travel_time = from_coord.calculate_travel_time(
-                to_coord, transport_movable.sec_per_km
+                to_coord, speed
             );
 
             // reduce travel time if there is a road

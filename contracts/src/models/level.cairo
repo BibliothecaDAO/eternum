@@ -1,3 +1,10 @@
+use cubit::f128::math::core::{pow as fixed_pow};
+use cubit::f128::types::fixed::{Fixed, FixedTrait};
+use eternum::models::config::{LevelingConfig};
+use eternum::constants::{LevelIndex};
+use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
+use eternum::models::resources::{ResourceCost};
+
 #[derive(Model, Copy, Drop, Serde)]
 struct Level {
     #[key]
@@ -24,27 +31,52 @@ impl LevelImpl of LevelTrait {
         }
     }
 
-    fn get_level_multiplier(self: Level) -> u128 {
+    fn get_multiplier(leveling_config: LevelingConfig, tier: u64) -> u128 {
+        let decay_fixed = FixedTrait::new(leveling_config.decay_scaled, false);
+        let tier_fixed = FixedTrait::new_unscaled(tier.into(), false);
+        let base_multiplier_fixed = FixedTrait::new_unscaled(leveling_config.base_multiplier, false);
+        let nom = FixedTrait::ONE() - fixed_pow(FixedTrait::ONE() - decay_fixed, tier_fixed - FixedTrait::ONE());
+        let denom = decay_fixed;
+        (base_multiplier_fixed * (nom / denom)).try_into().unwrap()
+    }
+
+    fn get_index_multiplier(self: Level, leveling_config: LevelingConfig, index: u8) -> u128 {
         let current_level = self.get_level();
-        
-        if current_level == 0 {
+
+        if current_level < 5 {
             100
-        } else if current_level == 1 {
-            125
-        } else if current_level == 2 {
-            150
-        } else if current_level == 3 {
-            200
         } else {
-            100
+            let mut tier = if ((current_level % 4) + 1 >= index.into()) {
+                current_level / 4 + 1
+            } else {
+                current_level / 4
+            };
+        
+            let multiplier = LevelTrait::get_multiplier(leveling_config, tier);
+        
+            multiplier + 100
+        }    
+    }
+
+    fn get_cost_multiplier(self: Level, cost_percentage_scaled: u128) -> u128 {
+        let next_tier = (self.get_level() / 4) + 1;
+        let cost_percentage = FixedTrait::new(cost_percentage_scaled, false);
+        if next_tier == 1 {
+            return 100;
+        } else {
+            let coefficient = fixed_pow(cost_percentage + FixedTrait::ONE(), FixedTrait::new_unscaled((next_tier - 1).into(), false));
+            (coefficient * FixedTrait::new_unscaled(100, false)).try_into().unwrap()
         }
     }
+
 }
 
 
 #[cfg(test)]
 mod tests {
     use super::{Level, LevelTrait};
+    use eternum::models::config::{LevelingConfig};
+    use eternum::constants::{LevelIndex};
 
     #[test]
     #[available_gas(30000000)]
@@ -79,13 +111,90 @@ mod tests {
 
     #[test]
     #[available_gas(30000000)]
-    fn test_get_level_multiplier() {
+    fn test_get_multiplier() {
 
-        // set level
-        let level = Level { entity_id: 1, level: 3, valid_until: 1000};
+        let leveling_config = LevelingConfig {
+            config_id: 0,
+            wheat_base_amount: 0,
+            fish_base_amount: 0,
+            resource_1_cost_id: 0,
+            resource_1_cost_count: 0,
+            resource_2_cost_id: 0,
+            resource_2_cost_count: 0,
+            resource_3_cost_id: 0,
+            resource_3_cost_count: 0,
+            decay_scaled: 1844674407370955161,
+            base_multiplier: 25,
+            cost_percentage_scaled: 4611686018427387904
+        };
 
-        let level_multiplier = level.get_level_multiplier();
+        // tier 2
+        let level_multiplier = LevelTrait::get_multiplier(leveling_config, 2);
+        assert(level_multiplier == 25, 'wrong multiplier');
 
-        assert(level_multiplier == 200, 'wrong multiplier');
+        // tier 40
+        let level_multiplier = LevelTrait::get_multiplier(leveling_config, 40);
+        assert(level_multiplier == 245, 'wrong multi');
+
+        // tier 100
+        let level_multiplier = LevelTrait::get_multiplier(leveling_config, 100);
+        assert(level_multiplier == 249, 'wrong multi');
+    }
+
+    #[test]
+    #[available_gas(30000000)]
+    fn test_get_index_multiplier() {
+
+        let leveling_config = LevelingConfig {
+            config_id: 0,
+            wheat_base_amount: 0,
+            fish_base_amount: 0,
+            resource_1_cost_id: 0,
+            resource_1_cost_count: 0,
+            resource_2_cost_id: 0,
+            resource_2_cost_count: 0,
+            resource_3_cost_id: 0,
+            resource_3_cost_count: 0,
+            decay_scaled: 1844674407370955161,
+            base_multiplier: 25,
+            cost_percentage_scaled: 4611686018427387904
+        };
+
+        // set level 
+        // tier 1
+        let level = Level { entity_id: 1, level: 1, valid_until: 1000};
+        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::FOOD);
+        assert(multiplier == 100, 'wrong multiplier');
+
+        // tier 2
+        let level = Level { entity_id: 1, level: 6, valid_until: 1000};
+        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::FOOD);
+        assert(multiplier == 125, 'wrong multiplier');
+
+        // tier 2
+        let level = Level { entity_id: 1, level: 6, valid_until: 1000};
+        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::COMBAT);
+        assert(multiplier == 100, 'wrong multiplier');
+
+        // tier 2
+        let level = Level { entity_id: 1, level: 8, valid_until: 1000};
+        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::COMBAT);
+        assert(multiplier == 125, 'wrong multiplier');
+
+        // tier 11
+        let level = Level { entity_id: 1, level: 43, valid_until: 1000};
+        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::FOOD);
+        assert(multiplier == 262, 'wrong multiplier');
+    }
+
+    #[test]
+    #[available_gas(30000000)]
+    fn test_get_cost_multiplier() {
+        let level = Level { entity_id: 1, level: 9, valid_until: 1000};
+
+        // 25% increase each tier
+        let cost_multiplier = level.get_cost_multiplier(4611686018427387904);
+
+        assert(cost_multiplier == 156, 'wrong cost_multiplier')
     }
 }

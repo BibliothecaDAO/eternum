@@ -191,6 +191,18 @@ impl WeightConfigImpl of WeightConfigTrait {
 struct LevelingConfig {
     #[key]
     config_id: u128,
-    resource_cost_id: u128,
-    resource_cost_count: u32
+    wheat_base_amount: u128,
+    fish_base_amount: u128,
+    // low tier resources
+    resource_1_cost_id: u128,
+    resource_1_cost_count: u32,
+    // mid tier resources
+    resource_2_cost_id: u128,
+    resource_2_cost_count: u32,
+    // high tier resources
+    resource_3_cost_id: u128,
+    resource_3_cost_count: u32,
+    decay_scaled: u128,
+    cost_percentage_scaled: u128,
+    base_multiplier: u128
 }
