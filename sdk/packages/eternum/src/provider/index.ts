@@ -29,6 +29,7 @@ import {
   MergeSoldiersProps,
   CreateAndMergeSoldiersProps,
   HealSoldiersProps,
+  HarvestAllLaborProps,
 } from "../types";
 import { Call } from "starknet";
 
@@ -79,6 +80,25 @@ export class EternumProvider extends RPCProvider {
       entrypoint: "harvest",
       calldata: [this.getWorldAddress(), realm_id, resource_type],
     });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async harvest_all_labor(props: HarvestAllLaborProps) {
+    const { entity_ids, signer } = props;
+
+    const calldata = entity_ids.map((entity_id) => {
+      return {
+        contractAddress: getContractByName(this.manifest, "labor_systems"),
+        entrypoint: "harvest",
+        calldata: [this.getWorldAddress(), ...entity_id],
+      };
+    });
+
+    console.log({ calldata });
+
+    const tx = await this.executeMulti(signer, calldata);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
     });
@@ -586,18 +606,6 @@ export class EternumProvider extends RPCProvider {
     });
   }
 
-  public async set_address_name(props: SetAddressNameProps) {
-    const { name, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "name_systems"),
-      entrypoint: "set_address_name",
-      calldata: [this.getWorldAddress(), name],
-    });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
-  }
-
   public async heal_soldiers(props: HealSoldiersProps) {
     const { unit_id, health_amount, signer } = props;
 
@@ -605,6 +613,19 @@ export class EternumProvider extends RPCProvider {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
       entrypoint: "heal_soldiers",
       calldata: [this.getWorldAddress(), unit_id, health_amount],
+    });
+
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async set_address_name(props: SetAddressNameProps) {
+    const { name, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "name_systems"),
+      entrypoint: "set_address_name",
+      calldata: [this.getWorldAddress(), name],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,

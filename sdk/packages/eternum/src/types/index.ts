@@ -123,6 +123,10 @@ export interface HarvestLaborProps extends SystemSigner {
   resource_type: num.BigNumberish;
 }
 
+export interface HarvestAllLaborProps extends SystemSigner {
+  entity_ids: num.BigNumberish[][];
+}
+
 export interface MintResourcesProps extends SystemSigner {
   entity_id: num.BigNumberish;
   resources: num.BigNumberish[];

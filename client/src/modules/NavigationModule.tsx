@@ -1,7 +1,7 @@
-import NavgationComponent from "../components/NavigationComponents"
+import NavgationComponent from "../components/NavigationComponents";
 
 const NavigationModule = () => {
-    return (<NavgationComponent />)
-}
+  return <NavgationComponent />;
+};
 
-export default NavigationModule
+export default NavigationModule;
