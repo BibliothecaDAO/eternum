@@ -19,6 +19,10 @@ export interface DetachSoldiersProps extends SystemSigner {
   detached_quantity: num.BigNumberish;
 }
 
+export interface SetAddressNameProps extends SystemSigner {
+  name: string;
+}
+
 export interface AttackProps extends SystemSigner {
   attacker_ids: num.BigNumberish[];
   target_id: num.BigNumberish;

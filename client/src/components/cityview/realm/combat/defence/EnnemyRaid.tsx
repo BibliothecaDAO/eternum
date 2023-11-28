@@ -8,16 +8,19 @@ import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import useUIStore from "../../../../../hooks/store/useUIStore";
+import { useRealm } from "../../../../../hooks/helpers/useRealm";
 
 type EnemyRaidProps = {
   raider: CombatInfo;
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const EnemyRaid = ({ raider, ...props }: EnemyRaidProps) => {
-  const { entityId, health, quantity, attack, defence, originRealmId, arrivalTime } = raider;
+  const { entityOwnerId, entityId, health, quantity, attack, defence, originRealmId, arrivalTime } = raider;
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const { getRealmAddressName } = useRealm();
+  const attackerAddressName = getRealmAddressName(entityOwnerId);
 
   const isTraveling = arrivalTime ? arrivalTime > nextBlockTimestamp : false;
   const originRealmName = originRealmId ? getRealmNameById(raider.originRealmId) : undefined;
@@ -51,6 +54,7 @@ export const EnemyRaid = ({ raider, ...props }: EnemyRaidProps) => {
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Arrived from</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
+                <span className={"mr-1"}>{attackerAddressName.slice(0, 10)}</span>
                 <OrderIcon order={getRealmOrderNameById(originRealmId)} className="mr-1" size="xxs" />
                 {originRealmName}
               </div>

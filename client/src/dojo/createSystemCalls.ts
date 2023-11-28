@@ -30,6 +30,7 @@ import {
   MergeSoldiersProps,
   CreateAndMergeSoldiersProps,
   HealSoldiersProps,
+  SetAddressNameProps,
 } from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -156,6 +157,10 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.heal_soldiers(props)));
   };
 
+  const set_address_name = async (props: SetAddressNameProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.set_address_name(props)));
+  };
+
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -167,6 +172,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
 
   return {
     create_and_merge_soldiers,
+    set_address_name,
     level_up,
     isLive,
     create_soldiers,

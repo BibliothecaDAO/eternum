@@ -121,6 +121,19 @@ export const numberToHex = (num: number) => {
   return "0x" + num.toString(16);
 };
 
+export const hexToAscii = (str1: string) => {
+  var hex = str1.toString();
+  var str = "";
+  for (var n = 0; n < hex.length; n += 2) {
+    var asciiCode = parseInt(hex.substr(n, 2), 16);
+    if (!isNaN(asciiCode)) {
+      // Check if the parsed value is a number
+      str += String.fromCharCode(asciiCode);
+    }
+  }
+  return str;
+};
+
 export const padAddress = (address: string) => {
   return "0x" + address.substring(2).padStart(64, "0");
 };
@@ -324,4 +337,19 @@ const LOWEST_X = 470200;
 // get zone for labor auction
 export function getZone(x: number): number {
   return 1 + Math.floor(((x - LOWEST_X) * 10) / (HIGHEST_X - LOWEST_X));
+}
+
+export function addressToNumber(address) {
+  // Convert the address to a big integer
+  let numericValue = BigInt(address);
+
+  // Sum the digits of the numeric value
+  let sum = 0;
+  while (numericValue > 0) {
+    sum += Number(numericValue % 5n);
+    numericValue /= 5n;
+  }
+
+  // Map the sum to a number between 1 and 10
+  return (sum % 5) + 1;
 }

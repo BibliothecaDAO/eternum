@@ -635,5 +635,19 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    AddressName: (() => {
+      const name = "AddressName";
+      return defineComponent(
+        world,
+        {
+          name: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
   };
 }

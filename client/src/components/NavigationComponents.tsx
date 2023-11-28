@@ -6,6 +6,8 @@ import clsx from "clsx";
 import { RealmSwitch } from "./cityview/RealmSwitch";
 import { Link, useLocation } from "wouter";
 import useUIStore from "../hooks/store/useUIStore";
+import { useDojo } from "../DojoContext";
+import { addressToNumber } from "../utils/utils";
 
 const NavgationComponent = () => {
   const moveCameraToWorldMapView = useUIStore((state) => state.moveCameraToWorldMapView);
@@ -16,9 +18,13 @@ const NavgationComponent = () => {
 
   const [location] = useLocation();
 
+  const {
+    account: { account },
+  } = useDojo();
+
   return (
     <div className="relative">
-      <Avatar size="xl" className="relative z-10" src="/images/avatars/1.png" />
+      <Avatar size="xl" className="relative z-10" src={`/images/avatars/${addressToNumber(account.address)}.png`} />
       <Link
         href="/map"
         onClick={() => {
