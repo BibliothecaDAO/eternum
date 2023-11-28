@@ -1,4 +1,4 @@
-mod resource_chest_offload_system_tests {
+mod inventory_transfer_system_tests {
     use eternum::models::resources::{Resource, ResourceChest};
     use eternum::models::owner::Owner;
     use eternum::models::weight::Weight;
@@ -16,8 +16,8 @@ mod resource_chest_offload_system_tests {
 
     use eternum::systems::resources::contracts::resource_systems;
     use eternum::systems::resources::interface::{
-        IResourceChestSystemsDispatcher, 
-        IResourceChestSystemsDispatcherTrait
+        IInventorySystemsDispatcher, 
+        IInventorySystemsDispatcherTrait
     };
 
     use eternum::systems::resources::contracts::resource_systems::{
@@ -34,8 +34,10 @@ mod resource_chest_offload_system_tests {
 
     use core::traits::Into;
 
+    use debug::PrintTrait;
 
-    fn setup() -> (IWorldDispatcher, u128, u128, u128, IResourceChestSystemsDispatcher) {
+
+    fn setup() -> (IWorldDispatcher, u128, u128, u128, IInventorySystemsDispatcher) {
         let world = spawn_eternum();
 
         let config_systems_address 
@@ -56,12 +58,16 @@ mod resource_chest_offload_system_tests {
         let resource_systems_address 
             = deploy_system(resource_systems::TEST_CLASS_HASH);
 
-        let resource_chest_systems_dispatcher = IResourceChestSystemsDispatcher {
+        let inventory_systems_dispatcher = IInventorySystemsDispatcher {
             contract_address: resource_systems_address
         };
 
         let donor_id = 10;
         let donor_transport_id = 11;
+
+        // call world.uuid() so that the next generated id is not 0
+       
+        world.uuid();
 
         set!(world, (
             Inventory {
@@ -70,7 +76,7 @@ mod resource_chest_offload_system_tests {
                 items_count: 0
             }, 
         ));
-
+        
         set!(world, (Owner { entity_id: donor_id, address: contract_address_const::<'donor'>()}));
         set!(world, (Owner { entity_id: donor_transport_id, address: contract_address_const::<'donor'>()}));
 
@@ -78,18 +84,16 @@ mod resource_chest_offload_system_tests {
         set!(world, (Resource { entity_id: donor_id, resource_type: ResourceTypes::GOLD, balance: 5000 }));
 
 
-        let (chest, _) 
-            = InternalResourceChestSystemsImpl::create(
+        let chest 
+            = InternalResourceChestSystemsImpl::create_and_fill(
                 world, 
-                array![ResourceTypes::STONE, ResourceTypes::GOLD].span(),
-                array![1000, 1000].span()
+                donor_id,
+                array![
+                    (ResourceTypes::STONE, 1000), 
+                    (ResourceTypes::GOLD, 1000), 
+                ].span()
             );
 
-        InternalResourceChestSystemsImpl::fill(
-            world, 
-            chest.entity_id, 
-            donor_id,
-        );
 
         InternalInventorySystemsImpl::add(
             world, 
@@ -98,16 +102,17 @@ mod resource_chest_offload_system_tests {
         );
         
 
-        (world, chest.entity_id, donor_id, donor_transport_id, resource_chest_systems_dispatcher)
+        (world, chest.entity_id, donor_id, donor_transport_id, inventory_systems_dispatcher)
     }
+
 
 
 
     #[test]
     #[available_gas(30000000000000)]
-    fn test_offload() {
+    fn test_inventory_transfer_item() {
 
-        let (world, chest_id, donor_id, donor_transport_id, resource_chest_systems_dispatcher) 
+        let (world, chest_id, donor_id, donor_transport_id, inventory_systems_dispatcher) 
             = setup();
 
 
@@ -116,10 +121,9 @@ mod resource_chest_offload_system_tests {
         );
 
         let receiver_id = 700;
-        resource_chest_systems_dispatcher
-            .offload_chest(world, chest_id, 0, receiver_id, donor_transport_id);
+        inventory_systems_dispatcher
+            .transfer_item(world, donor_transport_id, 0, receiver_id );
               
-
         // check donor balance
         let donor_stone_resource 
             = get!(world, (donor_id, ResourceTypes::STONE), Resource );
@@ -176,9 +180,9 @@ mod resource_chest_offload_system_tests {
     #[test]
     #[available_gas(30000000000000)]
     #[should_panic(expected: ('not caravan owner','ENTRYPOINT_FAILED' ))]
-    fn test_offload_not_transport_owner() {
+    fn test_inventory_transfer_item_not_transport_owner() {
 
-        let (world, chest_id, donor_id, donor_transport_id, resource_chest_systems_dispatcher) 
+        let (world, chest_id, donor_id, donor_transport_id, inventory_systems_dispatcher) 
             = setup();
 
         // set caller to arbitrary address
@@ -187,10 +191,8 @@ mod resource_chest_offload_system_tests {
         );
 
         let receiver_id = 700;
-        resource_chest_systems_dispatcher
-            .offload_chest(
-                world, chest_id, 0, receiver_id, donor_transport_id
-                );
+        inventory_systems_dispatcher
+            .transfer_item(world, donor_transport_id, 0, receiver_id );
 
 
     }
@@ -199,9 +201,9 @@ mod resource_chest_offload_system_tests {
     #[test]
     #[available_gas(30000000000000)]
     #[should_panic(expected: ('mismatched positions','ENTRYPOINT_FAILED' ))]
-    fn test_offload_wrong_position() {
+    fn test_inventory_transfer_item_wrong_position() {
 
-        let (world, chest_id, donor_id, donor_transport_id, resource_chest_systems_dispatcher) 
+        let (world, chest_id, donor_id, donor_transport_id, inventory_systems_dispatcher) 
             = setup();
 
         // receiver is not in the same position as donor transport
@@ -223,10 +225,9 @@ mod resource_chest_offload_system_tests {
             contract_address_const::<'donor'>()
         );
 
-        resource_chest_systems_dispatcher
-            .offload_chest(
-                world, chest_id, 0, receiver_id, donor_transport_id
-                );
+        inventory_systems_dispatcher
+            .transfer_item(world, donor_transport_id, 0, receiver_id );
+
     }
 
 
@@ -234,9 +235,9 @@ mod resource_chest_offload_system_tests {
     #[test]
     #[available_gas(30000000000000)]
     #[should_panic(expected: ('transport has not arrived','ENTRYPOINT_FAILED' ))]
-    fn test_offload_wrong_arrival_time() {
+    fn test_inventory_transfer_item_wrong_arrival_time() {
 
-        let (world, chest_id, donor_id, donor_transport_id, resource_chest_systems_dispatcher) 
+        let (world, chest_id, donor_id, donor_transport_id, inventory_systems_dispatcher) 
             = setup();
 
         // receiver is not in the same position as donor transport
@@ -252,19 +253,18 @@ mod resource_chest_offload_system_tests {
             contract_address_const::<'donor'>()
         );
 
-        resource_chest_systems_dispatcher
-            .offload_chest(
-                world, chest_id, 0, receiver_id, donor_transport_id
-                );
+        inventory_systems_dispatcher
+            .transfer_item(world, donor_transport_id, 0, receiver_id );
+
     }
 
 
     #[test]
     #[available_gas(30000000000000)]
     #[should_panic(expected: ('inventory is empty','ENTRYPOINT_FAILED' ))]
-    fn test_offload_from_empty_inventory() {
+    fn test_inventory_transfer_item_from_empty_inventory() {
 
-        let (world, chest_id, donor_id, donor_transport_id, resource_chest_systems_dispatcher) 
+        let (world, chest_id, donor_id, donor_transport_id, inventory_systems_dispatcher) 
             = setup();
         starknet::testing::set_contract_address(
             contract_address_const::<'donor'>()
@@ -272,15 +272,13 @@ mod resource_chest_offload_system_tests {
 
         let receiver_id = 700;
 
-        // offload twice
-        resource_chest_systems_dispatcher
-            .offload_chest(
-                world, chest_id, 0, receiver_id, donor_transport_id
-                );
-        resource_chest_systems_dispatcher
-            .offload_chest(
-                world, chest_id, 0, receiver_id, donor_transport_id
-                );
+        // inventory_transfer_item twice
+        inventory_systems_dispatcher
+            .transfer_item(world, donor_transport_id, 0, receiver_id );
+
+        inventory_systems_dispatcher
+            .transfer_item(world, donor_transport_id, 0, receiver_id );
+
     }
 
 }
