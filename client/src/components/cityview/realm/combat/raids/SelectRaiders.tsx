@@ -7,27 +7,32 @@ import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import { getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 
-type RoadBuildPopupProps = {
+type SelectRaidersProps = {
   selectedRaiders: CombatInfo[];
   attackingRaiders: CombatInfo[];
   setSelectedRaiders: (raiders: CombatInfo[]) => void;
 };
 
-export const SelectRaiders = ({ attackingRaiders, selectedRaiders, setSelectedRaiders }: RoadBuildPopupProps) => {
+export const SelectRaiders = ({ attackingRaiders, selectedRaiders, setSelectedRaiders }: SelectRaidersProps) => {
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  return attackingRaiders
-    .filter((raider) => {
-      return raider.arrivalTime <= nextBlockTimestamp;
-    })
-    .map((raider, i) => (
-      <SelectableRaider
-        key={i}
-        raider={raider}
-        selectedRaiders={selectedRaiders}
-        setSelectedRaiders={setSelectedRaiders}
-      ></SelectableRaider>
-    ));
+  return (
+    <div className={"w-full mt-2"}>
+      {attackingRaiders
+        .filter((raider) => {
+          // either the ones that never moved or have arrived
+          return raider.arrivalTime === undefined || raider.arrivalTime <= nextBlockTimestamp;
+        })
+        .map((raider, i) => (
+          <SelectableRaider
+            key={i}
+            raider={raider}
+            selectedRaiders={selectedRaiders}
+            setSelectedRaiders={setSelectedRaiders}
+          ></SelectableRaider>
+        ))}
+    </div>
+  );
 };
 
 type SelectableRaiderProps = {
@@ -100,7 +105,7 @@ export const SelectableRaider = ({ raider, selectedRaiders, setSelectedRaiders, 
               <img src="/images/units/troop-icon.png" className="h-[28px]" />
               <div className="flex ml-1 text-center">
                 <div className="bold mr-1">x{quantity}</div>
-                Battalions
+                Raiders
               </div>
             </div>
           </div>
