@@ -1,16 +1,15 @@
 import { Transition } from "@headlessui/react";
 import React, { Fragment } from "react";
-import useUIStore from "../hooks/store/useUIStore";
 
 type BlurOverlayContainerProps = {
   children?: React.ReactNode;
+  open?: boolean;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const BlankOverlayContainer = ({ children }: BlurOverlayContainerProps) => {
-  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
+export const BlankOverlayContainer = ({ children, open }: BlurOverlayContainerProps) => {
   return (
     <Transition
-      show={showBlankOverlay}
+      show={open}
       as={Fragment}
       enter="transition-opacity duration-300"
       enterFrom="opacity-0"

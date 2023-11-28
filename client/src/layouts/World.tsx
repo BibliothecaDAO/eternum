@@ -17,7 +17,6 @@ import clsx from "clsx";
 import { Redirect, Route, Switch, useLocation } from "wouter";
 import { useProgress } from "@react-three/drei";
 import { BlurOverlayContainer } from "../containers/BlurOverlayContainer";
-import { SignUpComponent } from "../components/SignUpComponent";
 import useSound from "use-sound";
 import { NotificationsComponent } from "../components/NotificationsComponent";
 import { useSyncWorld } from "../hooks/graphql/useGraphQLQueries";
@@ -34,23 +33,24 @@ import { Onboarding } from "../plugins/onboarding/components/Onboarding";
 
 export const World = () => {
   const {
-    account: { account, list },
+    account: { list },
     setup: {
       systemCalls: { isLive },
     },
   } = useDojo();
 
-  const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
 
   useEffect(() => {
     if (list().length > 0) {
-      showBlankOverlay(false);
+      setBlankOverlay(false);
     } else {
-      showBlankOverlay(true);
+      setBlankOverlay(true);
     }
   }, []);
 
-  const [isWorldLive, setIsWorldLive] = useState(false);
+  const [_isWorldLive, setIsWorldLive] = useState(false);
 
   useEffect(() => {
     const checkWorldLive = async () => {
@@ -59,7 +59,7 @@ export const World = () => {
     checkWorldLive();
   }, []);
 
-  const { loading: worldLoading, progress: worldProgress } = useSyncWorld();
+  const { loading: worldLoading } = useSyncWorld();
 
   useFetchBlockchainData();
 
@@ -178,7 +178,7 @@ export const World = () => {
       <BottomRightContainer>
         <ChatModule />
       </BottomRightContainer>
-      <BlankOverlayContainer>
+      <BlankOverlayContainer open={showBlankOverlay}>
         <Onboarding />
       </BlankOverlayContainer>
       <BlurOverlayContainer>
