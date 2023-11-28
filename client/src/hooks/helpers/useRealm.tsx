@@ -106,7 +106,7 @@ export function useRealm() {
       return 100;
     } else {
       let tier = (level % 4) + 1 > levelIndex ? Math.floor(level / 4) + 1 : Math.floor(level / 4);
-      return ((1 - (1 - LEVEL_DECAY) ** (tier - 1)) / LEVEL_DECAY) * LEVEL_BASE_MULTIPLIER + 100;
+      return Math.round(((1 - (1 - LEVEL_DECAY) ** (tier - 1)) / LEVEL_DECAY) * LEVEL_BASE_MULTIPLIER) + 100;
     }
   };
 

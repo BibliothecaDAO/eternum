@@ -62,8 +62,9 @@ export const LaborComponent = ({
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 
-  const { getRealmLevelBonus } = useRealm();
-  const levelBonus = getRealmLevelBonus(realmEntityId, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
+  const { getRealmLevel, getRealmLevelBonus } = useRealm();
+  const level = getRealmLevel(realmEntityId)?.level || 0;
+  const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
 
   const onHarvest = () => {
     playHarvest();

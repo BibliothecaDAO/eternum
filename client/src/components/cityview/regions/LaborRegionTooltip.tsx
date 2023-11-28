@@ -32,8 +32,9 @@ export const LaborRegionTooltip = ({ position, resourceId }: LaborRegionTooltipP
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 
-  const { getRealmLevelBonus } = useRealm();
-  const levelBonus = getRealmLevelBonus(realmEntityId, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
+  const { getRealmLevelBonus, getRealmLevel } = useRealm();
+  const level = getRealmLevel(realmEntityId)?.level || 0;
+  const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
 
   const laborLeft = useMemo(() => {
     if (nextBlockTimestamp && labor && LABOR_CONFIG && labor.balance > nextBlockTimestamp) {
