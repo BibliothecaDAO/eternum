@@ -4,7 +4,7 @@ import Button from "../../../../../elements/Button";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../DojoContext";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
-import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
+import { LevelIndex, useGetRealm, useRealm } from "../../../../../hooks/helpers/useRealm";
 import { calculateSuccess } from "../../../../../utils/combat";
 import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
 import { Defence } from "../defence/Defence";
@@ -469,6 +469,8 @@ const SelectRaidersPanel = ({
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
+  const { getRealmLevelBonus, getRealmLevel } = useRealm();
+
   const [attackerTotalAttack, attackerTotalHealth] = useMemo(() => {
     // sum attack of the list
     return [
@@ -478,12 +480,26 @@ const SelectRaidersPanel = ({
     ];
   }, [selectedRaiders]);
 
+  const level = useMemo(() => {
+    return level;
+  }, [realmEntityId]);
+
+  const attackerLevelBonus = useMemo(() => {
+    let level = getRealmLevel(realmEntityId)?.level || 0;
+    return getRealmLevelBonus(level, LevelIndex.COMBAT);
+  }, [realmEntityId]);
+
+  const defenderLevelBonus = useMemo(() => {
+    let level = getRealmLevel(watchTower.entityOwnerId)?.level || 0;
+    return getRealmLevelBonus(level, LevelIndex.COMBAT);
+  }, [realmEntityId]);
+
   const succesProb = useMemo(() => {
     return calculateSuccess(
-      { attack: attackerTotalAttack, health: attackerTotalHealth },
-      watchTower ? { defence: watchTower.defence, health: watchTower.health } : undefined,
+      { attack: (attackerTotalAttack * attackerLevelBonus) / 100, health: attackerTotalHealth },
+      watchTower ? { defence: (watchTower.defence * defenderLevelBonus) / 100, health: watchTower.health } : undefined,
     );
-  }, [attackerTotalAttack]);
+  }, [attackerTotalAttack, attackerLevelBonus, defenderLevelBonus]);
 
   // @ts-ignore
   const { realm } = useGetRealm(realmEntityId);
@@ -543,6 +559,10 @@ const SelectRaidersPanel = ({
             </div>
           </div>
           <div className="flex mt-2 flex-col items-center justify-center w-full">
+            <div>
+              <span>{`Attacker Combat Bonus ${attackerLevelBonus}`}</span>
+              <span>{`Defender Combat Bonus ${defenderLevelBonus}`}</span>
+            </div>
             <div className="grid mb-1 grid-cols-2 gap-2 w-full">
               <Button
                 className="w-full text-xxs h-[18px]"

@@ -11,6 +11,16 @@ import { useEntityQuery } from "@dojoengine/react";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { Realm } from "../../types";
 
+const LEVEL_DECAY = 0.1;
+const LEVEL_BASE_MULTIPLIER = 25;
+
+export enum LevelIndex {
+  FOOD = 1,
+  RESOURCE = 2,
+  TRAVEL = 3,
+  COMBAT = 4,
+}
+
 export type RealmExtended = Realm & {
   entity_id: EntityIndex;
   name: string;
@@ -91,6 +101,15 @@ export function useRealm() {
     return { level: trueLevel, timeLeft, percentage };
   };
 
+  const getRealmLevelBonus = (level: number, levelIndex: LevelIndex) => {
+    if (level < 5) {
+      return 100;
+    } else {
+      let tier = (level % 4) + 1 > levelIndex ? Math.floor(level / 4) + 1 : Math.floor(level / 4);
+      return ((1 - (1 - LEVEL_DECAY) ** (tier - 1)) / LEVEL_DECAY) * LEVEL_BASE_MULTIPLIER + 100;
+    }
+  };
+
   const getAddressName = (address: string) => {
     const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]));
     return addressName ? hexToAscii(numberToHex(addressName.name)) : undefined;
@@ -110,6 +129,7 @@ export function useRealm() {
   return {
     getNextRealmIdForOrder,
     getRealmLevel,
+    getRealmLevelBonus,
     getAddressName,
     getRealmAddressName,
   };

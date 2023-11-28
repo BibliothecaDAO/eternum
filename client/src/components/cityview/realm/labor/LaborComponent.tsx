@@ -12,7 +12,7 @@ import { useMemo } from "react";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useComponentValue } from "@dojoengine/react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { useRealm } from "../../../../hooks/helpers/useRealm";
+import { LevelIndex, useRealm } from "../../../../hooks/helpers/useRealm";
 
 type LaborComponentProps = {
   resourceId: number;
@@ -60,14 +60,16 @@ export const LaborComponent = ({
 
   const { play: playHarvest } = useUiSounds(soundSelector.harvest);
 
-  const { getRealmLevel } = useRealm();
-  const level = getRealmLevel(realmEntityId)?.level || 0;
+  const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
+
+  const { getRealmLevelBonus } = useRealm();
+  const levelBonus = getRealmLevelBonus(realmEntityId, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
 
   const onHarvest = () => {
     playHarvest();
     optimisticHarvestLabor(
       nextBlockTimestamp || 0,
-      level,
+      levelBonus,
       harvest_labor,
     )({
       signer: account,
@@ -85,8 +87,6 @@ export const LaborComponent = ({
     return 0;
   }, [nextBlockTimestamp, labor]);
 
-  const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
-
   const nextHarvest = useMemo(() => {
     if (labor && nextBlockTimestamp) {
       return calculateNextHarvest(
@@ -96,7 +96,7 @@ export const LaborComponent = ({
         LABOR_CONFIG.base_labor_units,
         isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
         nextBlockTimestamp,
-        level,
+        levelBonus,
       );
     } else {
       return 0;
@@ -123,7 +123,7 @@ export const LaborComponent = ({
                         isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
                         labor.multiplier,
                         LABOR_CONFIG.base_labor_units,
-                        level,
+                        levelBonus,
                       ),
                     ).toFixed(0)}`
                   : "+0"}

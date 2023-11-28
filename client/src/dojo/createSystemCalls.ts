@@ -147,6 +147,8 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
 
   const set_address_name = async (props: SetAddressNameProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.set_address_name(props)));
+  };
+
   const merge_soldiers = async (props: MergeSoldiersProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.merge_soldiers(props)));
   };
