@@ -39,6 +39,7 @@ const ChatHistory = (props: ChatHistoryProps) => {
   // }
 
   const setGroup = async (group: string) => {
+    console.log('click ')
     setLoadingMessages(true);
 
     await client?.channel.joinGroup(group);

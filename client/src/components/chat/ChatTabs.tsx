@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { Tabs } from "../../elements/tab";
 import { ChatMessageProps } from "../../elements/ChatMessage";
 import ChatHistory from "./ChatHistory";
+import ChatList from "./ChatList";
+import {GuildTabs} from "./GuildTabs";
 // import { ChatAccount } from "./ChatAccount";
 // import { ReactComponent as RedDot } from "../../assets/icons/common/red-dot.svg";
 
@@ -113,6 +115,22 @@ export const ChatTabs = ({ }: ChatTabsProps) => {
         ),
         component: <ChatHistory messages={dummyMessages} />,
       },
+      {
+        label: (
+          <div className="flex flex-col items-center">
+            <div>Guild Chat</div>
+          </div>
+        ),
+        component: <GuildTabs />,
+      },
+      {
+        label: (
+          <div className="flex flex-col items-center">
+            <div>Messages</div>
+          </div>
+        ),
+        component: <ChatList />,
+      },
       // {
       //   label: (
       //     <div className="flex flex-col items-center">
@@ -139,18 +157,18 @@ export const ChatTabs = ({ }: ChatTabsProps) => {
       selectedIndex={selectedTab}
       onChange={(index: any) => setSelectedTab(index as number)}
       variant="primary"
-      className="flex-1 -mx-2 overflow-hidden relative z-0"
+      className="flex-1 -mx-2 overflow-hidden relative z-0 "
     >
-      <Tabs.List className="!justify-start relative !pointer-events-autopx-0">
+      <Tabs.List className="!justify-start relative !pointer-events-autopx-0 border-b border-gray-gold">
         {tabs.map((tab, index) => (
           <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
         ))}
       </Tabs.List>
       <Tabs.Panels className="overflow-hidden">
         {tabs.map((tab, index) => (
-          <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+          <Tabs.Panel className="overflow-hidden" key={index}>{tab.component}</Tabs.Panel>
         ))}
-        <div className="border-t -mx-2 border-gray-gold bg-gradient-to-b from-[#151515] to-transparent absolute w-full h-16 top-[39px] left-0" />
+        {/*<div className="border-t -mx-2 border-gray-gold bg-gradient-to-b from-[#151515] to-transparent absolute w-full h-16 top-[39px] left-0" />*/}
       </Tabs.Panels>
     </Tabs>
   );

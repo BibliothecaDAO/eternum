@@ -3,8 +3,10 @@ import { Client, WalletType } from "@web3mq/client";
 
 export const useLogin = () => {
     const [_didValue, setDidValue] = useState<string>('');
-    const password = '123456';
-    const didType: WalletType = 'argentX' // or 'starknet';
+    const password = '123123';
+    const didType: WalletType = 'metamask' // or 'starknet';
+    const chainType = 'eth'
+    const appKey = 'vAUJTFXbBZRkEDRE';
 
     const [userExist, setUserExist] = useState<boolean>(false);
 
@@ -22,7 +24,7 @@ export const useLogin = () => {
 
         const { userid, userExist } = await Client.register.getUserInfo({
             did_value: didValue,
-            did_type: 'starknet',
+            did_type: chainType,
         });
         localStorage.setItem("USER_ID", userid)
 
@@ -117,7 +119,8 @@ export const useLogin = () => {
     const init = async () => {
         const fastUrl = await Client.init({
             connectUrl: getStorageValue("FAST_URL"),
-            app_key: "OVEEGLRxtqXcEIJN",
+            env: "dev",
+            app_key: appKey,
         });
         localStorage.setItem("FAST_URL", fastUrl);
 
