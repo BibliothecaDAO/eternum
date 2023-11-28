@@ -124,3 +124,10 @@ enum BuildingTypes {
     ARCHER_TOWER: u8,
     CASTLE: u8,
 }
+
+mod LevelIndex {
+    const FOOD: u8 = 1;
+    const RESOURCE: u8 = 2;
+    const TRAVEL: u8 = 3;
+    const COMBAT: u8 = 4;
+}

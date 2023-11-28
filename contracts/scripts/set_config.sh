@@ -40,7 +40,15 @@ commands=(
 ### LEVELING CONFIG ###
 commands+=(
     ## leveling cost
-    "sozo execute $CONFIG_SYSTEMS set_leveling_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,22,1,218042,2,171347,3,166652,4,114912,5,96347,6,75695,7,51260,8,41607,9,39740,10,25825,11,13042,12,10740,13,10392,14,10392,15,7477,16,7042,17,6042,18,4825,19,4042,20,2392,21,1607,22,100"
+    ## decay_scaled = 1844674407370955161 => 10%,
+    ## cost_percentage_scaled = 4611686018427387904 => 25%,
+    ## base_multiplier = 25 => 25%,
+    ## wheat_base_amount = 3780 => 12 hours of average prod,
+    ## fish_base_amount = 1260 => 12 hours of average prod,
+    ## resource_1_costs = 1, 132, 2, 104, 3, 101, 4, 70, 5, 58, 6, 46, 7, 31,
+    ## resource_2_costs = 8, 25, 9, 24, 10, 16, 11, 8, 12, 7, 13, 6, 14, 6, 15, 5,
+    ## resource_3_costs = 16, 4, 17, 4, 18, 3, 19, 2, 20, 1, 21, 1, 22, 1,
+    "sozo execute $CONFIG_SYSTEMS set_leveling_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1844674407370955161,4611686018427387904,25,3780000,1260000,7,1,132000,2,103731,3,100889,4,69566,5,58327,6,45825,7,31033,8,8,25189,9,24057,10,15635,11,7896,12,6501,13,6291,14,6291,15,4527,7,16,4264,17,3659,18,2922,19,2448,20,1448,21,974,22,605"
 )
 
 

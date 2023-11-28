@@ -127,6 +127,13 @@ trait IHyperstructureConfig<TContractState> {
 trait ILevelingConfig<TContractState> {
     fn set_leveling_config(
         self: @TContractState, world: IWorldDispatcher,
-        resource_costs: Span<(u8, u128)>
+        decay_scaled: u128,
+        cost_percentage_scaled: u128,
+        base_multiplier: u128,
+        wheat_base_amount: u128,
+        fish_base_amount: u128,
+        resource_1_costs: Span<(u8, u128)>,
+        resource_2_costs: Span<(u8, u128)>,
+        resource_3_costs: Span<(u8, u128)>
     );
 }

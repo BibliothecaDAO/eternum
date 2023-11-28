@@ -25,10 +25,10 @@ import {
   AttackProps,
   StealProps,
   LevelUpProps,
+  SetAddressNameProps,
   MergeSoldiersProps,
   CreateAndMergeSoldiersProps,
   HealSoldiersProps,
-  SetAddressNameProps,
   HarvestAllLaborProps,
 } from "../types";
 import { Call } from "starknet";
@@ -627,7 +627,6 @@ export class EternumProvider extends RPCProvider {
       entrypoint: "set_address_name",
       calldata: [this.getWorldAddress(), name],
     });
-
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
     });

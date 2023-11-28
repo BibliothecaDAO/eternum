@@ -6,10 +6,12 @@ mod combat_systems {
     use eternum::models::position::{Position};
     use eternum::models::config::{
         SpeedConfig, WeightConfig, CapacityConfig, CombatConfig,
-        SoldierConfig, HealthConfig, AttackConfig, DefenceConfig
+        SoldierConfig, HealthConfig, AttackConfig, DefenceConfig,
+        LevelingConfig
     };
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::inventory::Inventory;
+    use eternum::models::level::{Level, LevelTrait};
     use eternum::models::capacity::Capacity;
     use eternum::models::weight::Weight;
     use eternum::models::owner::{Owner, EntityOwner};
@@ -34,7 +36,8 @@ mod combat_systems {
 
     use eternum::constants::{
         WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE, COMBAT_CONFIG_ID,
-        get_unzipped_resource_probabilities
+        LEVELING_CONFIG_ID, get_unzipped_resource_probabilities,
+        LevelIndex
     };
 
     use eternum::utils::random;
@@ -619,7 +622,21 @@ mod combat_systems {
                 index +=1;
             };
 
+            let attacker_realm_entity_id 
+                = get!(world, *attacker_ids.at(0), EntityOwner).entity_owner_id;
+
+            // get level bonus
+            let leveling_config: LevelingConfig = get!(world, LEVELING_CONFIG_ID, LevelingConfig);
+            let attacker_level = get!(world, (attacker_realm_entity_id), Level);
+            let attacker_level_bonus = attacker_level.get_index_multiplier(leveling_config, LevelIndex::FOOD);
+
+            attackers_total_attack = (attackers_total_attack * attacker_level_bonus)/100;
+            attackers_total_defence = (attackers_total_defence + attacker_level_bonus)/100;
+
             let mut damage: u128 = 0; 
+            
+            let target_level = get!(world, (attacker_realm_entity_id), Level);
+            let target_level_bonus = target_level.get_index_multiplier(leveling_config, LevelIndex::COMBAT);
 
             let mut target_town_watch_attack = get!(world, target_town_watch_id, Attack);
             let mut target_town_watch_defense = get!(world, target_town_watch_id, Defence);
@@ -628,7 +645,7 @@ mod combat_systems {
                 array![true, false].span(), 
                 array![
                     attackers_total_attack * attackers_total_health, 
-                    target_town_watch_defense.value * target_town_watch_health.value
+                    ((target_town_watch_defense.value * target_level_bonus) / 100) * target_town_watch_health.value
                 ].span(), 
                 array![].span(), 1
             )[0];

@@ -8,6 +8,7 @@ import { useDojo } from "../../../../../DojoContext";
 import AttacksComponent from "./AttacksComponent";
 import { ManageSoldiersPopupTabs } from "../raids/ManageSoldiersPopupTabs";
 import { HealPopup } from "../HealPopup";
+import { LevelIndex, useRealm } from "../../../../../hooks/helpers/useRealm";
 
 type DefencePanelProps = {};
 
@@ -25,6 +26,8 @@ export const DefencePanel = ({}: DefencePanelProps) => {
 
   const { getEntitiesCombatInfo, getRealmWatchTowerId } = useCombat();
 
+  const { getRealmLevelBonus, getRealmLevel } = useRealm();
+
   const watchTowerId = getRealmWatchTowerId(realmEntityId);
   const watchTowerHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(watchTowerId)]));
 
@@ -36,6 +39,11 @@ export const DefencePanel = ({}: DefencePanelProps) => {
       return undefined;
     }
   }, [watchTowerId, watchTowerHealth]);
+
+  const defenderLevelBonus = useMemo(() => {
+    let level = getRealmLevel(watchTower.entityOwnerId)?.level || 0;
+    return getRealmLevelBonus(level, LevelIndex.COMBAT);
+  }, [watchTower]);
 
   return (
     <div className="relative flex flex-col p-2 min-h-[120px]">
@@ -51,6 +59,7 @@ export const DefencePanel = ({}: DefencePanelProps) => {
         {watchTower && (
           <Defence
             onReinforce={() => setShowBuildDefence(!showBuildDefence)}
+            levelBonus={defenderLevelBonus}
             setShowHeal={setShowHeal}
             watchTower={watchTower}
           />

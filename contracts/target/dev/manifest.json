@@ -973,7 +973,7 @@
     {
       "name": "combat_systems",
       "address": null,
-      "class_hash": "0x1c400a30cd1c5e022f32f5393aa8c12b7798477966964593f0acb5e02daab4d",
+      "class_hash": "0x4e0d5108e338edd5fa81f30a2877598f402b3cf9e7654fd20475233d62e7b7f",
       "abi": [
         {
           "type": "impl",
@@ -1286,6 +1286,8 @@
         "Health",
         "HealthConfig",
         "Inventory",
+        "Level",
+        "LevelingConfig",
         "Movable",
         "Owner",
         "Position",
@@ -1317,7 +1319,7 @@
     {
       "name": "config_systems",
       "address": null,
-      "class_hash": "0x3b8c3b795585ec917711f16778a7c1a596a84249e850acb2a781891a6e2244c",
+      "class_hash": "0x2e64f01bf6d883a6a42a9a6cafcde97a43bf2f9d4a8a6d5e00ea636d167ea09",
       "abi": [
         {
           "type": "impl",
@@ -1588,7 +1590,35 @@
                   "type": "dojo::world::IWorldDispatcher"
                 },
                 {
-                  "name": "resource_costs",
+                  "name": "decay_scaled",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "cost_percentage_scaled",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "base_multiplier",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "wheat_base_amount",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "fish_base_amount",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "resource_1_costs",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                },
+                {
+                  "name": "resource_2_costs",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                },
+                {
+                  "name": "resource_3_costs",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                 }
               ],
@@ -1993,7 +2023,7 @@
     {
       "name": "labor_systems",
       "address": null,
-      "class_hash": "0x1842dbbbebd71d8c247f6d15981a49ed2aee5e81bd2899b140bb1a0d7d871f6",
+      "class_hash": "0x1058d4850bfd94e5f2890f36e40feb81fc164a61f7e137635357c8ab6f0e4c9",
       "abi": [
         {
           "type": "impl",
@@ -2136,6 +2166,7 @@
         "LaborCostAmount",
         "LaborCostResources",
         "Level",
+        "LevelingConfig",
         "Owner",
         "Position",
         "Realm",
@@ -2151,7 +2182,7 @@
     {
       "name": "leveling_systems",
       "address": null,
-      "class_hash": "0x3e35cf90aadf51c415e9e978d04c21400576f6990a0701da16df7a31e964992",
+      "class_hash": "0x46fbedd7b1013503ce8c1a832b55372bb42bb123b7870a9c5c2764b34fd85de",
       "abi": [
         {
           "type": "impl",
@@ -2240,7 +2271,8 @@
         "ResourceCost"
       ],
       "writes": [
-        "Level"
+        "Level",
+        "Resource"
       ],
       "computed": []
     },
@@ -2974,7 +3006,7 @@
     {
       "name": "trade_systems",
       "address": null,
-      "class_hash": "0x7f8555b6afa833b0d51af0dc7c57917e7b5342c344a1280b03250cef8a168f",
+      "class_hash": "0x2a1dd4b29735c6822b4e9c45a2a4e494b19e9483a23f4bbe71ba40bf944ff63",
       "abi": [
         {
           "type": "impl",
@@ -3279,7 +3311,7 @@
     {
       "name": "travel_systems",
       "address": null,
-      "class_hash": "0x1a4882b76ddbd273be8730f30b9c685bd477ff8708e11317b62324ef5dd6d37",
+      "class_hash": "0x6c017e3dc7a261370471d33e66215837a31db640a22eac36d7b031e9ce58b79",
       "abi": [
         {
           "type": "impl",
@@ -3379,6 +3411,7 @@
       ],
       "reads": [
         "ArrivalTime",
+        "EntityOwner",
         "Movable",
         "Owner",
         "Position"
@@ -8536,17 +8569,62 @@
           "key": true
         },
         {
-          "name": "resource_cost_id",
+          "name": "wheat_base_amount",
           "type": "u128",
           "key": false
         },
         {
-          "name": "resource_cost_count",
+          "name": "fish_base_amount",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "resource_1_cost_id",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "resource_1_cost_count",
           "type": "u32",
+          "key": false
+        },
+        {
+          "name": "resource_2_cost_id",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "resource_2_cost_count",
+          "type": "u32",
+          "key": false
+        },
+        {
+          "name": "resource_3_cost_id",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "resource_3_cost_count",
+          "type": "u32",
+          "key": false
+        },
+        {
+          "name": "decay_scaled",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "cost_percentage_scaled",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "base_multiplier",
+          "type": "u128",
           "key": false
         }
       ],
-      "class_hash": "0x3de3d2e92d1616482d23773ca618e3dd3630a6c761d7931f36325cb95d0d9d7",
+      "class_hash": "0x2e0a70d2268e06a7fda8ad50ee10406775a9d69091637f7463283ea347509f3",
       "abi": [
         {
           "type": "function",
