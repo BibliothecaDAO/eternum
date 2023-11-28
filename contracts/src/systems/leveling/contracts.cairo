@@ -98,4 +98,14 @@ mod leveling_systems {
 
         }   
     }
+
+    #[generate_trait]
+    impl InternalLevelingSystemsImpl of InternalLevelingSystemsTrait {
+
+        fn get_realm_level_bonus(world: IWorldDispatcher, realm_entity_id: ID, leveling_index: u8) -> u128 {
+            let level = get!(world, (realm_entity_id), Level);
+            let leveling_config: LevelingConfig = get!(world, LEVELING_CONFIG_ID, LevelingConfig);
+            level.get_index_multiplier(leveling_config, leveling_index)
+        }
+    }
 }

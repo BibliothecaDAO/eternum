@@ -973,7 +973,7 @@
     {
       "name": "combat_systems",
       "address": "0x778fd3e137dc0e58d94d599167aa431332b8529f9bfc8efd70a7ea4e9c74247",
-      "class_hash": "0x2f77a7a9b6bd15b6f6b4a856bb2ab4e9b28ad38fa5451a02b5698db03268dff",
+      "class_hash": "0x4e0d5108e338edd5fa81f30a2877598f402b3cf9e7654fd20475233d62e7b7f",
       "abi": [
         {
           "type": "impl",
@@ -3006,7 +3006,7 @@
     {
       "name": "trade_systems",
       "address": "0x7b54643f42a1c4298fe5e465105ccbee30ba505f3bedaa90f4951f9f15be8f0",
-      "class_hash": "0x7f8555b6afa833b0d51af0dc7c57917e7b5342c344a1280b03250cef8a168f",
+      "class_hash": "0x2a1dd4b29735c6822b4e9c45a2a4e494b19e9483a23f4bbe71ba40bf944ff63",
       "abi": [
         {
           "type": "impl",
@@ -3311,7 +3311,7 @@
     {
       "name": "travel_systems",
       "address": "0x8fa2df40a28c2ffb7a99267c1a67318451da3a5d39cadb18577a2d09856b0e",
-      "class_hash": "0x4a85632057725bccc7ff986990f049ea1dc0e911f56096fb1d46328a0f1f71a",
+      "class_hash": "0x6c017e3dc7a261370471d33e66215837a31db640a22eac36d7b031e9ce58b79",
       "abi": [
         {
           "type": "impl",
@@ -3412,8 +3412,6 @@
       "reads": [
         "ArrivalTime",
         "EntityOwner",
-        "Level",
-        "LevelingConfig",
         "Movable",
         "Owner",
         "Position"
