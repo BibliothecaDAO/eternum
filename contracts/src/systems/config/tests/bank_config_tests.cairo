@@ -62,7 +62,7 @@ fn test_create_bank() {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_create_bank_auction() {
+fn test_set_bank_auction() {
     let world = spawn_eternum();
 
     let config_systems_address 
@@ -73,13 +73,14 @@ fn test_create_bank_auction() {
     };
 
 
-    let zone: u8 = 5;
+    let bank_id: u128 = 1;
     let decay_constant: u128 = _0_1;
     let per_time_unit: u128 = 50;
     let price_update_interval: u128 = 10;
 
-    bank_config_dispatcher.create_bank_auction(
+    bank_config_dispatcher.set_bank_auction(
         world,
+        bank_id,
         array![
             ResourceTypes::SHEKELS, 
             ResourceTypes::DRAGONHIDE
@@ -89,8 +90,7 @@ fn test_create_bank_auction() {
         price_update_interval
     );
 
-    let bank_shekel_auction = get!(world, (zone, ResourceTypes::SHEKELS), BankAuction);
-    assert(bank_shekel_auction.zone == zone, 'zone');
+    let bank_shekel_auction = get!(world, (bank_id, ResourceTypes::SHEKELS), BankAuction);
     assert(bank_shekel_auction.decay_constant_mag == decay_constant, 'decay_constant_mag');
     assert(bank_shekel_auction.per_time_unit == per_time_unit, 'per_time_unit');
     assert(bank_shekel_auction.sold == 0, 'sold');
@@ -98,8 +98,7 @@ fn test_create_bank_auction() {
     assert(bank_shekel_auction.price_update_interval == 10, 'price_update_interval');
 
 
-    let bank_dragonhide_auction = get!(world, (zone, ResourceTypes::DRAGONHIDE), BankAuction);
-    assert(bank_dragonhide_auction.zone == zone, 'zone');
+    let bank_dragonhide_auction = get!(world, (bank_id, ResourceTypes::DRAGONHIDE), BankAuction);
     assert(bank_dragonhide_auction.decay_constant_mag == decay_constant, 'decay_constant_mag');
     assert(bank_dragonhide_auction.per_time_unit == per_time_unit, 'per_time_unit');
     assert(bank_dragonhide_auction.sold == 0, 'sold');

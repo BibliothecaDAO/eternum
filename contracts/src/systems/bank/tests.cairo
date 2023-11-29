@@ -66,8 +66,9 @@ fn setup() -> (IWorldDispatcher, u128, u128, IBankSystemsDispatcher,) {
     let decay_constant: u128 = _0_1;
     let per_time_unit: u128 = 50;
     let price_update_interval: u128 = 10;
-    bank_config_dispatcher.create_bank_auction(
+    bank_config_dispatcher.set_bank_auction(
         world,
+        1,
         array![
             ResourceTypes::SHEKELS, 
         ].span(),

@@ -148,9 +148,10 @@ trait IBankConfig<TContractState> {
     ) -> ID ;
 
 
-    fn create_bank_auction(
+    fn set_bank_auction(
         self: @TContractState,
         world: IWorldDispatcher,
+        bank_id: u128,
         resource_types: Span<u8>,
         decay_constant: u128,
         per_time_unit: u128,

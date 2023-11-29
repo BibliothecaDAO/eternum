@@ -23,7 +23,7 @@ struct BankSwapResourceCost {
 #[derive(Model, Copy, Drop, Serde)]
 struct BankAuction {
     #[key]
-    zone: u8,
+    bank_id: u128,
     #[key]
     resource_type: u8,
     decay_constant_mag: u128,
@@ -105,7 +105,7 @@ mod tests {
     #[available_gas(30000000)]
     fn test_auction_get_price() {
         let auction = BankAuction {
-            zone: 0,
+            bank_id: 1,
             resource_type: 0,
             decay_constant_mag: _0_1,
             decay_constant_sign: false,

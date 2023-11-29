@@ -636,9 +636,10 @@ mod config_systems {
 
 
 
-        fn create_bank_auction(
+        fn set_bank_auction(
             self: @ContractState,
             world: IWorldDispatcher,
+            bank_id: u128, 
             resource_types: Span<u8>,
             decay_constant: u128,
             per_time_unit: u128,
@@ -647,38 +648,27 @@ mod config_systems {
 
             let start_time = starknet::get_block_timestamp();
 
-            let mut zone: u8 = 1;
-
+            let mut index = 0;
             loop {
-                if zone > 10 {
+                if index == resource_types.len() {
                     break;
                 }
 
-                let mut index = 0;
-                loop {
-                    if index == resource_types.len() {
-                        break;
+                set!(world, (
+                    BankAuction {
+                        bank_id,
+                        resource_type: *resource_types.at(index),
+                        decay_constant_mag: decay_constant,
+                        decay_constant_sign: false,
+                        per_time_unit,
+                        start_time,
+                        sold: 0,
+                        price_update_interval,
                     }
+                ));
 
-                    set!(world, (
-                        BankAuction {
-                            zone,
-                            resource_type: *resource_types.at(index),
-                            decay_constant_mag: decay_constant,
-                            decay_constant_sign: false,
-                            per_time_unit,
-                            start_time,
-                            sold: 0,
-                            price_update_interval,
-                        }
-                    ));
-
-                    index += 1;
-                };
-    
-                zone += 1;
-            };       
+                index += 1;
+        };       
         }
-
     }
 }

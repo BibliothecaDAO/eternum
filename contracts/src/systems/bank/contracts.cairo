@@ -44,7 +44,7 @@ mod bank_systems {
 
             let bank_position = get!(world, bank_id, Position);
             let zone = bank_position.get_zone();
-            let mut bank_auction = get!(world, (zone, bought_resource_type), BankAuction);
+            let mut bank_auction = get!(world, (bank_id, bought_resource_type), BankAuction);
             assert(bank_auction.per_time_unit != 0, 'auction not found');
 
             let mut bank_auction_vrgda = bank_auction.to_LinearVRGDA();
