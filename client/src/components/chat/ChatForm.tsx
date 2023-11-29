@@ -3,6 +3,8 @@ import TextInput from "../../elements/TextInput";
 import Button from "../../elements/Button";
 import Avatar from "../../elements/Avatar";
 import { useChat } from "../../ChatContext";
+import { addressToNumber } from "../../utils/utils";
+import { useDojo } from "../../DojoContext";
 
 const ChatForm = () => {
   const [message, setMessage] = useState<string>("");
@@ -10,19 +12,23 @@ const ChatForm = () => {
   const { client } = useChat();
 
   const handleSendMessage = () => {
-    client?.message.sendMessage(message)
+    client?.message.sendMessage(message);
     setMessage("");
-  }
+  };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' && message.trim() !== "") {
+    if (event.key === "Enter" && message.trim() !== "") {
       handleSendMessage();
     }
-  }
+  };
+
+  const {
+    account: { account },
+  } = useDojo();
 
   return (
     <div className="flex items-center mt-auto rounded-b-xl bg-gradient-to-b from-black to-[#151515] -m-2 p-2 border-t-[1px] border-gold">
-      <Avatar src="/images/avatars/1.png" size="sm" />
+      <Avatar src={`/images/avatars/${addressToNumber(account.address)}.png`} size="md" />
       <TextInput placeholder="Write something..." value={message} onChange={setMessage} onKeyDown={handleKeyDown} />
       <Button className="ml-2 bg-transparent" onClick={() => handleSendMessage()}>
         <svg width="17" height="18" viewBox="0 0 17 18" fill="none" xmlns="http://www.w3.org/2000/svg">

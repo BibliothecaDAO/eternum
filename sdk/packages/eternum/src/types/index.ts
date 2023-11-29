@@ -9,28 +9,14 @@ export interface CreateSoldiersProps extends SystemSigner {
   quantity: num.BigNumberish;
 }
 
-export enum Duty {
-  ATTACK = 0,
-  DEFEND = 1,
+export interface HealSoldiersProps extends SystemSigner {
+  unit_id: num.BigNumberish;
+  health_amount: num.BigNumberish;
 }
 
-export interface GroupAndDeploySoldiersProps extends SystemSigner {
-  realm_entity_id: num.BigNumberish;
-  soldier_ids: num.BigNumberish[];
-  duty: Duty;
-}
-
-export interface UngroupSoldiersProps extends SystemSigner {
-  group_id: num.BigNumberish;
-}
-
-export interface UngroupAndRegroupSoldiersProps extends SystemSigner {
-  group_id: num.BigNumberish;
-  realm_entity_id: num.BigNumberish;
-  new_total_quantity: num.BigNumberish;
-  // if empty, no new soldier in the group
-  new_soldier_ids: num.BigNumberish[];
-  duty: Duty;
+export interface DetachSoldiersProps extends SystemSigner {
+  unit_id: num.BigNumberish;
+  detached_quantity: num.BigNumberish;
 }
 
 export interface SetAddressNameProps extends SystemSigner {
@@ -40,6 +26,17 @@ export interface SetAddressNameProps extends SystemSigner {
 export interface AttackProps extends SystemSigner {
   attacker_ids: num.BigNumberish[];
   target_id: num.BigNumberish;
+}
+
+export interface MergeSoldiersProps extends SystemSigner {
+  merge_into_unit_id: num.BigNumberish;
+  units: num.BigNumberish[];
+}
+
+export interface CreateAndMergeSoldiersProps extends SystemSigner {
+  realm_entity_id: num.BigNumberish;
+  quantity: num.BigNumberish;
+  merge_into_unit_id: num.BigNumberish;
 }
 
 export interface StealProps extends SystemSigner {
@@ -124,6 +121,10 @@ export interface BuildLaborProps extends SystemSigner {
 export interface HarvestLaborProps extends SystemSigner {
   realm_id: num.BigNumberish; // TODO: this is entity id not realm id
   resource_type: num.BigNumberish;
+}
+
+export interface HarvestAllLaborProps extends SystemSigner {
+  entity_ids: num.BigNumberish[][];
 }
 
 export interface MintResourcesProps extends SystemSigner {

@@ -11,6 +11,7 @@ import { MarketOffer } from "./MarketOffer";
 import { AcceptOfferPopup } from "../AcceptOffer";
 import { MarketInterface, sortTrades, useGetMarket } from "../../../../../hooks/helpers/useTrade";
 import { RoadBuildPopup } from "../Roads/RoadBuildPopup";
+import { MarketPopup } from "./MarketPopup";
 
 type MarketPanelProps = {
   directOffers: boolean;
@@ -19,6 +20,7 @@ type MarketPanelProps = {
 export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
   const [activeFilter, setActiveFilter] = useState(false);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
+  const [showMarketplace, setShowMarketplace] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<MarketInterface | undefined>(undefined);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
@@ -39,7 +41,7 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
     sort: "none",
   });
 
-  const market = useGetMarket({ selectedResources, selectedOrders, directOffers });
+  const market = useGetMarket({ selectedResources, selectedOrders, directOffers, filterOwnOffers: true });
 
   const renderedMarketOffers = useMemo(() => {
     if (!market) return null;
@@ -59,51 +61,57 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
   }, [market, activeSort]);
 
   return (
-    <div className="flex flex-col min-h-[125px] relative pb-3">
-      <FiltersPanel className="px-3 py-2">
-        <FilterButton active={activeFilter} onClick={() => setActiveFilter(!activeFilter)}>
-          Filter
-        </FilterButton>
-        <ResourceFilter selectedResources={selectedResources} setSelectedResources={setSelectedResources} />
-        <OrdersFilter selectedOrders={selectedOrders} setSelectedOrders={setSelectedOrders} />
-      </FiltersPanel>
-      <SortPanel className="px-3 py-2">
-        {sortingParams.map(({ label, sortKey, className }) => (
-          <SortButton
-            className={className}
-            key={sortKey}
-            label={label}
-            sortKey={sortKey}
-            activeSort={activeSort}
-            onChange={(_sortKey, _sort) => {
-              setActiveSort({
-                sortKey: _sortKey,
-                sort: _sort,
-              });
+    <>
+      <div className="fixed top-0 left-0">
+        {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
+        {showMarketplace && <MarketPopup onClose={() => setShowMarketplace(false)} />}
+        {buildRoadToEntityId && (
+          <RoadBuildPopup onClose={() => setBuildRoadToEntityId(undefined)} toEntityId={buildRoadToEntityId} />
+        )}
+        {selectedTrade && (
+          <AcceptOfferPopup
+            onClose={() => {
+              setSelectedTrade(undefined);
             }}
+            selectedTrade={selectedTrade}
           />
-        ))}
-      </SortPanel>
-      {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
-      {buildRoadToEntityId && (
-        <RoadBuildPopup onClose={() => setBuildRoadToEntityId(undefined)} toEntityId={buildRoadToEntityId} />
-      )}
-      {selectedTrade && (
-        <AcceptOfferPopup
-          onClose={() => {
-            setSelectedTrade(undefined);
-          }}
-          selectedTrade={selectedTrade}
-        />
-      )}
-      {renderedMarketOffers}
-      <Button
-        className="sticky w-32 -translate-x-1/2 bottom-2 left-1/2 !rounded-full"
-        onClick={() => setShowCreateOffer(true)}
-        variant="primary"
-      >
-        + Create new offer
-      </Button>
-    </div>
+        )}
+      </div>
+      <div className="flex flex-col min-h-[125px] relative pb-3">
+        <FiltersPanel className="px-3 py-2">
+          <FilterButton active={activeFilter} onClick={() => setActiveFilter(!activeFilter)}>
+            Filter
+          </FilterButton>
+          <ResourceFilter selectedResources={selectedResources} setSelectedResources={setSelectedResources} />
+          <OrdersFilter selectedOrders={selectedOrders} setSelectedOrders={setSelectedOrders} />
+        </FiltersPanel>
+        <SortPanel className="px-3 py-2">
+          {sortingParams.map(({ label, sortKey, className }) => (
+            <SortButton
+              className={className}
+              key={sortKey}
+              label={label}
+              sortKey={sortKey}
+              activeSort={activeSort}
+              onChange={(_sortKey, _sort) => {
+                setActiveSort({
+                  sortKey: _sortKey,
+                  sort: _sort,
+                });
+              }}
+            />
+          ))}
+        </SortPanel>
+        {renderedMarketOffers}
+        <div className="flex items-center justify-center sticky w-32 -translate-x-1/2 bottom-2 left-1/2 ">
+          <Button className="!rounded-full" onClick={() => setShowCreateOffer(true)} variant="primary">
+            + Create new offer
+          </Button>
+          <Button className="!rounded-full ml-2" onClick={() => setShowMarketplace(true)} variant="primary">
+            Open Marketplace
+          </Button>
+        </div>
+      </div>
+    </>
   );
 };

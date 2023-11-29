@@ -3,9 +3,9 @@ import { Tabs } from "../../../elements/tab";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useRoute, useLocation } from "wouter";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { BattalionsPanel } from "./combat/battalions/BattalionsPanel";
 import { RaidsPanel } from "./combat/raids/RaidsPanel";
 import { DefencePanel } from "./combat/defence/DefencePanel";
+import { useRealm } from "../../../hooks/helpers/useRealm";
 
 export type Order = {
   orderId: number;
@@ -13,9 +13,9 @@ export type Order = {
   tradeId: number;
 };
 
-type RealmTradeComponentProps = {};
+type RealmCombatComponentProps = {};
 
-export const RealmCombatComponent = ({}: RealmTradeComponentProps) => {
+export const RealmCombatComponent = ({}: RealmCombatComponentProps) => {
   const [selectedTab, setSelectedTab] = useState(1);
   const { realmEntityId } = useRealmStore();
 
@@ -62,32 +62,10 @@ export const RealmCombatComponent = ({}: RealmTradeComponentProps) => {
             onMouseLeave={() => setTooltip(null)}
             className="flex relative group flex-col items-center"
           >
-            <div>Raids</div>
+            <div>Raiders</div>
           </div>
         ),
-        component: <RaidsPanel></RaidsPanel>,
-      },
-      {
-        key: "battalions",
-        label: (
-          <div
-            onMouseEnter={() =>
-              setTooltip({
-                position: "bottom",
-                content: (
-                  <>
-                    <p className="whitespace-nowrap">Check your Raiders</p>
-                  </>
-                ),
-              })
-            }
-            onMouseLeave={() => setTooltip(null)}
-            className="flex relative group flex-col items-center"
-          >
-            <div>Battalions</div>
-          </div>
-        ),
-        component: <BattalionsPanel />,
+        component: <RaidsPanel />,
       },
       {
         key: "defence",
@@ -109,31 +87,38 @@ export const RealmCombatComponent = ({}: RealmTradeComponentProps) => {
             <div>Defence</div>
           </div>
         ),
-        component: <DefencePanel></DefencePanel>,
+        component: <DefencePanel />,
       },
     ],
     [selectedTab],
   );
 
+  const { getRealmLevel } = useRealm();
+  const realm_level = getRealmLevel(realmEntityId).level;
+
   return (
     <>
-      <Tabs
-        selectedIndex={selectedTab}
-        onChange={(index: any) => setLocation(`/realm/${realmEntityId}/${tabs[index].key}`)}
-        variant="default"
-        className="h-full"
-      >
-        <Tabs.List>
-          {tabs.map((tab, index) => (
-            <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-          ))}
-        </Tabs.List>
-        <Tabs.Panels className="overflow-hidden">
-          {tabs.map((tab, index) => (
-            <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
-          ))}
-        </Tabs.Panels>
-      </Tabs>
+      {realm_level < 2 ? (
+        <div className="text-gold p-4 border rounded border-gold m-2">Combat Locked until level 2</div>
+      ) : (
+        <Tabs
+          selectedIndex={selectedTab}
+          onChange={(index: any) => setLocation(`/realm/${realmEntityId}/${tabs[index].key}`)}
+          variant="default"
+          className="h-full"
+        >
+          <Tabs.List>
+            {tabs.map((tab, index) => (
+              <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+            ))}
+          </Tabs.List>
+          <Tabs.Panels className="overflow-hidden">
+            {tabs.map((tab, index) => (
+              <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+            ))}
+          </Tabs.Panels>
+        </Tabs>
+      )}
     </>
   );
 };

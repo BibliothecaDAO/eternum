@@ -1,6 +1,6 @@
 {
   "name": "@bibliothecadao/eternum",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Eternum SDK for Starknet & Dojo",
   "type": "module",
   "scripts": {

@@ -9,6 +9,8 @@ body {
   overflow: hidden;
   font-family: "Merriweather", serif;
   touch-action: none;
+  @apply cursor-fancy;
+  
 }
 
 .container-bg-gradient {
@@ -60,3 +62,8 @@ body {
 .root-container > * {
   pointer-events: auto;
 }
+
+h1 {
+  @apply text-4xl font-bold;
+}
+

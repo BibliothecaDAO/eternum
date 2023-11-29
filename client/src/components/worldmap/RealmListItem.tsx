@@ -54,7 +54,7 @@ export const RealmListItem = ({ realm }: RealmListItemProps) => {
             {realm.resources &&
               realm.resources.map((resourceId: number) => (
                 <div className="flex flex-col items-center mx-2 my-0.5" key={resourceId}>
-                  <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="xs" className="mb-1" />
+                  <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="md" className="mb-1" />
                 </div>
               ))}
           </div>

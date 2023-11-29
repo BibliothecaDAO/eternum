@@ -8,6 +8,7 @@ import { ResourcesIds } from "@bibliothecadao/eternum";
 import { LaborBuildPopup } from "./LaborBuild";
 import { useRoute } from "wouter";
 import { getRealm } from "../../../../utils/realms";
+import { useRealm } from "../../../../hooks/helpers/useRealm";
 
 type LaborPanelProps = {
   type?: "all" | "food" | "mines";
@@ -69,6 +70,10 @@ export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
     }
   }, [realm]);
 
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const { getRealmLevel } = useRealm();
+  const realm_level = getRealmLevel(realmEntityId).level;
+
   return (
     <div className="flex flex-col">
       <SortPanel className="px-3 py-2">
@@ -106,6 +111,7 @@ export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
               realm={realm}
               setBuildLoadingStates={setBuildLoadingStates}
               buildLoadingStates={buildLoadingStates}
+              locked={realm_level == 0 && resourceId <= 22}
             />
           </div>
         ))}

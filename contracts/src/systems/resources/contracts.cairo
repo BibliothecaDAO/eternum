@@ -458,6 +458,7 @@ mod resource_systems {
 
                 // add item to inventory
                 let mut inventory = get!(world, entity_id, Inventory);
+
                 let foreign_key 
                     = InternalInventorySystemsImpl::get_foreign_key(inventory, inventory.items_count);
                 set!(world, (
@@ -470,6 +471,62 @@ mod resource_systems {
                 // update entity's inventory
                 inventory.items_count += 1;
                 set!(world, (inventory));
+        }
+
+
+        fn add_many(world: IWorldDispatcher, entity_id: ID, mut item_ids: Span<ID>) {
+
+            let mut entity_weight = get!(world, entity_id, Weight);
+            let entity_capacity = get!(world, entity_id, Capacity); 
+            let entity_quantity = get!(world, entity_id, Quantity).get_value();
+            let entity_total_capacity = entity_capacity.weight_gram * entity_quantity;
+            
+            let mut inventory = get!(world, entity_id, Inventory);
+            assert(inventory.items_key != 0, 'entity has no inventory');
+
+
+            loop {
+                
+                match item_ids.pop_front() {
+                    Option::Some(item_id) => {
+                        // ensure entity can carry the weight
+                        let item_weight = get!(world, *item_id, Weight);
+                        assert(item_weight.value > 0, 'item is empty');
+
+                        entity_weight.value += item_weight.value;
+
+                        if entity_capacity.weight_gram != 0  {
+                            // when weight_gram == 0, there is no capacity limit
+                            assert(
+                                entity_total_capacity >= entity_weight.value,
+                                    'capacity is not enough'
+                            );
+                        }  
+
+                        // add item to inventory
+                        let foreign_key 
+                            = InternalInventorySystemsImpl::get_foreign_key(inventory, inventory.items_count);
+                        set!(world, (
+                            ForeignKey {
+                                foreign_key: foreign_key,
+                                entity_id: *item_id
+                            }
+                        ));
+
+                        // update inventory item count
+                        inventory.items_count += 1;
+
+                    },
+                    Option::None => {break;}
+
+                }
+            };
+
+            // update entity's weight
+            set!(world, (entity_weight));
+
+            // update entity's inventory
+            set!(world, (inventory));
         }
 
         /// Remove an item from an inventory
@@ -502,6 +559,47 @@ mod resource_systems {
             let mut item_weight = get!(world, item_id, Weight);
             entity_weight.value -= item_weight.value;
             set!(world, (entity_weight));
+        }
+
+
+        /// Remove all items from inventory
+        fn clear(
+            world: IWorldDispatcher, entity_id: ID
+        ) -> Span<u128> {
+            let mut deleted_item_ids = array![];
+            let mut deleted_item_weight = 0;
+            
+            let mut inventory = get!(world, entity_id, Inventory);
+            if inventory.items_count > 0 {
+                let mut index = 0;
+                loop {
+                    if index == inventory.items_count {
+                        break;
+                    }
+    
+                    let current_inventory_item_foreign_key 
+                        = InternalInventorySystemsImpl::get_foreign_key(inventory, index);
+                    let current_inventory_item 
+                        = get!(world, current_inventory_item_foreign_key, ForeignKey);
+                    
+                    deleted_item_ids.append(current_inventory_item.entity_id);
+                    deleted_item_weight += get!(world, current_inventory_item.entity_id, Weight).value;
+                
+                    index += 1;
+                };
+
+                // remove items from inventory
+                inventory.items_count = 0;
+                set!(world, (inventory));
+
+                // remove weight from entity
+                let mut entity_weight = get!(world, entity_id, Weight);
+                entity_weight.value -= deleted_item_weight;
+                set!(world, (entity_weight));
+            }
+
+            deleted_item_ids.span()
+
         }
     }
     

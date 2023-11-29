@@ -5,6 +5,8 @@ import { orderNameDict } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { useGetRealm, useRealm } from "../../../hooks/helpers/useRealm";
 import { useDojo } from "../../../DojoContext";
+import { Leveling } from "./leveling/Leveling";
+import { LaborAuction } from "./labor/LaborAuction";
 
 type RealmInfoComponentProps = {};
 
@@ -43,7 +45,7 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
       {realm && (
         <div
           className={clsx(
-            "relative rounded-t-xl transition-colors duration-300 text-sm shadow-lg shadow-black/25 flex items-center px-4 py-2 text-white h-[50px]",
+            "relative rounded-t-xl transition-colors duration-300 text-sm shadow-lg shadow-black/25 flex items-center px-4 py-2 text-white h-[50px] justify-between ",
           )}
           style={{
             backgroundColor: bgColorsByOrder[orderNameDict[realm?.order] as keyof typeof bgColorsByOrder],
@@ -56,7 +58,18 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
             </div>
             <div className="font-bold">{realmsNames.features[realm.realmId - 1].name}</div>
           </div>
-          <div className="flex items-center ml-auto capitalize">
+          <LaborAuction />
+          <Leveling />
+          {/* <div className="flex justify-between items-center p-3">
+        <button
+          onClick={showOnMap}
+          className="flex items-center hover:bg-gold/20 transition-bg duration-200 z-10 px-2 py-1 ml-auto text-xxs border rounded-md text-gold border-gold"
+        >
+          <Map className="mr-1 fill-current" />
+          Show on map
+        </button>
+      </div> */}
+          <div className="flex items-center capitalize">
             <OrderIcon order={orderNameDict[realm?.order]} size="xs" />
           </div>
         </div>

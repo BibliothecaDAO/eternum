@@ -110,7 +110,9 @@ mod config_systems {
         fn set_soldier_config(
             self: @ContractState, 
             world: IWorldDispatcher, 
-            resource_costs: Span<(u8, u128)>
+            resource_costs: Span<(u8, u128)>,
+            wheat_burn_per_soldier: u128,
+            fish_burn_per_soldier: u128
         ) {
             let resource_cost_id = world.uuid().into();
             let mut index = 0;
@@ -137,7 +139,9 @@ mod config_systems {
                 (SoldierConfig {
                     config_id: SOLDIER_ENTITY_TYPE,
                     resource_cost_id,
-                    resource_cost_count: resource_costs.len()
+                    resource_cost_count: resource_costs.len(),
+                    wheat_burn_per_soldier,
+                    fish_burn_per_soldier
                 })
             );
         }
@@ -146,55 +150,8 @@ mod config_systems {
             self: @ContractState, 
             world: IWorldDispatcher, 
             entity_type: u128, 
-            value: u128
-        ) {
-            set!(
-                world,
-                (HealthConfig {
-                    entity_type,
-                    value
-                })
-            );
-        }
-
-        fn set_attack_config(
-            self: @ContractState, 
-            world: IWorldDispatcher, 
-            entity_type: u128, 
-            value: u128
-        ) {
-            set!(
-                world,
-                (AttackConfig {
-                    entity_type,
-                    value
-                })
-            );
-        }
-
-
-        fn set_defence_config(
-            self: @ContractState, 
-            world: IWorldDispatcher, 
-            entity_type: u128, 
-            value: u128
-        ) {
-            set!(
-                world,
-                (DefenceConfig {
-                    entity_type,
-                    value
-                })
-            );
-        }
-    }
-
-    #[external(v0)]
-    impl LevelingConfigImpl of ILevelingConfig<ContractState> {
-        fn set_leveling_config(
-            self: @ContractState, 
-            world: IWorldDispatcher, 
-            resource_costs: Span<(u8, u128)>
+            resource_costs: Span<(u8, u128)>,
+            max_value: u128
         ) {
             let resource_cost_id = world.uuid().into();
             let mut index = 0;
@@ -216,12 +173,145 @@ mod config_systems {
 
                 index += 1;
             };
+
+            set!(
+                world,
+                (HealthConfig {
+                    entity_type,
+                    resource_cost_id,
+                    resource_cost_count: resource_costs.len(),
+                    max_value
+                })
+            );
+        }
+
+        fn set_attack_config(
+            self: @ContractState, 
+            world: IWorldDispatcher, 
+            entity_type: u128, 
+            max_value: u128
+        ) {
+            set!(
+                world,
+                (AttackConfig {
+                    entity_type,
+                    max_value
+                })
+            );
+        }
+
+
+        fn set_defence_config(
+            self: @ContractState, 
+            world: IWorldDispatcher, 
+            entity_type: u128, 
+            max_value: u128
+        ) {
+            set!(
+                world,
+                (DefenceConfig {
+                    entity_type,
+                    max_value
+                })
+            );
+        }
+    }
+
+    #[external(v0)]
+    impl LevelingConfigImpl of ILevelingConfig<ContractState> {
+        fn set_leveling_config(
+            self: @ContractState, 
+            world: IWorldDispatcher, 
+            decay_scaled: u128,
+            cost_percentage_scaled: u128,
+            base_multiplier: u128,
+            wheat_base_amount: u128,
+            fish_base_amount: u128,
+            resource_1_costs: Span<(u8, u128)>,
+            resource_2_costs: Span<(u8, u128)>,
+            resource_3_costs: Span<(u8, u128)>,
+        ) {
+            let resource_1_cost_id = world.uuid().into();
+            let mut index = 0;
+            loop {
+               
+                if index == resource_1_costs.len() {
+                    break;
+                }
+                let (resource_type, resource_amount) 
+                    = *resource_1_costs.at(index);
+                set!(world, (
+                    ResourceCost {
+                        entity_id: resource_1_cost_id,
+                        index,
+                        resource_type,
+                        amount: resource_amount
+                    }
+                ));
+
+                index += 1;
+            };
+
+
+            let resource_2_cost_id = world.uuid().into();
+            let mut index = 0;
+            loop {
+               
+                if index == resource_2_costs.len() {
+                    break;
+                }
+                let (resource_type, resource_amount) 
+                    = *resource_2_costs.at(index);
+                set!(world, (
+                    ResourceCost {
+                        entity_id: resource_2_cost_id,
+                        index,
+                        resource_type,
+                        amount: resource_amount
+                    }
+                ));
+
+                index += 1;
+            };
+
+
+            let resource_3_cost_id = world.uuid().into();
+            let mut index = 0;
+            loop {
+               
+                if index == resource_3_costs.len() {
+                    break;
+                }
+                let (resource_type, resource_amount) 
+                    = *resource_3_costs.at(index);
+                set!(world, (
+                    ResourceCost {
+                        entity_id: resource_3_cost_id,
+                        index,
+                        resource_type,
+                        amount: resource_amount
+                    }
+                ));
+
+                index += 1;
+            };
+
+
             set!(
                 world,
                 (LevelingConfig {
                     config_id: LEVELING_CONFIG_ID,
-                    resource_cost_id,
-                    resource_cost_count: resource_costs.len()
+                    wheat_base_amount,
+                    fish_base_amount,
+                    resource_1_cost_id,
+                    resource_2_cost_id,
+                    resource_3_cost_id,
+                    resource_1_cost_count: resource_1_costs.len(),
+                    resource_2_cost_count: resource_2_costs.len(),
+                    resource_3_cost_count: resource_3_costs.len(),
+                    decay_scaled,
+                    cost_percentage_scaled,
+                    base_multiplier,
                 })
             );
         }

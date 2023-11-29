@@ -42,7 +42,7 @@ const Arcs = ({ paths }) => {
             key={i}
             width={20} // Width of the line
             color={"orangered"} // Color of the line
-            length={5} // Length of the line
+            length={20} // Length of the line
             decay={1} // How fast the line fades away
             local={true} // Wether to use the target's world or local positions
             stride={0} // Min distance between previous and current point

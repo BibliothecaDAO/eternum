@@ -338,3 +338,18 @@ const LOWEST_X = 470200;
 export function getZone(x: number): number {
   return 1 + Math.floor(((x - LOWEST_X) * 10) / (HIGHEST_X - LOWEST_X));
 }
+
+export function addressToNumber(address) {
+  // Convert the address to a big integer
+  let numericValue = BigInt(address);
+
+  // Sum the digits of the numeric value
+  let sum = 0;
+  while (numericValue > 0) {
+    sum += Number(numericValue % 5n);
+    numericValue /= 5n;
+  }
+
+  // Map the sum to a number between 1 and 10
+  return (sum % 5) + 1;
+}

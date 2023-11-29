@@ -6,24 +6,37 @@ import Button from "../../../../../elements/Button";
 
 type DefenceProps = {
   watchTower: CombatInfo;
+  levelBonus: number;
   onReinforce?: () => void;
-  onHeal?: () => void;
+  setShowHeal?: (show: boolean) => void;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const Defence = ({ watchTower, onReinforce, onHeal, ...props }: DefenceProps) => {
+export const Defence = ({ watchTower, levelBonus, onReinforce, setShowHeal, ...props }: DefenceProps) => {
   const { health, quantity, attack, defence } = watchTower;
 
   return (
     <div className={clsx("flex flex-1 w-full", props.className)}>
       <img src={`/images/buildings/defence_tower.png`} className="object-cover rounded-md w-[107px]" />
       <div className="flex flex-col w-full min-w-[244px] h-full ml-2">
-        <div className="flex  text-white items-center mb-2">
-          <div className="font-bold text-xs">City Tower</div>
+        <div className="font-bold text-white text-xs mb-1">City Tower</div>
+        <div className="flex text-white items-end mb-2">
+          <div className="flex flex-row text-xxs justify-center">
+            <span className="mr-1 text-gold">{`Combat Bonus: `}</span>
+            <span className="text-order-brilliance">{`+${levelBonus - 100}%`}</span>
+          </div>
           <div className="flex items-center text-xxs ml-auto">
             <div className="text-order-brilliance">{health && health.toLocaleString()}</div>&nbsp;/ {10 * quantity} HP
           </div>
-          {onHeal && (
-            <Button onClick={onHeal} className="ml-2" variant="success" size="xs">
+          {setShowHeal && (
+            <Button
+              onClick={() => {
+                watchTower.quantity > 0 && setShowHeal(true);
+              }}
+              disabled={watchTower.quantity === 0 || watchTower.health === 10 * watchTower.quantity}
+              className="ml-2"
+              variant="success"
+              size="xs"
+            >
               Heal
             </Button>
           )}
@@ -40,7 +53,7 @@ export const Defence = ({ watchTower, onReinforce, onHeal, ...props }: DefencePr
             className="rounded flex flex-col items-center justify-center"
             style={{ background: "radial-gradient(120.12% 123.03% at 19.74% -19.25%, #4A4A4A 0%, #000 100%)" }}
           >
-            <img src="/images/units/troop-icon.png" className="w-10 h-10 mb-2" />
+            <img src="/images/icons/troop.png" className="w-10 h-10 mb-2" />
             <div className=" font-bold">{quantity || 0}</div>
             <div>Defenders</div>
           </div>

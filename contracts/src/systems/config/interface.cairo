@@ -41,28 +41,31 @@ trait ICombatConfig<TContractState> {
     fn set_soldier_config(
         self: @TContractState, 
         world: IWorldDispatcher, 
-        resource_costs: Span<(u8, u128)>
+        resource_costs: Span<(u8, u128)>,
+        wheat_burn_per_soldier: u128,
+        fish_burn_per_soldier: u128
     );
 
     fn set_health_config(
         self: @TContractState, 
         world: IWorldDispatcher, 
         entity_type: u128, 
-        value: u128
+        resource_costs: Span<(u8, u128)>,
+        max_value: u128
     );
 
     fn set_attack_config(
         self: @TContractState, 
         world: IWorldDispatcher, 
         entity_type: u128, 
-        value: u128
+        max_value: u128
     );
 
     fn set_defence_config(
         self: @TContractState, 
         world: IWorldDispatcher, 
         entity_type: u128, 
-        value: u128
+        max_value: u128
     );
 }
 
@@ -124,6 +127,13 @@ trait IHyperstructureConfig<TContractState> {
 trait ILevelingConfig<TContractState> {
     fn set_leveling_config(
         self: @TContractState, world: IWorldDispatcher,
-        resource_costs: Span<(u8, u128)>
+        decay_scaled: u128,
+        cost_percentage_scaled: u128,
+        base_multiplier: u128,
+        wheat_base_amount: u128,
+        fish_base_amount: u128,
+        resource_1_costs: Span<(u8, u128)>,
+        resource_2_costs: Span<(u8, u128)>,
+        resource_3_costs: Span<(u8, u128)>
     );
 }
