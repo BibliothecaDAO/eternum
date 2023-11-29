@@ -30,4 +30,13 @@ dependencies = [
  "alexandria_math",
  "cubit",
  "dojo",
+ "eternum_guild_module",
+]
+
+[[package]]
+name = "eternum_guild_module"
+version = "0.1.0"
+source = "git+https://github.com/Generative-Labs/eternum-guild-module#5e871f513d684bc9db3a48a9106732ef66c9faed"
+dependencies = [
+ "dojo",
 ]
