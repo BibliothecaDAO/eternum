@@ -20,14 +20,16 @@ import useUIStore from "../../../../../hooks/store/useUIStore";
 
 type RaidProps = {
   raider: CombatInfo;
+  isSelected: boolean;
   setShowTravelRaid: (show: boolean) => void;
   setShowAttackRaid: (show: boolean) => void;
   setShowManageRaid: (show: boolean) => void;
+  setShowHealRaid: (show: boolean) => void;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const Raid = ({ raider, ...props }: RaidProps) => {
+export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
   const { entityId, health, quantity, capacity, attack, defence } = raider;
-  const { setShowAttackRaid, setShowManageRaid, setShowTravelRaid } = props;
+  const { setShowAttackRaid, setShowManageRaid, setShowTravelRaid, setShowHealRaid } = props;
 
   const {
     account: { account },
@@ -74,6 +76,7 @@ export const Raid = ({ raider, ...props }: RaidProps) => {
 
   const hasResources = inventoryResources && inventoryResources.length > 0;
   const isTraveling = raider.arrivalTime ? raider.arrivalTime > nextBlockTimestamp : false;
+  const hasMaxHealth = health === 10 * quantity;
   const destinationRealmId = raider.position ? getRealmIdByPosition(raider.position) : undefined;
   const destinationRealmName = destinationRealmId ? getRealmNameById(destinationRealmId) : undefined;
   const isHome = destinationRealmId === realmId;
@@ -83,7 +86,9 @@ export const Raid = ({ raider, ...props }: RaidProps) => {
   return (
     <div
       className={clsx(
-        "flex flex-col relative p-2 border rounded-md border-gray-gold text-xxs text-gray-gold",
+        `flex flex-col relative p-2 border rounded-md ${
+          isSelected ? "border-order-brilliance" : "border-gray-gold"
+        } text-xxs text-gray-gold`,
         props.className,
       )}
       onClick={props.onClick}
@@ -92,7 +97,7 @@ export const Raid = ({ raider, ...props }: RaidProps) => {
         {entityId && (
           <div
             className={clsx(
-              "flex items-center p-1 border text-light-pink rounded-br-md rounded-tl-md border-gray-gold",
+              `flex items-center p-1 border text-light-pink rounded-br-md rounded-tl-md border-gray-gold`,
               isTraveling && "!border-orange !text-orange",
               !isTraveling && isHome && "!text-order-brilliance !border-order-brilliance",
               !isTraveling && destinationRealmName && !isHome && "!text-order-giants !border-order-giants",
@@ -166,7 +171,7 @@ export const Raid = ({ raider, ...props }: RaidProps) => {
               <img src="/images/units/troop-icon.png" className="h-[28px]" />
               <div className="flex ml-1 text-center">
                 <div className="bold mr-1">x{quantity}</div>
-                Battalions
+                Raiders
               </div>
             </div>
           </div>
@@ -290,6 +295,20 @@ export const Raid = ({ raider, ...props }: RaidProps) => {
                 withoutSound
               >
                 {`Manage`}
+              </Button>
+            )}
+            {!isTraveling && isHome && !hasMaxHealth && (
+              <Button
+                size="xs"
+                className="ml-auto"
+                disabled={false}
+                onClick={() => {
+                  setShowHealRaid(true);
+                }}
+                variant="success"
+                withoutSound
+              >
+                {`Heal`}
               </Button>
             )}
             {hasResources && isHome && (

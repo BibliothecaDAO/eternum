@@ -42,9 +42,7 @@ export const Leveling = () => {
   }, [progress]);
 
   const onClick = () => {
-    if (level.level < 3) {
-      setShowLevelUp(true);
-    }
+    setShowLevelUp(true);
   };
 
   return (
@@ -53,8 +51,7 @@ export const Leveling = () => {
       {showLevelUp && <LevelingPopup onClose={() => setShowLevelUp(false)}></LevelingPopup>}
       <div onClick={onClick} className="cursor-pointer">
         <div className={"flex items-center text-white justify-between text-[13px] font-bold"}>
-          <div className={clsx("ml-3")}>Level: {level ? level.level : 0}</div>
-          <div className={clsx("ml-3", timeLeftColors.text)}>%{level.percentage}</div>
+          <div className={clsx("")}>Level: {level ? level.level : 0}</div>
         </div>
         <ProgressBar
           progress={progress}

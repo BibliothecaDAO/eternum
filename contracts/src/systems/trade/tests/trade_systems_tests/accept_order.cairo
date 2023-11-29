@@ -1,11 +1,13 @@
 use eternum::models::resources::{Resource, ResourceChest};
 use eternum::models::owner::Owner;
+use eternum::models::level::{Level};
 use eternum::models::position::{Position, Coord};
 use eternum::models::weight::Weight;
 use eternum::models::metadata::ForeignKey;
 use eternum::models::road::Road;
 use eternum::models::inventory::Inventory;
 use eternum::models::movable::{Movable, ArrivalTime};
+use eternum::models::config::{LevelingConfig};
 
 use eternum::models::trade::{Trade, Status, TradeStatus};
 
@@ -50,7 +52,7 @@ use eternum::systems::transport::interface::{
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
 use eternum::constants::ResourceTypes;
-use eternum::constants::FREE_TRANSPORT_ENTITY_TYPE;
+use eternum::constants::{FREE_TRANSPORT_ENTITY_TYPE, LEVELING_CONFIG_ID};
 
 use dojo::world::{ IWorldDispatcher, IWorldDispatcherTrait};
 
@@ -581,6 +583,186 @@ fn test_accept_order_direct_trade() {
     // check maker transport arrival time
     let maker_transport_arrival_time = get!(world, trade.maker_transport_id, ArrivalTime);
     assert(maker_transport_arrival_time.arrives_at == 800 * 2, 'wrong arrival time');
+
+    
+    // check maker transport position
+    let maker_transport_position = get!(world, trade.maker_transport_id, Position);
+    assert(maker_transport_position.x == maker_position.x, 'wrong maker position');
+    assert(maker_transport_position.y == maker_position.y, 'wrong maker position');
+
+
+
+
+
+    ///// Check Taker Data ///////
+    //////////////////////////////
+
+
+
+
+    // check that taker resource chest is filled
+    let taker_resource_chest_weight
+        = get!(world, trade.taker_resource_chest_id, Weight);
+    assert(taker_resource_chest_weight.value != 0, 'chest should be filled');
+
+    // check taker resource chest is locked
+    let taker_resource_chest 
+        = get!(world, trade.taker_resource_chest_id, ResourceChest);
+    assert(taker_resource_chest.locked_until == 800 , 'wrong chest locked_until');
+    
+    // check that the taker's resource chest was 
+    // added their transport's inventory
+    let taker_transport_inventory 
+        = get!(world, trade.taker_transport_id, Inventory);
+    assert(taker_transport_inventory.items_count == 1,'wrong item count' );
+    
+    let inventory_resource_chest_key 
+        = inventory::get_foreign_key(taker_transport_inventory, 0);
+    let foreign_key = get!(world, inventory_resource_chest_key, ForeignKey);
+    assert(foreign_key.entity_id == trade.taker_resource_chest_id,'chest not in inventory');
+
+    // check taker transport movable
+    let taker_transport_movable = get!(world, trade.taker_transport_id, Movable);
+    assert(taker_transport_movable.blocked == false, 'taker transport not blocked');
+
+    assert(
+        taker_transport_movable.intermediate_coord_x == maker_position.x, 
+            'wrong position x'
+    );
+
+    assert(
+        taker_transport_movable.intermediate_coord_y == maker_position.y, 
+            'wrong position y'
+    );
+
+    assert(
+        taker_transport_movable.round_trip == true, 
+            'wrong position y'
+    );
+
+
+    // check taker transport arrival time
+    let taker_transport_arrival_time = get!(world, trade.taker_transport_id, ArrivalTime);
+    assert(taker_transport_arrival_time.arrives_at == 800 * 2, 'wrong arrival time');
+
+    
+    // check taker transport position
+    let taker_transport_position = get!(world, trade.taker_transport_id, Position);
+    assert(taker_transport_position.x == taker_position.x, 'wrong taker position');
+    assert(taker_transport_position.y == taker_position.y, 'wrong taker position');
+
+}
+
+#[test]
+#[available_gas(3000000000000)]
+fn test_accept_order_with_travel_bonus() {
+
+    let (world, trade_id, maker_id, taker_id, taker_transport_id, trade_systems_dispatcher) 
+        = setup(true);
+
+    let caller_address = starknet::get_contract_address();
+    starknet::testing::set_contract_address(world.executor());
+    set!(world, (
+        Level {
+            entity_id: maker_id,
+            level: 12,
+            valid_until: 100_000
+        }
+    ));
+    set!(world, (
+        LevelingConfig {
+        config_id: LEVELING_CONFIG_ID,
+        wheat_base_amount: 0,
+        fish_base_amount: 0,
+        resource_1_cost_id: 0,
+        resource_1_cost_count: 0,
+        resource_2_cost_id: 0,
+        resource_2_cost_count: 0,
+        resource_3_cost_id: 0,
+        resource_3_cost_count: 0,
+        decay_scaled: 1844674407370955161,
+        cost_percentage_scaled: 4611686018427387904,
+        base_multiplier: 25
+        }
+    ));
+    starknet::testing::set_contract_address(caller_address);
+
+    // accept order 
+    trade_systems_dispatcher
+        .accept_order(world, taker_id, taker_transport_id, trade_id);
+    
+
+    // check that taker balance is correct
+    let taker_wood_resource = get!(world, (taker_id, ResourceTypes::WOOD), Resource);
+    assert(taker_wood_resource.balance == 300, 'wrong taker balance');
+
+    let taker_silver_resource = get!(world, (taker_id, ResourceTypes::SILVER), Resource);
+    assert(taker_silver_resource.balance == 300, 'wrong taker balance');
+
+
+    let trade = get!(world, trade_id, Trade);
+    assert(trade.taker_id == taker_id, 'wrong taker id');
+    assert(trade.taker_transport_id == taker_transport_id, 'wrong taker transport id');
+
+    let trade_status = get!(world, trade_id, Status);
+    assert(trade_status.value == TradeStatus::ACCEPTED,'wrong trade status');
+
+
+
+
+    ///// Check Maker Data ///////
+    //////////////////////////////
+
+
+
+
+    // check that maker resource chest is filled
+    let maker_resource_chest_weight
+        = get!(world, trade.maker_resource_chest_id, Weight);
+    assert(maker_resource_chest_weight.value != 0, 'chest should be filled');
+
+    // check maker resource chest is locked
+    let maker_resource_chest 
+        = get!(world, trade.maker_resource_chest_id, ResourceChest);
+    assert(maker_resource_chest.locked_until == 544 , 'wrong chest locked_until');
+    
+    // check that the maker's resource chest was 
+    // added their transport's inventory
+    let maker_transport_inventory 
+        = get!(world, trade.maker_transport_id, Inventory);
+    assert(maker_transport_inventory.items_count == 1,'wrong item count' );
+    
+    let inventory_resource_chest_key 
+        = inventory::get_foreign_key(maker_transport_inventory, 0);
+    let foreign_key = get!(world, inventory_resource_chest_key, ForeignKey);
+    assert(foreign_key.entity_id == trade.maker_resource_chest_id,'chest not in inventory');
+
+    // check maker transport movable
+    let maker_transport_movable = get!(world, trade.maker_transport_id, Movable);
+    assert(maker_transport_movable.blocked == false, 'maker transport not blocked');
+
+    let maker_position = get!(world, maker_id, Position);
+    let taker_position = get!(world, taker_id, Position);
+
+    assert(
+        maker_transport_movable.intermediate_coord_x == taker_position.x, 
+            'wrong position x'
+    );
+
+    assert(
+        maker_transport_movable.intermediate_coord_y == taker_position.y, 
+            'wrong position y'
+    );
+
+    assert(
+        maker_transport_movable.round_trip == true, 
+            'wrong position y'
+    );
+
+
+    // check maker transport arrival time
+    let maker_transport_arrival_time = get!(world, trade.maker_transport_id, ArrivalTime);
+    assert(maker_transport_arrival_time.arrives_at == 544 * 2, 'wrong arrival time');
 
     
     // check maker transport position

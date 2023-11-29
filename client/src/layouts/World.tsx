@@ -17,7 +17,6 @@ import clsx from "clsx";
 import { Redirect, Route, Switch, useLocation } from "wouter";
 import { useProgress } from "@react-three/drei";
 import { BlurOverlayContainer } from "../containers/BlurOverlayContainer";
-import { SignUpComponent } from "../components/SignUpComponent";
 import useSound from "use-sound";
 import { NotificationsComponent } from "../components/NotificationsComponent";
 import { useSyncWorld } from "../hooks/graphql/useGraphQLQueries";
@@ -29,15 +28,37 @@ import useLeaderBoardStore from "../hooks/store/useLeaderBoardStore";
 import useCombatHistoryStore from "../hooks/store/useCombatHistoryStore";
 import { useDojo } from "../DojoContext";
 import useRealmStore from "../hooks/store/useRealmStore";
+import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
+import { Onboarding } from "../plugins/onboarding/components/Onboarding";
 
 export const World = () => {
   const {
+    account: { list },
     setup: {
       systemCalls: { isLive },
     },
   } = useDojo();
 
-  const [isWorldLive, setIsWorldLive] = useState(false);
+  const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
+  const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const setHyperstructures = useUIStore((state) => state.setHyperstructures);
+  const setMouseCoords = useUIStore((state) => state.setMouseCoords);
+  const syncData = useLeaderBoardStore((state) => state.syncData);
+  const syncCombatHistory = useCombatHistoryStore((state) => state.syncData);
+  const isSoundOn = useUIStore((state) => state.isSoundOn);
+  const musicLevel = useUIStore((state) => state.musicLevel);
+
+  useEffect(() => {
+    if (list().length > 0) {
+      setBlankOverlay(false);
+    } else {
+      setBlankOverlay(true);
+    }
+  }, []);
+
+  const [_isWorldLive, setIsWorldLive] = useState(false);
 
   useEffect(() => {
     const checkWorldLive = async () => {
@@ -46,23 +67,13 @@ export const World = () => {
     checkWorldLive();
   }, []);
 
-  const { loading: worldLoading, progress: worldProgress } = useSyncWorld();
+  const { loading: worldLoading } = useSyncWorld();
 
   useFetchBlockchainData();
 
   const { progress } = useProgress();
 
-  const isSoundOn = useUIStore((state) => state.isSoundOn);
-  const musicLevel = useUIStore((state) => state.musicLevel);
-
-  const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const setHyperstructures = useUIStore((state) => state.setHyperstructures);
-  const setMouseCoords = useUIStore((state) => state.setMouseCoords);
-
   const { getHyperstructureIds } = useHyperstructure();
-  const syncData = useLeaderBoardStore((state) => state.syncData);
-  const syncCombatHistory = useCombatHistoryStore((state) => state.syncData);
 
   useEffect(() => {
     let ids = getHyperstructureIds();
@@ -165,14 +176,16 @@ export const World = () => {
       <BottomRightContainer>
         <ChatModule />
       </BottomRightContainer>
+      <BlankOverlayContainer open={showBlankOverlay}>
+        <Onboarding />
+      </BlankOverlayContainer>
       <BlurOverlayContainer>
-        <SignUpComponent isWorldLive={isWorldLive} worldLoading={worldLoading} worldProgress={worldProgress} />
+        {/* <SignUpComponent isWorldLive={isWorldLive} worldLoading={worldLoading} worldProgress={worldProgress} /> */}
       </BlurOverlayContainer>
       <Leva hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU} />
       <Tooltip />
       <Redirect to="/map" />
       <div className="absolute bottom-4 right-6 text-white text-xs text-white/60">v0.3.0</div>
-      {/* <div className="absolute h-screen w-screen bg-black top-0"></div> */}
     </div>
   );
 };

@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
 import Button from "../../../../../elements/Button";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../DojoContext";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
-import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
+import { LevelIndex, useGetRealm, useRealm } from "../../../../../hooks/helpers/useRealm";
 import { calculateSuccess } from "../../../../../utils/combat";
 import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
 import { Defence } from "../defence/Defence";
@@ -16,6 +16,7 @@ import { ResourceIcon } from "../../../../../elements/ResourceIcon";
 import { findResourceById, resources } from "@bibliothecadao/eternum";
 import { getRealmIdByPosition, getRealmNameById } from "../../../../../utils/realms";
 import { SmallResource } from "../../SmallResource";
+import { Resource } from "../../../../../types";
 
 type AttackRaidsPopupProps = {
   selectedRaider: CombatInfo;
@@ -27,10 +28,12 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
 
   const [step, setStep] = useState<number>(1);
   const [selectedRaiders, setSelectedRaiders] = useState([]);
+  const [targetRealmEntityId, setTargetRealmEntityId] = useState(null);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const { getEntitiesCombatInfo, getRealmRaidersOnPosition, getDefenceOnPosition } = useCombat();
+  const { getFoodResources } = useResources();
 
   const attackingEntities = getRealmRaidersOnPosition(realmEntityId, attackPosition);
 
@@ -38,9 +41,22 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
     return getEntitiesCombatInfo(attackingEntities);
   }, [attackingEntities]);
 
+  useEffect(() => {
+    // This effect runs only when selectedRaider changes.
+    // Check if selectedRaider is defined and targetRealmEntityId is not already set.
+    if (selectedRaider && targetRealmEntityId === null) {
+      setTargetRealmEntityId(selectedRaider.locationRealmEntityId);
+    }
+  }, [selectedRaider]);
+
   const watchTower = useMemo(() => {
     return getDefenceOnPosition(attackPosition);
   }, [attackPosition]);
+
+  const targetFoodBalance = useMemo(() => {
+    if (targetRealmEntityId === null) return [];
+    return getFoodResources(targetRealmEntityId);
+  }, [targetRealmEntityId]);
 
   const defendingRealmId = useMemo(() => {
     return getRealmIdByPosition(attackPosition);
@@ -81,6 +97,8 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
           {step == 3 && (
             <StealResultPanel
               watchTower={watchTower}
+              targetFoodBalance={targetFoodBalance}
+              targetRealmEntityId={targetRealmEntityId}
               onClose={onClose}
               selectedRaiders={selectedRaiders}
             ></StealResultPanel>
@@ -235,10 +253,14 @@ const AttackerHealthChange = ({ selectedRaider }: { selectedRaider: CombatInfo }
 
 const StealResultPanel = ({
   watchTower,
+  targetFoodBalance,
+  targetRealmEntityId,
   selectedRaiders,
   onClose,
 }: {
   watchTower: CombatInfo;
+  targetFoodBalance: Resource[];
+  targetRealmEntityId: number;
   selectedRaiders: CombatInfo[];
   onClose: () => void;
 }) => {
@@ -248,12 +270,20 @@ const StealResultPanel = ({
     },
   } = useDojo();
 
-  const { getResourcesFromInventory } = useResources();
-  const [openedChest, setOpenedChest] = useState(false);
+  const { getResourcesFromInventory, getFoodResources } = useResources();
+  const [step, setStep] = useState(1);
   const attackerHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(selectedRaiders[0].entityId)]));
+  const newFoodBalance = getFoodResources(targetRealmEntityId);
+
+  const burnFood = useMemo(() => {
+    return targetFoodBalance.map((resource, index) => {
+      return { resourceId: resource.resourceId, burntAmount: resource.amount - newFoodBalance[index].amount };
+    });
+  }, [newFoodBalance]);
+
   const inventoryResources = useMemo(() => {
     return selectedRaiders[0].entityId ? getResourcesFromInventory(selectedRaiders[0].entityId) : undefined;
-  }, [openedChest]);
+  }, [step === 3]);
   const success = attackerHealth.value === selectedRaiders[0].health;
 
   return (
@@ -276,7 +306,7 @@ const StealResultPanel = ({
               <circle cx="6" cy="6" r="1" fill="#1B1B1B" />
             </svg>
 
-            <div className="text-[#86C16A] text-xs mx-2 flex-1 text-center">Succesfull steal!</div>
+            <div className="text-[#86C16A] text-xs mx-2 flex-1 text-center">Succesfull pillage!</div>
             <svg width="132" height="12" viewBox="0 0 132 12" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
                 d="M0.113249 6L3 8.88675L5.88675 6L3 3.11325L0.113249 6ZM3 6.5L130.761 6.50001L130.761 5.50001L3 5.5L3 6.5Z"
@@ -292,9 +322,36 @@ const StealResultPanel = ({
               <circle cx="1" cy="1" r="1" transform="matrix(-1 0 0 1 127 5)" fill="#1B1B1B" />
             </svg>
           </div>
-          <div className="italic text-light-pink text-xxs my-2">You’ve got a golden chest:</div>
-          {!openedChest && <img src={`/images/chest.png`} className="object-cover w-full h-full rounded-[10px]" />}
-          {openedChest && (
+          {step === 1 && <div className="italic text-light-pink text-xxs my-2">You have burnt some food:</div>}
+          {step !== 1 && <div className="italic text-light-pink text-xxs my-2">You’ve got a golden chest:</div>}
+          {step === 1 && (
+            <div className="flex relative">
+              <img src={`/images/pillage/pillage1.png`} className="object-cover w-full h-full rounded-[10px]" />
+              <div className="absolute top-0 left-0 w-full h-full bg-black bg-opacity-70 rounded-lg"></div>
+              {burnFood && (
+                <div className="flex justify-center items-center space-x-1 flex-wrap p-2 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                  <div className="text-light-pink text-lg w-full mb-2 text-center italic">Burnt Resources!</div>
+                  {burnFood.map(
+                    (resource) =>
+                      resource && (
+                        <div key={resource.resourceId} className="flex flex-col items-center justify-center">
+                          <ResourceIcon size="md" resource={findResourceById(resource.resourceId).trait} />
+                          <div className="text-sm mt-1 text-order-titans">
+                            -
+                            {Intl.NumberFormat("en-US", {
+                              notation: "compact",
+                              maximumFractionDigits: 1,
+                            }).format(divideByPrecision(resource.burntAmount) || 0)}
+                          </div>
+                        </div>
+                      ),
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          {step === 2 && <img src={`/images/chest.png`} className="object-cover w-full h-full rounded-[10px]" />}
+          {step === 3 && (
             <div className="flex relative">
               <img src={`/images/opened_chest.png`} className="object-cover w-full h-full rounded-[10px]" />
               {inventoryResources && (
@@ -338,7 +395,7 @@ const StealResultPanel = ({
               <circle cx="17.5" cy="6" r="1.5" fill="#1B1B1B" />
               <circle cx="6" cy="6" r="1" fill="#1B1B1B" />
             </svg>
-            <div className="text-order-giants text-xs mx-2 flex-1 text-center">Steal failed!</div>
+            <div className="text-order-giants text-xs mx-2 flex-1 text-center">Pillage failed!</div>
             <svg width="142" height="12" viewBox="0 0 142 12" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
                 d="M0.113249 6L3 8.88675L5.88675 6L3 3.11325L0.113249 6ZM3 6.5L140.761 6.50001L140.761 5.50001L3 5.5L3 6.5Z"
@@ -368,15 +425,16 @@ const StealResultPanel = ({
         <Button
           size="xs"
           onClick={() => {
-            if (success && !openedChest) {
-              setOpenedChest(true);
+            if (step === 1) setStep(2);
+            else if (success && step === 2) {
+              setStep(3);
             } else {
               onClose();
             }
           }}
           variant="outline"
         >
-          {success && !openedChest ? `Open Chest` : "Close"}
+          {step === 1 ? "Steal Resources" : success && step === 2 ? `Open Chest` : "Close"}
         </Button>
       </div>
     </div>
@@ -411,6 +469,8 @@ const SelectRaidersPanel = ({
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
+  const { getRealmLevelBonus, getRealmLevel } = useRealm();
+
   const [attackerTotalAttack, attackerTotalHealth] = useMemo(() => {
     // sum attack of the list
     return [
@@ -420,12 +480,22 @@ const SelectRaidersPanel = ({
     ];
   }, [selectedRaiders]);
 
+  const attackerLevelBonus = useMemo(() => {
+    let level = getRealmLevel(realmEntityId)?.level || 0;
+    return getRealmLevelBonus(level, LevelIndex.COMBAT);
+  }, [realmEntityId]);
+
+  const defenderLevelBonus = useMemo(() => {
+    let level = watchTower ? getRealmLevel(watchTower.entityOwnerId)?.level || 0 : 0;
+    return getRealmLevelBonus(level, LevelIndex.COMBAT);
+  }, [realmEntityId]);
+
   const succesProb = useMemo(() => {
     return calculateSuccess(
-      { attack: attackerTotalAttack, health: attackerTotalHealth },
-      watchTower ? { defence: watchTower.defence, health: watchTower.health } : undefined,
+      { attack: (attackerTotalAttack * attackerLevelBonus) / 100, health: attackerTotalHealth },
+      watchTower ? { defence: (watchTower.defence * defenderLevelBonus) / 100, health: watchTower.health } : undefined,
     );
-  }, [attackerTotalAttack]);
+  }, [attackerTotalAttack, attackerLevelBonus, defenderLevelBonus]);
 
   // @ts-ignore
   const { realm } = useGetRealm(realmEntityId);
@@ -469,7 +539,7 @@ const SelectRaidersPanel = ({
       <div className="flex flex-col items-center w-full">
         {/* {toRealm && <Headline size="big">Build road to {realmsData["features"][toRealm.realmId - 1].name}</Headline>} */}
         <div className="p-2 rounded border border-gold w-full flex flex-col">
-          {watchTower && <Defence watchTower={watchTower}></Defence>}
+          {watchTower && <Defence levelBonus={defenderLevelBonus} watchTower={watchTower}></Defence>}
           <div className="flex mt-2 flex-col items-center w-full text-xxs">
             <div className="text-light-pink italic w-full">Available resources:</div>
             <div className="grid grid-cols-12 text-lightest gap-2 w-full mt-1 flex-wrap">
@@ -484,7 +554,7 @@ const SelectRaidersPanel = ({
               ))}
             </div>
           </div>
-          <div className="flex mt-2 flex-col items-center justify-center w-full">
+          <div className="flex my-2 flex-col items-center justify-center w-full">
             <div className="grid mb-1 grid-cols-2 gap-2 w-full">
               <Button
                 className="w-full text-xxs h-[18px]"
@@ -493,7 +563,7 @@ const SelectRaidersPanel = ({
                 isLoading={loading}
                 variant="primary"
               >
-                {`Steal Resources`}
+                {`Pillage`}
               </Button>
               <Button
                 className="w-full text-xxs h-[18px]"
@@ -527,6 +597,10 @@ const SelectRaidersPanel = ({
 
         <div className={"relative w-full mt-2"}>
           <div className="font-bold text-center text-white text-xs mb-2">Select Raiders</div>
+          <div className="flex flex-row mb-3 text-xs items-center justify-center">
+            <span className="mr-1 text-gold">{`Combat Bonus: `}</span>
+            <span className="text-order-brilliance">{`+${attackerLevelBonus - 100}%`}</span>
+          </div>
           <SelectRaiders
             attackingRaiders={attackingRaiders}
             selectedRaiders={selectedRaiders}

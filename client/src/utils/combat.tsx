@@ -27,10 +27,17 @@ export const calculateDamages = (attackers: number, defenders: number | undefine
   return 1;
 };
 
-export const getResourceCost = (quantity: number): { resourceId: number; amount: number }[] => {
+export const getBuildResourceCost = (quantity: number): { resourceId: number; amount: number }[] => {
   return [
     { resourceId: 254, amount: 1512000 * quantity },
     { resourceId: 255, amount: 504000 * quantity },
+  ];
+};
+
+export const getHealResourceCost = (healthAmount: number): { resourceId: number; amount: number }[] => {
+  return [
+    { resourceId: 254, amount: 75600 * healthAmount },
+    { resourceId: 255, amount: 25200 * healthAmount },
   ];
 };
 

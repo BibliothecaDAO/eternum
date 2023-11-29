@@ -3,7 +3,7 @@ import clsx from "clsx";
 interface AvatarProps {
   src: string;
   className?: string;
-  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  size?: "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
 }
 
 const sizes = {
@@ -12,6 +12,7 @@ const sizes = {
   md: "w-8 h-8",
   lg: "w-12 h-12",
   xl: "w-[68px] h-[68px]",
+  xxl: "w-[100px] h-[100px]",
 } as const;
 
 const Avatar = ({ src, className, size }: AvatarProps) => {

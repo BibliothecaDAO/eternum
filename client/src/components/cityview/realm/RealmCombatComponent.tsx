@@ -3,7 +3,6 @@ import { Tabs } from "../../../elements/tab";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useRoute, useLocation } from "wouter";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { BattalionsPanel } from "./combat/battalions/BattalionsPanel";
 import { RaidsPanel } from "./combat/raids/RaidsPanel";
 import { DefencePanel } from "./combat/defence/DefencePanel";
 
@@ -13,9 +12,9 @@ export type Order = {
   tradeId: number;
 };
 
-type RealmTradeComponentProps = {};
+type RealmCombatComponentProps = {};
 
-export const RealmCombatComponent = ({}: RealmTradeComponentProps) => {
+export const RealmCombatComponent = ({}: RealmCombatComponentProps) => {
   const [selectedTab, setSelectedTab] = useState(1);
   const { realmEntityId } = useRealmStore();
 
@@ -62,32 +61,10 @@ export const RealmCombatComponent = ({}: RealmTradeComponentProps) => {
             onMouseLeave={() => setTooltip(null)}
             className="flex relative group flex-col items-center"
           >
-            <div>Raids</div>
+            <div>Raiders</div>
           </div>
         ),
         component: <RaidsPanel></RaidsPanel>,
-      },
-      {
-        key: "battalions",
-        label: (
-          <div
-            onMouseEnter={() =>
-              setTooltip({
-                position: "bottom",
-                content: (
-                  <>
-                    <p className="whitespace-nowrap">Check your Raiders</p>
-                  </>
-                ),
-              })
-            }
-            onMouseLeave={() => setTooltip(null)}
-            className="flex relative group flex-col items-center"
-          >
-            <div>Battalions</div>
-          </div>
-        ),
-        component: <BattalionsPanel />,
       },
       {
         key: "defence",

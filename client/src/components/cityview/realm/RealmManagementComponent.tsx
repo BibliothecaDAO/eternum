@@ -156,7 +156,7 @@ const RealmManagementComponent = () => {
     <>
       <div className="flex justify-between items-center p-3">
         <div className="flex flex-row ">
-          <div className="mr-2">
+          <div className="mr-4">
             <LaborAuction />
           </div>
           <div>

@@ -61,3 +61,7 @@ body {
 .root-container > * {
   pointer-events: auto;
 }
+
+h1 {
+  @apply text-4xl font-bold;
+}

@@ -63,6 +63,7 @@ export const useNotifications = () => {
     },
   } = useDojo();
 
+  const [closedNotifications, setClosedNotifications] = useState<Record<string, boolean>>({});
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const { realmEntityIds, realmEntityId } = useRealmStore();
   const realmsResources = useRealmsResource(realmEntityIds);
@@ -180,8 +181,19 @@ export const useNotifications = () => {
     return () => clearInterval(intervalId);
   }, [nextBlockTimestamp]);
 
+  const removeNotification = (notificationId: string) => {
+    setNotifications((prev) => prev.filter((notification) => generateUniqueId(notification) !== notificationId));
+  };
+
+  const handleCloseNotification = (notificationId: string) => {
+    setClosedNotifications((prev) => ({ ...prev, [notificationId]: true }));
+  };
+
   return {
     notifications,
+    removeNotification,
+    closedNotifications,
+    handleCloseNotification,
   };
 };
 
