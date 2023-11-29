@@ -13,7 +13,6 @@ import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useComponentValue } from "@dojoengine/react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { LevelIndex, useRealm } from "../../../../hooks/helpers/useRealm";
-import useUIStore from "../../../../hooks/store/useUIStore";
 
 type LaborComponentProps = {
   resourceId: number;

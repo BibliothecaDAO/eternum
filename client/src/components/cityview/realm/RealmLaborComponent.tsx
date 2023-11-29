@@ -38,8 +38,6 @@ export const RealmLaborComponent = ({}: RealmLaborComponentProps) => {
 
   const { getRealmLevel } = useRealm();
 
-  const realm_level = getRealmLevel(realmEntityId).level;
-
   const tabs = useMemo(
     () => [
       {
