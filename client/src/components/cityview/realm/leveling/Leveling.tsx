@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import ProgressBar from "../../../../elements/ProgressBar";
-import clsx from "clsx";
 import { useRealm } from "../../../../hooks/helpers/useRealm";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { LevelingPopup } from "./LevelingPopup";
@@ -14,6 +13,8 @@ export const Leveling = () => {
 
   const level = realmEntityId ? getRealmLevel(realmEntityId) : undefined;
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+
+  console.log(realmEntityId);
 
   const progress = useMemo(() => {
     return (level.timeLeft / 604800) * 100;
@@ -51,7 +52,7 @@ export const Leveling = () => {
       {showLevelUp && <LevelingPopup onClose={() => setShowLevelUp(false)}></LevelingPopup>}
       <div onClick={onClick} className="cursor-pointer">
         <div className={"flex items-center text-white justify-between text-[13px] font-bold"}>
-          <div className={clsx("")}>Level: {level ? level.level : 0}</div>
+          <div>Level: {level ? level.level : 0}</div>
         </div>
         <ProgressBar
           progress={progress}

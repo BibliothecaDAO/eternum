@@ -4,10 +4,11 @@ import { LaborPanel } from "./labor/LaborPanel";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useRoute, useLocation } from "wouter";
+import { useRealm } from "../../../hooks/helpers/useRealm";
 
 type RealmLaborComponentProps = {};
 
-export const RealmLaborComponent = ({ }: RealmLaborComponentProps) => {
+export const RealmLaborComponent = ({}: RealmLaborComponentProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const { realmEntityId } = useRealmStore();
 
@@ -34,6 +35,10 @@ export const RealmLaborComponent = ({ }: RealmLaborComponentProps) => {
       setSelectedTab(tabIndex);
     }
   }, [params]);
+
+  const { getRealmLevel } = useRealm();
+
+  const realm_level = getRealmLevel(realmEntityId).level;
 
   const tabs = useMemo(
     () => [

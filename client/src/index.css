@@ -9,6 +9,7 @@ body {
   overflow: hidden;
   font-family: "Merriweather", serif;
   touch-action: none;
+  @apply cursor-fancy;
   
 }
 
@@ -65,3 +66,4 @@ body {
 h1 {
   @apply text-4xl font-bold;
 }
+

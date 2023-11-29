@@ -57,7 +57,7 @@ const Components: { [key: string]: Resource } = Object.freeze({
   MountainDeep: { component: <Ore className="w-full h-full" />, name: "Ore" },
   UnderwaterKeep: { component: <Shekels className="w-full h-full" />, name: "Shekels" },
   ForestRuins: { component: <Spores className="w-full h-full" />, name: "Spores" },
-  Shekels: { component: <Shekels className="w-full h-full" />, name: "Shekels" },
+  Shekels: { component: <img src={`/images/resources/coin.png`} />, name: "Lords" },
   Fish: { component: <img src={`/images/resources/255.png`} />, name: "Fish" },
   Wheat: { component: <img src={`/images/resources/254.png`} />, name: "Wheat" },
 });
@@ -74,7 +74,7 @@ const STYLES = {
 export const ResourceIcon = ({ withTooltip = true, ...props }: Props) => {
   const Icon = (
     <div
-      className={`flex self-center w-min paper relative group rounded-xl justify-center w-full ${props.containerClassName}`}
+      className={`flex self-center paper relative group rounded-xl justify-center w-full ${props.containerClassName}`}
     >
       <div className={` mx-auto ${clsx(STYLES.size[props.size], props.className)} `}>
         {Components[props.resource.replace(" ", "").replace("'", "")]?.component}

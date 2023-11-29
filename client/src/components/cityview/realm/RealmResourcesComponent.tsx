@@ -26,6 +26,9 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
 
   const { realm } = useGetRealm(realmEntityId);
 
+  const { getRealmLevel } = useRealm();
+  const realm_level = getRealmLevel(realmEntityId).level;
+
   // unpack the resources
   useMemo((): any => {
     let realmResourceIds: number[] = [ResourcesIds["Shekels"], ResourcesIds["Wheat"], ResourcesIds["Fish"]];
@@ -45,34 +48,36 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
           {realmResourceIds.map((resourceId) => (
             <ResourceComponent key={resourceId} resourceId={resourceId} />
           ))}
-          <div
-            onClick={() => {
-              !showAllResources && setShowAllResources(true);
-            }}
-            className="absolute flex items-center p-3 text-xs font-bold text-white translate-x-full cursor-pointer -right-2 min-h-10 bg-black/90 rounded-xl"
-          >
-            {showAllResources ? (
-              <div className="flex flex-col">
-                <div className="grid grid-cols-2 gap-3">
-                  {resources.map((resource) => (
-                    <SmallResource key={resource.id} resourceId={resource.id}></SmallResource>
-                  ))}
+          {realm_level > 0 && (
+            <div
+              onClick={() => {
+                !showAllResources && setShowAllResources(true);
+              }}
+              className="absolute flex items-center p-3 text-xs font-bold text-white translate-x-full cursor-pointer -right-2 min-h-10 bg-black/90 rounded-xl"
+            >
+              {showAllResources ? (
+                <div className="flex flex-col">
+                  <div className="grid grid-cols-2 gap-3">
+                    {resources.map((resource) => (
+                      <SmallResource key={resource.id} resourceId={resource.id}></SmallResource>
+                    ))}
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="mt-3 !px-3 !py-1 w-min text-xxs"
+                    onClick={() => setShowAllResources(false)}
+                  >
+                    Close
+                  </Button>
                 </div>
-                <Button
-                  variant="outline"
-                  className="mt-3 !px-3 !py-1 w-min text-xxs"
-                  onClick={() => setShowAllResources(false)}
-                >
-                  Close
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center">
-                <MoreIcon className="mr-1" />
-                <div className="text-xs">Show all</div>
-              </div>
-            )}
-          </div>
+              ) : (
+                <div className="flex items-center">
+                  <MoreIcon className="mr-1" />
+                  <div className="text-xs">Show all</div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -136,7 +141,9 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
             })
           }
           onMouseLeave={() => setTooltip(null)}
-          className="flex relative group items-center p-2 px-4 text-xs font-bold text-white bg-black/90 rounded-xl"
+          className={`flex relative group items-center p-2 px-4 text-xs font-bold text-white bg-black/90 rounded-xl ${
+            resourceId < 22 && level == 0 && "blur-sm"
+          }`}
         >
           <ResourceIcon
             withTooltip={false}

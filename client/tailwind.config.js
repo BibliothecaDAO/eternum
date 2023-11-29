@@ -8,6 +8,8 @@ export default {
       },
       cursor: {
         'fancy': 'url(./cursor.png), pointer',
+        'pointer': 'url(./cursor.png), pointer',
+        'grab': 'url(./grab.png), grab',
       },
       strokeWidth: {
         8: "8px",
