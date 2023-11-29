@@ -1,13 +1,31 @@
 use cubit::f128::math::core::ln;
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use starknet::get_block_timestamp;
-
 use eternum::utils::vrgda::{LinearVRGDA, LinearVRGDATrait};
 
+
 #[derive(Model, Copy, Drop, Serde)]
-struct LaborAuction {
+struct Bank{
+    #[key]
+    entity_id: u128,
+    exists: bool
+}
+
+// labor cost resources
+#[derive(Model, Copy, Drop, Serde)]
+struct BankSwapResourceCost {
+    #[key]
+    resource_type: u8,
+    resource_cost_id: u128,
+    resource_cost_count: u32,
+}
+
+#[derive(Model, Copy, Drop, Serde)]
+struct BankAuction {
     #[key]
     zone: u8,
+    #[key]
+    resource_type: u8,
     decay_constant_mag: u128,
     decay_constant_sign: bool,
     per_time_unit: u128,
@@ -17,8 +35,8 @@ struct LaborAuction {
 }
 
 #[generate_trait]
-impl LaborAuctionImpl of LaborAuctionTrait {
-    fn to_LinearVRGDA(self: LaborAuction) -> LinearVRGDA {
+impl BankAuctionImpl of BankAuctionTrait {
+    fn to_LinearVRGDA(self: BankAuction) -> LinearVRGDA {
         LinearVRGDA {
             target_price: FixedTrait::new_unscaled(1, false),
             decay_constant: ln(
@@ -29,14 +47,14 @@ impl LaborAuctionImpl of LaborAuctionTrait {
         }
     }
 
-    fn get_time_since_start_fixed(self: LaborAuction) -> Fixed {
+    fn get_time_since_start_fixed(self: BankAuction) -> Fixed {
         // time that has passed since auction start
         // 1 period = 1 day
         let time_since_start: u128 = get_block_timestamp().into() - self.start_time.into();
         FixedTrait::new_unscaled(time_since_start / 86400, false)
     }
 
-    fn get_price(self: LaborAuction) -> Fixed {
+    fn get_price(self: BankAuction) -> Fixed {
         // get current price
         self
             .to_LinearVRGDA()
@@ -48,11 +66,10 @@ impl LaborAuctionImpl of LaborAuctionTrait {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use eternum::models::labor_auction::{
-        LaborAuction, LaborAuctionTrait
+    use eternum::models::bank::{
+        BankAuction, BankAuctionTrait
     };
     use eternum::utils::vrgda::{LinearVRGDATrait, LinearVRGDA};
 
@@ -60,10 +77,7 @@ mod tests {
 
     // testing
     use eternum::utils::testing::spawn_eternum;
-
-    // use dojo_defi when working with nightly
-    // use dojo_defi::tests::utils::{assert_rel_approx_eq};
-
+    
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     // constants
@@ -90,8 +104,9 @@ mod tests {
     #[test]
     #[available_gas(30000000)]
     fn test_auction_get_price() {
-        let auction = LaborAuction {
+        let auction = BankAuction {
             zone: 0,
+            resource_type: 0,
             decay_constant_mag: _0_1,
             decay_constant_sign: false,
             per_time_unit: 50,

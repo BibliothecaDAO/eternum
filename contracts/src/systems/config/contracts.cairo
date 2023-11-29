@@ -3,6 +3,7 @@ mod config_systems {
     use eternum::alias::ID;
 
     use eternum::models::labor_auction::LaborAuction;
+    use eternum::models::bank::{Bank, BankSwapResourceCost, BankAuction};
     use eternum::models::config::{
         LaborCostResources, LaborCostAmount, LaborConfig,CapacityConfig, 
         RoadConfig, SpeedConfig, TravelConfig, WeightConfig,WorldConfig,
@@ -13,7 +14,7 @@ mod config_systems {
     use eternum::systems::config::interface::{
         IWorldConfig, IWeightConfig, ICapacityConfig, ILaborConfig, 
         ITransportConfig, IHyperstructureConfig, ICombatConfig,
-        ILevelingConfig
+        ILevelingConfig, IBankConfig
     };
 
     use eternum::constants::{
@@ -24,9 +25,7 @@ mod config_systems {
 
     use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::resources::ResourceCost;
-    use eternum::models::position::{Position, Coord};
-    
-
+    use eternum::models::position::{Position,PositionTrait, Coord};
 
     #[external(v0)]
     impl WorldConfigImpl of IWorldConfig<ContractState> {
@@ -561,6 +560,124 @@ mod config_systems {
 
             hyperstructure_id 
                 
+        }
+
+    }
+
+
+    #[external(v0)]
+    impl BankConfigImpl of IBankConfig<ContractState> {
+
+        fn create_bank(
+            self: @ContractState,
+            world: IWorldDispatcher,
+            coord: Coord,
+            swap_cost_resources: Span<(u8, Span<(u8, u128)>)>,
+        ) -> ID {
+      
+            let bank_id: ID = world.uuid().into();
+
+            // add swap cost
+            let mut swap_cost_resources = swap_cost_resources;
+            loop {
+                match swap_cost_resources.pop_front() {
+                    Option::Some((exchanged_resource_type, swap_resources)) => {
+
+                        let swap_resource_cost_id: ID = world.uuid().into();
+                        let swap_resources_count = (*swap_resources).len();
+                        
+                        let mut index = 0;
+                        let mut swap_resources = * swap_resources;
+                        loop {
+                            match swap_resources.pop_front() {
+                                Option::Some((resource_type, resource_amount)) => {
+                                    assert(*resource_amount > 0, 'amount must not be 0');
+
+                                    set!(world, (
+                                        ResourceCost {
+                                            entity_id: swap_resource_cost_id,
+                                            index,
+                                            resource_type: *resource_type,
+                                            amount: *resource_amount
+                                        }
+                                    ));
+
+                                    index += 1;
+                                },
+                                Option::None => {break;}
+                            };
+                        };
+                        set!(world, (
+                            BankSwapResourceCost {
+                                resource_type: *exchanged_resource_type,
+                                resource_cost_id: swap_resource_cost_id,
+                                resource_cost_count: swap_resources_count
+                            }
+                        ));
+                    },
+                    Option::None => {break;}
+                }
+            };
+
+            set!(world, (
+                Bank {
+                    entity_id: bank_id,
+                    exists: true
+                },
+                Position {
+                    entity_id: bank_id,
+                    x: coord.x,
+                    y: coord.y
+                }
+            ));  
+            bank_id 
+                
+        }
+
+
+
+        fn create_bank_auction(
+            self: @ContractState,
+            world: IWorldDispatcher,
+            resource_types: Span<u8>,
+            decay_constant: u128,
+            per_time_unit: u128,
+            price_update_interval: u128,
+        ) {
+
+            let start_time = starknet::get_block_timestamp();
+
+            let mut zone: u8 = 1;
+
+            loop {
+                if zone > 10 {
+                    break;
+                }
+
+                let mut index = 0;
+                loop {
+                    if index == resource_types.len() {
+                        break;
+                    }
+
+                    set!(world, (
+                        BankAuction {
+                            zone,
+                            resource_type: *resource_types.at(index),
+                            decay_constant_mag: decay_constant,
+                            decay_constant_sign: false,
+                            per_time_unit,
+                            start_time,
+                            sold: 0,
+                            price_update_interval,
+                        }
+                    ));
+
+                    index += 1;
+                };
+    
+                zone += 1;
+            };       
         }
 
     }
