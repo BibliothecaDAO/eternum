@@ -252,27 +252,23 @@ const Naming = ({ onNext }) => {
         <Avatar src={`/images/avatars/${addressToNumber(account.address)}.png`} size="xxl" />
         <div className="flex space-x-6 pt-4">
           <div>
-            <div className="flex flex-cols mb-2 space-x-2">
-              {(loading || addressName) && (
-                <span className="text-white border-gold border text-xl rounded-lg p-2 w-full">
-                  {addressName ? `${addressName}` : ""}
-                </span>
-              )}
-              {!addressName && (
-                <div className={"border border-gold text-2xl p-1 rounded-xl flex w-full"}>
-                  {!loading && !addressName && (
-                    <TextInput placeholder="Your Name..." maxLength={12} value={inputName} onChange={setInputName} />
-                  )}
-                  {!(loading || addressName) && (
-                    <Button
-                      isLoading={loading}
-                      onClick={onSetName}
-                      variant={"outline"}
-                      disabled={loading || addressName !== undefined}
-                    >
-                      Set Name
-                    </Button>
-                  )}
+            <div className="text-white border-gold border text-xl rounded-lg p-2 w-full">
+              {loading ? (
+                <span>Loading...</span>
+              ) : addressName ? (
+                <span>{addressName}</span>
+              ) : (
+                <div className="flex w-full">
+                  <TextInput
+                    className="text-xl "
+                    placeholder="Your Name..."
+                    maxLength={12}
+                    value={inputName}
+                    onChange={setInputName}
+                  />
+                  <Button isLoading={loading} onClick={onSetName} variant="outline" disabled={loading}>
+                    Set Name
+                  </Button>
                 </div>
               )}
             </div>
