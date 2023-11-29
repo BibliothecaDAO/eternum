@@ -1,7 +1,7 @@
 {
   "world": {
     "name": "world",
-    "address": null,
+    "address": "0x4d79c99ce9b489b77461e3491970ea5ede1f1966f4d2ff65ee76cd8701d6dad",
     "class_hash": "0x6441e7fc96d795ec94fca66634e6d87edf84362e564ef80eb13f459914b8b",
     "abi": [
       {
@@ -863,8 +863,8 @@
   "contracts": [
     {
       "name": "bank_systems",
-      "address": null,
-      "class_hash": "0x1f02e1740c4637b485c621b440cb6a759ac5fe6eff6e1d742d604659a20d4bb",
+      "address": "0x22915d02287759320f721a3e61836fe3dc1ed68fc8a66fdd2c2f7a8cf1ff4f8",
+      "class_hash": "0x6ff41f4353728446a7cbcc0599172bc12e4d1db874f3de59ffdafcebfaf5d1f",
       "abi": [
         {
           "type": "impl",
@@ -972,7 +972,7 @@
     },
     {
       "name": "caravan_systems",
-      "address": null,
+      "address": "0x384fd2bf241ffc48425ed1fed389495e8066079cdb16865a73e6d3849d32c4f",
       "class_hash": "0x7246ad54863b0d32f574265081ed83f5d8842428bf175b5d3ed39a0863c373b",
       "abi": [
         {
@@ -1081,7 +1081,7 @@
     },
     {
       "name": "combat_systems",
-      "address": null,
+      "address": "0x778fd3e137dc0e58d94d599167aa431332b8529f9bfc8efd70a7ea4e9c74247",
       "class_hash": "0x4a4e6ceb781ee437b4928d818050646331c500a2090ab1597b6dda1741b5622",
       "abi": [
         {
@@ -1422,8 +1422,8 @@
     },
     {
       "name": "config_systems",
-      "address": null,
-      "class_hash": "0x3839a0abc08125458bc1c0aa9feff544d11d564d66db5256d0f1e0859ce3a55",
+      "address": "0x74c3dd7b64a0c8ad6a27276b9ec6a628774028734ea46cf3970ef185e35247d",
+      "class_hash": "0x6512964e0a4deb28900b0ca0ce15494e845322fc8a05efe0d3d08b8565c4a6a",
       "abi": [
         {
           "type": "impl",
@@ -2021,11 +2021,15 @@
             },
             {
               "type": "function",
-              "name": "create_bank_auction",
+              "name": "set_bank_auction",
               "inputs": [
                 {
                   "name": "world",
                   "type": "dojo::world::IWorldDispatcher"
+                },
+                {
+                  "name": "bank_id",
+                  "type": "core::integer::u128"
                 },
                 {
                   "name": "resource_types",
@@ -2067,7 +2071,9 @@
           "variants": []
         }
       ],
-      "reads": [],
+      "reads": [
+        "Bank"
+      ],
       "writes": [
         "AttackConfig",
         "Bank",
@@ -2096,7 +2102,7 @@
     },
     {
       "name": "hyperstructure_systems",
-      "address": null,
+      "address": "0xfdcafc26f1d866ad585cadfb0fb177e4512d03f6020e67adadb5c66690d9c2",
       "class_hash": "0x2270543d25a4aba5b0fd5f1adb280bb34dc67564f999c6d2155aca455ba287b",
       "abi": [
         {
@@ -2213,7 +2219,7 @@
     },
     {
       "name": "labor_systems",
-      "address": null,
+      "address": "0x5b3b02ba50cfb46af86c20d1eca1bbff5fe82ff2f8985aefc413267a5d05b00",
       "class_hash": "0x614bd307f8a0505319a1405c175315e1142df4ea827aebaa02ddc4a64a39537",
       "abi": [
         {
@@ -2372,7 +2378,7 @@
     },
     {
       "name": "leveling_systems",
-      "address": null,
+      "address": "0x81edcebc0097b53ae8db567565eb5c5d9e8a9190a8a80411547676f24361ca",
       "class_hash": "0x46fbedd7b1013503ce8c1a832b55372bb42bb123b7870a9c5c2764b34fd85de",
       "abi": [
         {
@@ -2469,7 +2475,7 @@
     },
     {
       "name": "name_systems",
-      "address": null,
+      "address": "0x2a9ee652fb9ce9812e9d06ec05429b6e27254b37d0ef0eaca6a1e4533d5c244",
       "class_hash": "0x7ab8e9771a066df89edfabd3c6a461715fffe4ba86e95f293db61c92452f222",
       "abi": [
         {
@@ -2560,7 +2566,7 @@
     },
     {
       "name": "resource_systems",
-      "address": null,
+      "address": "0x2dab8013b2dea3f5b37f31db94a5136843408efa04a966a6587f65056b1ef40",
       "class_hash": "0x42a3bc781c5d7c67ffdc626daf2710d5e2f6637918fb26f7f1f28098d443cbf",
       "abi": [
         {
@@ -2805,7 +2811,7 @@
     },
     {
       "name": "road_systems",
-      "address": null,
+      "address": "0x46e8cc4deb048fed25465e134ebbfa962137daaf0bb52a63d41940af3638e4d",
       "class_hash": "0x7d0376077bb24e151510d6200867b03a514708b42b010d892e88b79f1ec3696",
       "abi": [
         {
@@ -2925,7 +2931,7 @@
     },
     {
       "name": "test_realm_systems",
-      "address": null,
+      "address": "0x141b54c5560368787c28e61f9c9542e3aaf26a3f426263cb0dcde36339eec30",
       "class_hash": "0x786015ab1f9bd8e8c2e2175ca8c6d52d415d252a000e274db115dbba9699e4",
       "abi": [
         {
@@ -3085,7 +3091,7 @@
     },
     {
       "name": "test_resource_systems",
-      "address": null,
+      "address": "0x5e2e8d20bc9f4c02050b2b6b7442a1ce06bbd9c0729716a7c5a478069c9b354",
       "class_hash": "0x1ad4fa3240e5f3c25d221d4ce96db8ac88c5e2946b83f2e28c5fce18543ad86",
       "abi": [
         {
@@ -3190,7 +3196,7 @@
     },
     {
       "name": "trade_systems",
-      "address": null,
+      "address": "0x7b54643f42a1c4298fe5e465105ccbee30ba505f3bedaa90f4951f9f15be8f0",
       "class_hash": "0x53b81301d57f4d449425a7baf06926d670421e917cf815e95ea2db2f88fd5be",
       "abi": [
         {
@@ -3364,7 +3370,7 @@
     },
     {
       "name": "transport_unit_systems",
-      "address": null,
+      "address": "0x75eb7b6012dbb91d59aa20808de28666f8207478e08f4e4ee101bdb0ac89e63",
       "class_hash": "0x7830200083cda593f82cb1f196d6c3d70771b6b082a87249ae0f4f6a6ba219b",
       "abi": [
         {
@@ -3477,7 +3483,7 @@
     },
     {
       "name": "travel_systems",
-      "address": null,
+      "address": "0x8fa2df40a28c2ffb7a99267c1a67318451da3a5d39cadb18577a2d09856b0e",
       "class_hash": "0x6c017e3dc7a261370471d33e66215837a31db640a22eac36d7b031e9ce58b79",
       "abi": [
         {
@@ -4657,8 +4663,8 @@
       "name": "BankAuction",
       "members": [
         {
-          "name": "zone",
-          "type": "u8",
+          "name": "bank_id",
+          "type": "u128",
           "key": true
         },
         {
@@ -4697,7 +4703,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x5dcf50dfa20c4c6c9c10e2eee1575ef3a54d3c2cf2d034c80a45d93a81a21c1",
+      "class_hash": "0x4ca0072a97f2d9c06d744492af6d178a8e48de79e0ffc0d0b4cdc20124d7069",
       "abi": [
         {
           "type": "function",

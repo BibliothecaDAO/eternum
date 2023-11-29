@@ -1,5 +1,5 @@
 
-use eternum::models::bank::{BankAuction, BankAuctionTrait,BankSwapResourceCost};
+use eternum::models::bank::{Bank, BankAuction, BankAuctionTrait,BankSwapResourceCost};
 use eternum::models::position::{Coord, Position};
 use eternum::models::resources::{ResourceCost, Resource};
 
@@ -72,8 +72,17 @@ fn test_set_bank_auction() {
         contract_address: config_systems_address
     };
 
+    let caller = starknet::get_caller_address();
+    starknet::testing::set_contract_address(world.executor());
 
     let bank_id: u128 = 1;
+    set!(world, Bank {
+        entity_id: bank_id,
+        exists: true
+    });
+
+    starknet::testing::set_contract_address(caller);
+
     let decay_constant: u128 = _0_1;
     let per_time_unit: u128 = 50;
     let price_update_interval: u128 = 10;

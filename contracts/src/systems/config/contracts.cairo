@@ -648,6 +648,9 @@ mod config_systems {
 
             let start_time = starknet::get_block_timestamp();
 
+            let bank = get!(world, (bank_id), Bank);
+            assert(bank.exists == true, 'no bank');
+
             let mut index = 0;
             loop {
                 if index == resource_types.len() {
