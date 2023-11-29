@@ -166,10 +166,10 @@
     "0x6b",
     "0x164d6e6ebe8bcaa9970b559b8acc221c179da0223587a2e542d9ca3894d22ee",
     "0x6d",
-    "0x164939437ad4d897dd71b0bbdee87c416e709f5812b29b8d67c48bef4d272df",
+    "0xf6c4d9f9fabe1b01b044b2afa9d7d7e60bbe7c33d8aac2884bc73480453228",
     "0x3801a2b8e005508b5009748409f92bfa4da38d948a159c0fdb329b9aedc0668",
     "0x6f",
-    "0x1a38bfb8aa14ca1144c3257f254fb04b417add6eaac74383ed661e8858280",
+    "0x33316a4e124384ea642d61d41a21647dd68467dd5840375482f89cf03408762",
     "0x71",
     "0x2b1f58b57cc2ec9716418fc0eb0625f3fdf352a1c9dd5667ba037391b802667",
     "0x9c48788138bd2864d954310f07860aa2e73bde1bb3e15606b44d0883349d9b",
@@ -11618,7 +11618,7 @@
       ],
       [
         111,
-        "eternum::models::labor_auction::LinearVRGDA"
+        "eternum::utils::vrgda::LinearVRGDA"
       ],
       [
         112,
@@ -11626,11 +11626,11 @@
       ],
       [
         113,
-        "Tuple<eternum::models::labor_auction::LinearVRGDA>"
+        "Tuple<eternum::utils::vrgda::LinearVRGDA>"
       ],
       [
         114,
-        "core::panics::PanicResult::<(eternum::models::labor_auction::LinearVRGDA,)>"
+        "core::panics::PanicResult::<(eternum::utils::vrgda::LinearVRGDA,)>"
       ],
       [
         115,
@@ -13548,7 +13548,7 @@
       ],
       [
         387,
-        "enum_match<core::panics::PanicResult::<(eternum::models::labor_auction::LinearVRGDA,)>>"
+        "enum_match<core::panics::PanicResult::<(eternum::utils::vrgda::LinearVRGDA,)>>"
       ],
       [
         388,
@@ -13564,7 +13564,7 @@
       ],
       [
         391,
-        "struct_deconstruct<Tuple<eternum::models::labor_auction::LinearVRGDA>>"
+        "struct_deconstruct<Tuple<eternum::utils::vrgda::LinearVRGDA>>"
       ],
       [
         392,
@@ -13584,7 +13584,7 @@
       ],
       [
         396,
-        "drop<eternum::models::labor_auction::LinearVRGDA>"
+        "drop<eternum::utils::vrgda::LinearVRGDA>"
       ],
       [
         397,
@@ -13592,7 +13592,7 @@
       ],
       [
         398,
-        "store_temp<eternum::models::labor_auction::LinearVRGDA>"
+        "store_temp<eternum::utils::vrgda::LinearVRGDA>"
       ],
       [
         399,
@@ -13628,7 +13628,7 @@
       ],
       [
         407,
-        "drop<Tuple<eternum::models::labor_auction::LinearVRGDA>>"
+        "drop<Tuple<eternum::utils::vrgda::LinearVRGDA>>"
       ],
       [
         408,
@@ -14568,19 +14568,19 @@
       ],
       [
         642,
-        "struct_construct<eternum::models::labor_auction::LinearVRGDA>"
+        "struct_construct<eternum::utils::vrgda::LinearVRGDA>"
       ],
       [
         643,
-        "struct_construct<Tuple<eternum::models::labor_auction::LinearVRGDA>>"
+        "struct_construct<Tuple<eternum::utils::vrgda::LinearVRGDA>>"
       ],
       [
         644,
-        "enum_init<core::panics::PanicResult::<(eternum::models::labor_auction::LinearVRGDA,)>, 0>"
+        "enum_init<core::panics::PanicResult::<(eternum::utils::vrgda::LinearVRGDA,)>, 0>"
       ],
       [
         645,
-        "store_temp<core::panics::PanicResult::<(eternum::models::labor_auction::LinearVRGDA,)>>"
+        "store_temp<core::panics::PanicResult::<(eternum::utils::vrgda::LinearVRGDA,)>>"
       ],
       [
         646,
@@ -14588,7 +14588,7 @@
       ],
       [
         647,
-        "enum_init<core::panics::PanicResult::<(eternum::models::labor_auction::LinearVRGDA,)>, 1>"
+        "enum_init<core::panics::PanicResult::<(eternum::utils::vrgda::LinearVRGDA,)>, 1>"
       ],
       [
         648,
@@ -14692,7 +14692,7 @@
       ],
       [
         673,
-        "dup<eternum::models::labor_auction::LinearVRGDA>"
+        "dup<eternum::utils::vrgda::LinearVRGDA>"
       ],
       [
         674,
@@ -15380,11 +15380,11 @@
       ],
       [
         845,
-        "snapshot_take<eternum::models::labor_auction::LinearVRGDA>"
+        "snapshot_take<eternum::utils::vrgda::LinearVRGDA>"
       ],
       [
         846,
-        "function_call<user@eternum::models::labor_auction::LinearVRGDAImpl::get_vrgda_price>"
+        "function_call<user@eternum::utils::vrgda::LinearVRGDAImpl::get_vrgda_price>"
       ],
       [
         847,
@@ -15732,11 +15732,11 @@
       ],
       [
         933,
-        "function_call<user@eternum::models::labor_auction::LinearVRGDAImpl::get_target_sale_time>"
+        "function_call<user@eternum::utils::vrgda::LinearVRGDAImpl::get_target_sale_time>"
       ],
       [
         934,
-        "struct_deconstruct<eternum::models::labor_auction::LinearVRGDA>"
+        "struct_deconstruct<eternum::utils::vrgda::LinearVRGDA>"
       ],
       [
         935,
@@ -16946,7 +16946,7 @@
       ],
       [
         116,
-        "eternum::models::labor_auction::LinearVRGDAImpl::get_vrgda_price"
+        "eternum::utils::vrgda::LinearVRGDAImpl::get_vrgda_price"
       ],
       [
         117,
@@ -16986,7 +16986,7 @@
       ],
       [
         126,
-        "eternum::models::labor_auction::LinearVRGDAImpl::get_target_sale_time"
+        "eternum::utils::vrgda::LinearVRGDAImpl::get_target_sale_time"
       ],
       [
         127,

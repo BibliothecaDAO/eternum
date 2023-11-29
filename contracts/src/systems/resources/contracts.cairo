@@ -26,8 +26,6 @@ mod resource_systems {
     use core::integer::BoundedInt;
     use core::poseidon::poseidon_hash_span;
 
-    use debug::PrintTrait;
-
     #[derive(Drop, starknet::Event)]
     struct Transfer {
         #[key]
@@ -187,6 +185,23 @@ mod resource_systems {
     #[generate_trait]
     impl InternalResourceSystemsImpl of InternalResourceSystemsTrait {
 
+        fn mint(
+            world: IWorldDispatcher, receiver_id: ID, mut resources: Span<(u8, u128)>
+        ) {
+            loop {
+                match resources.pop_front() {
+                    Option::Some((resource_type, resource_amount)) => {
+                        let mut entity_resource 
+                            = get!(world, (receiver_id, *resource_type), Resource);
+
+                        entity_resource.balance += *resource_amount;
+                        set!(world, (entity_resource));                       
+                    },
+                    Option::None(()) => {break;}
+                }
+            }
+        }
+
         fn transfer(
             world: IWorldDispatcher, sender_id: ID,  receiver_id: ID, resources: Span<(u8, u128)>
         ) {
@@ -223,6 +238,7 @@ mod resource_systems {
             caravan::check_owner(world, sender_id, starknet::get_caller_address());
             caravan::check_position(world, sender_id, receiver_id);
             caravan::check_arrival_time(world, sender_id);
+            caravan::check_arrival_time(world, receiver_id);
 
             // remove resource chest from sender's inventory
             let item_id = InternalInventorySystemsImpl::remove(world, sender_id, index);
@@ -389,12 +405,39 @@ mod resource_systems {
 
         fn offload(world: IWorldDispatcher, entity_id: ID, receiving_entity_id: ID) {
             let mut resource_chest = get!(world, entity_id, ResourceChest);
+            assert( 
+                resource_chest.locked_until <= starknet::get_block_timestamp(),
+                    'chest is locked'
+            );
+
             let mut resource_chest_weight = get!(world, entity_id, Weight);
             assert(resource_chest_weight.value != 0, 'chest is empty');
             
-            // ensure that receiver has enough weight capacity
-            let receiver_capacity = get!(world, receiving_entity_id, Capacity);
-            assert(receiver_capacity.is_capped() == false, 'invalid recepient');
+            if entity_id != receiving_entity_id {
+                // if it's a transfer to self, the weight wouldn't change
+
+                // ensure that receiver has enough weight capacity
+                let receiver_capacity = get!(world, receiving_entity_id, Capacity);
+                if receiver_capacity.is_capped() {
+                    let receiver_quantity = get!(world, receiving_entity_id, Quantity);
+                    let mut receiver_weight = get!(world, receiving_entity_id, Weight);
+                    receiver_weight.value += resource_chest_weight.value;
+                
+                    assert(
+                        receiver_capacity
+                            .can_carry_weight(
+                                    receiving_entity_id, 
+                                    receiver_quantity.get_value(), 
+                                    receiver_weight.value
+                                ),
+                        'not enough capacity'
+                    );
+
+                    // update receiver weight
+                    set!(world, (receiver_weight) );
+                }
+            }
+            
 
             // return resources to the entity
             let mut index = 0;
