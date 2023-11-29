@@ -41,7 +41,7 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
     sort: "none",
   });
 
-  const market = useGetMarket({ selectedResources, selectedOrders, directOffers });
+  const market = useGetMarket({ selectedResources, selectedOrders, directOffers, filterOwnOffers: true });
 
   const renderedMarketOffers = useMemo(() => {
     if (!market) return null;

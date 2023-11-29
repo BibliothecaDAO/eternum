@@ -15,6 +15,8 @@ import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import * as realmsData from "../../../../../geodata/realms.json";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import { AcceptOfferPopup } from "../AcceptOffer";
+import useRealmStore from "../../../../../hooks/store/useRealmStore";
+import { divideByPrecision } from "../../../../../utils/utils";
 
 type MarketPopupProps = {
   onClose: () => void;
@@ -36,7 +38,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
       key: "sell",
       label: (
         <div className="flex relative group flex-col items-center">
-          <div>Sell</div>
+          <div>Sell Resources</div>
         </div>
       ),
     },
@@ -44,7 +46,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
       key: "Buy",
       label: (
         <div className="flex group relative flex-col items-center">
-          <div>Buy</div>
+          <div>Buy Resources</div>
         </div>
       ),
     },
@@ -54,20 +56,23 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
     selectedResources: [],
     selectedOrders: [],
     directOffers: false,
+    filterOwnOffers: false,
   });
 
   const sellOffers = useMemo(() => {
     if (!marketOffers) return [];
 
     return marketOffers.filter(
-      (offer) => offer.resourcesGet.length === 1 && offer.resourcesGive[0].resourceId === ResourcesIds["Shekels"],
+      (offer) => offer.resourcesGet.length === 1 && offer.resourcesGet[0].resourceId === ResourcesIds["Shekels"],
     );
   }, [marketOffers]);
 
   const selectedResourceSellOffers = useMemo(() => {
     if (!sellOffers) return [];
 
-    return sellOffers.filter((offer) => offer.resourcesGive[0].resourceId === selectedResource);
+    return sellOffers
+      .filter((offer) => (selectedResource ? offer.resourcesGive[0].resourceId === selectedResource : true))
+      .sort((a, b) => b.ratio - a.ratio);
   }, [sellOffers, selectedResource]);
 
   const sellOffersSummary = useMemo(() => {
@@ -93,9 +98,9 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
         if (resourceIndex >= 0) {
           summary[resourceIndex].totalAmount += resource.amount;
           summary[resourceIndex].totalOffers += 1;
-          summary[resourceIndex].bestPrice = Math.min(
+          summary[resourceIndex].bestPrice = Math.max(
             summary[resourceIndex].bestPrice,
-            resource.amount / offer.resourcesGet[0].amount,
+            offer.resourcesGet[0].amount / resource.amount,
           );
         } else {
           summary.push({
@@ -122,7 +127,9 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
   const selectedResourceBuyOffers = useMemo(() => {
     if (!buyOffers) return [];
 
-    return buyOffers.filter((offer) => offer.resourcesGet[0].resourceId === selectedResource);
+    return buyOffers
+      .filter((offer) => offer.resourcesGet[0].resourceId === selectedResource)
+      .sort((a, b) => b.ratio - a.ratio);
   }, [buyOffers, selectedResource]);
 
   const buyOffersSummary = useMemo(() => {
@@ -150,7 +157,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
           summary[resourceIndex].totalOffers += 1;
           summary[resourceIndex].bestPrice = Math.min(
             summary[resourceIndex].bestPrice,
-            resource.amount / offer.resourcesGive[0].amount,
+            offer.resourcesGive[0].amount / resource.amount,
           );
         } else {
           summary.push({
@@ -166,13 +173,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
     return summary;
   }, [buyOffers]);
 
-  useEffect(() => {
-    console.log("buyOffers", buyOffers);
-    console.log("buyOffersSummary", buyOffersSummary);
-    console.log("sellOffers", sellOffers);
-    console.log("sellOffersSummary", sellOffersSummary);
-    console.log("marketOffers", marketOffers);
-  }, [buyOffers, buyOffersSummary, sellOffers, sellOffersSummary, marketOffers]);
+  useEffect(() => {}, [buyOffers, buyOffersSummary, sellOffers, sellOffersSummary, marketOffers]);
 
   return (
     <>
@@ -183,7 +184,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
             <div className="mr-0.5">Marketplace</div>
           </div>
         </SecondaryPopup.Head>
-        <SecondaryPopup.Body width={"662px"}>
+        <SecondaryPopup.Body width={"500px"}>
           <Tabs
             selectedIndex={isBuy ? 1 : 0}
             onChange={(index: any) => setIsBuy(index === 1)}
@@ -231,8 +232,8 @@ const MarketplaceOverviewPanel = ({
   const sortingParams = useMemo(() => {
     return [
       { label: "Resource", sortKey: "resource", className: "w-[100px]" },
-      { label: "Last price", sortKey: "price", className: "w-[100px] ml-4" },
-      { label: "Available", sortKey: "available", className: "ml-auto w-[100px] mr-4" },
+      { label: "Best price", sortKey: "price", className: "w-[100px] ml-4" },
+      { label: "Available Resources", sortKey: "available", className: "ml-auto w-[150px]" },
       { label: "Offers", sortKey: "offers", className: "w-[100px]" },
     ];
   }, []);
@@ -254,7 +255,7 @@ const MarketplaceOverviewPanel = ({
     <div className="flex flex-col p-2">
       <div className="flex items-center justify-between">
         <TextInput
-          className="border border-gold !w-auto !text-light-pink !w-36 !flex-grow-0"
+          className="border border-gold !w-auto !text-light-pink !w-34 !flex-grow-0"
           value={search}
           onChange={setSearch}
           placeholder="Search resource..."
@@ -337,6 +338,8 @@ const MarketplaceResourceOffersPanel = ({
   resourceId: number;
   onBack: () => void;
 }) => {
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+
   const [selectedTrade, setSelectedTrade] = useState<MarketInterface | undefined>(null);
   const sortingParams = useMemo(() => {
     return [
@@ -393,7 +396,13 @@ const MarketplaceResourceOffersPanel = ({
         </SortPanel>
         <div className="mt-2 space-y-2">
           {offers.map((offer) => (
-            <ResourceOfferRow key={offer.tradeId} isBuy={isBuy} offer={offer} onClick={() => setSelectedTrade(offer)} />
+            <ResourceOfferRow
+              key={offer.tradeId}
+              realmEntityId={realmEntityId}
+              isBuy={isBuy}
+              offer={offer}
+              onClick={() => setSelectedTrade(offer)}
+            />
           ))}
         </div>
       </div>
@@ -402,10 +411,12 @@ const MarketplaceResourceOffersPanel = ({
 };
 
 const ResourceOfferRow = ({
+  realmEntityId,
   offer,
   isBuy,
   onClick,
 }: {
+  realmEntityId: number;
   offer: MarketInterface;
   isBuy: boolean;
   onClick: () => void;
@@ -413,33 +424,34 @@ const ResourceOfferRow = ({
   const resource = findResourceById(isBuy ? offer.resourcesGet[0].resourceId : offer.resourcesGive[0].resourceId);
   const { realm: makerRealm } = useGetRealm(offer.makerId);
 
-  useEffect(() => {
-    console.log(makerRealm);
-  }, [offer, makerRealm]);
   return (
     <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-1 grid-cols-5 gap-4 text-lightest text-xxs">
       <div className="flex items-center">
-        <ResourceIcon className="mr-2" withTooltip={false} resource={resource.trait} size="sm" />
-        {isBuy ? offer.resourcesGet[0].amount : offer.resourcesGive[0].amount}
+        <ResourceIcon className="mr-2" withTooltip={false} resource={isBuy ? "Shekels" : resource.trait} size="sm" />
+        {divideByPrecision(offer.resourcesGive[0].amount)}
       </div>
       <div>
-        <div className="px-2 bg-black rounded-md w-min">{offer.ratio}</div>
+        <div className="px-2 bg-black rounded-md w-min">
+          {isBuy ? (1 / offer.ratio).toFixed(2) : offer.ratio.toFixed(2)}
+        </div>
       </div>
       <div className="flex items-center text-gold">
-        {isBuy ? offer.resourcesGive[0].amount : offer.resourcesGet[0].amount}
-        <ResourceIcon className="ml-2" resource="Shekels" size="sm" />
+        {divideByPrecision(offer.resourcesGet[0].amount)}
+        <ResourceIcon className="ml-2" resource={!isBuy ? "Shekels" : resource.trait} size="sm" />
       </div>
 
       <div className="flex items-center">
         {makerRealm?.order && <OrderIcon order={orderNameDict[makerRealm.order]} size="xs" className="mr-1" />}
         {realmsData["features"][makerRealm?.realmId - 1]?.name}
       </div>
-      <div className="flex item-center justify-end">
-        {`${offer.distance.toFixed(0)} km`}
-        <Button className="ml-2" onClick={onClick} size="xs" variant="success">
-          Accept
-        </Button>
-      </div>
+      {offer.makerId !== realmEntityId && (
+        <div className="flex item-center justify-end">
+          {`${offer.distance.toFixed(0)} km`}
+          <Button className="ml-2" onClick={onClick} disabled={!offer.canAccept} size="xs" variant="success">
+            Accept
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

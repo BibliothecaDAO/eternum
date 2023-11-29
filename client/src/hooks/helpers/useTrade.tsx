@@ -33,6 +33,7 @@ type useGetMarketProps = {
   selectedResources: string[];
   selectedOrders: string[];
   directOffers: boolean;
+  filterOwnOffers: boolean;
 };
 
 type useGetMyOffersProps = {
@@ -229,6 +230,7 @@ export function useGetMarket({
   selectedResources,
   selectedOrders,
   directOffers,
+  filterOwnOffers,
 }: useGetMarketProps): MarketInterface[] {
   const {
     setup: {
@@ -241,14 +243,12 @@ export function useGetMarket({
   const [market, setMarket] = useState<MarketInterface[]>([]);
 
   const fragments = useMemo(() => {
-    const baseFragments: QueryFragment[] = [
-      HasValue(Status, { value: 0 }),
-      // cant be maker nor taker of the trade
-      NotValue(Trade, { maker_id: realmEntityId }),
-    ];
+    const baseFragments: QueryFragment[] = [HasValue(Status, { value: 0 })];
 
     if (directOffers) {
       baseFragments.push(HasValue(Trade, { taker_id: realmEntityId }));
+    } else if (filterOwnOffers) {
+      baseFragments.push(NotValue(Trade, { maker_id: realmEntityId }));
     } else {
       baseFragments.push(HasValue(Trade, { taker_id: 0 }));
     }
@@ -290,6 +290,7 @@ export function useGetMarket({
       .map((tradeId) => {
         let trade = getComponentValue(Trade, tradeId);
         if (trade) {
+          const isMine = trade.maker_id === realmEntityId;
           const { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, tradeId);
           const distance = calculateDistance(trade.maker_id, realmEntityId);
           const hasRoad = getHasRoad(realmEntityId, trade.maker_id);
@@ -299,10 +300,10 @@ export function useGetMarket({
             takerId: trade.taker_id,
             makerOrder: getRealm(trade.maker_id).order,
             expiresAt: trade.expires_at,
-            resourcesGet,
-            resourcesGive,
+            resourcesGet: isMine ? resourcesGive : resourcesGet,
+            resourcesGive: isMine ? resourcesGet : resourcesGive,
             canAccept: canAcceptOffer({ realmEntityId, resourcesGive }),
-            ratio: calculateRatio(resourcesGive, resourcesGet),
+            ratio: isMine ? calculateRatio(resourcesGet, resourcesGive) : calculateRatio(resourcesGive, resourcesGet),
             distance: distance || 0,
             hasRoad,
           } as MarketInterface;

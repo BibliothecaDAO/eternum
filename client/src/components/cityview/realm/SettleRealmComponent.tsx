@@ -57,6 +57,7 @@ export const SettleRealmComponent = () => {
       resources = [...resources, i + 1, multiplyByPrecision(initialResources[i]) * dev_multiplier];
     }
     if (isDev) {
+      resources = [...resources, 253, multiplyByPrecision(1000000)];
       resources = [...resources, 254, multiplyByPrecision(1000000)];
       resources = [...resources, 255, multiplyByPrecision(1000000)];
     } else {
