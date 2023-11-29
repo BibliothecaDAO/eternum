@@ -42,6 +42,10 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.purchase_labor(props)));
   };
 
+  const uuid = async () => {
+    return provider.uuid();
+  };
+
   // Refactor the functions using the interfaces
   const build_labor = async (props: BuildLaborProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.build_labor(props)));
@@ -208,6 +212,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     travel,
     merge_soldiers,
     heal_soldiers,
+    uuid,
   };
 }
 

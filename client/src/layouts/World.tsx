@@ -35,6 +35,7 @@ export const World = () => {
   const {
     account: { list },
     setup: {
+      // systemCalls: { isLive, uuid },
       systemCalls: { isLive },
     },
   } = useDojo();
@@ -49,6 +50,15 @@ export const World = () => {
   const syncCombatHistory = useCombatHistoryStore((state) => state.syncData);
   const isSoundOn = useUIStore((state) => state.isSoundOn);
   const musicLevel = useUIStore((state) => state.musicLevel);
+
+  // only for dev
+  // useEffect(() => {
+  //   const printUuid = async () => {
+  //     let nextUuid = await uuid();
+  //     console.log({ nextUuid });
+  //   };
+  //   printUuid();
+  // });
 
   useEffect(() => {
     if (list().length > 0) {
