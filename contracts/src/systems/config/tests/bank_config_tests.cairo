@@ -32,31 +32,52 @@ fn test_create_bank() {
     let bank_id = bank_config_dispatcher.create_bank(
         world,
         Coord {x: 30, y :800},
-        array![(
-            // shekels costs 500 wheat and 200 fish
-            ResourceTypes::SHEKELS, 
-            array![
-                (ResourceTypes::WHEAT, 500),
-                (ResourceTypes::FISH, 200)
-            ].span()
-        )].span()
+        array![
+            (
+                // shekels costs 500 wheat and 200 fish
+                ResourceTypes::SHEKELS, 
+                array![
+                    (ResourceTypes::WHEAT, 500),
+                    (ResourceTypes::FISH, 200)
+                ].span()
+            ),
+            (
+                // shekels costs 700 DRAGONHIDE
+                ResourceTypes::SHEKELS, 
+                array![
+                    (ResourceTypes::DRAGONHIDE, 700),
+                ].span()
+            ),
+        ].span()
     );
 
     let bank_position = get!(world, bank_id, Position);
     assert(bank_position.x == 30, 'wrong x position');
     assert(bank_position.y == 800, 'wrong y position');
 
-    let bank_shekel_swap_cost = get!(world, ResourceTypes::SHEKELS, BankSwapResourceCost);
+    // check that fish and wheat cost was added successfully 
+
+    let bank_shekel_swap_cost_1 = get!(world, (ResourceTypes::SHEKELS, 0), BankSwapResourceCost);
     assert(
-        bank_shekel_swap_cost.resource_cost_count == 2, 
+        bank_shekel_swap_cost_1.resource_cost_count == 2, 
             'wrong resource cost count'
     );
 
-    let bank_shekel_wheat_cost = get!(world, (bank_shekel_swap_cost.resource_cost_id, 0), ResourceCost);
+    let bank_shekel_wheat_cost = get!(world, (bank_shekel_swap_cost_1.resource_cost_id, 0), ResourceCost);
     assert(bank_shekel_wheat_cost.amount == 500, 'wrong wheat cost');
 
-    let bank_shekel_fish_cost = get!(world, (bank_shekel_swap_cost.resource_cost_id, 1), ResourceCost);
+    let bank_shekel_fish_cost = get!(world, (bank_shekel_swap_cost_1.resource_cost_id, 1), ResourceCost);
     assert(bank_shekel_fish_cost.amount == 200, 'wrong fish cost');
+
+    // check that dragonhide cost was added successfully 
+    let bank_shekel_swap_cost_2 = get!(world, (ResourceTypes::SHEKELS, 1), BankSwapResourceCost);
+    assert(
+        bank_shekel_swap_cost_2.resource_cost_count == 1, 
+            'wrong resource cost count'
+    );
+
+    let bank_shekel_dragonhide_cost = get!(world, (bank_shekel_swap_cost_2.resource_cost_id, 0), ResourceCost);
+    assert(bank_shekel_dragonhide_cost.amount == 700, 'wrong dragonhide cost');
     
 }
 
@@ -91,15 +112,15 @@ fn test_set_bank_auction() {
         world,
         bank_id,
         array![
-            ResourceTypes::SHEKELS, 
-            ResourceTypes::DRAGONHIDE
+            (ResourceTypes::SHEKELS, 0),
+            (ResourceTypes::DRAGONHIDE, 0)
         ].span(),
         decay_constant,
         per_time_unit,
         price_update_interval
     );
 
-    let bank_shekel_auction = get!(world, (bank_id, ResourceTypes::SHEKELS), BankAuction);
+    let bank_shekel_auction = get!(world, (bank_id, ResourceTypes::SHEKELS, 0), BankAuction);
     assert(bank_shekel_auction.decay_constant_mag == decay_constant, 'decay_constant_mag');
     assert(bank_shekel_auction.per_time_unit == per_time_unit, 'per_time_unit');
     assert(bank_shekel_auction.sold == 0, 'sold');
@@ -107,7 +128,7 @@ fn test_set_bank_auction() {
     assert(bank_shekel_auction.price_update_interval == 10, 'price_update_interval');
 
 
-    let bank_dragonhide_auction = get!(world, (bank_id, ResourceTypes::DRAGONHIDE), BankAuction);
+    let bank_dragonhide_auction = get!(world, (bank_id, ResourceTypes::DRAGONHIDE, 0), BankAuction);
     assert(bank_dragonhide_auction.decay_constant_mag == decay_constant, 'decay_constant_mag');
     assert(bank_dragonhide_auction.per_time_unit == per_time_unit, 'per_time_unit');
     assert(bank_dragonhide_auction.sold == 0, 'sold');

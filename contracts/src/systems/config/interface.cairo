@@ -152,7 +152,7 @@ trait IBankConfig<TContractState> {
         self: @TContractState,
         world: IWorldDispatcher,
         bank_id: u128,
-        resource_types: Span<u8>,
+        bank_swap_resource_cost_keys: Span<(u8, u32)>,
         decay_constant: u128,
         per_time_unit: u128,
         price_update_interval: u128,
