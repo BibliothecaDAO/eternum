@@ -234,7 +234,7 @@ const BuildHyperstructurePanel = ({
   const {
     account: { account },
     setup: {
-      systemCalls: { complete_hyperstructure, send_resources_to_hyperstructure },
+      systemCalls: { complete_hyperstructure, send_resources_to_location },
     },
   } = useDojo();
 
@@ -253,7 +253,7 @@ const BuildHyperstructurePanel = ({
             .flatMap((id) => [Number(id), multiplyByPrecision(feedResourcesGiveAmounts[Number(id)])])
         : hyperstructureData?.initialzationResources.flatMap((resource) => [resource.resourceId, resource.amount]);
       if (isNewCaravan) {
-        await send_resources_to_hyperstructure({
+        await send_resources_to_location({
           signer: account,
           sending_entity_id: realmEntityId,
           resources: resourcesList || [],
@@ -263,7 +263,7 @@ const BuildHyperstructurePanel = ({
         });
       } else {
         // transfer resources to caravan
-        await send_resources_to_hyperstructure({
+        await send_resources_to_location({
           signer: account,
           sending_entity_id: realmEntityId,
           resources: resourcesList || [],

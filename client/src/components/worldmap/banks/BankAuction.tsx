@@ -1,26 +1,18 @@
 import { useMemo } from "react";
-import { useLabor } from "../../../hooks/helpers/useLabor";
-import useRealmStore from "../../../hooks/store/useRealmStore";
-import { getPosition, getZone } from "../../../utils/utils";
 import ProgressBar from "../../../elements/ProgressBar";
 import clsx from "clsx";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { BankInterface, useBanks } from "../../../hooks/helpers/useBanks";
 
 type BankAuctionProps = {
-  bank: { x: number; y: number; price: number };
+  bank: BankInterface;
 };
 
 export const BankAuction = ({ bank }: BankAuctionProps) => {
   const { price: coefficient } = bank;
 
-  const realmId = useRealmStore((state) => state.realmId);
-
-  const { useLaborAuctionCoefficient } = useLabor();
   //   const { getBankPrice } = useBanks();
 
-  const position = realmId ? getPosition(realmId) : undefined;
-  //   const zone = position ? getZone(position.x) : undefined;
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const demandColors = useMemo(() => {

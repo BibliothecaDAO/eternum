@@ -69,18 +69,73 @@ function computeAverageCoefficient(
   return sum / laborUnits; // Return the average coefficient
 }
 
-const laborUnits = 90;
-const interval = 20;
-const averageCoefficient = computeAverageCoefficient(
-  0,
-  0,
-  0,
-  laborUnits,
-  interval
-);
-const totalCost = Math.floor(1000 * laborUnits * averageCoefficient);
+function getLordsAmountFromBankAuction(
+  totalCost,
+  target_price,
+  startTimestamp,
+  nextBlockTimestamp,
+  sold,
+  price_update_interval
+) {
+  let unitsBought = 0;
+  let cost = 0;
+
+  let coefficient = computeCoefficient(
+    startTimestamp,
+    nextBlockTimestamp,
+    sold
+  );
+
+  while (cost <= totalCost) {
+    if (sold % price_update_interval == 0) {
+      coefficient = computeCoefficient(
+        startTimestamp,
+        nextBlockTimestamp,
+        sold
+      );
+    }
+    let priceForNextUnit = target_price * coefficient;
+
+    // Check if the next unit can be purchased within the totalCost
+    if (cost + priceForNextUnit <= totalCost) {
+      cost += priceForNextUnit;
+      unitsBought++;
+      sold++;
+    } else {
+      break; // Break if the next unit cannot be purchased
+    }
+  }
+
+  return unitsBought;
+}
 
 // Example usage
-console.log({ averageCoefficient });
-// console.log({ totalCost: 1000 * 16 * averageCoefficient });
-console.log({ remainder: 100000 - totalCost });
+let totalCost = 1000; // Example total cost
+let laborUnits = getLordsAmountFromBankAuction(
+  totalCost,
+  10, // target_price
+  1701344758, // startTimestamp
+  1701349160, // nextBlockTimestamp
+  0, // initially sold
+  10 // price_update_interval
+);
+
+console.log("Labor Units that can be bought: ", laborUnits);
+
+// const laborUnits = 80;
+// const interval = 10;
+// const averageCoefficient = computeAverageCoefficient(
+//   0,
+//   0,
+//   0,
+//   laborUnits,
+//   interval
+// );
+
+// const totalCost = Math.floor(3 * 80 * averageCoefficient);
+
+// Example usage
+// console.log({ averageCoefficient });
+// console.log({ totalCost });
+// // console.log({ totalCost: 1000 * 16 * averageCoefficient });
+// console.log({ remainder: 100000 - totalCost });

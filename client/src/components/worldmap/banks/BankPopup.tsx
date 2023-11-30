@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../elements/SecondaryPopup";
 import Button from "../../../elements/Button";
 import { SelectCaravanPanel } from "../../cityview/realm/trade/CreateOffer";
+import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/arrow-separator.svg";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { getRealm } from "../../../utils/realms";
 import { getComponentValue } from "@latticexyz/recs";
@@ -17,22 +18,23 @@ import { Tabs } from "../../../elements/tab";
 import { useGetPositionCaravans } from "../../../hooks/helpers/useCaravans";
 import { WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 import useUIStore from "../../../hooks/store/useUIStore";
-import { useBanks } from "../../../hooks/helpers/useBanks";
+import { BANK_AUCTION_DECAY, BankInterface, targetPrices } from "../../../hooks/helpers/useBanks";
 import { BankCaravansPanel } from "./BanksCaravans/BankCaravansPanel";
+import { NumberInput } from "../../../elements/NumberInput";
+import { getLordsAmountFromBankAuction } from "./utils";
+import { LaborAuction } from "../../cityview/realm/labor/LaborAuction";
+import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 
 type BankPopupProps = {
   onClose: () => void;
-  bank: { x: number; y: number; z: number };
+  bank: BankInterface;
 };
 
 export const BankPopup = ({ onClose, bank }: BankPopupProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const { getBankPrice } = useBanks();
-  const bankPrice = getBankPrice({ x: bank.x, y: bank.y });
-
-  const { caravans } = useGetPositionCaravans(bank.x, bank.y);
+  const { caravans } = useGetPositionCaravans(bank.position.x, bank.position.y);
 
   const tabs = useMemo(
     () => [
@@ -61,7 +63,7 @@ export const BankPopup = ({ onClose, bank }: BankPopupProps) => {
             onSendCaravan={() => setSelectedTab(1)}
             onClose={onClose}
             bank={bank}
-            bankPrice={bankPrice}
+            bankPrice={bank.wheatPrice}
           />
         ),
       },
@@ -86,7 +88,7 @@ export const BankPopup = ({ onClose, bank }: BankPopupProps) => {
             <div>{`Caravans (${caravans.length})`}</div>
           </div>
         ),
-        component: <BankCaravansPanel caravans={caravans} bank={{ ...bank, entityId: 0 }} />,
+        component: <BankCaravansPanel caravans={caravans} bank={bank} />,
       },
     ],
     [selectedTab, caravans],
@@ -162,17 +164,16 @@ const SelectableRealm = ({ realm, selected = false, onClick, costs, ...props }: 
       <div className="text-gold ml-auto absolute right-2 top-2">24h:10m away</div>
       <div className="flex items-center mt-6 w-full">
         <div className="flex">
-          {!initialized &&
-            realm.resources &&
+          {realm.resources &&
             realm.resources.map((resource: any) => {
               return (
                 <ResourceCost
                   type="vertical"
                   withTooltip
                   key={resource.id}
-                  resourceId={resource.id}
+                  resourceId={parseInt(resource.id)}
                   amount={divideByPrecision(resource.balance)}
-                  color={resource.balance >= costById[resource.id] ? "" : "text-order-giants"}
+                  color={resource.balance >= 0 ? "text-order-brilliance" : "text-order-giants"}
                 />
               );
             })}
@@ -211,7 +212,7 @@ const SwapResourcesPanel = ({
 }: {
   onClose: () => void;
   onSendCaravan: () => void;
-  bank: { x: number; y: number };
+  bank: BankInterface;
   bankPrice: number;
 }) => {
   const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
@@ -224,7 +225,7 @@ const SwapResourcesPanel = ({
   const {
     account: { account },
     setup: {
-      systemCalls: { send_resources_to_hyperstructure },
+      systemCalls: { send_resources_to_location },
     },
   } = useDojo();
 
@@ -234,22 +235,22 @@ const SwapResourcesPanel = ({
       .filter((id) => feedResourcesGiveAmounts[Number(id)] > 0)
       .flatMap((id) => [Number(id), multiplyByPrecision(feedResourcesGiveAmounts[Number(id)])]);
     if (isNewCaravan) {
-      await send_resources_to_hyperstructure({
+      await send_resources_to_location({
         signer: account,
         sending_entity_id: realmEntityId,
         resources: resourcesList || [],
-        destination_coord_x: bank.x,
-        destination_coord_y: bank.y,
+        destination_coord_x: bank.position.x,
+        destination_coord_y: bank.position.y,
         donkeys_quantity: donkeysCount,
       });
     } else {
       // transfer resources to caravan
-      await send_resources_to_hyperstructure({
+      await send_resources_to_location({
         signer: account,
         sending_entity_id: realmEntityId,
         resources: resourcesList || [],
-        destination_coord_x: bank.x,
-        destination_coord_y: bank.y,
+        destination_coord_x: bank.position.x,
+        destination_coord_y: bank.position.y,
         caravan_id: selectedCaravan,
       });
     }
@@ -261,6 +262,8 @@ const SwapResourcesPanel = ({
       components: { Resource },
     },
   } = useDojo();
+
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
@@ -304,6 +307,24 @@ const SwapResourcesPanel = ({
       return true;
     }
   }, [step, selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
+
+  const lordsAmountFromWheat = useMemo(() => {
+    console.log({ feedResourcesGiveAmounts });
+    const lordsAmountFromWheat = bank.wheatLaborAuction
+      ? getLordsAmountFromBankAuction(
+          feedResourcesGiveAmounts[254],
+          targetPrices[254],
+          BANK_AUCTION_DECAY,
+          bank.wheatLaborAuction.per_time_unit,
+          bank.wheatLaborAuction.start_time,
+          nextBlockTimestamp,
+          bank.wheatLaborAuction.sold,
+          bank.wheatLaborAuction.price_update_interval,
+        )
+      : 1;
+    console.log({ lordsAmountFromWheat });
+    return lordsAmountFromWheat;
+  }, [feedResourcesGiveAmounts[254]]);
 
   useEffect(() => {
     if (donkeysCount * WEIGHT_PER_DONKEY_KG >= divideByPrecision(resourceWeight)) {
@@ -371,28 +392,20 @@ const SwapResourcesPanel = ({
                 <div className="mb-1 ml-1 italic text-light-pink text-xxs">
                   {/* {hyperstructureData?.initialized ? "Resources need to complete:" : "Initialization cost:"} */}
                 </div>
-                {/* <div className="grid grid-cols-4 gap-1">
-                  {!hyperstructureData?.initialized
-                    ? hyperstructureData?.initialzationResources.map(({ resourceId, amount }) => (
-                        <ResourceCost
-                          withTooltip
-                          type="vertical"
-                          key={resourceId}
-                          resourceId={resourceId}
-                          amount={divideByPrecision(amount)}
-                        />
-                      ))
-                    : resourcesLeftToComplete &&
-                      Object.keys(resourcesLeftToComplete).map((id) => (
-                        <ResourceCost
-                          withTooltip
-                          type="vertical"
-                          key={id}
-                          resourceId={Number(id)}
-                          amount={resourcesLeftToComplete[id]}
-                        />
-                      ))}
-                </div> */}
+                <div className="grid grid-cols-4 gap-1">
+                  {[
+                    { resourceId: 254, amount: 1000 },
+                    { resourceId: 255, amount: 1000 },
+                  ].map(({ resourceId, amount }) => (
+                    <ResourceCost
+                      withTooltip
+                      type="vertical"
+                      key={resourceId}
+                      resourceId={resourceId}
+                      amount={divideByPrecision(amount)}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
             <Headline size="big">
@@ -431,6 +444,59 @@ const SwapResourcesPanel = ({
       )}
       {step == 3 && (
         <>
+          <>
+            <div className="grid relative grid-cols-9 gap-2 max-h-[350px] overflow-auto mb-4">
+              <div className={clsx("flex flex-col items-center  space-y-2 h-min", "col-span-4")}>
+                <Headline className="mb-2">You Give</Headline>
+                {Object.keys(totalResources).map((_id) => {
+                  const id: any = Number(_id);
+                  return (
+                    <div key={id} className="flex items-center w-full h-8">
+                      <NumberInput
+                        max={totalResources[id]}
+                        min={1}
+                        step={targetPrices[id]}
+                        value={feedResourcesGiveAmounts[id]}
+                        onChange={(value) => {
+                          setFeedResourcesGiveAmounts({
+                            ...feedResourcesGiveAmounts,
+                            [id]: Math.min(divideByPrecision(totalResources[id] || 0), value),
+                          });
+                        }}
+                      />
+                      <div className="ml-2">
+                        <ResourceCost
+                          className=" cursor-pointer"
+                          onClick={() => {
+                            setFeedResourcesGiveAmounts({
+                              ...feedResourcesGiveAmounts,
+                              [id]: divideByPrecision(totalResources[id] || 0),
+                            });
+                          }}
+                          resourceId={id}
+                          amount={divideByPrecision(totalResources[id] || 0)}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex items-center justify-center">
+                <ArrowSeparator className="fixed top-1/6" />
+              </div>
+              <div className="flex flex-col w-full col-span-4 space-y-2 h-min">
+                <Headline className="mb-2">You Get</Headline>
+                <div className="w-full flex justify-center">
+                  <ResourceCost
+                    className="!w-min h-8 cursor-pointer"
+                    resourceId={253}
+                    amount={lordsAmountFromWheat}
+                    onClick={() => {}}
+                  />
+                </div>
+              </div>
+            </div>
+          </>
           <PercentageSelection setPercentage={setPercentage}></PercentageSelection>
           <SelectCaravanPanel
             className="!p-0"

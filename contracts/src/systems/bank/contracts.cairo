@@ -41,9 +41,6 @@ mod bank_systems {
             InternalCaravanSystemsImpl::check_arrival_time(world, entity_id);
             InternalCaravanSystemsImpl::check_position(world, entity_id, bank_id);
 
-
-            let bank_position = get!(world, bank_id, Position);
-            let zone = bank_position.get_zone();
             let mut bank_auction = get!(world, (bank_id, bought_resource_type), BankAuction);
             assert(bank_auction.per_time_unit != 0, 'auction not found');
 

@@ -22,7 +22,6 @@ export const WorldMapScene = () => {
 
   const hyperstructures = useUIStore((state) => state.hyperstructures);
 
-  console.log({ len: banks.length });
   const { getCaravanInfo } = useCaravan();
   const { caravansAtPositionWithInventory: caravanIds } = useGetCaravansWithResourcesChest();
   const { realmEntityId } = useRealmStore();
@@ -38,8 +37,6 @@ export const WorldMapScene = () => {
       };
     });
   }, [caravanIds, realm]);
-
-  console.log({ banks });
 
   return (
     <>

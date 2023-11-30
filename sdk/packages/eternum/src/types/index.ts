@@ -85,7 +85,7 @@ export interface FeedHyperstructureAndTravelBackPropos extends SystemSigner {
   hyperstructure_id: num.BigNumberish;
 }
 
-export interface SendResourcesToHyperstructureProps extends SystemSigner {
+export interface SendResourcesToLocationProps extends SystemSigner {
   sending_entity_id: num.BigNumberish;
   resources: num.BigNumberish[];
   destination_coord_x: num.BigNumberish;
@@ -121,6 +121,16 @@ export interface BuildLaborProps extends SystemSigner {
 export interface HarvestLaborProps extends SystemSigner {
   realm_id: num.BigNumberish; // TODO: this is entity id not realm id
   resource_type: num.BigNumberish;
+}
+
+export interface SwapBankAndTravelBackProps extends SystemSigner {
+  sender_id: num.BigNumberish;
+  inventoryIndex: num.BigNumberish;
+  bank_id: num.BigNumberish;
+  resource_type: num.BigNumberish;
+  resource_amount: num.BigNumberish;
+  destination_coord_x: num.BigNumberish;
+  destination_coord_y: num.BigNumberish;
 }
 
 export interface HarvestAllLaborProps extends SystemSigner {

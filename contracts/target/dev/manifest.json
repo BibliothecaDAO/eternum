@@ -864,7 +864,7 @@
     {
       "name": "bank_systems",
       "address": "0x22915d02287759320f721a3e61836fe3dc1ed68fc8a66fdd2c2f7a8cf1ff4f8",
-      "class_hash": "0x6ff41f4353728446a7cbcc0599172bc12e4d1db874f3de59ffdafcebfaf5d1f",
+      "class_hash": "0x1754fa5adfb5b2d08f654b478a74d40c3a605e395311b692459f0935c7563a9",
       "abi": [
         {
           "type": "impl",
@@ -960,7 +960,6 @@
         "Bank",
         "BankAuction",
         "BankSwapResourceCost",
-        "Position",
         "Resource",
         "ResourceCost"
       ],

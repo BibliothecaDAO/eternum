@@ -16,10 +16,11 @@ import { getComponentValue } from "@latticexyz/recs";
 import { useDojo } from "../../../../DojoContext";
 import Button from "../../../../elements/Button";
 import { Resource } from "../../../../types";
+import { BankInterface } from "../../../../hooks/helpers/useBanks";
 
 type BankCaravanProps = {
   caravan: CaravanInterface;
-  bank: { x: number; y: number; z: number; entityId: number };
+  bank: BankInterface;
   idleOnly?: boolean;
   selectedCaravan?: number;
 } & React.HTMLAttributes<HTMLDivElement>;
@@ -34,7 +35,7 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
   const {
     account: { account },
     setup: {
-      systemCalls: { feed_hyperstructure_and_travel_back },
+      systemCalls: { swap_bank_and_travel_back },
       components: { Resource, CaravanMembers, EntityOwner, ForeignKey, Position },
     },
   } = useDojo();
@@ -56,11 +57,13 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
   }, [caravan]);
 
   const transferAndReturn = async () => {
-    await feed_hyperstructure_and_travel_back({
+    await swap_bank_and_travel_back({
       signer: account,
-      entity_id: caravan.caravanId,
-      hyperstructure_id: bank.entityId,
-      resources: resources.flatMap((resource) => Object.values(resource)),
+      sender_id: caravan.caravanId,
+      bank_id: bank.bankId,
+      inventoryIndex: 0,
+      resource_type: 253,
+      resource_amount: 1,
       destination_coord_x: returnPosition?.x || 0,
       destination_coord_y: returnPosition?.y || 0,
     });
@@ -153,7 +156,7 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
             variant={hasArrived ? "success" : "danger"}
             className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
           >
-            {hasArrived ? `Transfer And Return` : "On the way"}
+            {hasArrived ? `Swap And Return` : "On the way"}
           </Button>
         )}
         {isLoading && isMine && (

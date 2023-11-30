@@ -1,16 +1,12 @@
-import { OrderIcon } from "../../../elements/OrderIcon";
 import Button from "../../../elements/Button";
 import { ReactComponent as Map } from "../../../assets/icons/common/map.svg";
-import { orderNameDict, orders } from "@bibliothecadao/eternum";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { ReactComponent as Bank } from "../../../assets/icons/common/bank.svg";
-import ProgressBar from "../../../elements/ProgressBar";
-import clsx from "clsx";
-import { LaborAuction } from "../../cityview/realm/labor/LaborAuction";
 import { BankAuction } from "./BankAuction";
+import { BankInterface } from "../../../hooks/helpers/useBanks";
 
 type BanksListItemProps = {
-  bank: { x: number; y: number; z: number; name: string };
+  bank: BankInterface;
   onFeed?: () => void;
 };
 

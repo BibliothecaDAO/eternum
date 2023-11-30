@@ -38,12 +38,16 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
   const { realmEntityId, realmId, setRealmId, setRealmEntityId, realmEntityIds, setRealmEntityIds } = useRealmStore();
 
   const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: account.address })]);
+  // const entityIds = useEntityQuery([Has(Realm)]);
+  // console.log({ account: account.address });
 
   // set realm entity ids everytime the entity ids change
   useEffect(() => {
     let realmEntityIds = Array.from(entityIds)
       .map((id) => {
         const realm = getComponentValue(Realm, id);
+        const owner = getComponentValue(Owner, id);
+        console.log({ owner });
         if (realm) {
           return { realmEntityId: Number(id), realmId: realm?.realm_id };
         }

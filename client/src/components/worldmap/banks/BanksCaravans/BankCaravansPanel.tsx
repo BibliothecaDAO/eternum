@@ -6,10 +6,11 @@ import { FilterButton } from "../../../../elements/FilterButton";
 import { SortPanel } from "../../../../elements/SortPanel";
 import { CaravanDetails } from "../../../caravans/CaravanDetailsComponent";
 import { BankCaravan } from "./BankCaravan";
+import { BankInterface } from "../../../../hooks/helpers/useBanks";
 
 type BankCaravansPanelProps = {
   caravans: CaravanInterface[];
-  bank: { x: number; y: number; z: number; entityId: number };
+  bank: BankInterface;
 };
 
 export const BankCaravansPanel = ({ caravans, bank }: BankCaravansPanelProps) => {

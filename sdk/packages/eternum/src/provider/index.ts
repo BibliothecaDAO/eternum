@@ -16,7 +16,7 @@ import {
   InitializeHyperstructuresProps,
   MintResourcesProps,
   PurchaseLaborProps,
-  SendResourcesToHyperstructureProps,
+  SendResourcesToLocationProps,
   TransferResourcesProps,
   TravelProps,
   OffloadResourcesProps,
@@ -30,6 +30,7 @@ import {
   CreateAndMergeSoldiersProps,
   HealSoldiersProps,
   HarvestAllLaborProps,
+  SwapBankAndTravelBackProps,
 } from "../types";
 import { Call } from "starknet";
 
@@ -381,7 +382,7 @@ export class EternumProvider extends RPCProvider {
     });
   }
 
-  public async send_resources_to_hyperstructure(props: SendResourcesToHyperstructureProps) {
+  public async send_resources_to_location(props: SendResourcesToLocationProps) {
     const {
       sending_entity_id,
       resources,
@@ -435,6 +436,40 @@ export class EternumProvider extends RPCProvider {
       retryInterval: 500,
     });
   }
+
+  public swap_bank_and_travel_back = async (props: SwapBankAndTravelBackProps) => {
+    const {
+      sender_id,
+      inventoryIndex,
+      bank_id,
+      resource_type,
+      resource_amount,
+      // destination_coord_x,
+      // destination_coord_y,
+      signer,
+    } = props;
+
+    const tx = await this.executeMulti(signer, [
+      {
+        contractAddress: getContractByName(this.manifest, "resource_systems"),
+        entrypoint: "transfer_item",
+        calldata: [this.getWorldAddress(), sender_id, inventoryIndex, sender_id],
+      },
+      {
+        contractAddress: getContractByName(this.manifest, "bank_systems"),
+        entrypoint: "swap",
+        calldata: [this.getWorldAddress(), bank_id, sender_id, resource_type, resource_amount],
+      },
+      //{
+      //contractAddress: getContractByName(this.manifest, "travel_systems"),
+      //entrypoint: "travel",
+      //calldata: [this.getWorldAddress(), sender_id, destination_coord_x, destination_coord_y],
+      //},
+    ]);
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  };
 
   public feed_hyperstructure_and_travel_back = async (props: FeedHyperstructureAndTravelBackPropos) => {
     const { entity_id, resources, hyperstructure_id, destination_coord_x, destination_coord_y, signer } = props;
