@@ -27,6 +27,7 @@ mod bank_systems {
             self: @ContractState, 
             world: IWorldDispatcher, 
             bank_id: u128, 
+            bank_swap_resource_cost_index: u8, 
             entity_id: u128, 
             bought_resource_type: u8, 
             bought_resource_amount: u128
@@ -41,7 +42,8 @@ mod bank_systems {
             InternalCaravanSystemsImpl::check_arrival_time(world, entity_id);
             InternalCaravanSystemsImpl::check_position(world, entity_id, bank_id);
 
-            let mut bank_auction = get!(world, (bank_id, bought_resource_type), BankAuction);
+            let mut bank_auction 
+                = get!(world, (bank_id, bought_resource_type, bank_swap_resource_cost_index ), BankAuction);
             assert(bank_auction.per_time_unit != 0, 'auction not found');
 
             let mut bank_auction_vrgda = bank_auction.to_LinearVRGDA();
@@ -49,7 +51,8 @@ mod bank_systems {
                 = bank_auction.get_time_since_start_fixed();
 
             let zero_fixed = Fixed {sign: false, mag: 0};
-            let swap_cost_resources = get!(world, bought_resource_type, BankSwapResourceCost);
+            let swap_cost_resources 
+                = get!(world, (bought_resource_type, bank_swap_resource_cost_index), BankSwapResourceCost);
 
             let mut index = 0_usize;
             loop {
