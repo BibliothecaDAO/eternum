@@ -49,20 +49,29 @@ fn setup() -> (IWorldDispatcher, u128, u128, IBankSystemsDispatcher,) {
     let bank_id = bank_config_dispatcher.create_bank(
         world,
         bank_coord,
-        array![(
-            // shekels cost 500 wheat, 200 fish and 300 coal
+        array![
+            (
+                // 1 shekel costs 5 wheat, 2 fish and 3 coal
+                ResourceTypes::SHEKELS, 
+                array![
+                    (ResourceTypes::WHEAT, 5),
+                    (ResourceTypes::FISH, 2),
+                    (ResourceTypes::COAL, 3),
+                ].span()
+            ),
+
+            (
+            // shekels cost 2 dragonhide
             ResourceTypes::SHEKELS, 
             array![
-                (ResourceTypes::WHEAT, 5),
-                (ResourceTypes::FISH, 2),
-                (ResourceTypes::COAL, 3),
+                (ResourceTypes::DRAGONHIDE, 2),
             ].span()
-        )].span()
+        ),
+        ].span()
     );
 
 
     // create bank auction for shekels
-    let zone: u8 = 5;
     let decay_constant: u128 = _0_1;
     let per_time_unit: u128 = 50;
     let price_update_interval: u128 = 10;
@@ -70,7 +79,8 @@ fn setup() -> (IWorldDispatcher, u128, u128, IBankSystemsDispatcher,) {
         world,
         1,
         array![
-            ResourceTypes::SHEKELS, 
+            (ResourceTypes::SHEKELS, 0), // the one where shekels cost fish, wheat and coal
+            (ResourceTypes::SHEKELS, 1), // the one where shekels cost dragonhide
         ].span(),
         decay_constant,
         per_time_unit,
@@ -112,6 +122,11 @@ fn setup() -> (IWorldDispatcher, u128, u128, IBankSystemsDispatcher,) {
             resource_type: ResourceTypes::COAL,
             balance: 500
         },
+        Resource {
+            entity_id: transport_id,
+            resource_type: ResourceTypes::DRAGONHIDE,
+            balance: 500
+        },
     ));
 
 
@@ -131,7 +146,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, IBankSystemsDispatcher,) {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_bank_swap() {
+fn test_bank_swap_for_wheat_fish_and_coal() {
     let (world, bank_id, transport_id, bank_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(
@@ -141,7 +156,7 @@ fn test_bank_swap() {
     let shekels_bought = 80;
 
     bank_systems_dispatcher.swap(
-        world, bank_id, transport_id, 
+        world, bank_id, 0, transport_id, 
         ResourceTypes::SHEKELS, shekels_bought
     );
 
@@ -154,8 +169,41 @@ fn test_bank_swap() {
     let transport_coal_resource = get!(world, (transport_id, ResourceTypes::COAL), Resource);
     assert(transport_coal_resource.balance == 500 - 258, 'wrong coal balance');
 
-    let bank_zone = 1;
-    let bank_auction = get!(world, (bank_zone, ResourceTypes::SHEKELS), BankAuction);
+    let bank_auction = get!(world, (bank_id, ResourceTypes::SHEKELS, 0), BankAuction);
+    assert(bank_auction.sold == shekels_bought, 'wrong auction sold');
+
+    // ensure no excess shekel was minted
+    let bank_shekel_resource = get!(world, (bank_id, ResourceTypes::SHEKELS), Resource);
+    assert(bank_shekel_resource.balance == 0, 'wrong bank balance');
+
+    // ensure item was added to transport's inventory
+    let transport_inventory = get!(world, (transport_id), Inventory);
+    assert(transport_inventory.items_count == 1, 'wrong inventory count');
+
+}
+
+
+#[test]
+#[available_gas(3000000000000)]
+fn test_bank_swap_for_dragonhide() {
+    let (world, bank_id, transport_id, bank_systems_dispatcher) = setup();
+
+    starknet::testing::set_contract_address(
+        contract_address_const::<'transport'>()
+    );
+
+    let shekels_bought = 80;
+
+    bank_systems_dispatcher.swap(
+        world, bank_id, 1, transport_id, 
+        ResourceTypes::SHEKELS, shekels_bought
+    );
+
+    let transport_dragonhide_resource = get!(world, (transport_id, ResourceTypes::DRAGONHIDE), Resource);
+    assert(transport_dragonhide_resource.balance == 500 - 172, 'wrong fish balance');
+
+
+    let bank_auction = get!(world, (bank_id, ResourceTypes::SHEKELS, 1), BankAuction);
     assert(bank_auction.sold == shekels_bought, 'wrong auction sold');
 
     // ensure no excess shekel was minted
@@ -181,7 +229,7 @@ fn test_bank_swap__wrong_caller() {
     let shekels_bought = 80;
 
     bank_systems_dispatcher.swap(
-        world, bank_id, transport_id, 
+        world, bank_id, 0, transport_id, 
         ResourceTypes::SHEKELS, shekels_bought
     );
 }
@@ -208,7 +256,7 @@ fn test_bank_swap__wrong_transport_position() {
 
     let shekels_bought = 80;
     bank_systems_dispatcher.swap(
-        world, bank_id, transport_id, 
+        world, bank_id, 0, transport_id, 
         ResourceTypes::SHEKELS, shekels_bought
     );
 }
@@ -234,7 +282,7 @@ fn test_bank_swap__wrong_transport_arrival_time() {
 
     let shekels_bought = 80;
     bank_systems_dispatcher.swap(
-        world, bank_id, transport_id, 
+        world, bank_id, 0, transport_id, 
         ResourceTypes::SHEKELS, shekels_bought
     );
 }
@@ -251,7 +299,7 @@ fn test_bank_swap__no_auction() {
 
     let dragonhide_bought = 80;
     bank_systems_dispatcher.swap(
-        world, bank_id, transport_id, 
+        world, bank_id, 0, transport_id, 
         ResourceTypes::DRAGONHIDE, dragonhide_bought
     );
 }

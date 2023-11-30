@@ -864,7 +864,7 @@
     {
       "name": "bank_systems",
       "address": "0x22915d02287759320f721a3e61836fe3dc1ed68fc8a66fdd2c2f7a8cf1ff4f8",
-      "class_hash": "0x6ff41f4353728446a7cbcc0599172bc12e4d1db874f3de59ffdafcebfaf5d1f",
+      "class_hash": "0x15c006a60ff194c13cf4367176b335ec9c7b168339206f154f2cc338c4044a6",
       "abi": [
         {
           "type": "impl",
@@ -921,6 +921,10 @@
                   "type": "core::integer::u128"
                 },
                 {
+                  "name": "bank_swap_resource_cost_index",
+                  "type": "core::integer::u8"
+                },
+                {
                   "name": "entity_id",
                   "type": "core::integer::u128"
                 },
@@ -960,7 +964,6 @@
         "Bank",
         "BankAuction",
         "BankSwapResourceCost",
-        "Position",
         "Resource",
         "ResourceCost"
       ],
@@ -1423,7 +1426,7 @@
     {
       "name": "config_systems",
       "address": "0x74c3dd7b64a0c8ad6a27276b9ec6a628774028734ea46cf3970ef185e35247d",
-      "class_hash": "0x6512964e0a4deb28900b0ca0ce15494e845322fc8a05efe0d3d08b8565c4a6a",
+      "class_hash": "0x27b7c99dfe4b6ad980d50eb55426a81a91cb9839f3643548aa6aba2e56dd1ec",
       "abi": [
         {
           "type": "impl",
@@ -1983,11 +1986,11 @@
         },
         {
           "type": "struct",
-          "name": "core::array::Span::<core::integer::u8>",
+          "name": "core::array::Span::<(core::integer::u8, core::integer::u32)>",
           "members": [
             {
               "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u8>"
+              "type": "@core::array::Array::<(core::integer::u8, core::integer::u32)>"
             }
           ]
         },
@@ -2032,8 +2035,8 @@
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "resource_types",
-                  "type": "core::array::Span::<core::integer::u8>"
+                  "name": "bank_swap_resource_cost_keys",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u32)>"
                 },
                 {
                   "name": "decay_constant",
@@ -4668,8 +4671,13 @@
           "key": true
         },
         {
-          "name": "resource_type",
+          "name": "bank_gives_resource_type",
           "type": "u8",
+          "key": true
+        },
+        {
+          "name": "bank_swap_resource_cost_index",
+          "type": "u32",
           "key": true
         },
         {
@@ -4703,7 +4711,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x4ca0072a97f2d9c06d744492af6d178a8e48de79e0ffc0d0b4cdc20124d7069",
+      "class_hash": "0x4cf509fead24ee1ab7cb10675c54c279fccef036acf1c908d97bd7636068a",
       "abi": [
         {
           "type": "function",
@@ -4870,8 +4878,13 @@
       "name": "BankSwapResourceCost",
       "members": [
         {
-          "name": "resource_type",
+          "name": "bank_gives_resource_type",
           "type": "u8",
+          "key": true
+        },
+        {
+          "name": "index",
+          "type": "u32",
           "key": true
         },
         {
@@ -4885,7 +4898,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x2b5fe15608d7c849bbeb83919f13926f49ac746563bc3a48965553833f1648e",
+      "class_hash": "0x12851c84251a2355c79ff2037a6c5f6ecc83c2e3b15dcca3c27f4a8c2cba30",
       "abi": [
         {
           "type": "function",

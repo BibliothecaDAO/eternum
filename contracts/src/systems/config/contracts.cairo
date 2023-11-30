@@ -579,6 +579,8 @@ mod config_systems {
 
             // add swap cost
             let mut swap_cost_resources = swap_cost_resources;
+            
+            let mut index = 0;
             loop {
                 match swap_cost_resources.pop_front() {
                     Option::Some((exchanged_resource_type, swap_resources)) => {
@@ -586,7 +588,7 @@ mod config_systems {
                         let swap_resource_cost_id: ID = world.uuid().into();
                         let swap_resources_count = (*swap_resources).len();
                         
-                        let mut index = 0;
+                        let mut jndex = 0;
                         let mut swap_resources = * swap_resources;
                         loop {
                             match swap_resources.pop_front() {
@@ -596,24 +598,28 @@ mod config_systems {
                                     set!(world, (
                                         ResourceCost {
                                             entity_id: swap_resource_cost_id,
-                                            index,
+                                            index: jndex,
                                             resource_type: *resource_type,
                                             amount: *resource_amount
                                         }
                                     ));
 
-                                    index += 1;
+                                    jndex += 1;
                                 },
                                 Option::None => {break;}
                             };
                         };
+
                         set!(world, (
                             BankSwapResourceCost {
-                                resource_type: *exchanged_resource_type,
+                                bank_gives_resource_type: *exchanged_resource_type,
+                                index,
                                 resource_cost_id: swap_resource_cost_id,
                                 resource_cost_count: swap_resources_count
                             }
                         ));
+
+                        index += 1;
                     },
                     Option::None => {break;}
                 }
@@ -640,7 +646,7 @@ mod config_systems {
             self: @ContractState,
             world: IWorldDispatcher,
             bank_id: u128, 
-            resource_types: Span<u8>,
+            bank_swap_resource_cost_keys: Span<(u8, u32)>,
             decay_constant: u128,
             per_time_unit: u128,
             price_update_interval: u128,
@@ -653,14 +659,18 @@ mod config_systems {
 
             let mut index = 0;
             loop {
-                if index == resource_types.len() {
+                if index == bank_swap_resource_cost_keys.len() {
                     break;
                 }
+
+                let (bank_gives_resource_type, bank_swap_resource_cost_index) 
+                    = *bank_swap_resource_cost_keys.at(index);
 
                 set!(world, (
                     BankAuction {
                         bank_id,
-                        resource_type: *resource_types.at(index),
+                        bank_gives_resource_type,
+                        bank_swap_resource_cost_index,
                         decay_constant_mag: decay_constant,
                         decay_constant_sign: false,
                         per_time_unit,

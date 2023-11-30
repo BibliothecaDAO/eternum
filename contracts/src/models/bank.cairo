@@ -15,7 +15,9 @@ struct Bank{
 #[derive(Model, Copy, Drop, Serde)]
 struct BankSwapResourceCost {
     #[key]
-    resource_type: u8,
+    bank_gives_resource_type: u8,
+    #[key]
+    index: u32,
     resource_cost_id: u128,
     resource_cost_count: u32,
 }
@@ -25,7 +27,9 @@ struct BankAuction {
     #[key]
     bank_id: u128,
     #[key]
-    resource_type: u8,
+    bank_gives_resource_type: u8,
+    #[key]
+    bank_swap_resource_cost_index: u32,
     decay_constant_mag: u128,
     decay_constant_sign: bool,
     per_time_unit: u128,
@@ -106,7 +110,8 @@ mod tests {
     fn test_auction_get_price() {
         let auction = BankAuction {
             bank_id: 1,
-            resource_type: 0,
+            bank_gives_resource_type: 1,
+            bank_swap_resource_cost_index: 1,
             decay_constant_mag: _0_1,
             decay_constant_sign: false,
             per_time_unit: 50,
