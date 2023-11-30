@@ -113,13 +113,40 @@ SecondaryPopup.Head = ({
   </div>
 );
 
-SecondaryPopup.Body = ({ width = null, children }: { width?: string | null; children: React.ReactNode }) => (
-  <div
-    className={`${
-      width ? "" : "min-w-[438px]"
-    } relative z-10 bg-gray border flex flex-col border-white rounded-tr-[4px] rounded-b-[4px]`}
-    style={{ width: width ? width : "" }}
-  >
-    {children}
-  </div>
-);
+SecondaryPopup.Body = ({ width = null, children }: { width?: string | null; children: React.ReactNode }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [maxHeight, setMaxHeight] = useState<number | null>(null);
+
+  const calculateMaxHeight = () => {
+    if (ref && ref.current) {
+      // get top position of the popup
+      const popupTop = ref.current.getBoundingClientRect().top;
+      // get the height of the window
+      const windowHeight = window.innerHeight;
+      // calculate the max height of the popup
+      const maxHeight = windowHeight - popupTop - 20;
+      // set the max height of the popup
+      setMaxHeight(maxHeight);
+    }
+  };
+  // handle resize
+  useEffect(() => {
+    calculateMaxHeight();
+    window.addEventListener("resize", calculateMaxHeight);
+    return () => {
+      window.removeEventListener("resize", calculateMaxHeight);
+    };
+  }, [ref]);
+
+  return (
+    <div
+      ref={ref}
+      className={`${
+        width ? "" : "min-w-[438px]"
+      } relative z-10 bg-gray border flex flex-col border-white rounded-tr-[4px] rounded-b-[4px] overflow-auto`}
+      style={{ width: width ? width : "", maxHeight: maxHeight ? `${maxHeight}px` : "" }}
+    >
+      {children}
+    </div>
+  );
+};

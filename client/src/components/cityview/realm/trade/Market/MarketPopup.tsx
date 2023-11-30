@@ -184,7 +184,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
             <div className="mr-0.5">Marketplace</div>
           </div>
         </SecondaryPopup.Head>
-        <SecondaryPopup.Body width={"500px"}>
+        <SecondaryPopup.Body width={"520px"}>
           <Tabs
             selectedIndex={isBuy ? 1 : 0}
             onChange={(index: any) => setIsBuy(index === 1)}
@@ -231,7 +231,7 @@ const MarketplaceOverviewPanel = ({
 
   const sortingParams = useMemo(() => {
     return [
-      { label: "Resource", sortKey: "resource", className: "w-[100px]" },
+      { label: "Resource", sortKey: "resource", className: "w-[120px]" },
       { label: "Best price", sortKey: "price", className: "w-[100px] ml-4" },
       { label: "Available Resources", sortKey: "available", className: "ml-auto w-[150px]" },
       { label: "Offers", sortKey: "offers", className: "w-[100px]" },
@@ -301,14 +301,14 @@ const OverviewResourceRow = ({ summary, onClick }: { summary: ResourceOffersSumm
   const resource = findResourceById(summary.resourceId);
 
   return (
-    <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-1 grid-cols-[100px,100px,1fr,100px,100px] gap-4 text-lightest text-xxs">
+    <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-1 grid-cols-[120px,100px,1fr,100px,100px] gap-4 text-lightest text-xxs">
       <div className="flex items-center">
-        <ResourceIcon className="mr-2" withTooltip={false} resource={resource.trait} size="sm" />
-        {resource.trait}
+        <ResourceIcon containerClassName="mr-2 w-min" withTooltip={false} resource={resource.trait} size="sm" />
+        <div>{resource.trait}</div>
       </div>
       <div className="flex items-center text-gold">
-        {summary.bestPrice !== Infinity ? summary.bestPrice.toFixed(2) : 0}
-        <ResourceIcon className="ml-2" resource="Shekels" size="sm" />
+        {summary.bestPrice !== Infinity ? summary.bestPrice.toFixed(2) : (0).toFixed(2)}
+        <ResourceIcon containerClassName="ml-2 w-min" resource="Shekels" size="sm" />
       </div>
       <div></div>
       <div>
@@ -427,7 +427,12 @@ const ResourceOfferRow = ({
   return (
     <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-1 grid-cols-5 gap-4 text-lightest text-xxs">
       <div className="flex items-center">
-        <ResourceIcon className="mr-2" withTooltip={false} resource={isBuy ? "Shekels" : resource.trait} size="sm" />
+        <ResourceIcon
+          containerClassName="mr-2 w-min"
+          withTooltip={false}
+          resource={isBuy ? "Shekels" : resource.trait}
+          size="sm"
+        />
         {divideByPrecision(offer.resourcesGive[0].amount)}
       </div>
       <div>
@@ -437,7 +442,7 @@ const ResourceOfferRow = ({
       </div>
       <div className="flex items-center text-gold">
         {divideByPrecision(offer.resourcesGet[0].amount)}
-        <ResourceIcon className="ml-2" resource={!isBuy ? "Shekels" : resource.trait} size="sm" />
+        <ResourceIcon containerClassName="ml-2 w-min" resource={!isBuy ? "Shekels" : resource.trait} size="sm" />
       </div>
 
       <div className="flex items-center">
