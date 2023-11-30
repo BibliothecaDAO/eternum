@@ -173,8 +173,14 @@ export const World = () => {
         {/* <ContextsModule /> */}
       </TopContainer>
       <ContentContainer>
-        <WorldMapMenuModule />
-        <RealmManagementModule />
+        <Switch location={locationType}>
+          <Route path="map">
+            <WorldMapMenuModule />
+          </Route>
+          <Route path="realm">
+            <RealmManagementModule />
+          </Route>
+        </Switch>
       </ContentContainer>
       <BottomMiddleContainer>{/* <WolrdMapLayersModule /> */}</BottomMiddleContainer>
       <BottomRightContainer>

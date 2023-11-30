@@ -10,9 +10,7 @@ const WorldMapMenuModule = () => {
 
   useEffect(() => {
     if (location.includes("/map")) {
-      setTimeout(() => {
-        setShowMenu(true);
-      }, 1000);
+      setShowMenu(true);
     } else {
       setShowMenu(false);
     }

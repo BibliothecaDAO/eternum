@@ -15,9 +15,7 @@ const RealmManagementModule = () => {
 
   useEffect(() => {
     if (!location.includes("/map") && realm) {
-      setTimeout(() => {
-        setShowMenu(true);
-      }, 350);
+      setShowMenu(true);
     } else {
       setShowMenu(false);
     }
