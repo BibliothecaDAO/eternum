@@ -28,6 +28,7 @@ import {
   StealProps,
   LevelUpProps,
   SetAddressNameProps,
+  CreateGuildProps,
 } from "../types";
 import { Call } from "starknet";
 
@@ -612,6 +613,21 @@ export class EternumProvider extends RPCProvider {
       calldata: [this.getWorldAddress(), name],
     });
 
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async create_guild(props: CreateGuildProps) {
+    const { guild_id, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "guild_systems"),
+      entrypoint: "create_guild",
+      calldata: [
+        this.getWorldAddress(),
+        guild_id,
+      ],
+    });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
     });

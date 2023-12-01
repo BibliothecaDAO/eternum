@@ -195,3 +195,8 @@ export interface OffloadResourcesProps extends SystemSigner {
   receiving_entity_id: num.BigNumberish;
   transport_id: num.BigNumberish;
 }
+
+
+export interface CreateGuildProps extends SystemSigner {
+  guild_id: num.BigNumberish;
+}

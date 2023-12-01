@@ -8,10 +8,17 @@ import TextInput from "../elements/TextInput";
 import clsx from "clsx";
 import { CreateRoomParams } from "@web3mq/client";
 import { ToastStateType, ToastState } from "../elements/ToastState";
+import { useDojo } from "../DojoContext";
 
 type GuildType = "public" | "request";
 
 export const CreateGuildComponent = () => {
+  const {
+    setup: {
+      systemCalls: { create_guild },
+    },
+    account: { account },
+  } = useDojo();
   const { client } = useChat();
   const [showModal, setShowModal] = useState(false);
   const [toastState, setToastState] = useState<ToastStateType>();
@@ -31,7 +38,11 @@ export const CreateGuildComponent = () => {
       },
     };
     try {
-      await client.channel.createRoom(params);
+      const res = await client.channel.createRoom(params);
+      await create_guild({
+        signer: account,
+        guild_id: res.groupid,
+      });
       setIsLoading(false);
       setShowModal(false);
     } catch (e) {

@@ -192,3 +192,27 @@ export function useGetRealms(): { realms: RealmExtended[] } {
     realms,
   };
 }
+export function useGetGuilds(): { guilds: any[] } {
+  const {
+    setup: {
+      components: { Guild },
+    },
+  } = useDojo();
+
+  const realmEntityIds = useEntityQuery([Has(Guild)]);
+
+  const guilds: any[] = useMemo(
+    () =>
+      Array.from(realmEntityIds).map((entityId) => {
+        const guild = getComponentValue(Guild, entityId) as any;
+        console.log(guild, 'guild')
+        guild.entity_id = entityId;
+        return guild;
+      }),
+    [realmEntityIds],
+  );
+
+  return {
+    guilds,
+  };
+}

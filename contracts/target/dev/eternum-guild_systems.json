@@ -101,12 +101,12 @@
     "0x29d7d57c04a880978e7b3689f6218e507f3be17588744b58dc17762447ad0e7",
     "0x37",
     "0x3c1ad3a81104b00c2971ced68d7cfe6fc6de52b964d148d18ff4ecc463220b",
-    "0x68a6ba9bd4bbe8807ee9086bd238764a9bcf7d3f3acb4fa437f44a93d95699",
-    "0x3074364440f3cf41fe6f20902b5c75ecd6dba0e96f44ac9ace3356a9c6cd842",
+    "0xdfa57a5b1e825d0954f91bbd5b69098a43b46d60b044acc3bcd56c99bdf74c",
+    "0x39f0ca740afa3faf453eca3d567088dba525777c403efe4a424fba40d03ca30",
     "0x3a",
     "0x800000000000000f00000000000000000000000000000003",
     "0x3b",
-    "0x3b458b73a344f5f67d7985c6106f39d55e59b49b4ae49e1cee6f9262fb9871c",
+    "0x2b01036db4a7252d428256eaa7d8e1c70282351ae233de04a78b5996d52c743",
     "0x3c",
     "0x436c61737348617368",
     "0x11771f2d3e7dc3ed5afe7eae405dfd127619490dec57ceaa021ac8bc2b9b315",
@@ -1223,19 +1223,19 @@
       ],
       [
         58,
-        "eternum::systems::guild::contracts::guild_systems::world_dispatcher::ContractMemberState"
+        "eternum::systems::guild::contract::guild_systems::world_dispatcher::ContractMemberState"
       ],
       [
         59,
-        "eternum::systems::guild::contracts::guild_systems::ContractState"
+        "eternum::systems::guild::contract::guild_systems::ContractState"
       ],
       [
         60,
-        "Tuple<eternum::systems::guild::contracts::guild_systems::ContractState, Unit>"
+        "Tuple<eternum::systems::guild::contract::guild_systems::ContractState, Unit>"
       ],
       [
         61,
-        "core::panics::PanicResult::<(eternum::systems::guild::contracts::guild_systems::ContractState, ())>"
+        "core::panics::PanicResult::<(eternum::systems::guild::contract::guild_systems::ContractState, ())>"
       ],
       [
         62,
@@ -1437,15 +1437,15 @@
       ],
       [
         42,
-        "struct_construct<eternum::systems::guild::contracts::guild_systems::world_dispatcher::ContractMemberState>"
+        "struct_construct<eternum::systems::guild::contract::guild_systems::world_dispatcher::ContractMemberState>"
       ],
       [
         43,
-        "struct_construct<eternum::systems::guild::contracts::guild_systems::ContractState>"
+        "struct_construct<eternum::systems::guild::contract::guild_systems::ContractState>"
       ],
       [
         44,
-        "store_temp<eternum::systems::guild::contracts::guild_systems::ContractState>"
+        "store_temp<eternum::systems::guild::contract::guild_systems::ContractState>"
       ],
       [
         45,
@@ -1453,15 +1453,15 @@
       ],
       [
         46,
-        "function_call<user@eternum::systems::guild::contracts::guild_systems::Upgradeable::upgrade>"
+        "function_call<user@eternum::systems::guild::contract::guild_systems::Upgradeable::upgrade>"
       ],
       [
         47,
-        "enum_match<core::panics::PanicResult::<(eternum::systems::guild::contracts::guild_systems::ContractState, ())>>"
+        "enum_match<core::panics::PanicResult::<(eternum::systems::guild::contract::guild_systems::ContractState, ())>>"
       ],
       [
         48,
-        "drop<Tuple<eternum::systems::guild::contracts::guild_systems::ContractState, Unit>>"
+        "drop<Tuple<eternum::systems::guild::contract::guild_systems::ContractState, Unit>>"
       ],
       [
         49,
@@ -1541,11 +1541,11 @@
       ],
       [
         68,
-        "snapshot_take<eternum::systems::guild::contracts::guild_systems::ContractState>"
+        "snapshot_take<eternum::systems::guild::contract::guild_systems::ContractState>"
       ],
       [
         69,
-        "drop<eternum::systems::guild::contracts::guild_systems::ContractState>"
+        "drop<eternum::systems::guild::contract::guild_systems::ContractState>"
       ],
       [
         70,
@@ -1557,7 +1557,7 @@
       ],
       [
         72,
-        "function_call<user@eternum::systems::guild::contracts::guild_systems::GuildSystemsImpl::create_guild>"
+        "function_call<user@eternum::systems::guild::contract::guild_systems::GuildSystemsImpl::create_guild>"
       ],
       [
         73,
@@ -1613,19 +1613,19 @@
       ],
       [
         86,
-        "struct_deconstruct<eternum::systems::guild::contracts::guild_systems::ContractState>"
+        "struct_deconstruct<eternum::systems::guild::contract::guild_systems::ContractState>"
       ],
       [
         87,
-        "snapshot_take<eternum::systems::guild::contracts::guild_systems::world_dispatcher::ContractMemberState>"
+        "snapshot_take<eternum::systems::guild::contract::guild_systems::world_dispatcher::ContractMemberState>"
       ],
       [
         88,
-        "store_temp<eternum::systems::guild::contracts::guild_systems::world_dispatcher::ContractMemberState>"
+        "store_temp<eternum::systems::guild::contract::guild_systems::world_dispatcher::ContractMemberState>"
       ],
       [
         89,
-        "function_call<user@eternum::systems::guild::contracts::guild_systems::world_dispatcher::InternalContractMemberStateImpl::read>"
+        "function_call<user@eternum::systems::guild::contract::guild_systems::world_dispatcher::InternalContractMemberStateImpl::read>"
       ],
       [
         90,
@@ -1673,23 +1673,23 @@
       ],
       [
         101,
-        "struct_construct<Tuple<eternum::systems::guild::contracts::guild_systems::ContractState, Unit>>"
+        "struct_construct<Tuple<eternum::systems::guild::contract::guild_systems::ContractState, Unit>>"
       ],
       [
         102,
-        "enum_init<core::panics::PanicResult::<(eternum::systems::guild::contracts::guild_systems::ContractState, ())>, 0>"
+        "enum_init<core::panics::PanicResult::<(eternum::systems::guild::contract::guild_systems::ContractState, ())>, 0>"
       ],
       [
         103,
-        "store_temp<core::panics::PanicResult::<(eternum::systems::guild::contracts::guild_systems::ContractState, ())>>"
+        "store_temp<core::panics::PanicResult::<(eternum::systems::guild::contract::guild_systems::ContractState, ())>>"
       ],
       [
         104,
-        "drop<eternum::systems::guild::contracts::guild_systems::world_dispatcher::ContractMemberState>"
+        "drop<eternum::systems::guild::contract::guild_systems::world_dispatcher::ContractMemberState>"
       ],
       [
         105,
-        "enum_init<core::panics::PanicResult::<(eternum::systems::guild::contracts::guild_systems::ContractState, ())>, 1>"
+        "enum_init<core::panics::PanicResult::<(eternum::systems::guild::contract::guild_systems::ContractState, ())>, 1>"
       ],
       [
         106,
@@ -2391,15 +2391,15 @@
     "user_func_names": [
       [
         0,
-        "eternum::systems::guild::contracts::guild_systems::__wrapper__dojo_resource"
+        "eternum::systems::guild::contract::guild_systems::__wrapper__dojo_resource"
       ],
       [
         1,
-        "eternum::systems::guild::contracts::guild_systems::__wrapper__Upgradeable__upgrade"
+        "eternum::systems::guild::contract::guild_systems::__wrapper__Upgradeable__upgrade"
       ],
       [
         2,
-        "eternum::systems::guild::contracts::guild_systems::__wrapper__GuildSystemsImpl__create_guild"
+        "eternum::systems::guild::contract::guild_systems::__wrapper__GuildSystemsImpl__create_guild"
       ],
       [
         3,
@@ -2411,7 +2411,7 @@
       ],
       [
         5,
-        "eternum::systems::guild::contracts::guild_systems::Upgradeable::upgrade"
+        "eternum::systems::guild::contract::guild_systems::Upgradeable::upgrade"
       ],
       [
         6,
@@ -2423,7 +2423,7 @@
       ],
       [
         8,
-        "eternum::systems::guild::contracts::guild_systems::GuildSystemsImpl::create_guild"
+        "eternum::systems::guild::contract::guild_systems::GuildSystemsImpl::create_guild"
       ],
       [
         9,
@@ -2435,7 +2435,7 @@
       ],
       [
         11,
-        "eternum::systems::guild::contracts::guild_systems::world_dispatcher::InternalContractMemberStateImpl::read"
+        "eternum::systems::guild::contract::guild_systems::world_dispatcher::InternalContractMemberStateImpl::read"
       ],
       [
         12,
@@ -2600,7 +2600,7 @@
     },
     {
       "type": "event",
-      "name": "eternum::systems::guild::contracts::guild_systems::Event",
+      "name": "eternum::systems::guild::contract::guild_systems::Event",
       "kind": "enum",
       "variants": []
     }

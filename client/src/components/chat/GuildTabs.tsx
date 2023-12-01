@@ -7,6 +7,7 @@ import { useChat } from "../../ChatContext";
 import { GroupPermissions } from "@web3mq/client";
 import { GroupPermissionValueType } from "@web3mq/client/dist/types";
 import GuildChat from "./GuildChat";
+import { useGetGuilds } from "../../hooks/helpers/useRealm";
 
 type ChatTabsProps = {};
 
@@ -26,6 +27,8 @@ export const GuildTabs = (props: ChatTabsProps) => {
   const [activeGuild, setActiveGuild] = useState<ChannelType>();
 
   const { loginFlow, client, loading, loggedIn } = useChat();
+  const { guilds } = useGetGuilds();
+  console.log(guilds, "guilds");
   // this should be moved
   const [loadingList, setLoadingList] = useState(false);
   // todo get ids from torii new contracts
@@ -68,7 +71,7 @@ export const GuildTabs = (props: ChatTabsProps) => {
       return userInfo.nickname || getShortAddress(userInfo.wallet_address) || getShortAddress(userInfo.userid);
     };
     const res = await client?.channel.queryGroups(guildIds, true);
-    let list  = res.map((item): ChannelType => {
+    let list = res.map((item): ChannelType => {
       return {
         creatorId: item.creator_id,
         groupid: item.groupid,

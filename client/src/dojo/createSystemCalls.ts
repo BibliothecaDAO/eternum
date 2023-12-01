@@ -29,7 +29,7 @@ import {
   AttackProps,
   StealProps,
   LevelUpProps,
-  SetAddressNameProps,
+  SetAddressNameProps, CreateGuildProps,
 } from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -155,6 +155,9 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
   const set_address_name = async (props: SetAddressNameProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.set_address_name(props)));
   };
+  const create_guild = async (props: CreateGuildProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.create_guild(props)));
+  };
 
   const isLive = async () => {
     try {
@@ -196,6 +199,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     complete_hyperstructure,
     travel,
     ungroup_and_regroup_soldiers,
+    create_guild,
   };
 }
 

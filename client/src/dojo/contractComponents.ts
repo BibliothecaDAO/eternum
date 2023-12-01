@@ -649,5 +649,19 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Guild: (() => {
+      const name = "Guild";
+      return defineComponent(
+          world,
+          {
+            guild_id: RecsType.Number,
+          },
+          {
+            metadata: {
+              name: name,
+            },
+          },
+      );
+    })(),
   };
 }
