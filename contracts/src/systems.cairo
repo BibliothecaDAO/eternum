@@ -8,3 +8,4 @@ mod combat;
 mod leveling;
 mod name;
 mod test;
+mod guild;
