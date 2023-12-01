@@ -864,7 +864,7 @@
     {
       "name": "bank_systems",
       "address": null,
-      "class_hash": "0x15c006a60ff194c13cf4367176b335ec9c7b168339206f154f2cc338c4044a6",
+      "class_hash": "0x193b43fcf70309aeb2f89a3ffe4ea06b6949b8f1fa0c16950f7b9888cd9cfd5",
       "abi": [
         {
           "type": "impl",
@@ -965,11 +965,14 @@
         "BankAuction",
         "BankSwapResourceCost",
         "Resource",
-        "ResourceCost"
+        "ResourceCost",
+        "Weight",
+        "WeightConfig"
       ],
       "writes": [
         "BankAuction",
-        "Resource"
+        "Resource",
+        "Weight"
       ],
       "computed": []
     },

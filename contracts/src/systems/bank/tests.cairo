@@ -2,6 +2,7 @@
 use eternum::models::bank::{BankAuction, BankAuctionTrait,BankSwapResourceCost};
 use eternum::models::position::{Coord, Position};
 use eternum::models::owner::Owner;
+use eternum::models::weight::Weight;
 use eternum::models::movable::ArrivalTime;
 use eternum::models::inventory::Inventory;
 use eternum::models::resources::{ResourceCost, Resource};
@@ -155,10 +156,19 @@ fn test_bank_swap_for_wheat_fish_and_coal() {
 
     let shekels_bought = 80;
 
+    let initial_transport_weight = get!(world, transport_id, Weight);
+
     bank_systems_dispatcher.swap(
         world, bank_id, 0, transport_id, 
         ResourceTypes::SHEKELS, shekels_bought
     );
+
+    let after_transport_weight = get!(world, transport_id, Weight);
+    assert(
+        after_transport_weight.value != initial_transport_weight.value,
+            'wrong weight value'
+        );
+
 
     let transport_wheat_resource = get!(world, (transport_id, ResourceTypes::WHEAT), Resource);
     assert(transport_wheat_resource.balance == 500 - 431, 'wrong wheat balance');
@@ -192,11 +202,20 @@ fn test_bank_swap_for_dragonhide() {
         contract_address_const::<'transport'>()
     );
 
+    let initial_transport_weight = get!(world, transport_id, Weight);
+
+
     let shekels_bought = 80;
 
     bank_systems_dispatcher.swap(
         world, bank_id, 1, transport_id, 
         ResourceTypes::SHEKELS, shekels_bought
+    );
+
+    let after_transport_weight = get!(world, transport_id, Weight);
+    assert(
+        after_transport_weight.value != initial_transport_weight.value,
+            'wrong weight value'
     );
 
     let transport_dragonhide_resource = get!(world, (transport_id, ResourceTypes::DRAGONHIDE), Resource);
