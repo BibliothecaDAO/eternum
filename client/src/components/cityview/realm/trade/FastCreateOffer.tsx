@@ -5,7 +5,6 @@ import { Headline } from "../../../../elements/Headline";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../elements/NumberInput";
 import { ResourcesIds, resources } from "@bibliothecadao/eternum";
-import { ReactComponent as ArrowSeparator } from "../../../../assets/icons/common/arrow-separator.svg";
 import { ReactComponent as Danger } from "../../../../assets/icons/common/danger.svg";
 import { ReactComponent as Donkey } from "../../../../assets/icons/units/donkey-circle.svg";
 import { Caravan } from "./Caravans/Caravan";
@@ -21,7 +20,6 @@ import clsx from "clsx";
 import { DONKEYS_PER_CITY, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 import { useResources } from "../../../../hooks/helpers/useResources";
 import ListSelect from "../../../../elements/ListSelect";
-import { set } from "mobx";
 
 type FastCreateOfferPopupProps = {
   resourceId: number;
@@ -36,7 +34,6 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose }: FastCreateO
   const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] = useState<{ [key: number]: number }>({});
   const [selectedResourcesGetAmounts, setSelectedResourcesGetAmounts] = useState<{ [key: number]: number }>({});
   const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
-  const [selectedRealmEntityId, setSelectedRealmEntityId] = useState<number | undefined>();
   const [selectedRealmId, setSelectedRealmId] = useState<number | undefined>();
   const [isNewCaravan, setIsNewCaravan] = useState(true);
   const [donkeysCount, setDonkeysCount] = useState(1);
@@ -78,7 +75,7 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose }: FastCreateO
         maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
           multiplyByPrecision(selectedResourcesGiveAmounts[id]),
         ),
-        taker_id: selectedRealmEntityId || 0,
+        taker_id: 0,
         taker_gives_resource_types: selectedResourceIdsGet,
         taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
           multiplyByPrecision(selectedResourcesGetAmounts[id]),
@@ -93,7 +90,7 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose }: FastCreateO
         maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
           multiplyByPrecision(selectedResourcesGiveAmounts[id]),
         ),
-        taker_id: selectedRealmEntityId || 0,
+        taker_id: 0,
         maker_transport_id: selectedCaravan,
         taker_gives_resource_types: selectedResourceIdsGet,
         taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
