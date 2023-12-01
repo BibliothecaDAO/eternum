@@ -277,7 +277,7 @@ const Naming = ({ onNext }) => {
                 title="Active Account: "
                 options={list().map((account) => ({
                   id: account.address,
-                  label: displayAddress(account.address),
+                  label: <div className="w-[225px] text-left">{displayAddress(account.address)}</div>,
                 }))}
                 value={account.address}
                 onChange={select}

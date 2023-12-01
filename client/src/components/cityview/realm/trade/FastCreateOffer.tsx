@@ -20,6 +20,8 @@ import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { DONKEYS_PER_CITY, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 import { useResources } from "../../../../hooks/helpers/useResources";
+import ListSelect from "../../../../elements/ListSelect";
+import { set } from "mobx";
 
 type FastCreateOfferPopupProps = {
   resourceId: number;
@@ -150,20 +152,18 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose }: FastCreateO
           />
         </div>
         <div className="flex justify-between m-2 text-xxs">
-          {!isLoading && (
-            <Button
-              className="!px-[6px] !py-[2px] w-full"
-              disabled={!canCreateOffer}
-              isLoading={isLoading}
-              onClick={() => {
-                createOrder();
-              }}
-              size="md"
-              variant={"primary"}
-            >
-              Create Order
-            </Button>
-          )}
+          <Button
+            className="!px-[6px] !py-[2px] w-full"
+            disabled={!canCreateOffer}
+            isLoading={isLoading}
+            onClick={() => {
+              createOrder();
+            }}
+            size="md"
+            variant={"primary"}
+          >
+            Create Order
+          </Button>
         </div>
       </SecondaryPopup.Body>
     </SecondaryPopup>
@@ -204,10 +204,14 @@ const SelectResourcesAmountPanel = ({
   const { realmEntityId } = useRealmStore();
 
   const swapResources = () => {
-    setSelectedResourceIdsGive(selectedResourceIdsGet);
-    setSelectedResourceIdsGet(selectedResourceIdsGive);
-    setSelectedResourcesGiveAmounts(selectedResourcesGetAmounts);
-    setSelectedResourcesGetAmounts(selectedResourcesGiveAmounts);
+    const tmpGet = [...selectedResourceIdsGet];
+    const tmpGive = [...selectedResourceIdsGive];
+    const tmpGetAmounts = { ...selectedResourcesGetAmounts };
+    const tmpGiveAmounts = { ...selectedResourcesGiveAmounts };
+    setSelectedResourceIdsGive(tmpGet);
+    setSelectedResourceIdsGet(tmpGive);
+    setSelectedResourcesGiveAmounts(tmpGetAmounts);
+    setSelectedResourcesGetAmounts(tmpGiveAmounts);
   };
 
   useEffect(() => {
@@ -241,18 +245,46 @@ const SelectResourcesAmountPanel = ({
                     });
                   }}
                 />
-                <div className="ml-2">
-                  <ResourceCost
-                    onClick={() => {
+                {id !== ResourcesIds.Shekels ? (
+                  <ListSelect
+                    className="w-full ml-2"
+                    style="black"
+                    options={resources
+                      .filter((res) => !selectedResourceIdsGet.includes(res.id))
+                      .map((res) => {
+                        const bal = getComponentValue(
+                          Resource,
+                          getEntityIdFromKeys([BigInt(realmEntityId), BigInt(res.id)]),
+                        );
+                        return {
+                          id: res.id,
+                          label: (
+                            <ResourceCost
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setSelectedResourcesGiveAmounts({
+                                  ...selectedResourcesGiveAmounts,
+                                  [id]: divideByPrecision(bal?.balance || 0),
+                                });
+                              }}
+                              resourceId={res.id}
+                              amount={divideByPrecision(bal?.balance || 0)}
+                            />
+                          ),
+                        };
+                      })}
+                    value={selectedResourceIdsGive[0]}
+                    onChange={(value) => {
+                      setSelectedResourceIdsGive([value]);
                       setSelectedResourcesGiveAmounts({
                         ...selectedResourcesGiveAmounts,
-                        [id]: divideByPrecision(resource?.balance || 0),
+                        [value]: 1,
                       });
                     }}
-                    resourceId={id}
-                    amount={divideByPrecision(resource?.balance || 0)}
                   />
-                </div>
+                ) : (
+                  <ResourceCost className="ml-2" resourceId={id} amount={divideByPrecision(resource?.balance || 0)} />
+                )}
               </div>
             );
           })}
@@ -277,7 +309,7 @@ const SelectResourcesAmountPanel = ({
           </Headline>
           {selectedResourceIdsGet.map((id) => {
             let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
-
+            console.log("id", id, selectedResourceIdsGet[0]);
             return (
               <div key={id} className="flex items-center w-full">
                 <NumberInput
@@ -291,9 +323,46 @@ const SelectResourcesAmountPanel = ({
                     });
                   }}
                 />
-                <div className="ml-2">
-                  <ResourceCost resourceId={id} amount={divideByPrecision(resource?.balance || 0)} />
-                </div>
+                {id !== ResourcesIds.Shekels ? (
+                  <ListSelect
+                    className="ml-2 w-full"
+                    style="black"
+                    options={resources
+                      .filter((res) => !selectedResourceIdsGive.includes(res.id))
+                      .map((res) => {
+                        const bal = getComponentValue(
+                          Resource,
+                          getEntityIdFromKeys([BigInt(realmEntityId), BigInt(res.id)]),
+                        );
+                        return {
+                          id: res.id,
+                          label: (
+                            <ResourceCost
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setSelectedResourcesGetAmounts({
+                                  ...selectedResourcesGetAmounts,
+                                  [id]: divideByPrecision(bal?.balance || 0),
+                                });
+                              }}
+                              resourceId={res.id}
+                              amount={divideByPrecision(bal?.balance || 0)}
+                            />
+                          ),
+                        };
+                      })}
+                    value={selectedResourceIdsGet[0]}
+                    onChange={(value) => {
+                      setSelectedResourceIdsGet([value]);
+                      setSelectedResourcesGetAmounts({
+                        ...selectedResourcesGetAmounts,
+                        [value]: 1,
+                      });
+                    }}
+                  />
+                ) : (
+                  <ResourceCost className="ml-2" resourceId={id} amount={divideByPrecision(resource?.balance || 0)} />
+                )}
               </div>
             );
           })}
