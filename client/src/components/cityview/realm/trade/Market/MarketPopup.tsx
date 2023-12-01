@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
 import TextInput from "../../../../../elements/TextInput";
 import Button from "../../../../../elements/Button";
-import { CreateOfferPopup } from "../CreateOffer";
 import { SortPanel } from "../../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../../elements/SortButton";
 import { ResourcesIds, findResourceById, orderNameDict, resources } from "@bibliothecadao/eternum";
@@ -17,6 +16,7 @@ import { AcceptOfferPopup } from "../AcceptOffer";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { divideByPrecision } from "../../../../../utils/utils";
 import clsx from "clsx";
+import { FastCreateOfferPopup } from "../FastCreateOffer";
 
 type MarketPopupProps = {
   onClose: () => void;
@@ -156,7 +156,14 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
 
   return (
     <>
-      {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
+      {showCreateOffer && (
+        <FastCreateOfferPopup
+          resourceId={selectedResource || 1}
+          isBuy={isBuy}
+          onClose={() => setShowCreateOffer(false)}
+          onCreate={() => {}}
+        />
+      )}
       <SecondaryPopup name="marketplace">
         <SecondaryPopup.Head onClose={onClose}>
           <div className="flex items-center space-x-1">
