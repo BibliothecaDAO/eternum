@@ -8,7 +8,6 @@ import { SortButton, SortInterface } from "../../../../../elements/SortButton";
 import { ResourcesIds, findResourceById, orderNameDict, resources } from "@bibliothecadao/eternum";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
 import { MarketInterface, useGetMarket } from "../../../../../hooks/helpers/useTrade";
-import { Tabs } from "../../../../../elements/tab";
 import { FiltersPanel } from "../../../../../elements/FiltersPanel";
 import { FilterButton } from "../../../../../elements/FilterButton";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
@@ -17,6 +16,7 @@ import { OrderIcon } from "../../../../../elements/OrderIcon";
 import { AcceptOfferPopup } from "../AcceptOffer";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { divideByPrecision } from "../../../../../utils/utils";
+import clsx from "clsx";
 
 type MarketPopupProps = {
   onClose: () => void;
@@ -33,25 +33,6 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
   const [showCreateOffer, setShowCreateOffer] = useState(false);
   const [isBuy, setIsBuy] = useState(false);
 
-  const tabs = [
-    {
-      key: "sell",
-      label: (
-        <div className="flex relative group flex-col items-center">
-          <div>Sell Resources</div>
-        </div>
-      ),
-    },
-    {
-      key: "Buy",
-      label: (
-        <div className="flex group relative flex-col items-center">
-          <div>Buy Resources</div>
-        </div>
-      ),
-    },
-  ];
-
   const marketOffers = useGetMarket({
     selectedResources: [],
     selectedOrders: [],
@@ -59,7 +40,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
     filterOwnOffers: false,
   });
 
-  const sellOffers = useMemo(() => {
+  const bidOffers = useMemo(() => {
     if (!marketOffers) return [];
 
     return marketOffers.filter(
@@ -67,16 +48,16 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
     );
   }, [marketOffers]);
 
-  const selectedResourceSellOffers = useMemo(() => {
-    if (!sellOffers) return [];
+  const selectedResourceBidOffers = useMemo(() => {
+    if (!bidOffers) return [];
 
-    return sellOffers
+    return bidOffers
       .filter((offer) => (selectedResource ? offer.resourcesGive[0].resourceId === selectedResource : true))
       .sort((a, b) => b.ratio - a.ratio);
-  }, [sellOffers, selectedResource]);
+  }, [bidOffers, selectedResource]);
 
-  const sellOffersSummary = useMemo(() => {
-    if (!sellOffers) return [];
+  const bidOffersSummary = useMemo(() => {
+    if (!bidOffers) return [];
 
     const summary: ResourceOffersSummary[] = [];
 
@@ -91,7 +72,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
       });
     });
 
-    sellOffers.forEach((offer) => {
+    bidOffers.forEach((offer) => {
       offer.resourcesGive.forEach((resource) => {
         const resourceIndex = summary.findIndex((summary) => summary.resourceId === resource.resourceId);
 
@@ -114,9 +95,9 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
     });
 
     return summary;
-  }, [sellOffers]);
+  }, [bidOffers]);
 
-  const buyOffers = useMemo(() => {
+  const askOffers = useMemo(() => {
     if (!marketOffers) return [];
 
     return marketOffers.filter(
@@ -124,16 +105,16 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
     );
   }, [marketOffers]);
 
-  const selectedResourceBuyOffers = useMemo(() => {
-    if (!buyOffers) return [];
+  const selectedResourceAskOffers = useMemo(() => {
+    if (!askOffers) return [];
 
-    return buyOffers
+    return askOffers
       .filter((offer) => offer.resourcesGet[0].resourceId === selectedResource)
       .sort((a, b) => b.ratio - a.ratio);
-  }, [buyOffers, selectedResource]);
+  }, [askOffers, selectedResource]);
 
-  const buyOffersSummary = useMemo(() => {
-    if (!buyOffers) return [];
+  const askOffersSummary = useMemo(() => {
+    if (!askOffers) return [];
 
     const summary: ResourceOffersSummary[] = [];
 
@@ -148,7 +129,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
       });
     });
 
-    buyOffers.forEach((offer) => {
+    askOffers.forEach((offer) => {
       offer.resourcesGet.forEach((resource) => {
         const resourceIndex = summary.findIndex((summary) => summary.resourceId === resource.resourceId);
 
@@ -171,9 +152,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
     });
 
     return summary;
-  }, [buyOffers]);
-
-  useEffect(() => {}, [buyOffers, buyOffersSummary, sellOffers, sellOffersSummary, marketOffers]);
+  }, [askOffers]);
 
   return (
     <>
@@ -184,22 +163,10 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
             <div className="mr-0.5">Marketplace</div>
           </div>
         </SecondaryPopup.Head>
-        <SecondaryPopup.Body width={"520px"}>
-          <Tabs
-            selectedIndex={isBuy ? 1 : 0}
-            onChange={(index: any) => setIsBuy(index === 1)}
-            variant="default"
-            className="h-full"
-          >
-            <Tabs.List className="!border-t-transparent">
-              {tabs.map((tab, index) => (
-                <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-              ))}
-            </Tabs.List>
-          </Tabs>
+        <SecondaryPopup.Body width={"600px"}>
           {selectedResource ? (
             <MarketplaceResourceOffersPanel
-              offers={isBuy ? selectedResourceBuyOffers : selectedResourceSellOffers}
+              offers={isBuy ? selectedResourceAskOffers : selectedResourceBidOffers}
               isBuy={isBuy}
               resourceId={selectedResource}
               onBack={() => setSelectedResource(null)}
@@ -207,8 +174,16 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
             />
           ) : (
             <MarketplaceOverviewPanel
-              offersSummary={isBuy ? buyOffersSummary : sellOffersSummary}
-              onSelect={setSelectedResource}
+              askOffersSummary={askOffersSummary}
+              bidOffersSummary={bidOffersSummary}
+              onBuy={(resourceId: number) => {
+                setIsBuy(true);
+                setSelectedResource(resourceId);
+              }}
+              onSell={(resourceId: number) => {
+                setIsBuy(false);
+                setSelectedResource(resourceId);
+              }}
               onCreate={() => setShowCreateOffer(true)}
             />
           )}
@@ -219,13 +194,17 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
 };
 
 const MarketplaceOverviewPanel = ({
-  onSelect,
+  onBuy,
+  onSell,
   onCreate,
-  offersSummary,
+  askOffersSummary,
+  bidOffersSummary,
 }: {
-  onSelect: (resourceId: number) => void;
+  onBuy: (resourceId: number) => void;
+  onSell: (resourceId: number) => void;
   onCreate: () => void;
-  offersSummary: ResourceOffersSummary[];
+  askOffersSummary: ResourceOffersSummary[];
+  bidOffersSummary: ResourceOffersSummary[];
 }) => {
   const [search, setSearch] = useState<string>("");
 
@@ -233,8 +212,8 @@ const MarketplaceOverviewPanel = ({
     return [
       { label: "Resource", sortKey: "resource", className: "w-[120px]" },
       { label: "Best price", sortKey: "price", className: "w-[100px] ml-4" },
-      { label: "Available Resources", sortKey: "available", className: "ml-auto w-[150px]" },
-      { label: "Offers", sortKey: "offers", className: "w-[100px]" },
+      { label: "Ask", sortKey: "ask", className: "ml-auto w-[120px] !justify-end mr-4" },
+      { label: "Bid", sortKey: "bid", className: " w-[120px] !justify-end" },
     ];
   }, []);
 
@@ -252,7 +231,7 @@ const MarketplaceOverviewPanel = ({
   }, [search]);
 
   return (
-    <div className="flex flex-col p-2">
+    <div className="flex flex-col p-3">
       <div className="flex items-center justify-between">
         <TextInput
           className="border border-gold !w-auto !text-light-pink !w-34 !flex-grow-0 text-xs"
@@ -287,8 +266,10 @@ const MarketplaceOverviewPanel = ({
           return (
             <OverviewResourceRow
               key={resource.id}
-              summary={offersSummary.find((summary) => summary.resourceId === resource.id)}
-              onClick={() => onSelect(resource.id)}
+              askSummary={askOffersSummary.find((summary) => summary.resourceId === resource.id)}
+              bidSummary={bidOffersSummary.find((summary) => summary.resourceId === resource.id)}
+              onBuy={() => onBuy(resource.id)}
+              onSell={() => onSell(resource.id)}
             />
           );
         })}
@@ -297,30 +278,49 @@ const MarketplaceOverviewPanel = ({
   );
 };
 
-const OverviewResourceRow = ({ summary, onClick }: { summary: ResourceOffersSummary; onClick: () => void }) => {
-  const resource = findResourceById(summary.resourceId);
+const OverviewResourceRow = ({
+  askSummary,
+  bidSummary,
+  onBuy,
+  onSell,
+}: {
+  askSummary: ResourceOffersSummary;
+  bidSummary: ResourceOffersSummary;
+  onBuy: () => void;
+  onSell: () => void;
+}) => {
+  const resource = findResourceById(bidSummary.resourceId);
 
   return (
-    <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-1 grid-cols-[120px,100px,1fr,100px,100px] gap-4 text-lightest text-xxs">
+    <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-1 grid-cols-[120px,100px,1fr,120px] gap-4 text-lightest text-xxs">
       <div className="flex items-center">
         <ResourceIcon containerClassName="mr-2 w-min" withTooltip={false} resource={resource.trait} size="sm" />
         <div>{resource.trait}</div>
       </div>
       <div className="flex items-center text-gold">
-        {summary.bestPrice !== Infinity ? summary.bestPrice.toFixed(2) : (0).toFixed(2)}
+        {bidSummary.bestPrice !== Infinity ? bidSummary.bestPrice.toFixed(2) : (0).toFixed(2)}
         <ResourceIcon containerClassName="ml-2 w-min" resource="Shekels" size="sm" />
       </div>
-      <div></div>
-      <div>
+      <div className="flex justify-end items-center">
         {Intl.NumberFormat("en-US", {
           style: "decimal",
           maximumFractionDigits: 2,
           minimumFractionDigits: 2,
-        }).format(summary.totalAmount)}
+        }).format(askSummary.totalAmount)}
+        <Button className="ml-2" onClick={onBuy} size="xs" variant="success">
+          Buy
+        </Button>
       </div>
-      <Button onClick={onClick} size="xs" variant="success">
-        {summary.totalOffers} offers
-      </Button>
+      <div className="flex justify-end items-center">
+        {Intl.NumberFormat("en-US", {
+          style: "decimal",
+          maximumFractionDigits: 2,
+          minimumFractionDigits: 2,
+        }).format(bidSummary.totalAmount)}
+        <Button className="ml-2" onClick={onSell} size="xs" variant="red">
+          Sell
+        </Button>
+      </div>
     </div>
   );
 };
@@ -344,7 +344,7 @@ const MarketplaceResourceOffersPanel = ({
   const sortingParams = useMemo(() => {
     return [
       { label: "Sell", sortKey: "sell", className: "" },
-      { label: "Rate", sortKey: "rate", className: "ml-auto" },
+      { label: "Price", sortKey: "Price", className: "ml-auto" },
       { label: "Buy", sortKey: "buy", className: "ml-auto" },
       { label: "Order", sortKey: "order", className: "ml-auto" },
       { label: "Travel time", sortKey: "travel", className: "ml-auto" },
@@ -370,7 +370,18 @@ const MarketplaceResourceOffersPanel = ({
         <div className="flex items-center justify-between">
           <FiltersPanel>
             <FilterButton active={true} onClick={onBack}>
-              {findResourceById(resourceId)?.trait}
+              Resource: {findResourceById(resourceId)?.trait}
+            </FilterButton>
+            <FilterButton active={true} onClick={onBack}>
+              Type:
+              <div
+                className={clsx(
+                  "text-xxs ml-1 rounded-[5px] px-1 w-min ",
+                  isBuy ? "text-order-vitriol bg-dark-green" : "text-danger bg-brown",
+                )}
+              >
+                {isBuy ? "Buy" : "Sell"}
+              </div>
             </FilterButton>
           </FiltersPanel>
           <Button onClick={onCreate} variant="primary">

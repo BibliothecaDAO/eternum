@@ -6,7 +6,7 @@ type ButtonProps = {
   children: React.ReactNode;
   className?: string;
   disabled?: boolean;
-  variant?: "primary" | "secondary" | "success" | "danger" | "default" | "outline";
+  variant?: "primary" | "secondary" | "success" | "red" | "danger" | "default" | "outline";
   isLoading?: boolean;
   withoutSound?: boolean;
   size?: "xs" | "md";
@@ -20,6 +20,7 @@ const STYLES = {
   enabledStyle: "bg-black/10 hover:bg-black/30 focus:outline-none",
   disabledStyle: "bg-gray-300 cursor-not-allowed !border-gray-gold !text-gray-gold",
   success: "border border-brilliance !text-brilliance bg-transparent hover:bg-brilliance/10",
+  red: "border border-danger !text-danger bg-transparent hover:bg-danger/10",
   outline: "border border-gold !text-gold bg-transparent hover:bg-gold/10",
   danger: "border border-orange !text-orange bg-transparent hover:bg-orange/10",
   secondary: "border border-orange !text-orange bg-transparent hover:bg-orange/10",
