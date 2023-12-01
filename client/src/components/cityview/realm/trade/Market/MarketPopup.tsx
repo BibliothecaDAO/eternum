@@ -281,7 +281,7 @@ const MarketplaceOverviewPanel = ({
           />
         ))}
       </SortPanel>
-      <div className="mt-2 space-y-2">
+      <div className="mt-2">
         {filteredResources.map((resource) => {
           if (resource.trait === "Shekels") return null;
           return (
@@ -394,7 +394,7 @@ const MarketplaceResourceOffersPanel = ({
             />
           ))}
         </SortPanel>
-        <div className="mt-2 space-y-2">
+        <div className="mt-2">
           {offers.map((offer) => (
             <ResourceOfferRow
               key={offer.tradeId}
