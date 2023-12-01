@@ -113,11 +113,11 @@ SecondaryPopup.Head = ({
   </div>
 );
 
-SecondaryPopup.Body = ({ width = null, children }: { width?: string | null; children: React.ReactNode }) => (
+SecondaryPopup.Body = ({ width = null, children, className }: { width?: string | null; children: React.ReactNode, className?: string }) => (
   <div
-    className={`${
-      width ? "" : "min-w-[438px]"
-    } relative z-10 bg-gray border flex flex-col border-white rounded-tr-[4px] rounded-b-[4px]`}
+    className={clsx(`${
+        width ? "" : "min-w-[438px]"
+    } relative z-10 bg-gray border flex flex-col border-white rounded-tr-[4px] rounded-b-[4px]`, className)}
     style={{ width: width ? width : "" }}
   >
     {children}

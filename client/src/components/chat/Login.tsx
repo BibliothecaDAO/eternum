@@ -3,8 +3,10 @@ import { Client, WalletType } from "@web3mq/client";
 
 export const useLogin = () => {
     const [_didValue, setDidValue] = useState<string>('');
-    const password = '123456';
-    const didType: WalletType = 'argentX' // or 'starknet';
+    const password = '123123';
+    const didType: WalletType = 'metamask' // or 'starknet';
+    const chainType = 'eth'
+    const appKey = 'vAUJTFXbBZRkEDRE';
 
     const [userExist, setUserExist] = useState<boolean>(false);
 
@@ -22,7 +24,7 @@ export const useLogin = () => {
 
         const { userid, userExist } = await Client.register.getUserInfo({
             did_value: didValue,
-            did_type: 'starknet',
+            did_type: chainType,
         });
         localStorage.setItem("USER_ID", userid)
 
@@ -96,6 +98,7 @@ export const useLogin = () => {
         localStorage.setItem("TEMP_PRIVATE_KEY", tempPrivateKey)
         localStorage.setItem("TEMP_PUBLIC_KEY", tempPublicKey)
         localStorage.setItem('PUBKEY_EXPIRED_TIMESTAMP', String(pubkeyExpiredTimestamp));
+        localStorage.setItem('WALLET_ADDRESS', didValue)
 
         setLoggedIn(!loggedIn)
 
@@ -114,10 +117,15 @@ export const useLogin = () => {
         return timestamp ? Number(timestamp) < Date.now() : true;
     }
 
+    const checkAddressChanged = (address: string) => {
+        const cacheAddress = getStorageValue('WALLET_ADDRESS');
+        return cacheAddress ? cacheAddress.toLowerCase() !== address.toLowerCase() : true
+    }
     const init = async () => {
         const fastUrl = await Client.init({
             connectUrl: getStorageValue("FAST_URL"),
-            app_key: "OVEEGLRxtqXcEIJN",
+            env: "dev",
+            app_key: appKey,
         });
         localStorage.setItem("FAST_URL", fastUrl);
 
@@ -151,7 +159,7 @@ export const useLogin = () => {
 
         const { userExist, didValue } = await connect();
 
-        if (!hasKeys || expiredKeys()) {
+        if (!hasKeys || expiredKeys() || checkAddressChanged(didValue)) {
             try {
                 await createKeyPairs(didValue);
             } catch (e) {

@@ -2,6 +2,7 @@ import { ChatProvider } from "../ChatContext";
 import ChatForm from "../components/chat/ChatForm";
 import { ChatTabs } from "../components/chat/ChatTabs";
 import { BaseContainer } from "../containers/BaseContainer";
+import {ChatNotificationsComponent} from "../components/ChatNotificationsComponent";
 
 const ChatModule = () => {
   return (
@@ -9,6 +10,7 @@ const ChatModule = () => {
       <ChatProvider>
         <ChatTabs />
         <ChatForm />
+        <ChatNotificationsComponent />
       </ChatProvider>
     </BaseContainer>
   );
