@@ -98,6 +98,7 @@ export const useLogin = () => {
         localStorage.setItem("TEMP_PRIVATE_KEY", tempPrivateKey)
         localStorage.setItem("TEMP_PUBLIC_KEY", tempPublicKey)
         localStorage.setItem('PUBKEY_EXPIRED_TIMESTAMP', String(pubkeyExpiredTimestamp));
+        localStorage.setItem('WALLET_ADDRESS', didValue)
 
         setLoggedIn(!loggedIn)
 
@@ -116,6 +117,10 @@ export const useLogin = () => {
         return timestamp ? Number(timestamp) < Date.now() : true;
     }
 
+    const checkAddressChanged = (address: string) => {
+        const cacheAddress = getStorageValue('WALLET_ADDRESS');
+        return cacheAddress ? cacheAddress.toLowerCase() !== address.toLowerCase() : true
+    }
     const init = async () => {
         const fastUrl = await Client.init({
             connectUrl: getStorageValue("FAST_URL"),
@@ -154,7 +159,7 @@ export const useLogin = () => {
 
         const { userExist, didValue } = await connect();
 
-        if (!hasKeys || expiredKeys()) {
+        if (!hasKeys || expiredKeys() || checkAddressChanged(didValue)) {
             try {
                 await createKeyPairs(didValue);
             } catch (e) {

@@ -6,9 +6,13 @@ import { addressToNumber } from "../../utils/utils";
 
 interface ChatHistoryProps {
   messages: ChatMessageProps[];
+  group?: string;
+  isJoined?: boolean;
 }
 
 const ChatHistory = (props: ChatHistoryProps) => {
+  // real world: group:aaa83cddb7d563d2847d56247060cec696f3d425
+  const { group = "group:ef4557048e0342f1747c31656ac87d1fa6bb8e51", isJoined = false } = props;
   const [messageList, setMessageList] = useState<ChatMessageProps[]>([]);
 
   // this should be moved
@@ -25,8 +29,7 @@ const ChatHistory = (props: ChatHistoryProps) => {
   const { loginFlow, client, loading, loggedIn } = useChat();
 
   // Temp world chat
-  const group = "group:aaa83cddb7d563d2847d56247060cec696f3d425";
-
+  // const group = "group:aaa83cddb7d563d2847d56247060cec696f3d425";
   // const createRoom = async (groupName: string) => {
   //     client?.channel.createRoom({
   //         groupName, permissions: {
@@ -39,11 +42,10 @@ const ChatHistory = (props: ChatHistoryProps) => {
   // }
 
   const setGroup = async (group: string) => {
-    console.log('click ')
     setLoadingMessages(true);
-
-    await client?.channel.joinGroup(group);
-
+    if (!isJoined) {
+      await client?.channel.joinGroup(group);
+    }
     const { channelList } = client?.channel as any;
 
     console.log("channelList", channelList);
@@ -62,10 +64,25 @@ const ChatHistory = (props: ChatHistoryProps) => {
     setLoadingMessages(false);
   };
 
-  const transform = (s: string) => s.replace("user:", "0x").slice(0, 2) + "..." + s.slice(-3);
+  const transform = (s: string) => {
+    if (s.startsWith("user:")) {
+      return s.replace("user:", "0x").slice(0, 2) + "..." + s.slice(-3);
+    }
+    if (s.startsWith("group:")) {
+      return s.replace("group:", "0x").slice(0, 2) + "..." + s.slice(-3);
+    }
+    return "";
+  };
 
   const handleEvent = (event: { type: any }) => {
-    const transformToAddress = (s: string) => s.replace("user:", "0x");
+    const transformToAddress = (s: string) => {
+      if (s.startsWith("user:")) {
+        return s.replace("user:", "0x");
+      }
+      if (s.startsWith("group:")) {
+        return s.replace("group:", "0x");
+      }
+    };
 
     const format = (message: any) => {
       return {
@@ -95,6 +112,12 @@ const ChatHistory = (props: ChatHistoryProps) => {
     client?.on("channel.updated", handleEvent);
   }, [client]);
 
+  useEffect(() => {
+    if (isJoined) {
+      setGroup(group);
+    }
+  }, []);
+
   const isLoading = loading || loadingMessages;
 
   return (
@@ -118,7 +141,7 @@ const ChatHistory = (props: ChatHistoryProps) => {
           </Button>
         </div>
       )}
-      {loggedIn && !messageList.length && (
+      {loggedIn && !messageList.length && !isJoined && (
         <div className="my-2 w-full p-2 mx-auto flex">
           <Button className="mx-auto" variant="outline" onClick={() => setGroup(group)}>
             World Chat

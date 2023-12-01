@@ -1,19 +1,23 @@
 import { GroupPermissionValueType } from "@web3mq/client";
 import Button from "./Button";
+import { JoinGuildComponent } from "../components/JoinGuildComponent";
 // import { OrderIcon } from "./OrderIcon";
 // import { useDojo } from "../DojoContext";
 
-export interface ChannelProps {
+export interface ChannelType {
+  groupid: string;
   groupName: string;
   avatar?: string;
   isJoined?: boolean;
   memberCount: number;
   creator: string;
+  creatorId: string;
   permissionType: GroupPermissionValueType;
 }
 
-const Channel = (props: ChannelProps) => {
-  const { groupName, isJoined = false, memberCount, creator, permissionType } = props;
+const Channel = (props: { channel: ChannelType; handleChat: any }) => {
+  const { channel, handleChat } = props;
+  const { groupName, isJoined = false, memberCount, creator } = channel;
 
   return (
     <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold">
@@ -26,10 +30,10 @@ const Channel = (props: ChannelProps) => {
               {/* <OrderIcon order="power" size="xs" className="scale-75" /> */}
             </div>
             <div className="mr-3 text-[8px] text-white/30">
-              {isJoined || permissionType === "public" ? (
+              {isJoined ? (
                 <Button
                   onClick={() => {
-                    console.log("start chat");
+                    handleChat(channel);
                   }}
                   variant="outline"
                   className="p-1 !h-4 text-xxs !rounded-md"
@@ -37,15 +41,9 @@ const Channel = (props: ChannelProps) => {
                   Chat
                 </Button>
               ) : (
-                <Button
-                  onClick={() => {
-                    console.log(" requst join chat");
-                  }}
-                  variant="outline"
-                  className="p-1 !h-4 text-xxs !rounded-md"
-                >
-                  Join
-                </Button>
+                <JoinGuildComponent handleJoinSuccess={() => {
+                  handleChat(channel)
+                }} guild={channel} />
               )}
             </div>
           </div>

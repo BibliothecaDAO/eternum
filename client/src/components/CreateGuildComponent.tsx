@@ -1,50 +1,52 @@
-import React, { ReactNode, useMemo, useState } from "react";
-import { ReactComponent as FightLost } from "../assets/icons/common/fight-lost.svg";
-import { ReactComponent as FightWaiting } from "../assets/icons/common/fight-waiting.svg";
-import { ReactComponent as FightWin } from "../assets/icons/common/fight-win.svg";
-import { ReactComponent as FightReject } from "../assets/icons/common/fight-reject.svg";
+import { useMemo, useState } from "react";
 import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
+import { ReactComponent as FailedIcon } from "../assets/icons/common/close-toast.svg";
 import { SecondaryPopup } from "../elements/SecondaryPopup";
-import { Headline } from "../elements/Headline";
 import Button from "../elements/Button";
-import { useDojo } from "../DojoContext";
-import { NumberInput } from "../elements/NumberInput";
-import { ResourcesIds } from "@bibliothecadao/eternum";
-import { useGetRealms } from "../hooks/helpers/useRealm";
 import { useChat } from "../ChatContext";
 import TextInput from "../elements/TextInput";
 import clsx from "clsx";
-import {CreateRoomParams} from "@web3mq/client";
+import { CreateRoomParams } from "@web3mq/client";
+import { ToastStateType, ToastState } from "../elements/ToastState";
 
 type GuildType = "public" | "request";
 
 export const CreateGuildComponent = () => {
   const { client } = useChat();
   const [showModal, setShowModal] = useState(false);
-  const [toastState, setToastState] = useState<any>();
-  const [guildType, setGuildType] = useState<GuildType>();
+  const [toastState, setToastState] = useState<ToastStateType>();
+  const [guildType, setGuildType] = useState<GuildType>("public");
   const [guildName, setGuildName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const submit = async () => {
-    console.log(client, 'client')
-    console.log(client.channel)
-    setIsLoading(true)
+    setIsLoading(true);
     const params: CreateRoomParams = {
       groupName: guildName,
       permissions: {
-        'group:join': {
-          type: 'enum',
-          value: guildType === 'request'
-              ? 'creator_invite_friends'
-              : 'public',
+        "group:join": {
+          type: "enum",
+          value: guildType === "request" ? "creator_invite_friends" : "public",
         },
       },
+    };
+    try {
+      await client.channel.createRoom(params);
+      setIsLoading(false);
+      setShowModal(false);
+    } catch (e) {
+      console.log(e, "e");
+      setIsLoading(false);
+      setToastState({
+        btnText: "Retry",
+        content: e.message || "Failed to create guild",
+        icon: <FailedIcon />,
+        handler: () => {
+          setToastState(undefined);
+          setIsLoading(false);
+        },
+      });
     }
-    console.log(params, 'params')
-    // client.channel.createRoom(params)
-    // console.log("submit create guild");
-    // console.log(client, "client");
   };
 
   const Btns: {
@@ -66,7 +68,7 @@ export const CreateGuildComponent = () => {
     ];
   }, [guildType]);
 
-  const isDisable = !guildName || isLoading || toastState;
+  const isDisable = !guildName || isLoading || !!toastState;
 
   return (
     <div className="flex items-center text-white">
@@ -82,16 +84,17 @@ export const CreateGuildComponent = () => {
         </Button>
       </div>
       {showModal && (
-        <SecondaryPopup className="top-1/3" name="settings">
-          <SecondaryPopup.Head>
-            <div className="flex items-center">
-              <div className="mr-0.5">Create a Guild</div>
-              <CloseIcon className="w-3 h-3 cursor-pointer fill-white" onClick={() => setShowModal(false)} />
-            </div>
+        <SecondaryPopup className="top-1/3 border !border-gold rounded-xl overflow-hidden" name="guild-create">
+          <SecondaryPopup.Head
+            className={
+              "w-full flex items-center h-10 px-4 px-3 justify-between min-w-full border-x-0 border-b !border-gold"
+            }
+          >
+            <div className="mr-0.5 !text-gold">Create a Guild</div>
+            <CloseIcon className="w-3 h-3 cursor-pointer fill-white" onClick={() => setShowModal(false)} />
           </SecondaryPopup.Head>
-          <SecondaryPopup.Body width="400px">
-            {toastState && <div className="bg-red w-full h-full relative">{toastState}</div>}
-
+          <SecondaryPopup.Body width="400px" className="!border-gold border-0 relative">
+            {toastState && <ToastState {...toastState} />}
             <div className="flex flex-col p-3 gap-3">
               <div className="text-xs text-white">Guild Name:</div>
               <TextInput
@@ -100,13 +103,6 @@ export const CreateGuildComponent = () => {
                 value={guildName}
                 onChange={setGuildName}
               />
-              {/*<TextInput*/}
-              {/*    placeholder="Attach Name to Address"*/}
-              {/*    className={"border !py-1 !my-1 mr-2"}*/}
-              {/*    maxLength={12}*/}
-              {/*    value={inputName}*/}
-              {/*    onChange={setInputName}*/}
-              {/*></TextInput>*/}
               <div className="w-full h-2 border-b border-gray-gold mt-px mb-1"></div>
               <div className="text-xs text-white">Guild Permission:</div>
               <div className=" flex justify-center items-center gap-3">
@@ -114,7 +110,10 @@ export const CreateGuildComponent = () => {
                   <Button
                     variant="outline"
                     key={index}
-                    className={clsx("w-1/2 text-xxs !py-1 !px-2", !item.isSelected ? "!text-gray-gold border-gray-gold" : '')}
+                    className={clsx(
+                      "w-1/2 text-xxs !py-1 !px-2",
+                      !item.isSelected ? "!text-gray-gold border-gray-gold" : "",
+                    )}
                     onClick={() => setGuildType(item.type)}
                   >
                     {item.label}
@@ -130,7 +129,7 @@ export const CreateGuildComponent = () => {
                 variant="outline"
                 className="text-xxs !py-1 !px-2 mr-auto w-full mt-2"
               >
-                Create
+                {isLoading ? "Creating..." : "Create"}
               </Button>
             </div>
           </SecondaryPopup.Body>

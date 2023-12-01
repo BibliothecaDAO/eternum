@@ -30,6 +30,7 @@ export enum EventType {
   OrderClaimable,
   StolenResource,
   Attacked,
+  Chat,
 }
 
 type realmsResources = { realmEntityId: number; resourceIds: number[] }[];
