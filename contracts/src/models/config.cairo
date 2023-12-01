@@ -12,6 +12,7 @@ use starknet::ContractAddress;
 struct WorldConfig {
     #[key]
     config_id: u128,
+    admin_address: ContractAddress,
     realm_l2_contract: ContractAddress,
 }
 

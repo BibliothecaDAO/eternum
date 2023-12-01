@@ -88,7 +88,7 @@ fn setup() -> (IWorldDispatcher, Array<u128>, ICaravanSystemsDispatcher, u128) {
     // set world config
     IWorldConfigDispatcher {
         contract_address: config_systems_address
-    }.set_world_config(world, world.contract_address); // realm l2 contract address
+    }.set_world_config(world, contract_address_const::<0>(), world.contract_address); // realm l2 contract address
 
 
     // set capacity configuration
