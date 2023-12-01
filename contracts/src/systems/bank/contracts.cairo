@@ -3,6 +3,8 @@ mod bank_systems {
     use eternum::alias::ID;
     use eternum::models::resources::{Resource, ResourceCost};
     use eternum::models::owner::Owner;
+    use eternum::models::weight::Weight;
+    use eternum::models::config::WeightConfig;
     use eternum::models::bank::{Bank, BankAuction, BankAuctionTrait, BankSwapResourceCost};
     use eternum::models::position::{Coord, Position, PositionTrait};
 
@@ -16,6 +18,7 @@ mod bank_systems {
 
     use eternum::utils::vrgda::{LinearVRGDA, LinearVRGDATrait};
     use eternum::systems::bank::interface::IBankSystems;
+    use eternum::constants::WORLD_CONFIG_ID;
 
     use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
@@ -55,6 +58,8 @@ mod bank_systems {
                 = get!(world, (bought_resource_type, bank_swap_resource_cost_index), BankSwapResourceCost);
 
             let mut index = 0_usize;
+            let mut swap_resources_weight = 0;
+            
             loop {
                 if index == swap_cost_resources.resource_cost_count {
                     break ();
@@ -69,6 +74,7 @@ mod bank_systems {
                 let mut total_resource_swap_cost_fixed = FixedTrait::new_unscaled(0, false);
 
                 let mut bought_resource_amount_remaining = bought_resource_amount;
+                
                 
                 loop {
                     if bought_resource_amount_remaining == 0 {
@@ -118,6 +124,11 @@ mod bank_systems {
                     }
                 );
 
+                // update swap resources weight
+                let swap_resource_type_weight 
+                    = get!(world, (WORLD_CONFIG_ID, swap_cost_resource.resource_type), WeightConfig);
+                swap_resources_weight += swap_resource_type_weight.weight_gram * total_resource_swap_cost;
+
                 // reset auction amount sold for next loop
                 bank_auction.sold -= bought_resource_amount;
 
@@ -125,8 +136,16 @@ mod bank_systems {
                 index += 1;
             };
 
+            // remove weight from entity
+            let mut entity_weight = get!(world, entity_id, Weight);
+            entity_weight.value -= swap_resources_weight;
+            set!(world, (entity_weight));
+
+
+
             bank_auction.sold = bought_resource_amount;
             set!(world, (bank_auction));
+            
 
 
             let bought_resource 
