@@ -10,7 +10,7 @@ sierra-replace-ids = true
 dojo = { git = "https://github.com/dojoengine/dojo", tag="v0.3.10" }
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "e1aa42853815f04ff00e4ed3507cfd74d7b0c644" }
 cubit = { git = "https://github.com/influenceth/cubit" }
-eternum_guild_module = { git = "https://github.com/Generative-Labs/eternum-guild-module"}
+# eternum_guild_module = { git = "https://github.com/Generative-Labs/eternum-guild-module"}
 # TODO: use dojo_defi when works with latest nightly
 #dojo_defi = { git = "https://github.com/dojoengine/dojo" }
 

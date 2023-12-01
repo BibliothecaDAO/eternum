@@ -1,6 +1,4 @@
 use eternum::alias::ID;
-
-use eternum_guild_module::models::guild::Guild;
 #[derive(Model, Copy, Drop, Serde)]
 struct Trade {
     #[key]
