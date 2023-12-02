@@ -6,7 +6,7 @@ import { SecondaryPopup } from "../elements/SecondaryPopup";
 import Button from "../elements/Button";
 import { useChat } from "../ChatContext";
 import TextInput from "../elements/TextInput";
-import { BlockChainMap, Client } from "@web3mq/client";
+import { BlockChainMap, Client, WalletType } from "@web3mq/client";
 import { ChannelType } from "../elements/Channel";
 import { ToastState, ToastStateType } from "../elements/ToastState";
 
@@ -17,7 +17,7 @@ export const JoinGuildComponent = (props: { guild: ChannelType; handleJoinSucces
   const [toastState, setToastState] = useState<ToastStateType>();
   const [isLoading, setIsLoading] = useState(false);
   const [reason, setReason] = useState("");
-  const walletType = "metamask";
+  const walletType: WalletType = "argentX";
 
   const submit = async () => {
     setIsLoading(true);

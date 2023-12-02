@@ -91,5 +91,8 @@
     ],
     "NAME_SYSTEMS": [
         "AddressName"
+    ],
+    "GUILD_SYSTEMS": [
+        "Guild"
     ]
 }

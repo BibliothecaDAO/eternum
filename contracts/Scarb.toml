@@ -27,6 +27,10 @@ private_key = "0x1800000000300000180000000000030000000000003006001800006600"
 #private_key = "0x7318b1bb2c88be4d85f7df34eed7f3bfcc396e7cadae945fe6465cf8f589055"
 
 [[target.dojo]]
+build-external-contracts=[
+    "eternum::models::*",
+    "ethernum::systems::*"
+]
 
 [lib]
 

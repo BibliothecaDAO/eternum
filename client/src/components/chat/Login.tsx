@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
-import { Client, WalletType } from "@web3mq/client";
+import {BlockChainType, Client, WalletType} from "@web3mq/client";
 
 export const useLogin = () => {
     const [_didValue, setDidValue] = useState<string>('');
-    const password = '123123';
-    const didType: WalletType = 'metamask' // or 'starknet';
-    const chainType = 'eth'
-    const appKey = 'vAUJTFXbBZRkEDRE';
+    const password = '123456';
+    const didType: WalletType = 'argentX'
+    const chainType: BlockChainType = 'starknet'
+    const appKey = 'OVEEGLRxtqXcEIJN';
 
     const [userExist, setUserExist] = useState<boolean>(false);
 
@@ -124,7 +124,6 @@ export const useLogin = () => {
     const init = async () => {
         const fastUrl = await Client.init({
             connectUrl: getStorageValue("FAST_URL"),
-            env: "dev",
             app_key: appKey,
         });
         localStorage.setItem("FAST_URL", fastUrl);

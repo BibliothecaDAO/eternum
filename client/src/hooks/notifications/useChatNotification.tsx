@@ -1,5 +1,5 @@
 import { NotificationType } from "./useNotifications";
-import { BlockChainMap, Client } from "@web3mq/client";
+import {BlockChainMap, Client, WalletType} from "@web3mq/client";
 import { useCallback } from "react";
 import Button from "../../elements/Button";
 import { useChat } from "../../ChatContext";
@@ -14,7 +14,7 @@ export const useChatNotification = (
 } => {
   const { keys } = notification;
   const { client} = useChat();
-  const walletType = "metamask";
+  const walletType: WalletType = "argentX";
   const metadata = keys[3];
 
   const approveGuildRequest = async (params: {
