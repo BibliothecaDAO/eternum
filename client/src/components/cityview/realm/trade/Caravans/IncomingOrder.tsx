@@ -19,16 +19,16 @@ type IncomingOrderProps = {
 export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const [isLoading, setIsLoading] = useState(false);
-  const { getResourcesFromInventory, offloadChest } = useResources();
+  const { getResourcesFromInventory, offloadChests } = useResources();
   const { getCaravanInfo } = useCaravan();
 
-  const { resourcesChestId, destination, arrivalTime } = getCaravanInfo(caravanId);
+  const { destination, arrivalTime } = getCaravanInfo(caravanId);
 
   const resourcesGet = getResourcesFromInventory(caravanId);
 
   const offload = async () => {
     setIsLoading(true);
-    await offloadChest(realmEntityId, caravanId, resourcesChestId, 0, resourcesGet);
+    await offloadChests(realmEntityId, caravanId, resourcesGet.indices, resourcesGet.resources);
   };
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
@@ -67,7 +67,7 @@ export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
       <div className="flex mt-1">
         {resourcesGet && (
           <div className="flex justify-center items-center space-x-2 flex-wrap mt-2">
-            {resourcesGet.map(
+            {resourcesGet.resources.map(
               (resource) =>
                 resource && (
                   <ResourceCost

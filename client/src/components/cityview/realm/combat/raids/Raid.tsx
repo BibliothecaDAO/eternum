@@ -13,7 +13,6 @@ import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import { useDojo } from "../../../../../DojoContext";
 import { useResources } from "../../../../../hooks/helpers/useResources";
 import { getTotalResourceWeight } from "../../trade/TradeUtils";
-import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
 import { divideByPrecision } from "../../../../../utils/utils";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import useUIStore from "../../../../../hooks/store/useUIStore";
@@ -41,24 +40,22 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
   const { realmId, realmEntityId } = useRealmStore();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { getResourcesFromInventory, offloadChest } = useResources();
-  const { getInventoryResourcesChestId } = useCaravan();
+  const { getResourcesFromInventory, offloadChests } = useResources();
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const inventoryResources = raider.entityId ? getResourcesFromInventory(raider.entityId) : undefined;
-  const resourceChestId = raider.entityId ? getInventoryResourcesChestId(raider.entityId) : undefined;
 
   // capacity
   let resourceWeight = useMemo(() => {
-    return getTotalResourceWeight([...inventoryResources]);
+    return getTotalResourceWeight([...inventoryResources.resources]);
   }, [inventoryResources]);
 
   // offload
   const onOffload = async () => {
     setIsLoading(true);
-    await offloadChest(realmEntityId, raider.entityId, resourceChestId, 0, inventoryResources);
+    await offloadChests(realmEntityId, raider.entityId, inventoryResources.indices, inventoryResources.resources);
   };
 
   const onReturn = async () => {
@@ -74,7 +71,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
     }
   };
 
-  const hasResources = inventoryResources && inventoryResources.length > 0;
+  const hasResources = inventoryResources && inventoryResources.resources.length > 0;
   const isTraveling = raider.arrivalTime ? raider.arrivalTime > nextBlockTimestamp : false;
   const hasMaxHealth = health === 10 * quantity;
   const destinationRealmId = raider.position ? getRealmIdByPosition(raider.position) : undefined;
@@ -231,7 +228,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
         <div className="flex items-center justify-between mt-[8px] text-xxs">
           {inventoryResources && (
             <div className="flex justify-center items-center space-x-1 flex-wrap">
-              {inventoryResources.map(
+              {inventoryResources.resources.map(
                 (resource) =>
                   resource && (
                     <ResourceCost

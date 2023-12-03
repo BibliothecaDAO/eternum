@@ -32,7 +32,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
 
   // capacity
   let resourceWeight = useMemo(() => {
-    return getTotalResourceWeight([...resourcesGet]);
+    return getTotalResourceWeight([...resourcesGet.resources]);
   }, [resourcesGet]);
 
   const destinationRealmId = destination && getRealmIdByPosition(destination);
@@ -108,7 +108,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
           !isWaitingForDeparture &&
           hasArrivedPickupPosition &&
           resourcesGet &&
-          resourcesGet.map(
+          resourcesGet.resources.map(
             (resource) =>
               resource && (
                 <ResourceCost

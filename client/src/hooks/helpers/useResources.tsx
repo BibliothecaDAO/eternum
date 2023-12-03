@@ -1,4 +1,4 @@
-import { Has, HasValue, getComponentValue } from "@latticexyz/recs";
+import { Has, HasValue, NotValue, getComponentValue } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys } from "../../utils/utils";
@@ -12,35 +12,60 @@ export function useResources() {
     setup: {
       components: { Inventory, ForeignKey, ResourceChest, DetachedResource, Resource },
       optimisticSystemCalls: { optimisticOffloadResources },
-      systemCalls: { offload_chest },
+      systemCalls: { transfer_items },
     },
   } = useDojo();
 
   // for any entity that has a resourceChest in its inventory,
-  const getResourcesFromInventory = (entityId: number): Resource[] => {
+  const getResourcesFromInventory = (entityId: number): { resources: Resource[]; indices: number[] } => {
+    let indices: number[] = [];
+    let resources = {};
+    let inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(entityId)]));
+
+    if (!inventory) {
+      return { resources: [], indices: [] };
+    }
+
+    for (let i = 0; i < inventory.items_count; i++) {
+      let foreignKey = inventory
+        ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(entityId), BigInt(inventory.items_key), BigInt(i)]))
+        : undefined;
+
+      // if nothing on this index, break
+      let resourcesChest = foreignKey
+        ? getComponentValue(ResourceChest, getEntityIdFromKeys([BigInt(foreignKey.entity_id)]))
+        : undefined;
+
+      let { resources_count } = resourcesChest;
+      for (let i = 0; i < resources_count; i++) {
+        let entityId = getEntityIdFromKeys([BigInt(foreignKey.entity_id), BigInt(i)]);
+        const resource = getComponentValue(DetachedResource, entityId);
+        if (resource) {
+          resources[resource.resource_type] = (resources[resource.resource_type] || 0) + resource.resource_amount;
+        }
+      }
+      indices.push(i);
+    }
+
+    return {
+      resources: Object.keys(resources).map((resourceId) => ({
+        resourceId: Number(resourceId),
+        amount: resources[resourceId],
+      })),
+      indices,
+    };
+  };
+
+  const getResourceChestIdFromInventoryIndex = (entityId: number, index: number): number | undefined => {
     let inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(entityId)]));
     let foreignKey = inventory
-      ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(entityId), BigInt(inventory.items_key), BigInt(0)]))
+      ? getComponentValue(
+          ForeignKey,
+          getEntityIdFromKeys([BigInt(entityId), BigInt(inventory.items_key), BigInt(index)]),
+        )
       : undefined;
 
-    let resourcesChest = foreignKey
-      ? getComponentValue(ResourceChest, getEntityIdFromKeys([BigInt(foreignKey.entity_id)]))
-      : undefined;
-
-    if (!resourcesChest) return [];
-    let resources: Resource[] = [];
-    let { resources_count } = resourcesChest;
-    for (let i = 0; i < resources_count; i++) {
-      let entityId = getEntityIdFromKeys([BigInt(foreignKey.entity_id), BigInt(i)]);
-      const resource = getComponentValue(DetachedResource, entityId);
-      if (resource) {
-        resources.push({
-          resourceId: resource.resource_type,
-          amount: resource.resource_amount,
-        });
-      }
-    }
-    return resources;
+    return foreignKey?.entity_id;
   };
 
   const getFoodResources = (entityId: number): Resource[] => {
@@ -63,35 +88,32 @@ export function useResources() {
    * @param [optimisticResourcesGet]: resources to display in case of optimistic rendering
    * @returns: void
    */
-  const offloadChest = async (
+  const offloadChests = async (
     receiving_entity_id: BigNumberish,
     transport_id: BigNumberish,
-    resource_chest_id: BigNumberish,
-    entity_index_in_inventory: BigNumberish,
+    entity_index_in_inventory: BigNumberish[],
     optimisticResourcesGet?: Resource[],
   ) => {
     if (optimisticResourcesGet) {
       return await optimisticOffloadResources(
         optimisticResourcesGet,
-        offload_chest,
+        transfer_items,
       )({
         signer: account,
-        receiving_entity_id,
-        transport_id,
-        entity_id: resource_chest_id,
-        entity_index_in_inventory,
+        receiver_id: receiving_entity_id,
+        sender_id: transport_id,
+        indices: entity_index_in_inventory,
       });
     }
-    return await offload_chest({
+    return await transfer_items({
       signer: account,
-      receiving_entity_id,
-      transport_id,
-      entity_id: resource_chest_id,
-      entity_index_in_inventory,
+      sender_id: transport_id,
+      receiver_id: receiving_entity_id,
+      indices: entity_index_in_inventory,
     });
   };
 
-  return { getResourcesFromInventory, offloadChest, getFoodResources };
+  return { getResourcesFromInventory, offloadChests, getFoodResources, getResourceChestIdFromInventoryIndex };
 }
 
 //  caravans coming your way with a resource chest in their inventory
@@ -107,8 +129,8 @@ export function useGetCaravansWithResourcesChest() {
 
   const caravansAtPositionWithInventory = useEntityQuery([
     Has(CaravanMembers),
-    HasValue(Inventory, {
-      items_count: 1,
+    NotValue(Inventory, {
+      items_count: 0,
     }),
     HasValue(Position, {
       x: realmPosition?.x,

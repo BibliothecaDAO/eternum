@@ -198,12 +198,16 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     let trade_id = trade_systems_dispatcher.create_order(
             world,
             maker_id,
-            array![ResourceTypes::STONE, ResourceTypes::GOLD].span(),
-            array![100, 100].span(),
+            array![
+                (ResourceTypes::STONE, 100), 
+                (ResourceTypes::GOLD, 100), 
+            ].span(),
             maker_transport_id,
             taker_id,
-            array![ResourceTypes::WOOD, ResourceTypes::SILVER].span(),
-            array![200, 200].span(),
+            array![
+                (ResourceTypes::WOOD, 200), 
+                (ResourceTypes::SILVER, 200), 
+            ].span(),
             100
     );
 
