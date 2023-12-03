@@ -23,7 +23,7 @@ import { Tabs } from "../../../elements/tab";
 import ProgressBar from "../../../elements/ProgressBar";
 import { HyperStructureCaravansPanel } from "./HyperStructureCaravans/HyperStructureCaravansPanel";
 import hyperStructures from "../../../data/hyperstructures.json";
-import { useGetPositionCaravans } from "../../../hooks/helpers/useCaravans";
+import { useCaravan } from "../../../hooks/helpers/useCaravans";
 import { NumberInput } from "../../../elements/NumberInput";
 import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/arrow-separator.svg";
 import { WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
@@ -50,6 +50,8 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
     y: hyperStructures[order - 1].y,
     z: hyperStructures[order - 1].z,
   });
+
+  const { useGetPositionCaravans } = useCaravan();
 
   const { caravans } = useGetPositionCaravans(hyperStructurePosition.x, hyperStructurePosition.y);
 

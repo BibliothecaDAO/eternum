@@ -127,8 +127,9 @@ export interface SwapBankAndTravelBackProps extends SystemSigner {
   sender_id: num.BigNumberish;
   inventoryIndex: num.BigNumberish;
   bank_id: num.BigNumberish;
-  resource_type: num.BigNumberish;
-  resource_amount: num.BigNumberish;
+  indices: num.BigNumberish[];
+  resource_types: num.BigNumberish[];
+  resource_amounts: num.BigNumberish[];
   destination_coord_x: num.BigNumberish;
   destination_coord_y: num.BigNumberish;
 }
@@ -200,9 +201,8 @@ export interface CreateRealmProps extends SystemSigner {
   resources: num.BigNumberish[];
 }
 
-export interface OffloadResourcesProps extends SystemSigner {
-  entity_id: num.BigNumberish;
-  entity_index_in_inventory: num.BigNumberish;
-  receiving_entity_id: num.BigNumberish;
-  transport_id: num.BigNumberish;
+export interface TransferItemsProps extends SystemSigner {
+  sender_id: num.BigNumberish;
+  indices: num.BigNumberish[];
+  receiver_id: num.BigNumberish;
 }

@@ -15,8 +15,9 @@ import { CAPACITY_PER_DONKEY } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@latticexyz/recs";
 import { useDojo } from "../../../../DojoContext";
 import Button from "../../../../elements/Button";
-import { Resource } from "../../../../types";
-import { BankInterface } from "../../../../hooks/helpers/useBanks";
+import { BANK_AUCTION_DECAY, BankInterface, targetPrices } from "../../../../hooks/helpers/useBanks";
+import { useResources } from "../../../../hooks/helpers/useResources";
+import { getLordsAmountFromBankAuction } from "../utils";
 
 type BankCaravanProps = {
   caravan: CaravanInterface;
@@ -36,9 +37,11 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
     account: { account },
     setup: {
       systemCalls: { swap_bank_and_travel_back },
-      components: { Resource, CaravanMembers, EntityOwner, ForeignKey, Position },
+      components: { CaravanMembers, EntityOwner, ForeignKey, Position },
     },
   } = useDojo();
+
+  const { getResourcesFromInventory } = useResources();
 
   const returnPosition = useMemo(() => {
     const caravanMembers = getComponentValue(CaravanMembers, getEntityIdFromKeys([BigInt(caravan.caravanId)]));
@@ -56,52 +59,85 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
     }
   }, [caravan]);
 
+  const resourcesGive = getResourcesFromInventory(caravan.caravanId);
+
+  const lordsAmountFromWheat = useMemo(() => {
+    return bank.wheatLaborAuction
+      ? getLordsAmountFromBankAuction(
+          resourcesGive.resources.find((resource) => {
+            return resource.resourceId === 254;
+          })?.amount || 0,
+          targetPrices[254],
+          BANK_AUCTION_DECAY,
+          bank.wheatLaborAuction.per_time_unit,
+          bank.wheatLaborAuction.start_time,
+          nextBlockTimestamp,
+          bank.wheatLaborAuction.sold,
+          bank.wheatLaborAuction.price_update_interval,
+        )
+      : 0;
+  }, [resourcesGive, bank]);
+
+  const lordsAmountFromFish = useMemo(() => {
+    return bank.fishLaborAuction
+      ? getLordsAmountFromBankAuction(
+          resourcesGive.resources.find((resource) => {
+            return resource.resourceId === 255;
+          })?.amount || 0,
+          targetPrices[255],
+          BANK_AUCTION_DECAY,
+          bank.fishLaborAuction.per_time_unit,
+          bank.fishLaborAuction.start_time,
+          nextBlockTimestamp,
+          bank.fishLaborAuction.sold,
+          bank.fishLaborAuction.price_update_interval,
+        )
+      : 0;
+  }, [resourcesGive, bank]);
+
+  const [resource_types, indices, resource_amounts] = useMemo(() => {
+    if (lordsAmountFromWheat > 0 && lordsAmountFromFish > 0) {
+      return [
+        [253, 253],
+        [0, 1],
+        [lordsAmountFromWheat, lordsAmountFromFish],
+      ];
+    } else {
+      if (lordsAmountFromWheat > 0 && lordsAmountFromFish === 0) {
+        return [[253], [0], [lordsAmountFromWheat]];
+      } else if (lordsAmountFromWheat === 0 && lordsAmountFromFish > 0) {
+        return [[253], [1], [lordsAmountFromFish]];
+      } else {
+        return [[], [], []];
+      }
+    }
+  }, [lordsAmountFromFish, lordsAmountFromWheat]);
+
   const transferAndReturn = async () => {
     await swap_bank_and_travel_back({
       signer: account,
       sender_id: caravan.caravanId,
       bank_id: bank.bankId,
       inventoryIndex: 0,
-      resource_type: 253,
-      resource_amount: 1,
+      resource_types,
+      indices,
+      // lords amount
+      resource_amounts: resource_amounts.map((amount) => Math.floor(amount * 1000)),
       destination_coord_x: returnPosition?.x || 0,
       destination_coord_y: returnPosition?.y || 0,
     });
   };
 
-  // TODO: update price
-  // const updateHyperStructure = () => {
-  //   const newHyperstructure = getHyperstructure(hyperstructureData.orderId, hyperstructureData.uiPosition);
-  //   hyperstructures[hyperstructureData.orderId - 1] = newHyperstructure;
-  //   setHyperstructures([...hyperstructures]);
-  // };
-
   const onClick = async () => {
     setIsLoading(true);
     await transferAndReturn();
-    // updateHyperStructure();
     setIsLoading(false);
   };
 
-  const resources = useMemo(() => {
-    return Array(22)
-      .fill(0)
-      .map((_, i: number) => {
-        const resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(caravan.caravanId), BigInt(i + 1)]));
-        if (resource && resource.balance > 0) {
-          return {
-            resourceId: i + 1,
-            amount: resource?.balance,
-          };
-        }
-      })
-      .filter(Boolean) as Resource[];
-  }, [caravan]);
-
   // capacity
   let resourceWeight = useMemo(() => {
-    return getTotalResourceWeight([...resources]);
-  }, [resources]);
+    return getTotalResourceWeight([...resourcesGive.resources]);
+  }, [resourcesGive]);
 
   return (
     <div
@@ -135,13 +171,13 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
       </div>
       <div className="flex mt-1">
         <div className="flex justify-center items-center space-x-2 flex-wrap mt-2">
-          {resources &&
-            resources.map(
+          {resourcesGive &&
+            resourcesGive.resources.map(
               (resource) =>
                 resource && (
                   <ResourceCost
                     key={resource.resourceId}
-                    className="!text-gold !w-5 mt-0.5"
+                    className="!text-gold !w-5 mt-0.5 mr-1"
                     type="vertical"
                     resourceId={resource.resourceId}
                     amount={divideByPrecision(resource.amount)}
@@ -149,6 +185,34 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
                 ),
             )}
         </div>
+        {caravan.isMine && (
+          <div className="flex ml-auto justify-end items-center space-x-2 flex-wrap mt-2">
+            <div className="flex flex-row">
+              <div className="flex flex-col">
+                {
+                  <ResourceCost
+                    type="vertical"
+                    color="text-order-brilliance"
+                    className="!w-5 mt-0.5"
+                    resourceId={253}
+                    amount={lordsAmountFromWheat + lordsAmountFromFish}
+                  />
+                }
+              </div>
+
+              {/* <div className="flex flex-col ml-7 mt-1">
+              <div className="mb-2">{`1 Wheat = ${(
+                multiplyByPrecision(lordsAmountFromWheat) /
+                (resourcesGive.resources.find((resource) => resource.resourceId === 254)?.amount || 1 / bank.wheatPrice)
+              ).toFixed(2)}`}</div>
+              <div>{`1 Fish = ${(
+                multiplyByPrecision(lordsAmountFromFish) /
+                (resourcesGive.resources.find((resource) => resource.resourceId === 254)?.amount || 1 / bank.fishPrice)
+              ).toFixed(2)}`}</div>
+            </div> */}
+            </div>
+          </div>
+        )}
         {!isLoading && isMine && (
           <Button
             onClick={onClick}

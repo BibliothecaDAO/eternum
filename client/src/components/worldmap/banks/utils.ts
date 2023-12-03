@@ -1,3 +1,5 @@
+import { divideByPrecision } from "../../../utils/utils";
+
 const SECONDS_PER_DAY = 86400;
 
 export function computeCoefficient(
@@ -22,16 +24,6 @@ export const getLordsAmountFromBankAuction = (
   sold: number,
   price_update_interval: number,
 ) => {
-  //console log all props
-  console.log({ totalCost });
-  console.log({ target_price });
-  console.log({ decay });
-  console.log({ units_per_day });
-  console.log({ startTimestamp });
-  console.log({ nextBlockTimestamp });
-  console.log({ sold });
-  console.log({ price_update_interval });
-
   let unitsBought = 0;
   let cost = 0;
 
@@ -53,5 +45,7 @@ export const getLordsAmountFromBankAuction = (
     }
   }
 
-  return unitsBought;
+  // divide by 1000
+  // todo: seems like im overestimating by 1 sometimes, need to investigate why
+  return Math.max(divideByPrecision(unitsBought - 1), 0);
 };

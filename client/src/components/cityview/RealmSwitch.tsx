@@ -46,8 +46,8 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
     let realmEntityIds = Array.from(entityIds)
       .map((id) => {
         const realm = getComponentValue(Realm, id);
-        const owner = getComponentValue(Owner, id);
-        console.log({ owner });
+        // const owner = getComponentValue(Owner, id);
+        // console.log({ owner });
         if (realm) {
           return { realmEntityId: Number(id), realmId: realm?.realm_id };
         }

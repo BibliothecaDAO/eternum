@@ -19,7 +19,7 @@ import {
   SendResourcesToLocationProps,
   TransferResourcesProps,
   TravelProps,
-  OffloadResourcesProps,
+  TransferItemsProps,
   CreateSoldiersProps,
   DetachSoldiersProps,
   AttackProps,
@@ -96,8 +96,6 @@ export class EternumProvider extends RPCProvider {
         calldata: [this.getWorldAddress(), ...entity_id],
       };
     });
-
-    console.log({ calldata });
 
     const tx = await this.executeMulti(signer, calldata);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -232,13 +230,17 @@ export class EternumProvider extends RPCProvider {
     });
   }
 
-  public async offload_chest(props: OffloadResourcesProps) {
-    const { entity_id, entity_index_in_inventory, receiving_entity_id, transport_id, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "resource_systems"),
-      entrypoint: "offload_chest",
-      calldata: [this.getWorldAddress(), entity_id, entity_index_in_inventory, receiving_entity_id, transport_id],
+  public async transfer_items(props: TransferItemsProps) {
+    const { sender_id, indices, receiver_id, signer } = props;
+
+    let calldata = indices.map((index) => {
+      return {
+        contractAddress: getContractByName(this.manifest, "resource_systems"),
+        entrypoint: "transfer_item",
+        calldata: [this.getWorldAddress(), sender_id, index, receiver_id],
+      };
     });
+    const tx = await this.executeMulti(signer, calldata);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
     });
@@ -442,10 +444,11 @@ export class EternumProvider extends RPCProvider {
       sender_id,
       inventoryIndex,
       bank_id,
-      resource_type,
-      resource_amount,
-      // destination_coord_x,
-      // destination_coord_y,
+      resource_types,
+      resource_amounts,
+      indices,
+      destination_coord_x,
+      destination_coord_y,
       signer,
     } = props;
 
@@ -455,16 +458,16 @@ export class EternumProvider extends RPCProvider {
         entrypoint: "transfer_item",
         calldata: [this.getWorldAddress(), sender_id, inventoryIndex, sender_id],
       },
-      {
+      ...indices.map((index, i) => ({
         contractAddress: getContractByName(this.manifest, "bank_systems"),
         entrypoint: "swap",
-        calldata: [this.getWorldAddress(), bank_id, sender_id, resource_type, resource_amount],
+        calldata: [this.getWorldAddress(), bank_id, index, sender_id, resource_types[i], resource_amounts[i]],
+      })),
+      {
+        contractAddress: getContractByName(this.manifest, "travel_systems"),
+        entrypoint: "travel",
+        calldata: [this.getWorldAddress(), sender_id, destination_coord_x, destination_coord_y],
       },
-      //{
-      //contractAddress: getContractByName(this.manifest, "travel_systems"),
-      //entrypoint: "travel",
-      //calldata: [this.getWorldAddress(), sender_id, destination_coord_x, destination_coord_y],
-      //},
     ]);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,

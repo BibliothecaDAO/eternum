@@ -89,8 +89,6 @@ export const Onboarding = () => {
     setYourRealms(realms);
   }, [realms]);
 
-  console.log(realms);
-
   return (
     <div className="relative h-screen w-screen">
       <img className="absolute h-screen w-screen object-cover" src="/images/cover-2.png" alt="" />

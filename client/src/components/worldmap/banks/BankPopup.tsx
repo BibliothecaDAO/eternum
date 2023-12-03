@@ -15,26 +15,36 @@ import { orderNameDict } from "@bibliothecadao/eternum";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import clsx from "clsx";
 import { Tabs } from "../../../elements/tab";
-import { useGetPositionCaravans } from "../../../hooks/helpers/useCaravans";
+import { useCaravan } from "../../../hooks/helpers/useCaravans";
 import { WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 import useUIStore from "../../../hooks/store/useUIStore";
-import { BANK_AUCTION_DECAY, BankInterface, targetPrices } from "../../../hooks/helpers/useBanks";
+import {
+  BANK_AUCTION_DECAY,
+  BankInterface,
+  BankStaticInterface,
+  targetPrices,
+  useBanks,
+} from "../../../hooks/helpers/useBanks";
 import { BankCaravansPanel } from "./BanksCaravans/BankCaravansPanel";
 import { NumberInput } from "../../../elements/NumberInput";
 import { getLordsAmountFromBankAuction } from "./utils";
-import { LaborAuction } from "../../cityview/realm/labor/LaborAuction";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 
 type BankPopupProps = {
   onClose: () => void;
-  bank: BankInterface;
+  bank: BankStaticInterface;
 };
 
 export const BankPopup = ({ onClose, bank }: BankPopupProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const { caravans } = useGetPositionCaravans(bank.position.x, bank.position.y);
+  const { useGetBank } = useBanks();
+  const { useGetPositionCaravans } = useCaravan();
+
+  const bankInfo = useGetBank(bank);
+
+  const { caravans } = useGetPositionCaravans(bankInfo.position.x, bankInfo.position.y);
 
   const tabs = useMemo(
     () => [
@@ -55,15 +65,15 @@ export const BankPopup = ({ onClose, bank }: BankPopupProps) => {
             onMouseLeave={() => setTooltip(null)}
             className="flex relative group flex-col items-center"
           >
-            <div>Build</div>
+            <div>Swap</div>
           </div>
         ),
         component: (
           <SwapResourcesPanel
             onSendCaravan={() => setSelectedTab(1)}
             onClose={onClose}
-            bank={bank}
-            bankPrice={bank.wheatPrice}
+            bank={bankInfo}
+            bankPrice={bankInfo.wheatPrice}
           />
         ),
       },
@@ -88,7 +98,7 @@ export const BankPopup = ({ onClose, bank }: BankPopupProps) => {
             <div>{`Caravans (${caravans.length})`}</div>
           </div>
         ),
-        component: <BankCaravansPanel caravans={caravans} bank={bank} />,
+        component: <BankCaravansPanel caravans={caravans} bank={bankInfo} />,
       },
     ],
     [selectedTab, caravans],
@@ -98,7 +108,7 @@ export const BankPopup = ({ onClose, bank }: BankPopupProps) => {
     <SecondaryPopup name="hyperstructure">
       <SecondaryPopup.Head onClose={onClose}>
         <div className="flex items-center space-x-1">
-          <div className="mr-0.5 bg-gray">Manage Hyperstructure:</div>
+          <div className="mr-0.5 bg-gray">Bank Swap:</div>
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"460px"}>
@@ -125,28 +135,6 @@ export const BankPopup = ({ onClose, bank }: BankPopupProps) => {
 };
 
 const SelectableRealm = ({ realm, selected = false, onClick, costs, ...props }: any) => {
-  const costById = useMemo(() => {
-    const costById: any = {};
-    costs &&
-      costs.forEach((cost: any) => {
-        costById[cost.resourceId] = cost.amount;
-      });
-    return costById;
-  }, [costs]);
-
-  const canInitialize = useMemo(() => {
-    let canInitialize = true;
-    if (!realm || !realm.resources) {
-      return false;
-    }
-    realm.resources.forEach((resource: any) => {
-      if (resource.balance < costById[resource.id]) {
-        canInitialize = false;
-      }
-    });
-    return canInitialize;
-  }, [costById, realm.resources]);
-
   return (
     <div
       className={clsx(
@@ -178,12 +166,7 @@ const SelectableRealm = ({ realm, selected = false, onClick, costs, ...props }: 
               );
             })}
         </div>
-        <Button
-          // disabled={!initialized && !canInitialize}
-          onClick={onClick}
-          className="h-6 text-xxs ml-auto"
-          variant="success"
-        >
+        <Button onClick={onClick} className="h-6 text-xxs ml-auto" variant="success">
           {`Set the amounts`}
         </Button>
       </div>
@@ -309,10 +292,9 @@ const SwapResourcesPanel = ({
   }, [step, selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
 
   const lordsAmountFromWheat = useMemo(() => {
-    console.log({ feedResourcesGiveAmounts });
-    const lordsAmountFromWheat = bank.wheatLaborAuction
+    return bank.wheatLaborAuction
       ? getLordsAmountFromBankAuction(
-          feedResourcesGiveAmounts[254],
+          multiplyByPrecision(feedResourcesGiveAmounts[254] || 0),
           targetPrices[254],
           BANK_AUCTION_DECAY,
           bank.wheatLaborAuction.per_time_unit,
@@ -321,10 +303,23 @@ const SwapResourcesPanel = ({
           bank.wheatLaborAuction.sold,
           bank.wheatLaborAuction.price_update_interval,
         )
-      : 1;
-    console.log({ lordsAmountFromWheat });
-    return lordsAmountFromWheat;
+      : 0;
   }, [feedResourcesGiveAmounts[254]]);
+
+  const lordsAmountFromFish = useMemo(() => {
+    return bank.fishLaborAuction
+      ? getLordsAmountFromBankAuction(
+          multiplyByPrecision(feedResourcesGiveAmounts[255] || 0),
+          targetPrices[255],
+          BANK_AUCTION_DECAY,
+          bank.fishLaborAuction.per_time_unit,
+          bank.fishLaborAuction.start_time,
+          nextBlockTimestamp,
+          bank.fishLaborAuction.sold,
+          bank.fishLaborAuction.price_update_interval,
+        )
+      : 0;
+  }, [feedResourcesGiveAmounts[255]]);
 
   useEffect(() => {
     if (donkeysCount * WEIGHT_PER_DONKEY_KG >= divideByPrecision(resourceWeight)) {
@@ -358,44 +353,24 @@ const SwapResourcesPanel = ({
     <div className="flex flex-col items-center p-2">
       <div className="flex flex-col space-y-2 text-xs w-full mb-3">
         <div className="flex justify-between">
-          <div className="flex items-center">
-            {/* {<OrderIcon order={orderNameDict[order]} size="xs" className="mx-1" />} */}
-            {/* <span className="text-white font-bold">{orders[order - 1].fullOrderName}</span> */}
-          </div>
+          <div className="flex items-center"></div>
           <div className="flex flex-col text-xxs text-right">
             <span className="text-gray-gold italic">State</span>
-            {/* <span
-              className={clsx(
-                !hyperstructureData?.initialized && "text-order-giants",
-                hyperstructureData?.completed && "text-order-brilliance",
-                hyperstructureData && hyperstructureData?.progress >= 0 && !hyperstructureData?.completed
-                  ? "text-gold"
-                  : "",
-              )}
-            >
-              {hyperstructureData?.completed
-                ? "Completed"
-                : hyperstructureData?.initialized
-                ? `Building in progress ${hyperstructureData?.progress.toFixed(2)}%`
-                : "Not initialized"}
-            </span> */}
           </div>
         </div>
-        {/* <ProgressBar rounded progress={hyperstructureData?.progress || 0} className="bg-gold" /> */}
       </div>
       {step == 1 && (
         <>
           <div className="flex flex-col space-y-2 text-xs">
             <div className="relative w-full">
-              <img src={`/images/buildings/hyperstructure.jpg`} className="object-cover w-full h-full rounded-[10px]" />
+              <img src={`/images/buildings/bank.png`} className="object-cover w-full h-full rounded-[10px]" />
               <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
-                <div className="mb-1 ml-1 italic text-light-pink text-xxs">
-                  {/* {hyperstructureData?.initialized ? "Resources need to complete:" : "Initialization cost:"} */}
-                </div>
+                <div className="mb-1 ml-1 italic text-light-pink text-xxs"></div>
+                <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price per Shekel:</div>
                 <div className="grid grid-cols-4 gap-1">
                   {[
-                    { resourceId: 254, amount: 1000 },
-                    { resourceId: 255, amount: 1000 },
+                    { resourceId: 254, amount: bank.wheatPrice * 1000 },
+                    { resourceId: 255, amount: bank.fishPrice * 1000 },
                   ].map(({ resourceId, amount }) => (
                     <ResourceCost
                       withTooltip
@@ -408,16 +383,14 @@ const SwapResourcesPanel = ({
                 </div>
               </div>
             </div>
-            <Headline size="big">
-              {/* {hyperstructureData?.initialized ? "Feed Hyperstructure" : "Initialize Hyperstructure"}- Step {step} */}
-            </Headline>
+            <Headline size="big"> Swap Food for Shekels</Headline>
             <div className="text-xxs mb-2 italic text-gold">
               {`
-                To feed the Hyperstructure you need to send any amount of required resources to the Hyperstructure location.
+                To swap wheat or fish for Shekles at the bank, you can send any amount you want. The amount of Shekles you get in return depends on the market price of wheat and fish at that specific bank.
               `}
             </div>
 
-            <div className="text-xxs mb-2 italic text-white">{`Click the "Next" button to select a Realm from which you want to spend resources.`}</div>
+            <div className="text-xxs mb-2 italic text-white">{`Click the "Next" button to select a Realm from which you want to swap food.`}</div>
           </div>
         </>
       )}
@@ -437,7 +410,6 @@ const SwapResourcesPanel = ({
               }}
               costs={[]}
               selected={realmEntityId === realm.entity_id}
-              initialized={false}
             />
           ))}
         </div>
@@ -490,7 +462,7 @@ const SwapResourcesPanel = ({
                   <ResourceCost
                     className="!w-min h-8 cursor-pointer"
                     resourceId={253}
-                    amount={lordsAmountFromWheat}
+                    amount={lordsAmountFromWheat + lordsAmountFromFish}
                     onClick={() => {}}
                   />
                 </div>

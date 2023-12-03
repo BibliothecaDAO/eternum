@@ -30,8 +30,8 @@ function getTotalPrice(
 }
 
 // Example usage
-// let price = getTotalPrice(0.1, 1000, 20, 50, 0, 0, 1, 10);
-// console.log("total price", price);
+let price = getTotalPrice(0.1, 10, 2219523, 100000, 14, 88067000, 1, 100000);
+console.log("total price", price);
 // let balance = 100000;
 // console.log("resource left", balance - price);
 
@@ -110,17 +110,17 @@ function getLordsAmountFromBankAuction(
 }
 
 // Example usage
-let totalCost = 1000; // Example total cost
+let totalCost = 1000000; // Example total cost
 let laborUnits = getLordsAmountFromBankAuction(
   totalCost,
   10, // target_price
-  1701344758, // startTimestamp
-  1701349160, // nextBlockTimestamp
+  1701420311, // startTimestamp
+  1701456643, // nextBlockTimestamp
   0, // initially sold
-  10 // price_update_interval
+  100000 // price_update_interval
 );
 
-console.log("Labor Units that can be bought: ", laborUnits);
+// console.log("Labor Units that can be bought: ", laborUnits);
 
 // const laborUnits = 80;
 // const interval = 10;

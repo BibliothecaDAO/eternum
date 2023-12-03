@@ -5,6 +5,8 @@ import { getContractPositionFromRealPosition, getEntityIdFromKeys } from "../../
 import banks from "../../data/banks.json";
 import { computeCoefficient, getLordsAmountFromBankAuction } from "../../components/worldmap/banks/utils";
 import useBlockchainStore from "../store/useBlockchainStore";
+import { useComponentValue } from "@dojoengine/react";
+import useRealmStore from "../store/useRealmStore";
 
 export const targetPrices = {
   254: 10,
@@ -13,12 +15,19 @@ export const targetPrices = {
 
 export const BANK_AUCTION_DECAY = 0.1;
 
-type LaborAuction = {
+type Auction = {
   start_time: number;
   per_time_unit: number;
   sold: number;
   price_update_interval: number;
 };
+
+export interface BankStaticInterface {
+  name: string;
+  uiPosition: UIPosition;
+  position: Position;
+  distance: number | undefined;
+}
 
 export interface BankInterface {
   name: string;
@@ -27,8 +36,9 @@ export interface BankInterface {
   bankId: number;
   uiPosition: UIPosition;
   position: Position;
-  wheatLaborAuction: LaborAuction | undefined;
-  fishLaborAuction: LaborAuction | undefined;
+  wheatLaborAuction: Auction | undefined;
+  fishLaborAuction: Auction | undefined;
+  distance: number | undefined;
 }
 
 export const useBanks = () => {
@@ -39,8 +49,9 @@ export const useBanks = () => {
   } = useDojo();
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
-  const getResourceBankPrice = (laborAuction: LaborAuction, resourceId: number): number | undefined => {
+  const getResourceBankPrice = (laborAuction: Auction, resourceId: number): number | undefined => {
     const coefficient = laborAuction
       ? computeCoefficient(
           laborAuction.start_time,
@@ -87,12 +98,39 @@ export const useBanks = () => {
       const { name, x, y, z } = bank;
       const position = getContractPositionFromRealPosition({ x, y: z });
       const bankId = getBankEntityId(position);
-      console.log({ bankId });
-      const wheatLaborAuction = getComponentValue(BankAuction, getEntityIdFromKeys([BigInt(bankId), BigInt(253)]));
-      console.log({ wheatLaborAuction });
-      const fishLaborAuction = getComponentValue(BankAuction, getEntityIdFromKeys([BigInt(bankId), BigInt(253)]));
+      const wheatLaborAuction =
+        bankId !== undefined
+          ? getComponentValue(BankAuction, getEntityIdFromKeys([BigInt(bankId), BigInt(253), BigInt(0)]))
+          : undefined;
+      const fishLaborAuction =
+        bankId !== undefined
+          ? getComponentValue(BankAuction, getEntityIdFromKeys([BigInt(bankId), BigInt(253), BigInt(1)]))
+          : undefined;
       const wheatPrice = getResourceBankPrice(wheatLaborAuction, 254);
       const fishPrice = getResourceBankPrice(fishLaborAuction, 255);
+      let distance = 0;
+      if (realmEntityIds.length > 0) {
+        const startPosition = getComponentValue(
+          Position,
+          getEntityIdFromKeys([BigInt(realmEntityIds[0].realmEntityId)]),
+        );
+
+        if (startPosition && position) {
+          const x: number =
+            startPosition.x > position.x
+              ? Math.pow(startPosition.x - position.x, 2)
+              : Math.pow(position.x - startPosition.x, 2);
+
+          const y: number =
+            startPosition.y > position.y
+              ? Math.pow(startPosition.y - position.y, 2)
+              : Math.pow(position.y - startPosition.y, 2);
+
+          // Using bitwise shift for the square root approximation for BigInt.
+          // we store coords in x * 10000 to get precise distance
+          distance = (x + y) ** 0.5 / 10000;
+        }
+      }
 
       return {
         name,
@@ -103,12 +141,82 @@ export const useBanks = () => {
         position,
         wheatLaborAuction,
         fishLaborAuction,
+        distance,
       };
     });
   };
 
+  const useGetBank = (bank: BankStaticInterface): BankInterface => {
+    const { name, uiPosition, distance, position } = bank;
+    const bankId = getBankEntityId(position);
+    const wheatLaborAuction =
+      bankId !== undefined
+        ? useComponentValue(BankAuction, getEntityIdFromKeys([BigInt(bankId), BigInt(253), BigInt(0)]))
+        : undefined;
+    const fishLaborAuction =
+      bankId !== undefined
+        ? useComponentValue(BankAuction, getEntityIdFromKeys([BigInt(bankId), BigInt(253), BigInt(1)]))
+        : undefined;
+    const wheatPrice = getResourceBankPrice(wheatLaborAuction, 254);
+    const fishPrice = getResourceBankPrice(fishLaborAuction, 255);
+
+    return {
+      name,
+      bankId,
+      wheatPrice,
+      fishPrice,
+      uiPosition,
+      position,
+      wheatLaborAuction,
+      fishLaborAuction,
+      distance,
+    };
+  };
+
+  const getBanksStatic = (): BankStaticInterface[] => {
+    return banks
+      .map((bank, i) => {
+        const { name, x, y, z } = bank;
+        const position = getContractPositionFromRealPosition({ x, y: z });
+
+        let distance = 0;
+        if (realmEntityIds.length > 0) {
+          const startPosition = getComponentValue(
+            Position,
+            getEntityIdFromKeys([BigInt(realmEntityIds[0].realmEntityId)]),
+          );
+
+          if (startPosition && position) {
+            const x: number =
+              startPosition.x > position.x
+                ? Math.pow(startPosition.x - position.x, 2)
+                : Math.pow(position.x - startPosition.x, 2);
+
+            const y: number =
+              startPosition.y > position.y
+                ? Math.pow(startPosition.y - position.y, 2)
+                : Math.pow(position.y - startPosition.y, 2);
+
+            // Using bitwise shift for the square root approximation for BigInt.
+            // we store coords in x * 10000 to get precise distance
+            distance = (x + y) ** 0.5 / 10000;
+          }
+        }
+
+        return {
+          name,
+          uiPosition: { x, y, z },
+          position,
+          distance,
+        };
+      })
+      .sort((a, b) => (a.distance || 0) - (b.distance || 0));
+  };
+
   return {
+    useGetBank,
     getBanks,
+    getBanksStatic,
     getResourceBankPrice,
     getLordsAmountFromBank,
   };
