@@ -261,7 +261,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
             <div className="flex items-center">
               {!isFood && (
                 <>
-                  <ResourceIcon className="mr-1" resource={resourceInfo?.trait || ""} size="xs" /> {resourceInfo?.trait}
+                  <ResourceIcon className="mr-1" resource={resourceInfo?.trait || ""} size="md" /> {resourceInfo?.trait}
                 </>
               )}
               {resourceId === 254 && (
@@ -310,13 +310,16 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               />
             )}
             {!isFood && (
-              <img src={`/images/resources/${resourceId}.jpg`} className="object-cover w-full h-full rounded-[10px]" />
+              <img
+                src={`/images/resource_buildings/${resourceId}.png`}
+                className="object-cover w-full h-full rounded-[10px]"
+              />
             )}
-            <div className="absolute top-2 left-2 bg-black/60 rounded-[10px] p-3 hover:bg-black">
+            <div className="absolute top-2 left-2 bg-black/90 rounded-[10px] p-3 hover:bg-black">
               <LaborAuction />
             </div>
-            <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
-              <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
+            <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/90">
+              <div className="mb-1 ml-1 italic text-light-pink text-xxs">Cost of Production:</div>
               <div className="grid grid-cols-4 gap-2">
                 {costResources.map(({ resourceId, amount }) => (
                   <ResourceCost
@@ -342,7 +345,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               {/* note: max 76 for now because of gas, can remove after new contract deployment */}
               <NumberInput className="ml-2 mr-2" value={laborAmount} step={5} onChange={setLaborAmount} max={76} />
               <div className="italic text-gold">
-                Create labor for: <br />
+                Creates labor for: <br />
                 {formatSecondsLeftInDaysHours(
                   laborAmount * divideByPrecision(LABOR_CONFIG?.base_labor_units * 1000 || 0),
                 )}
@@ -373,10 +376,10 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               // className="!px-[6px] !py-[2px] text-xxs ml-auto"
               disabled={!hasEnoughResources || (isFood && hasLaborLeft)}
               onClick={() => onBuild()}
-              variant="outline"
+              variant="primary"
               withoutSound
             >
-              {isFood ? `Build` : `Buy Labor`}
+              Purchase & Build
             </Button>
             {!hasEnoughResources && <div className="text-xxs text-order-giants/70">Insufficient resources</div>}
             {isFood && hasLaborLeft && <div className="text-xxs text-order-giants/70">Finish 24h cycle</div>}

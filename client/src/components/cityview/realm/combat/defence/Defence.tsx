@@ -40,7 +40,7 @@ export const Defence = ({ watchTower, onReinforce, onHeal, ...props }: DefencePr
             className="rounded flex flex-col items-center justify-center"
             style={{ background: "radial-gradient(120.12% 123.03% at 19.74% -19.25%, #4A4A4A 0%, #000 100%)" }}
           >
-            <img src="/images/units/troop-icon.png" className="w-10 h-10 mb-2" />
+            <img src="/images/icons/troop.png" className="w-10 h-10 mb-2" />
             <div className=" font-bold">{quantity || 0}</div>
             <div>Defenders</div>
           </div>

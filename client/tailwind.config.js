@@ -6,6 +6,9 @@ export default {
       fontSize: {
         xxs: ".625rem",
       },
+      cursor: {
+        'fancy': 'url(./cursor.png), pointer',
+      },
       strokeWidth: {
         8: "8px",
       },
