@@ -58,7 +58,7 @@ commands=(
 commands+=(
     ### WORLD ###
     # realm_l2_contract
-    "sozo execute $CONFIG_SYSTEMS set_world_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,0"
+    "sozo execute $CONFIG_SYSTEMS set_world_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,$DOJO_ACCOUNT_ADDRESS,0"
 
     # ### LABOR ###
     # # base_labor_units 7200

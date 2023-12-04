@@ -7,6 +7,7 @@ use dojo::world::IWorldDispatcher;
 trait IWorldConfig<TContractState> {
     fn set_world_config(
         self: @TContractState, world: IWorldDispatcher, 
+        admin_address: starknet::ContractAddress,
         realm_l2_contract: starknet::ContractAddress
     );
 }

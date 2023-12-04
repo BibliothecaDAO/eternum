@@ -1429,7 +1429,7 @@
     {
       "name": "config_systems",
       "address": null,
-      "class_hash": "0x27b7c99dfe4b6ad980d50eb55426a81a91cb9839f3643548aa6aba2e56dd1ec",
+      "class_hash": "0x22cf5c1896ad4345ece35aaf2ffdcbfc5c4e2646686fd3eb0ad094bef98f207",
       "abi": [
         {
           "type": "impl",
@@ -1480,6 +1480,10 @@
                 {
                   "name": "world",
                   "type": "dojo::world::IWorldDispatcher"
+                },
+                {
+                  "name": "admin_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
                 },
                 {
                   "name": "realm_l2_contract",
@@ -2078,7 +2082,8 @@
         }
       ],
       "reads": [
-        "Bank"
+        "Bank",
+        "WorldConfig"
       ],
       "writes": [
         "AttackConfig",
@@ -13276,12 +13281,17 @@
           "key": true
         },
         {
+          "name": "admin_address",
+          "type": "ContractAddress",
+          "key": false
+        },
+        {
           "name": "realm_l2_contract",
           "type": "ContractAddress",
           "key": false
         }
       ],
-      "class_hash": "0x3b80cd81fede5c9e274f13f771e62ae765fe143b3fb0199f49188367a58ed2b",
+      "class_hash": "0x411e942cb34c2820b1190a175136b31900c8e72fed723554cb0653730a3082b",
       "abi": [
         {
           "type": "function",

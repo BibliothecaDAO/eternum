@@ -27,17 +27,33 @@ mod config_systems {
     use eternum::models::resources::ResourceCost;
     use eternum::models::position::{Position,PositionTrait, Coord};
 
+
+    fn assert_caller_is_admin(world: IWorldDispatcher) {
+        let admin_address = get!(world, WORLD_CONFIG_ID, WorldConfig).admin_address;
+        if admin_address != Zeroable::zero() {
+            assert(
+                starknet::get_caller_address() == admin_address, 
+                    'caller not admin'
+            );
+        }
+    }
+
     #[external(v0)]
     impl WorldConfigImpl of IWorldConfig<ContractState> {
         fn set_world_config(
             self: @ContractState, 
             world: IWorldDispatcher, 
+            admin_address: starknet::ContractAddress,
             realm_l2_contract: starknet::ContractAddress
         ) {
+
+            assert_caller_is_admin(world); 
+
             set!(
                 world,
                 (WorldConfig {
                     config_id: WORLD_CONFIG_ID,
+                    admin_address,
                     realm_l2_contract
                 })
             );
@@ -54,6 +70,8 @@ mod config_systems {
             entity_type: u128, 
             weight_gram: u128
         ) {
+            assert_caller_is_admin(world); 
+
             set!(world, (
                 CapacityConfig {
                     config_id: WORLD_CONFIG_ID,
@@ -73,6 +91,9 @@ mod config_systems {
             entity_type: u128, 
             weight_gram: u128
         ) {
+
+            assert_caller_is_admin(world); 
+
             set!(
                 world,
                 (WeightConfig {
@@ -96,6 +117,9 @@ mod config_systems {
             config_id: u128, 
             stealing_trial_count: u32
         ) {
+        
+            assert_caller_is_admin(world); 
+
             set!(
                 world,
                 (CombatConfig {
@@ -113,6 +137,9 @@ mod config_systems {
             wheat_burn_per_soldier: u128,
             fish_burn_per_soldier: u128
         ) {
+
+            assert_caller_is_admin(world); 
+
             let resource_cost_id = world.uuid().into();
             let mut index = 0;
             loop {
@@ -152,6 +179,9 @@ mod config_systems {
             resource_costs: Span<(u8, u128)>,
             max_value: u128
         ) {
+
+            assert_caller_is_admin(world); 
+
             let resource_cost_id = world.uuid().into();
             let mut index = 0;
             loop {
@@ -190,6 +220,9 @@ mod config_systems {
             entity_type: u128, 
             max_value: u128
         ) {
+
+            assert_caller_is_admin(world); 
+
             set!(
                 world,
                 (AttackConfig {
@@ -206,6 +239,9 @@ mod config_systems {
             entity_type: u128, 
             max_value: u128
         ) {
+
+            assert_caller_is_admin(world); 
+
             set!(
                 world,
                 (DefenceConfig {
@@ -230,6 +266,9 @@ mod config_systems {
             resource_2_costs: Span<(u8, u128)>,
             resource_3_costs: Span<(u8, u128)>,
         ) {
+
+            assert_caller_is_admin(world); 
+
             let resource_1_cost_id = world.uuid().into();
             let mut index = 0;
             loop {
@@ -327,6 +366,9 @@ mod config_systems {
             resource_types_packed: u128, 
             resource_types_count: u8
         ) {
+
+            assert_caller_is_admin(world); 
+
             // set cost of creating labor for resource id 1 
             // to only resource id 1 cost
             set!(
@@ -347,6 +389,9 @@ mod config_systems {
             resource_type_cost: felt252, 
             resource_type_value: u128
         ) {
+
+            assert_caller_is_admin(world); 
+
             set!(
                 world,
                 (LaborCostAmount {
@@ -365,6 +410,9 @@ mod config_systems {
             base_resources_per_cycle: u128, 
             base_food_per_cycle: u128
         ) {
+
+            assert_caller_is_admin(world); 
+
             // set labor config
             set!(
                 world,
@@ -385,6 +433,9 @@ mod config_systems {
             per_time_unit: u128, 
             price_update_interval: u128
         ) {
+
+            assert_caller_is_admin(world); 
+
             let start_time = starknet::get_block_timestamp();
 
             let mut zone: u8 = 1;
@@ -424,6 +475,9 @@ mod config_systems {
             fee_amount: u128, 
             speed_up_by: u64
         ) {
+
+            assert_caller_is_admin(world); 
+
             set!(
                 world,
                 (RoadConfig {
@@ -442,6 +496,9 @@ mod config_systems {
             entity_type: u128, 
             sec_per_km: u16
         ) {
+
+            assert_caller_is_admin(world); 
+
             set!(
                 world,
                 (SpeedConfig {
@@ -459,6 +516,8 @@ mod config_systems {
             world: IWorldDispatcher, 
             free_transport_per_city: u128
         ) {
+
+            assert_caller_is_admin(world); 
 
             set!(
                 world,
@@ -484,6 +543,9 @@ mod config_systems {
             construction_resources: Span<(u8, u128)>,
             coord: Coord
         ) -> ID {
+
+            assert_caller_is_admin(world); 
+
             let mut initialization_resources = initialization_resources;
             let mut construction_resources = construction_resources;
         
