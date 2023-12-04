@@ -44,7 +44,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
     if (!marketOffers) return [];
 
     return marketOffers.filter(
-      (offer) => offer.resourcesGet.length === 1 && offer.resourcesGet[0].resourceId === ResourcesIds["Shekels"],
+      (offer) => offer.resourcesGet.length === 1 && offer.resourcesGet[0]?.resourceId === ResourcesIds["Shekels"],
     );
   }, [marketOffers]);
 
@@ -52,7 +52,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
     if (!bidOffers) return [];
 
     return bidOffers
-      .filter((offer) => (selectedResource ? offer.resourcesGive[0].resourceId === selectedResource : true))
+      .filter((offer) => (selectedResource ? offer.resourcesGive[0]?.resourceId === selectedResource : true))
       .sort((a, b) => b.ratio - a.ratio);
   }, [bidOffers, selectedResource]);
 
@@ -101,7 +101,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
     if (!marketOffers) return [];
 
     return marketOffers.filter(
-      (offer) => offer.resourcesGet.length === 1 && offer.resourcesGive[0].resourceId === ResourcesIds["Shekels"],
+      (offer) => offer.resourcesGet.length === 1 && offer.resourcesGive[0]?.resourceId === ResourcesIds["Shekels"],
     );
   }, [marketOffers]);
 
@@ -313,7 +313,7 @@ const OverviewResourceRow = ({
           style: "decimal",
           maximumFractionDigits: 2,
           minimumFractionDigits: 2,
-        }).format(askSummary.totalAmount)}
+        }).format(divideByPrecision(askSummary.totalAmount))}
         <Button className="ml-2" onClick={onBuy} size="xs" variant="success">
           Buy
         </Button>
@@ -323,7 +323,7 @@ const OverviewResourceRow = ({
           style: "decimal",
           maximumFractionDigits: 2,
           minimumFractionDigits: 2,
-        }).format(bidSummary.totalAmount)}
+        }).format(divideByPrecision(bidSummary.totalAmount))}
         <Button className="ml-2" onClick={onSell} size="xs" variant="red">
           Sell
         </Button>
