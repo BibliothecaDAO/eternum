@@ -1,7 +1,7 @@
 {
   "world": {
     "name": "world",
-    "address": "0x4d79c99ce9b489b77461e3491970ea5ede1f1966f4d2ff65ee76cd8701d6dad",
+    "address": null,
     "class_hash": "0x6441e7fc96d795ec94fca66634e6d87edf84362e564ef80eb13f459914b8b",
     "abi": [
       {
@@ -862,8 +862,123 @@
   },
   "contracts": [
     {
+      "name": "bank_systems",
+      "address": null,
+      "class_hash": "0x193b43fcf70309aeb2f89a3ffe4ea06b6949b8f1fa0c16950f7b9888cd9cfd5",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "Upgradeable",
+          "interface_name": "dojo::upgradable::IUpgradeable"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::upgradable::IUpgradeable",
+          "items": [
+            {
+              "type": "function",
+              "name": "upgrade",
+              "inputs": [
+                {
+                  "name": "new_class_hash",
+                  "type": "core::starknet::class_hash::ClassHash"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "BankSystemsImpl",
+          "interface_name": "eternum::systems::bank::interface::IBankSystems"
+        },
+        {
+          "type": "struct",
+          "name": "dojo::world::IWorldDispatcher",
+          "members": [
+            {
+              "name": "contract_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::bank::interface::IBankSystems",
+          "items": [
+            {
+              "type": "function",
+              "name": "swap",
+              "inputs": [
+                {
+                  "name": "world",
+                  "type": "dojo::world::IWorldDispatcher"
+                },
+                {
+                  "name": "bank_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "bank_swap_resource_cost_index",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "bought_resource_type",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "bought_resource_amount",
+                  "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "function",
+          "name": "dojo_resource",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::felt252"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::bank::contracts::bank_systems::Event",
+          "kind": "enum",
+          "variants": []
+        }
+      ],
+      "reads": [
+        "Bank",
+        "BankAuction",
+        "BankSwapResourceCost",
+        "Resource",
+        "ResourceCost",
+        "Weight",
+        "WeightConfig"
+      ],
+      "writes": [
+        "BankAuction",
+        "Resource",
+        "Weight"
+      ],
+      "computed": []
+    },
+    {
       "name": "caravan_systems",
-      "address": "0x384fd2bf241ffc48425ed1fed389495e8066079cdb16865a73e6d3849d32c4f",
+      "address": null,
       "class_hash": "0x7246ad54863b0d32f574265081ed83f5d8842428bf175b5d3ed39a0863c373b",
       "abi": [
         {
@@ -972,8 +1087,8 @@
     },
     {
       "name": "combat_systems",
-      "address": "0x778fd3e137dc0e58d94d599167aa431332b8529f9bfc8efd70a7ea4e9c74247",
-      "class_hash": "0xbda34a7ec7cbdecfd9eb892264bd58ae49eaea4806baa917e8a860342bfdb8",
+      "address": null,
+      "class_hash": "0x5679ad4ac6cd14be5c87d0243a998ad9efccc38e7cc0508c90fd93d5dbb683f",
       "abi": [
         {
           "type": "impl",
@@ -1015,25 +1130,11 @@
         },
         {
           "type": "struct",
-          "name": "core::array::Span::<core::integer::u128>",
+          "name": "core::array::Span::<(core::integer::u128, core::integer::u128)>",
           "members": [
             {
               "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u128>"
-            }
-          ]
-        },
-        {
-          "type": "enum",
-          "name": "eternum::models::combat::Duty",
-          "variants": [
-            {
-              "name": "Attack",
-              "type": "()"
-            },
-            {
-              "name": "Defence",
-              "type": "()"
+              "type": "@core::array::Array::<(core::integer::u128, core::integer::u128)>"
             }
           ]
         },
@@ -1060,30 +1161,26 @@
               ],
               "outputs": [
                 {
-                  "type": "core::array::Span::<core::integer::u128>"
+                  "type": "core::integer::u128"
                 }
               ],
               "state_mutability": "view"
             },
             {
               "type": "function",
-              "name": "group_and_deploy_soldiers",
+              "name": "detach_soldiers",
               "inputs": [
                 {
                   "name": "world",
                   "type": "dojo::world::IWorldDispatcher"
                 },
                 {
-                  "name": "realm_entity_id",
+                  "name": "unit_id",
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "soldier_ids",
-                  "type": "core::array::Span::<core::integer::u128>"
-                },
-                {
-                  "name": "duty",
-                  "type": "eternum::models::combat::Duty"
+                  "name": "detached_quantity",
+                  "type": "core::integer::u128"
                 }
               ],
               "outputs": [
@@ -1095,22 +1192,42 @@
             },
             {
               "type": "function",
-              "name": "ungroup_soldiers",
+              "name": "merge_soldiers",
               "inputs": [
                 {
                   "name": "world",
                   "type": "dojo::world::IWorldDispatcher"
                 },
                 {
-                  "name": "group_id",
+                  "name": "merge_into_unit_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "units",
+                  "type": "core::array::Span::<(core::integer::u128, core::integer::u128)>"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "heal_soldiers",
+              "inputs": [
+                {
+                  "name": "world",
+                  "type": "dojo::world::IWorldDispatcher"
+                },
+                {
+                  "name": "unit_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "health_amount",
                   "type": "core::integer::u128"
                 }
               ],
-              "outputs": [
-                {
-                  "type": "core::array::Span::<core::integer::u128>"
-                }
-              ],
+              "outputs": [],
               "state_mutability": "view"
             }
           ]
@@ -1119,6 +1236,16 @@
           "type": "impl",
           "name": "CombatSystemsImpl",
           "interface_name": "eternum::systems::combat::interface::ICombatSystems"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u128>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u128>"
+            }
+          ]
         },
         {
           "type": "interface",
@@ -1178,6 +1305,16 @@
           "state_mutability": "view"
         },
         {
+          "type": "struct",
+          "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
+            }
+          ]
+        },
+        {
           "type": "enum",
           "name": "eternum::systems::combat::contracts::combat_systems::Winner",
           "variants": [
@@ -1192,18 +1329,8 @@
           ]
         },
         {
-          "type": "struct",
-          "name": "core::array::Span::<core::integer::u8>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u8>"
-            }
-          ]
-        },
-        {
           "type": "event",
-          "name": "eternum::systems::combat::contracts::combat_systems::Combat",
+          "name": "eternum::systems::combat::contracts::combat_systems::CombatOutcome",
           "kind": "struct",
           "members": [
             {
@@ -1222,18 +1349,13 @@
               "kind": "data"
             },
             {
+              "name": "stolen_resources",
+              "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
+              "kind": "data"
+            },
+            {
               "name": "winner",
               "type": "eternum::systems::combat::contracts::combat_systems::Winner",
-              "kind": "data"
-            },
-            {
-              "name": "stolen_resource_types",
-              "type": "core::array::Span::<core::integer::u8>",
-              "kind": "data"
-            },
-            {
-              "name": "stolen_resource_amounts",
-              "type": "core::array::Span::<core::integer::u128>",
               "kind": "data"
             },
             {
@@ -1254,8 +1376,8 @@
           "kind": "enum",
           "variants": [
             {
-              "name": "Combat",
-              "type": "eternum::systems::combat::contracts::combat_systems::Combat",
+              "name": "CombatOutcome",
+              "type": "eternum::systems::combat::contracts::combat_systems::CombatOutcome",
               "kind": "nested"
             }
           ]
@@ -1274,6 +1396,8 @@
         "Health",
         "HealthConfig",
         "Inventory",
+        "Level",
+        "LevelingConfig",
         "Movable",
         "Owner",
         "Position",
@@ -1288,7 +1412,6 @@
         "WeightConfig"
       ],
       "writes": [
-        "ArrivalTime",
         "Attack",
         "Capacity",
         "Defence",
@@ -1298,14 +1421,15 @@
         "Movable",
         "Owner",
         "Position",
-        "Quantity"
+        "Quantity",
+        "Resource"
       ],
       "computed": []
     },
     {
       "name": "config_systems",
-      "address": "0x74c3dd7b64a0c8ad6a27276b9ec6a628774028734ea46cf3970ef185e35247d",
-      "class_hash": "0xabd7c1aab4d2ac63ec45ffad1e78cf9c3e65eb7f2418da973bad77a88db3a3",
+      "address": null,
+      "class_hash": "0x22cf5c1896ad4345ece35aaf2ffdcbfc5c4e2646686fd3eb0ad094bef98f207",
       "abi": [
         {
           "type": "impl",
@@ -1356,6 +1480,10 @@
                 {
                   "name": "world",
                   "type": "dojo::world::IWorldDispatcher"
+                },
+                {
+                  "name": "admin_address",
+                  "type": "core::starknet::contract_address::ContractAddress"
                 },
                 {
                   "name": "realm_l2_contract",
@@ -1479,6 +1607,14 @@
                 {
                   "name": "resource_costs",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                },
+                {
+                  "name": "wheat_burn_per_soldier",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "fish_burn_per_soldier",
+                  "type": "core::integer::u128"
                 }
               ],
               "outputs": [],
@@ -1497,7 +1633,11 @@
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "value",
+                  "name": "resource_costs",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                },
+                {
+                  "name": "max_value",
                   "type": "core::integer::u128"
                 }
               ],
@@ -1517,7 +1657,7 @@
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "value",
+                  "name": "max_value",
                   "type": "core::integer::u128"
                 }
               ],
@@ -1537,7 +1677,7 @@
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "value",
+                  "name": "max_value",
                   "type": "core::integer::u128"
                 }
               ],
@@ -1564,7 +1704,35 @@
                   "type": "dojo::world::IWorldDispatcher"
                 },
                 {
-                  "name": "resource_costs",
+                  "name": "decay_scaled",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "cost_percentage_scaled",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "base_multiplier",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "wheat_base_amount",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "fish_base_amount",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "resource_1_costs",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                },
+                {
+                  "name": "resource_2_costs",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
+                },
+                {
+                  "name": "resource_3_costs",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                 }
               ],
@@ -1809,6 +1977,93 @@
           ]
         },
         {
+          "type": "impl",
+          "name": "BankConfigImpl",
+          "interface_name": "eternum::systems::config::interface::IBankConfig"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<(core::integer::u8, core::array::Span::<(core::integer::u8, core::integer::u128)>)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::integer::u8, core::array::Span::<(core::integer::u8, core::integer::u128)>)>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<(core::integer::u8, core::integer::u32)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::integer::u8, core::integer::u32)>"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::config::interface::IBankConfig",
+          "items": [
+            {
+              "type": "function",
+              "name": "create_bank",
+              "inputs": [
+                {
+                  "name": "world",
+                  "type": "dojo::world::IWorldDispatcher"
+                },
+                {
+                  "name": "coord",
+                  "type": "eternum::models::position::Coord"
+                },
+                {
+                  "name": "swap_cost_resources",
+                  "type": "core::array::Span::<(core::integer::u8, core::array::Span::<(core::integer::u8, core::integer::u128)>)>"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::integer::u128"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "set_bank_auction",
+              "inputs": [
+                {
+                  "name": "world",
+                  "type": "dojo::world::IWorldDispatcher"
+                },
+                {
+                  "name": "bank_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "bank_swap_resource_cost_keys",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u32)>"
+                },
+                {
+                  "name": "decay_constant",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "per_time_unit",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "price_update_interval",
+                  "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
           "type": "function",
           "name": "dojo_resource",
           "inputs": [],
@@ -1826,9 +2081,15 @@
           "variants": []
         }
       ],
-      "reads": [],
+      "reads": [
+        "Bank",
+        "WorldConfig"
+      ],
       "writes": [
         "AttackConfig",
+        "Bank",
+        "BankAuction",
+        "BankSwapResourceCost",
         "CapacityConfig",
         "CombatConfig",
         "DefenceConfig",
@@ -1839,6 +2100,7 @@
         "LaborCostAmount",
         "LaborCostResources",
         "LevelingConfig",
+        "Position",
         "ResourceCost",
         "RoadConfig",
         "SoldierConfig",
@@ -1851,7 +2113,7 @@
     },
     {
       "name": "hyperstructure_systems",
-      "address": "0xfdcafc26f1d866ad585cadfb0fb177e4512d03f6020e67adadb5c66690d9c2",
+      "address": null,
       "class_hash": "0x2270543d25a4aba5b0fd5f1adb280bb34dc67564f999c6d2155aca455ba287b",
       "abi": [
         {
@@ -1968,8 +2230,8 @@
     },
     {
       "name": "labor_systems",
-      "address": "0x5b3b02ba50cfb46af86c20d1eca1bbff5fe82ff2f8985aefc413267a5d05b00",
-      "class_hash": "0x1842dbbbebd71d8c247f6d15981a49ed2aee5e81bd2899b140bb1a0d7d871f6",
+      "address": null,
+      "class_hash": "0x614bd307f8a0505319a1405c175315e1142df4ea827aebaa02ddc4a64a39537",
       "abi": [
         {
           "type": "impl",
@@ -2112,6 +2374,7 @@
         "LaborCostAmount",
         "LaborCostResources",
         "Level",
+        "LevelingConfig",
         "Owner",
         "Position",
         "Realm",
@@ -2126,8 +2389,8 @@
     },
     {
       "name": "leveling_systems",
-      "address": "0x81edcebc0097b53ae8db567565eb5c5d9e8a9190a8a80411547676f24361ca",
-      "class_hash": "0x3e35cf90aadf51c415e9e978d04c21400576f6990a0701da16df7a31e964992",
+      "address": null,
+      "class_hash": "0x46fbedd7b1013503ce8c1a832b55372bb42bb123b7870a9c5c2764b34fd85de",
       "abi": [
         {
           "type": "impl",
@@ -2216,13 +2479,14 @@
         "ResourceCost"
       ],
       "writes": [
-        "Level"
+        "Level",
+        "Resource"
       ],
       "computed": []
     },
     {
       "name": "name_systems",
-      "address": "0x2a9ee652fb9ce9812e9d06ec05429b6e27254b37d0ef0eaca6a1e4533d5c244",
+      "address": null,
       "class_hash": "0x7ab8e9771a066df89edfabd3c6a461715fffe4ba86e95f293db61c92452f222",
       "abi": [
         {
@@ -2313,8 +2577,8 @@
     },
     {
       "name": "resource_systems",
-      "address": "0x2dab8013b2dea3f5b37f31db94a5136843408efa04a966a6587f65056b1ef40",
-      "class_hash": "0x1e054d3a41a9818cab6820a40005e0f89e9943b5ee15b58f60b58ecf807d2d1",
+      "address": null,
+      "class_hash": "0x42a3bc781c5d7c67ffdc626daf2710d5e2f6637918fb26f7f1f28098d443cbf",
       "abi": [
         {
           "type": "impl",
@@ -2448,35 +2712,31 @@
         },
         {
           "type": "impl",
-          "name": "ResourceChestSystemsImpl",
-          "interface_name": "eternum::systems::resources::interface::IResourceChestSystems"
+          "name": "InventorySystemsImpl",
+          "interface_name": "eternum::systems::resources::interface::IInventorySystems"
         },
         {
           "type": "interface",
-          "name": "eternum::systems::resources::interface::IResourceChestSystems",
+          "name": "eternum::systems::resources::interface::IInventorySystems",
           "items": [
             {
               "type": "function",
-              "name": "offload_chest",
+              "name": "transfer_item",
               "inputs": [
                 {
                   "name": "world",
                   "type": "dojo::world::IWorldDispatcher"
                 },
                 {
-                  "name": "entity_id",
+                  "name": "sender_id",
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "entity_index_in_inventory",
+                  "name": "index",
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "receiving_entity_id",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "transport_id",
+                  "name": "receiver_id",
                   "type": "core::integer::u128"
                 }
               ],
@@ -2543,7 +2803,6 @@
         "ForeignKey",
         "Inventory",
         "Owner",
-        "Position",
         "Quantity",
         "Resource",
         "ResourceAllowance",
@@ -2555,7 +2814,6 @@
         "DetachedResource",
         "ForeignKey",
         "Inventory",
-        "Resource",
         "ResourceAllowance",
         "ResourceChest",
         "Weight"
@@ -2564,7 +2822,7 @@
     },
     {
       "name": "road_systems",
-      "address": "0x46e8cc4deb048fed25465e134ebbfa962137daaf0bb52a63d41940af3638e4d",
+      "address": null,
       "class_hash": "0x7d0376077bb24e151510d6200867b03a514708b42b010d892e88b79f1ec3696",
       "abi": [
         {
@@ -2684,8 +2942,8 @@
     },
     {
       "name": "test_realm_systems",
-      "address": "0x141b54c5560368787c28e61f9c9542e3aaf26a3f426263cb0dcde36339eec30",
-      "class_hash": "0x7f33d1102a9119c17543d110008c50ece9f15a55567102fa2950778ea28ee2d",
+      "address": null,
+      "class_hash": "0x786015ab1f9bd8e8c2e2175ca8c6d52d415d252a000e274db115dbba9699e4",
       "abi": [
         {
           "type": "impl",
@@ -2827,9 +3085,14 @@
           "variants": []
         }
       ],
-      "reads": [],
+      "reads": [
+        "CapacityConfig"
+      ],
       "writes": [
+        "Capacity",
         "EntityMetadata",
+        "EntityOwner",
+        "Movable",
         "Owner",
         "Position",
         "Realm",
@@ -2839,7 +3102,7 @@
     },
     {
       "name": "test_resource_systems",
-      "address": "0x5e2e8d20bc9f4c02050b2b6b7442a1ce06bbd9c0729716a7c5a478069c9b354",
+      "address": null,
       "class_hash": "0x1ad4fa3240e5f3c25d221d4ce96db8ac88c5e2946b83f2e28c5fce18543ad86",
       "abi": [
         {
@@ -2944,8 +3207,8 @@
     },
     {
       "name": "trade_systems",
-      "address": "0x7b54643f42a1c4298fe5e465105ccbee30ba505f3bedaa90f4951f9f15be8f0",
-      "class_hash": "0x7f8555b6afa833b0d51af0dc7c57917e7b5342c344a1280b03250cef8a168f",
+      "address": null,
+      "class_hash": "0x53b81301d57f4d449425a7baf06926d670421e917cf815e95ea2db2f88fd5be",
       "abi": [
         {
           "type": "impl",
@@ -2987,21 +3250,11 @@
         },
         {
           "type": "struct",
-          "name": "core::array::Span::<core::integer::u8>",
+          "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
           "members": [
             {
               "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u8>"
-            }
-          ]
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<core::integer::u128>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<core::integer::u128>"
+              "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
             }
           ]
         },
@@ -3022,12 +3275,8 @@
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "maker_gives_resource_types",
-                  "type": "core::array::Span::<core::integer::u8>"
-                },
-                {
-                  "name": "maker_gives_resource_amounts",
-                  "type": "core::array::Span::<core::integer::u128>"
+                  "name": "maker_gives_resources",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                 },
                 {
                   "name": "maker_transport_id",
@@ -3038,12 +3287,8 @@
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "taker_gives_resource_types",
-                  "type": "core::array::Span::<core::integer::u8>"
-                },
-                {
-                  "name": "taker_gives_resource_amounts",
-                  "type": "core::array::Span::<core::integer::u128>"
+                  "name": "taker_gives_resources",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                 },
                 {
                   "name": "expires_at",
@@ -3136,7 +3381,7 @@
     },
     {
       "name": "transport_unit_systems",
-      "address": "0x75eb7b6012dbb91d59aa20808de28666f8207478e08f4e4ee101bdb0ac89e63",
+      "address": null,
       "class_hash": "0x7830200083cda593f82cb1f196d6c3d70771b6b082a87249ae0f4f6a6ba219b",
       "abi": [
         {
@@ -3249,8 +3494,8 @@
     },
     {
       "name": "travel_systems",
-      "address": "0x8fa2df40a28c2ffb7a99267c1a67318451da3a5d39cadb18577a2d09856b0e",
-      "class_hash": "0x1a4882b76ddbd273be8730f30b9c685bd477ff8708e11317b62324ef5dd6d37",
+      "address": null,
+      "class_hash": "0x6c017e3dc7a261370471d33e66215837a31db640a22eac36d7b031e9ce58b79",
       "abi": [
         {
           "type": "impl",
@@ -3350,6 +3595,7 @@
       ],
       "reads": [
         "ArrivalTime",
+        "EntityOwner",
         "Movable",
         "Owner",
         "Position"
@@ -4079,12 +4325,12 @@
           "key": true
         },
         {
-          "name": "value",
+          "name": "max_value",
           "type": "u128",
           "key": false
         }
       ],
-      "class_hash": "0x4ae412fe270fe2d3f5acb27defe3b19ab94933b3d910e38979105b876e81d3f",
+      "class_hash": "0x552cd9e127e6ebcd5f950385a3a425e67c4e3df8760d65edbd63270e218e2ec",
       "abi": [
         {
           "type": "function",
@@ -4242,6 +4488,582 @@
         {
           "type": "event",
           "name": "eternum::models::config::attack_config::Event",
+          "kind": "enum",
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "Bank",
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "u128",
+          "key": true
+        },
+        {
+          "name": "exists",
+          "type": "bool",
+          "key": false
+        }
+      ],
+      "class_hash": "0x1989eb07f3441751adddbf09bcbd601ce46013a4b943f2ad7b7967528ca6709",
+      "abi": [
+        {
+          "type": "function",
+          "name": "name",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::felt252"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "unpacked_size",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "packed_size",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
+          "type": "function",
+          "name": "layout",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::array::Span::<core::integer::u8>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::felt252>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::felt252>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::schema::Struct",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::schema::Enum",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "dojo::database::schema::Ty",
+          "variants": [
+            {
+              "name": "Primitive",
+              "type": "core::felt252"
+            },
+            {
+              "name": "Struct",
+              "type": "dojo::database::schema::Struct"
+            },
+            {
+              "name": "Enum",
+              "type": "dojo::database::schema::Enum"
+            },
+            {
+              "name": "Tuple",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "function",
+          "name": "schema",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "dojo::database::schema::Ty"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::bank::bank::Event",
+          "kind": "enum",
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "BankAuction",
+      "members": [
+        {
+          "name": "bank_id",
+          "type": "u128",
+          "key": true
+        },
+        {
+          "name": "bank_gives_resource_type",
+          "type": "u8",
+          "key": true
+        },
+        {
+          "name": "bank_swap_resource_cost_index",
+          "type": "u32",
+          "key": true
+        },
+        {
+          "name": "decay_constant_mag",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "decay_constant_sign",
+          "type": "bool",
+          "key": false
+        },
+        {
+          "name": "per_time_unit",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "start_time",
+          "type": "u64",
+          "key": false
+        },
+        {
+          "name": "sold",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "price_update_interval",
+          "type": "u128",
+          "key": false
+        }
+      ],
+      "class_hash": "0x4cf509fead24ee1ab7cb10675c54c279fccef036acf1c908d97bd7636068a",
+      "abi": [
+        {
+          "type": "function",
+          "name": "name",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::felt252"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "unpacked_size",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "packed_size",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
+          "type": "function",
+          "name": "layout",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::array::Span::<core::integer::u8>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::felt252>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::felt252>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::schema::Struct",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::schema::Enum",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "dojo::database::schema::Ty",
+          "variants": [
+            {
+              "name": "Primitive",
+              "type": "core::felt252"
+            },
+            {
+              "name": "Struct",
+              "type": "dojo::database::schema::Struct"
+            },
+            {
+              "name": "Enum",
+              "type": "dojo::database::schema::Enum"
+            },
+            {
+              "name": "Tuple",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "function",
+          "name": "schema",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "dojo::database::schema::Ty"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::bank::bank_auction::Event",
+          "kind": "enum",
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "BankSwapResourceCost",
+      "members": [
+        {
+          "name": "bank_gives_resource_type",
+          "type": "u8",
+          "key": true
+        },
+        {
+          "name": "index",
+          "type": "u32",
+          "key": true
+        },
+        {
+          "name": "resource_cost_id",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "resource_cost_count",
+          "type": "u32",
+          "key": false
+        }
+      ],
+      "class_hash": "0x12851c84251a2355c79ff2037a6c5f6ecc83c2e3b15dcca3c27f4a8c2cba30",
+      "abi": [
+        {
+          "type": "function",
+          "name": "name",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::felt252"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "unpacked_size",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "function",
+          "name": "packed_size",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::integer::u32"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
+          "type": "function",
+          "name": "layout",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::array::Span::<core::integer::u8>"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::felt252>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::felt252>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::schema::Struct",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::schema::Enum",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "dojo::database::schema::Ty",
+          "variants": [
+            {
+              "name": "Primitive",
+              "type": "core::felt252"
+            },
+            {
+              "name": "Struct",
+              "type": "dojo::database::schema::Struct"
+            },
+            {
+              "name": "Enum",
+              "type": "dojo::database::schema::Enum"
+            },
+            {
+              "name": "Tuple",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "function",
+          "name": "schema",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "dojo::database::schema::Ty"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::bank::bank_swap_resource_cost::Event",
           "kind": "enum",
           "variants": []
         }
@@ -5722,12 +6544,12 @@
           "key": true
         },
         {
-          "name": "value",
+          "name": "max_value",
           "type": "u128",
           "key": false
         }
       ],
-      "class_hash": "0x4a76b2acb0ee7a19e820a50663cf11bb12227a3af6c0b80bb7ed0f921fe2b80",
+      "class_hash": "0x425d44029a1861b8abdc95f08911689f9140f0efd9322467c44bd75664f202b",
       "abi": [
         {
           "type": "function",
@@ -6794,12 +7616,22 @@
           "key": true
         },
         {
-          "name": "value",
+          "name": "resource_cost_id",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "resource_cost_count",
+          "type": "u32",
+          "key": false
+        },
+        {
+          "name": "max_value",
           "type": "u128",
           "key": false
         }
       ],
-      "class_hash": "0x10873200782e604d9879f0effbac76111365f09e8680383b337cfe8f23a015d",
+      "class_hash": "0x7c7412cb264ccc8091d6dfd83c66a323de29fe55592767d6a8ce55625349466",
       "abi": [
         {
           "type": "function",
@@ -8497,17 +9329,62 @@
           "key": true
         },
         {
-          "name": "resource_cost_id",
+          "name": "wheat_base_amount",
           "type": "u128",
           "key": false
         },
         {
-          "name": "resource_cost_count",
+          "name": "fish_base_amount",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "resource_1_cost_id",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "resource_1_cost_count",
           "type": "u32",
+          "key": false
+        },
+        {
+          "name": "resource_2_cost_id",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "resource_2_cost_count",
+          "type": "u32",
+          "key": false
+        },
+        {
+          "name": "resource_3_cost_id",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "resource_3_cost_count",
+          "type": "u32",
+          "key": false
+        },
+        {
+          "name": "decay_scaled",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "cost_percentage_scaled",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "base_multiplier",
+          "type": "u128",
           "key": false
         }
       ],
-      "class_hash": "0x3de3d2e92d1616482d23773ca618e3dd3630a6c761d7931f36325cb95d0d9d7",
+      "class_hash": "0x2e0a70d2268e06a7fda8ad50ee10406775a9d69091637f7463283ea347509f3",
       "abi": [
         {
           "type": "function",
@@ -10931,9 +11808,19 @@
           "name": "resource_cost_count",
           "type": "u32",
           "key": false
+        },
+        {
+          "name": "wheat_burn_per_soldier",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "fish_burn_per_soldier",
+          "type": "u128",
+          "key": false
         }
       ],
-      "class_hash": "0x39e0a6a5d1286bfc186f1d5fd6319d65a40cde3f14706a280b973ac085843c7",
+      "class_hash": "0x2e85dc798eeb6bf3b7dd200ee1b843840548d6adf388b0687045f608a59539c",
       "abi": [
         {
           "type": "function",
@@ -12394,12 +13281,17 @@
           "key": true
         },
         {
+          "name": "admin_address",
+          "type": "ContractAddress",
+          "key": false
+        },
+        {
           "name": "realm_l2_contract",
           "type": "ContractAddress",
           "key": false
         }
       ],
-      "class_hash": "0x3b80cd81fede5c9e274f13f771e62ae765fe143b3fb0199f49188367a58ed2b",
+      "class_hash": "0x411e942cb34c2820b1190a175136b31900c8e72fed723554cb0653730a3082b",
       "abi": [
         {
           "type": "function",

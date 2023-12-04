@@ -1,0 +1,3 @@
+target/*
+!target/dev/manifest.json
+!target/release/manifest.json

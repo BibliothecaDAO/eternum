@@ -1,56 +1,8 @@
-use cubit::f128::math::core::{ln, abs, exp, pow};
+use cubit::f128::math::core::ln;
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
-use starknet::{ContractAddress, get_block_timestamp};
-// TODO: use dojo_defi when works with nightly
-// use dojo_defi::dutch_auction::vrgda::{LinearVRGDA, LinearVRGDATrait};
+use starknet::get_block_timestamp;
 
-use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
-
-/// A Linear Variable Rate Gradual Dutch Auction (VRGDA) struct.
-/// Represents an auction where the price decays linearly based on the target price,
-/// decay constant, and per-time-unit rate.
-#[derive(Copy, Drop, Serde, starknet::Storage)]
-struct LinearVRGDA {
-    target_price: Fixed,
-    decay_constant: Fixed,
-    per_time_unit: Fixed,
-}
-
-#[generate_trait]
-impl LinearVRGDAImpl of LinearVRGDATrait {
-    /// Calculates the target sale time based on the quantity sold.
-    ///
-    /// # Arguments
-    ///
-    /// * `sold`: Quantity sold.
-    ///
-    /// # Returns
-    ///
-    /// * A `Fixed` representing the target sale time.
-    fn get_target_sale_time(self: @LinearVRGDA, sold: Fixed) -> Fixed {
-        sold / *self.per_time_unit
-    }
-
-    /// Calculates the VRGDA price at a specific time since the auction started.
-    ///
-    /// # Arguments
-    ///
-    /// * `time_since_start`: Time since the auction started.
-    /// * `sold`: Quantity sold.
-    ///
-    /// # Returns
-    ///
-    /// * A `Fixed` representing the price.
-    fn get_vrgda_price(self: @LinearVRGDA, time_since_start: Fixed, sold: Fixed) -> Fixed {
-        *self.target_price
-            * exp(
-                *self.decay_constant
-                    * (time_since_start
-                        - self.get_target_sale_time(sold + FixedTrait::new(1, false)))
-            )
-    }
-}
-
+use eternum::utils::vrgda::{LinearVRGDA, LinearVRGDATrait};
 
 #[derive(Model, Copy, Drop, Serde)]
 struct LaborAuction {
@@ -94,19 +46,15 @@ impl LaborAuctionImpl of LaborAuctionTrait {
                 FixedTrait::new_unscaled(self.sold, false), // amount sold
             )
     }
-
-    #[inline(always)]
-    fn sell(ref self: LaborAuction) {
-        self.sold += 1;
-    }
 }
 
 
 #[cfg(test)]
 mod tests {
     use eternum::models::labor_auction::{
-        LaborAuction, LaborAuctionTrait, LinearVRGDATrait, LinearVRGDA
+        LaborAuction, LaborAuctionTrait
     };
+    use eternum::utils::vrgda::{LinearVRGDATrait, LinearVRGDA};
 
     use cubit::f128::math::core::{ln, abs, exp, pow};
 
@@ -162,43 +110,4 @@ mod tests {
         )
     }
 
-    #[test]
-    #[available_gas(3000000000)]
-    fn test_auction_sell() {
-        let world = spawn_eternum();
-        starknet::testing::set_contract_address(world.executor());
-
-        let mut auction = LaborAuction {
-            zone: 1,
-            decay_constant_mag: _0_1,
-            decay_constant_sign: false,
-            per_time_unit: 50,
-            start_time: 0,
-            sold: 50,
-            price_update_interval: 10,
-        };
-
-        set!(world, (auction));
-
-        // advance time to 1 day
-        starknet::testing::set_block_timestamp(86400);
-
-        // sell all remaining labor
-        let mut i: u8 = 1;
-        loop {
-            if i > 50 {
-                break;
-            }
-            auction.sell();
-            i += 1;
-        };
-
-        assert(auction.sold == 100, 'sold is wrong');
-
-        let price = auction.get_price();
-
-        assert_rel_approx_eq(
-            price, FixedTrait::new(_1_1111111111, false), FixedTrait::new(DELTA_0_0005, false)
-        )
-    }
 }

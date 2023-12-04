@@ -9,15 +9,15 @@ const ContentContainer = ({ children }: { children: React.ReactNode }) => {
     <Transition
       show={isSideMenuOpened}
       as={Fragment}
-      enter="transition-transform duration-300"
-      enterFrom="-translate-x-[125%]"
-      enterTo="translate-x-0"
-      leave="transition-transfirn duration-300"
-      leaveFrom="translate-x-0"
-      leaveTo="-translate-x-[125%]"
+      enter="transition-all duration-300"
+      enterFrom="-ml-[470px]"
+      enterTo="ml-0"
+      leave="transition-all duration-300"
+      leaveFrom="ml-0"
+      leaveTo="-ml-[470px]"
       appear
     >
-      <div className="absolute w-[420px] left-6 bottom-10 h-[calc(100vh-14.5rem)] root-container">{children}</div>
+      <div className="absolute w-[420px] -ml left-6 bottom-10 h-[calc(100vh-14.5rem)] root-container">{children}</div>
     </Transition>
   );
 };

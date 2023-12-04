@@ -4,7 +4,7 @@ import Button from "../../../../../elements/Button";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../DojoContext";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
-import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
+import { LevelIndex, useGetRealm, useRealm } from "../../../../../hooks/helpers/useRealm";
 import { calculateSuccess } from "../../../../../utils/combat";
 import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
 import { Defence } from "../defence/Defence";
@@ -357,7 +357,7 @@ const StealResultPanel = ({
               {inventoryResources && (
                 <div className="flex justify-center items-center space-x-1 flex-wrap p-2 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                   <div className="text-light-pink text-lg w-full mb-2 text-center italic">You won!</div>
-                  {inventoryResources.map(
+                  {inventoryResources.resources.map(
                     (resource) =>
                       resource && (
                         <div key={resource.resourceId} className="flex flex-col items-center justify-center">
@@ -469,6 +469,8 @@ const SelectRaidersPanel = ({
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
+  const { getRealmLevelBonus, getRealmLevel } = useRealm();
+
   const [attackerTotalAttack, attackerTotalHealth] = useMemo(() => {
     // sum attack of the list
     return [
@@ -478,12 +480,22 @@ const SelectRaidersPanel = ({
     ];
   }, [selectedRaiders]);
 
+  const attackerLevelBonus = useMemo(() => {
+    let level = getRealmLevel(realmEntityId)?.level || 0;
+    return getRealmLevelBonus(level, LevelIndex.COMBAT);
+  }, [realmEntityId]);
+
+  const defenderLevelBonus = useMemo(() => {
+    let level = watchTower ? getRealmLevel(watchTower.entityOwnerId)?.level || 0 : 0;
+    return getRealmLevelBonus(level, LevelIndex.COMBAT);
+  }, [realmEntityId]);
+
   const succesProb = useMemo(() => {
     return calculateSuccess(
-      { attack: attackerTotalAttack, health: attackerTotalHealth },
-      watchTower ? { defence: watchTower.defence, health: watchTower.health } : undefined,
+      { attack: (attackerTotalAttack * attackerLevelBonus) / 100, health: attackerTotalHealth },
+      watchTower ? { defence: (watchTower.defence * defenderLevelBonus) / 100, health: watchTower.health } : undefined,
     );
-  }, [attackerTotalAttack]);
+  }, [attackerTotalAttack, attackerLevelBonus, defenderLevelBonus]);
 
   // @ts-ignore
   const { realm } = useGetRealm(realmEntityId);
@@ -527,7 +539,7 @@ const SelectRaidersPanel = ({
       <div className="flex flex-col items-center w-full">
         {/* {toRealm && <Headline size="big">Build road to {realmsData["features"][toRealm.realmId - 1].name}</Headline>} */}
         <div className="p-2 rounded border border-gold w-full flex flex-col">
-          {watchTower && <Defence watchTower={watchTower}></Defence>}
+          {watchTower && <Defence levelBonus={defenderLevelBonus} watchTower={watchTower}></Defence>}
           <div className="flex mt-2 flex-col items-center w-full text-xxs">
             <div className="text-light-pink italic w-full">Available resources:</div>
             <div className="grid grid-cols-12 text-lightest gap-2 w-full mt-1 flex-wrap">
@@ -542,7 +554,7 @@ const SelectRaidersPanel = ({
               ))}
             </div>
           </div>
-          <div className="flex mt-2 flex-col items-center justify-center w-full">
+          <div className="flex my-2 flex-col items-center justify-center w-full">
             <div className="grid mb-1 grid-cols-2 gap-2 w-full">
               <Button
                 className="w-full text-xxs h-[18px]"
@@ -585,6 +597,10 @@ const SelectRaidersPanel = ({
 
         <div className={"relative w-full mt-2"}>
           <div className="font-bold text-center text-white text-xs mb-2">Select Raiders</div>
+          <div className="flex flex-row mb-3 text-xs items-center justify-center">
+            <span className="mr-1 text-gold">{`Combat Bonus: `}</span>
+            <span className="text-order-brilliance">{`+${attackerLevelBonus - 100}%`}</span>
+          </div>
           <SelectRaiders
             attackingRaiders={attackingRaiders}
             selectedRaiders={selectedRaiders}

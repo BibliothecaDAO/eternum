@@ -64,6 +64,8 @@ const WHEAT_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST: u128 = 50;
 const FISH_BURN_PER_SOLDIER_DURING_ATTACK: u128 = 200;
 const FISH_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST: u128 = 10;
 
+const WHEAT_BURN_PER_SOLDIER_DURING_ATTACK: u128 = 100;
+const FISH_BURN_PER_SOLDIER_DURING_ATTACK: u128 = 200;
 const ATTACKER_SOLDIER_COUNT: u128 = 15;
 const TARGET_SOLDIER_COUNT: u128 = 5;
 const INITIAL_RESOURCE_BALANCE: u128 = 5000;
@@ -99,7 +101,9 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, u128, ICombatSystemsDis
             // pay for each soldier with the following
             (ResourceTypes::DRAGONHIDE, 40),
             (ResourceTypes::DEMONHIDE, 40),
-        ].span()
+        ].span(),
+        WHEAT_BURN_PER_SOLDIER_DURING_ATTACK,
+        FISH_BURN_PER_SOLDIER_DURING_ATTACK
     );
 
     // set soldiers starting attack, defence and health

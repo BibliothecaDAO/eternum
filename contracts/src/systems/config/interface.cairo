@@ -7,6 +7,7 @@ use dojo::world::IWorldDispatcher;
 trait IWorldConfig<TContractState> {
     fn set_world_config(
         self: @TContractState, world: IWorldDispatcher, 
+        admin_address: starknet::ContractAddress,
         realm_l2_contract: starknet::ContractAddress
     );
 }
@@ -46,7 +47,9 @@ trait ICombatConfig<TContractState> {
     fn set_soldier_config(
         self: @TContractState, 
         world: IWorldDispatcher, 
-        resource_costs: Span<(u8, u128)>
+        resource_costs: Span<(u8, u128)>,
+        wheat_burn_per_soldier: u128,
+        fish_burn_per_soldier: u128
     );
 
     fn set_health_config(
@@ -129,6 +132,34 @@ trait IHyperstructureConfig<TContractState> {
 trait ILevelingConfig<TContractState> {
     fn set_leveling_config(
         self: @TContractState, world: IWorldDispatcher,
-        resource_costs: Span<(u8, u128)>
+        decay_scaled: u128,
+        cost_percentage_scaled: u128,
+        base_multiplier: u128,
+        wheat_base_amount: u128,
+        fish_base_amount: u128,
+        resource_1_costs: Span<(u8, u128)>,
+        resource_2_costs: Span<(u8, u128)>,
+        resource_3_costs: Span<(u8, u128)>
+    );
+}
+
+#[starknet::interface]
+trait IBankConfig<TContractState> {
+    fn create_bank(
+        self: @TContractState,
+        world: IWorldDispatcher,
+        coord: Coord,
+        swap_cost_resources: Span<(u8, Span<(u8, u128)>)>
+    ) -> ID ;
+
+
+    fn set_bank_auction(
+        self: @TContractState,
+        world: IWorldDispatcher,
+        bank_id: u128,
+        bank_swap_resource_cost_keys: Span<(u8, u32)>,
+        decay_constant: u128,
+        per_time_unit: u128,
+        price_update_interval: u128,
     );
 }

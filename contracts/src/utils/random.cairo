@@ -45,6 +45,8 @@ fn make_seed_from_transaction_hash(salt: u128) -> u256 {
 ///     k: u128
 ///         The number of elements to sample.
 ///
+///     r: bool
+///         Whether or not to choose with (r)eplacement.
 /// Returns:
 ///     Span<u128>
 ///         A k sized list of population elements chosen with replacement.
@@ -52,10 +54,10 @@ fn make_seed_from_transaction_hash(salt: u128) -> u256 {
 /// See Also: https://docs.python.org/3/library/random.html#random.choices
 ///
 fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>
-    (population: Span<T>, weights: Span<u128>, mut cum_weights: Span<u128>, k: u128) -> Span<T> {
+    (population: Span<T>, weights: Span<u128>, mut cum_weights: Span<u128>, k: u128, r: bool) -> Span<T> {
 
     let mut n = population.len();
-    let salt: u128 = starknet::get_block_timestamp().into();  
+    let mut salt: u128 = starknet::get_block_timestamp().into();  
 
     if cum_weights.len() == 0 {
         if weights.len() == 0 {
@@ -95,20 +97,35 @@ fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>
     let mut index = 0;
     let mut result = array![];
 
+    let mut chosen_index_map : Felt252Dict<u8> = Default::default();
+
     loop {
         if index == k {
             break;
         }
-        result.append(
-            *population.at(
-                bisect_right(
-                    cum_weights.clone(), 
-                    random(salt + index.into(), total), 
-                    0, Option::Some(hi)
-                    )
-            )
-        );
-        index += 1;
+
+        // update salt by any number 
+        // just to make it different
+        salt += 18;
+
+        let chosen_index
+            = bisect_right(
+                cum_weights.clone(), 
+                random(salt, total), 
+                0, Option::Some(hi)
+            );
+
+        if r == false {
+            if chosen_index_map.get(chosen_index.into()) == 0 {
+                chosen_index_map.insert(chosen_index.into(), 1);
+                result.append(*population.at(chosen_index));
+                index += 1;
+            } 
+        } else {
+            result.append(*population.at(chosen_index));
+            index += 1;
+        }
+
     };
     return result.span();
 }

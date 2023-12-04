@@ -12,6 +12,7 @@ use starknet::ContractAddress;
 struct WorldConfig {
     #[key]
     config_id: u128,
+    admin_address: ContractAddress,
     realm_l2_contract: ContractAddress,
 }
 
@@ -141,7 +142,9 @@ struct SoldierConfig {
     #[key]
     config_id: u128,
     resource_cost_id: u128,
-    resource_cost_count: u32
+    resource_cost_count: u32,
+    wheat_burn_per_soldier: u128,
+    fish_burn_per_soldier: u128,
 }
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -198,9 +201,18 @@ impl WeightConfigImpl of WeightConfigTrait {
 struct LevelingConfig {
     #[key]
     config_id: u128,
-    #[key]
-    index: u32,
-    resource_cost_id: u128,
-    resource_cost_count: u32
+    wheat_base_amount: u128,
+    fish_base_amount: u128,
+    // low tier resources
+    resource_1_cost_id: u128,
+    resource_1_cost_count: u32,
+    // mid tier resources
+    resource_2_cost_id: u128,
+    resource_2_cost_count: u32,
+    // high tier resources
+    resource_3_cost_id: u128,
+    resource_3_cost_count: u32,
+    decay_scaled: u128,
+    cost_percentage_scaled: u128,
+    base_multiplier: u128
 }
-

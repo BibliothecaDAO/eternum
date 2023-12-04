@@ -7,14 +7,13 @@ import { LaborCostInterface } from "../hooks/helpers/useLabor";
 import { LABOR_CONFIG, ROAD_COST_PER_USAGE } from "@bibliothecadao/eternum";
 import {
   CancelFungibleOrderProps,
-  OffloadResourcesProps,
+  TransferItemsProps,
   CreateOrderProps,
   CreateRoadProps,
   HarvestLaborProps,
   PurchaseLaborProps,
   BuildLaborProps,
 } from "@bibliothecadao/eternum";
-import { calculateLevelMultiplier } from "../components/cityview/realm/labor/laborUtils";
 
 export const HIGH_ENTITY_ID = 9999999999;
 
@@ -22,7 +21,7 @@ export function createOptimisticSystemCalls({
   Trade,
   Status,
   Labor,
-  Level,
+  ForeignKey,
   Resource,
   Road,
   DetachedResource,
@@ -105,10 +104,21 @@ export function createOptimisticSystemCalls({
   // note: claim fungible order is actually transferring from the resourceschest to the realm
   function optimisticOffloadResources(
     resourcesGet: Resource[],
-    systemCall: (args: OffloadResourcesProps) => Promise<void>,
+    systemCall: (args: TransferItemsProps) => Promise<void>,
   ) {
-    return async function (this: any, args: OffloadResourcesProps) {
-      const { receiving_entity_id, transport_id, entity_id: resources_chest_id } = args;
+    return async function (this: any, args: TransferItemsProps) {
+      const { receiver_id: receiving_entity_id, indices, sender_id: transport_id } = args;
+
+      const resources_chest_ids = indices.map((index: number) => {
+        let inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(transport_id)]));
+        let foreignKey = inventory
+          ? getComponentValue(
+              ForeignKey,
+              getEntityIdFromKeys([BigInt(transport_id), BigInt(inventory.items_key), BigInt(index)]),
+            )
+          : undefined;
+        return foreignKey?.entity_id;
+      });
 
       let overrideId = uuid();
 
@@ -120,12 +130,14 @@ export function createOptimisticSystemCalls({
         },
       });
 
-      // remove resources from chest
-      ResourceChest.addOverride(overrideId, {
-        entity: getEntityIdFromKeys([BigInt(resources_chest_id)]),
-        value: {
-          resources_count: 0,
-        },
+      resources_chest_ids.forEach((resources_chest_id) => {
+        // remove resources from chest
+        ResourceChest.addOverride(overrideId, {
+          entity: getEntityIdFromKeys([BigInt(resources_chest_id)]),
+          value: {
+            resources_count: 0,
+          },
+        });
       });
 
       // add resources to balance
@@ -272,7 +284,11 @@ export function createOptimisticSystemCalls({
     };
   }
 
-  function optimisticHarvestLabor(ts: number, level: number, systemCall: (args: HarvestLaborProps) => Promise<void>) {
+  function optimisticHarvestLabor(
+    ts: number,
+    levelBonus: number,
+    systemCall: (args: HarvestLaborProps) => Promise<void>,
+  ) {
     return async function (this: any, args: HarvestLaborProps) {
       const { realm_id, resource_type } = args;
 
@@ -285,7 +301,6 @@ export function createOptimisticSystemCalls({
         last_harvest: ts,
         multiplier: 1,
       };
-      let levelMultiplier = calculateLevelMultiplier(level);
       let laborGenerated = labor.balance <= ts ? labor.balance - labor.last_harvest : ts - labor.last_harvest;
       let laborUnharvested = labor.balance <= ts ? 0 : labor.balance - ts;
       let laborUnitsGenerated = Math.floor(laborGenerated / LABOR_CONFIG.base_labor_units);
@@ -306,8 +321,8 @@ export function createOptimisticSystemCalls({
         balance: 0,
       };
       let resourceBalance = isFood
-        ? laborUnitsGenerated * LABOR_CONFIG.base_food_per_cycle * labor.multiplier * levelMultiplier
-        : laborUnitsGenerated * LABOR_CONFIG.base_resources_per_cycle * levelMultiplier;
+        ? (laborUnitsGenerated * LABOR_CONFIG.base_food_per_cycle * labor.multiplier * levelBonus) / 100
+        : (laborUnitsGenerated * LABOR_CONFIG.base_resources_per_cycle * levelBonus) / 100;
       Resource.addOverride(overrideId, {
         entity: resource_id,
         value: {

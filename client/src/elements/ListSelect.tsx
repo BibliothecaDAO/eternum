@@ -28,17 +28,15 @@ function ListSelect(props: ListSelectProps) {
     <div className={clsx("w-full", props.className)}>
       <Listbox value={props.value} onChange={props.onChange}>
         {({ open }) => (
-          <div className="relative mt-1">
+          <div className="relative  ">
             <Listbox.Button
               className={clsx(
                 "flex relative justify-center w-full cursor-pointer rounded-md text-xs py-2 px-6",
                 open ? "bg-white text-brown" : "bg-dark-brown text-white hover:bg-dark-brown/50",
               )}
             >
-              {props.title && (
-                <span className="inline-block truncate flex items-center !text-gold mr-2">{props.title}</span>
-              )}
-              <span className="inline-block truncate flex items-center">{selectedOption.label}</span>
+              {props.title && <span className="truncate flex items-center !text-gold mr-2">{props.title}</span>}
+              <span className="truncate flex items-center">{selectedOption.label}</span>
               <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                 <div className="flex flex-col items-center justify-center ml-1">
                   <CaretDown

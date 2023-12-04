@@ -16,10 +16,10 @@ import {
   InitializeHyperstructuresProps,
   MintResourcesProps,
   PurchaseLaborProps,
-  SendResourcesToHyperstructureProps,
+  SendResourcesToLocationProps,
   TransferResourcesProps,
   TravelProps,
-  OffloadResourcesProps,
+  TransferItemsProps,
   CreateSoldiersProps,
   DetachSoldiersProps,
   AttackProps,
@@ -29,6 +29,8 @@ import {
   MergeSoldiersProps,
   CreateAndMergeSoldiersProps,
   HealSoldiersProps,
+  HarvestAllLaborProps,
+  SwapBankAndTravelBackProps,
 } from "../types";
 import { Call } from "starknet";
 
@@ -79,6 +81,23 @@ export class EternumProvider extends RPCProvider {
       entrypoint: "harvest",
       calldata: [this.getWorldAddress(), realm_id, resource_type],
     });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async harvest_all_labor(props: HarvestAllLaborProps) {
+    const { entity_ids, signer } = props;
+
+    const calldata = entity_ids.map((entity_id) => {
+      return {
+        contractAddress: getContractByName(this.manifest, "labor_systems"),
+        entrypoint: "harvest",
+        calldata: [this.getWorldAddress(), ...entity_id],
+      };
+    });
+
+    const tx = await this.executeMulti(signer, calldata);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
     });
@@ -211,13 +230,17 @@ export class EternumProvider extends RPCProvider {
     });
   }
 
-  public async offload_chest(props: OffloadResourcesProps) {
-    const { entity_id, entity_index_in_inventory, receiving_entity_id, transport_id, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "resource_systems"),
-      entrypoint: "offload_chest",
-      calldata: [this.getWorldAddress(), entity_id, entity_index_in_inventory, receiving_entity_id, transport_id],
+  public async transfer_items(props: TransferItemsProps) {
+    const { sender_id, indices, receiver_id, signer } = props;
+
+    let calldata = indices.map((index) => {
+      return {
+        contractAddress: getContractByName(this.manifest, "resource_systems"),
+        entrypoint: "transfer_item",
+        calldata: [this.getWorldAddress(), sender_id, index, receiver_id],
+      };
     });
+    const tx = await this.executeMulti(signer, calldata);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
     });
@@ -361,7 +384,7 @@ export class EternumProvider extends RPCProvider {
     });
   }
 
-  public async send_resources_to_hyperstructure(props: SendResourcesToHyperstructureProps) {
+  public async send_resources_to_location(props: SendResourcesToLocationProps) {
     const {
       sending_entity_id,
       resources,
@@ -415,6 +438,41 @@ export class EternumProvider extends RPCProvider {
       retryInterval: 500,
     });
   }
+
+  public swap_bank_and_travel_back = async (props: SwapBankAndTravelBackProps) => {
+    const {
+      sender_id,
+      inventoryIndex,
+      bank_id,
+      resource_types,
+      resource_amounts,
+      indices,
+      destination_coord_x,
+      destination_coord_y,
+      signer,
+    } = props;
+
+    const tx = await this.executeMulti(signer, [
+      {
+        contractAddress: getContractByName(this.manifest, "resource_systems"),
+        entrypoint: "transfer_item",
+        calldata: [this.getWorldAddress(), sender_id, inventoryIndex, sender_id],
+      },
+      ...indices.map((index, i) => ({
+        contractAddress: getContractByName(this.manifest, "bank_systems"),
+        entrypoint: "swap",
+        calldata: [this.getWorldAddress(), bank_id, index, sender_id, resource_types[i], resource_amounts[i]],
+      })),
+      {
+        contractAddress: getContractByName(this.manifest, "travel_systems"),
+        entrypoint: "travel",
+        calldata: [this.getWorldAddress(), sender_id, destination_coord_x, destination_coord_y],
+      },
+    ]);
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  };
 
   public feed_hyperstructure_and_travel_back = async (props: FeedHyperstructureAndTravelBackPropos) => {
     const { entity_id, resources, hyperstructure_id, destination_coord_x, destination_coord_y, signer } = props;
@@ -586,18 +644,6 @@ export class EternumProvider extends RPCProvider {
     });
   }
 
-  public async set_address_name(props: SetAddressNameProps) {
-    const { name, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "name_systems"),
-      entrypoint: "set_address_name",
-      calldata: [this.getWorldAddress(), name],
-    });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
-  }
-
   public async heal_soldiers(props: HealSoldiersProps) {
     const { unit_id, health_amount, signer } = props;
 
@@ -605,6 +651,19 @@ export class EternumProvider extends RPCProvider {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
       entrypoint: "heal_soldiers",
       calldata: [this.getWorldAddress(), unit_id, health_amount],
+    });
+
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async set_address_name(props: SetAddressNameProps) {
+    const { name, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "name_systems"),
+      entrypoint: "set_address_name",
+      calldata: [this.getWorldAddress(), name],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,

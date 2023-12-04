@@ -6,10 +6,12 @@ mod combat_systems {
     use eternum::models::position::{Position};
     use eternum::models::config::{
         SpeedConfig, WeightConfig, CapacityConfig, CombatConfig,
-        SoldierConfig, HealthConfig, AttackConfig, DefenceConfig
+        SoldierConfig, HealthConfig, AttackConfig, DefenceConfig,
+        LevelingConfig
     };
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::inventory::Inventory;
+    use eternum::models::level::{Level, LevelTrait};
     use eternum::models::capacity::Capacity;
     use eternum::models::weight::Weight;
     use eternum::models::owner::{Owner, EntityOwner};
@@ -25,8 +27,7 @@ mod combat_systems {
         ISoldierSystems, ICombatSystems
     };
     use eternum::systems::resources::contracts::resource_systems::{
-        InternalResourceChestSystemsImpl,
-        InternalInventorySystemsImpl 
+        InternalResourceSystemsImpl
     };
 
     use eternum::systems::transport::contracts::travel_systems::travel_systems::{
@@ -35,12 +36,13 @@ mod combat_systems {
 
     use eternum::constants::{
         WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE, COMBAT_CONFIG_ID,
-        get_unzipped_resource_probabilities
+        LEVELING_CONFIG_ID, get_unzipped_resource_probabilities,
+        LevelIndex
     };
 
     use eternum::utils::random;
     use eternum::utils::math::{min};
-    use eternum::constants::ResourceTypes;
+    use eternum::constants::ResourceTypes;    
 
 
     #[derive(Serde, Copy, Drop)]
@@ -56,11 +58,10 @@ mod combat_systems {
         #[key]
         target_realm_entity_id: u128,
         attacking_entity_ids: Span<u128>,
+        stolen_resources: Span<(u8, u128)>,
         winner: Winner,
-        stolen_resource_types: Span<u8>,
-        stolen_resource_amounts: Span<u128>,
         damage: u128,
-        ts: u64,
+        ts: u64
     }
 
     #[event]
@@ -620,7 +621,21 @@ mod combat_systems {
                 index +=1;
             };
 
+            let attacker_realm_entity_id 
+                = get!(world, *attacker_ids.at(0), EntityOwner).entity_owner_id;
+
+            // get level bonus
+            let leveling_config: LevelingConfig = get!(world, LEVELING_CONFIG_ID, LevelingConfig);
+            let attacker_level = get!(world, (attacker_realm_entity_id), Level);
+            let attacker_level_bonus = attacker_level.get_index_multiplier(leveling_config, LevelIndex::FOOD);
+
+            attackers_total_attack = (attackers_total_attack * attacker_level_bonus)/100;
+            attackers_total_defence = (attackers_total_defence + attacker_level_bonus)/100;
+
             let mut damage: u128 = 0; 
+            
+            let target_level = get!(world, (attacker_realm_entity_id), Level);
+            let target_level_bonus = target_level.get_index_multiplier(leveling_config, LevelIndex::COMBAT);
 
             let mut target_town_watch_attack = get!(world, target_town_watch_id, Attack);
             let mut target_town_watch_defense = get!(world, target_town_watch_id, Defence);
@@ -629,9 +644,9 @@ mod combat_systems {
                 array![true, false].span(), 
                 array![
                     attackers_total_attack * attackers_total_health, 
-                    target_town_watch_defense.value * target_town_watch_health.value
+                    ((target_town_watch_defense.value * target_level_bonus) / 100) * target_town_watch_health.value
                 ].span(), 
-                array![].span(), 1
+                array![].span(), 1, true
             )[0];
 
             if attack_successful {
@@ -692,11 +707,10 @@ mod combat_systems {
                     attacker_realm_entity_id,
                     attacking_entity_ids: attacker_ids,
                     target_realm_entity_id,
+                    stolen_resources: array![].span(),
                     winner,
-                    stolen_resource_types: array![].span(),
-                    stolen_resource_amounts: array![].span(),
                     damage,
-                    ts
+                    ts,
              });
 
         }
@@ -780,7 +794,7 @@ mod combat_systems {
                     chance_of_successful_attack, 
                     target_town_watch_defense.value * target_town_watch_health.value
                 ].span(), 
-                array![].span(), 1
+                array![].span(), 1, true
             )[0];
             
 
@@ -833,11 +847,11 @@ mod combat_systems {
 
                 let mut index = 0;
 
-                // here we choose x number of resources (with replacement)
+                // here we choose x number of resources (without replacement)
                 // that the attacker can get away with 
                 let chosen_resource_types: Span<u8> = random::choices(
                     resource_types, resource_type_probabilities, 
-                    array![].span(), combat_config.stealing_trial_count.into()
+                    array![].span(), combat_config.stealing_trial_count.into(), choose_with_replacement
                 );
 
                 loop {
@@ -872,30 +886,24 @@ mod combat_systems {
                             attacker_remaining_weight
                                  -= stolen_resource_amount * resource_weight;
 
-                            stolen_resource_types.append(resource_type);
-                            stolen_resource_amounts.append(stolen_resource_amount);
+                            stolen_resources.append(
+                                (resource_type, stolen_resource_amount)
+                            );
                         }
                     }
                     index += 1;                
                 };
 
-                if stolen_resource_amounts.len() > 0 {
-                    // create a resource chest for the attacker 
-                    // and fill it with the stolen resources to it
-                    let (attacker_resource_chest, _) 
-                        = InternalResourceChestSystemsImpl::create(world, 
-                            stolen_resource_types.span(), stolen_resource_amounts.span()
-                        );
-                    InternalResourceChestSystemsImpl::fill(
-                        world, attacker_resource_chest.entity_id, target_realm_entity_id
-                    );
+                if stolen_resources.len() > 0 {
+                    // give stolen resources to attacker
 
-                    // add the resource chest to the attacker's inventory
-                    InternalInventorySystemsImpl::add(
-                        world, 
+                    InternalResourceSystemsImpl::transfer(
+                        world,
+                        target_realm_entity_id,
                         attacker_id,
-                        attacker_resource_chest.entity_id
+                        stolen_resources.span()
                     );
+                    
                 }
 
         
@@ -906,9 +914,8 @@ mod combat_systems {
                         attacker_realm_entity_id,
                         attacking_entity_ids: array![attacker_id].span(),
                         target_realm_entity_id,
+                        stolen_resources: stolen_resources.span(),
                         winner: Winner::Attacker,
-                        stolen_resource_types: stolen_resource_types.span(),
-                        stolen_resource_amounts: stolen_resource_amounts.span(),
                         damage: 0,
                         ts
                 });
@@ -935,9 +942,8 @@ mod combat_systems {
                         attacker_realm_entity_id,
                         attacking_entity_ids: array![attacker_id].span(),
                         target_realm_entity_id,
+                        stolen_resources: array![].span(),
                         winner: Winner::Target,
-                        stolen_resource_types: array![].span(),
-                        stolen_resource_amounts: array![].span(),
                         damage,
                         ts
                 });

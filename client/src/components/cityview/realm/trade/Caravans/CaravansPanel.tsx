@@ -8,7 +8,7 @@ import { CaravanDetails } from "../../../../caravans/CaravanDetailsComponent";
 import { CaravanInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
-import { useGetPositionCaravans } from "../../../../../hooks/helpers/useCaravans";
+import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
 import { getPosition } from "../../../../../utils/utils";
 
 type CaravansPanelProps = {};
@@ -20,6 +20,8 @@ export const CaravansPanel = ({}: CaravansPanelProps) => {
 
   const realmId = useRealmStore((state) => state.realmId);
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+
+  const { useGetPositionCaravans } = useCaravan();
 
   const onClick = (caravan: CaravanInterface) => {
     // way to find if caravan has currently resources inside

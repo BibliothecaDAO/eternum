@@ -91,5 +91,16 @@
     ],
     "NAME_SYSTEMS": [
         "AddressName"
+    ],
+    "BANK_SYSTEMS": [
+        "BankAuction",
+        "Resource",
+        "ResourceAllowance",
+        "Owner",
+        "Weight",
+        "ResourceChest",
+        "DetachedResource",
+        "ForeignKey",
+        "Inventory"
     ]
 }

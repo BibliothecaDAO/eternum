@@ -16,7 +16,8 @@ import { useEntityQuery } from "@dojoengine/react";
 
 type RealmSwitchProps = {} & ComponentPropsWithRef<"div">;
 
-type Realm = {
+// TODO: Remove
+export type RealmBubble = {
   id: number;
   realmId: number;
   name: string;
@@ -32,17 +33,21 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
   } = useDojo();
 
   const [showRealms, setShowRealms] = useState(false);
-  const [yourRealms, setYourRealms] = useState<Realm[]>([]);
+  const [yourRealms, setYourRealms] = useState<RealmBubble[]>([]);
 
   const { realmEntityId, realmId, setRealmId, setRealmEntityId, realmEntityIds, setRealmEntityIds } = useRealmStore();
 
   const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: account.address })]);
+  // const entityIds = useEntityQuery([Has(Realm)]);
+  // console.log({ account: account.address });
 
   // set realm entity ids everytime the entity ids change
   useEffect(() => {
     let realmEntityIds = Array.from(entityIds)
       .map((id) => {
         const realm = getComponentValue(Realm, id);
+        // const owner = getComponentValue(Owner, id);
+        // console.log({ owner });
         if (realm) {
           return { realmEntityId: Number(id), realmId: realm?.realm_id };
         }
@@ -65,7 +70,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
   }, [location]);
 
   const realms = useMemo(() => {
-    const fetchedYourRealms: Realm[] = [];
+    const fetchedYourRealms: RealmBubble[] = [];
     realmEntityIds.forEach(({ realmEntityId, realmId }) => {
       const realm = getRealm(realmId);
       const name = realmsNames.features[realm.realm_id - 1].name;

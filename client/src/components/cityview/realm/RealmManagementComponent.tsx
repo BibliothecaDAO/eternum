@@ -11,9 +11,7 @@ import RealmLaborComponent from "./RealmLaborComponent";
 import useUIStore from "../../../hooks/store/useUIStore";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
-import { LaborAuction } from "./labor/LaborAuction";
 import RealmCombatComponent from "./RealmCombatComponent";
-import { Leveling } from "./leveling/Leveling";
 
 const RealmManagementComponent = () => {
   const { realmEntityId } = useRealmStore();
@@ -93,7 +91,7 @@ const RealmManagementComponent = () => {
               })
             }
             onMouseLeave={() => setTooltip(null)}
-            className="flex relative group flex-col items-center"
+            className={`flex relative group flex-col items-center`}
           >
             <Coin className="mb-2 fill-gold" /> <div>Trade</div>
           </div>
@@ -125,10 +123,24 @@ const RealmManagementComponent = () => {
         component: <RealmCombatComponent />,
       },
       {
-        key: "civilians",
+        key: "Crafting",
         label: (
-          <div className="flex flex-col items-center blur-sm cursor-not-allowed" title="Not implemented">
-            <City className="mb-2 fill-gold" /> <div>Civilians</div>
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "top",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Coming Soon</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex flex-col items-center"
+            title="Not implemented"
+          >
+            <City className="mb-2 fill-gold" /> <div>Crafting</div>
           </div>
         ),
         component: <div></div>,
@@ -155,14 +167,6 @@ const RealmManagementComponent = () => {
   return (
     <>
       <div className="flex justify-between items-center p-3">
-        <div className="flex flex-row ">
-          <div className="mr-2">
-            <LaborAuction />
-          </div>
-          <div>
-            <Leveling />
-          </div>
-        </div>
         <button
           onClick={showOnMap}
           className="flex items-center hover:bg-gold/20 transition-bg duration-200 z-10 px-2 py-1 ml-auto text-xxs border rounded-md text-gold border-gold"

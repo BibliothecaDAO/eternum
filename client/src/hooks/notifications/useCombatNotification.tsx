@@ -29,8 +29,10 @@ export const useAttackedNotification = (
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const { attackerRealmEntityId, targetRealmEntityId, damage, winner, attackTimestamp } = data;
-  const { realm_id: attackerRealmId } = getComponentValue(Realm, getEntityIdFromKeys([BigInt(attackerRealmEntityId)]));
-  const { realm_id: targetRealmId } = getComponentValue(Realm, getEntityIdFromKeys([BigInt(targetRealmEntityId)]));
+  const { realm_id: attackerRealmId } =
+    getComponentValue(Realm, getEntityIdFromKeys([BigInt(attackerRealmEntityId)])) || {};
+  const { realm_id: targetRealmId } =
+    getComponentValue(Realm, getEntityIdFromKeys([BigInt(targetRealmEntityId)])) || {};
   const attackerRealmOrderName = attackerRealmId ? getRealmOrderNameById(attackerRealmId) : undefined;
   const targetRealmOrderName = targetRealmId ? getRealmOrderNameById(targetRealmId) : undefined;
   const attackerRealmName = attackerRealmId ? getRealmNameById(attackerRealmId) : undefined;
@@ -91,8 +93,10 @@ export const useStolenResourcesNotification = (
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const { attackerRealmEntityId, targetRealmEntityId, stolenResources, attackTimestamp } = data;
-  const { realm_id: attackerRealmId } = getComponentValue(Realm, getEntityIdFromKeys([BigInt(attackerRealmEntityId)]));
-  const { realm_id: targetRealmId } = getComponentValue(Realm, getEntityIdFromKeys([BigInt(targetRealmEntityId)]));
+  const { realm_id: attackerRealmId } =
+    getComponentValue(Realm, getEntityIdFromKeys([BigInt(attackerRealmEntityId)])) || {};
+  const { realm_id: targetRealmId } =
+    getComponentValue(Realm, getEntityIdFromKeys([BigInt(targetRealmEntityId)])) || {};
   const attackerRealmOrderName = attackerRealmId ? getRealmOrderNameById(attackerRealmId) : undefined;
   const targetRealmOrderName = targetRealmId ? getRealmOrderNameById(targetRealmId) : undefined;
   const attackerRealmName = attackerRealmId ? getRealmNameById(attackerRealmId) : undefined;

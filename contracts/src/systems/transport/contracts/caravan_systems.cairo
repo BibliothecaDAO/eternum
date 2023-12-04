@@ -14,6 +14,9 @@ mod caravan_systems {
     use eternum::systems::transport::interface::caravan_systems_interface::{
         ICaravanSystems
     };
+    use eternum::systems::leveling::contracts::leveling_systems::{InternalLevelingSystemsImpl as leveling};
+
+    use eternum::constants::{LevelIndex};
 
     use starknet::ContractAddress;
 
@@ -211,12 +214,18 @@ mod caravan_systems {
             world: IWorldDispatcher, transport_id: ID, from_pos: Position, to_pos: Position, 
             ) -> (u64, u64) {
 
+            // get level bonus
+            let realm_owner = get!(world, (transport_id), EntityOwner);
+            let level_bonus = leveling::get_realm_level_bonus(world, realm_owner.entity_owner_id, LevelIndex::TRAVEL);
+
             let (caravan_movable, caravan_position) 
                 = get!(world, transport_id, (Movable, Position));
             let mut one_way_trip_time 
                 = from_pos.calculate_travel_time(
                     to_pos, caravan_movable.sec_per_km
                     );
+            
+            one_way_trip_time = ((one_way_trip_time.into() * 100 / level_bonus)).try_into().unwrap();
                     
             let round_trip_time: u64 = 2 * one_way_trip_time;
             // reduce round trip time if there is a road
