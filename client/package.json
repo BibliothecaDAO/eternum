@@ -12,7 +12,7 @@
   "dependencies": {
     "@bibliothecadao/eternum": "../sdk/packages/eternum",
     "@dojoengine/core": "^0.1.56",
-    "@dojoengine/create-burner": "^0.0.18",
+    "@dojoengine/create-burner": "^0.1.56",
     "@dojoengine/react": "^0.1.57",
     "@headlessui/react": "^1.7.14",
     "@dojoengine/recs": "^0.1.35",
