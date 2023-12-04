@@ -649,5 +649,38 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Bank: (() => {
+      const name = "Bank";
+      return defineComponent(
+        world,
+        {
+          exists: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
+    BankAuction: (() => {
+      const name = "BankAuction";
+      return defineComponent(
+        world,
+        {
+          decay_constant_mag: RecsType.Number,
+          decay_constant_sign: RecsType.Boolean,
+          per_time_unit: RecsType.Number,
+          start_time: RecsType.Number,
+          sold: RecsType.Number,
+          price_update_interval: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: name,
+          },
+        },
+      );
+    })(),
   };
 }

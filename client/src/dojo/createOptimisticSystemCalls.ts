@@ -7,7 +7,7 @@ import { LaborCostInterface } from "../hooks/helpers/useLabor";
 import { LABOR_CONFIG, ROAD_COST_PER_USAGE } from "@bibliothecadao/eternum";
 import {
   CancelFungibleOrderProps,
-  OffloadResourcesProps,
+  TransferItemsProps,
   CreateOrderProps,
   CreateRoadProps,
   HarvestLaborProps,
@@ -21,7 +21,7 @@ export function createOptimisticSystemCalls({
   Trade,
   Status,
   Labor,
-  Level,
+  ForeignKey,
   Resource,
   Road,
   DetachedResource,
@@ -104,10 +104,21 @@ export function createOptimisticSystemCalls({
   // note: claim fungible order is actually transferring from the resourceschest to the realm
   function optimisticOffloadResources(
     resourcesGet: Resource[],
-    systemCall: (args: OffloadResourcesProps) => Promise<void>,
+    systemCall: (args: TransferItemsProps) => Promise<void>,
   ) {
-    return async function (this: any, args: OffloadResourcesProps) {
-      const { receiving_entity_id, transport_id, entity_id: resources_chest_id } = args;
+    return async function (this: any, args: TransferItemsProps) {
+      const { receiver_id: receiving_entity_id, indices, sender_id: transport_id } = args;
+
+      const resources_chest_ids = indices.map((index: number) => {
+        let inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(transport_id)]));
+        let foreignKey = inventory
+          ? getComponentValue(
+              ForeignKey,
+              getEntityIdFromKeys([BigInt(transport_id), BigInt(inventory.items_key), BigInt(index)]),
+            )
+          : undefined;
+        return foreignKey?.entity_id;
+      });
 
       let overrideId = uuid();
 
@@ -119,12 +130,14 @@ export function createOptimisticSystemCalls({
         },
       });
 
-      // remove resources from chest
-      ResourceChest.addOverride(overrideId, {
-        entity: getEntityIdFromKeys([BigInt(resources_chest_id)]),
-        value: {
-          resources_count: 0,
-        },
+      resources_chest_ids.forEach((resources_chest_id) => {
+        // remove resources from chest
+        ResourceChest.addOverride(overrideId, {
+          entity: getEntityIdFromKeys([BigInt(resources_chest_id)]),
+          value: {
+            resources_count: 0,
+          },
+        });
       });
 
       // add resources to balance

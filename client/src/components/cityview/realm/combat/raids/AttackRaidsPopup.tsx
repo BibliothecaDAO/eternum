@@ -357,7 +357,7 @@ const StealResultPanel = ({
               {inventoryResources && (
                 <div className="flex justify-center items-center space-x-1 flex-wrap p-2 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                   <div className="text-light-pink text-lg w-full mb-2 text-center italic">You won!</div>
-                  {inventoryResources.map(
+                  {inventoryResources.resources.map(
                     (resource) =>
                       resource && (
                         <div key={resource.resourceId} className="flex flex-col items-center justify-center">

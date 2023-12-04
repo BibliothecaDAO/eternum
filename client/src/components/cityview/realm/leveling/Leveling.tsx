@@ -14,8 +14,6 @@ export const Leveling = () => {
   const level = realmEntityId ? getRealmLevel(realmEntityId) : undefined;
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  console.log(realmEntityId);
-
   const progress = useMemo(() => {
     return (level.timeLeft / 604800) * 100;
   }, [level, nextBlockTimestamp]);
