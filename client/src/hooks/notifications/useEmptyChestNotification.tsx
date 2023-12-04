@@ -17,7 +17,7 @@ export const useEmptyChestNotification = (
   title: React.ReactElement;
   content: (onClose: any) => React.ReactElement;
 } => {
-  const { getResourcesFromInventory, offloadChest } = useResources();
+  const { getResourcesFromInventory, offloadChests } = useResources();
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -25,8 +25,6 @@ export const useEmptyChestNotification = (
     notification.data && "destinationRealmId" in notification.data ? notification.data.destinationRealmId : undefined;
 
   const caravanId = notification.data && "caravanId" in notification.data ? notification.data.caravanId : undefined;
-  const resourcesChestId =
-    notification.data && "resourcesChestId" in notification.data ? notification.data.resourcesChestId : undefined;
   const realmEntityId =
     notification.data && "realmEntityId" in notification.data ? notification.data.realmEntityId : undefined;
 
@@ -37,7 +35,7 @@ export const useEmptyChestNotification = (
 
   const emptyChest = async () => {
     setIsLoading(true);
-    await offloadChest(realmEntityId, caravanId, resourcesChestId, 0, claimableResources);
+    await offloadChests(realmEntityId, caravanId, claimableResources.indices, claimableResources.resources);
     setIsLoading(false);
   };
 
@@ -62,7 +60,7 @@ export const useEmptyChestNotification = (
       <div className="flex flex-col">
         <div className="flex mt-2 w-full items-center justify-center flex-wrap space-x-2 space-y-1">
           {claimableResources &&
-            claimableResources.map(({ resourceId, amount }) => (
+            claimableResources.resources.map(({ resourceId, amount }) => (
               <ResourceCost
                 type="vertical"
                 withTooltip

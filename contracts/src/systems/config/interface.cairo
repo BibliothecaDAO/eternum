@@ -138,3 +138,24 @@ trait ILevelingConfig<TContractState> {
         resource_3_costs: Span<(u8, u128)>
     );
 }
+
+#[starknet::interface]
+trait IBankConfig<TContractState> {
+    fn create_bank(
+        self: @TContractState,
+        world: IWorldDispatcher,
+        coord: Coord,
+        swap_cost_resources: Span<(u8, Span<(u8, u128)>)>
+    ) -> ID ;
+
+
+    fn set_bank_auction(
+        self: @TContractState,
+        world: IWorldDispatcher,
+        bank_id: u128,
+        bank_swap_resource_cost_keys: Span<(u8, u32)>,
+        decay_constant: u128,
+        per_time_unit: u128,
+        price_update_interval: u128,
+    );
+}

@@ -3,6 +3,7 @@ import { SetupNetworkResult } from "./setupNetwork";
 import { Event } from "starknet";
 import { getEntityIdFromKeys } from "../utils/utils";
 import {
+  SwapBankAndTravelBackProps,
   AcceptOrderProps,
   AttachCaravanProps,
   BuildLaborProps,
@@ -19,10 +20,10 @@ import {
   InitializeHyperstructuresAndTravelProps,
   MintResourcesProps,
   PurchaseLaborProps,
-  SendResourcesToHyperstructureProps,
+  SendResourcesToLocationProps,
   TransferResourcesProps,
   TravelProps,
-  OffloadResourcesProps,
+  TransferItemsProps,
   CreateSoldiersProps,
   DetachSoldiersProps,
   AttackProps,
@@ -75,10 +76,6 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.cancel_fungible_order(props)));
   };
 
-  const offload_chest = async (props: OffloadResourcesProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.offload_chest(props)));
-  };
-
   const create_free_transport_unit = async (props: CreateFreeTransportUnitProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.create_free_transport_unit(props)));
   };
@@ -126,8 +123,8 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.complete_hyperstructure(props)));
   };
 
-  const send_resources_to_hyperstructure = async (props: SendResourcesToHyperstructureProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.send_resources_to_hyperstructure(props)));
+  const send_resources_to_location = async (props: SendResourcesToLocationProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.send_resources_to_location(props)));
   };
 
   const travel = async (props: TravelProps) => {
@@ -170,6 +167,15 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.heal_soldiers(props)));
   };
 
+  const swap_bank_and_travel_back = async (props: SwapBankAndTravelBackProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.swap_bank_and_travel_back(props)));
+  };
+
+  const transfer_items = async (props: TransferItemsProps) => {
+    console.log({ props });
+    setComponentsFromEvents(contractComponents, getEvents(await provider.transfer_items(props)));
+  };
+
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -180,6 +186,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
   };
 
   return {
+    swap_bank_and_travel_back,
     create_and_merge_soldiers,
     set_address_name,
     level_up,
@@ -197,14 +204,14 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     create_order,
     accept_order,
     cancel_fungible_order,
-    offload_chest,
+    transfer_items,
     create_free_transport_unit,
     create_caravan,
     attach_caravan,
     create_realm,
     create_road,
     transfer_resources,
-    send_resources_to_hyperstructure,
+    send_resources_to_location,
     feed_hyperstructure_and_travel_back,
     initialize_hyperstructure_and_travel_back,
     initialize_hyperstructure,

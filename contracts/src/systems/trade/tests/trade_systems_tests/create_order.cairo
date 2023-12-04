@@ -176,12 +176,16 @@ fn test_create_order() {
     let trade_id = trade_systems_dispatcher.create_order(
             world,
             maker_id,
-            array![ResourceTypes::STONE, ResourceTypes::GOLD].span(),
-            array![100, 100].span(),
+            array![
+                (ResourceTypes::STONE, 100), 
+                (ResourceTypes::GOLD, 100), 
+            ].span(),
             maker_transport_id,
             taker_id,
-            array![ResourceTypes::STONE, ResourceTypes::GOLD].span(),
-            array![200, 200].span(),
+            array![
+                (ResourceTypes::STONE, 200), 
+                (ResourceTypes::GOLD, 200), 
+            ].span(),
             100
     );
 
@@ -256,12 +260,16 @@ fn test_caller_not_maker() {
     let trade_id = trade_systems_dispatcher.create_order(
             world,
             maker_id,
-            array![ResourceTypes::STONE, ResourceTypes::GOLD].span(),
-            array![100, 100].span(),
+            array![
+                (ResourceTypes::STONE, 100), 
+                (ResourceTypes::GOLD, 100), 
+            ].span(),
             maker_transport_id,
             taker_id,
-            array![ResourceTypes::STONE, ResourceTypes::GOLD].span(),
-            array![200, 200].span(),
+            array![
+                (ResourceTypes::STONE, 200), 
+                (ResourceTypes::GOLD, 200), 
+            ].span(),
             100
     );
 }
@@ -282,12 +290,16 @@ fn test_caller_not_owner_of_transport_id() {
     let trade_id = trade_systems_dispatcher.create_order(
             world,
             maker_id,
-            array![ResourceTypes::STONE, ResourceTypes::GOLD].span(),
-            array![100, 100].span(),
+            array![
+                (ResourceTypes::STONE, 100), 
+                (ResourceTypes::GOLD, 100), 
+            ].span(),
             maker_transport_id,
             taker_id,
-            array![ResourceTypes::STONE, ResourceTypes::GOLD].span(),
-            array![200, 200].span(),
+            array![
+                (ResourceTypes::STONE, 200), 
+                (ResourceTypes::GOLD, 200), 
+            ].span(),
             100
     );
 }
@@ -315,12 +327,16 @@ fn test_different_transport_position() {
     let trade_id = trade_systems_dispatcher.create_order(
             world,
             maker_id,
-            array![ResourceTypes::STONE, ResourceTypes::GOLD].span(),
-            array![100, 100].span(),
+            array![
+                (ResourceTypes::STONE, 100), 
+                (ResourceTypes::GOLD, 100), 
+            ].span(),
             maker_transport_id,
             taker_id,
-            array![ResourceTypes::STONE, ResourceTypes::GOLD].span(),
-            array![200, 200].span(),
+            array![
+                (ResourceTypes::STONE, 200), 
+                (ResourceTypes::GOLD, 200), 
+            ].span(),
             100
     );
 }
@@ -348,12 +364,16 @@ fn test_transport_in_transit() {
     let trade_id = trade_systems_dispatcher.create_order(
             world,
             maker_id,
-            array![ResourceTypes::STONE, ResourceTypes::GOLD].span(),
-            array![100, 100].span(),
+            array![
+                (ResourceTypes::STONE, 100), 
+                (ResourceTypes::GOLD, 100), 
+            ].span(),
             maker_transport_id,
             taker_id,
-            array![ResourceTypes::STONE, ResourceTypes::GOLD].span(),
-            array![200, 200].span(),
+            array![
+                (ResourceTypes::STONE, 200), 
+                (ResourceTypes::GOLD, 200), 
+            ].span(),
             100
     );
 }
@@ -419,12 +439,16 @@ fn test_transport_not_enough_capacity() {
     let trade_id = trade_systems_dispatcher.create_order(
             world,
             maker_id,
-            array![ResourceTypes::STONE, ResourceTypes::GOLD].span(),
-            array![100, 100].span(),
+            array![
+                (ResourceTypes::STONE, 100), 
+                (ResourceTypes::GOLD, 100), 
+            ].span(),
             maker_transport_id,
             taker_id,
-            array![ResourceTypes::STONE, ResourceTypes::GOLD].span(),
-            array![200, 200].span(),
+            array![
+                (ResourceTypes::STONE, 200), 
+                (ResourceTypes::GOLD, 200), 
+            ].span(),
             100
     );
 }

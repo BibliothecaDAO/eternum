@@ -23,7 +23,7 @@ import { Tabs } from "../../../elements/tab";
 import ProgressBar from "../../../elements/ProgressBar";
 import { HyperStructureCaravansPanel } from "./HyperStructureCaravans/HyperStructureCaravansPanel";
 import hyperStructures from "../../../data/hyperstructures.json";
-import { useGetPositionCaravans } from "../../../hooks/helpers/useCaravans";
+import { useCaravan } from "../../../hooks/helpers/useCaravans";
 import { NumberInput } from "../../../elements/NumberInput";
 import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/arrow-separator.svg";
 import { WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
@@ -50,6 +50,8 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
     y: hyperStructures[order - 1].y,
     z: hyperStructures[order - 1].z,
   });
+
+  const { useGetPositionCaravans } = useCaravan();
 
   const { caravans } = useGetPositionCaravans(hyperStructurePosition.x, hyperStructurePosition.y);
 
@@ -234,7 +236,7 @@ const BuildHyperstructurePanel = ({
   const {
     account: { account },
     setup: {
-      systemCalls: { complete_hyperstructure, send_resources_to_hyperstructure },
+      systemCalls: { complete_hyperstructure, send_resources_to_location },
     },
   } = useDojo();
 
@@ -253,7 +255,7 @@ const BuildHyperstructurePanel = ({
             .flatMap((id) => [Number(id), multiplyByPrecision(feedResourcesGiveAmounts[Number(id)])])
         : hyperstructureData?.initialzationResources.flatMap((resource) => [resource.resourceId, resource.amount]);
       if (isNewCaravan) {
-        await send_resources_to_hyperstructure({
+        await send_resources_to_location({
           signer: account,
           sending_entity_id: realmEntityId,
           resources: resourcesList || [],
@@ -263,7 +265,7 @@ const BuildHyperstructurePanel = ({
         });
       } else {
         // transfer resources to caravan
-        await send_resources_to_hyperstructure({
+        await send_resources_to_location({
           signer: account,
           sending_entity_id: realmEntityId,
           resources: resourcesList || [],
