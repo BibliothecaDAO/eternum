@@ -1088,7 +1088,7 @@
     {
       "name": "combat_systems",
       "address": null,
-      "class_hash": "0x4a4e6ceb781ee437b4928d818050646331c500a2090ab1597b6dda1741b5622",
+      "class_hash": "0x5679ad4ac6cd14be5c87d0243a998ad9efccc38e7cc0508c90fd93d5dbb683f",
       "abi": [
         {
           "type": "impl",

@@ -645,7 +645,7 @@ mod combat_systems {
                     attackers_total_attack * attackers_total_health, 
                     ((target_town_watch_defense.value * target_level_bonus) / 100) * target_town_watch_health.value
                 ].span(), 
-                array![].span(), 1
+                array![].span(), 1, true
             )[0];
 
             if attack_successful {
@@ -769,7 +769,7 @@ mod combat_systems {
                     attacker_attack.value * attacker_health.value, 
                     target_town_watch_defense.value * target_town_watch_health.value
                 ].span(), 
-                array![].span(), 1
+                array![].span(), 1, true
             )[0];
             
 
@@ -808,12 +808,13 @@ mod combat_systems {
 
                 let mut index = 0;
 
-                // here we choose x number of resources (with replacement)
+                // here we choose x number of resources (without replacement)
                 // that the attacker can get away with 
                 let combat_config = get!(world, COMBAT_CONFIG_ID, CombatConfig);
+                let choose_with_replacement = false;
                 let chosen_resource_types: Span<u8> = random::choices(
                     resource_types, resource_type_probabilities, 
-                    array![].span(), combat_config.stealing_trial_count.into()
+                    array![].span(), combat_config.stealing_trial_count.into(), choose_with_replacement
                 );
 
                 loop {
