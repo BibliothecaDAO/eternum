@@ -111,17 +111,17 @@ fn setup() -> (IWorldDispatcher, u128, u128, IBankSystemsDispatcher,) {
         Resource {
             entity_id: transport_id,
             resource_type: ResourceTypes::WHEAT,
-            balance: 5000
+            balance: 500
         },
         Resource {
             entity_id: transport_id,
             resource_type: ResourceTypes::FISH,
-            balance: 5000
+            balance: 500
         },
         Resource {
             entity_id: transport_id,
             resource_type: ResourceTypes::COAL,
-            balance: 5000
+            balance: 500
         },
         Resource {
             entity_id: transport_id,

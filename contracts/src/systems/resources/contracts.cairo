@@ -641,7 +641,6 @@ mod resource_systems {
             item_id
         }
 
-
         /// Remove all items from inventory
         fn clear(
             world: IWorldDispatcher, entity_id: ID
@@ -679,48 +678,6 @@ mod resource_systems {
             }
 
             deleted_item_ids.span()
-
-        }
-
-
-        /// Remove all items from inventory
-        fn clear(
-            world: IWorldDispatcher, entity_id: ID
-        ) -> Span<u128> {
-            let mut deleted_item_ids = array![];
-            let mut deleted_item_weight = 0;
-            
-            let mut inventory = get!(world, entity_id, Inventory);
-            if inventory.items_count > 0 {
-                let mut index = 0;
-                loop {
-                    if index == inventory.items_count {
-                        break;
-                    }
-    
-                    let current_inventory_item_foreign_key 
-                        = InternalInventorySystemsImpl::get_foreign_key(inventory, index);
-                    let current_inventory_item 
-                        = get!(world, current_inventory_item_foreign_key, ForeignKey);
-                    
-                    deleted_item_ids.append(current_inventory_item.entity_id);
-                    deleted_item_weight += get!(world, current_inventory_item.entity_id, Weight).value;
-                
-                    index += 1;
-                };
-
-                // remove items from inventory
-                inventory.items_count = 0;
-                set!(world, (inventory));
-
-                // remove weight from entity
-                let mut entity_weight = get!(world, entity_id, Weight);
-                entity_weight.value -= deleted_item_weight;
-                set!(world, (entity_weight));
-            }
-
-            deleted_item_ids.span()
-
         }
     }
     

@@ -22,7 +22,7 @@ mod labor_systems {
 
     use eternum::systems::labor::interface::ILaborSystems;
 
-    use eternum::constants::{LEVELING_CONFIG_ID};
+    use eternum::constants::{REALM_LEVELING_CONFIG_ID};
     
     #[external(v0)]
     impl LaborSystemsImpl of ILaborSystems<ContractState> {
@@ -238,7 +238,7 @@ mod labor_systems {
                 let remainder = labor_generated % labor_config.base_labor_units;
 
                 // get level bonus
-                let leveling_config: LevelingConfig = get!(world, LEVELING_CONFIG_ID, LevelingConfig);
+                let leveling_config: LevelingConfig = get!(world, REALM_LEVELING_CONFIG_ID, LevelingConfig);
                 let level = get!(world, (realm_id), Level);
                 
                 let level_index = if is_food {

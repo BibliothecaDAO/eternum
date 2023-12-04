@@ -5,13 +5,15 @@ use eternum::models::config::LevelingConfig;
 
 use eternum::systems::config::interface::{
     IHyperstructureConfigDispatcher, 
-    IHyperstructureConfigDispatcherTrait
+    IHyperstructureConfigDispatcherTrait,
+    ILevelingConfigDispatcher,
+    ILevelingConfigDispatcherTrait,
 };
 use eternum::systems::config::contracts::config_systems;
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
-use eternum::constants::HYPERSTRUCTURE_CONFIG_ID;
+use eternum::constants::HYPERSTRUCTURE_LEVELING_CONFIG_ID;
 use eternum::constants::ResourceTypes;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
@@ -21,7 +23,7 @@ use starknet::contract_address::contract_address_const;
 use core::array::{ArrayTrait, SpanTrait};
 
 
-fn setup() -> (IWorldDispatcher, IHyperstructureConfigDispatcher) {
+fn setup() -> (IWorldDispatcher, IHyperstructureConfigDispatcher, ILevelingConfigDispatcher) {
     let world = spawn_eternum();
 
     let config_systems_address 
@@ -31,7 +33,11 @@ fn setup() -> (IWorldDispatcher, IHyperstructureConfigDispatcher) {
         contract_address: config_systems_address
     };
 
-    (world, hyperstructure_config_dispatcher)
+    let leveling_config_dispatcher = ILevelingConfigDispatcher {
+        contract_address: config_systems_address
+    };
+
+    (world, hyperstructure_config_dispatcher, leveling_config_dispatcher)
 }
 
 
@@ -39,7 +45,7 @@ fn setup() -> (IWorldDispatcher, IHyperstructureConfigDispatcher) {
 #[test]
 #[available_gas(3000000000000)]  
 fn test_create_hyperstructure() {
-    let (world, hyperstructure_config_dispatcher) = setup();
+    let (world, hyperstructure_config_dispatcher, leveling_config_dispatcher) = setup();
 
     starknet::testing::set_contract_address(
         contract_address_const::<'entity'>()
@@ -47,23 +53,6 @@ fn test_create_hyperstructure() {
 
     let hyperstructure_type = 1_u8;
 
-    let level_construction_resources = array![
-        array![
-            // resources needed to be on level 1
-            (ResourceTypes::STONE, 10_u128), 
-        ].span(),
-        array![
-            // resources needed to be on level 2
-            (ResourceTypes::STONE, 20_u128), 
-            (ResourceTypes::WOOD, 30_u128)
-        ].span(),
-        array![
-            // resources needed to be on level 3
-            (ResourceTypes::STONE, 30_u128), 
-            (ResourceTypes::WOOD, 40_u128),
-            (ResourceTypes::COAL, 50_u128)
-        ].span(),
-    ];
 
     let hyperstructure_coord = Coord{ x:20, y:30 };
     let hyperstructure_order = 3;
@@ -76,11 +65,9 @@ fn test_create_hyperstructure() {
         = hyperstructure_config_dispatcher.create_hyperstructure(
             world,
             hyperstructure_type,
-            level_construction_resources.span(),
             hyperstructure_coord,
             hyperstructure_order,
         );
-
 
     let hyperstructure = get!(world, hyperstructure_id, HyperStructure);
     assert(hyperstructure.hyperstructure_type == hyperstructure_type, 
@@ -93,78 +80,63 @@ fn test_create_hyperstructure() {
     assert(hyperstructure_position.x == hyperstructure_coord.x, 'wrong x value');
     assert(hyperstructure_position.y == hyperstructure_coord.y, 'wrong y value');
 
-    //////////////////////////////////////////
-    // check resources needed to reach level 1
-    let first_level_construction_resources_config 
-        = get!(world, (HYPERSTRUCTURE_CONFIG_ID, 1 - 1 ), LevelingConfig);
+    let tier_1_construction_resources = array![
+        (ResourceTypes::STONE, 10_u128)
+        ].span();
+    
+    let tier_2_construction_resources = array![
+        // resources needed to be on level 2
+        (ResourceTypes::STONE, 20_u128), 
+        (ResourceTypes::WOOD, 30_u128)
+        ].span();
+        
+    let tier_3_construction_resources = array![
+        // resources needed to be on level 3
+        (ResourceTypes::STONE, 30_u128), 
+        (ResourceTypes::WOOD, 40_u128),
+        (ResourceTypes::COAL, 50_u128)
+        ].span();
 
-    assert(first_level_construction_resources_config.resource_cost_id != 0, 'wrong resource id');
-    assert(first_level_construction_resources_config.resource_cost_count == 1, 'wrong resource count');
-
-    let first_level_construction_stone_cost 
-        = get!(world, (first_level_construction_resources_config.resource_cost_id, 0), ResourceCost);
-    assert(first_level_construction_stone_cost.amount == 10, 'wrong amount value');
-    assert(first_level_construction_stone_cost.resource_type == ResourceTypes::STONE, 
-            'wrong resource_type value'
+    // set the leveling_config
+    leveling_config_dispatcher.set_leveling_config(
+            world,
+            HYPERSTRUCTURE_LEVELING_CONFIG_ID,
+            decay_interval: 0,
+            max_level: 5,
+            decay_scaled: 1000000000,
+            cost_percentage_scaled: 1000000000,
+            base_multiplier: 25,
+            wheat_base_amount: 1,
+            fish_base_amount: 2,
+            resource_1_costs: tier_1_construction_resources,
+            resource_2_costs: tier_2_construction_resources,
+            resource_3_costs: tier_3_construction_resources,
     );
-
-
-    //////////////////////////////////////////
-    // check resources needed to reach level 2
-
-    let second_level_construction_resources_config 
-        = get!(world, (HYPERSTRUCTURE_CONFIG_ID, 2 - 1 ), LevelingConfig);
-
-    assert(second_level_construction_resources_config.resource_cost_id != 0, 'wrong resource id');
-    assert(second_level_construction_resources_config.resource_cost_count == 2, 'wrong resource count');
-
-    let second_level_construction_stone_cost 
-        = get!(world, (second_level_construction_resources_config.resource_cost_id, 0), ResourceCost);
-    assert(second_level_construction_stone_cost.amount == 20, 'wrong amount value');
-    assert(second_level_construction_stone_cost.resource_type == ResourceTypes::STONE, 
-            'wrong resource_type value'
-    );
-
-
-    let second_level_construction_wood_cost 
-        = get!(world, (second_level_construction_resources_config.resource_cost_id, 1), ResourceCost);
-    assert(second_level_construction_wood_cost.amount == 30, 'wrong amount value');
-    assert(second_level_construction_wood_cost.resource_type == ResourceTypes::WOOD, 
-            'wrong resource_type value'
-    );
-
-
 
     //////////////////////////////////////////
-    // check resources needed to reach level 3
-    let third_level_construction_resources_config 
-        = get!(world, (HYPERSTRUCTURE_CONFIG_ID, 3 - 1 ), LevelingConfig);
+    // check resources needed to reach each level
 
-    assert(third_level_construction_resources_config.resource_cost_id != 0, 'wrong resource id');
-    assert(third_level_construction_resources_config.resource_cost_count == 3, 'wrong resource count');
+    let leveling_config 
+        = get!(world, (HYPERSTRUCTURE_LEVELING_CONFIG_ID), LevelingConfig);
 
-    let third_level_construction_stone_cost 
-        = get!(world, (third_level_construction_resources_config.resource_cost_id, 0), ResourceCost);
-    assert(third_level_construction_stone_cost.amount == 30, 'wrong amount value');
-    assert(third_level_construction_stone_cost.resource_type == ResourceTypes::STONE, 
-            'wrong resource_type value'
-    );
+    assert(leveling_config.wheat_base_amount == 1, 'wrong fish');
+    assert(leveling_config.fish_base_amount == 2, 'wrong wheat');
 
+    // food
+    assert(leveling_config.resource_1_cost_id != 0, 'wrong cost id');
+    assert(leveling_config.resource_1_cost_count == 1, 'wrong cost length');
 
-    let third_level_construction_wood_cost 
-        = get!(world, (third_level_construction_resources_config.resource_cost_id, 1), ResourceCost);
-    assert(third_level_construction_wood_cost.amount == 40, 'wrong amount value');
-    assert(third_level_construction_wood_cost.resource_type == ResourceTypes::WOOD, 
-            'wrong resource_type value'
-    );
+    // tier 1 resources
+    assert(leveling_config.resource_1_cost_id != 0, 'wrong cost id');
+    assert(leveling_config.resource_1_cost_count == 1, 'wrong cost length');
 
-    let third_level_construction_coal_cost 
-        = get!(world, (third_level_construction_resources_config.resource_cost_id, 2), ResourceCost);
-    assert(third_level_construction_coal_cost.amount == 50, 'wrong amount value');
-    assert(third_level_construction_coal_cost.resource_type == ResourceTypes::COAL, 
-            'wrong resource_type value'
-    );
-
+    // tier 2 resources
+    assert(leveling_config.resource_2_cost_id != 0, 'wrong cost id');
+    assert(leveling_config.resource_2_cost_count == 2, 'wrong cost length');
+    
+    // tier 3 resources
+    assert(leveling_config.resource_3_cost_id != 0, 'wrong cost id');
+    assert(leveling_config.resource_3_cost_count == 3, 'wrong cost length');
 }
 
 

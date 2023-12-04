@@ -9,7 +9,7 @@ mod travel_systems {
     use eternum::models::road::RoadImpl;
     use eternum::models::config::{RoadConfig, LevelingConfig};
 
-    use eternum::constants::{ROAD_CONFIG_ID, LEVELING_CONFIG_ID, LevelIndex};
+    use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, LevelIndex};
     
     use eternum::systems::transport::interface::travel_systems_interface::{
         ITravelSystems

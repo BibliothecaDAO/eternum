@@ -1,6 +1,7 @@
 use eternum::models::position::Position;
 use eternum::models::metadata::ForeignKey;
 use eternum::models::resources::{Resource, ResourceCost};
+use eternum::models::level::Level;
 use eternum::models::config::{
     SpeedConfig, WeightConfig, CapacityConfig, CombatConfig,
     SoldierConfig, HealthConfig, AttackConfig, DefenceConfig
@@ -64,8 +65,6 @@ const WHEAT_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST: u128 = 50;
 const FISH_BURN_PER_SOLDIER_DURING_ATTACK: u128 = 200;
 const FISH_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST: u128 = 10;
 
-const WHEAT_BURN_PER_SOLDIER_DURING_ATTACK: u128 = 100;
-const FISH_BURN_PER_SOLDIER_DURING_ATTACK: u128 = 200;
 const ATTACKER_SOLDIER_COUNT: u128 = 15;
 const TARGET_SOLDIER_COUNT: u128 = 5;
 const INITIAL_RESOURCE_BALANCE: u128 = 5000;
@@ -147,8 +146,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, u128, ICombatSystemsDis
                 entity_id: attacker_order_hyperstructure_id,
                 hyperstructure_type: 1,
                 order: 1,
-                level: 0,
-                max_level: 3
         }
     ));
 
@@ -462,10 +459,10 @@ fn test_steal_success_with_level_1_boost() {
     ));
 
     // boost hyperstructure level to 1
-    let mut attacker_order_hyperstructure 
-        = get!(world, attacker_order_hyperstructure_id, HyperStructure);
-    attacker_order_hyperstructure.level = 1;
-    set!(world, (attacker_order_hyperstructure));
+    let mut attacker_order_hyperstructure_level 
+        = get!(world, attacker_order_hyperstructure_id, Level);
+    attacker_order_hyperstructure_level.level = 1;
+    set!(world, (attacker_order_hyperstructure_level));
 
     starknet::testing::set_contract_address(
         contract_address_const::<'attacker'>()
@@ -589,10 +586,10 @@ fn test_steal_success_with_level_3_boost() {
     ));
 
     // boost hyperstructure level to 3
-    let mut attacker_order_hyperstructure 
-        = get!(world, attacker_order_hyperstructure_id, HyperStructure);
-    attacker_order_hyperstructure.level = 3;
-    set!(world, (attacker_order_hyperstructure));
+    let mut attacker_order_hyperstructure_level
+        = get!(world, attacker_order_hyperstructure_id, Level);
+    attacker_order_hyperstructure_level.level = 3;
+    set!(world, (attacker_order_hyperstructure_level));
 
     starknet::testing::set_contract_address(
         contract_address_const::<'attacker'>()

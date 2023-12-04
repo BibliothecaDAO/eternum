@@ -36,7 +36,7 @@ mod combat_systems {
 
     use eternum::constants::{
         WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE, COMBAT_CONFIG_ID,
-        LEVELING_CONFIG_ID, get_unzipped_resource_probabilities,
+        REALM_LEVELING_CONFIG_ID, get_unzipped_resource_probabilities,
         LevelIndex
     };
 
@@ -625,7 +625,7 @@ mod combat_systems {
                 = get!(world, *attacker_ids.at(0), EntityOwner).entity_owner_id;
 
             // get level bonus
-            let leveling_config: LevelingConfig = get!(world, LEVELING_CONFIG_ID, LevelingConfig);
+            let leveling_config: LevelingConfig = get!(world, REALM_LEVELING_CONFIG_ID, LevelingConfig);
             let attacker_level = get!(world, (attacker_realm_entity_id), Level);
             let attacker_level_bonus = attacker_level.get_index_multiplier(leveling_config, LevelIndex::FOOD);
 
@@ -778,7 +778,8 @@ mod combat_systems {
                         'wrong hyperstructure id'
                 );
 
-                attack_boost_level = attacker_order_hyperstructure.level;
+                let attacker_hyperstructure_level = get!(world, attacker_order_hyperstructure_id, Level);
+                attack_boost_level = attacker_hyperstructure_level.level;
             }
 
             // increase chance of successful attack if level is boosted
@@ -831,8 +832,7 @@ mod combat_systems {
 
 
                 // steal resources
-                let mut stolen_resource_types: Array<u8> = array![];
-                let mut stolen_resource_amounts: Array<u128> = array![];
+                let mut stolen_resources: Array<(u8, u128)> = array![];
 
                 let attacker_capacity = get!(world, attacker_id, Capacity);
                 let attacker_total_weight_capacity 
@@ -846,6 +846,7 @@ mod combat_systems {
                     = get_unzipped_resource_probabilities();
 
                 let mut index = 0;
+                let choose_with_replacement = false;
 
                 // here we choose x number of resources (without replacement)
                 // that the attacker can get away with 

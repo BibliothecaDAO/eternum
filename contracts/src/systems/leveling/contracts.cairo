@@ -7,8 +7,9 @@ mod leveling_systems {
     use eternum::models::realm::{Realm};
     use eternum::models::level::{Level, LevelTrait};
 
-    use eternum::constants::{LEVELING_CONFIG_ID, LevelIndex, ResourceTypes};
+    use eternum::constants::{REALM_LEVELING_CONFIG_ID, LevelIndex, ResourceTypes};
 
+    use eternum::systems::leveling::contracts::leveling_systems::{InternalLevelingSystemsImpl as leveling};
     use eternum::systems::leveling::interface::{ILevelingSystems};
 
     #[external(v0)]
@@ -31,26 +32,43 @@ mod leveling_systems {
                     'not realm owner'
             );
 
-            // leveling cost
-            let mut level = get!(world, (realm_entity_id), Level);
+            leveling::level_up(world, realm_entity_id, REALM_LEVELING_CONFIG_ID);
+        }   
+    }
 
-            // check that realm has enough resources to level up
+    #[generate_trait]
+    impl InternalLevelingSystemsImpl of InternalLevelingSystemsTrait {
+
+        fn get_realm_level_bonus(world: IWorldDispatcher, realm_entity_id: ID, leveling_index: u8) -> u128 {
+            let level = get!(world, (realm_entity_id), Level);
+            let leveling_config: LevelingConfig = get!(world, REALM_LEVELING_CONFIG_ID, LevelingConfig);
+            level.get_index_multiplier(leveling_config, leveling_index)
+        }
+
+        fn level_up(world: IWorldDispatcher, entity_id: ID, leveling_config_id: ID) {
+            // leveling cost
+            let mut level = get!(world, (entity_id), Level);
+
+            // check that entity has enough resources to level up
             let leveling_config: LevelingConfig 
-                = get!(world, (REALM_LEVELING_CONFIG_ID, 0), LevelingConfig);
+                = get!(world, (leveling_config_id), LevelingConfig);
 
             let current_level = level.get_level();
+            
+            assert(current_level < leveling_config.max_level, 'reached max level');
+            
             let cost_multiplier = level.get_cost_multiplier(leveling_config.cost_percentage_scaled);
             let next_index: u8 = (current_level % 4 + 1).try_into().unwrap();
 
             if (next_index == LevelIndex::FOOD) {
                 let wheat_cost = (cost_multiplier * leveling_config.wheat_base_amount)/100;
-                let mut wheat = get!(world, (realm_entity_id, ResourceTypes::WHEAT), Resource);
+                let mut wheat = get!(world, (entity_id, ResourceTypes::WHEAT), Resource);
                 assert(wheat.balance >= wheat_cost, 'not enough wheat');
                 wheat.balance -= wheat_cost;
                 set!(world, (wheat));
 
                 let fish_cost = (cost_multiplier * leveling_config.fish_base_amount)/100;
-                let mut fish = get!(world, (realm_entity_id, ResourceTypes::FISH), Resource);
+                let mut fish = get!(world, (entity_id, ResourceTypes::FISH), Resource);
                 assert(fish.balance >= fish_cost, 'not enough fish');
                 fish.balance -= fish_cost;
                 set!(world, (fish));
@@ -81,7 +99,7 @@ mod leveling_systems {
                 
                     let total_cost = (cost_multiplier * resource_cost.amount)/100;
                 
-                    let mut resource = get!(world, (realm_entity_id, resource_cost.resource_type), Resource);
+                    let mut resource = get!(world, (entity_id, resource_cost.resource_type), Resource);
                     assert(resource.balance >= total_cost, 'not enough resource');
                     resource.balance -= total_cost;
                     set!(world, (resource));
@@ -94,19 +112,9 @@ mod leveling_systems {
             level.level = current_level + 1;
             // one week of leveling
             let ts = starknet::get_block_timestamp();
-            level.valid_until = ts + 604800;
+            // 604800
+            level.valid_until = ts + leveling_config.decay_interval;
             set!(world, (level));
-
-        }   
-    }
-
-    #[generate_trait]
-    impl InternalLevelingSystemsImpl of InternalLevelingSystemsTrait {
-
-        fn get_realm_level_bonus(world: IWorldDispatcher, realm_entity_id: ID, leveling_index: u8) -> u128 {
-            let level = get!(world, (realm_entity_id), Level);
-            let leveling_config: LevelingConfig = get!(world, LEVELING_CONFIG_ID, LevelingConfig);
-            level.get_index_multiplier(leveling_config, leveling_index)
         }
     }
 }

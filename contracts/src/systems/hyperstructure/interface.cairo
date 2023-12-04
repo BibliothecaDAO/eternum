@@ -5,7 +5,7 @@ use dojo::world::IWorldDispatcher;
 
 #[starknet::interface]
 trait IHyperstructureSystems<TContractState> {
-    fn upgrade_level(
+    fn level_up(
         self: @TContractState,
         world: IWorldDispatcher,
         hyperstructure_id: u128

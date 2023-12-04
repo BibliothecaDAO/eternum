@@ -52,7 +52,7 @@ use eternum::systems::transport::interface::{
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
 use eternum::constants::ResourceTypes;
-use eternum::constants::{FREE_TRANSPORT_ENTITY_TYPE, LEVELING_CONFIG_ID};
+use eternum::constants::{FREE_TRANSPORT_ENTITY_TYPE, REALM_LEVELING_CONFIG_ID};
 
 use dojo::world::{ IWorldDispatcher, IWorldDispatcherTrait};
 
@@ -671,7 +671,9 @@ fn test_accept_order_with_travel_bonus() {
     ));
     set!(world, (
         LevelingConfig {
-        config_id: LEVELING_CONFIG_ID,
+        config_id: REALM_LEVELING_CONFIG_ID,
+        decay_interval: 604800,
+        max_level: 1000,
         wheat_base_amount: 0,
         fish_base_amount: 0,
         resource_1_cost_id: 0,

@@ -1,4 +1,4 @@
-use eternum::constants::ResourceTypes;
+use eternum::constants::{ResourceTypes, REALM_LEVELING_CONFIG_ID};
 use eternum::models::resources::Resource;
 use eternum::models::level::Level;
 use eternum::models::position::Position;
@@ -48,6 +48,8 @@ fn setup() -> (IWorldDispatcher, u128, ILevelingSystemsDispatcher) {
     let wheat_base_amount: u128 = 3780;
     // half a day of average production
     let fish_base_amount: u128 = 1260;
+    let decay_interval = 604600;
+    let max_level = 1000;
     
     // 3 tier resources
     let mut resource_1_costs = array![(1, 1000), (2, 1000)].span();
@@ -56,6 +58,9 @@ fn setup() -> (IWorldDispatcher, u128, ILevelingSystemsDispatcher) {
 
     level_config_dispatcher.set_leveling_config(
         world,
+        REALM_LEVELING_CONFIG_ID,
+        decay_interval,
+        max_level,
         decay_scaled,
         cost_percentage_scaled,
         base_multiplier,

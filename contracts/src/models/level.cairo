@@ -68,7 +68,6 @@ impl LevelImpl of LevelTrait {
             (coefficient * FixedTrait::new_unscaled(100, false)).try_into().unwrap()
         }
     }
-
 }
 
 
@@ -115,6 +114,8 @@ mod tests {
 
         let leveling_config = LevelingConfig {
             config_id: 0,
+            decay_interval: 604800,
+            max_level: 1000,
             wheat_base_amount: 0,
             fish_base_amount: 0,
             resource_1_cost_id: 0,
@@ -147,6 +148,8 @@ mod tests {
 
         let leveling_config = LevelingConfig {
             config_id: 0,
+            decay_interval: 604800,
+            max_level: 1000,
             wheat_base_amount: 0,
             fish_base_amount: 0,
             resource_1_cost_id: 0,
