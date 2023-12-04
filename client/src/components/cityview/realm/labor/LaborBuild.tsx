@@ -14,7 +14,7 @@ import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../DojoContext";
 import { formatSecondsLeftInDaysHours } from "./laborUtils";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { divideByPrecision, getEntityIdFromKeys, getPosition, getZone } from "../../../../utils/utils";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";

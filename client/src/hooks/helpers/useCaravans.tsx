@@ -1,4 +1,4 @@
-import { Has, HasValue, getComponentValue } from "@latticexyz/recs";
+import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { CaravanInterface } from "../graphql/useGraphQLQueries";
 import { useMemo, useState } from "react";

@@ -1,4 +1,4 @@
-import { Components, Schema, setComponent } from "@latticexyz/recs";
+import { Components, Schema, setComponent } from "@dojoengine/recs";
 import { SetupNetworkResult } from "./setupNetwork";
 import { Event } from "starknet";
 import { getEntityIdFromKeys } from "../utils/utils";

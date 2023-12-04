@@ -1,4 +1,4 @@
-import { Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
+import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { Position, UIPosition } from "../../types";
 import hyperstructureData from "../../data/hyperstructures.json";

@@ -21,7 +21,7 @@ import {
   getEntitiesWithValue,
   hasComponent,
   toUpdateStream,
-} from "@latticexyz/recs";
+} from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
 
 enum QueryFragmentType {

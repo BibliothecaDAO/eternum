@@ -1,4 +1,4 @@
-import { Components } from "@latticexyz/recs";
+import { Components } from "@dojoengine/recs";
 import { createEntitySubscription } from "./createEntitySubscription";
 import { createEventSubscription } from "./createEventSubscription";
 import { COMBAT_EVENT, TRANSFER_EVENT } from "@bibliothecadao/eternum";

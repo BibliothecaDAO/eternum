@@ -5,7 +5,7 @@ import { SelectCaravanPanel } from "../../cityview/realm/trade/CreateOffer";
 import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/arrow-separator.svg";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { getRealm } from "../../../utils/realms";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../utils/utils";
 import { useDojo } from "../../../DojoContext";
 import { Steps } from "../../../elements/Steps";

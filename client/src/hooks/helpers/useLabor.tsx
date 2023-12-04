@@ -1,4 +1,4 @@
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { getEntityIdFromKeys } from "../../utils/utils";
 import { unpackResources } from "../../utils/packedData";

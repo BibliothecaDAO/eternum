@@ -1,4 +1,4 @@
-import { EntityIndex, HasValue, NotValue, getComponentValue, runQuery } from "@latticexyz/recs";
+import { EntityIndex, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { Resource } from "../../types";
 import { ResourceInterface } from "../graphql/useGraphQLQueries";

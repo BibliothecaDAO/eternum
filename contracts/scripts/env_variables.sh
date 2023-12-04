@@ -4,7 +4,7 @@
 STARKNET_RPC_URL="http://localhost:5050"
 DOJO_ACCOUNT_ADDRESS="0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973"
 DOJO_PRIVATE_KEY="0x1800000000300000180000000000030000000000003006001800006600"
-SOZO_WORLD="0x4d79c99ce9b489b77461e3491970ea5ede1f1966f4d2ff65ee76cd8701d6dad"
+SOZO_WORLD="0x1877a0cec8a630bbeba7dc1ac7cedeaaa3c2f7a5b21ee248c863018b4e9dc07"
 
 # Check if the first argument is provided and set it to "dev" or "prod"
 if [[ ! -z "$1" ]]; then

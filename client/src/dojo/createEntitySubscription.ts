@@ -1,6 +1,6 @@
 import { GraphQLClient, gql } from "graphql-request";
 import { createClient } from "graphql-ws";
-import { Components } from "@latticexyz/recs";
+import { Components } from "@dojoengine/recs";
 import { setComponentFromEntity } from "../utils/utils";
 import { BehaviorSubject, Observable } from "rxjs";
 

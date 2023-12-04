@@ -17,7 +17,7 @@ import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useCaravan } from "../../../../hooks/helpers/useCaravans";
 import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../../utils/utils";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 import { useTrade } from "../../../../hooks/helpers/useTrade";
 import { SelectRealmPanel } from "../SelectRealmPanel";

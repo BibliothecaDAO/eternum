@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { RealmInterface } from "../graphql/useGraphQLQueries";
-import { EntityIndex, Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
+import { EntityIndex, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { getEntityIdFromKeys, hexToAscii, numberToHex } from "../../utils/utils";
 import { getOrderName } from "@bibliothecadao/eternum";

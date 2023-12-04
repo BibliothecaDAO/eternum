@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useDojo } from "../../DojoContext";
 import { useEntityQuery } from "@dojoengine/react";
-import { Has, HasValue } from "@latticexyz/recs";
+import { Has, HasValue } from "@dojoengine/recs";
 import { RealmListItem } from "./RealmListItem";
 import { useGetRealms } from "../../hooks/helpers/useRealm";
 
