@@ -37,7 +37,7 @@ mod combat_systems {
     use eternum::constants::{
         WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE, COMBAT_CONFIG_ID,
         REALM_LEVELING_CONFIG_ID, get_unzipped_resource_probabilities,
-        LevelIndex
+        LevelIndex, HYPERSTRUCTURE_LEVELING_CONFIG_ID
     };
 
     use eternum::utils::random;
@@ -569,13 +569,14 @@ mod combat_systems {
 
         fn attack(
             self: @ContractState, world: IWorldDispatcher,
-            attacker_ids: Span<u128>, target_realm_entity_id: u128
+            attacker_ids: Span<u128>, attacker_order_hyperstructure_id: u128, 
+            target_realm_entity_id: u128, target_order_hyperstructure_id: u128
         ) {
             let caller = starknet::get_caller_address();
 
             let target_town_watch_id 
                 = get!(world, target_realm_entity_id, TownWatch).town_watch_id;
-
+            
             let mut target_town_watch_health = get!(world, target_town_watch_id, Health);
             assert(target_town_watch_health.value > 0, 'target is dead');
 
@@ -623,28 +624,60 @@ mod combat_systems {
 
             let attacker_realm_entity_id 
                 = get!(world, *attacker_ids.at(0), EntityOwner).entity_owner_id;
+            let attacker_realm = get!(world, attacker_realm_entity_id, Realm );
 
-            // get level bonus
-            let leveling_config: LevelingConfig = get!(world, REALM_LEVELING_CONFIG_ID, LevelingConfig);
-            let attacker_level = get!(world, (attacker_realm_entity_id), Level);
-            let attacker_level_bonus = attacker_level.get_index_multiplier(leveling_config, LevelIndex::FOOD);
-
-            attackers_total_attack = (attackers_total_attack * attacker_level_bonus)/100;
-            attackers_total_defence = (attackers_total_defence + attacker_level_bonus)/100;
-
-            let mut damage: u128 = 0; 
-            
-            let target_level = get!(world, (attacker_realm_entity_id), Level);
-            let target_level_bonus = target_level.get_index_multiplier(leveling_config, LevelIndex::COMBAT);
+            let target_realm = get!(world, target_realm_entity_id, Realm);
 
             let mut target_town_watch_attack = get!(world, target_town_watch_id, Attack);
             let mut target_town_watch_defense = get!(world, target_town_watch_id, Defence);
+            let mut target_town_watch_health = get!(world, target_town_watch_id, Health);
+
+            /////// REALM LEVEL BONUS ///////
+            let leveling_config: LevelingConfig = get!(world, REALM_LEVELING_CONFIG_ID, LevelingConfig);
+            let attacker_level = get!(world, (attacker_realm_entity_id), Level);
+            let attacker_level_bonus = attacker_level.get_index_multiplier(leveling_config, LevelIndex::COMBAT);
+
+            let target_level = get!(world, (target_realm_entity_id), Level);
+            let target_level_bonus = target_level.get_index_multiplier(leveling_config, LevelIndex::COMBAT);
+
+            ////// HYPERSTRUCTURE LEVEL BONUS //////
+            let hyperstructure_leveling_config = get!(world, HYPERSTRUCTURE_LEVELING_CONFIG_ID, LevelingConfig);
+
+            // attacker order hyperstructure
+            let attacker_order_hyperstructure 
+                = get!(world, attacker_order_hyperstructure_id, HyperStructure);
+            assert(
+                attacker_order_hyperstructure.order == attacker_realm.order, 
+                    'wrong hyperstructure id'
+            );
+            let attacker_hyperstructure_level = get!(world, attacker_order_hyperstructure_id, Level);
+            let attacker_order_level_bonus = attacker_hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, LevelIndex::COMBAT);
+
+            // defender order hyperstructure
+            let target_order_hyperstructure 
+                = get!(world, target_order_hyperstructure_id, HyperStructure);
+            assert(
+                target_order_hyperstructure.order == target_realm.order, 
+                    'wrong hyperstructure id'
+            );
+            let target_hyperstructure_level = get!(world, target_order_hyperstructure_id, Level);
+            let target_order_level_bonus = target_hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, LevelIndex::COMBAT);
+
+            // need to divide by 100**2 because level_bonus in precision 100
+            attackers_total_attack = (attackers_total_attack * attacker_level_bonus * attacker_order_level_bonus)/10000;
+            attackers_total_defence = (attackers_total_defence + attacker_level_bonus * attacker_order_level_bonus)/10000;
+
+            // need to divide by 100**2 because level_bonus in precision 100
+            let target_total_attack = (target_town_watch_attack.value * target_level_bonus * target_order_level_bonus)/10000;
+            let target_total_defence = (target_town_watch_defense.value + target_level_bonus * target_order_level_bonus)/10000;
+
+            let mut damage: u128 = 0; 
 
             let attack_successful: bool = *random::choices(
                 array![true, false].span(), 
                 array![
                     attackers_total_attack * attackers_total_health, 
-                    ((target_town_watch_defense.value * target_level_bonus) / 100) * target_town_watch_health.value
+                    target_total_defence * target_town_watch_health.value
                 ].span(), 
                 array![].span(), 1, true
             )[0];
@@ -657,7 +690,6 @@ mod combat_systems {
                 let damage_percent = random::random(salt, 100 + 1 );
                 damage = (attackers_total_attack * damage_percent) / 100;
 
-                
                 target_town_watch_health.value -= min(damage, target_town_watch_health.value);
 
                 set!(world, (target_town_watch_attack, target_town_watch_defense, target_town_watch_health));
@@ -669,7 +701,7 @@ mod combat_systems {
                 // get damage to attacker based on the target's attack value 
                 let salt: u128 = ts.into();
                 let damage_percent = random::random(salt, 100 + 1 );
-                damage = (target_town_watch_attack.value * damage_percent) / 100;
+                damage = (target_total_attack * damage_percent) / 100;
 
                 // share damage between attackers
                 damage = damage / attacker_ids.len().into();
@@ -719,10 +751,12 @@ mod combat_systems {
 
         fn steal(
             self: @ContractState, world: IWorldDispatcher,
-            attacker_id: u128, attacker_order_hyperstructure_id: u128, target_realm_entity_id: u128
+            attacker_id: u128, attacker_order_hyperstructure_id: u128, 
+            target_realm_entity_id: u128, target_order_hyperstructure_id: u128
         ) {
             // check that target is a realm
             let target_realm = get!(world, target_realm_entity_id, Realm);
+            
             assert(target_realm.realm_id != 0, 'target not realm');
 
             let caller = starknet::get_caller_address();
@@ -739,9 +773,6 @@ mod combat_systems {
                 attacker_arrival.arrives_at <= ts,
                     'attacker is travelling'
             );
-
-
-         
             
             let attacker_position = get!(world, attacker_id, Position);
             let target_realm_position = get!(world, target_realm_entity_id, Position);
@@ -763,37 +794,60 @@ mod combat_systems {
             let target_town_watch_attack = get!(world, target_town_watch_id, Attack);
             let target_town_watch_defense = get!(world, target_town_watch_id, Defence);
 
-            
-            let attacker_entity_owner = get!(world, attacker_id, EntityOwner);
-            let attacker_realm = get!(world,attacker_entity_owner.entity_owner_id, Realm );
+            let attacker_realm_entity_id = get!(world, attacker_id, EntityOwner).entity_owner_id;
+            let attacker_realm = get!(world, attacker_realm_entity_id, Realm );
             let combat_config = get!(world, COMBAT_CONFIG_ID, CombatConfig);
 
-            let mut attack_boost_level = 0;
-            
-            if attacker_realm.realm_id != 0 {
-                let attacker_order_hyperstructure 
-                    = get!(world, attacker_order_hyperstructure_id, HyperStructure);
-                assert(
-                    attacker_order_hyperstructure.order == attacker_realm.order, 
-                        'wrong hyperstructure id'
-                );
+            let target_realm = get!(world, target_realm_entity_id, Realm);
 
-                let attacker_hyperstructure_level = get!(world, attacker_order_hyperstructure_id, Level);
-                attack_boost_level = attacker_hyperstructure_level.level;
-            }
+            let mut target_town_watch_attack = get!(world, target_town_watch_id, Attack);
+            let mut target_town_watch_defense = get!(world, target_town_watch_id, Defence);
+            let mut target_town_watch_health = get!(world, target_town_watch_id, Health);
 
-            // increase chance of successful attack if level is boosted
-            let mut chance_of_successful_attack = attacker_attack.value * attacker_health.value;
-            if attack_boost_level == 2 || attack_boost_level == 3 {
-                chance_of_successful_attack 
-                    += (combat_config.steal_chance_percentage_boost.into() * chance_of_successful_attack ) 
-                        / 100
-            }
+            /////// REALM LEVEL BONUS ///////
+            let leveling_config: LevelingConfig = get!(world, REALM_LEVELING_CONFIG_ID, LevelingConfig);
+            let attacker_level = get!(world, (attacker_realm_entity_id), Level);
+            let attacker_level_bonus = attacker_level.get_index_multiplier(leveling_config, LevelIndex::COMBAT);
+
+            let target_level = get!(world, (target_realm_entity_id), Level);
+            let target_level_bonus = target_level.get_index_multiplier(leveling_config, LevelIndex::COMBAT);
+
+            ////// HYPERSTRUCTURE LEVEL BONUS //////
+            let hyperstructure_leveling_config = get!(world, HYPERSTRUCTURE_LEVELING_CONFIG_ID, LevelingConfig);
+
+            // attacker order hyperstructure
+            let attacker_order_hyperstructure 
+                = get!(world, attacker_order_hyperstructure_id, HyperStructure);
+            assert(
+                attacker_order_hyperstructure.order == attacker_realm.order, 
+                    'wrong hyperstructure id'
+            );
+            let attacker_hyperstructure_level = get!(world, attacker_order_hyperstructure_id, Level);
+            let attacker_order_level_bonus = attacker_hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, LevelIndex::COMBAT);
+
+            // defender order hyperstructure
+            let target_order_hyperstructure 
+                = get!(world, target_order_hyperstructure_id, HyperStructure);
+            assert(
+                target_order_hyperstructure.order == target_realm.order, 
+                    'wrong hyperstructure id'
+            );
+            let target_hyperstructure_level = get!(world, target_order_hyperstructure_id, Level);
+            let target_order_level_bonus = target_hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, LevelIndex::COMBAT);
+
+            // need to divide by 100**2 because level_bonus in precision 100
+            let attackers_total_attack = (attacker_attack.value * attacker_level_bonus * attacker_order_level_bonus)/10000;
+            let attackers_total_defence = (attacker_defence.value + attacker_level_bonus * attacker_order_level_bonus)/10000;
+
+            // need to divide by 100**2 because level_bonus in precision 100
+            let target_total_attack = (target_town_watch_attack.value * target_level_bonus * target_order_level_bonus)/10000;
+            let target_total_defence = (target_town_watch_defense.value + target_level_bonus * target_order_level_bonus)/10000;
+
             let attack_successful: bool = *random::choices(
                 array![true, false].span(), 
                 array![
-                    chance_of_successful_attack, 
-                    target_town_watch_defense.value * target_town_watch_health.value
+                    attackers_total_attack * attacker_health.value, 
+                    target_total_defence * target_town_watch_health.value
                 ].span(), 
                 array![].span(), 1, true
             )[0];
@@ -808,18 +862,6 @@ mod combat_systems {
                 let mut wheat_burn_amount = combat_config.wheat_burn_per_soldier * attacker_quantity.value;
                 let mut fish_burn_amount = combat_config.fish_burn_per_soldier * attacker_quantity.value;
                 
-                if attack_boost_level == 1 || attack_boost_level == 3 {
-                    // boost burn amount is hyperstructure level is boosted
-                    wheat_burn_amount 
-                        += combat_config.wheat_burn_percent_boost * wheat_burn_amount 
-                            / 100;
-
-                    fish_burn_amount 
-                        += combat_config.fish_burn_percent_boost * fish_burn_amount
-                            / 100;
-                } 
-
-
                 let mut target_wheat_resource
                     = get!(world, (target_realm_entity_id, ResourceTypes::WHEAT), Resource);
                 target_wheat_resource.balance -= min(wheat_burn_amount, target_wheat_resource.balance);
@@ -930,7 +972,7 @@ mod combat_systems {
                 // get damage to attacker based on the target's attack value 
                 let salt: u128 = ts.into();
                 let damage_percent = random::random(salt, 100 + 1 );
-                let damage = (target_town_watch_attack.value * damage_percent) / 100;
+                let damage = (target_total_attack * damage_percent) / 100;
 
                 attacker_health.value -= min(damage, attacker_health.value);
 
@@ -953,12 +995,12 @@ mod combat_systems {
 
             // send attacker back to home realm
             let attacker_movable = get!(world, attacker_id, Movable);
-            let attacker_entity_owner = get!(world, attacker_id, EntityOwner);
             let attacker_home_position 
-                = get!(world, attacker_entity_owner.entity_owner_id, Position);
+                = get!(world, attacker_realm_entity_id, Position);
             InternalTravelSystemsImpl::travel(
                 world, attacker_id, attacker_movable, 
-                attacker_position.into(), attacker_home_position.into()
+                attacker_position.into(), attacker_home_position.into(),
+                attacker_order_hyperstructure_id
             );
         }
     }

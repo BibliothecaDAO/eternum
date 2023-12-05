@@ -3,6 +3,8 @@ mod caravan_systems {
     use eternum::alias::ID;
     use eternum::models::metadata::ForeignKey;
     use eternum::models::caravan::CaravanMembers;
+    use eternum::models::realm::Realm;
+    use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::inventory::Inventory;
     use eternum::models::weight::Weight;
     use eternum::models::quantity::{Quantity, QuantityTrait};
@@ -211,12 +213,18 @@ mod caravan_systems {
 
 
         fn get_travel_time(
-            world: IWorldDispatcher, transport_id: ID, from_pos: Position, to_pos: Position, 
+            world: IWorldDispatcher, transport_id: ID, from_pos: Position, to_pos: Position, order_hyperstructure_id: ID 
             ) -> (u64, u64) {
 
             // get level bonus
             let realm_owner = get!(world, (transport_id), EntityOwner);
-            let level_bonus = leveling::get_realm_level_bonus(world, realm_owner.entity_owner_id, LevelIndex::TRAVEL);
+            let realm_level_bonus = leveling::get_realm_level_bonus(world, realm_owner.entity_owner_id, LevelIndex::TRAVEL);
+
+            // get hyperstructure level bonus
+            let hyperstructure = get!(world, (order_hyperstructure_id), HyperStructure);
+            let realm = get!(world, (realm_owner.entity_owner_id), Realm);
+            assert(hyperstructure.order == realm.order, 'not same order');
+            let hyperstructure_level_bonus = leveling::get_hyperstructure_level_bonus(world, order_hyperstructure_id, LevelIndex::TRAVEL);
 
             let (caravan_movable, caravan_position) 
                 = get!(world, transport_id, (Movable, Position));
@@ -225,7 +233,7 @@ mod caravan_systems {
                     to_pos, caravan_movable.sec_per_km
                     );
             
-            one_way_trip_time = ((one_way_trip_time.into() * 100 / level_bonus)).try_into().unwrap();
+            one_way_trip_time = ((one_way_trip_time.into() * 100 / realm_level_bonus)).try_into().unwrap();
                     
             let round_trip_time: u64 = 2 * one_way_trip_time;
             // reduce round trip time if there is a road

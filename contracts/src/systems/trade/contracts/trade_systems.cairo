@@ -117,7 +117,8 @@ mod trade_systems {
 
         fn accept_order(
             self: @ContractState, world: IWorldDispatcher,
-            taker_id: u128, taker_transport_id: u128, trade_id: u128
+            taker_id: u128, taker_transport_id: u128, trade_id: u128,
+            order_hyperstructure_id: ID
         ) {
             // check that caller is taker
             let caller = starknet::get_caller_address();
@@ -188,7 +189,7 @@ mod trade_systems {
                 // get maker travel time
                 let (maker_transport_round_trip_time, maker_transport_one_way_trip_time) 
                     = caravan::get_travel_time(
-                        world, trade.maker_transport_id, maker_position, taker_position
+                        world, trade.maker_transport_id, maker_position, taker_position, order_hyperstructure_id
                         ); 
             
 
@@ -243,7 +244,7 @@ mod trade_systems {
                 // get taker travel time
                 let (taker_transport_round_trip_time, taker_transport_one_way_trip_time) 
                     = caravan::get_travel_time(
-                        world, taker_transport_id, taker_position, maker_position
+                        world, taker_transport_id, taker_position, maker_position, order_hyperstructure_id
                         ); 
                 // lock chest until the taker has picked it up
                 resource_chest::lock_until(

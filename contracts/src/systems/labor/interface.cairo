@@ -14,7 +14,8 @@ trait ILaborSystems<TContractState> {
         self: @TContractState, 
         world: IWorldDispatcher, 
         realm_id: u128, 
-        resource_type: u8
+        resource_type: u8,
+        order_hyperstructure_id: u128
     );
     fn purchase(
         self: @TContractState, 
