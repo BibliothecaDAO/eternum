@@ -34,6 +34,7 @@ type GetLatestEntitiesQuery = {
 };
 
 export async function createEntitySubscription(contractComponents: Components): Promise<Observable<UpdatedEntity[]>> {
+  console.log("createEntitySubscription", contractComponents);
   const wsClient = createClient({ url: import.meta.env.VITE_TORII_WS });
   const client = new GraphQLClient(import.meta.env.VITE_TORII_URL!);
 

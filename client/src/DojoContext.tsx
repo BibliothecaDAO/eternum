@@ -93,12 +93,10 @@ export const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
 
   const { create, list, get, account, select, isDeploying, clear } = useBurner();
 
-  if (!list().length && !isDeploying) {
-    create();
-    return;
-  }
-
-  if (!account) return;
+  // if (!list().length && !isDeploying) {
+  //   create();
+  //   return;
+  // }
 
   return (
     <DojoContext.Provider
@@ -112,9 +110,9 @@ export const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
           get,
           select,
           clear,
-          account: account as any,
+          account: account ? account : masterAccount,
           isDeploying,
-          accountDisplay: displayAddress(account.address),
+          accountDisplay: account ? displayAddress(account.address) : displayAddress(masterAddress.address),
         },
       }}
     >

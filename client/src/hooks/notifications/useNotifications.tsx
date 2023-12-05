@@ -51,7 +51,7 @@ export const useNotifications = () => {
   const {
     setup: {
       updates: {
-        entityUpdates,
+        // entityUpdates,
         eventUpdates: { createCombatEvents },
       },
       components: { Status, Realm, Labor, ArrivalTime, Position, CaravanMembers, Inventory, ForeignKey },
@@ -72,16 +72,16 @@ export const useNotifications = () => {
   /**
    * Trade notifications
    */
-  useEffect(() => {
-    const subscription = entityUpdates.subscribe((updates) => {
-      const notifications = generateTradeNotifications(updates, Status);
-      addUniqueNotifications(notifications, setNotifications);
-    });
+  // useEffect(() => {
+  //   const subscription = entityUpdates.subscribe((updates) => {
+  //     const notifications = generateTradeNotifications(updates, Status);
+  //     addUniqueNotifications(notifications, setNotifications);
+  //   });
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+  //   return () => {
+  //     subscription.unsubscribe();
+  //   };
+  // }, []);
 
   /**
    * Labor notifications
