@@ -17,16 +17,22 @@ import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { divideByPrecision } from "../../../../../utils/utils";
 import clsx from "clsx";
 import { FastCreateOfferPopup } from "../FastCreateOffer";
+import useUIStore from "../../../../../hooks/store/useUIStore";
 
 type MarketPopupProps = {
   onClose: () => void;
 };
 
+interface DepthOfMarket {
+  price: number;
+  amount: number;
+}
 interface ResourceOffersSummary {
   resourceId: number;
   bestPrice: number;
   totalAmount: number;
   totalOffers: number;
+  depthOfMarket: DepthOfMarket[];
 }
 export const MarketPopup = ({ onClose }: MarketPopupProps) => {
   const [selectedResource, setSelectedResource] = useState<number>(null);
@@ -69,6 +75,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
         totalAmount: 0,
         totalOffers: 0,
         bestPrice: 0,
+        depthOfMarket: [] as DepthOfMarket[],
       });
     });
 
@@ -83,14 +90,30 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
             summary[resourceIndex].bestPrice,
             offer.resourcesGet[0].amount / resource.amount,
           );
+          const depthOfMarketIndex = summary[resourceIndex].depthOfMarket.findIndex(
+            (depth) => depth.price === offer.resourcesGet[0].amount / resource.amount,
+          );
+          if (depthOfMarketIndex >= 0) {
+            summary[resourceIndex].depthOfMarket[depthOfMarketIndex].amount += resource.amount;
+          } else {
+            summary[resourceIndex].depthOfMarket.push({
+              price: offer.resourcesGet[0].amount / resource.amount,
+              amount: resource.amount,
+            });
+          }
         } else {
           summary.push({
             resourceId: resource.resourceId,
             totalAmount: resource.amount,
             totalOffers: 1,
             bestPrice: resource.amount / offer.resourcesGet[0].amount,
+            depthOfMarket: [{ price: resource.amount / offer.resourcesGet[0].amount, amount: resource.amount }],
           });
         }
+      });
+
+      summary.forEach((summary) => {
+        summary.depthOfMarket.sort((a, b) => b.price - a.price);
       });
     });
 
@@ -126,6 +149,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
         totalAmount: 0,
         totalOffers: 0,
         bestPrice: Infinity,
+        depthOfMarket: [] as DepthOfMarket[],
       });
     });
 
@@ -140,14 +164,32 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
             summary[resourceIndex].bestPrice,
             offer.resourcesGive[0].amount / resource.amount,
           );
+
+          const depthOfMarketIndex = summary[resourceIndex].depthOfMarket.findIndex(
+            (depth) => depth.price === offer.resourcesGive[0].amount / resource.amount,
+          );
+
+          if (depthOfMarketIndex >= 0) {
+            summary[resourceIndex].depthOfMarket[depthOfMarketIndex].amount += resource.amount;
+          } else {
+            summary[resourceIndex].depthOfMarket.push({
+              price: offer.resourcesGive[0].amount / resource.amount,
+              amount: resource.amount,
+            });
+          }
         } else {
           summary.push({
             resourceId: resource.resourceId,
             totalAmount: resource.amount,
             totalOffers: 1,
             bestPrice: resource.amount / offer.resourcesGive[0].amount,
+            depthOfMarket: [{ price: resource.amount / offer.resourcesGive[0].amount, amount: resource.amount }],
           });
         }
+      });
+
+      summary.forEach((summary) => {
+        summary.depthOfMarket.sort((a, b) => a.price - b.price);
       });
     });
 
@@ -170,7 +212,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
             <div className="mr-0.5">Marketplace</div>
           </div>
         </SecondaryPopup.Head>
-        <SecondaryPopup.Body width={"600px"}>
+        <SecondaryPopup.Body width={"660px"}>
           {selectedResource ? (
             <MarketplaceResourceOffersPanel
               offers={isBuy ? selectedResourceAskOffers : selectedResourceBidOffers}
@@ -218,9 +260,10 @@ const MarketplaceOverviewPanel = ({
   const sortingParams = useMemo(() => {
     return [
       { label: "Resource", sortKey: "resource", className: "w-[120px]" },
-      { label: "Best price", sortKey: "price", className: "w-[100px] ml-4" },
-      { label: "Ask", sortKey: "ask", className: "ml-auto w-[120px] !justify-end mr-4" },
-      { label: "Bid", sortKey: "bid", className: " w-[120px] !justify-end" },
+      { label: "Best Ask price", sortKey: "ask-price", className: "w-[100px] ml-auto !justify-end" },
+      { label: "Ask Total Vol.", sortKey: "ask-vol", className: "ml-4 w-[100px] !justify-end" },
+      { label: "Best Bid price", sortKey: "bid-price", className: "ml-4 w-[100px] !justify-end" },
+      { label: "Bid Total Vol.", sortKey: "bid-vol", className: "ml-4 w-[100px] !justify-end" },
     ];
   }, []);
 
@@ -297,34 +340,175 @@ const OverviewResourceRow = ({
   onSell: () => void;
 }) => {
   const resource = findResourceById(bidSummary.resourceId);
+  const setTooltip = useUIStore((state) => state.setTooltip);
+
+  const depthOfMarketBids = useMemo(() => {
+    const lastFive = bidSummary.depthOfMarket.slice(0, 5);
+
+    let accumulatedAmount = 0;
+
+    return (
+      lastFive.length && (
+        <div className="flex flex-col w-[300px]">
+          <div className="flex items-center mb-2">
+            <ResourceIcon containerClassName="mr-2 w-min" withTooltip={false} resource={resource.trait} size="sm" />
+            {resource.trait}
+          </div>
+          {lastFive.map((depth) => {
+            accumulatedAmount += depth.amount;
+            const width = (accumulatedAmount / bidSummary.totalAmount) * 100;
+            return (
+              <div className="w-full relative h-5 border-b border-white/30">
+                <div className="flex mt-0.5 flex-1 w-full justify-between px-0.5 items-center">
+                  <div className="relative z-10">
+                    {Intl.NumberFormat("en-US", {
+                      style: "decimal",
+                      maximumFractionDigits: 2,
+                      minimumFractionDigits: 2,
+                    }).format(divideByPrecision(depth.amount))}
+                  </div>
+                  <div className="relative z-10 flex items-center">
+                    {depth.price.toFixed(2)}
+                    <ResourceIcon containerClassName="ml-1 w-min" resource="Shekels" size="xs" />
+                  </div>
+                </div>
+                <div
+                  className="absolute z-0 top-0 left-0 w-full h-full bg-danger/30"
+                  style={{ width: `${width}%` }}
+                ></div>
+              </div>
+            );
+          })}
+        </div>
+      )
+    );
+  }, [bidSummary.depthOfMarket]);
+
+  const depthOfMarketAsks = useMemo(() => {
+    const lastFive = askSummary.depthOfMarket.slice(0, 5);
+
+    let accumulatedAmount = 0;
+
+    return (
+      lastFive.length && (
+        <div className="flex flex-col w-[300px]">
+          <div className="flex items-center mb-2">
+            <ResourceIcon containerClassName="mr-2 w-min" withTooltip={false} resource={resource.trait} size="sm" />
+            {resource.trait}
+          </div>
+          {lastFive.map((depth) => {
+            accumulatedAmount += depth.amount;
+            const width = (accumulatedAmount / askSummary.totalAmount) * 100;
+            return (
+              <div className="w-full relative h-5 border-b border-white/30">
+                <div className="flex mt-0.5 flex-1 w-full justify-between px-0.5 items-center">
+                  <div className="relative z-10">
+                    {Intl.NumberFormat("en-US", {
+                      style: "decimal",
+                      maximumFractionDigits: 2,
+                      minimumFractionDigits: 2,
+                    }).format(divideByPrecision(depth.amount))}
+                  </div>
+                  <div className="relative z-10 flex items-center">
+                    {depth.price.toFixed(2)}
+                    <ResourceIcon containerClassName="ml-1 w-min" resource="Shekels" size="xs" />
+                  </div>
+                </div>
+                <div
+                  className="absolute z-0 top-0 left-0 w-full h-full bg-order-brilliance/30"
+                  style={{ width: `${width}%` }}
+                ></div>
+              </div>
+            );
+          })}
+        </div>
+      )
+    );
+  }, [askSummary.depthOfMarket]);
 
   return (
-    <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-1 grid-cols-[120px,100px,1fr,120px] gap-4 text-lightest text-xxs">
+    <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-1 grid-cols-[120px,1fr,100px,100px,100px] gap-4 text-lightest text-xxs">
       <div className="flex items-center">
         <ResourceIcon containerClassName="mr-2 w-min" withTooltip={false} resource={resource.trait} size="sm" />
         <div>{resource.trait}</div>
       </div>
-      <div className="flex items-center text-gold">
-        {bidSummary.bestPrice !== Infinity ? bidSummary.bestPrice.toFixed(2) : (0).toFixed(2)}
+      <div
+        className="flex justify-end  items-center text-gold"
+        onMouseEnter={() =>
+          setTooltip({
+            position: "bottom",
+            content: depthOfMarketAsks,
+          })
+        }
+        onMouseLeave={() => setTooltip(null)}
+      >
+        {askSummary.bestPrice !== Infinity ? askSummary.bestPrice.toFixed(2) : (0).toFixed(2)}
         <ResourceIcon containerClassName="ml-2 w-min" resource="Shekels" size="sm" />
       </div>
-      <div className="flex justify-end items-center">
+      <div
+        className="flex justify-end items-center"
+        onMouseEnter={() =>
+          setTooltip({
+            position: "bottom",
+            content: depthOfMarketAsks,
+          })
+        }
+        onMouseLeave={() => setTooltip(null)}
+      >
         {Intl.NumberFormat("en-US", {
           style: "decimal",
           maximumFractionDigits: 2,
           minimumFractionDigits: 2,
         }).format(divideByPrecision(askSummary.totalAmount))}
-        <Button className="ml-2" onClick={onBuy} size="xs" variant="success">
+        <Button
+          className="ml-2"
+          onClick={() => {
+            onBuy();
+            setTooltip(null);
+          }}
+          size="xs"
+          variant="success"
+        >
           Buy
         </Button>
       </div>
-      <div className="flex justify-end items-center">
+      <div
+        className="flex justify-end  items-center text-gold"
+        onMouseEnter={() =>
+          setTooltip({
+            position: "bottom",
+            content: depthOfMarketBids,
+          })
+        }
+        onMouseLeave={() => setTooltip(null)}
+      >
+        {bidSummary.bestPrice !== Infinity ? bidSummary.bestPrice.toFixed(2) : (0).toFixed(2)}
+        <ResourceIcon containerClassName="ml-2 w-min" resource="Shekels" size="sm" />
+      </div>
+      <div
+        className="flex justify-end items-center"
+        onMouseEnter={() =>
+          setTooltip({
+            position: "bottom",
+            content: depthOfMarketBids,
+          })
+        }
+        onMouseLeave={() => setTooltip(null)}
+      >
         {Intl.NumberFormat("en-US", {
           style: "decimal",
           maximumFractionDigits: 2,
           minimumFractionDigits: 2,
         }).format(divideByPrecision(bidSummary.totalAmount))}
-        <Button className="ml-2" onClick={onSell} size="xs" variant="red">
+        <Button
+          className="ml-2"
+          onClick={() => {
+            onSell();
+            setTooltip(null);
+          }}
+          size="xs"
+          variant="red"
+        >
           Sell
         </Button>
       </div>
