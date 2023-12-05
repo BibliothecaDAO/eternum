@@ -13,26 +13,22 @@ export interface HyperStructureInterface {
     currentAmount: number;
     completeAmount: number;
   }[];
-  initialzationResources: {
-    resourceId: number;
-    amount: number;
-  }[];
-  initialized: boolean;
   completed: boolean;
   position: Position;
   uiPosition: UIPosition;
+  level: number;
 }
 
 export const useHyperstructure = () => {
   const {
     setup: {
-      components: { HyperStructure, Resource, Position },
+      components: { HyperStructure, Resource, Position, Realm },
     },
   } = useDojo();
 
   const getHyperstructure = (orderId: number, uiPosition: UIPosition): HyperStructureInterface | undefined => {
     const position = getContractPositionFromRealPosition({ x: uiPosition.x, y: uiPosition.z });
-    const hypestructureId = runQuery([HasValue(HyperStructure, { coord_x: position.x, coord_y: position.y })]);
+    const hypestructureId = runQuery([Has(HyperStructure), HasValue(Position, position)]);
 
     if (hypestructureId.size > 0) {
       let hyperstructureId = Array.from(hypestructureId)[0];
@@ -66,16 +62,11 @@ export const useHyperstructure = () => {
           orderId,
           progress,
           hyperstructureResources,
-          initialzationResources: hyperstructureData[orderId - 1].resources.initialization.map((resource) => {
-            return {
-              resourceId: resource.resourceType, // Fixed: changed semicolon to comma
-              amount: resource.amount,
-            };
-          }),
-          initialized: hyperstructure.initialized_at > 0,
-          completed: hyperstructure.completed_at > 0,
           position,
           uiPosition,
+          // todo: calculate completed
+          completed: false,
+          level: 0,
         };
       }
     }
@@ -85,8 +76,20 @@ export const useHyperstructure = () => {
     return Array.from(runQuery([Has(HyperStructure), Has(Position)]));
   };
 
+  const getHyperstructureIdByOrder = (orderId: number): number | undefined => {
+    const ids = Array.from(runQuery([HasValue(HyperStructure, { order: orderId }), Has(Position)]));
+    return ids.length === 1 ? ids[0] : undefined;
+  };
+
+  const getHyperstructureIdByRealmEntityId = (realmEntityId: number): number | undefined => {
+    const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
+    return realm ? getHyperstructureIdByOrder(realm.order) : undefined;
+  };
+
   return {
     getHyperstructure,
     getHyperstructureIds,
+    getHyperstructureIdByRealmEntityId,
+    getHyperstructureIdByOrder,
   };
 };

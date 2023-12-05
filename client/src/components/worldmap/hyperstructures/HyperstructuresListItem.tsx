@@ -50,16 +50,11 @@ export const HyperstructuresListItem = ({
           <div
             className={clsx(
               "ml-1 italic ",
-              !hyperstructure?.initialized && "text-white/70",
               hyperstructure?.completed && "text-order-brilliance",
               hyperstructure && hyperstructure?.progress >= 0 && !hyperstructure?.completed ? "text-gold" : "",
             )}
           >
-            {hyperstructure?.completed
-              ? "Completed"
-              : hyperstructure?.initialized
-              ? `Building in progress ${hyperstructure?.progress.toFixed(2)}%`
-              : "Not initialized"}
+            {hyperstructure?.completed ? "Completed" : `Building in progress ${hyperstructure?.progress.toFixed(2)}%`}
           </div>
 
           {onFeed && (

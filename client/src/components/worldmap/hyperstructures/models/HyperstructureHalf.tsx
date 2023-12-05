@@ -29,13 +29,11 @@ export default function HyperstructureHalfFinished(
   return (
     <group {...props} dispose={null}>
       <group name="Scene">
-        {props.hyperstructure?.initialized && (
-          <Html position={[0, -1.1, 0]} distanceFactor={10}>
-            <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
-              Progress: {props.hyperstructure?.progress.toFixed(2)}%
-            </div>
-          </Html>
-        )}
+        <Html position={[0, -1.1, 0]} distanceFactor={10}>
+          <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
+            Progress: {props.hyperstructure?.progress.toFixed(2)}%
+          </div>
+        </Html>
         <group name="tower_half-finished">
           <mesh
             name="tower_half-finished_1"

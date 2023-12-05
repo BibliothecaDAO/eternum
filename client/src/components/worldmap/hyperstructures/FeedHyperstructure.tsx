@@ -236,24 +236,26 @@ const BuildHyperstructurePanel = ({
   const {
     account: { account },
     setup: {
-      systemCalls: { complete_hyperstructure, send_resources_to_location },
+      systemCalls: { send_resources_to_location, level_up_hyperstructure },
     },
   } = useDojo();
 
-  const completeHyperstructure = async () => {
+  const onLevelUp = async () => {
     setIsLoading(true);
-    await complete_hyperstructure({ signer: account, hyperstructure_id: hyperstructureData?.hyperstructureId || 0 });
-    onClose();
+
+    await level_up_hyperstructure({
+      signer: account,
+      hyperstructure_id: hyperstructureData.hyperstructureId,
+    });
+    setIsLoading(false);
   };
 
   const sendResourcesToHyperStructure = async () => {
     setIsLoading(true);
     if (hyperstructureData) {
-      const resourcesList = hyperstructureData?.initialized
-        ? Object.keys(feedResourcesGiveAmounts)
-            .filter((id) => feedResourcesGiveAmounts[Number(id)] > 0)
-            .flatMap((id) => [Number(id), multiplyByPrecision(feedResourcesGiveAmounts[Number(id)])])
-        : hyperstructureData?.initialzationResources.flatMap((resource) => [resource.resourceId, resource.amount]);
+      const resourcesList = Object.keys(feedResourcesGiveAmounts)
+        .filter((id) => feedResourcesGiveAmounts[Number(id)] > 0)
+        .flatMap((id) => [Number(id), multiplyByPrecision(feedResourcesGiveAmounts[Number(id)])]);
       if (isNewCaravan) {
         await send_resources_to_location({
           signer: account,
@@ -262,6 +264,7 @@ const BuildHyperstructurePanel = ({
           destination_coord_x: hyperstructureData.position.x,
           destination_coord_y: hyperstructureData.position.y,
           donkeys_quantity: donkeysCount,
+          order_hyperstructure_id: hyperstructureData.hyperstructureId,
         });
       } else {
         // transfer resources to caravan
@@ -272,6 +275,7 @@ const BuildHyperstructurePanel = ({
           destination_coord_x: hyperstructureData.position.x,
           destination_coord_y: hyperstructureData.position.y,
           caravan_id: selectedCaravan,
+          order_hyperstructure_id: hyperstructureData.hyperstructureId,
         });
       }
     }
@@ -318,31 +322,11 @@ const BuildHyperstructurePanel = ({
   // TODO: use same precision everywhere
   const resourceWeight = useMemo(() => {
     let _resourceWeight = 0;
-    if (!hyperstructureData?.initialized) {
-      for (const [_, amount] of Object.entries(
-        hyperstructureData?.initialzationResources.map((resource) => resource.amount) || {},
-      )) {
-        _resourceWeight += amount * 1;
-      }
-    } else {
-      for (const amount of Object.values(feedResourcesGiveAmounts || {})) {
-        _resourceWeight += multiplyByPrecision(amount * 1);
-      }
+    for (const amount of Object.values(feedResourcesGiveAmounts || {})) {
+      _resourceWeight += multiplyByPrecision(amount * 1);
     }
     return _resourceWeight;
   }, [hyperstructureData, feedResourcesGiveAmounts]);
-
-  const initializeResourceIds = useMemo(() => {
-    return hyperstructureData?.initialzationResources.map((resource) => resource.resourceId) || [];
-  }, [hyperstructureData]);
-
-  const initializeResourceAmounts = useMemo(() => {
-    const amounts: any = {};
-    hyperstructureData?.initialzationResources.forEach((resource) => {
-      amounts[resource.resourceId] = divideByPrecision(resource.amount);
-    });
-    return amounts;
-  }, [hyperstructureData]);
 
   const resourcesLeftToComplete = useMemo(() => {
     const resourcesLeftToComplete: any = {};
@@ -357,7 +341,7 @@ const BuildHyperstructurePanel = ({
     () =>
       realmEntityIds.map((realmEntityId) => {
         const _realm = getRealm(realmEntityId.realmId);
-        const _resources = hyperstructureData?.initialzationResources.map((resource) => ({
+        const _resources = hyperstructureData.hyperstructureResources.map((resource) => ({
           id: resource.resourceId,
           balance:
             getComponentValue(
@@ -423,8 +407,6 @@ const BuildHyperstructurePanel = ({
             <span className="text-gray-gold italic">State</span>
             <span
               className={clsx(
-                !hyperstructureData?.initialized && "text-order-giants",
-                hyperstructureData?.completed && "text-order-brilliance",
                 hyperstructureData && hyperstructureData?.progress >= 0 && !hyperstructureData?.completed
                   ? "text-gold"
                   : "",
@@ -432,9 +414,7 @@ const BuildHyperstructurePanel = ({
             >
               {hyperstructureData?.completed
                 ? "Completed"
-                : hyperstructureData?.initialized
-                ? `Building in progress ${hyperstructureData?.progress.toFixed(2)}%`
-                : "Not initialized"}
+                : `Building in progress ${hyperstructureData?.progress.toFixed(2)}%`}
             </span>
           </div>
         </div>
@@ -446,42 +426,26 @@ const BuildHyperstructurePanel = ({
             <div className="relative w-full">
               <img src={`/images/buildings/hyperstructure.jpg`} className="object-cover w-full h-64 rounded-[10px]" />
               <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
-                <div className="mb-1 ml-1 italic text-light-pink text-xxs">
-                  {hyperstructureData?.initialized ? "Resources need to complete:" : "Initialization cost:"}
-                </div>
+                <div className="mb-1 ml-1 italic text-light-pink text-xxs">{"Resources need to level up:"}</div>
                 <div className="grid grid-cols-4 gap-1">
-                  {!hyperstructureData?.initialized
-                    ? hyperstructureData?.initialzationResources.map(({ resourceId, amount }) => (
-                        <ResourceCost
-                          withTooltip
-                          type="vertical"
-                          key={resourceId}
-                          resourceId={resourceId}
-                          amount={divideByPrecision(amount)}
-                        />
-                      ))
-                    : resourcesLeftToComplete &&
-                      Object.keys(resourcesLeftToComplete).map((id) => (
-                        <ResourceCost
-                          withTooltip
-                          type="vertical"
-                          key={id}
-                          resourceId={Number(id)}
-                          amount={resourcesLeftToComplete[id]}
-                        />
-                      ))}
+                  {resourcesLeftToComplete &&
+                    Object.keys(resourcesLeftToComplete).map((id) => (
+                      <ResourceCost
+                        withTooltip
+                        type="vertical"
+                        key={id}
+                        resourceId={Number(id)}
+                        amount={resourcesLeftToComplete[id]}
+                      />
+                    ))}
                 </div>
               </div>
             </div>
             <Headline size="big">
-              {hyperstructureData?.initialized ? "Feed Hyperstructure" : "Initialize Hyperstructure"}- Step {step}
+              {"Feed Hyperstructure"}- Step {step}
             </Headline>
             <div className="text-xxs mb-2 italic text-gold">
-              {hyperstructureData?.initialized
-                ? `
-                To feed the Hyperstructure you need to send any amount of required resources to the Hyperstructure location.
-              `
-                : `To start construction of the Hyperstructure you need to send a caravan with initial cost of resources to the Hyperstructure location.`}
+              {`To start construction of the Hyperstructure you need to send a caravan with initial cost of resources to the Hyperstructure location.`}
             </div>
 
             <div className="text-xxs mb-2 italic text-white">{`Click the "Next" button to select a Realm from which you want to spend resources.`}</div>
@@ -492,9 +456,7 @@ const BuildHyperstructurePanel = ({
         <div className="flex flex-col w-full space-y-2">
           <Headline size="big">Select Realm - Step {step}</Headline>
           <div className="text-xxs mb-2 italic text-gold">
-            {hyperstructureData?.initialized
-              ? `Press "Set the amounts" on any Realm with required resources, to set amounts and send caravan to Hyperstructure.`
-              : `Press "Initialize construction" on any Realm with enough resources, to send caravan to Hyperstructure.`}
+            {`Press "Set the amounts" on any Realm with required resources, to set amounts and send caravan to Hyperstructure.`}
           </div>
           <div className="h-72 flex flex-col w-full space-y-2 overflow-y-scroll">
             {realms.map((realm) => (
@@ -505,9 +467,8 @@ const BuildHyperstructurePanel = ({
                   setRealmEntityId(realm.entity_id);
                   setStep(step + 1);
                 }}
-                costs={hyperstructureData?.initialzationResources}
+                costs={hyperstructureData?.hyperstructureResources}
                 selected={realmEntityId === realm.entity_id}
-                initialized={hyperstructureData?.initialized}
               />
             ))}
           </div>
@@ -515,66 +476,64 @@ const BuildHyperstructurePanel = ({
       )}
       {step == 3 && (
         <>
-          {hyperstructureData?.initialized && (
-            <>
-              <div className="grid relative grid-cols-9 gap-2 max-h-[350px] overflow-auto">
-                <div className={clsx("flex flex-col items-center  space-y-2 h-min", "col-span-4")}>
-                  <Headline className="mb-2">You Give</Headline>
-                  {Object.keys(resourcesLeftToComplete).map((_id) => {
-                    const id: any = Number(_id);
-                    return (
-                      <div key={id} className="flex items-center w-full h-8">
-                        <NumberInput
-                          max={resourcesLeftToComplete[id]}
-                          min={1}
-                          value={feedResourcesGiveAmounts[id]}
-                          onChange={(value) => {
+          <>
+            <div className="grid relative grid-cols-9 gap-2 max-h-[350px] overflow-auto">
+              <div className={clsx("flex flex-col items-center  space-y-2 h-min", "col-span-4")}>
+                <Headline className="mb-2">You Give</Headline>
+                {Object.keys(resourcesLeftToComplete).map((_id) => {
+                  const id: any = Number(_id);
+                  return (
+                    <div key={id} className="flex items-center w-full h-8">
+                      <NumberInput
+                        max={resourcesLeftToComplete[id]}
+                        min={1}
+                        value={feedResourcesGiveAmounts[id]}
+                        onChange={(value) => {
+                          setFeedResourcesGiveAmounts({
+                            ...feedResourcesGiveAmounts,
+                            [id]: Math.min(divideByPrecision(totalResources[id] || 0), value),
+                          });
+                        }}
+                      />
+                      <div className="ml-2">
+                        <ResourceCost
+                          className=" cursor-pointer"
+                          onClick={() => {
                             setFeedResourcesGiveAmounts({
                               ...feedResourcesGiveAmounts,
-                              [id]: Math.min(divideByPrecision(totalResources[id] || 0), value),
+                              [id]: Math.min(divideByPrecision(totalResources[id] || 0), resourcesLeftToComplete[id]),
                             });
                           }}
+                          resourceId={id}
+                          amount={divideByPrecision(totalResources[id] || 0)}
                         />
-                        <div className="ml-2">
-                          <ResourceCost
-                            className=" cursor-pointer"
-                            onClick={() => {
-                              setFeedResourcesGiveAmounts({
-                                ...feedResourcesGiveAmounts,
-                                [id]: Math.min(divideByPrecision(totalResources[id] || 0), resourcesLeftToComplete[id]),
-                              });
-                            }}
-                            resourceId={id}
-                            amount={divideByPrecision(totalResources[id] || 0)}
-                          />
-                        </div>
                       </div>
-                    );
-                  })}
-                </div>
-                <div className="flex items-center justify-center">
-                  <ArrowSeparator className="fixed top-1/2" />
-                </div>
-                <div className="flex flex-col col-span-4 space-y-2 h-min">
-                  <Headline className="mb-2">Structure needs</Headline>
-                  {Object.keys(resourcesLeftToComplete).map((id) => (
-                    <ResourceCost
-                      key={id}
-                      className="!w-min h-8 cursor-pointer"
-                      resourceId={Number(id)}
-                      amount={resourcesLeftToComplete[id]}
-                      onClick={() => {
-                        setFeedResourcesGiveAmounts({
-                          ...feedResourcesGiveAmounts,
-                          [id]: resourcesLeftToComplete[id],
-                        });
-                      }}
-                    />
-                  ))}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
-            </>
-          )}
+              <div className="flex items-center justify-center">
+                <ArrowSeparator className="fixed top-1/2" />
+              </div>
+              <div className="flex flex-col col-span-4 space-y-2 h-min">
+                <Headline className="mb-2">Structure needs</Headline>
+                {Object.keys(resourcesLeftToComplete).map((id) => (
+                  <ResourceCost
+                    key={id}
+                    className="!w-min h-8 cursor-pointer"
+                    resourceId={Number(id)}
+                    amount={resourcesLeftToComplete[id]}
+                    onClick={() => {
+                      setFeedResourcesGiveAmounts({
+                        ...feedResourcesGiveAmounts,
+                        [id]: resourcesLeftToComplete[id],
+                      });
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
           <PercentageSelection percentages={[0, 25, 50, 75, 100]} setPercentage={setPercentage}></PercentageSelection>
           <SelectCaravanPanel
             className="!p-0"
@@ -586,8 +545,8 @@ const BuildHyperstructurePanel = ({
             setSelectedCaravan={setSelectedCaravan}
             selectedResourceIdsGet={[]}
             selectedResourcesGetAmounts={[]}
-            selectedResourceIdsGive={hyperstructureData?.initialized ? [] : initializeResourceIds}
-            selectedResourcesGiveAmounts={hyperstructureData?.initialized ? [] : initializeResourceAmounts}
+            selectedResourceIdsGive={[]}
+            selectedResourcesGiveAmounts={[]}
             resourceWeight={resourceWeight}
             hasEnoughDonkeys={hasEnoughDonkeys}
             headline="Select Caravan - Step 3"
@@ -612,7 +571,7 @@ const BuildHyperstructurePanel = ({
               if (step == 3) {
                 sendResourcesToHyperStructure();
               } else {
-                isComplete ? completeHyperstructure() : setStep(step + 1);
+                isComplete ? onLevelUp() : setStep(step + 1);
               }
             }}
             variant={canGoToNextStep ? "success" : "outline"}

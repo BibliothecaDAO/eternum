@@ -18,6 +18,8 @@ import Button from "../../../../elements/Button";
 import { BANK_AUCTION_DECAY, BankInterface, targetPrices } from "../../../../hooks/helpers/useBanks";
 import { useResources } from "../../../../hooks/helpers/useResources";
 import { getLordsAmountFromBankAuction } from "../utils";
+import { useHyperstructure } from "../../../../hooks/helpers/useHyperstructure";
+import useRealmStore from "../../../../hooks/store/useRealmStore";
 
 type BankCaravanProps = {
   caravan: CaravanInterface;
@@ -42,6 +44,11 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
   } = useDojo();
 
   const { getResourcesFromInventory } = useResources();
+  const { getHyperstructureIdByRealmEntityId } = useHyperstructure();
+
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+
+  const order_hyperstructure_id = realmEntityId ? getHyperstructureIdByRealmEntityId(realmEntityId) : undefined;
 
   const returnPosition = useMemo(() => {
     const caravanMembers = getComponentValue(CaravanMembers, getEntityIdFromKeys([BigInt(caravan.caravanId)]));
@@ -125,6 +132,7 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
       resource_amounts: resource_amounts.map((amount) => Math.floor(amount * 1000)),
       destination_coord_x: returnPosition?.x || 0,
       destination_coord_y: returnPosition?.y || 0,
+      order_hyperstructure_id,
     });
   };
 

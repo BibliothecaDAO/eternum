@@ -4,7 +4,6 @@ import {
   AttachCaravanProps,
   BuildLaborProps,
   CancelFungibleOrderProps,
-  CompleteHyperStructureProps,
   CreateCaravanProps,
   CreateFreeTransportUnitProps,
   CreateOrderProps,
@@ -12,8 +11,6 @@ import {
   CreateRoadProps,
   FeedHyperstructureAndTravelBackPropos,
   HarvestLaborProps,
-  InitializeHyperstructuresAndTravelProps,
-  InitializeHyperstructuresProps,
   MintResourcesProps,
   PurchaseLaborProps,
   SendResourcesToLocationProps,
@@ -24,7 +21,8 @@ import {
   DetachSoldiersProps,
   AttackProps,
   StealProps,
-  LevelUpProps,
+  LevelUpRealmProps,
+  LevelUpHyperstructureProps,
   SetAddressNameProps,
   MergeSoldiersProps,
   CreateAndMergeSoldiersProps,
@@ -508,19 +506,6 @@ export class EternumProvider extends RPCProvider {
     });
   };
 
-  // TODO: change that to levelup
-  public async initialize_hyperstructure(props: InitializeHyperstructuresProps) {
-    const { entity_id, hyperstructure_id, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
-      entrypoint: "initialize",
-      calldata: [this.getWorldAddress(), entity_id, hyperstructure_id],
-    });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
-  }
-
   public async travel(props: TravelProps) {
     const { travelling_entity_id, destination_coord_x, destination_coord_y, order_hyperstructure_id, signer } = props;
     const tx = await this.executeMulti(signer, {
@@ -600,7 +585,19 @@ export class EternumProvider extends RPCProvider {
     });
   }
 
-  public async level_up(props: LevelUpProps) {
+  public async level_up_hyperstructure(props: LevelUpHyperstructureProps) {
+    const { hyperstructure_id, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
+      entrypoint: "level_up",
+      calldata: [this.getWorldAddress(), hyperstructure_id],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async level_up_realm(props: LevelUpRealmProps) {
     const { realm_entity_id, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "leveling_systems"),

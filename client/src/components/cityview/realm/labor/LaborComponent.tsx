@@ -13,6 +13,7 @@ import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useComponentValue } from "@dojoengine/react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { LevelIndex, useRealm } from "../../../../hooks/helpers/useRealm";
+import { useHyperstructure } from "../../../../hooks/helpers/useHyperstructure";
 
 type LaborComponentProps = {
   resourceId: number;
@@ -70,6 +71,10 @@ export const LaborComponent = ({
   const level = getRealmLevel(realmEntityId)?.level || 0;
   const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
 
+  const { getHyperstructureIdByRealmEntityId } = useHyperstructure();
+
+  const order_hyperstructure_id = realmEntityId ? getHyperstructureIdByRealmEntityId(realmEntityId) : undefined;
+
   const onHarvest = () => {
     playHarvest();
     optimisticHarvestLabor(
@@ -80,6 +85,7 @@ export const LaborComponent = ({
       signer: account,
       realm_id: realmEntityId,
       resource_type: resourceId,
+      order_hyperstructure_id,
     });
   };
 

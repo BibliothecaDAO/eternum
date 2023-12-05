@@ -584,14 +584,7 @@ export function defineContractComponents(world: World) {
         world,
         {
           hyperstructure_type: RecsType.Number,
-          initialization_resource_id: RecsType.Number,
-          initialization_resource_count: RecsType.Number,
-          construction_resource_id: RecsType.Number,
-          construction_resource_count: RecsType.Number,
-          initialized_at: RecsType.Number,
-          completed_at: RecsType.Number,
-          coord_x: RecsType.Number,
-          coord_y: RecsType.Number,
+          order: RecsType.Number,
         },
         {
           metadata: {

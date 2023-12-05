@@ -48,7 +48,11 @@ export interface StealProps extends SystemSigner {
   target_order_hyperstructure_id: num.BigNumberish;
 }
 
-export interface LevelUpProps extends SystemSigner {
+export interface LevelUpHyperstructureProps extends SystemSigner {
+  hyperstructure_id: num.BigNumberish;
+}
+
+export interface LevelUpRealmProps extends SystemSigner {
   realm_entity_id: num.BigNumberish;
 }
 
@@ -71,17 +75,6 @@ export interface CreateOrderProps {
   donkeys_quantity?: num.BigNumberish;
 }
 
-export interface InitializeHyperstructuresProps extends SystemSigner {
-  entity_id: num.BigNumberish;
-  hyperstructure_id: num.BigNumberish;
-}
-
-export interface InitializeHyperstructuresAndTravelProps extends SystemSigner {
-  entity_id: num.BigNumberish;
-  hyperstructure_id: num.BigNumberish;
-  destination_coord_x: num.BigNumberish;
-  destination_coord_y: num.BigNumberish;
-}
 export interface FeedHyperstructureAndTravelBackPropos extends SystemSigner {
   entity_id: num.BigNumberish;
   destination_coord_x: num.BigNumberish;
@@ -98,10 +91,6 @@ export interface SendResourcesToLocationProps extends SystemSigner {
   donkeys_quantity?: num.BigNumberish;
   caravan_id?: num.BigNumberish;
   order_hyperstructure_id: num.BigNumberish;
-}
-
-export interface CompleteHyperStructureProps extends SystemSigner {
-  hyperstructure_id: num.BigNumberish;
 }
 
 export interface TransferResourcesProps extends SystemSigner {

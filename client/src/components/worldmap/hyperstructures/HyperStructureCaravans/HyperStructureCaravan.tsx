@@ -35,12 +35,11 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
 
   const [isLoading, setIsLoading] = useState(false);
   const hasArrived = arrivalTime !== undefined && nextBlockTimestamp !== undefined && arrivalTime <= nextBlockTimestamp;
-  const isInitialized = hyperstructureData.initialized;
 
   const {
     account: { account },
     setup: {
-      systemCalls: { initialize_hyperstructure_and_travel_back, feed_hyperstructure_and_travel_back },
+      systemCalls: { feed_hyperstructure_and_travel_back },
       components: { Resource, CaravanMembers, EntityOwner, ForeignKey, Position },
     },
   } = useDojo();
@@ -62,24 +61,14 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
   }, [caravan]);
 
   const transferAndReturn = async () => {
-    if (isInitialized) {
-      await feed_hyperstructure_and_travel_back({
-        signer: account,
-        entity_id: caravan.caravanId,
-        hyperstructure_id: hyperstructureData.hyperstructureId,
-        resources: resources.flatMap((resource) => Object.values(resource)),
-        destination_coord_x: returnPosition?.x || 0,
-        destination_coord_y: returnPosition?.y || 0,
-      });
-    } else {
-      await initialize_hyperstructure_and_travel_back({
-        signer: account,
-        entity_id: caravan.caravanId,
-        hyperstructure_id: hyperstructureData.hyperstructureId,
-        destination_coord_x: returnPosition?.x || 0,
-        destination_coord_y: returnPosition?.y || 0,
-      });
-    }
+    await feed_hyperstructure_and_travel_back({
+      signer: account,
+      entity_id: caravan.caravanId,
+      hyperstructure_id: hyperstructureData.hyperstructureId,
+      resources: resources.flatMap((resource) => Object.values(resource)),
+      destination_coord_x: returnPosition?.x || 0,
+      destination_coord_y: returnPosition?.y || 0,
+    });
   };
 
   const updateHyperStructure = () => {
@@ -168,7 +157,7 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
             variant={hasArrived ? "success" : "danger"}
             className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
           >
-            {hasArrived ? (isInitialized ? `Transfer And Return` : `Initialize And Return`) : "On the way"}
+            {hasArrived ? `Transfer And Return` : "On the way"}
           </Button>
         )}
         {isLoading && isMine && (

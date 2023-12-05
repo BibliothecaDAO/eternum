@@ -16,6 +16,7 @@ import { getTotalResourceWeight } from "../../trade/TradeUtils";
 import { divideByPrecision } from "../../../../../utils/utils";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import useUIStore from "../../../../../hooks/store/useUIStore";
+import { useHyperstructure } from "../../../../../hooks/helpers/useHyperstructure";
 
 type RaidProps = {
   raider: CombatInfo;
@@ -47,6 +48,10 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
 
   const inventoryResources = raider.entityId ? getResourcesFromInventory(raider.entityId) : undefined;
 
+  const { getHyperstructureIdByRealmEntityId } = useHyperstructure();
+
+  const order_hyperstructure_id = realmEntityId ? getHyperstructureIdByRealmEntityId(realmEntityId) : undefined;
+
   // capacity
   let resourceWeight = useMemo(() => {
     return getTotalResourceWeight([...inventoryResources.resources]);
@@ -66,6 +71,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
         travelling_entity_id: raider.entityId,
         destination_coord_x: raider.homePosition.x,
         destination_coord_y: raider.homePosition.y,
+        order_hyperstructure_id,
       });
       setIsLoading(false);
     }

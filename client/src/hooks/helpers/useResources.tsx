@@ -81,19 +81,6 @@ export function useResources() {
     ];
   };
 
-  const getFoodResources = (entityId: number): Resource[] => {
-    const wheat = getComponentValue(Resource, getEntityIdFromKeys([BigInt(entityId), BigInt(254)]));
-    const fish = getComponentValue(Resource, getEntityIdFromKeys([BigInt(entityId), BigInt(255)]));
-
-    return [
-      {
-        resourceId: 254,
-        amount: wheat?.balance,
-      },
-      { resourceId: 255, amount: fish?.balance },
-    ];
-  };
-
   /* Empty Resource Chest
    * @param receiver_id: entity id of entity that will add resources to balance
    * @param carrier_id: id of the entity that carries the resource chest

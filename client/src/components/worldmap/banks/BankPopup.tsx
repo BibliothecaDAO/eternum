@@ -29,6 +29,7 @@ import { BankCaravansPanel } from "./BanksCaravans/BankCaravansPanel";
 import { NumberInput } from "../../../elements/NumberInput";
 import { getLordsAmountFromBankAuction } from "./utils";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
+import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
 
 type BankPopupProps = {
   onClose: () => void;
@@ -225,6 +226,7 @@ const SwapResourcesPanel = ({
         destination_coord_x: bank.position.x,
         destination_coord_y: bank.position.y,
         donkeys_quantity: donkeysCount,
+        order_hyperstructure_id,
       });
     } else {
       // transfer resources to caravan
@@ -235,6 +237,7 @@ const SwapResourcesPanel = ({
         destination_coord_x: bank.position.x,
         destination_coord_y: bank.position.y,
         caravan_id: selectedCaravan,
+        order_hyperstructure_id,
       });
     }
     onSendCaravan();
@@ -256,6 +259,9 @@ const SwapResourcesPanel = ({
     254: 0,
     255: 0,
   });
+
+  const { getHyperstructureIdByRealmEntityId } = useHyperstructure();
+  const order_hyperstructure_id = realmEntityId ? getHyperstructureIdByRealmEntityId(realmEntityId) : undefined;
 
   // TODO: use same precision everywhere
   const resourceWeight = useMemo(() => {

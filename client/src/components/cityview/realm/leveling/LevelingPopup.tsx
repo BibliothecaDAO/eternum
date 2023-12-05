@@ -19,7 +19,7 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
   const {
     setup: {
       components: { Resource },
-      systemCalls: { level_up },
+      systemCalls: { level_up_realm },
     },
     account: { account },
   } = useDojo();
@@ -63,7 +63,7 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
   const onBuild = async () => {
     if (realmEntityId) {
       setIsLoading(true);
-      await level_up({ realm_entity_id: realmEntityId, signer: account });
+      await level_up_realm({ realm_entity_id: realmEntityId, signer: account });
       onClose();
     }
   };
