@@ -632,13 +632,14 @@ mod combat_systems {
             let mut target_town_watch_defense = get!(world, target_town_watch_id, Defence);
             let mut target_town_watch_health = get!(world, target_town_watch_id, Health);
 
+            // TODO: use the leveling helper function to get bonus
             /////// REALM LEVEL BONUS ///////
             let leveling_config: LevelingConfig = get!(world, REALM_LEVELING_CONFIG_ID, LevelingConfig);
             let attacker_level = get!(world, (attacker_realm_entity_id), Level);
-            let attacker_level_bonus = attacker_level.get_index_multiplier(leveling_config, LevelIndex::COMBAT);
+            let attacker_level_bonus = attacker_level.get_index_multiplier(leveling_config, LevelIndex::COMBAT, 5);
 
             let target_level = get!(world, (target_realm_entity_id), Level);
-            let target_level_bonus = target_level.get_index_multiplier(leveling_config, LevelIndex::COMBAT);
+            let target_level_bonus = target_level.get_index_multiplier(leveling_config, LevelIndex::COMBAT, 5);
 
             ////// HYPERSTRUCTURE LEVEL BONUS //////
             let hyperstructure_leveling_config = get!(world, HYPERSTRUCTURE_LEVELING_CONFIG_ID, LevelingConfig);
@@ -651,7 +652,7 @@ mod combat_systems {
                     'wrong hyperstructure id'
             );
             let attacker_hyperstructure_level = get!(world, attacker_order_hyperstructure_id, Level);
-            let attacker_order_level_bonus = attacker_hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, LevelIndex::COMBAT);
+            let attacker_order_level_bonus = attacker_hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, LevelIndex::COMBAT, 1);
 
             // defender order hyperstructure
             let target_order_hyperstructure 
@@ -661,7 +662,7 @@ mod combat_systems {
                     'wrong hyperstructure id'
             );
             let target_hyperstructure_level = get!(world, target_order_hyperstructure_id, Level);
-            let target_order_level_bonus = target_hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, LevelIndex::COMBAT);
+            let target_order_level_bonus = target_hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, LevelIndex::COMBAT, 1);
 
             // need to divide by 100**2 because level_bonus in precision 100
             attackers_total_attack = (attackers_total_attack * attacker_level_bonus * attacker_order_level_bonus)/10000;
@@ -807,10 +808,10 @@ mod combat_systems {
             /////// REALM LEVEL BONUS ///////
             let leveling_config: LevelingConfig = get!(world, REALM_LEVELING_CONFIG_ID, LevelingConfig);
             let attacker_level = get!(world, (attacker_realm_entity_id), Level);
-            let attacker_level_bonus = attacker_level.get_index_multiplier(leveling_config, LevelIndex::COMBAT);
+            let attacker_level_bonus = attacker_level.get_index_multiplier(leveling_config, LevelIndex::COMBAT, 5);
 
             let target_level = get!(world, (target_realm_entity_id), Level);
-            let target_level_bonus = target_level.get_index_multiplier(leveling_config, LevelIndex::COMBAT);
+            let target_level_bonus = target_level.get_index_multiplier(leveling_config, LevelIndex::COMBAT, 5);
 
             ////// HYPERSTRUCTURE LEVEL BONUS //////
             let hyperstructure_leveling_config = get!(world, HYPERSTRUCTURE_LEVELING_CONFIG_ID, LevelingConfig);
@@ -823,7 +824,7 @@ mod combat_systems {
                     'wrong hyperstructure id'
             );
             let attacker_hyperstructure_level = get!(world, attacker_order_hyperstructure_id, Level);
-            let attacker_order_level_bonus = attacker_hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, LevelIndex::COMBAT);
+            let attacker_order_level_bonus = attacker_hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, LevelIndex::COMBAT, 1);
 
             // defender order hyperstructure
             let target_order_hyperstructure 
@@ -833,7 +834,7 @@ mod combat_systems {
                     'wrong hyperstructure id'
             );
             let target_hyperstructure_level = get!(world, target_order_hyperstructure_id, Level);
-            let target_order_level_bonus = target_hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, LevelIndex::COMBAT);
+            let target_order_level_bonus = target_hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, LevelIndex::COMBAT, 1);
 
             // need to divide by 100**2 because level_bonus in precision 100
             let attackers_total_attack = (attacker_attack.value * attacker_level_bonus * attacker_order_level_bonus)/10000;

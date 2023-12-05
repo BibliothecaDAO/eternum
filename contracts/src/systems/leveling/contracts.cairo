@@ -42,13 +42,13 @@ mod leveling_systems {
         fn get_realm_level_bonus(world: IWorldDispatcher, realm_entity_id: ID, leveling_index: u8) -> u128 {
             let level = get!(world, (realm_entity_id), Level);
             let leveling_config: LevelingConfig = get!(world, REALM_LEVELING_CONFIG_ID, LevelingConfig);
-            level.get_index_multiplier(leveling_config, leveling_index)
+            level.get_index_multiplier(leveling_config, leveling_index, 5)
         }
 
         fn get_hyperstructure_level_bonus(world: IWorldDispatcher, hyperstructure_id: ID, leveling_index: u8) -> u128 {
             let level = get!(world, (hyperstructure_id), Level);
             let leveling_config: LevelingConfig = get!(world, HYPERSTRUCTURE_LEVELING_CONFIG_ID, LevelingConfig);
-            level.get_index_multiplier(leveling_config, leveling_index)
+            level.get_index_multiplier(leveling_config, leveling_index, 1)
         }
 
         fn level_up(world: IWorldDispatcher, entity_id: ID, leveling_config_id: ID) {

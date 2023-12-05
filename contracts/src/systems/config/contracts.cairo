@@ -116,27 +116,9 @@ mod config_systems {
             world: IWorldDispatcher, 
             config_id: u128, 
             stealing_trial_count: u32,
-            steal_chance_percentage_boost: u32,
             wheat_burn_per_soldier: u128,
-            wheat_burn_percent_boost: u128,
             fish_burn_per_soldier: u128,
-            fish_burn_percent_boost: u128
         ) {
-            assert(
-                steal_chance_percentage_boost > 0,
-                    'incorrect steal chance value'
-            );
-
-            assert(
-                wheat_burn_percent_boost > 0,
-                    'incorrect wheat boost value'
-            );
-
-            assert(
-                fish_burn_percent_boost > 0,
-                     'incorrect fish boost value'
-            );
-        
             assert_caller_is_admin(world); 
 
             set!(
@@ -144,11 +126,8 @@ mod config_systems {
                 (CombatConfig {
                     config_id,
                     stealing_trial_count,
-                    steal_chance_percentage_boost,
                     wheat_burn_per_soldier,
-                    wheat_burn_percent_boost,
                     fish_burn_per_soldier,
-                    fish_burn_percent_boost
                 })
             );
         }

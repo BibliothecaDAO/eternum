@@ -130,11 +130,8 @@ struct CombatConfig {
     #[key]
     config_id: u128,
     stealing_trial_count: u32,
-    steal_chance_percentage_boost: u32,
     wheat_burn_per_soldier: u128,
-    wheat_burn_percent_boost: u128,
     fish_burn_per_soldier: u128,
-    fish_burn_percent_boost: u128,
 }
 
 #[derive(Model, Copy, Drop, Serde)]

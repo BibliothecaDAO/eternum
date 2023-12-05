@@ -40,10 +40,10 @@ impl LevelImpl of LevelTrait {
         (base_multiplier_fixed * (nom / denom)).try_into().unwrap()
     }
 
-    fn get_index_multiplier(self: Level, leveling_config: LevelingConfig, index: u8) -> u128 {
+    fn get_index_multiplier(self: Level, leveling_config: LevelingConfig, index: u8, min_bonus_level: u64) -> u128 {
         let current_level = self.get_level();
 
-        if current_level < 5 {
+        if current_level < min_bonus_level {
             100
         } else {
             let mut tier = if ((current_level % 4) + 1 >= index.into()) {
@@ -166,27 +166,27 @@ mod tests {
         // set level 
         // tier 1
         let level = Level { entity_id: 1, level: 1, valid_until: 1000};
-        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::FOOD);
+        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::FOOD, 5);
         assert(multiplier == 100, 'wrong multiplier');
 
         // tier 2
         let level = Level { entity_id: 1, level: 6, valid_until: 1000};
-        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::FOOD);
+        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::FOOD, 5);
         assert(multiplier == 125, 'wrong multiplier');
 
         // tier 2
         let level = Level { entity_id: 1, level: 6, valid_until: 1000};
-        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::COMBAT);
+        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::COMBAT, 5);
         assert(multiplier == 100, 'wrong multiplier');
 
         // tier 2
         let level = Level { entity_id: 1, level: 8, valid_until: 1000};
-        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::COMBAT);
+        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::COMBAT, 5);
         assert(multiplier == 125, 'wrong multiplier');
 
         // tier 11
         let level = Level { entity_id: 1, level: 43, valid_until: 1000};
-        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::FOOD);
+        let multiplier = level.get_index_multiplier(leveling_config, LevelIndex::FOOD, 5);
         assert(multiplier == 262, 'wrong multiplier');
     }
 

@@ -248,7 +248,7 @@ mod labor_systems {
                 let realm_leveling_config: LevelingConfig = get!(world, REALM_LEVELING_CONFIG_ID, LevelingConfig);
                 let realm_level = get!(world, (realm_id), Level);
                 
-                let realm_level_bonus = realm_level.get_index_multiplier(realm_leveling_config, level_index);
+                let realm_level_bonus = realm_level.get_index_multiplier(realm_leveling_config, level_index, 5);
 
                 /// HYPERSTRUCTURE BONUS ///
                 let hyperstructure = get!(world, (order_hyperstructure_id), HyperStructure);
@@ -256,7 +256,7 @@ mod labor_systems {
                 let hyperstructure_leveling_config: LevelingConfig = get!(world, HYPERSTRUCTURE_LEVELING_CONFIG_ID, LevelingConfig);
                 let hyperstructure_level = get!(world, (order_hyperstructure_id), Level);
                 
-                let hyperstructure_level_bonus = hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, level_index);
+                let hyperstructure_level_bonus = hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, level_index, 1);
 
                 // update resources with multiplier
                 // and with level bonus

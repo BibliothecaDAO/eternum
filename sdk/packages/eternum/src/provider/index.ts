@@ -75,11 +75,11 @@ export class EternumProvider extends RPCProvider {
   }
 
   public async harvest_labor(props: HarvestLaborProps) {
-    const { realm_id, resource_type, signer } = props;
+    const { realm_id, resource_type, order_hyperstructure_id, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "labor_systems"),
       entrypoint: "harvest",
-      calldata: [this.getWorldAddress(), realm_id, resource_type],
+      calldata: [this.getWorldAddress(), realm_id, resource_type, order_hyperstructure_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -87,13 +87,13 @@ export class EternumProvider extends RPCProvider {
   }
 
   public async harvest_all_labor(props: HarvestAllLaborProps) {
-    const { entity_ids, signer } = props;
+    const { entity_ids, order_hyperstructure_id, signer } = props;
 
     const calldata = entity_ids.map((entity_id) => {
       return {
         contractAddress: getContractByName(this.manifest, "labor_systems"),
         entrypoint: "harvest",
-        calldata: [this.getWorldAddress(), ...entity_id],
+        calldata: [this.getWorldAddress(), ...entity_id, order_hyperstructure_id],
       };
     });
 
@@ -179,7 +179,7 @@ export class EternumProvider extends RPCProvider {
   }
 
   public async accept_order(props: AcceptOrderProps) {
-    const { taker_id, trade_id, donkeys_quantity, signer, caravan_id } = props;
+    const { taker_id, trade_id, donkeys_quantity, caravan_id, order_hyperstructure_id, signer } = props;
 
     let transactions: Call[] = [];
     let final_caravan_id = caravan_id;
@@ -208,7 +208,7 @@ export class EternumProvider extends RPCProvider {
       transactions.push({
         contractAddress: getContractByName(this.manifest, "trade_systems"),
         entrypoint: "accept_order",
-        calldata: [this.getWorldAddress(), taker_id, final_caravan_id, trade_id],
+        calldata: [this.getWorldAddress(), taker_id, final_caravan_id, trade_id, order_hyperstructure_id],
       });
     }
 
@@ -391,8 +391,9 @@ export class EternumProvider extends RPCProvider {
       donkeys_quantity,
       destination_coord_x,
       destination_coord_y,
-      signer,
       caravan_id,
+      order_hyperstructure_id,
+      signer,
     } = props;
 
     let transactions: Call[] = [];
@@ -428,7 +429,13 @@ export class EternumProvider extends RPCProvider {
         {
           contractAddress: getContractByName(this.manifest, "travel_systems"),
           entrypoint: "travel",
-          calldata: [this.getWorldAddress(), final_caravan_id, destination_coord_x, destination_coord_y],
+          calldata: [
+            this.getWorldAddress(),
+            final_caravan_id,
+            destination_coord_x,
+            destination_coord_y,
+            order_hyperstructure_id,
+          ],
         },
       );
     }
@@ -449,6 +456,7 @@ export class EternumProvider extends RPCProvider {
       indices,
       destination_coord_x,
       destination_coord_y,
+      order_hyperstructure_id,
       signer,
     } = props;
 
@@ -466,7 +474,13 @@ export class EternumProvider extends RPCProvider {
       {
         contractAddress: getContractByName(this.manifest, "travel_systems"),
         entrypoint: "travel",
-        calldata: [this.getWorldAddress(), sender_id, destination_coord_x, destination_coord_y],
+        calldata: [
+          this.getWorldAddress(),
+          sender_id,
+          destination_coord_x,
+          destination_coord_y,
+          order_hyperstructure_id,
+        ],
       },
     ]);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -486,7 +500,7 @@ export class EternumProvider extends RPCProvider {
       {
         contractAddress: getContractByName(this.manifest, "travel_systems"),
         entrypoint: "travel",
-        calldata: [this.getWorldAddress(), entity_id, destination_coord_x, destination_coord_y],
+        calldata: [this.getWorldAddress(), entity_id, destination_coord_x, destination_coord_y, hyperstructure_id],
       },
     ]);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -494,26 +508,7 @@ export class EternumProvider extends RPCProvider {
     });
   };
 
-  public async initialize_hyperstructure_and_travel_back(props: InitializeHyperstructuresAndTravelProps) {
-    const { entity_id, hyperstructure_id, destination_coord_x, destination_coord_y, signer } = props;
-
-    const tx = await this.executeMulti(signer, [
-      {
-        contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
-        entrypoint: "initialize",
-        calldata: [this.getWorldAddress(), entity_id, hyperstructure_id],
-      },
-      {
-        contractAddress: getContractByName(this.manifest, "travel_systems"),
-        entrypoint: "travel",
-        calldata: [this.getWorldAddress(), entity_id, destination_coord_x, destination_coord_y],
-      },
-    ]);
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
-  }
-
+  // TODO: change that to levelup
   public async initialize_hyperstructure(props: InitializeHyperstructuresProps) {
     const { entity_id, hyperstructure_id, signer } = props;
     const tx = await this.executeMulti(signer, {
@@ -526,24 +521,18 @@ export class EternumProvider extends RPCProvider {
     });
   }
 
-  public async complete_hyperstructure(props: CompleteHyperStructureProps) {
-    const { hyperstructure_id, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
-      entrypoint: "complete",
-      calldata: [this.getWorldAddress(), hyperstructure_id],
-    });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
-  }
-
   public async travel(props: TravelProps) {
-    const { travelling_entity_id, destination_coord_x, destination_coord_y, signer } = props;
+    const { travelling_entity_id, destination_coord_x, destination_coord_y, order_hyperstructure_id, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "travel_systems"),
       entrypoint: "travel",
-      calldata: [this.getWorldAddress(), travelling_entity_id, destination_coord_x, destination_coord_y],
+      calldata: [
+        this.getWorldAddress(),
+        travelling_entity_id,
+        destination_coord_x,
+        destination_coord_y,
+        order_hyperstructure_id,
+      ],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -575,11 +564,18 @@ export class EternumProvider extends RPCProvider {
   }
 
   public async attack(props: AttackProps) {
-    const { attacker_ids, target_id, signer } = props;
+    const { attacker_ids, attacker_order_hyperstructure_id, target_id, target_order_hyperstructure_id, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
       entrypoint: "attack",
-      calldata: [this.getWorldAddress(), attacker_ids.length, ...attacker_ids, target_id],
+      calldata: [
+        this.getWorldAddress(),
+        attacker_ids.length,
+        ...attacker_ids,
+        attacker_order_hyperstructure_id,
+        target_id,
+        target_order_hyperstructure_id,
+      ],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -587,11 +583,17 @@ export class EternumProvider extends RPCProvider {
   }
 
   public async steal(props: StealProps) {
-    const { attacker_id, target_id, signer } = props;
+    const { attacker_id, attacker_order_hyperstructure_id, target_id, target_order_hyperstructure_id, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
       entrypoint: "steal",
-      calldata: [this.getWorldAddress(), attacker_id, target_id],
+      calldata: [
+        this.getWorldAddress(),
+        attacker_id,
+        attacker_order_hyperstructure_id,
+        target_id,
+        target_order_hyperstructure_id,
+      ],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
