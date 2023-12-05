@@ -66,6 +66,7 @@ const useLeaderBoardStore = create<LeaderboardStore>((set, get) => ({
           const resourceId = parseInt(event.data[2 + 2 * i]);
           const resourceAmount = parseInt(event.data[2 + 2 * i + 1]);
           const realmId = parseInt(event.keys[2]);
+          if (realmId === 0) continue;
           get().addOrUpdateLeaderboardEntry(realmId, resourceAmount, resourceId);
         }
       };

@@ -91,8 +91,6 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
     return getResourcesFromInventory(caravan.caravanId)?.resources || [];
   }, [caravan.caravanId]);
 
-  console.log({ resources: resources.flatMap((resource) => Object.values(resource)) });
-
   // capacity
   let resourceWeight = useMemo(() => {
     return getTotalResourceWeight([...resources]);

@@ -1,13 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import ProgressBar from "../../../../elements/ProgressBar";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
-import { LevelingPopup } from "./LevelingPopup";
 import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
 
 type LevelingProps = {
   className?: string;
   entityId: number | undefined;
-  setShowLevelUp: (show: boolean) => void;
+  setShowLevelUp?: (show: boolean) => void;
 };
 
 export const Leveling = ({ className, entityId, setShowLevelUp }: LevelingProps) => {
@@ -43,7 +42,7 @@ export const Leveling = ({ className, entityId, setShowLevelUp }: LevelingProps)
   }, [progress]);
 
   const onClick = () => {
-    setShowLevelUp(true);
+    setShowLevelUp && setShowLevelUp(true);
   };
 
   return (

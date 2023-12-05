@@ -9,8 +9,9 @@ import { Leveling, LevelingBonusIcons } from "./leveling/Leveling";
 import { LaborAuction } from "./labor/LaborAuction";
 import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
 import { LevelingPopup } from "./leveling/LevelingPopup";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import useUIStore from "../../../hooks/store/useUIStore";
+import { useLevel } from "../../../hooks/helpers/useLevel";
 
 type RealmInfoComponentProps = {};
 
@@ -51,8 +52,22 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
   const { realm } = useGetRealm(realmEntityId);
 
   const { getHyperstructureIdByRealmEntityId } = useHyperstructure();
+  const { getHyperstructureBonuses, getRealmBonuses, getEntityLevel } = useLevel();
 
   const hyperstructureId = realmEntityId ? getHyperstructureIdByRealmEntityId(realmEntityId) : undefined;
+
+  const hyperstructureLevel = getEntityLevel(hyperstructureId);
+  const realmLevel = getEntityLevel(realmEntityId);
+
+  const hyperstructureBonuses = useMemo(() => {
+    const bonus = getHyperstructureBonuses(hyperstructureLevel.level);
+    return bonus.reduce((acc, curr) => acc + curr.bonusAmount, 0) === 0 ? undefined : bonus;
+  }, [hyperstructureLevel]);
+
+  const realmBonuses = useMemo(() => {
+    const bonus = getRealmBonuses(hyperstructureLevel.level);
+    return bonus.reduce((acc, curr) => acc + curr.bonusAmount, 0) === 0 ? undefined : bonus;
+  }, [realmLevel]);
 
   return (
     <>
@@ -74,27 +89,47 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
           </div>
           <LaborAuction />
           <div
-            className="cursor-pointer"
-            onMouseEnter={() =>
+            onMouseEnter={() => {
+              if (!realmBonuses) return;
               setTooltip({
                 position: "top",
                 content: (
-                  <>
-                    <LevelingBonusIcons bonuses={[{ bonusType: 1, bonusAmount: 25 }]}></LevelingBonusIcons>
-                  </>
+                  <>{<LevelingBonusIcons className="flex flex-row" bonuses={realmBonuses}></LevelingBonusIcons>}</>
                 ),
-              })
-            }
+              });
+            }}
             onMouseLeave={() => {
               setTooltip(null);
             }}
+            className="cursor-pointer"
           >
             <div className="text-xxs"> Realm </div>
             {showRealmLevelUp && <LevelingPopup onClose={() => setShowRealmLevelUp(false)}></LevelingPopup>}
             <Leveling setShowLevelUp={setShowRealmLevelUp} entityId={realmEntityId} />
           </div>
           {/* <div className="cursor-pointer"> */}
-          <div className="cursor-pointer">
+          <div
+            onMouseEnter={() => {
+              if (!hyperstructureBonuses) return;
+              setTooltip({
+                position: "top",
+                content: (
+                  <>
+                    {
+                      <LevelingBonusIcons
+                        className={"flex flex-row"}
+                        bonuses={hyperstructureBonuses}
+                      ></LevelingBonusIcons>
+                    }
+                  </>
+                ),
+              });
+            }}
+            onMouseLeave={() => {
+              setTooltip(null);
+            }}
+            className="cursor-pointer"
+          >
             {/* todo: add hyperstructure level up */}
             <div className="text-xxs"> Order </div>
             {/* {showHyperstructureLevelUp && (

@@ -47,6 +47,8 @@ export const HyperstructuresListItem = ({
     setHyperstructures([...hyperstructures]);
   };
 
+  const canLevelUp = hyperstructure?.progress === 100;
+
   const onLevelUp = async () => {
     setIsLoading(true);
     await level_up_hyperstructure({
@@ -103,7 +105,7 @@ export const HyperstructuresListItem = ({
           </Button>
         </div>
       </div>
-      <Leveling className={"mt-2"} entityId={hyperstructure?.hyperstructureId} />
+      <Leveling setShowLevelUp={() => {}} className={"mt-2"} entityId={hyperstructure?.hyperstructureId} />
       <div className="flex flex-col w-full mt-3">
         <div className="text-white mb-1">Next Level</div>
         <ProgressBar rounded progress={hyperstructure?.progress || 0} className="bg-white" />
@@ -122,7 +124,7 @@ export const HyperstructuresListItem = ({
             {onFeed && (
               <Button
                 isLoading={isLoading}
-                disabled={hyperstructure?.progress < 100}
+                disabled={!canLevelUp}
                 className="!px-[6px] !py-[2px] mr-2"
                 variant="success"
                 onClick={onLevelUp}
@@ -132,7 +134,7 @@ export const HyperstructuresListItem = ({
             )}
             {onFeed && (
               <Button
-                disabled={hyperstructure?.completed}
+                disabled={hyperstructure?.completed || canLevelUp}
                 className="!px-[6px] !py-[2px]"
                 variant="outline"
                 onClick={onFeed}

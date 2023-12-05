@@ -36,9 +36,6 @@ export const useHyperstructure = () => {
     if (hypestructureId.size > 0) {
       let hyperstructureId = Array.from(hypestructureId)[0];
       const level = getEntityLevel(hyperstructureId);
-      if (hyperstructureId === 60) {
-        console.log({ level });
-      }
 
       let hyperstructure = getComponentValue(HyperStructure, hyperstructureId);
 
@@ -64,8 +61,6 @@ export const useHyperstructure = () => {
           totCompleteAmount += resource.completeAmount;
         });
         let progress = (totCurrentAmount / totCompleteAmount) * 100;
-
-        console.log({ level });
 
         return {
           hyperstructureId,

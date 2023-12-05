@@ -44,7 +44,6 @@ export default function HyperstructureStarted(
   }, [hyperstructure, uninitializedMaterials]);
 
   const currentLevel = hyperstructure?.level || 0;
-  console.log({ hyperstructure, currentLevel });
 
   return (
     <group {...props} dispose={null}>
