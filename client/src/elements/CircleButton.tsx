@@ -14,12 +14,7 @@ const sizes = {
   xl: "w-14 h-14",
 };
 
-const CircleButton = ({
-  children,
-  className,
-  size,
-  ...props
-}: CircleButtonProps) => {
+const CircleButton = ({ children, className, size, ...props }: CircleButtonProps) => {
   return (
     <button
       className={clsx(

@@ -1,9 +1,7 @@
-import WorldMapLayersComponent from "../components/worldmap/WorldMapLayersComponent"
+import WorldMapLayersComponent from "../components/worldmap/WorldMapLayersComponent";
 
 const WolrdMapLayersModule = () => {
-    return (
-        <WorldMapLayersComponent />
-    )
-}
+  return <WorldMapLayersComponent />;
+};
 
-export default WolrdMapLayersModule
+export default WolrdMapLayersModule;

@@ -114,13 +114,7 @@
     {
       "xy": [-127.88, -11.9997],
       "id": 23,
-      "resources": [
-        "Alchemical Silver",
-        "Silver",
-        "Cold Iron",
-        "Deep Crystal",
-        "Stone"
-      ]
+      "resources": ["Alchemical Silver", "Silver", "Cold Iron", "Deep Crystal", "Stone"]
     },
     {
       "xy": [75.7471, -13.92],
@@ -180,14 +174,7 @@
     {
       "xy": [69.8015, -15.4092],
       "id": 35,
-      "resources": [
-        "Cold Iron",
-        "Obsidian",
-        "Stone",
-        "Wood",
-        "Ironwood",
-        "Silver"
-      ]
+      "resources": ["Cold Iron", "Obsidian", "Stone", "Wood", "Ironwood", "Silver"]
     },
     {
       "xy": [-111.58, 35.7003],
@@ -512,14 +499,7 @@
     {
       "xy": [112.7471, 10.28],
       "id": 100,
-      "resources": [
-        "Silver",
-        "Coal",
-        "Stone",
-        "Deep Crystal",
-        "Wood",
-        "Ironwood"
-      ]
+      "resources": ["Silver", "Coal", "Stone", "Deep Crystal", "Wood", "Ironwood"]
     },
     {
       "xy": [114.469, -22.7292],
@@ -564,14 +544,7 @@
     {
       "xy": [94.3471, 29.78],
       "id": 109,
-      "resources": [
-        "Stone",
-        "Wood",
-        "Twilight Quartz",
-        "Ironwood",
-        "Cold Iron",
-        "Hartwood"
-      ]
+      "resources": ["Stone", "Wood", "Twilight Quartz", "Ironwood", "Cold Iron", "Hartwood"]
     },
     {
       "xy": [56.7471, 6.98],
@@ -1036,15 +1009,7 @@
     {
       "xy": [-87.2801, -48.0996],
       "id": 202,
-      "resources": [
-        "Cold Iron",
-        "Wood",
-        "True Ice",
-        "Coal",
-        "Gold",
-        "Ironwood",
-        "Hartwood"
-      ]
+      "resources": ["Cold Iron", "Wood", "True Ice", "Coal", "Gold", "Ironwood", "Hartwood"]
     },
     {
       "xy": [-74.0801, 28.9004],
@@ -1144,14 +1109,7 @@
     {
       "xy": [-11.9529, -24.72],
       "id": 222,
-      "resources": [
-        "Hartwood",
-        "Coal",
-        "Copper",
-        "Cold Iron",
-        "Stone",
-        "Ignium"
-      ]
+      "resources": ["Hartwood", "Coal", "Copper", "Cold Iron", "Stone", "Ignium"]
     },
     {
       "xy": [26.0471, -32.12],
@@ -1681,14 +1639,7 @@
     {
       "xy": [-54.4097, -40.0011],
       "id": 328,
-      "resources": [
-        "Copper",
-        "Gold",
-        "Wood",
-        "Stone",
-        "Twilight Quartz",
-        "Hartwood"
-      ]
+      "resources": ["Copper", "Gold", "Wood", "Stone", "Twilight Quartz", "Hartwood"]
     },
     {
       "xy": [99.2471, 42.28],
@@ -1733,14 +1684,7 @@
     {
       "xy": [-24.1529, -1.02],
       "id": 337,
-      "resources": [
-        "Hartwood",
-        "Silver",
-        "Ironwood",
-        "Coal",
-        "Copper",
-        "Alchemical Silver"
-      ]
+      "resources": ["Hartwood", "Silver", "Ironwood", "Coal", "Copper", "Alchemical Silver"]
     },
     {
       "xy": [-116.88, -28.5997],
@@ -1785,14 +1729,7 @@
     {
       "xy": [-107.6801, 16.4004],
       "id": 346,
-      "resources": [
-        "Copper",
-        "Hartwood",
-        "Obsidian",
-        "Coal",
-        "Ironwood",
-        "Stone"
-      ]
+      "resources": ["Copper", "Hartwood", "Obsidian", "Coal", "Ironwood", "Stone"]
     },
     {
       "xy": [-82.9801, 22.8004],
@@ -1897,15 +1834,7 @@
     {
       "xy": [-1.8529, 46.68],
       "id": 367,
-      "resources": [
-        "Cold Iron",
-        "Wood",
-        "Coal",
-        "Obsidian",
-        "Ironwood",
-        "Copper",
-        "Stone"
-      ]
+      "resources": ["Cold Iron", "Wood", "Coal", "Obsidian", "Ironwood", "Copper", "Stone"]
     },
     {
       "xy": [118.4471, 40.78],
@@ -2095,14 +2024,7 @@
     {
       "xy": [-59.78, -45.0996],
       "id": 405,
-      "resources": [
-        "Hartwood",
-        "Stone",
-        "Cold Iron",
-        "Wood",
-        "Ironwood",
-        "Coal"
-      ]
+      "resources": ["Hartwood", "Stone", "Cold Iron", "Wood", "Ironwood", "Coal"]
     },
     {
       "xy": [-30.5529, 30.08],
@@ -2567,14 +2489,7 @@
     {
       "xy": [-64.48, -60.0996],
       "id": 498,
-      "resources": [
-        "Ethereal Silica",
-        "Wood",
-        "Copper",
-        "Gold",
-        "Coal",
-        "Silver"
-      ]
+      "resources": ["Ethereal Silica", "Wood", "Copper", "Gold", "Coal", "Silver"]
     },
     {
       "xy": [-115.28, -30.7997],
@@ -2919,13 +2834,7 @@
     {
       "xy": [114.6471, 40.88],
       "id": 567,
-      "resources": [
-        "True Ice",
-        "Cold Iron",
-        "Silver",
-        "Copper",
-        "Twilight Quartz"
-      ]
+      "resources": ["True Ice", "Cold Iron", "Silver", "Copper", "Twilight Quartz"]
     },
     {
       "xy": [50.8471, -19.52],
@@ -2955,14 +2864,7 @@
     {
       "xy": [-13.3529, 20.68],
       "id": 573,
-      "resources": [
-        "Stone",
-        "Ethereal Silica",
-        "Obsidian",
-        "Wood",
-        "Sapphire",
-        "Coal"
-      ]
+      "resources": ["Stone", "Ethereal Silica", "Obsidian", "Wood", "Sapphire", "Coal"]
     },
     {
       "xy": [96.3471, 48.28],
@@ -3267,14 +3169,7 @@
     {
       "xy": [86.9471, -16.12],
       "id": 634,
-      "resources": [
-        "Stone",
-        "Deep Crystal",
-        "Obsidian",
-        "Ironwood",
-        "Coal",
-        "Copper"
-      ]
+      "resources": ["Stone", "Deep Crystal", "Obsidian", "Ironwood", "Coal", "Copper"]
     },
     {
       "xy": [-62.6801, 11.1004],
@@ -3314,14 +3209,7 @@
     {
       "xy": [-40.7529, 14.08],
       "id": 642,
-      "resources": [
-        "Ironwood",
-        "Stone",
-        "Copper",
-        "Ignium",
-        "Cold Iron",
-        "Wood"
-      ]
+      "resources": ["Ironwood", "Stone", "Copper", "Ignium", "Cold Iron", "Wood"]
     },
     {
       "xy": [-90.78, -22.4997],
@@ -3631,14 +3519,7 @@
     {
       "xy": [-15.9529, 27.58],
       "id": 704,
-      "resources": [
-        "Obsidian",
-        "Hartwood",
-        "Sapphire",
-        "Coal",
-        "Silver",
-        "Stone"
-      ]
+      "resources": ["Obsidian", "Hartwood", "Sapphire", "Coal", "Silver", "Stone"]
     },
     {
       "xy": [-46.7728, 50.6401],
@@ -3938,14 +3819,7 @@
     {
       "xy": [-104.0254, 43.2363],
       "id": 764,
-      "resources": [
-        "Stone",
-        "Coal",
-        "Ironwood",
-        "Copper",
-        "Silver",
-        "Cold Iron"
-      ]
+      "resources": ["Stone", "Coal", "Ironwood", "Copper", "Silver", "Cold Iron"]
     },
     {
       "xy": [-102.0801, 20.7004],
@@ -3990,15 +3864,7 @@
     {
       "xy": [-15.8529, 27.88],
       "id": 773,
-      "resources": [
-        "Ironwood",
-        "Sapphire",
-        "Silver",
-        "Coal",
-        "Obsidian",
-        "Hartwood",
-        "Gold"
-      ]
+      "resources": ["Ironwood", "Sapphire", "Silver", "Coal", "Obsidian", "Hartwood", "Gold"]
     },
     {
       "xy": [-132.98, 0.5003],
@@ -4123,14 +3989,7 @@
     {
       "xy": [-104.38, -35.8997],
       "id": 798,
-      "resources": [
-        "True Ice",
-        "Obsidian",
-        "Gold",
-        "Wood",
-        "Copper",
-        "Hartwood"
-      ]
+      "resources": ["True Ice", "Obsidian", "Gold", "Wood", "Copper", "Hartwood"]
     },
     {
       "xy": [-56.7136, -50.0411],
@@ -4340,14 +4199,7 @@
     {
       "xy": [-63.4801, 5.9004],
       "id": 840,
-      "resources": [
-        "Twilight Quartz",
-        "Obsidian",
-        "Stone",
-        "Coal",
-        "Wood",
-        "Diamonds"
-      ]
+      "resources": ["Twilight Quartz", "Obsidian", "Stone", "Coal", "Wood", "Diamonds"]
     },
     {
       "xy": [52.6471, 14.08],
@@ -4547,14 +4399,7 @@
     {
       "xy": [130.771, 9.1615],
       "id": 880,
-      "resources": [
-        "Stone",
-        "Cold Iron",
-        "Obsidian",
-        "Wood",
-        "Coal",
-        "Ironwood"
-      ]
+      "resources": ["Stone", "Cold Iron", "Obsidian", "Wood", "Coal", "Ironwood"]
     },
     {
       "xy": [2.2471, 43.78],
@@ -5244,14 +5089,7 @@
     {
       "xy": [119.2471, 19.58],
       "id": 1018,
-      "resources": [
-        "Deep Crystal",
-        "Coal",
-        "Wood",
-        "Ironwood",
-        "Diamonds",
-        "Copper"
-      ]
+      "resources": ["Deep Crystal", "Coal", "Wood", "Ironwood", "Diamonds", "Copper"]
     },
     {
       "xy": [-53.9474, -31.7822],
@@ -5296,14 +5134,7 @@
     {
       "xy": [-127.98, -1.1997],
       "id": 1027,
-      "resources": [
-        "Ruby",
-        "Stone",
-        "Copper",
-        "Ethereal Silica",
-        "Wood",
-        "Coal"
-      ]
+      "resources": ["Ruby", "Stone", "Copper", "Ethereal Silica", "Wood", "Coal"]
     },
     {
       "xy": [75.9471, 16.78],
@@ -5473,15 +5304,7 @@
     {
       "xy": [98.1471, 51.08],
       "id": 1061,
-      "resources": [
-        "Obsidian",
-        "Silver",
-        "Twilight Quartz",
-        "Wood",
-        "Cold Iron",
-        "Diamonds",
-        "Copper"
-      ]
+      "resources": ["Obsidian", "Silver", "Twilight Quartz", "Wood", "Cold Iron", "Diamonds", "Copper"]
     },
     {
       "xy": [45.1471, -15.32],
@@ -5691,14 +5514,7 @@
     {
       "xy": [30.4471, 4.98],
       "id": 1103,
-      "resources": [
-        "Wood",
-        "Sapphire",
-        "Ironwood",
-        "Deep Crystal",
-        "Obsidian",
-        "Stone"
-      ]
+      "resources": ["Wood", "Sapphire", "Ironwood", "Deep Crystal", "Obsidian", "Stone"]
     },
     {
       "xy": [1.5471, -3.12],
@@ -6403,14 +6219,7 @@
     {
       "xy": [-91.7801, -53.4996],
       "id": 1244,
-      "resources": [
-        "Deep Crystal",
-        "Stone",
-        "Coal",
-        "Obsidian",
-        "Ironwood",
-        "Wood"
-      ]
+      "resources": ["Deep Crystal", "Stone", "Coal", "Obsidian", "Ironwood", "Wood"]
     },
     {
       "xy": [-62.6801, 5.1004],
@@ -6470,14 +6279,7 @@
     {
       "xy": [-42.9927, 52.6557],
       "id": 1256,
-      "resources": [
-        "Diamonds",
-        "Obsidian",
-        "Wood",
-        "Cold Iron",
-        "Silver",
-        "Coal"
-      ]
+      "resources": ["Diamonds", "Obsidian", "Wood", "Cold Iron", "Silver", "Coal"]
     },
     {
       "xy": [32.8471, -34.72],
@@ -6622,14 +6424,7 @@
     {
       "xy": [-20.1529, 19.68],
       "id": 1285,
-      "resources": [
-        "Obsidian",
-        "Wood",
-        "Copper",
-        "Cold Iron",
-        "Deep Crystal",
-        "Hartwood"
-      ]
+      "resources": ["Obsidian", "Wood", "Copper", "Cold Iron", "Deep Crystal", "Hartwood"]
     },
     {
       "xy": [-15.6529, 25.18],
@@ -6669,14 +6464,7 @@
     {
       "xy": [-69.2801, -24.3996],
       "id": 1293,
-      "resources": [
-        "Wood",
-        "Copper",
-        "Obsidian",
-        "Sapphire",
-        "Silver",
-        "Ironwood"
-      ]
+      "resources": ["Wood", "Copper", "Obsidian", "Sapphire", "Silver", "Ironwood"]
     },
     {
       "xy": [-47.4529, 54.68],
@@ -6696,14 +6484,7 @@
     {
       "xy": [-60.5232, 30.3572],
       "id": 1297,
-      "resources": [
-        "True Ice",
-        "Obsidian",
-        "Stone",
-        "Deep Crystal",
-        "Silver",
-        "Wood"
-      ]
+      "resources": ["True Ice", "Obsidian", "Stone", "Deep Crystal", "Silver", "Wood"]
     },
     {
       "xy": [-108.58, -1.8997],
@@ -7378,14 +7159,7 @@
     {
       "xy": [112.9471, 12.08],
       "id": 1432,
-      "resources": [
-        "Obsidian",
-        "Cold Iron",
-        "Coal",
-        "Hartwood",
-        "Wood",
-        "Ignium"
-      ]
+      "resources": ["Obsidian", "Cold Iron", "Coal", "Hartwood", "Wood", "Ignium"]
     },
     {
       "xy": [105.2471, -8.42],
@@ -7420,13 +7194,7 @@
     {
       "xy": [-95.8801, 26.8004],
       "id": 1439,
-      "resources": [
-        "Obsidian",
-        "Ironwood",
-        "Copper",
-        "Ethereal Silica",
-        "Hartwood"
-      ]
+      "resources": ["Obsidian", "Ironwood", "Copper", "Ethereal Silica", "Hartwood"]
     },
     {
       "xy": [-108.08, -3.4997],
@@ -7651,13 +7419,7 @@
     {
       "xy": [-70.8723, 43.3703],
       "id": 1484,
-      "resources": [
-        "Deep Crystal",
-        "Hartwood",
-        "Obsidian",
-        "Stone",
-        "Cold Iron"
-      ]
+      "resources": ["Deep Crystal", "Hartwood", "Obsidian", "Stone", "Cold Iron"]
     },
     {
       "xy": [-98.1031, 48.5383],
@@ -8052,15 +7814,7 @@
     {
       "xy": [33.4471, -35.72],
       "id": 1563,
-      "resources": [
-        "Coal",
-        "Hartwood",
-        "Ironwood",
-        "Obsidian",
-        "Stone",
-        "Silver",
-        "Copper"
-      ]
+      "resources": ["Coal", "Hartwood", "Ironwood", "Obsidian", "Stone", "Silver", "Copper"]
     },
     {
       "xy": [114.8471, 14.18],
@@ -8075,15 +7829,7 @@
     {
       "xy": [14.5471, 26.88],
       "id": 1566,
-      "resources": [
-        "Alchemical Silver",
-        "Hartwood",
-        "Cold Iron",
-        "Stone",
-        "Coal",
-        "Wood",
-        "Diamonds"
-      ]
+      "resources": ["Alchemical Silver", "Hartwood", "Cold Iron", "Stone", "Coal", "Wood", "Diamonds"]
     },
     {
       "xy": [77.0471, 53.88],
@@ -8143,14 +7889,7 @@
     {
       "xy": [66.261, -24.555],
       "id": 1578,
-      "resources": [
-        "Cold Iron",
-        "Deep Crystal",
-        "Ironwood",
-        "Ignium",
-        "Obsidian",
-        "Stone"
-      ]
+      "resources": ["Cold Iron", "Deep Crystal", "Ironwood", "Ignium", "Obsidian", "Stone"]
     },
     {
       "xy": [51.6471, -35.32],
@@ -8450,14 +8189,7 @@
     {
       "xy": [-31.6529, 23.98],
       "id": 1638,
-      "resources": [
-        "Obsidian",
-        "Cold Iron",
-        "Copper",
-        "Silver",
-        "Wood",
-        "Stone"
-      ]
+      "resources": ["Obsidian", "Cold Iron", "Copper", "Silver", "Wood", "Stone"]
     },
     {
       "xy": [62.4471, 6.48],
@@ -8482,26 +8214,12 @@
     {
       "xy": [-75.9801, -32.3996],
       "id": 1643,
-      "resources": [
-        "Ironwood",
-        "Wood",
-        "Silver",
-        "Stone",
-        "Cold Iron",
-        "Copper"
-      ]
+      "resources": ["Ironwood", "Wood", "Silver", "Stone", "Cold Iron", "Copper"]
     },
     {
       "xy": [-100.6442, -38.749],
       "id": 1644,
-      "resources": [
-        "Twilight Quartz",
-        "Stone",
-        "Wood",
-        "Coal",
-        "Hartwood",
-        "Obsidian"
-      ]
+      "resources": ["Twilight Quartz", "Stone", "Wood", "Coal", "Hartwood", "Obsidian"]
     },
     {
       "xy": [-106.0294, 30.0264],
@@ -9071,14 +8789,7 @@
     {
       "xy": [-6.6529, 28.58],
       "id": 1758,
-      "resources": [
-        "Copper",
-        "Ironwood",
-        "Coal",
-        "Cold Iron",
-        "Gold",
-        "Obsidian"
-      ]
+      "resources": ["Copper", "Ironwood", "Coal", "Cold Iron", "Gold", "Obsidian"]
     },
     {
       "xy": [73.1471, 27.98],
@@ -9493,15 +9204,7 @@
     {
       "xy": [-91.6801, -52.6996],
       "id": 1841,
-      "resources": [
-        "Obsidian",
-        "Stone",
-        "Wood",
-        "Gold",
-        "Coal",
-        "Copper",
-        "Silver"
-      ]
+      "resources": ["Obsidian", "Stone", "Wood", "Gold", "Coal", "Copper", "Silver"]
     },
     {
       "xy": [-89.3123, -51.6752],
@@ -9511,14 +9214,7 @@
     {
       "xy": [57.7471, 34.88],
       "id": 1843,
-      "resources": [
-        "Coal",
-        "Wood",
-        "Copper",
-        "Hartwood",
-        "Obsidian",
-        "Cold Iron"
-      ]
+      "resources": ["Coal", "Wood", "Copper", "Hartwood", "Obsidian", "Cold Iron"]
     },
     {
       "xy": [65.2471, 8.68],
@@ -9768,14 +9464,7 @@
     {
       "xy": [99.9912, -12.507],
       "id": 1893,
-      "resources": [
-        "Wood",
-        "Stone",
-        "Obsidian",
-        "Sapphire",
-        "Cold Iron",
-        "Silver"
-      ]
+      "resources": ["Wood", "Stone", "Obsidian", "Sapphire", "Cold Iron", "Silver"]
     },
     {
       "xy": [-90.1844, 29.0744],
@@ -9785,14 +9474,7 @@
     {
       "xy": [-104.9256, 33.6575],
       "id": 1895,
-      "resources": [
-        "Diamonds",
-        "Stone",
-        "Ruby",
-        "Ironwood",
-        "Obsidian",
-        "Copper"
-      ]
+      "resources": ["Diamonds", "Stone", "Ruby", "Ironwood", "Obsidian", "Copper"]
     },
     {
       "xy": [-70.5801, -10.0996],
@@ -9887,14 +9569,7 @@
     {
       "xy": [71.5471, 47.68],
       "id": 1914,
-      "resources": [
-        "Alchemical Silver",
-        "Ruby",
-        "Stone",
-        "Wood",
-        "Obsidian",
-        "Deep Crystal"
-      ]
+      "resources": ["Alchemical Silver", "Ruby", "Stone", "Wood", "Obsidian", "Deep Crystal"]
     },
     {
       "xy": [-31.0527, 52.2801],
@@ -10024,14 +9699,7 @@
     {
       "xy": [-120.58, 21.2003],
       "id": 1940,
-      "resources": [
-        "Stone",
-        "Obsidian",
-        "Cold Iron",
-        "Coal",
-        "Wood",
-        "Sapphire"
-      ]
+      "resources": ["Stone", "Obsidian", "Cold Iron", "Coal", "Wood", "Sapphire"]
     },
     {
       "xy": [106.5471, 42.58],
@@ -10111,14 +9779,7 @@
     {
       "xy": [109.8471, 8.68],
       "id": 1956,
-      "resources": [
-        "Coal",
-        "Twilight Quartz",
-        "Ironwood",
-        "Stone",
-        "Adamantine",
-        "Wood"
-      ]
+      "resources": ["Coal", "Twilight Quartz", "Ironwood", "Stone", "Adamantine", "Wood"]
     },
     {
       "xy": [-57.7878, -45.0904],
@@ -10243,14 +9904,7 @@
     {
       "xy": [36.0471, -39.52],
       "id": 1981,
-      "resources": [
-        "Ironwood",
-        "True Ice",
-        "Coal",
-        "Stone",
-        "Cold Iron",
-        "Silver"
-      ]
+      "resources": ["Ironwood", "True Ice", "Coal", "Stone", "Cold Iron", "Silver"]
     },
     {
       "xy": [55.6471, 30.68],
@@ -10365,14 +10019,7 @@
     {
       "xy": [-45.4529, 6.38],
       "id": 2004,
-      "resources": [
-        "Stone",
-        "Ethereal Silica",
-        "Coal",
-        "Ironwood",
-        "Obsidian",
-        "Cold Iron"
-      ]
+      "resources": ["Stone", "Ethereal Silica", "Coal", "Ironwood", "Obsidian", "Cold Iron"]
     },
     {
       "xy": [5.0471, -20.82],
@@ -10637,14 +10284,7 @@
     {
       "xy": [-56.4267, 56.6601],
       "id": 2057,
-      "resources": [
-        "Obsidian",
-        "Wood",
-        "Silver",
-        "Deep Crystal",
-        "Cold Iron",
-        "Stone"
-      ]
+      "resources": ["Obsidian", "Wood", "Silver", "Deep Crystal", "Cold Iron", "Stone"]
     },
     {
       "xy": [-55.3722, -52.5396],
@@ -11204,14 +10844,7 @@
     {
       "xy": [-88.3801, -53.0996],
       "id": 2169,
-      "resources": [
-        "Wood",
-        "Silver",
-        "Ironwood",
-        "Stone",
-        "Obsidian",
-        "Hartwood"
-      ]
+      "resources": ["Wood", "Silver", "Ironwood", "Stone", "Obsidian", "Hartwood"]
     },
     {
       "xy": [92.3296, -22.5798],
@@ -11431,14 +11064,7 @@
     {
       "xy": [99.2471, 41.98],
       "id": 2213,
-      "resources": [
-        "Wood",
-        "Copper",
-        "Stone",
-        "Obsidian",
-        "Cold Iron",
-        "Silver"
-      ]
+      "resources": ["Wood", "Copper", "Stone", "Obsidian", "Cold Iron", "Silver"]
     },
     {
       "xy": [75.0471, 8.68],
@@ -11628,14 +11254,7 @@
     {
       "xy": [76.5471, -24.02],
       "id": 2251,
-      "resources": [
-        "Wood",
-        "Coal",
-        "Ethereal Silica",
-        "Copper",
-        "Stone",
-        "Gold"
-      ]
+      "resources": ["Wood", "Coal", "Ethereal Silica", "Copper", "Stone", "Gold"]
     },
     {
       "xy": [100.8471, 44.18],
@@ -12315,14 +11934,7 @@
     {
       "xy": [-115.88, -6.3997],
       "id": 2387,
-      "resources": [
-        "Silver",
-        "Coal",
-        "Cold Iron",
-        "Copper",
-        "Obsidian",
-        "Stone"
-      ]
+      "resources": ["Silver", "Coal", "Cold Iron", "Copper", "Obsidian", "Stone"]
     },
     {
       "xy": [-101.98, -4.6997],
@@ -12732,14 +12344,7 @@
     {
       "xy": [-93.2662, 35.3596],
       "id": 2469,
-      "resources": [
-        "Silver",
-        "Wood",
-        "Copper",
-        "Stone",
-        "Alchemical Silver",
-        "Obsidian"
-      ]
+      "resources": ["Silver", "Wood", "Copper", "Stone", "Alchemical Silver", "Obsidian"]
     },
     {
       "xy": [-69.9801, -26.8996],
@@ -12989,14 +12594,7 @@
     {
       "xy": [-54.48, -52.5996],
       "id": 2519,
-      "resources": [
-        "Wood",
-        "Cold Iron",
-        "Stone",
-        "Silver",
-        "Ignium",
-        "Ironwood"
-      ]
+      "resources": ["Wood", "Cold Iron", "Stone", "Silver", "Ignium", "Ironwood"]
     },
     {
       "xy": [-63.68, -44.9996],
@@ -13101,14 +12699,7 @@
     {
       "xy": [57.4471, 24.18],
       "id": 2540,
-      "resources": [
-        "Ironwood",
-        "Stone",
-        "Obsidian",
-        "Silver",
-        "Coal",
-        "Diamonds"
-      ]
+      "resources": ["Ironwood", "Stone", "Obsidian", "Silver", "Coal", "Diamonds"]
     },
     {
       "xy": [-13.9529, 47.58],
@@ -13338,14 +12929,7 @@
     {
       "xy": [-122.18, 10.4003],
       "id": 2586,
-      "resources": [
-        "Coal",
-        "Cold Iron",
-        "Obsidian",
-        "Silver",
-        "Stone",
-        "Copper"
-      ]
+      "resources": ["Coal", "Cold Iron", "Obsidian", "Silver", "Stone", "Copper"]
     },
     {
       "xy": [-116.28, -29.1997],
@@ -13770,14 +13354,7 @@
     {
       "xy": [-18.3529, -34.52],
       "id": 2671,
-      "resources": [
-        "Copper",
-        "Wood",
-        "Ignium",
-        "True Ice",
-        "Cold Iron",
-        "Silver"
-      ]
+      "resources": ["Copper", "Wood", "Ignium", "True Ice", "Cold Iron", "Silver"]
     },
     {
       "xy": [-19.3529, -37.72],
@@ -13897,14 +13474,7 @@
     {
       "xy": [62.2471, 21.78],
       "id": 2695,
-      "resources": [
-        "Twilight Quartz",
-        "True Ice",
-        "Silver",
-        "Coal",
-        "Wood",
-        "Obsidian"
-      ]
+      "resources": ["Twilight Quartz", "True Ice", "Silver", "Coal", "Wood", "Obsidian"]
     },
     {
       "xy": [76.0471, -14.22],
@@ -14039,15 +13609,7 @@
     {
       "xy": [-117.08, 36.5003],
       "id": 2722,
-      "resources": [
-        "Silver",
-        "Copper",
-        "Stone",
-        "Ironwood",
-        "Obsidian",
-        "Gold",
-        "Hartwood"
-      ]
+      "resources": ["Silver", "Copper", "Stone", "Ironwood", "Obsidian", "Gold", "Hartwood"]
     },
     {
       "xy": [113.5471, 39.48],
@@ -14217,14 +13779,7 @@
     {
       "xy": [85.1471, -2.92],
       "id": 2756,
-      "resources": [
-        "Alchemical Silver",
-        "Copper",
-        "Wood",
-        "Cold Iron",
-        "Obsidian",
-        "Coal"
-      ]
+      "resources": ["Alchemical Silver", "Copper", "Wood", "Cold Iron", "Obsidian", "Coal"]
     },
     {
       "xy": [-107.68, -35.8997],
@@ -14454,14 +14009,7 @@
     {
       "xy": [-70.08, -55.1996],
       "id": 2802,
-      "resources": [
-        "Hartwood",
-        "Obsidian",
-        "Copper",
-        "Cold Iron",
-        "Wood",
-        "Ironwood"
-      ]
+      "resources": ["Hartwood", "Obsidian", "Copper", "Cold Iron", "Wood", "Ironwood"]
     },
     {
       "xy": [22.5471, 56.58],
@@ -14481,15 +14029,7 @@
     {
       "xy": [-80.1914, 45.7059],
       "id": 2806,
-      "resources": [
-        "Coal",
-        "Ignium",
-        "Silver",
-        "Cold Iron",
-        "Gold",
-        "Stone",
-        "Wood"
-      ]
+      "resources": ["Coal", "Ignium", "Silver", "Cold Iron", "Gold", "Stone", "Wood"]
     },
     {
       "xy": [-31.3529, 22.18],
@@ -14679,15 +14219,7 @@
     {
       "xy": [53.2471, -37.02],
       "id": 2844,
-      "resources": [
-        "Silver",
-        "Sapphire",
-        "Diamonds",
-        "Ironwood",
-        "Wood",
-        "Coal",
-        "Copper"
-      ]
+      "resources": ["Silver", "Sapphire", "Diamonds", "Ironwood", "Wood", "Coal", "Copper"]
     },
     {
       "xy": [-108.9342, -34.2115],
@@ -14702,14 +14234,7 @@
     {
       "xy": [-85.3801, -55.2996],
       "id": 2847,
-      "resources": [
-        "Ironwood",
-        "Coal",
-        "Obsidian",
-        "Hartwood",
-        "Cold Iron",
-        "Wood"
-      ]
+      "resources": ["Ironwood", "Coal", "Obsidian", "Hartwood", "Cold Iron", "Wood"]
     },
     {
       "xy": [-112.38, -4.2997],
@@ -14909,15 +14434,7 @@
     {
       "xy": [-100.8801, 19.8004],
       "id": 2887,
-      "resources": [
-        "Coal",
-        "Ironwood",
-        "Gold",
-        "Ethereal Silica",
-        "Wood",
-        "Stone",
-        "Copper"
-      ]
+      "resources": ["Coal", "Ironwood", "Gold", "Ethereal Silica", "Wood", "Stone", "Copper"]
     },
     {
       "xy": [51.0471, 8.98],
@@ -15437,13 +14954,7 @@
     {
       "xy": [60.8471, 32.78],
       "id": 2991,
-      "resources": [
-        "Diamonds",
-        "Copper",
-        "Coal",
-        "Cold Iron",
-        "Twilight Quartz"
-      ]
+      "resources": ["Diamonds", "Copper", "Coal", "Cold Iron", "Twilight Quartz"]
     },
     {
       "xy": [-25.5529, -9.12],
@@ -15483,15 +14994,7 @@
     {
       "xy": [0.8471, 0.38],
       "id": 2999,
-      "resources": [
-        "Coal",
-        "Copper",
-        "Cold Iron",
-        "Silver",
-        "Wood",
-        "Obsidian",
-        "Diamonds"
-      ]
+      "resources": ["Coal", "Copper", "Cold Iron", "Silver", "Wood", "Obsidian", "Diamonds"]
     },
     {
       "xy": [3.7471, -14.62],
@@ -15521,14 +15024,7 @@
     {
       "xy": [-121.08, 7.2003],
       "id": 3005,
-      "resources": [
-        "Coal",
-        "Diamonds",
-        "Hartwood",
-        "Wood",
-        "Cold Iron",
-        "Ironwood"
-      ]
+      "resources": ["Coal", "Diamonds", "Hartwood", "Wood", "Cold Iron", "Ironwood"]
     },
     {
       "xy": [81.3471, -19.32],
@@ -15588,13 +15084,7 @@
     {
       "xy": [111.8684, -22.0689],
       "id": 3017,
-      "resources": [
-        "Ironwood",
-        "Alchemical Silver",
-        "Stone",
-        "Twilight Quartz",
-        "Wood"
-      ]
+      "resources": ["Ironwood", "Alchemical Silver", "Stone", "Twilight Quartz", "Wood"]
     },
     {
       "xy": [115.3471, 38.28],
@@ -15654,14 +15144,7 @@
     {
       "xy": [-61.38, -43.6996],
       "id": 3029,
-      "resources": [
-        "Deep Crystal",
-        "Wood",
-        "Cold Iron",
-        "Diamonds",
-        "Coal",
-        "Obsidian"
-      ]
+      "resources": ["Deep Crystal", "Wood", "Cold Iron", "Diamonds", "Coal", "Obsidian"]
     },
     {
       "xy": [-94.0274, 34.0004],
@@ -15886,15 +15369,7 @@
     {
       "xy": [-33.5529, -10.12],
       "id": 3074,
-      "resources": [
-        "Ironwood",
-        "Ethereal Silica",
-        "Silver",
-        "Wood",
-        "Stone",
-        "Gold",
-        "Copper"
-      ]
+      "resources": ["Ironwood", "Ethereal Silica", "Silver", "Wood", "Stone", "Gold", "Copper"]
     },
     {
       "xy": [4.1471, 8.68],
@@ -16029,15 +15504,7 @@
     {
       "xy": [3.0471, 42.48],
       "id": 3101,
-      "resources": [
-        "Stone",
-        "Twilight Quartz",
-        "Wood",
-        "Coal",
-        "Obsidian",
-        "Gold",
-        "Copper"
-      ]
+      "resources": ["Stone", "Twilight Quartz", "Wood", "Coal", "Obsidian", "Gold", "Copper"]
     },
     {
       "xy": [-23.0529, 27.88],
@@ -16072,15 +15539,7 @@
     {
       "xy": [-9.1529, 13.98],
       "id": 3108,
-      "resources": [
-        "Coal",
-        "Ironwood",
-        "Gold",
-        "Obsidian",
-        "Sapphire",
-        "Wood",
-        "Stone"
-      ]
+      "resources": ["Coal", "Ironwood", "Gold", "Obsidian", "Sapphire", "Wood", "Stone"]
     },
     {
       "xy": [-51.5529, 55.08],
@@ -16610,14 +16069,7 @@
     {
       "xy": [112.8471, 12.88],
       "id": 3214,
-      "resources": [
-        "Copper",
-        "Obsidian",
-        "Deep Crystal",
-        "Silver",
-        "Wood",
-        "Coal"
-      ]
+      "resources": ["Copper", "Obsidian", "Deep Crystal", "Silver", "Wood", "Coal"]
     },
     {
       "xy": [-8.9529, 2.88],
@@ -16847,14 +16299,7 @@
     {
       "xy": [107.7831, -6.1154],
       "id": 3260,
-      "resources": [
-        "Deep Crystal",
-        "Copper",
-        "Stone",
-        "Wood",
-        "Coal",
-        "Obsidian"
-      ]
+      "resources": ["Deep Crystal", "Copper", "Stone", "Wood", "Coal", "Obsidian"]
     },
     {
       "xy": [-7.7529, 6.58],
@@ -17089,14 +16534,7 @@
     {
       "xy": [-65.48, 33.7003],
       "id": 3307,
-      "resources": [
-        "Obsidian",
-        "Alchemical Silver",
-        "Wood",
-        "Copper",
-        "Stone",
-        "Sapphire"
-      ]
+      "resources": ["Obsidian", "Alchemical Silver", "Wood", "Copper", "Stone", "Sapphire"]
     },
     {
       "xy": [-66.7801, 4.6004],
@@ -17166,14 +16604,7 @@
     {
       "xy": [123.4692, 9.3811],
       "id": 3321,
-      "resources": [
-        "Cold Iron",
-        "Deep Crystal",
-        "Stone",
-        "Gold",
-        "Silver",
-        "Coal"
-      ]
+      "resources": ["Cold Iron", "Deep Crystal", "Stone", "Gold", "Silver", "Coal"]
     },
     {
       "xy": [-129.98, -12.8997],
@@ -17933,15 +17364,7 @@
     {
       "xy": [124.8841, -18.6583],
       "id": 3473,
-      "resources": [
-        "True Ice",
-        "Cold Iron",
-        "Coal",
-        "Stone",
-        "Gold",
-        "Wood",
-        "Silver"
-      ]
+      "resources": ["True Ice", "Cold Iron", "Coal", "Stone", "Gold", "Wood", "Silver"]
     },
     {
       "xy": [-120.08, -19.9997],
@@ -18111,14 +17534,7 @@
     {
       "xy": [-3.1529, 5.68],
       "id": 3507,
-      "resources": [
-        "Stone",
-        "Ironwood",
-        "Obsidian",
-        "Hartwood",
-        "Silver",
-        "Wood"
-      ]
+      "resources": ["Stone", "Ironwood", "Obsidian", "Hartwood", "Silver", "Wood"]
     },
     {
       "xy": [67.7471, -15.02],
@@ -18188,14 +17604,7 @@
     {
       "xy": [117.1399, -22.9142],
       "id": 3521,
-      "resources": [
-        "Ethereal Silica",
-        "Ironwood",
-        "Copper",
-        "Obsidian",
-        "Coal",
-        "Wood"
-      ]
+      "resources": ["Ethereal Silica", "Ironwood", "Copper", "Obsidian", "Coal", "Wood"]
     },
     {
       "xy": [-108.28, -4.5997],
@@ -18485,14 +17894,7 @@
     {
       "xy": [95.8471, 53.38],
       "id": 3579,
-      "resources": [
-        "Diamonds",
-        "Obsidian",
-        "Hartwood",
-        "Ironwood",
-        "Coal",
-        "Stone"
-      ]
+      "resources": ["Diamonds", "Obsidian", "Hartwood", "Ironwood", "Coal", "Stone"]
     },
     {
       "xy": [-125.18, 0.5003],
@@ -18507,14 +17909,7 @@
     {
       "xy": [-94.7801, 26.7004],
       "id": 3582,
-      "resources": [
-        "Cold Iron",
-        "Coal",
-        "Diamonds",
-        "Silver",
-        "Obsidian",
-        "Wood"
-      ]
+      "resources": ["Cold Iron", "Coal", "Diamonds", "Silver", "Obsidian", "Wood"]
     },
     {
       "xy": [-102.6801, 18.4004],
@@ -18959,14 +18354,7 @@
     {
       "xy": [18.1471, 19.98],
       "id": 3671,
-      "resources": [
-        "Stone",
-        "Coal",
-        "Silver",
-        "Ironwood",
-        "Cold Iron",
-        "Copper"
-      ]
+      "resources": ["Stone", "Coal", "Silver", "Ironwood", "Cold Iron", "Copper"]
     },
     {
       "xy": [120.6477, -16.1773],
@@ -19206,27 +18594,12 @@
     {
       "xy": [-32.9527, 47.3801],
       "id": 3719,
-      "resources": [
-        "Coal",
-        "Wood",
-        "Obsidian",
-        "Ironwood",
-        "Stone",
-        "Deep Crystal"
-      ]
+      "resources": ["Coal", "Wood", "Obsidian", "Ironwood", "Stone", "Deep Crystal"]
     },
     {
       "xy": [-50.48, -49.1997],
       "id": 3720,
-      "resources": [
-        "Wood",
-        "Obsidian",
-        "Stone",
-        "Deep Crystal",
-        "Copper",
-        "Ironwood",
-        "Silver"
-      ]
+      "resources": ["Wood", "Obsidian", "Stone", "Deep Crystal", "Copper", "Ironwood", "Silver"]
     },
     {
       "xy": [55.7471, 21.58],
@@ -19316,14 +18689,7 @@
     {
       "xy": [-68.1867, 42.7857],
       "id": 3738,
-      "resources": [
-        "Deep Crystal",
-        "Coal",
-        "Obsidian",
-        "Stone",
-        "Wood",
-        "Silver"
-      ]
+      "resources": ["Deep Crystal", "Coal", "Obsidian", "Stone", "Wood", "Silver"]
     },
     {
       "xy": [50.0471, 8.88],
@@ -19433,14 +18799,7 @@
     {
       "xy": [-107.4748, 44.2957],
       "id": 3760,
-      "resources": [
-        "Coal",
-        "Ironwood",
-        "Dragonhide",
-        "Stone",
-        "Obsidian",
-        "Copper"
-      ]
+      "resources": ["Coal", "Ironwood", "Dragonhide", "Stone", "Obsidian", "Copper"]
     },
     {
       "xy": [63.3471, 33.08],
@@ -19565,14 +18924,7 @@
     {
       "xy": [-68.78, -58.4996],
       "id": 3785,
-      "resources": [
-        "Wood",
-        "Silver",
-        "Cold Iron",
-        "Obsidian",
-        "Ironwood",
-        "Deep Crystal"
-      ]
+      "resources": ["Wood", "Silver", "Cold Iron", "Obsidian", "Ironwood", "Deep Crystal"]
     },
     {
       "xy": [66.2471, 40.28],
@@ -19747,14 +19099,7 @@
     {
       "xy": [-105.0936, 33.3347],
       "id": 3820,
-      "resources": [
-        "Obsidian",
-        "Sapphire",
-        "Coal",
-        "Wood",
-        "Adamantine",
-        "Stone"
-      ]
+      "resources": ["Obsidian", "Sapphire", "Coal", "Wood", "Adamantine", "Stone"]
     },
     {
       "xy": [104.2471, 53.78],
@@ -19799,14 +19144,7 @@
     {
       "xy": [-118.28, 19.1003],
       "id": 3829,
-      "resources": [
-        "Obsidian",
-        "Wood",
-        "Diamonds",
-        "Cold Iron",
-        "Stone",
-        "Ironwood"
-      ]
+      "resources": ["Obsidian", "Wood", "Diamonds", "Cold Iron", "Stone", "Ironwood"]
     },
     {
       "xy": [116.7471, 19.28],
@@ -19841,14 +19179,7 @@
     {
       "xy": [-56.8077, 11.7295],
       "id": 3836,
-      "resources": [
-        "Deep Crystal",
-        "Copper",
-        "Stone",
-        "Cold Iron",
-        "Coal",
-        "Ironwood"
-      ]
+      "resources": ["Deep Crystal", "Copper", "Stone", "Cold Iron", "Coal", "Ironwood"]
     },
     {
       "xy": [25.6471, -32.72],
@@ -19908,14 +19239,7 @@
     {
       "xy": [-36.2529, 2.98],
       "id": 3848,
-      "resources": [
-        "Obsidian",
-        "Hartwood",
-        "Gold",
-        "Wood",
-        "Silver",
-        "Sapphire"
-      ]
+      "resources": ["Obsidian", "Hartwood", "Gold", "Wood", "Silver", "Sapphire"]
     },
     {
       "xy": [-18.2529, -22.22],
@@ -20390,14 +19714,7 @@
     {
       "xy": [-88.78, -26.4997],
       "id": 3943,
-      "resources": [
-        "Coal",
-        "Sapphire",
-        "Stone",
-        "Wood",
-        "Ethereal Silica",
-        "Copper"
-      ]
+      "resources": ["Coal", "Sapphire", "Stone", "Wood", "Ethereal Silica", "Copper"]
     },
     {
       "xy": [10.0471, -13.52],
@@ -20667,14 +19984,7 @@
     {
       "xy": [89.6471, 1.58],
       "id": 3997,
-      "resources": [
-        "Gold",
-        "Ironwood",
-        "Ignium",
-        "Cold Iron",
-        "Obsidian",
-        "Wood"
-      ]
+      "resources": ["Gold", "Ironwood", "Ignium", "Cold Iron", "Obsidian", "Wood"]
     },
     {
       "xy": [-118.08, -26.5997],
@@ -20789,15 +20099,7 @@
     {
       "xy": [80.7471, 29.48],
       "id": 4020,
-      "resources": [
-        "Stone",
-        "Silver",
-        "Cold Iron",
-        "Wood",
-        "Copper",
-        "Coal",
-        "Ironwood"
-      ]
+      "resources": ["Stone", "Silver", "Cold Iron", "Wood", "Copper", "Coal", "Ironwood"]
     },
     {
       "xy": [-29.4529, -6.22],
@@ -20892,15 +20194,7 @@
     {
       "xy": [-88.3801, -49.4996],
       "id": 4039,
-      "resources": [
-        "Stone",
-        "Copper",
-        "Sapphire",
-        "Hartwood",
-        "Coal",
-        "Ironwood",
-        "Wood"
-      ]
+      "resources": ["Stone", "Copper", "Sapphire", "Hartwood", "Coal", "Ironwood", "Wood"]
     },
     {
       "xy": [-65.9801, 2.1004],
@@ -21155,14 +20449,7 @@
     {
       "xy": [-100.3665, -37.4746],
       "id": 4090,
-      "resources": [
-        "Alchemical Silver",
-        "Silver",
-        "Coal",
-        "Copper",
-        "Obsidian",
-        "Cold Iron"
-      ]
+      "resources": ["Alchemical Silver", "Silver", "Coal", "Copper", "Obsidian", "Cold Iron"]
     },
     {
       "xy": [-12.8529, -24.32],
@@ -21317,15 +20604,7 @@
     {
       "xy": [75.9471, -24.42],
       "id": 4121,
-      "resources": [
-        "Ironwood",
-        "Stone",
-        "Wood",
-        "Coal",
-        "Alchemical Silver",
-        "Hartwood",
-        "Deep Crystal"
-      ]
+      "resources": ["Ironwood", "Stone", "Wood", "Coal", "Alchemical Silver", "Hartwood", "Deep Crystal"]
     },
     {
       "xy": [-15.4529, -40.52],
@@ -21865,14 +21144,7 @@
     {
       "xy": [122.6471, 25.58],
       "id": 4229,
-      "resources": [
-        "Stone",
-        "Coal",
-        "True Ice",
-        "Silver",
-        "Cold Iron",
-        "Hartwood"
-      ]
+      "resources": ["Stone", "Coal", "True Ice", "Silver", "Cold Iron", "Hartwood"]
     },
     {
       "xy": [104.3471, 51.48],
@@ -22212,14 +21484,7 @@
     {
       "xy": [-122.48, -11.5997],
       "id": 4297,
-      "resources": [
-        "Silver",
-        "Wood",
-        "Deep Crystal",
-        "Stone",
-        "Obsidian",
-        "Copper"
-      ]
+      "resources": ["Silver", "Wood", "Deep Crystal", "Stone", "Obsidian", "Copper"]
     },
     {
       "xy": [79.5471, 29.08],
@@ -22499,14 +21764,7 @@
     {
       "xy": [24.4471, 61.08],
       "id": 4353,
-      "resources": [
-        "Wood",
-        "Ironwood",
-        "Silver",
-        "Stone",
-        "Cold Iron",
-        "Copper"
-      ]
+      "resources": ["Wood", "Ironwood", "Silver", "Stone", "Cold Iron", "Copper"]
     },
     {
       "xy": [-8.5529, -23.12],
@@ -22591,14 +21849,7 @@
     {
       "xy": [129.9463, 4.6571],
       "id": 4370,
-      "resources": [
-        "Deep Crystal",
-        "Stone",
-        "Silver",
-        "Obsidian",
-        "Coal",
-        "Copper"
-      ]
+      "resources": ["Deep Crystal", "Stone", "Silver", "Obsidian", "Coal", "Copper"]
     },
     {
       "xy": [-74.08, -54.3996],
@@ -22763,14 +22014,7 @@
     {
       "xy": [117.6894, -29.0517],
       "id": 4403,
-      "resources": [
-        "Obsidian",
-        "Wood",
-        "Silver",
-        "Copper",
-        "Cold Iron",
-        "Stone"
-      ]
+      "resources": ["Obsidian", "Wood", "Silver", "Copper", "Cold Iron", "Stone"]
     },
     {
       "xy": [63.3732, -20.4304],
@@ -22820,15 +22064,7 @@
     {
       "xy": [6.2471, 32.88],
       "id": 4413,
-      "resources": [
-        "Ruby",
-        "Stone",
-        "Sapphire",
-        "Coal",
-        "Obsidian",
-        "Wood",
-        "Silver"
-      ]
+      "resources": ["Ruby", "Stone", "Sapphire", "Coal", "Obsidian", "Wood", "Silver"]
     },
     {
       "xy": [121.7579, 4.655],
@@ -22973,15 +22209,7 @@
     {
       "xy": [-62.58, 35.0003],
       "id": 4442,
-      "resources": [
-        "Obsidian",
-        "Copper",
-        "Sapphire",
-        "Ethereal Silica",
-        "Wood",
-        "Coal",
-        "Stone"
-      ]
+      "resources": ["Obsidian", "Copper", "Sapphire", "Ethereal Silica", "Wood", "Coal", "Stone"]
     },
     {
       "xy": [-68.0126, 37.084],
@@ -23011,15 +22239,7 @@
     {
       "xy": [116.8062, -28.3959],
       "id": 4448,
-      "resources": [
-        "Obsidian",
-        "Stone",
-        "Wood",
-        "Copper",
-        "Ignium",
-        "Coal",
-        "Silver"
-      ]
+      "resources": ["Obsidian", "Stone", "Wood", "Copper", "Ignium", "Coal", "Silver"]
     },
     {
       "xy": [-94.8801, 35.0004],
@@ -23074,14 +22294,7 @@
     {
       "xy": [-124.68, 0.3003],
       "id": 4459,
-      "resources": [
-        "Copper",
-        "Gold",
-        "Stone",
-        "Ethereal Silica",
-        "Wood",
-        "Obsidian"
-      ]
+      "resources": ["Copper", "Gold", "Stone", "Ethereal Silica", "Wood", "Obsidian"]
     },
     {
       "xy": [-79.18, -50.8996],
@@ -23181,13 +22394,7 @@
     {
       "xy": [-68.8801, -25.4996],
       "id": 4479,
-      "resources": [
-        "Deep Crystal",
-        "Twilight Quartz",
-        "Wood",
-        "Cold Iron",
-        "Stone"
-      ]
+      "resources": ["Deep Crystal", "Twilight Quartz", "Wood", "Cold Iron", "Stone"]
     },
     {
       "xy": [112.106, -17.3877],
@@ -23372,14 +22579,7 @@
     {
       "xy": [84.5471, -17.52],
       "id": 4516,
-      "resources": [
-        "Ethereal Silica",
-        "Coal",
-        "Wood",
-        "Ignium",
-        "Cold Iron",
-        "Silver"
-      ]
+      "resources": ["Ethereal Silica", "Coal", "Wood", "Ignium", "Cold Iron", "Silver"]
     },
     {
       "xy": [-82.7801, 47.4004],
@@ -23824,14 +23024,7 @@
     {
       "xy": [-68.0061, 37.3351],
       "id": 4605,
-      "resources": [
-        "Obsidian",
-        "Wood",
-        "Silver",
-        "Ethereal Silica",
-        "Coal",
-        "Gold"
-      ]
+      "resources": ["Obsidian", "Wood", "Silver", "Ethereal Silica", "Coal", "Gold"]
     },
     {
       "xy": [32.3471, -14.12],
@@ -23956,14 +23149,7 @@
     {
       "xy": [-15.6529, -26.72],
       "id": 4630,
-      "resources": [
-        "Cold Iron",
-        "Silver",
-        "Wood",
-        "Obsidian",
-        "Stone",
-        "Copper"
-      ]
+      "resources": ["Cold Iron", "Silver", "Wood", "Obsidian", "Stone", "Copper"]
     },
     {
       "xy": [-25.2529, 31.48],
@@ -24098,14 +23284,7 @@
     {
       "xy": [-72.3801, 28.3004],
       "id": 4657,
-      "resources": [
-        "Deep Crystal",
-        "Ironwood",
-        "Hartwood",
-        "Copper",
-        "Stone",
-        "Coal"
-      ]
+      "resources": ["Deep Crystal", "Ironwood", "Hartwood", "Copper", "Stone", "Coal"]
     },
     {
       "xy": [-81.3801, -14.5996],
@@ -24240,14 +23419,7 @@
     {
       "xy": [-68.8801, 45.9004],
       "id": 4684,
-      "resources": [
-        "Coal",
-        "Cold Iron",
-        "Wood",
-        "Ironwood",
-        "Stone",
-        "Hartwood"
-      ]
+      "resources": ["Coal", "Cold Iron", "Wood", "Ironwood", "Stone", "Hartwood"]
     },
     {
       "xy": [124.6074, -21.1323],
@@ -24272,15 +23444,7 @@
     {
       "xy": [-32.2529, 30.88],
       "id": 4689,
-      "resources": [
-        "Wood",
-        "Twilight Quartz",
-        "Coal",
-        "Silver",
-        "Stone",
-        "Copper",
-        "Obsidian"
-      ]
+      "resources": ["Wood", "Twilight Quartz", "Coal", "Silver", "Stone", "Copper", "Obsidian"]
     },
     {
       "xy": [-54.2385, 20.3758],
@@ -25075,15 +24239,7 @@
     {
       "xy": [3.4471, 9.68],
       "id": 4848,
-      "resources": [
-        "True Ice",
-        "Stone",
-        "Ruby",
-        "Ironwood",
-        "Hartwood",
-        "Obsidian",
-        "Copper"
-      ]
+      "resources": ["True Ice", "Stone", "Ruby", "Ironwood", "Hartwood", "Obsidian", "Copper"]
     },
     {
       "xy": [113.5471, 41.48],
@@ -25373,14 +24529,7 @@
     {
       "xy": [-14.5529, 24.78],
       "id": 4906,
-      "resources": [
-        "Stone",
-        "Coal",
-        "Wood",
-        "Cold Iron",
-        "Obsidian",
-        "Hartwood"
-      ]
+      "resources": ["Stone", "Coal", "Wood", "Cold Iron", "Obsidian", "Hartwood"]
     },
     {
       "xy": [-12.2529, 23.38],
@@ -26340,14 +25489,7 @@
     {
       "xy": [-117.78, -32.2997],
       "id": 5098,
-      "resources": [
-        "Obsidian",
-        "Wood",
-        "Cold Iron",
-        "Stone",
-        "Copper",
-        "Ironwood"
-      ]
+      "resources": ["Obsidian", "Wood", "Cold Iron", "Stone", "Copper", "Ironwood"]
     },
     {
       "xy": [6.4471, 30.88],
@@ -26467,14 +25609,7 @@
     {
       "xy": [57.6471, 18.48],
       "id": 5122,
-      "resources": [
-        "Stone",
-        "Wood",
-        "Ethereal Silica",
-        "Deep Crystal",
-        "Gold",
-        "Coal"
-      ]
+      "resources": ["Stone", "Wood", "Ethereal Silica", "Deep Crystal", "Gold", "Coal"]
     },
     {
       "xy": [67.4471, 49.48],
@@ -26999,14 +26134,7 @@
     {
       "xy": [-122.38, -31.2997],
       "id": 5227,
-      "resources": [
-        "Gold",
-        "Copper",
-        "Stone",
-        "Cold Iron",
-        "Deep Crystal",
-        "Wood"
-      ]
+      "resources": ["Gold", "Copper", "Stone", "Cold Iron", "Deep Crystal", "Wood"]
     },
     {
       "xy": [55.6471, 10.68],
@@ -27341,14 +26469,7 @@
     {
       "xy": [41.2471, 11.98],
       "id": 5294,
-      "resources": [
-        "Cold Iron",
-        "Wood",
-        "Stone",
-        "Deep Crystal",
-        "Coal",
-        "Copper"
-      ]
+      "resources": ["Cold Iron", "Wood", "Stone", "Deep Crystal", "Coal", "Copper"]
     },
     {
       "xy": [-33.5527, 49.3801],
@@ -27633,15 +26754,7 @@
     {
       "xy": [62.0471, 9.48],
       "id": 5351,
-      "resources": [
-        "Obsidian",
-        "Gold",
-        "Copper",
-        "Alchemical Silver",
-        "Ethereal Silica",
-        "Wood",
-        "Hartwood"
-      ]
+      "resources": ["Obsidian", "Gold", "Copper", "Alchemical Silver", "Ethereal Silica", "Wood", "Hartwood"]
     },
     {
       "xy": [-116.18, 13.4003],
@@ -27871,14 +26984,7 @@
     {
       "xy": [-4.6529, -19.72],
       "id": 5397,
-      "resources": [
-        "Coal",
-        "Sapphire",
-        "Obsidian",
-        "Hartwood",
-        "Wood",
-        "Ethereal Silica"
-      ]
+      "resources": ["Coal", "Sapphire", "Obsidian", "Hartwood", "Wood", "Ethereal Silica"]
     },
     {
       "xy": [100.1615, -11.2644],
@@ -28268,14 +27374,7 @@
     {
       "xy": [77.9471, 45.28],
       "id": 5475,
-      "resources": [
-        "Ignium",
-        "Deep Crystal",
-        "Wood",
-        "Stone",
-        "Copper",
-        "Obsidian"
-      ]
+      "resources": ["Ignium", "Deep Crystal", "Wood", "Stone", "Copper", "Obsidian"]
     },
     {
       "xy": [92.2471, -14.42],
@@ -28435,15 +27534,7 @@
     {
       "xy": [-34.0529, 14.08],
       "id": 5507,
-      "resources": [
-        "Wood",
-        "Silver",
-        "Cold Iron",
-        "Diamonds",
-        "Coal",
-        "Stone",
-        "Obsidian"
-      ]
+      "resources": ["Wood", "Silver", "Cold Iron", "Diamonds", "Coal", "Stone", "Obsidian"]
     },
     {
       "xy": [-122.38, 16.4003],
@@ -28588,14 +27679,7 @@
     {
       "xy": [-67.8801, 44.7004],
       "id": 5536,
-      "resources": [
-        "Wood",
-        "Cold Iron",
-        "Coal",
-        "Obsidian",
-        "Stone",
-        "Diamonds"
-      ]
+      "resources": ["Wood", "Cold Iron", "Coal", "Obsidian", "Stone", "Diamonds"]
     },
     {
       "xy": [1.1471, 45.28],
@@ -28710,15 +27794,7 @@
     {
       "xy": [-52.0529, 48.38],
       "id": 5559,
-      "resources": [
-        "Ruby",
-        "Sapphire",
-        "Obsidian",
-        "Wood",
-        "Ironwood",
-        "Silver",
-        "Hartwood"
-      ]
+      "resources": ["Ruby", "Sapphire", "Obsidian", "Wood", "Ironwood", "Silver", "Hartwood"]
     },
     {
       "xy": [-81.8801, -53.2996],
@@ -29318,14 +28394,7 @@
     {
       "xy": [7.7471, -19.12],
       "id": 5679,
-      "resources": [
-        "Ironwood",
-        "Stone",
-        "Deep Crystal",
-        "Coal",
-        "Adamantine",
-        "Obsidian"
-      ]
+      "resources": ["Ironwood", "Stone", "Deep Crystal", "Coal", "Adamantine", "Obsidian"]
     },
     {
       "xy": [25.4471, 31.78],
@@ -29445,14 +28514,7 @@
     {
       "xy": [47.5471, -30.12],
       "id": 5703,
-      "resources": [
-        "Cold Iron",
-        "Wood",
-        "Obsidian",
-        "Copper",
-        "Ironwood",
-        "Silver"
-      ]
+      "resources": ["Cold Iron", "Wood", "Obsidian", "Copper", "Ironwood", "Silver"]
     },
     {
       "xy": [-44.904, 51.3157],
@@ -29667,14 +28729,7 @@
     {
       "xy": [92.7325, -16.6749],
       "id": 5746,
-      "resources": [
-        "Copper",
-        "Ethereal Silica",
-        "Coal",
-        "Gold",
-        "Wood",
-        "Silver"
-      ]
+      "resources": ["Copper", "Ethereal Silica", "Coal", "Gold", "Wood", "Silver"]
     },
     {
       "xy": [44.5471, -36.42],
@@ -29684,13 +28739,7 @@
     {
       "xy": [59.9471, 24.18],
       "id": 5748,
-      "resources": [
-        "Stone",
-        "Wood",
-        "Obsidian",
-        "Cold Iron",
-        "Alchemical Silver"
-      ]
+      "resources": ["Stone", "Wood", "Obsidian", "Cold Iron", "Alchemical Silver"]
     },
     {
       "xy": [-102.7936, 3.4423],
@@ -29925,14 +28974,7 @@
     {
       "xy": [-82.8801, -36.2996],
       "id": 5795,
-      "resources": [
-        "Coal",
-        "Deep Crystal",
-        "Wood",
-        "Ironwood",
-        "Stone",
-        "Silver"
-      ]
+      "resources": ["Coal", "Deep Crystal", "Wood", "Ironwood", "Stone", "Silver"]
     },
     {
       "xy": [58.0471, 34.48],
@@ -30242,14 +29284,7 @@
     {
       "xy": [-61.2647, 13.3972],
       "id": 5857,
-      "resources": [
-        "Coal",
-        "Obsidian",
-        "Diamonds",
-        "Stone",
-        "Cold Iron",
-        "Wood"
-      ]
+      "resources": ["Coal", "Obsidian", "Diamonds", "Stone", "Cold Iron", "Wood"]
     },
     {
       "xy": [-85.3836, 28.3259],
@@ -30599,14 +29634,7 @@
     {
       "xy": [95.0471, 13.68],
       "id": 5927,
-      "resources": [
-        "Stone",
-        "Cold Iron",
-        "Ignium",
-        "Wood",
-        "Obsidian",
-        "Silver"
-      ]
+      "resources": ["Stone", "Cold Iron", "Ignium", "Wood", "Obsidian", "Silver"]
     },
     {
       "xy": [-59.7059, 12.7388],
@@ -30831,15 +29859,7 @@
     {
       "xy": [-69.6801, 27.1004],
       "id": 5972,
-      "resources": [
-        "Copper",
-        "Ironwood",
-        "Adamantine",
-        "Silver",
-        "Cold Iron",
-        "Coal",
-        "Wood"
-      ]
+      "resources": ["Copper", "Ironwood", "Adamantine", "Silver", "Cold Iron", "Coal", "Wood"]
     },
     {
       "xy": [-79.7418, 45.3164],
@@ -30849,14 +29869,7 @@
     {
       "xy": [13.7471, 14.18],
       "id": 5974,
-      "resources": [
-        "Wood",
-        "Stone",
-        "Coal",
-        "Cold Iron",
-        "Gold",
-        "Ethereal Silica"
-      ]
+      "resources": ["Wood", "Stone", "Coal", "Cold Iron", "Gold", "Ethereal Silica"]
     },
     {
       "xy": [-48.7974, 55.327],
@@ -30971,15 +29984,7 @@
     {
       "xy": [57.8471, 22.78],
       "id": 5997,
-      "resources": [
-        "Ignium",
-        "Stone",
-        "Copper",
-        "Hartwood",
-        "Obsidian",
-        "Wood",
-        "Coal"
-      ]
+      "resources": ["Ignium", "Stone", "Copper", "Hartwood", "Obsidian", "Wood", "Coal"]
     },
     {
       "xy": [-99.4643, 41.1807],
@@ -31459,14 +30464,7 @@
     {
       "xy": [-37.4824, -10.8421],
       "id": 6093,
-      "resources": [
-        "Wood",
-        "Copper",
-        "True Ice",
-        "Stone",
-        "Obsidian",
-        "Hartwood"
-      ]
+      "resources": ["Wood", "Copper", "True Ice", "Stone", "Obsidian", "Hartwood"]
     },
     {
       "xy": [117.5471, 37.98],
@@ -31521,14 +30519,7 @@
     {
       "xy": [19.8471, -29.42],
       "id": 6104,
-      "resources": [
-        "Obsidian",
-        "Coal",
-        "Wood",
-        "Hartwood",
-        "Silver",
-        "Ironwood"
-      ]
+      "resources": ["Obsidian", "Coal", "Wood", "Hartwood", "Silver", "Ironwood"]
     },
     {
       "xy": [-92.7432, 32.7387],
@@ -31598,14 +30589,7 @@
     {
       "xy": [-104.8801, 5.7004],
       "id": 6118,
-      "resources": [
-        "Silver",
-        "Coal",
-        "Wood",
-        "Sapphire",
-        "Alchemical Silver",
-        "Stone"
-      ]
+      "resources": ["Silver", "Coal", "Wood", "Sapphire", "Alchemical Silver", "Stone"]
     },
     {
       "xy": [-94.2246, -55.1812],
@@ -31645,13 +30629,7 @@
     {
       "xy": [-107.98, 34.5003],
       "id": 6126,
-      "resources": [
-        "Twilight Quartz",
-        "Coal",
-        "Stone",
-        "Ethereal Silica",
-        "Obsidian"
-      ]
+      "resources": ["Twilight Quartz", "Coal", "Stone", "Ethereal Silica", "Obsidian"]
     },
     {
       "xy": [-5.9529, -34.92],
@@ -31666,14 +30644,7 @@
     {
       "xy": [-83.7801, 46.1004],
       "id": 6129,
-      "resources": [
-        "Obsidian",
-        "Stone",
-        "Ignium",
-        "Wood",
-        "Copper",
-        "Cold Iron"
-      ]
+      "resources": ["Obsidian", "Stone", "Ignium", "Wood", "Copper", "Cold Iron"]
     },
     {
       "xy": [-108.9801, 14.1004],
@@ -31818,14 +30789,7 @@
     {
       "xy": [89.1471, 12.68],
       "id": 6158,
-      "resources": [
-        "Copper",
-        "Diamonds",
-        "Obsidian",
-        "Sapphire",
-        "Cold Iron",
-        "Stone"
-      ]
+      "resources": ["Copper", "Diamonds", "Obsidian", "Sapphire", "Cold Iron", "Stone"]
     },
     {
       "xy": [5.2471, -35.62],
@@ -32050,14 +31014,7 @@
     {
       "xy": [53.6471, -50.62],
       "id": 6203,
-      "resources": [
-        "Wood",
-        "Cold Iron",
-        "Stone",
-        "Coal",
-        "Twilight Quartz",
-        "Copper"
-      ]
+      "resources": ["Wood", "Cold Iron", "Stone", "Coal", "Twilight Quartz", "Copper"]
     },
     {
       "xy": [75.3471, -13.72],
@@ -32327,14 +31284,7 @@
     {
       "xy": [75.7471, 10.28],
       "id": 6257,
-      "resources": [
-        "Hartwood",
-        "Wood",
-        "Coal",
-        "Obsidian",
-        "Silver",
-        "Ironwood"
-      ]
+      "resources": ["Hartwood", "Wood", "Coal", "Obsidian", "Silver", "Ironwood"]
     },
     {
       "xy": [47.9471, 5.58],
@@ -32349,14 +31299,7 @@
     {
       "xy": [-118.88, 2.1003],
       "id": 6260,
-      "resources": [
-        "Wood",
-        "Coal",
-        "Copper",
-        "Alchemical Silver",
-        "Obsidian",
-        "Ironwood"
-      ]
+      "resources": ["Wood", "Coal", "Copper", "Alchemical Silver", "Obsidian", "Ironwood"]
     },
     {
       "xy": [-30.1527, 45.0801],
@@ -32431,14 +31374,7 @@
     {
       "xy": [-2.6529, -4.12],
       "id": 6275,
-      "resources": [
-        "Wood",
-        "Obsidian",
-        "Ethereal Silica",
-        "Cold Iron",
-        "Hartwood",
-        "Gold"
-      ]
+      "resources": ["Wood", "Obsidian", "Ethereal Silica", "Cold Iron", "Hartwood", "Gold"]
     },
     {
       "xy": [-101.6801, 4.4004],
@@ -32628,14 +31564,7 @@
     {
       "xy": [76.7471, 25.58],
       "id": 6313,
-      "resources": [
-        "Ironwood",
-        "Deep Crystal",
-        "Wood",
-        "Obsidian",
-        "Coal",
-        "Silver"
-      ]
+      "resources": ["Ironwood", "Deep Crystal", "Wood", "Obsidian", "Coal", "Silver"]
     },
     {
       "xy": [-15.8529, -40.42],
@@ -32690,15 +31619,7 @@
     {
       "xy": [-108.1801, 47.1004],
       "id": 6324,
-      "resources": [
-        "Coal",
-        "Gold",
-        "Cold Iron",
-        "Stone",
-        "Silver",
-        "Copper",
-        "Wood"
-      ]
+      "resources": ["Coal", "Gold", "Cold Iron", "Stone", "Silver", "Copper", "Wood"]
     },
     {
       "xy": [-118.68, 12.8003],
@@ -32763,13 +31684,7 @@
     {
       "xy": [63.1471, 33.28],
       "id": 6337,
-      "resources": [
-        "Copper",
-        "Obsidian",
-        "Deep Crystal",
-        "Gold",
-        "Twilight Quartz"
-      ]
+      "resources": ["Copper", "Obsidian", "Deep Crystal", "Gold", "Twilight Quartz"]
     },
     {
       "xy": [-98.3801, 21.1004],
@@ -32824,14 +31739,7 @@
     {
       "xy": [-83.6383, 27.4385],
       "id": 6348,
-      "resources": [
-        "Ethereal Silica",
-        "Coal",
-        "Stone",
-        "Ironwood",
-        "Cold Iron",
-        "Wood"
-      ]
+      "resources": ["Ethereal Silica", "Coal", "Stone", "Ironwood", "Cold Iron", "Wood"]
     },
     {
       "xy": [18.2471, 21.08],
@@ -32891,14 +31799,7 @@
     {
       "xy": [-122.88, 15.9003],
       "id": 6360,
-      "resources": [
-        "Wood",
-        "Stone",
-        "Hartwood",
-        "Twilight Quartz",
-        "Silver",
-        "Obsidian"
-      ]
+      "resources": ["Wood", "Stone", "Hartwood", "Twilight Quartz", "Silver", "Obsidian"]
     },
     {
       "xy": [-88.4801, 24.9004],
@@ -33273,14 +32174,7 @@
     {
       "xy": [-103.6801, 5.8004],
       "id": 6435,
-      "resources": [
-        "Coal",
-        "Gold",
-        "Ethereal Silica",
-        "Stone",
-        "Wood",
-        "Copper"
-      ]
+      "resources": ["Coal", "Gold", "Ethereal Silica", "Stone", "Wood", "Copper"]
     },
     {
       "xy": [-100.2801, 3.8004],
@@ -34130,14 +33024,7 @@
     {
       "xy": [-122.88, 8.6003],
       "id": 6605,
-      "resources": [
-        "Stone",
-        "Wood",
-        "Copper",
-        "Ethereal Silica",
-        "Silver",
-        "Gold"
-      ]
+      "resources": ["Stone", "Wood", "Copper", "Ethereal Silica", "Silver", "Gold"]
     },
     {
       "xy": [30.2471, 8.78],
@@ -34257,14 +33144,7 @@
     {
       "xy": [-44.7529, 6.28],
       "id": 6629,
-      "resources": [
-        "Alchemical Silver",
-        "Cold Iron",
-        "Coal",
-        "Copper",
-        "Wood",
-        "Twilight Quartz"
-      ]
+      "resources": ["Alchemical Silver", "Cold Iron", "Coal", "Copper", "Wood", "Twilight Quartz"]
     },
     {
       "xy": [86.4471, -16.92],
@@ -34304,14 +33184,7 @@
     {
       "xy": [95.6661, -20.28],
       "id": 6637,
-      "resources": [
-        "Coal",
-        "Ironwood",
-        "Obsidian",
-        "Mithral",
-        "Diamonds",
-        "Wood"
-      ]
+      "resources": ["Coal", "Ironwood", "Obsidian", "Mithral", "Diamonds", "Wood"]
     },
     {
       "xy": [3.6471, -0.02],
@@ -34721,14 +33594,7 @@
     {
       "xy": [9.4471, 14.38],
       "id": 6719,
-      "resources": [
-        "Wood",
-        "Silver",
-        "Cold Iron",
-        "Coal",
-        "Diamonds",
-        "Obsidian"
-      ]
+      "resources": ["Wood", "Silver", "Cold Iron", "Coal", "Diamonds", "Obsidian"]
     },
     {
       "xy": [-50.48, -50.7996],
@@ -34828,14 +33694,7 @@
     {
       "xy": [16.8471, 16.08],
       "id": 6739,
-      "resources": [
-        "Wood",
-        "Gold",
-        "Silver",
-        "Deep Crystal",
-        "Cold Iron",
-        "Copper"
-      ]
+      "resources": ["Wood", "Gold", "Silver", "Deep Crystal", "Cold Iron", "Copper"]
     },
     {
       "xy": [1.2471, 23.88],
@@ -35090,13 +33949,7 @@
     {
       "xy": [-126.08, -11.4997],
       "id": 6790,
-      "resources": [
-        "Wood",
-        "Ethereal Silica",
-        "Copper",
-        "Deep Crystal",
-        "Ironwood"
-      ]
+      "resources": ["Wood", "Ethereal Silica", "Copper", "Deep Crystal", "Ironwood"]
     },
     {
       "xy": [53.5471, 11.78],
@@ -35116,14 +33969,7 @@
     {
       "xy": [7.0471, 28.98],
       "id": 6794,
-      "resources": [
-        "Twilight Quartz",
-        "Stone",
-        "Hartwood",
-        "Ironwood",
-        "Wood",
-        "Coal"
-      ]
+      "resources": ["Twilight Quartz", "Stone", "Hartwood", "Ironwood", "Wood", "Coal"]
     },
     {
       "xy": [-53.18, -51.3996],
@@ -35348,14 +34194,7 @@
     {
       "xy": [-72.5674, 35.809],
       "id": 6839,
-      "resources": [
-        "Cold Iron",
-        "Ironwood",
-        "Obsidian",
-        "Wood",
-        "Coal",
-        "Copper"
-      ]
+      "resources": ["Cold Iron", "Ironwood", "Obsidian", "Wood", "Coal", "Copper"]
     },
     {
       "xy": [-57.5801, -19.3996],
@@ -35565,13 +34404,7 @@
     {
       "xy": [76.0471, 7.88],
       "id": 6881,
-      "resources": [
-        "Alchemical Silver",
-        "Silver",
-        "Coal",
-        "Ethereal Silica",
-        "Stone"
-      ]
+      "resources": ["Alchemical Silver", "Silver", "Coal", "Ethereal Silica", "Stone"]
     },
     {
       "xy": [-64.3801, 10.5004],
@@ -35596,14 +34429,7 @@
     {
       "xy": [77.3471, 21.78],
       "id": 6886,
-      "resources": [
-        "Copper",
-        "Ethereal Silica",
-        "Wood",
-        "Stone",
-        "Coal",
-        "Silver"
-      ]
+      "resources": ["Copper", "Ethereal Silica", "Wood", "Stone", "Coal", "Silver"]
     },
     {
       "xy": [28.7471, -18.52],
@@ -35763,14 +34589,7 @@
     {
       "xy": [-87.6262, 29.9539],
       "id": 6918,
-      "resources": [
-        "Wood",
-        "Gold",
-        "Cold Iron",
-        "Stone",
-        "Deep Crystal",
-        "Coal"
-      ]
+      "resources": ["Wood", "Gold", "Cold Iron", "Stone", "Deep Crystal", "Coal"]
     },
     {
       "xy": [61.8596, -21.2575],
@@ -35900,14 +34719,7 @@
     {
       "xy": [-16.5529, -32.42],
       "id": 6944,
-      "resources": [
-        "Wood",
-        "Coal",
-        "Ironwood",
-        "Ethereal Silica",
-        "Stone",
-        "Obsidian"
-      ]
+      "resources": ["Wood", "Coal", "Ironwood", "Ethereal Silica", "Stone", "Obsidian"]
     },
     {
       "xy": [112.847, -2.92],
@@ -36562,14 +35374,7 @@
     {
       "xy": [114.6188, -24.2357],
       "id": 7075,
-      "resources": [
-        "Stone",
-        "Obsidian",
-        "Twilight Quartz",
-        "Cold Iron",
-        "Coal",
-        "Wood"
-      ]
+      "resources": ["Stone", "Obsidian", "Twilight Quartz", "Cold Iron", "Coal", "Wood"]
     },
     {
       "xy": [4.4471, 15.68],
@@ -36719,14 +35524,7 @@
     {
       "xy": [-101.9801, 42.2004],
       "id": 7105,
-      "resources": [
-        "Copper",
-        "Sapphire",
-        "Ironwood",
-        "Gold",
-        "Wood",
-        "Obsidian"
-      ]
+      "resources": ["Copper", "Sapphire", "Ironwood", "Gold", "Wood", "Obsidian"]
     },
     {
       "xy": [126.216, 8.8577],
@@ -36766,14 +35564,7 @@
     {
       "xy": [-92.5801, -33.8996],
       "id": 7113,
-      "resources": [
-        "Obsidian",
-        "Stone",
-        "Wood",
-        "Coal",
-        "Alchemical Silver",
-        "Silver"
-      ]
+      "resources": ["Obsidian", "Stone", "Wood", "Coal", "Alchemical Silver", "Silver"]
     },
     {
       "xy": [-98.6801, 20.1004],
@@ -36783,15 +35574,7 @@
     {
       "xy": [79.3471, 20.48],
       "id": 7115,
-      "resources": [
-        "Copper",
-        "Wood",
-        "Hartwood",
-        "Cold Iron",
-        "Stone",
-        "Coal",
-        "Ironwood"
-      ]
+      "resources": ["Copper", "Wood", "Hartwood", "Cold Iron", "Stone", "Coal", "Ironwood"]
     },
     {
       "xy": [-68.2711, 42.5738],
@@ -36851,14 +35634,7 @@
     {
       "xy": [112.7471, 34.78],
       "id": 7127,
-      "resources": [
-        "Wood",
-        "Silver",
-        "Stone",
-        "Obsidian",
-        "Ethereal Silica",
-        "Coal"
-      ]
+      "resources": ["Wood", "Silver", "Stone", "Obsidian", "Ethereal Silica", "Coal"]
     },
     {
       "xy": [-87.38, -27.5997],
@@ -36928,15 +35704,7 @@
     {
       "xy": [-53.3039, -31.7323],
       "id": 7141,
-      "resources": [
-        "Hartwood",
-        "Wood",
-        "Ironwood",
-        "Coal",
-        "True Ice",
-        "Sapphire",
-        "Copper"
-      ]
+      "resources": ["Hartwood", "Wood", "Ironwood", "Coal", "True Ice", "Sapphire", "Copper"]
     },
     {
       "xy": [-96.4801, 27.8004],
@@ -37396,14 +36164,7 @@
     {
       "xy": [-110.6148, -35.1446],
       "id": 7233,
-      "resources": [
-        "Obsidian",
-        "Coal",
-        "Copper",
-        "Gold",
-        "Hartwood",
-        "Cold Iron"
-      ]
+      "resources": ["Obsidian", "Coal", "Copper", "Gold", "Hartwood", "Cold Iron"]
     },
     {
       "xy": [52.7471, -27.02],
@@ -37998,13 +36759,7 @@
     {
       "xy": [-63.88, -41.6996],
       "id": 7352,
-      "resources": [
-        "Stone",
-        "Ethereal Silica",
-        "Ironwood",
-        "Twilight Quartz",
-        "Copper"
-      ]
+      "resources": ["Stone", "Ethereal Silica", "Ironwood", "Twilight Quartz", "Copper"]
     },
     {
       "xy": [-14.3529, 9.98],
@@ -38204,15 +36959,7 @@
     {
       "xy": [-101.6801, 42.0004],
       "id": 7392,
-      "resources": [
-        "Wood",
-        "Stone",
-        "Silver",
-        "Obsidian",
-        "Twilight Quartz",
-        "Coal",
-        "Gold"
-      ]
+      "resources": ["Wood", "Stone", "Silver", "Obsidian", "Twilight Quartz", "Coal", "Gold"]
     },
     {
       "xy": [-85.4801, -36.2996],
@@ -38267,14 +37014,7 @@
     {
       "xy": [84.8981, -22.0294],
       "id": 7403,
-      "resources": [
-        "Copper",
-        "Diamonds",
-        "Wood",
-        "Cold Iron",
-        "Coal",
-        "Obsidian"
-      ]
+      "resources": ["Copper", "Diamonds", "Wood", "Cold Iron", "Coal", "Obsidian"]
     },
     {
       "xy": [10.7471, 45.48],
@@ -38354,14 +37094,7 @@
     {
       "xy": [-51.0529, 54.48],
       "id": 7419,
-      "resources": [
-        "Ironwood",
-        "Alchemical Silver",
-        "Wood",
-        "Copper",
-        "Silver",
-        "Obsidian"
-      ]
+      "resources": ["Ironwood", "Alchemical Silver", "Wood", "Copper", "Silver", "Obsidian"]
     },
     {
       "xy": [-45.0442, 51.394],
@@ -38846,14 +37579,7 @@
     {
       "xy": [-59.78, -46.9996],
       "id": 7516,
-      "resources": [
-        "Obsidian",
-        "Coal",
-        "True Ice",
-        "Wood",
-        "Alchemical Silver",
-        "Ironwood"
-      ]
+      "resources": ["Obsidian", "Coal", "True Ice", "Wood", "Alchemical Silver", "Ironwood"]
     },
     {
       "xy": [87.8471, 5.38],
@@ -38873,14 +37599,7 @@
     {
       "xy": [65.6471, -15.72],
       "id": 7520,
-      "resources": [
-        "Coal",
-        "Obsidian",
-        "Cold Iron",
-        "Hartwood",
-        "Wood",
-        "Silver"
-      ]
+      "resources": ["Coal", "Obsidian", "Cold Iron", "Hartwood", "Wood", "Silver"]
     },
     {
       "xy": [-34.1529, 11.58],
@@ -38890,14 +37609,7 @@
     {
       "xy": [78.9471, 53.58],
       "id": 7522,
-      "resources": [
-        "Silver",
-        "Coal",
-        "Obsidian",
-        "Ironwood",
-        "Wood",
-        "Cold Iron"
-      ]
+      "resources": ["Silver", "Coal", "Obsidian", "Ironwood", "Wood", "Cold Iron"]
     },
     {
       "xy": [82.9471, -19.72],
@@ -38942,14 +37654,7 @@
     {
       "xy": [-106.6801, 17.4004],
       "id": 7531,
-      "resources": [
-        "Silver",
-        "Stone",
-        "Coal",
-        "True Ice",
-        "Wood",
-        "Ethereal Silica"
-      ]
+      "resources": ["Silver", "Stone", "Coal", "True Ice", "Wood", "Ethereal Silica"]
     },
     {
       "xy": [-37.2529, 5.98],
@@ -39314,14 +38019,7 @@
     {
       "xy": [-126.18, 3.9003],
       "id": 7604,
-      "resources": [
-        "Ironwood",
-        "Alchemical Silver",
-        "Wood",
-        "Obsidian",
-        "Cold Iron",
-        "Stone"
-      ]
+      "resources": ["Ironwood", "Alchemical Silver", "Wood", "Obsidian", "Cold Iron", "Stone"]
     },
     {
       "xy": [-62.2529, 50.18],
@@ -39631,15 +38329,7 @@
     {
       "xy": [73.4034, -25.9013],
       "id": 7666,
-      "resources": [
-        "Ruby",
-        "Stone",
-        "Wood",
-        "Twilight Quartz",
-        "Obsidian",
-        "Silver",
-        "Ironwood"
-      ]
+      "resources": ["Ruby", "Stone", "Wood", "Twilight Quartz", "Obsidian", "Silver", "Ironwood"]
     },
     {
       "xy": [-59.4529, 44.98],
@@ -39799,27 +38489,12 @@
     {
       "xy": [66.0471, 20.98],
       "id": 7698,
-      "resources": [
-        "Copper",
-        "Gold",
-        "Ignium",
-        "Stone",
-        "Diamonds",
-        "Coal",
-        "Obsidian"
-      ]
+      "resources": ["Copper", "Gold", "Ignium", "Stone", "Diamonds", "Coal", "Obsidian"]
     },
     {
       "xy": [-6.9529, 26.98],
       "id": 7699,
-      "resources": [
-        "Ironwood",
-        "Obsidian",
-        "Wood",
-        "Cold Iron",
-        "Stone",
-        "Copper"
-      ]
+      "resources": ["Ironwood", "Obsidian", "Wood", "Cold Iron", "Stone", "Copper"]
     },
     {
       "xy": [117.3412, 5.2785],
@@ -39994,15 +38669,7 @@
     {
       "xy": [34.0471, -15.12],
       "id": 7734,
-      "resources": [
-        "Obsidian",
-        "Coal",
-        "Ironwood",
-        "Stone",
-        "Silver",
-        "Wood",
-        "Hartwood"
-      ]
+      "resources": ["Obsidian", "Coal", "Ironwood", "Stone", "Silver", "Wood", "Hartwood"]
     },
     {
       "xy": [8.9471, -35.12],
@@ -40077,14 +38744,7 @@
     {
       "xy": [-73.88, -54.4996],
       "id": 7749,
-      "resources": [
-        "Silver",
-        "Obsidian",
-        "Coal",
-        "Stone",
-        "Wood",
-        "Twilight Quartz"
-      ]
+      "resources": ["Silver", "Obsidian", "Coal", "Stone", "Wood", "Twilight Quartz"]
     },
     {
       "xy": [112.5471, 30.68],
@@ -40229,14 +38889,7 @@
     {
       "xy": [56.4471, 37.68],
       "id": 7778,
-      "resources": [
-        "Stone",
-        "Wood",
-        "Cold Iron",
-        "Coal",
-        "Gold",
-        "Ethereal Silica"
-      ]
+      "resources": ["Stone", "Wood", "Cold Iron", "Coal", "Gold", "Ethereal Silica"]
     },
     {
       "xy": [-18.5529, 13.58],
@@ -40641,14 +39294,7 @@
     {
       "xy": [-45.0529, 11.28],
       "id": 7859,
-      "resources": [
-        "Stone",
-        "Silver",
-        "Coal",
-        "Wood",
-        "Deep Crystal",
-        "True Ice"
-      ]
+      "resources": ["Stone", "Silver", "Coal", "Wood", "Deep Crystal", "True Ice"]
     },
     {
       "xy": [-117.78, 11.7003],
@@ -40823,14 +39469,7 @@
     {
       "xy": [-103.7786, -4.2765],
       "id": 7894,
-      "resources": [
-        "Obsidian",
-        "Ethereal Silica",
-        "Wood",
-        "Silver",
-        "Stone",
-        "True Ice"
-      ]
+      "resources": ["Obsidian", "Ethereal Silica", "Wood", "Silver", "Stone", "True Ice"]
     },
     {
       "xy": [43.5471, -35.42],
@@ -40945,15 +39584,7 @@
     {
       "xy": [121.4471, 21.08],
       "id": 7917,
-      "resources": [
-        "Ignium",
-        "Stone",
-        "Cold Iron",
-        "Ironwood",
-        "Gold",
-        "Coal",
-        "Wood"
-      ]
+      "resources": ["Ignium", "Stone", "Cold Iron", "Ironwood", "Gold", "Coal", "Wood"]
     },
     {
       "xy": [32.4471, -35.82],
@@ -41198,15 +39829,7 @@
     {
       "xy": [121.6471, 25.68],
       "id": 7966,
-      "resources": [
-        "Wood",
-        "Sapphire",
-        "Stone",
-        "Silver",
-        "Gold",
-        "Coal",
-        "Obsidian"
-      ]
+      "resources": ["Wood", "Sapphire", "Stone", "Silver", "Gold", "Coal", "Obsidian"]
     },
     {
       "xy": [-89.9801, -33.2996],

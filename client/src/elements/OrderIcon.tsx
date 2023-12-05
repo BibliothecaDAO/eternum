@@ -79,9 +79,7 @@ export const OrderIcon = ({ withTooltip = true, ...props }: Props) => {
 
   return (
     <div className={clsx("relative group", props.containerClassName)}>
-      <div className={clsx(STYLES.size[props.size], props.className)}>
-        {getIcon(order, color)}
-      </div>
+      <div className={clsx(STYLES.size[props.size], props.className)}>{getIcon(order, color)}</div>
       {withTooltip && (
         <div className="absolute flex -top-2 flex-col items-center -translate-y-full hidden left-1/2 -translate-x-1/2 bg-black rounded-lg w-max group-hover:flex">
           <span className="relative z-10 p-2 text-xs leading-none text-white whitespace-no-wrap rounded shadow-lg bg-gray-1000">

@@ -33,9 +33,7 @@ const useScreenOrientation = () => {
     );
   };
 
-  const requestFullScreenLandscape = (
-    element: DocumentElementWithFullscreen,
-  ) => {
+  const requestFullScreenLandscape = (element: DocumentElementWithFullscreen) => {
     // (A1) GO INTO FULL SCREEN FIRST
     if (element.requestFullscreen) {
       element.requestFullscreen();

@@ -22,22 +22,6 @@ const STYLES = {
   success: "bg-order-brilliance",
   primary: "bg-gold",
 };
-export const Badge = ({
-  children,
-  size,
-  className,
-  type = "primary",
-  bordered,
-}: BadgeProps) => (
-  <div
-    className={clsx(
-      STYLES.base,
-      sizes[size],
-      bordered && STYLES.bordered,
-      STYLES[type],
-      className,
-    )}
-  >
-    {children}
-  </div>
+export const Badge = ({ children, size, className, type = "primary", bordered }: BadgeProps) => (
+  <div className={clsx(STYLES.base, sizes[size], bordered && STYLES.bordered, STYLES[type], className)}>{children}</div>
 );

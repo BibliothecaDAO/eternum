@@ -11,11 +11,11 @@ export const getOrderIdsFromTrade = (
         counterpartyOrderId: trade.taker_order_id,
       }
     : trade.taker_id === realmEntityId
-    ? {
-        realmOrderId: trade.taker_order_id,
-        counterpartyOrderId: trade.maker_order_id,
-      }
-    : undefined;
+      ? {
+          realmOrderId: trade.taker_order_id,
+          counterpartyOrderId: trade.maker_order_id,
+        }
+      : undefined;
 };
 
 export const getTotalResourceWeight = (resources: (ResourceInterface | undefined)[]) => {

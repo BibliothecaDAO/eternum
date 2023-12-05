@@ -58,8 +58,8 @@ export const HyperstructuresListItem = ({
             {hyperstructure?.completed
               ? "Completed"
               : hyperstructure?.initialized
-              ? `Building in progress ${hyperstructure?.progress.toFixed(2)}%`
-              : "Not initialized"}
+                ? `Building in progress ${hyperstructure?.progress.toFixed(2)}%`
+                : "Not initialized"}
           </div>
 
           {onFeed && (

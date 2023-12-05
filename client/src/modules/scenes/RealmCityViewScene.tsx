@@ -1,9 +1,9 @@
-import { Model } from '../../components/cityview/CityView'
+import { Model } from "../../components/cityview/CityView";
 
 export const RealmCityViewScene = () => {
-    return (
-        <>
-            <Model />
-        </>
-    )
-}
+  return (
+    <>
+      <Model />
+    </>
+  );
+};

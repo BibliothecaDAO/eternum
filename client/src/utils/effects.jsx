@@ -1,10 +1,10 @@
-import { Effect } from 'postprocessing'
+import { Effect } from "postprocessing";
 import { wrapEffect } from "./utils.jsx";
 class SobelEffect extends Effect {
-    constructor() {
-        super(
-            'SobelEffect',
-        /* glsl */ `
+  constructor() {
+    super(
+      "SobelEffect",
+      /* glsl */ `
                   void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
                       vec2 texel = vec2( 1.0 / resolution.x, 1.0 / resolution.y );
   
@@ -58,8 +58,8 @@ class SobelEffect extends Effect {
                     }
                   }
               `,
-        )
-    }
+    );
+  }
 }
 
-export const Sobel = wrapEffect(SobelEffect)
+export const Sobel = wrapEffect(SobelEffect);

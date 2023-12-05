@@ -251,10 +251,10 @@ export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: Si
             {!isWorldLive
               ? "No World"
               : worldLoading
-              ? "World Loading"
-              : isWalletSelected
-              ? "Start playing"
-              : "No wallet selected"}
+                ? "World Loading"
+                : isWalletSelected
+                  ? "Start playing"
+                  : "No wallet selected"}
           </Button>
           {/* Progress text */}
           {worldLoading && (

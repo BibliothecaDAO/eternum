@@ -429,8 +429,8 @@ const BuildHyperstructurePanel = ({
               {hyperstructureData?.completed
                 ? "Completed"
                 : hyperstructureData?.initialized
-                ? `Building in progress ${hyperstructureData?.progress.toFixed(2)}%`
-                : "Not initialized"}
+                  ? `Building in progress ${hyperstructureData?.progress.toFixed(2)}%`
+                  : "Not initialized"}
             </span>
           </div>
         </div>

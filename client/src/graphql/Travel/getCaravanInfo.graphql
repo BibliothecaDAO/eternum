@@ -1,8 +1,4 @@
-query getCaravanInfo(
-  $caravanId: String!
-  $orderId: String!
-  $counterpartyOrderId: String!
-) {
+query getCaravanInfo($caravanId: String!, $orderId: String!, $counterpartyOrderId: String!) {
   caravan: entities(keys: [$caravanId], first: 100) {
     edges {
       node {
