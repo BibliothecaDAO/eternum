@@ -1,10 +1,10 @@
-import { EntityIndex, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Entity, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { Resource } from "../../types";
 import { ResourceInterface } from "../graphql/useGraphQLQueries";
 import { useEffect, useMemo, useState } from "react";
 import useRealmStore from "../store/useRealmStore";
-import { getEntityIdFromKeys } from "../../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { HIGH_ENTITY_ID } from "../../dojo/createOptimisticSystemCalls";
 import { calculateRatio } from "../../components/cityview/realm/trade/Market/MarketOffer";
 import { HasOrders, QueryFragment, useTradeQuery } from "./useTradeQueries";
@@ -54,7 +54,7 @@ export function useTrade() {
   } = useDojo();
 
   const getChestResources = (resourcesChestId: number): Resource[] => {
-    const resourcesChest = getComponentValue(ResourceChest, resourcesChestId as EntityIndex);
+    const resourcesChest = getComponentValue(ResourceChest, resourcesChestId.toString() as Entity);
     if (!resourcesChest) return [];
     let resources: Resource[] = [];
     let { resources_count } = resourcesChest;
@@ -113,7 +113,7 @@ export function useTrade() {
 
     const tradeId = Array.from(new Set([...makerTradeIds, ...takerTradeIds]))[0];
 
-    return tradeId;
+    return parseInt(tradeId);
   };
 
   const canAcceptOffer = ({
@@ -193,18 +193,18 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
   const { calculateDistance } = useCaravan();
 
   useMemo((): any => {
-    const optimisticTradeId = entityIds.indexOf(HIGH_ENTITY_ID as EntityIndex);
+    const optimisticTradeId = entityIds.indexOf(HIGH_ENTITY_ID.toString() as Entity);
     const trades = entityIds
       // avoid having optimistic and real trade at the same time
       .slice(0, optimisticTradeId === -1 ? entityIds.length + 1 : optimisticTradeId + 1)
       .map((tradeId) => {
         let trade = getComponentValue(Trade, tradeId);
         if (trade) {
-          const { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, tradeId);
+          const { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, parseInt(tradeId));
           const hasRoad = getHasRoad(realmEntityId, trade.taker_id);
           const distance = calculateDistance(trade.taker_id, realmEntityId);
           return {
-            tradeId,
+            tradeId: trade.trade_id,
             makerId: trade.maker_id,
             takerId: trade.taker_id,
             makerOrder: getRealm(trade.maker_id).order,
@@ -291,11 +291,11 @@ export function useGetMarket({
         let trade = getComponentValue(Trade, tradeId);
         if (trade) {
           const isMine = trade.maker_id === realmEntityId;
-          const { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, tradeId);
+          const { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, parseInt(tradeId));
           const distance = calculateDistance(trade.maker_id, realmEntityId);
           const hasRoad = getHasRoad(realmEntityId, trade.maker_id);
           return {
-            tradeId,
+            tradeId: trade.trade_id,
             makerId: trade.maker_id,
             takerId: trade.taker_id,
             makerOrder: getRealm(trade.maker_id).order,

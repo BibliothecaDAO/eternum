@@ -1,6 +1,7 @@
 import Button from "../../../../elements/Button";
 import { ResourcesIds, findResourceById, LABOR_CONFIG } from "@bibliothecadao/eternum";
-import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "../../../../utils/utils.jsx";
+import { currencyFormat, divideByPrecision } from "../../../../utils/utils.jsx";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { ReactComponent as Clock } from "../../../../assets/icons/common/clock.svg";
 import { ReactComponent as Village } from "../../../../assets/icons/common/village.svg";
 import ProgressBar from "../../../../elements/ProgressBar";
@@ -161,7 +162,7 @@ export const LaborComponent = ({
                     {isFood ? `Build` : `Add Production`}
                   </Button>
                 )}
-                {buildLoadingStates[resourceId] && (
+                {/* {buildLoadingStates[resourceId] && (
                   <Button
                     isLoading={true}
                     onClick={() => {}}
@@ -170,7 +171,7 @@ export const LaborComponent = ({
                   >
                     {}
                   </Button>
-                )}
+                )} */}
               </div>
             </div>
             <ProgressBar

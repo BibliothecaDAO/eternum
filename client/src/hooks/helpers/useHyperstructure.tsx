@@ -1,8 +1,9 @@
-import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Has, HasValue, getComponentValue, runQuery, Entity } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { Position, UIPosition } from "../../types";
 import hyperstructureData from "../../data/hyperstructures.json";
-import { getContractPositionFromRealPosition, getEntityIdFromKeys } from "../../utils/utils";
+import { getContractPositionFromRealPosition } from "../../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 export interface HyperStructureInterface {
   hyperstructureId: number;
@@ -62,7 +63,7 @@ export const useHyperstructure = () => {
         let progress = (totCurrentAmount / totCompleteAmount) * 100;
 
         return {
-          hyperstructureId,
+          hyperstructureId: parseInt(hyperstructureId),
           orderId,
           progress,
           hyperstructureResources,
@@ -81,7 +82,7 @@ export const useHyperstructure = () => {
     }
   };
 
-  const getHyperstructureIds = (): number[] => {
+  const getHyperstructureIds = (): Entity[] => {
     return Array.from(runQuery([Has(HyperStructure), Has(Position)]));
   };
 

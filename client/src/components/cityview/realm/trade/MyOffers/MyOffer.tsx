@@ -127,7 +127,7 @@ export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
             className="ml-auto p-2 !h-4 text-xxs !rounded-md"
           >{`Cancel`}</Button>
         )}
-        {isLoading && (
+        {/* {isLoading && (
           <Button
             isLoading={true}
             onClick={() => {}}
@@ -136,7 +136,7 @@ export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
           >
             {}
           </Button>
-        )}
+        )} */}
       </div>
     </div>
   );

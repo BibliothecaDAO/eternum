@@ -1,8 +1,9 @@
 import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { useDojo } from "../../DojoContext";
-import { getEntityIdFromKeys, getPosition } from "../../utils/utils";
+import { getPosition } from "../../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useEffect, useMemo, useState } from "react";
-import { EntityIndex, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Entity, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import useRealmStore from "../store/useRealmStore";
 import { getRealm, getRealmIdByPosition, getRealmNameById } from "../../utils/realms";
 
@@ -78,7 +79,7 @@ export function useGetRoads(entityId: number) {
 
   const entityIds2 = useEntityQuery([HasValue(Road, { end_coord_x: position?.x || 0, end_coord_y: position?.y || 0 })]);
 
-  const entityIds: EntityIndex[] = useMemo(() => {
+  const entityIds: Entity[] = useMemo(() => {
     return [...entityIds1, ...entityIds2];
   }, [entityIds1, entityIds2]);
 
@@ -92,7 +93,7 @@ export function useGetRoads(entityId: number) {
 
   useEffect(() => {
     let roads: RoadInterface[] = entityIds
-      .map((entityId: EntityIndex) => {
+      .map((entityId: Entity) => {
         let road = getComponentValue(Road, entityId);
         if (road) {
           // TODO: refactor to just do one query per realm

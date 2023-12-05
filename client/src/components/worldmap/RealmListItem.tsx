@@ -18,7 +18,7 @@ export const RealmListItem = ({ realm }: RealmListItemProps) => {
 
   const { getRealmAddressName } = useRealm();
 
-  const addressName = getRealmAddressName(realm.entity_id);
+  const addressName = getRealmAddressName(parseInt(realm.entity_id));
 
   return (
     <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold">

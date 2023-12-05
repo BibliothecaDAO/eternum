@@ -1,6 +1,6 @@
 import { uuid } from "@latticexyz/utils";
 import { ClientComponents } from "./createClientComponents";
-import { getEntityIdFromKeys } from "../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Type, getComponentValue } from "@dojoengine/recs";
 import { Resource } from "../types";
 import { LaborCostInterface } from "../hooks/helpers/useLabor";
@@ -55,8 +55,8 @@ export function createOptimisticSystemCalls({
         value: {
           maker_id: maker_id as Type.Number,
           taker_id: taker_id as Type.Number,
-          maker_resource_chest_id,
-          taker_resource_chest_id,
+          maker_resource_chest_id: parseInt(maker_resource_chest_id.toString()),
+          taker_resource_chest_id: parseInt(taker_resource_chest_id.toString()),
           maker_transport_id: maker_transport_id as Type.Number,
           expires_at,
         },
@@ -179,7 +179,7 @@ export function createOptimisticSystemCalls({
       // change trade taker_id to realm
       Trade.addOverride(overrideId, {
         entity: trade_id,
-        value: { taker_id },
+        value: { taker_id: parseInt(taker_id.toString()) },
       });
 
       // TODO: remove resources from the realm balance

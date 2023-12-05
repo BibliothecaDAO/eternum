@@ -1,13 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDojo } from "../../DojoContext";
-import { Component, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import {
-  divideByPrecision,
-  extractAndCleanKey,
-  getEntityIdFromKeys,
-  getPosition,
-  numberToHex,
-} from "../../utils/utils";
+import { Component, Has, HasValue, getComponentValue, runQuery, Entity } from "@dojoengine/recs";
+import { divideByPrecision, extractAndCleanKey, getPosition, numberToHex } from "../../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { calculateNextHarvest } from "../../components/cityview/realm/labor/laborUtils";
 import useRealmStore from "../store/useRealmStore";
@@ -47,7 +42,7 @@ type HarvestData = {
 
 type EmptyChestData = {
   destinationRealmId: number;
-  caravanId: number;
+  caravanId: Entity;
   realmEntityId: number;
   resourcesChestId: number;
 };

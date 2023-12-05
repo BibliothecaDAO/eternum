@@ -30,7 +30,7 @@ export const WorldMapScene = () => {
   const destinations = useMemo(() => {
     if (!realm) return [];
     return caravanIds.map((caravanId) => {
-      const { destination: from } = getCaravanInfo(caravanId);
+      const { destination: from } = getCaravanInfo(parseInt(caravanId));
       return {
         from: getRealmPositionFromContractPosition(from),
         to: getRealmPositionFromContractPosition(realm.position),

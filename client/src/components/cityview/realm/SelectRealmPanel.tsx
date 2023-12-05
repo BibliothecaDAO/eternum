@@ -70,7 +70,7 @@ export const SelectRealmPanel = ({
             const takerEntityId = getRealmEntityIdFromRealmId(takerRealmId);
             const distance = takerEntityId ? calculateDistance(realmEntityId, takerEntityId) ?? 0 : 0;
             return {
-              entityId,
+              entityId: parseInt(entityId.toString()),
               realmId: realm.realm_id,
               name,
               order: getOrderName(order),

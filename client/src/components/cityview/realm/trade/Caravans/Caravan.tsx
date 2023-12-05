@@ -28,7 +28,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
 
   const { getResourcesFromInventory } = useResources();
 
-  const resourcesGet = getResourcesFromInventory(caravanId);
+  const resourcesGet = getResourcesFromInventory(caravanId.toString() as any);
 
   // capacity
   let resourceWeight = useMemo(() => {

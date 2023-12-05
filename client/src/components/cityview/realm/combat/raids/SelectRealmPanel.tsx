@@ -1,6 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { getOrderName } from "@bibliothecadao/eternum";
-import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Has, getComponentValue, runQuery, Entity } from "@dojoengine/recs";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useTrade } from "../../../../../hooks/helpers/useTrade";
 import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
@@ -72,9 +72,9 @@ export const SelectRealmPanel = ({
             const { name, order, realm_id: takerRealmId } = getRealm(realm.realm_id);
             const takerEntityId = getRealmEntityIdFromRealmId(takerRealmId);
             const distance = takerEntityId ? calculateDistance(realmEntityId, takerEntityId) ?? 0 : 0;
-            const defence = takerEntityId ? getDefenceOnRealm(takerEntityId) : undefined;
+            const defence = takerEntityId ? getDefenceOnRealm(takerEntityId.toString() as Entity) : undefined;
             return {
-              entityId,
+              entityId: parseInt(entityId),
               realmId: realm.realm_id,
               name,
               order: getOrderName(order),

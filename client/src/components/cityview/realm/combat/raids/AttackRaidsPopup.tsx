@@ -3,7 +3,8 @@ import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
 import Button from "../../../../../elements/Button";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../DojoContext";
-import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
+import { divideByPrecision } from "../../../../../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { LevelIndex, useGetRealm, useRealm } from "../../../../../hooks/helpers/useRealm";
 import { calculateSuccess } from "../../../../../utils/combat";
 import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
@@ -549,7 +550,7 @@ const SelectRaidersPanel = ({
                   vertical
                   intlFormat
                   hideIfZero
-                  entity_id={attackingRaiders[0].locationRealmEntityId}
+                  entity_id={parseInt(attackingRaiders[0].locationRealmEntityId)}
                 />
               ))}
             </div>

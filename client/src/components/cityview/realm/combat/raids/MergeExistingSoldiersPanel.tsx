@@ -5,6 +5,7 @@ import { Headline } from "../../../../../elements/Headline";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import Button from "../../../../../elements/Button";
 import { useDojo } from "../../../../../DojoContext";
+import { Entity } from "@dojoengine/recs";
 import { SelectMergeRaiders } from "./SelectMergeRaiders";
 import { useResources } from "../../../../../hooks/helpers/useResources";
 
@@ -41,7 +42,7 @@ export const MergeExistingSoldiersPanel = ({ isDefence, selectedRaider, onClose 
   }, [selectedRaider]);
 
   const [totalAttack, totalDefence, totalHealth, totalQuantity] = useMemo(() => {
-    const raidersInfo = getEntitiesCombatInfo(Object.keys(selectedRaiders).map((id) => parseInt(id)));
+    const raidersInfo = getEntitiesCombatInfo(Object.keys(selectedRaiders).map((id) => id as Entity));
     let totalAttack = 0;
     let totalDefence = 0;
     let totalHealth = 0;
@@ -69,7 +70,7 @@ export const MergeExistingSoldiersPanel = ({ isDefence, selectedRaider, onClose 
     return id !== selectedRaider.entityId && inventoryResources.resources.length === 0;
   });
   const realmDefence = useMemo(() => {
-    const defence = getDefenceOnRealm(realmEntityId);
+    const defence = getDefenceOnRealm(realmEntityId.toString() as Entity);
     return defence.quantity > 0 ? defence : undefined;
   }, [realmEntityId]);
 

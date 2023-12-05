@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { divideByPrecision, numberToHex } from "../../utils/utils";
 import { getRealm } from "../../utils/realms";
 import { pollForEvents, Event } from "../../services/eventPoller";
+import { Entity } from "@dojoengine/recs";
 
 export interface LeaderboardInterface {
   realmId: number;
@@ -20,7 +21,7 @@ interface LeaderboardStore {
   setProgress: (progress: number) => void;
   leaderboard: Record<number, LeaderboardInterface>;
   addOrUpdateLeaderboardEntry: (realmId: number, resourceAmount: number, resourceId: number) => void;
-  syncData: (hyperstructureIds: number[]) => void;
+  syncData: (hyperstructureIds: Entity[]) => void;
 }
 
 const useLeaderBoardStore = create<LeaderboardStore>((set, get) => ({
@@ -59,7 +60,7 @@ const useLeaderBoardStore = create<LeaderboardStore>((set, get) => ({
     set({ loading: true });
     set({ leaderboard: {} });
 
-    const syncDataInternal = async (hyperstructureId: number) => {
+    const syncDataInternal = async (hyperstructureId: Entity) => {
       const processEvents = (event: Event) => {
         const resources_len = parseInt(event.data[1]);
         for (let i = 0; i < resources_len; i += 1) {
@@ -71,7 +72,7 @@ const useLeaderBoardStore = create<LeaderboardStore>((set, get) => ({
       };
 
       // Keccak for Transfer event
-      await pollForEvents([TRANSFER_EVENT, numberToHex(hyperstructureId), "*"], processEvents);
+      await pollForEvents([TRANSFER_EVENT, numberToHex(parseInt(hyperstructureId)), "*"], processEvents);
     };
 
     await Promise.all(hyperstructureIds.map(syncDataInternal)).finally(() => {

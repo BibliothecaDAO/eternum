@@ -1,6 +1,7 @@
 import { findResourceById } from "@bibliothecadao/eternum";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
-import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "../../../utils/utils";
+import { currencyFormat, divideByPrecision } from "../../../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../DojoContext";
 import useRealmStore from "../../../hooks/store/useRealmStore";
@@ -12,7 +13,6 @@ export const SmallResource = ({
   entity_id,
   vertical,
   intlFormat,
-  hideIfZero,
 }: {
   resourceId: number;
   entity_id?: number;

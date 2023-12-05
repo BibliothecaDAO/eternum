@@ -2,8 +2,8 @@ import { forwardRef, useMemo, useLayoutEffect } from "react";
 import { Vector2 } from "three";
 import { useThree } from "@react-three/fiber";
 import { BlendFunction } from "postprocessing";
-import { EntityIndex, setComponent, Component, Schema, Components } from "@dojoengine/recs";
-import { poseidonHashMany } from "micro-starknet";
+import { setComponent, Schema, Components } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Position } from "../types";
 import realmCoords from "../geodata/coords.json";
 
@@ -176,66 +176,6 @@ export function getAllSystemNames(manifest: any): any {
 
 export function getAllSystemNamesAsFelt(manifest: any): any {
   return manifest.systems.map((system: any) => strTofelt252Felt(system.name));
-}
-
-// DISCUSSION: MUD expects Numbers, but entities in Starknet are BigInts (from poseidon hash)
-// so I am converting them to Numbers here, but it means that there is a bigger risk of collisions
-export function getEntityIdFromKeys(keys: bigint[]): EntityIndex {
-  if (keys.length === 1) {
-    return parseInt(keys[0].toString()) as EntityIndex;
-  }
-  // calculate the poseidon hash of the keys
-  let poseidon = poseidonHashMany(keys);
-  return parseInt(poseidon.toString()) as EntityIndex;
-}
-
-export function setComponentFromEntitiesQuery(component: Component, entities: bigint[]) {
-  let index = 0;
-
-  // Retrieve the number of entityIds
-  const numEntityIds = Number(entities[index++]);
-
-  // Retrieve entityIds
-  const entityIds = entities.slice(index, index + numEntityIds);
-  index += numEntityIds;
-
-  // Retrieve the number of entities with component values
-  const numEntities = Number(entities[index++]);
-
-  for (let i = 0; i < numEntities; i++) {
-    // Retrieve the number of component values for the current entity
-    const numValues = Number(entities[index++]);
-
-    // Retrieve entity's component values
-    const valueArray = entities.slice(index, index + numValues);
-    const componentValues = Object.keys(component.schema).reduce((acc: Schema, key, index) => {
-      const value = valueArray[index];
-      acc[key] = Number(value);
-      return acc;
-    }, {});
-
-    const entityIndex = parseInt(entityIds[i].toString()) as EntityIndex;
-    setComponent(component, entityIndex, componentValues);
-
-    index += numValues;
-  }
-}
-
-export function setComponentFromEntitiesGraphqlQuery(component: Component, entities: Entity[]) {
-  entities.forEach((entity) => {
-    const keys = extractAndCleanKey(entity.keys);
-    const entityIndex = getEntityIdFromKeys(keys);
-    entity.models.forEach((comp: any) => {
-      if (comp.__typename === component.metadata?.name) {
-        const componentValues = Object.keys(component.schema).reduce((acc: Schema, key) => {
-          const value = comp[key];
-          acc[key] = key === "address" ? value : Number(value);
-          return acc;
-        }, {});
-        setComponent(component, entityIndex, componentValues);
-      }
-    });
-  });
 }
 
 export function setComponentFromEvent(components: Components, eventData: string[]) {

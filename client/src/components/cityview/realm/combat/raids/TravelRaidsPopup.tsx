@@ -4,7 +4,7 @@ import Button from "../../../../../elements/Button";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "../../../../../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import { SelectRealmPanel } from "./SelectRealmPanel";
@@ -85,7 +85,7 @@ export const TravelRaidsPopup = ({ selectedRaider, onClose }: RoadBuildPopupProp
                   {`Travel`}
                 </Button>
               )}
-              {loading && (
+              {/* {loading && (
                 <Button
                   className="!px-[6px] !py-[2px] text-xxs ml-auto"
                   onClick={() => {}}
@@ -95,7 +95,7 @@ export const TravelRaidsPopup = ({ selectedRaider, onClose }: RoadBuildPopupProp
                 >
                   {}
                 </Button>
-              )}
+              )} */}
             </div>
           </div>
         </div>

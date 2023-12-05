@@ -3,7 +3,7 @@ import { OrderIcon } from "../../elements/OrderIcon";
 import { useDojo } from "../../DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
 import { Badge } from "../../elements/Badge";
-import { getEntityIdFromKeys } from "../../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { NotificationType } from "./useNotifications";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 import Button from "../../elements/Button";

@@ -2,6 +2,7 @@ import { BurnerProvider, useBurner } from "@dojoengine/create-burner";
 import { ReactNode, createContext, useContext, useMemo } from "react";
 import { Account, RpcProvider } from "starknet";
 import { SetupResult } from "./dojo/setup";
+import { displayAddress } from "./utils/utils";
 
 interface DojoContextType extends SetupResult {
   masterAccount: Account;
@@ -13,6 +14,7 @@ interface DojoContextType extends SetupResult {
     account: Account;
     isDeploying: boolean;
     clear: () => void;
+    accountDisplay: string;
   };
 }
 
@@ -65,6 +67,7 @@ export const useDojo = () => {
   return {
     setup: contextValue,
     account: contextValue.account,
+    masterAccount: contextValue.masterAccount,
   };
 };
 
@@ -104,12 +107,14 @@ export const DojoContextProvider = ({ children, value }: DojoProviderProps) => {
         masterAccount,
         account: {
           create,
+
           list,
           get,
           select,
           clear,
           account: account as any,
           isDeploying,
+          accountDisplay: displayAddress(account.address),
         },
       }}
     >

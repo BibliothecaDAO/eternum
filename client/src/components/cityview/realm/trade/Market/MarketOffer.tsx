@@ -111,7 +111,7 @@ export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferPr
             )}
           </div>
         )}
-        {isLoading && (
+        {/* {isLoading && (
           <Button
             isLoading={true}
             onClick={() => {}}
@@ -120,7 +120,7 @@ export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferPr
           >
             {}
           </Button>
-        )}
+        )} */}
       </div>
     </div>
   );

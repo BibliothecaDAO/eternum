@@ -24,7 +24,8 @@ export const SettleRealmComponent = () => {
     setup: {
       systemCalls: { create_realm },
     },
-    account: { account, masterAccount },
+    account: { account },
+    masterAccount,
   } = useDojo();
 
   const { getNextRealmIdForOrder } = useRealm();

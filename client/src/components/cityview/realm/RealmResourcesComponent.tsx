@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
 import { ResourcesIds, findResourceById, resources } from "@bibliothecadao/eternum";
-import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "../../../utils/utils.jsx";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { currencyFormat, divideByPrecision } from "../../../utils/utils.jsx";
 import clsx from "clsx";
 import { unpackResources } from "../../../utils/packedData";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";

@@ -5,7 +5,6 @@ import { Leva } from "leva";
 import { BottomRightContainer } from "../containers/BottomRightContainer";
 import ChatModule from "../modules/ChatModule";
 import NetworkModule from "../modules/NetworkModule";
-import BottomMiddleContainer from "../containers/BottomMiddleContainer";
 import TopContainer from "../containers/TopContainer";
 import NavigationModule from "../modules/NavigationModule";
 import ContentContainer from "../containers/ContentContainer";
@@ -182,7 +181,6 @@ export const World = () => {
           </Route>
         </Switch>
       </ContentContainer>
-      <BottomMiddleContainer>{/* <WolrdMapLayersModule /> */}</BottomMiddleContainer>
       <BottomRightContainer>
         <ChatModule />
       </BottomRightContainer>

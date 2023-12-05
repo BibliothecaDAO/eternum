@@ -2,7 +2,8 @@ import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { CaravanInterface } from "../graphql/useGraphQLQueries";
 import { useMemo, useState } from "react";
-import { getEntityIdFromKeys, padAddress } from "../../utils/utils";
+import { padAddress } from "../../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useEntityQuery } from "@dojoengine/react";
 
 const FREE_TRANSPORT_ENTITY_TYPE = 256;
@@ -35,7 +36,7 @@ export function useCaravan() {
     const resourceChest = resourcesChestId
       ? getComponentValue(ResourceChest, getEntityIdFromKeys([BigInt(resourcesChestId)]))
       : undefined;
-    // const resources_chest_id =
+
     const rawDestination = movable ? { x: movable.intermediate_coord_x, y: movable.intermediate_coord_y } : undefined;
     let destination = rawDestination ? { x: rawDestination.x, y: rawDestination.y } : undefined;
 
@@ -88,7 +89,7 @@ export function useCaravan() {
 
     useMemo((): any => {
       const caravans = entityIds
-        .map((id) => {
+        .map((id: any) => {
           return getCaravanInfo(id);
         })
         .filter(Boolean)

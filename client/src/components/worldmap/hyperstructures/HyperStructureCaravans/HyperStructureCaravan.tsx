@@ -6,7 +6,8 @@ import { ReactComponent as CaretDownFill } from "../../../../assets/icons/common
 import { ReactComponent as DonkeyIcon } from "../../../../assets/icons/units/donkey-circle.svg";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { getTotalResourceWeight } from "../../../cityview/realm/trade/TradeUtils";
-import { displayAddress, divideByPrecision, getEntityIdFromKeys, numberToHex } from "../../../../utils/utils";
+import { displayAddress, divideByPrecision, numberToHex } from "../../../../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { formatSecondsInHoursMinutes } from "../../../cityview/realm/labor/laborUtils";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import ProgressBar from "../../../../elements/ProgressBar";
@@ -171,7 +172,7 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
             {hasArrived ? (isInitialized ? `Transfer And Return` : `Initialize And Return`) : "On the way"}
           </Button>
         )}
-        {isLoading && isMine && (
+        {/* {isLoading && isMine && (
           <Button
             isLoading={true}
             onClick={() => {}}
@@ -180,7 +181,7 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
           >
             {}
           </Button>
-        )}
+        )} */}
       </div>
       <div className="flex mt-2">
         <div className="grid w-full grid-cols-1 gap-5">

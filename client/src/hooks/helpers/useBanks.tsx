@@ -1,7 +1,8 @@
-import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Has, HasValue, getComponentValue, runQuery, Entity } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { Position, Resource, UIPosition } from "../../types";
-import { getContractPositionFromRealPosition, getEntityIdFromKeys } from "../../utils/utils";
+import { getContractPositionFromRealPosition } from "../../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import banks from "../../data/banks.json";
 import { computeCoefficient, getLordsAmountFromBankAuction } from "../../components/worldmap/banks/utils";
 import useBlockchainStore from "../store/useBlockchainStore";
@@ -33,7 +34,7 @@ export interface BankInterface {
   name: string;
   wheatPrice: number;
   fishPrice: number;
-  bankId: number;
+  bankId: Entity;
   uiPosition: UIPosition;
   position: Position;
   wheatLaborAuction: Auction | undefined;
@@ -65,7 +66,7 @@ export const useBanks = () => {
     return coefficient ? coefficient * targetPrices[resourceId] : undefined;
   };
 
-  const getBankEntityId = (bankPosition: Position): number | undefined => {
+  const getBankEntityId = (bankPosition: Position): Entity | undefined => {
     const entityIds = runQuery([Has(Bank), HasValue(Position, bankPosition)]);
     return Array.from(entityIds).length === 1 ? Array.from(entityIds)[0] : undefined;
   };

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
-
+import { Entity } from "@dojoengine/recs";
 import clsx from "clsx";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
@@ -24,7 +24,7 @@ export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
 
   const { destination, arrivalTime } = getCaravanInfo(caravanId);
 
-  const resourcesGet = getResourcesFromInventory(caravanId);
+  const resourcesGet = getResourcesFromInventory(caravanId.toString() as Entity);
 
   const offload = async () => {
     setIsLoading(true);
@@ -94,7 +94,7 @@ export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
             {hasArrivedOriginalPosition ? `Claim` : "On the way"}
           </Button>
         )}
-        {isLoading && (
+        {/* {isLoading && (
           <Button
             isLoading={true}
             onClick={() => {}}
@@ -103,7 +103,7 @@ export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
           >
             {}
           </Button>
-        )}
+        )} */}
       </div>
     </div>
   );

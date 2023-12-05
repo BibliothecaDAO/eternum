@@ -1,7 +1,8 @@
 import clsx from "clsx";
 import { CombatResultInterface, Winner } from "../../../../../hooks/store/useCombatHistoryStore";
 import { getComponentValue } from "@dojoengine/recs";
-import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
+import { divideByPrecision } from "../../../../../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useDojo } from "../../../../../DojoContext";
 import { getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 import { OrderIcon } from "../../../../../elements/OrderIcon";

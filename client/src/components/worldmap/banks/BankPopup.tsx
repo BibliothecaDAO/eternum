@@ -6,7 +6,8 @@ import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/a
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { getRealm } from "../../../utils/realms";
 import { getComponentValue } from "@dojoengine/recs";
-import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../utils/utils";
+import { divideByPrecision, multiplyByPrecision } from "../../../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useDojo } from "../../../DojoContext";
 import { Steps } from "../../../elements/Steps";
 import { Headline } from "../../../elements/Headline";

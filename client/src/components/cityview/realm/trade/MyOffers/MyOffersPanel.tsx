@@ -74,7 +74,7 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
       )}
       <div className="flex flex-col p-2 space-y-2">
         {caravanIds.map((caravanId) => (
-          <IncomingOrder key={caravanId} caravanId={caravanId} />
+          <IncomingOrder key={caravanId} caravanId={parseInt(caravanId)} />
         ))}
         {myOffers.length > 0 &&
           sortTrades(myOffers, activeSort).map((myOffer) => (

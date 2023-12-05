@@ -1,7 +1,7 @@
 import { Components, Schema, setComponent } from "@dojoengine/recs";
 import { SetupNetworkResult } from "./setupNetwork";
 import { Event } from "starknet";
-import { getEntityIdFromKeys } from "../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import {
   SwapBankAndTravelBackProps,
   AcceptOrderProps,

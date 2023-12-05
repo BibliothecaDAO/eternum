@@ -1,7 +1,8 @@
 import { Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import useRealmStore from "../store/useRealmStore";
-import { getEntityIdFromKeys } from "../../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { Entity } from "@dojoengine/recs";
 import { useEntityQuery } from "@dojoengine/react";
 import { BigNumberish } from "starknet";
 import { Resource } from "../../types";
@@ -17,7 +18,7 @@ export function useResources() {
   } = useDojo();
 
   // for any entity that has a resourceChest in its inventory,
-  const getResourcesFromInventory = (entityId: number): { resources: Resource[]; indices: number[] } => {
+  const getResourcesFromInventory = (entityId: Entity): { resources: Resource[]; indices: number[] } => {
     let indices: number[] = [];
     let resources = {};
     let inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(entityId)]));

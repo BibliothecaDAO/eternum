@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { RealmInterface } from "../graphql/useGraphQLQueries";
-import { EntityIndex, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
-import { getEntityIdFromKeys, hexToAscii, numberToHex } from "../../utils/utils";
+import { hexToAscii, numberToHex } from "../../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { getOrderName } from "@bibliothecadao/eternum";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
 import realmsData from "../../geodata/realms.json";
@@ -22,7 +23,7 @@ export enum LevelIndex {
 }
 
 export type RealmExtended = Realm & {
-  entity_id: EntityIndex;
+  entity_id: Entity;
   name: string;
   owner?: { address: number };
   resources: number[];
@@ -46,7 +47,7 @@ export function useRealm() {
 
     // sort from biggest to lowest
     if (entityIds.size > 0) {
-      const realmEntityId = Array.from(entityIds).sort((a, b) => b - a)[0];
+      const realmEntityId = Array.from(entityIds).sort((a: any, b: any) => b - a)[0];
       const latestRealmFromOrder = getComponentValue(Realm, realmEntityId);
       if (latestRealmFromOrder) {
         latestRealmIdFromOrder = latestRealmFromOrder.realm_id;

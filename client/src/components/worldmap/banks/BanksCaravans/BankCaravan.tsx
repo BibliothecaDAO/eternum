@@ -6,13 +6,14 @@ import { ReactComponent as CaretDownFill } from "../../../../assets/icons/common
 import { ReactComponent as DonkeyIcon } from "../../../../assets/icons/units/donkey-circle.svg";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { getTotalResourceWeight } from "../../../cityview/realm/trade/TradeUtils";
-import { displayAddress, divideByPrecision, getEntityIdFromKeys, numberToHex } from "../../../../utils/utils";
+import { displayAddress, divideByPrecision, numberToHex } from "../../../../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { formatSecondsInHoursMinutes } from "../../../cityview/realm/labor/laborUtils";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import ProgressBar from "../../../../elements/ProgressBar";
 import { Dot } from "../../../../elements/Dot";
 import { CAPACITY_PER_DONKEY } from "@bibliothecadao/eternum";
-import { getComponentValue } from "@dojoengine/recs";
+import { getComponentValue, Entity } from "@dojoengine/recs";
 import { useDojo } from "../../../../DojoContext";
 import Button from "../../../../elements/Button";
 import { BANK_AUCTION_DECAY, BankInterface, targetPrices } from "../../../../hooks/helpers/useBanks";
@@ -59,7 +60,7 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
     }
   }, [caravan]);
 
-  const resourcesGive = getResourcesFromInventory(caravan.caravanId);
+  const resourcesGive = getResourcesFromInventory(caravan.caravanId.toString() as Entity);
 
   const lordsAmountFromWheat = useMemo(() => {
     return bank.wheatLaborAuction
@@ -223,7 +224,7 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
             {hasArrived ? `Swap And Return` : "On the way"}
           </Button>
         )}
-        {isLoading && isMine && (
+        {/* {isLoading && isMine && (
           <Button
             isLoading={true}
             onClick={() => {}}
@@ -232,7 +233,7 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
           >
             {}
           </Button>
-        )}
+        )} */}
       </div>
       <div className="flex mt-2">
         <div className="grid w-full grid-cols-1 gap-5">

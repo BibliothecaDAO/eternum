@@ -16,7 +16,8 @@ import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useCaravan } from "../../../../hooks/helpers/useCaravans";
-import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../../utils/utils";
+import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { getComponentValue } from "@dojoengine/recs";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 import { useTrade } from "../../../../hooks/helpers/useTrade";
@@ -458,7 +459,7 @@ export const SelectCaravanPanel = ({
       realmCaravans
         ? (realmCaravans
             .map((caravan) => {
-              const resourcesCarried = getResourcesFromInventory(caravan.caravanId);
+              const resourcesCarried = getResourcesFromInventory(caravan.caravanId.toString() as any);
               const isIdle =
                 caravan &&
                 nextBlockTimestamp &&

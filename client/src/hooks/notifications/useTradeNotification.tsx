@@ -4,7 +4,8 @@ import { ReactComponent as RatioIcon } from "../../assets/icons/common/ratio.svg
 import { useDojo } from "../../DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
 import { Badge } from "../../elements/Badge";
-import { currencyFormat, extractAndCleanKey, getEntityIdFromKeys } from "../../utils/utils";
+import { currencyFormat, extractAndCleanKey } from "../../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useTrade } from "../helpers/useTrade";
 import { ResourceIcon } from "../../elements/ResourceIcon";
 import { findResourceById } from "@bibliothecadao/eternum";

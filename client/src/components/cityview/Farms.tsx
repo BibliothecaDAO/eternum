@@ -11,7 +11,6 @@ import { GLTF } from "three-stdlib";
 import useRealmStore from "../../hooks/store/useRealmStore";
 import { useDojo } from "../../DojoContext";
 import { useComponentValue } from "@dojoengine/react";
-import { getEntityIdFromKeys } from "../../utils/utils";
 import { LABOR_CONFIG, ResourcesIds } from "@bibliothecadao/eternum";
 import useBlockchainStore from "../../hooks/store/useBlockchainStore";
 

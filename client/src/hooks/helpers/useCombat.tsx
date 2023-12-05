@@ -1,12 +1,12 @@
-import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Has, HasValue, NotValue, getComponentValue, runQuery, Entity } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { Position } from "../../types";
 import { useEntityQuery } from "@dojoengine/react";
 import useRealmStore from "../store/useRealmStore";
-import { getEntityIdFromKeys } from "../../utils/utils";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 export interface CombatInfo {
-  entityId?: number | undefined;
+  entityId?: Entity | undefined;
   health?: number | undefined;
   quantity?: number | undefined;
   attack?: number | undefined;
@@ -18,7 +18,7 @@ export interface CombatInfo {
   position?: Position | undefined;
   homePosition?: Position | undefined;
   entityOwnerId?: number | undefined;
-  locationRealmEntityId?: number | undefined;
+  locationRealmEntityId?: Entity | undefined;
   originRealmId?: number | undefined;
 }
 
@@ -59,10 +59,10 @@ export function useCombat() {
     ]);
   };
 
-  const getDefenceOnRealm = (realmEntityId: number): CombatInfo | undefined => {
+  const getDefenceOnRealm = (realmEntityId: Entity): CombatInfo | undefined => {
     const watchTower = getComponentValue(TownWatch, getEntityIdFromKeys([BigInt(realmEntityId)]));
     if (watchTower) {
-      const watchTowerInfo = getEntitiesCombatInfo([watchTower.town_watch_id]);
+      const watchTowerInfo = getEntitiesCombatInfo([watchTower.town_watch_id.toString() as Entity]);
       if (watchTowerInfo.length === 1) {
         return watchTowerInfo[0];
       }
@@ -73,7 +73,7 @@ export function useCombat() {
     const realmEntityIds = Array.from(runQuery([HasValue(Position, position), Has(Realm)]));
     const watchTower = realmEntityIds.length === 1 ? getComponentValue(TownWatch, realmEntityIds[0]) : undefined;
     if (watchTower) {
-      const watchTowerInfo = getEntitiesCombatInfo([watchTower.town_watch_id]);
+      const watchTowerInfo = getEntitiesCombatInfo([watchTower.town_watch_id.toString() as Entity]);
       if (watchTowerInfo.length === 1 && watchTowerInfo[0].health > 0) {
         return watchTowerInfo[0];
       }
@@ -109,41 +109,41 @@ export function useCombat() {
     );
   };
 
-  const getEntitiesCombatInfo = (entityIds: number[]): CombatInfo[] => {
+  const getEntitiesCombatInfo = (entityIds: Entity[]): CombatInfo[] => {
     return entityIds.map((entityId) => {
-      let entityIndex = getEntityIdFromKeys([BigInt(entityId)]);
-      const health = getComponentValue(Health, entityIndex);
-      const quantity = getComponentValue(Quantity, entityIndex);
-      const attack = getComponentValue(Attack, entityIndex);
-      const defence = getComponentValue(Defence, entityIndex);
+      let entityIndex = getEntityIdFromKeys([BigInt(entityId.toString())]);
+      const health = getComponentValue(Health, entityIndex)?.value;
+      const quantity = getComponentValue(Quantity, entityIndex)?.value || 0;
+      const attack = getComponentValue(Attack, entityIndex)?.value;
+      const defence = getComponentValue(Defence, entityIndex)?.value;
       const movable = getComponentValue(Movable, entityIndex);
-      const capacity = getComponentValue(Capacity, entityIndex);
+      const capacity = getComponentValue(Capacity, entityIndex)?.weight_gram;
       const arrivalTime = getComponentValue(ArrivalTime, entityIndex);
       const position = getComponentValue(Position, entityIndex);
-      const entityOwner = getComponentValue(EntityOwner, entityIndex);
+      const entityOwner = getComponentValue(EntityOwner, entityIndex)?.entity_owner_id;
       const locationRealmEntityIds = Array.from(runQuery([Has(Realm), HasValue(Position, position)]));
       const originRealm = entityOwner
-        ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]))
+        ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(entityOwner)]))?.realm_id
         : undefined;
       const homePosition = entityOwner
-        ? getComponentValue(Position, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]))
+        ? getComponentValue(Position, getEntityIdFromKeys([BigInt(entityOwner)]))
         : undefined;
 
       return {
-        entityId,
-        health: health?.value,
-        quantity: quantity?.value || 0,
-        attack: attack?.value,
-        defence: defence?.value,
+        entityId: entityId.toString() as Entity,
+        health,
+        quantity,
+        attack,
+        defence,
         sec_per_km: movable?.sec_per_km,
         blocked: movable?.blocked,
-        capacity: capacity?.weight_gram,
+        capacity,
         arrivalTime: arrivalTime?.arrives_at,
         position,
-        entityOwnerId: entityOwner?.entity_owner_id,
+        entityOwnerId: entityOwner,
         homePosition,
         locationRealmEntityId: locationRealmEntityIds.length === 1 ? locationRealmEntityIds[0] : undefined,
-        originRealmId: originRealm?.realm_id,
+        originRealmId: originRealm,
       };
     });
   };
