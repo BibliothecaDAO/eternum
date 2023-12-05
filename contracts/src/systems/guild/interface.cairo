@@ -4,6 +4,6 @@ trait IGuildSystems<TContractState> {
     fn create_guild(
         self: @TContractState, 
         world: IWorldDispatcher, 
-        guild_id: u128
+        guild_id: felt252
     );
 }

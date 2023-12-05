@@ -2,5 +2,5 @@
 struct Guild {
     #[key]
     entity_id: u32,
-    guild_id: u128
+    guild_id: felt252
 }
