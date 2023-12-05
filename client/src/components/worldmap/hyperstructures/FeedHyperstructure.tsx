@@ -29,6 +29,8 @@ import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/a
 import { WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { PercentageSelection } from "../../../elements/PercentageSelection";
+import { LevelingTable } from "../../cityview/realm/leveling/LevelingPopup";
+import { LevelIndex, useLevel } from "../../../hooks/helpers/useLevel";
 
 type FeedHyperstructurePopupProps = {
   onClose: () => void;
@@ -147,28 +149,15 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
   );
 };
 
-const SelectableRealm = ({ realm, selected = false, initialized = false, onClick, costs, ...props }: any) => {
+const SelectableRealm = ({ realm, selected = false, onClick, costs, ...props }: any) => {
   const costById = useMemo(() => {
     const costById: any = {};
     costs &&
-      costs.forEach((cost: any) => {
-        costById[cost.resourceId] = cost.amount;
+      costs.forEach((cost: { resourceId: number; currentAmount: number; completeAmount: number }) => {
+        costById[cost.resourceId] = cost.completeAmount - cost.currentAmount;
       });
     return costById;
   }, [costs]);
-
-  const canInitialize = useMemo(() => {
-    let canInitialize = true;
-    if (!realm || !realm.resources) {
-      return false;
-    }
-    realm.resources.forEach((resource: any) => {
-      if (resource.balance < costById[resource.id]) {
-        canInitialize = false;
-      }
-    });
-    return canInitialize;
-  }, [costById, realm.resources]);
 
   return (
     <div
@@ -187,8 +176,7 @@ const SelectableRealm = ({ realm, selected = false, initialized = false, onClick
       <div className="text-gold ml-auto absolute right-2 top-2">24h:10m away</div>
       <div className="flex items-center mt-6 w-full">
         <div className="flex">
-          {!initialized &&
-            realm.resources &&
+          {realm.resources &&
             realm.resources.map((resource: any) => {
               return (
                 <ResourceCost
@@ -196,19 +184,15 @@ const SelectableRealm = ({ realm, selected = false, initialized = false, onClick
                   withTooltip
                   key={resource.id}
                   resourceId={resource.id}
-                  amount={divideByPrecision(resource.balance)}
-                  color={resource.balance >= costById[resource.id] ? "" : "text-order-giants"}
+                  amount={divideByPrecision(Math.min(resource.balance, costById[resource.id]))}
+                  // color={resource.balance >= costById[resource.id] ? "" : "text-order-brilliance"}
+                  color={"text-order-brilliance"}
                 />
               );
             })}
         </div>
-        <Button
-          disabled={!initialized && !canInitialize}
-          onClick={onClick}
-          className="h-6 text-xxs ml-auto"
-          variant="success"
-        >
-          {initialized ? `Set the amounts` : `Initialize construction`}
+        <Button disabled={false} onClick={onClick} className="h-6 text-xxs ml-auto" variant="success">
+          {`Send Resources`}
         </Button>
       </div>
     </div>
@@ -236,19 +220,9 @@ const BuildHyperstructurePanel = ({
   const {
     account: { account },
     setup: {
-      systemCalls: { send_resources_to_location, level_up_hyperstructure },
+      systemCalls: { send_resources_to_location },
     },
   } = useDojo();
-
-  const onLevelUp = async () => {
-    setIsLoading(true);
-
-    await level_up_hyperstructure({
-      signer: account,
-      hyperstructure_id: hyperstructureData.hyperstructureId,
-    });
-    setIsLoading(false);
-  };
 
   const sendResourcesToHyperStructure = async () => {
     setIsLoading(true);
@@ -317,8 +291,6 @@ const BuildHyperstructurePanel = ({
     22: 0,
   });
 
-  const isComplete = hyperstructureData && hyperstructureData?.progress >= 100;
-
   // TODO: use same precision everywhere
   const resourceWeight = useMemo(() => {
     let _resourceWeight = 0;
@@ -384,6 +356,26 @@ const BuildHyperstructurePanel = ({
     return totalResources;
   }, [hyperstructureData, realmEntityId]);
 
+  const { getHyperstructureLevelBonus } = useLevel();
+
+  const bonusData = useMemo(() => {
+    const foodProdBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.FOOD);
+    const resourceProdBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.RESOURCE);
+    const travelSpeedBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.TRAVEL);
+    const combatBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.COMBAT);
+    return [foodProdBonus, resourceProdBonus, travelSpeedBonus, combatBonus];
+  }, [hyperstructureData]);
+
+  const [_, newIndex, newBonus] = useMemo(() => {
+    // don't update if click on level_up
+    const newLevel = (hyperstructureData?.level || 0) + 1;
+    let newIndex = newLevel % 4;
+    if (newIndex === 0) newIndex = 4;
+
+    let newBonus = getHyperstructureLevelBonus(newLevel, newIndex);
+    return [newLevel, newIndex, newBonus];
+  }, [hyperstructureData]);
+
   useEffect(() => {
     const feedResourcesGiveAmounts = {};
     Object.keys(totalResources).forEach((id) => {
@@ -403,6 +395,7 @@ const BuildHyperstructurePanel = ({
             {<OrderIcon order={orderNameDict[order]} size="xs" className="mx-1" />}
             <span className="text-white font-bold">{orders[order - 1].fullOrderName}</span>
           </div>
+          {/* <Leveling className="mt-2" entityId={hyperstructureData.hyperstructureId} /> */}
           <div className="flex flex-col text-xxs text-right">
             <span className="text-gray-gold italic">State</span>
             <span
@@ -426,7 +419,7 @@ const BuildHyperstructurePanel = ({
             <div className="relative w-full">
               <img src={`/images/buildings/hyperstructure.jpg`} className="object-cover w-full h-64 rounded-[10px]" />
               <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
-                <div className="mb-1 ml-1 italic text-light-pink text-xxs">{"Resources need to level up:"}</div>
+                <div className="mb-1 ml-1 italic text-light-pink text-xxs">{"Resources needed to level up:"}</div>
                 <div className="grid grid-cols-4 gap-1">
                   {resourcesLeftToComplete &&
                     Object.keys(resourcesLeftToComplete).map((id) => (
@@ -445,9 +438,12 @@ const BuildHyperstructurePanel = ({
               {"Feed Hyperstructure"}- Step {step}
             </Headline>
             <div className="text-xxs mb-2 italic text-gold">
-              {`To start construction of the Hyperstructure you need to send a caravan with initial cost of resources to the Hyperstructure location.`}
+              {`To level up the Hyperstructure you need to send a caravan with needed resources to the Hyperstructure location.
+               You will be able to level up once all resources are sent for this level.`}
             </div>
-
+            <div className="mx-1">
+              {<LevelingTable updateLevel={{ newBonus, index: newIndex }} data={bonusData}></LevelingTable>}
+            </div>
             <div className="text-xxs mb-2 italic text-white">{`Click the "Next" button to select a Realm from which you want to spend resources.`}</div>
           </div>
         </>
@@ -571,12 +567,12 @@ const BuildHyperstructurePanel = ({
               if (step == 3) {
                 sendResourcesToHyperStructure();
               } else {
-                isComplete ? onLevelUp() : setStep(step + 1);
+                setStep(step + 1);
               }
             }}
             variant={canGoToNextStep ? "success" : "outline"}
           >
-            {step == 3 ? "Send Caravan" : isComplete ? "Complete" : "Next Step"}
+            {step == 3 ? "Send Caravan" : hyperstructureData?.completed ? "Complete" : "Next Step"}
           </Button>
         )}
         {isLoading && (

@@ -44,22 +44,17 @@ export default function HyperstructureStarted(
   }, [hyperstructure, uninitializedMaterials]);
 
   const currentLevel = hyperstructure?.level || 0;
+  console.log({ hyperstructure, currentLevel });
 
   return (
     <group {...props} dispose={null}>
       <group name="Scene">
-        {!(currentLevel !== 0) && (
-          <Html distanceFactor={10}>
-            <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">Not Initialized</div>
-          </Html>
-        )}
-        {currentLevel !== 0 && (
-          <Html position={[0, -1.1, 0]} distanceFactor={10}>
-            <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
-              Progress: {hyperstructure?.progress.toFixed(2)}%
-            </div>
-          </Html>
-        )}
+        <Html position={[0, -1.1, 0]} distanceFactor={10}>
+          <div className="p-2 text-center text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
+            <div> Level {currentLevel}</div>
+            <div> Progress: {hyperstructure?.progress.toFixed(2)}%</div>
+          </div>
+        </Html>
         <mesh
           name="tower_initialized"
           geometry={nodes.tower_initialized.geometry}

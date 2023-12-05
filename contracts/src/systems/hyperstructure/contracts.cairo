@@ -23,6 +23,8 @@ mod hyperstructure_systems {
             let mut hyperstructure = get!(world, hyperstructure_id, HyperStructure);
             assert(hyperstructure.order != 0, 'does not exist');
 
+            // todo: burn the resources
+
             leveling::level_up(world, hyperstructure_id, HYPERSTRUCTURE_LEVELING_CONFIG_ID);
         }
 

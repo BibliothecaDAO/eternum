@@ -16,7 +16,7 @@ mod labor_systems {
     use eternum::models::config::{LevelingConfig, WorldConfig, LaborConfig, LaborCostResources, LaborCostAmount};
 
     use eternum::systems::labor::utils::{assert_harvestable_resource, get_labor_resource_type};
-    use eternum::constants::{LABOR_CONFIG_ID,WORLD_CONFIG_ID, ResourceTypes, LevelIndex};
+    use eternum::constants::{LABOR_CONFIG_ID,WORLD_CONFIG_ID, HYPERSTRUCTURE_LEVELING_START_TIER, REALM_LEVELING_START_TIER, ResourceTypes, LevelIndex};
     use eternum::utils::unpack::unpack_resource_types;
 
     use starknet::ContractAddress;
@@ -248,7 +248,7 @@ mod labor_systems {
                 let realm_leveling_config: LevelingConfig = get!(world, REALM_LEVELING_CONFIG_ID, LevelingConfig);
                 let realm_level = get!(world, (realm_id), Level);
                 
-                let realm_level_bonus = realm_level.get_index_multiplier(realm_leveling_config, level_index, 5);
+                let realm_level_bonus = realm_level.get_index_multiplier(realm_leveling_config, level_index, REALM_LEVELING_START_TIER);
 
                 /// HYPERSTRUCTURE BONUS ///
                 let hyperstructure = get!(world, (order_hyperstructure_id), HyperStructure);
@@ -256,7 +256,7 @@ mod labor_systems {
                 let hyperstructure_leveling_config: LevelingConfig = get!(world, HYPERSTRUCTURE_LEVELING_CONFIG_ID, LevelingConfig);
                 let hyperstructure_level = get!(world, (order_hyperstructure_id), Level);
                 
-                let hyperstructure_level_bonus = hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, level_index, 1);
+                let hyperstructure_level_bonus = hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, level_index, HYPERSTRUCTURE_LEVELING_START_TIER);
 
                 // update resources with multiplier
                 // and with level bonus

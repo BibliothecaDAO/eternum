@@ -487,13 +487,13 @@ export class EternumProvider extends RPCProvider {
   };
 
   public feed_hyperstructure_and_travel_back = async (props: FeedHyperstructureAndTravelBackPropos) => {
-    const { entity_id, resources, hyperstructure_id, destination_coord_x, destination_coord_y, signer } = props;
+    const { entity_id, inventoryIndex, hyperstructure_id, destination_coord_x, destination_coord_y, signer } = props;
 
     const tx = await this.executeMulti(signer, [
       {
         contractAddress: getContractByName(this.manifest, "resource_systems"),
-        entrypoint: "transfer",
-        calldata: [this.getWorldAddress(), entity_id, hyperstructure_id, resources.length / 2, ...resources],
+        entrypoint: "transfer_item",
+        calldata: [this.getWorldAddress(), entity_id, inventoryIndex, hyperstructure_id],
       },
       {
         contractAddress: getContractByName(this.manifest, "travel_systems"),

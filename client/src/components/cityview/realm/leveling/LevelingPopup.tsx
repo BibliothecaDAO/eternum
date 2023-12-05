@@ -116,7 +116,9 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
         <div className="flex justify-between m-2 text-xxs">
           <div className="w-full flex flex-col items-center justify-center">
             <div className="w-[90%] mb-3">
-              {newLevel >= 5 && <Table updateLevel={{ newBonus, index: newIndex }} data={bonusData}></Table>}
+              {newLevel >= 5 && (
+                <LevelingTable updateLevel={{ newBonus, index: newIndex }} data={bonusData}></LevelingTable>
+              )}
               {newLevel < 5 && <UnlockMessage newLevel={newLevel}></UnlockMessage>}
             </div>
             <div className="flex">
@@ -154,7 +156,7 @@ interface TableProps {
   updateLevel: { newBonus: number; index: number };
 }
 
-const Table: React.FC<TableProps> = ({ data, updateLevel }) => {
+export const LevelingTable: React.FC<TableProps> = ({ data, updateLevel }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const elements = data.map((item, index) => {

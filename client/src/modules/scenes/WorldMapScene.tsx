@@ -50,17 +50,18 @@ export const WorldMapScene = () => {
       <WorldMap ref={worldRef} />
       {hyperstructures.map((hyperstructure, i) => {
         if (hyperstructure) {
-          if (hyperstructure.progress == 100) {
+          if (hyperstructure.level >= 3) {
             return (
               <HyperstructureFinished
                 key={i}
                 position={[hyperstructure.uiPosition.x, hyperstructure.uiPosition.y, hyperstructure.uiPosition.z]}
               />
             );
-          } else if (hyperstructure.progress >= 50) {
+          } else if (hyperstructure.level == 2) {
             return (
               <HyperstructureHalf
                 key={i}
+                hyperstructure={hyperstructure}
                 position={[hyperstructure.uiPosition.x, hyperstructure.uiPosition.y, hyperstructure.uiPosition.z]}
               />
             );

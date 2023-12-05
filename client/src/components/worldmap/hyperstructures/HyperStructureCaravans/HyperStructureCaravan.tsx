@@ -15,9 +15,9 @@ import { CAPACITY_PER_DONKEY } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@latticexyz/recs";
 import { useDojo } from "../../../../DojoContext";
 import Button from "../../../../elements/Button";
-import { Resource } from "../../../../types";
 import { HyperStructureInterface, useHyperstructure } from "../../../../hooks/helpers/useHyperstructure";
 import useUIStore from "../../../../hooks/store/useUIStore";
+import { useResources } from "../../../../hooks/helpers/useResources";
 
 type CaravanProps = {
   caravan: CaravanInterface;
@@ -40,7 +40,7 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
     account: { account },
     setup: {
       systemCalls: { feed_hyperstructure_and_travel_back },
-      components: { Resource, CaravanMembers, EntityOwner, ForeignKey, Position },
+      components: { CaravanMembers, EntityOwner, ForeignKey, Position },
     },
   } = useDojo();
 
@@ -65,6 +65,7 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
       signer: account,
       entity_id: caravan.caravanId,
       hyperstructure_id: hyperstructureData.hyperstructureId,
+      inventoryIndex: 0,
       resources: resources.flatMap((resource) => Object.values(resource)),
       destination_coord_x: returnPosition?.x || 0,
       destination_coord_y: returnPosition?.y || 0,
@@ -84,20 +85,13 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
     setIsLoading(false);
   };
 
+  const { getResourcesFromInventory } = useResources();
+
   const resources = useMemo(() => {
-    return Array(22)
-      .fill(0)
-      .map((_, i: number) => {
-        const resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(caravan.caravanId), BigInt(i + 1)]));
-        if (resource && resource.balance > 0) {
-          return {
-            resourceId: i + 1,
-            amount: resource?.balance,
-          };
-        }
-      })
-      .filter(Boolean) as Resource[];
-  }, [caravan]);
+    return getResourcesFromInventory(caravan.caravanId)?.resources || [];
+  }, [caravan.caravanId]);
+
+  console.log({ resources: resources.flatMap((resource) => Object.values(resource)) });
 
   // capacity
   let resourceWeight = useMemo(() => {

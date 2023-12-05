@@ -36,12 +36,15 @@ export const useHyperstructure = () => {
     if (hypestructureId.size > 0) {
       let hyperstructureId = Array.from(hypestructureId)[0];
       const level = getEntityLevel(hyperstructureId);
+      if (hyperstructureId === 60) {
+        console.log({ level });
+      }
 
       let hyperstructure = getComponentValue(HyperStructure, hyperstructureId);
 
       if (hyperstructure) {
         let hyperstructureResources: { resourceId: number; currentAmount: number; completeAmount: number }[] = [];
-        getHyperstructureResources(level.level).forEach((resource) => {
+        getHyperstructureResources(level?.level || 0).forEach((resource) => {
           let hyperstructureResource = getComponentValue(
             Resource,
             getEntityIdFromKeys([BigInt(hyperstructureId), BigInt(resource.resourceId)]),
@@ -62,6 +65,8 @@ export const useHyperstructure = () => {
         });
         let progress = (totCurrentAmount / totCompleteAmount) * 100;
 
+        console.log({ level });
+
         return {
           hyperstructureId,
           orderId,
@@ -71,7 +76,7 @@ export const useHyperstructure = () => {
           uiPosition,
           // completed means max level
           completed: level?.level === 4,
-          level: 0,
+          level: level?.level || 0,
         };
       }
     }

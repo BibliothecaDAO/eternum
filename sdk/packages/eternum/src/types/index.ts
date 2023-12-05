@@ -80,6 +80,7 @@ export interface FeedHyperstructureAndTravelBackPropos extends SystemSigner {
   destination_coord_x: num.BigNumberish;
   destination_coord_y: num.BigNumberish;
   resources: num.BigNumberish[];
+  inventoryIndex: num.BigNumberish;
   hyperstructure_id: num.BigNumberish;
 }
 

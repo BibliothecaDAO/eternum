@@ -20,6 +20,9 @@ const HYPERSTRUCTURE_LEVELING_CONFIG_ID: u128 = 999999999999999992;
 const RESOURCE_IDS_PACKED_SIZE: usize = 8_usize;
 const REALMS_DATA_PACKED_SIZE: usize = 8_usize;
 
+// leveling tiers
+const HYPERSTRUCTURE_LEVELING_START_TIER: u64 = 0;
+const REALM_LEVELING_START_TIER: u64 = 1;
 
 mod ResourceTypes {
     const WOOD: u8 = 1;

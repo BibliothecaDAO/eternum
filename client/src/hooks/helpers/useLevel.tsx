@@ -22,6 +22,48 @@ export function useLevel() {
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
+  const getRealmBonuses = (level: number) => {
+    return [
+      {
+        bonusType: LevelIndex.FOOD,
+        bonusAmount: getRealmLevelBonus(level, LevelIndex.FOOD) - 100,
+      },
+      {
+        bonusType: LevelIndex.RESOURCE,
+        bonusAmount: getRealmLevelBonus(level, LevelIndex.RESOURCE) - 100,
+      },
+      {
+        bonusType: LevelIndex.TRAVEL,
+        bonusAmount: getRealmLevelBonus(level, LevelIndex.TRAVEL) - 100,
+      },
+      {
+        bonusType: LevelIndex.COMBAT,
+        bonusAmount: getRealmLevelBonus(level, LevelIndex.COMBAT) - 100,
+      },
+    ];
+  };
+
+  const getHyperstructureBonuses = (level: number) => {
+    return [
+      {
+        bonusType: LevelIndex.FOOD,
+        bonusAmount: getHyperstructureLevelBonus(level, LevelIndex.FOOD) - 100,
+      },
+      {
+        bonusType: LevelIndex.RESOURCE,
+        bonusAmount: getHyperstructureLevelBonus(level, LevelIndex.RESOURCE) - 100,
+      },
+      {
+        bonusType: LevelIndex.TRAVEL,
+        bonusAmount: getHyperstructureLevelBonus(level, LevelIndex.TRAVEL) - 100,
+      },
+      {
+        bonusType: LevelIndex.COMBAT,
+        bonusAmount: getHyperstructureLevelBonus(level, LevelIndex.COMBAT) - 100,
+      },
+    ];
+  };
+
   const getEntityLevel = (entityId: number): { level: number; timeLeft: number; percentage: number } | undefined => {
     const level = getComponentValue(Level, getEntityIdFromKeys([BigInt(entityId)])) || {
       level: 0,
@@ -68,8 +110,15 @@ export function useLevel() {
     }
   };
 
+  const getHyperstructureLevelBonus = (level: number, levelIndex: LevelIndex) => {
+    return level >= levelIndex ? 100 + LEVEL_BASE_MULTIPLIER : 100;
+  };
+
   return {
     getEntityLevel,
     getRealmLevelBonus,
+    getHyperstructureLevelBonus,
+    getHyperstructureBonuses,
+    getRealmBonuses,
   };
 }

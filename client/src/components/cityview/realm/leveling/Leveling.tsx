@@ -1,21 +1,23 @@
 import { useMemo, useState } from "react";
-import useRealmStore from "../../../../hooks/store/useRealmStore";
 import ProgressBar from "../../../../elements/ProgressBar";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { LevelingPopup } from "./LevelingPopup";
-import { useLevel } from "../../../../hooks/helpers/useLevel";
+import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
 
-export const Leveling = () => {
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
-  const [showLevelUp, setShowLevelUp] = useState(false);
+type LevelingProps = {
+  className?: string;
+  entityId: number | undefined;
+  setShowLevelUp: (show: boolean) => void;
+};
 
+export const Leveling = ({ className, entityId, setShowLevelUp }: LevelingProps) => {
   const { getEntityLevel } = useLevel();
 
-  const level = realmEntityId ? getEntityLevel(realmEntityId) : undefined;
+  const level = entityId ? getEntityLevel(entityId) : undefined;
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const progress = useMemo(() => {
-    return (level.timeLeft / 604800) * 100;
+    return (level?.timeLeft / 604800) * 100;
   }, [level, nextBlockTimestamp]);
 
   const timeLeftColors = useMemo(() => {
@@ -46,10 +48,10 @@ export const Leveling = () => {
 
   return (
     // mouse is pointer
-    <div>
-      {showLevelUp && <LevelingPopup onClose={() => setShowLevelUp(false)}></LevelingPopup>}
+    <div className={className || ""}>
       <div onClick={onClick} className="cursor-pointer">
-        <div className={"flex items-center text-white justify-between text-[13px] font-bold"}>
+        {/* text-[13px] */}
+        <div className={"flex items-center text-white justify-between font-bold"}>
           <div>Level: {level ? level.level : 0}</div>
         </div>
         <ProgressBar
@@ -59,6 +61,51 @@ export const Leveling = () => {
           rounded
         />
       </div>
+    </div>
+  );
+};
+
+type LevelingBonusIconsProps = {
+  bonuses: { bonusType: number; bonusAmount: number }[];
+  className?: string;
+};
+
+export const LevelingBonusIcons = ({ className, bonuses }: LevelingBonusIconsProps) => {
+  return (
+    <div className={className}>
+      {bonuses.map((bonus) => {
+        if (bonus.bonusAmount === 0) return null;
+        if (bonus.bonusType === LevelIndex.FOOD)
+          return (
+            <div className="flex flex-col items-center justify-center mr-1">
+              <div>🌾</div>
+              <div className="text-order-brilliance"> +{bonus.bonusAmount}% </div>
+            </div>
+          );
+
+        if (bonus.bonusType === LevelIndex.RESOURCE)
+          return (
+            <div className="flex flex-col items-center justify-center mr-1">
+              <div>💎</div>
+              <div className="text-order-brilliance"> +{bonus.bonusAmount}% </div>
+            </div>
+          );
+
+        if (bonus.bonusType === LevelIndex.TRAVEL)
+          return (
+            <div className="flex flex-col items-center justify-center mr-1">
+              <div>🫏</div>
+              <div className="text-order-brilliance"> +{bonus.bonusAmount}% </div>
+            </div>
+          );
+        if (bonus.bonusType === LevelIndex.COMBAT)
+          return (
+            <div className="flex flex-col items-center justify-center">
+              <div>🛡️</div>
+              <div className="text-order-brilliance"> +{bonus.bonusAmount}% </div>
+            </div>
+          );
+      })}
     </div>
   );
 };

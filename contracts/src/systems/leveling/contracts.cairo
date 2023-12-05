@@ -7,7 +7,8 @@ mod leveling_systems {
     use eternum::models::realm::{Realm};
     use eternum::models::level::{Level, LevelTrait};
 
-    use eternum::constants::{REALM_LEVELING_CONFIG_ID, LevelIndex, ResourceTypes, HYPERSTRUCTURE_LEVELING_CONFIG_ID};
+    use eternum::constants::{REALM_LEVELING_CONFIG_ID, LevelIndex, ResourceTypes, 
+    HYPERSTRUCTURE_LEVELING_CONFIG_ID, REALM_LEVELING_START_TIER, HYPERSTRUCTURE_LEVELING_START_TIER};
 
     use eternum::systems::leveling::contracts::leveling_systems::{InternalLevelingSystemsImpl as leveling};
     use eternum::systems::leveling::interface::{ILevelingSystems};
@@ -42,13 +43,13 @@ mod leveling_systems {
         fn get_realm_level_bonus(world: IWorldDispatcher, realm_entity_id: ID, leveling_index: u8) -> u128 {
             let level = get!(world, (realm_entity_id), Level);
             let leveling_config: LevelingConfig = get!(world, REALM_LEVELING_CONFIG_ID, LevelingConfig);
-            level.get_index_multiplier(leveling_config, leveling_index, 5)
+            level.get_index_multiplier(leveling_config, leveling_index, REALM_LEVELING_START_TIER)
         }
 
         fn get_hyperstructure_level_bonus(world: IWorldDispatcher, hyperstructure_id: ID, leveling_index: u8) -> u128 {
             let level = get!(world, (hyperstructure_id), Level);
             let leveling_config: LevelingConfig = get!(world, HYPERSTRUCTURE_LEVELING_CONFIG_ID, LevelingConfig);
-            level.get_index_multiplier(leveling_config, leveling_index, 1)
+            level.get_index_multiplier(leveling_config, leveling_index, HYPERSTRUCTURE_LEVELING_START_TIER)
         }
 
         fn level_up(world: IWorldDispatcher, entity_id: ID, leveling_config_id: ID) {
