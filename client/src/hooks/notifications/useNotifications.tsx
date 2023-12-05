@@ -27,8 +27,8 @@ export enum EventType {
   Attacked,
 }
 
-type realmsResources = { realmEntityId: number; resourceIds: number[] }[];
-type realmsPosition = { realmId: number; position: Position }[];
+type realmsResources = { realmEntityId: bigint; resourceIds: number[] }[];
+type realmsPosition = { realmId: bigint; position: Position }[];
 
 export type NotificationType = {
   eventType: EventType;
@@ -41,7 +41,7 @@ type HarvestData = {
 };
 
 type EmptyChestData = {
-  destinationRealmId: number;
+  destinationRealmId: bigint;
   caravanId: Entity;
   realmEntityId: number;
   resourcesChestId: number;
@@ -119,7 +119,11 @@ export const useNotifications = () => {
     // poll for each of the realmEntityIds
     for (const realmEntityId of realmEntityIds) {
       // Keccak for Combat event
-      pollForEvents([COMBAT_EVENT, "*", numberToHex(realmEntityId.realmEntityId)], setCombatNotificationsFromEvents, 5);
+      pollForEvents(
+        [COMBAT_EVENT, "*", numberToHex(parseInt(realmEntityId.realmEntityId.toString()))],
+        setCombatNotificationsFromEvents,
+        5,
+      );
     }
   }, [realmEntityIds]);
 
@@ -224,40 +228,40 @@ const addUniqueNotifications = (
  * @param Status Component
  * @returns
  */
-const generateTradeNotifications = (entityUpdates: UpdatedEntity[], Status: Component) => {
-  const notifications = entityUpdates
-    .map((update) => {
-      if (update.model_names.includes("Trade")) {
-        const status = getComponentValue(Status, getEntityIdFromKeys(extractAndCleanKey(update.entityKeys)));
-        switch (status?.value) {
-          case 0:
-            return { eventType: EventType.MakeOffer, keys: update.entityKeys };
-          case 1:
-            return {
-              eventType: EventType.AcceptOffer,
-              keys: update.entityKeys,
-            };
-          case 2:
-            return {
-              eventType: EventType.CancelOffer,
-              keys: update.entityKeys,
-            };
-          default:
-            return null;
-        }
-      }
-      return null;
-    })
-    .filter(Boolean) as NotificationType[];
+// const generateTradeNotifications = (entityUpdates: UpdatedEntity[], Status: Component) => {
+//   const notifications = entityUpdates
+//     .map((update) => {
+//       if (update.model_names.includes("Trade")) {
+//         const status = getComponentValue(Status, getEntityIdFromKeys(extractAndCleanKey(update.entityKeys)));
+//         switch (status?.value) {
+//           case 0:
+//             return { eventType: EventType.MakeOffer, keys: update.entityKeys };
+//           case 1:
+//             return {
+//               eventType: EventType.AcceptOffer,
+//               keys: update.entityKeys,
+//             };
+//           case 2:
+//             return {
+//               eventType: EventType.CancelOffer,
+//               keys: update.entityKeys,
+//             };
+//           default:
+//             return null;
+//         }
+//       }
+//       return null;
+//     })
+//     .filter(Boolean) as NotificationType[];
 
-  // Remove consecutive duplicates
-  return notifications.reduce((acc, curr, idx, array) => {
-    if (idx === 0 || JSON.stringify(curr) !== JSON.stringify(array[idx - 1])) {
-      acc.push(curr);
-    }
-    return acc;
-  }, [] as NotificationType[]);
-};
+//   // Remove consecutive duplicates
+//   return notifications.reduce((acc, curr, idx, array) => {
+//     if (idx === 0 || JSON.stringify(curr) !== JSON.stringify(array[idx - 1])) {
+//       acc.push(curr);
+//     }
+//     return acc;
+//   }, [] as NotificationType[]);
+// };
 
 /**
  * Generate labor notifications from realm resources
@@ -267,7 +271,7 @@ const generateTradeNotifications = (entityUpdates: UpdatedEntity[], Status: Comp
  * @returns
  */
 const generateLaborNotifications = (
-  resourcesPerRealm: { realmEntityId: number; resourceIds: number[] }[],
+  resourcesPerRealm: { realmEntityId: bigint; resourceIds: number[] }[],
   nextBlockTimestamp: number,
   level: number,
   Labor: Component,
@@ -385,8 +389,8 @@ const generateEmptyChestNotifications = (
  */
 const useRealmsResource = (
   realms: {
-    realmEntityId: number;
-    realmId: number;
+    realmEntityId: bigint;
+    realmId: bigint;
   }[],
 ): realmsResources => {
   return useMemo(() => {
@@ -405,7 +409,7 @@ const useRealmsResource = (
         }
         return null;
       })
-      .filter(Boolean) as { realmEntityId: number; resourceIds: number[] }[];
+      .filter(Boolean) as { realmEntityId: bigint; resourceIds: number[] }[];
   }, [realms]);
 };
 
@@ -416,8 +420,8 @@ const useRealmsResource = (
  */
 const useRealmsPosition = (
   realms: {
-    realmEntityId: number;
-    realmId: number;
+    realmEntityId: bigint;
+    realmId: bigint;
   }[],
 ): realmsPosition => {
   return useMemo(() => {

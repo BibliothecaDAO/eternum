@@ -72,7 +72,7 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
       <SecondaryPopup.Head onClose={onClose}>
         <div className="flex items-center space-x-1">
           <div className="mr-0.5">
-            Attacking {defendingRealmName} (#{defendingRealmId}):
+            Attacking {defendingRealmName} (#{defendingRealmId.toString()}):
           </div>
         </div>
       </SecondaryPopup.Head>
@@ -173,9 +173,9 @@ const AttackResultPanel = ({
             <div className="text-light-pink text-xs">{"Damage dealt:"}</div>
             <div className="p-2 mb-2 rounded flex bg-black/20 text-white text-xxs space-x-2">
               <div>{"Watchtower Old Health:"}</div>
-              <div className="text-order-brilliance">{watchTower.health}</div>
+              <div className="text-order-brilliance">{watchTower.health.toString()}</div>
               <div>{"Watchtower New Health:"}</div>
-              <div className="text-order-giants">{newWatchTowerHealth.value}</div>
+              <div className="text-order-giants">{newWatchTowerHealth.value.toString()}</div>
             </div>
           </div>
         </>
@@ -245,9 +245,9 @@ const AttackerHealthChange = ({ selectedRaider }: { selectedRaider: CombatInfo }
     <div className="p-2 mb-2 rounded flex bg-black/20 text-white text-xxs space-x-2">
       <div>{`Group #${selectedRaider.entityId}`}:</div>
       <div>Old Health</div>
-      <div className="text-order-brilliance">{selectedRaider.health}</div>
+      <div className="text-order-brilliance">{selectedRaider.health.toString()}</div>
       <div>New Health</div>
-      <div className="text-order-giants">{newHealth.value}</div>
+      <div className="text-order-giants">{newHealth.value.toString()}</div>
     </div>
   );
 };
@@ -261,7 +261,7 @@ const StealResultPanel = ({
 }: {
   watchTower: CombatInfo;
   targetFoodBalance: Resource[];
-  targetRealmEntityId: number;
+  targetRealmEntityId: bigint;
   selectedRaiders: CombatInfo[];
   onClose: () => void;
 }) => {
@@ -342,7 +342,7 @@ const StealResultPanel = ({
                             {Intl.NumberFormat("en-US", {
                               notation: "compact",
                               maximumFractionDigits: 1,
-                            }).format(divideByPrecision(resource.burntAmount) || 0)}
+                            }).format(divideByPrecision(parseInt(resource.burntAmount.toString())) || 0)}
                           </div>
                         </div>
                       ),
@@ -368,7 +368,7 @@ const StealResultPanel = ({
                             {Intl.NumberFormat("en-US", {
                               notation: "compact",
                               maximumFractionDigits: 1,
-                            }).format(divideByPrecision(resource.amount) || 0)}
+                            }).format(divideByPrecision(parseInt(resource.amount.toString())) || 0)}
                           </div>
                         </div>
                       ),
@@ -477,7 +477,7 @@ const SelectRaidersPanel = ({
     return [
       selectedRaiders.reduce((acc, battalion) => acc + battalion.attack, 0),
       selectedRaiders.reduce((acc, battalion) => acc + battalion.defence, 0),
-      selectedRaiders.reduce((acc, battalion) => acc + battalion.health, 0),
+      selectedRaiders.reduce((acc: any, battalion) => acc + battalion.health, 0),
     ];
   }, [selectedRaiders]);
 
@@ -487,7 +487,7 @@ const SelectRaidersPanel = ({
   }, [realmEntityId]);
 
   const defenderLevelBonus = useMemo(() => {
-    let level = watchTower ? getRealmLevel(watchTower.entityOwnerId)?.level || 0 : 0;
+    let level = watchTower ? getRealmLevel(BigInt(watchTower.entityOwnerId))?.level || 0 : 0;
     return getRealmLevelBonus(level, LevelIndex.COMBAT);
   }, [realmEntityId]);
 

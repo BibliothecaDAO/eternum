@@ -14,7 +14,7 @@ import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
 // import { ReactComponent as Shield } from "../../../../../assets/icons/units/shield.svg";
 
 export interface SelectRealmInterface {
-  entityId: number;
+  entityId: bigint;
   realmId: number;
   name: string;
   order: string;

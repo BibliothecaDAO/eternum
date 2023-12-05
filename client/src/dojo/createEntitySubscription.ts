@@ -3,6 +3,7 @@ import { createClient } from "graphql-ws";
 import { Components } from "@dojoengine/recs";
 import { setComponentFromEntity } from "../utils/utils";
 import { BehaviorSubject, Observable } from "rxjs";
+import { client } from "../hooks/graphql/useGraphQLQueries";
 
 type EntityUpdated = {
   id: string[];
@@ -35,8 +36,7 @@ type GetLatestEntitiesQuery = {
 
 export async function createEntitySubscription(contractComponents: Components): Promise<Observable<UpdatedEntity[]>> {
   console.log("createEntitySubscription", contractComponents);
-  const wsClient = createClient({ url: import.meta.env.VITE_TORII_WS });
-  const client = new GraphQLClient(import.meta.env.VITE_TORII_URL!);
+  const wsClient = createClient({ url: import.meta.env.VITE_PUBLIC_TORII + "/graphql/ws" });
 
   /**
    * DISCUSS: good way to have initial data?

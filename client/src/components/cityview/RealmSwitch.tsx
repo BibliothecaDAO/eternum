@@ -13,13 +13,14 @@ import { getRealm } from "../../utils/realms";
 import { useDojo } from "../../DojoContext";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useEntityQuery } from "@dojoengine/react";
+import { useSync } from "@dojoengine/react";
 
 type RealmSwitchProps = {} & ComponentPropsWithRef<"div">;
 
 // TODO: Remove
 export type RealmBubble = {
-  id: number;
-  realmId: number;
+  id: bigint;
+  realmId: bigint;
   name: string;
   order: string;
 };
@@ -28,6 +29,10 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
   const {
     account: { account },
     setup: {
+      network: {
+        toriiClient,
+        contractComponents: { Realm: RealmComponent },
+      },
       components: { Realm, Owner },
     },
   } = useDojo();
@@ -37,7 +42,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
 
   const { realmEntityId, realmId, setRealmId, setRealmEntityId, realmEntityIds, setRealmEntityIds } = useRealmStore();
 
-  const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: account.address })]);
+  const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: BigInt(account.address) })]);
   // const entityIds = useEntityQuery([Has(Realm)]);
   // console.log({ account: account.address });
 
@@ -53,7 +58,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
         }
       })
       .filter(Boolean)
-      .sort((a, b) => a!.realmId - b!.realmId) as { realmEntityId: number; realmId: number }[];
+      .sort((a: any, b: any) => a!.realmId - b!.realmId) as { realmEntityId: number; realmId: bigint }[];
     setRealmEntityIds(realmEntityIds);
   }, [entityIds]);
 
@@ -92,6 +97,10 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
     let realmOrder = realm?.order || 1;
     return orderNameDict[realmOrder];
   }, [realmEntityId, realm]);
+
+  console.log(realmEntityId.toString());
+
+  useSync(toriiClient, RealmComponent, [realmEntityId.toString()]);
 
   return (
     <div className={clsx("flex", className)}>

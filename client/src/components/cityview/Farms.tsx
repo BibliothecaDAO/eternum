@@ -13,6 +13,7 @@ import { useDojo } from "../../DojoContext";
 import { useComponentValue } from "@dojoengine/react";
 import { LABOR_CONFIG, ResourcesIds } from "@bibliothecadao/eternum";
 import useBlockchainStore from "../../hooks/store/useBlockchainStore";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 type GLTFResult = GLTF & {
   nodes: {

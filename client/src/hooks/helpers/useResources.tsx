@@ -57,7 +57,7 @@ export function useResources() {
     };
   };
 
-  const getResourceChestIdFromInventoryIndex = (entityId: number, index: number): number | undefined => {
+  const getResourceChestIdFromInventoryIndex = (entityId: bigint, index: number): number | undefined => {
     let inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(entityId)]));
     let foreignKey = inventory
       ? getComponentValue(
@@ -69,7 +69,7 @@ export function useResources() {
     return foreignKey?.entity_id;
   };
 
-  const getFoodResources = (entityId: number): Resource[] => {
+  const getFoodResources = (entityId: bigint): Resource[] => {
     const wheat = getComponentValue(Resource, getEntityIdFromKeys([BigInt(entityId), BigInt(254)]));
     const fish = getComponentValue(Resource, getEntityIdFromKeys([BigInt(entityId), BigInt(255)]));
 

@@ -8,9 +8,9 @@ export const createUpdates = async (components: Components) => {
   console.log("createUpdates", components);
   // const entityUpdates = await createEntitySubscription(components);
   const eventUpdates = {
-    createCombatEvents: async (entityId: number) => createEventSubscription([COMBAT_EVENT, numberToHex(entityId), "*"]),
-    createTransferEvents: async (entityId: number) =>
-      createEventSubscription([TRANSFER_EVENT, numberToHex(entityId), "*"]),
+    createCombatEvents: async (entityId: bigint) => createEventSubscription([COMBAT_EVENT, entityId.toString(), "*"]),
+    createTransferEvents: async (entityId: bigint) =>
+      createEventSubscription([TRANSFER_EVENT, entityId.toString(), "*"]),
   };
 
   return {

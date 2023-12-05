@@ -43,7 +43,7 @@ export function useRealm() {
 
     const entityIds = runQuery([HasValue(Realm, { order })]);
 
-    let latestRealmIdFromOrder = 0;
+    let latestRealmIdFromOrder = BigInt(0);
 
     // sort from biggest to lowest
     if (entityIds.size > 0) {
@@ -54,7 +54,7 @@ export function useRealm() {
       }
     }
     const orderRealmIds = (realmIdsByOrder as { [key: string]: number[] })[orderName];
-    const latestIndex = orderRealmIds.indexOf(latestRealmIdFromOrder);
+    const latestIndex = orderRealmIds.indexOf(parseInt(latestRealmIdFromOrder.toString()));
 
     if (latestIndex === -1 || latestIndex === orderRealmIds.length - 1) {
       return orderRealmIds[0];
@@ -64,7 +64,7 @@ export function useRealm() {
   };
 
   const getRealmLevel = (
-    realmEntityId: number,
+    realmEntityId: bigint,
   ): { level: number; timeLeft: number; percentage: number } | undefined => {
     const level = getComponentValue(Level, getEntityIdFromKeys([BigInt(realmEntityId)])) || {
       level: 0,
@@ -136,7 +136,7 @@ export function useRealm() {
   };
 }
 
-export function useGetRealm(realmEntityId: number | undefined) {
+export function useGetRealm(realmEntityId: bigint | undefined) {
   const {
     setup: {
       components: { Realm, Position, Owner },

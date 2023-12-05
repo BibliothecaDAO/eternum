@@ -79,7 +79,7 @@ export const EnemyRaid = ({ raider, ...props }: EnemyRaidProps) => {
             <div className="flex items-center h-6 mr-2">
               <img src="/images/units/troop-icon.png" className="h-[28px]" />
               <div className="flex ml-1 text-center">
-                <div className="bold mr-1">x{quantity}</div>
+                <div className="bold mr-1">x{quantity.toString()}</div>
                 Raiders
               </div>
             </div>
@@ -125,7 +125,8 @@ export const EnemyRaid = ({ raider, ...props }: EnemyRaidProps) => {
             </div>
           </div>
           <div className="flex items-center">
-            <div className="text-order-brilliance">{health && health.toLocaleString()}</div>&nbsp;/ {10 * quantity} HP
+            <div className="text-order-brilliance">{health && health.toLocaleString()}</div>&nbsp;/{" "}
+            {10 * parseInt(quantity.toString())} HP
           </div>
         </div>
         {health && (
@@ -133,7 +134,7 @@ export const EnemyRaid = ({ raider, ...props }: EnemyRaidProps) => {
             <ProgressBar
               containerClassName="col-span-12 !bg-order-giants"
               rounded
-              progress={(health / (10 * quantity)) * 100}
+              progress={(parseInt(health.toString()) / (10 * parseInt(quantity.toString()))) * 100}
             />
           </div>
         )}

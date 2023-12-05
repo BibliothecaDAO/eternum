@@ -4,7 +4,7 @@ export enum Entity {
 }
 
 export interface Realm {
-  realm_id: number;
+  realm_id: bigint;
   name: string;
   resource_types_packed: number;
   resource_types_count: number;
@@ -54,11 +54,11 @@ export interface Trade {
 
 export interface Resource {
   resourceId: number;
-  amount: number;
+  amount: bigint;
 }
 
 export interface Order {
-  entityId: number;
+  entityId: bigint;
   arrivalTime: number;
   position: Position;
   resourcesGive: ResourcesOffer[];
@@ -82,7 +82,7 @@ export interface UIPosition {
 }
 
 export interface EntityData {
-  entityId: number;
+  entityId: bigint;
   entityType: Entity;
 }
 

@@ -50,7 +50,7 @@ export const useTradeNotification = (
 
   let { resourcesGet: orderResources1, resourcesGive: orderResources2 } = getTradeResources(
     realmEntityId,
-    trade?.trade_id || 0,
+    parseInt(trade?.trade_id.toString()) || 0,
   );
 
   let type: "primary" | "success" | "danger";

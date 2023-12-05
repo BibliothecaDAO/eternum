@@ -13,7 +13,7 @@ import { ReactComponent as CaretDownFill } from "../../../assets/icons/common/ca
 import TextInput from "../../../elements/TextInput";
 
 export interface SelectRealmInterface {
-  entityId: number;
+  entityId: bigint;
   realmId: number;
   name: string;
   order: string;

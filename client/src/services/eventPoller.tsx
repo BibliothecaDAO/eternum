@@ -1,8 +1,6 @@
-import { GraphQLClient } from "graphql-request";
+import { client } from "../hooks/graphql/useGraphQLQueries";
 
 const OFFSET = 100;
-
-const client = new GraphQLClient(import.meta.env.VITE_TORII_URL!);
 
 type getEventsQuery = {
   events: {

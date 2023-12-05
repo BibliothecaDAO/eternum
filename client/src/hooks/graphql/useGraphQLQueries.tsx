@@ -11,7 +11,7 @@ export enum FetchStatus {
   Error = "error",
 }
 
-const client = new GraphQLClient(import.meta.env.VITE_TORII_URL!);
+export const client = new GraphQLClient(import.meta.env.VITE_PUBLIC_TORII! + "/graphql");
 
 type Entity = {
   __typename?: "Entity";
@@ -35,7 +35,7 @@ export interface PositionInterface {
 }
 
 export interface MyOfferInterface {
-  tradeId: string;
+  tradeId: bigint;
   makerOrderId: string;
   takerOrderId: string;
   expiresAt: number;
@@ -43,11 +43,11 @@ export interface MyOfferInterface {
 }
 
 export interface CounterPartyOrderIdInterface {
-  counterpartyOrderId: number;
+  counterpartyOrderId: bigint;
 }
 
 export interface RealmInterface {
-  realmId: number;
+  realmId: bigint;
   cities: number;
   rivers: number;
   wonder: number;
@@ -70,7 +70,7 @@ export interface LaborInterface {
   multiplier: number;
 }
 export interface IncomingOrderInterface {
-  tradeId: number;
+  tradeId: bigint;
   claimed: boolean | undefined;
   arrivalTime: number | undefined;
   origin: PositionInterface | undefined;
@@ -78,14 +78,14 @@ export interface IncomingOrderInterface {
 }
 
 export interface CaravanInterface {
-  caravanId: number;
-  resourcesChestId: number | undefined;
+  caravanId: bigint;
+  resourcesChestId: bigint | undefined;
   blocked: boolean | undefined;
   arrivalTime: number | undefined;
   pickupArrivalTime: number | undefined;
-  capacity: number | undefined;
+  capacity: bigint | undefined;
   destination: PositionInterface | undefined;
-  owner: string | undefined;
+  owner: bigint | undefined;
   isMine: boolean;
 }
 

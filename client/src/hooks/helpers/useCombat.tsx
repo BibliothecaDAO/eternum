@@ -7,8 +7,8 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 export interface CombatInfo {
   entityId?: Entity | undefined;
-  health?: number | undefined;
-  quantity?: number | undefined;
+  health?: bigint | undefined;
+  quantity?: bigint | undefined;
   attack?: number | undefined;
   defence?: number | undefined;
   sec_per_km?: number | undefined;
@@ -19,7 +19,7 @@ export interface CombatInfo {
   homePosition?: Position | undefined;
   entityOwnerId?: number | undefined;
   locationRealmEntityId?: Entity | undefined;
-  originRealmId?: number | undefined;
+  originRealmId?: bigint | undefined;
 }
 
 export function useCombat() {
@@ -43,18 +43,18 @@ export function useCombat() {
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const getRealmWatchTowerId = (realmEntityId: number): number | undefined => {
+  const getRealmWatchTowerId = (realmEntityId: bigint): bigint | undefined => {
     // find realm watchtower
     const townWatch = getComponentValue(TownWatch, getEntityIdFromKeys([BigInt(realmEntityId)]));
     return townWatch?.town_watch_id;
   };
 
   // todo: need to find better ways to differentiate
-  const useRealmRaiders = (realmEntityId: number) => {
+  const useRealmRaiders = (realmEntityId: bigint) => {
     return useEntityQuery([
       Has(Attack),
       HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
-      NotValue(Health, { value: 0 }),
+      NotValue(Health, { value: BigInt(0) }),
       NotValue(Movable, { sec_per_km: 0 }),
     ]);
   };
@@ -83,13 +83,13 @@ export function useCombat() {
   const useEnemyRaidersOnPosition = (position: Position) => {
     return useEntityQuery([
       Has(Attack),
-      NotValue(Health, { value: 0 }),
+      NotValue(Health, { value: BigInt(0) }),
       HasValue(Position, position),
       NotValue(EntityOwner, { entity_owner_id: realmEntityId }),
     ]);
   };
 
-  const useRealmRaidersOnPosition = (realmEntityId: number, position: Position) => {
+  const useRealmRaidersOnPosition = (realmEntityId: bigint, position: Position) => {
     return useEntityQuery([
       Has(Attack),
       HasValue(Position, position),
@@ -97,11 +97,11 @@ export function useCombat() {
     ]);
   };
 
-  const getRealmRaidersOnPosition = (realmEntityId: number, position: Position) => {
+  const getRealmRaidersOnPosition = (realmEntityId: bigint, position: Position) => {
     return Array.from(
       runQuery([
         Has(Attack),
-        NotValue(Health, { value: 0 }),
+        NotValue(Health, { value: BigInt(0) }),
         HasValue(Position, position),
         NotValue(Movable, { sec_per_km: 0 }),
         HasValue(EntityOwner, { entity_owner_id: realmEntityId }),

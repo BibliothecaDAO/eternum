@@ -15,9 +15,9 @@ import { getRealm } from "../../utils/realms";
 import { useRoads } from "./useRoads";
 
 export interface MarketInterface {
-  tradeId: number;
-  makerId: number;
-  takerId: number;
+  tradeId: bigint;
+  makerId: bigint;
+  takerId: bigint;
   // brillance, reflection, ...
   makerOrder: number;
   expiresAt: number;
@@ -53,7 +53,7 @@ export function useTrade() {
     },
   } = useDojo();
 
-  const getChestResources = (resourcesChestId: number): Resource[] => {
+  const getChestResources = (resourcesChestId: bigint): Resource[] => {
     const resourcesChest = getComponentValue(ResourceChest, resourcesChestId.toString() as Entity);
     if (!resourcesChest) return [];
     let resources: Resource[] = [];
@@ -71,7 +71,7 @@ export function useTrade() {
     return resources;
   };
 
-  const getTradeResources = (entityId: number, tradeId: number): TradeResources => {
+  const getTradeResources = (entityId: bigint, tradeId: bigint): TradeResources => {
     let trade = getComponentValue(Trade, getEntityIdFromKeys([BigInt(tradeId)]));
 
     let resourcesGet =
@@ -87,7 +87,7 @@ export function useTrade() {
     return { resourcesGet, resourcesGive };
   };
 
-  const getTradeIdFromResourcesChestId = (resourcesChestId: number): number | undefined => {
+  const getTradeIdFromResourcesChestId = (resourcesChestId: bigint): bigint | undefined => {
     const tradeIfMaker = Array.from(runQuery([HasValue(Trade, { maker_resource_chest_id: resourcesChestId })]));
     const tradeIfTaker = Array.from(runQuery([HasValue(Trade, { taker_resource_chest_id: resourcesChestId })]));
     if (tradeIfMaker.length > 0) {
@@ -101,13 +101,13 @@ export function useTrade() {
     }
   };
 
-  const getTradeIdFromTransportId = (transportId: number): number | undefined => {
+  const getTradeIdFromTransportId = (transportId: bigint): number | undefined => {
     const makerTradeIds = runQuery([
-      HasValue(Status, { value: 0 }),
+      HasValue(Status, { value: BigInt(0) }),
       HasValue(Trade, { maker_transport_id: transportId }),
     ]);
     const takerTradeIds = runQuery([
-      HasValue(Status, { value: 0 }),
+      HasValue(Status, { value: BigInt(0) }),
       HasValue(Trade, { taker_transport_id: transportId }),
     ]);
 
@@ -120,7 +120,7 @@ export function useTrade() {
     realmEntityId,
     resourcesGive,
   }: {
-    realmEntityId: number;
+    realmEntityId: bigint;
     resourcesGive: ResourceInterface[];
   }): boolean => {
     let canAccept = true;
@@ -136,7 +136,7 @@ export function useTrade() {
     return canAccept;
   };
 
-  const getRealmEntityIdFromRealmId = (realmId: number): number | undefined => {
+  const getRealmEntityIdFromRealmId = (realmId: bigint): number | undefined => {
     const realms = runQuery([HasValue(Realm, { realm_id: realmId })]);
     if (realms.size > 0) {
       return Number(realms.values().next().value);
@@ -166,7 +166,7 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
 
   const fragments = useMemo(() => {
     const baseFragments: QueryFragment[] = [
-      HasValue(Status, { value: 0 }),
+      HasValue(Status, { value: BigInt(0) }),
       HasValue(Trade, { maker_id: realmEntityId }),
     ];
 
@@ -200,7 +200,7 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
       .map((tradeId) => {
         let trade = getComponentValue(Trade, tradeId);
         if (trade) {
-          const { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, parseInt(tradeId));
+          const { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, BigInt(tradeId));
           const hasRoad = getHasRoad(realmEntityId, trade.taker_id);
           const distance = calculateDistance(trade.taker_id, realmEntityId);
           return {
@@ -243,14 +243,14 @@ export function useGetMarket({
   const [market, setMarket] = useState<MarketInterface[]>([]);
 
   const fragments = useMemo(() => {
-    const baseFragments: QueryFragment[] = [HasValue(Status, { value: 0 })];
+    const baseFragments: QueryFragment[] = [HasValue(Status, { value: BigInt(0) })];
 
     if (directOffers) {
       baseFragments.push(HasValue(Trade, { taker_id: realmEntityId }));
     } else if (filterOwnOffers) {
       baseFragments.push(NotValue(Trade, { maker_id: realmEntityId }));
     } else {
-      baseFragments.push(HasValue(Trade, { taker_id: 0 }));
+      baseFragments.push(HasValue(Trade, { taker_id: BigInt(0) }));
     }
 
     if (selectedOrders.length > 0) {
@@ -346,7 +346,7 @@ export function sortTrades(trades: MarketInterface[], activeSort: SortInterface)
         }
       });
     } else if (activeSort.sortKey === "realm") {
-      return trades.sort((a, b) => {
+      return trades.sort((a: any, b: any) => {
         if (activeSort.sort === "asc") {
           return a.makerId - b.makerId;
         } else {
@@ -357,6 +357,6 @@ export function sortTrades(trades: MarketInterface[], activeSort: SortInterface)
       return trades;
     }
   } else {
-    return trades.sort((a, b) => b!.tradeId - a!.tradeId);
+    return trades.sort((a: any, b: any) => b!.tradeId - a!.tradeId);
   }
 }

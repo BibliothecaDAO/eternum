@@ -20,7 +20,7 @@ interface LeaderboardStore {
   progress: number;
   setProgress: (progress: number) => void;
   leaderboard: Record<number, LeaderboardInterface>;
-  addOrUpdateLeaderboardEntry: (realmId: number, resourceAmount: number, resourceId: number) => void;
+  addOrUpdateLeaderboardEntry: (realmId: bigint, resourceAmount: number, resourceId: number) => void;
   syncData: (hyperstructureIds: Entity[]) => void;
 }
 
@@ -33,17 +33,17 @@ const useLeaderBoardStore = create<LeaderboardStore>((set, get) => ({
   setProgress: (progress) => set({ progress }),
 
   // Function to add or update a leaderboard entry
-  addOrUpdateLeaderboardEntry: (realmId: number, resourceAmount: number, resourceId: number) => {
+  addOrUpdateLeaderboardEntry: (realmId: bigint, resourceAmount: number, resourceId: number) => {
     set((state) => {
       const newLeaderboard = { ...state.leaderboard };
-      if (newLeaderboard[realmId]) {
-        newLeaderboard[realmId].total_transfers += 1;
-        newLeaderboard[realmId].total_amount += resourceAmount;
-        newLeaderboard[realmId].total_points += calculatePoints(resourceId, resourceAmount);
+      if (newLeaderboard[BigInt(realmId).toString()]) {
+        newLeaderboard[BigInt(realmId).toString()].total_transfers += 1;
+        newLeaderboard[BigInt(realmId).toString()].total_amount += resourceAmount;
+        newLeaderboard[BigInt(realmId).toString()].total_points += calculatePoints(resourceId, resourceAmount);
       } else {
         let realm = getRealm(realmId);
         let orderName = orderNameDict[realm.order];
-        newLeaderboard[realmId] = {
+        newLeaderboard[BigInt(realmId).toString()] = {
           realmId,
           realmOrder: orderName,
           realmName: realm.name,
@@ -66,7 +66,7 @@ const useLeaderBoardStore = create<LeaderboardStore>((set, get) => ({
         for (let i = 0; i < resources_len; i += 1) {
           const resourceId = parseInt(event.data[2 + 2 * i]);
           const resourceAmount = parseInt(event.data[2 + 2 * i + 1]);
-          const realmId = parseInt(event.keys[2]);
+          const realmId = BigInt(event.keys[2]);
           get().addOrUpdateLeaderboardEntry(realmId, resourceAmount, resourceId);
         }
       };

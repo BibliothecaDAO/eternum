@@ -37,7 +37,7 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
   let attackerAddressName = getRealmAddressName(attackerRealmEntityId);
 
   const attackerTotalSoldiers = useMemo(() => {
-    let total = 0;
+    let total = BigInt(0);
     for (const id of attackingEntityIds) {
       let { value } = getComponentValue(Quantity, getEntityIdFromKeys([BigInt(id)]));
       total += value;
@@ -46,7 +46,7 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
   }, [attackingEntityIds]);
 
   const attackerTotalAttack = useMemo(() => {
-    let total = 0;
+    let total = BigInt(0);
     for (const id of attackingEntityIds) {
       let { value } = getComponentValue(Attack, getEntityIdFromKeys([BigInt(id)]));
       total += value;
@@ -55,7 +55,7 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
   }, [attackingEntityIds]);
 
   const attackerTotalHealth = useMemo(() => {
-    let total = 0;
+    let total = BigInt(0);
     for (const id of attackingEntityIds) {
       let { value } = getComponentValue(Health, getEntityIdFromKeys([BigInt(id)]));
       total += value;
@@ -64,7 +64,7 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
   }, [attackingEntityIds]);
 
   const attackerTotalDefence = useMemo(() => {
-    let total = 0;
+    let total = BigInt(0);
     for (const id of attackingEntityIds) {
       let { value } = getComponentValue(Defence, getEntityIdFromKeys([BigInt(id)]));
       total += value;
@@ -132,7 +132,7 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
             <div className="flex items-center h-6 mr-2">
               <img src="/images/units/troop-icon.png" className="h-[28px]" />
               <div className="flex ml-1 text-center">
-                <div className="bold mr-1">x{attackerTotalSoldiers}</div>
+                <div className="bold mr-1">x{attackerTotalSoldiers.toString()}</div>
                 Battalions
               </div>
             </div>
@@ -154,7 +154,7 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
             >
               <img src="/images/icons/attack.png" className="h-full" />
               <div className="flex flex-col ml-1 text-center">
-                <div className="bold ">{attackerTotalAttack}</div>
+                <div className="bold ">{attackerTotalAttack.toString()}</div>
               </div>
             </div>
             <div
@@ -173,13 +173,13 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
             >
               <img src="/images/icons/defence.png" className="h-full" />
               <div className="flex flex-col ml-1 text-center">
-                <div className="bold ">{attackerTotalDefence}</div>
+                <div className="bold ">{attackerTotalDefence.toString()}</div>
               </div>
             </div>
           </div>
           <div className="flex items-center">
             <div className="text-order-brilliance">{attackerTotalHealth && attackerTotalHealth.toLocaleString()}</div>
-            &nbsp;/ {10 * attackerTotalSoldiers} HP
+            &nbsp;/ {10 * parseInt(attackerTotalSoldiers.toString())} HP
           </div>
         </div>
         {/* {attackerTotalHealth !== undefined && (
@@ -202,7 +202,7 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
                       type="vertical"
                       color="text-order-brilliance"
                       resourceId={resource.resourceId}
-                      amount={divideByPrecision(resource.amount)}
+                      amount={divideByPrecision(parseInt(resource.amount.toString()))}
                     />
                   ),
               )}

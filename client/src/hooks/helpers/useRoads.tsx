@@ -23,7 +23,7 @@ export function useRoads() {
     },
   } = useDojo();
 
-  const getHasRoad = (entityA: number | undefined, entityB: number | undefined): boolean | undefined => {
+  const getHasRoad = (entityA: bigint | undefined, entityB: bigint | undefined): boolean | undefined => {
     if (entityA && entityB) {
       const positionA = getComponentValue(Position, getEntityIdFromKeys([BigInt(entityA)]));
       const positionB = getComponentValue(Position, getEntityIdFromKeys([BigInt(entityB)]));
@@ -60,7 +60,7 @@ export function useRoads() {
   return { getHasRoad };
 }
 
-export function useGetRoads(entityId: number) {
+export function useGetRoads(entityId: bigint) {
   const {
     setup: {
       components: { Road, Position, Realm },

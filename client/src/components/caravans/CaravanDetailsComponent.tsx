@@ -33,7 +33,7 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
   const destinationRealmId = useMemo(() => {
     return destination && getRealmIdByPosition(destination);
   }, [destination]);
-  const destinationRealmName = destinationRealmId && getRealmNameById(destinationRealmId);
+  const destinationRealmName = destinationRealmId && getRealmNameById(BigInt(destinationRealmId));
   const hasArrivedPickupPosition =
     pickupArrivalTime !== undefined && nextBlockTimestamp !== undefined && pickupArrivalTime <= nextBlockTimestamp;
 
@@ -44,7 +44,8 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
         <div className="flex items-center space-x-1">
           {capacity && (
             <div className="mr-0.5">
-              Caravan #{caravan.caravanId} {divideByPrecision(resourceWeight)} / {divideByPrecision(capacity)}
+              Caravan #{caravan.caravanId.toString()} {divideByPrecision(resourceWeight)} /{" "}
+              {divideByPrecision(parseInt(capacity.toString()))}
             </div>
           )}
         </div>
@@ -54,7 +55,7 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
           <div className="flex items-center mt-2 ml-2 text-xxs">
             <span className="italic text-light-pink">Traveling {hasArrivedPickupPosition ? "from" : "to"}</span>
             <div className="flex items-center ml-1 mr-1 text-gold">
-              <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xs" />
+              <OrderIcon order={getRealmOrderNameById(BigInt(destinationRealmId))} className="mr-1" size="xs" />
               {destinationRealmName}
             </div>
             <span className="italic text-light-pink">{hasArrivedPickupPosition ? "with" : "to pick up"}</span>
@@ -67,7 +68,7 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
                 <ResourceCost
                   key={resource.resourceId}
                   resourceId={resource.resourceId}
-                  amount={divideByPrecision(resource.amount)}
+                  amount={divideByPrecision(parseInt(resource.amount.toString()))}
                 />
               ),
           )}
@@ -84,7 +85,7 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
                 <ResourceCost
                   key={resource.resourceId}
                   resourceId={resource.resourceId}
-                  amount={divideByPrecision(resource.amount)}
+                  amount={divideByPrecision(parseInt(resource.amount.toString()))}
                 />
               ),
           )}

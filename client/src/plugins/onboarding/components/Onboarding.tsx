@@ -14,7 +14,6 @@ import { ReactComponent as ArrowRight } from "../../../assets/icons/common/arrow
 import { ReactComponent as ArrowLeft } from "../../../assets/icons/common/arrow-left.svg";
 import Avatar from "../../../elements/Avatar";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-
 import realmsNames from "../../../geodata/realms.json";
 import { useLocation } from "wouter";
 import { orderNameDict } from "@bibliothecadao/eternum";
@@ -50,7 +49,7 @@ export const Onboarding = () => {
 
   const { realmId, setRealmId, setRealmEntityId, realmEntityIds, setRealmEntityIds } = useRealmStore();
 
-  const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: account.address })]);
+  const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: BigInt(account.address) })]);
 
   // set realm entity ids everytime the entity ids change
   useEffect(() => {
@@ -58,11 +57,12 @@ export const Onboarding = () => {
       .map((id) => {
         const realm = getComponentValue(Realm, id);
         if (realm) {
-          return { realmEntityId: Number(id), realmId: realm?.realm_id };
+          return { realmEntityId: BigInt(id), realmId: realm?.realm_id };
         }
       })
       .filter(Boolean)
-      .sort((a, b) => a!.realmId - b!.realmId) as { realmEntityId: number; realmId: number }[];
+      .sort((a: any, b: any) => a!.realmId - b!.realmId) as { realmEntityId: bigint; realmId: bigint }[];
+
     setRealmEntityIds(realmEntityIds);
   }, [entityIds]);
 
@@ -74,7 +74,7 @@ export const Onboarding = () => {
     const fetchedYourRealms: RealmBubble[] = [];
     realmEntityIds.forEach(({ realmEntityId, realmId }) => {
       const realm = getRealm(realmId);
-      const name = realmsNames.features[realm.realm_id - 1].name;
+      const name = realmsNames.features[(BigInt(realm.realm_id.toString()) - BigInt(1)).toString()].name;
       fetchedYourRealms.push({
         id: realmEntityId,
         realmId: realm.realm_id,

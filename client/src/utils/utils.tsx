@@ -266,8 +266,10 @@ export function divideByPrecision(value: number): number {
   return value / PRECISION;
 }
 
-export function getPosition(realm_id: number): { x: number; y: number } {
-  const coords = realmCoords.features[realm_id - 1].geometry.coordinates.map((value) => parseInt(value));
+export function getPosition(realm_id: bigint): { x: number; y: number } {
+  const coords = realmCoords.features[(BigInt(realm_id) - BigInt(1)).toString()].geometry.coordinates.map((value) =>
+    parseInt(value),
+  );
   return { x: coords[0] + 1800000, y: coords[1] + 1800000 };
 }
 

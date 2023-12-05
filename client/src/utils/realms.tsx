@@ -5,13 +5,13 @@ import realmsOrdersJson from "../geodata/realms_raw.json";
 import { findResourceIdByTrait, orders } from "@bibliothecadao/eternum";
 import { packResources } from "../utils/packedData";
 import { Realm } from "../types";
-
+import { Entity } from "@dojoengine/recs";
 interface Attribute {
   trait_type: string;
   value: any;
 }
 
-export const getRealmIdByPosition = (positionRaw: { x: number; y: number }): number | undefined => {
+export const getRealmIdByPosition = (positionRaw: { x: number; y: number }): bigint | undefined => {
   let offset = 1800000;
   let position = { x: positionRaw.x - offset, y: positionRaw.y - offset };
   // TODO: find a better way to find position
@@ -20,22 +20,22 @@ export const getRealmIdByPosition = (positionRaw: { x: number; y: number }): num
       parseInt(realm["geometry"]["coordinates"][0]) === position.x &&
       parseInt(realm["geometry"]["coordinates"][1]) === position.y
     ) {
-      return realm["properties"]["tokenId"];
+      return BigInt(realm["properties"]["tokenId"]);
     }
   }
   return undefined;
 };
 
-export const getRealmNameById = (realmId: number): string => {
-  return realmsJson["features"][realmId - 1]["name"];
+export const getRealmNameById = (realmId: bigint): string => {
+  return realmsJson["features"][(realmId - BigInt(1)).toString()]["name"];
 };
 
-export const getRealmOrderNameById = (realmId: number): string => {
-  const orderName = realmsOrdersJson[realmId - 1].order;
+export const getRealmOrderNameById = (realmId: bigint): string => {
+  const orderName = realmsOrdersJson[(realmId - BigInt(1)).toString()].order;
   return orderName.toLowerCase().replace("the ", "");
 };
 
-export function getRealm(realm_id: number): Realm {
+export function getRealm(realm_id: bigint): Realm {
   const realmsData = realms as {
     [key: string]: any;
   };
