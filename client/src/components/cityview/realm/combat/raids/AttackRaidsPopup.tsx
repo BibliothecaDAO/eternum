@@ -4,7 +4,7 @@ import Button from "../../../../../elements/Button";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../DojoContext";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
-import { LevelIndex, useGetRealm, useRealm } from "../../../../../hooks/helpers/useRealm";
+import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import { calculateSuccess } from "../../../../../utils/combat";
 import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
 import { Defence } from "../defence/Defence";
@@ -18,6 +18,7 @@ import { getRealmIdByPosition, getRealmNameById } from "../../../../../utils/rea
 import { SmallResource } from "../../SmallResource";
 import { Resource } from "../../../../../types";
 import { useHyperstructure } from "../../../../../hooks/helpers/useHyperstructure";
+import { LevelIndex, useLevel } from "../../../../../hooks/helpers/useLevel";
 
 type AttackRaidsPopupProps = {
   selectedRaider: CombatInfo;
@@ -470,7 +471,7 @@ const SelectRaidersPanel = ({
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const { getRealmLevelBonus, getRealmLevel } = useRealm();
+  const { getEntityLevel, getRealmLevelBonus } = useLevel();
 
   const [attackerTotalAttack, attackerTotalHealth] = useMemo(() => {
     // sum attack of the list
@@ -482,12 +483,12 @@ const SelectRaidersPanel = ({
   }, [selectedRaiders]);
 
   const attackerLevelBonus = useMemo(() => {
-    let level = getRealmLevel(realmEntityId)?.level || 0;
+    let level = getEntityLevel(realmEntityId)?.level || 0;
     return getRealmLevelBonus(level, LevelIndex.COMBAT);
   }, [realmEntityId]);
 
   const defenderLevelBonus = useMemo(() => {
-    let level = watchTower ? getRealmLevel(watchTower.entityOwnerId)?.level || 0 : 0;
+    let level = watchTower ? getEntityLevel(watchTower.entityOwnerId)?.level || 0 : 0;
     return getRealmLevelBonus(level, LevelIndex.COMBAT);
   }, [realmEntityId]);
 

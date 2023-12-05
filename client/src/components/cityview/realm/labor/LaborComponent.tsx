@@ -12,8 +12,8 @@ import { useMemo } from "react";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useComponentValue } from "@dojoengine/react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { LevelIndex, useRealm } from "../../../../hooks/helpers/useRealm";
 import { useHyperstructure } from "../../../../hooks/helpers/useHyperstructure";
+import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
 
 type LaborComponentProps = {
   resourceId: number;
@@ -67,8 +67,8 @@ export const LaborComponent = ({
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 
-  const { getRealmLevel, getRealmLevelBonus } = useRealm();
-  const level = getRealmLevel(realmEntityId)?.level || 0;
+  const { getEntityLevel, getRealmLevelBonus } = useLevel();
+  const level = getEntityLevel(realmEntityId)?.level || 0;
   const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
 
   const { getHyperstructureIdByRealmEntityId } = useHyperstructure();

@@ -17,10 +17,10 @@ import { UpdatedEntity } from "../../dojo/createEntitySubscription";
 import { Position } from "../../types";
 import { getRealm } from "../../utils/realms";
 import { LABOR_CONFIG } from "@bibliothecadao/eternum";
-import { useRealm } from "../helpers/useRealm";
 import { CombatResultInterface } from "../store/useCombatHistoryStore";
 import { createCombatNotification, parseCombatEvent } from "../../utils/combat";
 import { Event, pollForEvents } from "../../services/eventPoller";
+import { useLevel } from "../helpers/useLevel";
 
 export enum EventType {
   MakeOffer,
@@ -69,8 +69,8 @@ export const useNotifications = () => {
   const realmsResources = useRealmsResource(realmEntityIds);
   const realmPositions = useRealmsPosition(realmEntityIds);
 
-  const { getRealmLevel } = useRealm();
-  const level = getRealmLevel(realmEntityId)?.level || 0;
+  const { getEntityLevel } = useLevel();
+  const level = getEntityLevel(realmEntityId)?.level || 0;
 
   const [notifications, setNotifications] = useState<NotificationType[]>([]);
 

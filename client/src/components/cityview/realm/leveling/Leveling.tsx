@@ -1,17 +1,17 @@
 import { useMemo, useState } from "react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import ProgressBar from "../../../../elements/ProgressBar";
-import { useRealm } from "../../../../hooks/helpers/useRealm";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { LevelingPopup } from "./LevelingPopup";
+import { useLevel } from "../../../../hooks/helpers/useLevel";
 
 export const Leveling = () => {
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const [showLevelUp, setShowLevelUp] = useState(false);
 
-  const { getRealmLevel } = useRealm();
+  const { getEntityLevel } = useLevel();
 
-  const level = realmEntityId ? getRealmLevel(realmEntityId) : undefined;
+  const level = realmEntityId ? getEntityLevel(realmEntityId) : undefined;
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const progress = useMemo(() => {

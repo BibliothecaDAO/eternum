@@ -12,9 +12,10 @@ import Button from "../../../elements/Button";
 import { SmallResource } from "./SmallResource";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../DojoContext";
-import { useGetRealm, useRealm } from "../../../hooks/helpers/useRealm";
+import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import { LABOR_CONFIG } from "@bibliothecadao/eternum";
 import useUIStore from "../../../hooks/store/useUIStore";
+import { useLevel } from "../../../hooks/helpers/useLevel";
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<"div">;
 
@@ -26,8 +27,8 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
 
   const { realm } = useGetRealm(realmEntityId);
 
-  const { getRealmLevel } = useRealm();
-  const realm_level = getRealmLevel(realmEntityId).level;
+  const { getEntityLevel } = useLevel();
+  const realm_level = getEntityLevel(realmEntityId).level;
 
   // unpack the resources
   useMemo((): any => {
@@ -103,8 +104,8 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const [productivity, setProductivity] = useState<number>(0);
 
-  const { getRealmLevel } = useRealm();
-  const level = getRealmLevel(realmEntityId)?.level || 0;
+  const { getEntityLevel } = useLevel();
+  const level = getEntityLevel(realmEntityId)?.level || 0;
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 

@@ -321,3 +321,12 @@ export const hyperstructureResourcesPerLevel = [
   // level 4
   [16, 1408500, 17, 1208500, 18, 965000, 19, 808500, 20, 478500, 21, 321500, 22, 200000],
 ];
+
+export const getHyperstructureResources = (level: number): { resourceId: number; amount: number }[] => {
+  let resourcesList = hyperstructureResourcesPerLevel[level - 1];
+  let resources = [];
+  for (let i = 0; i < resources.length; i += 2) {
+    resources.push({ resourceId: resourcesList[i], amount: resourcesList[i + 1] });
+  }
+  return resources;
+};

@@ -1,8 +1,9 @@
 import { Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import { Position, UIPosition } from "../../types";
-import hyperstructureData from "../../data/hyperstructures.json";
 import { getContractPositionFromRealPosition, getEntityIdFromKeys } from "../../utils/utils";
+import { useLevel } from "./useLevel";
+import { getHyperstructureResources } from "@bibliothecadao/eternum";
 
 export interface HyperStructureInterface {
   hyperstructureId: number;
@@ -26,23 +27,27 @@ export const useHyperstructure = () => {
     },
   } = useDojo();
 
+  const { getEntityLevel } = useLevel();
+
   const getHyperstructure = (orderId: number, uiPosition: UIPosition): HyperStructureInterface | undefined => {
     const position = getContractPositionFromRealPosition({ x: uiPosition.x, y: uiPosition.z });
     const hypestructureId = runQuery([Has(HyperStructure), HasValue(Position, position)]);
 
     if (hypestructureId.size > 0) {
       let hyperstructureId = Array.from(hypestructureId)[0];
+      const level = getEntityLevel(hyperstructureId);
+
       let hyperstructure = getComponentValue(HyperStructure, hyperstructureId);
 
       if (hyperstructure) {
         let hyperstructureResources: { resourceId: number; currentAmount: number; completeAmount: number }[] = [];
-        hyperstructureData[orderId - 1].resources.completion.forEach((resource) => {
+        getHyperstructureResources(level.level).forEach((resource) => {
           let hyperstructureResource = getComponentValue(
             Resource,
-            getEntityIdFromKeys([BigInt(hyperstructureId), BigInt(resource.resourceType)]),
+            getEntityIdFromKeys([BigInt(hyperstructureId), BigInt(resource.resourceId)]),
           );
           hyperstructureResources.push({
-            resourceId: resource.resourceType,
+            resourceId: resource.resourceId,
             currentAmount: Math.min(hyperstructureResource?.balance ?? 0, resource.amount),
             completeAmount: resource.amount,
           });
@@ -64,8 +69,8 @@ export const useHyperstructure = () => {
           hyperstructureResources,
           position,
           uiPosition,
-          // todo: calculate completed
-          completed: false,
+          // completed means max level
+          completed: level?.level === 4,
           level: 0,
         };
       }

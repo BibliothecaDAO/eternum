@@ -8,7 +8,7 @@ import { useDojo } from "../../../../../DojoContext";
 import AttacksComponent from "./AttacksComponent";
 import { ManageSoldiersPopupTabs } from "../raids/ManageSoldiersPopupTabs";
 import { HealPopup } from "../HealPopup";
-import { LevelIndex, useRealm } from "../../../../../hooks/helpers/useRealm";
+import { LevelIndex, useLevel } from "../../../../../hooks/helpers/useLevel";
 
 type DefencePanelProps = {};
 
@@ -26,7 +26,7 @@ export const DefencePanel = ({}: DefencePanelProps) => {
 
   const { getEntitiesCombatInfo, getRealmWatchTowerId } = useCombat();
 
-  const { getRealmLevelBonus, getRealmLevel } = useRealm();
+  const { getEntityLevel, getRealmLevelBonus } = useLevel();
 
   const watchTowerId = getRealmWatchTowerId(realmEntityId);
   const watchTowerHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(watchTowerId)]));
@@ -41,7 +41,7 @@ export const DefencePanel = ({}: DefencePanelProps) => {
   }, [watchTowerId, watchTowerHealth]);
 
   const defenderLevelBonus = useMemo(() => {
-    let level = getRealmLevel(watchTower.entityOwnerId)?.level || 0;
+    let level = getEntityLevel(watchTower.entityOwnerId)?.level || 0;
     return getRealmLevelBonus(level, LevelIndex.COMBAT);
   }, [watchTower]);
 

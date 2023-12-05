@@ -7,9 +7,9 @@ import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../DojoContext";
 import { getComponentValue } from "@latticexyz/recs";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../utils/utils";
-import { LevelIndex, useRealm } from "../../../../hooks/helpers/useRealm";
 import { getLevelingCost } from "./utils";
 import useUIStore from "../../../../hooks/store/useUIStore";
+import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
 
 type LevelingPopupProps = {
   onClose: () => void;
@@ -26,10 +26,10 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
 
   let { realmEntityId } = useRealmStore();
 
-  const { getRealmLevelBonus, getRealmLevel } = useRealm();
+  const { getEntityLevel, getRealmLevelBonus } = useLevel();
 
   const [level, tier] = useMemo(() => {
-    let level = getRealmLevel(realmEntityId)?.level || 0;
+    let level = getEntityLevel(realmEntityId)?.level || 0;
     return [level, Math.floor(level / 4) + 1];
   }, [realmEntityId]);
 

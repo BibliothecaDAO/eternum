@@ -8,18 +8,7 @@ import realmIdsByOrder from "../../data/realmids_by_order.json";
 import realmsData from "../../geodata/realms.json";
 import { unpackResources } from "../../utils/packedData";
 import { useEntityQuery } from "@dojoengine/react";
-import useBlockchainStore from "../store/useBlockchainStore";
 import { Realm } from "../../types";
-
-const LEVEL_DECAY = 0.1;
-const LEVEL_BASE_MULTIPLIER = 25;
-
-export enum LevelIndex {
-  FOOD = 1,
-  RESOURCE = 2,
-  TRAVEL = 3,
-  COMBAT = 4,
-}
 
 export type RealmExtended = Realm & {
   entity_id: EntityIndex;
@@ -31,11 +20,9 @@ export type RealmExtended = Realm & {
 export function useRealm() {
   const {
     setup: {
-      components: { Realm, Level, AddressName, Owner },
+      components: { Realm, AddressName, Owner },
     },
   } = useDojo();
-
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const getNextRealmIdForOrder = (order: number) => {
     const orderName = getOrderName(order);
@@ -62,54 +49,6 @@ export function useRealm() {
     }
   };
 
-  const getRealmLevel = (
-    realmEntityId: number,
-  ): { level: number; timeLeft: number; percentage: number } | undefined => {
-    const level = getComponentValue(Level, getEntityIdFromKeys([BigInt(realmEntityId)])) || {
-      level: 0,
-      valid_until: nextBlockTimestamp,
-    };
-
-    let trueLevel = level.level;
-    // calculate true level
-    if (level.valid_until > nextBlockTimestamp) {
-      trueLevel = level.level;
-    } else {
-      const weeksPassed = Math.floor((nextBlockTimestamp - level.valid_until) / 604800) + 1;
-      trueLevel = Math.max(0, level.level - weeksPassed);
-    }
-
-    let timeLeft: number;
-    if (trueLevel === 0) {
-      timeLeft = 0;
-    } else {
-      if (nextBlockTimestamp >= level.valid_until) {
-        timeLeft = 604800 - ((nextBlockTimestamp - level.valid_until) % 604800);
-      } else {
-        timeLeft = level.valid_until - nextBlockTimestamp;
-      }
-    }
-
-    let percentage = 100;
-    if (trueLevel === 1) {
-      percentage = 125;
-    } else if (trueLevel === 2) {
-      percentage = 150;
-    } else if (trueLevel === 3) {
-      percentage = 200;
-    }
-    return { level: trueLevel, timeLeft, percentage };
-  };
-
-  const getRealmLevelBonus = (level: number, levelIndex: LevelIndex) => {
-    if (level < 5) {
-      return 100;
-    } else {
-      let tier = (level % 4) + 1 > levelIndex ? Math.floor(level / 4) + 1 : Math.floor(level / 4);
-      return Math.round(((1 - (1 - LEVEL_DECAY) ** (tier - 1)) / LEVEL_DECAY) * LEVEL_BASE_MULTIPLIER) + 100;
-    }
-  };
-
   const getAddressName = (address: string) => {
     const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]));
     return addressName ? hexToAscii(numberToHex(addressName.name)) : undefined;
@@ -128,8 +67,6 @@ export function useRealm() {
 
   return {
     getNextRealmIdForOrder,
-    getRealmLevel,
-    getRealmLevelBonus,
     getAddressName,
     getRealmAddressName,
   };

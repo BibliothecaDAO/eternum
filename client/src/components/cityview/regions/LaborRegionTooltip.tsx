@@ -9,7 +9,7 @@ import { LABOR_CONFIG, findResourceById } from "@bibliothecadao/eternum";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { calculateNextHarvest, calculateProductivity, formatSecondsInHoursMinutes } from "../realm/labor/laborUtils";
 import ProgressBar from "../../../elements/ProgressBar";
-import { LevelIndex, useRealm } from "../../../hooks/helpers/useRealm";
+import { LevelIndex, useLevel } from "../../../hooks/helpers/useLevel";
 
 type LaborRegionTooltipProps = {
   position: [number, number, number];
@@ -32,8 +32,8 @@ export const LaborRegionTooltip = ({ position, resourceId }: LaborRegionTooltipP
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 
-  const { getRealmLevelBonus, getRealmLevel } = useRealm();
-  const level = getRealmLevel(realmEntityId)?.level || 0;
+  const { getEntityLevel, getRealmLevelBonus } = useLevel();
+  const level = getEntityLevel(realmEntityId)?.level || 0;
   const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
 
   const laborLeft = useMemo(() => {
