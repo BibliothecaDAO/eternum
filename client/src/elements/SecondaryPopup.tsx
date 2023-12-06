@@ -124,7 +124,7 @@ SecondaryPopup.Body = ({ width = null, children }: { width?: string | null; chil
       // get the height of the window
       const windowHeight = window.innerHeight;
       // calculate the max height of the popup
-      const maxHeight = windowHeight - popupTop - 20;
+      const maxHeight = windowHeight - popupTop - 24;
       // set the max height of the popup
       setMaxHeight(maxHeight);
     }

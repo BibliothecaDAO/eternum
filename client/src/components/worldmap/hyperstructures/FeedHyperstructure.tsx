@@ -444,7 +444,7 @@ const BuildHyperstructurePanel = ({
         <>
           <div className="flex flex-col space-y-2 text-xs">
             <div className="relative w-full">
-              <img src={`/images/buildings/hyperstructure.jpg`} className="object-cover w-full h-64 rounded-[10px]" />
+              <img src={`/images/buildings/hyperstructure.jpg`} className="object-cover w-full rounded-[10px]" />
               <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
                 <div className="mb-1 ml-1 italic text-light-pink text-xxs">
                   {hyperstructureData?.initialized ? "Resources need to complete:" : "Initialization cost:"}
