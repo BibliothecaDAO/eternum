@@ -107,7 +107,7 @@ fn test_travel() {
     travel_systems_dispatcher.travel(
         world,
         travelling_entity_id.into(),
-        destination_coord, 0
+        destination_coord
     );
 
 
@@ -137,7 +137,7 @@ fn test_travel_with_realm_bonus() {
     ///////////////////////////////
 
     let realm_entity_id = 99;
-    let realm_order = 0;
+    let realm_order_hyperstructure_id = 44;
     starknet::testing::set_contract_address(world.executor());
     set!(world, (
         EntityOwner {
@@ -149,12 +149,13 @@ fn test_travel_with_realm_bonus() {
             realm_id: 0,
             resource_types_packed: 0,
             resource_types_count: 0,
-            cities: 0,
+            cities: 76,
             harbors: 0,
             rivers: 0,
             regions: 0,
             wonder: 0,
-            order: realm_order,
+            order: 0,
+            order_hyperstructure_id: realm_order_hyperstructure_id
         },
         Level {
             entity_id: realm_entity_id,
@@ -196,14 +197,13 @@ fn test_travel_with_realm_bonus() {
     travel_systems_dispatcher.travel(
         world,
         travelling_entity_id.into(),
-        destination_coord, 0
+        destination_coord
     );
 
 
     // verify arrival time and position of travelling_entity 
     let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
     let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
-
     assert(travelling_entity_arrival_time.arrives_at == 640, 'arrival time not correct');
 
     assert(new_travelling_entity_position.x == destination_coord.x, 'coord x is not correct');
@@ -229,7 +229,7 @@ fn test_travel_with_realm_and_hyperstructure_bonus() {
     ///////////////////////////////
 
     let realm_entity_id = 99;
-    let realm_order = 0;
+    let realm_order_hyperstructure_id = 999;
     starknet::testing::set_contract_address(world.executor());
     set!(world, (
         EntityOwner {
@@ -241,12 +241,13 @@ fn test_travel_with_realm_and_hyperstructure_bonus() {
             realm_id: 0,
             resource_types_packed: 0,
             resource_types_count: 0,
-            cities: 0,
+            cities: 76,
             harbors: 0,
             rivers: 0,
             regions: 0,
             wonder: 0,
-            order: realm_order,
+            order: 0,
+            order_hyperstructure_id: realm_order_hyperstructure_id
         },
         Level {
             entity_id: realm_entity_id,
@@ -276,7 +277,6 @@ fn test_travel_with_realm_and_hyperstructure_bonus() {
     // create hyperstructure and set level
     ///////////////////////////////////////
 
-    let hyperstructure_id = 799;
     starknet::testing::set_contract_address(world.executor());
     set!(world, (
         EntityOwner {
@@ -284,12 +284,12 @@ fn test_travel_with_realm_and_hyperstructure_bonus() {
             entity_owner_id: realm_entity_id
         }, 
         HyperStructure {
-            entity_id: hyperstructure_id,
+            entity_id: realm_order_hyperstructure_id,
             hyperstructure_type: 0,
-            order: realm_order,
+            order: 0,
         },
         Level {
-            entity_id: hyperstructure_id,
+            entity_id: realm_order_hyperstructure_id,
             level: LevelIndex::TRAVEL.into(),
             valid_until: 10000000,
         },
@@ -328,7 +328,7 @@ fn test_travel_with_realm_and_hyperstructure_bonus() {
     travel_systems_dispatcher.travel(
         world,
         travelling_entity_id.into(),
-        destination_coord, hyperstructure_id
+        destination_coord
     );
 
 
@@ -386,7 +386,7 @@ fn test_travel_with_road(){
     travel_systems_dispatcher.travel(
         world,
         travelling_entity_id.into(),
-        destination_coord, 0
+        destination_coord
     );
 
     // verify arrival time and position of travelling_entity 
@@ -420,7 +420,7 @@ fn test_not_owner() {
     travel_systems_dispatcher.travel(
         world,
         travelling_entity_id.into(),
-        destination_coord, 0
+        destination_coord
     );
 }
 
@@ -441,7 +441,7 @@ fn test_no_speed() {
     travel_systems_dispatcher.travel(
         world,
         travelling_entity_id.into(),
-        destination_coord, 0
+        destination_coord
     );
 }
 
@@ -472,7 +472,7 @@ fn test_blocked() {
     travel_systems_dispatcher.travel(
         world,
         travelling_entity_id.into(),
-        destination_coord, 0
+        destination_coord
     );
 }
 
@@ -507,7 +507,7 @@ fn test_in_transit() {
     travel_systems_dispatcher.travel(
         world,
         travelling_entity_id.into(),
-        destination_coord, 0
+        destination_coord
     );
 }
 

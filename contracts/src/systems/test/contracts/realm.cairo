@@ -34,6 +34,7 @@ mod test_realm_systems {
             regions: u8,
             wonder: u8,
             order: u8,
+            order_hyperstructure_id: u128,
             position: Position
         ) -> ID {
             let entity_id = world.uuid();
@@ -53,6 +54,7 @@ mod test_realm_systems {
                         regions,
                         wonder,
                         order,
+                        order_hyperstructure_id
                     }, 
                     Position {
                         entity_id: entity_id.into(), 

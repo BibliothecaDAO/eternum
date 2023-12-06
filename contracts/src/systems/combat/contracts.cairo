@@ -570,8 +570,7 @@ mod combat_systems {
 
         fn attack(
             self: @ContractState, world: IWorldDispatcher,
-            attacker_ids: Span<u128>, attacker_order_hyperstructure_id: u128, 
-            target_realm_entity_id: u128, target_order_hyperstructure_id: u128
+            attacker_ids: Span<u128>, target_realm_entity_id: u128
         ) {
             let caller = starknet::get_caller_address();
 
@@ -647,22 +646,14 @@ mod combat_systems {
 
             // attacker order hyperstructure
             let attacker_order_hyperstructure 
-                = get!(world, attacker_order_hyperstructure_id, HyperStructure);
-            assert(
-                attacker_order_hyperstructure.order == attacker_realm.order, 
-                    'wrong hyperstructure id'
-            );
-            let attacker_hyperstructure_level = get!(world, attacker_order_hyperstructure_id, Level);
+                = get!(world, attacker_realm.order_hyperstructure_id, HyperStructure);
+            let attacker_hyperstructure_level = get!(world, attacker_realm.order_hyperstructure_id, Level);
             let attacker_order_level_bonus = attacker_hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, LevelIndex::COMBAT, HYPERSTRUCTURE_LEVELING_START_TIER);
 
             // defender order hyperstructure
             let target_order_hyperstructure 
-                = get!(world, target_order_hyperstructure_id, HyperStructure);
-            assert(
-                target_order_hyperstructure.order == target_realm.order, 
-                    'wrong hyperstructure id'
-            );
-            let target_hyperstructure_level = get!(world, target_order_hyperstructure_id, Level);
+                = get!(world, target_realm.order_hyperstructure_id, HyperStructure);
+            let target_hyperstructure_level = get!(world, target_realm.order_hyperstructure_id, Level);
             let target_order_level_bonus = target_hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, LevelIndex::COMBAT, HYPERSTRUCTURE_LEVELING_START_TIER);
 
             // need to divide by 100**2 because level_bonus in precision 100
@@ -753,8 +744,7 @@ mod combat_systems {
 
         fn steal(
             self: @ContractState, world: IWorldDispatcher,
-            attacker_id: u128, attacker_order_hyperstructure_id: u128, 
-            target_realm_entity_id: u128, target_order_hyperstructure_id: u128
+            attacker_id: u128, target_realm_entity_id: u128
         ) {
             // check that target is a realm
             let target_realm = get!(world, target_realm_entity_id, Realm);
@@ -819,22 +809,14 @@ mod combat_systems {
 
             // attacker order hyperstructure
             let attacker_order_hyperstructure 
-                = get!(world, attacker_order_hyperstructure_id, HyperStructure);
-            assert(
-                attacker_order_hyperstructure.order == attacker_realm.order, 
-                    'wrong hyperstructure id'
-            );
-            let attacker_hyperstructure_level = get!(world, attacker_order_hyperstructure_id, Level);
+                = get!(world, attacker_realm.order_hyperstructure_id, HyperStructure);
+            let attacker_hyperstructure_level = get!(world, attacker_realm.order_hyperstructure_id, Level);
             let attacker_order_level_bonus = attacker_hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, LevelIndex::COMBAT, HYPERSTRUCTURE_LEVELING_START_TIER);
 
             // defender order hyperstructure
             let target_order_hyperstructure 
-                = get!(world, target_order_hyperstructure_id, HyperStructure);
-            assert(
-                target_order_hyperstructure.order == target_realm.order, 
-                    'wrong hyperstructure id'
-            );
-            let target_hyperstructure_level = get!(world, target_order_hyperstructure_id, Level);
+                = get!(world, target_realm.order_hyperstructure_id, HyperStructure);
+            let target_hyperstructure_level = get!(world, target_realm.order_hyperstructure_id, Level);
             let target_order_level_bonus = target_hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, LevelIndex::COMBAT, HYPERSTRUCTURE_LEVELING_START_TIER);
 
             // need to divide by 100**2 because level_bonus in precision 100
@@ -1001,8 +983,7 @@ mod combat_systems {
                 = get!(world, attacker_realm_entity_id, Position);
             InternalTravelSystemsImpl::travel(
                 world, attacker_id, attacker_movable, 
-                attacker_position.into(), attacker_home_position.into(),
-                attacker_order_hyperstructure_id
+                attacker_position.into(), attacker_home_position.into()
             );
         }
     }

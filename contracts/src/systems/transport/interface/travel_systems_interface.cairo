@@ -7,7 +7,6 @@ use dojo::world::IWorldDispatcher;
 trait ITravelSystems<TContractState> {
     fn travel(
         self: @TContractState, world: IWorldDispatcher, 
-        travelling_entity_id: ID, destination_coord: Coord,
-        order_hyperstructure_id: ID
+        travelling_entity_id: ID, destination_coord: Coord
     );
 }

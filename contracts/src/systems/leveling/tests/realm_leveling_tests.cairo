@@ -96,8 +96,11 @@ fn setup() -> (IWorldDispatcher, u128, ILevelingSystemsDispatcher) {
         5, // regions
         1, // wonder
         1, // order
+        9, // order hyperstructure id
+
         Position { x: 500200, y: 1, entity_id: 1_u128 }, // position  
                 // x needs to be > 470200 to get zone
+
     );
 
     // mint 100_000 wheat and fish for the realm;

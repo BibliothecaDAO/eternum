@@ -5,6 +5,7 @@ use eternum::models::labor::Labor;
 use eternum::models::hyperstructure::HyperStructure;
 use eternum::models::level::Level;
 use eternum::models::position::Position;
+use eternum::models::realm::Realm;
 use eternum::models::config::LevelingConfig;
 
 use eternum::constants::{
@@ -87,8 +88,10 @@ fn test_harvest_labor_non_food() {
         5, // regions
         1, // wonder
         0, // order
+        9, // order hyperstructure id
         Position { x: 1, y: 1, entity_id: 1_u128 }, // position  
                 // x needs to be > 470200 to get zone
+
     );
 
 
@@ -138,8 +141,7 @@ fn test_harvest_labor_non_food() {
     labor_systems_dispatcher.harvest(
         world,
         realm_entity_id,
-        resource_type,
-        0
+        resource_type
     );
 
 
@@ -212,8 +214,10 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
         5, // regions
         1, // wonder
         0, // order
+        9, // order hyperstructure id
         Position { x: 1, y: 1, entity_id: 1_u128 }, // position  
                 // x needs to be > 470200 to get zone
+            
     );
 
 
@@ -243,7 +247,8 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
         }
     );
 
-    let hyperstructure_id = 499;
+    let hyperstructure_id 
+        = get!(world, realm_entity_id, Realm).order_hyperstructure_id;
 
     set!(world, (
         Level {
@@ -316,8 +321,7 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
     labor_systems_dispatcher.harvest(
         world,
         realm_entity_id,
-        resource_type,
-        hyperstructure_id
+        resource_type
     );
 
 
@@ -391,8 +395,11 @@ fn test_harvest_labor_food() {
         5, // regions
         1, // wonder
         0, // order
+        9, // order hyperstructure id
+
         Position { x: 1, y: 1, entity_id: 1_u128 }, // position  
                 // x needs to be > 470200 to get zone
+
     );
 
 
@@ -441,8 +448,7 @@ fn test_harvest_labor_food() {
     labor_systems_dispatcher.harvest(
         world,
         realm_entity_id,
-        resource_type,
-        0
+        resource_type
     );
 
 
@@ -517,8 +523,10 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
         5, // regions
         1, // wonder
         0, // order
+        9, // order hyperstructure id
         Position { x: 1, y: 1, entity_id: 1_u128 }, // position  
                 // x needs to be > 470200 to get zone
+
     );
 
 
@@ -548,7 +556,7 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
         }
     );
 
-    let hyperstructure_id = 499;
+    let order_hyperstructure_id = get!(world, realm_entity_id, Realm).order_hyperstructure_id;
 
     set!(world, (
         Level {
@@ -573,12 +581,12 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
             base_multiplier: 25
         },
         HyperStructure {
-            entity_id: hyperstructure_id, 
+            entity_id: order_hyperstructure_id, 
             hyperstructure_type: 0,
             order: 0
         },
         Level {
-            entity_id: hyperstructure_id,
+            entity_id: order_hyperstructure_id,
             level: LevelIndex::FOOD.into(),
             valid_until: 10000000000000000000,
         },
@@ -619,8 +627,7 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
     labor_systems_dispatcher.harvest(
         world,
         realm_entity_id,
-        resource_type,
-        hyperstructure_id
+        resource_type
     );
 
 

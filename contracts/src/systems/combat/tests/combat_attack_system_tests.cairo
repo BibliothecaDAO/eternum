@@ -114,12 +114,14 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     let regions = 5;
     let wonder = 1;
     let order = 0;
+    let order_hyperstructure_id = 99;
 
     // create attacker's realm
     let attacker_realm_entity_id = realm_systems_dispatcher.create(
         world, realm_id, contract_address_const::<'attacker'>(), // owner
         resource_types_packed, resource_types_count, cities,
-        harbors, rivers, regions, wonder, order, attacker_realm_entity_position.clone(),
+        harbors, rivers, regions, wonder, order, order_hyperstructure_id,
+        attacker_realm_entity_position.clone(),
     );
 
     // create target's realm
@@ -128,7 +130,8 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     let target_realm_entity_id = realm_systems_dispatcher.create(
         world, realm_id, contract_address_const::<'target'>(), // owner
         resource_types_packed, resource_types_count, cities,
-        harbors, rivers, regions, wonder, order, attacker_realm_entity_position.clone(),
+        harbors, rivers, regions, wonder, order, order_hyperstructure_id,
+        attacker_realm_entity_position.clone(),
     );
 
     starknet::testing::set_contract_address(world.executor());
@@ -227,8 +230,8 @@ fn test_attack() {
     combat_systems_dispatcher
         .attack(
             world, 
-            array![attacker_unit_id].span(), 0,
-            target_realm_entity_id, 0
+            array![attacker_unit_id].span(),
+            target_realm_entity_id
         );
 
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
@@ -265,8 +268,8 @@ fn test_not_owner() {
     combat_systems_dispatcher
         .attack(
             world, 
-            array![attacker_unit_id].span(), 0,
-            target_realm_entity_id, 0
+            array![attacker_unit_id].span(),
+            target_realm_entity_id
         );
 
 }
@@ -305,8 +308,8 @@ fn test_attacker_in_transit() {
     combat_systems_dispatcher
         .attack(
             world, 
-            array![attacker_unit_id].span(), 0,
-            target_realm_entity_id, 0
+            array![attacker_unit_id].span(),
+            target_realm_entity_id
         );
 
 }
@@ -343,8 +346,8 @@ fn test_attacker_dead() {
     combat_systems_dispatcher
         .attack(
             world, 
-            array![attacker_unit_id].span(), 0,
-            target_realm_entity_id, 0
+            array![attacker_unit_id].span(),
+            target_realm_entity_id
         );
 
 }
@@ -381,8 +384,8 @@ fn test_target_dead() {
     combat_systems_dispatcher
         .attack(
             world, 
-            array![attacker_unit_id].span(), 0,
-            target_realm_entity_id, 0
+            array![attacker_unit_id].span(),
+            target_realm_entity_id
         );
 
 }
@@ -420,8 +423,8 @@ fn test_wrong_position() {
     combat_systems_dispatcher
         .attack(
             world, 
-            array![attacker_unit_id].span(), 0,
-            target_realm_entity_id, 0
+            array![attacker_unit_id].span(),
+            target_realm_entity_id
         );
 
 }

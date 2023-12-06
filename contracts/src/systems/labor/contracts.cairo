@@ -185,7 +185,7 @@ mod labor_systems {
             /// * `realm_id` - The realm id
             /// * `resource_type` - The resource type (e.g fish, wheat, gold etc)
             ///
-            fn harvest(self: @ContractState, world: IWorldDispatcher, realm_id: u128, resource_type: u8, order_hyperstructure_id: u128) {
+            fn harvest(self: @ContractState, world: IWorldDispatcher, realm_id: u128, resource_type: u8) {
                 let player_id: ContractAddress = starknet::get_caller_address();
                 let (realm, owner) = get!(world, realm_id, (Realm, Owner));
 
@@ -251,10 +251,9 @@ mod labor_systems {
                 let realm_level_bonus = realm_level.get_index_multiplier(realm_leveling_config, level_index, REALM_LEVELING_START_TIER);
 
                 /// HYPERSTRUCTURE BONUS ///
-                let hyperstructure = get!(world, (order_hyperstructure_id), HyperStructure);
-                assert(hyperstructure.order == realm.order, 'not same order');
+                let hyperstructure = get!(world, (realm.order_hyperstructure_id), HyperStructure);
                 let hyperstructure_leveling_config: LevelingConfig = get!(world, HYPERSTRUCTURE_LEVELING_CONFIG_ID, LevelingConfig);
-                let hyperstructure_level = get!(world, (order_hyperstructure_id), Level);
+                let hyperstructure_level = get!(world, (realm.order_hyperstructure_id), Level);
                 
                 let hyperstructure_level_bonus = hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, level_index, HYPERSTRUCTURE_LEVELING_START_TIER);
 
