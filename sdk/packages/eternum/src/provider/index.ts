@@ -588,8 +588,8 @@ export class EternumProvider extends RPCProvider {
   public async level_up_hyperstructure(props: LevelUpHyperstructureProps) {
     const { hyperstructure_id, signer } = props;
     const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
-      entrypoint: "level_up",
+      contractAddress: getContractByName(this.manifest, "leveling_systems"),
+      entrypoint: "level_up_hyperstructure",
       calldata: [this.getWorldAddress(), hyperstructure_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -601,7 +601,7 @@ export class EternumProvider extends RPCProvider {
     const { realm_entity_id, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "leveling_systems"),
-      entrypoint: "level_up",
+      entrypoint: "level_up_realm",
       calldata: [this.getWorldAddress(), realm_entity_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
