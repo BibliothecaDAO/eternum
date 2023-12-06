@@ -35,8 +35,7 @@ trait ITradeSystems<TContractState> {
 
     fn accept_order(
         self: @TContractState, world: IWorldDispatcher,
-        taker_id: u128, taker_transport_id: u128, trade_id: u128,
-        order_hyperstructure_id: ID
+        taker_id: u128, taker_transport_id: u128, trade_id: u128
     );
 
     fn cancel_order(self: @TContractState, world: IWorldDispatcher, trade_id: u128);

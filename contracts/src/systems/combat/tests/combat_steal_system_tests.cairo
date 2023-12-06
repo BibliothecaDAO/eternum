@@ -2,9 +2,10 @@ use eternum::models::position::Position;
 use eternum::models::metadata::ForeignKey;
 use eternum::models::resources::{Resource, ResourceCost};
 use eternum::models::level::Level;
+use eternum::models::realm::Realm;
 use eternum::models::config::{
     SpeedConfig, WeightConfig, CapacityConfig, CombatConfig,
-    SoldierConfig, HealthConfig, AttackConfig, DefenceConfig
+    SoldierConfig, HealthConfig, AttackConfig, DefenceConfig, LevelingConfig
 };
 use eternum::models::movable::{Movable, ArrivalTime};
 use eternum::models::inventory::Inventory;
@@ -48,6 +49,7 @@ use eternum::utils::testing::{spawn_eternum, deploy_system};
 
 use eternum::constants::ResourceTypes;
 use eternum::constants::{COMBAT_CONFIG_ID, SOLDIER_ENTITY_TYPE};
+use eternum::constants::{REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID};
 
 use dojo::world::{ IWorldDispatcher, IWorldDispatcherTrait};
 
@@ -57,22 +59,17 @@ use core::array::{ArrayTrait, SpanTrait};
 use core::traits::Into;
 
 const ATTACKER_STOLEN_RESOURCE_COUNT: u32 = 2;
-const STEAL_CHANCE_PERCENTAGE_BOOST: u32 = 10;
-
 const WHEAT_BURN_PER_SOLDIER_DURING_ATTACK: u128 = 100;
-const WHEAT_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST: u128 = 50;
-
 const FISH_BURN_PER_SOLDIER_DURING_ATTACK: u128 = 200;
-const FISH_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST: u128 = 10;
 
 const ATTACKER_SOLDIER_COUNT: u128 = 15;
 const TARGET_SOLDIER_COUNT: u128 = 5;
 const INITIAL_RESOURCE_BALANCE: u128 = 5000;
 
-const PRECALCULATED_STOLEN_RESOURCE_TYPE_ONE: u8 = 9;
-const PRECALCULATED_STOLEN_RESOURCE_TYPE_TWO: u8 = 5;
+const PRECALCULATED_STOLEN_RESOURCE_TYPE_ONE: u8 = 5;
+const PRECALCULATED_STOLEN_RESOURCE_TYPE_TWO: u8 = 6;
 
-fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, u128, ICombatSystemsDispatcher) {
+fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatcher) {
     let world = spawn_eternum();
 
     let config_systems_address 
@@ -87,11 +84,8 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, u128, ICombatSystemsDis
         world,
         COMBAT_CONFIG_ID,
         ATTACKER_STOLEN_RESOURCE_COUNT,
-        STEAL_CHANCE_PERCENTAGE_BOOST,
         WHEAT_BURN_PER_SOLDIER_DURING_ATTACK,
-        WHEAT_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST,
         FISH_BURN_PER_SOLDIER_DURING_ATTACK,
-        FISH_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST
     );
 
     combat_config_dispatcher.set_soldier_config(
@@ -138,17 +132,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, u128, ICombatSystemsDis
         contract_address: config_systems_address
     }.set_weight_config(
         world, PRECALCULATED_STOLEN_RESOURCE_TYPE_TWO.into(), 200); 
-    
-    // set up attacker order's hyperstructure
-    let attacker_order_hyperstructure_id = world.uuid().into();
-    set!(world, (
-        HyperStructure { 
-                entity_id: attacker_order_hyperstructure_id,
-                hyperstructure_type: 1,
-                order: 1,
-        }
-    ));
-
+      
     let realm_systems_address 
         = deploy_system(test_realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
@@ -167,12 +151,24 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, u128, ICombatSystemsDis
     let regions = 5;
     let wonder = 1;
     let order = 1;
+    let order_hyperstructure_id = world.uuid().into();
+
+    starknet::testing::set_contract_address(world.executor());
+    set!(world, (
+        HyperStructure { 
+                entity_id: order_hyperstructure_id,
+                hyperstructure_type: 1,
+                order: 1,
+        }
+    ));
+
 
     // create attacker's realm
     let attacker_realm_entity_id = realm_systems_dispatcher.create(
         world, realm_id, contract_address_const::<'attacker'>(), // owner
         resource_types_packed, resource_types_count, cities,
-        harbors, rivers, regions, wonder, order, attacker_realm_entity_position.clone(),
+        harbors, rivers, regions, wonder, order, order_hyperstructure_id, attacker_realm_entity_position.clone(),
+        
     );
 
     // create target's realm
@@ -180,12 +176,48 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, u128, ICombatSystemsDis
     let target_realm_entity_id = realm_systems_dispatcher.create(
         world, realm_id, contract_address_const::<'target'>(), // owner
         resource_types_packed, resource_types_count, cities,
-        harbors, rivers, regions, wonder, order, target_realm_entity_position.clone(),
+        harbors, rivers, regions, wonder, 0, order_hyperstructure_id, target_realm_entity_position.clone(),
     );
 
     starknet::testing::set_contract_address(world.executor());
 
     starknet::testing::set_block_timestamp(1000);
+
+    // set up leveling config 
+    set!(world, (
+        LevelingConfig {
+            config_id: REALM_LEVELING_CONFIG_ID,
+            decay_interval: 604800,
+            max_level: 1000,
+            wheat_base_amount: 0,
+            fish_base_amount: 0,
+            resource_1_cost_id: 0,
+            resource_1_cost_count: 0,
+            resource_2_cost_id: 0,
+            resource_2_cost_count: 0,
+            resource_3_cost_id: 0,
+            resource_3_cost_count: 0,
+            decay_scaled: 1844674407370955161,
+            cost_percentage_scaled: 4611686018427387904,
+            base_multiplier: 25
+        },
+        LevelingConfig {
+            config_id: HYPERSTRUCTURE_LEVELING_CONFIG_ID,
+            decay_interval: 604800,
+            max_level: 1000,
+            wheat_base_amount: 0,
+            fish_base_amount: 0,
+            resource_1_cost_id: 0,
+            resource_1_cost_count: 0,
+            resource_2_cost_id: 0,
+            resource_2_cost_count: 0,
+            resource_3_cost_id: 0,
+            resource_3_cost_count: 0,
+            decay_scaled: 1844674407370955161,
+            cost_percentage_scaled: 4611686018427387904,
+            base_multiplier: 25
+        }
+    ));
 
     // set up attacker
     set!(world, (
@@ -311,7 +343,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, u128, ICombatSystemsDis
     };
     (
         world, 
-        attacker_realm_entity_id, attacker_unit_id, attacker_order_hyperstructure_id,
+        attacker_realm_entity_id, attacker_unit_id,
         target_realm_entity_id, target_town_watch_id, 
         combat_systems_dispatcher
     ) 
@@ -330,7 +362,7 @@ fn test_steal_success() {
 
     let (
         world, 
-        attacker_realm_entity_id, attacker_unit_id, attacker_order_hyperstructure_id,
+        attacker_realm_entity_id, attacker_unit_id,
         target_realm_entity_id, target_town_watch_id, 
         combat_systems_dispatcher
     ) = setup();
@@ -353,7 +385,7 @@ fn test_steal_success() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id
+            world, attacker_unit_id, target_realm_entity_id
             );
 
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
@@ -442,7 +474,7 @@ fn test_steal_success_with_level_1_boost() {
 
     let (
         world, 
-        attacker_realm_entity_id, attacker_unit_id, attacker_order_hyperstructure_id,
+        attacker_realm_entity_id, attacker_unit_id, 
         target_realm_entity_id, target_town_watch_id, 
         combat_systems_dispatcher
     ) = setup();
@@ -459,8 +491,9 @@ fn test_steal_success_with_level_1_boost() {
     ));
 
     // boost hyperstructure level to 1
+    let attacker_realm = get!(world, attacker_realm_entity_id, Realm);
     let mut attacker_order_hyperstructure_level 
-        = get!(world, attacker_order_hyperstructure_id, Level);
+        = get!(world, attacker_realm.order_hyperstructure_id, Level);
     attacker_order_hyperstructure_level.level = 1;
     set!(world, (attacker_order_hyperstructure_level));
 
@@ -471,7 +504,7 @@ fn test_steal_success_with_level_1_boost() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id
+            world, attacker_unit_id, target_realm_entity_id
             );
 
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
@@ -485,24 +518,20 @@ fn test_steal_success_with_level_1_boost() {
 
     // ensure that food was burned
     let target_realm_wheat_resource = get!(world, (target_realm_entity_id, ResourceTypes::WHEAT), Resource);
-    let normal_wheat_expected_burn = WHEAT_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
-    let boosted_wheat_expected_burn
-         = normal_wheat_expected_burn + WHEAT_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST * normal_wheat_expected_burn / 100;
+    let wheat_expected_burn = WHEAT_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
 
     assert(
         target_realm_wheat_resource.balance 
-            == INITIAL_RESOURCE_BALANCE - boosted_wheat_expected_burn,
+            == INITIAL_RESOURCE_BALANCE - wheat_expected_burn,
                 'wrong wheat value'
     );
 
     let target_realm_fish_resource = get!(world, (target_realm_entity_id, ResourceTypes::FISH), Resource);
-    let normal_fish_expected_burn = FISH_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
-    let boosted_fish_expected_burn
-         = normal_fish_expected_burn + FISH_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST * normal_fish_expected_burn / 100;
-      
+    let fish_expected_burn = FISH_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
+
     assert(
         target_realm_fish_resource.balance 
-            == INITIAL_RESOURCE_BALANCE - boosted_fish_expected_burn,
+            == INITIAL_RESOURCE_BALANCE - fish_expected_burn,
                 'wrong fish value'
     );
 
@@ -569,7 +598,7 @@ fn test_steal_success_with_level_3_boost() {
 
     let (
         world, 
-        attacker_realm_entity_id, attacker_unit_id, attacker_order_hyperstructure_id,
+        attacker_realm_entity_id, attacker_unit_id,
         target_realm_entity_id, target_town_watch_id, 
         combat_systems_dispatcher
     ) = setup();
@@ -586,8 +615,9 @@ fn test_steal_success_with_level_3_boost() {
     ));
 
     // boost hyperstructure level to 3
+    let attacker_realm = get!(world, attacker_realm_entity_id, Realm);
     let mut attacker_order_hyperstructure_level
-        = get!(world, attacker_order_hyperstructure_id, Level);
+        = get!(world, attacker_realm.order_hyperstructure_id, Level);
     attacker_order_hyperstructure_level.level = 3;
     set!(world, (attacker_order_hyperstructure_level));
 
@@ -598,7 +628,7 @@ fn test_steal_success_with_level_3_boost() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id
+            world, attacker_unit_id, target_realm_entity_id
             );
 
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
@@ -612,24 +642,20 @@ fn test_steal_success_with_level_3_boost() {
 
     // ensure that food was burned
     let target_realm_wheat_resource = get!(world, (target_realm_entity_id, ResourceTypes::WHEAT), Resource);
-    let normal_wheat_expected_burn = WHEAT_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
-    let boosted_wheat_expected_burn
-         = normal_wheat_expected_burn + WHEAT_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST * normal_wheat_expected_burn / 100;
-                             
+    let wheat_expected_burn = WHEAT_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
+             
     assert(
         target_realm_wheat_resource.balance 
-            == INITIAL_RESOURCE_BALANCE - boosted_wheat_expected_burn,
+            == INITIAL_RESOURCE_BALANCE - wheat_expected_burn,
                 'wrong wheat value'
     );
 
     let target_realm_fish_resource = get!(world, (target_realm_entity_id, ResourceTypes::FISH), Resource);
-    let normal_fish_expected_burn = FISH_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
-    let boosted_fish_expected_burn
-         = normal_fish_expected_burn + FISH_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST * normal_fish_expected_burn / 100;
-                         
+    let fish_expected_burn = FISH_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
+             
     assert(
         target_realm_fish_resource.balance 
-            == INITIAL_RESOURCE_BALANCE - boosted_fish_expected_burn,
+            == INITIAL_RESOURCE_BALANCE - fish_expected_burn,
                 'wrong fish value'
     );
 
@@ -695,7 +721,7 @@ fn test_steal_failure() {
 
     let (
         world, 
-        attacker_realm_entity_id, attacker_unit_id, attacker_order_hyperstructure_id,
+        attacker_realm_entity_id, attacker_unit_id,
         target_realm_entity_id, target_town_watch_id, 
         combat_systems_dispatcher
     ) = setup();
@@ -717,7 +743,7 @@ fn test_steal_failure() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id
+            world, attacker_unit_id, target_realm_entity_id
             );
 
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
@@ -750,7 +776,7 @@ fn test_not_owner() {
 
     let (
         world, 
-        attacker_realm_entity_id, attacker_unit_id, attacker_order_hyperstructure_id,
+        attacker_realm_entity_id, attacker_unit_id,
         target_realm_entity_id, target_town_watch_id, 
         combat_systems_dispatcher
     ) = setup();
@@ -763,7 +789,7 @@ fn test_not_owner() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id
+            world, attacker_unit_id, target_realm_entity_id
             );
 
 }
@@ -775,7 +801,7 @@ fn test_target_not_realm() {
 
     let (
         world, 
-        attacker_realm_entity_id, attacker_unit_id, attacker_order_hyperstructure_id,
+        attacker_realm_entity_id, attacker_unit_id,
         _, target_town_watch_id, 
         combat_systems_dispatcher
     ) = setup();
@@ -791,7 +817,7 @@ fn test_target_not_realm() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id
+            world, attacker_unit_id, target_realm_entity_id
             );
 
 }
@@ -805,7 +831,7 @@ fn test_attacker_in_transit() {
 
     let (
         world, 
-        attacker_realm_entity_id, attacker_unit_id, attacker_order_hyperstructure_id,
+        attacker_realm_entity_id, attacker_unit_id,
         target_realm_entity_id, target_town_watch_id, 
         combat_systems_dispatcher
     ) = setup();
@@ -828,7 +854,7 @@ fn test_attacker_in_transit() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id
+            world, attacker_unit_id, target_realm_entity_id
             );
 
 }
@@ -841,7 +867,7 @@ fn test_attacker_dead() {
 
     let (
         world, 
-        attacker_realm_entity_id, attacker_unit_id, attacker_order_hyperstructure_id,
+        attacker_realm_entity_id, attacker_unit_id,
         target_realm_entity_id, target_town_watch_id, 
         combat_systems_dispatcher
     ) = setup();
@@ -864,7 +890,7 @@ fn test_attacker_dead() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id
+            world, attacker_unit_id, target_realm_entity_id
             );
 
 }
@@ -881,7 +907,7 @@ fn test_wrong_position() {
 
     let (
         world, 
-        attacker_realm_entity_id, attacker_unit_id, attacker_order_hyperstructure_id,
+        attacker_realm_entity_id, attacker_unit_id,
         target_realm_entity_id, target_town_watch_id, 
         combat_systems_dispatcher
     ) = setup();
@@ -904,7 +930,7 @@ fn test_wrong_position() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id
+            world, attacker_unit_id, target_realm_entity_id
             );
 
 }

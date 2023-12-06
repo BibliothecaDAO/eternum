@@ -213,28 +213,39 @@ mod caravan_systems {
 
 
         fn get_travel_time(
-            world: IWorldDispatcher, transport_id: ID, from_pos: Position, to_pos: Position, order_hyperstructure_id: ID 
+            world: IWorldDispatcher, transport_id: ID, from_pos: Position, to_pos: Position
             ) -> (u64, u64) {
-
-            // get level bonus
-            let realm_owner = get!(world, (transport_id), EntityOwner);
-            let realm_level_bonus = leveling::get_realm_level_bonus(world, realm_owner.entity_owner_id, LevelIndex::TRAVEL);
-
-            // get hyperstructure level bonus
-            let hyperstructure = get!(world, (order_hyperstructure_id), HyperStructure);
-            let realm = get!(world, (realm_owner.entity_owner_id), Realm);
-            assert(hyperstructure.order == realm.order, 'not same order');
-            let hyperstructure_level_bonus = leveling::get_hyperstructure_level_bonus(world, order_hyperstructure_id, LevelIndex::TRAVEL);
-
+                      
             let (caravan_movable, caravan_position) 
                 = get!(world, transport_id, (Movable, Position));
             let mut one_way_trip_time 
                 = from_pos.calculate_travel_time(
                     to_pos, caravan_movable.sec_per_km
                     );
-            
-            one_way_trip_time = ((one_way_trip_time.into() * 100 / realm_level_bonus)).try_into().unwrap();
-                    
+
+            // check if entity owner is a realm and apply bonuses if it is
+            let entity_owner = get!(world, (transport_id), EntityOwner);
+            let realm = get!(world, entity_owner.entity_owner_id, Realm);
+            if realm.cities > 0 {
+
+                // get realm level bonus
+                let realm_level_bonus 
+                    = leveling::get_realm_level_bonus(
+                        world, entity_owner.entity_owner_id, LevelIndex::TRAVEL
+                        );
+
+                // get hyperstructure level bonus
+                let hyperstructure = get!(world, (realm.order_hyperstructure_id), HyperStructure);
+                let hyperstructure_level_bonus 
+                    = leveling::get_hyperstructure_level_bonus(
+                            world, realm.order_hyperstructure_id, LevelIndex::TRAVEL
+                        );
+
+                // apply bonuses 
+                // precision of level bonus is 100
+                one_way_trip_time = ((one_way_trip_time.into() * 10000 / (realm_level_bonus * hyperstructure_level_bonus))).try_into().unwrap();
+            }
+                                
             let round_trip_time: u64 = 2 * one_way_trip_time;
             // reduce round trip time if there is a road
             let round_trip_time = RoadImpl::use_road(

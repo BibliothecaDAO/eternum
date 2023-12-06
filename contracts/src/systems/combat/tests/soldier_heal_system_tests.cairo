@@ -108,12 +108,14 @@ fn setup() -> (IWorldDispatcher, u128, u128, ISoldierSystemsDispatcher) {
     let regions = 5;
     let wonder = 1;
     let order = 1;
+    let order_hyperstructure_id = world.uuid().into();
+
 
     // create caller's realm
     let caller_realm_entity_id = realm_systems_dispatcher.create(
         world, realm_id, contract_address_const::<'caller'>(), // owner
         resource_types_packed, resource_types_count, cities,
-        harbors, rivers, regions, wonder, order, caller_position.clone(),
+        harbors, rivers, regions, wonder, order, order_hyperstructure_id, caller_position.clone(),
     );
 
     starknet::testing::set_contract_address(world.executor());

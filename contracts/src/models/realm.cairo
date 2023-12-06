@@ -19,7 +19,8 @@ struct Realm {
     rivers: u8,
     regions: u8,
     wonder: u8,
-    order: u8
+    order: u8,
+    order_hyperstructure_id: u128
 }
 
 
