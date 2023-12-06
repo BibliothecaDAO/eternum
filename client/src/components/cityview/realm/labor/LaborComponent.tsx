@@ -12,7 +12,6 @@ import { useMemo } from "react";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useComponentValue } from "@dojoengine/react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { useHyperstructure } from "../../../../hooks/helpers/useHyperstructure";
 import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
 
 type LaborComponentProps = {
@@ -71,10 +70,6 @@ export const LaborComponent = ({
   const level = getEntityLevel(realmEntityId)?.level || 0;
   const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
 
-  const { getHyperstructureIdByRealmEntityId } = useHyperstructure();
-
-  const order_hyperstructure_id = realmEntityId ? getHyperstructureIdByRealmEntityId(realmEntityId) : undefined;
-
   const onHarvest = () => {
     playHarvest();
     optimisticHarvestLabor(
@@ -85,7 +80,6 @@ export const LaborComponent = ({
       signer: account,
       realm_id: realmEntityId,
       resource_type: resourceId,
-      order_hyperstructure_id,
     });
   };
 
@@ -162,21 +156,15 @@ export const LaborComponent = ({
                   <div className="px-2">{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${realm?.harbors}`}</div>
                 )}
                 {/* // TODO: show visual cue that it's disabled */}
-                {!buildLoadingStates[resourceId] && (
-                  <Button variant="outline" className="px-2 py-1" onClick={onBuild} disabled={isFood && laborLeft > 0}>
-                    {isFood ? `Build` : `Add Production`}
-                  </Button>
-                )}
-                {buildLoadingStates[resourceId] && (
-                  <Button
-                    isLoading={true}
-                    onClick={() => {}}
-                    variant="danger"
-                    className="ml-auto p-2 !h-4 text-xxs !rounded-md"
-                  >
-                    {}
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  className="px-2 py-1"
+                  onClick={onBuild}
+                  disabled={isFood && laborLeft > 0}
+                  isLoading={buildLoadingStates[resourceId]}
+                >
+                  {isFood ? `Build` : `Add Production`}
+                </Button>
               </div>
             </div>
             <ProgressBar

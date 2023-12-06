@@ -25,9 +25,7 @@ export interface SetAddressNameProps extends SystemSigner {
 
 export interface AttackProps extends SystemSigner {
   attacker_ids: num.BigNumberish[];
-  attacker_order_hyperstructure_id: num.BigNumberish;
   target_id: num.BigNumberish;
-  target_order_hyperstructure_id: num.BigNumberish;
 }
 
 export interface MergeSoldiersProps extends SystemSigner {
@@ -43,9 +41,7 @@ export interface CreateAndMergeSoldiersProps extends SystemSigner {
 
 export interface StealProps extends SystemSigner {
   attacker_id: num.BigNumberish;
-  attacker_order_hyperstructure_id: num.BigNumberish;
   target_id: num.BigNumberish;
-  target_order_hyperstructure_id: num.BigNumberish;
 }
 
 export interface LevelUpHyperstructureProps extends SystemSigner {
@@ -60,7 +56,6 @@ export interface TravelProps extends SystemSigner {
   travelling_entity_id: num.BigNumberish;
   destination_coord_x: num.BigNumberish;
   destination_coord_y: num.BigNumberish;
-  order_hyperstructure_id: num.BigNumberish;
 }
 
 export interface CreateOrderProps {
@@ -91,7 +86,6 @@ export interface SendResourcesToLocationProps extends SystemSigner {
   destination_coord_y: num.BigNumberish;
   donkeys_quantity?: num.BigNumberish;
   caravan_id?: num.BigNumberish;
-  order_hyperstructure_id: num.BigNumberish;
 }
 
 export interface TransferResourcesProps extends SystemSigner {
@@ -117,7 +111,6 @@ export interface BuildLaborProps extends SystemSigner {
 export interface HarvestLaborProps extends SystemSigner {
   realm_id: num.BigNumberish; // TODO: this is entity id not realm id
   resource_type: num.BigNumberish;
-  order_hyperstructure_id: num.BigNumberish;
 }
 
 export interface SwapBankAndTravelBackProps extends SystemSigner {
@@ -129,12 +122,10 @@ export interface SwapBankAndTravelBackProps extends SystemSigner {
   resource_amounts: num.BigNumberish[];
   destination_coord_x: num.BigNumberish;
   destination_coord_y: num.BigNumberish;
-  order_hyperstructure_id: num.BigNumberish;
 }
 
 export interface HarvestAllLaborProps extends SystemSigner {
   entity_ids: num.BigNumberish[][];
-  order_hyperstructure_id: num.BigNumberish;
 }
 
 export interface MintResourcesProps extends SystemSigner {
@@ -147,7 +138,6 @@ export interface AcceptOrderProps extends SystemSigner {
   trade_id: num.BigNumberish;
   caravan_id?: num.BigNumberish; // This is optional now
   donkeys_quantity?: num.BigNumberish; // Also optional
-  order_hyperstructure_id: num.BigNumberish;
 }
 
 export interface CancelFungibleOrderProps extends SystemSigner {
@@ -194,6 +184,7 @@ export interface CreateRealmProps extends SystemSigner {
   regions: num.BigNumberish;
   wonder: num.BigNumberish;
   order: num.BigNumberish;
+  order_hyperstructure_id: num.BigNumberish;
   position: {
     x: num.BigNumberish;
     y: num.BigNumberish;

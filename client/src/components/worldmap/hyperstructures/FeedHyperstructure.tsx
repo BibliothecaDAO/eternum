@@ -238,7 +238,6 @@ const BuildHyperstructurePanel = ({
           destination_coord_x: hyperstructureData.position.x,
           destination_coord_y: hyperstructureData.position.y,
           donkeys_quantity: donkeysCount,
-          order_hyperstructure_id: hyperstructureData.hyperstructureId,
         });
       } else {
         // transfer resources to caravan
@@ -249,7 +248,6 @@ const BuildHyperstructurePanel = ({
           destination_coord_x: hyperstructureData.position.x,
           destination_coord_y: hyperstructureData.position.y,
           caravan_id: selectedCaravan,
-          order_hyperstructure_id: hyperstructureData.hyperstructureId,
         });
       }
     }

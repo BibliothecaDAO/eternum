@@ -11,7 +11,6 @@ import { ResourceCost } from "../../elements/ResourceCost";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { soundSelector, useUiSounds } from "../useUISound";
 import { useState } from "react";
-import { useHyperstructure } from "../helpers/useHyperstructure";
 import { useLevel } from "../helpers/useLevel";
 
 export const useHarvestNotification = (
@@ -47,12 +46,6 @@ export const useHarvestNotification = (
   const { getEntityLevel } = useLevel();
   const level = getEntityLevel(parseInt(realmEntityId))?.level || 0;
 
-  const { getHyperstructureIdByRealmEntityId } = useHyperstructure();
-
-  const order_hyperstructure_id = realmEntityId
-    ? getHyperstructureIdByRealmEntityId(parseInt(realmEntityId))
-    : undefined;
-
   const onHarvest = async () => {
     setIsLoading(true);
     await optimisticHarvestLabor(
@@ -63,7 +56,6 @@ export const useHarvestNotification = (
       signer: account,
       realm_id: realmEntityId,
       resource_type: parseInt(notification.keys[1]),
-      order_hyperstructure_id,
     });
     playHarvest();
     setIsLoading(false);

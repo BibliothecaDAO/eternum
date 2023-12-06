@@ -17,7 +17,6 @@ import { findResourceById, resources } from "@bibliothecadao/eternum";
 import { getRealmIdByPosition, getRealmNameById } from "../../../../../utils/realms";
 import { SmallResource } from "../../SmallResource";
 import { Resource } from "../../../../../types";
-import { useHyperstructure } from "../../../../../hooks/helpers/useHyperstructure";
 import { LevelIndex, useLevel } from "../../../../../hooks/helpers/useLevel";
 
 type AttackRaidsPopupProps = {
@@ -501,15 +500,6 @@ const SelectRaidersPanel = ({
 
   // @ts-ignore
   const { realm } = useGetRealm(realmEntityId);
-  const { getHyperstructureIdByRealmEntityId } = useHyperstructure();
-
-  const attacker_order_hyperstructure_id = realmEntityId
-    ? getHyperstructureIdByRealmEntityId(realmEntityId)
-    : undefined;
-
-  const target_order_hyperstructure_id = watchTower?.entityOwnerId
-    ? getHyperstructureIdByRealmEntityId(watchTower?.entityOwnerId)
-    : undefined;
 
   const onAttack = async () => {
     // set is loading
@@ -519,9 +509,7 @@ const SelectRaidersPanel = ({
     await attack({
       signer: account,
       attacker_ids: selectedRaiders.map((raider) => raider.entityId),
-      attacker_order_hyperstructure_id,
       target_id: watchTower.locationRealmEntityId,
-      target_order_hyperstructure_id,
     });
     // when contract finished setloading false
     setLoading(false);
@@ -539,9 +527,7 @@ const SelectRaidersPanel = ({
     await steal({
       signer: account,
       attacker_id: selectedRaiders[0].entityId,
-      target_order_hyperstructure_id,
       target_id: selectedRaiders[0].locationRealmEntityId,
-      attacker_order_hyperstructure_id,
     });
     // when contract finished setloading false
     setLoading(false);

@@ -13,6 +13,7 @@ import { getPosition, multiplyByPrecision } from "../../../utils/utils";
 import { initialResources } from "@bibliothecadao/eternum";
 import { BigNumberish } from "starknet";
 import { order_statments } from "../../../data/orders";
+import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
 
 export const MAX_REALMS = 5;
 
@@ -26,6 +27,8 @@ export const SettleRealmComponent = () => {
     },
     account: { account, masterAccount },
   } = useDojo();
+
+  const { getHyperstructureIdByOrder } = useHyperstructure();
 
   const { getNextRealmIdForOrder } = useRealm();
 
@@ -65,11 +68,14 @@ export const SettleRealmComponent = () => {
       resources = [...resources, 255, multiplyByPrecision(2520)];
     }
 
+    const order_hyperstructure_id = getHyperstructureIdByOrder(realm.order);
+
     await create_realm({
       signer: masterAccount as any,
       owner: BigInt(account.address),
       ...realm,
       position,
+      order_hyperstructure_id,
       resources,
     });
     setIsLoading(false);

@@ -7,7 +7,6 @@ import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { MarketInterface, useTrade } from "../../../../hooks/helpers/useTrade";
 import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
 import { WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
-import { useHyperstructure } from "../../../../hooks/helpers/useHyperstructure";
 
 type AcceptOfferPopupProps = {
   onClose: () => void;
@@ -35,8 +34,6 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
   } = useDojo();
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
-  const { getHyperstructureIdByRealmEntityId } = useHyperstructure();
-  const order_hyperstructure_id = realmEntityId ? getHyperstructureIdByRealmEntityId(realmEntityId) : undefined;
 
   const acceptOffer = async () => {
     if (isNewCaravan) {
@@ -45,7 +42,6 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
         taker_id: realmEntityId,
         trade_id: selectedTrade.tradeId,
         donkeys_quantity: donkeysCount,
-        order_hyperstructure_id,
       });
     } else {
       await accept_order({
@@ -53,7 +49,6 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
         taker_id: realmEntityId,
         trade_id: selectedTrade.tradeId,
         caravan_id: selectedCaravan,
-        order_hyperstructure_id,
       });
     }
   };

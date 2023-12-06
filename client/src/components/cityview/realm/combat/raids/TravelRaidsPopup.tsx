@@ -8,7 +8,6 @@ import { getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import { SelectRealmPanel } from "./SelectRealmPanel";
-import { useHyperstructure } from "../../../../../hooks/helpers/useHyperstructure";
 
 type RoadBuildPopupProps = {
   selectedRaider: CombatInfo;
@@ -36,10 +35,6 @@ export const TravelRaidsPopup = ({ selectedRaider, onClose }: RoadBuildPopupProp
     ? getComponentValue(Position, getEntityIdFromKeys([BigInt(selectedEntityId)]))
     : undefined;
 
-  const { getHyperstructureIdByRealmEntityId } = useHyperstructure();
-
-  const order_hyperstructure_id = realmEntityId ? getHyperstructureIdByRealmEntityId(realmEntityId) : undefined;
-
   const onTravel = async () => {
     if (destinationPosition) {
       setLoading(true);
@@ -48,7 +43,6 @@ export const TravelRaidsPopup = ({ selectedRaider, onClose }: RoadBuildPopupProp
         travelling_entity_id: selectedRaider.entityId,
         destination_coord_x: destinationPosition.x,
         destination_coord_y: destinationPosition.y,
-        order_hyperstructure_id,
       });
       setLoading(false);
       onClose();
@@ -80,28 +74,17 @@ export const TravelRaidsPopup = ({ selectedRaider, onClose }: RoadBuildPopupProp
                   {`Cancel`}
                 </Button>
               )}
-              {!loading && (
-                <Button
-                  className="!px-[6px] !py-[2px] text-xxs ml-auto"
-                  onClick={onTravel}
-                  disabled={!selectedEntityId}
-                  variant="outline"
-                  withoutSound
-                >
-                  {`Travel`}
-                </Button>
-              )}
-              {loading && (
-                <Button
-                  className="!px-[6px] !py-[2px] text-xxs ml-auto"
-                  onClick={() => {}}
-                  isLoading={true}
-                  variant="outline"
-                  withoutSound
-                >
-                  {}
-                </Button>
-              )}
+
+              <Button
+                className="!px-[6px] !py-[2px] text-xxs ml-auto"
+                isLoading={loading}
+                onClick={onTravel}
+                disabled={!selectedEntityId}
+                variant="outline"
+                withoutSound
+              >
+                {`Travel`}
+              </Button>
             </div>
           </div>
         </div>

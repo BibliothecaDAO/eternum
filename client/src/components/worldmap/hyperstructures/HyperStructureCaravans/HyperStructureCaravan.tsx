@@ -142,24 +142,15 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
                 ),
             )}
         </div>
-        {!isLoading && isMine && (
+        {isMine && (
           <Button
             onClick={onClick}
+            isLoading={isLoading}
             disabled={!hasArrived}
             variant={hasArrived ? "success" : "danger"}
             className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
           >
             {hasArrived ? `Transfer And Return` : "On the way"}
-          </Button>
-        )}
-        {isLoading && isMine && (
-          <Button
-            isLoading={true}
-            onClick={() => {}}
-            variant="danger"
-            className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
-          >
-            {}
           </Button>
         )}
       </div>

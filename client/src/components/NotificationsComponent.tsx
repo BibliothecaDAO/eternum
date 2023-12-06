@@ -9,8 +9,6 @@ import {
   useNotifications,
 } from "../hooks/notifications/useNotifications";
 import { useDojo } from "../DojoContext";
-import { useHyperstructure } from "../hooks/helpers/useHyperstructure";
-import useRealmStore from "../hooks/store/useRealmStore";
 
 const MAX_HARVEST_NOTIFICATIONS = 11;
 
@@ -31,11 +29,6 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
 
   const { notifications, handleCloseNotification, removeNotification, closedNotifications } = useNotifications();
 
-  const realm_entity_id = useRealmStore((state) => state.realmEntityId);
-
-  const { getHyperstructureIdByRealmEntityId } = useHyperstructure();
-  const order_hyperstructure_id = realm_entity_id ? getHyperstructureIdByRealmEntityId(realm_entity_id) : undefined;
-
   const onHarvestAll = async () => {
     setIsLoading(true);
     for (let notification of notifications
@@ -54,7 +47,6 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
     await harvest_all_labor({
       signer: account,
       entity_ids: harvestKeys,
-      order_hyperstructure_id,
     });
     for (let notification of notifications
       .filter((notification) => notification.eventType === EventType.Harvest)

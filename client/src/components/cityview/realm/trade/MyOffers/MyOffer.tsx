@@ -120,23 +120,12 @@ export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
               ))}
           </div>
         </div>
-        {!isLoading && (
-          <Button
-            onClick={onCancel}
-            variant={"danger"}
-            className="ml-auto p-2 !h-4 text-xxs !rounded-md"
-          >{`Cancel`}</Button>
-        )}
-        {isLoading && (
-          <Button
-            isLoading={true}
-            onClick={() => {}}
-            variant="danger"
-            className="ml-auto p-2 !h-4 text-xxs !rounded-md"
-          >
-            {}
-          </Button>
-        )}
+        <Button
+          isLoading={isLoading}
+          onClick={onCancel}
+          variant={"danger"}
+          className="ml-auto p-2 !h-4 text-xxs !rounded-md"
+        >{`Cancel`}</Button>
       </div>
     </div>
   );
