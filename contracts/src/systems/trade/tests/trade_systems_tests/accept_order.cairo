@@ -52,7 +52,7 @@ use eternum::systems::transport::interface::{
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
 use eternum::constants::ResourceTypes;
-use eternum::constants::{FREE_TRANSPORT_ENTITY_TYPE, REALM_LEVELING_CONFIG_ID};
+use eternum::constants::{FREE_TRANSPORT_ENTITY_TYPE, REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID};
 
 use dojo::world::{ IWorldDispatcher, IWorldDispatcherTrait};
 
@@ -127,7 +127,7 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, u128, ITrad
     let rivers = 5;
     let regions = 5;
     let wonder = 1;
-    let order = 1;
+    let order = 0;
 
     // create maker's realm
     let maker_realm_entity_id = realm_systems_dispatcher.create(
@@ -280,7 +280,7 @@ fn test_accept_without_taker_transport_id() {
         contract_address_const::<'taker'>()
     );
     trade_systems_dispatcher
-        .accept_order(world, taker_id, 0, trade_id);
+        .accept_order(world, taker_id, 0, trade_id, 0);
 
     // check that maker balance is correct
     let maker_stone_resource = get!(world, (maker_id, ResourceTypes::STONE), Resource);
@@ -341,7 +341,7 @@ fn test_accept_without_taker_transport_id_wrong_position() {
 
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, 0, trade_id);
+        .accept_order(world, taker_id, 0, trade_id, 0);
 }
 
 
@@ -354,7 +354,7 @@ fn test_accept_order_free_trade() {
 
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, taker_transport_id, trade_id);
+        .accept_order(world, taker_id, taker_transport_id, trade_id, 0);
 
     // check that taker balance is correct
     let taker_wood_resource = get!(world, (taker_id, ResourceTypes::WOOD), Resource);
@@ -510,7 +510,7 @@ fn test_accept_order_direct_trade() {
 
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, taker_transport_id, trade_id);
+        .accept_order(world, taker_id, taker_transport_id, trade_id, 0);
 
     // check that taker balance is correct
     let taker_wood_resource = get!(world, (taker_id, ResourceTypes::WOOD), Resource);
@@ -685,13 +685,30 @@ fn test_accept_order_with_travel_bonus() {
         decay_scaled: 1844674407370955161,
         cost_percentage_scaled: 4611686018427387904,
         base_multiplier: 25
-        }
+        },
+        LevelingConfig {
+        config_id: HYPERSTRUCTURE_LEVELING_CONFIG_ID,
+        decay_interval: 604800,
+        max_level: 1000,
+        wheat_base_amount: 0,
+        fish_base_amount: 0,
+        resource_1_cost_id: 0,
+        resource_1_cost_count: 0,
+        resource_2_cost_id: 0,
+        resource_2_cost_count: 0,
+        resource_3_cost_id: 0,
+        resource_3_cost_count: 0,
+        decay_scaled: 1844674407370955161,
+        cost_percentage_scaled: 4611686018427387904,
+        base_multiplier: 25
+        },
+
     ));
     starknet::testing::set_contract_address(caller_address);
 
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, taker_transport_id, trade_id);
+        .accept_order(world, taker_id, taker_transport_id, trade_id, 0);
     
 
     // check that taker balance is correct
@@ -858,7 +875,7 @@ fn test_accept_order_with_road() {
 
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, taker_transport_id, trade_id);
+        .accept_order(world, taker_id, taker_transport_id, trade_id, 0);
 
     let trade = get!(world, trade_id, Trade);
     assert(trade.taker_id == taker_id, 'wrong taker id');
@@ -915,7 +932,7 @@ fn test_not_trade_taker_id() {
 
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, taker_transport_id, trade_id);
+        .accept_order(world, taker_id, taker_transport_id, trade_id, 0);
 }
 
 
@@ -934,7 +951,7 @@ fn test_caller_not_taker() {
 
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, taker_transport_id, trade_id);
+        .accept_order(world, taker_id, taker_transport_id, trade_id, 0);
 }
 
 
@@ -954,7 +971,7 @@ fn test_caller_not_owner_of_transport_id() {
 
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, taker_transport_id, trade_id);
+        .accept_order(world, taker_id, taker_transport_id, trade_id, 0);
 }
 
 
@@ -981,7 +998,7 @@ fn test_different_transport_position() {
 
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, taker_transport_id, trade_id);
+        .accept_order(world, taker_id, taker_transport_id, trade_id, 0);
 }
 
 
@@ -1008,7 +1025,7 @@ fn test_transport_in_transit() {
     );
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, taker_transport_id, trade_id);
+        .accept_order(world, taker_id, taker_transport_id, trade_id, 0);
 }
 
 
@@ -1069,6 +1086,6 @@ fn test_transport_not_enough_capacity() {
     // accept order 
     trade_systems_dispatcher
         .accept_order(
-            world, taker_id, taker_transport_id, trade_id
+            world, taker_id, taker_transport_id, trade_id, 0
             );
 }

@@ -4,7 +4,7 @@ use eternum::models::resources::{Resource, ResourceCost};
 use eternum::models::level::Level;
 use eternum::models::config::{
     SpeedConfig, WeightConfig, CapacityConfig, CombatConfig,
-    SoldierConfig, HealthConfig, AttackConfig, DefenceConfig
+    SoldierConfig, HealthConfig, AttackConfig, DefenceConfig, LevelingConfig
 };
 use eternum::models::movable::{Movable, ArrivalTime};
 use eternum::models::inventory::Inventory;
@@ -48,6 +48,7 @@ use eternum::utils::testing::{spawn_eternum, deploy_system};
 
 use eternum::constants::ResourceTypes;
 use eternum::constants::{COMBAT_CONFIG_ID, SOLDIER_ENTITY_TYPE};
+use eternum::constants::{REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID};
 
 use dojo::world::{ IWorldDispatcher, IWorldDispatcherTrait};
 
@@ -57,20 +58,15 @@ use core::array::{ArrayTrait, SpanTrait};
 use core::traits::Into;
 
 const ATTACKER_STOLEN_RESOURCE_COUNT: u32 = 2;
-const STEAL_CHANCE_PERCENTAGE_BOOST: u32 = 10;
-
 const WHEAT_BURN_PER_SOLDIER_DURING_ATTACK: u128 = 100;
-const WHEAT_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST: u128 = 50;
-
 const FISH_BURN_PER_SOLDIER_DURING_ATTACK: u128 = 200;
-const FISH_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST: u128 = 10;
 
 const ATTACKER_SOLDIER_COUNT: u128 = 15;
 const TARGET_SOLDIER_COUNT: u128 = 5;
 const INITIAL_RESOURCE_BALANCE: u128 = 5000;
 
-const PRECALCULATED_STOLEN_RESOURCE_TYPE_ONE: u8 = 9;
-const PRECALCULATED_STOLEN_RESOURCE_TYPE_TWO: u8 = 5;
+const PRECALCULATED_STOLEN_RESOURCE_TYPE_ONE: u8 = 5;
+const PRECALCULATED_STOLEN_RESOURCE_TYPE_TWO: u8 = 6;
 
 fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, u128, ICombatSystemsDispatcher) {
     let world = spawn_eternum();
@@ -87,11 +83,8 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, u128, ICombatSystemsDis
         world,
         COMBAT_CONFIG_ID,
         ATTACKER_STOLEN_RESOURCE_COUNT,
-        STEAL_CHANCE_PERCENTAGE_BOOST,
         WHEAT_BURN_PER_SOLDIER_DURING_ATTACK,
-        WHEAT_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST,
         FISH_BURN_PER_SOLDIER_DURING_ATTACK,
-        FISH_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST
     );
 
     combat_config_dispatcher.set_soldier_config(
@@ -180,12 +173,48 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, u128, ICombatSystemsDis
     let target_realm_entity_id = realm_systems_dispatcher.create(
         world, realm_id, contract_address_const::<'target'>(), // owner
         resource_types_packed, resource_types_count, cities,
-        harbors, rivers, regions, wonder, order, target_realm_entity_position.clone(),
+        harbors, rivers, regions, wonder, 0, target_realm_entity_position.clone(),
     );
 
     starknet::testing::set_contract_address(world.executor());
 
     starknet::testing::set_block_timestamp(1000);
+
+    // set up leveling config 
+    set!(world, (
+        LevelingConfig {
+            config_id: REALM_LEVELING_CONFIG_ID,
+            decay_interval: 604800,
+            max_level: 1000,
+            wheat_base_amount: 0,
+            fish_base_amount: 0,
+            resource_1_cost_id: 0,
+            resource_1_cost_count: 0,
+            resource_2_cost_id: 0,
+            resource_2_cost_count: 0,
+            resource_3_cost_id: 0,
+            resource_3_cost_count: 0,
+            decay_scaled: 1844674407370955161,
+            cost_percentage_scaled: 4611686018427387904,
+            base_multiplier: 25
+        },
+        LevelingConfig {
+            config_id: HYPERSTRUCTURE_LEVELING_CONFIG_ID,
+            decay_interval: 604800,
+            max_level: 1000,
+            wheat_base_amount: 0,
+            fish_base_amount: 0,
+            resource_1_cost_id: 0,
+            resource_1_cost_count: 0,
+            resource_2_cost_id: 0,
+            resource_2_cost_count: 0,
+            resource_3_cost_id: 0,
+            resource_3_cost_count: 0,
+            decay_scaled: 1844674407370955161,
+            cost_percentage_scaled: 4611686018427387904,
+            base_multiplier: 25
+        }
+    ));
 
     // set up attacker
     set!(world, (
@@ -353,7 +382,7 @@ fn test_steal_success() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id
+            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id, 0
             );
 
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
@@ -471,7 +500,7 @@ fn test_steal_success_with_level_1_boost() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id
+            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id, 0
             );
 
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
@@ -485,24 +514,20 @@ fn test_steal_success_with_level_1_boost() {
 
     // ensure that food was burned
     let target_realm_wheat_resource = get!(world, (target_realm_entity_id, ResourceTypes::WHEAT), Resource);
-    let normal_wheat_expected_burn = WHEAT_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
-    let boosted_wheat_expected_burn
-         = normal_wheat_expected_burn + WHEAT_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST * normal_wheat_expected_burn / 100;
+    let wheat_expected_burn = WHEAT_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
 
     assert(
         target_realm_wheat_resource.balance 
-            == INITIAL_RESOURCE_BALANCE - boosted_wheat_expected_burn,
+            == INITIAL_RESOURCE_BALANCE - wheat_expected_burn,
                 'wrong wheat value'
     );
 
     let target_realm_fish_resource = get!(world, (target_realm_entity_id, ResourceTypes::FISH), Resource);
-    let normal_fish_expected_burn = FISH_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
-    let boosted_fish_expected_burn
-         = normal_fish_expected_burn + FISH_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST * normal_fish_expected_burn / 100;
-      
+    let fish_expected_burn = FISH_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
+
     assert(
         target_realm_fish_resource.balance 
-            == INITIAL_RESOURCE_BALANCE - boosted_fish_expected_burn,
+            == INITIAL_RESOURCE_BALANCE - fish_expected_burn,
                 'wrong fish value'
     );
 
@@ -598,7 +623,7 @@ fn test_steal_success_with_level_3_boost() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id
+            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id, 0
             );
 
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
@@ -612,24 +637,20 @@ fn test_steal_success_with_level_3_boost() {
 
     // ensure that food was burned
     let target_realm_wheat_resource = get!(world, (target_realm_entity_id, ResourceTypes::WHEAT), Resource);
-    let normal_wheat_expected_burn = WHEAT_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
-    let boosted_wheat_expected_burn
-         = normal_wheat_expected_burn + WHEAT_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST * normal_wheat_expected_burn / 100;
-                             
+    let wheat_expected_burn = WHEAT_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
+             
     assert(
         target_realm_wheat_resource.balance 
-            == INITIAL_RESOURCE_BALANCE - boosted_wheat_expected_burn,
+            == INITIAL_RESOURCE_BALANCE - wheat_expected_burn,
                 'wrong wheat value'
     );
 
     let target_realm_fish_resource = get!(world, (target_realm_entity_id, ResourceTypes::FISH), Resource);
-    let normal_fish_expected_burn = FISH_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
-    let boosted_fish_expected_burn
-         = normal_fish_expected_burn + FISH_BURN_PER_SOLDIER_DURING_ATTACK_PERCENTAGE_BOOST * normal_fish_expected_burn / 100;
-                         
+    let fish_expected_burn = FISH_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
+             
     assert(
         target_realm_fish_resource.balance 
-            == INITIAL_RESOURCE_BALANCE - boosted_fish_expected_burn,
+            == INITIAL_RESOURCE_BALANCE - fish_expected_burn,
                 'wrong fish value'
     );
 
@@ -717,7 +738,7 @@ fn test_steal_failure() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id
+            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id, 0
             );
 
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
@@ -763,7 +784,7 @@ fn test_not_owner() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id
+            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id, 0
             );
 
 }
@@ -791,7 +812,7 @@ fn test_target_not_realm() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id
+            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id, 0
             );
 
 }
@@ -828,7 +849,7 @@ fn test_attacker_in_transit() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id
+            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id, 0
             );
 
 }
@@ -864,7 +885,7 @@ fn test_attacker_dead() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id
+            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id, 0
             );
 
 }
@@ -904,7 +925,7 @@ fn test_wrong_position() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id
+            world, attacker_unit_id, attacker_order_hyperstructure_id, target_realm_entity_id, 0
             );
 
 }

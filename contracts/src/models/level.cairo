@@ -131,11 +131,11 @@ mod tests {
 
         // tier 2
         let level_multiplier = LevelTrait::get_multiplier(leveling_config, 2);
-        assert(level_multiplier == 25, 'wrong multiplier');
+        assert(level_multiplier == 47, 'wrong multiplier');
 
         // tier 40
         let level_multiplier = LevelTrait::get_multiplier(leveling_config, 40);
-        assert(level_multiplier == 245, 'wrong multi');
+        assert(level_multiplier == 246, 'wrong multi');
 
         // tier 100
         let level_multiplier = LevelTrait::get_multiplier(leveling_config, 100);

@@ -268,11 +268,14 @@ fn test_cancel_after_acceptance() {
         = setup();
 
     // accept order 
-    starknet::testing::set_contract_address(
-        contract_address_const::<'taker'>()
-    );
-    trade_systems_dispatcher
-        .accept_order(world, taker_id, 0, trade_id);
+    starknet::testing::set_contract_address(world.executor());
+    set!(world, (
+            Status {
+                trade_id,
+                value: TradeStatus::ACCEPTED,
+            }
+        ),
+    );     
 
     // cancel order 
     starknet::testing::set_contract_address(

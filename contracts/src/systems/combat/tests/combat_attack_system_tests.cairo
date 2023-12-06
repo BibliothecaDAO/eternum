@@ -113,7 +113,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     let rivers = 5;
     let regions = 5;
     let wonder = 1;
-    let order = 1;
+    let order = 0;
 
     // create attacker's realm
     let attacker_realm_entity_id = realm_systems_dispatcher.create(
@@ -227,8 +227,8 @@ fn test_attack() {
     combat_systems_dispatcher
         .attack(
             world, 
-            array![attacker_unit_id].span(), 
-            target_realm_entity_id
+            array![attacker_unit_id].span(), 0,
+            target_realm_entity_id, 0
         );
 
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
@@ -265,8 +265,8 @@ fn test_not_owner() {
     combat_systems_dispatcher
         .attack(
             world, 
-            array![attacker_unit_id].span(), 
-            target_realm_entity_id
+            array![attacker_unit_id].span(), 0,
+            target_realm_entity_id, 0
         );
 
 }
@@ -305,8 +305,8 @@ fn test_attacker_in_transit() {
     combat_systems_dispatcher
         .attack(
             world, 
-            array![attacker_unit_id].span(), 
-            target_realm_entity_id
+            array![attacker_unit_id].span(), 0,
+            target_realm_entity_id, 0
         );
 
 }
@@ -343,8 +343,8 @@ fn test_attacker_dead() {
     combat_systems_dispatcher
         .attack(
             world, 
-            array![attacker_unit_id].span(), 
-            target_realm_entity_id
+            array![attacker_unit_id].span(), 0,
+            target_realm_entity_id, 0
         );
 
 }
@@ -381,8 +381,8 @@ fn test_target_dead() {
     combat_systems_dispatcher
         .attack(
             world, 
-            array![attacker_unit_id].span(), 
-            target_realm_entity_id
+            array![attacker_unit_id].span(), 0,
+            target_realm_entity_id, 0
         );
 
 }
@@ -420,8 +420,8 @@ fn test_wrong_position() {
     combat_systems_dispatcher
         .attack(
             world, 
-            array![attacker_unit_id].span(), 
-            target_realm_entity_id
+            array![attacker_unit_id].span(), 0,
+            target_realm_entity_id, 0
         );
 
 }
