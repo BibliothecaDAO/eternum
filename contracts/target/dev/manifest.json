@@ -1852,7 +1852,7 @@
     {
       "name": "guild_systems",
       "address": "0x68d033b537d018c4641bd25282273e0c10ad60f2b43604158299dd8219f99b7",
-      "class_hash": "0x2ef61c15a181d0252634d68890a94afa78fc6b49cb5c388ecccd8c6da1c6014",
+      "class_hash": "0xe3e7c3f16846fcb40e832bcccecf023a30192c62cb6fc696c41a1960e33d7",
       "abi": [
         {
           "type": "impl",
@@ -1906,7 +1906,7 @@
                 },
                 {
                   "name": "guild_id",
-                  "type": "core::integer::u128"
+                  "type": "core::starknet::contract_address::ContractAddress"
                 }
               ],
               "outputs": [],
@@ -6707,11 +6707,11 @@
         },
         {
           "name": "guild_id",
-          "type": "u128",
+          "type": "ContractAddress",
           "key": false
         }
       ],
-      "class_hash": "0x14e23a02031ed0476b7508ca01e6a1aa89a0a48170b5e528c05c590a609f8c0",
+      "class_hash": "0x28b9c110acf95989b0b18bba570a81572ffd71f1e3630378d6b777348800103",
       "abi": [
         {
           "type": "function",
