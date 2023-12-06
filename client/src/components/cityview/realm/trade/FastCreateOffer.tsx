@@ -12,7 +12,7 @@ import { CaravanInterface } from "../../../../hooks/graphql/useGraphQLQueries";
 import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
-import { useCaravan, useGetPositionCaravans } from "../../../../hooks/helpers/useCaravans";
+import { useCaravan } from "../../../../hooks/helpers/useCaravans";
 import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../../utils/utils";
 import { getComponentValue } from "@latticexyz/recs";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
@@ -306,7 +306,6 @@ const SelectResourcesAmountPanel = ({
           </Headline>
           {selectedResourceIdsGet.map((id) => {
             let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
-            console.log("id", id, selectedResourceIdsGet[0]);
             return (
               <div key={id} className="flex items-center w-full">
                 <NumberInput
@@ -407,7 +406,7 @@ export const SelectCaravanPanel = ({
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const { getRealmDonkeysCount } = useCaravan();
+  const { getRealmDonkeysCount, useGetPositionCaravans } = useCaravan();
   const { getResourcesFromInventory } = useResources();
   const { realm } = useGetRealm(realmEntityId);
   const { caravans: realmCaravans } = useGetPositionCaravans(realm?.position.x || 0, realm?.position.y || 0);
@@ -436,7 +435,7 @@ export const SelectCaravanPanel = ({
                 nextBlockTimestamp &&
                 !caravan.blocked &&
                 (!caravan.arrivalTime || caravan.arrivalTime <= nextBlockTimestamp) &&
-                resourcesCarried.length == 0;
+                resourcesCarried.resources.length == 0;
               // capacity in gr (1kg = 1000gr)
               if (isIdle && canCarry(caravan, resourceWeight)) {
                 return caravan;
