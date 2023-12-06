@@ -3,6 +3,7 @@ mod leveling_systems {
     use eternum::alias::ID;
     use eternum::models::resources::{Resource, ResourceCost};
     use eternum::models::owner::{Owner};
+    use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::config::{LevelingConfig};
     use eternum::models::realm::{Realm};
     use eternum::models::level::{Level, LevelTrait};
@@ -11,12 +12,12 @@ mod leveling_systems {
     HYPERSTRUCTURE_LEVELING_CONFIG_ID, REALM_LEVELING_START_TIER, HYPERSTRUCTURE_LEVELING_START_TIER};
 
     use eternum::systems::leveling::contracts::leveling_systems::{InternalLevelingSystemsImpl as leveling};
-    use eternum::systems::leveling::interface::{ILevelingSystems};
+    use eternum::systems::leveling::interface::ILevelingSystems;
 
     #[external(v0)]
     impl LevelingSystemsImpl of ILevelingSystems<ContractState> {
-        
-        fn level_up(
+
+        fn level_up_realm(
             self: @ContractState, world: IWorldDispatcher, 
             realm_entity_id: ID,
         ) {
@@ -34,8 +35,24 @@ mod leveling_systems {
             );
 
             leveling::level_up(world, realm_entity_id, REALM_LEVELING_CONFIG_ID);
+        }
+
+
+        fn level_up_hyperstructure(
+            self: @ContractState,
+            world: IWorldDispatcher,
+            hyperstructure_id: ID,
+        ){
+            let mut hyperstructure = get!(world, hyperstructure_id, HyperStructure);
+            assert(hyperstructure.order != 0, 'does not exist');
+
+            // todo burn resources
+
+            leveling::level_up(world, hyperstructure_id, HYPERSTRUCTURE_LEVELING_CONFIG_ID);
         }   
     }
+
+
 
     #[generate_trait]
     impl InternalLevelingSystemsImpl of InternalLevelingSystemsTrait {
