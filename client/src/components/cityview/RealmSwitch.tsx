@@ -100,7 +100,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
 
   console.log(realmEntityId.toString());
 
-  useSync(toriiClient, RealmComponent, [realmEntityId.toString()]);
+  // useSync(toriiClient, RealmComponent, [realmEntityId.toString()]);
 
   return (
     <div className={clsx("flex", className)}>
