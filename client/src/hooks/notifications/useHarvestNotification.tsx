@@ -10,8 +10,8 @@ import Button from "../../elements/Button";
 import { ResourceCost } from "../../elements/ResourceCost";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { soundSelector, useUiSounds } from "../useUISound";
-import { useState } from "react";
-import { useLevel } from "../helpers/useLevel";
+import { useMemo, useState } from "react";
+import { LevelIndex, useLevel } from "../helpers/useLevel";
 
 export const useHarvestNotification = (
   notification: NotificationType,
@@ -43,14 +43,29 @@ export const useHarvestNotification = (
 
   const harvestAmount = notification.data && "harvestAmount" in notification.data ? notification.data.harvestAmount : 0;
 
-  const { getEntityLevel } = useLevel();
-  const level = getEntityLevel(parseInt(realmEntityId))?.level || 0;
+  const { getEntityLevel, getRealmLevelBonus, getHyperstructureLevelBonus } = useLevel();
+
+  const resourceType = parseInt(notification.keys[1]);
+
+  // get harvest bonuses
+  const [levelBonus, hyperstructureLevelBonus] = useMemo(() => {
+    const isFood = [254, 255].includes(resourceType);
+    const level = getEntityLevel(parseInt(realmEntityId))?.level || 0;
+    const hyperstructureLevel = getEntityLevel(realm.order_hyperstructure_id)?.level || 0;
+    const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
+    const hyperstructureLevelBonus = getHyperstructureLevelBonus(
+      hyperstructureLevel,
+      isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE,
+    );
+    return [levelBonus, hyperstructureLevelBonus];
+  }, [realmEntityId]);
 
   const onHarvest = async () => {
     setIsLoading(true);
     await optimisticHarvestLabor(
       nextBlockTimestamp || 0,
-      level,
+      levelBonus,
+      hyperstructureLevelBonus,
       harvest_labor,
     )({
       signer: account,

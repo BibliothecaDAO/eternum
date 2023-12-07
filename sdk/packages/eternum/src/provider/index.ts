@@ -335,8 +335,8 @@ export class EternumProvider extends RPCProvider {
           regions,
           wonder,
           order,
-          2,
           order_hyperstructure_id,
+          2,
           position.x,
           position.y,
         ],
@@ -486,7 +486,7 @@ export class EternumProvider extends RPCProvider {
       {
         contractAddress: getContractByName(this.manifest, "travel_systems"),
         entrypoint: "travel",
-        calldata: [this.getWorldAddress(), entity_id, destination_coord_x, destination_coord_y, hyperstructure_id],
+        calldata: [this.getWorldAddress(), entity_id, destination_coord_x, destination_coord_y],
       },
     ]);
     return await this.provider.waitForTransaction(tx.transaction_hash, {

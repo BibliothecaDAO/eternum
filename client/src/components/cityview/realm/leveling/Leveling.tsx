@@ -55,7 +55,7 @@ export const Leveling = ({ className, entityId, setShowLevelUp }: LevelingProps)
         </div>
         <ProgressBar
           progress={progress}
-          containerClassName={`mt-1 ${timeLeftColors.container}`}
+          containerClassName={` ${timeLeftColors.container}`}
           className={timeLeftColors.bg}
           rounded
         />

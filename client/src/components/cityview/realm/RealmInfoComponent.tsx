@@ -65,7 +65,7 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
   }, [hyperstructureLevel]);
 
   const realmBonuses = useMemo(() => {
-    const bonus = getRealmBonuses(hyperstructureLevel.level);
+    const bonus = getRealmBonuses(realmLevel.level);
     return bonus.reduce((acc, curr) => acc + curr.bonusAmount, 0) === 0 ? undefined : bonus;
   }, [realmLevel]);
 
@@ -103,9 +103,9 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
             }}
             className="cursor-pointer"
           >
-            <div className="text-xxs"> Realm </div>
+            <div className="text-xxs leading-none"> Realm </div>
             {showRealmLevelUp && <LevelingPopup onClose={() => setShowRealmLevelUp(false)}></LevelingPopup>}
-            <Leveling setShowLevelUp={setShowRealmLevelUp} entityId={realmEntityId} />
+            <Leveling className={"text-xxs"} setShowLevelUp={setShowRealmLevelUp} entityId={realmEntityId} />
           </div>
           {/* <div className="cursor-pointer"> */}
           <div
@@ -131,11 +131,15 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
             className="cursor-pointer"
           >
             {/* todo: add hyperstructure level up */}
-            <div className="text-xxs"> Order </div>
+            <div className="text-xxs leading-none"> Order </div>
             {/* {showHyperstructureLevelUp && (
               <LevelingPopup onClose={() => setShowHyperstructureLevelUp(false)}></LevelingPopup>
             )} */}
-            <Leveling setShowLevelUp={setShowHyperstructureLevelUp} entityId={hyperstructureId} />
+            <Leveling
+              className={"text-xxs"}
+              setShowLevelUp={setShowHyperstructureLevelUp}
+              entityId={hyperstructureId}
+            />
           </div>
           <div className="flex items-center capitalize">
             <OrderIcon order={orderNameDict[realm?.order]} size="xs" />

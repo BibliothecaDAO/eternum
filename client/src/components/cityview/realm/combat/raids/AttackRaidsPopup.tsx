@@ -468,7 +468,7 @@ const SelectRaidersPanel = ({
 
   const [loading, setLoading] = useState(false);
 
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const { realmEntityId, hyperstructureId } = useRealmStore();
 
   const { getEntityLevel, getRealmLevelBonus } = useLevel();
 
@@ -481,22 +481,37 @@ const SelectRaidersPanel = ({
     ];
   }, [selectedRaiders]);
 
-  const attackerLevelBonus = useMemo(() => {
+  const [attackerLevelBonus, attackerHyperstructureLevelBonus] = useMemo(() => {
     let level = getEntityLevel(realmEntityId)?.level || 0;
-    return getRealmLevelBonus(level, LevelIndex.COMBAT);
+    let hyperstructureLevel = getEntityLevel(hyperstructureId)?.level || 0;
+    let levelBonus = getRealmLevelBonus(level, LevelIndex.COMBAT);
+    let hyperstructureLevelBonus = getRealmLevelBonus(hyperstructureLevel, LevelIndex.COMBAT);
+    return [levelBonus, hyperstructureLevelBonus];
   }, [realmEntityId]);
 
-  const defenderLevelBonus = useMemo(() => {
-    let level = watchTower ? getEntityLevel(watchTower.entityOwnerId)?.level || 0 : 0;
-    return getRealmLevelBonus(level, LevelIndex.COMBAT);
-  }, [realmEntityId]);
+  const [defenderLevelBonus, defenderHyperstructureLevelBonus] = useMemo(() => {
+    if (watchTower) {
+      let level = getEntityLevel(watchTower.entityOwnerId)?.level || 0;
+      let hyperstructureLevel = getEntityLevel(watchTower.hyperstructureId)?.level || 0;
+      let levelBonus = getRealmLevelBonus(level, LevelIndex.COMBAT);
+      let hyperstructureLevelBonus = getRealmLevelBonus(hyperstructureLevel, LevelIndex.COMBAT);
+      return [levelBonus, hyperstructureLevelBonus];
+    } else {
+      return [100, 100];
+    }
+  }, [watchTower]);
 
   const succesProb = useMemo(() => {
     return calculateSuccess(
       { attack: (attackerTotalAttack * attackerLevelBonus) / 100, health: attackerTotalHealth },
-      watchTower ? { defence: (watchTower.defence * defenderLevelBonus) / 100, health: watchTower.health } : undefined,
+      watchTower
+        ? {
+            defence: (watchTower.defence * defenderLevelBonus * defenderHyperstructureLevelBonus) / 10000,
+            health: watchTower.health,
+          }
+        : undefined,
     );
-  }, [attackerTotalAttack, attackerLevelBonus, defenderLevelBonus]);
+  }, [attackerTotalAttack, attackerLevelBonus, defenderLevelBonus, defenderHyperstructureLevelBonus]);
 
   // @ts-ignore
   const { realm } = useGetRealm(realmEntityId);
@@ -540,7 +555,13 @@ const SelectRaidersPanel = ({
       <div className="flex flex-col items-center w-full">
         {/* {toRealm && <Headline size="big">Build road to {realmsData["features"][toRealm.realmId - 1].name}</Headline>} */}
         <div className="p-2 rounded border border-gold w-full flex flex-col">
-          {watchTower && <Defence levelBonus={defenderLevelBonus} watchTower={watchTower}></Defence>}
+          {watchTower && (
+            <Defence
+              hyperstructureLevelBonus={defenderHyperstructureLevelBonus}
+              levelBonus={defenderLevelBonus}
+              watchTower={watchTower}
+            ></Defence>
+          )}
           <div className="flex mt-2 flex-col items-center w-full text-xxs">
             <div className="text-light-pink italic w-full">Available resources:</div>
             <div className="grid grid-cols-12 text-lightest gap-2 w-full mt-1 flex-wrap">
@@ -598,9 +619,13 @@ const SelectRaidersPanel = ({
 
         <div className={"relative w-full mt-2"}>
           <div className="font-bold text-center text-white text-xs mb-2">Select Raiders</div>
-          <div className="flex flex-row mb-3 text-xs items-center justify-center">
-            <span className="mr-1 text-gold">{`Combat Bonus: `}</span>
+          <div className="flex flex-row mb-1 text-xs items-center justify-center">
+            <span className="mr-1 text-gold">{`Realm Bonus: `}</span>
             <span className="text-order-brilliance">{`+${attackerLevelBonus - 100}%`}</span>
+          </div>
+          <div className="flex flex-row mb-3 text-xs items-center justify-center">
+            <span className="mr-1 text-gold">{`Hyperstructure Bonus: `}</span>
+            <span className="text-order-brilliance">{`+${attackerHyperstructureLevelBonus - 100}%`}</span>
           </div>
           <SelectRaiders
             attackingRaiders={attackingRaiders}

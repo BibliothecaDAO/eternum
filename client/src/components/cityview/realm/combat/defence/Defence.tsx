@@ -7,11 +7,19 @@ import Button from "../../../../../elements/Button";
 type DefenceProps = {
   watchTower: CombatInfo;
   levelBonus: number;
+  hyperstructureLevelBonus: number;
   onReinforce?: () => void;
   setShowHeal?: (show: boolean) => void;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const Defence = ({ watchTower, levelBonus, onReinforce, setShowHeal, ...props }: DefenceProps) => {
+export const Defence = ({
+  watchTower,
+  levelBonus,
+  hyperstructureLevelBonus,
+  onReinforce,
+  setShowHeal,
+  ...props
+}: DefenceProps) => {
   const { health, quantity, attack, defence } = watchTower;
 
   return (
@@ -20,9 +28,15 @@ export const Defence = ({ watchTower, levelBonus, onReinforce, setShowHeal, ...p
       <div className="flex flex-col w-full min-w-[244px] h-full ml-2">
         <div className="font-bold text-white text-xs mb-1">City Tower</div>
         <div className="flex text-white items-end mb-2">
-          <div className="flex flex-row text-xxs justify-center">
-            <span className="mr-1 text-gold">{`Combat Bonus: `}</span>
-            <span className="text-order-brilliance">{`+${levelBonus - 100}%`}</span>
+          <div className="flex flex-col items-start">
+            <div className="flex flex-row text-xxs justify-center">
+              <span className="mr-1 text-gold">{`Realm Bonus: `}</span>
+              <span className="text-order-brilliance">{`+${levelBonus - 100}%`}</span>
+            </div>
+            <div className="flex flex-row text-xxs justify-center">
+              <span className="mr-1 text-gold">{`HyperStructure Bonus: `}</span>
+              <span className="text-order-brilliance">{`+${hyperstructureLevelBonus - 100}%`}</span>
+            </div>
           </div>
           <div className="flex items-center text-xxs ml-auto">
             <div className="text-order-brilliance">{health && health.toLocaleString()}</div>&nbsp;/ {10 * quantity} HP

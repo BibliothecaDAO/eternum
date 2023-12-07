@@ -44,7 +44,7 @@ export const LaborComponent = ({
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const { realmEntityId } = useRealmStore();
+  const { realmEntityId, hyperstructureId } = useRealmStore();
 
   const labor = useComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
 
@@ -66,15 +66,26 @@ export const LaborComponent = ({
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 
-  const { getEntityLevel, getRealmLevelBonus } = useLevel();
-  const level = getEntityLevel(realmEntityId)?.level || 0;
-  const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
+  const { getEntityLevel, getRealmLevelBonus, getHyperstructureLevelBonus } = useLevel();
+
+  // get harvest bonuses
+  const [levelBonus, hyperstructureLevelBonus] = useMemo(() => {
+    const level = getEntityLevel(realmEntityId)?.level || 0;
+    const hyperstructureLevel = getEntityLevel(hyperstructureId)?.level || 0;
+    const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
+    const hyperstructureLevelBonus = getHyperstructureLevelBonus(
+      hyperstructureLevel,
+      isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE,
+    );
+    return [levelBonus, hyperstructureLevelBonus];
+  }, [realmEntityId, isFood]);
 
   const onHarvest = () => {
     playHarvest();
     optimisticHarvestLabor(
       nextBlockTimestamp || 0,
       levelBonus,
+      hyperstructureLevelBonus,
       harvest_labor,
     )({
       signer: account,
@@ -102,6 +113,7 @@ export const LaborComponent = ({
         isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
         nextBlockTimestamp,
         levelBonus,
+        hyperstructureLevelBonus,
       );
     } else {
       return 0;
@@ -140,6 +152,7 @@ export const LaborComponent = ({
                           labor.multiplier,
                           LABOR_CONFIG.base_labor_units,
                           levelBonus,
+                          hyperstructureLevelBonus,
                         ),
                       ).toFixed(0)}`
                     : "+0"}

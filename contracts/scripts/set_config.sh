@@ -143,7 +143,7 @@ commands+=(
     ## stealing_trial_count
     ## 100 wheat per soldier
     ## 30 fish per soldier
-    "sozo execute $CONFIG_SYSTEMS set_combat_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999994,22,100000,300000"
+    "sozo execute $CONFIG_SYSTEMS set_combat_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999994,3,100000,300000"
 )
 
 ### WEIGHT ###

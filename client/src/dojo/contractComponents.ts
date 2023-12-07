@@ -282,6 +282,7 @@ export function defineContractComponents(world: World) {
           regions: RecsType.Number,
           wonder: RecsType.Number,
           order: RecsType.Number,
+          order_hyperstructure_id: RecsType.Number,
         },
         {
           metadata: {

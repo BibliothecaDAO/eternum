@@ -40,9 +40,12 @@ export const DefencePanel = ({}: DefencePanelProps) => {
     }
   }, [watchTowerId, watchTowerHealth]);
 
-  const defenderLevelBonus = useMemo(() => {
+  const [defenderLevelBonus, defenderHyperstructureLevelBonus] = useMemo(() => {
     let level = getEntityLevel(watchTower.entityOwnerId)?.level || 0;
-    return getRealmLevelBonus(level, LevelIndex.COMBAT);
+    let hyperstructureLevel = getEntityLevel(watchTower.hyperstructureId)?.level || 0;
+    let levelBonus = getRealmLevelBonus(level, LevelIndex.COMBAT);
+    let hyperstructureLevelBonus = getRealmLevelBonus(hyperstructureLevel, LevelIndex.COMBAT);
+    return [levelBonus, hyperstructureLevelBonus];
   }, [watchTower]);
 
   return (
@@ -60,6 +63,7 @@ export const DefencePanel = ({}: DefencePanelProps) => {
           <Defence
             onReinforce={() => setShowBuildDefence(!showBuildDefence)}
             levelBonus={defenderLevelBonus}
+            hyperstructureLevelBonus={defenderHyperstructureLevelBonus}
             setShowHeal={setShowHeal}
             watchTower={watchTower}
           />

@@ -15,7 +15,7 @@ import { useDojo } from "../../../DojoContext";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import { LABOR_CONFIG } from "@bibliothecadao/eternum";
 import useUIStore from "../../../hooks/store/useUIStore";
-import { useLevel } from "../../../hooks/helpers/useLevel";
+import { LevelIndex, useLevel } from "../../../hooks/helpers/useLevel";
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<"div">;
 
@@ -98,16 +98,27 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
     },
   } = useDojo();
 
-  let { realmEntityId } = useRealmStore();
+  let { realmEntityId, hyperstructureId } = useRealmStore();
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const [productivity, setProductivity] = useState<number>(0);
 
-  const { getEntityLevel } = useLevel();
-  const level = getEntityLevel(realmEntityId)?.level || 0;
+  const { getEntityLevel, getRealmLevelBonus, getHyperstructureLevelBonus } = useLevel();
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
+
+  const level = getEntityLevel(realmEntityId)?.level || 0;
+  // get harvest bonuses
+  const [levelBonus, hyperstructureLevelBonus] = useMemo(() => {
+    const hyperstructureLevel = getEntityLevel(hyperstructureId)?.level || 0;
+    const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
+    const hyperstructureLevelBonus = getHyperstructureLevelBonus(
+      hyperstructureLevel,
+      isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE,
+    );
+    return [levelBonus, hyperstructureLevelBonus];
+  }, [realmEntityId, isFood]);
 
   const labor = useComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]));
 
@@ -125,7 +136,8 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
             isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
             labor.multiplier,
             LABOR_CONFIG.base_labor_units,
-            level,
+            levelBonus,
+            hyperstructureLevelBonus,
           )
         : 0;
     setProductivity(productivity);
