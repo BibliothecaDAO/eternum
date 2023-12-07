@@ -11,6 +11,8 @@ const isRef = (ref: any) => !!ref.current;
 
 export const resolveRef = (ref: any) => (isRef(ref) ? ref.current : ref);
 
+export const specialKeys = ["address", 'guild_id']
+
 export const currencyFormat = (num: any, decimals: number) => {
   return divideByPrecision(num)
     .toFixed(decimals)
@@ -84,7 +86,8 @@ export function setComponentsFromEntity(entity: Entity, components: Components) 
       const componentValues = Object.keys(component.schema).reduce((acc: Schema, key) => {
         const value = rawComponentValues[key];
         // TODO: better way to do this? check the recs type
-        acc[key] = key === "address" ? value : Number(value);
+        // @ts-ignore
+        acc[key] = specialKeys.includes(key) ? value : Number(value);
         return acc;
       }, {});
 
@@ -108,7 +111,7 @@ export function setComponentFromEntity(entity: Entity, componentName: string, co
       const componentValues = Object.keys(component.schema).reduce((acc: Schema, key) => {
         const value = rawComponentValues[key];
         // TODO: better way to do this? check the recs type
-        acc[key] = key === "address" ? value : Number(value);
+        acc[key] = specialKeys.includes(key) ? value : Number(value);
         return acc;
       }, {});
 
@@ -229,7 +232,7 @@ export function setComponentFromEntitiesGraphqlQuery(component: Component, entit
       if (comp.__typename === component.metadata?.name) {
         const componentValues = Object.keys(component.schema).reduce((acc: Schema, key) => {
           const value = comp[key];
-          acc[key] = key === "address" ? value : Number(value);
+          acc[key] = specialKeys.includes(key) ? value : Number(value);
           return acc;
         }, {});
         setComponent(component, entityIndex, componentValues);
@@ -264,7 +267,7 @@ export function setComponentFromEvent(components: Components, eventData: string[
   const componentValues = Object.keys(component.schema).reduce((acc: Schema, key, index) => {
     const value = values[index];
     // @ts-ignore
-    acc[key] = key === "address" ? value : Number(value);
+    acc[key] = specialKeys.includes(key) ? value : Number(value);
     return acc;
   }, {});
 

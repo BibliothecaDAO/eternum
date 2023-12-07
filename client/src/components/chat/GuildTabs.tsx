@@ -7,7 +7,7 @@ import { useChat } from "../../ChatContext";
 import { GroupPermissions } from "@web3mq/client";
 import { GroupPermissionValueType } from "@web3mq/client/dist/types";
 import GuildChat from "./GuildChat";
-import { useGetGuilds } from "../../hooks/helpers/useRealm";
+import { useGetGuilds } from "../../hooks/helpers/useGuild";
 
 type ChatTabsProps = {};
 
@@ -27,12 +27,10 @@ export const GuildTabs = (props: ChatTabsProps) => {
   const [activeGuild, setActiveGuild] = useState<ChannelType>();
 
   const { loginFlow, client, loading, loggedIn } = useChat();
-  const { guilds } = useGetGuilds();
-  console.log(guilds, "guilds");
+  const { guildIds } = useGetGuilds();
   // this should be moved
   const [loadingList, setLoadingList] = useState(false);
   // todo get ids from torii new contracts
-  const guildIds = ["group:54fabcc0ab58776ceab850b53e792eb993935305"];
   const formatGroupPermission = (permission: GroupPermissions): GroupPermissionValueType => {
     if (Object.keys(permission).includes("group:join")) {
       if (permission["group:join"] && permission["group:join"].value) {
@@ -45,7 +43,7 @@ export const GuildTabs = (props: ChatTabsProps) => {
 
   const handleEvent = (event: { type: any }) => {
     if (event.type === "channel.created") {
-      queryGroups();
+      queryGroups(guildIds);
     }
   };
 
@@ -63,14 +61,15 @@ export const GuildTabs = (props: ChatTabsProps) => {
   const isLoading = loading || loadingList;
 
   // const bottomRef = useRef<HTMLDivElement>(null);
-  const queryGroups = async () => {
-    setLoadingList(true);
-
+  const queryGroups = async (ids: string[], showLoading: boolean = true) => {
+    if (showLoading) {
+      setLoadingList(true);
+    }
     const getUserNickname = (userInfo) => {
       if (!userInfo) return "";
       return userInfo.nickname || getShortAddress(userInfo.wallet_address) || getShortAddress(userInfo.userid);
     };
-    const res = await client?.channel.queryGroups(guildIds, true);
+    const res = await client?.channel.queryGroups(ids, true);
     let list = res.map((item): ChannelType => {
       return {
         creatorId: item.creator_id,
@@ -93,9 +92,16 @@ export const GuildTabs = (props: ChatTabsProps) => {
   useEffect(() => {
     if (client) {
       console.log("query groups");
-      queryGroups();
+      queryGroups(guildIds);
     }
   }, [selectedTab, client]);
+  // when other user created guild
+  useEffect(() => {
+    if (client) {
+      console.log("query groups");
+      queryGroups(guildIds, false);
+    }
+  }, [client, guildIds]);
 
   const tabs = useMemo(
     () => [
@@ -129,10 +135,12 @@ export const GuildTabs = (props: ChatTabsProps) => {
 
   if (!loggedIn) {
     return (
-      <div className="my-2 w-full p-2 flex">
-        <Button className="mx-auto" variant="outline" onClick={() => loginFlow()}>
-          Connect
-        </Button>
+      <div className="w-full h-full flex items-center">
+        <div className="my-2 w-full p-2 flex">
+          <Button className="mx-auto" variant="outline" onClick={() => loginFlow()}>
+            Connect
+          </Button>
+        </div>
       </div>
     );
   }
@@ -140,13 +148,6 @@ export const GuildTabs = (props: ChatTabsProps) => {
   return (
     <div className="relative flex flex-col h-full overflow-auto">
       {/*{isLoading && <RenderLoading />}*/}
-      {!loggedIn && (
-        <div className="my-2 w-full p-2 flex">
-          <Button className="mx-auto" variant="outline" onClick={() => loginFlow()}>
-            Connect
-          </Button>
-        </div>
-      )}
       {activeGuild ? (
         <GuildChat handleBack={() => setActiveGuild(undefined)} guild={activeGuild} />
       ) : (

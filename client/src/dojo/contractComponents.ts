@@ -654,7 +654,7 @@ export function defineContractComponents(world: World) {
       return defineComponent(
           world,
           {
-            guild_id: RecsType.Number,
+            guild_id: RecsType.String,
           },
           {
             metadata: {

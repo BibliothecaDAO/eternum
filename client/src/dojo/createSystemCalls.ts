@@ -1,7 +1,7 @@
 import { Components, Schema, setComponent } from "@latticexyz/recs";
 import { SetupNetworkResult } from "./setupNetwork";
 import { Event } from "starknet";
-import { getEntityIdFromKeys } from "../utils/utils";
+import { getEntityIdFromKeys, specialKeys } from "../utils/utils";
 import {
   AcceptOrderProps,
   AttachCaravanProps,
@@ -29,7 +29,8 @@ import {
   AttackProps,
   StealProps,
   LevelUpProps,
-  SetAddressNameProps, CreateGuildProps,
+  SetAddressNameProps,
+  CreateGuildProps,
 } from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -245,8 +246,8 @@ export function setComponentFromEvent(components: Components, eventData: string[
   // create component object from values with schema
   const componentValues = componentFields.reduce((acc: Schema, key, index) => {
     const value = values[index];
-    // @ts-ignore
-    acc[key] = key === "address" ? value : Number(value);
+    //@ts-ignore
+    acc[key] = specialKeys.includes(key) ? value : Number(value);
     return acc;
   }, {});
 

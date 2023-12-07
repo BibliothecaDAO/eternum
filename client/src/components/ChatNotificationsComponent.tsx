@@ -86,23 +86,42 @@ export const ChatNotificationsComponent = ({ className }: NotificationsComponent
           await updateNotifications(data.data[0]);
         }
       }
-      if (data.type === "notification.getList") {
-        const list = client?.notify.notificationList || [];
-        for (let i = 0; i < list.length; i++) {
-          await updateNotifications(list[i]);
-        }
-      }
     }
   };
 
+  const queryNotificationList = async () => {
+    const list = await client?.notify.queryNotifications({
+      page: 1,
+      size: 10,
+      notice_type: 'system.group.agree_join_request',
+      //@ts-ignore
+      read_status: 'unread'
+    });
+    const list2 = await client?.notify.queryNotifications({
+      page: 1,
+      size: 10,
+      notice_type: 'system.group.join_request',
+      //@ts-ignore
+      read_status: 'unread'
+    });
+    const list3 = await client?.notify.queryNotifications({
+      page: 1,
+      size: 10,
+      notice_type: 'system.group.reject_join_request',
+      //@ts-ignore
+      read_status: 'unread'
+    });
+    const unReadList = [...list, ...list2, ...list3]
+    for (let i = 0; i < unReadList.length; i++) {
+      await updateNotifications(unReadList[i]);
+    }
+  }
+
+
   useEffect(() => {
     if (client) {
-      client?.notify.queryNotifications({
-        page: 1,
-        size: 100,
-      });
+      queryNotificationList()
       client?.on("notification.received", handleEvent);
-      client?.on("notification.getList", handleEvent);
     }
   }, [client]);
 
@@ -140,7 +159,6 @@ export const ChatNotificationsComponent = ({ className }: NotificationsComponent
         notifications.map((notification: NotificationType, index) => {
           const { keys } = notification;
           const metadata = JSON.parse(keys[3]);
-          console.log(metadata, "metadata");
           const id = metadata.messageId || index.toString();
           return (
             <Notification
