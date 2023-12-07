@@ -11,8 +11,7 @@ interface ChatHistoryProps {
 }
 
 const ChatHistory = (props: ChatHistoryProps) => {
-  // real world: group:aaa83cddb7d563d2847d56247060cec696f3d425
-  const { group = "group:ef4557048e0342f1747c31656ac87d1fa6bb8e51", isJoined = false } = props;
+  const { group = "group:aaa83cddb7d563d2847d56247060cec696f3d425", isJoined = false } = props;
   const [messageList, setMessageList] = useState<ChatMessageProps[]>([]);
 
   // this should be moved
