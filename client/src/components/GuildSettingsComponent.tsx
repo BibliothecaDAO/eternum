@@ -24,7 +24,7 @@ export const GuildSettingsComponent = (props: { guild: ChannelType; handleSucces
   const submit = async () => {
     setIsLoading(true);
     try {
-      const updateRes = await client.channel.updateGroupPermissions({
+      await client.channel.updateGroupPermissions({
         groupid: guild.groupid,
         permissions: {
           "group:join": {
@@ -33,7 +33,6 @@ export const GuildSettingsComponent = (props: { guild: ChannelType; handleSucces
           },
         },
       });
-      console.log(updateRes, "updateRes");
       setIsLoading(false);
       setToastState({
         icon: <SuccessIcon />,

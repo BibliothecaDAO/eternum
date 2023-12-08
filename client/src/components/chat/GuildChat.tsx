@@ -25,7 +25,12 @@ const GuildChat = (props: GuildChatProps) => {
         }} />}</div>
       </div>
       <div className="relative flex flex-col space-y-2 h-full px-2 mb-2 overflow-auto">
-        {<ChatHistory group={guild.groupid} messages={[]} isJoined={true} />}
+        {<ChatHistory group={{
+            chatid: guild.groupid,
+            avatar_url: guild.avatar || '',
+            chat_name: guild.groupName,
+            chat_type: 'guild'
+        }} messages={[]} isJoined={true} />}
       </div>
     </>
   );

@@ -3,16 +3,22 @@ import ChatMessage, { ChatMessageProps } from "../../elements/ChatMessage";
 import Button from "../../elements/Button";
 import { chatConfig, useChat } from "../../ChatContext";
 import { addressToNumber } from "../../utils/utils";
+import {ChannelItemType} from "@web3mq/client";
 
 interface ChatHistoryProps {
   messages: ChatMessageProps[];
-  group?: string;
+  group?: ChannelItemType;
   isJoined?: boolean;
 }
 
 const ChatHistory = (props: ChatHistoryProps) => {
   const { defaultWorldAddress } = chatConfig();
-  const { group = defaultWorldAddress, isJoined = false } = props;
+  const { group = {
+    avatar_url: '',
+    chat_name: 'World',
+    chat_type: 'group',
+    chatid: defaultWorldAddress
+  }, isJoined = false } = props;
   const [messageList, setMessageList] = useState<ChatMessageProps[]>([]);
 
   // this should be moved
@@ -41,17 +47,13 @@ const ChatHistory = (props: ChatHistoryProps) => {
   //     })
   // }
 
-  const setGroup = async (group: string) => {
+  const setGroup = async (guild: ChannelItemType) => {
     setLoadingMessages(true);
     if (!isJoined) {
-      await client?.channel.joinGroup(group);
+      await client?.channel.joinGroup(guild.chatid);
     }
-    const { channelList } = client?.channel as any;
 
-    console.log("channelList", channelList);
-    const channel = channelList?.find((channel: any) => channel.chatid === group);
-
-    await client?.channel.setActiveChannel(channel);
+    await client?.channel.setActiveChannel(guild);
     await client?.channel.queryChannels({
       page: 1,
       size: 20,
@@ -96,7 +98,6 @@ const ChatHistory = (props: ChatHistoryProps) => {
     const list = client?.message.messageList;
 
     if (event.type === "channel.updated" || event.type == "message.getList") {
-      console.log("message.getList", list);
       setMessageList(list?.map((message: any) => format(message)) || []);
     }
   };

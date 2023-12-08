@@ -16,7 +16,6 @@ export function useGetGuilds(): { guildIds: any[] } {
     () =>
       Array.from(guildEntityIds).map((entityId) => {
         const guild = getComponentValue(Guild, entityId) as any;
-        console.log(guild, "guild");
         guild.entity_id = entityId;
         if (guild.guild_id.startsWith("0x")) {
           return guild.guild_id.replace("0x", "group:");

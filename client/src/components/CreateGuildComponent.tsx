@@ -39,9 +39,10 @@ export const CreateGuildComponent = () => {
     };
     try {
       const res = await client.channel.createRoom(params);
+      const guild_id = res.groupid.replace('group:', '0x')
       await create_guild({
         signer: account,
-        guild_id: res.groupid.replace('group:', '0x')
+        guild_id
       });
       setIsLoading(false);
       setShowModal(false);

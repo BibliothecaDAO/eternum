@@ -33,7 +33,7 @@ export const JoinGuildComponent = (props: { guild: ChannelType; handleJoinSucces
 
       const { sign, publicKey } = await Client.register.sign(signContent, address, walletType);
 
-      const res = await client?.channel.requestJoinGroupBySignature({
+      await client?.channel.requestJoinGroupBySignature({
         didPubkey: publicKey,
         signature: sign,
         signContent,
@@ -43,7 +43,6 @@ export const JoinGuildComponent = (props: { guild: ChannelType; handleJoinSucces
         didType: BlockChainMap[walletType],
         walletAddress: address,
       });
-      console.log(res, "res");
       setIsLoading(false);
       setToastState({
         content: "Submit success",
@@ -69,7 +68,6 @@ export const JoinGuildComponent = (props: { guild: ChannelType; handleJoinSucces
   const isDisable = !reason || isLoading || !!toastState;
 
   const handleJoinClick = async () => {
-    console.log(guild, "guild");
     if (guild.permissionType === "public") {
       await client.channel.joinGroup(guild.groupid);
       await handleJoinSuccess();

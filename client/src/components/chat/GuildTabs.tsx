@@ -91,14 +91,12 @@ export const GuildTabs = (props: ChatTabsProps) => {
 
   useEffect(() => {
     if (client) {
-      console.log("query groups");
       queryGroups(guildIds);
     }
   }, [selectedTab, client]);
   // when other user created guild
   useEffect(() => {
     if (client) {
-      console.log("query groups");
       queryGroups(guildIds, false);
     }
   }, [client, guildIds]);
@@ -170,7 +168,6 @@ export const GuildTabs = (props: ChatTabsProps) => {
                 ) : (
                   <GuildList
                     handleChat={(guild: ChannelType) => {
-                      console.log(guild, "guild");
                       const list = guildList.map((item) => {
                         if (item.groupid === guild.groupid) {
                           item.isJoined = true;
