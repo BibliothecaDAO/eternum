@@ -74,6 +74,8 @@ export function useTrade() {
   const getTradeResources = (entityId: number, tradeId: number): TradeResources => {
     let trade = getComponentValue(Trade, getEntityIdFromKeys([BigInt(tradeId)]));
 
+    if (!trade) return { resourcesGet: [], resourcesGive: [] };
+
     let resourcesGet =
       trade.maker_id === entityId
         ? getChestResources(trade.maker_resource_chest_id)

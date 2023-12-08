@@ -27,15 +27,15 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
   const { position: attackPosition } = selectedRaider;
 
   const [step, setStep] = useState<number>(1);
-  const [selectedRaiders, setSelectedRaiders] = useState([]);
-  const [targetRealmEntityId, setTargetRealmEntityId] = useState(null);
+  const [selectedRaiders, setSelectedRaiders] = useState<CombatInfo[]>([]);
+  const [targetRealmEntityId, setTargetRealmEntityId] = useState<number | null>(null);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const { getEntitiesCombatInfo, getRealmRaidersOnPosition, getDefenceOnPosition } = useCombat();
   const { getFoodResources } = useResources();
 
-  const attackingEntities = getRealmRaidersOnPosition(realmEntityId, attackPosition);
+  const attackingEntities = attackPosition ? getRealmRaidersOnPosition(realmEntityId, attackPosition) : [];
 
   const attackingRaiders = useMemo(() => {
     return getEntitiesCombatInfo(attackingEntities);
@@ -44,13 +44,13 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
   useEffect(() => {
     // This effect runs only when selectedRaider changes.
     // Check if selectedRaider is defined and targetRealmEntityId is not already set.
-    if (selectedRaider && targetRealmEntityId === null) {
+    if (selectedRaider?.locationRealmEntityId && targetRealmEntityId === null) {
       setTargetRealmEntityId(selectedRaider.locationRealmEntityId);
     }
   }, [selectedRaider]);
 
   const watchTower = useMemo(() => {
-    return getDefenceOnPosition(attackPosition);
+    return attackPosition ? getDefenceOnPosition(attackPosition) : undefined;
   }, [attackPosition]);
 
   const targetFoodBalance = useMemo(() => {
@@ -59,11 +59,11 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
   }, [targetRealmEntityId]);
 
   const defendingRealmId = useMemo(() => {
-    return getRealmIdByPosition(attackPosition);
+    return attackPosition ? getRealmIdByPosition(attackPosition) : undefined;
   }, [attackPosition]);
 
   const defendingRealmName = useMemo(() => {
-    return getRealmNameById(defendingRealmId);
+    return defendingRealmId ? getRealmNameById(defendingRealmId) : undefined;
   }, [defendingRealmId]);
 
   return (
@@ -76,34 +76,36 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"410px"}>
-        <div className="flex flex-col items-center p-2">
-          {step == 1 && (
-            <SelectRaidersPanel
-              watchTower={watchTower}
-              setStep={setStep}
-              onClose={onClose}
-              attackingRaiders={attackingRaiders}
-              selectedRaiders={selectedRaiders}
-              setSelectedRaiders={setSelectedRaiders}
-            ></SelectRaidersPanel>
-          )}
-          {step == 2 && (
-            <AttackResultPanel
-              watchTower={watchTower}
-              onClose={onClose}
-              selectedRaiders={selectedRaiders}
-            ></AttackResultPanel>
-          )}
-          {step == 3 && (
-            <StealResultPanel
-              watchTower={watchTower}
-              targetFoodBalance={targetFoodBalance}
-              targetRealmEntityId={targetRealmEntityId}
-              onClose={onClose}
-              selectedRaiders={selectedRaiders}
-            ></StealResultPanel>
-          )}
-        </div>
+        {watchTower && (
+          <div className="flex flex-col items-center p-2">
+            {step == 1 && (
+              <SelectRaidersPanel
+                watchTower={watchTower}
+                setStep={setStep}
+                onClose={onClose}
+                attackingRaiders={attackingRaiders}
+                selectedRaiders={selectedRaiders}
+                setSelectedRaiders={setSelectedRaiders}
+              ></SelectRaidersPanel>
+            )}
+            {step == 2 && (
+              <AttackResultPanel
+                watchTower={watchTower}
+                onClose={onClose}
+                selectedRaiders={selectedRaiders}
+              ></AttackResultPanel>
+            )}
+            {targetRealmEntityId && step == 3 && (
+              <StealResultPanel
+                watchTower={watchTower}
+                targetFoodBalance={targetFoodBalance}
+                targetRealmEntityId={targetRealmEntityId}
+                onClose={onClose}
+                selectedRaiders={selectedRaiders}
+              ></StealResultPanel>
+            )}
+          </div>
+        )}
       </SecondaryPopup.Body>
     </SecondaryPopup>
   );
@@ -124,12 +126,14 @@ const AttackResultPanel = ({
     },
   } = useDojo();
 
-  const newWatchTowerHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(watchTower.entityId)]));
-  const success = newWatchTowerHealth.value !== watchTower.health;
+  const newWatchTowerHealth = watchTower?.entityId
+    ? useComponentValue(Health, getEntityIdFromKeys([BigInt(watchTower.entityId)]))
+    : undefined;
+  const success = newWatchTowerHealth ? newWatchTowerHealth.value !== watchTower.health : false;
 
   return (
     <div className="flex flex-col items-center w-full">
-      {success && (
+      {success && newWatchTowerHealth && (
         <>
           <div className="flex w-full items-center">
             <svg width="132" height="12" viewBox="0 0 132 12" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -238,7 +242,9 @@ const AttackerHealthChange = ({ selectedRaider }: { selectedRaider: CombatInfo }
     },
   } = useDojo();
 
-  const newHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(selectedRaider.entityId)]));
+  const newHealth = selectedRaider?.entityId
+    ? useComponentValue(Health, getEntityIdFromKeys([BigInt(selectedRaider.entityId)]))
+    : undefined;
 
   return (
     <div className="p-2 mb-2 rounded flex bg-black/20 text-white text-xxs space-x-2">
@@ -246,7 +252,7 @@ const AttackerHealthChange = ({ selectedRaider }: { selectedRaider: CombatInfo }
       <div>Old Health</div>
       <div className="text-order-brilliance">{selectedRaider.health}</div>
       <div>New Health</div>
-      <div className="text-order-giants">{newHealth.value}</div>
+      {newHealth && <div className="text-order-giants">{newHealth.value}</div>}
     </div>
   );
 };
@@ -272,7 +278,9 @@ const StealResultPanel = ({
 
   const { getResourcesFromInventory, getFoodResources } = useResources();
   const [step, setStep] = useState(1);
-  const attackerHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(selectedRaiders[0].entityId)]));
+  const attackerHealth = selectedRaiders[0].entityId
+    ? useComponentValue(Health, getEntityIdFromKeys([BigInt(selectedRaiders[0].entityId)]))
+    : undefined;
   const newFoodBalance = getFoodResources(targetRealmEntityId);
 
   const burnFood = useMemo(() => {
@@ -284,7 +292,7 @@ const StealResultPanel = ({
   const inventoryResources = useMemo(() => {
     return selectedRaiders[0].entityId ? getResourcesFromInventory(selectedRaiders[0].entityId) : undefined;
   }, [step === 3]);
-  const success = attackerHealth.value === selectedRaiders[0].health;
+  const success = attackerHealth ? attackerHealth.value === selectedRaiders[0].health : undefined;
 
   return (
     <div className="flex flex-col items-center w-full">
@@ -335,7 +343,7 @@ const StealResultPanel = ({
                     (resource) =>
                       resource && (
                         <div key={resource.resourceId} className="flex flex-col items-center justify-center">
-                          <ResourceIcon size="md" resource={findResourceById(resource.resourceId).trait} />
+                          <ResourceIcon size="md" resource={findResourceById(resource.resourceId)?.trait || ""} />
                           <div className="text-sm mt-1 text-order-titans">
                             -
                             {Intl.NumberFormat("en-US", {
@@ -361,7 +369,7 @@ const StealResultPanel = ({
                     (resource) =>
                       resource && (
                         <div key={resource.resourceId} className="flex flex-col items-center justify-center">
-                          <ResourceIcon size="md" resource={findResourceById(resource.resourceId).trait} />
+                          <ResourceIcon size="md" resource={findResourceById(resource.resourceId)?.trait || ""} />
                           <div className="text-sm mt-1 text-order-brilliance">
                             +
                             {Intl.NumberFormat("en-US", {
@@ -454,7 +462,7 @@ const SelectRaidersPanel = ({
   selectedRaiders: CombatInfo[];
   setSelectedRaiders: (raiders: CombatInfo[]) => void;
   onClose: () => void;
-  setStep: (number) => void;
+  setStep: (number: number) => void;
 }) => {
   const {
     account: { account },
@@ -486,7 +494,7 @@ const SelectRaidersPanel = ({
   }, [realmEntityId]);
 
   const defenderLevelBonus = useMemo(() => {
-    let level = watchTower ? getRealmLevel(watchTower.entityOwnerId)?.level || 0 : 0;
+    let level = watchTower?.entityOwnerId ? getRealmLevel(watchTower.entityOwnerId)?.level || 0 : 0;
     return getRealmLevelBonus(level, LevelIndex.COMBAT);
   }, [realmEntityId]);
 
@@ -505,15 +513,17 @@ const SelectRaidersPanel = ({
     setLoading(true);
 
     // call contract
-    await attack({
-      signer: account,
-      attacker_ids: selectedRaiders.map((raider) => raider.entityId),
-      target_id: watchTower.locationRealmEntityId,
-    });
-    // when contract finished setloading false
-    setLoading(false);
-    // attack result = step 2
-    setStep(2);
+    if (watchTower?.locationRealmEntityId) {
+      await attack({
+        signer: account,
+        attacker_ids: selectedRaiders.map((raider) => raider.entityId).filter(Boolean) as number[],
+        target_id: watchTower.locationRealmEntityId,
+      });
+      // when contract finished setloading false
+      setLoading(false);
+      // attack result = step 2
+      setStep(2);
+    }
   };
 
   const onSteal = async () => {
@@ -565,15 +575,17 @@ const SelectRaidersPanel = ({
               >
                 {`Pillage`}
               </Button>
-              <Button
-                className="w-full text-xxs h-[18px]"
-                disabled={!(selectedRaiders.length > 0 && watchTower?.health > 0)}
-                onClick={onAttack}
-                isLoading={loading}
-                variant="outline"
-              >
-                {`Attack Realm`}
-              </Button>
+              {watchTower && (
+                <Button
+                  className="w-full text-xxs h-[18px]"
+                  disabled={!(selectedRaiders.length > 0 && watchTower?.health > 0)}
+                  onClick={onAttack}
+                  isLoading={loading}
+                  variant="outline"
+                >
+                  {`Attack Realm`}
+                </Button>
+              )}
             </div>
             {selectedRaiders.length > 0 && (
               <div

@@ -32,11 +32,12 @@ export const useHarvestNotification = (
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const realmEntityId = notification.keys[0];
+  const realmEntityId = notification.keys ? notification.keys[0] : undefined;
+  const resourceType = notification.keys ? notification.keys[1] : undefined;
   const { play: playHarvest } = useUiSounds(soundSelector.harvest);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
+  const realm = realmEntityId ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)])) : undefined;
 
   const realmName = realm ? getRealmNameById(realm.realm_id) : "";
   const realmOrderName = realm ? getRealmOrderNameById(realm?.realm_id) : "";
@@ -44,10 +45,11 @@ export const useHarvestNotification = (
   const harvestAmount = notification.data && "harvestAmount" in notification.data ? notification.data.harvestAmount : 0;
 
   const { getRealmLevel } = useRealm();
-  const level = getRealmLevel(parseInt(realmEntityId))?.level || 0;
+  const level = realmEntityId ? getRealmLevel(parseInt(realmEntityId))?.level || 0 : 0;
 
   const onHarvest = async () => {
     setIsLoading(true);
+    if (!realmEntityId || !resourceType) return;
     await optimisticHarvestLabor(
       nextBlockTimestamp || 0,
       level,
@@ -55,7 +57,7 @@ export const useHarvestNotification = (
     )({
       signer: account,
       realm_id: realmEntityId,
-      resource_type: parseInt(notification.keys[1]),
+      resource_type: parseInt(resourceType),
     });
     playHarvest();
     setIsLoading(false);
@@ -80,11 +82,9 @@ export const useHarvestNotification = (
     content: (onClose: () => void) => (
       <div className="flex flex-col">
         <div className="mt-2 flex items-center">
-          <ResourceCost
-            resourceId={parseInt(notification.keys[1])}
-            amount={harvestAmount}
-            color="text-order-brilliance"
-          />
+          {resourceType && (
+            <ResourceCost resourceId={parseInt(resourceType)} amount={harvestAmount} color="text-order-brilliance" />
+          )}
         </div>
         <Button
           isLoading={isLoading}

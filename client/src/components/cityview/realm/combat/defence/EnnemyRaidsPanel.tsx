@@ -8,10 +8,10 @@ type MarketPanelProps = {};
 
 export const EnnemyRaidersPanel = ({}: MarketPanelProps) => {
   const { realmId } = useRealmStore();
-  const realmPosition = getPosition(realmId);
+  const realmPosition = realmId ? getPosition(realmId) : undefined;
 
   const { useEnemyRaidersOnPosition, getEntitiesCombatInfo } = useCombat();
-  const attackingEntities = useEnemyRaidersOnPosition(realmPosition);
+  const attackingEntities = realmPosition ? useEnemyRaidersOnPosition(realmPosition) : [];
 
   const attackingRaiders = useMemo(() => {
     return getEntitiesCombatInfo(attackingEntities);

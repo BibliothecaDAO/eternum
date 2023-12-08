@@ -76,7 +76,7 @@ export const SettleRealmComponent = () => {
     playSign();
   };
 
-  const mintMultipleRealms = async (times) => {
+  const mintMultipleRealms = async (times: number) => {
     for (let i = 0; i < times; i++) {
       await settleRealm();
     }

@@ -10,7 +10,7 @@ import { BankInterface } from "../../../../hooks/helpers/useBanks";
 
 type BankCaravansPanelProps = {
   caravans: CaravanInterface[];
-  bank: BankInterface;
+  bank: BankInterface | undefined;
 };
 
 export const BankCaravansPanel = ({ caravans, bank }: BankCaravansPanelProps) => {
@@ -59,7 +59,7 @@ export const BankCaravansPanel = ({ caravans, bank }: BankCaravansPanelProps) =>
       {selectedCaravan && showCaravanDetails && (
         <CaravanDetails caravan={selectedCaravan} onClose={() => setShowCaravanDetails(false)} />
       )}
-      {caravans && (
+      {caravans && bank && (
         <div className="flex flex-col p-2 space-y-2 max-h-[500px] overflow-auto">
           {caravans.map((caravan) => (
             <BankCaravan

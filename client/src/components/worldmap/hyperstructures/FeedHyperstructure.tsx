@@ -287,7 +287,7 @@ const BuildHyperstructurePanel = ({
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const setRealmEntityId = useRealmStore((state) => state.setRealmEntityId);
-  const [percentage, setPercentage] = useState<number>(null);
+  const [percentage, setPercentage] = useState<number>(0);
   const [feedResourcesGiveAmounts, setFeedResourcesGiveAmounts] = useState<{ [key: number]: number }>({
     1: 0,
     2: 0,
@@ -401,7 +401,7 @@ const BuildHyperstructurePanel = ({
   }, [hyperstructureData, realmEntityId]);
 
   useEffect(() => {
-    const feedResourcesGiveAmounts = {};
+    const feedResourcesGiveAmounts: Record<string, number> = {};
     Object.keys(totalResources).forEach((id) => {
       feedResourcesGiveAmounts[id] = Math.min(
         Math.floor(divideByPrecision((totalResources[id] * percentage) / 100)),

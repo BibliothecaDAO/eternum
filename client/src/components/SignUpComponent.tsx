@@ -31,8 +31,8 @@ export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: Si
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   // import export account
-  const [importMessage, setImportMessage] = useState(null);
-  const [copyMessage, setCopyMessage] = useState(null);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
+  const [copyMessage, setCopyMessage] = useState<string | null>(null);
   const [inputName, setInputName] = useState("");
 
   const { loading, setLoading, addressName, setAddressName } = useAddressStore();
@@ -87,7 +87,7 @@ export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: Si
     navigator.clipboard.readText().then((text) => {
       try {
         const burner = JSON.parse(text);
-        let currentBurners = localStorage.getItem("burners") ? JSON.parse(localStorage.getItem("burners")) : {};
+        let currentBurners = localStorage.getItem("burners") ? JSON.parse(localStorage.getItem("burners") || "") : {};
 
         if (currentBurners.hasOwnProperty(burner.address)) {
           throw new Error("Account already imported");
