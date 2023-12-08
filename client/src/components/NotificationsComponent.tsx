@@ -43,7 +43,8 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
           return notification.keys as string[];
         }
       })
-      .slice(0, MAX_HARVEST_NOTIFICATIONS);
+      .filter(Boolean)
+      .slice(0, MAX_HARVEST_NOTIFICATIONS) as string[][];
     await harvest_all_labor({
       signer: account,
       entity_ids: harvestKeys,

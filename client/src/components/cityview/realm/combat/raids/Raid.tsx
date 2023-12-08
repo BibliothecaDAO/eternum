@@ -49,30 +49,34 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
 
   // capacity
   let resourceWeight = useMemo(() => {
-    return getTotalResourceWeight([...inventoryResources.resources]);
+    return getTotalResourceWeight([...(inventoryResources?.resources || [])]);
   }, [inventoryResources]);
 
   // offload
   const onOffload = async () => {
     setIsLoading(true);
-    await offloadChests(realmEntityId, raider.entityId, inventoryResources.indices, inventoryResources.resources);
+    if (raider?.entityId && inventoryResources) {
+      await offloadChests(realmEntityId, raider.entityId, inventoryResources.indices, inventoryResources.resources);
+    }
   };
 
   const onReturn = async () => {
     if (raider.homePosition) {
       setIsLoading(true);
-      await travel({
-        signer: account,
-        travelling_entity_id: raider.entityId,
-        destination_coord_x: raider.homePosition.x,
-        destination_coord_y: raider.homePosition.y,
-      });
-      setIsLoading(false);
+      if (raider.entityId) {
+        await travel({
+          signer: account,
+          travelling_entity_id: raider.entityId,
+          destination_coord_x: raider.homePosition.x,
+          destination_coord_y: raider.homePosition.y,
+        });
+        setIsLoading(false);
+      }
     }
   };
 
   const hasResources = inventoryResources && inventoryResources.resources.length > 0;
-  const isTraveling = raider.arrivalTime ? raider.arrivalTime > nextBlockTimestamp : false;
+  const isTraveling = raider.arrivalTime && nextBlockTimestamp ? raider.arrivalTime > nextBlockTimestamp : false;
   const hasMaxHealth = health === 10 * quantity;
   const destinationRealmId = raider.position ? getRealmIdByPosition(raider.position) : undefined;
   const destinationRealmName = destinationRealmId ? getRealmNameById(destinationRealmId) : undefined;
@@ -111,7 +115,9 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Traveling to</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
-                <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xxs" />
+                {destinationRealmId && (
+                  <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xxs" />
+                )}
                 {destinationRealmName}
                 <span className="italic text-light-pink ml-1">with</span>
               </div>
@@ -134,7 +140,9 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Waiting on</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
-                <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xxs" />
+                {destinationRealmId && (
+                  <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xxs" />
+                )}
                 {destinationRealmName}
                 <span className="italic text-light-pink ml-1">with</span>
               </div>

@@ -29,7 +29,9 @@ export const DefencePanel = ({}: DefencePanelProps) => {
   const { getRealmLevelBonus, getRealmLevel } = useRealm();
 
   const watchTowerId = getRealmWatchTowerId(realmEntityId);
-  const watchTowerHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(watchTowerId)]));
+  const watchTowerHealth = watchTowerId
+    ? useComponentValue(Health, getEntityIdFromKeys([BigInt(watchTowerId)]))
+    : undefined;
 
   const watchTower = useMemo(() => {
     const info = watchTowerId ? getEntitiesCombatInfo([watchTowerId]) : undefined;
@@ -41,20 +43,24 @@ export const DefencePanel = ({}: DefencePanelProps) => {
   }, [watchTowerId, watchTowerHealth]);
 
   const defenderLevelBonus = useMemo(() => {
-    let level = getRealmLevel(watchTower.entityOwnerId)?.level || 0;
-    return getRealmLevelBonus(level, LevelIndex.COMBAT);
+    if (watchTower?.entityOwnerId) {
+      let level = getRealmLevel(watchTower.entityOwnerId)?.level || 0;
+      return getRealmLevelBonus(level, LevelIndex.COMBAT);
+    } else {
+      return 100;
+    }
   }, [watchTower]);
 
   return (
     <div className="relative flex flex-col p-2 min-h-[120px]">
-      {showBuildDefence && (
+      {showBuildDefence && watchTower && (
         <ManageSoldiersPopupTabs
           headline={"Reinforce Defence"}
           selectedRaider={watchTower}
           onClose={() => setShowBuildDefence(false)}
         />
       )}
-      {showHeal && <HealPopup selectedRaider={watchTower} onClose={() => setShowHeal(false)} />}
+      {showHeal && watchTower && <HealPopup selectedRaider={watchTower} onClose={() => setShowHeal(false)} />}
       <div className="flex flex-col p-2">
         {watchTower && (
           <Defence

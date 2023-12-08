@@ -19,7 +19,7 @@ export function useResources() {
   // for any entity that has a resourceChest in its inventory,
   const getResourcesFromInventory = (entityId: number): { resources: Resource[]; indices: number[] } => {
     let indices: number[] = [];
-    let resources = {};
+    let resources: Record<number, number> = {};
     let inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(entityId)]));
 
     if (!inventory) {
@@ -36,21 +36,23 @@ export function useResources() {
         ? getComponentValue(ResourceChest, getEntityIdFromKeys([BigInt(foreignKey.entity_id)]))
         : undefined;
 
-      let { resources_count } = resourcesChest;
-      for (let i = 0; i < resources_count; i++) {
-        let entityId = getEntityIdFromKeys([BigInt(foreignKey.entity_id), BigInt(i)]);
-        const resource = getComponentValue(DetachedResource, entityId);
-        if (resource) {
-          resources[resource.resource_type] = (resources[resource.resource_type] || 0) + resource.resource_amount;
+      if (resourcesChest && foreignKey) {
+        let { resources_count } = resourcesChest;
+        for (let i = 0; i < resources_count; i++) {
+          let entityId = getEntityIdFromKeys([BigInt(foreignKey.entity_id), BigInt(i)]);
+          const resource = getComponentValue(DetachedResource, entityId);
+          if (resource) {
+            resources[resource.resource_type] = (resources[resource.resource_type] || 0) + resource.resource_amount;
+          }
         }
       }
       indices.push(i);
     }
 
     return {
-      resources: Object.keys(resources).map((resourceId) => ({
+      resources: Object.keys(resources).map((resourceId: string) => ({
         resourceId: Number(resourceId),
-        amount: resources[resourceId],
+        amount: resources[Number(resourceId)],
       })),
       indices,
     };
@@ -75,9 +77,9 @@ export function useResources() {
     return [
       {
         resourceId: 254,
-        amount: wheat?.balance,
+        amount: wheat?.balance || 0,
       },
-      { resourceId: 255, amount: fish?.balance },
+      { resourceId: 255, amount: fish?.balance || 0 },
     ];
   };
 

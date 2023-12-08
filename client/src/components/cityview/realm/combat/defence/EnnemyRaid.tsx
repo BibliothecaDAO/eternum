@@ -20,10 +20,10 @@ export const EnemyRaid = ({ raider, ...props }: EnemyRaidProps) => {
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const setTooltip = useUIStore((state) => state.setTooltip);
   const { getRealmAddressName } = useRealm();
-  const attackerAddressName = getRealmAddressName(entityOwnerId);
+  const attackerAddressName = entityOwnerId ? getRealmAddressName(entityOwnerId) : "";
 
-  const isTraveling = arrivalTime ? arrivalTime > nextBlockTimestamp : false;
-  const originRealmName = originRealmId ? getRealmNameById(raider.originRealmId) : undefined;
+  const isTraveling = arrivalTime && nextBlockTimestamp ? arrivalTime > nextBlockTimestamp : false;
+  const originRealmName = originRealmId ? getRealmNameById(originRealmId) : "";
 
   return (
     <div

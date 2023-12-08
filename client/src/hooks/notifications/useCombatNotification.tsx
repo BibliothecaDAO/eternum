@@ -33,12 +33,13 @@ export const useAttackedNotification = (
     getComponentValue(Realm, getEntityIdFromKeys([BigInt(attackerRealmEntityId)])) || {};
   const { realm_id: targetRealmId } =
     getComponentValue(Realm, getEntityIdFromKeys([BigInt(targetRealmEntityId)])) || {};
-  const attackerRealmOrderName = attackerRealmId ? getRealmOrderNameById(attackerRealmId) : undefined;
-  const targetRealmOrderName = targetRealmId ? getRealmOrderNameById(targetRealmId) : undefined;
-  const attackerRealmName = attackerRealmId ? getRealmNameById(attackerRealmId) : undefined;
-  const targetRealmName = targetRealmId ? getRealmNameById(targetRealmId) : undefined;
+  const attackerRealmOrderName = attackerRealmId ? getRealmOrderNameById(attackerRealmId) : "";
+  const targetRealmOrderName = targetRealmId ? getRealmOrderNameById(targetRealmId) : "";
+  const attackerRealmName = attackerRealmId ? getRealmNameById(attackerRealmId) : "";
+  const targetRealmName = targetRealmId ? getRealmNameById(targetRealmId) : "";
 
-  const time = attackTimestamp ? formatTimeLeftDaysHoursMinutes(nextBlockTimestamp - attackTimestamp) : "";
+  const time =
+    attackTimestamp && nextBlockTimestamp ? formatTimeLeftDaysHoursMinutes(nextBlockTimestamp - attackTimestamp) : "";
 
   const youWon = winner === Winner.Target;
 
@@ -97,12 +98,13 @@ export const useStolenResourcesNotification = (
     getComponentValue(Realm, getEntityIdFromKeys([BigInt(attackerRealmEntityId)])) || {};
   const { realm_id: targetRealmId } =
     getComponentValue(Realm, getEntityIdFromKeys([BigInt(targetRealmEntityId)])) || {};
-  const attackerRealmOrderName = attackerRealmId ? getRealmOrderNameById(attackerRealmId) : undefined;
-  const targetRealmOrderName = targetRealmId ? getRealmOrderNameById(targetRealmId) : undefined;
-  const attackerRealmName = attackerRealmId ? getRealmNameById(attackerRealmId) : undefined;
-  const targetRealmName = targetRealmId ? getRealmNameById(targetRealmId) : undefined;
+  const attackerRealmOrderName = attackerRealmId ? getRealmOrderNameById(attackerRealmId) : "";
+  const targetRealmOrderName = targetRealmId ? getRealmOrderNameById(targetRealmId) : "";
+  const attackerRealmName = attackerRealmId ? getRealmNameById(attackerRealmId) : "";
+  const targetRealmName = targetRealmId ? getRealmNameById(targetRealmId) : "";
 
-  const time = attackTimestamp ? formatTimeLeftDaysHoursMinutes(nextBlockTimestamp - attackTimestamp) : "";
+  const time =
+    nextBlockTimestamp && attackTimestamp ? formatTimeLeftDaysHoursMinutes(nextBlockTimestamp - attackTimestamp) : "";
 
   return {
     type: "success",

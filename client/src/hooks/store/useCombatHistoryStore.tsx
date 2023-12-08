@@ -16,8 +16,8 @@ export interface CombatResultInterface {
   attackingEntityIds: number[];
   winner: Winner;
   stolenResources: Resource[];
-  damage: number | undefined;
-  attackTimestamp: number | undefined;
+  damage: number;
+  attackTimestamp: number;
 }
 
 interface CombatHistoryStore {

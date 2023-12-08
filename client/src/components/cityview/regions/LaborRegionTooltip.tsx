@@ -73,8 +73,8 @@ export const LaborRegionTooltip = ({ position, resourceId }: LaborRegionTooltipP
   return (
     <BaseRegionTooltip position={position} distanceFactor={400}>
       <div className="flex items-center">
-        <ResourceIcon resource={resource.trait} size="sm" />
-        <div className=" ml-2 text-sm text-gold font-bold">{resource.trait} Mine</div>
+        <ResourceIcon resource={resource?.trait || ""} size="sm" />
+        <div className=" ml-2 text-sm text-gold font-bold">{resource?.trait} Mine</div>
         <div className="flex flex-col ml-auto text-xxs">
           <div className="flex items-center mx-auto text-white/70">
             {labor && laborLeft > 0
@@ -107,7 +107,7 @@ export const LaborRegionTooltip = ({ position, resourceId }: LaborRegionTooltipP
           {laborLeft > 60 ? `${formatSecondsInHoursMinutes(laborLeft)}` : "Idle"}
         </div>
         <div className="flex ml-auto">
-          <ResourceIcon resource={resource.trait as any} size="xs" className="!w-[12px]" />
+          <ResourceIcon resource={resource?.trait || ""} size="xs" className="!w-[12px]" />
           <div className="mx-1 text-brilliance">{`+${divideByPrecision(nextHarvest)}`}</div>
         </div>
       </div>

@@ -31,12 +31,14 @@ export const useEmptyChestNotification = (
   const realmName = realmId ? getRealmNameById(realmId) : "";
   const realmOrderName = realmId ? getRealmOrderNameById(realmId) : "";
 
-  let claimableResources = getResourcesFromInventory(caravanId);
+  let claimableResources = caravanId ? getResourcesFromInventory(caravanId) : undefined;
 
   const emptyChest = async () => {
     setIsLoading(true);
-    await offloadChests(realmEntityId, caravanId, claimableResources.indices, claimableResources.resources);
-    setIsLoading(false);
+    if (claimableResources && realmEntityId && caravanId) {
+      await offloadChests(realmEntityId, caravanId, claimableResources.indices, claimableResources.resources);
+      setIsLoading(false);
+    }
   };
 
   return {

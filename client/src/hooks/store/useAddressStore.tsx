@@ -6,7 +6,7 @@ import { hexToAscii } from "../../utils/utils";
 type AddressStore = {
   loading: boolean;
   addressName: undefined | string;
-  setAddressName: (addressName: string) => void;
+  setAddressName: (addressName: string | undefined) => void;
   setLoading: (loading: boolean) => void;
 };
 

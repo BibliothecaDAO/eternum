@@ -109,16 +109,18 @@ export function createOptimisticSystemCalls({
     return async function (this: any, args: TransferItemsProps) {
       const { receiver_id: receiving_entity_id, indices, sender_id: transport_id } = args;
 
-      const resources_chest_ids = indices.map((index: number) => {
-        let inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(transport_id)]));
-        let foreignKey = inventory
-          ? getComponentValue(
-              ForeignKey,
-              getEntityIdFromKeys([BigInt(transport_id), BigInt(inventory.items_key), BigInt(index)]),
-            )
-          : undefined;
-        return foreignKey?.entity_id;
-      });
+      const resources_chest_ids = indices
+        .map((index) => {
+          let inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(transport_id)]));
+          let foreignKey = inventory
+            ? getComponentValue(
+                ForeignKey,
+                getEntityIdFromKeys([BigInt(transport_id), BigInt(inventory.items_key), BigInt(index)]),
+              )
+            : undefined;
+          return foreignKey?.entity_id;
+        })
+        .filter(Boolean) as number[];
 
       let overrideId = uuid();
 

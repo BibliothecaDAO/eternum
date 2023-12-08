@@ -47,11 +47,13 @@ export const MergeExistingSoldiersPanel = ({ isDefence, selectedRaider, onClose 
     let totalHealth = 0;
     let totalQuantity = 0;
     raidersInfo.forEach((raider) => {
-      let proportion = selectedRaiders[raider.entityId] / raider.quantity;
-      totalAttack += raider.attack * proportion;
-      totalDefence += raider.defence * proportion;
-      totalHealth += raider.health * proportion;
-      totalQuantity += raider.quantity * proportion;
+      if (raider?.entityId) {
+        let proportion = selectedRaiders[raider.entityId] / raider.quantity;
+        totalAttack += raider.attack * proportion;
+        totalDefence += raider.defence * proportion;
+        totalHealth += raider.health * proportion;
+        totalQuantity += raider.quantity * proportion;
+      }
     });
     return [
       Math.round(totalAttack + selectedRaider.attack),
@@ -64,26 +66,30 @@ export const MergeExistingSoldiersPanel = ({ isDefence, selectedRaider, onClose 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const { getResourcesFromInventory } = useResources();
 
-  const realmRaiderIds = getRealmRaidersOnPosition(realmEntityId, selectedRaider.position).filter((id) => {
-    const inventoryResources = getResourcesFromInventory(id);
-    return id !== selectedRaider.entityId && inventoryResources.resources.length === 0;
-  });
+  const realmRaiderIds = selectedRaider.position
+    ? getRealmRaidersOnPosition(realmEntityId, selectedRaider.position).filter((id) => {
+        const inventoryResources = getResourcesFromInventory(id);
+        return id !== selectedRaider.entityId && inventoryResources.resources.length === 0;
+      })
+    : [];
   const realmDefence = useMemo(() => {
     const defence = getDefenceOnRealm(realmEntityId);
-    return defence.quantity > 0 ? defence : undefined;
+    return defence?.quantity && defence.quantity > 0 ? defence : undefined;
   }, [realmEntityId]);
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const onBuild = async () => {
     setLoading(true);
-    await merge_soldiers({
-      signer: account,
-      merge_into_unit_id: selectedRaider.entityId,
-      units: Object.keys(selectedRaiders).flatMap((unit) => [unit, selectedRaiders[unit]]),
-    });
-    setLoading(false);
-    onClose();
+    if (selectedRaider?.entityId) {
+      await merge_soldiers({
+        signer: account,
+        merge_into_unit_id: selectedRaider.entityId,
+        units: Object.keys(selectedRaiders).flatMap((unit) => [unit, selectedRaiders[unit]]),
+      });
+      setLoading(false);
+      onClose();
+    }
   };
 
   const realmRaiders = useMemo(() => {

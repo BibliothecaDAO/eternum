@@ -133,7 +133,7 @@ export const Onboarding = () => {
   );
 };
 
-const StepOne = ({ onNext }) => {
+const StepOne = ({ onNext }: { onNext: () => void }) => {
   return (
     <div>
       <p className="leading-loose pt-4">
@@ -151,7 +151,7 @@ const StepOne = ({ onNext }) => {
   );
 };
 
-const Naming = ({ onNext }) => {
+const Naming = ({ onNext }: { onNext: () => void }) => {
   const {
     account: { create, isDeploying, list, account, select, clear },
     setup: {
@@ -161,8 +161,8 @@ const Naming = ({ onNext }) => {
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const [importMessage, setImportMessage] = useState(null);
-  const [copyMessage, setCopyMessage] = useState(null);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
+  const [copyMessage, setCopyMessage] = useState<string | null>(null);
   const [inputName, setInputName] = useState("");
 
   const { loading, setLoading, addressName, setAddressName } = useAddressStore();
@@ -171,9 +171,11 @@ const Naming = ({ onNext }) => {
 
   const onSetName = async () => {
     setLoading(true);
-    await set_address_name({ name: inputName, signer: account as any });
-    setAddressName(inputName);
-    setLoading(false);
+    if (inputName) {
+      await set_address_name({ name: inputName, signer: account as any });
+      setAddressName(inputName);
+      setLoading(false);
+    }
   };
 
   const onCopy = () => {
@@ -199,7 +201,7 @@ const Naming = ({ onNext }) => {
     navigator.clipboard.readText().then((text) => {
       try {
         const burner = JSON.parse(text);
-        let currentBurners = localStorage.getItem("burners") ? JSON.parse(localStorage.getItem("burners")) : {};
+        let currentBurners = localStorage.getItem("burners") ? JSON.parse(localStorage.getItem("burners") || "") : {};
 
         if (currentBurners.hasOwnProperty(burner.address)) {
           throw new Error("Account already imported");
@@ -353,7 +355,7 @@ const Naming = ({ onNext }) => {
     </div>
   );
 };
-const StepTwo = ({ onPrev, onNext }) => {
+const StepTwo = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => {
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
   const canSettle = realmEntityIds.length < MAX_REALMS;
@@ -379,7 +381,7 @@ const StepTwo = ({ onPrev, onNext }) => {
   );
 };
 
-const StepThree = ({ onPrev }) => {
+const StepThree = ({ onPrev }: { onPrev: () => void }) => {
   return (
     <div>
       <p className="leading-loose text-2xl">

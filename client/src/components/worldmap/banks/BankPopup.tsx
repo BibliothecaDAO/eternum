@@ -44,7 +44,7 @@ export const BankPopup = ({ onClose, bank }: BankPopupProps) => {
 
   const bankInfo = useGetBank(bank);
 
-  const { caravans } = useGetPositionCaravans(bankInfo.position.x, bankInfo.position.y);
+  const { caravans } = bankInfo ? useGetPositionCaravans(bankInfo.position.x, bankInfo.position.y) : { caravans: [] };
 
   const tabs = useMemo(
     () => [
@@ -73,7 +73,7 @@ export const BankPopup = ({ onClose, bank }: BankPopupProps) => {
             onSendCaravan={() => setSelectedTab(1)}
             onClose={onClose}
             bank={bankInfo}
-            bankPrice={bankInfo.wheatPrice}
+            bankPrice={bankInfo?.wheatPrice || 0}
           />
         ),
       },
@@ -195,7 +195,7 @@ const SwapResourcesPanel = ({
 }: {
   onClose: () => void;
   onSendCaravan: () => void;
-  bank: BankInterface;
+  bank: BankInterface | undefined;
   bankPrice: number;
 }) => {
   const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
@@ -214,30 +214,32 @@ const SwapResourcesPanel = ({
 
   const sendResourcesToBank = async () => {
     setIsLoading(true);
-    const resourcesList = Object.keys(feedResourcesGiveAmounts)
-      .filter((id) => feedResourcesGiveAmounts[Number(id)] > 0)
-      .flatMap((id) => [Number(id), multiplyByPrecision(feedResourcesGiveAmounts[Number(id)])]);
-    if (isNewCaravan) {
-      await send_resources_to_location({
-        signer: account,
-        sending_entity_id: realmEntityId,
-        resources: resourcesList || [],
-        destination_coord_x: bank.position.x,
-        destination_coord_y: bank.position.y,
-        donkeys_quantity: donkeysCount,
-      });
-    } else {
-      // transfer resources to caravan
-      await send_resources_to_location({
-        signer: account,
-        sending_entity_id: realmEntityId,
-        resources: resourcesList || [],
-        destination_coord_x: bank.position.x,
-        destination_coord_y: bank.position.y,
-        caravan_id: selectedCaravan,
-      });
+    if (bank) {
+      const resourcesList = Object.keys(feedResourcesGiveAmounts)
+        .filter((id) => feedResourcesGiveAmounts[Number(id)] > 0)
+        .flatMap((id) => [Number(id), multiplyByPrecision(feedResourcesGiveAmounts[Number(id)])]);
+      if (isNewCaravan) {
+        await send_resources_to_location({
+          signer: account,
+          sending_entity_id: realmEntityId,
+          resources: resourcesList || [],
+          destination_coord_x: bank.position.x,
+          destination_coord_y: bank.position.y,
+          donkeys_quantity: donkeysCount,
+        });
+      } else {
+        // transfer resources to caravan
+        await send_resources_to_location({
+          signer: account,
+          sending_entity_id: realmEntityId,
+          resources: resourcesList || [],
+          destination_coord_x: bank.position.x,
+          destination_coord_y: bank.position.y,
+          caravan_id: selectedCaravan,
+        });
+      }
+      onSendCaravan();
     }
-    onSendCaravan();
   };
 
   const {
@@ -251,7 +253,7 @@ const SwapResourcesPanel = ({
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const setRealmEntityId = useRealmStore((state) => state.setRealmEntityId);
-  const [percentage, setPercentage] = useState<number>(null);
+  const [percentage, setPercentage] = useState<number>(0);
   const [feedResourcesGiveAmounts, setFeedResourcesGiveAmounts] = useState<{ [key: number]: number }>({
     254: 0,
     255: 0,
@@ -292,7 +294,7 @@ const SwapResourcesPanel = ({
   }, [step, selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
 
   const lordsAmountFromWheat = useMemo(() => {
-    return bank.wheatLaborAuction
+    return bank?.wheatLaborAuction && nextBlockTimestamp
       ? getLordsAmountFromBankAuction(
           multiplyByPrecision(feedResourcesGiveAmounts[254] || 0),
           targetPrices[254],
@@ -307,7 +309,7 @@ const SwapResourcesPanel = ({
   }, [feedResourcesGiveAmounts[254]]);
 
   const lordsAmountFromFish = useMemo(() => {
-    return bank.fishLaborAuction
+    return bank?.fishLaborAuction && nextBlockTimestamp
       ? getLordsAmountFromBankAuction(
           multiplyByPrecision(feedResourcesGiveAmounts[255] || 0),
           targetPrices[255],
@@ -342,7 +344,7 @@ const SwapResourcesPanel = ({
   }, [realmEntityId]);
 
   useEffect(() => {
-    const feedResourcesGiveAmounts = {};
+    const feedResourcesGiveAmounts: Record<string, number> = {};
     Object.keys(totalResources).forEach((id) => {
       (feedResourcesGiveAmounts[id] = Math.floor(divideByPrecision((totalResources[id] * percentage) / 100))),
         setFeedResourcesGiveAmounts(feedResourcesGiveAmounts);
@@ -367,20 +369,22 @@ const SwapResourcesPanel = ({
               <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
                 <div className="mb-1 ml-1 italic text-light-pink text-xxs"></div>
                 <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price per Shekel:</div>
-                <div className="grid grid-cols-4 gap-1">
-                  {[
-                    { resourceId: 254, amount: bank.wheatPrice * 1000 },
-                    { resourceId: 255, amount: bank.fishPrice * 1000 },
-                  ].map(({ resourceId, amount }) => (
-                    <ResourceCost
-                      withTooltip
-                      type="vertical"
-                      key={resourceId}
-                      resourceId={resourceId}
-                      amount={divideByPrecision(amount)}
-                    />
-                  ))}
-                </div>
+                {bank && (
+                  <div className="grid grid-cols-4 gap-1">
+                    {[
+                      { resourceId: 254, amount: bank.wheatPrice * 1000 },
+                      { resourceId: 255, amount: bank.fishPrice * 1000 },
+                    ].map(({ resourceId, amount }) => (
+                      <ResourceCost
+                        withTooltip
+                        type="vertical"
+                        key={resourceId}
+                        resourceId={resourceId}
+                        amount={divideByPrecision(amount)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             <Headline size="big"> Swap Food for Shekels</Headline>
@@ -421,13 +425,13 @@ const SwapResourcesPanel = ({
               <div className={clsx("flex flex-col items-center  space-y-2 h-min", "col-span-4")}>
                 <Headline className="mb-2">You Give</Headline>
                 {Object.keys(totalResources).map((_id) => {
-                  const id: any = Number(_id);
+                  const id: number = Number(_id);
                   return (
                     <div key={id} className="flex items-center w-full h-8">
                       <NumberInput
                         max={totalResources[id]}
                         min={1}
-                        step={targetPrices[id]}
+                        step={targetPrices[id as 254 | 255]}
                         value={feedResourcesGiveAmounts[id]}
                         onChange={(value) => {
                           setFeedResourcesGiveAmounts({

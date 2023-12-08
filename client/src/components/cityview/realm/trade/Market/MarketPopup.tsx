@@ -35,7 +35,7 @@ interface ResourceOffersSummary {
   depthOfMarket: DepthOfMarket[];
 }
 export const MarketPopup = ({ onClose }: MarketPopupProps) => {
-  const [selectedResource, setSelectedResource] = useState<number>(null);
+  const [selectedResource, setSelectedResource] = useState<number | null>(null);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
   const [isBuy, setIsBuy] = useState(false);
 
@@ -334,104 +334,112 @@ const OverviewResourceRow = ({
   onBuy,
   onSell,
 }: {
-  askSummary: ResourceOffersSummary;
-  bidSummary: ResourceOffersSummary;
+  askSummary: ResourceOffersSummary | undefined;
+  bidSummary: ResourceOffersSummary | undefined;
   onBuy: () => void;
   onSell: () => void;
 }) => {
-  const resource = findResourceById(bidSummary.resourceId);
+  const resource = findResourceById(bidSummary?.resourceId || 0);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const depthOfMarketBids = useMemo(() => {
-    const lastFive = bidSummary.depthOfMarket.slice(0, 5);
+    const lastFive = bidSummary?.depthOfMarket.slice(0, 5) || [];
 
     let accumulatedAmount = 0;
 
     return (
       lastFive.length && (
         <div className="flex flex-col w-[300px]">
-          <div className="flex items-center mb-2">
-            <ResourceIcon containerClassName="mr-2 w-min" withTooltip={false} resource={resource.trait} size="sm" />
-            {resource.trait}
-          </div>
-          {lastFive.map((depth) => {
-            accumulatedAmount += depth.amount;
-            const width = (accumulatedAmount / bidSummary.totalAmount) * 100;
-            return (
-              <div className="w-full relative h-5 border-b border-white/30">
-                <div className="flex mt-0.5 flex-1 w-full justify-between px-0.5 items-center">
-                  <div className="relative z-10">
-                    {Intl.NumberFormat("en-US", {
-                      style: "decimal",
-                      maximumFractionDigits: 2,
-                      minimumFractionDigits: 2,
-                    }).format(divideByPrecision(depth.amount))}
+          {resource && (
+            <div className="flex items-center mb-2">
+              <ResourceIcon containerClassName="mr-2 w-min" withTooltip={false} resource={resource.trait} size="sm" />
+              {resource.trait}
+            </div>
+          )}
+          {bidSummary &&
+            lastFive.map((depth) => {
+              accumulatedAmount += depth.amount;
+              const width = (accumulatedAmount / bidSummary.totalAmount) * 100;
+              return (
+                <div className="w-full relative h-5 border-b border-white/30">
+                  <div className="flex mt-0.5 flex-1 w-full justify-between px-0.5 items-center">
+                    <div className="relative z-10">
+                      {Intl.NumberFormat("en-US", {
+                        style: "decimal",
+                        maximumFractionDigits: 2,
+                        minimumFractionDigits: 2,
+                      }).format(divideByPrecision(depth.amount))}
+                    </div>
+                    <div className="relative z-10 flex items-center">
+                      {depth.price.toFixed(2)}
+                      <ResourceIcon containerClassName="ml-1 w-min" resource="Shekels" size="xs" />
+                    </div>
                   </div>
-                  <div className="relative z-10 flex items-center">
-                    {depth.price.toFixed(2)}
-                    <ResourceIcon containerClassName="ml-1 w-min" resource="Shekels" size="xs" />
-                  </div>
+                  <div
+                    className="absolute z-0 top-0 left-0 w-full h-full bg-danger/30"
+                    style={{ width: `${width}%` }}
+                  ></div>
                 </div>
-                <div
-                  className="absolute z-0 top-0 left-0 w-full h-full bg-danger/30"
-                  style={{ width: `${width}%` }}
-                ></div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       )
     );
-  }, [bidSummary.depthOfMarket]);
+  }, [bidSummary?.depthOfMarket]);
 
   const depthOfMarketAsks = useMemo(() => {
-    const lastFive = askSummary.depthOfMarket.slice(0, 5);
+    const lastFive = askSummary?.depthOfMarket.slice(0, 5) || [];
 
     let accumulatedAmount = 0;
 
     return (
       lastFive.length && (
         <div className="flex flex-col w-[300px]">
-          <div className="flex items-center mb-2">
-            <ResourceIcon containerClassName="mr-2 w-min" withTooltip={false} resource={resource.trait} size="sm" />
-            {resource.trait}
-          </div>
-          {lastFive.map((depth) => {
-            accumulatedAmount += depth.amount;
-            const width = (accumulatedAmount / askSummary.totalAmount) * 100;
-            return (
-              <div className="w-full relative h-5 border-b border-white/30">
-                <div className="flex mt-0.5 flex-1 w-full justify-between px-0.5 items-center">
-                  <div className="relative z-10">
-                    {Intl.NumberFormat("en-US", {
-                      style: "decimal",
-                      maximumFractionDigits: 2,
-                      minimumFractionDigits: 2,
-                    }).format(divideByPrecision(depth.amount))}
+          {resource && (
+            <div className="flex items-center mb-2">
+              <ResourceIcon containerClassName="mr-2 w-min" withTooltip={false} resource={resource.trait} size="sm" />
+              {resource.trait}
+            </div>
+          )}
+          {askSummary &&
+            lastFive.map((depth) => {
+              accumulatedAmount += depth.amount;
+              const width = (accumulatedAmount / askSummary.totalAmount) * 100;
+              return (
+                <div className="w-full relative h-5 border-b border-white/30">
+                  <div className="flex mt-0.5 flex-1 w-full justify-between px-0.5 items-center">
+                    <div className="relative z-10">
+                      {Intl.NumberFormat("en-US", {
+                        style: "decimal",
+                        maximumFractionDigits: 2,
+                        minimumFractionDigits: 2,
+                      }).format(divideByPrecision(depth.amount))}
+                    </div>
+                    <div className="relative z-10 flex items-center">
+                      {depth.price.toFixed(2)}
+                      <ResourceIcon containerClassName="ml-1 w-min" resource="Shekels" size="xs" />
+                    </div>
                   </div>
-                  <div className="relative z-10 flex items-center">
-                    {depth.price.toFixed(2)}
-                    <ResourceIcon containerClassName="ml-1 w-min" resource="Shekels" size="xs" />
-                  </div>
+                  <div
+                    className="absolute z-0 top-0 left-0 w-full h-full bg-order-brilliance/30"
+                    style={{ width: `${width}%` }}
+                  ></div>
                 </div>
-                <div
-                  className="absolute z-0 top-0 left-0 w-full h-full bg-order-brilliance/30"
-                  style={{ width: `${width}%` }}
-                ></div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       )
     );
-  }, [askSummary.depthOfMarket]);
+  }, [askSummary?.depthOfMarket]);
 
   return (
     <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-1 grid-cols-[120px,1fr,100px,100px,100px] gap-4 text-lightest text-xxs">
-      <div className="flex items-center">
-        <ResourceIcon containerClassName="mr-2 w-min" withTooltip={false} resource={resource.trait} size="sm" />
-        <div>{resource.trait}</div>
-      </div>
+      {resource && (
+        <div className="flex items-center">
+          <ResourceIcon containerClassName="mr-2 w-min" withTooltip={false} resource={resource.trait} size="sm" />
+          <div>{resource.trait}</div>
+        </div>
+      )}
       <div
         className="flex justify-end  items-center text-gold"
         onMouseEnter={() =>
@@ -442,7 +450,7 @@ const OverviewResourceRow = ({
         }
         onMouseLeave={() => setTooltip(null)}
       >
-        {askSummary.bestPrice !== Infinity ? askSummary.bestPrice.toFixed(2) : (0).toFixed(2)}
+        {askSummary && askSummary.bestPrice !== Infinity ? askSummary.bestPrice.toFixed(2) : (0).toFixed(2)}
         <ResourceIcon containerClassName="ml-2 w-min" resource="Shekels" size="sm" />
       </div>
       <div
@@ -459,7 +467,7 @@ const OverviewResourceRow = ({
           style: "decimal",
           maximumFractionDigits: 2,
           minimumFractionDigits: 2,
-        }).format(divideByPrecision(askSummary.totalAmount))}
+        }).format(divideByPrecision(askSummary?.totalAmount || 0))}
         <Button
           className="ml-2"
           onClick={() => {
@@ -482,7 +490,7 @@ const OverviewResourceRow = ({
         }
         onMouseLeave={() => setTooltip(null)}
       >
-        {bidSummary.bestPrice !== Infinity ? bidSummary.bestPrice.toFixed(2) : (0).toFixed(2)}
+        {bidSummary && bidSummary.bestPrice !== Infinity ? bidSummary.bestPrice.toFixed(2) : (0).toFixed(2)}
         <ResourceIcon containerClassName="ml-2 w-min" resource="Shekels" size="sm" />
       </div>
       <div
@@ -499,7 +507,7 @@ const OverviewResourceRow = ({
           style: "decimal",
           maximumFractionDigits: 2,
           minimumFractionDigits: 2,
-        }).format(divideByPrecision(bidSummary.totalAmount))}
+        }).format(divideByPrecision(bidSummary?.totalAmount || 0))}
         <Button
           className="ml-2"
           onClick={() => {
@@ -531,7 +539,7 @@ const MarketplaceResourceOffersPanel = ({
 }) => {
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const [selectedTrade, setSelectedTrade] = useState<MarketInterface | undefined>(null);
+  const [selectedTrade, setSelectedTrade] = useState<MarketInterface | null>(null);
   const sortingParams = useMemo(() => {
     return [
       { label: "Sell", sortKey: "sell", className: "" },
@@ -552,7 +560,7 @@ const MarketplaceResourceOffersPanel = ({
       {selectedTrade && (
         <AcceptOfferPopup
           onClose={() => {
-            setSelectedTrade(undefined);
+            setSelectedTrade(null);
           }}
           selectedTrade={selectedTrade}
         />
@@ -628,29 +636,35 @@ const ResourceOfferRow = ({
 
   return (
     <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-1 grid-cols-5 gap-4 text-lightest text-xxs">
-      <div className="flex items-center">
-        <ResourceIcon
-          containerClassName="mr-2 w-min"
-          withTooltip={false}
-          resource={isBuy ? "Shekels" : resource.trait}
-          size="sm"
-        />
-        {divideByPrecision(offer.resourcesGive[0].amount)}
-      </div>
+      {resource && (
+        <div className="flex items-center">
+          <ResourceIcon
+            containerClassName="mr-2 w-min"
+            withTooltip={false}
+            resource={isBuy ? "Shekels" : resource.trait}
+            size="sm"
+          />
+          {divideByPrecision(offer.resourcesGive[0].amount)}
+        </div>
+      )}
       <div>
         <div className="px-2 bg-black rounded-md w-min">
           {isBuy ? (1 / offer.ratio).toFixed(2) : offer.ratio.toFixed(2)}
         </div>
       </div>
-      <div className="flex items-center text-gold">
-        {divideByPrecision(offer.resourcesGet[0].amount)}
-        <ResourceIcon containerClassName="ml-2 w-min" resource={!isBuy ? "Shekels" : resource.trait} size="sm" />
-      </div>
+      {resource && (
+        <div className="flex items-center text-gold">
+          {divideByPrecision(offer.resourcesGet[0].amount)}
+          <ResourceIcon containerClassName="ml-2 w-min" resource={!isBuy ? "Shekels" : resource.trait} size="sm" />
+        </div>
+      )}
 
-      <div className="flex items-center">
-        {makerRealm?.order && <OrderIcon order={orderNameDict[makerRealm.order]} size="xs" className="mr-1" />}
-        {realmsData["features"][makerRealm?.realmId - 1]?.name}
-      </div>
+      {makerRealm && (
+        <div className="flex items-center">
+          {<OrderIcon order={orderNameDict[makerRealm.order]} size="xs" className="mr-1" />}
+          {realmsData["features"][makerRealm.realmId - 1]?.name}
+        </div>
+      )}
       {offer.makerId !== realmEntityId && (
         <div className="flex item-center justify-end">
           {`${offer.distance.toFixed(0)} km`}

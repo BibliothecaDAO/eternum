@@ -27,7 +27,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
   const { realm } = useGetRealm(realmEntityId);
 
   const { getRealmLevel } = useRealm();
-  const realm_level = getRealmLevel(realmEntityId).level;
+  const realm_level = getRealmLevel(realmEntityId)?.level;
 
   // unpack the resources
   useMemo((): any => {
@@ -48,7 +48,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
           {realmResourceIds.map((resourceId) => (
             <ResourceComponent key={resourceId} resourceId={resourceId} />
           ))}
-          {realm_level > 0 && (
+          {realm_level && realm_level > 0 && (
             <div
               onClick={() => {
                 !showAllResources && setShowAllResources(true);

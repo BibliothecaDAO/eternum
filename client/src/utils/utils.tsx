@@ -339,7 +339,7 @@ export function getZone(x: number): number {
   return 1 + Math.floor(((x - LOWEST_X) * 10) / (HIGHEST_X - LOWEST_X));
 }
 
-export function addressToNumber(address) {
+export function addressToNumber(address: string) {
   // Convert the address to a big integer
   let numericValue = BigInt(address);
 

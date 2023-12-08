@@ -9,7 +9,7 @@ type BanksListComponentProps = {};
 
 export const BanksListComponent = ({}: BanksListComponentProps) => {
   const [showFeedPopup, setShowFeedPopup] = useState(false);
-  const [selectedBank, setSelectedBank] = useState<BankStaticInterface>(null);
+  const [selectedBank, setSelectedBank] = useState<BankStaticInterface | null>(null);
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -18,7 +18,7 @@ export const BanksListComponent = ({}: BanksListComponentProps) => {
 
   return (
     <>
-      {showFeedPopup && <BankPopup bank={selectedBank} onClose={() => setShowFeedPopup(false)} />}
+      {showFeedPopup && selectedBank && <BankPopup bank={selectedBank} onClose={() => setShowFeedPopup(false)} />}
       <div
         onMouseEnter={() =>
           setTooltip({
