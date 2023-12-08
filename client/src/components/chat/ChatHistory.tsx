@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import ChatMessage, { ChatMessageProps } from "../../elements/ChatMessage";
 import Button from "../../elements/Button";
-import { useChat } from "../../ChatContext";
+import { chatConfig, useChat } from "../../ChatContext";
 import { addressToNumber } from "../../utils/utils";
 
 interface ChatHistoryProps {
@@ -11,7 +11,8 @@ interface ChatHistoryProps {
 }
 
 const ChatHistory = (props: ChatHistoryProps) => {
-  const { group = "group:aaa83cddb7d563d2847d56247060cec696f3d425", isJoined = false } = props;
+  const { defaultWorldAddress } = chatConfig();
+  const { group = defaultWorldAddress, isJoined = false } = props;
   const [messageList, setMessageList] = useState<ChatMessageProps[]>([]);
 
   // this should be moved
