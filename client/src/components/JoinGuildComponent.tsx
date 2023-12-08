@@ -4,9 +4,9 @@ import { ReactComponent as SuccessIcon } from "../assets/icons/common/success-to
 import { ReactComponent as FailedIcon } from "../assets/icons/common/close-toast.svg";
 import { SecondaryPopup } from "../elements/SecondaryPopup";
 import Button from "../elements/Button";
-import { useChat } from "../ChatContext";
+import {chatConfig, useChat} from "../ChatContext";
 import TextInput from "../elements/TextInput";
-import { BlockChainMap, Client, WalletType } from "@web3mq/client";
+import { BlockChainMap, Client } from "@web3mq/client";
 import { ChannelType } from "../elements/Channel";
 import { ToastState, ToastStateType } from "../elements/ToastState";
 
@@ -17,7 +17,7 @@ export const JoinGuildComponent = (props: { guild: ChannelType; handleJoinSucces
   const [toastState, setToastState] = useState<ToastStateType>();
   const [isLoading, setIsLoading] = useState(false);
   const [reason, setReason] = useState("");
-  const walletType: WalletType = "argentX";
+  const { walletType } = chatConfig()
 
   const submit = async () => {
     setIsLoading(true);

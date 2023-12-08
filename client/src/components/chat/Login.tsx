@@ -1,13 +1,11 @@
 import { useMemo, useState } from "react";
-import { BlockChainType, Client, EnvTypes, WalletType } from "@web3mq/client";
+import { Client } from "@web3mq/client";
+import { chatConfig } from "../../ChatContext";
 
 export const useLogin = () => {
   const [_didValue, setDidValue] = useState<string>("");
-  const password = "123456";
-  const didType: WalletType = "argentX";
-  const chainType: BlockChainType = "starknet";
-  const env: EnvTypes = "dev";
-  const appKey = "vAUJTFXbBZRkEDRE";
+  const { walletType, chainType, env, appKey, defaultPassword } = chatConfig();
+
   // const appKey = "OVEEGLRxtqXcEIJN";
 
   const [userExist, setUserExist] = useState<boolean>(false);
@@ -19,7 +17,7 @@ export const useLogin = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
   const connect = async () => {
-    const { address: didValue } = await Client.register.getAccount(didType);
+    const { address: didValue } = await Client.register.getAccount(walletType);
     setDidValue(didValue);
 
     console.log(didValue);
@@ -40,9 +38,9 @@ export const useLogin = () => {
   // 2. create main key pairs
   const createKeyPairs = async (didValue: string) => {
     const { publicKey: localMainPublicKey, secretKey: localMainPrivateKey } = await Client.register.getMainKeypair({
-      password,
+      password: defaultPassword,
       did_value: didValue,
-      did_type: didType,
+      did_type: walletType,
     });
 
     localStorage.setItem("MAIN_PRIVATE_KEY", localMainPrivateKey);
@@ -57,18 +55,22 @@ export const useLogin = () => {
     const { signContent } = await Client.register.getRegisterSignContent({
       userid: getStorageValue("USER_ID"),
       mainPublicKey: getStorageValue("MAIN_PUBLIC_KEY"),
-      didType,
+      didType: walletType,
       didValue,
     });
 
-    const { sign: signature, publicKey: did_pubkey = "" } = await Client.register.sign(signContent, didValue, didType);
+    const { sign: signature, publicKey: did_pubkey = "" } = await Client.register.sign(
+      signContent,
+      didValue,
+      walletType,
+    );
 
     const params = {
       userid: getStorageValue("USER_ID"),
       didValue,
       mainPublicKey: getStorageValue("MAIN_PUBLIC_KEY"),
       did_pubkey,
-      didType,
+      didType: walletType,
       nickname: "",
       avatar_url: `https://cdn.stamp.fyi/avatar/${didValue}?s=300`,
       signature,
@@ -79,11 +81,11 @@ export const useLogin = () => {
 
   const login = async (didValue: string) => {
     const params = {
-      password,
+      password: defaultPassword,
       mainPublicKey: getStorageValue("MAIN_PUBLIC_KEY"),
       mainPrivateKey: getStorageValue("MAIN_PRIVATE_KEY"),
       userid: getStorageValue("USER_ID"),
-      didType,
+      didType: walletType,
       didValue,
     };
 
