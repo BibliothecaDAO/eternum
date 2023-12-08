@@ -6,9 +6,9 @@ export const useLogin = () => {
   const password = "123456";
   const didType: WalletType = "argentX";
   const chainType: BlockChainType = "starknet";
-  const env: EnvTypes = "test";
-  // const appKey = 'vAUJTFXbBZRkEDRE';
-  const appKey = "OVEEGLRxtqXcEIJN";
+  const env: EnvTypes = "dev";
+  const appKey = "vAUJTFXbBZRkEDRE";
+  // const appKey = "OVEEGLRxtqXcEIJN";
 
   const [userExist, setUserExist] = useState<boolean>(false);
 
@@ -116,8 +116,12 @@ export const useLogin = () => {
     return cacheAddress ? cacheAddress.toLowerCase() !== address.toLowerCase() : true;
   };
   const init = async () => {
+    let cacheUrl = getStorageValue("FAST_URL");
+    if (cacheUrl.indexOf(env) === -1) {
+      cacheUrl = "";
+    }
     const fastUrl = await Client.init({
-      connectUrl: getStorageValue("FAST_URL"),
+      connectUrl: cacheUrl,
       env,
       app_key: appKey,
     });
