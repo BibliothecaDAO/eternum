@@ -28,7 +28,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
   const { realm } = useGetRealm(realmEntityId);
 
   const { getEntityLevel } = useLevel();
-  const realm_level = getEntityLevel(realmEntityId).level;
+  const realm_level = getEntityLevel(realmEntityId)?.level;
 
   // unpack the resources
   useMemo((): any => {
@@ -49,7 +49,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
           {realmResourceIds.map((resourceId) => (
             <ResourceComponent key={resourceId} resourceId={resourceId} />
           ))}
-          {realm_level > 0 && (
+          {realm_level && realm_level > 0 && (
             <div
               onClick={() => {
                 !showAllResources && setShowAllResources(true);
@@ -111,7 +111,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
   const level = getEntityLevel(realmEntityId)?.level || 0;
   // get harvest bonuses
   const [levelBonus, hyperstructureLevelBonus] = useMemo(() => {
-    const hyperstructureLevel = getEntityLevel(hyperstructureId)?.level || 0;
+    const hyperstructureLevel = hyperstructureId ? getEntityLevel(hyperstructureId)?.level || 0 : 0;
     const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
     const hyperstructureLevelBonus = getHyperstructureLevelBonus(
       hyperstructureLevel,

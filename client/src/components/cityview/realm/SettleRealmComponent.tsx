@@ -70,19 +70,22 @@ export const SettleRealmComponent = () => {
 
     const order_hyperstructure_id = getHyperstructureIdByOrder(realm.order);
 
-    await create_realm({
-      signer: masterAccount as any,
-      owner: BigInt(account.address),
-      ...realm,
-      position,
-      order_hyperstructure_id,
-      resources,
-    });
-    setIsLoading(false);
-    playSign();
+    // if no order hyperstructure dont mint realms
+    if (order_hyperstructure_id) {
+      await create_realm({
+        signer: masterAccount as any,
+        owner: BigInt(account.address),
+        ...realm,
+        position,
+        order_hyperstructure_id,
+        resources,
+      });
+      setIsLoading(false);
+      playSign();
+    }
   };
 
-  const mintMultipleRealms = async (times) => {
+  const mintMultipleRealms = async (times: number) => {
     for (let i = 0; i < times; i++) {
       await settleRealm();
     }

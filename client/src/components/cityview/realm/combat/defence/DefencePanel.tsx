@@ -29,7 +29,9 @@ export const DefencePanel = ({}: DefencePanelProps) => {
   const { getEntityLevel, getRealmLevelBonus } = useLevel();
 
   const watchTowerId = getRealmWatchTowerId(realmEntityId);
-  const watchTowerHealth = useComponentValue(Health, getEntityIdFromKeys([BigInt(watchTowerId)]));
+  const watchTowerHealth = watchTowerId
+    ? useComponentValue(Health, getEntityIdFromKeys([BigInt(watchTowerId)]))
+    : undefined;
 
   const watchTower = useMemo(() => {
     const info = watchTowerId ? getEntitiesCombatInfo([watchTowerId]) : undefined;
@@ -41,8 +43,10 @@ export const DefencePanel = ({}: DefencePanelProps) => {
   }, [watchTowerId, watchTowerHealth]);
 
   const [defenderLevelBonus, defenderHyperstructureLevelBonus] = useMemo(() => {
-    let level = getEntityLevel(watchTower.entityOwnerId)?.level || 0;
-    let hyperstructureLevel = getEntityLevel(watchTower.hyperstructureId)?.level || 0;
+    let level = watchTower?.entityOwnerId ? getEntityLevel(watchTower.entityOwnerId)?.level || 0 : 0;
+    let hyperstructureLevel = watchTower?.hyperstructureId
+      ? getEntityLevel(watchTower.hyperstructureId)?.level || 0
+      : 0;
     let levelBonus = getRealmLevelBonus(level, LevelIndex.COMBAT);
     let hyperstructureLevelBonus = getRealmLevelBonus(hyperstructureLevel, LevelIndex.COMBAT);
     return [levelBonus, hyperstructureLevelBonus];
@@ -50,14 +54,14 @@ export const DefencePanel = ({}: DefencePanelProps) => {
 
   return (
     <div className="relative flex flex-col p-2 min-h-[120px]">
-      {showBuildDefence && (
+      {showBuildDefence && watchTower && (
         <ManageSoldiersPopupTabs
           headline={"Reinforce Defence"}
           selectedRaider={watchTower}
           onClose={() => setShowBuildDefence(false)}
         />
       )}
-      {showHeal && <HealPopup selectedRaider={watchTower} onClose={() => setShowHeal(false)} />}
+      {showHeal && watchTower && <HealPopup selectedRaider={watchTower} onClose={() => setShowHeal(false)} />}
       <div className="flex flex-col p-2">
         {watchTower && (
           <Defence

@@ -72,7 +72,7 @@ export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const { getEntityLevel } = useLevel();
-  const realm_level = getEntityLevel(realmEntityId).level;
+  const realm_level = getEntityLevel(realmEntityId)?.level;
 
   return (
     <div className="flex flex-col">

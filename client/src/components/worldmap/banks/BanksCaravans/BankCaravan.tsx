@@ -62,7 +62,7 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
   const resourcesGive = getResourcesFromInventory(caravan.caravanId);
 
   const lordsAmountFromWheat = useMemo(() => {
-    return bank.wheatLaborAuction
+    return bank.wheatLaborAuction && nextBlockTimestamp
       ? getLordsAmountFromBankAuction(
           resourcesGive.resources.find((resource) => {
             return resource.resourceId === 254;
@@ -79,7 +79,7 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
   }, [resourcesGive, bank]);
 
   const lordsAmountFromFish = useMemo(() => {
-    return bank.fishLaborAuction
+    return bank.fishLaborAuction && nextBlockTimestamp
       ? getLordsAmountFromBankAuction(
           resourcesGive.resources.find((resource) => {
             return resource.resourceId === 255;
@@ -199,17 +199,6 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
                   />
                 }
               </div>
-
-              {/* <div className="flex flex-col ml-7 mt-1">
-              <div className="mb-2">{`1 Wheat = ${(
-                multiplyByPrecision(lordsAmountFromWheat) /
-                (resourcesGive.resources.find((resource) => resource.resourceId === 254)?.amount || 1 / bank.wheatPrice)
-              ).toFixed(2)}`}</div>
-              <div>{`1 Fish = ${(
-                multiplyByPrecision(lordsAmountFromFish) /
-                (resourcesGive.resources.find((resource) => resource.resourceId === 254)?.amount || 1 / bank.fishPrice)
-              ).toFixed(2)}`}</div>
-            </div> */}
             </div>
           </div>
         )}

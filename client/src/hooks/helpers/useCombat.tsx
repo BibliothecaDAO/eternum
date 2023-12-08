@@ -7,12 +7,12 @@ import { getEntityIdFromKeys } from "../../utils/utils";
 import { useHyperstructure } from "./useHyperstructure";
 
 export interface CombatInfo {
-  entityId?: number | undefined;
-  health?: number | undefined;
-  quantity?: number | undefined;
-  attack?: number | undefined;
-  defence?: number | undefined;
-  sec_per_km?: number | undefined;
+  entityId: number;
+  health: number;
+  quantity: number;
+  attack: number;
+  defence: number;
+  sec_per_km: number;
   blocked?: boolean | undefined;
   capacity?: number | undefined;
   arrivalTime?: number | undefined;
@@ -128,7 +128,7 @@ export function useCombat() {
       const hyperstructureId = entityOwner
         ? getHyperstructureIdByRealmEntityId(entityOwner.entity_owner_id)
         : undefined;
-      const locationRealmEntityIds = Array.from(runQuery([Has(Realm), HasValue(Position, position)]));
+      const locationRealmEntityIds = position ? Array.from(runQuery([Has(Realm), HasValue(Position, position)])) : [];
       const originRealm = entityOwner
         ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]))
         : undefined;
@@ -138,13 +138,13 @@ export function useCombat() {
 
       return {
         entityId,
-        health: health?.value,
+        health: health?.value || 0,
         quantity: quantity?.value || 0,
-        attack: attack?.value,
-        defence: defence?.value,
-        sec_per_km: movable?.sec_per_km,
+        attack: attack?.value || 0,
+        defence: defence?.value || 0,
+        sec_per_km: movable?.sec_per_km || 0,
         blocked: movable?.blocked,
-        capacity: capacity?.weight_gram,
+        capacity: capacity?.weight_gram || 0,
         arrivalTime: arrivalTime?.arrives_at,
         position,
         entityOwnerId: entityOwner?.entity_owner_id,

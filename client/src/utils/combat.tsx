@@ -1,10 +1,3 @@
-// note: placeholder
-// export const calculateStealSuccess = (raiders: number, defence: number) => {
-//   if (!defence) return 1;
-//   const success = raiders / (raiders + defence);
-//   return success;
-// };
-
 import { EventType, NotificationType } from "../hooks/notifications/useNotifications";
 import { CombatResultInterface, Winner } from "../hooks/store/useCombatHistoryStore";
 import { Event } from "../services/eventPoller";
@@ -60,10 +53,8 @@ export const parseCombatEvent = (event: Event): CombatResultInterface => {
   }
   let damage: number | undefined;
   let attackTimestamp: number | undefined;
-  if (event.data.length > nextIndex) {
-    damage = parseInt(event.data[nextIndex]);
-    attackTimestamp = parseInt(event.data[nextIndex + 1]);
-  }
+  damage = parseInt(event.data[nextIndex]);
+  attackTimestamp = parseInt(event.data[nextIndex + 1]);
 
   return {
     attackerRealmEntityId: parseInt(event.keys[1]),

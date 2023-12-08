@@ -46,7 +46,7 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
   }, [params]);
 
   const { getEntityLevel } = useLevel();
-  const realm_level = getEntityLevel(realmEntityId).level;
+  const realm_level = getEntityLevel(realmEntityId)?.level;
 
   const tabs = useMemo(
     () => [

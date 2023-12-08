@@ -16,7 +16,7 @@ export const Leveling = ({ className, entityId, setShowLevelUp }: LevelingProps)
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const progress = useMemo(() => {
-    return (level?.timeLeft / 604800) * 100;
+    return (level?.timeLeft || 0 / 604800) * 100;
   }, [level, nextBlockTimestamp]);
 
   const timeLeftColors = useMemo(() => {

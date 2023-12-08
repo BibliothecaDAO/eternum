@@ -40,16 +40,17 @@ export const HyperstructureLeaderboard = () => {
     setSortedRealms(
       Object.keys(leaderboard)
         .map((key) => {
+          let id = parseInt(key);
           return {
-            realmId: parseInt(key),
-            realmName: leaderboard[key].realmName,
-            realmOrder: leaderboard[key].realmOrder,
-            total_amount: leaderboard[key].total_amount,
-            total_transfers: leaderboard[key].total_transfers,
-            total_points: leaderboard[key].total_points,
+            realmId: id,
+            realmName: leaderboard[id].realmName,
+            realmOrder: leaderboard[id].realmOrder,
+            total_amount: leaderboard[id].total_amount,
+            total_transfers: leaderboard[id].total_transfers,
+            total_points: leaderboard[id].total_points,
           };
         })
-        .sort((a, b) => parseInt(b.total_points) - parseInt(a.total_points)),
+        .sort((a, b) => b.total_points - a.total_points),
     );
   }, [loading]);
 

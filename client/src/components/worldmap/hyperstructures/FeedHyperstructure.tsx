@@ -263,7 +263,7 @@ const BuildHyperstructurePanel = ({
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const setRealmEntityId = useRealmStore((state) => state.setRealmEntityId);
-  const [percentage, setPercentage] = useState<number>(null);
+  const [percentage, setPercentage] = useState<number>(0);
   const [feedResourcesGiveAmounts, setFeedResourcesGiveAmounts] = useState<{ [key: number]: number }>({
     1: 0,
     2: 0,
@@ -311,7 +311,7 @@ const BuildHyperstructurePanel = ({
     () =>
       realmEntityIds.map((realmEntityId) => {
         const _realm = getRealm(realmEntityId.realmId);
-        const _resources = hyperstructureData.hyperstructureResources.map((resource) => ({
+        const _resources = hyperstructureData?.hyperstructureResources.map((resource) => ({
           id: resource.resourceId,
           balance:
             getComponentValue(
@@ -357,11 +357,13 @@ const BuildHyperstructurePanel = ({
   const { getHyperstructureLevelBonus } = useLevel();
 
   const bonusData = useMemo(() => {
-    const foodProdBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.FOOD);
-    const resourceProdBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.RESOURCE);
-    const travelSpeedBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.TRAVEL);
-    const combatBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.COMBAT);
-    return [foodProdBonus, resourceProdBonus, travelSpeedBonus, combatBonus];
+    if (hyperstructureData) {
+      const foodProdBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.FOOD);
+      const resourceProdBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.RESOURCE);
+      const travelSpeedBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.TRAVEL);
+      const combatBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.COMBAT);
+      return [foodProdBonus, resourceProdBonus, travelSpeedBonus, combatBonus];
+    }
   }, [hyperstructureData]);
 
   const [_, newIndex, newBonus] = useMemo(() => {
@@ -375,7 +377,7 @@ const BuildHyperstructurePanel = ({
   }, [hyperstructureData]);
 
   useEffect(() => {
-    const feedResourcesGiveAmounts = {};
+    const feedResourcesGiveAmounts: Record<string, number> = {};
     Object.keys(totalResources).forEach((id) => {
       feedResourcesGiveAmounts[id] = Math.min(
         Math.floor(divideByPrecision((totalResources[id] * percentage) / 100)),
@@ -415,7 +417,7 @@ const BuildHyperstructurePanel = ({
         <>
           <div className="flex flex-col space-y-2 text-xs">
             <div className="relative w-full">
-              <img src={`/images/buildings/hyperstructure.jpg`} className="object-cover w-full h-64 rounded-[10px]" />
+              <img src={`/images/buildings/hyperstructure.jpg`} className="object-cover w-full rounded-[10px]" />
               <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
                 <div className="mb-1 ml-1 italic text-light-pink text-xxs">{"Resources needed to level up:"}</div>
                 <div className="grid grid-cols-4 gap-1">
@@ -440,7 +442,9 @@ const BuildHyperstructurePanel = ({
                You will be able to level up once all resources are sent for this level.`}
             </div>
             <div className="mx-1">
-              {<LevelingTable updateLevel={{ newBonus, index: newIndex }} data={bonusData}></LevelingTable>}
+              {bonusData && (
+                <LevelingTable updateLevel={{ newBonus, index: newIndex }} data={bonusData}></LevelingTable>
+              )}
             </div>
             <div className="text-xxs mb-2 italic text-white">{`Click the "Next" button to select a Realm from which you want to spend resources.`}</div>
           </div>

@@ -106,7 +106,7 @@ export const useNotifications = () => {
             getHyperstructureLevelBonus,
             nextBlockTimestamp,
             realmLevel,
-            hyperstructureLevel,
+            hyperstructureLevel || 0,
             Labor,
           )
         : [];

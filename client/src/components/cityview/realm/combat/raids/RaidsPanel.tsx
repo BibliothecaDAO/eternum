@@ -13,7 +13,7 @@ type RaidsPanelProps = {};
 
 export const RaidsPanel = ({}: RaidsPanelProps) => {
   const [showBuildRaiders, setShowBuildRaiders] = useState(false);
-  const [selectedRaider, setSelectedRaider] = useState<CombatInfo>(null);
+  const [selectedRaider, setSelectedRaider] = useState<CombatInfo | null>(null);
 
   const [showTravelRaid, setShowTravelRaid] = useState(false);
   const [showAttackRaid, setShowAttackRaid] = useState(false);
@@ -42,12 +42,12 @@ export const RaidsPanel = ({}: RaidsPanelProps) => {
     <div className="relative flex flex-col pb-3 min-h-[120px]">
       {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
       {showBuildRaiders && <CreateRaidersPopup onClose={onClose} />}
-      {showManageRaid && (
+      {selectedRaider && showManageRaid && (
         <ManageSoldiersPopupTabs headline={"Manage Raiders"} selectedRaider={selectedRaider} onClose={onClose} />
       )}
-      {showAttackRaid && <AttackRaidsPopup selectedRaider={selectedRaider} onClose={onClose} />}
-      {showTravelRaid && <TravelRaidsPopup selectedRaider={selectedRaider} onClose={onClose} />}
-      {showHealRaid && <HealPopup selectedRaider={selectedRaider} onClose={onClose} />}
+      {selectedRaider && showAttackRaid && <AttackRaidsPopup selectedRaider={selectedRaider} onClose={onClose} />}
+      {selectedRaider && showTravelRaid && <TravelRaidsPopup selectedRaider={selectedRaider} onClose={onClose} />}
+      {selectedRaider && showHealRaid && <HealPopup selectedRaider={selectedRaider} onClose={onClose} />}
       <div className="flex flex-col p-2 space-y-2">
         {raiders.map((raider) => (
           <Raid

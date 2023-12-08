@@ -71,8 +71,9 @@ export const LaborComponent = ({
   // get harvest bonuses
   const [levelBonus, hyperstructureLevelBonus] = useMemo(() => {
     const level = getEntityLevel(realmEntityId)?.level || 0;
-    const hyperstructureLevel = getEntityLevel(hyperstructureId)?.level || 0;
     const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
+    if (!hyperstructureId) return [levelBonus, undefined];
+    const hyperstructureLevel = getEntityLevel(hyperstructureId)?.level || 0;
     const hyperstructureLevelBonus = getHyperstructureLevelBonus(
       hyperstructureLevel,
       isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE,
@@ -81,17 +82,19 @@ export const LaborComponent = ({
   }, [realmEntityId, isFood]);
 
   const onHarvest = () => {
-    playHarvest();
-    optimisticHarvestLabor(
-      nextBlockTimestamp || 0,
-      levelBonus,
-      hyperstructureLevelBonus,
-      harvest_labor,
-    )({
-      signer: account,
-      realm_id: realmEntityId,
-      resource_type: resourceId,
-    });
+    if (hyperstructureLevelBonus) {
+      playHarvest();
+      optimisticHarvestLabor(
+        nextBlockTimestamp || 0,
+        levelBonus,
+        hyperstructureLevelBonus,
+        harvest_labor,
+      )({
+        signer: account,
+        realm_id: realmEntityId,
+        resource_type: resourceId,
+      });
+    }
   };
 
   // if the labor balance does not exist or is lower than the current time,
@@ -104,7 +107,7 @@ export const LaborComponent = ({
   }, [nextBlockTimestamp, labor]);
 
   const nextHarvest = useMemo(() => {
-    if (labor && nextBlockTimestamp) {
+    if (labor && nextBlockTimestamp && hyperstructureLevelBonus) {
       return calculateNextHarvest(
         labor.balance,
         labor.last_harvest,
@@ -145,7 +148,7 @@ export const LaborComponent = ({
                 <span className="opacity-60">{currencyFormat(resource ? resource.balance : 0, 2)}</span>
 
                 <span className={`ml-3  ${labor && laborLeft > 0 ? "text-gold" : "text-gray-gold"}`}>
-                  {labor && laborLeft > 0
+                  {hyperstructureLevelBonus && labor && laborLeft > 0
                     ? `+${divideByPrecision(
                         calculateProductivity(
                           isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,

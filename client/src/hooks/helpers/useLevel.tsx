@@ -65,6 +65,7 @@ export function useLevel() {
   };
 
   const getEntityLevel = (entityId: number): { level: number; timeLeft: number; percentage: number } | undefined => {
+    if (!nextBlockTimestamp) return undefined;
     const level = getComponentValue(Level, getEntityIdFromKeys([BigInt(entityId)])) || {
       level: 0,
       valid_until: nextBlockTimestamp,

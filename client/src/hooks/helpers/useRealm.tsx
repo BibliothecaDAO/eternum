@@ -62,6 +62,8 @@ export function useRealm() {
 
     if (addressName) {
       return hexToAscii(numberToHex(addressName.name));
+    } else {
+      return "";
     }
   };
 

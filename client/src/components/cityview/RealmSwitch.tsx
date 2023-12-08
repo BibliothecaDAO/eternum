@@ -55,12 +55,12 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
     let realmEntityIds = Array.from(entityIds)
       .map((id) => {
         const realm = getComponentValue(Realm, id);
-        if (hyperstructureId !== realm.order_hyperstructure_id) {
-          setHyperstructureId(realm.order_hyperstructure_id);
-        }
         if (realm) {
           // const owner = getComponentValue(Owner, id);
           // console.log({ owner });
+          if (hyperstructureId !== realm.order_hyperstructure_id) {
+            setHyperstructureId(realm.order_hyperstructure_id);
+          }
           return { realmEntityId: Number(id), realmId: realm?.realm_id };
         }
       })

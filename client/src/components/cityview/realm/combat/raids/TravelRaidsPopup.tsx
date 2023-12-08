@@ -36,7 +36,7 @@ export const TravelRaidsPopup = ({ selectedRaider, onClose }: RoadBuildPopupProp
     : undefined;
 
   const onTravel = async () => {
-    if (destinationPosition) {
+    if (destinationPosition && selectedRaider?.entityId) {
       setLoading(true);
       await travel({
         signer: account,

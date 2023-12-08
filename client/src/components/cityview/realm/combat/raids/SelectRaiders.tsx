@@ -21,7 +21,9 @@ export const SelectRaiders = ({ attackingRaiders, selectedRaiders, setSelectedRa
       {attackingRaiders
         .filter((raider) => {
           // either the ones that never moved or have arrived
-          return raider.arrivalTime === undefined || raider.arrivalTime <= nextBlockTimestamp;
+          return nextBlockTimestamp
+            ? raider.arrivalTime === undefined || raider.arrivalTime <= nextBlockTimestamp
+            : false;
         })
         .map((raider, i) => (
           <SelectableRaider
@@ -47,8 +49,8 @@ export const SelectableRaider = ({ raider, selectedRaiders, setSelectedRaiders, 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const isTraveling = arrivalTime ? arrivalTime > nextBlockTimestamp : false;
-  const originRealmName = originRealmId ? getRealmNameById(raider.originRealmId) : undefined;
+  const isTraveling = nextBlockTimestamp && arrivalTime ? arrivalTime > nextBlockTimestamp : false;
+  const originRealmName = originRealmId ? getRealmNameById(originRealmId) : undefined;
 
   return (
     <div

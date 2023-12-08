@@ -42,6 +42,7 @@ export const HyperstructuresListItem = ({
   const { getHyperstructureLevelBonus } = useLevel();
 
   const updateHyperStructure = () => {
+    if (!hyperstructure) return;
     const newHyperstructure = getHyperstructure(hyperstructure.orderId, hyperstructure.uiPosition);
     hyperstructures[hyperstructure.orderId - 1] = newHyperstructure;
     setHyperstructures([...hyperstructures]);
@@ -51,6 +52,7 @@ export const HyperstructuresListItem = ({
 
   const onLevelUp = async () => {
     setIsLoading(true);
+    if (!hyperstructure) return;
     await level_up_hyperstructure({
       signer: account,
       hyperstructure_id: hyperstructure.hyperstructureId,

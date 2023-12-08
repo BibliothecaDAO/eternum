@@ -56,16 +56,16 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
 
   const hyperstructureId = realmEntityId ? getHyperstructureIdByRealmEntityId(realmEntityId) : undefined;
 
-  const hyperstructureLevel = getEntityLevel(hyperstructureId);
-  const realmLevel = getEntityLevel(realmEntityId);
+  const hyperstructureLevel = hyperstructureId ? getEntityLevel(hyperstructureId) : undefined;
+  const realmLevel = realmEntityId ? getEntityLevel(realmEntityId) : undefined;
 
   const hyperstructureBonuses = useMemo(() => {
-    const bonus = getHyperstructureBonuses(hyperstructureLevel.level);
+    const bonus = hyperstructureLevel ? getHyperstructureBonuses(hyperstructureLevel?.level) : [];
     return bonus.reduce((acc, curr) => acc + curr.bonusAmount, 0) === 0 ? undefined : bonus;
   }, [hyperstructureLevel]);
 
   const realmBonuses = useMemo(() => {
-    const bonus = getRealmBonuses(realmLevel.level);
+    const bonus = realmLevel ? getRealmBonuses(realmLevel.level) : [];
     return bonus.reduce((acc, curr) => acc + curr.bonusAmount, 0) === 0 ? undefined : bonus;
   }, [realmLevel]);
 

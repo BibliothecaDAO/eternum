@@ -7,6 +7,7 @@ import HyperstructureHalf from "../../components/worldmap/hyperstructures/models
 import HyperstructureFinished from "../../components/worldmap/hyperstructures/models/HyperstructureFinished";
 import useUIStore from "../../hooks/store/useUIStore.js";
 // import { TransformControls } from "@react-three/drei";
+// @ts-ignore
 import Arcs from "../../components/worldmap/Arcs.jsx";
 import { useGetCaravansWithResourcesChest } from "../../hooks/helpers/useResources.js";
 import { useMemo, useRef } from "react";
@@ -29,13 +30,17 @@ export const WorldMapScene = () => {
 
   const destinations = useMemo(() => {
     if (!realm) return [];
-    return caravanIds.map((caravanId) => {
-      const { destination: from } = getCaravanInfo(caravanId);
-      return {
-        from: getRealmPositionFromContractPosition(from),
-        to: getRealmPositionFromContractPosition(realm.position),
-      };
-    });
+    return caravanIds
+      .map((caravanId) => {
+        const { destination: from } = getCaravanInfo(caravanId);
+        if (from) {
+          return {
+            from: getRealmPositionFromContractPosition(from),
+            to: getRealmPositionFromContractPosition(realm.position),
+          };
+        }
+      })
+      .filter(Boolean);
   }, [caravanIds, realm]);
 
   return (

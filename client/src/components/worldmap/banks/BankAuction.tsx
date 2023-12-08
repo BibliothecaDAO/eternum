@@ -7,13 +7,11 @@ import { ResourceIcon } from "../../../elements/ResourceIcon";
 
 type BankAuctionProps = {
   bankInfo: BankInterface;
-  resourceId: number;
+  resourceId: 254 | 255;
 };
 
 export const BankAuction = ({ bankInfo, resourceId }: BankAuctionProps) => {
   const coefficient =
-    // (targetPrices[resourceId] - (resourceId === 254 ? bankInfo?.wheatPrice : bankInfo?.fishPrice)) /
-    // targetPrices[resourceId];
     (1 / (resourceId === 254 ? bankInfo?.wheatPrice : bankInfo?.fishPrice) - 1 / targetPrices[resourceId]) /
     (1 / targetPrices[resourceId]);
 
@@ -130,7 +128,7 @@ export const BankAuction = ({ bankInfo, resourceId }: BankAuctionProps) => {
   );
 };
 
-const priceDifferenceString = (currentPrice: number, resourceId: number) => {
+const priceDifferenceString = (currentPrice: number, resourceId: 254 | 255) => {
   // current price = 1/currentPrice
   // target price  = 1/targetPrice
   // % difference from targetprice to currentprice

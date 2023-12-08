@@ -31,14 +31,15 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
   const setTooltip = useUIStore((state) => state.setTooltip);
   const { getRealmAddressName } = useRealm();
 
-  let { realm_id: attackerRealmId } = getComponentValue(Realm, getEntityIdFromKeys([BigInt(attackerRealmEntityId)]));
+  let { realm_id: attackerRealmId } =
+    getComponentValue(Realm, getEntityIdFromKeys([BigInt(attackerRealmEntityId)])) || {};
   let attackerName = attackerRealmId ? getRealmNameById(attackerRealmId) : undefined;
   let attackerAddressName = getRealmAddressName(attackerRealmEntityId);
 
   const attackerTotalSoldiers = useMemo(() => {
     let total = 0;
     for (const id of attackingEntityIds) {
-      let { value } = getComponentValue(Quantity, getEntityIdFromKeys([BigInt(id)]));
+      let { value } = getComponentValue(Quantity, getEntityIdFromKeys([BigInt(id)])) || { value: 0 };
       total += value;
     }
     return total;
@@ -47,7 +48,7 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
   const attackerTotalAttack = useMemo(() => {
     let total = 0;
     for (const id of attackingEntityIds) {
-      let { value } = getComponentValue(Attack, getEntityIdFromKeys([BigInt(id)]));
+      let { value } = getComponentValue(Attack, getEntityIdFromKeys([BigInt(id)])) || { value: 0 };
       total += value;
     }
     return total;
@@ -56,7 +57,7 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
   const attackerTotalHealth = useMemo(() => {
     let total = 0;
     for (const id of attackingEntityIds) {
-      let { value } = getComponentValue(Health, getEntityIdFromKeys([BigInt(id)]));
+      let { value } = getComponentValue(Health, getEntityIdFromKeys([BigInt(id)])) || { value: 0 };
       total += value;
     }
     return total;
@@ -65,7 +66,7 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
   const attackerTotalDefence = useMemo(() => {
     let total = 0;
     for (const id of attackingEntityIds) {
-      let { value } = getComponentValue(Defence, getEntityIdFromKeys([BigInt(id)]));
+      let { value } = getComponentValue(Defence, getEntityIdFromKeys([BigInt(id)])) || { value: 0 };
       total += value;
     }
     return total;

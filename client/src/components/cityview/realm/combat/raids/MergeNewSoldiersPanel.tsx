@@ -52,12 +52,14 @@ export const MergeNewSoldiersPanel = ({ isDefence, selectedRaider, onClose }: Me
 
   const onBuild = async () => {
     setLoading(true);
-    await create_and_merge_soldiers({
-      signer: account,
-      realm_entity_id: BigInt(realmEntityId),
-      quantity: BigInt(soldierAmount),
-      merge_into_unit_id: selectedRaider.entityId,
-    });
+    if (selectedRaider.entityId) {
+      await create_and_merge_soldiers({
+        signer: account,
+        realm_entity_id: BigInt(realmEntityId),
+        quantity: BigInt(soldierAmount),
+        merge_into_unit_id: selectedRaider.entityId,
+      });
+    }
     setLoading(false);
     onClose();
   };

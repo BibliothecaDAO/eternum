@@ -8,9 +8,7 @@ import { BaseStatus } from "../../../elements/BaseStatus";
 
 type RealmStatusComponentProps = {} & React.ComponentPropsWithRef<"div">;
 
-export const RealmStatusComponent = ({
-  className,
-}: RealmStatusComponentProps) => {
+export const RealmStatusComponent = ({ className }: RealmStatusComponentProps) => {
   const realmStatus = {
     defence: "vulnerable" as keyof typeof defence,
     happiness: "happy" as keyof typeof hapiness,

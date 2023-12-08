@@ -94,11 +94,11 @@ export const RealmCombatComponent = ({}: RealmCombatComponentProps) => {
   );
 
   const { getEntityLevel } = useLevel();
-  const realm_level = getEntityLevel(realmEntityId).level;
+  const realm_level = getEntityLevel(realmEntityId)?.level;
 
   return (
     <>
-      {realm_level < 2 ? (
+      {realm_level && realm_level < 2 ? (
         <div className="text-gold p-4 border rounded border-gold m-2">Combat Locked until level 2</div>
       ) : (
         <Tabs

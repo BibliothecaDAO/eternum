@@ -15,7 +15,7 @@ export const LaborAuction = () => {
   const zone = position ? getZone(position.x) : undefined;
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const coefficient = zone ? useLaborAuctionCoefficient(zone) : undefined;
+  const coefficient = zone ? useLaborAuctionCoefficient(zone) || 0 : 0;
 
   const demandColors = useMemo(() => {
     if (coefficient <= 1) {

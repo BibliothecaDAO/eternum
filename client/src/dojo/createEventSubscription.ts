@@ -9,10 +9,10 @@ type Event = {
   created_at: string;
 };
 
-export async function createEventSubscription(keys: string[]): Promise<Observable<Event>> {
+export async function createEventSubscription(keys: string[]): Promise<Observable<Event | null>> {
   const wsClient = createClient({ url: import.meta.env.VITE_TORII_WS });
 
-  const lastUpdate$ = new BehaviorSubject<Event>(null);
+  const lastUpdate$ = new BehaviorSubject<Event | null>(null);
 
   const formattedKeys = keys.map((key) => `"${key}"`).join(",");
 

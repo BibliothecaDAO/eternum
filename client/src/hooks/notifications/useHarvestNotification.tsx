@@ -32,11 +32,12 @@ export const useHarvestNotification = (
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const realmEntityId = notification.keys[0];
+  const realmEntityId = notification.keys ? parseInt(notification.keys[0]) : undefined;
+  const resourceType = notification.keys ? parseInt(notification.keys[1]) : undefined;
   const { play: playHarvest } = useUiSounds(soundSelector.harvest);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
+  const realm = realmEntityId ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)])) : undefined;
 
   const realmName = realm ? getRealmNameById(realm.realm_id) : "";
   const realmOrderName = realm ? getRealmOrderNameById(realm?.realm_id) : "";
@@ -45,12 +46,11 @@ export const useHarvestNotification = (
 
   const { getEntityLevel, getRealmLevelBonus, getHyperstructureLevelBonus } = useLevel();
 
-  const resourceType = parseInt(notification.keys[1]);
-
   // get harvest bonuses
   const [levelBonus, hyperstructureLevelBonus] = useMemo(() => {
+    if (!realm || !realmEntityId || !resourceType) return [undefined, undefined];
     const isFood = [254, 255].includes(resourceType);
-    const level = getEntityLevel(parseInt(realmEntityId))?.level || 0;
+    const level = getEntityLevel(realmEntityId)?.level || 0;
     const hyperstructureLevel = getEntityLevel(realm.order_hyperstructure_id)?.level || 0;
     const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
     const hyperstructureLevelBonus = getHyperstructureLevelBonus(
@@ -62,18 +62,21 @@ export const useHarvestNotification = (
 
   const onHarvest = async () => {
     setIsLoading(true);
-    await optimisticHarvestLabor(
-      nextBlockTimestamp || 0,
-      levelBonus,
-      hyperstructureLevelBonus,
-      harvest_labor,
-    )({
-      signer: account,
-      realm_id: realmEntityId,
-      resource_type: parseInt(notification.keys[1]),
-    });
-    playHarvest();
-    setIsLoading(false);
+    if (!realmEntityId || !resourceType) return;
+    if (levelBonus && resourceType) {
+      await optimisticHarvestLabor(
+        nextBlockTimestamp || 0,
+        levelBonus,
+        hyperstructureLevelBonus,
+        harvest_labor,
+      )({
+        signer: account,
+        realm_id: realmEntityId,
+        resource_type: resourceType,
+      });
+      playHarvest();
+      setIsLoading(false);
+    }
   };
 
   return {
@@ -95,11 +98,9 @@ export const useHarvestNotification = (
     content: (onClose: () => void) => (
       <div className="flex flex-col">
         <div className="mt-2 flex items-center">
-          <ResourceCost
-            resourceId={parseInt(notification.keys[1])}
-            amount={harvestAmount}
-            color="text-order-brilliance"
-          />
+          {resourceType && (
+            <ResourceCost resourceId={resourceType} amount={harvestAmount} color="text-order-brilliance" />
+          )}
         </div>
         <Button
           isLoading={isLoading}

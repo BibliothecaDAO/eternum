@@ -26,7 +26,7 @@ export const SelectMergeRaiders = ({
       {attackingRaiders
         .filter((raider) => {
           // either the ones that never moved or have arrived
-          return raider.arrivalTime === undefined || raider.arrivalTime <= nextBlockTimestamp;
+          return raider.arrivalTime === undefined || raider.arrivalTime <= (nextBlockTimestamp || 0);
         })
         .map((raider, i) => (
           <SelectableMergeRaider
@@ -57,8 +57,8 @@ export const SelectableMergeRaider = ({
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const isTraveling = arrivalTime ? arrivalTime > nextBlockTimestamp : false;
-  const originRealmName = originRealmId ? getRealmNameById(raider.originRealmId) : undefined;
+  const isTraveling = arrivalTime && nextBlockTimestamp ? arrivalTime > nextBlockTimestamp : false;
+  const originRealmName = originRealmId ? getRealmNameById(originRealmId) : undefined;
 
   const soldierProportion = useMemo(() => {
     return (selectedRaiders[entityId] || 0) / raider.quantity;
