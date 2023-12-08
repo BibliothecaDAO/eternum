@@ -25,8 +25,12 @@ const Channel = (props: { channel: ChannelType; handleChat: any }) => {
         <div className="flex flex-col w-full">
           <div className="flex text-[10px] justify-between">
             <div className="flex">
-              <div className="text-white/30">{groupName}</div>
-              <div>owned by {creator}</div>
+              <div>
+                <span className="text-gold ml-1 mr-1">{groupName}</span>
+              </div>
+              <div>
+                owned by <span> {creator}</span>
+              </div>
               {/* <OrderIcon order="power" size="xs" className="scale-75" /> */}
             </div>
             <div className="mr-3 text-[8px] text-white/30">
@@ -41,9 +45,12 @@ const Channel = (props: { channel: ChannelType; handleChat: any }) => {
                   Chat
                 </Button>
               ) : (
-                <JoinGuildComponent handleJoinSuccess={() => {
-                  handleChat(channel)
-                }} guild={channel} />
+                <JoinGuildComponent
+                  handleJoinSuccess={() => {
+                    handleChat(channel);
+                  }}
+                  guild={channel}
+                />
               )}
             </div>
           </div>

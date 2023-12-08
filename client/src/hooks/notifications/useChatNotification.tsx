@@ -1,8 +1,8 @@
 import { NotificationType } from "./useNotifications";
-import {BlockChainMap, Client} from "@web3mq/client";
+import { BlockChainMap, Client } from "@web3mq/client";
 import { useCallback } from "react";
 import Button from "../../elements/Button";
-import {chatConfig, useChat} from "../../ChatContext";
+import { chatConfig, useChat } from "../../ChatContext";
 
 export const useChatNotification = (
   notification: NotificationType,
@@ -13,9 +13,9 @@ export const useChatNotification = (
   content: (onClose: any) => React.ReactElement;
 } => {
   const { keys } = notification;
-  const { client} = useChat();
-  const { walletType } = chatConfig()
-  const metadata = keys[3];
+  const { client } = useChat();
+  const { walletType } = chatConfig();
+  const notificationData = JSON.parse(keys[3]);
 
   const approveGuildRequest = async (params: {
     reason: string;
@@ -50,16 +50,15 @@ export const useChatNotification = (
   };
 
   const handleApprove = async (isApprove: boolean, onClose: any) => {
-    const data = JSON.parse(metadata);
     try {
       await approveGuildRequest({
         isApprove,
         reason: keys[2],
-        requestUserid: data.metadata.userid,
-        groupid: data.metadata.groupid,
+        requestUserid: notificationData.metadata.userid,
+        groupid: notificationData.metadata.groupid,
       });
-      await client.notify.changeNotificationStatus([data.messageId], "read");
-      onClose()
+      await client.notify.changeNotificationStatus([notificationData.messageId], "read");
+      onClose();
     } catch (e) {
       console.log(e);
     }
@@ -68,8 +67,7 @@ export const useChatNotification = (
   const Btns = useCallback(
     (props: { onClose: any }) => {
       const { onClose } = props;
-      const data = JSON.parse(metadata);
-      if (data.type === "system.group.join_request") {
+      if (notificationData.type === "system.group.join_request") {
         return (
           <div className="flex justify-between gap-3 w-full">
             <Button onClick={() => handleApprove(false, onClose)} variant="outline" className="w-1/2 h-8 p-2">
@@ -83,7 +81,7 @@ export const useChatNotification = (
       }
       return null;
     },
-    [metadata],
+    [notificationData],
   );
 
   return {
@@ -95,6 +93,11 @@ export const useChatNotification = (
         <div className="flex w-full items-start justify-between gap-2 flex-col">
           <h1 className="text-white">{keys[1]}</h1>
           <h2>{keys[2]}</h2>
+          {notificationData?.metadata?.request_reason && (
+            <h2>
+              Request Reason: <span>{notificationData?.metadata?.request_reason}</span>
+            </h2>
+          )}
         </div>
         <Btns onClose={onClose} />
       </div>

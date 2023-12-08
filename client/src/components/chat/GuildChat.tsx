@@ -15,14 +15,12 @@ const GuildChat = (props: GuildChatProps) => {
 
   return (
     <>
-      <div className="flex h-10 py-3 px-4 rounded-md border-gray-gold text-xxs text-gray-gold justify-between items-center">
+      <div className="flex h-10 py-3 px-4 text-xxs text-gray-gold justify-between items-center border-y border-gold rounded-none">
         <div className="flex items-center justify-center h-full px-1 cursor-pointer " onClick={handleBack}>
-          <ArrowLeft /> <span className="ml-1">Back</span>
+          <ArrowLeft /> <span className="ml-1 text-gold">Back</span>
         </div>
-        <div className="text-xs text-white">{guild.groupName || "Guild Chat"}</div>
-        <div className="min-w-1">{guild.creatorId === userId && <GuildSettingsComponent guild={guild} handleSuccess={() => {
-
-        }} />}</div>
+        <div className="text-xs text-gold">{guild.groupName || "Guild Chat"}</div>
+        <div className="min-w-1">{guild.creatorId === userId && <GuildSettingsComponent guild={guild} handleSuccess={() => {}} />}</div>
       </div>
       <div className="relative flex flex-col space-y-2 h-full px-2 mb-2 overflow-auto">
         {<ChatHistory group={{

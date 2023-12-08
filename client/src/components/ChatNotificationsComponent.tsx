@@ -148,12 +148,12 @@ export const ChatNotificationsComponent = ({ className }: NotificationsComponent
     // TODO: handle overflow of the notifications
     <div
       className={clsx(
-        "flex flex-col space-y-2 fixed right-4 bottom-4 top-4 overflow-auto pointer-events-none",
+        "flex flex-col space-y-2 fixed right-[330px] bottom-4 top-4 overflow-auto pointer-events-none",
         className,
       )}
     >
       <Button variant="primary" className="pointer-events-auto" onClick={() => setShowNotifications((prev) => !prev)}>
-        {showNotifications ? "Hide notifications" : "Show notifications"}
+        {showNotifications ? "Hide Chat notifications" : "Show Chat notifications"}
       </Button>
       {showNotifications &&
         notifications.map((notification: NotificationType, index) => {
