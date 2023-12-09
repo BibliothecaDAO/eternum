@@ -10,6 +10,7 @@ import { useDojo } from "../../../../DojoContext";
 import { getRandomMood, parseMoodFeltToStruct } from "./utils";
 import { random } from "@latticexyz/utils";
 import { useNpcs } from "../../../../NpcContext";
+import useWebSocket, { ReadyState } from "react-use-websocket";
 
 type NpcPanelProps = {
   type?: "all" | "farmers" | "miners";
@@ -25,6 +26,20 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
     },
     account: { account },
   } = useDojo();
+
+  const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket(import.meta.env.VITE_OVERLORE_WS_URL, {
+    share: false,
+    shouldReconnect: () => true,
+  });
+
+  useEffect(() => {
+    console.log("Connection state changed");
+  }, [readyState]);
+
+  // Run when a new WebSocket message is received (lastJsonMessage)
+  useEffect(() => {
+    console.log(`Got a new message: ${JSON.stringify(lastJsonMessage, null, 2)}`);
+  }, [lastJsonMessage]);
 
   const [spawned, setSpawned] = useState(false);
   const { setGenMsg, setType } = useNpcs();
@@ -54,10 +69,17 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
     }
   }, [spawned]);
 
-  const spawnNpc = async () => {
-    console.log("Spawning NPC");
+  const genTownHall = async () => {
     // Optimistic call for now is useless as the normal call work completely fine
-    await optimisticSpawnNpc(spawn_npc)({ signer: account, realm_id: realm.realm_id });
+    // await optimisticSpawnNpc(spawn_npc)({ signer: account, realm_id: realm.realm_id });
+    if (readyState === ReadyState.OPEN) {
+      sendJsonMessage({
+        // Replace with this after demo version
+        // user: realm.realm_id,
+        user: 0,
+        day: 0,
+      });
+    }
     setSpawned(true);
   };
 
@@ -115,10 +137,10 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
         <Button
           disabled={npcs.length >= 5}
           className="mx-1 top-3 sticky w-32 bottom-2 !rounded-full"
-          onClick={() => spawnNpc()}
+          onClick={() => genTownHall()}
           variant="primary"
         >
-          {npcs.length > 5 ? "+ Village full" : "Spawn villager"}
+          {spawned ? "Townhall is generated" : "Generate townhall"}
         </Button>
         <Button
           className="mx-1 top-3 left-3 sticky w-32 bottom-2 !rounded-full"
