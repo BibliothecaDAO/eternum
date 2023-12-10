@@ -3,10 +3,8 @@ import { Client } from "@web3mq/client";
 import { chatConfig } from "../../ChatContext";
 
 export const useLogin = () => {
-  const [_didValue, setDidValue] = useState<string>("");
+  const [_didValue, setDidValue] = useState<string>('');
   const { walletType, chainType, env, appKey, defaultPassword } = chatConfig();
-
-  // const appKey = "OVEEGLRxtqXcEIJN";
 
   const [userExist, setUserExist] = useState<boolean>(false);
 
@@ -20,20 +18,20 @@ export const useLogin = () => {
     const { address: didValue } = await Client.register.getAccount(walletType);
     setDidValue(didValue);
 
-    console.log(didValue);
+    console.log(didValue)
 
     const { userid, userExist } = await Client.register.getUserInfo({
       did_value: didValue,
       did_type: chainType,
     });
-    localStorage.setItem("USER_ID", userid);
+    localStorage.setItem("USER_ID", userid)
 
-    console.log(userid, userExist);
+    console.log(userid, userExist)
 
-    setUserExist(userExist);
+    setUserExist(userExist)
 
-    return { userExist, didValue };
-  };
+    return { userExist, didValue }
+  }
 
   // 2. create main key pairs
   const createKeyPairs = async (didValue: string) => {
@@ -43,13 +41,13 @@ export const useLogin = () => {
       did_type: walletType,
     });
 
-    localStorage.setItem("MAIN_PRIVATE_KEY", localMainPrivateKey);
-    localStorage.setItem("MAIN_PUBLIC_KEY", localMainPublicKey);
-  };
+    localStorage.setItem("MAIN_PRIVATE_KEY", localMainPrivateKey)
+    localStorage.setItem("MAIN_PUBLIC_KEY", localMainPublicKey)
+  }
 
   const getStorageValue = (key: string) => {
-    return localStorage.getItem(key) || "";
-  };
+    return localStorage.getItem(key) || '';
+  }
 
   const register = async (didValue: string) => {
     const { signContent } = await Client.register.getRegisterSignContent({
@@ -59,11 +57,8 @@ export const useLogin = () => {
       didValue,
     });
 
-    const { sign: signature, publicKey: did_pubkey = "" } = await Client.register.sign(
-      signContent,
-      didValue,
-      walletType,
-    );
+    const { sign: signature, publicKey: did_pubkey = "" } =
+        await Client.register.sign(signContent, didValue, walletType);
 
     const params = {
       userid: getStorageValue("USER_ID"),
@@ -77,9 +72,10 @@ export const useLogin = () => {
     };
 
     await Client.register.register(params);
-  };
+  }
 
   const login = async (didValue: string) => {
+
     const params = {
       password: defaultPassword,
       mainPublicKey: getStorageValue("MAIN_PUBLIC_KEY"),
@@ -87,17 +83,22 @@ export const useLogin = () => {
       userid: getStorageValue("USER_ID"),
       didType: walletType,
       didValue,
-    };
+    }
 
-    const { tempPrivateKey, tempPublicKey, pubkeyExpiredTimestamp, mainPrivateKey, mainPublicKey } =
-      await Client.register.login(params);
+    const {
+      tempPrivateKey,
+      tempPublicKey,
+      pubkeyExpiredTimestamp,
+      mainPrivateKey,
+      mainPublicKey,
+    } = await Client.register.login(params);
 
-    localStorage.setItem("TEMP_PRIVATE_KEY", tempPrivateKey);
-    localStorage.setItem("TEMP_PUBLIC_KEY", tempPublicKey);
-    localStorage.setItem("PUBKEY_EXPIRED_TIMESTAMP", String(pubkeyExpiredTimestamp));
-    localStorage.setItem("WALLET_ADDRESS", didValue);
+    localStorage.setItem("TEMP_PRIVATE_KEY", tempPrivateKey)
+    localStorage.setItem("TEMP_PUBLIC_KEY", tempPublicKey)
+    localStorage.setItem('PUBKEY_EXPIRED_TIMESTAMP', String(pubkeyExpiredTimestamp));
+    localStorage.setItem('WALLET_ADDRESS', didValue)
 
-    setLoggedIn(!loggedIn);
+    setLoggedIn(!loggedIn)
 
     return {
       tempPrivateKey,
@@ -105,37 +106,34 @@ export const useLogin = () => {
       pubkeyExpiredTimestamp,
       mainPrivateKey,
       mainPublicKey,
-    };
-  };
+
+    }
+  }
 
   const expiredKeys = () => {
-    const timestamp = getStorageValue("PUBKEY_EXPIRED_TIMESTAMP");
+    const timestamp = getStorageValue('PUBKEY_EXPIRED_TIMESTAMP');
     return timestamp ? Number(timestamp) < Date.now() : true;
-  };
+  }
 
   const checkAddressChanged = (address: string) => {
-    const cacheAddress = getStorageValue("WALLET_ADDRESS");
-    return cacheAddress ? cacheAddress.toLowerCase() !== address.toLowerCase() : true;
-  };
+    const cacheAddress = getStorageValue('WALLET_ADDRESS');
+    return cacheAddress ? cacheAddress.toLowerCase() !== address.toLowerCase() : true
+  }
   const init = async () => {
-    let cacheUrl = getStorageValue("FAST_URL");
-    if (cacheUrl.indexOf(env) === -1) {
-      cacheUrl = "";
-    }
     const fastUrl = await Client.init({
-      connectUrl: cacheUrl,
+      connectUrl: getStorageValue("FAST_URL"),
       env,
       app_key: appKey,
     });
     localStorage.setItem("FAST_URL", fastUrl);
 
-    setInitUpdate(true);
-  };
+    setInitUpdate(true)
+  }
 
   const hasKeys = useMemo(() => {
-    const PrivateKey = getStorageValue("TEMP_PRIVATE_KEY");
-    const PublicKey = getStorageValue("TEMP_PUBLIC_KEY");
-    const userid = getStorageValue("USER_ID");
+    const PrivateKey = getStorageValue('TEMP_PRIVATE_KEY');
+    const PublicKey = getStorageValue('TEMP_PUBLIC_KEY');
+    const userid = getStorageValue('USER_ID');
     if (PrivateKey && PublicKey && userid) {
       return { PrivateKey, PublicKey, userid };
     }
@@ -150,11 +148,11 @@ export const useLogin = () => {
   }, [hasKeys, loggedIn]);
 
   const loginFlow = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
       await init();
     } catch (e) {
-      console.log("init", e);
+      console.log("init", e)
     }
 
     const { userExist, didValue } = await connect();
@@ -163,7 +161,7 @@ export const useLogin = () => {
       try {
         await createKeyPairs(didValue);
       } catch (e) {
-        console.log("key", e);
+        console.log("key", e)
       }
     }
 
@@ -171,24 +169,24 @@ export const useLogin = () => {
       try {
         await login(didValue);
       } catch (e) {
-        console.log("login", e);
+        console.log("login", e)
       }
     } else {
       try {
         await register(didValue);
       } catch (e) {
-        console.log("register", e);
+        console.log("register", e)
       } finally {
         try {
           await login(didValue);
         } catch (e) {
-          console.log("login", e);
+          console.log("login", e)
         }
       }
     }
 
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   return {
     login,
@@ -203,6 +201,6 @@ export const useLogin = () => {
     userExist,
     loginFlow,
     loading,
-    loggedIn,
-  };
-};
+    loggedIn
+  }
+}

@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # run the contracts.sh file
-source ./contracts.sh
+source ./scripts/contracts.sh
 
 commands=()
 
 # Read the System to Components JSON file
-system_models_json=$(cat ./system_models.json)
+system_models_json=$(cat ./scripts/system_models.json)
 
 # Loop through each system
 for system in $(echo $system_models_json | jq -r 'keys[]'); do

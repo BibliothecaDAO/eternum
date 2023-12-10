@@ -1,22 +1,6 @@
 import { createContext, ReactNode, useContext } from "react";
 import { useLogin } from "./components/chat/Login";
 import { BlockChainType, Client, EnvTypes, WalletType } from "@web3mq/client";
-
-type ChatSetup = {
-  login: (didValue: string) => void;
-  init: () => void;
-  connect: () => void;
-  createKeyPairs: (didValue: string) => void;
-  register: (didValue: string) => void;
-  client: Client | null;
-  userId: string;
-  loginFlow: () => void;
-  loading: boolean;
-  loggedIn: boolean;
-};
-
-const ChatContext = createContext<ChatSetup | null>(null);
-
 export const chatConfig = (): {
   defaultWorldAddress: string;
   defaultPassword: string;
@@ -45,6 +29,21 @@ export const chatConfig = (): {
   };
 };
 
+type ChatSetup = {
+  login: (didValue: string) => void;
+  init: () => void;
+  connect: () => void;
+  createKeyPairs: (didValue: string) => void;
+  register: (didValue: string) => void;
+  client: Client | null;
+  userId: string;
+  loginFlow: () => void;
+  loading: boolean;
+  loggedIn: boolean;
+};
+
+const ChatContext = createContext<ChatSetup | null>(null);
+
 type Props = {
   children: ReactNode;
 };
@@ -53,7 +52,18 @@ export const ChatProvider = ({ children }: Props) => {
   const currentValue = useContext(ChatContext);
   if (currentValue) throw new Error("DojoProvider can only be used once");
 
-  const { login, init, connect, createKeyPairs, register, client, userId, loginFlow, loading, loggedIn } = useLogin();
+  const {
+    login,
+    init,
+    connect,
+    createKeyPairs,
+    register,
+    client,
+    userId,
+    loginFlow,
+    loading,
+    loggedIn
+  } = useLogin();
 
   const contextValue: ChatSetup = {
     login, // the provided setup
@@ -65,7 +75,7 @@ export const ChatProvider = ({ children }: Props) => {
     userId,
     loginFlow,
     loading,
-    loggedIn,
+    loggedIn
   };
 
   return <ChatContext.Provider value={contextValue}>{children}</ChatContext.Provider>;
