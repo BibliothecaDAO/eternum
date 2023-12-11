@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
-import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import { Headline } from "../../../../../elements/Headline";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import Button from "../../../../../elements/Button";
 import { useDojo } from "../../../../../DojoContext";
 import { NumberInput } from "../../../../../elements/NumberInput";
+import { CombatInfo } from "@bibliothecadao/eternum";
 
 type SeparateSoldiersPanelProps = {
   isDefence: boolean;

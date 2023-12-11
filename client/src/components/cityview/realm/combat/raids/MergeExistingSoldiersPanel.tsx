@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
+import { useCombat } from "../../../../../hooks/helpers/useCombat";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { Headline } from "../../../../../elements/Headline";
 import useUIStore from "../../../../../hooks/store/useUIStore";
@@ -7,6 +7,7 @@ import Button from "../../../../../elements/Button";
 import { useDojo } from "../../../../../DojoContext";
 import { SelectMergeRaiders } from "./SelectMergeRaiders";
 import { useResources } from "../../../../../hooks/helpers/useResources";
+import { CombatInfo } from "@bibliothecadao/eternum";
 
 type MergeSoldiersPanelProps = {
   isDefence: boolean;

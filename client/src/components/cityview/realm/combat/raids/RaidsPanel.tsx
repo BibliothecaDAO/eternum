@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
 import Button from "../../../../../elements/Button";
 import { Raid } from "./Raid";
-import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
+import { useCombat } from "../../../../../hooks/helpers/useCombat";
 import { CreateRaidersPopup } from "./CreateRaidersPopup";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { ManageSoldiersPopupTabs } from "./ManageSoldiersPopupTabs";
 import { AttackRaidsPopup } from "./AttackRaidsPopup";
 import { TravelRaidsPopup } from "./TravelRaidsPopup";
 import { HealPopup } from "../HealPopup";
+import { CombatInfo } from "@bibliothecadao/eternum";
 
 type RaidsPanelProps = {};
 

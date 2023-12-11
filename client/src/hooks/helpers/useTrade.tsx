@@ -1,7 +1,6 @@
 import { EntityIndex, HasValue, NotValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
-import { Resource } from "../../types";
-import { ResourceInterface } from "../graphql/useGraphQLQueries";
+import { MarketInterface, Resource } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
 import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys } from "../../utils/utils";
@@ -13,21 +12,6 @@ import { SortInterface } from "../../elements/SortButton";
 import { useCaravan } from "./useCaravans";
 import { getRealm } from "../../utils/realms";
 import { useRoads } from "./useRoads";
-
-export interface MarketInterface {
-  tradeId: number;
-  makerId: number;
-  takerId: number;
-  // brillance, reflection, ...
-  makerOrder: number;
-  expiresAt: number;
-  resourcesGet: Resource[];
-  resourcesGive: Resource[];
-  canAccept?: boolean;
-  ratio: number;
-  distance: number;
-  hasRoad: boolean | undefined;
-}
 
 type useGetMarketProps = {
   selectedResources: string[];
@@ -123,7 +107,7 @@ export function useTrade() {
     resourcesGive,
   }: {
     realmEntityId: number;
-    resourcesGive: ResourceInterface[];
+    resourcesGive: Resource[];
   }): boolean => {
     let canAccept = true;
     Object.values(resourcesGive).forEach((resource) => {

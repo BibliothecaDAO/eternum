@@ -1,5 +1,4 @@
 import clsx from "clsx";
-import { CombatResultInterface, Winner } from "../../../../../hooks/store/useCombatHistoryStore";
 import { getComponentValue } from "@latticexyz/recs";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useDojo } from "../../../../../DojoContext";
@@ -12,6 +11,7 @@ import { ResourceCost } from "../../../../../elements/ResourceCost";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import { useRealm } from "../../../../../hooks/helpers/useRealm";
+import { CombatResultInterface, Winner } from "@bibliothecadao/eternum";
 
 type AttackHistoryProps = {
   combatResult: CombatResultInterface;

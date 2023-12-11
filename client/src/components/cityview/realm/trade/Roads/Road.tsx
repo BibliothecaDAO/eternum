@@ -1,8 +1,7 @@
 import { useMemo } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
-import { orderNameDict } from "@bibliothecadao/eternum";
-import { RoadInterface } from "../../../../../hooks/helpers/useRoads";
+import { RoadInterface, orderNameDict } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 
 type RoadProps = {

@@ -1,5 +1,4 @@
-import { Trade } from "../../../../types";
-import { ResourceInterface } from "../../../../hooks/graphql/useGraphQLQueries";
+import { Resource, Trade } from "@bibliothecadao/eternum";
 
 export const getOrderIdsFromTrade = (
   trade: Trade,
@@ -18,6 +17,6 @@ export const getOrderIdsFromTrade = (
     : undefined;
 };
 
-export const getTotalResourceWeight = (resources: (ResourceInterface | undefined)[]) => {
+export const getTotalResourceWeight = (resources: (Resource | undefined)[]) => {
   return resources.reduce((total, resource) => total + (resource?.amount || 0) * 1, 0);
 };

@@ -5,7 +5,7 @@ import { NotificationType } from "./useNotifications";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 import { ResourceCost } from "../../elements/ResourceCost";
 import { divideByPrecision, formatTimeLeftDaysHoursMinutes, getEntityIdFromKeys } from "../../utils/utils";
-import { CombatResultInterface, Winner } from "../store/useCombatHistoryStore";
+import { CombatResultInterface, Winner } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";

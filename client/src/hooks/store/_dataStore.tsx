@@ -1,5 +1,4 @@
-import { HyperStructureInterface } from "../helpers/useHyperstructure";
-
+import { HyperStructureInterface } from "@bibliothecadao/eternum";
 export interface DataStore {
   hyperstructures: (HyperStructureInterface | undefined)[];
   setHyperstructures: (hyperstructures: (HyperStructureInterface | undefined)[]) => void;

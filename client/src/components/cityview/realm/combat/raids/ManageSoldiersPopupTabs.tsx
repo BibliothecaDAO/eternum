@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import { Headline } from "../../../../../elements/Headline";
 import { Tabs } from "../../../../../elements/tab";
@@ -9,6 +8,7 @@ import { MergeNewSoldiersPanel } from "./MergeNewSoldiersPanel";
 import { MergeExistingSoldiersPanel } from "./MergeExistingSoldiersPanel";
 import { useLocation, useRoute } from "wouter";
 import { SeparateSoldiersPanel } from "./SeparateSoldiersPanel";
+import { CombatInfo } from "@bibliothecadao/eternum";
 
 type ManageSoldiersPopupTabsProps = {
   headline: string;

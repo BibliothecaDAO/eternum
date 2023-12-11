@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { getOrderName } from "@bibliothecadao/eternum";
+import { SelectableRealmInterface, getOrderName } from "@bibliothecadao/eternum";
 import { Has, getComponentValue, runQuery } from "@latticexyz/recs";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useTrade } from "../../../../../hooks/helpers/useTrade";
@@ -10,17 +10,7 @@ import { useDojo } from "../../../../../DojoContext";
 import TextInput from "../../../../../elements/TextInput";
 import { SortPanel } from "../../../../../elements/SortPanel";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
-import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
-// import { ReactComponent as Shield } from "../../../../../assets/icons/units/shield.svg";
-
-export interface SelectRealmInterface {
-  entityId: number;
-  realmId: number;
-  name: string;
-  order: string;
-  distance: number;
-  defence: CombatInfo;
-}
+import { useCombat } from "../../../../../hooks/helpers/useCombat";
 
 export const SelectRealmPanel = ({
   selectedEntityId,
@@ -30,8 +20,8 @@ export const SelectRealmPanel = ({
   setSelectedEntityId: (selectedEntityId: number) => void;
 }) => {
   const [nameFilter, setNameFilter] = useState("");
-  const [originalRealms, setOriginalRealms] = useState<SelectRealmInterface[]>([]);
-  const [sortedRealms, setSortedRealms] = useState<SelectRealmInterface[]>([]);
+  const [originalRealms, setOriginalRealms] = useState<SelectableRealmInterface[]>([]);
+  const [sortedRealms, setSortedRealms] = useState<SelectableRealmInterface[]>([]);
   const deferredNameFilter = useDeferredValue(nameFilter);
 
   const {
@@ -69,7 +59,7 @@ export const SelectRealmPanel = ({
         .map((entityId) => {
           const realm = getComponentValue(Realm, entityId);
           if (realm) {
-            const { name, order, realm_id: takerRealmId } = getRealm(realm.realm_id);
+            const { name, order, realmId: takerRealmId } = getRealm(realm.realm_id);
             const takerEntityId = getRealmEntityIdFromRealmId(takerRealmId);
             const distance = takerEntityId ? calculateDistance(realmEntityId, takerEntityId) ?? 0 : 0;
             const defence = takerEntityId ? getDefenceOnRealm(takerEntityId) : undefined;
@@ -83,7 +73,7 @@ export const SelectRealmPanel = ({
             };
           }
         })
-        .filter((realm) => realm && realm.realmId !== realmId && realm.realmId !== 1) as SelectRealmInterface[];
+        .filter((realm) => realm && realm.realmId !== realmId && realm.realmId !== 1) as SelectableRealmInterface[];
       setOriginalRealms(realms);
     };
     buildSelectableRealms();
@@ -158,7 +148,7 @@ export const SelectRealmPanel = ({
 
                       <div className="flex-none w-16 text-right">
                         {/* <Shield className="text-gold" /> */}
-                        <div>{defence.defence ? defence.defence : 0}</div>
+                        <div>{defence?.defence ? defence.defence : 0}</div>
                       </div>
                     </div>
                   </div>
@@ -175,7 +165,7 @@ export const SelectRealmPanel = ({
 /**
  * sort realms based on active filters
  */
-export function sortRealms(realms: SelectRealmInterface[], activeSort: SortInterface): SelectRealmInterface[] {
+export function sortRealms(realms: SelectableRealmInterface[], activeSort: SortInterface): SelectableRealmInterface[] {
   const sortedRealms = [...realms]; // Making a copy of the realms array
 
   if (activeSort.sort !== "none") {

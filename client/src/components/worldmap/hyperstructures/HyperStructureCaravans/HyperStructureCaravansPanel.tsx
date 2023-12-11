@@ -1,12 +1,11 @@
 import { useMemo, useState } from "react";
-import { CaravanInterface } from "../../../../hooks/graphql/useGraphQLQueries";
 import { SortButton, SortInterface } from "../../../../elements/SortButton";
 import { FiltersPanel } from "../../../../elements/FiltersPanel";
 import { FilterButton } from "../../../../elements/FilterButton";
 import { SortPanel } from "../../../../elements/SortPanel";
 import { CaravanDetails } from "../../../caravans/CaravanDetailsComponent";
 import { HyperStructureCaravan } from "./HyperStructureCaravan";
-import { HyperStructureInterface } from "../../../../hooks/helpers/useHyperstructure";
+import { CaravanInterface, HyperStructureInterface } from "@bibliothecadao/eternum";
 
 type CaravansPanelProps = {
   caravans: CaravanInterface[];

@@ -8,7 +8,7 @@ import { Dot } from "../../../../../elements/Dot";
 import clsx from "clsx";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
-import { CaravanInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
+import { CaravanInterface } from "@bibliothecadao/eternum";
 import { CAPACITY_PER_DONKEY } from "@bibliothecadao/eternum";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";

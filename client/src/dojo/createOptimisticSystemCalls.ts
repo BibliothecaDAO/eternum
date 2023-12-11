@@ -2,9 +2,7 @@ import { uuid } from "@latticexyz/utils";
 import { ClientComponents } from "./createClientComponents";
 import { getEntityIdFromKeys } from "../utils/utils";
 import { Type, getComponentValue } from "@latticexyz/recs";
-import { Resource } from "../types";
-import { LaborCostInterface } from "../hooks/helpers/useLabor";
-import { LABOR_CONFIG, ROAD_COST_PER_USAGE } from "@bibliothecadao/eternum";
+import { LABOR_CONFIG, ROAD_COST_PER_USAGE, Resource } from "@bibliothecadao/eternum";
 import {
   CancelFungibleOrderProps,
   TransferItemsProps,
@@ -219,7 +217,7 @@ export function createOptimisticSystemCalls({
 
   function optimisticBuildLabor(
     ts: number,
-    costResources: LaborCostInterface[],
+    costResources: Resource[],
     laborAuctionAverageCoefficient: number,
     systemCall: (args: PurchaseLaborProps & BuildLaborProps) => Promise<void>,
   ) {

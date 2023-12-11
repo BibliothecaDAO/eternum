@@ -1,7 +1,6 @@
 import { EventType, NotificationType } from "../hooks/notifications/useNotifications";
-import { CombatResultInterface, Winner } from "../hooks/store/useCombatHistoryStore";
 import { Event } from "../services/eventPoller";
-import { Resource } from "../types";
+import { Resource, CombatResultInterface, Winner } from "@bibliothecadao/eternum";
 
 // note: placeholder
 export const calculateSuccess = (

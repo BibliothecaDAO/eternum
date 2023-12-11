@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { BanksListItem } from "./BanksListItem";
 import { BankPopup } from "./BankPopup";
-import { BankStaticInterface, targetPrices, useBanks } from "../../../hooks/helpers/useBanks";
+import { targetPrices, useBanks } from "../../../hooks/helpers/useBanks";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
 import useUIStore from "../../../hooks/store/useUIStore";
+import { BankStaticInterface } from "@bibliothecadao/eternum";
 
 type BanksListComponentProps = {};
 

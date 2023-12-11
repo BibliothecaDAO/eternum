@@ -10,7 +10,7 @@ import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import { getBuildResourceCost } from "../../../../../utils/combat";
 import { Headline } from "../../../../../elements/Headline";
 import useUIStore from "../../../../../hooks/store/useUIStore";
-import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
+import { CombatInfo } from "@bibliothecadao/eternum";
 
 type MergeNewSoldiersPanelProps = {
   isDefence: boolean;

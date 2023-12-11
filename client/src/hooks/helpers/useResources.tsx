@@ -4,7 +4,7 @@ import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys } from "../../utils/utils";
 import { useEntityQuery } from "@dojoengine/react";
 import { BigNumberish } from "starknet";
-import { Resource } from "../../types";
+import { Resource } from "@bibliothecadao/eternum";
 
 export function useResources() {
   const {

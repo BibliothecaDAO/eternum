@@ -2,13 +2,11 @@ import { useEffect, useState } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
-import { findResourceById, orderNameDict } from "@bibliothecadao/eternum";
+import { MarketInterface, Resource, findResourceById, orderNameDict } from "@bibliothecadao/eternum";
 import { ReactComponent as RatioIcon } from "../../../../../assets/icons/common/ratio.svg";
 import * as realmsData from "../../../../../geodata/realms.json";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
-import { ResourcesOffer } from "../../../../../types";
-import { MarketInterface } from "../../../../../hooks/helpers/useTrade";
 import { currencyFormat } from "../../../../../utils/utils";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 
@@ -115,7 +113,7 @@ export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferPr
   );
 };
 
-export const calculateRatio = (resourcesGive: ResourcesOffer[], resourcesGet: ResourcesOffer[]) => {
+export const calculateRatio = (resourcesGive: Resource[], resourcesGet: Resource[]) => {
   let quantityGive = 0;
   for (let i = 0; i < resourcesGive.length; i++) {
     quantityGive += resourcesGive[i].amount;

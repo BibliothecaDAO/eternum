@@ -4,7 +4,7 @@ import { useThree } from "@react-three/fiber";
 import { BlendFunction } from "postprocessing";
 import { EntityIndex, setComponent, Component, Schema, Components } from "@latticexyz/recs";
 import { poseidonHashMany } from "micro-starknet";
-import { Position } from "../types";
+import { Position } from "@bibliothecadao/eternum";
 import realmCoords from "../geodata/coords.json";
 
 const isRef = (ref: any) => !!ref.current;

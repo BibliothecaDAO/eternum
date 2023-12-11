@@ -1,11 +1,11 @@
 import React from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
-import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import { getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
+import { CombatInfo } from "@bibliothecadao/eternum";
 
 type SelectRaidersProps = {
   selectedRaiders: CombatInfo[];

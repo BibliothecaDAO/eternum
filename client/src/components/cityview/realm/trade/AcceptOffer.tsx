@@ -4,9 +4,9 @@ import Button from "../../../../elements/Button";
 import { SelectCaravanPanel } from "./CreateOffer";
 import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { MarketInterface, useTrade } from "../../../../hooks/helpers/useTrade";
+import { useTrade } from "../../../../hooks/helpers/useTrade";
 import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
-import { WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
+import { WEIGHT_PER_DONKEY_KG, MarketInterface } from "@bibliothecadao/eternum";
 
 type AcceptOfferPopupProps = {
   onClose: () => void;

@@ -5,15 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { EntityIndex, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import useRealmStore from "../store/useRealmStore";
 import { getRealm, getRealmIdByPosition, getRealmNameById } from "../../utils/realms";
-
-export interface RoadInterface {
-  startRealmName: string;
-  startRealmOrder: number | undefined;
-  destinationEntityId: number;
-  destinationRealmName: string;
-  destinationRealmOrder: number | undefined;
-  usageLeft: number;
-}
+import { RoadInterface } from "@bibliothecadao/eternum";
 
 export function useRoads() {
   const {

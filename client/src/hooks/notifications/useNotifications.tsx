@@ -14,10 +14,10 @@ import useRealmStore from "../store/useRealmStore";
 import { unpackResources } from "../../utils/packedData";
 import { COMBAT_EVENT, ResourcesIds } from "@bibliothecadao/eternum";
 import { UpdatedEntity } from "../../dojo/createEntitySubscription";
-import { Position } from "../../types";
+import { Position } from "@bibliothecadao/eternum";
 import { getRealm } from "../../utils/realms";
 import { LABOR_CONFIG } from "@bibliothecadao/eternum";
-import { CombatResultInterface } from "../store/useCombatHistoryStore";
+import { CombatResultInterface } from "@bibliothecadao/eternum";
 import { createCombatNotification, parseCombatEvent } from "../../utils/combat";
 import { Event, pollForEvents } from "../../services/eventPoller";
 import { LevelIndex, useLevel } from "../helpers/useLevel";
@@ -420,12 +420,12 @@ const useRealmsResource = (
   return useMemo(() => {
     return realms
       .map(({ realmEntityId, realmId }) => {
-        const { resource_types_packed, resource_types_count } = realmId
+        const { resourceTypesPacked, resourceTypesCount } = realmId
           ? getRealm(realmId)
-          : { resource_types_packed: 0, resource_types_count: 0 };
+          : { resourceTypesPacked: 0, resourceTypesCount: 0 };
 
         if (realmId) {
-          let unpackedResources = unpackResources(BigInt(resource_types_packed), resource_types_count);
+          let unpackedResources = unpackResources(BigInt(resourceTypesPacked), resourceTypesCount);
           return {
             realmEntityId,
             resourceIds: [ResourcesIds["Wheat"], ResourcesIds["Fish"]].concat(unpackedResources),

@@ -1,12 +1,11 @@
 import { OrderIcon } from "../../../elements/OrderIcon";
 import Button from "../../../elements/Button";
 import { ReactComponent as Map } from "../../../assets/icons/common/map.svg";
-import { orderNameDict, orders } from "@bibliothecadao/eternum";
+import { HyperStructureInterface, UIPosition, orderNameDict, orders } from "@bibliothecadao/eternum";
 import useUIStore from "../../../hooks/store/useUIStore";
 import ProgressBar from "../../../elements/ProgressBar";
-import { HyperStructureInterface, useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
+import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
 import clsx from "clsx";
-import { UIPosition } from "../../../types";
 import { Leveling, LevelingBonusIcons } from "../../cityview/realm/leveling/Leveling";
 import { useMemo, useState } from "react";
 import { LevelIndex, useLevel } from "../../../hooks/helpers/useLevel";

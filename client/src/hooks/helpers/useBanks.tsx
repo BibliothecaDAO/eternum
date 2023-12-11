@@ -1,12 +1,13 @@
 import { Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
-import { Position, Resource, UIPosition } from "../../types";
+import { Position, Resource } from "@bibliothecadao/eternum";
 import { getContractPositionFromRealPosition, getEntityIdFromKeys } from "../../utils/utils";
 import banks from "../../data/banks.json";
 import { computeCoefficient, getLordsAmountFromBankAuction } from "../../components/worldmap/banks/utils";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { useComponentValue } from "@dojoengine/react";
 import useRealmStore from "../store/useRealmStore";
+import { AuctionInterface, BankInterface, BankStaticInterface } from "@bibliothecadao/eternum";
 
 export const targetPrices = {
   254: 10,
@@ -14,32 +15,6 @@ export const targetPrices = {
 };
 
 export const BANK_AUCTION_DECAY = 0.1;
-
-type Auction = {
-  start_time: number;
-  per_time_unit: number;
-  sold: number;
-  price_update_interval: number;
-};
-
-export interface BankStaticInterface {
-  name: string;
-  uiPosition: UIPosition;
-  position: Position;
-  distance: number | undefined;
-}
-
-export interface BankInterface {
-  name: string;
-  wheatPrice: number;
-  fishPrice: number;
-  bankId: number;
-  uiPosition: UIPosition;
-  position: Position;
-  wheatLaborAuction: Auction | undefined;
-  fishLaborAuction: Auction | undefined;
-  distance: number | undefined;
-}
 
 export const useBanks = () => {
   const {
@@ -51,16 +26,10 @@ export const useBanks = () => {
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
-  const getResourceBankPrice = (laborAuction: Auction, resourceId: 254 | 255): number | undefined => {
+  const getResourceBankPrice = (auction: AuctionInterface, resourceId: 254 | 255): number | undefined => {
     const coefficient =
-      laborAuction && nextBlockTimestamp
-        ? computeCoefficient(
-            laborAuction.start_time,
-            nextBlockTimestamp,
-            laborAuction.sold,
-            0.1,
-            laborAuction.per_time_unit,
-          )
+      auction && nextBlockTimestamp
+        ? computeCoefficient(auction.start_time, nextBlockTimestamp, auction.sold, 0.1, auction.per_time_unit)
         : undefined;
 
     return coefficient ? coefficient * targetPrices[resourceId] : undefined;
@@ -73,14 +42,14 @@ export const useBanks = () => {
 
   const getLordsAmountFromBank = (bankPosition: Position, resource: Resource): number | undefined => {
     const bankId = getBankEntityId(bankPosition);
-    const laborAuction =
+    const auction =
       bankId !== undefined
         ? getComponentValue(BankAuction, getEntityIdFromKeys([BigInt(bankId), BigInt(resource.resourceId)]))
         : undefined;
 
-    const { per_time_unit, sold, start_time, price_update_interval } = laborAuction || {};
+    const { per_time_unit, sold, start_time, price_update_interval } = auction || {};
 
-    return laborAuction && per_time_unit && start_time && nextBlockTimestamp && sold && price_update_interval
+    return auction && per_time_unit && start_time && nextBlockTimestamp && sold && price_update_interval
       ? getLordsAmountFromBankAuction(
           resource.amount,
           targetPrices[resource.resourceId as 254 | 255],
@@ -100,16 +69,16 @@ export const useBanks = () => {
         const { name, x, y, z } = bank;
         const position = getContractPositionFromRealPosition({ x, y: z });
         const bankId = getBankEntityId(position);
-        const wheatLaborAuction =
+        const wheatAuction =
           bankId !== undefined
             ? getComponentValue(BankAuction, getEntityIdFromKeys([BigInt(bankId), BigInt(253), BigInt(0)]))
             : undefined;
-        const fishLaborAuction =
+        const fishAuction =
           bankId !== undefined
             ? getComponentValue(BankAuction, getEntityIdFromKeys([BigInt(bankId), BigInt(253), BigInt(1)]))
             : undefined;
-        const wheatPrice = wheatLaborAuction ? getResourceBankPrice(wheatLaborAuction, 254) || 0 : 0;
-        const fishPrice = fishLaborAuction ? getResourceBankPrice(fishLaborAuction, 255) || 0 : 0;
+        const wheatPrice = wheatAuction ? getResourceBankPrice(wheatAuction, 254) || 0 : 0;
+        const fishPrice = fishAuction ? getResourceBankPrice(fishAuction, 255) || 0 : 0;
         let distance = 0;
         if (realmEntityIds.length > 0) {
           const startPosition = getComponentValue(
@@ -142,8 +111,8 @@ export const useBanks = () => {
             fishPrice,
             uiPosition: { x, y, z },
             position,
-            wheatLaborAuction,
-            fishLaborAuction,
+            wheatAuction,
+            fishAuction,
             distance,
           };
         }
@@ -154,16 +123,16 @@ export const useBanks = () => {
   const useGetBank = (bank: BankStaticInterface): BankInterface | undefined => {
     const { name, uiPosition, distance, position } = bank;
     const bankId = getBankEntityId(position);
-    const wheatLaborAuction =
+    const wheatAuction =
       bankId !== undefined
         ? useComponentValue(BankAuction, getEntityIdFromKeys([BigInt(bankId), BigInt(253), BigInt(0)]))
         : undefined;
-    const fishLaborAuction =
+    const fishAuction =
       bankId !== undefined
         ? useComponentValue(BankAuction, getEntityIdFromKeys([BigInt(bankId), BigInt(253), BigInt(1)]))
         : undefined;
-    const wheatPrice = wheatLaborAuction ? getResourceBankPrice(wheatLaborAuction, 254) || 0 : 0;
-    const fishPrice = fishLaborAuction ? getResourceBankPrice(fishLaborAuction, 255) || 0 : 0;
+    const wheatPrice = wheatAuction ? getResourceBankPrice(wheatAuction, 254) || 0 : 0;
+    const fishPrice = fishAuction ? getResourceBankPrice(fishAuction, 255) || 0 : 0;
 
     if (bankId) {
       return {
@@ -173,8 +142,8 @@ export const useBanks = () => {
         fishPrice,
         uiPosition,
         position,
-        wheatLaborAuction,
-        fishLaborAuction,
+        wheatAuction,
+        fishAuction,
         distance,
       };
     }
