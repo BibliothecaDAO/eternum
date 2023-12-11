@@ -8,7 +8,7 @@ import { useDojo } from "../../../../../DojoContext";
 import AttacksComponent from "./AttacksComponent";
 import { ManageSoldiersPopupTabs } from "../raids/ManageSoldiersPopupTabs";
 import { HealPopup } from "../HealPopup";
-import { LevelIndex, useRealm } from "../../../../../hooks/helpers/useRealm";
+import { LevelIndex, useLevel } from "../../../../../hooks/helpers/useLevel";
 
 type DefencePanelProps = {};
 
@@ -26,7 +26,7 @@ export const DefencePanel = ({}: DefencePanelProps) => {
 
   const { getEntitiesCombatInfo, getRealmWatchTowerId } = useCombat();
 
-  const { getRealmLevelBonus, getRealmLevel } = useRealm();
+  const { getEntityLevel, getRealmLevelBonus } = useLevel();
 
   const watchTowerId = getRealmWatchTowerId(realmEntityId);
   const watchTowerHealth = watchTowerId
@@ -42,13 +42,14 @@ export const DefencePanel = ({}: DefencePanelProps) => {
     }
   }, [watchTowerId, watchTowerHealth]);
 
-  const defenderLevelBonus = useMemo(() => {
-    if (watchTower?.entityOwnerId) {
-      let level = getRealmLevel(watchTower.entityOwnerId)?.level || 0;
-      return getRealmLevelBonus(level, LevelIndex.COMBAT);
-    } else {
-      return 100;
-    }
+  const [defenderLevelBonus, defenderHyperstructureLevelBonus] = useMemo(() => {
+    let level = watchTower?.entityOwnerId ? getEntityLevel(watchTower.entityOwnerId)?.level || 0 : 0;
+    let hyperstructureLevel = watchTower?.hyperstructureId
+      ? getEntityLevel(watchTower.hyperstructureId)?.level || 0
+      : 0;
+    let levelBonus = getRealmLevelBonus(level, LevelIndex.COMBAT);
+    let hyperstructureLevelBonus = getRealmLevelBonus(hyperstructureLevel, LevelIndex.COMBAT);
+    return [levelBonus, hyperstructureLevelBonus];
   }, [watchTower]);
 
   return (
@@ -66,6 +67,7 @@ export const DefencePanel = ({}: DefencePanelProps) => {
           <Defence
             onReinforce={() => setShowBuildDefence(!showBuildDefence)}
             levelBonus={defenderLevelBonus}
+            hyperstructureLevelBonus={defenderHyperstructureLevelBonus}
             setShowHeal={setShowHeal}
             watchTower={watchTower}
           />

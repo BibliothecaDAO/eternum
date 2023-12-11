@@ -9,7 +9,7 @@ import { LABOR_CONFIG, findResourceById } from "@bibliothecadao/eternum";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { calculateNextHarvest, calculateProductivity, formatSecondsInHoursMinutes } from "../realm/labor/laborUtils";
 import ProgressBar from "../../../elements/ProgressBar";
-import { LevelIndex, useRealm } from "../../../hooks/helpers/useRealm";
+import { LevelIndex, useLevel } from "../../../hooks/helpers/useLevel";
 
 type LaborRegionTooltipProps = {
   position: [number, number, number];
@@ -17,7 +17,7 @@ type LaborRegionTooltipProps = {
 };
 
 export const LaborRegionTooltip = ({ position, resourceId }: LaborRegionTooltipProps) => {
-  let { realmEntityId } = useRealmStore();
+  let { realmEntityId, hyperstructureId } = useRealmStore();
 
   const {
     setup: {
@@ -32,9 +32,19 @@ export const LaborRegionTooltip = ({ position, resourceId }: LaborRegionTooltipP
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 
-  const { getRealmLevelBonus, getRealmLevel } = useRealm();
-  const level = getRealmLevel(realmEntityId)?.level || 0;
-  const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
+  const { getEntityLevel, getRealmLevelBonus, getHyperstructureLevelBonus } = useLevel();
+
+  // get harvest bonuses
+  const [levelBonus, hyperstructureLevelBonus] = useMemo(() => {
+    const level = getEntityLevel(realmEntityId)?.level || 0;
+    const hyperstructureLevel = hyperstructureId ? getEntityLevel(hyperstructureId)?.level || 0 : 0;
+    const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
+    const hyperstructureLevelBonus = getHyperstructureLevelBonus(
+      hyperstructureLevel,
+      isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE,
+    );
+    return [levelBonus, hyperstructureLevelBonus];
+  }, [realmEntityId, isFood]);
 
   const laborLeft = useMemo(() => {
     if (nextBlockTimestamp && labor && LABOR_CONFIG && labor.balance > nextBlockTimestamp) {
@@ -64,6 +74,7 @@ export const LaborRegionTooltip = ({ position, resourceId }: LaborRegionTooltipP
         LABOR_CONFIG.base_resources_per_cycle,
         nextBlockTimestamp,
         levelBonus,
+        hyperstructureLevelBonus,
       );
     } else {
       return 0;
@@ -84,6 +95,7 @@ export const LaborRegionTooltip = ({ position, resourceId }: LaborRegionTooltipP
                     labor.multiplier,
                     LABOR_CONFIG.base_labor_units,
                     levelBonus,
+                    hyperstructureLevelBonus,
                   ),
                 ).toFixed(0)}`
               : "+0"}

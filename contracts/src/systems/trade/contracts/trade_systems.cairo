@@ -188,7 +188,8 @@ mod trade_systems {
                 // get maker travel time
                 let (maker_transport_round_trip_time, maker_transport_one_way_trip_time) 
                     = caravan::get_travel_time(
-                        world, trade.maker_transport_id, maker_position, taker_position
+                        world, trade.maker_transport_id, maker_position, 
+                        taker_position
                         ); 
             
 

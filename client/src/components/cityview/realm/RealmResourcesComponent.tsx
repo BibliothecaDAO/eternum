@@ -12,9 +12,10 @@ import Button from "../../../elements/Button";
 import { SmallResource } from "./SmallResource";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../DojoContext";
-import { useGetRealm, useRealm } from "../../../hooks/helpers/useRealm";
+import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import { LABOR_CONFIG } from "@bibliothecadao/eternum";
 import useUIStore from "../../../hooks/store/useUIStore";
+import { LevelIndex, useLevel } from "../../../hooks/helpers/useLevel";
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<"div">;
 
@@ -26,8 +27,8 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
 
   const { realm } = useGetRealm(realmEntityId);
 
-  const { getRealmLevel } = useRealm();
-  const realm_level = getRealmLevel(realmEntityId)?.level;
+  const { getEntityLevel } = useLevel();
+  const realm_level = getEntityLevel(realmEntityId)?.level;
 
   // unpack the resources
   useMemo((): any => {
@@ -97,16 +98,27 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
     },
   } = useDojo();
 
-  let { realmEntityId } = useRealmStore();
+  let { realmEntityId, hyperstructureId } = useRealmStore();
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const [productivity, setProductivity] = useState<number>(0);
 
-  const { getRealmLevel } = useRealm();
-  const level = getRealmLevel(realmEntityId)?.level || 0;
+  const { getEntityLevel, getRealmLevelBonus, getHyperstructureLevelBonus } = useLevel();
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
+
+  const level = getEntityLevel(realmEntityId)?.level || 0;
+  // get harvest bonuses
+  const [levelBonus, hyperstructureLevelBonus] = useMemo(() => {
+    const hyperstructureLevel = hyperstructureId ? getEntityLevel(hyperstructureId)?.level || 0 : 0;
+    const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
+    const hyperstructureLevelBonus = getHyperstructureLevelBonus(
+      hyperstructureLevel,
+      isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE,
+    );
+    return [levelBonus, hyperstructureLevelBonus];
+  }, [realmEntityId, isFood]);
 
   const labor = useComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]));
 
@@ -124,7 +136,8 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
             isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
             labor.multiplier,
             LABOR_CONFIG.base_labor_units,
-            level,
+            levelBonus,
+            hyperstructureLevelBonus,
           )
         : 0;
     setProductivity(productivity);

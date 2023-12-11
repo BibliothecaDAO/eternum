@@ -3,13 +3,15 @@ mod travel_systems {
     
     use eternum::alias::ID;
     use eternum::models::movable::{Movable, ArrivalTime};
+    use eternum::models::realm::Realm;
+    use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::position::{Coord, CoordTrait, Position};
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::level::{Level, LevelTrait};
     use eternum::models::road::RoadImpl;
     use eternum::models::config::{RoadConfig, LevelingConfig};
 
-    use eternum::constants::{ROAD_CONFIG_ID, LEVELING_CONFIG_ID, LevelIndex};
+    use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, LevelIndex};
     
     use eternum::systems::transport::interface::travel_systems_interface::{
         ITravelSystems
@@ -70,15 +72,38 @@ mod travel_systems {
             world: IWorldDispatcher, transport_id: ID, transport_movable: Movable, 
             from_coord: Coord, to_coord: Coord
         ){
-            // get level bonus
-            let realm_owner = get!(world, (transport_id), EntityOwner);
-            let level_bonus = leveling::get_realm_level_bonus(world, realm_owner.entity_owner_id, LevelIndex::TRAVEL);
+
 
             let mut travel_time = from_coord.calculate_travel_time(
                 to_coord, transport_movable.sec_per_km
             );
 
-            travel_time = ((travel_time.into() * 100 / level_bonus)).try_into().unwrap();
+            // check if entity owner is a realm and apply bonuses if it is
+            let entity_owner = get!(world, (transport_id), EntityOwner);
+            let realm = get!(world, entity_owner.entity_owner_id, Realm);
+            if realm.cities > 0 {
+                // get realm level bonus
+
+                let realm_level_bonus 
+                    = leveling::get_realm_level_bonus(
+                        world, entity_owner.entity_owner_id, LevelIndex::TRAVEL
+                    );
+
+                // get hyperstructure level bonus
+                let hyperstructure = get!(world, (realm.order_hyperstructure_id), HyperStructure);
+                let hyperstructure_level_bonus 
+                    = leveling::get_hyperstructure_level_bonus(
+                            world, realm.order_hyperstructure_id, LevelIndex::TRAVEL
+                        );
+
+                // apply bonuses 
+                // precision of level bonus is 100
+                travel_time = ((travel_time.into() * 10000 / (realm_level_bonus * hyperstructure_level_bonus))).try_into().unwrap();
+            }
+
+            
+
+
 
             // reduce travel time if there is a road
             let travel_time = RoadImpl::use_road(

@@ -61,11 +61,14 @@ fn setup() -> (IWorldDispatcher, u128, ITransportUnitSystemsDispatcher) {
     let regions = 5;
     let wonder = 1;
     let order = 1;
+    let order_hyperstructure_id = 999;
+
 
     let realm_entity_id = realm_systems_dispatcher.create(
         world, realm_id, starknet::get_contract_address(), // owner
         resource_types_packed, resource_types_count, cities,
-        harbors, rivers, regions, wonder, order, position.clone(),
+        harbors, rivers, regions, wonder, order, order_hyperstructure_id,
+        position.clone(),
     );
 
 

@@ -49,7 +49,8 @@
         "HyperStructure",
         "Position",
         "Resource",
-        "ResourceCost"
+        "ResourceCost",
+        "Level"
     ],
     "RESOURCE_SYSTEMS": [
         "Resource",

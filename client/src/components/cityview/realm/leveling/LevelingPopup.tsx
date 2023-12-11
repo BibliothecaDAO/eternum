@@ -7,9 +7,9 @@ import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../DojoContext";
 import { getComponentValue } from "@latticexyz/recs";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../utils/utils";
-import { LevelIndex, useRealm } from "../../../../hooks/helpers/useRealm";
 import { getLevelingCost } from "./utils";
 import useUIStore from "../../../../hooks/store/useUIStore";
+import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
 
 type LevelingPopupProps = {
   onClose: () => void;
@@ -19,17 +19,17 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
   const {
     setup: {
       components: { Resource },
-      systemCalls: { level_up },
+      systemCalls: { level_up_realm },
     },
     account: { account },
   } = useDojo();
 
   let { realmEntityId } = useRealmStore();
 
-  const { getRealmLevelBonus, getRealmLevel } = useRealm();
+  const { getEntityLevel, getRealmLevelBonus } = useLevel();
 
   const [level, tier] = useMemo(() => {
-    let level = getRealmLevel(realmEntityId)?.level || 0;
+    let level = getEntityLevel(realmEntityId)?.level || 0;
     return [level, Math.floor(level / 4) + 1];
   }, [realmEntityId]);
 
@@ -63,7 +63,7 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
   const onBuild = async () => {
     if (realmEntityId) {
       setIsLoading(true);
-      await level_up({ realm_entity_id: realmEntityId, signer: account });
+      await level_up_realm({ realm_entity_id: realmEntityId, signer: account });
       onClose();
     }
   };
@@ -116,7 +116,9 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
         <div className="flex justify-between m-2 text-xxs">
           <div className="w-full flex flex-col items-center justify-center">
             <div className="w-[90%] mb-3">
-              {newLevel >= 5 && <Table updateLevel={{ newBonus, index: newIndex }} data={bonusData}></Table>}
+              {newLevel >= 5 && (
+                <LevelingTable updateLevel={{ newBonus, index: newIndex }} data={bonusData}></LevelingTable>
+              )}
               {newLevel < 5 && <UnlockMessage newLevel={newLevel}></UnlockMessage>}
             </div>
             <div className="flex">
@@ -154,7 +156,7 @@ interface TableProps {
   updateLevel: { newBonus: number; index: number };
 }
 
-const Table: React.FC<TableProps> = ({ data, updateLevel }) => {
+export const LevelingTable: React.FC<TableProps> = ({ data, updateLevel }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const elements = data.map((item, index) => {

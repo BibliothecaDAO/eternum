@@ -5,6 +5,7 @@ mod labor_systems {
     use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
     use eternum::models::owner::Owner;
+    use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::realm::{Realm, RealmTrait};
     use eternum::models::position::{Position, PositionTrait};
     use eternum::models::resources::Resource;
@@ -15,14 +16,14 @@ mod labor_systems {
     use eternum::models::config::{LevelingConfig, WorldConfig, LaborConfig, LaborCostResources, LaborCostAmount};
 
     use eternum::systems::labor::utils::{assert_harvestable_resource, get_labor_resource_type};
-    use eternum::constants::{LABOR_CONFIG_ID,WORLD_CONFIG_ID, ResourceTypes, LevelIndex};
+    use eternum::constants::{LABOR_CONFIG_ID,WORLD_CONFIG_ID, HYPERSTRUCTURE_LEVELING_START_TIER, REALM_LEVELING_START_TIER, ResourceTypes, LevelIndex};
     use eternum::utils::unpack::unpack_resource_types;
 
     use starknet::ContractAddress;
 
     use eternum::systems::labor::interface::ILaborSystems;
 
-    use eternum::constants::{LEVELING_CONFIG_ID};
+    use eternum::constants::{REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID};
     
     #[external(v0)]
     impl LaborSystemsImpl of ILaborSystems<ContractState> {
@@ -237,17 +238,24 @@ mod labor_systems {
                 // remainder is what is left from division by base labor units
                 let remainder = labor_generated % labor_config.base_labor_units;
 
-                // get level bonus
-                let leveling_config: LevelingConfig = get!(world, LEVELING_CONFIG_ID, LevelingConfig);
-                let level = get!(world, (realm_id), Level);
-                
                 let level_index = if is_food {
                     LevelIndex::FOOD
                 } else {
                     LevelIndex::RESOURCE
                 };
 
-                let level_bonus = level.get_index_multiplier(leveling_config, level_index);
+                /// REALM BONUS ///
+                let realm_leveling_config: LevelingConfig = get!(world, REALM_LEVELING_CONFIG_ID, LevelingConfig);
+                let realm_level = get!(world, (realm_id), Level);
+                
+                let realm_level_bonus = realm_level.get_index_multiplier(realm_leveling_config, level_index, REALM_LEVELING_START_TIER);
+
+                /// HYPERSTRUCTURE BONUS ///
+                let hyperstructure = get!(world, (realm.order_hyperstructure_id), HyperStructure);
+                let hyperstructure_leveling_config: LevelingConfig = get!(world, HYPERSTRUCTURE_LEVELING_CONFIG_ID, LevelingConfig);
+                let hyperstructure_level = get!(world, (realm.order_hyperstructure_id), Level);
+                
+                let hyperstructure_level_bonus = hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, level_index, HYPERSTRUCTURE_LEVELING_START_TIER);
 
                 // update resources with multiplier
                 // and with level bonus
@@ -259,7 +267,8 @@ mod labor_systems {
                         balance: resource.balance
                             + (labor_units_generated.into()
                                 * base_production_per_cycle
-                                * labor.multiplier.into() * level_bonus) / 100,
+                                // divide by 10000 because 100*100 (bonus precision)
+                                * labor.multiplier.into() * realm_level_bonus * hyperstructure_level_bonus) / 10000,
                     }
                 );
 

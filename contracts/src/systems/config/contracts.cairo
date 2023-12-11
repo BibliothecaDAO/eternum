@@ -8,7 +8,7 @@ mod config_systems {
         LaborCostResources, LaborCostAmount, LaborConfig,CapacityConfig, 
         RoadConfig, SpeedConfig, TravelConfig, WeightConfig,WorldConfig,
         SoldierConfig, HealthConfig, AttackConfig, DefenceConfig, CombatConfig,
-        LevelingConfig
+        LevelingConfig,
     };
 
     use eternum::systems::config::interface::{
@@ -20,7 +20,7 @@ mod config_systems {
     use eternum::constants::{
         WORLD_CONFIG_ID, LABOR_CONFIG_ID, TRANSPORT_CONFIG_ID,
         ROAD_CONFIG_ID, SOLDIER_ENTITY_TYPE, COMBAT_CONFIG_ID, 
-        LEVELING_CONFIG_ID
+        REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID
     };
 
     use eternum::models::hyperstructure::HyperStructure;
@@ -115,16 +115,19 @@ mod config_systems {
             self: @ContractState, 
             world: IWorldDispatcher, 
             config_id: u128, 
-            stealing_trial_count: u32
+            stealing_trial_count: u32,
+            wheat_burn_per_soldier: u128,
+            fish_burn_per_soldier: u128,
         ) {
-        
             assert_caller_is_admin(world); 
 
             set!(
                 world,
                 (CombatConfig {
                     config_id,
-                    stealing_trial_count
+                    stealing_trial_count,
+                    wheat_burn_per_soldier,
+                    fish_burn_per_soldier,
                 })
             );
         }
@@ -179,9 +182,6 @@ mod config_systems {
             resource_costs: Span<(u8, u128)>,
             max_value: u128
         ) {
-
-            assert_caller_is_admin(world); 
-
             let resource_cost_id = world.uuid().into();
             let mut index = 0;
             loop {
@@ -257,6 +257,9 @@ mod config_systems {
         fn set_leveling_config(
             self: @ContractState, 
             world: IWorldDispatcher, 
+            config_id: u128,
+            decay_interval: u64,
+            max_level: u64,
             decay_scaled: u128,
             cost_percentage_scaled: u128,
             base_multiplier: u128,
@@ -338,7 +341,9 @@ mod config_systems {
             set!(
                 world,
                 (LevelingConfig {
-                    config_id: LEVELING_CONFIG_ID,
+                    config_id,
+                    decay_interval,
+                    max_level,
                     wheat_base_amount,
                     fish_base_amount,
                     resource_1_cost_id,
@@ -539,69 +544,11 @@ mod config_systems {
             self: @ContractState,
             world: IWorldDispatcher,
             hyperstructure_type: u8,
-            initialization_resources: Span<(u8, u128)>,
-            construction_resources: Span<(u8, u128)>,
-            coord: Coord
+            coord: Coord,
+            order: u8,
         ) -> ID {
 
             assert_caller_is_admin(world); 
-
-            let mut initialization_resources = initialization_resources;
-            let mut construction_resources = construction_resources;
-        
-            let initialization_resource_count = initialization_resources.len();
-            assert(initialization_resource_count > 0, 'resources must not be empty');
-
-            let construction_resource_count = construction_resources.len();
-            assert(construction_resource_count > 0, 'resources must not be empty');
-
-            // create initialization resource cost components
-            let initialization_resource_id: ID = world.uuid().into();
-            let mut index = 0;
-            loop {
-                match initialization_resources.pop_front() {
-                    Option::Some((resource_type, resource_amount)) => {
-                        assert(*resource_amount > 0, 'amount must not be 0');
-
-                        set!(world, (
-                            ResourceCost {
-                                entity_id: initialization_resource_id,
-                                index,
-                                resource_type: *resource_type,
-                                amount: *resource_amount
-                            }
-                        ));
-
-                        index += 1;
-                    },
-                    Option::None => {break;}
-                };
-            };
-
-
-            // create construction resource cost components
-            let construction_resource_id: ID = world.uuid().into();
-            let mut index = 0;
-            loop {
-                match construction_resources.pop_front() {
-                    Option::Some((resource_type, resource_amount)) => {
-                        assert(*resource_amount > 0, 'amount must not be 0');
-
-                        set!(world, (
-                            ResourceCost {
-                                entity_id: construction_resource_id,
-                                index,
-                                resource_type: *resource_type,
-                                amount: *resource_amount
-                            }
-                        ));
-
-                        index += 1;
-                    },
-                    Option::None => {break;}
-                };
-            };
-
 
             let hyperstructure_id: ID = world.uuid().into();
 
@@ -609,14 +556,12 @@ mod config_systems {
                 HyperStructure {
                     entity_id: hyperstructure_id,
                     hyperstructure_type,
-                    initialization_resource_id,
-                    initialization_resource_count,
-                    construction_resource_id,
-                    construction_resource_count,
-                    initialized_at: 0,
-                    completed_at: 0,
-                    coord_x: coord.x,
-                    coord_y: coord.y
+                    order,
+                },
+                Position {
+                    entity_id: hyperstructure_id,
+                    x: coord.x,
+                    y: coord.y
                 }
             ));  
 

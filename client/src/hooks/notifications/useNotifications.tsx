@@ -17,10 +17,10 @@ import { UpdatedEntity } from "../../dojo/createEntitySubscription";
 import { Position } from "../../types";
 import { getRealm } from "../../utils/realms";
 import { LABOR_CONFIG } from "@bibliothecadao/eternum";
-import { useRealm } from "../helpers/useRealm";
 import { CombatResultInterface } from "../store/useCombatHistoryStore";
 import { createCombatNotification, parseCombatEvent } from "../../utils/combat";
 import { Event, pollForEvents } from "../../services/eventPoller";
+import { LevelIndex, useLevel } from "../helpers/useLevel";
 
 export enum EventType {
   MakeOffer,
@@ -65,12 +65,18 @@ export const useNotifications = () => {
 
   const [closedNotifications, setClosedNotifications] = useState<Record<string, boolean>>({});
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const { realmEntityIds, realmEntityId } = useRealmStore();
+  const { realmEntityIds, realmEntityId, hyperstructureId } = useRealmStore();
   const realmsResources = useRealmsResource(realmEntityIds);
   const realmPositions = useRealmsPosition(realmEntityIds);
 
-  const { getRealmLevel } = useRealm();
-  const level = getRealmLevel(realmEntityId)?.level || 0;
+  const { getEntityLevel, getHyperstructureLevelBonus, getRealmLevelBonus } = useLevel();
+
+  // get harvest bonuses
+  const [realmLevel, hyperstructureLevel] = useMemo(() => {
+    const realmLevel = getEntityLevel(realmEntityId)?.level || 0;
+    const hyperstructureLevel = hyperstructureId ? getEntityLevel(hyperstructureId)?.level || 0 : undefined;
+    return [realmLevel, hyperstructureLevel];
+  }, [realmEntityId]);
 
   const [notifications, setNotifications] = useState<NotificationType[]>([]);
 
@@ -94,7 +100,15 @@ export const useNotifications = () => {
   useEffect(() => {
     const updateNotifications = () => {
       const notifications = nextBlockTimestamp
-        ? generateLaborNotifications(realmsResources, nextBlockTimestamp, level, Labor)
+        ? generateLaborNotifications(
+            realmsResources,
+            getRealmLevelBonus,
+            getHyperstructureLevelBonus,
+            nextBlockTimestamp,
+            realmLevel,
+            hyperstructureLevel || 0,
+            Labor,
+          )
         : [];
       // add only add if not already in there
       addUniqueNotifications(notifications, setNotifications);
@@ -273,8 +287,11 @@ const generateTradeNotifications = (entityUpdates: UpdatedEntity[], Status: Comp
  */
 const generateLaborNotifications = (
   resourcesPerRealm: { realmEntityId: number; resourceIds: number[] }[],
+  getRealmLevelBonus: (level: number, levelIndex: LevelIndex) => number,
+  getHyperstructureLevelBonus: (level: number, levelIndex: LevelIndex) => number,
   nextBlockTimestamp: number,
-  level: number,
+  realmLevel: number,
+  hyperstructureLevel: number,
   Labor: Component,
 ) => {
   const notifications: NotificationType[] = [];
@@ -284,6 +301,11 @@ const generateLaborNotifications = (
       const labor = getComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)])) as
         | { balance: number; last_harvest: number; multiplier: number }
         | undefined;
+      const realmLevelBonus = getRealmLevelBonus(realmLevel, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
+      const hyperstructureLevelBonus = getHyperstructureLevelBonus(
+        hyperstructureLevel,
+        isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE,
+      );
       const harvest =
         labor && nextBlockTimestamp
           ? calculateNextHarvest(
@@ -293,7 +315,8 @@ const generateLaborNotifications = (
               LABOR_CONFIG.base_labor_units,
               isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
               nextBlockTimestamp,
-              level,
+              realmLevelBonus,
+              hyperstructureLevelBonus,
             )
           : 0;
 

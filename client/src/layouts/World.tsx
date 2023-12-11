@@ -182,7 +182,8 @@ export const World = () => {
           </Route>
         </Switch>
       </ContentContainer>
-      <BottomMiddleContainer>{/* <WolrdMapLayersModule /> */}</BottomMiddleContainer>
+      {/* <BottomMiddleContainer><WolrdMapLayersModule /></BottomMiddleContainer> */}
+      <BottomMiddleContainer>{<></>}</BottomMiddleContainer>
       <BottomRightContainer>
         <ChatModule />
       </BottomRightContainer>

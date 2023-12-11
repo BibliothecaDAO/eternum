@@ -289,6 +289,7 @@ export function createOptimisticSystemCalls({
   function optimisticHarvestLabor(
     ts: number,
     levelBonus: number,
+    hyperstructureLevelBonus: number,
     systemCall: (args: HarvestLaborProps) => Promise<void>,
   ) {
     return async function (this: any, args: HarvestLaborProps) {
@@ -323,8 +324,13 @@ export function createOptimisticSystemCalls({
         balance: 0,
       };
       let resourceBalance = isFood
-        ? (laborUnitsGenerated * LABOR_CONFIG.base_food_per_cycle * labor.multiplier * levelBonus) / 100
-        : (laborUnitsGenerated * LABOR_CONFIG.base_resources_per_cycle * levelBonus) / 100;
+        ? (laborUnitsGenerated *
+            LABOR_CONFIG.base_food_per_cycle *
+            labor.multiplier *
+            levelBonus *
+            hyperstructureLevelBonus) /
+          10000
+        : (laborUnitsGenerated * LABOR_CONFIG.base_resources_per_cycle * levelBonus * hyperstructureLevelBonus) / 10000;
       Resource.addOverride(overrideId, {
         entity: resource_id,
         value: {

@@ -82,28 +82,17 @@ export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
             )}
           </div>
         )}
-        {!isLoading && (
-          <Button
-            onClick={() => {
-              offload();
-            }}
-            disabled={!hasArrivedOriginalPosition}
-            variant={hasArrivedOriginalPosition ? "success" : "danger"}
-            className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
-          >
-            {hasArrivedOriginalPosition ? `Claim` : "On the way"}
-          </Button>
-        )}
-        {isLoading && (
-          <Button
-            isLoading={true}
-            onClick={() => {}}
-            variant="danger"
-            className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
-          >
-            {}
-          </Button>
-        )}
+        <Button
+          isLoading={isLoading}
+          onClick={() => {
+            offload();
+          }}
+          disabled={!hasArrivedOriginalPosition}
+          variant={hasArrivedOriginalPosition ? "success" : "danger"}
+          className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
+        >
+          {hasArrivedOriginalPosition ? `Claim` : "On the way"}
+        </Button>
       </div>
     </div>
   );

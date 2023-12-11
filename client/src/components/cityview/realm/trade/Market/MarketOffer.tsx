@@ -94,33 +94,22 @@ export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferPr
               ))}
           </div>
         </div>
-        {!isLoading && (
-          <div className="flex flex-col justify-center relative">
-            <Button
-              disabled={!canAccept}
-              onClick={() => {
-                onAccept();
-              }}
-              variant={canAccept ? "success" : "danger"}
-              className={clsx("ml-auto p-2 !h-4 text-xxs !rounded-md", !canAccept && "mb-4")}
-            >{`Accept`}</Button>
-            {!canAccept && (
-              <div className="text-xxs text-order-giants/70 w-min absolute whitespace-nowrap right-0 bottom-0">
-                Insufficient resources
-              </div>
-            )}
-          </div>
-        )}
-        {isLoading && (
+        <div className="flex flex-col justify-center relative">
           <Button
-            isLoading={true}
-            onClick={() => {}}
-            variant="danger"
-            className="ml-auto p-2 !h-4 text-xxs !rounded-md"
-          >
-            {}
-          </Button>
-        )}
+            isLoading={isLoading}
+            disabled={!canAccept}
+            onClick={() => {
+              onAccept();
+            }}
+            variant={canAccept ? "success" : "danger"}
+            className={clsx("ml-auto p-2 !h-4 text-xxs !rounded-md", !canAccept && "mb-4")}
+          >{`Accept`}</Button>
+          {!canAccept && (
+            <div className="text-xxs text-order-giants/70 w-min absolute whitespace-nowrap right-0 bottom-0">
+              Insufficient resources
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

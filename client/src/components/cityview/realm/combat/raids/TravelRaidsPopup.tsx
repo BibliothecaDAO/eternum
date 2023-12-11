@@ -74,28 +74,17 @@ export const TravelRaidsPopup = ({ selectedRaider, onClose }: RoadBuildPopupProp
                   {`Cancel`}
                 </Button>
               )}
-              {!loading && (
-                <Button
-                  className="!px-[6px] !py-[2px] text-xxs ml-auto"
-                  onClick={onTravel}
-                  disabled={!selectedEntityId}
-                  variant="outline"
-                  withoutSound
-                >
-                  {`Travel`}
-                </Button>
-              )}
-              {loading && (
-                <Button
-                  className="!px-[6px] !py-[2px] text-xxs ml-auto"
-                  onClick={() => {}}
-                  isLoading={true}
-                  variant="outline"
-                  withoutSound
-                >
-                  {}
-                </Button>
-              )}
+
+              <Button
+                className="!px-[6px] !py-[2px] text-xxs ml-auto"
+                isLoading={loading}
+                onClick={onTravel}
+                disabled={!selectedEntityId}
+                variant="outline"
+                withoutSound
+              >
+                {`Travel`}
+              </Button>
             </div>
           </div>
         </div>

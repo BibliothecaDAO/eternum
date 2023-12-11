@@ -7,7 +7,7 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import { useRoute, useLocation } from "wouter";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { RoadsPanel } from "./trade/Roads/RoadsPanel";
-import { useRealm } from "../../../hooks/helpers/useRealm";
+import { useLevel } from "../../../hooks/helpers/useLevel";
 
 export type Order = {
   orderId: number;
@@ -45,8 +45,8 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
     }
   }, [params]);
 
-  const { getRealmLevel } = useRealm();
-  const realm_level = getRealmLevel(realmEntityId)?.level;
+  const { getEntityLevel } = useLevel();
+  const realm_level = getEntityLevel(realmEntityId)?.level;
 
   const tabs = useMemo(
     () => [

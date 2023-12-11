@@ -8,7 +8,7 @@ import { ResourcesIds } from "@bibliothecadao/eternum";
 import { LaborBuildPopup } from "./LaborBuild";
 import { useRoute } from "wouter";
 import { getRealm } from "../../../../utils/realms";
-import { useRealm } from "../../../../hooks/helpers/useRealm";
+import { useLevel } from "../../../../hooks/helpers/useLevel";
 
 type LaborPanelProps = {
   type?: "all" | "food" | "mines";
@@ -71,8 +71,8 @@ export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
   }, [realm]);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
-  const { getRealmLevel } = useRealm();
-  const realm_level = getRealmLevel(realmEntityId)?.level;
+  const { getEntityLevel } = useLevel();
+  const realm_level = getEntityLevel(realmEntityId)?.level;
 
   return (
     <div className="flex flex-col">

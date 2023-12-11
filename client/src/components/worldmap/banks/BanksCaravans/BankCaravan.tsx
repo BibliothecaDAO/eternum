@@ -202,24 +202,15 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
             </div>
           </div>
         )}
-        {!isLoading && isMine && (
+        {isMine && (
           <Button
             onClick={onClick}
+            isLoading={isLoading}
             disabled={!hasArrived}
             variant={hasArrived ? "success" : "danger"}
             className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
           >
             {hasArrived ? `Swap And Return` : "On the way"}
-          </Button>
-        )}
-        {isLoading && isMine && (
-          <Button
-            isLoading={true}
-            onClick={() => {}}
-            variant="danger"
-            className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
-          >
-            {}
           </Button>
         )}
       </div>

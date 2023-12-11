@@ -4,7 +4,6 @@ import {
   AttachCaravanProps,
   BuildLaborProps,
   CancelFungibleOrderProps,
-  CompleteHyperStructureProps,
   CreateCaravanProps,
   CreateFreeTransportUnitProps,
   CreateOrderProps,
@@ -12,8 +11,6 @@ import {
   CreateRoadProps,
   FeedHyperstructureAndTravelBackPropos,
   HarvestLaborProps,
-  InitializeHyperstructuresAndTravelProps,
-  InitializeHyperstructuresProps,
   MintResourcesProps,
   PurchaseLaborProps,
   SendResourcesToLocationProps,
@@ -24,7 +21,8 @@ import {
   DetachSoldiersProps,
   AttackProps,
   StealProps,
-  LevelUpProps,
+  LevelUpRealmProps,
+  LevelUpHyperstructureProps,
   SetAddressNameProps,
   MergeSoldiersProps,
   CreateAndMergeSoldiersProps,
@@ -179,7 +177,7 @@ export class EternumProvider extends RPCProvider {
   }
 
   public async accept_order(props: AcceptOrderProps) {
-    const { taker_id, trade_id, donkeys_quantity, signer, caravan_id } = props;
+    const { taker_id, trade_id, donkeys_quantity, caravan_id, signer } = props;
 
     let transactions: Call[] = [];
     let final_caravan_id = caravan_id;
@@ -313,6 +311,7 @@ export class EternumProvider extends RPCProvider {
       regions,
       wonder,
       order,
+      order_hyperstructure_id,
       position,
       resources,
       signer,
@@ -336,6 +335,7 @@ export class EternumProvider extends RPCProvider {
           regions,
           wonder,
           order,
+          order_hyperstructure_id,
           2,
           position.x,
           position.y,
@@ -391,8 +391,8 @@ export class EternumProvider extends RPCProvider {
       donkeys_quantity,
       destination_coord_x,
       destination_coord_y,
-      signer,
       caravan_id,
+      signer,
     } = props;
 
     let transactions: Call[] = [];
@@ -475,13 +475,13 @@ export class EternumProvider extends RPCProvider {
   };
 
   public feed_hyperstructure_and_travel_back = async (props: FeedHyperstructureAndTravelBackPropos) => {
-    const { entity_id, resources, hyperstructure_id, destination_coord_x, destination_coord_y, signer } = props;
+    const { entity_id, inventoryIndex, hyperstructure_id, destination_coord_x, destination_coord_y, signer } = props;
 
     const tx = await this.executeMulti(signer, [
       {
         contractAddress: getContractByName(this.manifest, "resource_systems"),
-        entrypoint: "transfer",
-        calldata: [this.getWorldAddress(), entity_id, hyperstructure_id, resources.length / 2, ...resources],
+        entrypoint: "transfer_item",
+        calldata: [this.getWorldAddress(), entity_id, inventoryIndex, hyperstructure_id],
       },
       {
         contractAddress: getContractByName(this.manifest, "travel_systems"),
@@ -493,50 +493,6 @@ export class EternumProvider extends RPCProvider {
       retryInterval: 500,
     });
   };
-
-  public async initialize_hyperstructure_and_travel_back(props: InitializeHyperstructuresAndTravelProps) {
-    const { entity_id, hyperstructure_id, destination_coord_x, destination_coord_y, signer } = props;
-
-    const tx = await this.executeMulti(signer, [
-      {
-        contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
-        entrypoint: "initialize",
-        calldata: [this.getWorldAddress(), entity_id, hyperstructure_id],
-      },
-      {
-        contractAddress: getContractByName(this.manifest, "travel_systems"),
-        entrypoint: "travel",
-        calldata: [this.getWorldAddress(), entity_id, destination_coord_x, destination_coord_y],
-      },
-    ]);
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
-  }
-
-  public async initialize_hyperstructure(props: InitializeHyperstructuresProps) {
-    const { entity_id, hyperstructure_id, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
-      entrypoint: "initialize",
-      calldata: [this.getWorldAddress(), entity_id, hyperstructure_id],
-    });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
-  }
-
-  public async complete_hyperstructure(props: CompleteHyperStructureProps) {
-    const { hyperstructure_id, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
-      entrypoint: "complete",
-      calldata: [this.getWorldAddress(), hyperstructure_id],
-    });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
-  }
 
   public async travel(props: TravelProps) {
     const { travelling_entity_id, destination_coord_x, destination_coord_y, signer } = props;
@@ -598,11 +554,23 @@ export class EternumProvider extends RPCProvider {
     });
   }
 
-  public async level_up(props: LevelUpProps) {
+  public async level_up_hyperstructure(props: LevelUpHyperstructureProps) {
+    const { hyperstructure_id, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "leveling_systems"),
+      entrypoint: "level_up_hyperstructure",
+      calldata: [this.getWorldAddress(), hyperstructure_id],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async level_up_realm(props: LevelUpRealmProps) {
     const { realm_entity_id, signer } = props;
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "leveling_systems"),
-      entrypoint: "level_up",
+      entrypoint: "level_up_realm",
       calldata: [this.getWorldAddress(), realm_entity_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {

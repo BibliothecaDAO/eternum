@@ -18,11 +18,12 @@ export const calculateProductivity = (
   resources_per_cycle: number,
   multiplier: number,
   cycle_length: number,
-  levelBonus: number,
+  realmLevelBonus: number,
+  hyperstructureLevelBonus: number,
 ): number => {
   let productivity = (resources_per_cycle * multiplier) / cycle_length;
   // in hours
-  return ((productivity * levelBonus) / 100) * 3600;
+  return ((productivity * realmLevelBonus * hyperstructureLevelBonus) / 10000) * 3600;
 };
 
 // calculates how much you will have when you click on harvest
@@ -33,12 +34,13 @@ export const calculateNextHarvest = (
   cycleLengthInSeconds: number,
   productionPerCycle: number,
   nextBlockTimeInSeconds: number,
-  levelBonus: number,
+  realmLevelBonus: number,
+  hyperstructureLevelBonus: number,
 ): number => {
   if (nextBlockTimeInSeconds <= lastHarvestTimestamp) return 0;
 
   const harvestSeconds = Math.min(balance, nextBlockTimeInSeconds) - lastHarvestTimestamp;
   const nextHarvestUnits = Math.floor(harvestSeconds / cycleLengthInSeconds);
 
-  return (nextHarvestUnits * productionPerCycle * multiplier * levelBonus) / 100;
+  return (nextHarvestUnits * productionPerCycle * multiplier * realmLevelBonus * hyperstructureLevelBonus) / 10000;
 };

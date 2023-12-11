@@ -641,7 +641,6 @@ mod resource_systems {
             item_id
         }
 
-
         /// Remove all items from inventory
         fn clear(
             world: IWorldDispatcher, entity_id: ID
@@ -679,7 +678,6 @@ mod resource_systems {
             }
 
             deleted_item_ids.span()
-
         }
     }
     

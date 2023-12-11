@@ -1,8 +1,9 @@
 import { Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import { Position, UIPosition } from "../../types";
-import hyperstructureData from "../../data/hyperstructures.json";
 import { getContractPositionFromRealPosition, getEntityIdFromKeys } from "../../utils/utils";
+import { useLevel } from "./useLevel";
+import { getHyperstructureResources } from "@bibliothecadao/eternum";
 
 export interface HyperStructureInterface {
   hyperstructureId: number;
@@ -13,40 +14,40 @@ export interface HyperStructureInterface {
     currentAmount: number;
     completeAmount: number;
   }[];
-  initialzationResources: {
-    resourceId: number;
-    amount: number;
-  }[];
-  initialized: boolean;
   completed: boolean;
   position: Position;
   uiPosition: UIPosition;
+  level: number;
 }
 
 export const useHyperstructure = () => {
   const {
     setup: {
-      components: { HyperStructure, Resource, Position },
+      components: { HyperStructure, Resource, Position, Realm },
     },
   } = useDojo();
 
+  const { getEntityLevel } = useLevel();
+
   const getHyperstructure = (orderId: number, uiPosition: UIPosition): HyperStructureInterface | undefined => {
     const position = getContractPositionFromRealPosition({ x: uiPosition.x, y: uiPosition.z });
-    const hypestructureId = runQuery([HasValue(HyperStructure, { coord_x: position.x, coord_y: position.y })]);
+    const hypestructureId = runQuery([Has(HyperStructure), HasValue(Position, position)]);
 
     if (hypestructureId.size > 0) {
       let hyperstructureId = Array.from(hypestructureId)[0];
+      const level = getEntityLevel(hyperstructureId);
+
       let hyperstructure = getComponentValue(HyperStructure, hyperstructureId);
 
       if (hyperstructure) {
         let hyperstructureResources: { resourceId: number; currentAmount: number; completeAmount: number }[] = [];
-        hyperstructureData[orderId - 1].resources.completion.forEach((resource) => {
+        getHyperstructureResources(level?.level || 0).forEach((resource) => {
           let hyperstructureResource = getComponentValue(
             Resource,
-            getEntityIdFromKeys([BigInt(hyperstructureId), BigInt(resource.resourceType)]),
+            getEntityIdFromKeys([BigInt(hyperstructureId), BigInt(resource.resourceId)]),
           );
           hyperstructureResources.push({
-            resourceId: resource.resourceType,
+            resourceId: resource.resourceId,
             currentAmount: Math.min(hyperstructureResource?.balance ?? 0, resource.amount),
             completeAmount: resource.amount,
           });
@@ -66,16 +67,11 @@ export const useHyperstructure = () => {
           orderId,
           progress,
           hyperstructureResources,
-          initialzationResources: hyperstructureData[orderId - 1].resources.initialization.map((resource) => {
-            return {
-              resourceId: resource.resourceType, // Fixed: changed semicolon to comma
-              amount: resource.amount,
-            };
-          }),
-          initialized: hyperstructure.initialized_at > 0,
-          completed: hyperstructure.completed_at > 0,
           position,
           uiPosition,
+          // completed means max level
+          completed: level?.level === 4,
+          level: level?.level || 0,
         };
       }
     }
@@ -85,8 +81,20 @@ export const useHyperstructure = () => {
     return Array.from(runQuery([Has(HyperStructure), Has(Position)]));
   };
 
+  const getHyperstructureIdByOrder = (orderId: number): number | undefined => {
+    const ids = Array.from(runQuery([HasValue(HyperStructure, { order: orderId }), Has(Position)]));
+    return ids.length === 1 ? ids[0] : undefined;
+  };
+
+  const getHyperstructureIdByRealmEntityId = (realmEntityId: number): number | undefined => {
+    const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
+    return realm ? getHyperstructureIdByOrder(realm.order) : undefined;
+  };
+
   return {
     getHyperstructure,
     getHyperstructureIds,
+    getHyperstructureIdByRealmEntityId,
+    getHyperstructureIdByOrder,
   };
 };

@@ -5,7 +5,7 @@ import { useRoute, useLocation } from "wouter";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { RaidsPanel } from "./combat/raids/RaidsPanel";
 import { DefencePanel } from "./combat/defence/DefencePanel";
-import { useRealm } from "../../../hooks/helpers/useRealm";
+import { useLevel } from "../../../hooks/helpers/useLevel";
 
 export type Order = {
   orderId: number;
@@ -93,8 +93,8 @@ export const RealmCombatComponent = ({}: RealmCombatComponentProps) => {
     [selectedTab],
   );
 
-  const { getRealmLevel } = useRealm();
-  const realm_level = getRealmLevel(realmEntityId)?.level;
+  const { getEntityLevel } = useLevel();
+  const realm_level = getEntityLevel(realmEntityId)?.level;
 
   return (
     <>

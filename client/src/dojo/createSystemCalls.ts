@@ -8,7 +8,6 @@ import {
   AttachCaravanProps,
   BuildLaborProps,
   CancelFungibleOrderProps,
-  CompleteHyperStructureProps,
   CreateCaravanProps,
   CreateFreeTransportUnitProps,
   CreateOrderProps,
@@ -17,7 +16,6 @@ import {
   FeedHyperstructureAndTravelBackPropos,
   HarvestLaborProps,
   HarvestAllLaborProps,
-  InitializeHyperstructuresAndTravelProps,
   MintResourcesProps,
   PurchaseLaborProps,
   SendResourcesToLocationProps,
@@ -28,7 +26,8 @@ import {
   DetachSoldiersProps,
   AttackProps,
   StealProps,
-  LevelUpProps,
+  LevelUpRealmProps,
+  LevelUpHyperstructureProps,
   SetAddressNameProps,
   MergeSoldiersProps,
   CreateAndMergeSoldiersProps,
@@ -108,21 +107,6 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.feed_hyperstructure_and_travel_back(props)));
   };
 
-  const initialize_hyperstructure_and_travel_back = async (props: InitializeHyperstructuresAndTravelProps) => {
-    setComponentsFromEvents(
-      contractComponents,
-      getEvents(await provider.initialize_hyperstructure_and_travel_back(props)),
-    );
-  };
-
-  const initialize_hyperstructure = async (props: InitializeHyperstructuresAndTravelProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.initialize_hyperstructure(props)));
-  };
-
-  const complete_hyperstructure = async (props: CompleteHyperStructureProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.complete_hyperstructure(props)));
-  };
-
   const send_resources_to_location = async (props: SendResourcesToLocationProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.send_resources_to_location(props)));
   };
@@ -147,8 +131,12 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.detach_soldiers(props)));
   };
 
-  const level_up = async (props: LevelUpProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.level_up(props)));
+  const level_up_realm = async (props: LevelUpRealmProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.level_up_realm(props)));
+  };
+
+  const level_up_hyperstructure = async (props: LevelUpHyperstructureProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.level_up_hyperstructure(props)));
   };
 
   const set_address_name = async (props: SetAddressNameProps) => {
@@ -187,9 +175,10 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
 
   return {
     swap_bank_and_travel_back,
-    create_and_merge_soldiers,
     set_address_name,
-    level_up,
+    create_and_merge_soldiers,
+    level_up_realm,
+    level_up_hyperstructure,
     isLive,
     create_soldiers,
     detach_soldiers,
@@ -213,9 +202,6 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     transfer_resources,
     send_resources_to_location,
     feed_hyperstructure_and_travel_back,
-    initialize_hyperstructure_and_travel_back,
-    initialize_hyperstructure,
-    complete_hyperstructure,
     travel,
     merge_soldiers,
     heal_soldiers,

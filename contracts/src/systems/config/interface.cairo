@@ -36,7 +36,9 @@ trait ICombatConfig<TContractState> {
         self: @TContractState, 
         world: IWorldDispatcher, 
         config_id: u128, 
-        stealing_trial_count: u32
+        stealing_trial_count: u32,
+        wheat_burn_per_soldier: u128,
+        fish_burn_per_soldier: u128,
     );
 
     fn set_soldier_config(
@@ -117,9 +119,8 @@ trait ITransportConfig<TContractState> {
 #[starknet::interface]
 trait IHyperstructureConfig<TContractState> {
     fn create_hyperstructure(
-        self: @TContractState, world: IWorldDispatcher, 
-        hyperstructure_type: u8, initialization_resources: Span<(u8, u128)>, 
-        construction_resources: Span<(u8, u128)>, coord: Coord
+        self: @TContractState, world: IWorldDispatcher, hyperstructure_type: u8,
+        coord: Coord, order: u8
     ) -> ID;
 
 }
@@ -127,7 +128,11 @@ trait IHyperstructureConfig<TContractState> {
 #[starknet::interface]
 trait ILevelingConfig<TContractState> {
     fn set_leveling_config(
-        self: @TContractState, world: IWorldDispatcher,
+        self: @TContractState, 
+        world: IWorldDispatcher,
+        config_id: u128,
+        decay_interval: u64,
+        max_level: u64,
         decay_scaled: u128,
         cost_percentage_scaled: u128,
         base_multiplier: u128,
@@ -135,7 +140,7 @@ trait ILevelingConfig<TContractState> {
         fish_base_amount: u128,
         resource_1_costs: Span<(u8, u128)>,
         resource_2_costs: Span<(u8, u128)>,
-        resource_3_costs: Span<(u8, u128)>
+        resource_3_costs: Span<(u8, u128)>,
     );
 }
 

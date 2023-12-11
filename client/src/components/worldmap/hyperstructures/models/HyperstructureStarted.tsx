@@ -33,7 +33,7 @@ export default function HyperstructureStarted(
   };
 
   useEffect(() => {
-    if (!hyperstructure?.initialized) {
+    if (!(hyperstructure?.level !== 0)) {
       Object.values(uninitializedMaterials).forEach((material) => {
         material.opacity = 0.2;
         material.transparent = true;
@@ -43,31 +43,27 @@ export default function HyperstructureStarted(
     }
   }, [hyperstructure, uninitializedMaterials]);
 
+  const currentLevel = hyperstructure?.level || 0;
+
   return (
     <group {...props} dispose={null}>
       <group name="Scene">
-        {!hyperstructure?.initialized && (
-          <Html distanceFactor={10}>
-            <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">Not Initialized</div>
-          </Html>
-        )}
-        {hyperstructure?.initialized && (
-          <Html position={[0, -1.1, 0]} distanceFactor={10}>
-            <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
-              Progress: {hyperstructure?.progress.toFixed(2)}%
-            </div>
-          </Html>
-        )}
+        <Html position={[0, -1.1, 0]} distanceFactor={10}>
+          <div className="p-2 text-center text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
+            <div> Level {currentLevel}</div>
+            <div> Progress: {hyperstructure?.progress.toFixed(2)}%</div>
+          </div>
+        </Html>
         <mesh
           name="tower_initialized"
           geometry={nodes.tower_initialized.geometry}
-          material={hyperstructure?.initialized ? materials.Stone_Rough : uninitializedMaterials.Stone_Rough}
+          material={currentLevel !== 0 ? materials.Stone_Rough : uninitializedMaterials.Stone_Rough}
           position={[0, -0.096, -0.634]}
         />
         <mesh
           name="tower_initialized_scaffolds"
           geometry={nodes.tower_initialized_scaffolds.geometry}
-          material={hyperstructure?.initialized ? materials.Wood : uninitializedMaterials.Wood}
+          material={currentLevel !== 0 ? materials.Wood : uninitializedMaterials.Wood}
           position={[0.118, -0.001, -1.24]}
           rotation={[-Math.PI, 0.719, -Math.PI]}
         />

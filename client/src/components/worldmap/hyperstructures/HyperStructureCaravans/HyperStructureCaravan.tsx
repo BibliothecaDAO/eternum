@@ -15,9 +15,9 @@ import { CAPACITY_PER_DONKEY } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@latticexyz/recs";
 import { useDojo } from "../../../../DojoContext";
 import Button from "../../../../elements/Button";
-import { Resource } from "../../../../types";
 import { HyperStructureInterface, useHyperstructure } from "../../../../hooks/helpers/useHyperstructure";
 import useUIStore from "../../../../hooks/store/useUIStore";
+import { useResources } from "../../../../hooks/helpers/useResources";
 
 type CaravanProps = {
   caravan: CaravanInterface;
@@ -35,13 +35,12 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
 
   const [isLoading, setIsLoading] = useState(false);
   const hasArrived = arrivalTime !== undefined && nextBlockTimestamp !== undefined && arrivalTime <= nextBlockTimestamp;
-  const isInitialized = hyperstructureData.initialized;
 
   const {
     account: { account },
     setup: {
-      systemCalls: { initialize_hyperstructure_and_travel_back, feed_hyperstructure_and_travel_back },
-      components: { Resource, CaravanMembers, EntityOwner, ForeignKey, Position },
+      systemCalls: { feed_hyperstructure_and_travel_back },
+      components: { CaravanMembers, EntityOwner, ForeignKey, Position },
     },
   } = useDojo();
 
@@ -62,24 +61,15 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
   }, [caravan]);
 
   const transferAndReturn = async () => {
-    if (isInitialized) {
-      await feed_hyperstructure_and_travel_back({
-        signer: account,
-        entity_id: caravan.caravanId,
-        hyperstructure_id: hyperstructureData.hyperstructureId,
-        resources: resources.flatMap((resource) => Object.values(resource)),
-        destination_coord_x: returnPosition?.x || 0,
-        destination_coord_y: returnPosition?.y || 0,
-      });
-    } else {
-      await initialize_hyperstructure_and_travel_back({
-        signer: account,
-        entity_id: caravan.caravanId,
-        hyperstructure_id: hyperstructureData.hyperstructureId,
-        destination_coord_x: returnPosition?.x || 0,
-        destination_coord_y: returnPosition?.y || 0,
-      });
-    }
+    await feed_hyperstructure_and_travel_back({
+      signer: account,
+      entity_id: caravan.caravanId,
+      hyperstructure_id: hyperstructureData.hyperstructureId,
+      inventoryIndex: 0,
+      resources: resources.flatMap((resource) => Object.values(resource)),
+      destination_coord_x: returnPosition?.x || 0,
+      destination_coord_y: returnPosition?.y || 0,
+    });
   };
 
   const updateHyperStructure = () => {
@@ -95,20 +85,11 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
     setIsLoading(false);
   };
 
+  const { getResourcesFromInventory } = useResources();
+
   const resources = useMemo(() => {
-    return Array(22)
-      .fill(0)
-      .map((_, i: number) => {
-        const resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(caravan.caravanId), BigInt(i + 1)]));
-        if (resource && resource.balance > 0) {
-          return {
-            resourceId: i + 1,
-            amount: resource?.balance,
-          };
-        }
-      })
-      .filter(Boolean) as Resource[];
-  }, [caravan]);
+    return getResourcesFromInventory(caravan.caravanId)?.resources || [];
+  }, [caravan.caravanId]);
 
   // capacity
   let resourceWeight = useMemo(() => {
@@ -161,24 +142,15 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
                 ),
             )}
         </div>
-        {!isLoading && isMine && (
+        {isMine && (
           <Button
             onClick={onClick}
+            isLoading={isLoading}
             disabled={!hasArrived}
             variant={hasArrived ? "success" : "danger"}
             className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
           >
-            {hasArrived ? (isInitialized ? `Transfer And Return` : `Initialize And Return`) : "On the way"}
-          </Button>
-        )}
-        {isLoading && isMine && (
-          <Button
-            isLoading={true}
-            onClick={() => {}}
-            variant="danger"
-            className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
-          >
-            {}
+            {hasArrived ? `Transfer And Return` : "On the way"}
           </Button>
         )}
       </div>

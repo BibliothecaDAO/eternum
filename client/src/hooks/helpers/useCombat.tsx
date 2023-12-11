@@ -4,6 +4,7 @@ import { Position } from "../../types";
 import { useEntityQuery } from "@dojoengine/react";
 import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys } from "../../utils/utils";
+import { useHyperstructure } from "./useHyperstructure";
 
 export interface CombatInfo {
   entityId: number;
@@ -20,6 +21,7 @@ export interface CombatInfo {
   entityOwnerId?: number | undefined;
   locationRealmEntityId?: number | undefined;
   originRealmId?: number | undefined;
+  hyperstructureId: number | undefined;
 }
 
 export function useCombat() {
@@ -42,6 +44,8 @@ export function useCombat() {
   } = useDojo();
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
+
+  const { getHyperstructureIdByRealmEntityId } = useHyperstructure();
 
   const getRealmWatchTowerId = (realmEntityId: number): number | undefined => {
     // find realm watchtower
@@ -121,6 +125,9 @@ export function useCombat() {
       const arrivalTime = getComponentValue(ArrivalTime, entityIndex);
       const position = getComponentValue(Position, entityIndex);
       const entityOwner = getComponentValue(EntityOwner, entityIndex);
+      const hyperstructureId = entityOwner
+        ? getHyperstructureIdByRealmEntityId(entityOwner.entity_owner_id)
+        : undefined;
       const locationRealmEntityIds = position ? Array.from(runQuery([Has(Realm), HasValue(Position, position)])) : [];
       const originRealm = entityOwner
         ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]))
@@ -144,6 +151,7 @@ export function useCombat() {
         homePosition,
         locationRealmEntityId: locationRealmEntityIds.length === 1 ? locationRealmEntityIds[0] : undefined,
         originRealmId: originRealm?.realm_id,
+        hyperstructureId,
       };
     });
   };
