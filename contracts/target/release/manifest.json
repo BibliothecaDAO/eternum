@@ -1067,10 +1067,12 @@
         "ArrivalTime",
         "Capacity",
         "EntityOwner",
+        "HyperStructure",
         "Movable",
         "Owner",
         "Position",
         "Quantity",
+        "Realm",
         "Weight"
       ],
       "writes": [
@@ -1088,7 +1090,7 @@
     {
       "name": "combat_systems",
       "address": "0x778fd3e137dc0e58d94d599167aa431332b8529f9bfc8efd70a7ea4e9c74247",
-      "class_hash": "0x5679ad4ac6cd14be5c87d0243a998ad9efccc38e7cc0508c90fd93d5dbb683f",
+      "class_hash": "0x3c3300a6b359b7bc652e792aa508b3a8b1e3026a25916420f05fe2311d41c37",
       "abi": [
         {
           "type": "impl",
@@ -1395,6 +1397,7 @@
         "EntityOwner",
         "Health",
         "HealthConfig",
+        "HyperStructure",
         "Inventory",
         "Level",
         "LevelingConfig",
@@ -1429,7 +1432,7 @@
     {
       "name": "config_systems",
       "address": "0x74c3dd7b64a0c8ad6a27276b9ec6a628774028734ea46cf3970ef185e35247d",
-      "class_hash": "0x22cf5c1896ad4345ece35aaf2ffdcbfc5c4e2646686fd3eb0ad094bef98f207",
+      "class_hash": "0x41a0d94b36b7418400e1716d5775e0b01c4538a8e42f9afb72efab34d688244",
       "abi": [
         {
           "type": "impl",
@@ -1591,6 +1594,14 @@
                 {
                   "name": "stealing_trial_count",
                   "type": "core::integer::u32"
+                },
+                {
+                  "name": "wheat_burn_per_soldier",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "fish_burn_per_soldier",
+                  "type": "core::integer::u128"
                 }
               ],
               "outputs": [],
@@ -1702,6 +1713,18 @@
                 {
                   "name": "world",
                   "type": "dojo::world::IWorldDispatcher"
+                },
+                {
+                  "name": "config_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "decay_interval",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "max_level",
+                  "type": "core::integer::u64"
                 },
                 {
                   "name": "decay_scaled",
@@ -1955,16 +1978,12 @@
                   "type": "core::integer::u8"
                 },
                 {
-                  "name": "initialization_resources",
-                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
-                },
-                {
-                  "name": "construction_resources",
-                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
-                },
-                {
                   "name": "coord",
                   "type": "eternum::models::position::Coord"
+                },
+                {
+                  "name": "order",
+                  "type": "core::integer::u8"
                 }
               ],
               "outputs": [
@@ -2112,126 +2131,9 @@
       "computed": []
     },
     {
-      "name": "hyperstructure_systems",
-      "address": "0xfdcafc26f1d866ad585cadfb0fb177e4512d03f6020e67adadb5c66690d9c2",
-      "class_hash": "0x2270543d25a4aba5b0fd5f1adb280bb34dc67564f999c6d2155aca455ba287b",
-      "abi": [
-        {
-          "type": "impl",
-          "name": "Upgradeable",
-          "interface_name": "dojo::upgradable::IUpgradeable"
-        },
-        {
-          "type": "interface",
-          "name": "dojo::upgradable::IUpgradeable",
-          "items": [
-            {
-              "type": "function",
-              "name": "upgrade",
-              "inputs": [
-                {
-                  "name": "new_class_hash",
-                  "type": "core::starknet::class_hash::ClassHash"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            }
-          ]
-        },
-        {
-          "type": "impl",
-          "name": "HyperstructureSystemsImpl",
-          "interface_name": "eternum::systems::hyperstructure::interface::IHyperstructureSystems"
-        },
-        {
-          "type": "struct",
-          "name": "dojo::world::IWorldDispatcher",
-          "members": [
-            {
-              "name": "contract_address",
-              "type": "core::starknet::contract_address::ContractAddress"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::systems::hyperstructure::interface::IHyperstructureSystems",
-          "items": [
-            {
-              "type": "function",
-              "name": "initialize",
-              "inputs": [
-                {
-                  "name": "world",
-                  "type": "dojo::world::IWorldDispatcher"
-                },
-                {
-                  "name": "entity_id",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "hyperstructure_id",
-                  "type": "core::integer::u128"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            },
-            {
-              "type": "function",
-              "name": "complete",
-              "inputs": [
-                {
-                  "name": "world",
-                  "type": "dojo::world::IWorldDispatcher"
-                },
-                {
-                  "name": "hyperstructure_id",
-                  "type": "core::integer::u128"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "view"
-            }
-          ]
-        },
-        {
-          "type": "function",
-          "name": "dojo_resource",
-          "inputs": [],
-          "outputs": [
-            {
-              "type": "core::felt252"
-            }
-          ],
-          "state_mutability": "view"
-        },
-        {
-          "type": "event",
-          "name": "eternum::systems::hyperstructure::contracts::hyperstructure_systems::Event",
-          "kind": "enum",
-          "variants": []
-        }
-      ],
-      "reads": [
-        "HyperStructure",
-        "Owner",
-        "Position",
-        "Resource",
-        "ResourceCost"
-      ],
-      "writes": [
-        "HyperStructure",
-        "Position",
-        "Resource"
-      ],
-      "computed": []
-    },
-    {
       "name": "labor_systems",
       "address": "0x5b3b02ba50cfb46af86c20d1eca1bbff5fe82ff2f8985aefc413267a5d05b00",
-      "class_hash": "0x614bd307f8a0505319a1405c175315e1142df4ea827aebaa02ddc4a64a39537",
+      "class_hash": "0x6b380bf512cdc1cf59259b791f5a37d6f6361ad8c2f99b31ffb4dccace49f49",
       "abi": [
         {
           "type": "impl",
@@ -2368,6 +2270,7 @@
         }
       ],
       "reads": [
+        "HyperStructure",
         "Labor",
         "LaborAuction",
         "LaborConfig",
@@ -2390,7 +2293,7 @@
     {
       "name": "leveling_systems",
       "address": "0x81edcebc0097b53ae8db567565eb5c5d9e8a9190a8a80411547676f24361ca",
-      "class_hash": "0x46fbedd7b1013503ce8c1a832b55372bb42bb123b7870a9c5c2764b34fd85de",
+      "class_hash": "0x2bbf1f389e3358f666625ae8cbbbecab248d2a5acd2695fe1a67bd729fe19c1",
       "abi": [
         {
           "type": "impl",
@@ -2436,7 +2339,7 @@
           "items": [
             {
               "type": "function",
-              "name": "level_up",
+              "name": "level_up_realm",
               "inputs": [
                 {
                   "name": "world",
@@ -2444,6 +2347,22 @@
                 },
                 {
                   "name": "realm_entity_id",
+                  "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "level_up_hyperstructure",
+              "inputs": [
+                {
+                  "name": "world",
+                  "type": "dojo::world::IWorldDispatcher"
+                },
+                {
+                  "name": "hyperstructure_id",
                   "type": "core::integer::u128"
                 }
               ],
@@ -2471,6 +2390,7 @@
         }
       ],
       "reads": [
+        "HyperStructure",
         "Level",
         "LevelingConfig",
         "Owner",
@@ -2578,7 +2498,7 @@
     {
       "name": "resource_systems",
       "address": "0x2dab8013b2dea3f5b37f31db94a5136843408efa04a966a6587f65056b1ef40",
-      "class_hash": "0x42a3bc781c5d7c67ffdc626daf2710d5e2f6637918fb26f7f1f28098d443cbf",
+      "class_hash": "0x32b5afdd286a97b8e143416ea36fc27281cb59d694716657df956557c261f0e",
       "abi": [
         {
           "type": "impl",
@@ -2943,7 +2863,7 @@
     {
       "name": "test_realm_systems",
       "address": "0x141b54c5560368787c28e61f9c9542e3aaf26a3f426263cb0dcde36339eec30",
-      "class_hash": "0x786015ab1f9bd8e8c2e2175ca8c6d52d415d252a000e274db115dbba9699e4",
+      "class_hash": "0x40294d32c5ba9e581f52a80b45ca53c221f02aeb9227e6ba115840a88818f76",
       "abi": [
         {
           "type": "impl",
@@ -3052,6 +2972,10 @@
                 {
                   "name": "order",
                   "type": "core::integer::u8"
+                },
+                {
+                  "name": "order_hyperstructure_id",
+                  "type": "core::integer::u128"
                 },
                 {
                   "name": "position",
@@ -3208,7 +3132,7 @@
     {
       "name": "trade_systems",
       "address": "0x7b54643f42a1c4298fe5e465105ccbee30ba505f3bedaa90f4951f9f15be8f0",
-      "class_hash": "0x53b81301d57f4d449425a7baf06926d670421e917cf815e95ea2db2f88fd5be",
+      "class_hash": "0x1b57a844c6bc5bdc49f1b8c1c9cdf50f18c0f49b459db341ef5702e88505022",
       "abi": [
         {
           "type": "impl",
@@ -3382,7 +3306,7 @@
     {
       "name": "transport_unit_systems",
       "address": "0x75eb7b6012dbb91d59aa20808de28666f8207478e08f4e4ee101bdb0ac89e63",
-      "class_hash": "0x7830200083cda593f82cb1f196d6c3d70771b6b082a87249ae0f4f6a6ba219b",
+      "class_hash": "0x62573b03f1a3fca6b5a4bf5ed5b8ccbeae66b14f56eab3e80a086d69c270143",
       "abi": [
         {
           "type": "impl",
@@ -3495,7 +3419,7 @@
     {
       "name": "travel_systems",
       "address": "0x8fa2df40a28c2ffb7a99267c1a67318451da3a5d39cadb18577a2d09856b0e",
-      "class_hash": "0x6c017e3dc7a261370471d33e66215837a31db640a22eac36d7b031e9ce58b79",
+      "class_hash": "0x30c6f11bef79ebbd0d68b4c0c578f52665c1aa6f212b4815c6adf88a2655358",
       "abi": [
         {
           "type": "impl",
@@ -3596,9 +3520,11 @@
       "reads": [
         "ArrivalTime",
         "EntityOwner",
+        "HyperStructure",
         "Movable",
         "Owner",
-        "Position"
+        "Position",
+        "Realm"
       ],
       "writes": [
         "ArrivalTime",
@@ -6193,9 +6119,19 @@
           "name": "stealing_trial_count",
           "type": "u32",
           "key": false
+        },
+        {
+          "name": "wheat_burn_per_soldier",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "fish_burn_per_soldier",
+          "type": "u128",
+          "key": false
         }
       ],
-      "class_hash": "0x44afeaa5041700755966dccdcc38e70d2c3add8324d26b5acb8d8e8ff056ded",
+      "class_hash": "0x1f64a77850cc53c4a2ff6b41d4105a453b6e44b456c0656cddaa6debbe9edef",
       "abi": [
         {
           "type": "function",
@@ -7808,47 +7744,12 @@
           "key": false
         },
         {
-          "name": "initialization_resource_id",
-          "type": "u128",
-          "key": false
-        },
-        {
-          "name": "initialization_resource_count",
-          "type": "u32",
-          "key": false
-        },
-        {
-          "name": "construction_resource_id",
-          "type": "u128",
-          "key": false
-        },
-        {
-          "name": "construction_resource_count",
-          "type": "u32",
-          "key": false
-        },
-        {
-          "name": "initialized_at",
-          "type": "u64",
-          "key": false
-        },
-        {
-          "name": "completed_at",
-          "type": "u64",
-          "key": false
-        },
-        {
-          "name": "coord_x",
-          "type": "u32",
-          "key": false
-        },
-        {
-          "name": "coord_y",
-          "type": "u32",
+          "name": "order",
+          "type": "u8",
           "key": false
         }
       ],
-      "class_hash": "0x25f997693c25f7b4b834576b68ea3acf6667dca9339892daae1c9cd9d91a7d6",
+      "class_hash": "0x7293a25cd060324f651bded6560600982f4f389dd9151e288c1a1a8a2f61539",
       "abi": [
         {
           "type": "function",
@@ -9329,6 +9230,31 @@
           "key": true
         },
         {
+          "name": "decay_interval",
+          "type": "u64",
+          "key": false
+        },
+        {
+          "name": "max_level",
+          "type": "u64",
+          "key": false
+        },
+        {
+          "name": "decay_scaled",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "cost_percentage_scaled",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "base_multiplier",
+          "type": "u128",
+          "key": false
+        },
+        {
           "name": "wheat_base_amount",
           "type": "u128",
           "key": false
@@ -9367,24 +9293,9 @@
           "name": "resource_3_cost_count",
           "type": "u32",
           "key": false
-        },
-        {
-          "name": "decay_scaled",
-          "type": "u128",
-          "key": false
-        },
-        {
-          "name": "cost_percentage_scaled",
-          "type": "u128",
-          "key": false
-        },
-        {
-          "name": "base_multiplier",
-          "type": "u128",
-          "key": false
         }
       ],
-      "class_hash": "0x2e0a70d2268e06a7fda8ad50ee10406775a9d69091637f7463283ea347509f3",
+      "class_hash": "0x2cc96bfe19b794d30b5cf7d4da1c7b760f20b13949252be27edf7cbba6f2801",
       "abi": [
         {
           "type": "function",
@@ -10509,9 +10420,14 @@
           "name": "order",
           "type": "u8",
           "key": false
+        },
+        {
+          "name": "order_hyperstructure_id",
+          "type": "u128",
+          "key": false
         }
       ],
-      "class_hash": "0x4bb7bd2e35629ec4d8f5a2ef5c0ff8a2f20f2c09b29fb511c5eda1c4e44d614",
+      "class_hash": "0x74c466cd388d8962234137e62f4ac40aae8e713f58725801a0a2b36dc5dfc68",
       "abi": [
         {
           "type": "function",
