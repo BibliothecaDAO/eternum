@@ -92,8 +92,8 @@ export const RealmCombatComponent = ({}: RealmCombatComponentProps) => {
 
   return (
     <>
-      {realm_level && realm_level < 2 ? (
-        <div className="text-gold p-4 border rounded border-gold m-2">Combat Locked until level 2</div>
+      {realm_level === undefined || realm_level < 3 ? (
+        <div className="text-gold p-4 border rounded border-gold m-2">Combat Locked until level 3</div>
       ) : (
         <Tabs
           selectedIndex={selectedTab}

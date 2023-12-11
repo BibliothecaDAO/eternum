@@ -3,9 +3,9 @@ import { Tabs } from "../../../elements/tab";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { BanksListComponent } from "./BanksListComponent";
 
-type BanksPanelProps = {};
+type BanksPanelProps = { minimumRealmLevel: number };
 
-export const BanksPanel = ({}: BanksPanelProps) => {
+export const BanksPanel = ({ minimumRealmLevel }: BanksPanelProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -39,23 +39,27 @@ export const BanksPanel = ({}: BanksPanelProps) => {
 
   return (
     <>
-      <Tabs
-        selectedIndex={selectedTab}
-        onChange={(index: any) => setSelectedTab(index)}
-        variant="default"
-        className="h-full"
-      >
-        <Tabs.List>
-          {tabs.map((tab, index) => (
-            <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-          ))}
-        </Tabs.List>
-        <Tabs.Panels className="overflow-hidden">
-          {tabs.map((tab, index) => (
-            <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
-          ))}
-        </Tabs.Panels>
-      </Tabs>
+      {minimumRealmLevel < 2 ? (
+        <div className="text-gold p-4 border rounded border-gold m-2">Banks Locked until level 2</div>
+      ) : (
+        <Tabs
+          selectedIndex={selectedTab}
+          onChange={(index: any) => setSelectedTab(index)}
+          variant="default"
+          className="h-full"
+        >
+          <Tabs.List>
+            {tabs.map((tab, index) => (
+              <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+            ))}
+          </Tabs.List>
+          <Tabs.Panels className="overflow-hidden">
+            {tabs.map((tab, index) => (
+              <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+            ))}
+          </Tabs.Panels>
+        </Tabs>
+      )}
     </>
   );
 };

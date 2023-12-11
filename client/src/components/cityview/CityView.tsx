@@ -255,12 +255,12 @@ export function Model(props: JSX.IntrinsicElements["group"]) {
       5: false,
       6: false,
     };
-    for (let id = 0; id < realm.resource_types_count; id++) {
+    for (let id = 0; id < realm.resourceTypesCount; id++) {
       // @ts-ignore
       statuses[id] = true;
     }
 
-    const unpackedResources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
+    const unpackedResources = unpackResources(BigInt(realm.resourceTypesPacked), realm.resourceTypesCount);
     setRealmResourceIds(unpackedResources);
 
     setEnabledMines(statuses);

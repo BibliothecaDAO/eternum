@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { EntityIndex, Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
+import realmsCoordsJson from "../../geodata/coords.json";
 import { useDojo } from "../../DojoContext";
-import { getEntityIdFromKeys, hexToAscii, numberToHex } from "../../utils/utils";
+import { getContractPositionFromRealPosition, getEntityIdFromKeys, hexToAscii, numberToHex } from "../../utils/utils";
 import { getOrderName } from "@bibliothecadao/eternum";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
 import realmsData from "../../geodata/realms.json";
@@ -138,14 +139,35 @@ export function useGetRealms(): { realms: RealmExtended[] } {
 
   const realms: RealmExtended[] = useMemo(
     () =>
-      Array.from(realmEntityIds).map((entityId) => {
-        const realm = getComponentValue(Realm, entityId) as any;
-        realm.entity_id = entityId;
-        realm.name = realmsData["features"][realm.realm_id - 1].name;
-        realm.owner = getComponentValue(Owner, entityId);
-        realm.resources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
-        return realm;
-      }),
+      Array.from(realmEntityIds)
+        .map((entityId) => {
+          const realm = getComponentValue(Realm, entityId);
+          if (realm) {
+            let name = realmsData["features"][realm.realm_id - 1].name;
+            let owner = getComponentValue(Owner, entityId);
+            let resources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
+            let coords = realmsCoordsJson["features"][realm.realm_id]["geometry"]["coordinates"];
+            let position = getContractPositionFromRealPosition({ x: parseInt(coords[0]), y: parseInt(coords[1]) });
+
+            return {
+              realmId: realm.realm_id,
+              name,
+              cities: realm.cities,
+              rivers: realm.rivers,
+              wonder: realm.wonder,
+              harbors: realm.harbors,
+              regions: realm.regions,
+              resourceTypesCount: realm.resource_types_count,
+              resourceTypesPacked: realm.resource_types_packed,
+              order: realm.order,
+              position: position,
+              owner: owner?.address,
+              entity_id: entityId,
+              resources,
+            };
+          }
+        })
+        .filter(Boolean) as RealmExtended[],
     [realmEntityIds],
   );
 

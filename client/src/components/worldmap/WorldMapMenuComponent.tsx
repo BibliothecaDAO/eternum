@@ -9,6 +9,8 @@ import RealmsListPanel from "./RealmsListPanel";
 import { HyperstructuresPanel } from "./hyperstructures/HyperstructuresPanel";
 import useUIStore from "../../hooks/store/useUIStore";
 import { BanksPanel } from "./banks/BanksPanel";
+import useRealmStore from "../../hooks/store/useRealmStore";
+import { useLevel } from "../../hooks/helpers/useLevel";
 
 const WorldMapMenuComponent = () => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -16,6 +18,20 @@ const WorldMapMenuComponent = () => {
 
   // @ts-ignore
   const [_location, setLocation] = useLocation();
+
+  const { realmEntityIds } = useRealmStore();
+  const { getEntityLevel } = useLevel();
+
+  const minimumRealmLevel = useMemo(() => {
+    let min = 0;
+    realmEntityIds.forEach((realmEntityId) => {
+      const realm_level = getEntityLevel(realmEntityId.realmEntityId)?.level;
+      if (realm_level && realm_level > min) {
+        min = realm_level;
+      }
+    });
+    return min;
+  }, [realmEntityIds]);
 
   const tabs = useMemo(
     () => [
@@ -64,7 +80,7 @@ const WorldMapMenuComponent = () => {
             <Relic className="mb-2 fill-gold" /> <div>Hyperstructures</div>
           </div>
         ),
-        component: <HyperstructuresPanel />,
+        component: <HyperstructuresPanel minimumRealmLevel={minimumRealmLevel} />,
       },
       {
         key: "banks",
@@ -87,7 +103,7 @@ const WorldMapMenuComponent = () => {
             <Bank className="mb-2 fill-gold" /> <div>Banks</div>
           </div>
         ),
-        component: <BanksPanel />,
+        component: <BanksPanel minimumRealmLevel={minimumRealmLevel} />,
       },
     ],
     [selectedTab],

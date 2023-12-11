@@ -4,9 +4,11 @@ import { HyperstructuresListComponent } from "./HyperstructuresListComponent";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { HyperstructureLeaderboard } from "./HyperstructureLeaderboard";
 
-type HyperstructuresPanelProps = {};
+type HyperstructuresPanelProps = {
+  minimumRealmLevel: number;
+};
 
-export const HyperstructuresPanel = ({}: HyperstructuresPanelProps) => {
+export const HyperstructuresPanel = ({ minimumRealmLevel }: HyperstructuresPanelProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -86,23 +88,27 @@ export const HyperstructuresPanel = ({}: HyperstructuresPanelProps) => {
 
   return (
     <>
-      <Tabs
-        selectedIndex={selectedTab}
-        onChange={(index: any) => setSelectedTab(index)}
-        variant="default"
-        className="h-full"
-      >
-        <Tabs.List>
-          {tabs.map((tab, index) => (
-            <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-          ))}
-        </Tabs.List>
-        <Tabs.Panels className="overflow-hidden">
-          {tabs.map((tab, index) => (
-            <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
-          ))}
-        </Tabs.Panels>
-      </Tabs>
+      {minimumRealmLevel < 4 ? (
+        <div className="text-gold p-4 border rounded border-gold m-2">Hyperstructures Locked until level 4</div>
+      ) : (
+        <Tabs
+          selectedIndex={selectedTab}
+          onChange={(index: any) => setSelectedTab(index)}
+          variant="default"
+          className="h-full"
+        >
+          <Tabs.List>
+            {tabs.map((tab, index) => (
+              <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+            ))}
+          </Tabs.List>
+          <Tabs.Panels className="overflow-hidden">
+            {tabs.map((tab, index) => (
+              <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+            ))}
+          </Tabs.Panels>
+        </Tabs>
+      )}
     </>
   );
 };

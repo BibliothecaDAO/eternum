@@ -23,6 +23,7 @@ import { BankCaravansPanel } from "./BanksCaravans/BankCaravansPanel";
 import { NumberInput } from "../../../elements/NumberInput";
 import { getLordsAmountFromBankAuction } from "./utils";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
+import { useLevel } from "../../../hooks/helpers/useLevel";
 
 type BankPopupProps = {
   onClose: () => void;
@@ -129,6 +130,12 @@ export const BankPopup = ({ onClose, bank }: BankPopupProps) => {
 };
 
 const SelectableRealm = ({ realm, selected = false, onClick, costs, ...props }: any) => {
+  const { getEntityLevel } = useLevel();
+
+  const level = useMemo(() => {
+    return getEntityLevel(realm.entity_id)?.level || 0;
+  }, [realm]);
+
   return (
     <div
       className={clsx(
@@ -144,6 +151,7 @@ const SelectableRealm = ({ realm, selected = false, onClick, costs, ...props }: 
         </div>
       )}
       <div className="text-gold ml-auto absolute right-2 top-2">24h:10m away</div>
+      {level < 2 && <div className="text-xxs text-order-giants">Min level 2 to use Banks</div>}
       <div className="flex items-center mt-6 w-full">
         <div className="flex">
           {realm.resources &&
@@ -160,7 +168,7 @@ const SelectableRealm = ({ realm, selected = false, onClick, costs, ...props }: 
               );
             })}
         </div>
-        <Button onClick={onClick} className="h-6 text-xxs ml-auto" variant="success">
+        <Button disabled={level < 2} onClick={onClick} className="h-6 text-xxs ml-auto" variant="success">
           {`Set the amounts`}
         </Button>
       </div>
