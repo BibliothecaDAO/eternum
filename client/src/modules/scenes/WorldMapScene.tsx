@@ -15,7 +15,7 @@ import { useCaravan } from "../../hooks/helpers/useCaravans.js";
 import useRealmStore from "../../hooks/store/useRealmStore.js";
 import { useGetRealm } from "../../hooks/helpers/useRealm.js";
 import { getRealmPositionFromContractPosition } from "../../utils/utils.js";
-import Bank from "../../components/worldmap/banks/models/Banks.js";
+import Bank from "../../components/worldmap/banks/models/Bank2.js";
 import banks from "../../data/banks.json";
 
 export const WorldMapScene = () => {
