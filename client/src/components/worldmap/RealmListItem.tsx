@@ -6,7 +6,7 @@ import { ReactComponent as Map } from "../../assets/icons/common/map.svg";
 import * as realmsData from "../../geodata/realms.json";
 import clsx from "clsx";
 import useUIStore from "../../hooks/store/useUIStore";
-import { displayAddress, numberToHex } from "../../utils/utils";
+import { displayAddress } from "../../utils/utils";
 import { RealmExtended, useRealm } from "../../hooks/helpers/useRealm";
 
 type RealmListItemProps = {
@@ -26,19 +26,19 @@ export const RealmListItem = ({ realm }: RealmListItemProps) => {
         {realm && (
           <div className="flex items-center p-1 -mt-2 -ml-2 border border-t-0 border-l-0 rounded-br-md border-gray-gold">
             {realm.order && <OrderIcon order={orderNameDict[realm.order]} size="xs" className="mr-1" />}
-            {realmsData["features"][realm.realm_id - 1].name}
+            {realmsData["features"][realm.realmId - 1].name}
           </div>
         )}
         <div className="-mt-2 ml-2 italic">
           owned by
-          {!addressName && (
-            <span className="text-gold ml-1 mr-1">{displayAddress(numberToHex(realm?.owner?.address || 0))}</span>
+          {!addressName && realm?.owner && (
+            <span className="text-gold ml-1 mr-1">{displayAddress(realm.owner || "0x0")}</span>
           )}
           {addressName && <span className="text-gold ml-1 mr-1">{addressName}</span>}
         </div>
         <div className=" text-gold flex ml-auto ">
           <Button
-            onClick={() => moveCameraToRealm(realm?.realm_id as number)}
+            onClick={() => moveCameraToRealm(realm?.realmId as number)}
             variant="outline"
             className="p-1 !h-4 text-xxs !rounded-md"
           >

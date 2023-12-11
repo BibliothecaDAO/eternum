@@ -9,12 +9,6 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import { RoadsPanel } from "./trade/Roads/RoadsPanel";
 import { useLevel } from "../../../hooks/helpers/useLevel";
 
-export type Order = {
-  orderId: number;
-  counterpartyOrderId: number;
-  tradeId: number;
-};
-
 type RealmTradeComponentProps = {};
 
 export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {

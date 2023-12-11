@@ -1,8 +1,8 @@
 import React from "react";
 import clsx from "clsx";
-import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import Button from "../../../../../elements/Button";
+import { CombatInfo } from "@bibliothecadao/eternum";
 
 type DefenceProps = {
   watchTower: CombatInfo;

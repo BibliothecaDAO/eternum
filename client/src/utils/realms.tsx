@@ -4,7 +4,8 @@ import realms from "../data/realms.json";
 import realmsOrdersJson from "../geodata/realms_raw.json";
 import { findResourceIdByTrait, orders } from "@bibliothecadao/eternum";
 import { packResources } from "../utils/packedData";
-import { Realm } from "../types";
+import { RealmInterface } from "@bibliothecadao/eternum";
+import { getContractPositionFromRealPosition } from "./utils";
 
 interface Attribute {
   trait_type: string;
@@ -35,15 +36,15 @@ export const getRealmOrderNameById = (realmId: number): string => {
   return orderName.toLowerCase().replace("the ", "");
 };
 
-export function getRealm(realm_id: number): Realm {
+export function getRealm(realmId: number): RealmInterface {
   const realmsData = realms as {
     [key: string]: any;
   };
-  const realm = realmsData[realm_id.toString()];
+  const realm = realmsData[realmId.toString()];
   const resourceIds = realm.attributes
     .filter(({ trait_type }: Attribute) => trait_type === "Resource")
     .map(({ value }: Attribute) => findResourceIdByTrait(value));
-  const resource_types_packed = parseInt(packResources(resourceIds));
+  const resourceTypesPacked = parseInt(packResources(resourceIds));
   let cities: number = 0;
   realm.attributes.forEach(({ trait_type, value }: Attribute) => {
     if (trait_type === "Cities") {
@@ -83,16 +84,20 @@ export function getRealm(realm_id: number): Realm {
     }
   });
 
+  let coords = realmsCoordsJson["features"][realmId]["geometry"]["coordinates"];
+  let position = getContractPositionFromRealPosition({ x: parseInt(coords[0]), y: parseInt(coords[1]) });
+
   return {
-    realm_id,
-    name: getRealmNameById(realm_id),
-    resource_types_packed,
-    resource_types_count: resourceIds.length,
+    realmId,
+    name: getRealmNameById(realmId),
+    resourceTypesPacked,
+    resourceTypesCount: resourceIds.length,
     cities,
     harbors,
     rivers,
     regions,
     wonder,
     order,
+    position,
   };
 }

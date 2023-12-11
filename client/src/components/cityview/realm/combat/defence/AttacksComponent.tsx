@@ -6,12 +6,6 @@ import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { EnnemyRaidersPanel } from "./EnnemyRaidsPanel";
 import { AttackHistoryPanel } from "./AttackHistoryPanel";
 
-export type Order = {
-  orderId: number;
-  counterpartyOrderId: number;
-  tradeId: number;
-};
-
 type AttacksComponentProps = {};
 
 export const AttacksComponent = ({}: AttacksComponentProps) => {

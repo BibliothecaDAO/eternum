@@ -5,7 +5,7 @@ import { SortPanel } from "../../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../../elements/SortButton";
 import { Caravan } from "./Caravan";
 import { CaravanDetails } from "../../../../caravans/CaravanDetailsComponent";
-import { CaravanInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
+import { CaravanInterface } from "@bibliothecadao/eternum";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { useCaravan } from "../../../../../hooks/helpers/useCaravans";

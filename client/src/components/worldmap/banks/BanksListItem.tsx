@@ -3,11 +3,12 @@ import { ReactComponent as Map } from "../../../assets/icons/common/map.svg";
 import { ReactComponent as Bank } from "../../../assets/icons/common/bank.svg";
 import { ReactComponent as DonkeyIcon } from "../../../assets/icons/units/donkey-circle.svg";
 import { BankAuction } from "./BankAuction";
-import { BankStaticInterface, useBanks } from "../../../hooks/helpers/useBanks";
+import { useBanks } from "../../../hooks/helpers/useBanks";
 import { useCaravan } from "../../../hooks/helpers/useCaravans";
 import { useMemo } from "react";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { Dot } from "../../../elements/Dot";
+import { BankStaticInterface } from "@bibliothecadao/eternum";
 
 type BanksListItemProps = {
   bank: BankStaticInterface;

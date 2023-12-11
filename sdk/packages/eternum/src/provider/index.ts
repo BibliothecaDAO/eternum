@@ -29,7 +29,7 @@ import {
   HealSoldiersProps,
   HarvestAllLaborProps,
   SwapBankAndTravelBackProps,
-} from "../types";
+} from "../types/provider";
 import { Call } from "starknet";
 
 const UUID_OFFSET_CREATE_CARAVAN = 2;

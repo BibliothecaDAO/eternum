@@ -6,8 +6,8 @@ import { useDojo } from "../../../../../DojoContext";
 import { getComponentValue } from "@latticexyz/recs";
 import { getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
-import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import { SelectRealmPanel } from "./SelectRealmPanel";
+import { CombatInfo } from "@bibliothecadao/eternum";
 
 type RoadBuildPopupProps = {
   selectedRaider: CombatInfo;

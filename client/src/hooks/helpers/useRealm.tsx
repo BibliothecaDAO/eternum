@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { RealmInterface } from "../graphql/useGraphQLQueries";
 import { EntityIndex, Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import { getEntityIdFromKeys, hexToAscii, numberToHex } from "../../utils/utils";
@@ -8,12 +7,11 @@ import realmIdsByOrder from "../../data/realmids_by_order.json";
 import realmsData from "../../geodata/realms.json";
 import { unpackResources } from "../../utils/packedData";
 import { useEntityQuery } from "@dojoengine/react";
-import { Realm } from "../../types";
+import { RealmInterface } from "@bibliothecadao/eternum";
+import { getRealmNameById } from "../../utils/realms";
 
-export type RealmExtended = Realm & {
+export type RealmExtended = RealmInterface & {
   entity_id: EntityIndex;
-  name: string;
-  owner?: { address: number };
   resources: number[];
 };
 
@@ -102,16 +100,20 @@ export function useGetRealm(realmEntityId: number | undefined) {
           resource_types_packed,
           order,
         } = realm;
+
+        const name = getRealmNameById(realm_id);
+
         const { address } = owner;
         setRealm({
           realmId: realm_id,
+          name,
           cities,
           rivers,
           wonder,
           harbors,
           regions,
-          resource_types_count,
-          resource_types_packed,
+          resourceTypesCount: resource_types_count,
+          resourceTypesPacked: resource_types_packed,
           order,
           position,
           owner: address,

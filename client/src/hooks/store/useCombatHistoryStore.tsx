@@ -1,24 +1,9 @@
 import { create } from "zustand";
 import { numberToHex } from "../../utils/utils";
 import { pollForEvents, Event } from "../../services/eventPoller";
-import { Resource } from "../../types";
 import { parseCombatEvent } from "../../utils/combat";
 import { COMBAT_EVENT } from "@bibliothecadao/eternum";
-
-export enum Winner {
-  Attacker = "Attacker",
-  Target = "Target",
-}
-
-export interface CombatResultInterface {
-  attackerRealmEntityId: number;
-  targetRealmEntityId: number;
-  attackingEntityIds: number[];
-  winner: Winner;
-  stolenResources: Resource[];
-  damage: number;
-  attackTimestamp: number;
-}
+import { CombatResultInterface } from "@bibliothecadao/eternum";
 
 interface CombatHistoryStore {
   loading: boolean;

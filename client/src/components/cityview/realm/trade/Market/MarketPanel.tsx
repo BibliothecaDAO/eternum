@@ -9,9 +9,10 @@ import { CreateOfferPopup } from "../CreateOffer";
 import Button from "../../../../../elements/Button";
 import { MarketOffer } from "./MarketOffer";
 import { AcceptOfferPopup } from "../AcceptOffer";
-import { MarketInterface, sortTrades, useGetMarket } from "../../../../../hooks/helpers/useTrade";
+import { sortTrades, useGetMarket } from "../../../../../hooks/helpers/useTrade";
 import { RoadBuildPopup } from "../Roads/RoadBuildPopup";
 import { MarketPopup } from "./MarketPopup";
+import { MarketInterface } from "@bibliothecadao/eternum";
 
 type MarketPanelProps = {
   directOffers: boolean;

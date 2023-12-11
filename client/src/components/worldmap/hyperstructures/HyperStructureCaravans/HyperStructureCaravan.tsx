@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import clsx from "clsx";
-import { CaravanInterface } from "../../../../hooks/graphql/useGraphQLQueries";
 import { ReactComponent as Pen } from "../../../../assets/icons/common/pen.svg";
 import { ReactComponent as CaretDownFill } from "../../../../assets/icons/common/caret-down-fill.svg";
 import { ReactComponent as DonkeyIcon } from "../../../../assets/icons/units/donkey-circle.svg";
@@ -11,11 +10,11 @@ import { formatSecondsInHoursMinutes } from "../../../cityview/realm/labor/labor
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import ProgressBar from "../../../../elements/ProgressBar";
 import { Dot } from "../../../../elements/Dot";
-import { CAPACITY_PER_DONKEY } from "@bibliothecadao/eternum";
+import { CAPACITY_PER_DONKEY, CaravanInterface, HyperStructureInterface } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@latticexyz/recs";
 import { useDojo } from "../../../../DojoContext";
 import Button from "../../../../elements/Button";
-import { HyperStructureInterface, useHyperstructure } from "../../../../hooks/helpers/useHyperstructure";
+import { useHyperstructure } from "../../../../hooks/helpers/useHyperstructure";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { useResources } from "../../../../hooks/helpers/useResources";
 

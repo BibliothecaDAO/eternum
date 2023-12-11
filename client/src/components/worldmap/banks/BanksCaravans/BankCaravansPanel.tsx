@@ -1,12 +1,11 @@
 import { useMemo, useState } from "react";
-import { CaravanInterface } from "../../../../hooks/graphql/useGraphQLQueries";
 import { SortButton, SortInterface } from "../../../../elements/SortButton";
 import { FiltersPanel } from "../../../../elements/FiltersPanel";
 import { FilterButton } from "../../../../elements/FilterButton";
 import { SortPanel } from "../../../../elements/SortPanel";
 import { CaravanDetails } from "../../../caravans/CaravanDetailsComponent";
 import { BankCaravan } from "./BankCaravan";
-import { BankInterface } from "../../../../hooks/helpers/useBanks";
+import { BankInterface, CaravanInterface } from "@bibliothecadao/eternum";
 
 type BankCaravansPanelProps = {
   caravans: CaravanInterface[];

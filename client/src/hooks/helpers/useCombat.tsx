@@ -1,28 +1,11 @@
 import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
-import { Position } from "../../types";
+import { Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys } from "../../utils/utils";
 import { useHyperstructure } from "./useHyperstructure";
-
-export interface CombatInfo {
-  entityId: number;
-  health: number;
-  quantity: number;
-  attack: number;
-  defence: number;
-  sec_per_km: number;
-  blocked?: boolean | undefined;
-  capacity?: number | undefined;
-  arrivalTime?: number | undefined;
-  position?: Position | undefined;
-  homePosition?: Position | undefined;
-  entityOwnerId?: number | undefined;
-  locationRealmEntityId?: number | undefined;
-  originRealmId?: number | undefined;
-  hyperstructureId: number | undefined;
-}
+import { CombatInfo } from "@bibliothecadao/eternum";
 
 export function useCombat() {
   const {

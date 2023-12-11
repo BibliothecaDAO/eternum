@@ -15,10 +15,10 @@ import { useDojo } from "../../../DojoContext";
 import { Steps } from "../../../elements/Steps";
 import { Headline } from "../../../elements/Headline";
 import { OrderIcon } from "../../../elements/OrderIcon";
-import { orderNameDict, orders } from "@bibliothecadao/eternum";
+import { HyperStructureInterface, orderNameDict, orders } from "@bibliothecadao/eternum";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import clsx from "clsx";
-import { HyperStructureInterface, useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
+import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
 import { Tabs } from "../../../elements/tab";
 import ProgressBar from "../../../elements/ProgressBar";
 import { HyperStructureCaravansPanel } from "./HyperStructureCaravans/HyperStructureCaravansPanel";
@@ -459,7 +459,7 @@ const BuildHyperstructurePanel = ({
           <div className="h-72 flex flex-col w-full space-y-2 overflow-y-scroll">
             {realms.map((realm) => (
               <SelectableRealm
-                key={realm.realm_id}
+                key={realm.realmId}
                 realm={realm}
                 onClick={() => {
                   setRealmEntityId(realm.entity_id);

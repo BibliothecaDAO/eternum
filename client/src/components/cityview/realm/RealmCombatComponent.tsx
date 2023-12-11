@@ -7,12 +7,6 @@ import { RaidsPanel } from "./combat/raids/RaidsPanel";
 import { DefencePanel } from "./combat/defence/DefencePanel";
 import { useLevel } from "../../../hooks/helpers/useLevel";
 
-export type Order = {
-  orderId: number;
-  counterpartyOrderId: number;
-  tradeId: number;
-};
-
 type RealmCombatComponentProps = {};
 
 export const RealmCombatComponent = ({}: RealmCombatComponentProps) => {

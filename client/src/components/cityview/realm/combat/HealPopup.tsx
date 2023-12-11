@@ -7,10 +7,10 @@ import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../DojoContext";
 import { getComponentValue } from "@latticexyz/recs";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../utils/utils";
-import { CombatInfo } from "../../../../hooks/helpers/useCombat";
 import { getHealResourceCost } from "../../../../utils/combat";
 import { PercentageSelection } from "../../../../elements/PercentageSelection";
 import ProgressBar from "../../../../elements/ProgressBar";
+import { CombatInfo } from "@bibliothecadao/eternum";
 
 type HealPopupProps = {
   selectedRaider: CombatInfo;

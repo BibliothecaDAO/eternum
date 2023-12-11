@@ -11,20 +11,14 @@ import { useDojo } from "../../../DojoContext";
 import { Steps } from "../../../elements/Steps";
 import { Headline } from "../../../elements/Headline";
 import { OrderIcon } from "../../../elements/OrderIcon";
-import { orderNameDict } from "@bibliothecadao/eternum";
+import { BankInterface, BankStaticInterface, orderNameDict } from "@bibliothecadao/eternum";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import clsx from "clsx";
 import { Tabs } from "../../../elements/tab";
 import { useCaravan } from "../../../hooks/helpers/useCaravans";
 import { WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 import useUIStore from "../../../hooks/store/useUIStore";
-import {
-  BANK_AUCTION_DECAY,
-  BankInterface,
-  BankStaticInterface,
-  targetPrices,
-  useBanks,
-} from "../../../hooks/helpers/useBanks";
+import { BANK_AUCTION_DECAY, targetPrices, useBanks } from "../../../hooks/helpers/useBanks";
 import { BankCaravansPanel } from "./BanksCaravans/BankCaravansPanel";
 import { NumberInput } from "../../../elements/NumberInput";
 import { getLordsAmountFromBankAuction } from "./utils";
@@ -294,31 +288,31 @@ const SwapResourcesPanel = ({
   }, [step, selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
 
   const lordsAmountFromWheat = useMemo(() => {
-    return bank?.wheatLaborAuction && nextBlockTimestamp
+    return bank?.wheatAuction && nextBlockTimestamp
       ? getLordsAmountFromBankAuction(
           multiplyByPrecision(feedResourcesGiveAmounts[254] || 0),
           targetPrices[254],
           BANK_AUCTION_DECAY,
-          bank.wheatLaborAuction.per_time_unit,
-          bank.wheatLaborAuction.start_time,
+          bank.wheatAuction.per_time_unit,
+          bank.wheatAuction.start_time,
           nextBlockTimestamp,
-          bank.wheatLaborAuction.sold,
-          bank.wheatLaborAuction.price_update_interval,
+          bank.wheatAuction.sold,
+          bank.wheatAuction.price_update_interval,
         )
       : 0;
   }, [feedResourcesGiveAmounts[254]]);
 
   const lordsAmountFromFish = useMemo(() => {
-    return bank?.fishLaborAuction && nextBlockTimestamp
+    return bank?.fishAuction && nextBlockTimestamp
       ? getLordsAmountFromBankAuction(
           multiplyByPrecision(feedResourcesGiveAmounts[255] || 0),
           targetPrices[255],
           BANK_AUCTION_DECAY,
-          bank.fishLaborAuction.per_time_unit,
-          bank.fishLaborAuction.start_time,
+          bank.fishAuction.per_time_unit,
+          bank.fishAuction.start_time,
           nextBlockTimestamp,
-          bank.fishLaborAuction.sold,
-          bank.fishLaborAuction.price_update_interval,
+          bank.fishAuction.sold,
+          bank.fishAuction.price_update_interval,
         )
       : 0;
   }, [feedResourcesGiveAmounts[255]]);
@@ -406,7 +400,7 @@ const SwapResourcesPanel = ({
           </div>
           {realms.map((realm) => (
             <SelectableRealm
-              key={realm.realm_id}
+              key={realm.realmId}
               realm={realm}
               onClick={() => {
                 setRealmEntityId(realm.entity_id);

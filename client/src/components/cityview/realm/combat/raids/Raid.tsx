@@ -7,7 +7,6 @@ import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 import { ReactComponent as Pen } from "../../../../../assets/icons/common/pen.svg";
 import { ReactComponent as CaretDownFill } from "../../../../../assets/icons/common/caret-down-fill.svg";
-import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import { useDojo } from "../../../../../DojoContext";
@@ -16,6 +15,7 @@ import { getTotalResourceWeight } from "../../trade/TradeUtils";
 import { divideByPrecision } from "../../../../../utils/utils";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import useUIStore from "../../../../../hooks/store/useUIStore";
+import { CombatInfo } from "@bibliothecadao/eternum";
 
 type RaidProps = {
   raider: CombatInfo;

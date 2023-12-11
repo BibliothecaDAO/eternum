@@ -4,13 +4,6 @@ import { useDojo } from "../../DojoContext";
 import { setComponentsFromEntity } from "../../utils/utils";
 import { Components } from "@latticexyz/recs";
 
-export enum FetchStatus {
-  Idle = "idle",
-  Loading = "loading",
-  Success = "success",
-  Error = "error",
-}
-
 const client = new GraphQLClient(import.meta.env.VITE_TORII_URL!);
 
 type Entity = {
@@ -28,71 +21,6 @@ type getEntitiesQuery = {
     }[];
   };
 };
-
-export interface PositionInterface {
-  x: number;
-  y: number;
-}
-
-export interface MyOfferInterface {
-  tradeId: string;
-  makerOrderId: string;
-  takerOrderId: string;
-  expiresAt: number;
-  status: string;
-}
-
-export interface CounterPartyOrderIdInterface {
-  counterpartyOrderId: number;
-}
-
-export interface RealmInterface {
-  realmId: number;
-  cities: number;
-  rivers: number;
-  wonder: number;
-  harbors: number;
-  regions: number;
-  resource_types_count: number;
-  resource_types_packed: number;
-  order: number;
-  position: PositionInterface;
-  owner: string;
-}
-
-export interface RealmLaborInterface {
-  [resourceId: number]: LaborInterface;
-}
-
-export interface LaborInterface {
-  lastHarvest: number;
-  balance: number;
-  multiplier: number;
-}
-export interface IncomingOrderInterface {
-  tradeId: number;
-  claimed: boolean | undefined;
-  arrivalTime: number | undefined;
-  origin: PositionInterface | undefined;
-  position: PositionInterface | undefined;
-}
-
-export interface CaravanInterface {
-  caravanId: number;
-  resourcesChestId: number | undefined;
-  blocked: boolean | undefined;
-  arrivalTime: number | undefined;
-  pickupArrivalTime: number | undefined;
-  capacity: number | undefined;
-  destination: PositionInterface | undefined;
-  owner: string | undefined;
-  isMine: boolean;
-}
-
-export interface ResourceInterface {
-  resourceId: number;
-  amount: number;
-}
 
 const OFFSET = 100;
 

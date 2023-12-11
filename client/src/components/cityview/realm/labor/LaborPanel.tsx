@@ -56,7 +56,7 @@ export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
   // unpack the resources
   let realmResourceIds = useMemo(() => {
     if (realm) {
-      let unpackedResources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
+      let unpackedResources = unpackResources(BigInt(realm.resourceTypesPacked), realm.resourceTypesCount);
       const foodResources = [ResourcesIds["Wheat"], ResourcesIds["Fish"]];
       if (type == "food") {
         return foodResources;

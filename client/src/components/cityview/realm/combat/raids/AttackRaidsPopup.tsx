@@ -6,17 +6,16 @@ import { useDojo } from "../../../../../DojoContext";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import { calculateSuccess } from "../../../../../utils/combat";
-import { CombatInfo, useCombat } from "../../../../../hooks/helpers/useCombat";
+import { useCombat } from "../../../../../hooks/helpers/useCombat";
 import { Defence } from "../defence/Defence";
 import { useComponentValue } from "@dojoengine/react";
 import { SelectRaiders } from "./SelectRaiders";
 import { useResources } from "../../../../../hooks/helpers/useResources";
 import clsx from "clsx";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
-import { findResourceById, resources } from "@bibliothecadao/eternum";
+import { CombatInfo, Resource, findResourceById, resources } from "@bibliothecadao/eternum";
 import { getRealmIdByPosition, getRealmNameById } from "../../../../../utils/realms";
 import { SmallResource } from "../../SmallResource";
-import { Resource } from "../../../../../types";
 import { LevelIndex, useLevel } from "../../../../../hooks/helpers/useLevel";
 
 type AttackRaidsPopupProps = {

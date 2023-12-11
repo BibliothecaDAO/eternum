@@ -2,8 +2,9 @@ import { useMemo } from "react";
 import ProgressBar from "../../../elements/ProgressBar";
 import clsx from "clsx";
 import useUIStore from "../../../hooks/store/useUIStore";
-import { BankInterface, targetPrices } from "../../../hooks/helpers/useBanks";
+import { targetPrices } from "../../../hooks/helpers/useBanks";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
+import { BankInterface } from "@bibliothecadao/eternum";
 
 type BankAuctionProps = {
   bankInfo: BankInterface;

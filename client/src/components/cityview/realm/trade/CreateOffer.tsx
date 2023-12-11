@@ -11,7 +11,7 @@ import { ReactComponent as Danger } from "../../../../assets/icons/common/danger
 import { ReactComponent as Donkey } from "../../../../assets/icons/units/donkey-circle.svg";
 import { Caravan } from "./Caravans/Caravan";
 import { Steps } from "../../../../elements/Steps";
-import { CaravanInterface } from "../../../../hooks/graphql/useGraphQLQueries";
+import { CaravanInterface } from "@bibliothecadao/eternum";
 import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";

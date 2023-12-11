@@ -4,11 +4,11 @@ import clsx from "clsx";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 import { ReactComponent as Pen } from "../../../../../assets/icons/common/pen.svg";
-import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import { useRealm } from "../../../../../hooks/helpers/useRealm";
+import { CombatInfo } from "@bibliothecadao/eternum";
 
 type EnemyRaidProps = {
   raider: CombatInfo;

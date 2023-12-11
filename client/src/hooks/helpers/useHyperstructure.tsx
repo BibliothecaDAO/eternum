@@ -1,24 +1,9 @@
 import { Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
-import { Position, UIPosition } from "../../types";
+import { UIPosition } from "@bibliothecadao/eternum";
 import { getContractPositionFromRealPosition, getEntityIdFromKeys } from "../../utils/utils";
 import { useLevel } from "./useLevel";
-import { getHyperstructureResources } from "@bibliothecadao/eternum";
-
-export interface HyperStructureInterface {
-  hyperstructureId: number;
-  orderId: number;
-  progress: number;
-  hyperstructureResources: {
-    resourceId: number;
-    currentAmount: number;
-    completeAmount: number;
-  }[];
-  completed: boolean;
-  position: Position;
-  uiPosition: UIPosition;
-  level: number;
-}
+import { HyperStructureInterface, getHyperstructureResources } from "@bibliothecadao/eternum";
 
 export const useHyperstructure = () => {
   const {

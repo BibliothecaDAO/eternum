@@ -1,11 +1,10 @@
 import Button from "../../../../elements/Button";
-import { ResourcesIds, findResourceById, LABOR_CONFIG } from "@bibliothecadao/eternum";
+import { ResourcesIds, findResourceById, LABOR_CONFIG, RealmInterface } from "@bibliothecadao/eternum";
 import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "../../../../utils/utils.jsx";
 import { ReactComponent as Clock } from "../../../../assets/icons/common/clock.svg";
 import { ReactComponent as Village } from "../../../../assets/icons/common/village.svg";
 import ProgressBar from "../../../../elements/ProgressBar";
 import { useDojo } from "../../../../DojoContext";
-import { Realm } from "../../../../types";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { calculateNextHarvest, calculateProductivity, formatSecondsInHoursMinutes } from "./laborUtils";
 import { useMemo } from "react";
@@ -16,7 +15,7 @@ import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
 
 type LaborComponentProps = {
   resourceId: number;
-  realm: Realm;
+  realm: RealmInterface;
   buildLoadingStates: { [key: number]: boolean };
   setBuildLoadingStates: (prevStates: any) => void;
   onBuild: () => void;

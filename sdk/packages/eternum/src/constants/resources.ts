@@ -1,12 +1,4 @@
-export interface Resources {
-  trait: string;
-  value: number;
-  colour: string;
-  colourClass: string;
-  id: number;
-  description: string;
-  img: string;
-}
+import { Resources } from "../types";
 
 export const findResourceById = (value: number) => {
   return resources.find((e) => e.id === value);

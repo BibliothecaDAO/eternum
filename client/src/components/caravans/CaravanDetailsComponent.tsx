@@ -4,11 +4,11 @@ import Button from "../../elements/Button";
 import { OrderIcon } from "../../elements/OrderIcon";
 import { ResourceCost } from "../../elements/ResourceCost";
 import useBlockchainStore from "../../hooks/store/useBlockchainStore";
-import { CaravanInterface } from "../../hooks/graphql/useGraphQLQueries";
 import { useTrade } from "../../hooks/helpers/useTrade";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 import useRealmStore from "../../hooks/store/useRealmStore";
 import { divideByPrecision } from "../../utils/utils";
+import { CaravanInterface } from "@bibliothecadao/eternum";
 
 type CaravanDetailsProps = {
   caravan: CaravanInterface;

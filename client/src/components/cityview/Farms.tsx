@@ -92,8 +92,6 @@ type GLTFResult = GLTF & {
 
 type ContextType = Record<string, React.ForwardRefExoticComponent<JSX.IntrinsicElements["mesh"]>>;
 
-const MAX_FARMS = 4;
-
 function Farms(props: JSX.IntrinsicElements["group"]) {
   const { nodes, materials } = useGLTF("/models/farms-transformed.glb") as GLTFResult;
   let { realmEntityId } = useRealmStore();

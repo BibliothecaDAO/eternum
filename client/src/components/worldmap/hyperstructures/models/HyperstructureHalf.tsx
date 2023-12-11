@@ -7,7 +7,7 @@ Files: public/models/models/hyperstructure-half.glb [570.8KB] > hyperstructure-h
 import * as THREE from "three";
 import { Html, useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
-import { HyperStructureInterface } from "../../../../hooks/helpers/useHyperstructure";
+import { HyperStructureInterface } from "@bibliothecadao/eternum";
 
 type GLTFResult = GLTF & {
   nodes: {

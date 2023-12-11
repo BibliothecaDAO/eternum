@@ -6,11 +6,7 @@ import useBlockchainStore from "../store/useBlockchainStore";
 import { useComponentValue } from "@dojoengine/react";
 import { useEffect, useState } from "react";
 import { PRICE_UPDATE_INTERVAL } from "@bibliothecadao/eternum";
-
-export interface LaborCostInterface {
-  resourceId: number;
-  amount: number;
-}
+import { Resource } from "@bibliothecadao/eternum";
 
 export function useLabor() {
   const {
@@ -21,7 +17,7 @@ export function useLabor() {
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const getLaborCost = (resourceId: number): LaborCostInterface[] => {
+  const getLaborCost = (resourceId: number): Resource[] => {
     const laborCostResources = getComponentValue(LaborCostResources, getEntityIdFromKeys([BigInt(resourceId)]));
 
     const resourceIds = laborCostResources

@@ -1,6 +1,6 @@
 import { Has, HasValue, getComponentValue } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
-import { CaravanInterface } from "../graphql/useGraphQLQueries";
+import { CaravanInterface } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { getEntityIdFromKeys, padAddress } from "../../utils/utils";
 import { useEntityQuery } from "@dojoengine/react";

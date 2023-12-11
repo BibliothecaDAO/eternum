@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import clsx from "clsx";
-import { CaravanInterface } from "../../../../hooks/graphql/useGraphQLQueries";
 import { ReactComponent as Pen } from "../../../../assets/icons/common/pen.svg";
 import { ReactComponent as CaretDownFill } from "../../../../assets/icons/common/caret-down-fill.svg";
 import { ReactComponent as DonkeyIcon } from "../../../../assets/icons/units/donkey-circle.svg";
@@ -11,11 +10,11 @@ import { formatSecondsInHoursMinutes } from "../../../cityview/realm/labor/labor
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import ProgressBar from "../../../../elements/ProgressBar";
 import { Dot } from "../../../../elements/Dot";
-import { CAPACITY_PER_DONKEY } from "@bibliothecadao/eternum";
+import { BankInterface, CAPACITY_PER_DONKEY, CaravanInterface } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@latticexyz/recs";
 import { useDojo } from "../../../../DojoContext";
 import Button from "../../../../elements/Button";
-import { BANK_AUCTION_DECAY, BankInterface, targetPrices } from "../../../../hooks/helpers/useBanks";
+import { BANK_AUCTION_DECAY, targetPrices } from "../../../../hooks/helpers/useBanks";
 import { useResources } from "../../../../hooks/helpers/useResources";
 import { getLordsAmountFromBankAuction } from "../utils";
 
@@ -62,35 +61,35 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
   const resourcesGive = getResourcesFromInventory(caravan.caravanId);
 
   const lordsAmountFromWheat = useMemo(() => {
-    return bank.wheatLaborAuction && nextBlockTimestamp
+    return bank.wheatAuction && nextBlockTimestamp
       ? getLordsAmountFromBankAuction(
           resourcesGive.resources.find((resource) => {
             return resource.resourceId === 254;
           })?.amount || 0,
           targetPrices[254],
           BANK_AUCTION_DECAY,
-          bank.wheatLaborAuction.per_time_unit,
-          bank.wheatLaborAuction.start_time,
+          bank.wheatAuction.per_time_unit,
+          bank.wheatAuction.start_time,
           nextBlockTimestamp,
-          bank.wheatLaborAuction.sold,
-          bank.wheatLaborAuction.price_update_interval,
+          bank.wheatAuction.sold,
+          bank.wheatAuction.price_update_interval,
         )
       : 0;
   }, [resourcesGive, bank]);
 
   const lordsAmountFromFish = useMemo(() => {
-    return bank.fishLaborAuction && nextBlockTimestamp
+    return bank.fishAuction && nextBlockTimestamp
       ? getLordsAmountFromBankAuction(
           resourcesGive.resources.find((resource) => {
             return resource.resourceId === 255;
           })?.amount || 0,
           targetPrices[255],
           BANK_AUCTION_DECAY,
-          bank.fishLaborAuction.per_time_unit,
-          bank.fishLaborAuction.start_time,
+          bank.fishAuction.per_time_unit,
+          bank.fishAuction.start_time,
           nextBlockTimestamp,
-          bank.fishLaborAuction.sold,
-          bank.fishLaborAuction.price_update_interval,
+          bank.fishAuction.sold,
+          bank.fishAuction.price_update_interval,
         )
       : 0;
   }, [resourcesGive, bank]);

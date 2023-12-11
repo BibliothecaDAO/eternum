@@ -36,7 +36,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
     let unpackedResources: number[] = [];
 
     if (realm) {
-      unpackedResources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
+      unpackedResources = unpackResources(BigInt(realm.resourceTypesPacked), realm.resourceTypesCount);
       realmResourceIds = realmResourceIds.concat(unpackedResources);
       setRealmResourceIds(realmResourceIds);
     }

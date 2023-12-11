@@ -50,6 +50,7 @@ export const SettleRealmComponent = () => {
     // take next realm id
     let new_realm_id = getNextRealmIdForOrder(chosenOrder || selectedOrder);
     let realm = getRealm(new_realm_id);
+
     let position = getPosition(new_realm_id);
 
     // create array of initial resources
@@ -75,7 +76,15 @@ export const SettleRealmComponent = () => {
       await create_realm({
         signer: masterAccount as any,
         owner: BigInt(account.address),
-        ...realm,
+        realm_id: realm.realmId,
+        order: realm.order,
+        wonder: realm.wonder,
+        regions: realm.regions,
+        resource_types_count: realm.resourceTypesCount,
+        resource_types_packed: realm.resourceTypesPacked,
+        rivers: realm.rivers,
+        harbors: realm.harbors,
+        cities: realm.cities,
         position,
         order_hyperstructure_id,
         resources,
