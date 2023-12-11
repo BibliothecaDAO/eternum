@@ -15,7 +15,7 @@ import { useDojo } from "../../../DojoContext";
 import { Steps } from "../../../elements/Steps";
 import { Headline } from "../../../elements/Headline";
 import { OrderIcon } from "../../../elements/OrderIcon";
-import { HyperStructureInterface, RealmInterface, orderNameDict, orders } from "@bibliothecadao/eternum";
+import { HyperStructureInterface, orderNameDict, orders } from "@bibliothecadao/eternum";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import clsx from "clsx";
 import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
@@ -313,8 +313,6 @@ const BuildHyperstructurePanel = ({
     });
     return resourcesLeftToComplete;
   }, [hyperstructureData]);
-
-  const { getEntityLevel } = useLevel();
 
   const realms = useMemo(
     () =>
