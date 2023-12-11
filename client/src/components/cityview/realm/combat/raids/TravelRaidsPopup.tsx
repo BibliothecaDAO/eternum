@@ -6,15 +6,15 @@ import { useDojo } from "../../../../../DojoContext";
 import { getComponentValue } from "@latticexyz/recs";
 import { getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
-import { SelectRealmPanel } from "./SelectRealmPanel";
+import { SelectRealmForCombatPanel } from "./SelectRealmForCombatPanel";
 import { CombatInfo } from "@bibliothecadao/eternum";
 
-type RoadBuildPopupProps = {
+type TravelRaidsPopupProps = {
   selectedRaider: CombatInfo;
   onClose: () => void;
 };
 
-export const TravelRaidsPopup = ({ selectedRaider, onClose }: RoadBuildPopupProps) => {
+export const TravelRaidsPopup = ({ selectedRaider, onClose }: TravelRaidsPopupProps) => {
   const {
     setup: {
       components: { Position },
@@ -24,6 +24,7 @@ export const TravelRaidsPopup = ({ selectedRaider, onClose }: RoadBuildPopupProp
   } = useDojo();
 
   const [selectedEntityId, setSelectedEntityId] = useState<number | undefined>();
+  const [canAttack, setCanAttack] = useState(true);
   const [loading, setLoading] = useState(false);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
@@ -58,10 +59,11 @@ export const TravelRaidsPopup = ({ selectedRaider, onClose }: RoadBuildPopupProp
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"450px"}>
         <div className="flex flex-col items-center p-2">
-          <SelectRealmPanel
+          <SelectRealmForCombatPanel
             selectedEntityId={selectedEntityId}
             setSelectedEntityId={setSelectedEntityId}
-          ></SelectRealmPanel>
+            setCanAttack={setCanAttack}
+          ></SelectRealmForCombatPanel>
           <div className="flex mt-2 flex-col items-center justify-center">
             <div className="flex">
               {!loading && (
@@ -79,13 +81,16 @@ export const TravelRaidsPopup = ({ selectedRaider, onClose }: RoadBuildPopupProp
                 className="!px-[6px] !py-[2px] text-xxs ml-auto"
                 isLoading={loading}
                 onClick={onTravel}
-                disabled={!selectedEntityId}
+                disabled={!selectedEntityId || !canAttack}
                 variant="outline"
                 withoutSound
               >
                 {`Travel`}
               </Button>
             </div>
+            {!canAttack && (
+              <div className="text-order-giants my-1 text-xxs"> Can only attack Realms level 3 or higher </div>
+            )}
           </div>
         </div>
       </SecondaryPopup.Body>

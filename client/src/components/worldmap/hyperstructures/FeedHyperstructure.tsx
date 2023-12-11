@@ -15,7 +15,7 @@ import { useDojo } from "../../../DojoContext";
 import { Steps } from "../../../elements/Steps";
 import { Headline } from "../../../elements/Headline";
 import { OrderIcon } from "../../../elements/OrderIcon";
-import { HyperStructureInterface, orderNameDict, orders } from "@bibliothecadao/eternum";
+import { HyperStructureInterface, RealmInterface, orderNameDict, orders } from "@bibliothecadao/eternum";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import clsx from "clsx";
 import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
@@ -159,6 +159,12 @@ const SelectableRealm = ({ realm, selected = false, onClick, costs, ...props }: 
     return costById;
   }, [costs]);
 
+  const { getEntityLevel } = useLevel();
+
+  const level = useMemo(() => {
+    return getEntityLevel(realm.entity_id)?.level || 0;
+  }, [realm]);
+
   return (
     <div
       className={clsx(
@@ -173,6 +179,7 @@ const SelectableRealm = ({ realm, selected = false, onClick, costs, ...props }: 
           {realm.name}
         </div>
       )}
+      {level < 4 && <div className="text-xxs text-order-giants">Min level 4 to feed Hyperstructure</div>}
       <div className="text-gold ml-auto absolute right-2 top-2">24h:10m away</div>
       <div className="flex items-center mt-6 w-full">
         <div className="flex">
@@ -191,7 +198,7 @@ const SelectableRealm = ({ realm, selected = false, onClick, costs, ...props }: 
               );
             })}
         </div>
-        <Button disabled={false} onClick={onClick} className="h-6 text-xxs ml-auto" variant="success">
+        <Button disabled={level < 4} onClick={onClick} className="h-6 text-xxs ml-auto" variant="success">
           {`Send Resources`}
         </Button>
       </div>
@@ -306,6 +313,8 @@ const BuildHyperstructurePanel = ({
     });
     return resourcesLeftToComplete;
   }, [hyperstructureData]);
+
+  const { getEntityLevel } = useLevel();
 
   const realms = useMemo(
     () =>

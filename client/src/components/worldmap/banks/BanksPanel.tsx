@@ -2,16 +2,12 @@ import { useMemo, useState } from "react";
 import { Tabs } from "../../../elements/tab";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { BanksListComponent } from "./BanksListComponent";
-import { useLevel } from "../../../hooks/helpers/useLevel";
-import useRealmStore from "../../../hooks/store/useRealmStore";
 
-type BanksPanelProps = {};
+type BanksPanelProps = { minimumRealmLevel: number };
 
-export const BanksPanel = ({}: BanksPanelProps) => {
+export const BanksPanel = ({ minimumRealmLevel }: BanksPanelProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
-
-  const { realmEntityId } = useRealmStore();
 
   const tabs = useMemo(
     () => [
@@ -41,13 +37,10 @@ export const BanksPanel = ({}: BanksPanelProps) => {
     [selectedTab],
   );
 
-  const { getEntityLevel } = useLevel();
-  const realm_level = getEntityLevel(realmEntityId)?.level;
-
   return (
     <>
-      {realm_level === undefined || realm_level < 2 ? (
-        <div className="text-gold p-4 border rounded border-gold m-2">Banks Locked until level 3</div>
+      {minimumRealmLevel < 2 ? (
+        <div className="text-gold p-4 border rounded border-gold m-2">Banks Locked until level 2</div>
       ) : (
         <Tabs
           selectedIndex={selectedTab}
