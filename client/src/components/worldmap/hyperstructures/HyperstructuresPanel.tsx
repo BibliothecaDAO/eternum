@@ -3,12 +3,16 @@ import { Tabs } from "../../../elements/tab";
 import { HyperstructuresListComponent } from "./HyperstructuresListComponent";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { HyperstructureLeaderboard } from "./HyperstructureLeaderboard";
+import { useLevel } from "../../../hooks/helpers/useLevel";
+import useRealmStore from "../../../hooks/store/useRealmStore";
 
 type HyperstructuresPanelProps = {};
 
 export const HyperstructuresPanel = ({}: HyperstructuresPanelProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
+
+  const { realmEntityId } = useRealmStore();
 
   const tabs = useMemo(
     () => [
@@ -84,25 +88,32 @@ export const HyperstructuresPanel = ({}: HyperstructuresPanelProps) => {
     [selectedTab],
   );
 
+  const { getEntityLevel } = useLevel();
+  const realm_level = getEntityLevel(realmEntityId)?.level;
+
   return (
     <>
-      <Tabs
-        selectedIndex={selectedTab}
-        onChange={(index: any) => setSelectedTab(index)}
-        variant="default"
-        className="h-full"
-      >
-        <Tabs.List>
-          {tabs.map((tab, index) => (
-            <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-          ))}
-        </Tabs.List>
-        <Tabs.Panels className="overflow-hidden">
-          {tabs.map((tab, index) => (
-            <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
-          ))}
-        </Tabs.Panels>
-      </Tabs>
+      {realm_level === undefined || realm_level < 4 ? (
+        <div className="text-gold p-4 border rounded border-gold m-2">Hyperstructures Locked until level 4</div>
+      ) : (
+        <Tabs
+          selectedIndex={selectedTab}
+          onChange={(index: any) => setSelectedTab(index)}
+          variant="default"
+          className="h-full"
+        >
+          <Tabs.List>
+            {tabs.map((tab, index) => (
+              <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+            ))}
+          </Tabs.List>
+          <Tabs.Panels className="overflow-hidden">
+            {tabs.map((tab, index) => (
+              <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+            ))}
+          </Tabs.Panels>
+        </Tabs>
+      )}
     </>
   );
 };

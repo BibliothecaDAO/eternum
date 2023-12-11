@@ -64,7 +64,7 @@ export function useLevel() {
     ];
   };
 
-  const getEntityLevel = (entityId: number): { level: number; timeLeft: number; percentage: number } | undefined => {
+  const getEntityLevel = (entityId: number): { level: number; timeLeft: number } | undefined => {
     if (!nextBlockTimestamp) return undefined;
     const level = getComponentValue(Level, getEntityIdFromKeys([BigInt(entityId)])) || {
       level: 0,
@@ -91,15 +91,7 @@ export function useLevel() {
       }
     }
 
-    let percentage = 100;
-    if (trueLevel === 1) {
-      percentage = 125;
-    } else if (trueLevel === 2) {
-      percentage = 150;
-    } else if (trueLevel === 3) {
-      percentage = 200;
-    }
-    return { level: trueLevel, timeLeft, percentage };
+    return { level: trueLevel, timeLeft };
   };
 
   const getRealmLevelBonus = (level: number, levelIndex: LevelIndex) => {

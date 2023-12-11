@@ -16,7 +16,7 @@ export const Leveling = ({ className, entityId, setShowLevelUp }: LevelingProps)
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const progress = useMemo(() => {
-    return (level?.timeLeft || 0 / 604800) * 100;
+    return ((level?.timeLeft || 0) / 604800) * 100;
   }, [level, nextBlockTimestamp]);
 
   const timeLeftColors = useMemo(() => {
@@ -50,7 +50,7 @@ export const Leveling = ({ className, entityId, setShowLevelUp }: LevelingProps)
     <div className={className || ""}>
       <div onClick={onClick} className="cursor-pointer">
         {/* text-[13px] */}
-        <div className={"flex items-center text-white justify-between font-bold"}>
+        <div className={"flex items-center text-white justify-between text-[13px] font-bold"}>
           <div>Level: {level ? level.level : 0}</div>
         </div>
         <ProgressBar

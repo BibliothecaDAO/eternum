@@ -276,13 +276,13 @@ const UnlockMessage: React.FC<UnlockMessageProps> = ({ newLevel }) => {
     message =
       "Banks are a key component of the world. You can send food there using caravans and swap it against LORDS following a VRGDA curve. The more food is swapped, the less LORDS you get for the same amount.";
   } else if (newLevel === 3) {
-    title = "Unlocking Hyperstructures";
-    message =
-      "Each order can build a hyperstructure by sending it resources. As the hyperstructure levels up, Realms of that order will get additional bonuses.";
-  } else if (newLevel === 4) {
     title = "Unlocking Combat";
     message =
       "Because of the scarcity of resources, Realms will have to fight each other to survive. Combat is a key component of the game. You can send your Raiders to attack other Realms and steal their resources. You can also defend your Realm by building a Town Watch.";
+  } else if (newLevel === 4) {
+    title = "Unlocking Hyperstructures";
+    message =
+      "Each order can build a hyperstructure by sending it resources. As the hyperstructure levels up, Realms of that order will get additional bonuses.";
   }
 
   return (
