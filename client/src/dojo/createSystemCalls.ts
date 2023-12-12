@@ -32,6 +32,7 @@ import {
   MergeSoldiersProps,
   CreateAndMergeSoldiersProps,
   HealSoldiersProps,
+  CreateMultipleRealmsProps,
 } from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -93,6 +94,10 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
 
   const create_realm = async (props: CreateRealmProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.create_realm(props)));
+  };
+
+  const create_multiple_realms = async (props: CreateMultipleRealmsProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.create_multiple_realms(props)));
   };
 
   const create_road = async (props: CreateRoadProps) => {
@@ -198,6 +203,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     create_caravan,
     attach_caravan,
     create_realm,
+    create_multiple_realms,
     create_road,
     transfer_resources,
     send_resources_to_location,

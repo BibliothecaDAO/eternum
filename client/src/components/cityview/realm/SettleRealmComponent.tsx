@@ -23,14 +23,14 @@ export const SettleRealmComponent = () => {
 
   const {
     setup: {
-      systemCalls: { create_realm },
+      systemCalls: { create_multiple_realms },
     },
     account: { account, masterAccount },
   } = useDojo();
 
   const { getHyperstructureIdByOrder } = useHyperstructure();
 
-  const { getNextRealmIdForOrder } = useRealm();
+  const { getNextRealmIdForOrder, getRealmIdForOrderAfter } = useRealm();
 
   const { play: playSign } = useUiSounds(soundSelector.sign);
 
@@ -42,62 +42,71 @@ export const SettleRealmComponent = () => {
   );
   const canSettle = realmEntityIds.length < MAX_REALMS;
 
-  const settleRealm = async () => {
+  const settleRealms = async () => {
     setIsLoading(true);
-    // if no realm id latest realm id is 0
-    // const realm_id = await getLatestRealmId();
+    let calldata = [];
 
-    // take next realm id
     let new_realm_id = getNextRealmIdForOrder(chosenOrder || selectedOrder);
-    let realm = getRealm(new_realm_id);
+    for (let i = 0; i < MAX_REALMS; i++) {
+      // if no realm id latest realm id is 0
+      // const realm_id = await getLatestRealmId();
 
-    let position = getPosition(new_realm_id);
+      if (i > 0) {
+        new_realm_id = getRealmIdForOrderAfter(chosenOrder || selectedOrder, new_realm_id);
+      }
+      // take next realm id
+      let realm = getRealm(new_realm_id);
 
-    // create array of initial resources
-    let resources: BigNumberish[] = [];
-    const isDev = import.meta.env.VITE_DEV === "true";
-    const dev_multiplier = isDev ? 10 : 1;
-    for (let i = 0; i < 22; i++) {
-      resources = [...resources, i + 1, multiplyByPrecision(initialResources[i]) * dev_multiplier];
+      let position = getPosition(new_realm_id);
+
+      // create array of initial resources
+      let resources: BigNumberish[] = [];
+      const isDev = import.meta.env.VITE_DEV === "true";
+      const dev_multiplier = isDev ? 10 : 1;
+      for (let i = 0; i < 22; i++) {
+        resources = [...resources, i + 1, multiplyByPrecision(initialResources[i]) * dev_multiplier];
+      }
+      if (isDev) {
+        resources = [...resources, 253, multiplyByPrecision(1000000)];
+        resources = [...resources, 254, multiplyByPrecision(1000000)];
+        resources = [...resources, 255, multiplyByPrecision(1000000)];
+      } else {
+        resources = [...resources, 254, multiplyByPrecision(7560)];
+        resources = [...resources, 255, multiplyByPrecision(2520)];
+      }
+
+      const order_hyperstructure_id = getHyperstructureIdByOrder(realm.order);
+
+      if (order_hyperstructure_id) {
+        calldata.push({
+          owner: BigInt(account.address),
+          realm_id: realm.realmId,
+          order: realm.order,
+          wonder: realm.wonder,
+          regions: realm.regions,
+          resource_types_count: realm.resourceTypesCount,
+          resource_types_packed: realm.resourceTypesPacked,
+          rivers: realm.rivers,
+          harbors: realm.harbors,
+          cities: realm.cities,
+          position,
+          order_hyperstructure_id,
+          resources,
+        });
+      }
     }
-    if (isDev) {
-      resources = [...resources, 253, multiplyByPrecision(1000000)];
-      resources = [...resources, 254, multiplyByPrecision(1000000)];
-      resources = [...resources, 255, multiplyByPrecision(1000000)];
-    } else {
-      resources = [...resources, 254, multiplyByPrecision(7560)];
-      resources = [...resources, 255, multiplyByPrecision(2520)];
-    }
 
-    const order_hyperstructure_id = getHyperstructureIdByOrder(realm.order);
-
-    // if no order hyperstructure dont mint realms
-    if (order_hyperstructure_id) {
-      await create_realm({
-        signer: masterAccount as any,
-        owner: BigInt(account.address),
-        realm_id: realm.realmId,
-        order: realm.order,
-        wonder: realm.wonder,
-        regions: realm.regions,
-        resource_types_count: realm.resourceTypesCount,
-        resource_types_packed: realm.resourceTypesPacked,
-        rivers: realm.rivers,
-        harbors: realm.harbors,
-        cities: realm.cities,
-        position,
-        order_hyperstructure_id,
-        resources,
-      });
-      setIsLoading(false);
-      playSign();
-    }
-  };
-
-  const mintMultipleRealms = async (times: number) => {
-    for (let i = 0; i < times; i++) {
-      await settleRealm();
-    }
+    // @dev: do it in 2 times because too many steps for 1 tx
+    await create_multiple_realms({
+      signer: masterAccount as any,
+      realms: calldata.slice(0, 3),
+    });
+    await create_multiple_realms({
+      signer: masterAccount as any,
+      realms: calldata.slice(3, 5),
+    });
+    setIsLoading(false);
+    playSign();
   };
 
   return (
@@ -130,7 +139,7 @@ export const SettleRealmComponent = () => {
         <Button
           disabled={!canSettle}
           isLoading={isLoading}
-          onClick={() => (!isLoading ? mintMultipleRealms(5) : null)}
+          onClick={() => (!isLoading ? settleRealms() : null)}
           className="mx-auto mt-4 text-xl"
           variant={!isLoading ? "success" : "danger"}
         >

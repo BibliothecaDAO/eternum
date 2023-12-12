@@ -172,8 +172,7 @@ export interface CreateRoadProps extends SystemSigner {
   usage_count: num.BigNumberish;
 }
 
-// Interface definition
-export interface CreateRealmProps extends SystemSigner {
+interface Realm {
   realm_id: num.BigNumberish;
   owner: num.BigNumberish;
   resource_types_packed: num.BigNumberish;
@@ -191,6 +190,12 @@ export interface CreateRealmProps extends SystemSigner {
   };
   resources: num.BigNumberish[];
 }
+
+export interface CreateMultipleRealmsProps extends SystemSigner {
+  realms: Realm[];
+}
+
+export interface CreateRealmProps extends Realm, SystemSigner {}
 
 export interface TransferItemsProps extends SystemSigner {
   sender_id: num.BigNumberish;

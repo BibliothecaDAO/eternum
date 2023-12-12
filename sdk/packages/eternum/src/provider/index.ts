@@ -8,6 +8,7 @@ import {
   CreateFreeTransportUnitProps,
   CreateOrderProps,
   CreateRealmProps,
+  CreateMultipleRealmsProps,
   CreateRoadProps,
   FeedHyperstructureAndTravelBackPropos,
   HarvestLaborProps,
@@ -351,6 +352,67 @@ export class EternumProvider extends RPCProvider {
       retryInterval: 500,
     });
   }
+
+  create_multiple_realms = async (props: CreateMultipleRealmsProps) => {
+    let { realms, signer } = props;
+
+    let uuid = await this.uuid();
+
+    let calldata = realms.flatMap((realm) => {
+      const {
+        realm_id,
+        owner,
+        resource_types_packed,
+        resource_types_count,
+        cities,
+        harbors,
+        rivers,
+        regions,
+        wonder,
+        order,
+        order_hyperstructure_id,
+        position,
+        resources,
+      } = realm;
+
+      let calldata = [
+        {
+          contractAddress: getContractByName(this.manifest, "test_realm_systems"),
+          entrypoint: "create",
+          calldata: [
+            this.getWorldAddress(),
+            realm_id,
+            owner,
+            resource_types_packed,
+            resource_types_count,
+            cities,
+            harbors,
+            rivers,
+            regions,
+            wonder,
+            order,
+            order_hyperstructure_id,
+            2,
+            position.x,
+            position.y,
+          ],
+        },
+        {
+          contractAddress: getContractByName(this.manifest, "test_resource_systems"),
+          entrypoint: "mint",
+          calldata: [this.getWorldAddress(), uuid, resources.length / 2, ...resources],
+        },
+      ];
+
+      uuid = uuid + 1;
+      return calldata;
+    });
+
+    const tx = await this.executeMulti(signer, calldata);
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  };
 
   public async create_road(props: CreateRoadProps) {
     const { creator_id, start_coord, end_coord, usage_count, signer } = props;

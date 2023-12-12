@@ -48,6 +48,19 @@ export function useRealm() {
     }
   };
 
+  const getRealmIdForOrderAfter = (order: number, realmId: number) => {
+    const orderName = getOrderName(order);
+
+    const orderRealmIds = (realmIdsByOrder as { [key: string]: number[] })[orderName];
+    const latestIndex = orderRealmIds.indexOf(realmId);
+
+    if (latestIndex === -1 || latestIndex === orderRealmIds.length - 1) {
+      return orderRealmIds[0];
+    } else {
+      return orderRealmIds[latestIndex + 1];
+    }
+  };
+
   const getAddressName = (address: string) => {
     const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]));
     return addressName ? hexToAscii(numberToHex(addressName.name)) : undefined;
@@ -70,6 +83,7 @@ export function useRealm() {
     getNextRealmIdForOrder,
     getAddressName,
     getRealmAddressName,
+    getRealmIdForOrderAfter,
   };
 }
 
