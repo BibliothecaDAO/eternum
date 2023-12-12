@@ -2498,7 +2498,7 @@
     {
       "name": "resource_systems",
       "address": "0x2dab8013b2dea3f5b37f31db94a5136843408efa04a966a6587f65056b1ef40",
-      "class_hash": "0x532b1a918ee07ae3d2af1960b4c6558a0f5a65b2a0be0863ddf077d6fa2829a",
+      "class_hash": "0x296e8a045234c8d5a359080aa33be81a431e2614c6e3c59bb89930f6ee0c600",
       "abi": [
         {
           "type": "impl",
@@ -3133,7 +3133,7 @@
     {
       "name": "trade_systems",
       "address": "0x7b54643f42a1c4298fe5e465105ccbee30ba505f3bedaa90f4951f9f15be8f0",
-      "class_hash": "0x5cde449bb479bcc0130e605e8f6132f1f26621dd9300393ed762c52df294765",
+      "class_hash": "0x32571ae09145a2ec2791ef5729d546167c9c8fc62315660c452d4d604ee9d7f",
       "abi": [
         {
           "type": "impl",
