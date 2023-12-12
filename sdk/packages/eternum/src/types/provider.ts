@@ -68,6 +68,7 @@ export interface CreateOrderProps {
   signer: any;
   maker_transport_id?: num.BigNumberish;
   donkeys_quantity?: num.BigNumberish;
+  expires_at: num.BigNumberish;
 }
 
 export interface FeedHyperstructureAndTravelBackPropos extends SystemSigner {
@@ -201,4 +202,12 @@ export interface TransferItemsProps extends SystemSigner {
   sender_id: num.BigNumberish;
   indices: num.BigNumberish[];
   receiver_id: num.BigNumberish;
+}
+
+export interface TransferItemsFromMultipleProps extends SystemSigner {
+  senders: {
+    sender_id: num.BigNumberish;
+    indices: num.BigNumberish[];
+    receiver_id: num.BigNumberish;
+  }[];
 }

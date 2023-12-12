@@ -4,7 +4,6 @@ import { useDojo } from "../../DojoContext";
 import { getComponentValue } from "@latticexyz/recs";
 import { Badge } from "../../elements/Badge";
 import { getEntityIdFromKeys } from "../../utils/utils";
-import { NotificationType } from "./useNotifications";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 import Button from "../../elements/Button";
 import { ResourceCost } from "../../elements/ResourceCost";
@@ -12,6 +11,7 @@ import useBlockchainStore from "../store/useBlockchainStore";
 import { soundSelector, useUiSounds } from "../useUISound";
 import { useMemo, useState } from "react";
 import { LevelIndex, useLevel } from "../helpers/useLevel";
+import { NotificationType } from "../store/useNotificationsStore";
 
 export const useHarvestNotification = (
   notification: NotificationType,

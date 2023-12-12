@@ -2,16 +2,24 @@ import { useMemo, useState } from "react";
 import { Notification } from "../elements/Notification";
 import clsx from "clsx";
 import Button from "../elements/Button";
+import { generateUniqueId, useNotifications } from "../hooks/notifications/useNotifications";
+import { useDojo } from "../DojoContext";
 import {
+  EmptyChestData,
   EventType,
   NotificationType,
-  generateUniqueId,
-  useNotifications,
-} from "../hooks/notifications/useNotifications";
-import { useDojo } from "../DojoContext";
-import { useNotificationsStore } from "../hooks/store/useNotificationsStore";
+  useNotificationsStore,
+} from "../hooks/store/useNotificationsStore";
 
+// dev:max number of notifications before reach step limit
 const MAX_HARVEST_NOTIFICATIONS = 11;
+const MAX_CLAIM_NOTIFICATIONS = 7;
+
+type sender = {
+  sender_id: number;
+  receiver_id: number;
+  indices: number[];
+};
 
 type NotificationsComponentProps = {
   className?: string;
@@ -21,20 +29,20 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
   const {
     account: { account },
     setup: {
-      systemCalls: { harvest_all_labor },
+      systemCalls: { harvest_all_labor, transfer_items_from_multiple },
     },
   } = useDojo();
 
   const [showNotifications, setShowNotifications] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isHarvestLoading, setIsHarvestLoading] = useState(false);
+  const [isClaimLoading, setIsClaimLoading] = useState(false);
 
-  // const { notifications, handleCloseNotification, removeNotification, closedNotifications } = useNotifications();
   const { closedNotifications, handleCloseNotification } = useNotifications();
 
   const { notifications, deleteNotification } = useNotificationsStore();
 
   const onHarvestAll = async () => {
-    setIsLoading(true);
+    setIsHarvestLoading(true);
     const harvestKeys: string[][] = notifications
       .map((notification: NotificationType) => {
         if (notification.eventType === EventType.Harvest) {
@@ -52,13 +60,52 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
       .slice(0, MAX_HARVEST_NOTIFICATIONS)) {
       deleteNotification(notification.keys, notification.eventType);
     }
-    setIsLoading(false);
+    setIsHarvestLoading(false);
+  };
+
+  const onClaimAll = async () => {
+    setIsClaimLoading(true);
+    const senders: sender[] = notifications
+      .map((notification: NotificationType) => {
+        if (notification.eventType === EventType.EmptyChest) {
+          let data = notification.data as EmptyChestData;
+          if (notification?.keys) {
+            return {
+              sender_id: parseInt(notification.keys[0]),
+              receiver_id: data.realmEntityId,
+              indices: data.indices,
+            };
+          }
+        }
+      })
+      .filter(Boolean)
+      .slice(0, MAX_CLAIM_NOTIFICATIONS) as sender[];
+
+    for (let notification of notifications
+      .filter((notification) => notification.eventType === EventType.EmptyChest)
+      .slice(0, MAX_CLAIM_NOTIFICATIONS)) {
+      deleteNotification(notification.keys, notification.eventType);
+    }
+
+    await transfer_items_from_multiple({
+      signer: account,
+      senders,
+    });
+    setIsClaimLoading(false);
   };
 
   const hasHarvestNotification = useMemo(() => {
     return (
       notifications.filter((notification: NotificationType) => {
         return notification.eventType === EventType.Harvest;
+      }).length > 0
+    );
+  }, [notifications]);
+
+  const hasClaimNotifications = useMemo(() => {
+    return (
+      notifications.filter((notification: NotificationType) => {
+        return notification.eventType === EventType.EmptyChest;
       }).length > 0
     );
   }, [notifications]);
@@ -88,11 +135,28 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
             {showNotifications ? "Hide notifications" : "Show notifications"}
           </Button>
         }
-        {hasHarvestNotification && (
-          <Button variant="success" className="pointer-events-auto" isLoading={isLoading} onClick={onHarvestAll}>
-            {"Harvest All"}
-          </Button>
-        )}
+        <div>
+          {hasHarvestNotification && (
+            <Button
+              variant="success"
+              className="pointer-events-auto mr-2"
+              isLoading={isHarvestLoading}
+              onClick={onHarvestAll}
+            >
+              {"Harvest All"}
+            </Button>
+          )}
+          {hasClaimNotifications && (
+            <Button
+              variant="success"
+              className="pointer-events-auto mr-2"
+              isLoading={isClaimLoading}
+              onClick={onClaimAll}
+            >
+              {"Claim All"}
+            </Button>
+          )}
+        </div>
       </div>
       <div className="overflow-auto">
         {showNotifications &&

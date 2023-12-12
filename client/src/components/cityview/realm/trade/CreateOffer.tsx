@@ -5,7 +5,7 @@ import { Headline } from "../../../../elements/Headline";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../elements/NumberInput";
 import { SelectableResource } from "../../../../elements/SelectableResource";
-import { resources } from "@bibliothecadao/eternum";
+import { ONE_MONTH, resources } from "@bibliothecadao/eternum";
 import { ReactComponent as ArrowSeparator } from "../../../../assets/icons/common/arrow-separator.svg";
 import { ReactComponent as Danger } from "../../../../assets/icons/common/danger.svg";
 import { ReactComponent as Donkey } from "../../../../assets/icons/units/donkey-circle.svg";
@@ -55,6 +55,8 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+
   const { getRealmEntityIdFromRealmId } = useTrade();
 
   const onSelectRealmId = (realmId: number) => {
@@ -64,6 +66,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
 
   const createOrder = async () => {
     setIsLoading(true);
+    if (!nextBlockTimestamp) return;
     if (isNewCaravan) {
       await optimisticCreateOrder(create_order)({
         signer: account,
@@ -78,6 +81,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
           multiplyByPrecision(selectedResourcesGetAmounts[id]),
         ),
         donkeys_quantity: donkeysCount,
+        expires_at: nextBlockTimestamp + ONE_MONTH,
       });
     } else {
       await optimisticCreateOrder(create_order)({
@@ -93,6 +97,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
         taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
           multiplyByPrecision(selectedResourcesGetAmounts[id]),
         ),
+        expires_at: nextBlockTimestamp + ONE_MONTH,
       });
     }
     onClose();

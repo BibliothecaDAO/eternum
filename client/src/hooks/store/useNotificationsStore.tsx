@@ -1,25 +1,32 @@
 import { create } from "zustand";
-import { CombatResultInterface } from "@bibliothecadao/eternum";
+import { CombatResultInterface, Resource } from "@bibliothecadao/eternum";
 
 export enum EventType {
   MakeOffer,
   AcceptOffer,
   CancelOffer,
   Harvest,
-  OrderClaimable,
+  EmptyChest,
   StolenResource,
   Attacked,
 }
 
-type HarvestData = {
+export enum CarrierType {
+  Caravan,
+  Raiders,
+}
+
+export type HarvestData = {
   harvestAmount: number;
 };
 
-type EmptyChestData = {
+export type EmptyChestData = {
   destinationRealmId: number;
-  caravanId: number;
+  carrierType: CarrierType;
+  entityId: number;
   realmEntityId: number;
-  resourcesChestId: number;
+  indices: number[];
+  resources: Resource[];
 };
 
 export type NotificationType = {

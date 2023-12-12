@@ -2,18 +2,18 @@ import clsx from "clsx";
 import { ComponentPropsWithRef, useEffect, useState } from "react";
 import { Transition } from "@headlessui/react";
 import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
-import { EventType, NotificationType } from "../hooks/notifications/useNotifications";
 import { useTradeNotification } from "../hooks/notifications/useTradeNotification";
 import { useHarvestNotification } from "../hooks/notifications/useHarvestNotification";
 import { useEmptyChestNotification } from "../hooks/notifications/useEmptyChestNotification";
 import { useAttackedNotification, useStolenResourcesNotification } from "../hooks/notifications/useCombatNotification";
+import { EventType, NotificationType } from "../hooks/store/useNotificationsStore";
 
 const notificationHandlers = {
   [EventType.AcceptOffer]: useTradeNotification,
   [EventType.MakeOffer]: useTradeNotification,
   [EventType.CancelOffer]: useTradeNotification,
   [EventType.Harvest]: useHarvestNotification,
-  [EventType.OrderClaimable]: useEmptyChestNotification,
+  [EventType.EmptyChest]: useEmptyChestNotification,
   [EventType.StolenResource]: useStolenResourcesNotification,
   [EventType.Attacked]: useAttackedNotification,
 };

@@ -33,6 +33,7 @@ import {
   CreateAndMergeSoldiersProps,
   HealSoldiersProps,
   CreateMultipleRealmsProps,
+  TransferItemsFromMultipleProps,
 } from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -165,8 +166,11 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
   };
 
   const transfer_items = async (props: TransferItemsProps) => {
-    console.log({ props });
     setComponentsFromEvents(contractComponents, getEvents(await provider.transfer_items(props)));
+  };
+
+  const transfer_items_from_multiple = async (props: TransferItemsFromMultipleProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.transfer_items_from_multiple(props)));
   };
 
   const isLive = async () => {
@@ -199,6 +203,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     accept_order,
     cancel_fungible_order,
     transfer_items,
+    transfer_items_from_multiple,
     create_free_transport_unit,
     create_caravan,
     attach_caravan,

@@ -12,6 +12,7 @@ import { SortInterface } from "../../elements/SortButton";
 import { useCaravan } from "./useCaravans";
 import { getRealm } from "../../utils/realms";
 import { useRoads } from "./useRoads";
+import useBlockchainStore from "../store/useBlockchainStore";
 
 type useGetMarketProps = {
   selectedResources: string[];
@@ -224,6 +225,8 @@ export function useGetMarket({
     },
   } = useDojo();
 
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const [market, setMarket] = useState<MarketInterface[]>([]);
@@ -280,19 +283,21 @@ export function useGetMarket({
           const { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, tradeId);
           const distance = calculateDistance(trade.maker_id, realmEntityId);
           const hasRoad = getHasRoad(realmEntityId, trade.maker_id);
-          return {
-            tradeId,
-            makerId: trade.maker_id,
-            takerId: trade.taker_id,
-            makerOrder: getRealm(trade.maker_id).order,
-            expiresAt: trade.expires_at,
-            resourcesGet: isMine ? resourcesGive : resourcesGet,
-            resourcesGive: isMine ? resourcesGet : resourcesGive,
-            canAccept: canAcceptOffer({ realmEntityId, resourcesGive }),
-            ratio: isMine ? calculateRatio(resourcesGet, resourcesGive) : calculateRatio(resourcesGive, resourcesGet),
-            distance: distance || 0,
-            hasRoad,
-          } as MarketInterface;
+          if (nextBlockTimestamp && trade.expires_at > nextBlockTimestamp) {
+            return {
+              tradeId,
+              makerId: trade.maker_id,
+              takerId: trade.taker_id,
+              makerOrder: getRealm(trade.maker_id).order,
+              expiresAt: trade.expires_at,
+              resourcesGet: isMine ? resourcesGive : resourcesGet,
+              resourcesGive: isMine ? resourcesGet : resourcesGive,
+              canAccept: canAcceptOffer({ realmEntityId, resourcesGive }),
+              ratio: isMine ? calculateRatio(resourcesGet, resourcesGive) : calculateRatio(resourcesGive, resourcesGet),
+              distance: distance || 0,
+              hasRoad,
+            } as MarketInterface;
+          }
         }
       })
       .filter(Boolean) as MarketInterface[];
