@@ -128,6 +128,14 @@ export class EternumProvider extends RPCProvider {
       donkeys_quantity,
     } = props;
 
+    let maker_gives_resource = maker_gives_resource_amounts.flatMap((amount, i) => {
+      return [maker_gives_resource_types[i], amount];
+    });
+
+    let taker_gives_resource = taker_gives_resource_amounts.flatMap((amount, i) => {
+      return [taker_gives_resource_types[i], amount];
+    });
+
     const expires_at = Math.floor(Date.now() / 1000 + 2628000);
     let transactions: Call[] = [];
 
@@ -158,15 +166,11 @@ export class EternumProvider extends RPCProvider {
         this.getWorldAddress(),
         maker_id,
         maker_gives_resource_types.length,
-        ...maker_gives_resource_types,
-        maker_gives_resource_amounts.length,
-        ...maker_gives_resource_amounts,
+        ...maker_gives_resource,
         final_caravan_id,
         taker_id,
         taker_gives_resource_types.length,
-        ...taker_gives_resource_types,
-        taker_gives_resource_amounts.length,
-        ...taker_gives_resource_amounts,
+        ...taker_gives_resource,
         expires_at,
       ],
     });
