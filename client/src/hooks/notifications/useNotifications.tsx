@@ -21,6 +21,7 @@ import { CombatResultInterface } from "@bibliothecadao/eternum";
 import { createCombatNotification, parseCombatEvent } from "../../utils/combat";
 import { Event, pollForEvents } from "../../services/eventPoller";
 import { LevelIndex, useLevel } from "../helpers/useLevel";
+import { useNotificationsStore } from "../store/useNotificationsStore";
 
 export enum EventType {
   MakeOffer,
@@ -71,6 +72,8 @@ export const useNotifications = () => {
 
   const { getEntityLevel, getHyperstructureLevelBonus, getRealmLevelBonus } = useLevel();
 
+  const { notifications, addUniqueNotifications } = useNotificationsStore();
+
   // get harvest bonuses
   const [realmLevel, hyperstructureLevel] = useMemo(() => {
     const realmLevel = getEntityLevel(realmEntityId)?.level || 0;
@@ -78,15 +81,13 @@ export const useNotifications = () => {
     return [realmLevel, hyperstructureLevel];
   }, [realmEntityId]);
 
-  const [notifications, setNotifications] = useState<NotificationType[]>([]);
-
   /**
    * Trade notifications
    */
   useEffect(() => {
     const subscription = entityUpdates.subscribe((updates) => {
-      const notifications = generateTradeNotifications(updates, Status);
-      addUniqueNotifications(notifications, setNotifications);
+      const newNotifications = generateTradeNotifications(updates, Status);
+      addUniqueNotifications(newNotifications);
     });
 
     return () => {
@@ -99,7 +100,7 @@ export const useNotifications = () => {
    */
   useEffect(() => {
     const updateNotifications = () => {
-      const notifications = nextBlockTimestamp
+      const newNotifications = nextBlockTimestamp
         ? generateLaborNotifications(
             realmsResources,
             getRealmLevelBonus,
@@ -111,7 +112,7 @@ export const useNotifications = () => {
           )
         : [];
       // add only add if not already in there
-      addUniqueNotifications(notifications, setNotifications);
+      addUniqueNotifications(newNotifications);
     };
 
     // Call it once initially
@@ -129,9 +130,8 @@ export const useNotifications = () => {
    * Combat notifications
    */
   const setCombatNotificationsFromEvents = (event: Event) => {
-    const notification = createCombatNotification(parseCombatEvent(event));
-    // setNotifications((prev) => [notification, ...prev]);
-    addUniqueNotifications([notification], setNotifications);
+    const newNotification = createCombatNotification(parseCombatEvent(event));
+    addUniqueNotifications([newNotification]);
   };
 
   useEffect(() => {
@@ -152,8 +152,8 @@ export const useNotifications = () => {
         const observable = await createCombatEvents(realmEntityId);
         observable.subscribe((event) => {
           if (event) {
-            const notification = createCombatNotification(parseCombatEvent(event));
-            addUniqueNotifications([notification], setNotifications);
+            const newNotification = createCombatNotification(parseCombatEvent(event));
+            addUniqueNotifications([newNotification]);
           }
         });
       }
@@ -167,7 +167,7 @@ export const useNotifications = () => {
 
   useEffect(() => {
     const updateNotifications = () => {
-      const notifications = nextBlockTimestamp
+      const newNotifications = nextBlockTimestamp
         ? generateEmptyChestNotifications(
             realmPositions,
             CaravanMembers,
@@ -181,7 +181,7 @@ export const useNotifications = () => {
         : [];
 
       // add only add if not already in there
-      addUniqueNotifications(notifications, setNotifications);
+      addUniqueNotifications(newNotifications);
     };
 
     // Call it once initially
@@ -195,9 +195,9 @@ export const useNotifications = () => {
     return () => clearInterval(intervalId);
   }, [nextBlockTimestamp]);
 
-  const removeNotification = (notificationId: string) => {
-    setNotifications((prev) => prev.filter((notification) => generateUniqueId(notification) !== notificationId));
-  };
+  // const removeNotification = (notificationId: string) => {
+  //   setNotifications((prev) => prev.filter((notification) => generateUniqueId(notification) !== notificationId));
+  // };
 
   const handleCloseNotification = (notificationId: string) => {
     setClosedNotifications((prev) => ({ ...prev, [notificationId]: true }));
@@ -205,7 +205,7 @@ export const useNotifications = () => {
 
   return {
     notifications,
-    removeNotification,
+    // removeNotification,
     closedNotifications,
     handleCloseNotification,
   };
@@ -216,26 +216,26 @@ export const useNotifications = () => {
  * @param notifications list of notifications
  * @param setNotifications setter for notifications
  */
-const addUniqueNotifications = (
-  notifications: NotificationType[],
-  setNotifications: React.Dispatch<React.SetStateAction<NotificationType[]>>,
-) => {
-  setNotifications((prev) => {
-    // Extract keys from previous notifications
-    const prevIds = new Set(prev.map((n) => generateUniqueId(n)));
+// const addUniqueNotifications = (
+//   notifications: NotificationType[],
+//   setNotifications: React.Dispatch<React.SetStateAction<NotificationType[]>>,
+// ) => {
+//   setNotifications((prev) => {
+//     // Extract keys from previous notifications
+//     const prevIds = new Set(prev.map((n) => generateUniqueId(n)));
 
-    // Filter out notifications that are already in the prev list
-    const newNotifications = notifications.filter((notification) => !prevIds.has(generateUniqueId(notification)));
+//     // Filter out notifications that are already in the prev list
+//     const newNotifications = notifications.filter((notification) => !prevIds.has(generateUniqueId(notification)));
 
-    // If there are no new notifications, return the previous state to avoid re-render
-    if (newNotifications.length === 0) {
-      return prev;
-    }
+//     // If there are no new notifications, return the previous state to avoid re-render
+//     if (newNotifications.length === 0) {
+//       return prev;
+//     }
 
-    // Otherwise, return the combined list
-    return [...newNotifications, ...prev];
-  });
-};
+//     // Otherwise, return the combined list
+//     return [...newNotifications, ...prev];
+//   });
+// };
 
 /**
  * Generate trade notifications from entity updates from graphql subscription

@@ -9,6 +9,7 @@ import {
   useNotifications,
 } from "../hooks/notifications/useNotifications";
 import { useDojo } from "../DojoContext";
+import { useNotificationsStore } from "../hooks/store/useNotificationsStore";
 
 const MAX_HARVEST_NOTIFICATIONS = 11;
 
@@ -27,16 +28,13 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
   const [showNotifications, setShowNotifications] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { notifications, handleCloseNotification, removeNotification, closedNotifications } = useNotifications();
+  // const { notifications, handleCloseNotification, removeNotification, closedNotifications } = useNotifications();
+  const { closedNotifications, handleCloseNotification } = useNotifications();
+
+  const { notifications, deleteNotification } = useNotificationsStore();
 
   const onHarvestAll = async () => {
     setIsLoading(true);
-    for (let notification of notifications
-      .filter((notification) => notification.eventType === EventType.Harvest)
-      .slice(0, MAX_HARVEST_NOTIFICATIONS)) {
-      const id = generateUniqueId(notification);
-      handleCloseNotification(id);
-    }
     const harvestKeys: string[][] = notifications
       .map((notification: NotificationType) => {
         if (notification.eventType === EventType.Harvest) {
@@ -52,8 +50,7 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
     for (let notification of notifications
       .filter((notification) => notification.eventType === EventType.Harvest)
       .slice(0, MAX_HARVEST_NOTIFICATIONS)) {
-      const id = generateUniqueId(notification);
-      removeNotification(id);
+      deleteNotification(notification.keys, notification.eventType);
     }
     setIsLoading(false);
   };
@@ -99,16 +96,18 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
       </div>
       <div className="overflow-auto">
         {showNotifications &&
-          getUniqueNotifications(notifications).map((notification: NotificationType) => {
-            const id = generateUniqueId(notification);
-
+          getUniqueNotifications(notifications).map((notification: NotificationType, i) => {
+            let id = generateUniqueId(notification);
             return (
               <Notification
                 closedNotifications={closedNotifications}
                 notification={notification}
-                key={id}
+                key={i}
                 id={id}
-                onClose={() => handleCloseNotification(id)}
+                onClose={() => {
+                  handleCloseNotification(id);
+                  // deleteNotification(notification.keys, notification.eventType);
+                }}
               ></Notification>
             );
           })}
