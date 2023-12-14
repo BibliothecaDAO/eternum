@@ -7,15 +7,18 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "codegen": "graphql-codegen",
-    "components": "npx @dojoengine/core ../contracts/target/dev/manifest.json src/dojo/contractComponents.ts"
+    "components": "npx @dojoengine/core ../contracts/target/dev/manifest.json src/dojo/contractComponents.ts http://localhost:5050 0x5cb4ce060de62a7b6bfd4cb70fd4ae3196bfe399c372cb0863e632ba8cc73ef"
   },
   "dependencies": {
     "@bibliothecadao/eternum": "../sdk/packages/eternum",
-    "@dojoengine/core": "^0.1.21",
-    "@dojoengine/create-burner": "^0.0.18",
-    "@dojoengine/react": "^0.0.3",
+    "@dojoengine/core": "^0.2.3",
+    "@dojoengine/create-burner": "^0.2.0",
+    "@dojoengine/torii-client": "^0.2.0",
+    "@dojoengine/torii-wasm": "^0.2.0",
+    "@dojoengine/utils": "^0.2.0",
+    "@dojoengine/react": "^0.2.0",
+    "@dojoengine/recs": "0.1.35",
     "@headlessui/react": "^1.7.14",
-    "@latticexyz/recs": "^1.43.0",
     "@latticexyz/utils": "^1.43.0",
     "@popperjs/core": "^2.11.8",
     "@react-spring/core": "^9.7.2",

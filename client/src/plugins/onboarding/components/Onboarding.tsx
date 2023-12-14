@@ -19,7 +19,7 @@ import realmsNames from "../../../geodata/realms.json";
 import { useLocation } from "wouter";
 import { orderNameDict } from "@bibliothecadao/eternum";
 import { getRealm } from "../../../utils/realms";
-import { Has, HasValue, getComponentValue } from "@latticexyz/recs";
+import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useEntityQuery } from "@dojoengine/react";
 import { RealmBubble } from "../../../components/cityview/RealmSwitch";
 

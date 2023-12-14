@@ -2,7 +2,7 @@ import { forwardRef, useMemo, useLayoutEffect } from "react";
 import { Vector2 } from "three";
 import { useThree } from "@react-three/fiber";
 import { BlendFunction } from "postprocessing";
-import { EntityIndex, setComponent, Component, Schema, Components } from "@latticexyz/recs";
+import { EntityIndex, setComponent, Component, Schema, Components } from "@dojoengine/recs";
 import { poseidonHashMany } from "micro-starknet";
 import { Position } from "@bibliothecadao/eternum";
 import realmCoords from "../geodata/coords.json";

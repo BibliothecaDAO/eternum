@@ -1,6 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { SelectableRealmInterface, getOrderName } from "@bibliothecadao/eternum";
-import { Has, getComponentValue, runQuery } from "@latticexyz/recs";
+import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useTrade } from "../../../../../hooks/helpers/useTrade";
 import { useCaravan } from "../../../../../hooks/helpers/useCaravans";

@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useDojo } from "../../../../../DojoContext";
 import { getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";

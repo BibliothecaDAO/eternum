@@ -11,7 +11,7 @@ import realmsNames from "../../geodata/realms.json";
 import useUIStore from "../../hooks/store/useUIStore";
 import { getRealm } from "../../utils/realms";
 import { useDojo } from "../../DojoContext";
-import { Has, HasValue, getComponentValue } from "@latticexyz/recs";
+import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useEntityQuery } from "@dojoengine/react";
 
 type RealmSwitchProps = {} & ComponentPropsWithRef<"div">;

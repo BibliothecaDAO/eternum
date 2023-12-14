@@ -11,7 +11,7 @@ import { ResourceCost } from "../../../../elements/ResourceCost";
 import ProgressBar from "../../../../elements/ProgressBar";
 import { Dot } from "../../../../elements/Dot";
 import { CAPACITY_PER_DONKEY, CaravanInterface, HyperStructureInterface } from "@bibliothecadao/eternum";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../../../DojoContext";
 import Button from "../../../../elements/Button";
 import { useHyperstructure } from "../../../../hooks/helpers/useHyperstructure";

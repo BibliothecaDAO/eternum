@@ -1,4 +1,4 @@
-import { Has, HasValue, NotValue, getComponentValue } from "@latticexyz/recs";
+import { Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys } from "../../utils/utils";

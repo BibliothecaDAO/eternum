@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { GraphQLClient } from "graphql-request";
 import { useDojo } from "../../DojoContext";
 import { setComponentsFromEntity } from "../../utils/utils";
-import { Components } from "@latticexyz/recs";
+import { Components } from "@dojoengine/recs";
 
 const client = new GraphQLClient(import.meta.env.VITE_TORII_URL!);
 

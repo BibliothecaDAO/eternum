@@ -1,4 +1,4 @@
-import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@latticexyz/recs";
+import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";

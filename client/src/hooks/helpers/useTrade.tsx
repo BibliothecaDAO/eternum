@@ -1,4 +1,4 @@
-import { EntityIndex, HasValue, NotValue, getComponentValue, runQuery } from "@latticexyz/recs";
+import { EntityIndex, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { MarketInterface, Resource } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";

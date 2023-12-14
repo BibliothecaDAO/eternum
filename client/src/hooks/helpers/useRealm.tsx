@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { EntityIndex, Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
+import { EntityIndex, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import realmsCoordsJson from "../../geodata/coords.json";
 import { useDojo } from "../../DojoContext";
 import { getContractPositionFromRealPosition, getEntityIdFromKeys, hexToAscii, numberToHex } from "../../utils/utils";

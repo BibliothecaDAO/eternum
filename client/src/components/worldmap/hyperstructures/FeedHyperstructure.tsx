@@ -4,7 +4,7 @@ import Button from "../../../elements/Button";
 import { SelectCaravanPanel } from "../../cityview/realm/trade/CreateOffer";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { getRealm } from "../../../utils/realms";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import {
   divideByPrecision,
   getContractPositionFromRealPosition,

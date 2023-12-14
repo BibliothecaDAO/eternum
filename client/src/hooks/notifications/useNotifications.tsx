@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDojo } from "../../DojoContext";
-import { Component, Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
+import { Component, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import {
   divideByPrecision,
   extractAndCleanKey,

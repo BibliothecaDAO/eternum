@@ -11,7 +11,7 @@ import { ResourceCost } from "../../../../elements/ResourceCost";
 import ProgressBar from "../../../../elements/ProgressBar";
 import { Dot } from "../../../../elements/Dot";
 import { BankInterface, CAPACITY_PER_DONKEY, CaravanInterface } from "@bibliothecadao/eternum";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../../../DojoContext";
 import Button from "../../../../elements/Button";
 import { BANK_AUCTION_DECAY, targetPrices } from "../../../../hooks/helpers/useBanks";

@@ -7,7 +7,7 @@ import { SelectableRealmInterface, getOrderName } from "@bibliothecadao/eternum"
 import { OrderIcon } from "../../../elements/OrderIcon";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
-import { Has, getComponentValue, runQuery } from "@latticexyz/recs";
+import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../../DojoContext";
 import { ReactComponent as CaretDownFill } from "../../../assets/icons/common/caret-down-fill.svg";
 import TextInput from "../../../elements/TextInput";

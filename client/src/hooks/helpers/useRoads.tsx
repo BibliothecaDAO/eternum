@@ -2,7 +2,7 @@ import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { useDojo } from "../../DojoContext";
 import { getEntityIdFromKeys, getPosition } from "../../utils/utils";
 import { useEffect, useMemo, useState } from "react";
-import { EntityIndex, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
+import { EntityIndex, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import useRealmStore from "../store/useRealmStore";
 import { getRealm, getRealmIdByPosition, getRealmNameById } from "../../utils/realms";
 import { RoadInterface } from "@bibliothecadao/eternum";
