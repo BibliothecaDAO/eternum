@@ -4,6 +4,7 @@ mod resource_systems {
     use eternum::models::resources::{Resource, ResourceAllowance};
     use eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
     use eternum::models::inventory::Inventory;
+    use eternum::models::realm::Realm;
     use eternum::models::metadata::ForeignKey;
     use eternum::models::position::{Position, Coord};
     use eternum::models::quantity::{Quantity, QuantityTrait};
@@ -109,11 +110,6 @@ mod resource_systems {
                     'not owner of entity id'
             );
 
-            let sending_entity_owner = get!(world, sending_entity_id, EntityOwner);
-            let sending_realm_id = sending_entity_owner.get_realm_id(world);
-
-            emit!(world, Transfer { receiving_entity_id, sending_realm_id, sending_entity_id, resources });
-
             // check that recepient and sender are at the same position
             caravan::check_position(world, receiving_entity_id, sending_entity_id);
             caravan::check_arrival_time(world, receiving_entity_id);
@@ -218,7 +214,40 @@ mod resource_systems {
                 receiver_id,
                 resource_chest.entity_id
             );
+
+            // emit transfer event
+            InternalResourceSystemsImpl::emit_transfer_event(
+                world,
+                sender_id, 
+                receiver_id, 
+                resources
+            )
      
+        }
+
+        fn emit_transfer_event(
+            world: IWorldDispatcher,
+            sending_entity_id: ID, 
+            receiving_entity_id: ID, 
+            resources: Span<(u8, u128)>
+        ) {
+            let mut sending_realm_id = 0;
+
+            let sending_realm = get!(world, sending_entity_id, Realm);
+            if sending_realm.realm_id != 0 {
+                sending_realm_id = sending_realm.realm_id;
+            } else {
+                let sending_entity_owner = get!(world, sending_entity_id, EntityOwner);
+                sending_realm_id = sending_entity_owner.get_realm_id(world);
+            }           
+
+            emit!(world, 
+                Transfer { 
+                    receiving_entity_id,
+                    sending_realm_id, 
+                    sending_entity_id, 
+                    resources 
+                });
         }
     }
 
@@ -244,7 +273,7 @@ mod resource_systems {
             let item_id = InternalInventorySystemsImpl::remove(world, sender_id, index);
 
             // remove resources from resource chest and give receiver
-            InternalResourceChestSystemsImpl::offload(world, item_id, receiver_id);
+            InternalResourceChestSystemsImpl::offload(world,sender_id, item_id, receiver_id);
             
         }
     }
@@ -403,40 +432,38 @@ mod resource_systems {
         }
 
 
-        fn offload(world: IWorldDispatcher, entity_id: ID, receiving_entity_id: ID) {
-            let mut resource_chest = get!(world, entity_id, ResourceChest);
+        fn offload(world: IWorldDispatcher, sending_entity_id: ID, chest_id: ID, receiving_entity_id: ID) {
+            let mut resource_chest = get!(world, chest_id, ResourceChest);
             assert( 
                 resource_chest.locked_until <= starknet::get_block_timestamp(),
                     'chest is locked'
             );
 
-            let mut resource_chest_weight = get!(world, entity_id, Weight);
+            let mut resource_chest_weight = get!(world, chest_id, Weight);
             assert(resource_chest_weight.value != 0, 'chest is empty');
             
-            if entity_id != receiving_entity_id {
-                // if it's a transfer to self, the weight wouldn't change
 
-                // ensure that receiver has enough weight capacity
-                let receiver_capacity = get!(world, receiving_entity_id, Capacity);
-                if receiver_capacity.is_capped() {
-                    let receiver_quantity = get!(world, receiving_entity_id, Quantity);
-                    let mut receiver_weight = get!(world, receiving_entity_id, Weight);
-                    receiver_weight.value += resource_chest_weight.value;
-                
-                    assert(
-                        receiver_capacity
-                            .can_carry_weight(
-                                    receiving_entity_id, 
-                                    receiver_quantity.get_value(), 
-                                    receiver_weight.value
-                                ),
-                        'not enough capacity'
-                    );
+            // ensure that receiver has enough weight capacity
+            let receiver_capacity = get!(world, receiving_entity_id, Capacity);
+            if receiver_capacity.is_capped() {
+                let receiver_quantity = get!(world, receiving_entity_id, Quantity);
+                let mut receiver_weight = get!(world, receiving_entity_id, Weight);
+                receiver_weight.value += resource_chest_weight.value;
+            
+                assert(
+                    receiver_capacity
+                        .can_carry_weight(
+                                receiving_entity_id, 
+                                receiver_quantity.get_value(), 
+                                receiver_weight.value
+                            ),
+                    'not enough capacity'
+                );
 
-                    // update receiver weight
-                    set!(world, (receiver_weight) );
-                }
+                // update receiver weight
+                set!(world, (receiver_weight) );
             }
+            
             
 
             // return resources to the entity
@@ -474,20 +501,12 @@ mod resource_systems {
             resource_chest_weight.value = 0;
             set!(world,(resource_chest_weight));
 
-
-            // emit transfer event 
-
-            let entity_owner = get!(world, entity_id, EntityOwner);
-            let realm_id = entity_owner.get_realm_id(world);
-
-            emit!(world, Transfer { 
+            InternalResourceSystemsImpl::emit_transfer_event(
+                world,
+                sending_entity_id, 
                 receiving_entity_id, 
-                sending_realm_id: realm_id, 
-                sending_entity_id: entity_id,
-                resources: resources.span()
-            });
-
-
+                resources.span()
+            );
         }
 
     }
