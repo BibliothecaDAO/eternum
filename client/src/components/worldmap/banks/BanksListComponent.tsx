@@ -40,13 +40,13 @@ export const BanksListComponent = ({}: BanksListComponentProps) => {
           <div className="">1</div>
           <ResourceIcon resource={"Wheat"} size="xs" />
           <div className="whitespace-nowrap"> {`= ${1 / targetPrices[254]}`}</div>
-          <ResourceIcon resource={"Shekels" || ""} size="xs" />
+          <ResourceIcon resource={"Lords" || ""} size="xs" />
         </div>
         <div className="flex flex-row items-center">
           <div className="">1</div>
           <ResourceIcon resource={"Fish"} size="xs" />
           <div className="whitespace-nowrap"> {`= ${1 / targetPrices[255]}`}</div>
-          <ResourceIcon resource={"Shekels" || ""} size="xs" />
+          <ResourceIcon resource={"Lords" || ""} size="xs" />
         </div>
       </div>
       {banks && (

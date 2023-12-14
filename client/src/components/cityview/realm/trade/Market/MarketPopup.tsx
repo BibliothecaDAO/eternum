@@ -50,7 +50,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
     if (!marketOffers) return [];
 
     return marketOffers.filter(
-      (offer) => offer.resourcesGet.length === 1 && offer.resourcesGet[0]?.resourceId === ResourcesIds["Shekels"],
+      (offer) => offer.resourcesGet.length === 1 && offer.resourcesGet[0]?.resourceId === ResourcesIds["Lords"],
     );
   }, [marketOffers]);
 
@@ -68,7 +68,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
     const summary: ResourceOffersSummary[] = [];
 
     resources.forEach((resource) => {
-      if (resource.trait === "Shekels") return;
+      if (resource.trait === "Lords") return;
 
       summary.push({
         resourceId: resource.id,
@@ -124,7 +124,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
     if (!marketOffers) return [];
 
     return marketOffers.filter(
-      (offer) => offer.resourcesGet.length === 1 && offer.resourcesGive[0]?.resourceId === ResourcesIds["Shekels"],
+      (offer) => offer.resourcesGet.length === 1 && offer.resourcesGive[0]?.resourceId === ResourcesIds["Lords"],
     );
   }, [marketOffers]);
 
@@ -142,7 +142,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
     const summary: ResourceOffersSummary[] = [];
 
     resources.forEach((resource) => {
-      if (resource.trait === "Shekels") return;
+      if (resource.trait === "Lords") return;
 
       summary.push({
         resourceId: resource.id,
@@ -312,7 +312,7 @@ const MarketplaceOverviewPanel = ({
       </SortPanel>
       <div className="mt-2">
         {filteredResources.map((resource) => {
-          if (resource.trait === "Shekels") return null;
+          if (resource.trait === "Lords") return null;
           return (
             <OverviewResourceRow
               key={resource.id}
@@ -372,7 +372,7 @@ const OverviewResourceRow = ({
                     </div>
                     <div className="relative z-10 flex items-center">
                       {depth.price.toFixed(2)}
-                      <ResourceIcon containerClassName="ml-1 w-min" resource="Shekels" size="xs" />
+                      <ResourceIcon containerClassName="ml-1 w-min" resource="Lords" size="xs" />
                     </div>
                   </div>
                   <div
@@ -417,7 +417,7 @@ const OverviewResourceRow = ({
                     </div>
                     <div className="relative z-10 flex items-center">
                       {depth.price.toFixed(2)}
-                      <ResourceIcon containerClassName="ml-1 w-min" resource="Shekels" size="xs" />
+                      <ResourceIcon containerClassName="ml-1 w-min" resource="Lords" size="xs" />
                     </div>
                   </div>
                   <div
@@ -451,7 +451,7 @@ const OverviewResourceRow = ({
         onMouseLeave={() => setTooltip(null)}
       >
         {askSummary && askSummary.bestPrice !== Infinity ? askSummary.bestPrice.toFixed(2) : (0).toFixed(2)}
-        <ResourceIcon containerClassName="ml-2 w-min" resource="Shekels" size="sm" />
+        <ResourceIcon containerClassName="ml-2 w-min" resource="Lords" size="sm" />
       </div>
       <div
         className="flex justify-end items-center"
@@ -491,7 +491,7 @@ const OverviewResourceRow = ({
         onMouseLeave={() => setTooltip(null)}
       >
         {bidSummary && bidSummary.bestPrice !== Infinity ? bidSummary.bestPrice.toFixed(2) : (0).toFixed(2)}
-        <ResourceIcon containerClassName="ml-2 w-min" resource="Shekels" size="sm" />
+        <ResourceIcon containerClassName="ml-2 w-min" resource="Lords" size="sm" />
       </div>
       <div
         className="flex justify-end items-center"
@@ -641,7 +641,7 @@ const ResourceOfferRow = ({
           <ResourceIcon
             containerClassName="mr-2 w-min"
             withTooltip={false}
-            resource={isBuy ? "Shekels" : resource.trait}
+            resource={isBuy ? "Lords" : resource.trait}
             size="sm"
           />
           {divideByPrecision(offer.resourcesGive[0].amount)}
@@ -655,7 +655,7 @@ const ResourceOfferRow = ({
       {resource && (
         <div className="flex items-center text-gold">
           {divideByPrecision(offer.resourcesGet[0].amount)}
-          <ResourceIcon containerClassName="ml-2 w-min" resource={!isBuy ? "Shekels" : resource.trait} size="sm" />
+          <ResourceIcon containerClassName="ml-2 w-min" resource={!isBuy ? "Lords" : resource.trait} size="sm" />
         </div>
       )}
 
