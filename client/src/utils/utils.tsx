@@ -2,10 +2,12 @@ import { forwardRef, useMemo, useLayoutEffect } from "react";
 import { Vector2 } from "three";
 import { useThree } from "@react-three/fiber";
 import { BlendFunction } from "postprocessing";
-import { EntityIndex, setComponent, Component, Schema, Components } from "@dojoengine/recs";
-import { poseidonHashMany } from "micro-starknet";
+import { Entity, setComponent, Component, Schema, Components } from "@dojoengine/recs";
 import { Position } from "@bibliothecadao/eternum";
 import realmCoords from "../geodata/coords.json";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+
+export { getEntityIdFromKeys };
 
 const isRef = (ref: any) => !!ref.current;
 
@@ -64,14 +66,14 @@ export function extractAndCleanKey(keys: string | null | undefined | string[]): 
   }
 }
 
-export type Entity = {
+export type NodeEntity = {
   __typename?: "Entity";
   // keys?: (string | null)[] | null | undefined;
   keys?: string | null | undefined | string[];
   models?: any | null[];
 };
 
-export function setComponentsFromEntity(entity: Entity, components: Components) {
+export function setComponentsFromEntity(entity: NodeEntity, components: Components) {
   if (!entity || !entity.models) return;
 
   // Pre-calculate these to avoid redundancy
@@ -93,7 +95,7 @@ export function setComponentsFromEntity(entity: Entity, components: Components) 
   }
 }
 
-export function setComponentFromEntity(entity: Entity, componentName: string, components: Components) {
+export function setComponentFromEntity(entity: NodeEntity, componentName: string, components: Components) {
   if (entity) {
     let component = components[componentName];
     let rawComponentValues = entity?.models?.find((component: any) => {
@@ -138,7 +140,7 @@ export const padAddress = (address: string) => {
   return "0x" + address.substring(2).padStart(64, "0");
 };
 
-export function getFirstComponentByType(entities: Entity[] | null | undefined, typename: string): any | null {
+export function getFirstComponentByType(entities: NodeEntity[] | null | undefined, typename: string): any | null {
   if (!isValidArray(entities)) return null;
 
   for (let entity of entities) {
@@ -178,17 +180,6 @@ export function getAllSystemNamesAsFelt(manifest: any): any {
   return manifest.systems.map((system: any) => strTofelt252Felt(system.name));
 }
 
-// DISCUSSION: MUD expects Numbers, but entities in Starknet are BigInts (from poseidon hash)
-// so I am converting them to Numbers here, but it means that there is a bigger risk of collisions
-export function getEntityIdFromKeys(keys: bigint[]): EntityIndex {
-  if (keys.length === 1) {
-    return parseInt(keys[0].toString()) as EntityIndex;
-  }
-  // calculate the poseidon hash of the keys
-  let poseidon = poseidonHashMany(keys);
-  return parseInt(poseidon.toString()) as EntityIndex;
-}
-
 export function setComponentFromEntitiesQuery(component: Component, entities: bigint[]) {
   let index = 0;
 
@@ -214,14 +205,14 @@ export function setComponentFromEntitiesQuery(component: Component, entities: bi
       return acc;
     }, {});
 
-    const entityIndex = parseInt(entityIds[i].toString()) as EntityIndex;
+    const entityIndex = entityIds[i].toString() as Entity;
     setComponent(component, entityIndex, componentValues);
 
     index += numValues;
   }
 }
 
-export function setComponentFromEntitiesGraphqlQuery(component: Component, entities: Entity[]) {
+export function setComponentFromEntitiesGraphqlQuery(component: Component, entities: NodeEntity[]) {
   entities.forEach((entity) => {
     const keys = extractAndCleanKey(entity.keys);
     const entityIndex = getEntityIdFromKeys(keys);

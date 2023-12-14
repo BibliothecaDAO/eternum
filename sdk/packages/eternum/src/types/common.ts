@@ -101,7 +101,7 @@ export interface CaravanInterface {
 /// REALMS
 export interface SelectableRealmInterface {
   entityId: number;
-  realmId: number;
+  realmId: bigint;
   name: string;
   order: string;
   distance: number;
@@ -110,7 +110,7 @@ export interface SelectableRealmInterface {
 }
 
 export interface RealmInterface {
-  realmId: number;
+  realmId: bigint;
   name: string;
   cities: number;
   rivers: number;
