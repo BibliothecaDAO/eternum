@@ -76,36 +76,33 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"410px"}>
-        {watchTower && (
-          <div className="flex flex-col items-center p-2">
-            {step == 1 && (
-              <SelectRaidersPanel
-                watchTower={watchTower}
-                setStep={setStep}
-                onClose={onClose}
-                attackingRaiders={attackingRaiders}
-                selectedRaiders={selectedRaiders}
-                setSelectedRaiders={setSelectedRaiders}
-              ></SelectRaidersPanel>
-            )}
-            {step == 2 && (
-              <AttackResultPanel
-                watchTower={watchTower}
-                onClose={onClose}
-                selectedRaiders={selectedRaiders}
-              ></AttackResultPanel>
-            )}
-            {targetRealmEntityId && step == 3 && (
-              <StealResultPanel
-                watchTower={watchTower}
-                targetFoodBalance={targetFoodBalance}
-                targetRealmEntityId={targetRealmEntityId}
-                onClose={onClose}
-                selectedRaiders={selectedRaiders}
-              ></StealResultPanel>
-            )}
-          </div>
-        )}
+        <div className="flex flex-col items-center p-2">
+          {step == 1 && (
+            <SelectRaidersPanel
+              watchTower={watchTower}
+              setStep={setStep}
+              onClose={onClose}
+              attackingRaiders={attackingRaiders}
+              selectedRaiders={selectedRaiders}
+              setSelectedRaiders={setSelectedRaiders}
+            ></SelectRaidersPanel>
+          )}
+          {watchTower && step == 2 && (
+            <AttackResultPanel
+              watchTower={watchTower}
+              onClose={onClose}
+              selectedRaiders={selectedRaiders}
+            ></AttackResultPanel>
+          )}
+          {targetRealmEntityId && step == 3 && (
+            <StealResultPanel
+              targetFoodBalance={targetFoodBalance}
+              targetRealmEntityId={targetRealmEntityId}
+              onClose={onClose}
+              selectedRaiders={selectedRaiders}
+            ></StealResultPanel>
+          )}
+        </div>
       </SecondaryPopup.Body>
     </SecondaryPopup>
   );
@@ -258,13 +255,11 @@ const AttackerHealthChange = ({ selectedRaider }: { selectedRaider: CombatInfo }
 };
 
 const StealResultPanel = ({
-  watchTower,
   targetFoodBalance,
   targetRealmEntityId,
   selectedRaiders,
   onClose,
 }: {
-  watchTower: CombatInfo;
   targetFoodBalance: Resource[];
   targetRealmEntityId: number;
   selectedRaiders: CombatInfo[];
@@ -566,12 +561,14 @@ const SelectRaidersPanel = ({
       <div className="flex flex-col items-center w-full">
         {/* {toRealm && <Headline size="big">Build road to {realmsData["features"][toRealm.realmId - 1].name}</Headline>} */}
         <div className="p-2 rounded border border-gold w-full flex flex-col">
-          {watchTower && (
+          {watchTower ? (
             <Defence
               hyperstructureLevelBonus={defenderHyperstructureLevelBonus}
               levelBonus={defenderLevelBonus}
               watchTower={watchTower}
             ></Defence>
+          ) : (
+            <div className="text-xxs text-gold">No watchtower</div>
           )}
           <div className="flex mt-2 flex-col items-center w-full text-xxs">
             <div className="text-light-pink italic w-full">Available resources:</div>
@@ -588,7 +585,7 @@ const SelectRaidersPanel = ({
             </div>
           </div>
           <div className="flex my-2 flex-col items-center justify-center w-full">
-            <div className="grid mb-1 grid-cols-2 gap-2 w-full">
+            <div className={`grid mb-1 grid-cols-${watchTower ? "2" : "1"} gap-2 w-full`}>
               <Button
                 className="w-full text-xxs h-[18px]"
                 disabled={selectedRaiders.length !== 1}
@@ -618,7 +615,7 @@ const SelectRaidersPanel = ({
                 )}
               >
                 <div className="">{(succesProb * 100).toFixed(0)}% success rate</div>
-                <div className="">{(succesProb * 100).toFixed(0)}% success rate</div>
+                {watchTower && <div className="">{(succesProb * 100).toFixed(0)}% success rate</div>}
               </div>
             )}
             {!(selectedRaiders.length > 0) && (
