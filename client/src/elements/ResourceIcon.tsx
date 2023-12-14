@@ -5,7 +5,7 @@ import { ReactComponent as Cloth } from "../assets/icons/resources/Cloth.svg";
 import { ReactComponent as DemonHide } from "../assets/icons/resources/DemonHide.svg";
 import { ReactComponent as DesertGlass } from "../assets/icons/resources/DesertGlass.svg";
 import { ReactComponent as Ore } from "../assets/icons/resources/Ore.svg";
-import { ReactComponent as Shekels } from "../assets/icons/resources/Shekels.svg";
+import { ReactComponent as Lords } from "../assets/icons/resources/Lords.svg";
 import { ReactComponent as Spores } from "../assets/icons/resources/Spores.svg";
 
 export type Props = {
@@ -55,9 +55,9 @@ const Components: { [key: string]: Resource } = Object.freeze({
   StoneTemple: { component: <Cloth className="w-full h-full" />, name: "Cloth" },
   DesertOasis: { component: <DesertGlass className="w-full h-full" />, name: "Desert Glass" },
   MountainDeep: { component: <Ore className="w-full h-full" />, name: "Ore" },
-  UnderwaterKeep: { component: <Shekels className="w-full h-full" />, name: "Shekels" },
+  UnderwaterKeep: { component: <Lords className="w-full h-full" />, name: "Lords" },
   ForestRuins: { component: <Spores className="w-full h-full" />, name: "Spores" },
-  Shekels: { component: <img src={`/images/resources/coin.png`} />, name: "Lords" },
+  Lords: { component: <img src={`/images/resources/coin.png`} />, name: "Lords" },
   Fish: { component: <img src={`/images/resources/255.png`} />, name: "Fish" },
   Wheat: { component: <img src={`/images/resources/254.png`} />, name: "Wheat" },
 });

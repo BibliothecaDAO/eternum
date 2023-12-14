@@ -32,7 +32,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
 
   // unpack the resources
   useMemo((): any => {
-    let realmResourceIds: number[] = [ResourcesIds["Shekels"], ResourcesIds["Wheat"], ResourcesIds["Fish"]];
+    let realmResourceIds: number[] = [ResourcesIds["Lords"], ResourcesIds["Wheat"], ResourcesIds["Fish"]];
     let unpackedResources: number[] = [];
 
     if (realm) {
@@ -182,7 +182,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId }) => 
           </div>
         </div>
       </div>
-      {(resourceId === ResourcesIds["Fish"] || resourceId === ResourcesIds["Shekels"]) && (
+      {(resourceId === ResourcesIds["Fish"] || resourceId === ResourcesIds["Lords"]) && (
         <div className="flex items-center mx-3 -translate-y-2 scale-y-[2]">|</div>
       )}
     </>

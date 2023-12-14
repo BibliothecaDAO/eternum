@@ -389,10 +389,10 @@ const SwapResourcesPanel = ({
                 )}
               </div>
             </div>
-            <Headline size="big"> Swap Food for Shekels</Headline>
+            <Headline size="big"> Swap Food for Lords</Headline>
             <div className="text-xxs mb-2 italic text-gold">
               {`
-                To swap wheat or fish for Shekles at the bank, you can send any amount you want. The amount of Shekles you get in return depends on the market price of wheat and fish at that specific bank.
+                To swap wheat or fish for Lords at the bank, you can send any amount you want. The amount of Lords you get in return depends on the market price of wheat and fish at that specific bank.
               `}
             </div>
 
