@@ -24,6 +24,7 @@ import { NumberInput } from "../../../elements/NumberInput";
 import { getLordsAmountFromBankAuction } from "./utils";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { useLevel } from "../../../hooks/helpers/useLevel";
+import { getTotalResourceWeight } from "../../cityview/realm/trade/TradeUtils";
 
 type BankPopupProps = {
   onClose: () => void;
@@ -263,11 +264,13 @@ const SwapResourcesPanel = ({
 
   // TODO: use same precision everywhere
   const resourceWeight = useMemo(() => {
-    let _resourceWeight = 0;
-    for (const amount of Object.values(feedResourcesGiveAmounts || {})) {
-      _resourceWeight += multiplyByPrecision(amount * 1);
-    }
-    return _resourceWeight;
+    const resourcesGive = Object.keys(feedResourcesGiveAmounts).map((resourceId) => {
+      return {
+        resourceId: parseInt(resourceId),
+        amount: feedResourcesGiveAmounts[parseInt(resourceId)],
+      };
+    });
+    return multiplyByPrecision(getTotalResourceWeight(resourcesGive));
   }, [feedResourcesGiveAmounts]);
 
   const realms = useMemo(

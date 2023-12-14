@@ -2,7 +2,7 @@ import { Has, HasValue, getComponentValue } from "@latticexyz/recs";
 import { useDojo } from "../../DojoContext";
 import { CaravanInterface } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
-import { getEntityIdFromKeys, padAddress } from "../../utils/utils";
+import { divideByPrecision, getEntityIdFromKeys, padAddress } from "../../utils/utils";
 import { useEntityQuery } from "@dojoengine/react";
 
 const FREE_TRANSPORT_ENTITY_TYPE = 256;
@@ -45,7 +45,7 @@ export function useCaravan() {
       pickupArrivalTime: resourceChest?.locked_until,
       resourcesChestId,
       blocked: movable?.blocked,
-      capacity: capacity?.weight_gram,
+      capacity: divideByPrecision(capacity?.weight_gram || 0),
       destination,
       owner: owner?.address,
       isMine: padAddress(owner?.address || "0x0") === padAddress(account.address),

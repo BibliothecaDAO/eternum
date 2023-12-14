@@ -7,6 +7,7 @@ import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { useTrade } from "../../../../hooks/helpers/useTrade";
 import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
 import { WEIGHT_PER_DONKEY_KG, MarketInterface } from "@bibliothecadao/eternum";
+import { getTotalResourceWeight } from "./TradeUtils";
 
 type AcceptOfferPopupProps = {
   onClose: () => void;
@@ -63,10 +64,7 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
 
   let { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, selectedTrade.tradeId);
 
-  let resourceWeight = 0;
-  for (const [_, amount] of Object.entries(resourcesGet.map((resource) => resource.amount) || {})) {
-    resourceWeight += amount * 1;
-  }
+  let resourceWeight = getTotalResourceWeight(resourcesGet);
 
   const canAcceptOffer = useMemo(() => {
     return selectedCaravan !== 0 || (isNewCaravan && hasEnoughDonkeys);

@@ -5,7 +5,7 @@ import { Headline } from "../../../../elements/Headline";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../elements/NumberInput";
 import { SelectableResource } from "../../../../elements/SelectableResource";
-import { resources } from "@bibliothecadao/eternum";
+import { WEIGHTS, resources } from "@bibliothecadao/eternum";
 import { ReactComponent as ArrowSeparator } from "../../../../assets/icons/common/arrow-separator.svg";
 import { ReactComponent as Danger } from "../../../../assets/icons/common/danger.svg";
 import { ReactComponent as Donkey } from "../../../../assets/icons/units/donkey-circle.svg";
@@ -24,6 +24,7 @@ import { SelectRealmPanel } from "../SelectRealmPanel";
 import clsx from "clsx";
 import { DONKEYS_PER_CITY, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 import { useResources } from "../../../../hooks/helpers/useResources";
+import { getTotalResourceWeight } from "./TradeUtils";
 
 type CreateOfferPopupProps = {
   onClose: () => void;
@@ -320,11 +321,13 @@ const SelectResourcesAmountPanel = ({
 
   useEffect(() => {
     // set resource weight in kg
-    let weight = 0;
-    for (const [_resourceId, amount] of Object.entries(selectedResourcesGetAmounts)) {
-      weight += amount * 1;
-    }
-    setResourceWeight(multiplyByPrecision(weight));
+    let resourcesGet = Object.keys(selectedResourcesGetAmounts).map((resourceId) => {
+      return {
+        resourceId: Number(resourceId),
+        amount: selectedResourcesGetAmounts[Number(resourceId)],
+      };
+    });
+    setResourceWeight(multiplyByPrecision(getTotalResourceWeight(resourcesGet)));
   }, [selectedResourcesGetAmounts]);
 
   return (
@@ -392,8 +395,22 @@ const SelectResourcesAmountPanel = ({
           })}
         </div>
       </div>
-      <div className="flex text-xs text-center text-white">
-        Items Weight <div className="ml-1 text-gold">{`${divideByPrecision(resourceWeight)}kg`}</div>
+      <div className="flex text-xs mt-2 text-center text-white">
+        Total Items Weight <div className="ml-1 text-gold">{`${divideByPrecision(resourceWeight)}kg`}</div>
+      </div>
+      <div className="flex my-1 flex-row text-xxs text-center text-white">
+        <div className="flex flex-col mx-1">
+          <div> Food</div>
+          <div className="ml-1 text-gold">{`${WEIGHTS[254]}kg/unit`}</div>
+        </div>
+        <div className="flex flex-col mx-1">
+          <div> Resource</div>
+          <div className="ml-1 text-gold">{`${WEIGHTS[1]}kg/unit`}</div>
+        </div>
+        <div className="flex flex-col mx-1">
+          <div> Lords</div>
+          <div className="ml-1 text-gold">{`${WEIGHTS[253]}kg/unit`}</div>
+        </div>
       </div>
       <SelectRealmPanel selectedRealmId={selectedRealmId} setSelectedRealmId={setSelectedRealmId}></SelectRealmPanel>
     </>
@@ -448,6 +465,10 @@ export const SelectCaravanPanel = ({
       return (realm?.cities || 0) * DONKEYS_PER_CITY;
     }
   }, [realm]);
+
+  useEffect(() => {
+    setDonkeysCount(Math.min(donkeysLeft || 0, Math.ceil(divideByPrecision(resourceWeight) / WEIGHT_PER_DONKEY_KG)));
+  }, [resourceWeight]);
 
   const canCarry = (caravan: CaravanInterface, resourceWeight: number) => {
     return caravan.capacity ? caravan.capacity >= resourceWeight : false;
@@ -531,8 +552,22 @@ export const SelectCaravanPanel = ({
           )}
         </div>
       ) : null}
-      <div className="flex my-3 text-xs text-center text-white">
-        Items Weight <div className="ml-1 text-gold">{`${divideByPrecision(resourceWeight)}kg`}</div>
+      <div className="flex text-xs mt-2 text-center text-white">
+        Total Items Weight <div className="ml-1 text-gold">{`${divideByPrecision(resourceWeight)}kg`}</div>
+      </div>
+      <div className="flex my-1 flex-row text-xxs text-center text-white">
+        <div className="flex flex-col mx-1">
+          <div> Food</div>
+          <div className="ml-1 text-gold">{`${WEIGHTS[254]}kg/unit`}</div>
+        </div>
+        <div className="flex flex-col mx-1">
+          <div> Resource</div>
+          <div className="ml-1 text-gold">{`${WEIGHTS[1]}kg/unit`}</div>
+        </div>
+        <div className="flex flex-col mx-1 mb-2">
+          <div> Lords</div>
+          <div className="ml-1 text-gold">{`${WEIGHTS[253]}kg/unit`}</div>
+        </div>
       </div>
       {isNewCaravan && (
         <>

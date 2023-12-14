@@ -165,7 +165,6 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
   };
 
   const transfer_items = async (props: TransferItemsProps) => {
-    console.log({ props });
     setComponentsFromEvents(contractComponents, getEvents(await provider.transfer_items(props)));
   };
 
