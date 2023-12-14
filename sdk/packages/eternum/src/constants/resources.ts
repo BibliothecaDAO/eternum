@@ -11,12 +11,12 @@ export const findResourceIdByTrait = (trait: string) => {
 
 export const resources: Array<Resources> = [
   {
-    trait: "Shekels",
+    trait: "Lords",
     value: 253,
     colour: "#ec4899",
     colourClass: "",
     id: 253,
-    description: "Shekels.",
+    description: "Lords.",
     img: "",
   },
   {
@@ -283,7 +283,7 @@ export enum ResourcesIds {
   Adamantine = 20,
   Mithral = 21,
   Dragonhide = 22,
-  Shekels = 253,
+  Lords = 253,
   Wheat = 254,
   Fish = 255,
 }

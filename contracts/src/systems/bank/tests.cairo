@@ -39,7 +39,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, IBankSystemsDispatcher,) {
     // set weight configuration for wheat
     IWeightConfigDispatcher {
         contract_address: config_systems_address
-    }.set_weight_config(world, ResourceTypes::SHEKELS.into(), 2); 
+    }.set_weight_config(world, ResourceTypes::LORDS.into(), 2); 
 
     let bank_config_dispatcher = IBankConfigDispatcher {
         contract_address: config_systems_address
@@ -53,7 +53,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, IBankSystemsDispatcher,) {
         array![
             (
                 // 1 shekel costs 5 wheat, 2 fish and 3 coal
-                ResourceTypes::SHEKELS, 
+                ResourceTypes::LORDS, 
                 array![
                     (ResourceTypes::WHEAT, 5),
                     (ResourceTypes::FISH, 2),
@@ -62,8 +62,8 @@ fn setup() -> (IWorldDispatcher, u128, u128, IBankSystemsDispatcher,) {
             ),
 
             (
-            // shekels cost 2 dragonhide
-            ResourceTypes::SHEKELS, 
+            // lords cost 2 dragonhide
+            ResourceTypes::LORDS, 
             array![
                 (ResourceTypes::DRAGONHIDE, 2),
             ].span()
@@ -72,7 +72,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, IBankSystemsDispatcher,) {
     );
 
 
-    // create bank auction for shekels
+    // create bank auction for lords
     let decay_constant: u128 = _0_1;
     let per_time_unit: u128 = 50;
     let price_update_interval: u128 = 10;
@@ -80,8 +80,8 @@ fn setup() -> (IWorldDispatcher, u128, u128, IBankSystemsDispatcher,) {
         world,
         1,
         array![
-            (ResourceTypes::SHEKELS, 0), // the one where shekels cost fish, wheat and coal
-            (ResourceTypes::SHEKELS, 1), // the one where shekels cost dragonhide
+            (ResourceTypes::LORDS, 0), // the one where lords cost fish, wheat and coal
+            (ResourceTypes::LORDS, 1), // the one where lords cost dragonhide
         ].span(),
         decay_constant,
         per_time_unit,
@@ -154,13 +154,13 @@ fn test_bank_swap_for_wheat_fish_and_coal() {
         contract_address_const::<'transport'>()
     );
 
-    let shekels_bought = 80;
+    let lords_bought = 80;
 
     let initial_transport_weight = get!(world, transport_id, Weight);
 
     bank_systems_dispatcher.swap(
         world, bank_id, 0, transport_id, 
-        ResourceTypes::SHEKELS, shekels_bought
+        ResourceTypes::LORDS, lords_bought
     );
 
     let after_transport_weight = get!(world, transport_id, Weight);
@@ -179,11 +179,11 @@ fn test_bank_swap_for_wheat_fish_and_coal() {
     let transport_coal_resource = get!(world, (transport_id, ResourceTypes::COAL), Resource);
     assert(transport_coal_resource.balance == 500 - 258, 'wrong coal balance');
 
-    let bank_auction = get!(world, (bank_id, ResourceTypes::SHEKELS, 0), BankAuction);
-    assert(bank_auction.sold == shekels_bought, 'wrong auction sold');
+    let bank_auction = get!(world, (bank_id, ResourceTypes::LORDS, 0), BankAuction);
+    assert(bank_auction.sold == lords_bought, 'wrong auction sold');
 
     // ensure no excess shekel was minted
-    let bank_shekel_resource = get!(world, (bank_id, ResourceTypes::SHEKELS), Resource);
+    let bank_shekel_resource = get!(world, (bank_id, ResourceTypes::LORDS), Resource);
     assert(bank_shekel_resource.balance == 0, 'wrong bank balance');
 
     // ensure item was added to transport's inventory
@@ -205,11 +205,11 @@ fn test_bank_swap_for_dragonhide() {
     let initial_transport_weight = get!(world, transport_id, Weight);
 
 
-    let shekels_bought = 80;
+    let lords_bought = 80;
 
     bank_systems_dispatcher.swap(
         world, bank_id, 1, transport_id, 
-        ResourceTypes::SHEKELS, shekels_bought
+        ResourceTypes::LORDS, lords_bought
     );
 
     let after_transport_weight = get!(world, transport_id, Weight);
@@ -222,11 +222,11 @@ fn test_bank_swap_for_dragonhide() {
     assert(transport_dragonhide_resource.balance == 500 - 172, 'wrong fish balance');
 
 
-    let bank_auction = get!(world, (bank_id, ResourceTypes::SHEKELS, 1), BankAuction);
-    assert(bank_auction.sold == shekels_bought, 'wrong auction sold');
+    let bank_auction = get!(world, (bank_id, ResourceTypes::LORDS, 1), BankAuction);
+    assert(bank_auction.sold == lords_bought, 'wrong auction sold');
 
     // ensure no excess shekel was minted
-    let bank_shekel_resource = get!(world, (bank_id, ResourceTypes::SHEKELS), Resource);
+    let bank_shekel_resource = get!(world, (bank_id, ResourceTypes::LORDS), Resource);
     assert(bank_shekel_resource.balance == 0, 'wrong bank balance');
 
     // ensure item was added to transport's inventory
@@ -245,11 +245,11 @@ fn test_bank_swap__wrong_caller() {
         contract_address_const::<'unknown_caller'>()
     );
 
-    let shekels_bought = 80;
+    let lords_bought = 80;
 
     bank_systems_dispatcher.swap(
         world, bank_id, 0, transport_id, 
-        ResourceTypes::SHEKELS, shekels_bought
+        ResourceTypes::LORDS, lords_bought
     );
 }
 
@@ -273,10 +273,10 @@ fn test_bank_swap__wrong_transport_position() {
         contract_address_const::<'transport'>()
     );
 
-    let shekels_bought = 80;
+    let lords_bought = 80;
     bank_systems_dispatcher.swap(
         world, bank_id, 0, transport_id, 
-        ResourceTypes::SHEKELS, shekels_bought
+        ResourceTypes::LORDS, lords_bought
     );
 }
 
@@ -299,10 +299,10 @@ fn test_bank_swap__wrong_transport_arrival_time() {
         contract_address_const::<'transport'>()
     );
 
-    let shekels_bought = 80;
+    let lords_bought = 80;
     bank_systems_dispatcher.swap(
         world, bank_id, 0, transport_id, 
-        ResourceTypes::SHEKELS, shekels_bought
+        ResourceTypes::LORDS, lords_bought
     );
 }
 

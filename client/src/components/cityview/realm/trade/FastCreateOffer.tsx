@@ -53,15 +53,15 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose }: FastCreateO
 
   useEffect(() => {
     if (isBuy) {
-      setSelectedResourceIdsGive([ResourcesIds.Shekels]);
+      setSelectedResourceIdsGive([ResourcesIds.Lords]);
       setSelectedResourceIdsGet([resourceId]);
-      setSelectedResourcesGiveAmounts({ [ResourcesIds.Shekels]: 1 });
+      setSelectedResourcesGiveAmounts({ [ResourcesIds.Lords]: 1 });
       setSelectedResourcesGetAmounts({ [resourceId]: 1 });
     } else {
       setSelectedResourceIdsGive([resourceId]);
-      setSelectedResourceIdsGet([ResourcesIds.Shekels]);
+      setSelectedResourceIdsGet([ResourcesIds.Lords]);
       setSelectedResourcesGiveAmounts({ [resourceId]: 1 });
-      setSelectedResourcesGetAmounts({ [ResourcesIds.Shekels]: 1 });
+      setSelectedResourcesGetAmounts({ [ResourcesIds.Lords]: 1 });
     }
   }, [resourceId, isBuy]);
 
@@ -244,7 +244,7 @@ const SelectResourcesAmountPanel = ({
                     });
                   }}
                 />
-                {id !== ResourcesIds.Shekels ? (
+                {id !== ResourcesIds.Lords ? (
                   <ListSelect
                     className="w-full ml-2"
                     style="black"
@@ -321,7 +321,7 @@ const SelectResourcesAmountPanel = ({
                     });
                   }}
                 />
-                {id !== ResourcesIds.Shekels ? (
+                {id !== ResourcesIds.Lords ? (
                   <ListSelect
                     className="ml-2 w-full"
                     style="black"
