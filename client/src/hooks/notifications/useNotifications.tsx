@@ -103,7 +103,12 @@ export const useNotifications = () => {
     // poll for each of the realmEntityIds
     for (const realmEntityId of realmEntityIds) {
       // Keccak for Combat event
-      pollForEvents([COMBAT_EVENT, "*", numberToHex(realmEntityId.realmEntityId)], setCombatNotificationsFromEvents, 5);
+      pollForEvents(
+        // todo: bigint to hex
+        [COMBAT_EVENT, "*", numberToHex(Number(realmEntityId.realmEntityId))],
+        setCombatNotificationsFromEvents,
+        5,
+      );
     }
   }, [realmEntityIds]);
 
