@@ -189,7 +189,6 @@ interface Realm {
     x: num.BigNumberish;
     y: num.BigNumberish;
   };
-  resources: num.BigNumberish[];
 }
 
 export interface CreateMultipleRealmsProps extends SystemSigner {

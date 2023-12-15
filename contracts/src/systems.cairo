@@ -1,4 +1,5 @@
 mod config;
+mod realm;
 mod labor;
 mod trade;
 mod resources;

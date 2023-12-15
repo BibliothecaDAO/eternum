@@ -8,23 +8,24 @@ mod config_systems {
         LaborCostResources, LaborCostAmount, LaborConfig,CapacityConfig, 
         RoadConfig, SpeedConfig, TravelConfig, WeightConfig,WorldConfig,
         SoldierConfig, HealthConfig, AttackConfig, DefenceConfig, CombatConfig,
-        LevelingConfig,
+        LevelingConfig, RealmFreeMintConfig
     };
 
     use eternum::systems::config::interface::{
         IWorldConfig, IWeightConfig, ICapacityConfig, ILaborConfig, 
         ITransportConfig, IHyperstructureConfig, ICombatConfig,
-        ILevelingConfig, IBankConfig
+        ILevelingConfig, IBankConfig, IRealmFreeMintConfig
     };
 
     use eternum::constants::{
         WORLD_CONFIG_ID, LABOR_CONFIG_ID, TRANSPORT_CONFIG_ID,
         ROAD_CONFIG_ID, SOLDIER_ENTITY_TYPE, COMBAT_CONFIG_ID, 
-        REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID
+        REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID, 
+        REALM_FREE_MINT_CONFIG_ID
     };
 
     use eternum::models::hyperstructure::HyperStructure;
-    use eternum::models::resources::ResourceCost;
+    use eternum::models::resources::{ResourceCost, DetachedResource};
     use eternum::models::position::{Position,PositionTrait, Coord};
 
 
@@ -57,6 +58,48 @@ mod config_systems {
                     realm_l2_contract
                 })
             );
+        }
+    }
+
+    #[external(v0)]
+    impl RealmFreeMintConfigImpl of IRealmFreeMintConfig<ContractState> {
+        fn set_mint_config(
+            self: @ContractState, world: IWorldDispatcher, resources: Span<(u8, u128)>
+        ){
+            assert_caller_is_admin(world); 
+
+            let detached_resource_id = world.uuid().into();
+            let detached_resource_count = resources.len();
+            let mut resources = resources;
+            let mut index = 0;
+            loop {
+                match resources.pop_front() {
+                    Option::Some((resource_type, resource_amount)) => {
+                        let (resource_type, resource_amount) = (*resource_type, *resource_amount);
+                        assert(resource_amount > 0, 'amount must not be 0');
+
+                        set!(world, (
+                            DetachedResource { 
+                                entity_id: detached_resource_id,
+                                index, 
+                                resource_type, 
+                                resource_amount: resource_amount  }, )
+                        );
+
+                        index += 1;
+                    },
+                    Option::None => {break;}
+                };
+            };
+
+            set!(world, (
+                RealmFreeMintConfig {
+                    config_id: REALM_FREE_MINT_CONFIG_ID,
+                    detached_resource_id, 
+                    detached_resource_count
+                }
+            ));
+
         }
     }
 

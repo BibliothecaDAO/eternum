@@ -16,7 +16,6 @@ import {
   FeedHyperstructureAndTravelBackPropos,
   HarvestLaborProps,
   HarvestAllLaborProps,
-  MintResourcesProps,
   PurchaseLaborProps,
   SendResourcesToLocationProps,
   TransferResourcesProps,
@@ -59,10 +58,6 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
 
   const harvest_all_labor = async (props: HarvestAllLaborProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.harvest_all_labor(props)));
-  };
-
-  const mint_resources = async (props: MintResourcesProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.mint_resources(props)));
   };
 
   const create_order = async (props: CreateOrderProps) => {
@@ -198,7 +193,6 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     purchase_and_build_labor,
     harvest_labor,
     harvest_all_labor,
-    mint_resources,
     create_order,
     accept_order,
     cancel_fungible_order,

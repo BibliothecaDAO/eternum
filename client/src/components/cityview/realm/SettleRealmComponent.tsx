@@ -9,9 +9,7 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import { OrderIcon } from "../../../elements/OrderIcon";
 import { useRealm } from "../../../hooks/helpers/useRealm";
 import clsx from "clsx";
-import { getPosition, multiplyByPrecision } from "../../../utils/utils";
-import { initialResources } from "@bibliothecadao/eternum";
-import { BigNumberish } from "starknet";
+import { getPosition } from "../../../utils/utils";
 import { order_statments } from "../../../data/orders";
 import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
 
@@ -59,22 +57,6 @@ export const SettleRealmComponent = () => {
 
       let position = getPosition(new_realm_id);
 
-      // create array of initial resources
-      let resources: BigNumberish[] = [];
-      const isDev = import.meta.env.VITE_DEV === "true";
-      const dev_multiplier = isDev ? 10 : 1;
-      for (let i = 0; i < 22; i++) {
-        resources = [...resources, i + 1, multiplyByPrecision(initialResources[i]) * dev_multiplier];
-      }
-      if (isDev) {
-        resources = [...resources, 253, multiplyByPrecision(1000000)];
-        resources = [...resources, 254, multiplyByPrecision(1000000)];
-        resources = [...resources, 255, multiplyByPrecision(1000000)];
-      } else {
-        resources = [...resources, 254, multiplyByPrecision(7560)];
-        resources = [...resources, 255, multiplyByPrecision(2520)];
-      }
-
       const order_hyperstructure_id = getHyperstructureIdByOrder(realm.order);
 
       if (order_hyperstructure_id) {
@@ -91,19 +73,22 @@ export const SettleRealmComponent = () => {
           cities: realm.cities,
           position,
           order_hyperstructure_id,
-          resources,
         });
       }
     }
 
-    // @dev: do it in 2 times because too many steps for 1 tx
+    // @dev: do it in 3 times because too many steps for 1 tx
     await create_multiple_realms({
       signer: masterAccount as any,
-      realms: calldata.slice(0, 3),
+      realms: calldata.slice(0, 2),
     });
     await create_multiple_realms({
       signer: masterAccount as any,
-      realms: calldata.slice(3, 5),
+      realms: calldata.slice(2, 4),
+    });
+    await create_multiple_realms({
+      signer: masterAccount as any,
+      realms: calldata.slice(4, 5),
     });
     setIsLoading(false);
     playSign();

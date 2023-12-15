@@ -14,6 +14,14 @@ trait IWorldConfig<TContractState> {
 
 
 #[starknet::interface]
+trait IRealmFreeMintConfig<TContractState> {
+    fn set_mint_config(
+        self: @TContractState, world: IWorldDispatcher, resources: Span<(u8, u128)>
+    );
+}
+
+
+#[starknet::interface]
 trait IWeightConfig<TContractState> {
     fn set_weight_config(
         self: @TContractState, world: IWorldDispatcher, 
