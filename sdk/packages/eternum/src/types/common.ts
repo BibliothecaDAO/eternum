@@ -71,8 +71,8 @@ export interface Resources {
 }
 
 export interface Resource {
-  resourceId: number;
-  amount: number;
+  resourceId: bigint;
+  amount: bigint;
 }
 
 /// TRAVEL
@@ -92,9 +92,9 @@ export interface CaravanInterface {
   blocked: boolean | undefined;
   arrivalTime: number | undefined;
   pickupArrivalTime: number | undefined;
-  capacity: number | undefined;
+  capacity: bigint | undefined;
   destination: Position | undefined;
-  owner: string | undefined;
+  owner: bigint | undefined;
   isMine: boolean;
 }
 
@@ -118,10 +118,10 @@ export interface RealmInterface {
   harbors: number;
   regions: number;
   resourceTypesCount: number;
-  resourceTypesPacked: number;
+  resourceTypesPacked: bigint;
   order: number;
   position: Position;
-  owner?: string;
+  owner?: bigint;
 }
 
 /// LABOR
