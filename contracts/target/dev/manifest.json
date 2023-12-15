@@ -2526,7 +2526,7 @@
     },
     {
       "name": "realm_systems",
-      "address": null,
+      "address": "0x6b9518b94d4d1608095233f38aef1d996851200f1d5c0877c040fa42946496",
       "class_hash": "0x1baaee2ed04c72f376ceb0d0a80d5c748482d3422c027a77be883bda4211a33",
       "abi": [
         {
@@ -3059,7 +3059,7 @@
     },
     {
       "name": "test_resource_systems",
-      "address": null,
+      "address": "0x5e2e8d20bc9f4c02050b2b6b7442a1ce06bbd9c0729716a7c5a478069c9b354",
       "class_hash": "0x6c8cfca1efd3eaee0f7ec2f3e179460c18e6a635c33c2461a4c7f7000d7e516",
       "abi": [
         {

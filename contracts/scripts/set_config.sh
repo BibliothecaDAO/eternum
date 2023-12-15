@@ -395,6 +395,19 @@ for system in $(echo $system_models_json | jq -r 'keys[]'); do
     done
 done
 
+### STARTING REALM RESOURCE BALANCES
+# Check if the first argument is provided and set it to "dev" or "prod"
+if [[ "$1" == "prod" ]]; then
+    commands+=(
+        "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,24,1,872170,2,685390,3,666610,4,459650,5,385390,6,302780,7,205040,8,166430,9,158960,10,103300,11,52170,12,42960,13,41570,14,41570,15,29910,16,28170,17,24170,18,19300,19,16170,20,9570,21,6430,22,4000,254,7560000,255,2520000"
+    )
+else
+    # Add command for no argument case, which is also treated as dev
+    commands+=(
+        "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,25,1,1000000000,2,1000000000,3,1000000000,4,1000000000,5,1000000000,6,1000000000,7,1000000000,8,1000000000,9,1000000000,10,1000000000,11,1000000000,12,1000000000,13,1000000000,14,1000000000,15,1000000000,16,1000000000,17,1000000000,18,1000000000,19,1000000000,20,1000000000,21,1000000000,22,1000000000,253,1000000000,254,1000000000,255,1000000000"
+    )
+fi
+
 
 # Ask the user for the desired delay between commands
 read -p "Specify a delay in seconds between each command (or press Enter for no delay): " delay

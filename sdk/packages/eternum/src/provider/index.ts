@@ -12,7 +12,6 @@ import {
   CreateRoadProps,
   FeedHyperstructureAndTravelBackPropos,
   HarvestLaborProps,
-  MintResourcesProps,
   PurchaseLaborProps,
   SendResourcesToLocationProps,
   TransferResourcesProps,
@@ -98,18 +97,6 @@ export class EternumProvider extends RPCProvider {
     });
 
     const tx = await this.executeMulti(signer, calldata);
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
-  }
-
-  public async mint_resources(props: MintResourcesProps) {
-    const { entity_id, resources, signer } = props;
-    const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "test_resource_systems"),
-      entrypoint: "mint",
-      calldata: [this.getWorldAddress(), entity_id, resources.length / 2, ...resources],
-    });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
     });
@@ -338,15 +325,12 @@ export class EternumProvider extends RPCProvider {
       order,
       order_hyperstructure_id,
       position,
-      resources,
       signer,
     } = props;
 
-    const uuid = await this.uuid();
-
     const tx = await this.executeMulti(signer, [
       {
-        contractAddress: getContractByName(this.manifest, "test_realm_systems"),
+        contractAddress: getContractByName(this.manifest, "realm_systems"),
         entrypoint: "create",
         calldata: [
           this.getWorldAddress(),
@@ -366,11 +350,6 @@ export class EternumProvider extends RPCProvider {
           position.y,
         ],
       },
-      {
-        contractAddress: getContractByName(this.manifest, "test_resource_systems"),
-        entrypoint: "mint",
-        calldata: [this.getWorldAddress(), uuid, resources.length / 2, ...resources],
-      },
     ]);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -379,8 +358,6 @@ export class EternumProvider extends RPCProvider {
 
   create_multiple_realms = async (props: CreateMultipleRealmsProps) => {
     let { realms, signer } = props;
-
-    let uuid = await this.uuid();
 
     let calldata = realms.flatMap((realm) => {
       const {
@@ -396,12 +373,11 @@ export class EternumProvider extends RPCProvider {
         order,
         order_hyperstructure_id,
         position,
-        resources,
       } = realm;
 
       let calldata = [
         {
-          contractAddress: getContractByName(this.manifest, "test_realm_systems"),
+          contractAddress: getContractByName(this.manifest, "realm_systems"),
           entrypoint: "create",
           calldata: [
             this.getWorldAddress(),
@@ -421,14 +397,8 @@ export class EternumProvider extends RPCProvider {
             position.y,
           ],
         },
-        {
-          contractAddress: getContractByName(this.manifest, "test_resource_systems"),
-          entrypoint: "mint",
-          calldata: [this.getWorldAddress(), uuid, resources.length / 2, ...resources],
-        },
       ];
 
-      uuid = uuid + 2;
       return calldata;
     });
 
