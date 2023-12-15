@@ -27,16 +27,16 @@ export const getRealmIdByPosition = (positionRaw: { x: number; y: number }): num
   return undefined;
 };
 
-export const getRealmNameById = (realmId: number): string => {
-  return realmsJson["features"][realmId - 1]["name"];
+export const getRealmNameById = (realmId: bigint): string => {
+  return realmsJson["features"][Number(realmId - 1n)]["name"];
 };
 
-export const getRealmOrderNameById = (realmId: number): string => {
-  const orderName = realmsOrdersJson[realmId - 1].order;
+export const getRealmOrderNameById = (realmId: bigint): string => {
+  const orderName = realmsOrdersJson[Number(realmId - 1n)].order;
   return orderName.toLowerCase().replace("the ", "");
 };
 
-export function getRealm(realmId: number): RealmInterface {
+export function getRealm(realmId: bigint): RealmInterface {
   const realmsData = realms as {
     [key: string]: any;
   };
@@ -84,11 +84,11 @@ export function getRealm(realmId: number): RealmInterface {
     }
   });
 
-  let coords = realmsCoordsJson["features"][realmId]["geometry"]["coordinates"];
+  let coords = realmsCoordsJson["features"][Number(realmId)]["geometry"]["coordinates"];
   let position = getContractPositionFromRealPosition({ x: parseInt(coords[0]), y: parseInt(coords[1]) });
 
   return {
-    realmId: BigInt(realmId),
+    realmId,
     name: getRealmNameById(realmId),
     resourceTypesPacked,
     resourceTypesCount: resourceIds.length,
