@@ -26,7 +26,7 @@ export function useCaravan() {
     },
   } = useDojo();
 
-  const getCaravanInfo = (caravanId: number): CaravanInterface => {
+  const getCaravanInfo = (caravanId: bigint): CaravanInterface => {
     const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([BigInt(caravanId)]));
     const movable = getComponentValue(Movable, getEntityIdFromKeys([BigInt(caravanId)]));
     const capacity = getComponentValue(Capacity, getEntityIdFromKeys([BigInt(caravanId)]));
@@ -48,11 +48,11 @@ export function useCaravan() {
       capacity: capacity?.weight_gram,
       destination,
       owner: owner?.address,
-      isMine: padAddress(owner?.address || "0x0") === padAddress(account.address),
+      isMine: padAddress(owner?.address.toString() || "0x0") === padAddress(account.address),
     };
   };
 
-  const getInventoryResourcesChestId = (caravanId: number): number | undefined => {
+  const getInventoryResourcesChestId = (caravanId: bigint): bigint | undefined => {
     const inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(caravanId)]));
     let foreignKey = inventory
       ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(caravanId), BigInt(inventory.items_key), BigInt(0)]))
@@ -92,7 +92,7 @@ export function useCaravan() {
           return getCaravanInfo(id);
         })
         .filter(Boolean)
-        .sort((a, b) => b!.caravanId - a!.caravanId) as CaravanInterface[];
+        .sort((a: any, b: any) => b!.caravanId - a!.caravanId) as CaravanInterface[];
       // DISCUSS: can add sorting logic here
       setCaravans([...caravans]);
       // only recompute when different number of orders
@@ -110,19 +110,19 @@ export function useCaravan() {
       const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(id)]));
       return {
         owner: owner?.address,
-        isMine: padAddress(owner?.address || "0x0") === padAddress(account.address),
+        isMine: padAddress(owner?.address.toString() || "0x0") === padAddress(account.address),
         caravanId: id,
       };
     });
   };
 
-  function getRealmDonkeysCount(realmEntityId: number): number {
+  function getRealmDonkeysCount(realmEntityId: bigint): bigint {
     const donkeysQuantity = getComponentValue(
       QuantityTracker,
       getEntityIdFromKeys([BigInt(realmEntityId), BigInt(FREE_TRANSPORT_ENTITY_TYPE)]),
     );
 
-    return donkeysQuantity?.count || 0;
+    return donkeysQuantity?.count || 0n;
   }
   return {
     useGetPositionCaravansIds,

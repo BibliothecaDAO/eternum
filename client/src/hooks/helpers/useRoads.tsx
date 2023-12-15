@@ -75,10 +75,10 @@ export function useGetRoads(entityId: number) {
   }, [entityIds1, entityIds2]);
 
   // TODO: put somewhere else for reuse
-  const getRealmEntityIdFromRealmId = (realmId: bigint): number | undefined => {
+  const getRealmEntityIdFromRealmId = (realmId: bigint): bigint | undefined => {
     const realms = runQuery([HasValue(Realm, { realm_id: realmId })]);
     if (realms.size > 0) {
-      return Number(realms.values().next().value);
+      return realms.values().next().value;
     }
   };
 
@@ -89,18 +89,26 @@ export function useGetRoads(entityId: number) {
         if (road) {
           // TODO: refactor to just do one query per realm
           let startRealmId = realmId;
+
           let startRealmName = startRealmId ? getRealmNameById(startRealmId) : "";
+
           let { order: startRealmOrder } = startRealmId ? getRealm(startRealmId) : { order: undefined };
-          let startRealmPosition = getPosition(startRealmId || 0);
+
+          let startRealmPosition = getPosition(startRealmId || 0n);
+
           let destinationRealmId =
             startRealmPosition.x === road.start_coord_x && startRealmPosition.y === road.start_coord_y
               ? getRealmIdByPosition({ x: road.end_coord_x, y: road.end_coord_y })
               : getRealmIdByPosition({ x: road.start_coord_x, y: road.start_coord_y });
-          let destinationRealmName = destinationRealmId ? getRealmNameById(destinationRealmId) : "";
-          let destinationEntityId = getRealmEntityIdFromRealmId(destinationRealmId || 0) || 0;
+
+          let destinationRealmName = destinationRealmId ? getRealmNameById(BigInt(destinationRealmId)) : "";
+
+          let destinationEntityId = getRealmEntityIdFromRealmId(BigInt(destinationRealmId || 0n)) || 0n;
+
           let { order: destinationRealmOrder } = destinationRealmId
-            ? getRealm(destinationRealmId)
+            ? getRealm(BigInt(destinationRealmId))
             : { order: undefined };
+
           return {
             startRealmName,
             startRealmOrder,
