@@ -12,7 +12,7 @@ interface Attribute {
   value: any;
 }
 
-export const getRealmIdByPosition = (positionRaw: { x: number; y: number }): number | undefined => {
+export const getRealmIdByPosition = (positionRaw: { x: number; y: number }): bigint | undefined => {
   let offset = 1800000;
   let position = { x: positionRaw.x - offset, y: positionRaw.y - offset };
   // TODO: find a better way to find position
@@ -21,7 +21,7 @@ export const getRealmIdByPosition = (positionRaw: { x: number; y: number }): num
       parseInt(realm["geometry"]["coordinates"][0]) === position.x &&
       parseInt(realm["geometry"]["coordinates"][1]) === position.y
     ) {
-      return realm["properties"]["tokenId"];
+      return BigInt(realm["properties"]["tokenId"]);
     }
   }
   return undefined;
