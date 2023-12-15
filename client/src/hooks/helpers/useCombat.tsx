@@ -3,7 +3,7 @@ import { useDojo } from "../../DojoContext";
 import { Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import useRealmStore from "../store/useRealmStore";
-import { getEntityIdFromKeys } from "../../utils/utils";
+import { divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
 import { useHyperstructure } from "./useHyperstructure";
 import { CombatInfo } from "@bibliothecadao/eternum";
 
@@ -127,7 +127,7 @@ export function useCombat() {
         defence: defence?.value || 0,
         sec_per_km: movable?.sec_per_km || 0,
         blocked: movable?.blocked,
-        capacity: capacity?.weight_gram || 0,
+        capacity: divideByPrecision(capacity?.weight_gram || 0),
         arrivalTime: arrivalTime?.arrives_at,
         position,
         entityOwnerId: entityOwner?.entity_owner_id,

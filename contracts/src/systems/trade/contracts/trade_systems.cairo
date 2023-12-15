@@ -162,12 +162,12 @@ mod trade_systems {
                 );
                 // give traded resources to maker
                 resource_chest::offload(
-                    world, trade.maker_resource_chest_id, trade.maker_id
+                    world, trade.taker_id, trade.maker_resource_chest_id, trade.maker_id
                 );
 
                 // give traded resources to taker
                 resource_chest::offload(
-                    world, trade.taker_resource_chest_id, taker_id
+                    world,  trade.maker_id, trade.taker_resource_chest_id, taker_id
                 );
                 
             } else {
@@ -307,7 +307,7 @@ mod trade_systems {
 
             // return resources to maker
             resource_chest::offload(
-                world, trade.taker_resource_chest_id, trade.maker_id
+                world, 0, trade.taker_resource_chest_id, trade.maker_id
             );
             // unblock maker's caravan
             caravan::unblock(world, trade.maker_transport_id);
