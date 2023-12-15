@@ -24,16 +24,18 @@ type MarketPopupProps = {
 };
 
 interface DepthOfMarket {
-  price: number;
-  amount: number;
+  price: bigint;
+  amount: bigint;
 }
+
 interface ResourceOffersSummary {
   resourceId: number;
-  bestPrice: number;
-  totalAmount: number;
+  bestPrice: bigint;
+  totalAmount: bigint;
   totalOffers: number;
   depthOfMarket: DepthOfMarket[];
 }
+
 export const MarketPopup = ({ onClose }: MarketPopupProps) => {
   const [selectedResource, setSelectedResource] = useState<number | null>(null);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
@@ -72,9 +74,9 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
 
       summary.push({
         resourceId: resource.id,
-        totalAmount: 0,
+        totalAmount: 0n,
         totalOffers: 0,
-        bestPrice: 0,
+        bestPrice: 0n,
         depthOfMarket: [] as DepthOfMarket[],
       });
     });
@@ -86,9 +88,8 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
         if (resourceIndex >= 0) {
           summary[resourceIndex].totalAmount += resource.amount;
           summary[resourceIndex].totalOffers += 1;
-          summary[resourceIndex].bestPrice = Math.max(
-            summary[resourceIndex].bestPrice,
-            offer.resourcesGet[0].amount / resource.amount,
+          summary[resourceIndex].bestPrice = BigInt(
+            Math.max(Number(summary[resourceIndex].bestPrice), Number(offer.resourcesGet[0].amount / resource.amount)),
           );
           const depthOfMarketIndex = summary[resourceIndex].depthOfMarket.findIndex(
             (depth) => depth.price === offer.resourcesGet[0].amount / resource.amount,
@@ -113,7 +114,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
       });
 
       summary.forEach((summary) => {
-        summary.depthOfMarket.sort((a, b) => b.price - a.price);
+        summary.depthOfMarket.sort((a: any, b: any) => b.price - a.price);
       });
     });
 
@@ -146,9 +147,9 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
 
       summary.push({
         resourceId: resource.id,
-        totalAmount: 0,
+        totalAmount: 0n,
         totalOffers: 0,
-        bestPrice: Infinity,
+        bestPrice: BigInt(Infinity),
         depthOfMarket: [] as DepthOfMarket[],
       });
     });
@@ -160,9 +161,8 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
         if (resourceIndex >= 0) {
           summary[resourceIndex].totalAmount += resource.amount;
           summary[resourceIndex].totalOffers += 1;
-          summary[resourceIndex].bestPrice = Math.min(
-            summary[resourceIndex].bestPrice,
-            offer.resourcesGive[0].amount / resource.amount,
+          summary[resourceIndex].bestPrice = BigInt(
+            Math.min(Number(summary[resourceIndex].bestPrice), Number(offer.resourcesGive[0].amount / resource.amount)),
           );
 
           const depthOfMarketIndex = summary[resourceIndex].depthOfMarket.findIndex(
@@ -189,7 +189,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
       });
 
       summary.forEach((summary) => {
-        summary.depthOfMarket.sort((a, b) => a.price - b.price);
+        summary.depthOfMarket.sort((a: any, b: any) => a.price - b.price);
       });
     });
 
@@ -345,7 +345,7 @@ const OverviewResourceRow = ({
   const depthOfMarketBids = useMemo(() => {
     const lastFive = bidSummary?.depthOfMarket.slice(0, 5) || [];
 
-    let accumulatedAmount = 0;
+    let accumulatedAmount = 0n;
 
     return (
       lastFive.length && (
@@ -359,7 +359,7 @@ const OverviewResourceRow = ({
           {bidSummary &&
             lastFive.map((depth) => {
               accumulatedAmount += depth.amount;
-              const width = (accumulatedAmount / bidSummary.totalAmount) * 100;
+              const width = (accumulatedAmount / bidSummary.totalAmount) * 100n;
               return (
                 <div className="w-full relative h-5 border-b border-white/30">
                   <div className="flex mt-0.5 flex-1 w-full justify-between px-0.5 items-center">
@@ -368,10 +368,10 @@ const OverviewResourceRow = ({
                         style: "decimal",
                         maximumFractionDigits: 2,
                         minimumFractionDigits: 2,
-                      }).format(divideByPrecision(depth.amount))}
+                      }).format(divideByPrecision(Number(depth.amount)))}
                     </div>
                     <div className="relative z-10 flex items-center">
-                      {depth.price.toFixed(2)}
+                      {Number(depth.price).toFixed(2)}
                       <ResourceIcon containerClassName="ml-1 w-min" resource="Lords" size="xs" />
                     </div>
                   </div>
@@ -390,7 +390,7 @@ const OverviewResourceRow = ({
   const depthOfMarketAsks = useMemo(() => {
     const lastFive = askSummary?.depthOfMarket.slice(0, 5) || [];
 
-    let accumulatedAmount = 0;
+    let accumulatedAmount = 0n;
 
     return (
       lastFive.length && (
@@ -404,7 +404,7 @@ const OverviewResourceRow = ({
           {askSummary &&
             lastFive.map((depth) => {
               accumulatedAmount += depth.amount;
-              const width = (accumulatedAmount / askSummary.totalAmount) * 100;
+              const width = (accumulatedAmount / askSummary.totalAmount) * 100n;
               return (
                 <div className="w-full relative h-5 border-b border-white/30">
                   <div className="flex mt-0.5 flex-1 w-full justify-between px-0.5 items-center">
@@ -413,10 +413,10 @@ const OverviewResourceRow = ({
                         style: "decimal",
                         maximumFractionDigits: 2,
                         minimumFractionDigits: 2,
-                      }).format(divideByPrecision(depth.amount))}
+                      }).format(divideByPrecision(Number(depth.amount)))}
                     </div>
                     <div className="relative z-10 flex items-center">
-                      {depth.price.toFixed(2)}
+                      {Number(depth.price).toFixed(2)}
                       <ResourceIcon containerClassName="ml-1 w-min" resource="Lords" size="xs" />
                     </div>
                   </div>
@@ -450,7 +450,9 @@ const OverviewResourceRow = ({
         }
         onMouseLeave={() => setTooltip(null)}
       >
-        {askSummary && askSummary.bestPrice !== Infinity ? askSummary.bestPrice.toFixed(2) : (0).toFixed(2)}
+        {askSummary && askSummary.bestPrice !== BigInt(Infinity)
+          ? Number(askSummary.bestPrice).toFixed(2)
+          : (0).toFixed(2)}
         <ResourceIcon containerClassName="ml-2 w-min" resource="Lords" size="sm" />
       </div>
       <div
@@ -467,7 +469,7 @@ const OverviewResourceRow = ({
           style: "decimal",
           maximumFractionDigits: 2,
           minimumFractionDigits: 2,
-        }).format(divideByPrecision(askSummary?.totalAmount || 0))}
+        }).format(divideByPrecision(Number(askSummary?.totalAmount) || 0))}
         <Button
           className="ml-2"
           onClick={() => {
@@ -490,7 +492,9 @@ const OverviewResourceRow = ({
         }
         onMouseLeave={() => setTooltip(null)}
       >
-        {bidSummary && bidSummary.bestPrice !== Infinity ? bidSummary.bestPrice.toFixed(2) : (0).toFixed(2)}
+        {bidSummary && bidSummary.bestPrice !== BigInt(Infinity)
+          ? Number(bidSummary.bestPrice).toFixed(2)
+          : (0).toFixed(2)}
         <ResourceIcon containerClassName="ml-2 w-min" resource="Lords" size="sm" />
       </div>
       <div
@@ -507,7 +511,7 @@ const OverviewResourceRow = ({
           style: "decimal",
           maximumFractionDigits: 2,
           minimumFractionDigits: 2,
-        }).format(divideByPrecision(bidSummary?.totalAmount || 0))}
+        }).format(divideByPrecision(Number(bidSummary?.totalAmount) || 0))}
         <Button
           className="ml-2"
           onClick={() => {
@@ -626,7 +630,7 @@ const ResourceOfferRow = ({
   isBuy,
   onClick,
 }: {
-  realmEntityId: number;
+  realmEntityId: bigint;
   offer: MarketInterface;
   isBuy: boolean;
   onClick: () => void;
@@ -644,7 +648,7 @@ const ResourceOfferRow = ({
             resource={isBuy ? "Lords" : resource.trait}
             size="sm"
           />
-          {divideByPrecision(offer.resourcesGive[0].amount)}
+          {divideByPrecision(Number(offer.resourcesGive[0].amount))}
         </div>
       )}
       <div>
@@ -654,7 +658,7 @@ const ResourceOfferRow = ({
       </div>
       {resource && (
         <div className="flex items-center text-gold">
-          {divideByPrecision(offer.resourcesGet[0].amount)}
+          {divideByPrecision(Number(offer.resourcesGet[0].amount))}
           <ResourceIcon containerClassName="ml-2 w-min" resource={!isBuy ? "Lords" : resource.trait} size="sm" />
         </div>
       )}
@@ -662,7 +666,7 @@ const ResourceOfferRow = ({
       {makerRealm && (
         <div className="flex items-center">
           {<OrderIcon order={orderNameDict[makerRealm.order]} size="xs" className="mr-1" />}
-          {realmsData["features"][makerRealm.realmId - 1]?.name}
+          {realmsData["features"][Number(makerRealm.realmId - 1n)]?.name}
         </div>
       )}
       {offer.makerId !== realmEntityId && (
