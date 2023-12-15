@@ -35,8 +35,8 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   const [step, setStep] = useState<number>(1);
   const [selectedResourceIdsGive, setSelectedResourceIdsGive] = useState<number[]>([]);
   const [selectedResourceIdsGet, setSelectedResourceIdsGet] = useState<number[]>([]);
-  const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] = useState<{ [key: number]: number }>({});
-  const [selectedResourcesGetAmounts, setSelectedResourcesGetAmounts] = useState<{ [key: number]: number }>({});
+  const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] = useState<{ [key: number]: bigint }>({});
+  const [selectedResourcesGetAmounts, setSelectedResourcesGetAmounts] = useState<{ [key: number]: bigint }>({});
   const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
   const [selectedRealmEntityId, setSelectedRealmEntityId] = useState<bigint | undefined>();
   const [selectedRealmId, setSelectedRealmId] = useState<bigint | undefined>();
@@ -74,12 +74,12 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
         maker_id: realmEntityId,
         maker_gives_resource_types: selectedResourceIdsGive,
         maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
-          multiplyByPrecision(selectedResourcesGiveAmounts[id]),
+          multiplyByPrecision(Number(selectedResourcesGiveAmounts[id])),
         ),
         taker_id: selectedRealmEntityId || 0,
         taker_gives_resource_types: selectedResourceIdsGet,
         taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
-          multiplyByPrecision(selectedResourcesGetAmounts[id]),
+          multiplyByPrecision(Number(selectedResourcesGetAmounts[id])),
         ),
         donkeys_quantity: donkeysCount,
         expires_at: nextBlockTimestamp + ONE_MONTH,
@@ -90,13 +90,13 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
         maker_id: realmEntityId,
         maker_gives_resource_types: selectedResourceIdsGive,
         maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
-          multiplyByPrecision(selectedResourcesGiveAmounts[id]),
+          multiplyByPrecision(Number(selectedResourcesGiveAmounts[id])),
         ),
         taker_id: selectedRealmEntityId || 0,
         maker_transport_id: selectedCaravan,
         taker_gives_resource_types: selectedResourceIdsGet,
         taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
-          multiplyByPrecision(selectedResourcesGetAmounts[id]),
+          multiplyByPrecision(Number(selectedResourcesGetAmounts[id])),
         ),
         expires_at: nextBlockTimestamp + ONE_MONTH,
       });
@@ -247,7 +247,7 @@ const SelectResourcesPanel = ({
               <SelectableResource
                 key={id}
                 resourceId={id}
-                amount={resource?.balance || 0}
+                amount={resource?.balance || 0n}
                 disabled={(resource?.balance || 0) === 0 || selectedResourceIdsGet.includes(id)}
                 selected={selectedResourceIdsGive.includes(id)}
                 onClick={() => {
@@ -274,7 +274,7 @@ const SelectResourcesPanel = ({
               <SelectableResource
                 key={id}
                 resourceId={id}
-                amount={resource?.balance || 0}
+                amount={resource?.balance || 0n}
                 selected={selectedResourceIdsGet.includes(id)}
                 disabled={selectedResourceIdsGive.includes(id)}
                 onClick={() => {
@@ -307,14 +307,14 @@ const SelectResourcesAmountPanel = ({
 }: {
   selectedResourceIdsGive: number[];
   selectedResourceIdsGet: number[];
-  selectedResourcesGiveAmounts: { [key: number]: number };
-  selectedResourcesGetAmounts: { [key: number]: number };
+  selectedResourcesGiveAmounts: { [key: number]: bigint };
+  selectedResourcesGetAmounts: { [key: number]: bigint };
   resourceWeight: number;
   setSelectedResourcesGiveAmounts: (selectedResourcesGiveAmounts: { [key: number]: number }) => void;
   setSelectedResourcesGetAmounts: (selectedResourcesGetAmounts: { [key: number]: number }) => void;
   setResourceWeight: (resourceWeight: number) => void;
-  selectedRealmId: number | undefined;
-  setSelectedRealmId: (selectedRealmId: number) => void;
+  selectedRealmId: bigint | undefined;
+  setSelectedRealmId: (selectedRealmId: bigint) => void;
 }) => {
   const {
     setup: {
@@ -345,9 +345,9 @@ const SelectResourcesAmountPanel = ({
             return (
               <div key={id} className="flex items-center w-full">
                 <NumberInput
-                  max={divideByPrecision(resource?.balance || 0)}
+                  max={divideByPrecision(Number(resource?.balance) || 0)}
                   min={1}
-                  value={selectedResourcesGiveAmounts[id]}
+                  value={Number(selectedResourcesGiveAmounts[id].toString())}
                   onChange={(value) => {
                     setSelectedResourcesGiveAmounts({
                       ...selectedResourcesGiveAmounts,

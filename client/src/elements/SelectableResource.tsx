@@ -8,7 +8,7 @@ import useUIStore from "../hooks/store/useUIStore";
 
 type SelectableResourceProps = {
   resourceId: number;
-  amount?: number;
+  amount?: bigint;
   selected?: boolean;
   disabled?: boolean;
 } & React.HTMLAttributes<HTMLDivElement>;
