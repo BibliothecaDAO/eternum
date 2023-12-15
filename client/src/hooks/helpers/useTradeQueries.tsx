@@ -6,7 +6,7 @@
 import {
   Component,
   ComponentUpdate,
-  EntityIndex,
+  Entity,
   HasQueryFragment,
   HasValueQueryFragment,
   NotQueryFragment,
@@ -160,13 +160,13 @@ export const useDeepMemo = <T,>(currentValue: T): T => {
 
 export function defineQuery(
   fragments: QueryFragment[],
-  options?: { runOnInit?: boolean; initialSet?: Set<EntityIndex> },
+  options?: { runOnInit?: boolean; initialSet?: Set<Entity> },
 ): {
   update$: Observable<ComponentUpdate & { type: UpdateType }>;
-  matching: ObservableSet<EntityIndex>;
+  matching: ObservableSet<Entity>;
 } {
   const initialSet =
-    options?.runOnInit || options?.initialSet ? runQuery(fragments, options.initialSet) : new Set<EntityIndex>();
+    options?.runOnInit || options?.initialSet ? runQuery(fragments, options.initialSet) : new Set<Entity>();
 
   const matching = observable(initialSet);
   const initial$ = from(matching).pipe(toUpdateStream(fragments[0].component));
@@ -263,7 +263,7 @@ export function defineQuery(
  * @param fragment Query fragment to check.
  * @returns True if the entity passes the query fragment, else false.
  */
-function passesQueryFragment<T extends Schema>(entity: EntityIndex, fragment: EntityQueryFragment<T>): boolean {
+function passesQueryFragment<T extends Schema>(entity: Entity, fragment: EntityQueryFragment<T>): boolean {
   if (fragment.type === QueryFragmentType.Has) {
     // Entity must have the given component
     return hasComponent(fragment.component, entity);
@@ -295,7 +295,7 @@ function passesQueryFragment<T extends Schema>(entity: EntityIndex, fragment: En
   throw new Error("Unknown query fragment");
 }
 
-function hasOrders(fragment: HasOrdersQueryFragment, entity: EntityIndex): boolean {
+function hasOrders(fragment: HasOrdersQueryFragment, entity: Entity): boolean {
   const trade = getComponentValue(fragment.component, entity) as Trade | undefined;
 
   if (!trade?.maker_order_id) return false;
@@ -309,7 +309,7 @@ function hasOrders(fragment: HasOrdersQueryFragment, entity: EntityIndex): boole
   return fragment.orders.includes(realm.order);
 }
 
-function hasTradeResources(fragment: HasResourcesQueryFragment, entity: EntityIndex): boolean {
+function hasTradeResources(fragment: HasResourcesQueryFragment, entity: Entity): boolean {
   const trade = getComponentValue(fragment.component, entity) as Trade | undefined;
 
   if (!trade) return false;
@@ -341,8 +341,8 @@ function checkResourcesForOrder(order_id: number, fragment: HasResourcesQueryFra
   return resourcesLeftSet.size === 0;
 }
 
-export function runQuery(fragments: QueryFragment[], initialSet?: Set<EntityIndex>): Set<EntityIndex> {
-  let entities: Set<EntityIndex> | undefined = initialSet ? new Set([...initialSet]) : undefined; // Copy to a fresh set because it will be modified in place
+export function runQuery(fragments: QueryFragment[], initialSet?: Set<Entity>): Set<Entity> {
+  let entities: Set<Entity> | undefined = initialSet ? new Set([...initialSet]) : undefined; // Copy to a fresh set because it will be modified in place
 
   // Process fragments
   for (let i = 0; i < fragments.length; i++) {
@@ -373,5 +373,5 @@ export function runQuery(fragments: QueryFragment[], initialSet?: Set<EntityInde
       }
     }
   }
-  return entities ?? new Set<EntityIndex>();
+  return entities ?? new Set<Entity>();
 }

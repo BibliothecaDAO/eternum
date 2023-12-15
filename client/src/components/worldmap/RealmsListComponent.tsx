@@ -19,7 +19,9 @@ export const RealmsListComponent = ({ onlyMyRealms = false }: RealmsListComponen
 
   const { realms } = useGetRealms();
 
-  const myRealms = onlyMyRealms ? useEntityQuery([Has(Realm), HasValue(Owner, { address: account.address })]) : [];
+  const myRealms = onlyMyRealms
+    ? useEntityQuery([Has(Realm), HasValue(Owner, { address: BigInt(account.address) })])
+    : [];
 
   const realmsList = useMemo(() => {
     if (onlyMyRealms) {
