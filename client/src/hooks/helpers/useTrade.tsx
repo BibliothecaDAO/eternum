@@ -49,7 +49,7 @@ export function useTrade() {
       if (resource) {
         resources.push({
           resourceId: resource.resource_type,
-          amount: resource.resource_amount,
+          amount: Number(resource.resource_amount),
         });
       }
     }
