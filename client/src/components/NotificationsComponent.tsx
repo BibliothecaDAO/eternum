@@ -2,12 +2,13 @@ import { useMemo, useState } from "react";
 import { Notification } from "../elements/Notification";
 import clsx from "clsx";
 import Button from "../elements/Button";
-import { generateUniqueId, useNotifications } from "../hooks/notifications/useNotifications";
+import { useNotifications } from "../hooks/notifications/useNotifications";
 import { useDojo } from "../DojoContext";
 import {
   EmptyChestData,
   EventType,
   NotificationType,
+  generateUniqueId,
   useNotificationsStore,
 } from "../hooks/store/useNotificationsStore";
 
@@ -39,7 +40,7 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
 
   const { closedNotifications, handleCloseNotification } = useNotifications();
 
-  const { notifications, deleteNotification } = useNotificationsStore();
+  const { notifications, deleteNotification, deleteAllNotifications } = useNotificationsStore();
 
   const onHarvestAll = async () => {
     setIsHarvestLoading(true);
@@ -81,16 +82,16 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
       .filter(Boolean)
       .slice(0, MAX_CLAIM_NOTIFICATIONS) as sender[];
 
+    await transfer_items_from_multiple({
+      signer: account,
+      senders,
+    });
+
     for (let notification of notifications
       .filter((notification) => notification.eventType === EventType.EmptyChest)
       .slice(0, MAX_CLAIM_NOTIFICATIONS)) {
       deleteNotification(notification.keys, notification.eventType);
     }
-
-    await transfer_items_from_multiple({
-      signer: account,
-      senders,
-    });
     setIsClaimLoading(false);
   };
 
@@ -114,7 +115,7 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
   const getUniqueNotifications = (notifications: NotificationType[]): NotificationType[] => {
     const uniqueKeys = new Set<string>();
     return notifications.filter((notification) => {
-      const id = generateUniqueId(notification);
+      const id = generateUniqueId(notification.keys, notification.eventType);
       if (!uniqueKeys.has(id)) {
         uniqueKeys.add(id);
         return true;
@@ -136,6 +137,11 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
           </Button>
         }
         <div>
+          {notifications.length > 0 && (
+            <Button variant="danger" className="pointer-events-auto mr-2" onClick={deleteAllNotifications}>
+              {"Close All"}
+            </Button>
+          )}
           {hasHarvestNotification && (
             <Button
               variant="success"
@@ -161,12 +167,12 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
       <div className="overflow-auto">
         {showNotifications &&
           getUniqueNotifications(notifications).map((notification: NotificationType, i) => {
-            let id = generateUniqueId(notification);
+            let id = generateUniqueId(notification.keys, notification.eventType);
             return (
               <Notification
                 closedNotifications={closedNotifications}
                 notification={notification}
-                key={i}
+                key={id}
                 id={id}
                 onClose={() => {
                   handleCloseNotification(id);

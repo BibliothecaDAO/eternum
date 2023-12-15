@@ -7,7 +7,7 @@ import Button from "../../elements/Button";
 import { useResources } from "../helpers/useResources";
 import { ResourceCost } from "../../elements/ResourceCost";
 import { divideByPrecision } from "../../utils/utils";
-import { NotificationType } from "../store/useNotificationsStore";
+import { NotificationType, useNotificationsStore } from "../store/useNotificationsStore";
 
 export const useEmptyChestNotification = (
   notification: NotificationType,
@@ -20,6 +20,8 @@ export const useEmptyChestNotification = (
   const { getResourcesFromInventory, offloadChests } = useResources();
 
   const [isLoading, setIsLoading] = useState(false);
+
+  const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
 
   const realmId =
     notification.data && "destinationRealmId" in notification.data ? notification.data.destinationRealmId : undefined;
@@ -37,6 +39,7 @@ export const useEmptyChestNotification = (
     setIsLoading(true);
     if (claimableResources && realmEntityId && entityId) {
       await offloadChests(realmEntityId, entityId, claimableResources.indices, claimableResources.resources);
+      deleteNotification(notification.keys, notification.eventType);
       setIsLoading(false);
     }
   };
