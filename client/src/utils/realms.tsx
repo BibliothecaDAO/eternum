@@ -88,7 +88,7 @@ export function getRealm(realmId: number): RealmInterface {
   let position = getContractPositionFromRealPosition({ x: parseInt(coords[0]), y: parseInt(coords[1]) });
 
   return {
-    realmId,
+    realmId: BigInt(realmId),
     name: getRealmNameById(realmId),
     resourceTypesPacked,
     resourceTypesCount: resourceIds.length,
