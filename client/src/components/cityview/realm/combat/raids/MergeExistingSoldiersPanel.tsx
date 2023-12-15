@@ -42,14 +42,14 @@ export const MergeExistingSoldiersPanel = ({ isDefence, selectedRaider, onClose 
   }, [selectedRaider]);
 
   const [totalAttack, totalDefence, totalHealth, totalQuantity] = useMemo(() => {
-    const raidersInfo = getEntitiesCombatInfo(Object.keys(selectedRaiders).map((id) => parseInt(id)));
+    const raidersInfo = getEntitiesCombatInfo(Object.keys(selectedRaiders).map((id) => BigInt(id)));
     let totalAttack = 0;
     let totalDefence = 0;
     let totalHealth = 0;
     let totalQuantity = 0;
     raidersInfo.forEach((raider) => {
       if (raider?.entityId) {
-        let proportion = selectedRaiders[raider.entityId] / raider.quantity;
+        let proportion = selectedRaiders[Number(raider.entityId)] / raider.quantity;
         totalAttack += raider.attack * proportion;
         totalDefence += raider.defence * proportion;
         totalHealth += raider.health * proportion;
@@ -69,8 +69,8 @@ export const MergeExistingSoldiersPanel = ({ isDefence, selectedRaider, onClose 
 
   const realmRaiderIds = selectedRaider.position
     ? getRealmRaidersOnPosition(realmEntityId, selectedRaider.position).filter((id) => {
-        const inventoryResources = getResourcesFromInventory(id);
-        return id !== selectedRaider.entityId && inventoryResources.resources.length === 0;
+        const inventoryResources = getResourcesFromInventory(BigInt(id));
+        return BigInt(id) !== selectedRaider.entityId && inventoryResources.resources.length === 0;
       })
     : [];
   const realmDefence = useMemo(() => {
@@ -93,8 +93,9 @@ export const MergeExistingSoldiersPanel = ({ isDefence, selectedRaider, onClose 
     }
   };
 
+  // TODO: This seems dodgy
   const realmRaiders = useMemo(() => {
-    return getEntitiesCombatInfo(realmRaiderIds);
+    return getEntitiesCombatInfo(realmRaiderIds.map((id) => BigInt(id)));
   }, [realmRaiderIds]);
 
   return (
