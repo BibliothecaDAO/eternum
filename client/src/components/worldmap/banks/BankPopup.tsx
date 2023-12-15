@@ -201,7 +201,7 @@ const SwapResourcesPanel = ({
   bank: BankInterface | undefined;
   bankPrice: number;
 }) => {
-  const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
+  const [selectedCaravan, setSelectedCaravan] = useState<bigint>(0n);
   const [isNewCaravan, setIsNewCaravan] = useState(false);
   const [donkeysCount, setDonkeysCount] = useState(1);
   const [hasEnoughDonkeys, setHasEnoughDonkeys] = useState(false);
@@ -290,7 +290,7 @@ const SwapResourcesPanel = ({
 
   const canGoToNextStep = useMemo(() => {
     if (step === 3) {
-      return selectedCaravan !== 0 || (hasEnoughDonkeys && isNewCaravan);
+      return selectedCaravan !== 0n || (hasEnoughDonkeys && isNewCaravan);
     } else if (step == 2) {
       return false;
     } else {
@@ -304,11 +304,11 @@ const SwapResourcesPanel = ({
           multiplyByPrecision(feedResourcesGiveAmounts[254] || 0),
           targetPrices[254],
           BANK_AUCTION_DECAY,
-          bank.wheatAuction.per_time_unit,
+          Number(bank.wheatAuction.per_time_unit),
           bank.wheatAuction.start_time,
           nextBlockTimestamp,
-          bank.wheatAuction.sold,
-          bank.wheatAuction.price_update_interval,
+          Number(bank.wheatAuction.sold),
+          Number(bank.wheatAuction.price_update_interval),
         )
       : 0;
   }, [feedResourcesGiveAmounts[254]]);
@@ -319,11 +319,11 @@ const SwapResourcesPanel = ({
           multiplyByPrecision(feedResourcesGiveAmounts[255] || 0),
           targetPrices[255],
           BANK_AUCTION_DECAY,
-          bank.fishAuction.per_time_unit,
+          Number(bank.fishAuction.per_time_unit),
           bank.fishAuction.start_time,
           nextBlockTimestamp,
-          bank.fishAuction.sold,
-          bank.fishAuction.price_update_interval,
+          Number(bank.fishAuction.sold),
+          Number(bank.fishAuction.price_update_interval),
         )
       : 0;
   }, [feedResourcesGiveAmounts[255]]);

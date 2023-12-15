@@ -50,7 +50,7 @@ export const Onboarding = () => {
 
   const { realmId, setRealmId, setRealmEntityId, realmEntityIds, setRealmEntityIds } = useRealmStore();
 
-  const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: account.address })]);
+  const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: BigInt(account.address) })]);
 
   // set realm entity ids everytime the entity ids change
   useEffect(() => {
@@ -58,11 +58,11 @@ export const Onboarding = () => {
       .map((id) => {
         const realm = getComponentValue(Realm, id);
         if (realm) {
-          return { realmEntityId: Number(id), realmId: realm?.realm_id };
+          return { realmEntityId: id, realmId: realm?.realm_id };
         }
       })
       .filter(Boolean)
-      .sort((a, b) => a!.realmId - b!.realmId) as { realmEntityId: number; realmId: number }[];
+      .sort((a, b) => Number(a!.realmId) - Number(b!.realmId)) as { realmEntityId: bigint; realmId: bigint }[];
     setRealmEntityIds(realmEntityIds);
   }, [entityIds]);
 
@@ -74,7 +74,7 @@ export const Onboarding = () => {
     const fetchedYourRealms: RealmBubble[] = [];
     realmEntityIds.forEach(({ realmEntityId, realmId }) => {
       const realm = getRealm(realmId);
-      const name = realmsNames.features[realm.realmId - 1].name;
+      const name = realmsNames.features[Number(realm.realmId) - 1].name;
       fetchedYourRealms.push({
         id: realmEntityId,
         realmId: realm.realmId,
