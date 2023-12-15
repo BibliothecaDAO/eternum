@@ -29,7 +29,7 @@ Eternum serves as one of the pioneering nodes in the Realms Autonomous World, co
 
 Eternum represents an ambitious endeavor to forge an open and composable world, one that is collectively owned and governed by its user community. More than just a collection, Eternum encompasses a suite of smart contracts, crafted to be both composable and extensible. These contracts are not only designed to be utilized by various other contracts and applications but also to encourage a versatile and innovative ecosystem.
 
-As a developer you could deploy a set of systems in this world and ecourage players to use these systems, and in the process earn a small fee in resources or the native token lords.
+As a developer you could deploy a set of systems in this world and encourage players to use these systems, and in the process earn a small fee in resources or the native token lords.
 
 ## Open World Philosophy
 The term 'open' in this context means anyone can deploy a dojo system in Eternum, expanding its functionality or even adjusting its governing rules. For an in-depth understanding of its mechanics and ideology, consider delving into the dojo book.
