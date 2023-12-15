@@ -7,9 +7,10 @@ import { numberToHex } from "../utils/utils";
 export const createUpdates = async (components: Components) => {
   const entityUpdates = await createEntitySubscription(components);
   const eventUpdates = {
-    createCombatEvents: async (entityId: number) => createEventSubscription([COMBAT_EVENT, numberToHex(entityId), "*"]),
-    createTransferEvents: async (entityId: number) =>
-      createEventSubscription([TRANSFER_EVENT, numberToHex(entityId), "*"]),
+    createCombatEvents: async (entityId: bigint) =>
+      createEventSubscription([COMBAT_EVENT, numberToHex(Number(entityId)), "*"]),
+    createTransferEvents: async (entityId: bigint) =>
+      createEventSubscription([TRANSFER_EVENT, numberToHex(Number(entityId)), "*"]),
   };
 
   return {

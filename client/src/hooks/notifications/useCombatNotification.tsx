@@ -135,7 +135,7 @@ export const useStolenResourcesNotification = (
                 key={resourceId}
                 resourceId={resourceId}
                 color="text-order-brilliance"
-                amount={divideByPrecision(amount)}
+                amount={divideByPrecision(Number(amount))}
               />
             ))}
         </div>

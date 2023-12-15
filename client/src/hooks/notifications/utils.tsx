@@ -110,7 +110,7 @@ export const generateTradeNotifications = (entityUpdates: UpdatedEntity[], Statu
  * @returns
  */
 export const generateLaborNotifications = (
-  resourcesPerRealm: { realmEntityId: number; resourceIds: number[] }[],
+  resourcesPerRealm: { realmEntityId: bigint; resourceIds: number[] }[],
   getRealmLevelBonus: (level: number, levelIndex: LevelIndex) => number,
   getHyperstructureLevelBonus: (level: number, levelIndex: LevelIndex) => number,
   nextBlockTimestamp: number,
