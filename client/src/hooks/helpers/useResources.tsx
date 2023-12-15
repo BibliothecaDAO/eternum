@@ -17,10 +17,10 @@ export function useResources() {
   } = useDojo();
 
   // for any entity that has a resourceChest in its inventory,
-  const getResourcesFromInventory = (entityId: number): { resources: Resource[]; indices: number[] } => {
+  const getResourcesFromInventory = (entityId: bigint): { resources: Resource[]; indices: number[] } => {
     let indices: number[] = [];
     let resources: Record<number, number> = {};
-    let inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(entityId)]));
+    let inventory = getComponentValue(Inventory, getEntityIdFromKeys([entityId]));
 
     if (!inventory) {
       return { resources: [], indices: [] };
@@ -28,12 +28,12 @@ export function useResources() {
 
     for (let i = 0; i < inventory.items_count; i++) {
       let foreignKey = inventory
-        ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(entityId), BigInt(inventory.items_key), BigInt(i)]))
+        ? getComponentValue(ForeignKey, getEntityIdFromKeys([entityId, inventory.items_key, BigInt(i)]))
         : undefined;
 
       // if nothing on this index, break
       let resourcesChest = foreignKey
-        ? getComponentValue(ResourceChest, getEntityIdFromKeys([BigInt(foreignKey.entity_id)]))
+        ? getComponentValue(ResourceChest, getEntityIdFromKeys([foreignKey.entity_id]))
         : undefined;
 
       if (resourcesChest && foreignKey) {
@@ -42,7 +42,8 @@ export function useResources() {
           let entityId = getEntityIdFromKeys([BigInt(foreignKey.entity_id), BigInt(i)]);
           const resource = getComponentValue(DetachedResource, entityId);
           if (resource) {
-            resources[resource.resource_type] = (resources[resource.resource_type] || 0) + resource.resource_amount;
+            resources[resource.resource_type] =
+              (resources[resource.resource_type] || 0) + Number(resource.resource_amount);
           }
         }
       }
@@ -58,28 +59,25 @@ export function useResources() {
     };
   };
 
-  const getResourceChestIdFromInventoryIndex = (entityId: number, index: number): number | undefined => {
+  const getResourceChestIdFromInventoryIndex = (entityId: bigint, index: number): bigint | undefined => {
     let inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(entityId)]));
     let foreignKey = inventory
-      ? getComponentValue(
-          ForeignKey,
-          getEntityIdFromKeys([BigInt(entityId), BigInt(inventory.items_key), BigInt(index)]),
-        )
+      ? getComponentValue(ForeignKey, getEntityIdFromKeys([entityId, inventory.items_key, BigInt(index)]))
       : undefined;
 
     return foreignKey?.entity_id;
   };
 
-  const getFoodResources = (entityId: number): Resource[] => {
-    const wheat = getComponentValue(Resource, getEntityIdFromKeys([BigInt(entityId), BigInt(254)]));
-    const fish = getComponentValue(Resource, getEntityIdFromKeys([BigInt(entityId), BigInt(255)]));
+  const getFoodResources = (entityId: bigint): Resource[] => {
+    const wheat = getComponentValue(Resource, getEntityIdFromKeys([entityId, 254n]));
+    const fish = getComponentValue(Resource, getEntityIdFromKeys([entityId, 255n]));
 
     return [
       {
         resourceId: 254,
-        amount: wheat?.balance || 0,
+        amount: Number(wheat?.balance) || 0,
       },
-      { resourceId: 255, amount: fish?.balance || 0 },
+      { resourceId: 255, amount: Number(fish?.balance) || 0 },
     ];
   };
 
@@ -127,12 +125,12 @@ export function useGetCaravansWithResourcesChest() {
   } = useDojo();
 
   const { realmEntityId } = useRealmStore();
-  const realmPosition = getComponentValue(Position, getEntityIdFromKeys([BigInt(realmEntityId)]));
+  const realmPosition = getComponentValue(Position, getEntityIdFromKeys([realmEntityId]));
 
   const caravansAtPositionWithInventory = useEntityQuery([
     Has(CaravanMembers),
     NotValue(Inventory, {
-      items_count: 0,
+      items_count: 0n,
     }),
     HasValue(Position, {
       x: realmPosition?.x,
