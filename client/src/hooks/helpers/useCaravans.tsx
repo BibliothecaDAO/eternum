@@ -45,7 +45,7 @@ export function useCaravan() {
       pickupArrivalTime: resourceChest?.locked_until,
       resourcesChestId,
       blocked: movable?.blocked,
-      capacity: capacity?.weight_gram,
+      capacity: Number(capacity?.weight_gram),
       destination,
       owner: owner?.address,
       isMine: padAddress(owner?.address.toString() || "0x0") === padAddress(account.address),
@@ -60,10 +60,10 @@ export function useCaravan() {
     return foreignKey?.entity_id;
   };
 
-  function calculateDistance(startId: number, destinationId: number): number | undefined {
+  function calculateDistance(startId: bigint, destinationId: bigint): number | undefined {
     // d = √((x2-x1)² + (y2-y1)²)
-    let start = getComponentValue(Position, getEntityIdFromKeys([BigInt(startId)]));
-    let destination = getComponentValue(Position, getEntityIdFromKeys([BigInt(destinationId)]));
+    let start = getComponentValue(Position, getEntityIdFromKeys([startId]));
+    let destination = getComponentValue(Position, getEntityIdFromKeys([destinationId]));
     if (start && destination) {
       const x: number =
         start.x > destination.x ? Math.pow(start.x - destination.x, 2) : Math.pow(destination.x - start.x, 2);
@@ -116,13 +116,13 @@ export function useCaravan() {
     });
   };
 
-  function getRealmDonkeysCount(realmEntityId: bigint): bigint {
+  function getRealmDonkeysCount(realmEntityId: bigint): number {
     const donkeysQuantity = getComponentValue(
       QuantityTracker,
       getEntityIdFromKeys([BigInt(realmEntityId), BigInt(FREE_TRANSPORT_ENTITY_TYPE)]),
     );
 
-    return donkeysQuantity?.count || 0n;
+    return Number(donkeysQuantity?.count) || 0;
   }
   return {
     useGetPositionCaravansIds,

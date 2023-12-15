@@ -12,8 +12,7 @@ import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useCaravan } from "../../../../hooks/helpers/useCaravans";
-import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../../utils/utils";
-import { getComponentValue } from "@dojoengine/recs";
+import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { DONKEYS_PER_CITY, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
@@ -32,7 +31,7 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose }: FastCreateO
   const [selectedResourceIdsGet, setSelectedResourceIdsGet] = useState<number[]>([]);
   const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] = useState<{ [key: number]: number }>({});
   const [selectedResourcesGetAmounts, setSelectedResourcesGetAmounts] = useState<{ [key: number]: number }>({});
-  const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
+  const [selectedCaravan, setSelectedCaravan] = useState<bigint>(0n);
   const [selectedRealmId, setSelectedRealmId] = useState<number | undefined>();
   const [isNewCaravan, setIsNewCaravan] = useState(true);
   const [donkeysCount, setDonkeysCount] = useState(1);
@@ -101,7 +100,7 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose }: FastCreateO
   };
 
   const canCreateOffer = useMemo(() => {
-    return selectedCaravan !== 0 || (hasEnoughDonkeys && isNewCaravan);
+    return selectedCaravan !== 0n || (hasEnoughDonkeys && isNewCaravan);
   }, [selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
 
   useEffect(() => {
@@ -191,13 +190,9 @@ const SelectResourcesAmountPanel = ({
   selectedRealmId: number | undefined;
   setSelectedRealmId: (selectedRealmId: number) => void;
 }) => {
-  const {
-    setup: {
-      components: { Resource },
-    },
-  } = useDojo();
-
   const { realmEntityId } = useRealmStore();
+
+  const { getBalance } = useResources();
 
   const swapResources = () => {
     const tmpGet = [...selectedResourceIdsGet];
@@ -227,7 +222,7 @@ const SelectResourcesAmountPanel = ({
             You Sell
           </Headline>
           {selectedResourceIdsGive.map((id) => {
-            let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
+            let resource = getBalance(realmEntityId, id);
             return (
               <div key={id} className="flex items-center w-full">
                 <NumberInput
@@ -248,10 +243,7 @@ const SelectResourcesAmountPanel = ({
                     options={resources
                       .filter((res) => !selectedResourceIdsGet.includes(res.id))
                       .map((res) => {
-                        const bal = getComponentValue(
-                          Resource,
-                          getEntityIdFromKeys([BigInt(realmEntityId), BigInt(res.id)]),
-                        );
+                        const bal = getBalance(realmEntityId, res.id);
                         return {
                           id: res.id,
                           label: (
@@ -304,7 +296,7 @@ const SelectResourcesAmountPanel = ({
             You Buy
           </Headline>
           {selectedResourceIdsGet.map((id) => {
-            let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
+            let resource = getBalance(realmEntityId, id);
             return (
               <div key={id} className="flex items-center w-full">
                 <NumberInput
@@ -325,10 +317,7 @@ const SelectResourcesAmountPanel = ({
                     options={resources
                       .filter((res) => !selectedResourceIdsGive.includes(res.id))
                       .map((res) => {
-                        const bal = getComponentValue(
-                          Resource,
-                          getEntityIdFromKeys([BigInt(realmEntityId), BigInt(res.id)]),
-                        );
+                        let bal = getBalance(realmEntityId, res.id);
                         return {
                           id: res.id,
                           label: (
@@ -390,8 +379,8 @@ export const SelectCaravanPanel = ({
   setDonkeysCount: (donkeysCount: number) => void;
   isNewCaravan: boolean;
   setIsNewCaravan: (isNewCaravan: boolean) => void;
-  selectedCaravan: number;
-  setSelectedCaravan: (selectedCaravanId: number) => void;
+  selectedCaravan: bigint;
+  setSelectedCaravan: (selectedCaravanId: bigint) => void;
   selectedResourceIdsGet: number[];
   selectedResourceIdsGive: number[];
   selectedResourcesGetAmounts: { [key: number]: number };

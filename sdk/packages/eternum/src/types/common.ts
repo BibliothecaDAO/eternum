@@ -92,7 +92,7 @@ export interface CaravanInterface {
   blocked: boolean | undefined;
   arrivalTime: number | undefined;
   pickupArrivalTime: number | undefined;
-  capacity: bigint | undefined;
+  capacity: number | undefined;
   destination: Position | undefined;
   owner: bigint | undefined;
   isMine: boolean;

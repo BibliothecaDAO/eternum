@@ -81,6 +81,19 @@ export function useResources() {
     ];
   };
 
+  const getBalance = (
+    realmEntityId: bigint,
+    resourceId: number,
+  ): { resource_type: number; balance: number } | undefined => {
+    let resource = getComponentValue(Resource, getEntityIdFromKeys([realmEntityId, BigInt(resourceId)]));
+    if (resource) {
+      return {
+        resource_type: resource.resource_type,
+        balance: Number(resource.balance),
+      };
+    }
+  };
+
   /* Empty Resource Chest
    * @param receiver_id: entity id of entity that will add resources to balance
    * @param carrier_id: id of the entity that carries the resource chest
@@ -113,7 +126,13 @@ export function useResources() {
     });
   };
 
-  return { getResourcesFromInventory, offloadChests, getFoodResources, getResourceChestIdFromInventoryIndex };
+  return {
+    getResourcesFromInventory,
+    offloadChests,
+    getFoodResources,
+    getResourceChestIdFromInventoryIndex,
+    getBalance,
+  };
 }
 
 //  caravans coming your way with a resource chest in their inventory
