@@ -24,14 +24,14 @@ type MarketPopupProps = {
 };
 
 interface DepthOfMarket {
-  price: bigint;
-  amount: bigint;
+  price: number;
+  amount: number;
 }
 
 interface ResourceOffersSummary {
   resourceId: number;
-  bestPrice: bigint;
-  totalAmount: bigint;
+  bestPrice: number;
+  totalAmount: number;
   totalOffers: number;
   depthOfMarket: DepthOfMarket[];
 }
@@ -74,9 +74,9 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
 
       summary.push({
         resourceId: resource.id,
-        totalAmount: 0n,
+        totalAmount: 0,
         totalOffers: 0,
-        bestPrice: 0n,
+        bestPrice: 0,
         depthOfMarket: [] as DepthOfMarket[],
       });
     });
@@ -88,8 +88,9 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
         if (resourceIndex >= 0) {
           summary[resourceIndex].totalAmount += resource.amount;
           summary[resourceIndex].totalOffers += 1;
-          summary[resourceIndex].bestPrice = BigInt(
-            Math.max(Number(summary[resourceIndex].bestPrice), Number(offer.resourcesGet[0].amount / resource.amount)),
+          summary[resourceIndex].bestPrice = Math.max(
+            summary[resourceIndex].bestPrice,
+            offer.resourcesGet[0].amount / resource.amount,
           );
           const depthOfMarketIndex = summary[resourceIndex].depthOfMarket.findIndex(
             (depth) => depth.price === offer.resourcesGet[0].amount / resource.amount,
@@ -147,9 +148,9 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
 
       summary.push({
         resourceId: resource.id,
-        totalAmount: 0n,
+        totalAmount: 0,
         totalOffers: 0,
-        bestPrice: BigInt(Infinity),
+        bestPrice: Infinity,
         depthOfMarket: [] as DepthOfMarket[],
       });
     });
@@ -161,8 +162,9 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
         if (resourceIndex >= 0) {
           summary[resourceIndex].totalAmount += resource.amount;
           summary[resourceIndex].totalOffers += 1;
-          summary[resourceIndex].bestPrice = BigInt(
-            Math.min(Number(summary[resourceIndex].bestPrice), Number(offer.resourcesGive[0].amount / resource.amount)),
+          summary[resourceIndex].bestPrice = Math.min(
+            summary[resourceIndex].bestPrice,
+            offer.resourcesGive[0].amount / resource.amount,
           );
 
           const depthOfMarketIndex = summary[resourceIndex].depthOfMarket.findIndex(
@@ -345,7 +347,7 @@ const OverviewResourceRow = ({
   const depthOfMarketBids = useMemo(() => {
     const lastFive = bidSummary?.depthOfMarket.slice(0, 5) || [];
 
-    let accumulatedAmount = 0n;
+    let accumulatedAmount = 0;
 
     return (
       lastFive.length && (
@@ -359,7 +361,7 @@ const OverviewResourceRow = ({
           {bidSummary &&
             lastFive.map((depth) => {
               accumulatedAmount += depth.amount;
-              const width = (accumulatedAmount / bidSummary.totalAmount) * 100n;
+              const width = (accumulatedAmount / bidSummary.totalAmount) * 100;
               return (
                 <div className="w-full relative h-5 border-b border-white/30">
                   <div className="flex mt-0.5 flex-1 w-full justify-between px-0.5 items-center">
@@ -368,10 +370,10 @@ const OverviewResourceRow = ({
                         style: "decimal",
                         maximumFractionDigits: 2,
                         minimumFractionDigits: 2,
-                      }).format(divideByPrecision(Number(depth.amount)))}
+                      }).format(divideByPrecision(depth.amount))}
                     </div>
                     <div className="relative z-10 flex items-center">
-                      {Number(depth.price).toFixed(2)}
+                      {depth.price.toFixed(2)}
                       <ResourceIcon containerClassName="ml-1 w-min" resource="Lords" size="xs" />
                     </div>
                   </div>
@@ -390,7 +392,7 @@ const OverviewResourceRow = ({
   const depthOfMarketAsks = useMemo(() => {
     const lastFive = askSummary?.depthOfMarket.slice(0, 5) || [];
 
-    let accumulatedAmount = 0n;
+    let accumulatedAmount = 0;
 
     return (
       lastFive.length && (
@@ -404,7 +406,7 @@ const OverviewResourceRow = ({
           {askSummary &&
             lastFive.map((depth) => {
               accumulatedAmount += depth.amount;
-              const width = (accumulatedAmount / askSummary.totalAmount) * 100n;
+              const width = (accumulatedAmount / askSummary.totalAmount) * 100;
               return (
                 <div className="w-full relative h-5 border-b border-white/30">
                   <div className="flex mt-0.5 flex-1 w-full justify-between px-0.5 items-center">
@@ -413,10 +415,10 @@ const OverviewResourceRow = ({
                         style: "decimal",
                         maximumFractionDigits: 2,
                         minimumFractionDigits: 2,
-                      }).format(divideByPrecision(Number(depth.amount)))}
+                      }).format(divideByPrecision(depth.amount))}
                     </div>
                     <div className="relative z-10 flex items-center">
-                      {Number(depth.price).toFixed(2)}
+                      {depth.price.toFixed(2)}
                       <ResourceIcon containerClassName="ml-1 w-min" resource="Lords" size="xs" />
                     </div>
                   </div>
@@ -450,9 +452,7 @@ const OverviewResourceRow = ({
         }
         onMouseLeave={() => setTooltip(null)}
       >
-        {askSummary && askSummary.bestPrice !== BigInt(Infinity)
-          ? Number(askSummary.bestPrice).toFixed(2)
-          : (0).toFixed(2)}
+        {askSummary && askSummary.bestPrice !== Infinity ? askSummary.bestPrice.toFixed(2) : (0).toFixed(2)}
         <ResourceIcon containerClassName="ml-2 w-min" resource="Lords" size="sm" />
       </div>
       <div
@@ -469,7 +469,7 @@ const OverviewResourceRow = ({
           style: "decimal",
           maximumFractionDigits: 2,
           minimumFractionDigits: 2,
-        }).format(divideByPrecision(Number(askSummary?.totalAmount) || 0))}
+        }).format(divideByPrecision(askSummary?.totalAmount || 0))}
         <Button
           className="ml-2"
           onClick={() => {
@@ -492,9 +492,7 @@ const OverviewResourceRow = ({
         }
         onMouseLeave={() => setTooltip(null)}
       >
-        {bidSummary && bidSummary.bestPrice !== BigInt(Infinity)
-          ? Number(bidSummary.bestPrice).toFixed(2)
-          : (0).toFixed(2)}
+        {bidSummary && bidSummary.bestPrice !== Infinity ? bidSummary.bestPrice.toFixed(2) : (0).toFixed(2)}
         <ResourceIcon containerClassName="ml-2 w-min" resource="Lords" size="sm" />
       </div>
       <div
@@ -511,7 +509,7 @@ const OverviewResourceRow = ({
           style: "decimal",
           maximumFractionDigits: 2,
           minimumFractionDigits: 2,
-        }).format(divideByPrecision(Number(bidSummary?.totalAmount) || 0))}
+        }).format(divideByPrecision(bidSummary?.totalAmount || 0))}
         <Button
           className="ml-2"
           onClick={() => {
@@ -648,7 +646,7 @@ const ResourceOfferRow = ({
             resource={isBuy ? "Lords" : resource.trait}
             size="sm"
           />
-          {divideByPrecision(Number(offer.resourcesGive[0].amount))}
+          {divideByPrecision(offer.resourcesGive[0].amount)}
         </div>
       )}
       <div>
@@ -658,7 +656,7 @@ const ResourceOfferRow = ({
       </div>
       {resource && (
         <div className="flex items-center text-gold">
-          {divideByPrecision(Number(offer.resourcesGet[0].amount))}
+          {divideByPrecision(offer.resourcesGet[0].amount)}
           <ResourceIcon containerClassName="ml-2 w-min" resource={!isBuy ? "Lords" : resource.trait} size="sm" />
         </div>
       )}
