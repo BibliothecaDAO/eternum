@@ -46,7 +46,7 @@ export const parseCombatEvent = (event: Event): CombatResultInterface => {
   for (let i = 0; i < stolen_resources_ids_len; i++) {
     stolen_resources.push({
       resourceId: parseInt(event.data[3 + attackers_len + i]),
-      amount: parseInt(event.data[nextIndex]),
+      amount: BigInt(event.data[nextIndex]),
     });
     nextIndex += 1;
   }
