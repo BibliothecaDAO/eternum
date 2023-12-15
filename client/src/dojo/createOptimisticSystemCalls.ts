@@ -13,7 +13,7 @@ import {
   BuildLaborProps,
 } from "@bibliothecadao/eternum";
 
-export const HIGH_ENTITY_ID = 9999999999;
+export const HIGH_ENTITY_ID = 9999999999n;
 
 export function createOptimisticSystemCalls({
   Trade,

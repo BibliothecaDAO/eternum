@@ -1,4 +1,4 @@
-import { EntityIndex, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { Entity, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { MarketInterface, Resource } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
@@ -37,25 +37,25 @@ export function useTrade() {
     },
   } = useDojo();
 
-  const getChestResources = (resourcesChestId: number): Resource[] => {
-    const resourcesChest = getComponentValue(ResourceChest, resourcesChestId as EntityIndex);
+  const getChestResources = (resourcesChestId: bigint): Resource[] => {
+    const resourcesChest = getComponentValue(ResourceChest, getEntityIdFromKeys([resourcesChestId]));
     if (!resourcesChest) return [];
     let resources: Resource[] = [];
     let { resources_count } = resourcesChest;
     for (let i = 0; i < resources_count; i++) {
-      let entityId = getEntityIdFromKeys([BigInt(resourcesChestId), BigInt(i)]);
+      let entityId = getEntityIdFromKeys([resourcesChestId, BigInt(i)]);
       const resource = getComponentValue(DetachedResource, entityId);
       if (resource) {
         resources.push({
           resourceId: resource.resource_type,
-          amount: resource.resource_amount,
+          amount: Number(resource.resource_amount),
         });
       }
     }
     return resources;
   };
 
-  const getTradeResources = (entityId: number, tradeId: number): TradeResources => {
+  const getTradeResources = (entityId: bigint, tradeId: bigint): TradeResources => {
     let trade = getComponentValue(Trade, getEntityIdFromKeys([BigInt(tradeId)]));
 
     if (!trade) return { resourcesGet: [], resourcesGive: [] };
@@ -73,7 +73,7 @@ export function useTrade() {
     return { resourcesGet, resourcesGive };
   };
 
-  const getTradeIdFromResourcesChestId = (resourcesChestId: number): number | undefined => {
+  const getTradeIdFromResourcesChestId = (resourcesChestId: bigint): bigint | undefined => {
     const tradeIfMaker = Array.from(runQuery([HasValue(Trade, { maker_resource_chest_id: resourcesChestId })]));
     const tradeIfTaker = Array.from(runQuery([HasValue(Trade, { taker_resource_chest_id: resourcesChestId })]));
     if (tradeIfMaker.length > 0) {
@@ -87,33 +87,33 @@ export function useTrade() {
     }
   };
 
-  const getTradeIdFromTransportId = (transportId: number): number | undefined => {
+  const getTradeIdFromTransportId = (transportId: bigint): bigint | undefined => {
     const makerTradeIds = runQuery([
-      HasValue(Status, { value: 0 }),
+      HasValue(Status, { value: 0n }),
       HasValue(Trade, { maker_transport_id: transportId }),
     ]);
     const takerTradeIds = runQuery([
-      HasValue(Status, { value: 0 }),
+      HasValue(Status, { value: 0n }),
       HasValue(Trade, { taker_transport_id: transportId }),
     ]);
 
     const tradeId = Array.from(new Set([...makerTradeIds, ...takerTradeIds]))[0];
 
-    return tradeId;
+    return BigInt(tradeId);
   };
 
   const canAcceptOffer = ({
     realmEntityId,
     resourcesGive,
   }: {
-    realmEntityId: number;
+    realmEntityId: bigint;
     resourcesGive: Resource[];
   }): boolean => {
     let canAccept = true;
     Object.values(resourcesGive).forEach((resource) => {
       const realmResource = getComponentValue(
         Resource,
-        getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resource.resourceId)]),
+        getEntityIdFromKeys([realmEntityId, BigInt(resource.resourceId)]),
       );
       if (realmResource === undefined || realmResource.balance < resource.amount) {
         canAccept = false;
@@ -122,7 +122,7 @@ export function useTrade() {
     return canAccept;
   };
 
-  const getRealmEntityIdFromRealmId = (realmId: number): number | undefined => {
+  const getRealmEntityIdFromRealmId = (realmId: bigint): number | undefined => {
     const realms = runQuery([HasValue(Realm, { realm_id: realmId })]);
     if (realms.size > 0) {
       return Number(realms.values().next().value);
@@ -179,7 +179,7 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
   const { calculateDistance } = useCaravan();
 
   useMemo((): any => {
-    const optimisticTradeId = entityIds.indexOf(HIGH_ENTITY_ID as EntityIndex);
+    const optimisticTradeId = entityIds.indexOf(HIGH_ENTITY_ID);
     const trades = entityIds
       // avoid having optimistic and real trade at the same time
       .slice(0, optimisticTradeId === -1 ? entityIds.length + 1 : optimisticTradeId + 1)

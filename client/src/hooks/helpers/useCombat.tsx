@@ -84,11 +84,11 @@ export function useCombat() {
     ]);
   };
 
-  const getRealmRaidersOnPosition = (realmEntityId: number, position: Position) => {
+  const getRealmRaidersOnPosition = (realmEntityId: bigint, position: Position) => {
     return Array.from(
       runQuery([
         Has(Attack),
-        NotValue(Health, { value: 0 }),
+        NotValue(Health, { value: 0n }),
         HasValue(Position, position),
         NotValue(Movable, { sec_per_km: 0 }),
         HasValue(EntityOwner, { entity_owner_id: realmEntityId }),

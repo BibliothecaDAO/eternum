@@ -5,9 +5,9 @@ export enum Winner {
 }
 
 export interface CombatResultInterface {
-  attackerRealmEntityId: number;
-  targetRealmEntityId: number;
-  attackingEntityIds: number[];
+  attackerRealmEntityId: bigint;
+  targetRealmEntityId: bigint;
+  attackingEntityIds: bigint[];
   winner: Winner;
   stolenResources: Resource[];
   damage: number;
@@ -15,7 +15,7 @@ export interface CombatResultInterface {
 }
 
 export interface CombatInfo {
-  entityId: number;
+  entityId: bigint;
   health: number;
   quantity: number;
   attack: number;
@@ -26,17 +26,17 @@ export interface CombatInfo {
   arrivalTime?: number | undefined;
   position?: Position | undefined;
   homePosition?: Position | undefined;
-  entityOwnerId?: number | undefined;
-  locationRealmEntityId?: number | undefined;
-  originRealmId?: number | undefined;
-  hyperstructureId: number | undefined;
+  entityOwnerId?: bigint | undefined;
+  locationRealmEntityId?: bigint | undefined;
+  originRealmId?: bigint | undefined;
+  hyperstructureId: bigint | undefined;
 }
 
 /// TRADING
 export interface MarketInterface {
-  tradeId: number;
-  makerId: number;
-  takerId: number;
+  tradeId: bigint;
+  makerId: bigint;
+  takerId: bigint;
   // brillance, reflection, ...
   makerOrder: number;
   expiresAt: number;
@@ -49,10 +49,10 @@ export interface MarketInterface {
 }
 
 export interface Trade {
-  maker_id: number;
-  taker_id: number;
-  maker_order_id: number;
-  taker_order_id: number;
+  maker_id: bigint;
+  taker_id: bigint;
+  maker_order_id: bigint;
+  taker_order_id: bigint;
   expires_at: number;
   claimed_by_maker: boolean;
   claimed_by_taker: boolean;
@@ -80,15 +80,15 @@ export interface Resource {
 export interface RoadInterface {
   startRealmName: string;
   startRealmOrder: number | undefined;
-  destinationEntityId: number;
+  destinationEntityId: bigint;
   destinationRealmName: string;
   destinationRealmOrder: number | undefined;
   usageLeft: number;
 }
 
 export interface CaravanInterface {
-  caravanId: number;
-  resourcesChestId: number | undefined;
+  caravanId: bigint;
+  resourcesChestId: bigint | undefined;
   blocked: boolean | undefined;
   arrivalTime: number | undefined;
   pickupArrivalTime: number | undefined;
@@ -100,7 +100,7 @@ export interface CaravanInterface {
 
 /// REALMS
 export interface SelectableRealmInterface {
-  entityId: number;
+  entityId: bigint;
   realmId: bigint;
   name: string;
   order: string;
@@ -130,8 +130,8 @@ export interface RealmInterface {
 export interface AuctionInterface {
   start_time: number;
   per_time_unit: number;
-  sold: number;
-  price_update_interval: number;
+  sold: bigint;
+  price_update_interval: bigint;
 }
 
 export interface BankStaticInterface {
@@ -145,7 +145,7 @@ export interface BankInterface {
   name: string;
   wheatPrice: number;
   fishPrice: number;
-  bankId: number;
+  bankId: bigint;
   uiPosition: UIPosition;
   position: Position;
   wheatAuction: AuctionInterface | undefined;
@@ -167,7 +167,7 @@ export interface UIPosition {
 
 /// HYPESTRUCTURE
 export interface HyperStructureInterface {
-  hyperstructureId: number;
+  hyperstructureId: bigint;
   orderId: number;
   progress: number;
   hyperstructureResources: {
