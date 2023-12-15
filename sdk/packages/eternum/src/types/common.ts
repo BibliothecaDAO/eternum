@@ -72,7 +72,7 @@ export interface Resources {
 
 export interface Resource {
   resourceId: number;
-  amount: bigint;
+  amount: number;
 }
 
 /// TRAVEL

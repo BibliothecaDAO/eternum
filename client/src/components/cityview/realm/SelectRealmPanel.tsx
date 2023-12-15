@@ -16,8 +16,8 @@ export const SelectRealmPanel = ({
   selectedRealmId,
   setSelectedRealmId,
 }: {
-  selectedRealmId: number | undefined;
-  setSelectedRealmId: (selectedRealmId: number) => void;
+  selectedRealmId: bigint | undefined;
+  setSelectedRealmId: (selectedRealmId: bigint) => void;
 }) => {
   const [specifyRealmId, setSpecifyRealmId] = useState(false);
   const [nameFilter, setNameFilter] = useState("");
@@ -62,7 +62,7 @@ export const SelectRealmPanel = ({
             const takerEntityId = getRealmEntityIdFromRealmId(takerRealmId);
             const distance = takerEntityId ? calculateDistance(realmEntityId, takerEntityId) ?? 0 : 0;
             return {
-              entityId,
+              entityId: BigInt(entityId),
               realmId: realm.realm_id,
               name,
               order: getOrderName(order),
@@ -70,7 +70,7 @@ export const SelectRealmPanel = ({
             };
           }
         })
-        .filter((realm) => realm && realm.realmId !== realmId && realm.realmId !== 1) as SelectableRealmInterface[];
+        .filter((realm) => realm && realm.realmId !== realmId) as SelectableRealmInterface[];
       setOriginalRealms(realms);
     };
     buildSelectableRealms();

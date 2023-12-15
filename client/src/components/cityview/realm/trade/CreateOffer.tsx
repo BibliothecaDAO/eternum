@@ -39,7 +39,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   const [selectedResourcesGetAmounts, setSelectedResourcesGetAmounts] = useState<{ [key: number]: number }>({});
   const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
   const [selectedRealmEntityId, setSelectedRealmEntityId] = useState<number | undefined>();
-  const [selectedRealmId, setSelectedRealmId] = useState<number | undefined>();
+  const [selectedRealmId, setSelectedRealmId] = useState<bigint | undefined>();
   const [isNewCaravan, setIsNewCaravan] = useState(false);
   const [donkeysCount, setDonkeysCount] = useState(1);
   const [resourceWeight, setResourceWeight] = useState(0);
@@ -60,7 +60,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
 
   const { getRealmEntityIdFromRealmId } = useTrade();
 
-  const onSelectRealmId = (realmId: number) => {
+  const onSelectRealmId = (realmId: bigint) => {
     const entityId = getRealmEntityIdFromRealmId(realmId);
     entityId && setSelectedRealmEntityId(entityId);
   };
@@ -234,6 +234,8 @@ const SelectResourcesPanel = ({
     },
   } = useDojo();
 
+  const { getBalance } = useResources();
+
   const { realmEntityId } = useRealmStore();
 
   return (
@@ -242,7 +244,7 @@ const SelectResourcesPanel = ({
         <Headline className="mb-2">You Give</Headline>
         <div className="grid grid-cols-4 gap-2">
           {resources.map(({ id, trait: _name }) => {
-            let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
+            let resource = getBalance(realmEntityId, id);
             return (
               <SelectableResource
                 key={id}
@@ -313,16 +315,12 @@ const SelectResourcesAmountPanel = ({
   setSelectedResourcesGiveAmounts: (selectedResourcesGiveAmounts: { [key: number]: number }) => void;
   setSelectedResourcesGetAmounts: (selectedResourcesGetAmounts: { [key: number]: number }) => void;
   setResourceWeight: (resourceWeight: number) => void;
-  selectedRealmId: number | undefined;
-  setSelectedRealmId: (selectedRealmId: number) => void;
+  selectedRealmId: bigint | undefined;
+  setSelectedRealmId: (selectedRealmId: bigint) => void;
 }) => {
-  const {
-    setup: {
-      components: { Resource },
-    },
-  } = useDojo();
-
   const { realmEntityId } = useRealmStore();
+
+  const { getBalance } = useResources();
 
   useEffect(() => {
     // set resource weight in kg
@@ -341,7 +339,7 @@ const SelectResourcesAmountPanel = ({
         <div className="flex flex-col items-center col-span-4 space-y-2">
           <Headline className="mb-2">You Give</Headline>
           {selectedResourceIdsGive.map((id) => {
-            let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
+            let resource = getBalance(realmEntityId, id);
             return (
               <div key={id} className="flex items-center w-full">
                 <NumberInput
@@ -377,7 +375,7 @@ const SelectResourcesAmountPanel = ({
         <div className="flex flex-col items-center col-span-4 space-y-2">
           <Headline className="mb-2">You Get</Headline>
           {selectedResourceIdsGet.map((id) => {
-            let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
+            let resource = getBalance(realmEntityId, id);
 
             return (
               <div key={id} className="flex items-center w-full">
