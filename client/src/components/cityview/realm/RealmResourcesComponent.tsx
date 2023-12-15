@@ -8,8 +8,6 @@ import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { calculateProductivity } from "./labor/laborUtils";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { ReactComponent as MoreIcon } from "../../../assets/icons/common/more.svg";
-import Button from "../../../elements/Button";
-import { SmallResource } from "./SmallResource";
 import { useComponentValue } from "@dojoengine/react";
 import { useDojo } from "../../../DojoContext";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
