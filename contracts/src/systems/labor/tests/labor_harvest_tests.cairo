@@ -79,7 +79,6 @@ fn test_harvest_labor_non_food() {
     let realm_entity_id = realm_systems_dispatcher.create(
         world,
         1, // realm id
-        starknet::get_contract_address(), // owner
         0x209, // resource_types_packed // 2,9 // stone and gold
         2, // resource_types_count
         5, // cities
@@ -205,7 +204,6 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
     let realm_entity_id = realm_systems_dispatcher.create(
         world,
         1, // realm id
-        starknet::get_contract_address(), // owner
         0x209, // resource_types_packed // 2,9 // stone and gold
         2, // resource_types_count
         5, // cities
@@ -386,7 +384,6 @@ fn test_harvest_labor_food() {
     let realm_entity_id = realm_systems_dispatcher.create(
         world,
         1, // realm id
-        starknet::get_contract_address(), // owner
         0x1, // resource_types_packed // 1 // wheat
         1, // resource_types_count
         5, // cities
@@ -514,7 +511,6 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
     let realm_entity_id = realm_systems_dispatcher.create(
         world,
         1, // realm id
-        starknet::get_contract_address(), // owner
         0x209, // resource_types_packed // 2,9 // stone and gold
         2, // resource_types_count
         5, // cities

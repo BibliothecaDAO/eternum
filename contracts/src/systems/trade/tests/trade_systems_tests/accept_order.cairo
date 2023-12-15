@@ -134,13 +134,13 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, u128, ITrad
 
     // create maker's realm
     let maker_realm_entity_id = realm_systems_dispatcher.create(
-        world, realm_id, starknet::get_contract_address(), // owner
+        world, realm_id,
         resource_types_packed, resource_types_count, cities,
         harbors, rivers, regions, wonder, order, order_hyperstructure_id, maker_position.clone(),
     );
     // create taker's realm
     let taker_realm_entity_id = realm_systems_dispatcher.create(
-        world, realm_id, starknet::get_contract_address(), // owner
+        world, realm_id,
         resource_types_packed, resource_types_count, cities,
         harbors, rivers, regions, wonder, order,order_hyperstructure_id, taker_position.clone(),
         

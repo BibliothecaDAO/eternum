@@ -1,7 +1,7 @@
 #[dojo::contract]
 mod realm_systems {
 
-    use eternum::models::realm::Realm;
+    use eternum::models::realm::{Realm, RealmsOwned};
     use eternum::models::movable::Movable;
     use eternum::models::capacity::Capacity;
     use eternum::models::owner::{Owner, EntityOwner};
@@ -10,7 +10,10 @@ mod realm_systems {
     use eternum::models::combat::TownWatch;
     use eternum::models::resources::{DetachedResource, Resource};
     use eternum::models::config::{ CapacityConfig, RealmFreeMintConfig };
-    use eternum::constants::{ WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, SOLDIER_ENTITY_TYPE };
+    use eternum::constants::{ 
+        WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, 
+        SOLDIER_ENTITY_TYPE, MAX_REALMS_PER_ADDRESS
+     };
 
     use eternum::systems::realm::interface::IRealmSystems;
 
@@ -26,7 +29,6 @@ mod realm_systems {
             self: @ContractState,
             world: IWorldDispatcher,
             realm_id: u128,
-            owner: ContractAddress,
             resource_types_packed: u128,
             resource_types_count: u8,
             cities: u8,
@@ -39,10 +41,22 @@ mod realm_systems {
             position: Position,
         ) -> ID {
             let entity_id = world.uuid();
+            let caller = starknet::get_caller_address();
+
+            let mut caller_realms = get!(world, caller, RealmsOwned);
+            assert(
+                caller_realms.count < MAX_REALMS_PER_ADDRESS, 
+                    'max num of realms settled'
+            );
+
+            caller_realms.count += 1;
+            set!(world, (caller_realms));
+
             set!(world, (
+
                     Owner {
                         entity_id: entity_id.into(), 
-                        address: owner
+                        address: caller
                     }, 
                     Realm {
                         entity_id: entity_id.into(),
@@ -82,7 +96,7 @@ mod realm_systems {
                 },
                 Owner {
                     entity_id: combat_town_watch_id,
-                    address: owner
+                    address: caller
                 },
                 EntityOwner {
                     entity_id: combat_town_watch_id,

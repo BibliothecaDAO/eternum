@@ -24,6 +24,13 @@ struct Realm {
 }
 
 
+#[derive(Model, Copy, Drop, Serde)]
+struct RealmsOwned {
+    #[key]
+    owner: ContractAddress,
+    count: u8
+}
+
 trait RealmTrait {
     fn has_resource(self: Realm, resource_type: u8) -> bool;
 }
