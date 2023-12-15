@@ -152,7 +152,7 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
 
   const fragments = useMemo(() => {
     const baseFragments: QueryFragment[] = [
-      HasValue(Status, { value: 0 }),
+      HasValue(Status, { value: 0n }),
       HasValue(Trade, { maker_id: realmEntityId }),
     ];
 

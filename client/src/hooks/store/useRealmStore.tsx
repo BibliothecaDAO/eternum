@@ -1,18 +1,18 @@
 import { create } from "zustand";
 
 interface Realm {
-  realmId: BigInt | undefined;
-  setRealmId: (realmId: BigInt) => void;
-  realmEntityId: BigInt;
-  setRealmEntityId: (realmEntityId: BigInt) => void;
-  realmEntityIds: { realmEntityId: BigInt; realmId: BigInt }[];
-  setRealmEntityIds: (realmEntityIds: { realmEntityId: BigInt; realmId: BigInt }[]) => void;
-  hyperstructureId: BigInt | undefined;
-  setHyperstructureId: (hyperstructureId: BigInt) => void;
+  realmId: bigint | undefined;
+  setRealmId: (realmId: bigint) => void;
+  realmEntityId: bigint;
+  setRealmEntityId: (realmEntityId: bigint) => void;
+  realmEntityIds: { realmEntityId: bigint; realmId: bigint }[];
+  setRealmEntityIds: (realmEntityIds: { realmEntityId: bigint; realmId: bigint }[]) => void;
+  hyperstructureId: bigint | undefined;
+  setHyperstructureId: (hyperstructureId: bigint) => void;
 }
 
 const useRealmStore = create<Realm>((set) => {
-  const realmEntityIds: { realmEntityId: BigInt; realmId: BigInt }[] = [];
+  const realmEntityIds: { realmEntityId: bigint; realmId: bigint }[] = [];
 
   // TODO: put this as undefined first
   const realmEntityId = 9999n;
@@ -21,15 +21,15 @@ const useRealmStore = create<Realm>((set) => {
 
   return {
     realmEntityId,
-    setRealmEntityId: (realmEntityId: BigInt) => set({ realmEntityId }),
+    setRealmEntityId: (realmEntityId: bigint) => set({ realmEntityId }),
     realmEntityIds,
-    setRealmEntityIds: (realmEntityIds: { realmEntityId: BigInt; realmId: BigInt }[]) => {
+    setRealmEntityIds: (realmEntityIds: { realmEntityId: bigint; realmId: bigint }[]) => {
       set({ realmEntityIds });
     },
     realmId,
-    setRealmId: (realmId: BigInt) => set({ realmId }),
+    setRealmId: (realmId: bigint) => set({ realmId }),
     hyperstructureId,
-    setHyperstructureId: (hyperstructureId: BigInt) => set({ hyperstructureId }),
+    setHyperstructureId: (hyperstructureId: bigint) => set({ hyperstructureId }),
   };
 });
 
