@@ -43,25 +43,25 @@ export function createOptimisticSystemCalls({
       // optimisitc rendering of trade
       const overrideId = uuid();
       const trade_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID)]);
-      const maker_resource_chest_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 1)]);
-      const taker_resource_chest_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 2)]);
-      const maker_transport_id = transport_id || getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 3)]);
+      const maker_resource_chest_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 1n)]);
+      const taker_resource_chest_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 2n)]);
+      const maker_transport_id = transport_id || getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 3n)]);
       // const key = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 4)]);
 
       Trade.addOverride(overrideId, {
         entity: trade_id,
         value: {
-          maker_id: maker_id as Type.Number,
-          taker_id: taker_id as Type.Number,
-          maker_resource_chest_id,
-          taker_resource_chest_id,
-          maker_transport_id: maker_transport_id as Type.Number,
+          maker_id: BigInt(maker_id),
+          taker_id: BigInt(taker_id),
+          maker_resource_chest_id: BigInt(maker_resource_chest_id),
+          taker_resource_chest_id: BigInt(taker_resource_chest_id),
+          maker_transport_id: BigInt(maker_transport_id),
           expires_at,
         },
       });
       Status.addOverride(overrideId, {
         entity: trade_id,
-        value: { value: 0 },
+        value: { value: 0n },
       });
       ResourceChest.addOverride(overrideId, {
         entity: maker_resource_chest_id,
@@ -76,7 +76,7 @@ export function createOptimisticSystemCalls({
           entity: getEntityIdFromKeys([BigInt(maker_resource_chest_id), BigInt(i)]),
           value: {
             resource_type: maker_gives_resource_types[i] as Type.Number,
-            resource_amount: maker_gives_resource_amounts[i] as Type.Number,
+            resource_amount: BigInt(maker_gives_resource_amounts[i]),
           },
         });
       }
@@ -85,7 +85,7 @@ export function createOptimisticSystemCalls({
           entity: getEntityIdFromKeys([BigInt(taker_resource_chest_id), BigInt(i)]),
           value: {
             resource_type: taker_gives_resource_types[i] as Type.Number,
-            resource_amount: taker_gives_resource_amounts[i] as Type.Number,
+            resource_amount: BigInt(taker_gives_resource_amounts[i]),
           },
         });
       }
@@ -118,7 +118,7 @@ export function createOptimisticSystemCalls({
             : undefined;
           return foreignKey?.entity_id;
         })
-        .filter(Boolean) as number[];
+        .filter(Boolean) as bigint[];
 
       let overrideId = uuid();
 
@@ -126,7 +126,7 @@ export function createOptimisticSystemCalls({
       Inventory.addOverride(overrideId, {
         entity: getEntityIdFromKeys([BigInt(transport_id)]),
         value: {
-          items_count: 0,
+          items_count: 0n,
         },
       });
 
@@ -144,9 +144,9 @@ export function createOptimisticSystemCalls({
       for (let resource of resourcesGet) {
         let resource_id = getEntityIdFromKeys([BigInt(receiving_entity_id), BigInt(resource.resourceId)]);
         let currentResource = getComponentValue(Resource, resource_id) || {
-          balance: 0,
+          balance: 0n,
         };
-        let balance = currentResource.balance + resource.amount;
+        let balance = currentResource.balance + BigInt(resource.amount);
         Resource.addOverride(overrideId + resource.resourceId, {
           entity: resource_id,
           value: {
@@ -174,12 +174,12 @@ export function createOptimisticSystemCalls({
       // change status from open to accepted
       Status.addOverride(overrideId, {
         entity: trade_id,
-        value: { value: 1 },
+        value: { value: 1n },
       });
       // change trade taker_id to realm
       Trade.addOverride(overrideId, {
         entity: trade_id,
-        value: { taker_id },
+        value: { taker_id: BigInt(taker_id) },
       });
 
       // TODO: remove resources from the realm balance
@@ -203,7 +203,7 @@ export function createOptimisticSystemCalls({
       // change status from open to accepted
       Status.addOverride(overrideId, {
         entity: trade_id,
-        value: { value: 2 },
+        value: { value: 2n },
       });
 
       try {
@@ -230,12 +230,17 @@ export function createOptimisticSystemCalls({
       for (let i = 0; i < costResources.length; i++) {
         let costId = getEntityIdFromKeys([BigInt(realmEntityId), BigInt(costResources[i].resourceId)]);
         let currentResource = getComponentValue(Resource, costId) || {
-          balance: 0,
+          balance: 0n,
         };
         let balance =
           currentResource.balance -
-          Math.floor(
-            (laborUnits as number) * (multiplier as number) * costResources[i].amount * laborAuctionAverageCoefficient,
+          BigInt(
+            Math.floor(
+              (laborUnits as number) *
+                (multiplier as number) *
+                costResources[i].amount *
+                laborAuctionAverageCoefficient,
+            ),
           );
         Resource.addOverride(overrideId + i, {
           entity: costId,
@@ -319,7 +324,7 @@ export function createOptimisticSystemCalls({
       });
 
       let currentResource = getComponentValue(Resource, resource_id) || {
-        balance: 0,
+        balance: 0n,
       };
       let resourceBalance = isFood
         ? (laborUnitsGenerated *
@@ -332,7 +337,7 @@ export function createOptimisticSystemCalls({
       Resource.addOverride(overrideId, {
         entity: resource_id,
         value: {
-          balance: resourceBalance + currentResource.balance,
+          balance: BigInt(resourceBalance) + currentResource.balance,
         },
       });
 
@@ -363,7 +368,7 @@ export function createOptimisticSystemCalls({
       });
 
       let { balance } = getComponentValue(Resource, getEntityIdFromKeys([BigInt(creator_id), BigInt(2)])) || {
-        balance: 0,
+        balance: 0n,
       };
 
       // change trade taker_id to realm
@@ -371,7 +376,7 @@ export function createOptimisticSystemCalls({
         entity: getEntityIdFromKeys([BigInt(creator_id), BigInt(2)]),
         value: {
           // 10 stone per usage
-          balance: balance - usageCount * ROAD_COST_PER_USAGE,
+          balance: balance - BigInt(usageCount) * BigInt(ROAD_COST_PER_USAGE),
         },
       });
 
