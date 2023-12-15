@@ -129,7 +129,7 @@ export interface RealmInterface {
 /// BANK
 export interface AuctionInterface {
   start_time: number;
-  per_time_unit: number;
+  per_time_unit: bigint;
   sold: bigint;
   price_update_interval: bigint;
 }
