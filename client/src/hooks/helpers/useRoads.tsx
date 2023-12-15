@@ -51,7 +51,7 @@ export function useRoads() {
   return { getHasRoad };
 }
 
-export function useGetRoads(entityId: number) {
+export function useGetRoads(entityId: bigint) {
   const {
     setup: {
       components: { Road, Position, Realm },

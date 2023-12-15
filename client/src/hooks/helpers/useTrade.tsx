@@ -123,10 +123,10 @@ export function useTrade() {
     return canAccept;
   };
 
-  const getRealmEntityIdFromRealmId = (realmId: bigint): number | undefined => {
+  const getRealmEntityIdFromRealmId = (realmId: bigint): bigint | undefined => {
     const realms = runQuery([HasValue(Realm, { realm_id: realmId })]);
     if (realms.size > 0) {
-      return Number(realms.values().next().value);
+      return BigInt(realms.values().next().value);
     }
   };
 

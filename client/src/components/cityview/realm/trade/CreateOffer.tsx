@@ -38,8 +38,8 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] = useState<{ [key: number]: number }>({});
   const [selectedResourcesGetAmounts, setSelectedResourcesGetAmounts] = useState<{ [key: number]: number }>({});
   const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
-  const [selectedRealmEntityId, setSelectedRealmEntityId] = useState<number | undefined>();
-  const [selectedRealmId, setSelectedRealmId] = useState<number | undefined>();
+  const [selectedRealmEntityId, setSelectedRealmEntityId] = useState<bigint | undefined>();
+  const [selectedRealmId, setSelectedRealmId] = useState<bigint | undefined>();
   const [isNewCaravan, setIsNewCaravan] = useState(false);
   const [donkeysCount, setDonkeysCount] = useState(1);
   const [resourceWeight, setResourceWeight] = useState(0);
@@ -60,7 +60,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
 
   const { getRealmEntityIdFromRealmId } = useTrade();
 
-  const onSelectRealmId = (realmId: number) => {
+  const onSelectRealmId = (realmId: bigint) => {
     const entityId = getRealmEntityIdFromRealmId(realmId);
     entityId && setSelectedRealmEntityId(entityId);
   };

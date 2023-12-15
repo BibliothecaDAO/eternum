@@ -117,7 +117,8 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
       );
       return (
         realmResource &&
-        realmResource.balance >= getTotalAmount(amount, isFood, multiplier, laborAmount, laborAuctionAverageCoefficient)
+        realmResource.balance >=
+          getTotalAmount(Number(amount), isFood, multiplier, laborAmount, laborAuctionAverageCoefficient)
       );
     });
 
@@ -329,7 +330,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
                     resourceId={resourceId}
                     amount={Number(
                       divideByPrecision(
-                        getTotalAmount(amount, isFood, multiplier, laborAmount, laborAuctionAverageCoefficient),
+                        getTotalAmount(Number(amount), isFood, multiplier, laborAmount, laborAuctionAverageCoefficient),
                       ).toFixed(2),
                     )}
                   />

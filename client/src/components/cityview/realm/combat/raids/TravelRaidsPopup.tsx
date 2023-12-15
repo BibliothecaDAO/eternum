@@ -23,7 +23,7 @@ export const TravelRaidsPopup = ({ selectedRaider, onClose }: TravelRaidsPopupPr
     account: { account },
   } = useDojo();
 
-  const [selectedEntityId, setSelectedEntityId] = useState<number | undefined>();
+  const [selectedEntityId, setSelectedEntityId] = useState<bigint | undefined>();
   const [canAttack, setCanAttack] = useState(true);
   const [loading, setLoading] = useState(false);
 
