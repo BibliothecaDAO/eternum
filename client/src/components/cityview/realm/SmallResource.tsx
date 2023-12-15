@@ -15,7 +15,7 @@ export const SmallResource = ({
   hideIfZero,
 }: {
   resourceId: number;
-  entity_id?: number;
+  entity_id?: bigint;
   vertical?: boolean;
   intlFormat?: boolean;
   hideIfZero?: boolean;
