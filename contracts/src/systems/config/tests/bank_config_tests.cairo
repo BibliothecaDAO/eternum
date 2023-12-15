@@ -34,16 +34,16 @@ fn test_create_bank() {
         Coord {x: 30, y :800},
         array![
             (
-                // shekels costs 500 wheat and 200 fish
-                ResourceTypes::SHEKELS, 
+                // lords costs 500 wheat and 200 fish
+                ResourceTypes::LORDS, 
                 array![
                     (ResourceTypes::WHEAT, 500),
                     (ResourceTypes::FISH, 200)
                 ].span()
             ),
             (
-                // shekels costs 700 DRAGONHIDE
-                ResourceTypes::SHEKELS, 
+                // lords costs 700 DRAGONHIDE
+                ResourceTypes::LORDS, 
                 array![
                     (ResourceTypes::DRAGONHIDE, 700),
                 ].span()
@@ -57,7 +57,7 @@ fn test_create_bank() {
 
     // check that fish and wheat cost was added successfully 
 
-    let bank_shekel_swap_cost_1 = get!(world, (ResourceTypes::SHEKELS, 0), BankSwapResourceCost);
+    let bank_shekel_swap_cost_1 = get!(world, (ResourceTypes::LORDS, 0), BankSwapResourceCost);
     assert(
         bank_shekel_swap_cost_1.resource_cost_count == 2, 
             'wrong resource cost count'
@@ -70,7 +70,7 @@ fn test_create_bank() {
     assert(bank_shekel_fish_cost.amount == 200, 'wrong fish cost');
 
     // check that dragonhide cost was added successfully 
-    let bank_shekel_swap_cost_2 = get!(world, (ResourceTypes::SHEKELS, 1), BankSwapResourceCost);
+    let bank_shekel_swap_cost_2 = get!(world, (ResourceTypes::LORDS, 1), BankSwapResourceCost);
     assert(
         bank_shekel_swap_cost_2.resource_cost_count == 1, 
             'wrong resource cost count'
@@ -112,7 +112,7 @@ fn test_set_bank_auction() {
         world,
         bank_id,
         array![
-            (ResourceTypes::SHEKELS, 0),
+            (ResourceTypes::LORDS, 0),
             (ResourceTypes::DRAGONHIDE, 0)
         ].span(),
         decay_constant,
@@ -120,7 +120,7 @@ fn test_set_bank_auction() {
         price_update_interval
     );
 
-    let bank_shekel_auction = get!(world, (bank_id, ResourceTypes::SHEKELS, 0), BankAuction);
+    let bank_shekel_auction = get!(world, (bank_id, ResourceTypes::LORDS, 0), BankAuction);
     assert(bank_shekel_auction.decay_constant_mag == decay_constant, 'decay_constant_mag');
     assert(bank_shekel_auction.per_time_unit == per_time_unit, 'per_time_unit');
     assert(bank_shekel_auction.sold == 0, 'sold');

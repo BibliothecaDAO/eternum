@@ -9,9 +9,9 @@ import { useTrade } from "../helpers/useTrade";
 import { ResourceIcon } from "../../elements/ResourceIcon";
 import { findResourceById } from "@bibliothecadao/eternum";
 import { calculateRatio } from "../../components/cityview/realm/trade/Market/MarketOffer";
-import { EventType, NotificationType } from "./useNotifications";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 import useRealmStore from "../store/useRealmStore";
+import { EventType, NotificationType } from "../store/useNotificationsStore";
 
 export const useTradeNotification = (
   notification: NotificationType,

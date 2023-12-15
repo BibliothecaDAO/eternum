@@ -1,4 +1,4 @@
-import { Resource, Trade } from "@bibliothecadao/eternum";
+import { Resource, Trade, WEIGHTS } from "@bibliothecadao/eternum";
 
 export const getOrderIdsFromTrade = (
   trade: Trade,
@@ -18,5 +18,8 @@ export const getOrderIdsFromTrade = (
 };
 
 export const getTotalResourceWeight = (resources: (Resource | undefined)[]) => {
-  return resources.reduce((total, resource) => total + (resource?.amount || 0) * 1, 0);
+  return resources.reduce(
+    (total, resource) => total + (resource ? resource.amount * WEIGHTS[resource.resourceId] : 0),
+    0,
+  );
 };

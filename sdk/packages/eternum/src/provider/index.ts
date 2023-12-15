@@ -18,6 +18,7 @@ import {
   TransferResourcesProps,
   TravelProps,
   TransferItemsProps,
+  TransferItemsFromMultipleProps,
   CreateSoldiersProps,
   DetachSoldiersProps,
   AttackProps,
@@ -126,6 +127,7 @@ export class EternumProvider extends RPCProvider {
       signer,
       maker_transport_id,
       donkeys_quantity,
+      expires_at,
     } = props;
 
     let maker_gives_resource = maker_gives_resource_amounts.flatMap((amount, i) => {
@@ -136,7 +138,6 @@ export class EternumProvider extends RPCProvider {
       return [taker_gives_resource_types[i], amount];
     });
 
-    const expires_at = Math.floor(Date.now() / 1000 + 2628000);
     let transactions: Call[] = [];
 
     // If no caravan_id is provided, create a new caravan
@@ -228,6 +229,25 @@ export class EternumProvider extends RPCProvider {
       entrypoint: "cancel_order",
       calldata: [this.getWorldAddress(), trade_id],
     });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async transfer_items_from_multiple(props: TransferItemsFromMultipleProps) {
+    const { senders, signer } = props;
+
+    let calldata = senders.flatMap((sender) => {
+      return sender.indices.map((index) => {
+        return {
+          contractAddress: getContractByName(this.manifest, "resource_systems"),
+          entrypoint: "transfer_item",
+          calldata: [this.getWorldAddress(), sender.sender_id, index, sender.receiver_id],
+        };
+      });
+    });
+
+    const tx = await this.executeMulti(signer, calldata);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
     });
@@ -408,7 +428,7 @@ export class EternumProvider extends RPCProvider {
         },
       ];
 
-      uuid = uuid + 1;
+      uuid = uuid + 2;
       return calldata;
     });
 
