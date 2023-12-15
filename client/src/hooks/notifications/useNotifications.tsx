@@ -1,56 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDojo } from "../../DojoContext";
-import { Component, Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
-import {
-  divideByPrecision,
-  extractAndCleanKey,
-  getEntityIdFromKeys,
-  getPosition,
-  numberToHex,
-} from "../../utils/utils";
+import { numberToHex } from "../../utils/utils";
 import useBlockchainStore from "../store/useBlockchainStore";
-import { calculateNextHarvest } from "../../components/cityview/realm/labor/laborUtils";
 import useRealmStore from "../store/useRealmStore";
-import { unpackResources } from "../../utils/packedData";
-import { COMBAT_EVENT, ResourcesIds } from "@bibliothecadao/eternum";
-import { UpdatedEntity } from "../../dojo/createEntitySubscription";
-import { Position } from "@bibliothecadao/eternum";
-import { getRealm } from "../../utils/realms";
-import { LABOR_CONFIG } from "@bibliothecadao/eternum";
-import { CombatResultInterface } from "@bibliothecadao/eternum";
+import { COMBAT_EVENT } from "@bibliothecadao/eternum";
 import { createCombatNotification, parseCombatEvent } from "../../utils/combat";
 import { Event, pollForEvents } from "../../services/eventPoller";
-import { LevelIndex, useLevel } from "../helpers/useLevel";
-
-export enum EventType {
-  MakeOffer,
-  AcceptOffer,
-  CancelOffer,
-  Harvest,
-  OrderClaimable,
-  StolenResource,
-  Attacked,
-}
-
-type realmsResources = { realmEntityId: number; resourceIds: number[] }[];
-type realmsPosition = { realmId: number; position: Position }[];
-
-export type NotificationType = {
-  eventType: EventType;
-  keys: string[] | string | undefined;
-  data?: HarvestData | EmptyChestData | CombatResultInterface;
-};
-
-type HarvestData = {
-  harvestAmount: number;
-};
-
-type EmptyChestData = {
-  destinationRealmId: number;
-  caravanId: number;
-  realmEntityId: number;
-  resourcesChestId: number;
-};
+import { useLevel } from "../helpers/useLevel";
+import { useNotificationsStore } from "../store/useNotificationsStore";
+import { useResources } from "../helpers/useResources";
+import {
+  generateEmptyChestNotifications,
+  generateLaborNotifications,
+  generateTradeNotifications,
+  useRealmsPosition,
+  useRealmsResource,
+} from "./utils";
 
 export const useNotifications = () => {
   const {
@@ -59,7 +24,7 @@ export const useNotifications = () => {
         entityUpdates,
         eventUpdates: { createCombatEvents },
       },
-      components: { Status, Realm, Labor, ArrivalTime, Position, CaravanMembers, Inventory, ForeignKey },
+      components: { Status, Realm, Labor, ArrivalTime, CaravanMembers, Position, Inventory, ForeignKey },
     },
   } = useDojo();
 
@@ -70,6 +35,9 @@ export const useNotifications = () => {
   const realmPositions = useRealmsPosition(realmEntityIds);
 
   const { getEntityLevel, getHyperstructureLevelBonus, getRealmLevelBonus } = useLevel();
+  const { getResourcesFromInventory } = useResources();
+
+  const { notifications, addUniqueNotifications } = useNotificationsStore();
 
   // get harvest bonuses
   const [realmLevel, hyperstructureLevel] = useMemo(() => {
@@ -78,15 +46,13 @@ export const useNotifications = () => {
     return [realmLevel, hyperstructureLevel];
   }, [realmEntityId]);
 
-  const [notifications, setNotifications] = useState<NotificationType[]>([]);
-
   /**
    * Trade notifications
    */
   useEffect(() => {
     const subscription = entityUpdates.subscribe((updates) => {
-      const notifications = generateTradeNotifications(updates, Status);
-      addUniqueNotifications(notifications, setNotifications);
+      const newNotifications = generateTradeNotifications(updates, Status);
+      addUniqueNotifications(newNotifications);
     });
 
     return () => {
@@ -99,7 +65,7 @@ export const useNotifications = () => {
    */
   useEffect(() => {
     const updateNotifications = () => {
-      const notifications = nextBlockTimestamp
+      const newNotifications = nextBlockTimestamp
         ? generateLaborNotifications(
             realmsResources,
             getRealmLevelBonus,
@@ -111,7 +77,7 @@ export const useNotifications = () => {
           )
         : [];
       // add only add if not already in there
-      addUniqueNotifications(notifications, setNotifications);
+      addUniqueNotifications(newNotifications);
     };
 
     // Call it once initially
@@ -129,9 +95,8 @@ export const useNotifications = () => {
    * Combat notifications
    */
   const setCombatNotificationsFromEvents = (event: Event) => {
-    const notification = createCombatNotification(parseCombatEvent(event));
-    // setNotifications((prev) => [notification, ...prev]);
-    addUniqueNotifications([notification], setNotifications);
+    const newNotification = createCombatNotification(parseCombatEvent(event));
+    addUniqueNotifications([newNotification]);
   };
 
   useEffect(() => {
@@ -152,8 +117,8 @@ export const useNotifications = () => {
         const observable = await createCombatEvents(realmEntityId);
         observable.subscribe((event) => {
           if (event) {
-            const notification = createCombatNotification(parseCombatEvent(event));
-            addUniqueNotifications([notification], setNotifications);
+            const newNotification = createCombatNotification(parseCombatEvent(event));
+            addUniqueNotifications([newNotification]);
           }
         });
       }
@@ -167,21 +132,22 @@ export const useNotifications = () => {
 
   useEffect(() => {
     const updateNotifications = () => {
-      const notifications = nextBlockTimestamp
+      const newNotifications = nextBlockTimestamp
         ? generateEmptyChestNotifications(
             realmPositions,
-            CaravanMembers,
             Inventory,
             Position,
             ArrivalTime,
+            CaravanMembers,
             Realm,
             ForeignKey,
             nextBlockTimestamp,
+            getResourcesFromInventory,
           )
         : [];
 
       // add only add if not already in there
-      addUniqueNotifications(notifications, setNotifications);
+      addUniqueNotifications(newNotifications);
     };
 
     // Call it once initially
@@ -195,271 +161,13 @@ export const useNotifications = () => {
     return () => clearInterval(intervalId);
   }, [nextBlockTimestamp]);
 
-  const removeNotification = (notificationId: string) => {
-    setNotifications((prev) => prev.filter((notification) => generateUniqueId(notification) !== notificationId));
-  };
-
   const handleCloseNotification = (notificationId: string) => {
     setClosedNotifications((prev) => ({ ...prev, [notificationId]: true }));
   };
 
   return {
     notifications,
-    removeNotification,
     closedNotifications,
     handleCloseNotification,
   };
-};
-
-/**
- * Add unique notifications to the list of notifications
- * @param notifications list of notifications
- * @param setNotifications setter for notifications
- */
-const addUniqueNotifications = (
-  notifications: NotificationType[],
-  setNotifications: React.Dispatch<React.SetStateAction<NotificationType[]>>,
-) => {
-  setNotifications((prev) => {
-    // Extract keys from previous notifications
-    const prevIds = new Set(prev.map((n) => generateUniqueId(n)));
-
-    // Filter out notifications that are already in the prev list
-    const newNotifications = notifications.filter((notification) => !prevIds.has(generateUniqueId(notification)));
-
-    // If there are no new notifications, return the previous state to avoid re-render
-    if (newNotifications.length === 0) {
-      return prev;
-    }
-
-    // Otherwise, return the combined list
-    return [...newNotifications, ...prev];
-  });
-};
-
-/**
- * Generate trade notifications from entity updates from graphql subscription
- * @param entityUpdates list of updated entities with keys and componentNames
- * @param Status Component
- * @returns
- */
-const generateTradeNotifications = (entityUpdates: UpdatedEntity[], Status: Component) => {
-  const notifications = entityUpdates
-    .map((update) => {
-      if (update.model_names.includes("Trade")) {
-        const status = getComponentValue(Status, getEntityIdFromKeys(extractAndCleanKey(update.entityKeys)));
-        switch (status?.value) {
-          case 0:
-            return { eventType: EventType.MakeOffer, keys: update.entityKeys };
-          case 1:
-            return {
-              eventType: EventType.AcceptOffer,
-              keys: update.entityKeys,
-            };
-          case 2:
-            return {
-              eventType: EventType.CancelOffer,
-              keys: update.entityKeys,
-            };
-          default:
-            return null;
-        }
-      }
-      return null;
-    })
-    .filter(Boolean) as NotificationType[];
-
-  // Remove consecutive duplicates
-  return notifications.reduce((acc, curr, idx, array) => {
-    if (idx === 0 || JSON.stringify(curr) !== JSON.stringify(array[idx - 1])) {
-      acc.push(curr);
-    }
-    return acc;
-  }, [] as NotificationType[]);
-};
-
-/**
- * Generate labor notifications from realm resources
- * @param resourcesPerRealm list of objects with realmEntityId and resourceIds of the realm
- * @param nextBlockTimestamp next block timestamp
- * @param Labor Component
- * @returns
- */
-const generateLaborNotifications = (
-  resourcesPerRealm: { realmEntityId: number; resourceIds: number[] }[],
-  getRealmLevelBonus: (level: number, levelIndex: LevelIndex) => number,
-  getHyperstructureLevelBonus: (level: number, levelIndex: LevelIndex) => number,
-  nextBlockTimestamp: number,
-  realmLevel: number,
-  hyperstructureLevel: number,
-  Labor: Component,
-) => {
-  const notifications: NotificationType[] = [];
-  resourcesPerRealm.forEach(({ realmEntityId, resourceIds }) => {
-    resourceIds.forEach((resourceId) => {
-      const isFood = [ResourcesIds["Wheat"], ResourcesIds["Fish"]].includes(resourceId);
-      const labor = getComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)])) as
-        | { balance: number; last_harvest: number; multiplier: number }
-        | undefined;
-      const realmLevelBonus = getRealmLevelBonus(realmLevel, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
-      const hyperstructureLevelBonus = getHyperstructureLevelBonus(
-        hyperstructureLevel,
-        isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE,
-      );
-      const harvest =
-        labor && nextBlockTimestamp
-          ? calculateNextHarvest(
-              labor.balance,
-              labor.last_harvest,
-              labor.multiplier,
-              LABOR_CONFIG.base_labor_units,
-              isFood ? LABOR_CONFIG.base_food_per_cycle : LABOR_CONFIG.base_resources_per_cycle,
-              nextBlockTimestamp,
-              realmLevelBonus,
-              hyperstructureLevelBonus,
-            )
-          : 0;
-
-      if (harvest > 0) {
-        notifications.push({
-          eventType: EventType.Harvest,
-          keys: [realmEntityId.toString(), resourceId.toString()],
-          data: {
-            harvestAmount: divideByPrecision(harvest),
-          },
-        });
-      }
-    });
-  });
-
-  return notifications;
-};
-
-/**
- * Generate claimable orders notifications from realm positions by checking if any order has arrived on that position
- * @param realmPositions
- * @param FungibleEntities
- * @param Position
- * @param ArrivalTime
- * @param Trade
- * @param nextBlockTimestamp
- * @returns
- */
-const generateEmptyChestNotifications = (
-  realmPositions: realmsPosition,
-  CaravanMembers: Component,
-  Inventory: Component,
-  Position: Component,
-  ArrivalTime: Component,
-  Realm: Component,
-  ForeignKey: Component,
-  nextBlockTimestamp: number,
-) => {
-  let notifications: NotificationType[] = [];
-  for (const { realmId, position: realmPosition } of realmPositions) {
-    const caravansAtPositionWithInventory = runQuery([
-      Has(CaravanMembers),
-      HasValue(Inventory, {
-        items_count: 1,
-      }),
-      HasValue(Position, {
-        x: realmPosition?.x,
-        y: realmPosition?.y,
-      }),
-    ]);
-
-    const realms = runQuery([HasValue(Realm, { realm_id: realmId })]);
-    const realmEntityId = Number(realms.values().next().value);
-
-    for (const caravanId of caravansAtPositionWithInventory) {
-      const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([BigInt(caravanId)])) as
-        | { arrives_at: number }
-        | undefined;
-
-      const inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(caravanId)])) as
-        | { items_key: number; items_count: number }
-        | undefined;
-      const foreignKey = inventory
-        ? getComponentValue(
-            ForeignKey,
-            getEntityIdFromKeys([BigInt(caravanId), BigInt(inventory.items_key), BigInt(0)]),
-          )
-        : undefined;
-
-      const resourcesChestId = foreignKey?.entity_id as number;
-
-      if (arrivalTime?.arrives_at && arrivalTime.arrives_at <= nextBlockTimestamp && resourcesChestId) {
-        notifications.push({
-          eventType: EventType.OrderClaimable,
-          keys: [caravanId.toString()],
-          data: {
-            destinationRealmId: realmId,
-            realmEntityId,
-            caravanId,
-            resourcesChestId,
-          },
-        });
-      }
-    }
-  }
-
-  return notifications;
-};
-
-/**
- * Get all resources present on each realm
- * @param realms
- * @returns
- */
-const useRealmsResource = (
-  realms: {
-    realmEntityId: number;
-    realmId: number;
-  }[],
-): realmsResources => {
-  return useMemo(() => {
-    return realms
-      .map(({ realmEntityId, realmId }) => {
-        const { resourceTypesPacked, resourceTypesCount } = realmId
-          ? getRealm(realmId)
-          : { resourceTypesPacked: 0, resourceTypesCount: 0 };
-
-        if (realmId) {
-          let unpackedResources = unpackResources(BigInt(resourceTypesPacked), resourceTypesCount);
-          return {
-            realmEntityId,
-            resourceIds: [ResourcesIds["Wheat"], ResourcesIds["Fish"]].concat(unpackedResources),
-          };
-        }
-        return null;
-      })
-      .filter(Boolean) as { realmEntityId: number; resourceIds: number[] }[];
-  }, [realms]);
-};
-
-/**
- * Gets all positions of each realm
- * @param realms
- * @returns
- */
-const useRealmsPosition = (
-  realms: {
-    realmEntityId: number;
-    realmId: number;
-  }[],
-): realmsPosition => {
-  return useMemo(() => {
-    return realms.map(({ realmId }) => {
-      return { realmId, position: getPosition(realmId) };
-    });
-  }, [realms]);
-};
-
-/**
- *  Generate unique id for each notification based on keys and eventType
- * @param notification
- * @returns
- */
-export const generateUniqueId = (notification: NotificationType): string => {
-  return `${notification.eventType}_${extractAndCleanKey(notification.keys).join("_")}`;
 };
