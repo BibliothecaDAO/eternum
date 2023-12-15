@@ -21,10 +21,10 @@ export type HarvestData = {
 };
 
 export type EmptyChestData = {
-  destinationRealmId: number;
+  destinationRealmId: bigint;
   carrierType: CarrierType;
-  entityId: number;
-  realmEntityId: number;
+  entityId: bigint;
+  realmEntityId: bigint;
   indices: number[];
   resources: Resource[];
 };

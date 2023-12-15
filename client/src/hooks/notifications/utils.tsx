@@ -3,14 +3,14 @@ import { divideByPrecision, getEntityIdFromKeys, getPosition } from "../../utils
 import { LABOR_CONFIG, Position, Resource, ResourcesIds } from "@bibliothecadao/eternum";
 import { unpackResources } from "../../utils/packedData";
 import { getRealm } from "../../utils/realms";
-import { Component, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
+import { Component, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { UpdatedEntity } from "../../dojo/createEntitySubscription";
 import { CarrierType, EventType, NotificationType, extractAndCleanKey } from "../store/useNotificationsStore";
-import { LevelIndex } from "../helpers/useLevel";
 import { calculateNextHarvest } from "../../components/cityview/realm/labor/laborUtils";
+import { LevelIndex } from "../helpers/useLevel";
 
-export type realmsResources = { realmEntityId: number; resourceIds: number[] }[];
-export type realmsPosition = { realmId: number; position: Position }[];
+export type realmsResources = { realmEntityId: bigint; resourceIds: number[] }[];
+export type realmsPosition = { realmId: bigint; position: Position }[];
 
 /**
  * Get all resources present on each realm
@@ -19,8 +19,8 @@ export type realmsPosition = { realmId: number; position: Position }[];
  */
 export const useRealmsResource = (
   realms: {
-    realmEntityId: number;
-    realmId: number;
+    realmEntityId: bigint;
+    realmId: bigint;
   }[],
 ): realmsResources => {
   return useMemo(() => {
@@ -39,7 +39,7 @@ export const useRealmsResource = (
         }
         return null;
       })
-      .filter(Boolean) as { realmEntityId: number; resourceIds: number[] }[];
+      .filter(Boolean) as { realmEntityId: bigint; resourceIds: number[] }[];
   }, [realms]);
 };
 
@@ -50,8 +50,8 @@ export const useRealmsResource = (
  */
 export const useRealmsPosition = (
   realms: {
-    realmEntityId: number;
-    realmId: number;
+    realmEntityId: bigint;
+    realmId: bigint;
   }[],
 ): realmsPosition => {
   return useMemo(() => {
@@ -178,7 +178,7 @@ export const generateEmptyChestNotifications = (
   Realm: Component,
   ForeignKey: Component,
   nextBlockTimestamp: number,
-  getResourcesFromInventory: (entityId: number) => {
+  getResourcesFromInventory: (entityId: bigint) => {
     resources: Resource[];
     indices: number[];
   },
@@ -196,14 +196,14 @@ export const generateEmptyChestNotifications = (
     ]);
 
     const realms = runQuery([HasValue(Realm, { realm_id: realmId })]);
-    const realmEntityId = Number(realms.values().next().value);
+    const realmEntityId = BigInt(realms.values().next().value);
 
     for (const entityId of entitiesAtPositionWithInventory) {
       const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([BigInt(entityId)])) as
         | { arrives_at: number }
         | undefined;
 
-      const { resources, indices } = getResourcesFromInventory(entityId);
+      const { resources, indices } = getResourcesFromInventory(BigInt(entityId));
 
       const caravanMembers = getComponentValue(CaravanMembers, getEntityIdFromKeys([BigInt(entityId)]));
 
@@ -217,7 +217,7 @@ export const generateEmptyChestNotifications = (
             destinationRealmId: realmId,
             carrierType,
             realmEntityId,
-            entityId,
+            entityId: BigInt(entityId),
             resources,
             indices,
           },
