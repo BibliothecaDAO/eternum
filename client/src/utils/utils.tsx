@@ -17,6 +17,13 @@ export const currencyFormat = (num: any, decimals: number) => {
     .replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
 };
 
+export function currencyIntlFormat(num: any, decimals: number = 2) {
+  return Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: decimals,
+  }).format(num || 0);
+}
+
 export const wrapEffect = (effectImpl: any, defaultBlendMode = BlendFunction.ALPHA) =>
   forwardRef(function Wrap({ blendFunction, opacity, ...props }: any, ref) {
     const invalidate = useThree((state) => state.invalidate);
