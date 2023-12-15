@@ -44,7 +44,7 @@ const RealmManagementComponent = () => {
     setIsLoadingScreenEnabled(true);
     moveCameraToWorldMapView();
     setTimeout(() => {
-      moveCameraToRealm(realm?.realmId as number);
+      moveCameraToRealm(Number(realm?.realmId));
     }, 300);
   };
 

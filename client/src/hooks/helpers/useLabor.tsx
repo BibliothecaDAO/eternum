@@ -17,7 +17,7 @@ export function useLabor() {
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const getLaborCost = (resourceId: bigint): Resource[] => {
+  const getLaborCost = (resourceId: number): Resource[] => {
     const laborCostResources = getComponentValue(LaborCostResources, getEntityIdFromKeys([BigInt(resourceId)]));
 
     const resourceIds = laborCostResources

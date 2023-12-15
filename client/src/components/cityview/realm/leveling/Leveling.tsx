@@ -5,7 +5,7 @@ import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
 
 type LevelingProps = {
   className?: string;
-  entityId: number | undefined;
+  entityId: bigint | undefined;
   setShowLevelUp?: (show: boolean) => void;
 };
 

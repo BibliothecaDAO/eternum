@@ -85,7 +85,7 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
               <div className="text-xxs mr-2">{accountDisplay}</div>
               <div className="text-xxs">{addressName}</div>
             </div>
-            <div className="font-bold">{realmsNames.features[realm.realmId - 1].name}</div>
+            <div className="font-bold">{realmsNames.features[Number(realm.realmId - 1n)].name}</div>
           </div>
           <LaborAuction />
           <div

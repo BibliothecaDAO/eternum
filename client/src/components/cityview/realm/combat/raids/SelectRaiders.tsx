@@ -68,13 +68,13 @@ export const SelectableRaider = ({ raider, selectedRaiders, setSelectedRaiders, 
       }}
     >
       <div className="flex items-center text-xxs">
-        {entityId && (
+        {entityId.toString() && (
           <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
-            #{entityId}
+            #{entityId.toString()}
           </div>
         )}
         <div className="flex items-center ml-1 -mt-2">
-          {isTraveling && originRealmId && (
+          {isTraveling && originRealmId?.toString() && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Traveling from</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
@@ -84,7 +84,7 @@ export const SelectableRaider = ({ raider, selectedRaiders, setSelectedRaiders, 
               </div>
             </div>
           )}
-          {!isTraveling && originRealmId && (
+          {!isTraveling && originRealmId?.toString() && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Arrived from</span>
               <div className="flex items-center ml-1 mr-1 text-gold">

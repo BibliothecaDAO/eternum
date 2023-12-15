@@ -109,7 +109,7 @@ export const SelectRealmPanel = ({
             <div className="text-xs text-center text-gold">Make Direct Offer</div>
             <CaretDownFill className="ml-1 fill-gold absolute top-1/2 right-2 -translate-y-1/2 rotate-180" />
           </div>
-          {realmEntityId && (
+          {realmEntityId.toString() && (
             <div className="flex flex-col">
               <TextInput
                 className="border border-gold mx-1 !w-auto !text-light-pink"
@@ -146,7 +146,7 @@ export const SelectRealmPanel = ({
                         if (selectedRealmId !== takerRealmId) {
                           setSelectedRealmId(takerRealmId);
                         } else {
-                          setSelectedRealmId(0);
+                          setSelectedRealmId(0n);
                         }
                       }}
                     >
@@ -155,7 +155,7 @@ export const SelectRealmPanel = ({
                           <OrderIcon order={order} size="xs" />
                         </div>
 
-                        <div className="flex-none w-20">{takerRealmId}</div>
+                        <div className="flex-none w-20">{takerRealmId.toString()}</div>
 
                         <div className="flex-grow">{name}</div>
 
@@ -181,7 +181,7 @@ export function sortRealms(realms: SelectableRealmInterface[], activeSort: SortI
 
   if (activeSort.sort !== "none") {
     if (activeSort.sortKey === "id") {
-      return sortedRealms.sort((a, b) => {
+      return sortedRealms.sort((a: any, b: any) => {
         if (activeSort.sort === "asc") {
           return a.realmId - b.realmId;
         } else {
@@ -216,6 +216,6 @@ export function sortRealms(realms: SelectableRealmInterface[], activeSort: SortI
       return sortedRealms;
     }
   } else {
-    return sortedRealms.sort((a, b) => b.realmId - a.realmId);
+    return sortedRealms.sort((a: any, b: any) => b.realmId - a.realmId);
   }
 }
