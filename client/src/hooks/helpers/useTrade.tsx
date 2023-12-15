@@ -1,4 +1,4 @@
-import { Entity, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
+import { HasValue, NotValue, getComponentValue, runQuery, Entity } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { MarketInterface, Resource } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";
@@ -48,7 +48,7 @@ export function useTrade() {
       if (resource) {
         resources.push({
           resourceId: resource.resource_type,
-          amount: Number(resource.resource_amount),
+          amount: resource.resource_amount,
         });
       }
     }
@@ -179,18 +179,20 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
   const { calculateDistance } = useCaravan();
 
   useMemo((): any => {
-    const optimisticTradeId = entityIds.indexOf(HIGH_ENTITY_ID);
+    const optimisticTradeId = entityIds.indexOf(HIGH_ENTITY_ID.toString() as Entity);
     const trades = entityIds
       // avoid having optimistic and real trade at the same time
       .slice(0, optimisticTradeId === -1 ? entityIds.length + 1 : optimisticTradeId + 1)
       .map((tradeId) => {
         let trade = getComponentValue(Trade, tradeId);
         if (trade) {
-          const { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, tradeId);
+          const { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, BigInt(tradeId));
           const hasRoad = getHasRoad(realmEntityId, trade.taker_id);
+
           const distance = calculateDistance(trade.taker_id, realmEntityId);
+
           return {
-            tradeId,
+            tradeId: BigInt(tradeId),
             makerId: trade.maker_id,
             takerId: trade.taker_id,
             makerOrder: getRealm(trade.maker_id).order,
@@ -229,14 +231,14 @@ export function useGetMarket({
   const [market, setMarket] = useState<MarketInterface[]>([]);
 
   const fragments = useMemo(() => {
-    const baseFragments: QueryFragment[] = [HasValue(Status, { value: 0 })];
+    const baseFragments: QueryFragment[] = [HasValue(Status, { value: 0n })];
 
     if (directOffers) {
       baseFragments.push(HasValue(Trade, { taker_id: realmEntityId }));
     } else if (filterOwnOffers) {
       baseFragments.push(NotValue(Trade, { maker_id: realmEntityId }));
     } else {
-      baseFragments.push(HasValue(Trade, { taker_id: 0 }));
+      baseFragments.push(HasValue(Trade, { taker_id: 0n }));
     }
 
     if (selectedOrders.length > 0) {
@@ -277,11 +279,11 @@ export function useGetMarket({
         let trade = getComponentValue(Trade, tradeId);
         if (trade) {
           const isMine = trade.maker_id === realmEntityId;
-          const { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, tradeId);
+          const { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, BigInt(tradeId));
           const distance = calculateDistance(trade.maker_id, realmEntityId);
           const hasRoad = getHasRoad(realmEntityId, trade.maker_id);
           return {
-            tradeId,
+            tradeId: BigInt(tradeId),
             makerId: trade.maker_id,
             takerId: trade.taker_id,
             makerOrder: getRealm(trade.maker_id).order,
@@ -332,7 +334,7 @@ export function sortTrades(trades: MarketInterface[], activeSort: SortInterface)
         }
       });
     } else if (activeSort.sortKey === "realm") {
-      return trades.sort((a, b) => {
+      return trades.sort((a: any, b: any) => {
         if (activeSort.sort === "asc") {
           return a.makerId - b.makerId;
         } else {
@@ -343,6 +345,6 @@ export function sortTrades(trades: MarketInterface[], activeSort: SortInterface)
       return trades;
     }
   } else {
-    return trades.sort((a, b) => b!.tradeId - a!.tradeId);
+    return trades.sort((a: any, b: any) => b!.tradeId - a!.tradeId);
   }
 }

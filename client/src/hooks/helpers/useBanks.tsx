@@ -29,7 +29,13 @@ export const useBanks = () => {
   const getResourceBankPrice = (auction: AuctionInterface, resourceId: 254 | 255): number | undefined => {
     const coefficient =
       auction && nextBlockTimestamp
-        ? computeCoefficient(auction.start_time, nextBlockTimestamp, Number(auction.sold), 0.1, auction.per_time_unit)
+        ? computeCoefficient(
+            auction.start_time,
+            nextBlockTimestamp,
+            Number(auction.sold),
+            0.1,
+            Number(auction.per_time_unit),
+          )
         : undefined;
 
     return coefficient ? coefficient * targetPrices[resourceId] : undefined;

@@ -30,7 +30,7 @@ export function useLabor() {
         getEntityIdFromKeys([BigInt(resourceId), BigInt(costResourceId)]),
       );
       let amount = laborCostAmount?.value || 0n;
-      return { resourceId: BigInt(costResourceId), amount };
+      return { resourceId: costResourceId, amount };
     });
   };
 

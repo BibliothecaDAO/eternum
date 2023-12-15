@@ -60,7 +60,7 @@ export function useCaravan() {
     return foreignKey?.entity_id;
   };
 
-  function calculateDistance(startId: number, destinationId: number): number | undefined {
+  function calculateDistance(startId: bigint, destinationId: bigint): number | undefined {
     // d = √((x2-x1)² + (y2-y1)²)
     let start = getComponentValue(Position, getEntityIdFromKeys([BigInt(startId)]));
     let destination = getComponentValue(Position, getEntityIdFromKeys([BigInt(destinationId)]));
