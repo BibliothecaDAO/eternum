@@ -53,7 +53,7 @@ export function useResources() {
     return {
       resources: Object.keys(resources).map((resourceId: string) => ({
         resourceId: Number(resourceId),
-        amount: resources[Number(resourceId)],
+        amount: BigInt(resources[Number(resourceId)]),
       })),
       indices,
     };
@@ -75,9 +75,9 @@ export function useResources() {
     return [
       {
         resourceId: 254,
-        amount: Number(wheat?.balance) || 0,
+        amount: BigInt(wheat?.balance || 0n),
       },
-      { resourceId: 255, amount: Number(fish?.balance) || 0 },
+      { resourceId: 255, amount: BigInt(fish?.balance || 0n) },
     ];
   };
 

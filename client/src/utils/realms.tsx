@@ -44,7 +44,7 @@ export function getRealm(realmId: bigint): RealmInterface {
   const resourceIds = realm.attributes
     .filter(({ trait_type }: Attribute) => trait_type === "Resource")
     .map(({ value }: Attribute) => findResourceIdByTrait(value));
-  const resourceTypesPacked = parseInt(packResources(resourceIds));
+  const resourceTypesPacked = BigInt(packResources(resourceIds));
   let cities: number = 0;
   realm.attributes.forEach(({ trait_type, value }: Attribute) => {
     if (trait_type === "Cities") {

@@ -15,7 +15,7 @@ export function computeCoefficient(
 }
 
 export const getLordsAmountFromBankAuction = (
-  totalCost: number,
+  totalCost: bigint,
   target_price: number,
   decay: number,
   units_per_day: number,

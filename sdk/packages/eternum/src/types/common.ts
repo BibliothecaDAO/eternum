@@ -71,7 +71,7 @@ export interface Resources {
 }
 
 export interface Resource {
-  resourceId: bigint;
+  resourceId: number;
   amount: bigint;
 }
 
