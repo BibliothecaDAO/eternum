@@ -16,8 +16,7 @@ import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useCaravan } from "../../../../hooks/helpers/useCaravans";
-import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../../utils/utils";
-import { getComponentValue } from "@dojoengine/recs";
+import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 import { useTrade } from "../../../../hooks/helpers/useTrade";
 import { SelectRealmPanel } from "../SelectRealmPanel";
@@ -35,9 +34,9 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   const [step, setStep] = useState<number>(1);
   const [selectedResourceIdsGive, setSelectedResourceIdsGive] = useState<number[]>([]);
   const [selectedResourceIdsGet, setSelectedResourceIdsGet] = useState<number[]>([]);
-  const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] = useState<{ [key: number]: bigint }>({});
-  const [selectedResourcesGetAmounts, setSelectedResourcesGetAmounts] = useState<{ [key: number]: bigint }>({});
-  const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
+  const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] = useState<{ [key: number]: number }>({});
+  const [selectedResourcesGetAmounts, setSelectedResourcesGetAmounts] = useState<{ [key: number]: number }>({});
+  const [selectedCaravan, setSelectedCaravan] = useState<bigint>(0n);
   const [selectedRealmEntityId, setSelectedRealmEntityId] = useState<bigint | undefined>();
   const [selectedRealmId, setSelectedRealmId] = useState<bigint | undefined>();
   const [isNewCaravan, setIsNewCaravan] = useState(false);
@@ -108,7 +107,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
     if (step === 1) {
       return selectedResourceIdsGive.length > 0 && selectedResourceIdsGet.length > 0;
     } else if (step === 3) {
-      return selectedCaravan !== 0 || (hasEnoughDonkeys && isNewCaravan);
+      return selectedCaravan !== 0n || (hasEnoughDonkeys && isNewCaravan);
     } else {
       return true;
     }
@@ -228,12 +227,6 @@ const SelectResourcesPanel = ({
   selectedResourceIdsGet: number[];
   setSelectedResourceIdsGet: (selectedResourceIds: number[]) => void;
 }) => {
-  const {
-    setup: {
-      components: { Resource },
-    },
-  } = useDojo();
-
   const { getBalance } = useResources();
 
   const { realmEntityId } = useRealmStore();
@@ -249,7 +242,7 @@ const SelectResourcesPanel = ({
               <SelectableResource
                 key={id}
                 resourceId={id}
-                amount={resource?.balance || 0n}
+                amount={resource?.balance || 0}
                 disabled={(resource?.balance || 0) === 0 || selectedResourceIdsGet.includes(id)}
                 selected={selectedResourceIdsGive.includes(id)}
                 onClick={() => {
@@ -271,12 +264,12 @@ const SelectResourcesPanel = ({
         <Headline className="mb-2">You Get</Headline>
         <div className="grid grid-cols-4 gap-2">
           {resources.map(({ id, trait: _name }) => {
-            let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
+            let resource = getBalance(realmEntityId, id);
             return (
               <SelectableResource
                 key={id}
                 resourceId={id}
-                amount={resource?.balance || 0n}
+                amount={resource?.balance || 0}
                 selected={selectedResourceIdsGet.includes(id)}
                 disabled={selectedResourceIdsGive.includes(id)}
                 onClick={() => {
@@ -309,8 +302,8 @@ const SelectResourcesAmountPanel = ({
 }: {
   selectedResourceIdsGive: number[];
   selectedResourceIdsGet: number[];
-  selectedResourcesGiveAmounts: { [key: number]: bigint };
-  selectedResourcesGetAmounts: { [key: number]: bigint };
+  selectedResourcesGiveAmounts: { [key: number]: number };
+  selectedResourcesGetAmounts: { [key: number]: number };
   resourceWeight: number;
   setSelectedResourcesGiveAmounts: (selectedResourcesGiveAmounts: { [key: number]: number }) => void;
   setSelectedResourcesGetAmounts: (selectedResourcesGetAmounts: { [key: number]: number }) => void;
@@ -440,8 +433,8 @@ export const SelectCaravanPanel = ({
   setDonkeysCount: (donkeysCount: number) => void;
   isNewCaravan: boolean;
   setIsNewCaravan: (isNewCaravan: boolean) => void;
-  selectedCaravan: number;
-  setSelectedCaravan: (selectedCaravanId: number) => void;
+  selectedCaravan: bigint;
+  setSelectedCaravan: (selectedCaravanId: bigint) => void;
   selectedResourceIdsGet: number[];
   selectedResourceIdsGive: number[];
   selectedResourcesGetAmounts: { [key: number]: number };
