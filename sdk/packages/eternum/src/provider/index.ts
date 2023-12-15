@@ -428,7 +428,7 @@ export class EternumProvider extends RPCProvider {
         },
       ];
 
-      uuid = uuid + 1;
+      uuid = uuid + 2;
       return calldata;
     });
 
