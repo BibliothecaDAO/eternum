@@ -4,7 +4,7 @@ import Button from "../../../../elements/Button";
 import { Headline } from "../../../../elements/Headline";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../elements/NumberInput";
-import { CaravanInterface, ResourcesIds, resources } from "@bibliothecadao/eternum";
+import { CaravanInterface, ResourcesIds, ONE_MONTH, WEIGHTS, resources } from "@bibliothecadao/eternum";
 import { ReactComponent as Danger } from "../../../../assets/icons/common/danger.svg";
 import { ReactComponent as Donkey } from "../../../../assets/icons/units/donkey-circle.svg";
 import { Caravan } from "./Caravans/Caravan";
@@ -18,6 +18,7 @@ import clsx from "clsx";
 import { DONKEYS_PER_CITY, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 import { useResources } from "../../../../hooks/helpers/useResources";
 import ListSelect from "../../../../elements/ListSelect";
+import { getTotalResourceWeight } from "./TradeUtils";
 
 type FastCreateOfferPopupProps = {
   resourceId: number;
@@ -49,22 +50,25 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose }: FastCreateO
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+
   useEffect(() => {
     if (isBuy) {
-      setSelectedResourceIdsGive([ResourcesIds.Shekels]);
+      setSelectedResourceIdsGive([ResourcesIds.Lords]);
       setSelectedResourceIdsGet([resourceId]);
-      setSelectedResourcesGiveAmounts({ [ResourcesIds.Shekels]: 1 });
+      setSelectedResourcesGiveAmounts({ [ResourcesIds.Lords]: 1 });
       setSelectedResourcesGetAmounts({ [resourceId]: 1 });
     } else {
       setSelectedResourceIdsGive([resourceId]);
-      setSelectedResourceIdsGet([ResourcesIds.Shekels]);
+      setSelectedResourceIdsGet([ResourcesIds.Lords]);
       setSelectedResourcesGiveAmounts({ [resourceId]: 1 });
-      setSelectedResourcesGetAmounts({ [ResourcesIds.Shekels]: 1 });
+      setSelectedResourcesGetAmounts({ [ResourcesIds.Lords]: 1 });
     }
   }, [resourceId, isBuy]);
 
   const createOrder = async () => {
     setIsLoading(true);
+    if (!nextBlockTimestamp) return;
     if (isNewCaravan) {
       await optimisticCreateOrder(create_order)({
         signer: account,
@@ -79,6 +83,7 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose }: FastCreateO
           multiplyByPrecision(selectedResourcesGetAmounts[id]),
         ),
         donkeys_quantity: donkeysCount,
+        expires_at: nextBlockTimestamp + ONE_MONTH,
       });
     } else {
       await optimisticCreateOrder(create_order)({
@@ -94,6 +99,7 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose }: FastCreateO
         taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
           multiplyByPrecision(selectedResourcesGetAmounts[id]),
         ),
+        expires_at: nextBlockTimestamp + ONE_MONTH,
       });
     }
     onClose();
@@ -207,11 +213,13 @@ const SelectResourcesAmountPanel = ({
 
   useEffect(() => {
     // set resource weight in kg
-    let weight = 0;
-    for (const [_resourceId, amount] of Object.entries(selectedResourcesGetAmounts)) {
-      weight += amount * 1;
-    }
-    setResourceWeight(multiplyByPrecision(weight));
+    let resourcesGet = Object.keys(selectedResourcesGetAmounts).map((resourceId) => {
+      return {
+        resourceId: Number(resourceId),
+        amount: selectedResourcesGetAmounts[Number(resourceId)],
+      };
+    });
+    setResourceWeight(multiplyByPrecision(getTotalResourceWeight(resourcesGet)));
   }, [selectedResourcesGetAmounts]);
 
   return (
@@ -236,7 +244,7 @@ const SelectResourcesAmountPanel = ({
                     });
                   }}
                 />
-                {id !== ResourcesIds.Shekels ? (
+                {id !== ResourcesIds.Lords ? (
                   <ListSelect
                     className="w-full ml-2"
                     style="black"
@@ -310,7 +318,7 @@ const SelectResourcesAmountPanel = ({
                     });
                   }}
                 />
-                {id !== ResourcesIds.Shekels ? (
+                {id !== ResourcesIds.Lords ? (
                   <ListSelect
                     className="ml-2 w-full"
                     style="black"
@@ -352,8 +360,22 @@ const SelectResourcesAmountPanel = ({
           })}
         </div>
       </div>
-      <div className="flex text-xs text-center text-white">
-        Items Weight <div className="ml-1 text-gold">{`${divideByPrecision(resourceWeight)}kg`}</div>
+      <div className="flex text-xs mt-2 text-center text-white">
+        Total Items Weight <div className="ml-1 text-gold">{`${divideByPrecision(resourceWeight)}kg`}</div>
+      </div>
+      <div className="flex my-1 flex-row text-xxs text-center text-white">
+        <div className="flex flex-col mx-1">
+          <div> Food</div>
+          <div className="ml-1 text-gold">{`${WEIGHTS[254]}kg/unit`}</div>
+        </div>
+        <div className="flex flex-col mx-1">
+          <div> Resource</div>
+          <div className="ml-1 text-gold">{`${WEIGHTS[1]}kg/unit`}</div>
+        </div>
+        <div className="flex flex-col mx-1">
+          <div> Lords</div>
+          <div className="ml-1 text-gold">{`${WEIGHTS[253]}kg/unit`}</div>
+        </div>
       </div>
     </>
   );

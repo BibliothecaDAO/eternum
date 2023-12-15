@@ -1455,9 +1455,9 @@
       "computed": []
     },
     {
-      "name": "eternum::systems::config::contracts::config_systems",
-      "address": "0x7fff06bbcbe4f42f22c86b14e7a80604495c8b2034d14cbb10d32402c933ca8",
-      "class_hash": "0x7e318ab376d65f6f456a2f6a8f8c6347cd1b0d473b6a96af751259fd0442bb",
+      "name": "config_systems",
+      "address": "0x74c3dd7b64a0c8ad6a27276b9ec6a628774028734ea46cf3970ef185e35247d",
+      "class_hash": "0x1c1161179e636e724fe7bc26a92cb2440862d22352c3fe3c8b94e8b6e45cd9a",
       "abi": [
         {
           "type": "impl",
@@ -1515,6 +1515,43 @@
                 {
                   "name": "realm_l2_contract",
                   "type": "core::starknet::contract_address::ContractAddress"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "RealmFreeMintConfigImpl",
+          "interface_name": "eternum::systems::config::interface::IRealmFreeMintConfig"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::config::interface::IRealmFreeMintConfig",
+          "items": [
+            {
+              "type": "function",
+              "name": "set_mint_config",
+              "inputs": [
+                {
+                  "name": "world",
+                  "type": "dojo::world::IWorldDispatcher"
+                },
+                {
+                  "name": "resources",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                 }
               ],
               "outputs": [],
@@ -1588,16 +1625,6 @@
           "type": "impl",
           "name": "CombatConfigImpl",
           "interface_name": "eternum::systems::config::interface::ICombatConfig"
-        },
-        {
-          "type": "struct",
-          "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
-          "members": [
-            {
-              "name": "snapshot",
-              "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
-            }
-          ]
         },
         {
           "type": "interface",
@@ -2107,6 +2134,61 @@
           ]
         },
         {
+          "type": "function",
+          "name": "dojo_resource",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::felt252"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::config::contracts::config_systems::Event",
+          "kind": "enum",
+          "variants": []
+        }
+      ],
+      "reads": [
+        "Bank",
+        "WorldConfig"
+      ],
+      "writes": [
+        "AttackConfig",
+        "Bank",
+        "BankAuction",
+        "BankSwapResourceCost",
+        "CapacityConfig",
+        "CombatConfig",
+        "DefenceConfig",
+        "DetachedResource",
+        "HealthConfig",
+        "HyperStructure",
+        "LaborAuction",
+        "LaborConfig",
+        "LaborCostAmount",
+        "LaborCostResources",
+        "LevelingConfig",
+        "Position",
+        "RealmFreeMintConfig",
+        "ResourceCost",
+        "RoadConfig",
+        "SoldierConfig",
+        "SpeedConfig",
+        "TravelConfig",
+        "WeightConfig",
+        "WorldConfig"
+      ],
+      "computed": []
+    },
+    {
+      "name": "labor_systems",
+      "address": "0x5b3b02ba50cfb46af86c20d1eca1bbff5fe82ff2f8985aefc413267a5d05b00",
+      "class_hash": "0x6b380bf512cdc1cf59259b791f5a37d6f6361ad8c2f99b31ffb4dccace49f49",
+      "abi": [
+        {
           "type": "impl",
           "name": "UpgradableImpl",
           "interface_name": "dojo::components::upgradeable::IUpgradeable"
@@ -2596,6 +2678,204 @@
           ]
         },
         {
+          "type": "function",
+          "name": "dojo_resource",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::felt252"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::name::contracts::name_systems::Event",
+          "kind": "enum",
+          "variants": []
+        }
+      ],
+      "reads": [
+        "AddressName"
+      ],
+      "writes": [
+        "AddressName"
+      ],
+      "computed": []
+    },
+    {
+      "name": "realm_systems",
+      "address": "0x6b9518b94d4d1608095233f38aef1d996851200f1d5c0877c040fa42946496",
+      "class_hash": "0x1baaee2ed04c72f376ceb0d0a80d5c748482d3422c027a77be883bda4211a33",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "Upgradeable",
+          "interface_name": "dojo::upgradable::IUpgradeable"
+        },
+        {
+          "type": "interface",
+          "name": "dojo::upgradable::IUpgradeable",
+          "items": [
+            {
+              "type": "function",
+              "name": "upgrade",
+              "inputs": [
+                {
+                  "name": "new_class_hash",
+                  "type": "core::starknet::class_hash::ClassHash"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "RealmSystemsImpl",
+          "interface_name": "eternum::systems::realm::interface::IRealmSystems"
+        },
+        {
+          "type": "struct",
+          "name": "dojo::world::IWorldDispatcher",
+          "members": [
+            {
+              "name": "contract_address",
+              "type": "core::starknet::contract_address::ContractAddress"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::position::Position",
+          "members": [
+            {
+              "name": "entity_id",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "x",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "y",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::realm::interface::IRealmSystems",
+          "items": [
+            {
+              "type": "function",
+              "name": "create",
+              "inputs": [
+                {
+                  "name": "world",
+                  "type": "dojo::world::IWorldDispatcher"
+                },
+                {
+                  "name": "realm_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "owner",
+                  "type": "core::starknet::contract_address::ContractAddress"
+                },
+                {
+                  "name": "resource_types_packed",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "resource_types_count",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "cities",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "harbors",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "rivers",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "regions",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "wonder",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "order",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "order_hyperstructure_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "position",
+                  "type": "eternum::models::position::Position"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::integer::u128"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "function",
+          "name": "dojo_resource",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::felt252"
+            }
+          ],
+          "state_mutability": "view"
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::realm::contracts::realm_systems::Event",
+          "kind": "enum",
+          "variants": []
+        }
+      ],
+      "reads": [
+        "CapacityConfig",
+        "DetachedResource",
+        "RealmFreeMintConfig",
+        "Resource"
+      ],
+      "writes": [
+        "Capacity",
+        "EntityMetadata",
+        "EntityOwner",
+        "Movable",
+        "Owner",
+        "Position",
+        "Realm",
+        "TownWatch"
+      ],
+      "computed": []
+    },
+    {
+      "name": "resource_systems",
+      "address": "0x2dab8013b2dea3f5b37f31db94a5136843408efa04a966a6587f65056b1ef40",
+      "class_hash": "0x296e8a045234c8d5a359080aa33be81a431e2614c6e3c59bb89930f6ee0c600",
+      "abi": [
+        {
           "type": "impl",
           "name": "UpgradableImpl",
           "interface_name": "dojo::components::upgradeable::IUpgradeable"
@@ -2984,98 +3264,39 @@
           ]
         },
         {
-          "type": "impl",
-          "name": "RealmSystemsImpl",
-          "interface_name": "eternum::systems::test::interface::realm::IRealmSystems"
+          "type": "function",
+          "name": "dojo_resource",
+          "inputs": [],
+          "outputs": [
+            {
+              "type": "core::felt252"
+            }
+          ],
+          "state_mutability": "view"
         },
         {
-          "type": "struct",
-          "name": "eternum::models::position::Position",
-          "members": [
-            {
-              "name": "entity_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "x",
-              "type": "core::integer::u32"
-            },
-            {
-              "name": "y",
-              "type": "core::integer::u32"
-            }
-          ]
-        },
-        {
-          "type": "interface",
-          "name": "eternum::systems::test::interface::realm::IRealmSystems",
-          "items": [
-            {
-              "type": "function",
-              "name": "create",
-              "inputs": [
-                {
-                  "name": "world",
-                  "type": "dojo::world::IWorldDispatcher"
-                },
-                {
-                  "name": "realm_id",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "owner",
-                  "type": "core::starknet::contract_address::ContractAddress"
-                },
-                {
-                  "name": "resource_types_packed",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "resource_types_count",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "cities",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "harbors",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "rivers",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "regions",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "wonder",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "order",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "order_hyperstructure_id",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "position",
-                  "type": "eternum::models::position::Position"
-                }
-              ],
-              "outputs": [
-                {
-                  "type": "core::integer::u128"
-                }
-              ],
-              "state_mutability": "view"
-            }
-          ]
-        },
+          "type": "event",
+          "name": "eternum::systems::transport::contracts::road_systems::road_systems::Event",
+          "kind": "enum",
+          "variants": []
+        }
+      ],
+      "reads": [
+        "Owner",
+        "Resource",
+        "RoadConfig"
+      ],
+      "writes": [
+        "Resource",
+        "Road"
+      ],
+      "computed": []
+    },
+    {
+      "name": "test_resource_systems",
+      "address": "0x5e2e8d20bc9f4c02050b2b6b7442a1ce06bbd9c0729716a7c5a478069c9b354",
+      "class_hash": "0x6c8cfca1efd3eaee0f7ec2f3e179460c18e6a635c33c2461a4c7f7000d7e516",
+      "abi": [
         {
           "type": "impl",
           "name": "UpgradableImpl",
@@ -3158,8 +3379,8 @@
       "abi": [
         {
           "type": "impl",
-          "name": "WorldProviderImpl",
-          "interface_name": "dojo::world::IWorldProvider"
+          "name": "ResourceSystemsImpl",
+          "interface_name": "eternum::systems::test::interface::resource::IResourceSystems"
         },
         {
           "type": "struct",
@@ -3205,7 +3426,7 @@
         },
         {
           "type": "interface",
-          "name": "eternum::systems::test::contracts::resource::IResourceSystems",
+          "name": "eternum::systems::test::interface::resource::IResourceSystems",
           "items": [
             {
               "type": "function",
@@ -12290,30 +12511,25 @@
       ]
     },
     {
-      "name": "eternum::models::resources::detached_resource",
+      "name": "RealmFreeMintConfig",
       "members": [
         {
-          "name": "entity_id",
+          "name": "config_id",
           "type": "u128",
           "key": true
         },
         {
-          "name": "index",
-          "type": "u32",
-          "key": true
-        },
-        {
-          "name": "resource_type",
-          "type": "u8",
+          "name": "detached_resource_id",
+          "type": "u128",
           "key": false
         },
         {
-          "name": "resource_amount",
-          "type": "u128",
+          "name": "detached_resource_count",
+          "type": "u32",
           "key": false
         }
       ],
-      "class_hash": "0x1b880c802a0460ab8855260bd55e794a072ed31f4e03778539622d941b6a4d1",
+      "class_hash": "0x5e8b26ce94c495671c49a8d9868386aa10dca855979c9edb72501c0c966c271",
       "abi": [
         {
           "type": "function",
@@ -12391,7 +12607,7 @@
         },
         {
           "type": "struct",
-          "name": "dojo::database::introspect::Struct",
+          "name": "dojo::database::schema::Struct",
           "members": [
             {
               "name": "name",
@@ -12419,7 +12635,7 @@
         },
         {
           "type": "struct",
-          "name": "dojo::database::introspect::Enum",
+          "name": "dojo::database::schema::Enum",
           "members": [
             {
               "name": "name",
@@ -12437,7 +12653,7 @@
         },
         {
           "type": "enum",
-          "name": "dojo::database::introspect::Ty",
+          "name": "dojo::database::schema::Ty",
           "variants": [
             {
               "name": "Primitive",
@@ -12445,11 +12661,11 @@
             },
             {
               "name": "Struct",
-              "type": "dojo::database::introspect::Struct"
+              "type": "dojo::database::schema::Struct"
             },
             {
               "name": "Enum",
-              "type": "dojo::database::introspect::Enum"
+              "type": "dojo::database::schema::Enum"
             },
             {
               "name": "Tuple",
@@ -12463,21 +12679,21 @@
           "inputs": [],
           "outputs": [
             {
-              "type": "dojo::database::introspect::Ty"
+              "type": "dojo::database::schema::Ty"
             }
           ],
           "state_mutability": "view"
         },
         {
           "type": "event",
-          "name": "eternum::models::resources::detached_resource::Event",
+          "name": "eternum::models::config::realm_free_mint_config::Event",
           "kind": "enum",
           "variants": []
         }
       ]
     },
     {
-      "name": "eternum::models::resources::resource",
+      "name": "Resource",
       "members": [
         {
           "name": "entity_id",

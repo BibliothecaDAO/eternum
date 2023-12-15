@@ -20,8 +20,8 @@ use eternum::systems::config::interface::{
     ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait,
 };
 
-use eternum::systems::test::contracts::realm::test_realm_systems;
-use eternum::systems::test::interface::realm::{
+use eternum::systems::realm::contracts::realm_systems;
+use eternum::systems::realm::interface::{
     IRealmSystemsDispatcher,
     IRealmSystemsDispatcherTrait,
 };
@@ -79,7 +79,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
 
     // create maker's realm
     let realm_systems_address 
-        = deploy_system(test_realm_systems::TEST_CLASS_HASH);
+        = deploy_system(realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };

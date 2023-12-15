@@ -8,7 +8,7 @@ sleep_time=0.3
 source ./scripts/contracts.sh
 
 # 0. Mint a realm
-sozo execute $TEST_REALM_SYSTEMS create --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,$DOJO_ACCOUNT_ADDRESS,515,2,4,5,6,1,1,8,2,2087471,1610800
+sozo execute $REALM_SYSTEMS create --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,$DOJO_ACCOUNT_ADDRESS,515,2,4,5,6,1,1,8,2,2087471,1610800
 current_uuid=$((current_uuid + 1))
 sleep $sleep_time
 

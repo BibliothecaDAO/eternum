@@ -1,5 +1,5 @@
 #[dojo::contract]
-mod test_realm_systems {
+mod realm_systems {
 
     use eternum::models::realm::Realm;
     use eternum::models::movable::Movable;
@@ -8,10 +8,11 @@ mod test_realm_systems {
     use eternum::models::position::Position;
     use eternum::models::metadata::EntityMetadata;
     use eternum::models::combat::TownWatch;
-    use eternum::models::config::{ CapacityConfig };
-    use eternum::constants::{ WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE };
+    use eternum::models::resources::{DetachedResource, Resource};
+    use eternum::models::config::{ CapacityConfig, RealmFreeMintConfig };
+    use eternum::constants::{ WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, SOLDIER_ENTITY_TYPE };
 
-    use eternum::systems::test::interface::realm::IRealmSystems;
+    use eternum::systems::realm::interface::IRealmSystems;
 
     use eternum::constants::REALM_ENTITY_TYPE;
 
@@ -35,7 +36,7 @@ mod test_realm_systems {
             wonder: u8,
             order: u8,
             order_hyperstructure_id: u128,
-            position: Position
+            position: Position,
         ) -> ID {
             let entity_id = world.uuid();
             set!(world, (
@@ -105,9 +106,29 @@ mod test_realm_systems {
                     intermediate_coord_y: 0,  
                 },
             ));
-            entity_id.into()
-        }
 
+
+            // mint intial resources to realm
+            let realm_free_mint_config = get!(world, REALM_FREE_MINT_CONFIG_ID, RealmFreeMintConfig);
+            let mut index = 0;
+            loop {
+                if index == realm_free_mint_config.detached_resource_count {
+                    break;
+                }
+
+                let mut detached_resource 
+                    = get!(world, (realm_free_mint_config.detached_resource_id, index), DetachedResource);
+                let mut realm_resource 
+                    = get!(world, (entity_id, detached_resource.resource_type), Resource);
+                
+                realm_resource.balance += detached_resource.resource_amount;
+                set!(world, (realm_resource));  
+
+                index += 1;                  
+            };
+
+            entity_id.into()
+
+        }
     }
-    
 }

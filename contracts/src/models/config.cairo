@@ -17,6 +17,15 @@ struct WorldConfig {
 }
 
 #[derive(Model, Copy, Drop, Serde)]
+struct RealmFreeMintConfig {
+    #[key]
+    config_id: u128,
+    detached_resource_id: u128, 
+    detached_resource_count: u32
+}
+
+
+#[derive(Model, Copy, Drop, Serde)]
 struct LaborConfig {
     #[key]
     config_id: u128,

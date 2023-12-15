@@ -16,7 +16,6 @@ import {
   FeedHyperstructureAndTravelBackPropos,
   HarvestLaborProps,
   HarvestAllLaborProps,
-  MintResourcesProps,
   PurchaseLaborProps,
   SendResourcesToLocationProps,
   TransferResourcesProps,
@@ -33,6 +32,7 @@ import {
   CreateAndMergeSoldiersProps,
   HealSoldiersProps,
   CreateMultipleRealmsProps,
+  TransferItemsFromMultipleProps,
 } from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -58,10 +58,6 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
 
   const harvest_all_labor = async (props: HarvestAllLaborProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.harvest_all_labor(props)));
-  };
-
-  const mint_resources = async (props: MintResourcesProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.mint_resources(props)));
   };
 
   const create_order = async (props: CreateOrderProps) => {
@@ -165,8 +161,11 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
   };
 
   const transfer_items = async (props: TransferItemsProps) => {
-    console.log({ props });
     setComponentsFromEvents(contractComponents, getEvents(await provider.transfer_items(props)));
+  };
+
+  const transfer_items_from_multiple = async (props: TransferItemsFromMultipleProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.transfer_items_from_multiple(props)));
   };
 
   const isLive = async () => {
@@ -194,11 +193,11 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     purchase_and_build_labor,
     harvest_labor,
     harvest_all_labor,
-    mint_resources,
     create_order,
     accept_order,
     cancel_fungible_order,
     transfer_items,
+    transfer_items_from_multiple,
     create_free_transport_unit,
     create_caravan,
     attach_caravan,

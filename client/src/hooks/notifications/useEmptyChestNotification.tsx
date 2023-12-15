@@ -1,13 +1,13 @@
 import { ReactComponent as Checkmark } from "../../assets/icons/common/checkmark.svg";
 import { OrderIcon } from "../../elements/OrderIcon";
 import { Badge } from "../../elements/Badge";
-import { NotificationType } from "./useNotifications";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 import { useState } from "react";
 import Button from "../../elements/Button";
 import { useResources } from "../helpers/useResources";
 import { ResourceCost } from "../../elements/ResourceCost";
 import { divideByPrecision } from "../../utils/utils";
+import { NotificationType, useNotificationsStore } from "../store/useNotificationsStore";
 
 export const useEmptyChestNotification = (
   notification: NotificationType,
@@ -21,22 +21,25 @@ export const useEmptyChestNotification = (
 
   const [isLoading, setIsLoading] = useState(false);
 
+  const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
+
   const realmId =
     notification.data && "destinationRealmId" in notification.data ? notification.data.destinationRealmId : undefined;
 
-  const caravanId = notification.data && "caravanId" in notification.data ? notification.data.caravanId : undefined;
+  const entityId = notification.data && "entityId" in notification.data ? notification.data.entityId : undefined;
   const realmEntityId =
     notification.data && "realmEntityId" in notification.data ? notification.data.realmEntityId : undefined;
 
   const realmName = realmId ? getRealmNameById(realmId) : "";
   const realmOrderName = realmId ? getRealmOrderNameById(realmId) : "";
 
-  let claimableResources = caravanId ? getResourcesFromInventory(caravanId) : undefined;
+  let claimableResources = entityId ? getResourcesFromInventory(entityId) : undefined;
 
   const emptyChest = async () => {
     setIsLoading(true);
-    if (claimableResources && realmEntityId && caravanId) {
-      await offloadChests(realmEntityId, caravanId, claimableResources.indices, claimableResources.resources);
+    if (claimableResources && realmEntityId && entityId) {
+      await offloadChests(realmEntityId, entityId, claimableResources.indices, claimableResources.resources);
+      deleteNotification(notification.keys, notification.eventType);
       setIsLoading(false);
     }
   };
@@ -48,7 +51,7 @@ export const useEmptyChestNotification = (
       <div className="flex items-center">
         <Badge size="lg" type="success" className="mr-2">
           <Checkmark className="fill-current mr-1" />
-          {`Order Claimable`}
+          {`Resources claimable`}
         </Badge>
 
         <div className="flex items-center">
@@ -60,11 +63,11 @@ export const useEmptyChestNotification = (
     // TODO: better layout for claimable resources?
     content: (onClose: () => void) => (
       <div className="flex flex-col">
-        <div className="flex mt-2 w-full items-center justify-center flex-wrap space-x-2 space-y-1">
+        <div className="flex mt-2 w-full items-center justify-start flex-wrap space-x-2 space-y-1">
           {claimableResources &&
             claimableResources.resources.map(({ resourceId, amount }) => (
               <ResourceCost
-                type="vertical"
+                // type="vertical"
                 withTooltip
                 key={resourceId}
                 resourceId={resourceId}

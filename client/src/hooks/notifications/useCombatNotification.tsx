@@ -1,7 +1,6 @@
 import { ReactComponent as Checkmark } from "../../assets/icons/common/checkmark.svg";
 import { OrderIcon } from "../../elements/OrderIcon";
 import { Badge } from "../../elements/Badge";
-import { NotificationType } from "./useNotifications";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 import { ResourceCost } from "../../elements/ResourceCost";
 import { divideByPrecision, formatTimeLeftDaysHoursMinutes, getEntityIdFromKeys } from "../../utils/utils";
@@ -9,6 +8,7 @@ import { CombatResultInterface, Winner } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
+import { NotificationType } from "../store/useNotificationsStore";
 
 export const useAttackedNotification = (
   notification: NotificationType,

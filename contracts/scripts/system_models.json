@@ -1,4 +1,17 @@
 { 
+    "TEST_RESOURCE_SYSTEMS": [
+        "Resource"
+    ],
+    "REALM_SYSTEMS": [
+        "Owner",
+        "Realm",
+        "Position",
+        "EntityMetadata",
+        "TownWatch",
+        "EntityOwner",
+        "Capacity",
+        "Movable"
+    ],
     "CARAVAN_SYSTEMS": [
         "Movable",
         "Capacity",
