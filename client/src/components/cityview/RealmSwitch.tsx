@@ -18,7 +18,7 @@ type RealmSwitchProps = {} & ComponentPropsWithRef<"div">;
 
 // TODO: Remove
 export type RealmBubble = {
-  id: number;
+  id: bigint;
   realmId: bigint;
   name: string;
   order: string;
@@ -65,7 +65,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
         }
       })
       .filter(Boolean)
-      .sort((a, b) => a!.realmId - b!.realmId) as { realmEntityId: BigInt; realmId: BigInt }[];
+      .sort((a, b) => Number(a!.realmId) - Number(b!.realmId)) as { realmEntityId: bigint; realmId: bigint }[];
     setRealmEntityIds(realmEntityIds);
   }, [entityIds]);
 
@@ -85,7 +85,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
     const fetchedYourRealms: RealmBubble[] = [];
     realmEntityIds.forEach(({ realmEntityId, realmId }) => {
       const realm = getRealm(realmId);
-      const name = realmsNames.features[realm.realmId - 1].name;
+      const name = realmsNames.features[Number(realm.realmId) - 1].name;
       fetchedYourRealms.push({
         id: realmEntityId,
         realmId: realm.realmId,

@@ -5,7 +5,7 @@ import clsx from "clsx";
 type RealmBadgeProps = {
   active?: boolean;
   realm: {
-    id: number;
+    id: bigint;
     name: string;
     order: string;
   };
