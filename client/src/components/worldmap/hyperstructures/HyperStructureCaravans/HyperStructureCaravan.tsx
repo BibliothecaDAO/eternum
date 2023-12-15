@@ -50,7 +50,7 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
       let foreignKey = getComponentValue(ForeignKey, entity_id);
       if (foreignKey) {
         // @note: temp fix until we don't use entity_id as field name in foreign key
-        let ownerRealmEntityId = getComponentValue(EntityOwner, getEntityIdFromKeys([BigInt(caravan.caravanId - 2)]));
+        let ownerRealmEntityId = getComponentValue(EntityOwner, getEntityIdFromKeys([caravan.caravanId - 2n]));
         let homePosition = ownerRealmEntityId
           ? getComponentValue(Position, getEntityIdFromKeys([BigInt(ownerRealmEntityId.entity_owner_id)]))
           : undefined;
@@ -101,7 +101,7 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
     >
       <div className="flex items-center text-xxs">
         <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
-          {isMine ? "You" : displayAddress(owner || numberToHex(0))}
+          {isMine ? "You" : displayAddress(owner?.toString() || numberToHex(0))}
         </div>
         <div className="flex items-center ml-1 -mt-2">
           {capacity && resourceWeight !== undefined && capacity && (

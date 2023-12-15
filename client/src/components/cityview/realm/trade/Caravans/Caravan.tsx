@@ -35,8 +35,8 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
     return getTotalResourceWeight([...resourcesGet.resources]);
   }, [resourcesGet]);
 
-  const destinationRealmId = destination && getRealmIdByPosition(destination);
-  const destinationRealmName = destinationRealmId && getRealmNameById(destinationRealmId);
+  const destinationRealmId = destination ? getRealmIdByPosition(destination) : undefined;
+  const destinationRealmName = destinationRealmId ? getRealmNameById(destinationRealmId) : undefined;
 
   const isTraveling = !blocked && nextBlockTimestamp && arrivalTime && arrivalTime > nextBlockTimestamp;
   const isWaitingForDeparture = blocked;
@@ -56,10 +56,10 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
     >
       <div className="flex items-center text-xxs">
         <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
-          #{caravan.caravanId}
+          #{Number(caravan.caravanId)}
         </div>
         <div className="flex items-center ml-1 -mt-2">
-          {isTraveling && destinationRealmName && (
+          {isTraveling && destinationRealmId !== undefined && destinationRealmName && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Traveling {hasArrivedPickupPosition ? "from" : "to"}</span>
               <div className="flex items-center ml-1 mr-1 text-gold">

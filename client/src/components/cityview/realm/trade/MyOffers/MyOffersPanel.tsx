@@ -20,7 +20,7 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
   const [showCreateOffer, setShowCreateOffer] = useState(false);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
-  const [buildRoadToEntityId, setBuildRoadToEntityId] = useState<number | undefined>(undefined);
+  const [buildRoadToEntityId, setBuildRoadToEntityId] = useState<bigint | undefined>(undefined);
 
   const [activeSort, setActiveSort] = useState<SortInterface>({
     sortKey: "number",
@@ -69,7 +69,7 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
       </SortPanel>
       {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
       {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
-      {buildRoadToEntityId && (
+      {buildRoadToEntityId !== undefined && (
         <RoadBuildPopup onClose={() => setBuildRoadToEntityId(undefined)} toEntityId={buildRoadToEntityId} />
       )}
       <div className="flex flex-col p-2 space-y-2">

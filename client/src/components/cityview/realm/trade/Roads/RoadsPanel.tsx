@@ -18,7 +18,7 @@ export const RoadsPanel = (props: RoadsPanelProps) => {
     sort: "none",
   });
 
-  const [buildRoadToEntityId, setBuildRoadToEntityId] = useState<number | undefined>(undefined);
+  const [buildRoadToEntityId, setBuildRoadToEntityId] = useState<bigint | undefined>(undefined);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 

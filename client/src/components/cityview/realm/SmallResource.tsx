@@ -48,7 +48,7 @@ export const SmallResource = ({
           ? Intl.NumberFormat("en-US", {
               notation: "compact",
               maximumFractionDigits: 1,
-            }).format(divideByPrecision(resource?.balance || 0))
+            }).format(divideByPrecision(Number(resource?.balance) || 0))
           : currencyFormat(resource?.balance || 0, 2)}
       </div>
     </div>

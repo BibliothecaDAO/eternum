@@ -14,7 +14,7 @@ import { divideByPrecision } from "../../../../../utils/utils";
 import { EventType, useNotificationsStore } from "../../../../../hooks/store/useNotificationsStore";
 
 type IncomingOrderProps = {
-  caravanId: number;
+  caravanId: bigint;
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
@@ -38,8 +38,8 @@ export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const pickupRealmId = destination && getRealmIdByPosition({ x: destination.x, y: destination.y });
-  const pickupRealmName = pickupRealmId && getRealmNameById(pickupRealmId);
+  const pickupRealmId = destination ? getRealmIdByPosition({ x: destination.x, y: destination.y }) : undefined;
+  const pickupRealmName = pickupRealmId ? getRealmNameById(pickupRealmId) : undefined;
   const hasArrivedOriginalPosition =
     arrivalTime !== undefined && nextBlockTimestamp !== undefined && arrivalTime <= nextBlockTimestamp;
 
@@ -50,9 +50,9 @@ export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
     >
       <div className="flex items-center text-xxs">
         <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
-          #{caravanId}
+          #{Number(caravanId)}
         </div>
-        {!hasArrivedOriginalPosition && pickupRealmName && (
+        {!hasArrivedOriginalPosition && pickupRealmId !== undefined && pickupRealmName !== undefined && (
           <div className="flex items-center ml-1 -mt-2">
             <span className="italic text-light-pink">Coming from</span>
             <div className="flex items-center ml-1 mr-1 text-gold">

@@ -35,7 +35,7 @@ export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferPr
           <div className="flex items-center p-1 -mt-2 -ml-2 border border-t-0 border-l-0 rounded-br-md border-gray-gold">
             {/* // order of the order maker */}
             {makerRealm.order && <OrderIcon order={orderNameDict[makerRealm.order]} size="xs" className="mr-1" />}
-            {realmsData["features"][makerRealm.realmId - 1].name}
+            {realmsData["features"][Number(makerRealm.realmId) - 1].name}
           </div>
         )}
         <div className=" text-gold flex">

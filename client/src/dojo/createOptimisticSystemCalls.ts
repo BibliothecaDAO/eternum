@@ -166,7 +166,7 @@ export function createOptimisticSystemCalls({
     };
   }
 
-  function optimisticAcceptOffer(tradeId: number, takerId: number, systemCall: () => Promise<void>) {
+  function optimisticAcceptOffer(tradeId: bigint, takerId: bigint, systemCall: () => Promise<void>) {
     return async function (this: any) {
       const overrideId = uuid();
       let trade_id = getEntityIdFromKeys([BigInt(tradeId)]);
