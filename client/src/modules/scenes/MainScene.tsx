@@ -163,7 +163,7 @@ export const MainScene = () => {
         </Suspense>
         <EffectComposer multisampling={0}>
           <Bloom luminanceThreshold={0} intensity={0.1} mipmapBlur />
-          <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.3} />
+          <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.4} />
           <SMAA />
         </EffectComposer>
         <AdaptiveDpr pixelated />
