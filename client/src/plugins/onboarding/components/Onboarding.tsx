@@ -225,7 +225,7 @@ const Naming = ({ onNext }: { onNext: () => void }) => {
     });
   };
 
-  const isWalletSelected = useMemo(() => account.address !== import.meta.env.VITE_KATANA_ACCOUNT_1_ADDRESS!, [account]);
+  const isWalletSelected = useMemo(() => account.address !== import.meta.env.VITE_PUBLIC_MASTER_ADDRESS!, [account]);
 
   useEffect(() => {
     if (list().length == 0) {

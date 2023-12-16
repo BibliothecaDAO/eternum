@@ -4,7 +4,7 @@ import { useDojo } from "../../DojoContext";
 import { setComponentsFromEntity } from "../../utils/utils";
 import { Components } from "@dojoengine/recs";
 
-const client = new GraphQLClient(import.meta.env.VITE_TORII_URL!);
+const client = new GraphQLClient(import.meta.env.VITE_PUBLIC_TORII!);
 
 type Entity = {
   __typename?: "Entity";
@@ -14,7 +14,7 @@ type Entity = {
 
 type getEntitiesQuery = {
   entities: {
-    total_count: number;
+    totalCount: number;
     edges: {
       cursor: string;
       node: Entity;
@@ -60,7 +60,7 @@ export const useSyncWorld = (): { loading: boolean; progress: number } => {
             const queryBuilder = `
               query SyncWorld {
                 entities: entities(keys:["*"] ${cursor ? `after: "${cursor}"` : ""} first: ${OFFSET}) {
-                  total_count
+                  totalCount
                   edges {
                     cursor
                     node {
@@ -78,7 +78,7 @@ export const useSyncWorld = (): { loading: boolean; progress: number } => {
 
             // Update the progress
             const processedCount = OFFSET * loops; // OFFSET multiplied by how many loops so far
-            const newProgress = Math.min((processedCount / entities.total_count) * 100, 100); // Convert it to percentage
+            const newProgress = Math.min((processedCount / entities.totalCount) * 100, 100); // Convert it to percentage
             setProgress(newProgress);
 
             if (entities.edges.length < OFFSET) {

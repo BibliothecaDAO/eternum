@@ -35,7 +35,7 @@ type GetLatestEntitiesQuery = {
 
 export async function createEntitySubscription(contractComponents: Components): Promise<Observable<UpdatedEntity[]>> {
   const wsClient = createClient({ url: import.meta.env.VITE_TORII_WS });
-  const client = new GraphQLClient(import.meta.env.VITE_TORII_URL!);
+  const client = new GraphQLClient(import.meta.env.VITE_PUBLIC_TORII!);
 
   /**
    * DISCUSS: good way to have initial data?
@@ -53,7 +53,7 @@ export async function createEntitySubscription(contractComponents: Components): 
           entityUpdated {
             id
             keys
-            model_names
+            models
           }
         }
       `,

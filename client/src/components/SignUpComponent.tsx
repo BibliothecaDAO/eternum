@@ -111,7 +111,7 @@ export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: Si
     });
   };
 
-  const isWalletSelected = useMemo(() => account.address !== import.meta.env.VITE_KATANA_ACCOUNT_1_ADDRESS!, [account]);
+  const isWalletSelected = useMemo(() => account.address !== import.meta.env.VITE_PUBLIC_MASTER_ADDRESS!, [account]);
 
   useEffect(() => {
     setShowBlurOverlay(showSignupPopup);
@@ -270,7 +270,7 @@ export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: Si
               <img src="/images/argent-x.svg" className="h-8" alt="Argent X Logo" />
               <Button
                 // cannot use master account to sign in
-                disabled={account.address === import.meta.env.VITE_KATANA_ACCOUNT_1_ADDRESS!}
+                disabled={account.address === import.meta.env.VITE_PUBLIC_MASTER_ADDRESS!}
                 className=" !rounded text-brown"
                 variant="primary"
                 onClick={() => setShowSignupPopup(false)}
@@ -282,7 +282,7 @@ export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: Si
             <div className=" border border-gold my-3 w-full rounded-lg bg-black p-2 flex justify-between">
               <img src="/images/braavos.svg" className="h-8" alt="Braavos Logo" />
               <Button
-                disabled={account.address === import.meta.env.VITE_KATANA_ACCOUNT_1_ADDRESS!}
+                disabled={account.address === import.meta.env.VITE_PUBLIC_MASTER_ADDRESS!}
                 className=" !rounded text-brown"
                 variant="primary"
                 onClick={() => setShowSignupPopup(false)}

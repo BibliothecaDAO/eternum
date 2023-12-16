@@ -43,7 +43,7 @@ const fetchBlockTimestamp = async (): Promise<number | undefined> => {
     // the advance_time functionality
     // TODO: make sure this is still the case
     if (import.meta.env.VITE_DEV === "true") {
-      const response = await fetch(import.meta.env.VITE_KATANA_URL!, {
+      const response = await fetch(import.meta.env.VITE_PUBLIC_NODE_URL!, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -77,7 +77,7 @@ export const World = () => {
     checkWorldLive();
   }, []);
 
-  const { loading: worldLoading } = useSyncWorld();
+  // const { loading: worldLoading } = useSyncWorld();
 
   useFetchBlockchainData();
 
@@ -85,15 +85,15 @@ export const World = () => {
 
   const { getHyperstructureIds } = useHyperstructure();
 
-  useEffect(() => {
-    let ids = getHyperstructureIds();
-    syncData(ids);
-  }, [worldLoading]);
+  // useEffect(() => {
+  //   let ids = getHyperstructureIds();
+  //   syncData(ids);
+  // }, [worldLoading]);
 
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
-  useEffect(() => {
-    syncCombatHistory(realmEntityId);
-  }, [worldLoading, realmEntityId]);
+  // const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  // useEffect(() => {
+  //   syncCombatHistory(realmEntityId);
+  // }, [worldLoading, realmEntityId]);
 
   const [playBackground, { stop }] = useSound("/sound/music/happy_realm.mp3", {
     soundEnabled: isSoundOn,
@@ -111,23 +111,23 @@ export const World = () => {
 
   const { getHyperstructure } = useHyperstructure();
 
-  useEffect(() => {
-    if (!worldLoading) {
-      setHyperstructures(
-        hyperStructures.map((hyperstructure, index) =>
-          getHyperstructure(index + 1, { x: hyperstructure.x, y: hyperstructure.y, z: hyperstructure.z }),
-        ),
-      );
-    }
-  }, [worldLoading]);
+  // useEffect(() => {
+  //   if (!worldLoading) {
+  //     setHyperstructures(
+  //       hyperStructures.map((hyperstructure, index) =>
+  //         getHyperstructure(index + 1, { x: hyperstructure.x, y: hyperstructure.y, z: hyperstructure.z }),
+  //       ),
+  //     );
+  //   }
+  // }, [worldLoading]);
 
-  useEffect(() => {
-    if (progress === 100 && !worldLoading) {
-      setIsLoadingScreenEnabled(false);
-    } else {
-      setIsLoadingScreenEnabled(true);
-    }
-  }, [progress, worldLoading]);
+  // useEffect(() => {
+  //   if (progress === 100 && !worldLoading) {
+  //     setIsLoadingScreenEnabled(false);
+  //   } else {
+  //     setIsLoadingScreenEnabled(true);
+  //   }
+  // }, [progress, worldLoading]);
 
   const [location] = useLocation();
   // location type
