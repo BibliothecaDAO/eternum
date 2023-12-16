@@ -7,7 +7,7 @@ import { useLocation, Switch, Route } from "wouter";
 import { a } from "@react-spring/three";
 import { Sky, AdaptiveDpr, useHelper } from "@react-three/drei";
 import { Suspense, useMemo, useRef } from "react";
-import { EffectComposer, Bloom, Noise, SMAA } from "@react-three/postprocessing";
+import { EffectComposer, Bloom, Noise, SMAA, Pixelation } from "@react-three/postprocessing";
 // @ts-ignore
 import { Sobel } from "../../utils/effects.jsx";
 import { useControls } from "leva";
@@ -105,7 +105,7 @@ export const MainScene = () => {
       </Suspense>
       <EffectComposer multisampling={0}>
         <Bloom luminanceThreshold={0} intensity={0.1} mipmapBlur />
-        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.3} />
+        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.5} />
         <SMAA />
       </EffectComposer>
       <AdaptiveDpr pixelated />
