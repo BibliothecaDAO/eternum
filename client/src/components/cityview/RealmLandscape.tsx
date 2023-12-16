@@ -99,46 +99,101 @@ const RealmLandscape = (props: JSX.IntrinsicElements["group"]) => {
             clearcoatRoughness={clearcoatRoughness}
           />
         </mesh>
-        <mesh name="forest_small" geometry={nodes.forest_small.geometry} material={materials.PaletteMaterial003} />
+        <mesh
+          name="forest_small"
+          castShadow
+          geometry={nodes.forest_small.geometry}
+          material={materials.PaletteMaterial003}
+        />
         <group
           name="deciduous-tree189"
+          castShadow
           position={[494.866547, 4.604025, 284.570831]}
           rotation={[0, -0.79251, 0]}
           scale={[0.602762, 0.776755, 0.602762]}
         >
-          <mesh name="Cone001" geometry={nodes.Cone001.geometry} material={materials.PaletteMaterial003} />
-          <mesh name="Cone001_1" geometry={nodes.Cone001_1.geometry} material={materials.PaletteMaterial004} />
+          <mesh castShadow name="Cone001" geometry={nodes.Cone001.geometry} material={materials.PaletteMaterial003} />
+          <mesh
+            castShadow
+            name="Cone001_1"
+            geometry={nodes.Cone001_1.geometry}
+            material={materials.PaletteMaterial004}
+          />
         </group>
         <group
           name="deciduous-tree190"
+          castShadow
           position={[497.886841, 4.604025, 285.281494]}
           rotation={[Math.PI, -1.275876, Math.PI]}
           scale={[0.602762, 0.776755, 0.602762]}
         >
-          <mesh name="Cone001" geometry={nodes.Cone001.geometry} material={materials.PaletteMaterial003} />
-          <mesh name="Cone001_1" geometry={nodes.Cone001_1.geometry} material={materials.PaletteMaterial004} />
+          <mesh castShadow name="Cone001" geometry={nodes.Cone001.geometry} material={materials.PaletteMaterial003} />
+          <mesh
+            castShadow
+            name="Cone001_1"
+            geometry={nodes.Cone001_1.geometry}
+            material={materials.PaletteMaterial004}
+          />
         </group>
-        <group name="terrain_small">
-          <mesh name="Plane006" geometry={nodes.Plane006.geometry} material={materials.PaletteMaterial002} />
-          <mesh name="Plane006_1" geometry={nodes.Plane006_1.geometry} material={materials.PaletteMaterial006} />
-          <mesh name="Plane006_2" geometry={nodes.Plane006_2.geometry} material={materials.PaletteMaterial007} />
-          <mesh name="Plane006_3" geometry={nodes.Plane006_3.geometry} material={materials.PaletteMaterial005} />
-          <mesh name="Plane006_4" geometry={nodes.Plane006_4.geometry} material={materials.PaletteMaterial008} />
-          <mesh name="Plane006_5" geometry={nodes.Plane006_5.geometry} material={materials.PaletteMaterial005} />
-          <mesh name="Plane006_6" geometry={nodes.Plane006_6.geometry} material={materials.PaletteMaterial009} />
+        <group receiveShadow name="terrain_small">
+          <mesh
+            receiveShadow
+            name="Plane006"
+            geometry={nodes.Plane006.geometry}
+            material={materials.PaletteMaterial002}
+          />
+          <mesh
+            receiveShadow
+            name="Plane006_1"
+            geometry={nodes.Plane006_1.geometry}
+            material={materials.PaletteMaterial006}
+          />
+          <mesh
+            receiveShadow
+            name="Plane006_2"
+            geometry={nodes.Plane006_2.geometry}
+            material={materials.PaletteMaterial007}
+          />
+          <mesh
+            receiveShadow
+            name="Plane006_3"
+            geometry={nodes.Plane006_3.geometry}
+            material={materials.PaletteMaterial005}
+          />
+          <mesh
+            receiveShadow
+            name="Plane006_4"
+            geometry={nodes.Plane006_4.geometry}
+            material={materials.PaletteMaterial008}
+          />
+          <mesh
+            receiveShadow
+            name="Plane006_5"
+            geometry={nodes.Plane006_5.geometry}
+            material={materials.PaletteMaterial005}
+          />
+          <mesh
+            receiveShadow
+            name="Plane006_6"
+            geometry={nodes.Plane006_6.geometry}
+            material={materials.PaletteMaterial009}
+          />
         </group>
         <instancedMesh
+          castShadow
           args={[nodes.Cylinder001.geometry, materials.PaletteMaterial002, 35]}
           name="Cylinder001"
           instanceMatrix={nodes.Cylinder001.instanceMatrix}
         />
         <group>
           <instancedMesh
+            castShadow
             args={[nodes.Cone002.geometry, materials.PaletteMaterial003, 244]}
             name="Cone002"
             instanceMatrix={nodes.Cone002.instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes.Cone002_1.geometry, materials.PaletteMaterial004, 244]}
             name="Cone002_1"
             instanceMatrix={nodes.Cone002_1.instanceMatrix}
@@ -146,11 +201,13 @@ const RealmLandscape = (props: JSX.IntrinsicElements["group"]) => {
         </group>
         <group>
           <instancedMesh
+            castShadow
             args={[nodes.Cone.geometry, materials.PaletteMaterial005, 76]}
             name="Cone"
             instanceMatrix={nodes.Cone.instanceMatrix}
           />
           <instancedMesh
+            castShadow
             args={[nodes.Cone_1.geometry, materials.PaletteMaterial004, 76]}
             name="Cone_1"
             instanceMatrix={nodes.Cone_1.instanceMatrix}

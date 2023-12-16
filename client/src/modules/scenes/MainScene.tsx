@@ -5,7 +5,17 @@ import useUIStore from "../../hooks/store/useUIStore";
 import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
 import { a } from "@react-spring/three";
-import { Sky, AdaptiveDpr, useHelper, BakeShadows, ContactShadows, Sparkles, Clouds, Cloud } from "@react-three/drei";
+import {
+  Sky,
+  AdaptiveDpr,
+  useHelper,
+  BakeShadows,
+  ContactShadows,
+  Sparkles,
+  Clouds,
+  Cloud,
+  CameraShake,
+} from "@react-three/drei";
 import { Suspense, useMemo, useRef } from "react";
 import { EffectComposer, Bloom, Noise, SMAA } from "@react-three/postprocessing";
 // @ts-ignore
@@ -31,7 +41,7 @@ export const Camera = () => {
       step: 0.01,
     },
     bias: {
-      value: -0.003,
+      value: -0.002,
       min: -0.05,
       max: 0.05,
       step: 0.001,
@@ -92,6 +102,20 @@ export const MainScene = () => {
     },
   });
 
+  const shakeConfig = useMemo(
+    () => ({
+      maxYaw: 0.01, // Max amount camera can yaw in either direction
+      maxPitch: 0, // Max amount camera can pitch in either direction
+      maxRoll: 0, // Max amount camera can roll in either direction
+      yawFrequency: 0.04, // Frequency of the the yaw rotation
+      pitchFrequency: 0, // Frequency of the pitch rotation
+      rollFrequency: 0, // Frequency of the roll rotation
+      intensity: 1, // initial intensity of the shake
+      controls: undefined, // if using orbit controls, pass a ref here so we can update the rotation
+    }),
+    [],
+  );
+
   return (
     <Canvas
       frameloop="demand" // for fps limiter
@@ -124,7 +148,7 @@ export const MainScene = () => {
         <Sky azimuth={0.1} inclination={0.6} distance={3000} />
         <ambientLight />
         <Camera />
-        {/* <CameraShake {...shakeConfig} /> */}
+        <CameraShake {...shakeConfig} />
         <Suspense fallback={null}>
           <a.group>
             <Switch location={locationType}>
@@ -143,21 +167,10 @@ export const MainScene = () => {
           <SMAA />
         </EffectComposer>
         <AdaptiveDpr pixelated />
-        <BakeShadows />
-        <ContactShadows
-          renderOrder={2}
-          color="black"
-          resolution={1024}
-          frames={1}
-          scale={10}
-          blur={1.5}
-          opacity={0.65}
-          far={0.5}
-        />
-        <Clouds position={[0, 275, -250]} material={THREE.MeshBasicMaterial}>
+        <Clouds position={[0, 255, -250]} material={THREE.MeshBasicMaterial}>
           <Cloud
             concentrate="random"
-            seed={1}
+            seed={7331}
             speed={0.06}
             segments={100}
             opacity={0.1}
