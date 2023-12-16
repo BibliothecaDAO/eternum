@@ -41,7 +41,7 @@ const Model = React.forwardRef((props, worldMapRef) => {
       step: 0.01,
     },
     worldmapScale: {
-      value: 201.05,
+      value: 401.05,
       step: 0.05,
     },
     metalness: {

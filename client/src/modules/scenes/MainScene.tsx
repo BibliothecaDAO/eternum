@@ -92,8 +92,6 @@ export const MainScene = () => {
     },
     legacyLights: { value: false },
     fog: "#fff",
-    near: 1885,
-    far: 2300,
     encoding: {
       options: {
         rgb: THREE.sRGBEncoding,
@@ -114,6 +112,38 @@ export const MainScene = () => {
       controls: undefined, // if using orbit controls, pass a ref here so we can update the rotation
     }),
     [],
+  );
+
+  const fogDistance = useMemo(
+    () =>
+      locationType === "map"
+        ? {
+            near: 507,
+            far: 725,
+          }
+        : {
+            near: 1885,
+            far: 2300,
+          },
+    [locationType],
+  );
+
+  const cloudsConfig = useMemo(
+    () =>
+      locationType === "map"
+        ? {
+            position: [0, 75, 50],
+            opacity: 0.05,
+            bounds: [200, 1, 100],
+            volume: 50,
+          }
+        : {
+            position: [0, 255, -250],
+            opacity: 0.1,
+            bounds: [700, 10, 300],
+            volume: 200,
+          },
+    [locationType],
   );
 
   return (
@@ -167,15 +197,15 @@ export const MainScene = () => {
           <SMAA />
         </EffectComposer>
         <AdaptiveDpr pixelated />
-        <Clouds position={[0, 255, -250]} material={THREE.MeshBasicMaterial}>
+        <Clouds position={cloudsConfig.position} material={THREE.MeshBasicMaterial}>
           <Cloud
             concentrate="random"
             seed={7331}
             speed={0.06}
             segments={100}
-            opacity={0.1}
-            bounds={[700, 10, 300]}
-            volume={200}
+            opacity={cloudsConfig.opacity}
+            bounds={cloudsConfig.bounds}
+            volume={cloudsConfig.volume}
             color="white"
           />
           <Cloud
@@ -183,13 +213,13 @@ export const MainScene = () => {
             seed={1337}
             speed={0.03}
             segments={100}
-            opacity={0.1}
-            bounds={[700, 10, 300]}
-            volume={200}
+            opacity={cloudsConfig.opacity}
+            bounds={cloudsConfig.bounds}
+            volume={cloudsConfig.volume}
             color="white"
           />
         </Clouds>
-        <fog attach="fog" color={data.fog} near={data.near} far={data.far} />
+        <fog attach="fog" color={data.fog} near={fogDistance.near} far={fogDistance.far} />
       </FPSLimiter>
     </Canvas>
   );
