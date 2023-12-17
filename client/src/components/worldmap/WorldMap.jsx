@@ -113,7 +113,7 @@ const Model = React.forwardRef((props, worldMapRef) => {
         ref={worldMapRef}
         matrixAutoUpdate={false}
         geometry={nodes.continents.geometry}
-        scale={[worldmapScale, worldmapScale, worldmapScale]}
+        scale={[201.05, 201.05, 201.05]}
         position={[worldmapPosition.x, worldmapPosition.y, worldmapPosition.z]}
       >
         <meshStandardMaterial

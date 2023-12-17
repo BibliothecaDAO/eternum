@@ -82,24 +82,6 @@ const RealmLandscape = (props: JSX.IntrinsicElements["group"]) => {
           />
         </mesh>
         <mesh
-          name="ocean_small"
-          geometry={nodes.ocean_small.geometry}
-          position={[-2.583561, 1.317971, -2.678211]}
-          scale={[3.574031, 0.03574, 3.574031]}
-        >
-          <meshPhysicalMaterial
-            attach="material"
-            color={color}
-            transparent
-            opacity={opacity}
-            roughness={roughness}
-            metalness={metalness}
-            reflectivity={reflectivity}
-            clearcoat={clearcoat}
-            clearcoatRoughness={clearcoatRoughness}
-          />
-        </mesh>
-        <mesh
           name="forest_small"
           castShadow
           geometry={nodes.forest_small.geometry}

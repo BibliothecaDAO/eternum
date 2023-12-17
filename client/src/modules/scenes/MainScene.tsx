@@ -5,17 +5,7 @@ import useUIStore from "../../hooks/store/useUIStore";
 import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
 import { a } from "@react-spring/three";
-import {
-  Sky,
-  AdaptiveDpr,
-  useHelper,
-  BakeShadows,
-  ContactShadows,
-  Sparkles,
-  Clouds,
-  Cloud,
-  CameraShake,
-} from "@react-three/drei";
+import { Sky, AdaptiveDpr, useHelper, Clouds, Cloud, CameraShake } from "@react-three/drei";
 import { Suspense, useMemo, useRef } from "react";
 import { EffectComposer, Bloom, Noise, SMAA } from "@react-three/postprocessing";
 // @ts-ignore
@@ -154,7 +144,7 @@ export const MainScene = () => {
       camera={{ fov: 15, position: [0, 700, 0], far: 3500 }}
       dpr={[0.5, 1]}
       performance={{
-        min: 0.5,
+        min: 0.1,
         max: 1,
       }}
       shadows={{
@@ -193,7 +183,7 @@ export const MainScene = () => {
         </Suspense>
         <EffectComposer multisampling={0}>
           <Bloom luminanceThreshold={0} intensity={0.1} mipmapBlur />
-          <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.4} />
+          <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.3} />
           <SMAA />
         </EffectComposer>
         <AdaptiveDpr pixelated />
