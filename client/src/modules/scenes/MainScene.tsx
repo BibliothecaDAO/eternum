@@ -187,14 +187,14 @@ export const MainScene = () => {
           <SMAA />
         </EffectComposer>
         <AdaptiveDpr pixelated />
-        <Clouds position={cloudsConfig.position} material={THREE.MeshBasicMaterial}>
+        <Clouds position={cloudsConfig.position as any} material={THREE.MeshBasicMaterial}>
           <Cloud
             concentrate="random"
             seed={7331}
             speed={0.06}
             segments={100}
             opacity={cloudsConfig.opacity}
-            bounds={cloudsConfig.bounds}
+            bounds={cloudsConfig.bounds as any}
             volume={cloudsConfig.volume}
             color="white"
           />
@@ -204,7 +204,7 @@ export const MainScene = () => {
             speed={0.03}
             segments={100}
             opacity={cloudsConfig.opacity}
-            bounds={cloudsConfig.bounds}
+            bounds={cloudsConfig.bounds as any}
             volume={cloudsConfig.volume}
             color="white"
           />

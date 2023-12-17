@@ -5,8 +5,8 @@ Files: public/models/hyperstructure-started.glb [802.53KB] > hyperstructure-star
 */
 
 import * as THREE from "three";
-import { useEffect, useMemo, useState } from "react";
-import { Html, useGLTF } from "@react-three/drei";
+import { useEffect, useMemo } from "react";
+import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { HyperStructureInterface } from "@bibliothecadao/eternum";
 import useUIStore from "../../../../hooks/store/useUIStore";
@@ -21,30 +21,6 @@ type GLTFResult = GLTF & {
     Wood: THREE.MeshStandardMaterial;
   };
 };
-
-interface Position {
-  x: number;
-  y: number;
-}
-interface UIPosition {
-  x: number;
-  y: number;
-  z: number;
-}
-interface HyperStructureInterface {
-  hyperstructureId: number;
-  orderId: number;
-  progress: number;
-  hyperstructureResources: {
-    resourceId: number;
-    currentAmount: number;
-    completeAmount: number;
-  }[];
-  completed: boolean;
-  position: Position;
-  uiPosition: UIPosition;
-  level: number;
-}
 
 export default function HyperstructureStarted(
   props: JSX.IntrinsicElements["group"] & { hyperstructure?: HyperStructureInterface },

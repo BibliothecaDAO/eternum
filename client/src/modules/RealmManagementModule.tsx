@@ -1,4 +1,3 @@
-import RealmInfoComponent from "../components/cityview/realm/RealmInfoComponent";
 import RealmManagementComponent from "../components/cityview/realm/RealmManagementComponent";
 import { BaseContainer } from "../containers/BaseContainer";
 import { useGetRealm } from "../hooks/helpers/useRealm";

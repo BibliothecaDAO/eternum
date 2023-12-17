@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import ProgressBar from "../../../../elements/ProgressBar";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
 import clsx from "clsx";

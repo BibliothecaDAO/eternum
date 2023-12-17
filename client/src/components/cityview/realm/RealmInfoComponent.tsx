@@ -3,7 +3,7 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import realmsNames from "../../../geodata/realms.json";
 import { orderNameDict } from "@bibliothecadao/eternum";
 import clsx from "clsx";
-import { useGetRealm, useRealm } from "../../../hooks/helpers/useRealm";
+import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import { useDojo } from "../../../DojoContext";
 import { Leveling, LevelingBonusIcons } from "./leveling/Leveling";
 import { LaborAuction } from "./labor/LaborAuction";
@@ -12,11 +12,9 @@ import { LevelingPopup } from "./leveling/LevelingPopup";
 import { useMemo, useState } from "react";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useLevel } from "../../../hooks/helpers/useLevel";
-import { ReactComponent as Map } from "../../../assets/icons/common/map.svg";
 import { useLocation } from "wouter";
 import { RealmLevel } from "../../../elements/RealmLevel";
 import Button from "../../../elements/Button";
-import { set } from "mobx";
 
 type RealmInfoComponentProps = {};
 
@@ -41,7 +39,7 @@ const bgColorsByOrder = {
 
 export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
   const {
-    account: { accountDisplay, account },
+    account: { accountDisplay },
   } = useDojo();
   const [_location, setLocation] = useLocation();
 
@@ -53,9 +51,6 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
   const moveCameraToRealm = useUIStore((state) => state.moveCameraToRealm);
   const moveCameraToWorldMapView = useUIStore((state) => state.moveCameraToWorldMapView);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-
-  const { getAddressName } = useRealm();
-  const addressName = getAddressName(account.address);
 
   const { realmEntityId } = useRealmStore();
   const { realm } = useGetRealm(realmEntityId);

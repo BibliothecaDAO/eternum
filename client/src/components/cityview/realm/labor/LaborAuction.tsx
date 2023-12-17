@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { useLabor } from "../../../../hooks/helpers/useLabor";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { getPosition, getZone } from "../../../../utils/utils";
-import ProgressBar from "../../../../elements/ProgressBar";
 import clsx from "clsx";
 import useUIStore from "../../../../hooks/store/useUIStore";
 

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 const FPSLimiter = ({ children }: { children: any }) => {
   const invalidate = useThree((state) => state.invalidate);

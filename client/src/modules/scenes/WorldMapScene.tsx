@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-nocheck
 import WorldMap from "../../components/worldmap/WorldMap.jsx";
 // @ts-ignore
 import { Flags } from "../../components/worldmap/Flags.jsx";
