@@ -1,4 +1,4 @@
-import { RPCProvider, getContractByName } from "@dojoengine/core";
+import { RPCProvider } from "@dojoengine/core";
 import {
   AcceptOrderProps,
   AttachCaravanProps,
@@ -34,6 +34,15 @@ import {
 import { Call } from "starknet";
 
 const UUID_OFFSET_CREATE_CARAVAN = 2;
+
+export const getContractByName = (manifest: any, name: string) => {
+  return (
+    manifest.contracts.find((contract: any) => {
+      const nameParts = contract.name.split("::");
+      return nameParts[nameParts.length - 1] === name;
+    })?.address || ""
+  );
+};
 
 export class EternumProvider extends RPCProvider {
   constructor(world_address: string, url?: string, manifest: any = undefined) {

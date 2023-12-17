@@ -14,8 +14,7 @@ cubit = { git = "https://github.com/akhercha/cubit", rev = "d3869a3f0c47e5ed229b
 #dojo_defi = { git = "https://github.com/dojoengine/dojo" }
 
 [tool.dojo.env]
-
-world_address = "0x4d79c99ce9b489b77461e3491970ea5ede1f1966f4d2ff65ee76cd8701d6dad"
+world_address = "0x5cb4ce060de62a7b6bfd4cb70fd4ae3196bfe399c372cb0863e632ba8cc73ef"
 
 ## dev
 account_address = "0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973"

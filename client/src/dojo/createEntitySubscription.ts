@@ -7,7 +7,7 @@ import { BehaviorSubject, Observable } from "rxjs";
 type EntityUpdated = {
   id: string[];
   keys: string[];
-  model_names: string;
+  models: string;
 };
 
 type EntityQuery = {
@@ -22,13 +22,13 @@ type Entity = {
 
 export type UpdatedEntity = {
   entityKeys: string[];
-  model_names: string[];
+  modelNames: string[];
 };
 
 type GetLatestEntitiesQuery = {
   entities: {
     edges: {
-      node: Entity & { model_names: string };
+      node: Entity & { modelNames: string };
     }[];
   };
 };
@@ -60,9 +60,10 @@ export async function createEntitySubscription(contractComponents: Components): 
     },
     {
       next: ({ data }) => {
+        console.log({ data });
         try {
           const entityUpdated = data?.entityUpdated as EntityUpdated;
-          const componentNames = entityUpdated.model_names.split(",");
+          const componentNames = entityUpdated.models.split(",");
           queryEntityInfoById(entityUpdated.id, componentNames, client, contractComponents).then((entityInfo) => {
             let { entity } = entityInfo as EntityQuery;
             // note: remove that once fixed in torii
@@ -77,7 +78,7 @@ export async function createEntitySubscription(contractComponents: Components): 
             const previousUpdate = lastUpdate$.getValue().slice(0, 15);
             if (isEntityUpdate(componentNames)) {
               lastUpdate$.next([
-                { entityKeys: entity.keys as string[], model_names: componentNames },
+                { entityKeys: entity.keys as string[], modelNames: componentNames },
                 ...previousUpdate,
               ]);
             }
@@ -164,14 +165,14 @@ export const getInitialData = async (
 
   const initialData = rawIntitialData.entities.edges
     .map((edge) => {
-      let componentNames = edge.node.model_names.split(",");
+      let componentNames = edge.node.modelNames.split(",");
       for (const component of componentNames) {
         setComponentFromEntity(edge.node.models, component, contractComponents);
       }
       if (isEntityUpdate(componentNames)) {
         return {
           entityKeys: edge.node.keys,
-          model_names: edge.node.model_names.split(","),
+          modelNames: edge.node.modelNames.split(","),
         };
       }
     })

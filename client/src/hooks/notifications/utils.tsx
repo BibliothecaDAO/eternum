@@ -70,7 +70,7 @@ export const useRealmsPosition = (
 export const generateTradeNotifications = (entityUpdates: UpdatedEntity[], Status: Component) => {
   const notifications = entityUpdates
     .map((update) => {
-      if (update.model_names.includes("Trade")) {
+      if (update.modelNames.includes("Trade")) {
         const status = getComponentValue(Status, getEntityIdFromKeys(extractAndCleanKey(update.entityKeys)));
         switch (status?.value) {
           case 0:

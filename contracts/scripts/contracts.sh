@@ -1,18 +1,51 @@
 #!/bin/bash
 
-export WORLD_ADDRESS="0x4d79c99ce9b489b77461e3491970ea5ede1f1966f4d2ff65ee76cd8701d6dad"
-export CONFIG_SYSTEMS="0x74c3dd7b64a0c8ad6a27276b9ec6a628774028734ea46cf3970ef185e35247d"
-export LABOR_SYSTEMS="0x5b3b02ba50cfb46af86c20d1eca1bbff5fe82ff2f8985aefc413267a5d05b00"
-export TRADE_SYSTEMS="0x7b54643f42a1c4298fe5e465105ccbee30ba505f3bedaa90f4951f9f15be8f0"
-export HYPERSTRUCTURE_SYSTEMS="0xfdcafc26f1d866ad585cadfb0fb177e4512d03f6020e67adadb5c66690d9c2"
-export RESOURCE_SYSTEMS="0x2dab8013b2dea3f5b37f31db94a5136843408efa04a966a6587f65056b1ef40"
-export CARAVAN_SYSTEMS="0x384fd2bf241ffc48425ed1fed389495e8066079cdb16865a73e6d3849d32c4f"
-export ROAD_SYSTEMS="0x46e8cc4deb048fed25465e134ebbfa962137daaf0bb52a63d41940af3638e4d"
-export TRANSPORT_UNIT_SYSTEMS="0x75eb7b6012dbb91d59aa20808de28666f8207478e08f4e4ee101bdb0ac89e63"
-export TRAVEL_SYSTEMS="0x8fa2df40a28c2ffb7a99267c1a67318451da3a5d39cadb18577a2d09856b0e"
-export REALM_SYSTEMS="0x141b54c5560368787c28e61f9c9542e3aaf26a3f426263cb0dcde36339eec30"
-export TEST_RESOURCE_SYSTEMS="0x5e2e8d20bc9f4c02050b2b6b7442a1ce06bbd9c0729716a7c5a478069c9b354"
-export COMBAT_SYSTEMS="0x778fd3e137dc0e58d94d599167aa431332b8529f9bfc8efd70a7ea4e9c74247"
-export LEVELING_SYSTEMS="0x81edcebc0097b53ae8db567565eb5c5d9e8a9190a8a80411547676f24361ca"
-export NAME_SYSTEMS="0x2a9ee652fb9ce9812e9d06ec05429b6e27254b37d0ef0eaca6a1e4533d5c244"
-export BANK_SYSTEMS="0x22915d02287759320f721a3e61836fe3dc1ed68fc8a66fdd2c2f7a8cf1ff4f8"
+export WORLD_ADDRESS=$(cat ./target/dev/manifest.json | jq -r '.world.address')
+
+export CONFIG_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::config::contracts::config_systems" ).address')
+
+export LABOR_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::labor::contracts::labor_systems" ).address')
+
+export TRADE_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::trade::contracts::trade_systems::trade_systems" ).address')
+
+export HYPERSTRUCTURE_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::transport::contracts::road_systems::hyperstructure" ).address')
+
+export RESOURCE_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::resources::contracts::resource_systems" ).address')
+
+export CARAVAN_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::transport::contracts::caravan_systems::caravan_systems" ).address')
+
+export ROAD_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::transport::contracts::road_systems::road_systems" ).address')
+
+export TRANSPORT_UNIT_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::transport::contracts::transport_unit_systems::transport_unit_systems" ).address')
+
+export TRAVEL_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::transport::contracts::travel_systems::travel_systems" ).address')
+
+export REALM_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::realm::contracts::realm_systems" ).address')
+
+export TEST_RESOURCE_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::test::contracts::resource::test_resource_systems" ).address')
+
+export COMBAT_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::combat::contracts::combat_systems" ).address')
+
+export LEVELING_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::leveling::contracts::leveling_systems" ).address')
+
+export NAME_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::name::contracts::name_systems" ).address')
+
+export BANK_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::bank::contracts::bank_systems" ).address')
+
+echo "-------------------------ADDRESS----------------------------------------"
+echo world : $WORLD_SYSTEMS
+echo config : $CONFIG_SYSTEMS
+echo labor : $LABOR_SYSTEMS
+echo trade : $TRADE_SYSTEMS
+echo hyperstructure : $HYPERSTRUCTURE_SYSTEMS
+echo resource : $RESOURCE_SYSTEMS
+echo caravan : $CARAVAN_SYSTEMS
+echo road : $ROAD_SYSTEMS
+echo transport_unit : $TRANSPORT_UNIT_SYSTEMS
+echo travel : $TRAVEL_SYSTEMS
+echo realm : $REALM_SYSTEMS
+echo test_resource : $TEST_RESOURCE_SYSTEMS
+echo combat : $COMBAT_SYSTEMS
+echo leveling : $LEVELING_SYSTEMS
+echo name : $NAME_SYSTEMS
+echo bank : $BANK_SYSTEMS
