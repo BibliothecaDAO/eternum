@@ -3,7 +3,6 @@ import { ReactComponent as CrossSwords } from "../../../assets/icons/common/cros
 import { ReactComponent as PickAxeSecond } from "../../../assets/icons/common/pick-axe-second.svg";
 import { ReactComponent as Coin } from "../../../assets/icons/common/coin.svg";
 import { ReactComponent as City } from "../../../assets/icons/common/city.svg";
-import { ReactComponent as Map } from "../../../assets/icons/common/map.svg";
 import { useLocation, useRoute } from "wouter";
 import { Tabs } from "../../../elements/tab";
 import RealmTradeComponent from "./RealmTradeComponent";
@@ -12,6 +11,7 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import RealmCombatComponent from "./RealmCombatComponent";
+import RealmInfoComponent from "./RealmInfoComponent";
 
 const RealmManagementComponent = () => {
   const { realmEntityId } = useRealmStore();
@@ -26,9 +26,6 @@ const RealmManagementComponent = () => {
   const moveCameraToMarketView = useUIStore((state) => state.moveCameraToMarketView);
   const moveCameraToLaborView = useUIStore((state) => state.moveCameraToLaborView);
 
-  const moveCameraToRealm = useUIStore((state) => state.moveCameraToRealm);
-  const moveCameraToWorldMapView = useUIStore((state) => state.moveCameraToWorldMapView);
-  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   useEffect(() => {
@@ -38,15 +35,6 @@ const RealmManagementComponent = () => {
       moveCameraToMarketView();
     }
   }, [selectedTab]);
-
-  const showOnMap = () => {
-    setLocation("/map");
-    setIsLoadingScreenEnabled(true);
-    moveCameraToWorldMapView();
-    setTimeout(() => {
-      moveCameraToRealm(realm?.realmId as number);
-    }, 300);
-  };
 
   const tabs = useMemo(
     () => [
@@ -165,16 +153,8 @@ const RealmManagementComponent = () => {
   }, [params]);
 
   return (
-    <>
-      <div className="flex justify-between items-center p-3">
-        <button
-          onClick={showOnMap}
-          className="flex items-center hover:bg-gold/20 transition-bg duration-200 z-10 px-2 py-1 ml-auto text-xxs border rounded-md text-gold border-gold"
-        >
-          <Map className="mr-1 fill-current" />
-          Show on map
-        </button>
-      </div>
+    <div className="flex flex-col flex-1 z-10 overflow-auto">
+      <RealmInfoComponent />
       <Tabs
         selectedIndex={selectedTab}
         onChange={(index: any) => setLocation(`/realm/${realmEntityId}/${tabs[index].key}`)}
@@ -192,7 +172,7 @@ const RealmManagementComponent = () => {
           ))}
         </Tabs.Panels>
       </Tabs>
-    </>
+    </div>
   );
 };
 

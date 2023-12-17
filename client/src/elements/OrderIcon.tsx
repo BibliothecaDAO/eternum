@@ -15,6 +15,7 @@ import { ReactComponent as Skill } from "../assets/icons/orders/skill.svg";
 import { ReactComponent as Titans } from "../assets/icons/orders/titans.svg";
 import { ReactComponent as Twins } from "../assets/icons/orders/twins.svg";
 import { ReactComponent as Vitriol } from "../assets/icons/orders/vitriol.svg";
+import useUIStore from "../hooks/store/useUIStore";
 
 export type Props = {
   order: string;
@@ -74,23 +75,27 @@ const STYLES = {
 
 export const OrderIcon = ({ withTooltip = true, ...props }: Props) => {
   const order = props.order.toLowerCase();
-
+  const setTooltip = useUIStore((state) => state.setTooltip);
   const color = props.color ?? `order-${order.replace("the ", "")}`;
 
   return (
-    <div className={clsx("relative group", props.containerClassName)}>
-      <div className={clsx(STYLES.size[props.size], props.className)}>
-        {getIcon(order, color)}
-      </div>
-      {withTooltip && (
-        <div className="absolute flex -top-2 flex-col items-center -translate-y-full hidden left-1/2 -translate-x-1/2 bg-black rounded-lg w-max group-hover:flex">
-          <span className="relative z-10 p-2 text-xs leading-none text-white whitespace-no-wrap rounded shadow-lg bg-gray-1000">
-            Order of {order.includes("the") && "the "}
-            <span className="capitalize">{order.replace("the ", "")}</span>
-          </span>
-          <div className="z-[100] w-3 h-3 bottom-0 left-1/2 translate-y-1/2 -translate-x-1/2 absolute rotate-45 bg-black"></div>
-        </div>
-      )}
+    <div
+      className={clsx("relative group", props.containerClassName)}
+      onMouseOver={() =>
+        withTooltip &&
+        setTooltip({
+          position: "top",
+          content: (
+            <div className="flex">
+              Order of {order.includes("the") && "the "}
+              <span className="capitalize">{order.replace("the ", "")}</span>
+            </div>
+          ),
+        })
+      }
+      onMouseLeave={() => withTooltip && setTooltip(null)}
+    >
+      <div className={clsx(STYLES.size[props.size], props.className)}>{getIcon(order, color)}</div>
     </div>
   );
 };

@@ -36,8 +36,8 @@ const RealmManagementModule = () => {
           leaveTo="opacity-0"
         >
           <BaseContainer className="max-h-full h-min !p-0 mt-2">
-            <RealmInfoComponent />
             <RealmManagementComponent />
+            <img src="/images/realm_header.png" className="absolute rounded-t-xl top-0 left-0 z-0" />
           </BaseContainer>
         </Transition>
       }
