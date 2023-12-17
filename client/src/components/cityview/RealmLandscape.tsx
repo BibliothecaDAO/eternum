@@ -72,8 +72,6 @@ const RealmLandscape = (props: JSX.IntrinsicElements["group"]) => {
           <meshPhysicalMaterial
             attach="material"
             color={color}
-            transparent
-            opacity={opacity}
             roughness={roughness}
             metalness={metalness}
             reflectivity={reflectivity}
