@@ -5,17 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 const FPSLimiter = ({ children }: { children: any }) => {
   const invalidate = useThree((state) => state.invalidate);
   const clock = useMemo(() => new THREE.Clock(), []);
-  const [fps, setFps] = useState(60);
-
-  useEffect(() => {
-    navigator?.getBattery().then(function (battery) {
-      if (battery.charging && battery.chargingTime === 0) {
-        setFps(60);
-      } else {
-        setFps(30);
-      }
-    });
-  }, []);
+  const fps = 25;
 
   useEffect(() => {
     let rq: any = null;
