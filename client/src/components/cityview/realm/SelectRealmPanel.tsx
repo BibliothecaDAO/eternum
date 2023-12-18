@@ -155,7 +155,7 @@ export const SelectRealmPanel = ({
                           <OrderIcon order={order} size="xs" />
                         </div>
 
-                        <div className="flex-none w-20">{takerRealmId.toString()}</div>
+                        <div className="flex-none w-20">{Number(takerRealmId)}</div>
 
                         <div className="flex-grow">{name}</div>
 

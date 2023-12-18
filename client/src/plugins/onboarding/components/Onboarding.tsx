@@ -22,6 +22,7 @@ import { getRealm } from "../../../utils/realms";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useEntityQuery } from "@dojoengine/react";
 import { RealmBubble } from "../../../components/cityview/RealmSwitch";
+import { hexToAscii } from "@dojoengine/utils";
 
 export const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -155,7 +156,9 @@ const Naming = ({ onNext }: { onNext: () => void }) => {
   const {
     account: { create, isDeploying, list, account, select, clear },
     setup: {
+      network: { toriiClient },
       systemCalls: { set_address_name },
+      components: { AddressName },
     },
   } = useDojo();
 
@@ -167,7 +170,15 @@ const Naming = ({ onNext }: { onNext: () => void }) => {
 
   const { loading, setLoading, addressName, setAddressName } = useAddressStore();
 
-  useFetchAddressName(account.address);
+  useEffect(() => {
+    const getAddressName = async () => {
+      const data: { address: string; name: string } = await toriiClient.getModelValue("AddressName", [account.address]);
+      if (parseInt(data.name)) {
+        setAddressName(hexToAscii(data.name));
+      }
+    };
+    getAddressName();
+  }, [account.address, loading]);
 
   const onSetName = async () => {
     setLoading(true);

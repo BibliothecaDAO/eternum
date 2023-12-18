@@ -19,7 +19,7 @@ type RealmSwitchProps = {} & ComponentPropsWithRef<"div">;
 // TODO: Remove
 export type RealmBubble = {
   id: bigint;
-  realmId: string;
+  realmId: bigint;
   name: string;
   order: string;
 };
@@ -61,11 +61,11 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
           if (hyperstructureId !== realm.order_hyperstructure_id) {
             setHyperstructureId(realm.order_hyperstructure_id);
           }
-          return { realmEntityId: BigInt(id), realmId: realm?.realm_id.toString() };
+          return { realmEntityId: BigInt(id), realmId: realm?.realm_id };
         }
       })
       .filter(Boolean)
-      .sort((a, b) => Number(a!.realmId) - Number(b!.realmId)) as { realmEntityId: bigint; realmId: string }[];
+      .sort((a, b) => Number(a!.realmId) - Number(b!.realmId)) as { realmEntityId: bigint; realmId: bigint }[];
     setRealmEntityIds(realmEntityIds);
   }, [entityIds]);
 
@@ -131,7 +131,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
                 if (location.includes(`/realm`)) {
                   setIsLoadingScreenEnabled(false);
                 }
-                setLocation(`/realm/${realm.realmId}`);
+                setLocation(`/realm/${Number(realm.realmId)}`);
                 setRealmEntityId(realm.realmId);
                 setRealmId(realm.realmId);
               }, 500);

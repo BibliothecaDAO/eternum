@@ -8,8 +8,6 @@ export LABOR_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | se
 
 export TRADE_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::trade::contracts::trade_systems::trade_systems" ).address')
 
-export HYPERSTRUCTURE_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::transport::contracts::road_systems::hyperstructure" ).address')
-
 export RESOURCE_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::resources::contracts::resource_systems" ).address')
 
 export CARAVAN_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::transport::contracts::caravan_systems::caravan_systems" ).address')
@@ -37,7 +35,6 @@ echo world : $WORLD_SYSTEMS
 echo config : $CONFIG_SYSTEMS
 echo labor : $LABOR_SYSTEMS
 echo trade : $TRADE_SYSTEMS
-echo hyperstructure : $HYPERSTRUCTURE_SYSTEMS
 echo resource : $RESOURCE_SYSTEMS
 echo caravan : $CARAVAN_SYSTEMS
 echo road : $ROAD_SYSTEMS

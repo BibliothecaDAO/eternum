@@ -58,13 +58,6 @@
         "Road",
         "Resource"
     ],
-    "HYPERSTRUCTURE_SYSTEMS": [
-        "HyperStructure",
-        "Position",
-        "Resource",
-        "ResourceCost",
-        "Level"
-    ],
     "RESOURCE_SYSTEMS": [
         "Resource",
         "ResourceAllowance",

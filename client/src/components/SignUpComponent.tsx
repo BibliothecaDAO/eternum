@@ -38,19 +38,6 @@ export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: Si
   const { loading, setLoading, addressName, setAddressName } = useAddressStore();
   useFetchAddressName(account.address);
 
-  // useEffect(() => {
-  //   const fetchName = async () => {
-  //     const name = await fetchAddressName(account.address);
-  //     if (name) {
-  //       setCurrentName(hexToAscii(name));
-  //       setHasName(true);
-  //     } else {
-  //       setHasName(false);
-  //     }
-  //   };
-  //   fetchName();
-  // }, [account.address, loading]);
-
   let disableStart = false;
   // let disableStart = true;
   // if (import.meta.env.DEV) {
