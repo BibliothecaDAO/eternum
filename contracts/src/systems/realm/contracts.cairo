@@ -1,8 +1,9 @@
 #[dojo::contract]
 mod realm_systems {
 
-    use eternum::models::realm::{Realm, RealmsOwned};
+    use eternum::models::realm::Realm;
     use eternum::models::movable::Movable;
+    use eternum::models::quantity::QuantityTracker;
     use eternum::models::capacity::Capacity;
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::position::Position;
@@ -22,6 +23,8 @@ mod realm_systems {
     use eternum::alias::ID;
 
     use starknet::ContractAddress;
+
+    use core::poseidon::poseidon_hash_span;
 
     #[external(v0)]
     impl RealmSystemsImpl of IRealmSystems<ContractState> {
@@ -43,14 +46,20 @@ mod realm_systems {
             let entity_id = world.uuid();
             let caller = starknet::get_caller_address();
 
-            let mut caller_realms = get!(world, caller, RealmsOwned);
+            // Ensure that caller does not have more than `MAX_REALMS_PER_ADDRESS`
+        
+            let caller_realm_quantity_arr = array![caller.into(), REALM_ENTITY_TYPE.into()];
+            let caller_realm_quantity_key = poseidon_hash_span(caller_realm_quantity_arr.span());
+            let mut caller_realms_quantity = get!(world, caller_realm_quantity_key, QuantityTracker);
             assert(
-                caller_realms.count < MAX_REALMS_PER_ADDRESS, 
+                caller_realms_quantity.count < MAX_REALMS_PER_ADDRESS.into(), 
                     'max num of realms settled'
             );
 
-            caller_realms.count += 1;
-            set!(world, (caller_realms));
+            caller_realms_quantity.count += 1;
+            set!(world, (caller_realms_quantity));
+
+
 
             set!(world, (
 
