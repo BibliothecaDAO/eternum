@@ -1,4 +1,4 @@
-import { EventType, NotificationType } from "../hooks/notifications/useNotifications";
+import { EventType, NotificationType } from "../hooks/store/useNotificationsStore";
 import { Event } from "../services/eventPoller";
 import { Resource, CombatResultInterface, Winner } from "@bibliothecadao/eternum";
 

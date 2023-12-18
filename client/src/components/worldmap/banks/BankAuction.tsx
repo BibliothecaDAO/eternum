@@ -110,7 +110,7 @@ export const BankAuction = ({ bankInfo, resourceId }: BankAuctionProps) => {
             {" "}
             {`= ${(resourceId === 254 ? 1 / bankInfo?.wheatPrice : 1 / bankInfo?.fishPrice).toFixed(2)}`}
           </div>
-          <ResourceIcon resource={"Shekels" || ""} size="xs" />
+          <ResourceIcon resource={"Lords" || ""} size="xs" />
         </div>
         <div className={clsx("ml-3 flex flex-row", demandColors.text)}>
           <ResourceIcon resource={resourceId === 254 ? "Wheat" : "Fish" || ""} size="xs" />

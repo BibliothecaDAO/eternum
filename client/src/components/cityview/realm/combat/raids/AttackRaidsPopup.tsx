@@ -142,7 +142,7 @@ const AttackResultPanel = ({
                 d="M17.5986 1L22.2782 4L28.5547 6.00003L22.2782 8L17.5986 11L11 6.5C11 6.5 7.41876 8 5.95938 8C4.5 8 0.999649 6.00003 0.999649 6.00003C0.999649 6.00003 4.5 4 5.95938 4C7.41876 4 11 5.5 11 5.5L17.5986 1Z"
                 fill="#86C16A"
                 stroke="#86C16A"
-                stroke-linejoin="round"
+                strokeLinejoin="round"
               />
               <circle cx="17.5" cy="6" r="1.5" fill="#1B1B1B" />
               <circle cx="6" cy="6" r="1" fill="#1B1B1B" />
@@ -158,7 +158,7 @@ const AttackResultPanel = ({
                 d="M114.401 1L109.722 4L103.445 6.00003L109.722 8L114.401 11L121 6.5C121 6.5 124.581 8 126.041 8C127.5 8 131 6.00003 131 6.00003C131 6.00003 127.5 4 126.041 4C124.581 4 121 5.5 121 5.5L114.401 1Z"
                 fill="#86C16A"
                 stroke="#86C16A"
-                stroke-linejoin="round"
+                strokeLinejoin="round"
               />
               <circle cx="1.5" cy="1.5" r="1.5" transform="matrix(-1 0 0 1 116 4.5)" fill="#1B1B1B" />
               <circle cx="1" cy="1" r="1" transform="matrix(-1 0 0 1 127 5)" fill="#1B1B1B" />
@@ -192,7 +192,7 @@ const AttackResultPanel = ({
                 d="M17.5986 1L22.2782 4L28.5547 6.00003L22.2782 8L17.5986 11L11 6.5C11 6.5 7.41876 8 5.95938 8C4.5 8 0.999649 6.00003 0.999649 6.00003C0.999649 6.00003 4.5 4 5.95938 4C7.41876 4 11 5.5 11 5.5L17.5986 1Z"
                 fill="#C84444"
                 stroke="#C84444"
-                stroke-linejoin="round"
+                strokeLinejoin="round"
               />
               <circle cx="17.5" cy="6" r="1.5" fill="#1B1B1B" />
               <circle cx="6" cy="6" r="1" fill="#1B1B1B" />
@@ -207,7 +207,7 @@ const AttackResultPanel = ({
                 d="M124.401 1L119.722 4L113.445 6.00003L119.722 8L124.401 11L131 6.5C131 6.5 134.581 8 136.041 8C137.5 8 141 6.00003 141 6.00003C141 6.00003 137.5 4 136.041 4C134.581 4 131 5.5 131 5.5L124.401 1Z"
                 fill="#C84444"
                 stroke="#C84444"
-                stroke-linejoin="round"
+                strokeLinejoin="round"
               />
               <circle cx="1.5" cy="1.5" r="1.5" transform="matrix(-1 0 0 1 126 4.5)" fill="#1B1B1B" />
               <circle cx="1" cy="1" r="1" transform="matrix(-1 0 0 1 137 5)" fill="#1B1B1B" />
@@ -303,7 +303,7 @@ const StealResultPanel = ({
                 d="M17.5986 1L22.2782 4L28.5547 6.00003L22.2782 8L17.5986 11L11 6.5C11 6.5 7.41876 8 5.95938 8C4.5 8 0.999649 6.00003 0.999649 6.00003C0.999649 6.00003 4.5 4 5.95938 4C7.41876 4 11 5.5 11 5.5L17.5986 1Z"
                 fill="#86C16A"
                 stroke="#86C16A"
-                stroke-linejoin="round"
+                strokeLinejoin="round"
               />
               <circle cx="17.5" cy="6" r="1.5" fill="#1B1B1B" />
               <circle cx="6" cy="6" r="1" fill="#1B1B1B" />
@@ -319,7 +319,7 @@ const StealResultPanel = ({
                 d="M114.401 1L109.722 4L103.445 6.00003L109.722 8L114.401 11L121 6.5C121 6.5 124.581 8 126.041 8C127.5 8 131 6.00003 131 6.00003C131 6.00003 127.5 4 126.041 4C124.581 4 121 5.5 121 5.5L114.401 1Z"
                 fill="#86C16A"
                 stroke="#86C16A"
-                stroke-linejoin="round"
+                strokeLinejoin="round"
               />
               <circle cx="1.5" cy="1.5" r="1.5" transform="matrix(-1 0 0 1 116 4.5)" fill="#1B1B1B" />
               <circle cx="1" cy="1" r="1" transform="matrix(-1 0 0 1 127 5)" fill="#1B1B1B" />
@@ -393,7 +393,7 @@ const StealResultPanel = ({
                 d="M17.5986 1L22.2782 4L28.5547 6.00003L22.2782 8L17.5986 11L11 6.5C11 6.5 7.41876 8 5.95938 8C4.5 8 0.999649 6.00003 0.999649 6.00003C0.999649 6.00003 4.5 4 5.95938 4C7.41876 4 11 5.5 11 5.5L17.5986 1Z"
                 fill="#C84444"
                 stroke="#C84444"
-                stroke-linejoin="round"
+                strokeLinejoin="round"
               />
               <circle cx="17.5" cy="6" r="1.5" fill="#1B1B1B" />
               <circle cx="6" cy="6" r="1" fill="#1B1B1B" />
@@ -408,7 +408,7 @@ const StealResultPanel = ({
                 d="M124.401 1L119.722 4L113.445 6.00003L119.722 8L124.401 11L131 6.5C131 6.5 134.581 8 136.041 8C137.5 8 141 6.00003 141 6.00003C141 6.00003 137.5 4 136.041 4C134.581 4 131 5.5 131 5.5L124.401 1Z"
                 fill="#C84444"
                 stroke="#C84444"
-                stroke-linejoin="round"
+                strokeLinejoin="round"
               />
               <circle cx="1.5" cy="1.5" r="1.5" transform="matrix(-1 0 0 1 126 4.5)" fill="#1B1B1B" />
               <circle cx="1" cy="1" r="1" transform="matrix(-1 0 0 1 137 5)" fill="#1B1B1B" />

@@ -11,12 +11,12 @@ export const findResourceIdByTrait = (trait: string) => {
 
 export const resources: Array<Resources> = [
   {
-    trait: "Shekels",
+    trait: "Lords",
     value: 253,
     colour: "#ec4899",
     colourClass: "",
     id: 253,
-    description: "Shekels.",
+    description: "Lords.",
     img: "",
   },
   {
@@ -283,7 +283,7 @@ export enum ResourcesIds {
   Adamantine = 20,
   Mithral = 21,
   Dragonhide = 22,
-  Shekels = 253,
+  Lords = 253,
   Wheat = 254,
   Fish = 255,
 }
@@ -321,4 +321,33 @@ export const getHyperstructureResources = (level: number): { resourceId: number;
     resources.push({ resourceId: resourcesList[i], amount: resourcesList[i + 1] });
   }
   return resources;
+};
+
+interface WeightMap {
+  [key: number]: number;
+}
+// weight in kg
+export const WEIGHTS: WeightMap = {
+  1: 1,
+  2: 1,
+  3: 1,
+  4: 1,
+  5: 1,
+  6: 1,
+  8: 1,
+  9: 1,
+  10: 1,
+  11: 1,
+  13: 1,
+  14: 1,
+  15: 1,
+  16: 1,
+  18: 1,
+  19: 1,
+  20: 1,
+  21: 1,
+  22: 1,
+  253: 0.001,
+  254: 0.1,
+  255: 0.1,
 };

@@ -12,6 +12,7 @@ import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useComponentValue } from "@dojoengine/react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
+import { EventType, useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
 
 type LaborComponentProps = {
   resourceId: number;
@@ -67,6 +68,8 @@ export const LaborComponent = ({
 
   const { getEntityLevel, getRealmLevelBonus, getHyperstructureLevelBonus } = useLevel();
 
+  const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
+
   // get harvest bonuses
   const [levelBonus, hyperstructureLevelBonus] = useMemo(() => {
     const level = getEntityLevel(realmEntityId)?.level || 0;
@@ -93,6 +96,7 @@ export const LaborComponent = ({
         realm_id: realmEntityId,
         resource_type: resourceId,
       });
+      deleteNotification([realmEntityId.toString(), resourceId.toString()], EventType.Harvest);
     }
   };
 
