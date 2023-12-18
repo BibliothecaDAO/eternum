@@ -400,8 +400,8 @@ export class EternumProvider extends RPCProvider {
             regions,
             wonder,
             order,
-            order_hyperstructure_id,
-            2,
+            order_hyperstructure_id, // TODO: issue here we can't pass th BigINt
+            2n, // entity ID in position struct
             position.x,
             position.y,
           ],

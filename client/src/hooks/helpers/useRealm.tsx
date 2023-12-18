@@ -157,7 +157,7 @@ export function useGetRealms(): { realms: RealmExtended[] } {
         .map((entityId) => {
           const realm = getComponentValue(Realm, entityId);
           if (realm) {
-            let name = realmsData["features"][Number(realm.realm_id - 1n)].name;
+            let name = realmsData["features"][Number(realm.realm_id) - 1].name;
             let owner = getComponentValue(Owner, entityId);
             let resources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
             let coords = realmsCoordsJson["features"][Number(realm.realm_id)]["geometry"]["coordinates"];

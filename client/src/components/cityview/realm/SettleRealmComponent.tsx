@@ -64,7 +64,7 @@ export const SettleRealmComponent = () => {
       if (order_hyperstructure_id) {
         calldata.push({
           owner: BigInt(account.address),
-          realm_id: realm.realmId,
+          realm_id: realm.realmId.toString(),
           order: realm.order,
           wonder: realm.wonder,
           regions: realm.regions,
@@ -78,6 +78,8 @@ export const SettleRealmComponent = () => {
         });
       }
     }
+
+    console.log(calldata);
 
     // @dev: do it in 3 times because too many steps for 1 tx
     await create_multiple_realms({

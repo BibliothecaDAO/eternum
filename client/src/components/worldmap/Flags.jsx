@@ -171,9 +171,9 @@ export function Flags(props) {
 
     ordersRealms.forEach((orderRealms, index) => {
       orderRealms.forEach((realm, i) => {
-        const x = realmsJson.features[realm.realmId - 1].xy[0];
-        const y = realmsJson.features[realm.realmId - 1].xy[1];
-        const z = -0.92 - flagsHeights[realm.realmId - 1];
+        const x = realmsJson.features[Number(realm.realmId) - 1].xy[0];
+        const y = realmsJson.features[Number(realm.realmId) - 1].xy[1];
+        const z = -0.92 - flagsHeights[Number(realm.realmId) - 1];
         _position.set(x, y, z);
         dummy.position.copy(_position);
         dummy.rotateZ(

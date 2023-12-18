@@ -27,16 +27,16 @@ export const getRealmIdByPosition = (positionRaw: { x: number; y: number }): big
   return undefined;
 };
 
-export const getRealmNameById = (realmId: bigint): string => {
-  return realmsJson["features"][Number(realmId - 1n)]["name"];
+export const getRealmNameById = (realmId: string): string => {
+  return realmsJson["features"][parseInt(realmId) - 1]["name"];
 };
 
-export const getRealmOrderNameById = (realmId: bigint): string => {
-  const orderName = realmsOrdersJson[Number(realmId - 1n)].order;
+export const getRealmOrderNameById = (realmId: string): string => {
+  const orderName = realmsOrdersJson[parseInt(realmId) - 1].order;
   return orderName.toLowerCase().replace("the ", "");
 };
 
-export function getRealm(realmId: bigint): RealmInterface {
+export function getRealm(realmId: string): RealmInterface {
   const realmsData = realms as {
     [key: string]: any;
   };
