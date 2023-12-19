@@ -59,7 +59,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
           if (hyperstructureId !== realm.order_hyperstructure_id) {
             setHyperstructureId(realm.order_hyperstructure_id);
           }
-          return { realmEntityId: BigInt(id), realmId: realm?.realm_id };
+          return { realmEntityId: realm.entity_id, realmId: realm.realm_id };
         }
       })
       .filter(Boolean)

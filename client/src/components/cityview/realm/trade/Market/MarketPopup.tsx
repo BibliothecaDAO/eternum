@@ -115,7 +115,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
       });
 
       summary.forEach((summary) => {
-        summary.depthOfMarket.sort((a: any, b: any) => b.price - a.price);
+        summary.depthOfMarket.sort((a, b) => b.price - a.price);
       });
     });
 
@@ -191,7 +191,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
       });
 
       summary.forEach((summary) => {
-        summary.depthOfMarket.sort((a: any, b: any) => a.price - b.price);
+        summary.depthOfMarket.sort((a, b) => a.price - b.price);
       });
     });
 

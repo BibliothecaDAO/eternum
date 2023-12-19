@@ -339,17 +339,17 @@ export function sortTrades(trades: MarketInterface[], activeSort: SortInterface)
         }
       });
     } else if (activeSort.sortKey === "realm") {
-      return trades.sort((a: any, b: any) => {
+      return trades.sort((a, b) => {
         if (activeSort.sort === "asc") {
-          return a.makerId - b.makerId;
+          return Number(a.makerId - b.makerId);
         } else {
-          return b.makerId - a.makerId;
+          return Number(b.makerId - a.makerId);
         }
       });
     } else {
       return trades;
     }
   } else {
-    return trades.sort((a: any, b: any) => b!.tradeId - a!.tradeId);
+    return trades.sort((a, b) => Number(b!.tradeId - a!.tradeId));
   }
 }

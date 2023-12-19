@@ -183,11 +183,11 @@ export function sortRealms(realms: SelectableRealmInterface[], activeSort: SortI
 
   if (activeSort.sort !== "none") {
     if (activeSort.sortKey === "id") {
-      return sortedRealms.sort((a: any, b: any) => {
+      return sortedRealms.sort((a, b) => {
         if (activeSort.sort === "asc") {
-          return a.realmId - b.realmId;
+          return Number(a.realmId - b.realmId);
         } else {
-          return b.realmId - a.realmId;
+          return Number(b.realmId - a.realmId);
         }
       });
     } else if (activeSort.sortKey === "name") {
@@ -236,6 +236,6 @@ export function sortRealms(realms: SelectableRealmInterface[], activeSort: SortI
       return sortedRealms;
     }
   } else {
-    return sortedRealms.sort((a: any, b: any) => b.realmId - a.realmId);
+    return sortedRealms.sort((a, b) => Number(b.realmId - a.realmId));
   }
 }

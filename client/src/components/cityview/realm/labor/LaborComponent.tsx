@@ -148,7 +148,7 @@ export const LaborComponent = ({
             <div className="flex items-center mb-2">
               {/* <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="sm" /> */}
               <div className="ml-2 text-sm font-bold text-white">
-                <span className="opacity-60">{currencyFormat(resource ? resource.balance : 0, 2)}</span>
+                <span className="opacity-60">{currencyFormat(resource ? Number(resource.balance) : 0, 2)}</span>
 
                 <span className={`ml-3  ${labor && laborLeft > 0 ? "text-gold" : "text-gray-gold"}`}>
                   {hyperstructureLevelBonus && labor && laborLeft > 0

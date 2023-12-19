@@ -27,10 +27,10 @@ export function useCaravan() {
   } = useDojo();
 
   const getCaravanInfo = (caravanId: bigint): CaravanInterface => {
-    const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([BigInt(caravanId)]));
-    const movable = getComponentValue(Movable, getEntityIdFromKeys([BigInt(caravanId)]));
-    const capacity = getComponentValue(Capacity, getEntityIdFromKeys([BigInt(caravanId)]));
-    const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(caravanId)]));
+    const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([caravanId]));
+    const movable = getComponentValue(Movable, getEntityIdFromKeys([caravanId]));
+    const capacity = getComponentValue(Capacity, getEntityIdFromKeys([caravanId]));
+    const owner = getComponentValue(Owner, getEntityIdFromKeys([caravanId]));
     const resourcesChestId = getInventoryResourcesChestId(caravanId);
     const resourceChest = resourcesChestId
       ? getComponentValue(ResourceChest, getEntityIdFromKeys([BigInt(resourcesChestId)]))
@@ -53,9 +53,9 @@ export function useCaravan() {
   };
 
   const getInventoryResourcesChestId = (caravanId: bigint): bigint | undefined => {
-    const inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(caravanId)]));
+    const inventory = getComponentValue(Inventory, getEntityIdFromKeys([caravanId]));
     let foreignKey = inventory
-      ? getComponentValue(ForeignKey, getEntityIdFromKeys([BigInt(caravanId), BigInt(inventory.items_key), BigInt(0)]))
+      ? getComponentValue(ForeignKey, getEntityIdFromKeys([caravanId, inventory.items_key, 0n]))
       : undefined;
     return foreignKey?.entity_id;
   };
@@ -89,10 +89,11 @@ export function useCaravan() {
     useMemo((): any => {
       const caravans = entityIds
         .map((id) => {
-          return getCaravanInfo(id);
+          const position = getComponentValue(Position, id);
+          return getCaravanInfo(position!.entity_id);
         })
         .filter(Boolean)
-        .sort((a: any, b: any) => b!.caravanId - a!.caravanId) as CaravanInterface[];
+        .sort((a, b) => Number(b!.caravanId - a!.caravanId)) as CaravanInterface[];
       // DISCUSS: can add sorting logic here
       setCaravans([...caravans]);
       // only recompute when different number of orders
@@ -107,11 +108,12 @@ export function useCaravan() {
     const entityIds = useEntityQuery([HasValue(Position, { x, y }), Has(CaravanMembers)]);
 
     return Array.from(entityIds).map((id) => {
-      const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(id)]));
+      const owner = getComponentValue(Owner, id);
+      const position = getComponentValue(Position, getEntityIdFromKeys([BigInt(id)]));
       return {
         owner: owner?.address,
         isMine: padAddress(owner?.address.toString() || "0x0") === padAddress(account.address),
-        caravanId: id,
+        caravanId: position!.entity_id,
       };
     });
   };

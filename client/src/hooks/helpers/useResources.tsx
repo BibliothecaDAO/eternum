@@ -20,6 +20,7 @@ export function useResources() {
   const getResourcesFromInventory = (entityId: bigint): { resources: Resource[]; indices: number[] } => {
     let indices: number[] = [];
     let resources: Record<number, number> = {};
+    console.log({ entityId });
     let inventory = getComponentValue(Inventory, getEntityIdFromKeys([entityId]));
 
     if (!inventory) {

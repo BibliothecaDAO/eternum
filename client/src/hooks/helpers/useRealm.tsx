@@ -38,7 +38,7 @@ export function useRealm() {
 
     // sort from biggest to lowest
     if (entityIds.size > 0) {
-      const realmEntityId = Array.from(entityIds).sort((a: any, b: any) => b - a)[0];
+      const realmEntityId = Array.from(entityIds).sort((a, b) => Number(b) - Number(a))[0];
       const latestRealmFromOrder = getComponentValue(Realm, realmEntityId);
       if (latestRealmFromOrder) {
         latestRealmIdFromOrder = latestRealmFromOrder.realm_id;
@@ -104,7 +104,7 @@ export function useGetRealm(realmEntityId: bigint | undefined) {
 
   useMemo((): any => {
     if (realmEntityId) {
-      let entityId = formatEntityId(realmEntityId);
+      let entityId = getEntityIdFromKeys([realmEntityId]);
       const realm = getComponentValue(Realm, entityId);
       const owner = getComponentValue(Owner, entityId);
       const position = getComponentValue(Position, entityId);
