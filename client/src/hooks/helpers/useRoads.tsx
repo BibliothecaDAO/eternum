@@ -76,9 +76,10 @@ export function useGetRoads(entityId: bigint) {
 
   // TODO: put somewhere else for reuse
   const getRealmEntityIdFromRealmId = (realmId: bigint): bigint | undefined => {
-    const realms = runQuery([HasValue(Realm, { realm_id: realmId })]);
-    if (realms.size > 0) {
-      return realms.values().next().value;
+    const entityIds = Array.from(runQuery([HasValue(Realm, { realm_id: realmId })]));
+    if (entityIds.length > 0) {
+      let realm = getComponentValue(Realm, entityIds[0]);
+      return realm!.entity_id;
     }
   };
 

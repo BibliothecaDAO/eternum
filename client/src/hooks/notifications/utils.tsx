@@ -195,17 +195,16 @@ export const generateEmptyChestNotifications = (
       }),
     ]);
 
-    const realms = runQuery([HasValue(Realm, { realm_id: realmId })]);
-    const realmEntityId = BigInt(realms.values().next().value);
+    const ids = Array.from(runQuery([HasValue(Realm, { realm_id: realmId })]));
+    let realmEntityId = ids.length > 0 ? getComponentValue(Realm, ids[0])!.entity_id : undefined;
 
-    for (const entityId of entitiesAtPositionWithInventory) {
-      const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([BigInt(entityId)])) as
-        | { arrives_at: number }
-        | undefined;
+    for (const id of entitiesAtPositionWithInventory) {
+      const arrivalTime = getComponentValue(ArrivalTime, id) as { arrives_at: number } | undefined;
+      const caravanMembers = getComponentValue(CaravanMembers, id);
 
-      const { resources, indices } = getResourcesFromInventory(BigInt(entityId));
-
-      const caravanMembers = getComponentValue(CaravanMembers, getEntityIdFromKeys([BigInt(entityId)]));
+      // get key
+      let entityId = getComponentValue(Position, id)!.entity_id;
+      const { resources, indices } = getResourcesFromInventory(entityId);
 
       let carrierType = caravanMembers ? CarrierType.Caravan : CarrierType.Raiders;
 

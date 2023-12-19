@@ -16,10 +16,11 @@ export const useHyperstructure = () => {
 
   const getHyperstructure = (orderId: number, uiPosition: UIPosition): HyperStructureInterface | undefined => {
     const position = getContractPositionFromRealPosition({ x: uiPosition.x, y: uiPosition.z });
-    const hypestructureId = runQuery([Has(HyperStructure), HasValue(Position, position)]);
+    const entityIds = runQuery([Has(HyperStructure), HasValue(Position, position)]);
 
-    if (hypestructureId.size > 0) {
-      let hyperstructureId = BigInt(Array.from(hypestructureId)[0]);
+    if (entityIds.size > 0) {
+      let id = Array.from(entityIds)[0];
+      let hyperstructureId = getComponentValue(HyperStructure, id)!.entity_id;
       const level = getEntityLevel(hyperstructureId);
 
       let hyperstructure = getComponentValue(HyperStructure, getEntityIdFromKeys([hyperstructureId]));
@@ -63,12 +64,17 @@ export const useHyperstructure = () => {
   };
 
   const getHyperstructureIds = (): bigint[] => {
-    return Array.from(runQuery([Has(HyperStructure), Has(Position)])).map((id) => BigInt(id));
+    const entityIds = Array.from(runQuery([Has(HyperStructure), Has(Position)]));
+    return entityIds.map((id) => {
+      return getComponentValue(HyperStructure, id)!.entity_id;
+    });
   };
 
   const getHyperstructureIdByOrder = (orderId: number): bigint | undefined => {
-    const ids = Array.from(runQuery([HasValue(HyperStructure, { order: orderId }), Has(Position)]));
-    return ids.length === 1 ? BigInt(ids[0]) : undefined;
+    const entityIds = Array.from(runQuery([HasValue(HyperStructure, { order: orderId }), Has(Position)]));
+    if (entityIds.length === 1) {
+      return getComponentValue(HyperStructure, entityIds[0])!.entity_id;
+    }
   };
 
   const getHyperstructureIdByRealmEntityId = (realmEntityId: bigint): bigint | undefined => {

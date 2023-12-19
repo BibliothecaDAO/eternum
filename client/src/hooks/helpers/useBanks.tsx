@@ -42,8 +42,11 @@ export const useBanks = () => {
   };
 
   const getBankEntityId = (bankPosition: Position): bigint | undefined => {
-    const entityIds = runQuery([Has(Bank), HasValue(Position, bankPosition)]);
-    return Array.from(entityIds).length === 1 ? BigInt(Array.from(entityIds)[0]) : undefined;
+    const entityIds = Array.from(runQuery([Has(Bank), HasValue(Position, bankPosition)]));
+    if (entityIds.length === 1) {
+      let bank = getComponentValue(Bank, entityIds[0]);
+      return bank?.entity_id;
+    }
   };
 
   const getLordsAmountFromBank = (bankPosition: Position, resource: Resource): number | undefined => {

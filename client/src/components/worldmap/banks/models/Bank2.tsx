@@ -53,7 +53,7 @@ type GLTFResult = GLTF & {
 };
 
 export default function Bank2(props: JSX.IntrinsicElements["group"]) {
-  const { nodes, materials } = useGLTF("/models/bank2.glb") as GLTFResult;
+  const { nodes, materials } = useGLTF("/models/bank2.glb") as unknown as GLTFResult;
   return (
     <group {...props} dispose={null}>
       <group rotation={[-Math.PI / 2, 0, 0]}>

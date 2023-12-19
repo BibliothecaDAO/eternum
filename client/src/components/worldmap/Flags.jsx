@@ -55,7 +55,7 @@ export function Flags(props) {
   const [woodInstances, setWoodInstances] = useState([]);
   const [flagInstances, setFlagInstances] = useState([]);
 
-  const { realms } = useGetRealms();
+  const realms = useGetRealms();
 
   const ordersRealms = useMemo(
     () =>

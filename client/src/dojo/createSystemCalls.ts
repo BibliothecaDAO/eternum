@@ -253,17 +253,46 @@ export function setComponentFromEvent(components: Components, eventData: string[
   const values =
     valuesFromEventData.length < componentFields.length ? [...keys, ...valuesFromEventData] : valuesFromEventData;
 
+  const metadata = component.metadata as { types: string[]; name: string };
+
   // create component object from values with schema
   const componentValues = componentFields.reduce((acc: Schema, key, index) => {
     const value = values[index];
+    const type = metadata.types[index];
+    if (type === "bool") {
+      console.log({ value, type });
+    }
     // @ts-ignore
-    acc[key] = key === "address" ? value : Number(value);
+    acc[key] = setType(type, value);
     return acc;
   }, {});
 
   // set component
   setComponent(component, entityIndex, componentValues);
 }
+
+const setType = (type: string, value: string) => {
+  switch (type) {
+    case "u8":
+      return Number(value);
+    case "u16":
+      return Number(value);
+    case "u32":
+      return Number(value);
+    case "u64":
+      return Number(value);
+    case "u128":
+      return BigInt(value);
+    case "felt252":
+      return BigInt(value);
+    case "bool":
+      return parseInt(value) === 1;
+    case "contractaddress":
+      return BigInt(value);
+    default:
+      return BigInt(value);
+  }
+};
 
 function hexToAscii(hex: string) {
   var str = "";

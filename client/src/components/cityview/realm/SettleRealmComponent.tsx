@@ -75,12 +75,10 @@ export const SettleRealmComponent = () => {
           cities: realm.cities,
           position,
           // todo: fix this
-          order_hyperstructure_id: 1,
+          order_hyperstructure_id,
         });
       }
     }
-
-    console.log({ calldata, masterAccount });
 
     // @dev: do it in 3 times because too many steps for 1 tx
     await create_multiple_realms({

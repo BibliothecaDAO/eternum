@@ -34,7 +34,7 @@ type TradeResources = {
 export function useTrade() {
   const {
     setup: {
-      components: { Resource, Trade, Realm, ResourceChest, DetachedResource, Status },
+      components: { Resource, Trade, Realm, ResourceChest, DetachedResource },
     },
   } = useDojo();
 
@@ -88,21 +88,6 @@ export function useTrade() {
     }
   };
 
-  const getTradeIdFromTransportId = (transportId: bigint): bigint | undefined => {
-    const makerTradeIds = runQuery([
-      HasValue(Status, { value: 0n }),
-      HasValue(Trade, { maker_transport_id: transportId }),
-    ]);
-    const takerTradeIds = runQuery([
-      HasValue(Status, { value: 0n }),
-      HasValue(Trade, { taker_transport_id: transportId }),
-    ]);
-
-    const tradeId = Array.from(new Set([...makerTradeIds, ...takerTradeIds]))[0];
-
-    return BigInt(tradeId);
-  };
-
   const canAcceptOffer = ({
     realmEntityId,
     resourcesGive,
@@ -137,7 +122,6 @@ export function useTrade() {
     getChestResources,
     canAcceptOffer,
     getRealmEntityIdFromRealmId,
-    getTradeIdFromTransportId,
   };
 }
 

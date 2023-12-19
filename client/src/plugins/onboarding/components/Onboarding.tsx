@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import Button from "../../../elements/Button";
 import useUIStore from "../../../hooks/store/useUIStore";
 import SettleRealmComponent, { MAX_REALMS } from "../../../components/cityview/realm/SettleRealmComponent";
-import { useAddressStore, useFetchAddressName } from "../../../hooks/store/useAddressStore";
+import { useAddressStore } from "../../../hooks/store/useAddressStore";
 import { useDojo } from "../../../DojoContext";
 import TextInput from "../../../elements/TextInput";
 import ListSelect from "../../../elements/ListSelect";
@@ -20,9 +20,10 @@ import { useLocation } from "wouter";
 import { orderNameDict } from "@bibliothecadao/eternum";
 import { getRealm } from "../../../utils/realms";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
-import { useEntityQuery } from "@dojoengine/react";
 import { RealmBubble } from "../../../components/cityview/RealmSwitch";
-import { hexToAscii } from "@dojoengine/utils";
+import { getEntityIdFromKeys, hexToAscii } from "@dojoengine/utils";
+import { useGetMyRealms } from "../../../hooks/helpers/useRealm";
+import { useEntityQuery } from "@dojoengine/react";
 
 export const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -55,11 +56,11 @@ export const Onboarding = () => {
 
   // set realm entity ids everytime the entity ids change
   useEffect(() => {
-    let realmEntityIds = Array.from(entityIds)
+    let realmEntityIds = entityIds
       .map((id) => {
         const realm = getComponentValue(Realm, id);
         if (realm) {
-          return { realmEntityId: id, realmId: realm?.realm_id };
+          return { realmEntityId: realm.entity_id, realmId: realm?.realm_id };
         }
       })
       .filter(Boolean)
@@ -158,7 +159,6 @@ const Naming = ({ onNext }: { onNext: () => void }) => {
     setup: {
       network: { toriiClient },
       systemCalls: { set_address_name },
-      components: { AddressName },
     },
   } = useDojo();
 

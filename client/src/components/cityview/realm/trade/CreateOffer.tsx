@@ -460,10 +460,9 @@ export const SelectCaravanPanel = ({
     } else {
       return (realm?.cities || 0) * DONKEYS_PER_CITY;
     }
-  }, [realm]);
+  }, [realm, realmCaravans]);
 
   useEffect(() => {
-    console.log({ donkeysLeft, resourceWeight });
     setDonkeysCount(Math.min(donkeysLeft || 0, Math.ceil(divideByPrecision(resourceWeight) / WEIGHT_PER_DONKEY_KG)));
   }, [resourceWeight]);
 
@@ -492,8 +491,6 @@ export const SelectCaravanPanel = ({
         : [],
     [realmCaravans, resourceWeight],
   );
-
-  console.log({ donkeysLeft, donkeysCount });
 
   return (
     <div className={clsx("flex flex-col items-center w-full p-2", className)}>

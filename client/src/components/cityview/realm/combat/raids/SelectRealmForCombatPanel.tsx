@@ -70,7 +70,7 @@ export const SelectRealmForCombatPanel = ({
             const defence = takerEntityId ? getDefenceOnRealm(BigInt(takerEntityId)) : undefined;
             const level = takerEntityId ? getEntityLevel(BigInt(takerEntityId)) : undefined;
             return {
-              entityId: BigInt(entityId),
+              entityId: realm.entity_id,
               realmId: realm.realm_id,
               name,
               order: getOrderName(order),

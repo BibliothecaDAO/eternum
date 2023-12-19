@@ -1,27 +1,14 @@
 import { useMemo } from "react";
-import { useDojo } from "../../DojoContext";
-import { useEntityQuery } from "@dojoengine/react";
-import { Has, HasValue } from "@dojoengine/recs";
 import { RealmListItem } from "./RealmListItem";
-import { useGetRealms } from "../../hooks/helpers/useRealm";
+import { useGetMyRealms, useGetRealms } from "../../hooks/helpers/useRealm";
 
 type RealmsListComponentProps = {
   onlyMyRealms?: boolean;
 };
 
 export const RealmsListComponent = ({ onlyMyRealms = false }: RealmsListComponentProps) => {
-  const {
-    account: { account },
-    setup: {
-      components: { Realm, Owner },
-    },
-  } = useDojo();
-
-  const { realms } = useGetRealms();
-
-  const myRealms = onlyMyRealms
-    ? useEntityQuery([Has(Realm), HasValue(Owner, { address: BigInt(account.address) })])
-    : [];
+  const realms = useGetRealms();
+  const myRealms = onlyMyRealms ? useGetMyRealms() : [];
 
   const realmsList = useMemo(() => {
     if (onlyMyRealms) {

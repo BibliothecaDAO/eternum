@@ -119,10 +119,8 @@ export function useCaravan() {
   };
 
   function getRealmDonkeysCount(realmEntityId: bigint): number {
-    const donkeysQuantity = getComponentValue(
-      QuantityTracker,
-      getEntityIdFromKeys([BigInt(realmEntityId), BigInt(FREE_TRANSPORT_ENTITY_TYPE)]),
-    );
+    let hashedKeys = getEntityIdFromKeys([BigInt(realmEntityId), BigInt(FREE_TRANSPORT_ENTITY_TYPE)]);
+    const donkeysQuantity = getComponentValue(QuantityTracker, getEntityIdFromKeys([BigInt(hashedKeys)]));
 
     return Number(donkeysQuantity?.count) || 0;
   }

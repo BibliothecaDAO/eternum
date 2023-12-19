@@ -428,7 +428,7 @@ export const SelectCaravanPanel = ({
     } else {
       return (realm?.cities || 0) * DONKEYS_PER_CITY;
     }
-  }, [realm]);
+  }, [realm, realmCaravans]);
 
   const canCarry = (caravan: CaravanInterface, resourceWeight: number) => {
     return caravan.capacity ? caravan.capacity >= resourceWeight : false;

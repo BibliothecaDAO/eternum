@@ -23,7 +23,6 @@ export function useResources() {
     let indices: number[] = [];
     let resources: Record<number, number> = {};
     let inventory = getComponentValue(Inventory, getEntityIdFromKeys([entityId]));
-    console.log({ entityId, inventory });
 
     if (!inventory) {
       return { resources: [], indices: [] };
