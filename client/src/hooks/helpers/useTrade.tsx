@@ -124,9 +124,10 @@ export function useTrade() {
   };
 
   const getRealmEntityIdFromRealmId = (realmId: bigint): bigint | undefined => {
-    const realms = runQuery([HasValue(Realm, { realm_id: realmId })]);
-    if (realms.size > 0) {
-      return BigInt(realms.values().next().value);
+    const realmEntityIds = runQuery([HasValue(Realm, { realm_id: realmId })]);
+    if (realmEntityIds.size > 0) {
+      const realm = getComponentValue(Realm, realmEntityIds.values().next().value);
+      return realm!.entity_id;
     }
   };
 
@@ -184,16 +185,16 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
     const trades = entityIds
       // avoid having optimistic and real trade at the same time
       .slice(0, optimisticTradeId === -1 ? entityIds.length + 1 : optimisticTradeId + 1)
-      .map((tradeId) => {
-        let trade = getComponentValue(Trade, tradeId);
+      .map((id) => {
+        let trade = getComponentValue(Trade, id);
         if (trade) {
-          const { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, BigInt(tradeId));
+          const { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, trade.trade_id);
           const hasRoad = getHasRoad(realmEntityId, trade.taker_id);
 
           const distance = calculateDistance(trade.taker_id, realmEntityId);
 
           return {
-            tradeId: BigInt(tradeId),
+            tradeId: trade.trade_id,
             makerId: trade.maker_id,
             takerId: trade.taker_id,
             makerOrder: getRealm(trade.maker_id).order,
@@ -278,16 +279,16 @@ export function useGetMarket({
 
   useEffect(() => {
     const trades = entityIds
-      .map((tradeId) => {
-        let trade = getComponentValue(Trade, tradeId);
+      .map((id) => {
+        let trade = getComponentValue(Trade, id);
         if (trade) {
           const isMine = trade.maker_id === realmEntityId;
-          const { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, BigInt(tradeId));
+          const { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, trade.trade_id);
           const distance = calculateDistance(trade.maker_id, realmEntityId);
           const hasRoad = getHasRoad(realmEntityId, trade.maker_id);
           if (nextBlockTimestamp && trade.expires_at > nextBlockTimestamp) {
             return {
-              tradeId: BigInt(tradeId),
+              tradeId: trade.trade_id,
               makerId: trade.maker_id,
               takerId: trade.taker_id,
               makerOrder: getRealm(trade.maker_id).order,
