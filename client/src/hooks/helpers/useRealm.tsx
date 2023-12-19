@@ -2,7 +2,13 @@ import { useMemo, useState } from "react";
 import { Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import realmsCoordsJson from "../../geodata/coords.json";
 import { useDojo } from "../../DojoContext";
-import { getContractPositionFromRealPosition, getEntityIdFromKeys, hexToAscii, numberToHex } from "../../utils/utils";
+import {
+  formatEntityId,
+  getContractPositionFromRealPosition,
+  getEntityIdFromKeys,
+  hexToAscii,
+  numberToHex,
+} from "../../utils/utils";
 import { getOrderName } from "@bibliothecadao/eternum";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
 import realmsData from "../../geodata/realms.json";
@@ -98,7 +104,7 @@ export function useGetRealm(realmEntityId: bigint | undefined) {
 
   useMemo((): any => {
     if (realmEntityId) {
-      let entityId = getEntityIdFromKeys([BigInt(realmEntityId)]);
+      let entityId = formatEntityId(realmEntityId);
       const realm = getComponentValue(Realm, entityId);
       const owner = getComponentValue(Owner, entityId);
       const position = getComponentValue(Position, entityId);

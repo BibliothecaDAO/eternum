@@ -67,6 +67,7 @@ export const useDojo = () => {
   return {
     setup: contextValue,
     account: contextValue.account,
+    network: contextValue.network,
     masterAccount: contextValue.masterAccount,
   };
 };

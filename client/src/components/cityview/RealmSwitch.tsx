@@ -47,8 +47,6 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
   } = useRealmStore();
 
   const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: BigInt(account.address) })]);
-  // const entityIds = useEntityQuery([Has(Realm)]);
-  // console.log({ account: account.address });
 
   // set realm entity ids everytime the entity ids change
   useEffect(() => {
@@ -66,6 +64,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
       })
       .filter(Boolean)
       .sort((a, b) => Number(a!.realmId) - Number(b!.realmId)) as { realmEntityId: bigint; realmId: bigint }[];
+
     setRealmEntityIds(realmEntityIds);
   }, [entityIds]);
 
@@ -132,7 +131,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
                   setIsLoadingScreenEnabled(false);
                 }
                 setLocation(`/realm/${Number(realm.realmId)}`);
-                setRealmEntityId(realm.realmId);
+                setRealmEntityId(realm.id);
                 setRealmId(realm.realmId);
               }, 500);
             }}

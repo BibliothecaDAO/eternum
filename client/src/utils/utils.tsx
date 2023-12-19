@@ -9,6 +9,10 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 export { getEntityIdFromKeys };
 
+export const formatEntityId = (entityId: bigint): Entity => {
+  return ("0x" + entityId.toString(16)) as Entity;
+};
+
 const isRef = (ref: any) => !!ref.current;
 
 export const resolveRef = (ref: any) => (isRef(ref) ? ref.current : ref);
