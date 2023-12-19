@@ -2,7 +2,7 @@ import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { CaravanInterface } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
-import { divideByPrecision, getEntityIdFromKeys, padAddress } from "../../utils/utils";
+import { divideByPrecision, getEntityIdFromKeys, getForeignKeyEntityId, padAddress } from "../../utils/utils";
 import { useEntityQuery } from "@dojoengine/react";
 
 const FREE_TRANSPORT_ENTITY_TYPE = 256;
@@ -55,7 +55,7 @@ export function useCaravan() {
   const getInventoryResourcesChestId = (caravanId: bigint): bigint | undefined => {
     const inventory = getComponentValue(Inventory, getEntityIdFromKeys([caravanId]));
     let foreignKey = inventory
-      ? getComponentValue(ForeignKey, getEntityIdFromKeys([caravanId, inventory.items_key, 0n]))
+      ? getComponentValue(ForeignKey, getForeignKeyEntityId(caravanId, inventory.items_key, 0n))
       : undefined;
     return foreignKey?.entity_id;
   };

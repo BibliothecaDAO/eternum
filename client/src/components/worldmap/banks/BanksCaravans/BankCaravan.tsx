@@ -5,7 +5,13 @@ import { ReactComponent as CaretDownFill } from "../../../../assets/icons/common
 import { ReactComponent as DonkeyIcon } from "../../../../assets/icons/units/donkey-circle.svg";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { getTotalResourceWeight } from "../../../cityview/realm/trade/TradeUtils";
-import { displayAddress, divideByPrecision, getEntityIdFromKeys, numberToHex } from "../../../../utils/utils";
+import {
+  displayAddress,
+  divideByPrecision,
+  getEntityIdFromKeys,
+  getForeignKeyEntityId,
+  numberToHex,
+} from "../../../../utils/utils";
 import { formatSecondsInHoursMinutes } from "../../../cityview/realm/labor/laborUtils";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import ProgressBar from "../../../../elements/ProgressBar";
@@ -45,7 +51,7 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
   const returnPosition = useMemo(() => {
     const caravanMembers = getComponentValue(CaravanMembers, getEntityIdFromKeys([BigInt(caravan.caravanId)]));
     if (caravanMembers && caravanMembers.count > 0) {
-      let entity_id = getEntityIdFromKeys([BigInt(caravan.caravanId), BigInt(caravanMembers.key), BigInt(0)]);
+      let entity_id = getForeignKeyEntityId(caravan.caravanId, caravanMembers.key, BigInt(0));
       let foreignKey = getComponentValue(ForeignKey, entity_id);
       if (foreignKey) {
         // @note: temp fix until we don't use entity_id as field name in foreign key

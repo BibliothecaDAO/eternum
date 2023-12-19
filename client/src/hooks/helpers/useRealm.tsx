@@ -2,13 +2,7 @@ import { useMemo, useState } from "react";
 import { Entity, Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import realmsCoordsJson from "../../geodata/coords.json";
 import { useDojo } from "../../DojoContext";
-import {
-  formatEntityId,
-  getContractPositionFromRealPosition,
-  getEntityIdFromKeys,
-  hexToAscii,
-  numberToHex,
-} from "../../utils/utils";
+import { getContractPositionFromRealPosition, getEntityIdFromKeys, hexToAscii, numberToHex } from "../../utils/utils";
 import { getOrderName } from "@bibliothecadao/eternum";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
 import realmsData from "../../geodata/realms.json";

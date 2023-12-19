@@ -1,7 +1,7 @@
 import { Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import useRealmStore from "../store/useRealmStore";
-import { getEntityIdFromKeys } from "../../utils/utils";
+import { getEntityIdFromKeys, getForeignKeyEntityId } from "../../utils/utils";
 import { useEntityQuery } from "@dojoengine/react";
 import { BigNumberish } from "starknet";
 import { Resource } from "@bibliothecadao/eternum";
@@ -10,18 +10,20 @@ export function useResources() {
   const {
     account: { account },
     setup: {
-      components: { Inventory, ForeignKey, ResourceChest, DetachedResource, Resource },
+      components: { Inventory, ForeignKey, ResourceChest, DetachedResource, Resource, CaravanMembers, Position },
       optimisticSystemCalls: { optimisticOffloadResources },
       systemCalls: { transfer_items },
     },
   } = useDojo();
 
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+
   // for any entity that has a resourceChest in its inventory,
   const getResourcesFromInventory = (entityId: bigint): { resources: Resource[]; indices: number[] } => {
     let indices: number[] = [];
     let resources: Record<number, number> = {};
-    console.log({ entityId });
     let inventory = getComponentValue(Inventory, getEntityIdFromKeys([entityId]));
+    console.log({ entityId, inventory });
 
     if (!inventory) {
       return { resources: [], indices: [] };
@@ -29,7 +31,7 @@ export function useResources() {
 
     for (let i = 0; i < inventory.items_count; i++) {
       let foreignKey = inventory
-        ? getComponentValue(ForeignKey, getEntityIdFromKeys([entityId, inventory.items_key, BigInt(i)]))
+        ? getComponentValue(ForeignKey, getForeignKeyEntityId(entityId, inventory.items_key, BigInt(i)))
         : undefined;
 
       // if nothing on this index, break
@@ -63,7 +65,7 @@ export function useResources() {
   const getResourceChestIdFromInventoryIndex = (entityId: bigint, index: number): bigint | undefined => {
     let inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(entityId)]));
     let foreignKey = inventory
-      ? getComponentValue(ForeignKey, getEntityIdFromKeys([entityId, inventory.items_key, BigInt(index)]))
+      ? getComponentValue(ForeignKey, getForeignKeyEntityId(entityId, inventory.items_key, BigInt(index)))
       : undefined;
 
     return foreignKey?.entity_id;
@@ -93,6 +95,27 @@ export function useResources() {
         balance: Number(resource.balance),
       };
     }
+  };
+
+  //  caravans coming your way with a resource chest in their inventory
+  const getCaravansWithResourcesChest = () => {
+    const realmPosition = getComponentValue(Position, getEntityIdFromKeys([realmEntityId]));
+
+    const caravansAtPositionWithInventory = useEntityQuery([
+      Has(CaravanMembers),
+      NotValue(Inventory, {
+        items_count: 0n,
+      }),
+      HasValue(Position, {
+        x: realmPosition?.x,
+        y: realmPosition?.y,
+      }),
+    ]);
+
+    return caravansAtPositionWithInventory.map((id) => {
+      const caravanMembers = getComponentValue(CaravanMembers, id);
+      return caravanMembers!.entity_id;
+    });
   };
 
   /* Empty Resource Chest
@@ -133,32 +156,6 @@ export function useResources() {
     getFoodResources,
     getResourceChestIdFromInventoryIndex,
     getBalance,
-  };
-}
-
-//  caravans coming your way with a resource chest in their inventory
-export function useGetCaravansWithResourcesChest() {
-  const {
-    setup: {
-      components: { Position, CaravanMembers, Inventory },
-    },
-  } = useDojo();
-
-  const { realmEntityId } = useRealmStore();
-  const realmPosition = getComponentValue(Position, getEntityIdFromKeys([realmEntityId]));
-
-  const caravansAtPositionWithInventory = useEntityQuery([
-    Has(CaravanMembers),
-    NotValue(Inventory, {
-      items_count: 0n,
-    }),
-    HasValue(Position, {
-      x: realmPosition?.x,
-      y: realmPosition?.y,
-    }),
-  ]);
-
-  return {
-    caravansAtPositionWithInventory,
+    getCaravansWithResourcesChest,
   };
 }

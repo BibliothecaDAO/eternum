@@ -9,6 +9,11 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 export { getEntityIdFromKeys };
 
+export const getForeignKeyEntityId = (entityId: bigint, key: bigint, index: bigint) => {
+  let keyHash = getEntityIdFromKeys([entityId, key, BigInt(index)]);
+  return getEntityIdFromKeys([BigInt(keyHash)]);
+};
+
 export const formatEntityId = (entityId: bigint): Entity => {
   return ("0x" + entityId.toString(16)) as Entity;
 };
