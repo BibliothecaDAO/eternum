@@ -21,8 +21,7 @@ import { orderNameDict } from "@bibliothecadao/eternum";
 import { getRealm } from "../../../utils/realms";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { RealmBubble } from "../../../components/cityview/RealmSwitch";
-import { getEntityIdFromKeys, hexToAscii } from "@dojoengine/utils";
-import { useGetMyRealms } from "../../../hooks/helpers/useRealm";
+import { hexToAscii } from "@dojoengine/utils";
 import { useEntityQuery } from "@dojoengine/react";
 
 export const Onboarding = () => {

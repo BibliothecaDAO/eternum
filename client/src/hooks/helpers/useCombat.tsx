@@ -62,7 +62,8 @@ export function useCombat() {
   };
 
   const getDefenceOnPosition = (position: Position): CombatInfo | undefined => {
-    const realmEntityIds = Array.from(runQuery([HasValue(Position, position), Has(Realm)]));
+    const { x, y } = position;
+    const realmEntityIds = Array.from(runQuery([HasValue(Position, { x, y }), Has(Realm)]));
     const watchTower = realmEntityIds.length === 1 ? getComponentValue(TownWatch, realmEntityIds[0]) : undefined;
     if (watchTower) {
       const watchTowerInfo = getEntitiesCombatInfo([watchTower.town_watch_id]);
@@ -73,10 +74,11 @@ export function useCombat() {
   };
 
   const useEnemyRaidersOnPosition = (position: Position) => {
+    const { x, y } = position;
     const entityIds = useEntityQuery([
       Has(Attack),
       NotValue(Health, { value: 0n }),
-      HasValue(Position, position),
+      HasValue(Position, { x, y }),
       NotValue(EntityOwner, { entity_owner_id: realmEntityId }),
     ]);
 
@@ -87,9 +89,10 @@ export function useCombat() {
   };
 
   const useRealmRaidersOnPosition = (realmEntityId: bigint, position: Position) => {
+    const { x, y } = position;
     const entityIds = useEntityQuery([
       Has(Attack),
-      HasValue(Position, position),
+      HasValue(Position, { x, y }),
       HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
     ]);
 
@@ -100,11 +103,12 @@ export function useCombat() {
   };
 
   const getRealmRaidersOnPosition = (realmEntityId: bigint, position: Position) => {
+    const { x, y } = position;
     const entityIds = Array.from(
       runQuery([
         Has(Attack),
         NotValue(Health, { value: 0n }),
-        HasValue(Position, position),
+        HasValue(Position, { x, y }),
         NotValue(Movable, { sec_per_km: 0 }),
         HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
       ]),
@@ -131,7 +135,9 @@ export function useCombat() {
       const hyperstructureId = entityOwner
         ? getHyperstructureIdByRealmEntityId(entityOwner.entity_owner_id)
         : undefined;
-      const locationRealmEntityIds = position ? Array.from(runQuery([Has(Realm)])) : [];
+      const locationRealmEntityIds = position
+        ? Array.from(runQuery([Has(Realm), HasValue(Position, { x: position.x, y: position.y })]))
+        : [];
       const locationRealmEntityId =
         locationRealmEntityIds.length === 1
           ? getComponentValue(Realm, locationRealmEntityIds[0])!.entity_id
@@ -153,9 +159,9 @@ export function useCombat() {
         blocked: movable?.blocked,
         capacity: divideByPrecision(Number(capacity?.weight_gram) || 0),
         arrivalTime: arrivalTime?.arrives_at,
-        position,
+        position: position ? { x: position.x, y: position.y } : undefined,
         entityOwnerId: entityOwner?.entity_owner_id,
-        homePosition,
+        homePosition: homePosition ? { x: homePosition.x, y: homePosition.y } : undefined,
         locationRealmEntityId,
         originRealmId: originRealm?.realm_id,
         hyperstructureId,

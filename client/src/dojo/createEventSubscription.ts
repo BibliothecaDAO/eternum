@@ -32,12 +32,10 @@ export async function createEventSubscription(keys: string[]): Promise<Observabl
     },
     {
       next: ({ data }) => {
-        console.log({ data });
         try {
           const event = data?.eventEmitted as Event;
           if (event) {
             if (keys.includes(COMBAT_EVENT)) {
-              console.log({ combatEvent: event });
             }
             lastUpdate$.next(event);
           }

@@ -48,7 +48,7 @@ export function useCaravan() {
       capacity: divideByPrecision(Number(capacity?.weight_gram) || 0),
       destination,
       owner: owner?.address,
-      isMine: padAddress(owner?.address.toString() || "0x0") === padAddress(account.address),
+      isMine: owner?.address === BigInt(account.address),
     };
   };
 
@@ -109,10 +109,10 @@ export function useCaravan() {
 
     return Array.from(entityIds).map((id) => {
       const owner = getComponentValue(Owner, id);
-      const position = getComponentValue(Position, getEntityIdFromKeys([BigInt(id)]));
+      const position = getComponentValue(Position, id);
       return {
         owner: owner?.address,
-        isMine: padAddress(owner?.address.toString() || "0x0") === padAddress(account.address),
+        isMine: owner?.address === BigInt(account.address),
         caravanId: position!.entity_id,
       };
     });

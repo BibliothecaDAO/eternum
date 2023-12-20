@@ -15,8 +15,8 @@ export const useHyperstructure = () => {
   const { getEntityLevel } = useLevel();
 
   const getHyperstructure = (orderId: number, uiPosition: UIPosition): HyperStructureInterface | undefined => {
-    const position = getContractPositionFromRealPosition({ x: uiPosition.x, y: uiPosition.z });
-    const entityIds = runQuery([Has(HyperStructure), HasValue(Position, position)]);
+    const { x, y } = getContractPositionFromRealPosition({ x: uiPosition.x, y: uiPosition.z });
+    const entityIds = runQuery([Has(HyperStructure), HasValue(Position, { x, y })]);
 
     if (entityIds.size > 0) {
       let id = Array.from(entityIds)[0];
@@ -34,7 +34,7 @@ export const useHyperstructure = () => {
           );
           hyperstructureResources.push({
             resourceId: resource.resourceId,
-            currentAmount: Math.min(Number(hyperstructureResource?.balance) ?? 0, resource.amount),
+            currentAmount: Math.min(Number(hyperstructureResource?.balance) || 0, resource.amount),
             completeAmount: resource.amount,
           });
         });
@@ -53,7 +53,7 @@ export const useHyperstructure = () => {
           orderId,
           progress,
           hyperstructureResources,
-          position,
+          position: { x, y },
           uiPosition,
           // completed means max level
           completed: level?.level === 4,

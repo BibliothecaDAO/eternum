@@ -259,9 +259,6 @@ export function setComponentFromEvent(components: Components, eventData: string[
   const componentValues = componentFields.reduce((acc: Schema, key, index) => {
     const value = values[index];
     const type = metadata.types[index];
-    if (type === "bool") {
-      console.log({ value, type });
-    }
     // @ts-ignore
     acc[key] = setType(type, value);
     return acc;

@@ -60,7 +60,6 @@ export async function createEntitySubscription(contractComponents: Components): 
     },
     {
       next: ({ data }) => {
-        console.log({ data });
         try {
           const entityUpdated = data?.entityUpdated as EntityUpdated;
           const componentNames = entityUpdated.models.split(",");

@@ -280,8 +280,12 @@ const SwapResourcesPanel = ({
         const _resources = Object.keys(feedResourcesGiveAmounts).map((resourceId) => ({
           id: resourceId,
           balance:
-            getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId.realmEntityId), BigInt(resourceId)]))
-              ?.balance || 0,
+            Number(
+              getComponentValue(
+                Resource,
+                getEntityIdFromKeys([BigInt(realmEntityId.realmEntityId), BigInt(resourceId)]),
+              )?.balance,
+            ) || 0,
         }));
         return { ..._realm, entity_id: realmEntityId.realmEntityId, resources: _resources };
       }),
@@ -337,13 +341,13 @@ const SwapResourcesPanel = ({
   }, [donkeysCount, resourceWeight]);
 
   const totalResources = useMemo(() => {
-    const totalResources: any = {};
+    const totalResources: Record<string, number> = {};
     Object.keys(feedResourcesGiveAmounts).forEach((resourceId) => {
       let resourceAmount = getComponentValue(
         Resource,
         getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
       );
-      totalResources[resourceId] = resourceAmount?.balance || 0;
+      totalResources[resourceId] = Number(resourceAmount?.balance) || 0;
     });
     return totalResources;
   }, [realmEntityId]);

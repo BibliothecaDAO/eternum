@@ -540,7 +540,6 @@ const SelectRaidersPanel = ({
 
   const onSteal = async () => {
     // only 1 raider can steal at a time
-    console.log({ selectedRaiders });
     if (!selectedRaiders[0]?.entityId || !selectedRaiders[0]?.locationRealmEntityId) return;
     // set is loading
     setLoading(true);
