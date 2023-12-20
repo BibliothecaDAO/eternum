@@ -4,12 +4,13 @@ import Button from "../elements/Button";
 import { useEffect, useMemo, useState } from "react";
 import useUIStore from "../hooks/store/useUIStore";
 import { useDojo } from "../DojoContext";
-import { displayAddress } from "../utils/utils";
+import { displayAddress, getEntityIdFromKeys, hexToAscii } from "../utils/utils";
 import ListSelect from "../elements/ListSelect";
 import { ReactComponent as Copy } from "../assets/icons/common/copy.svg";
 import { ReactComponent as Import } from "../assets/icons/common/import.svg";
 import TextInput from "../elements/TextInput";
-import { useAddressStore, useFetchAddressName } from "../hooks/store/useAddressStore";
+import { useAddressStore } from "../hooks/store/useAddressStore";
+import { useComponentValue } from "@dojoengine/react";
 
 type SignUpComponentProps = {
   isWorldLive: boolean;
@@ -22,6 +23,7 @@ export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: Si
     account: { create, isDeploying, list, account, select, clear },
     setup: {
       systemCalls: { set_address_name },
+      components: { AddressName },
     },
   } = useDojo();
 
@@ -36,7 +38,7 @@ export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: Si
   const [inputName, setInputName] = useState("");
 
   const { loading, setLoading, addressName, setAddressName } = useAddressStore();
-  useFetchAddressName(account.address);
+  // useFetchAddressName(account.address);
 
   let disableStart = false;
   // let disableStart = true;

@@ -21,8 +21,8 @@ import { orderNameDict } from "@bibliothecadao/eternum";
 import { getRealm } from "../../../utils/realms";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { RealmBubble } from "../../../components/cityview/RealmSwitch";
-import { hexToAscii } from "@dojoengine/utils";
 import { useEntityQuery } from "@dojoengine/react";
+import { useRealm } from "../../../hooks/helpers/useRealm";
 
 export const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -169,15 +169,14 @@ const Naming = ({ onNext }: { onNext: () => void }) => {
 
   const { loading, setLoading, addressName, setAddressName } = useAddressStore();
 
+  const { getAddressName } = useRealm();
+
+  const name = getAddressName(account.address);
+
+  // @dev: refactor this
   useEffect(() => {
-    const getAddressName = async () => {
-      const data: { address: string; name: string } = await toriiClient.getModelValue("AddressName", [account.address]);
-      if (parseInt(data.name)) {
-        setAddressName(hexToAscii(data.name));
-      }
-    };
-    getAddressName();
-  }, [account.address, loading]);
+    setAddressName(name);
+  }, [name]);
 
   const onSetName = async () => {
     setLoading(true);
@@ -276,7 +275,12 @@ const Naming = ({ onNext }: { onNext: () => void }) => {
                     value={inputName}
                     onChange={setInputName}
                   />
-                  <Button isLoading={loading} onClick={onSetName} variant="outline" disabled={loading}>
+                  <Button
+                    isLoading={loading}
+                    onClick={onSetName}
+                    variant="outline"
+                    disabled={loading || inputName.length === 0}
+                  >
                     Set Name
                   </Button>
                 </div>

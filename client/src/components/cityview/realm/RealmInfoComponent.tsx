@@ -41,8 +41,6 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
 
   const [showRealmLevelUp, setShowRealmLevelUp] = useState(false);
   const [_, setShowHyperstructureLevelUp] = useState(false);
-  // const [showHyperstructureLevelUp, setShowHyperstructureLevelUp] = useState(false);
-
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const { getAddressName } = useRealm();

@@ -33,7 +33,7 @@ import { Onboarding } from "../plugins/onboarding/components/Onboarding";
 
 export const World = () => {
   const {
-    account: { list },
+    account: { list, account },
     setup: {
       // systemCalls: { isLive, uuid },
       systemCalls: { isLive },
