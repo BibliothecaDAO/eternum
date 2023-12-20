@@ -2,7 +2,7 @@ import { GraphQLClient } from "graphql-request";
 
 const OFFSET = 100;
 
-const client = new GraphQLClient(import.meta.env.VITE_PUBLIC_TORII!);
+const client = new GraphQLClient(import.meta.env.VITE_TORII_GRAPHQL!);
 
 type getEventsQuery = {
   events: {

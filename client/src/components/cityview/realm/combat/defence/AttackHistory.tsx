@@ -102,10 +102,10 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
                 {attackerName}
               </div>
               {winner === Winner.Attacker && (
-                <span className="italic text-light-pink">{`Attacked with ${attackerTotalSoldiers} battalions`}</span>
+                <span className="italic text-light-pink">{`Attacked with ${attackerTotalSoldiers} raiders`}</span>
               )}
               {winner === Winner.Target && (
-                <span className="italic text-light-pink">{`Failed to attack with ${attackerTotalSoldiers} battalions`}</span>
+                <span className="italic text-light-pink">{`Failed to attack with ${attackerTotalSoldiers} raiders`}</span>
               )}
             </div>
           )}
@@ -133,7 +133,7 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
               <img src="/images/units/troop-icon.png" className="h-[28px]" />
               <div className="flex ml-1 text-center">
                 <div className="bold mr-1">x{attackerTotalSoldiers?.toString()}</div>
-                Battalions
+                Raiders
               </div>
             </div>
           </div>

@@ -21,7 +21,6 @@ export const useNotifications = () => {
   const {
     setup: {
       updates: {
-        entityUpdates,
         eventUpdates: { createCombatEvents },
       },
       components: { Status, Realm, Labor, ArrivalTime, CaravanMembers, Position, Inventory, ForeignKey },
@@ -46,19 +45,20 @@ export const useNotifications = () => {
     return [realmLevel, hyperstructureLevel];
   }, [realmEntityId]);
 
-  /**
-   * Trade notifications
-   */
-  useEffect(() => {
-    const subscription = entityUpdates.subscribe((updates) => {
-      const newNotifications = generateTradeNotifications(updates, Status);
-      addUniqueNotifications(newNotifications);
-    });
+  // TODO: find another way to do trade notifications, would suggest custom event rather than entity updates
+  // /**
+  //  * Trade notifications
+  //  */
+  // useEffect(() => {
+  //   const subscription = entityUpdates.subscribe((updates) => {
+  //     const newNotifications = generateTradeNotifications(updates, Status);
+  //     addUniqueNotifications(newNotifications);
+  //   });
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+  //   return () => {
+  //     subscription.unsubscribe();
+  //   };
+  // }, []);
 
   /**
    * Labor notifications

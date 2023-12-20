@@ -25,7 +25,7 @@ export async function createEventSubscription(keys: string[]): Promise<Observabl
             id
             keys
             data
-            created_at
+            createdAt
           }
         }
       `,
@@ -35,8 +35,6 @@ export async function createEventSubscription(keys: string[]): Promise<Observabl
         try {
           const event = data?.eventEmitted as Event;
           if (event) {
-            if (keys.includes(COMBAT_EVENT)) {
-            }
             lastUpdate$.next(event);
           }
         } catch (error) {

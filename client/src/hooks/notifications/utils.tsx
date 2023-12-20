@@ -4,13 +4,16 @@ import { LABOR_CONFIG, Position, Resource, ResourcesIds } from "@bibliothecadao/
 import { unpackResources } from "../../utils/packedData";
 import { getRealm } from "../../utils/realms";
 import { Component, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { UpdatedEntity } from "../../dojo/createEntitySubscription";
 import { CarrierType, EventType, NotificationType, extractAndCleanKey } from "../store/useNotificationsStore";
 import { calculateNextHarvest } from "../../components/cityview/realm/labor/laborUtils";
 import { LevelIndex } from "../helpers/useLevel";
 
 export type realmsResources = { realmEntityId: bigint; resourceIds: number[] }[];
 export type realmsPosition = { realmId: bigint; position: Position }[];
+export type UpdatedEntity = {
+  entityKeys: string[];
+  modelNames: string[];
+};
 
 /**
  * Get all resources present on each realm

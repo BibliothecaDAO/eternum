@@ -72,11 +72,11 @@ type LevelingBonusIconsProps = {
 export const LevelingBonusIcons = ({ className, bonuses }: LevelingBonusIconsProps) => {
   return (
     <div className={className}>
-      {bonuses.map((bonus) => {
+      {bonuses.map((bonus, i) => {
         if (bonus.bonusAmount === 0) return null;
         if (bonus.bonusType === LevelIndex.FOOD)
           return (
-            <div className="flex flex-col items-center justify-center mr-1">
+            <div key={i} className="flex flex-col items-center justify-center mr-1">
               <div>🌾</div>
               <div className="text-order-brilliance"> +{bonus.bonusAmount}% </div>
             </div>
@@ -84,7 +84,7 @@ export const LevelingBonusIcons = ({ className, bonuses }: LevelingBonusIconsPro
 
         if (bonus.bonusType === LevelIndex.RESOURCE)
           return (
-            <div className="flex flex-col items-center justify-center mr-1">
+            <div key={i} className="flex flex-col items-center justify-center mr-1">
               <div>💎</div>
               <div className="text-order-brilliance"> +{bonus.bonusAmount}% </div>
             </div>
@@ -92,14 +92,14 @@ export const LevelingBonusIcons = ({ className, bonuses }: LevelingBonusIconsPro
 
         if (bonus.bonusType === LevelIndex.TRAVEL)
           return (
-            <div className="flex flex-col items-center justify-center mr-1">
+            <div key={i} className="flex flex-col items-center justify-center mr-1">
               <div>🫏</div>
               <div className="text-order-brilliance"> +{bonus.bonusAmount}% </div>
             </div>
           );
         if (bonus.bonusType === LevelIndex.COMBAT)
           return (
-            <div className="flex flex-col items-center justify-center">
+            <div key={i} className="flex flex-col items-center justify-center">
               <div>🛡️</div>
               <div className="text-order-brilliance"> +{bonus.bonusAmount}% </div>
             </div>

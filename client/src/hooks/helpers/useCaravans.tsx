@@ -2,7 +2,7 @@ import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { CaravanInterface } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
-import { divideByPrecision, getEntityIdFromKeys, getForeignKeyEntityId, padAddress } from "../../utils/utils";
+import { divideByPrecision, getEntityIdFromKeys, getForeignKeyEntityId } from "../../utils/utils";
 import { useEntityQuery } from "@dojoengine/react";
 
 const FREE_TRANSPORT_ENTITY_TYPE = 256;

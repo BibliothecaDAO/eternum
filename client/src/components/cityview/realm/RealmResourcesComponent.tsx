@@ -151,7 +151,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId, class
             content: (
               <div className="flex flex-col items-center justify-center">
                 <div className="font-bold">{findResourceById(resourceId)?.trait}</div>
-                <div>{currencyFormat(resource ? resource.balance : 0, 2)}</div>
+                <div>{currencyFormat(resource ? Number(resource.balance) : 0, 2)}</div>
               </div>
             ),
           })
@@ -168,7 +168,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId, class
           className="mr-1"
         />
         <div className="flex text-xs">
-          {currencyIntlFormat(resource ? resource.balance : 0, 2)}
+          {currencyIntlFormat(resource ? Number(resource.balance) : 0, 2)}
           {resourceId !== 253 && canFarm && (
             <div
               className={clsx(

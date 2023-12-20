@@ -404,11 +404,11 @@ const OverviewResourceRow = ({
             </div>
           )}
           {askSummary &&
-            lastFive.map((depth) => {
+            lastFive.map((depth, i) => {
               accumulatedAmount += depth.amount;
               const width = (accumulatedAmount / askSummary.totalAmount) * 100;
               return (
-                <div className="w-full relative h-5 border-b border-white/30">
+                <div key={i} className="w-full relative h-5 border-b border-white/30">
                   <div className="flex mt-0.5 flex-1 w-full justify-between px-0.5 items-center">
                     <div className="relative z-10">
                       {Intl.NumberFormat("en-US", {

@@ -39,21 +39,23 @@ export const parseCombatEvent = (event: Event): CombatResultInterface => {
   for (let i = 0; i < attackers_len; i++) {
     attacking_entity_ids.push(BigInt(event.data[1 + i]));
   }
-  const winner = parseInt(event.data[1 + attackers_len]) === 0 ? Winner.Attacker : Winner.Target;
-  const stolen_resources_ids_len = parseInt(event.data[2 + attackers_len]);
+  const stolen_resources_ids_len = parseInt(event.data[1 + attackers_len]);
   let stolen_resources: Resource[] = [];
-  let nextIndex = 3 + attackers_len + stolen_resources_ids_len + 1;
+  let nextIndex = 2 + attackers_len + stolen_resources_ids_len;
   for (let i = 0; i < stolen_resources_ids_len; i++) {
     stolen_resources.push({
-      resourceId: parseInt(event.data[3 + attackers_len + i]),
+      resourceId: parseInt(event.data[2 + attackers_len + i]),
       amount: Number(event.data[nextIndex]),
     });
     nextIndex += 1;
   }
+  const winner = parseInt(event.data[nextIndex]) === 0 ? Winner.Attacker : Winner.Target;
+  nextIndex += 1;
   let damage: number | undefined;
   let attackTimestamp: number | undefined;
   damage = parseInt(event.data[nextIndex]);
-  attackTimestamp = parseInt(event.data[nextIndex + 1]);
+  nextIndex += 1;
+  attackTimestamp = parseInt(event.data[nextIndex]);
 
   return {
     attackerRealmEntityId: BigInt(event.keys[1]),
