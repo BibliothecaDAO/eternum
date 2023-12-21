@@ -24,7 +24,6 @@ export const SettleRealmComponent = () => {
       systemCalls: { create_multiple_realms },
     },
     account: { account },
-    masterAccount,
   } = useDojo();
 
   const { getHyperstructureIdByOrder } = useHyperstructure();

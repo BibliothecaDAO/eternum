@@ -51,7 +51,7 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   setTheme: (theme) => set({ theme }),
   showBlurOverlay: false,
   setShowBlurOverlay: (show) => set({ showBlurOverlay: show }),
-  showBlankOverlay: false,
+  showBlankOverlay: true,
   setShowBlankOverlay: (show) => set({ showBlankOverlay: show }),
   isSideMenuOpened: true,
   toggleSideMenu: () => set((state) => ({ isSideMenuOpened: !state.isSideMenuOpened })),

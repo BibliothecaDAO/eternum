@@ -150,7 +150,7 @@ export const BankCaravan = ({ caravan, bank, ...props }: BankCaravanProps) => {
     >
       <div className="flex items-center text-xxs">
         <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
-          {isMine ? "You" : displayAddress(owner?.toString() || numberToHex(0))}
+          {isMine ? "You" : displayAddress("0x" + owner?.toString(16) || numberToHex(0))}
         </div>
         <div className="flex items-center ml-1 -mt-2">
           {capacity && resourceWeight !== undefined && capacity && (

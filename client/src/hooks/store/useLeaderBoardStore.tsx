@@ -1,4 +1,4 @@
-import { TRANSFER_EVENT, orderNameDict, resourceProb } from "@bibliothecadao/eternum";
+import { TRANSFER_EVENT, foodProb, orderNameDict, resourceProb } from "@bibliothecadao/eternum";
 import { create } from "zustand";
 import { divideByPrecision, numberToHex } from "../../utils/utils";
 import { getRealm } from "../../utils/realms";
@@ -83,10 +83,22 @@ const useLeaderBoardStore = create<LeaderboardStore>((set, get) => ({
 }));
 
 export const calculatePoints = (resourceId: number, amount: number): number => {
-  const prob = resourceProb[resourceId - 1];
-  const weight = 1 / prob;
+  let prob: number | undefined;
 
-  return divideByPrecision(amount) * weight;
+  if (resourceId === 254) {
+    prob = foodProb[0];
+  } else if (resourceId === 255) {
+    prob = foodProb[1];
+  } else {
+    prob = resourceProb[resourceId - 1];
+  }
+
+  if (prob) {
+    const weight = 1 / prob;
+    return divideByPrecision(amount) * weight;
+  } else {
+    return 0;
+  }
 };
 
 export default useLeaderBoardStore;

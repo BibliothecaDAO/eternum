@@ -12,7 +12,7 @@ import ContentContainer from "../containers/ContentContainer";
 import RealmManagementModule from "../modules/RealmManagementModule";
 import RealmResourcesComponent from "../components/cityview/realm/RealmResourcesComponent";
 import { useFetchBlockchainData } from "../hooks/store/useBlockchainStore";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import clsx from "clsx";
 import { Redirect, Route, Switch, useLocation } from "wouter";
 import { useProgress } from "@react-three/drei";
@@ -26,16 +26,11 @@ import { useHyperstructure } from "../hooks/helpers/useHyperstructure";
 import { Tooltip } from "../elements/Tooltip";
 import useLeaderBoardStore from "../hooks/store/useLeaderBoardStore";
 import useCombatHistoryStore from "../hooks/store/useCombatHistoryStore";
-import { useDojo } from "../DojoContext";
 import useRealmStore from "../hooks/store/useRealmStore";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
 import { Onboarding } from "../plugins/onboarding/components/Onboarding";
 
 export const World = () => {
-  const {
-    account: { list },
-  } = useDojo();
-
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
@@ -56,14 +51,6 @@ export const World = () => {
   //   printUuid();
   // });
 
-  useEffect(() => {
-    if (list().length > 0) {
-      setBlankOverlay(false);
-    } else {
-      setBlankOverlay(true);
-    }
-  }, []);
-
   useFetchBlockchainData();
 
   const { progress } = useProgress();
@@ -75,7 +62,16 @@ export const World = () => {
     syncData(ids);
   }, []);
 
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const { realmEntityId, realmEntityIds } = useRealmStore();
+
+  useEffect(() => {
+    if (realmEntityIds.length > 4) {
+      setBlankOverlay(false);
+    } else {
+      setBlankOverlay(true);
+    }
+  }, []);
+
   useEffect(() => {
     syncCombatHistory(realmEntityId);
   }, [realmEntityId]);
@@ -145,15 +141,17 @@ export const World = () => {
           <img src="/images/eternum-logo_animated.png" className=" invert scale-50" />
         </div>
       </BackgroundContainer>
-      <TopContainer>
-        <NetworkModule />
-        <div className="flex">
-          <NavigationModule />
-          <NotificationsComponent className="ml-auto" />
-        </div>
-        <RealmResourcesComponent />
-        {/* <ContextsModule /> */}
-      </TopContainer>
+      {!showBlankOverlay && (
+        <TopContainer>
+          <NetworkModule />
+          <div className="flex">
+            <NavigationModule />
+            <NotificationsComponent className="ml-auto" />
+          </div>
+          <RealmResourcesComponent />
+          {/* <ContextsModule /> */}
+        </TopContainer>
+      )}
       <ContentContainer>
         <Switch location={locationType}>
           <Route path="map">

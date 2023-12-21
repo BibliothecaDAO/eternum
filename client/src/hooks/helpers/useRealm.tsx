@@ -145,22 +145,6 @@ export function useGetRealm(realmEntityId: bigint | undefined) {
   };
 }
 
-export function useGetMyRealms() {
-  const {
-    account: { account },
-    setup: {
-      components: { Realm, Owner },
-    },
-  } = useDojo();
-
-  const ids = Array.from(useEntityQuery([Has(Realm), HasValue(Owner, { address: BigInt(account.address) })]));
-
-  return ids.map((id) => {
-    const realm = getComponentValue(Realm, id);
-    return realm!.entity_id;
-  });
-}
-
 export function useGetRealms(): RealmExtended[] {
   const {
     setup: {

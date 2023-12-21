@@ -13,7 +13,7 @@ import {
 } from "../hooks/store/useNotificationsStore";
 
 // dev:max number of notifications before reach step limit
-const MAX_HARVEST_NOTIFICATIONS = 11;
+const MAX_HARVEST_NOTIFICATIONS = 5;
 const MAX_CLAIM_NOTIFICATIONS = 7;
 
 type sender = {

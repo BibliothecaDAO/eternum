@@ -299,6 +299,10 @@ export const resourceProb = [
   0.0014889, 0.0009256,
 ];
 
+// (1247400000 / 43608500) * 0.2018109
+// (415800000 / 43608500) * 0.2018109
+export const foodProb = [5.7727, 1.9242];
+
 // wheat / fish
 export const hyperstructureResourcesPerLevel = [
   // level 1

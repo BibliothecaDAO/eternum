@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { RealmListItem } from "./RealmListItem";
-import { useGetMyRealms, useGetRealms } from "../../hooks/helpers/useRealm";
+import { useGetRealms } from "../../hooks/helpers/useRealm";
+import useRealmStore from "../../hooks/store/useRealmStore";
 
 type RealmsListComponentProps = {
   onlyMyRealms?: boolean;
@@ -8,7 +9,9 @@ type RealmsListComponentProps = {
 
 export const RealmsListComponent = ({ onlyMyRealms = false }: RealmsListComponentProps) => {
   const realms = useGetRealms();
-  const myRealms = onlyMyRealms ? useGetMyRealms() : [];
+
+  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
+  const myRealms = onlyMyRealms ? realmEntityIds.map((realm) => realm.realmEntityId) : [];
 
   const realmsList = useMemo(() => {
     if (onlyMyRealms) {
