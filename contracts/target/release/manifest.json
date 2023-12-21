@@ -2527,7 +2527,7 @@
     {
       "name": "realm_systems",
       "address": null,
-      "class_hash": "0x1baaee2ed04c72f376ceb0d0a80d5c748482d3422c027a77be883bda4211a33",
+      "class_hash": "0x109c521537c51ae33c335e3512b9a3469d6cad15e68de961b2c9f2be39df026",
       "abi": [
         {
           "type": "impl",
@@ -2602,10 +2602,6 @@
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "owner",
-                  "type": "core::starknet::contract_address::ContractAddress"
-                },
-                {
                   "name": "resource_types_packed",
                   "type": "core::integer::u128"
                 },
@@ -2676,6 +2672,7 @@
       "reads": [
         "CapacityConfig",
         "DetachedResource",
+        "QuantityTracker",
         "RealmFreeMintConfig",
         "Resource"
       ],
@@ -2686,6 +2683,7 @@
         "Movable",
         "Owner",
         "Position",
+        "QuantityTracker",
         "Realm",
         "TownWatch"
       ],

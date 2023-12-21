@@ -60,7 +60,6 @@ fn setup() -> (IWorldDispatcher, ID, ILaborSystemsDispatcher) {
     let realm_entity_id = realm_systems_dispatcher.create(
         world,
         1, // realm id
-        starknet::get_contract_address(), // owner
         0x20309, // resource_types_packed // 2,3,9 // stone, coal, gold
         3, // resource_types_count
         5, // cities

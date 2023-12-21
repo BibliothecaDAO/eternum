@@ -2774,10 +2774,6 @@
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "owner",
-                  "type": "core::starknet::contract_address::ContractAddress"
-                },
-                {
                   "name": "resource_types_packed",
                   "type": "core::integer::u128"
                 },

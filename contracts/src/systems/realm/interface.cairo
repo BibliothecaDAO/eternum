@@ -10,7 +10,6 @@ trait IRealmSystems<TContractState> {
         self: @TContractState, 
         world: IWorldDispatcher,
         realm_id: u128, 
-        owner: ContractAddress, 
         resource_types_packed: u128, 
         resource_types_count: u8, 
         cities: u8, harbors: u8, 
