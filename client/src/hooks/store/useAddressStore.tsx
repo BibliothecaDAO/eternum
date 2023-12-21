@@ -1,7 +1,4 @@
 import { create } from "zustand";
-import { fetchAddressName } from "../graphql/useGraphQLQueries";
-import { useEffect } from "react";
-import { hexToAscii } from "../../utils/utils";
 
 type AddressStore = {
   loading: boolean;

@@ -13,7 +13,6 @@ import { RangeInput } from "../elements/RangeInput";
 import useUIStore from "../hooks/store/useUIStore";
 import useScreenOrientation from "../hooks/useScreenOrientation";
 import { useDojo } from "../DojoContext";
-import { useAddressStore } from "../hooks/store/useAddressStore";
 import { useRealm } from "../hooks/helpers/useRealm";
 type SettingsComponentProps = {};
 

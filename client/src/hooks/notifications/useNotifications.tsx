@@ -12,7 +12,7 @@ import { useResources } from "../helpers/useResources";
 import {
   generateEmptyChestNotifications,
   generateLaborNotifications,
-  generateTradeNotifications,
+  // generateTradeNotifications,
   useRealmsPosition,
   useRealmsResource,
 } from "./utils";
@@ -23,7 +23,7 @@ export const useNotifications = () => {
       updates: {
         eventUpdates: { createCombatEvents },
       },
-      components: { Status, Realm, Labor, ArrivalTime, CaravanMembers, Position, Inventory, ForeignKey },
+      components: { Realm, Labor, ArrivalTime, CaravanMembers, Position, Inventory, ForeignKey },
     },
   } = useDojo();
 

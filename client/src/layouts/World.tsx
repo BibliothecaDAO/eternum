@@ -33,11 +33,7 @@ import { Onboarding } from "../plugins/onboarding/components/Onboarding";
 
 export const World = () => {
   const {
-    account: { list, account },
-    setup: {
-      // systemCalls: { isLive, uuid },
-      systemCalls: { isLive },
-    },
+    account: { list },
   } = useDojo();
 
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
@@ -66,15 +62,6 @@ export const World = () => {
     } else {
       setBlankOverlay(true);
     }
-  }, []);
-
-  const [_isWorldLive, setIsWorldLive] = useState(false);
-
-  useEffect(() => {
-    const checkWorldLive = async () => {
-      setIsWorldLive(await isLive());
-    };
-    checkWorldLive();
   }, []);
 
   useFetchBlockchainData();

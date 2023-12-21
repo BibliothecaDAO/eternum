@@ -156,7 +156,6 @@ const Naming = ({ onNext }: { onNext: () => void }) => {
   const {
     account: { create, isDeploying, list, account, select, clear },
     setup: {
-      network: { toriiClient },
       systemCalls: { set_address_name },
     },
   } = useDojo();
