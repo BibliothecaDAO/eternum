@@ -1,6 +1,7 @@
 use eternum::models::resources::{Resource, ResourceChest};
 use eternum::models::owner::Owner;
 use eternum::models::position::Position;
+use eternum::models::realm::Realm;
 
 use eternum::systems::config::contracts::config_systems;
 use eternum::systems::config::interface::{
@@ -18,6 +19,8 @@ use eternum::systems::realm::interface::{
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
 use eternum::constants::ResourceTypes;
+use eternum::constants::MAX_REALMS_PER_ADDRESS;
+
 use dojo::world::{ IWorldDispatcher, IWorldDispatcherTrait};
 
 use starknet::contract_address_const;
@@ -75,8 +78,12 @@ fn test_realm_create() {
     let order = 1;
     let order_hyperstructure_id = 999;
 
+    starknet::testing::set_contract_address(
+        contract_address_const::<'caller'>()
+    );
+
     let realm_entity_id = realm_systems_dispatcher.create(
-        world, realm_id, starknet::get_contract_address(), // owner
+        world, realm_id,
         resource_types_packed, resource_types_count, cities,
         harbors, rivers, regions, wonder, order, order_hyperstructure_id, position.clone(),
     );
@@ -89,4 +96,111 @@ fn test_realm_create() {
     let realm_initial_resource_2
         = get!(world, (realm_entity_id, INITIAL_RESOURCE_2_TYPE), Resource);
     assert(realm_initial_resource_2.balance == INITIAL_RESOURCE_2_AMOUNT, 'wrong mint 2 amount');
+
+
+
+    let realm_owner = get!(world, realm_entity_id, Owner);
+    assert(
+        realm_owner.address == contract_address_const::<'caller'>(),
+             'wrong realm owner'
+    );
+
+    let realm = get!(world, realm_entity_id, Realm);
+    assert(realm.realm_id == realm_id, 'wrong realm id');
+
+}
+
+
+#[test]
+#[available_gas(3000000000000)]
+fn test_realm_create_equal_max_realms_per_address() {
+
+    let world = setup();
+
+     // create realm
+    let realm_systems_address 
+        = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_dispatcher = IRealmSystemsDispatcher {
+        contract_address: realm_systems_address
+    };
+
+    let position = Position { x: 20, y: 30, entity_id: 1_u128};
+
+    let realm_id = 1;
+    let resource_types_packed = 1;
+    let resource_types_count = 1;
+    let cities = 6;
+    let harbors = 5;
+    let rivers = 5;
+    let regions = 5;
+    let wonder = 1;
+    let order = 1;
+    let order_hyperstructure_id = 999;
+
+
+
+    let mut index = 0;
+    loop {
+        if index == MAX_REALMS_PER_ADDRESS {
+            break;
+        }
+        realm_systems_dispatcher.create(
+            world, realm_id,
+            resource_types_packed, resource_types_count, cities,
+            harbors, rivers, regions, wonder, order, order_hyperstructure_id, position.clone(),
+        );
+
+        index += 1;
+    };
+
+
+}
+
+
+
+#[test]
+#[available_gas(3000000000000)]
+#[should_panic(expected: ('max num of realms settled','ENTRYPOINT_FAILED' ))]
+fn test_realm_create_greater_than_max_realms_per_address() {
+
+    let world = setup();
+
+     // create realm
+    let realm_systems_address 
+        = deploy_system(realm_systems::TEST_CLASS_HASH);
+    let realm_systems_dispatcher = IRealmSystemsDispatcher {
+        contract_address: realm_systems_address
+    };
+
+    let position = Position { x: 20, y: 30, entity_id: 1_u128};
+
+    let realm_id = 1;
+    let resource_types_packed = 1;
+    let resource_types_count = 1;
+    let cities = 6;
+    let harbors = 5;
+    let rivers = 5;
+    let regions = 5;
+    let wonder = 1;
+    let order = 1;
+    let order_hyperstructure_id = 999;
+
+    starknet::testing::set_contract_address(
+        starknet::get_contract_address()
+    );
+
+
+    let mut index = 0;
+    loop {
+        if index == MAX_REALMS_PER_ADDRESS + 1 {
+            break;
+        }
+        realm_systems_dispatcher.create(
+            world, realm_id,
+            resource_types_packed, resource_types_count, cities,
+            harbors, rivers, regions, wonder, order, order_hyperstructure_id, position.clone(),
+        );
+
+        index += 1;
+    };
 }

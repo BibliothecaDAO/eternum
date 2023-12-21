@@ -164,17 +164,23 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
 
 
     // create attacker's realm
+    starknet::testing::set_contract_address(
+        contract_address_const::<'attacker'>()
+    );
     let attacker_realm_entity_id = realm_systems_dispatcher.create(
-        world, realm_id, contract_address_const::<'attacker'>(), // owner
+        world, realm_id,
         resource_types_packed, resource_types_count, cities,
         harbors, rivers, regions, wonder, order, order_hyperstructure_id, attacker_realm_entity_position.clone(),
         
     );
 
     // create target's realm
+    starknet::testing::set_contract_address(
+        contract_address_const::<'target'>()
+    );
 
     let target_realm_entity_id = realm_systems_dispatcher.create(
-        world, realm_id, contract_address_const::<'target'>(), // owner
+        world, realm_id,
         resource_types_packed, resource_types_count, cities,
         harbors, rivers, regions, wonder, 0, order_hyperstructure_id, target_realm_entity_position.clone(),
     );

@@ -24,6 +24,7 @@ struct Realm {
 }
 
 
+
 trait RealmTrait {
     fn has_resource(self: Realm, resource_type: u8) -> bool;
 }
