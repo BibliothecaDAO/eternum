@@ -125,7 +125,7 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
   };
 
   return (
-    <div className={clsx("flex flex-col space-y-2 fixed right-4 bottom-4 top-4 events-none", className)}>
+    <div className={clsx("flex flex-col space-y-2 fixed right-4 bottom-4 top-4 pointer-events-none", className)}>
       <div className="w-full flex flex-cols justify-between">
         {
           <Button

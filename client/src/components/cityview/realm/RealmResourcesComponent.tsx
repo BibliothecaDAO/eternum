@@ -28,6 +28,10 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
   const { getEntityLevel } = useLevel();
   const realm_level = getEntityLevel(realmEntityId)?.level;
 
+  useEffect(() => {
+    setShowAllResources(false);
+  }, [realmEntityId]);
+
   // unpack the resources
   useMemo((): any => {
     let realmResourceIds: number[] = [ResourcesIds["Lords"], ResourcesIds["Wheat"], ResourcesIds["Fish"]];
@@ -145,7 +149,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId, class
     <>
       <div
         onMouseEnter={() =>
-          (resourceId >= 22 || level > 0) &&
+          (resourceId >= 23 || level > 0) &&
           setTooltip({
             position: "bottom",
             content: (
@@ -158,7 +162,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId, class
         }
         onMouseLeave={() => setTooltip(null)}
         className={`flex relative group items-center text-sm ${
-          resourceId < 22 && level == 0 && "blur-sm"
+          resourceId < 23 && level == 0 && "blur-sm"
         } ${className}`}
       >
         <ResourceIcon

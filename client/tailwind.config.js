@@ -7,9 +7,9 @@ export default {
         xxs: ".625rem",
       },
       cursor: {
-        'fancy': 'url(./cursor.png), pointer',
-        'pointer': 'url(./cursor.png), pointer',
-        'grab': 'url(./grab.png), grab',
+        fancy: "url(/cursor.png), pointer",
+        pointer: "url(/cursor.png), pointer",
+        grab: "url(/grab.png), grab",
       },
       strokeWidth: {
         8: "8px",

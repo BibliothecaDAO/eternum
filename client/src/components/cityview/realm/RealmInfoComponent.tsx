@@ -3,7 +3,7 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import realmsNames from "../../../geodata/realms.json";
 import { orderNameDict } from "@bibliothecadao/eternum";
 import clsx from "clsx";
-import { useGetRealm, useRealm } from "../../../hooks/helpers/useRealm";
+import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import { useDojo } from "../../../DojoContext";
 import { Leveling, LevelingBonusIcons } from "./leveling/Leveling";
 import { LaborAuction } from "./labor/LaborAuction";
@@ -12,6 +12,9 @@ import { LevelingPopup } from "./leveling/LevelingPopup";
 import { useMemo, useState } from "react";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useLevel } from "../../../hooks/helpers/useLevel";
+import { useLocation } from "wouter";
+import { RealmLevel } from "../../../elements/RealmLevel";
+import Button from "../../../elements/Button";
 
 type RealmInfoComponentProps = {};
 
@@ -36,15 +39,16 @@ const bgColorsByOrder = {
 
 export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
   const {
-    account: { accountDisplay, account },
+    account: { accountDisplay },
   } = useDojo();
+  const [_location, setLocation] = useLocation();
 
   const [showRealmLevelUp, setShowRealmLevelUp] = useState(false);
   const [_, setShowHyperstructureLevelUp] = useState(false);
   const setTooltip = useUIStore((state) => state.setTooltip);
-
-  const { getAddressName } = useRealm();
-  const addressName = getAddressName(account.address);
+  const moveCameraToRealm = useUIStore((state) => state.moveCameraToRealm);
+  const moveCameraToWorldMapView = useUIStore((state) => state.moveCameraToWorldMapView);
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
   const { realmEntityId } = useRealmStore();
   const { realm } = useGetRealm(realmEntityId);
@@ -67,45 +71,57 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
     return bonus.reduce((acc, curr) => acc + curr.bonusAmount, 0) === 0 ? undefined : bonus;
   }, [realmLevel]);
 
+  const showOnMap = () => {
+    setLocation("/map");
+    setIsLoadingScreenEnabled(true);
+    moveCameraToWorldMapView();
+    setTimeout(() => {
+      moveCameraToRealm(Number(realm?.realmId));
+    }, 300);
+  };
+
   return (
     <>
       {realm && (
         <div
           className={clsx(
-            "relative rounded-t-xl transition-colors duration-300 text-sm shadow-lg shadow-black/25 flex items-center px-4 py-2 text-white h-[50px] justify-between ",
+            "relative rounded-t-xl transition-colors duration-300 text-sm flex items-center pt-3 px-3 text-white justify-between ",
           )}
-          style={{
-            backgroundColor: bgColorsByOrder[orderNameDict[realm?.order] as keyof typeof bgColorsByOrder],
-          }}
         >
           <div className="flex flex-col leading-4">
             <div className="flex">
-              <div className="text-xxs mr-2">{accountDisplay}</div>
-              <div className="text-xxs">{addressName}</div>
+              <div className="text-xxs leading-none mr-2 text-gold">{accountDisplay}</div>
             </div>
-            <div className="font-bold">{realmsNames.features[Number(realm.realmId - 1n)].name}</div>
+            <div className="leading-none font-bold text-lg flex items-center">
+              <div
+                className=" flex items-center justify-center rounded-full p-0.5 mr-1"
+                style={{
+                  backgroundColor: bgColorsByOrder[orderNameDict[realm?.order] as keyof typeof bgColorsByOrder],
+                }}
+              >
+                <OrderIcon order={orderNameDict[realm?.order]} size="xxs" />
+              </div>
+              {realmsNames.features[Number(realm.realmId) - 1].name}
+              <RealmLevel
+                onMouseEnter={() => {
+                  if (!realmBonuses) return;
+                  setTooltip({
+                    position: "top",
+                    content: (
+                      <>{<LevelingBonusIcons className="flex flex-row" bonuses={realmBonuses}></LevelingBonusIcons>}</>
+                    ),
+                  });
+                }}
+                onMouseLeave={() => {
+                  setTooltip(null);
+                }}
+                className="ml-2"
+                level={realmLevel?.level as number}
+              />
+            </div>
           </div>
           <LaborAuction />
-          <div
-            onMouseEnter={() => {
-              if (!realmBonuses) return;
-              setTooltip({
-                position: "top",
-                content: (
-                  <>{<LevelingBonusIcons className="flex flex-row" bonuses={realmBonuses}></LevelingBonusIcons>}</>
-                ),
-              });
-            }}
-            onMouseLeave={() => {
-              setTooltip(null);
-            }}
-            className="cursor-pointer"
-          >
-            <div className="text-xxs leading-none"> Realm </div>
-            {showRealmLevelUp && <LevelingPopup onClose={() => setShowRealmLevelUp(false)}></LevelingPopup>}
-            <Leveling className={"text-xxs"} setShowLevelUp={setShowRealmLevelUp} entityId={realmEntityId} />
-          </div>
-          {/* <div className="cursor-pointer"> */}
+          {showRealmLevelUp && <LevelingPopup onClose={() => setShowRealmLevelUp(false)}></LevelingPopup>}
           <div
             onMouseEnter={() => {
               if (!hyperstructureBonuses) return;
@@ -128,8 +144,6 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
             }}
             className="cursor-pointer"
           >
-            {/* todo: add hyperstructure level up */}
-            <div className="text-xxs leading-none"> Order </div>
             {/* {showHyperstructureLevelUp && (
               <LevelingPopup onClose={() => setShowHyperstructureLevelUp(false)}></LevelingPopup>
             )} */}
@@ -139,11 +153,19 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
               entityId={hyperstructureId}
             />
           </div>
-          <div className="flex items-center capitalize">
-            <OrderIcon order={orderNameDict[realm?.order]} size="xs" />
-          </div>
         </div>
       )}
+      <div className="flex space-x-2 mt-1 items-center px-4">
+        <Button
+          onClick={() => setShowRealmLevelUp(true)}
+          className="p-2 !py-1 !bg-order-brilliance border-0 !text-brown"
+        >
+          Level UP
+        </Button>
+        <Button variant="primary" onClick={showOnMap}>
+          Show on Map
+        </Button>
+      </div>
     </>
   );
 };

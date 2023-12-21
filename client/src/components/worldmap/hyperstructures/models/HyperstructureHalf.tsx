@@ -25,7 +25,7 @@ type GLTFResult = GLTF & {
 export default function HyperstructureHalfFinished(
   props: JSX.IntrinsicElements["group"] & { hyperstructure?: HyperStructureInterface },
 ) {
-  const { nodes, materials } = useGLTF("/models/hyperstructure-half-transformed.glb") as GLTFResult;
+  const { nodes, materials } = useGLTF("/models/hyperstructure3_half-finished_LOW-transformed.glb") as GLTFResult;
   const { hyperstructure } = props;
 
   const currentLevel = hyperstructure?.level || 0;
@@ -60,4 +60,4 @@ export default function HyperstructureHalfFinished(
   );
 }
 
-useGLTF.preload("/models/hyperstructure-half-transformed.glb");
+useGLTF.preload("/models/hyperstructure3_half-finished_LOW-transformed.glb.glb");
