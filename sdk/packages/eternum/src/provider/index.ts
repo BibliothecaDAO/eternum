@@ -323,7 +323,6 @@ export class EternumProvider extends RPCProvider {
   public async create_realm(props: CreateRealmProps) {
     const {
       realm_id,
-      owner,
       resource_types_packed,
       resource_types_count,
       cities,
@@ -344,7 +343,6 @@ export class EternumProvider extends RPCProvider {
         calldata: [
           this.getWorldAddress(),
           realm_id,
-          owner,
           resource_types_packed,
           resource_types_count,
           cities,
@@ -371,7 +369,6 @@ export class EternumProvider extends RPCProvider {
     let calldata = realms.flatMap((realm) => {
       const {
         realm_id,
-        owner,
         resource_types_packed,
         resource_types_count,
         cities,
@@ -391,7 +388,6 @@ export class EternumProvider extends RPCProvider {
           calldata: [
             this.getWorldAddress(),
             realm_id,
-            owner,
             resource_types_packed,
             resource_types_count,
             cities,
@@ -401,7 +397,7 @@ export class EternumProvider extends RPCProvider {
             wonder,
             order,
             order_hyperstructure_id, // TODO: issue here we can't pass th BigINt
-            2n, // entity ID in position struct
+            2, // entity ID in position struct
             position.x,
             position.y,
           ],

@@ -2700,7 +2700,7 @@
     {
       "name": "eternum::systems::realm::contracts::realm_systems",
       "address": "0x25df90992b8eebca69f08035ceda822dee73028e828ceb8421895814eacd3d",
-      "class_hash": "0x18ad6f75923f63635764b1af67c663eb48cfe3ab35dd06a9a0c775387e1e5e9",
+      "class_hash": "0x47c24a1dcceda0238659739e1241f9ba03aa07ab9485f64cfb0f39efbdca99a",
       "abi": [
         {
           "type": "impl",

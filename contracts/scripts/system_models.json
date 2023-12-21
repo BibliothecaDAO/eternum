@@ -10,7 +10,9 @@
         "TownWatch",
         "EntityOwner",
         "Capacity",
-        "Movable"
+        "Movable",
+        "QuantityTracker",
+        "Resource"
     ],
     "CARAVAN_SYSTEMS": [
         "Movable",

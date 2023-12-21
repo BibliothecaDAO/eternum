@@ -143,7 +143,7 @@ export const useBanks = () => {
     const wheatPrice = wheatAuction ? getResourceBankPrice(wheatAuction, 254) || 0 : 0;
     const fishPrice = fishAuction ? getResourceBankPrice(fishAuction, 255) || 0 : 0;
 
-    if (bankId) {
+    if (bankId !== undefined) {
       return {
         name,
         bankId,

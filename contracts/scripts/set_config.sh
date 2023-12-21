@@ -349,25 +349,6 @@ commands+=(
     "sozo execute $CONFIG_SYSTEMS set_leveling_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999992,604800,4,1844674407370955161,4611686018427387904,25,1247400000,415800000,7,1,43608500,2,34269500,3,33330500,4,22982500,5,19269500,6,15138999,7,10252000,8,8,8321500,9,7948000,10,5165000,11,2608500,12,2148000,13,2078500,14,2078500,15,1495500,7,16,1408500,17,1208500,18,965000,19,808500,20,478500,21,321500,22,200000"
 )
 
-commands+=(
-    # NOTE: mint a random realm so that no player has the 0x0 entity id as a realm
-    # because 0x0 is also used in make_fungible_order as taker_id to specify that any entity can take the order
-    # TODO: need to rethink make_fungible_order so that we don't rely on taker_id 0x0 to know who can take order
-    ## realm 1:
-    ## name: Stolsli
-    ## resources_ids_packed = 4328719365 (1,2,3,4,5)
-    ## cities = 4
-    ## harbors = 5
-    ## rivers = 6
-    ## coordinates with offset of + 1800000
-    ## position = ["287471", "-189200"]
-    ## "Stone", "Coal"]
-    ## [2, 3]
-    ## order = giants = 8
-    "sozo execute $REALM_SYSTEMS create --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,$DOJO_ACCOUNT_ADDRESS,515,2,4,5,6,1,1,8,2,2087471,1610800"
-)
-
-
 #### SET LABOR AUCTIONS ####
 
 commands+=(

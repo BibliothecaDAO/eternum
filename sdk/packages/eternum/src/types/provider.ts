@@ -175,7 +175,6 @@ export interface CreateRoadProps extends SystemSigner {
 
 interface Realm {
   realm_id: num.BigNumberish;
-  owner: num.BigNumberish;
   resource_types_packed: num.BigNumberish;
   resource_types_count: num.BigNumberish;
   cities: num.BigNumberish;

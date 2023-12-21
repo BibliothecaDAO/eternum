@@ -31,7 +31,9 @@ export const RealmListItem = ({ realm }: RealmListItemProps) => {
         )}
         <div className="-mt-2 ml-2 italic">
           owned by
-          {realm && <span className="text-gold ml-1 mr-1">{displayAddress(realm?.owner?.toString() || "0x0")}</span>}
+          {realm && (
+            <span className="text-gold ml-1 mr-1">{displayAddress("0x" + realm?.owner?.toString(16) || "0x0")}</span>
+          )}
           {addressName && <span className="text-gold ml-1 mr-1">{addressName}</span>}
         </div>
         <div className=" text-gold flex ml-auto ">
