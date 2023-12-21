@@ -1,6 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { SelectableRealmInterface, getOrderName } from "@bibliothecadao/eternum";
-import { Has, getComponentValue, runQuery } from "@latticexyz/recs";
+import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useTrade } from "../../../../../hooks/helpers/useTrade";
 import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
@@ -18,8 +18,8 @@ export const SelectRealmForCombatPanel = ({
   setSelectedEntityId,
   setCanAttack,
 }: {
-  selectedEntityId: number | undefined;
-  setSelectedEntityId: (selectedEntityId: number) => void;
+  selectedEntityId: bigint | undefined;
+  setSelectedEntityId: (selectedEntityId: bigint) => void;
   setCanAttack: (canAttack: boolean) => void;
 }) => {
   const [nameFilter, setNameFilter] = useState("");
@@ -66,11 +66,11 @@ export const SelectRealmForCombatPanel = ({
           if (realm) {
             const { name, order, realmId: takerRealmId } = getRealm(realm.realm_id);
             const takerEntityId = getRealmEntityIdFromRealmId(takerRealmId);
-            const distance = takerEntityId ? calculateDistance(realmEntityId, takerEntityId) ?? 0 : 0;
-            const defence = takerEntityId ? getDefenceOnRealm(takerEntityId) : undefined;
-            const level = takerEntityId ? getEntityLevel(takerEntityId) : undefined;
+            const distance = takerEntityId ? calculateDistance(realmEntityId, BigInt(takerEntityId)) ?? 0 : 0;
+            const defence = takerEntityId ? getDefenceOnRealm(BigInt(takerEntityId)) : undefined;
+            const level = takerEntityId ? getEntityLevel(BigInt(takerEntityId)) : undefined;
             return {
-              entityId,
+              entityId: realm.entity_id,
               realmId: realm.realm_id,
               name,
               order: getOrderName(order),
@@ -80,7 +80,7 @@ export const SelectRealmForCombatPanel = ({
             };
           }
         })
-        .filter((realm) => realm && realm.realmId !== realmId && realm.realmId !== 1) as SelectableRealmInterface[];
+        .filter((realm) => realm && realm.realmId !== realmId && realm.realmId !== 1n) as SelectableRealmInterface[];
       setOriginalRealms(realms);
     };
     buildSelectableRealms();
@@ -102,7 +102,7 @@ export const SelectRealmForCombatPanel = ({
 
   return (
     <div className="flex flex-col p-1 rounded border-gold border w-full">
-      {realmEntityId && (
+      {realmEntityId.toString() && (
         <div className="flex flex-col">
           <TextInput
             className="border border-gold mx-1 !w-auto !text-light-pink"
@@ -151,7 +151,7 @@ export const SelectRealmForCombatPanel = ({
                         <OrderIcon order={order} size="xs" />
                       </div>
 
-                      <div className="flex-none w-20">{destinationRealmId}</div>
+                      <div className="flex-none w-20">{destinationRealmId.toString()}</div>
 
                       <div className="flex-grow">{name}</div>
 
@@ -185,9 +185,9 @@ export function sortRealms(realms: SelectableRealmInterface[], activeSort: SortI
     if (activeSort.sortKey === "id") {
       return sortedRealms.sort((a, b) => {
         if (activeSort.sort === "asc") {
-          return a.realmId - b.realmId;
+          return Number(a.realmId - b.realmId);
         } else {
-          return b.realmId - a.realmId;
+          return Number(b.realmId - a.realmId);
         }
       });
     } else if (activeSort.sortKey === "name") {
@@ -236,6 +236,6 @@ export function sortRealms(realms: SelectableRealmInterface[], activeSort: SortI
       return sortedRealms;
     }
   } else {
-    return sortedRealms.sort((a, b) => b.realmId - a.realmId);
+    return sortedRealms.sort((a, b) => Number(b.realmId - a.realmId));
   }
 }

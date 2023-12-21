@@ -2,7 +2,7 @@ import { ReactComponent as Checkmark } from "../../assets/icons/common/checkmark
 import { OrderIcon } from "../../elements/OrderIcon";
 import { ReactComponent as RatioIcon } from "../../assets/icons/common/ratio.svg";
 import { useDojo } from "../../DojoContext";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { Badge } from "../../elements/Badge";
 import { currencyFormat, extractAndCleanKey, getEntityIdFromKeys } from "../../utils/utils";
 import { useTrade } from "../helpers/useTrade";
@@ -49,7 +49,7 @@ export const useTradeNotification = (
 
   let { resourcesGet: orderResources1, resourcesGive: orderResources2 } = getTradeResources(
     realmEntityId,
-    trade?.trade_id || 0,
+    trade?.trade_id || 0n,
   );
 
   let type: "primary" | "success" | "danger";

@@ -1,11 +1,11 @@
-use cubit::f128::math::core::ln;
+use cubit::f128::math::ops::ln;
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use starknet::get_block_timestamp;
 use eternum::utils::vrgda::{LinearVRGDA, LinearVRGDATrait};
 
 
 #[derive(Model, Copy, Drop, Serde)]
-struct Bank{
+struct Bank {
     #[key]
     entity_id: u128,
     exists: bool
@@ -72,16 +72,14 @@ impl BankAuctionImpl of BankAuctionTrait {
 
 #[cfg(test)]
 mod tests {
-    use eternum::models::bank::{
-        BankAuction, BankAuctionTrait
-    };
+    use eternum::models::bank::{BankAuction, BankAuctionTrait};
     use eternum::utils::vrgda::{LinearVRGDATrait, LinearVRGDA};
 
-    use cubit::f128::math::core::{ln, abs, exp, pow};
+    use cubit::f128::math::ops::{ln, abs, exp, pow};
 
     // testing
     use eternum::utils::testing::spawn_eternum;
-    
+
     use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
     // constants
@@ -129,5 +127,4 @@ mod tests {
             price, FixedTrait::new(_0_9, false), FixedTrait::new(DELTA_0_0005, false)
         )
     }
-
 }

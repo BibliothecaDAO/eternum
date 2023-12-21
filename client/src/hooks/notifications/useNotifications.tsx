@@ -12,7 +12,7 @@ import { useResources } from "../helpers/useResources";
 import {
   generateEmptyChestNotifications,
   generateLaborNotifications,
-  generateTradeNotifications,
+  // generateTradeNotifications,
   useRealmsPosition,
   useRealmsResource,
 } from "./utils";
@@ -21,10 +21,9 @@ export const useNotifications = () => {
   const {
     setup: {
       updates: {
-        entityUpdates,
         eventUpdates: { createCombatEvents },
       },
-      components: { Status, Realm, Labor, ArrivalTime, CaravanMembers, Position, Inventory, ForeignKey },
+      components: { Realm, Labor, ArrivalTime, CaravanMembers, Position, Inventory, ForeignKey },
     },
   } = useDojo();
 
@@ -46,19 +45,20 @@ export const useNotifications = () => {
     return [realmLevel, hyperstructureLevel];
   }, [realmEntityId]);
 
-  /**
-   * Trade notifications
-   */
-  useEffect(() => {
-    const subscription = entityUpdates.subscribe((updates) => {
-      const newNotifications = generateTradeNotifications(updates, Status);
-      addUniqueNotifications(newNotifications);
-    });
+  // TODO: find another way to do trade notifications, would suggest custom event rather than entity updates
+  // /**
+  //  * Trade notifications
+  //  */
+  // useEffect(() => {
+  //   const subscription = entityUpdates.subscribe((updates) => {
+  //     const newNotifications = generateTradeNotifications(updates, Status);
+  //     addUniqueNotifications(newNotifications);
+  //   });
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+  //   return () => {
+  //     subscription.unsubscribe();
+  //   };
+  // }, []);
 
   /**
    * Labor notifications
@@ -103,7 +103,12 @@ export const useNotifications = () => {
     // poll for each of the realmEntityIds
     for (const realmEntityId of realmEntityIds) {
       // Keccak for Combat event
-      pollForEvents([COMBAT_EVENT, "*", numberToHex(realmEntityId.realmEntityId)], setCombatNotificationsFromEvents, 5);
+      pollForEvents(
+        // todo: bigint to hex
+        [COMBAT_EVENT, "*", numberToHex(Number(realmEntityId.realmEntityId))],
+        setCombatNotificationsFromEvents,
+        5,
+      );
     }
   }, [realmEntityIds]);
 

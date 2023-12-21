@@ -55,7 +55,7 @@ export function Flags(props) {
   const [woodInstances, setWoodInstances] = useState([]);
   const [flagInstances, setFlagInstances] = useState([]);
 
-  const { realms } = useGetRealms();
+  const realms = useGetRealms();
 
   const ordersRealms = useMemo(
     () =>
@@ -64,17 +64,6 @@ export function Flags(props) {
       }),
     [realms],
   );
-
-  const { flagsPosition, flagsScale } = useControls({
-    flagsPosition: {
-      value: { x: -0.38, z: 0, y: -0.04 },
-      step: 0.01,
-    },
-    flagsScale: {
-      value: 1,
-      step: 0.01,
-    },
-  });
 
   let scale = new THREE.Vector3();
   const tempObject = new THREE.Object3D();
@@ -171,9 +160,9 @@ export function Flags(props) {
 
     ordersRealms.forEach((orderRealms, index) => {
       orderRealms.forEach((realm, i) => {
-        const x = realmsJson.features[realm.realmId - 1].xy[0];
-        const y = realmsJson.features[realm.realmId - 1].xy[1];
-        const z = -0.92 - flagsHeights[realm.realmId - 1];
+        const x = realmsJson.features[Number(realm.realmId) - 1].xy[0];
+        const y = realmsJson.features[Number(realm.realmId) - 1].xy[1];
+        const z = -0.92 - flagsHeights[Number(realm.realmId) - 1];
         _position.set(x, y, z);
         dummy.position.copy(_position);
         dummy.rotateZ(
@@ -231,13 +220,7 @@ export function Flags(props) {
           {hoveredRealm && hoveredRealm.name}
         </div>
       </Html>
-      <group
-        {...props}
-        dispose={null}
-        position={[flagsPosition.x, flagsPosition.y, flagsPosition.z]}
-        scale={[flagsScale, flagsScale, flagsScale]}
-        rotation={[-Math.PI / 2, Math.PI, 0]}
-      >
+      <group {...props} dispose={null} position={[-0.38, 0, -0.04]} rotation={[-Math.PI / 2, Math.PI, 0]}>
         {woodInstances.map((woodInstance, index) => {
           return (
             <group key={index} onClick={(e) => clickHandler(e, index)} onPointerEnter={(e) => hoverHandler(e, index)}>

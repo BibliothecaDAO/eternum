@@ -2,8 +2,8 @@ import { Resource, Trade, WEIGHTS } from "@bibliothecadao/eternum";
 
 export const getOrderIdsFromTrade = (
   trade: Trade,
-  realmEntityId: number,
-): { realmOrderId: number; counterpartyOrderId: number } | undefined => {
+  realmEntityId: bigint,
+): { realmOrderId: bigint; counterpartyOrderId: bigint } | undefined => {
   return trade.maker_id === realmEntityId
     ? {
         realmOrderId: trade.maker_order_id,

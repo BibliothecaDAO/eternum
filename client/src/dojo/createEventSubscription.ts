@@ -1,4 +1,3 @@
-import { COMBAT_EVENT } from "@bibliothecadao/eternum";
 import { gql } from "graphql-request";
 import { createClient } from "graphql-ws";
 import { BehaviorSubject, Observable } from "rxjs";
@@ -25,20 +24,16 @@ export async function createEventSubscription(keys: string[]): Promise<Observabl
             id
             keys
             data
-            created_at
+            createdAt
           }
         }
       `,
     },
     {
       next: ({ data }) => {
-        console.log({ data });
         try {
           const event = data?.eventEmitted as Event;
           if (event) {
-            if (keys.includes(COMBAT_EVENT)) {
-              console.log({ combatEvent: event });
-            }
             lastUpdate$.next(event);
           }
         } catch (error) {

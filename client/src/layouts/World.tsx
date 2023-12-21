@@ -19,7 +19,7 @@ import { useProgress } from "@react-three/drei";
 import { BlurOverlayContainer } from "../containers/BlurOverlayContainer";
 import useSound from "use-sound";
 import { NotificationsComponent } from "../components/NotificationsComponent";
-import { useSyncWorld } from "../hooks/graphql/useGraphQLQueries";
+// import { useSyncWorld } from "../hooks/graphql/useGraphQLQueries";
 import WorldMapMenuModule from "../modules/WorldMapMenuModule";
 import hyperStructures from "../data/hyperstructures.json";
 import { useHyperstructure } from "../hooks/helpers/useHyperstructure";
@@ -34,10 +34,6 @@ import { Onboarding } from "../plugins/onboarding/components/Onboarding";
 export const World = () => {
   const {
     account: { list },
-    setup: {
-      // systemCalls: { isLive, uuid },
-      systemCalls: { isLive },
-    },
   } = useDojo();
 
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
@@ -68,17 +64,6 @@ export const World = () => {
     }
   }, []);
 
-  const [_isWorldLive, setIsWorldLive] = useState(false);
-
-  useEffect(() => {
-    const checkWorldLive = async () => {
-      setIsWorldLive(await isLive());
-    };
-    checkWorldLive();
-  }, []);
-
-  const { loading: worldLoading } = useSyncWorld();
-
   useFetchBlockchainData();
 
   const { progress } = useProgress();
@@ -88,12 +73,12 @@ export const World = () => {
   useEffect(() => {
     let ids = getHyperstructureIds();
     syncData(ids);
-  }, [worldLoading]);
+  }, []);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   useEffect(() => {
     syncCombatHistory(realmEntityId);
-  }, [worldLoading, realmEntityId]);
+  }, [realmEntityId]);
 
   const [playBackground, { stop }] = useSound("/sound/music/happy_realm.mp3", {
     soundEnabled: isSoundOn,
@@ -112,22 +97,20 @@ export const World = () => {
   const { getHyperstructure } = useHyperstructure();
 
   useEffect(() => {
-    if (!worldLoading) {
-      setHyperstructures(
-        hyperStructures.map((hyperstructure, index) =>
-          getHyperstructure(index + 1, { x: hyperstructure.x, y: hyperstructure.y, z: hyperstructure.z }),
-        ),
-      );
-    }
-  }, [worldLoading]);
+    setHyperstructures(
+      hyperStructures.map((hyperstructure, index) =>
+        getHyperstructure(index + 1, { x: hyperstructure.x, y: hyperstructure.y, z: hyperstructure.z }),
+      ),
+    );
+  }, []);
 
   useEffect(() => {
-    if (progress === 100 && !worldLoading) {
+    if (progress === 100) {
       setIsLoadingScreenEnabled(false);
     } else {
       setIsLoadingScreenEnabled(true);
     }
-  }, [progress, worldLoading]);
+  }, [progress]);
 
   const [location] = useLocation();
   // location type

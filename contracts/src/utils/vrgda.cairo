@@ -1,4 +1,4 @@
-use cubit::f128::math::core::exp;
+use cubit::f128::math::ops::exp;
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
 /// A Linear Variable Rate Gradual Dutch Auction (VRGDA) struct.

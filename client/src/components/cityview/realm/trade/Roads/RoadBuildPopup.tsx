@@ -6,14 +6,14 @@ import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../../elements/NumberInput";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../DojoContext";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import * as realmsData from "../../../../../geodata/realms.json";
 import { ROAD_COST_PER_USAGE } from "@bibliothecadao/eternum";
 
 type RoadBuildPopupProps = {
-  toEntityId: number;
+  toEntityId: bigint;
   onClose: () => void;
 };
 
@@ -83,7 +83,9 @@ export const RoadBuildPopup = ({ toEntityId, onClose }: RoadBuildPopupProps) => 
       <SecondaryPopup.Body width={"376px"}>
         <div className="flex flex-col items-center p-2">
           {toRealm && (
-            <Headline size="big">Build road to {toRealm && realmsData["features"][toRealm.realmId - 1].name}</Headline>
+            <Headline size="big">
+              Build road to {toRealm && realmsData["features"][Number(toRealm.realmId - 1n)].name}
+            </Headline>
           )}
           <div className={"relative w-full mt-3"}>
             <img src={`/images/road.jpg`} className="object-cover w-full h-full rounded-[10px]" />

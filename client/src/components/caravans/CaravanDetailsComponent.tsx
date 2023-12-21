@@ -44,18 +44,19 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
         <div className="flex items-center space-x-1">
           {capacity && (
             <div className="mr-0.5">
-              Caravan #{caravan.caravanId} {divideByPrecision(resourceWeight)} / {divideByPrecision(capacity)}
+              Caravan #{caravan.caravanId.toString()} {divideByPrecision(resourceWeight)} /{" "}
+              {divideByPrecision(capacity)}
             </div>
           )}
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body>
-        {isTravelling && destinationRealmName && (
+        {isTravelling?.toString() && destinationRealmName?.toString() && (
           <div className="flex items-center mt-2 ml-2 text-xxs">
             <span className="italic text-light-pink">Traveling {hasArrivedPickupPosition ? "from" : "to"}</span>
             <div className="flex items-center ml-1 mr-1 text-gold">
-              <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xs" />
-              {destinationRealmName}
+              <OrderIcon order={getRealmOrderNameById(destinationRealmId || 0n)} className="mr-1" size="xs" />
+              {destinationRealmName.toString()}
             </div>
             <span className="italic text-light-pink">{hasArrivedPickupPosition ? "with" : "to pick up"}</span>
           </div>
@@ -67,7 +68,7 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
                 <ResourceCost
                   key={resource.resourceId}
                   resourceId={resource.resourceId}
-                  amount={divideByPrecision(resource.amount)}
+                  amount={divideByPrecision(Number(resource.amount))}
                 />
               ),
           )}
@@ -84,7 +85,7 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
                 <ResourceCost
                   key={resource.resourceId}
                   resourceId={resource.resourceId}
-                  amount={divideByPrecision(resource.amount)}
+                  amount={divideByPrecision(Number(resource.amount))}
                 />
               ),
           )}

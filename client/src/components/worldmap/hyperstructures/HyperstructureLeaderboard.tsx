@@ -42,7 +42,7 @@ export const HyperstructureLeaderboard = () => {
         .map((key) => {
           let id = parseInt(key);
           return {
-            realmId: id,
+            realmId: BigInt(id),
             realmName: leaderboard[id].realmName,
             realmOrder: leaderboard[id].realmOrder,
             total_amount: leaderboard[id].total_amount,
@@ -101,7 +101,7 @@ export const HyperstructureLeaderboard = () => {
                     <OrderIcon order={realmOrder} size="xs" />
                   </div>
 
-                  <div className="flex-none w-20">{realmId}</div>
+                  <div className="flex-none w-20">{Number(realmId)}</div>
 
                   <div className="flex-none w-20">{realmName}</div>
 

@@ -5,7 +5,7 @@ import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../../elements/NumberInput";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../DojoContext";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import { getBuildResourceCost } from "../../../../../utils/combat";

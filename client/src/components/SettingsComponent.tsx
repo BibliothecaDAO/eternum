@@ -13,17 +13,20 @@ import { RangeInput } from "../elements/RangeInput";
 import useUIStore from "../hooks/store/useUIStore";
 import useScreenOrientation from "../hooks/useScreenOrientation";
 import { useDojo } from "../DojoContext";
-import { useAddressStore } from "../hooks/store/useAddressStore";
+import { useRealm } from "../hooks/helpers/useRealm";
 type SettingsComponentProps = {};
 
 export const SettingsComponent = ({}: SettingsComponentProps) => {
   const {
-    account: { accountDisplay },
+    account: { accountDisplay, account },
   } = useDojo();
 
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
 
-  const addressName = useAddressStore((state) => state.addressName);
+  const { getAddressName } = useRealm();
+  const addressName = getAddressName(account.address);
+
+  // const addressName = useAddressStore((state) => state.addressName);
   const [showSettings, setShowSettings] = useState(false);
   const musicLevel = useUIStore((state) => state.musicLevel);
   const effectsLevel = useUIStore((state) => state.effectsLevel);

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import Button from "../../../elements/Button";
 import useUIStore from "../../../hooks/store/useUIStore";
 import SettleRealmComponent, { MAX_REALMS } from "../../../components/cityview/realm/SettleRealmComponent";
-import { useAddressStore, useFetchAddressName } from "../../../hooks/store/useAddressStore";
+import { useAddressStore } from "../../../hooks/store/useAddressStore";
 import { useDojo } from "../../../DojoContext";
 import TextInput from "../../../elements/TextInput";
 import ListSelect from "../../../elements/ListSelect";
@@ -19,9 +19,10 @@ import realmsNames from "../../../geodata/realms.json";
 import { useLocation } from "wouter";
 import { orderNameDict } from "@bibliothecadao/eternum";
 import { getRealm } from "../../../utils/realms";
-import { Has, HasValue, getComponentValue } from "@latticexyz/recs";
-import { useEntityQuery } from "@dojoengine/react";
+import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { RealmBubble } from "../../../components/cityview/RealmSwitch";
+import { useEntityQuery } from "@dojoengine/react";
+import { useRealm } from "../../../hooks/helpers/useRealm";
 
 export const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -50,19 +51,19 @@ export const Onboarding = () => {
 
   const { realmId, setRealmId, setRealmEntityId, realmEntityIds, setRealmEntityIds } = useRealmStore();
 
-  const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: account.address })]);
+  const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: BigInt(account.address) })]);
 
   // set realm entity ids everytime the entity ids change
   useEffect(() => {
-    let realmEntityIds = Array.from(entityIds)
+    let realmEntityIds = entityIds
       .map((id) => {
         const realm = getComponentValue(Realm, id);
         if (realm) {
-          return { realmEntityId: Number(id), realmId: realm?.realm_id };
+          return { realmEntityId: realm.entity_id, realmId: realm?.realm_id };
         }
       })
       .filter(Boolean)
-      .sort((a, b) => a!.realmId - b!.realmId) as { realmEntityId: number; realmId: number }[];
+      .sort((a, b) => Number(a!.realmId) - Number(b!.realmId)) as { realmEntityId: bigint; realmId: bigint }[];
     setRealmEntityIds(realmEntityIds);
   }, [entityIds]);
 
@@ -74,7 +75,7 @@ export const Onboarding = () => {
     const fetchedYourRealms: RealmBubble[] = [];
     realmEntityIds.forEach(({ realmEntityId, realmId }) => {
       const realm = getRealm(realmId);
-      const name = realmsNames.features[realm.realmId - 1].name;
+      const name = realmsNames.features[Number(realm.realmId) - 1].name;
       fetchedYourRealms.push({
         id: realmEntityId,
         realmId: realm.realmId,
@@ -167,7 +168,14 @@ const Naming = ({ onNext }: { onNext: () => void }) => {
 
   const { loading, setLoading, addressName, setAddressName } = useAddressStore();
 
-  useFetchAddressName(account.address);
+  const { getAddressName } = useRealm();
+
+  const name = getAddressName(account.address);
+
+  // @dev: refactor this
+  useEffect(() => {
+    setAddressName(name);
+  }, [name]);
 
   const onSetName = async () => {
     setLoading(true);
@@ -225,7 +233,7 @@ const Naming = ({ onNext }: { onNext: () => void }) => {
     });
   };
 
-  const isWalletSelected = useMemo(() => account.address !== import.meta.env.VITE_KATANA_ACCOUNT_1_ADDRESS!, [account]);
+  const isWalletSelected = useMemo(() => account.address !== import.meta.env.VITE_PUBLIC_MASTER_ADDRESS!, [account]);
 
   useEffect(() => {
     if (list().length == 0) {
@@ -266,7 +274,12 @@ const Naming = ({ onNext }: { onNext: () => void }) => {
                     value={inputName}
                     onChange={setInputName}
                   />
-                  <Button isLoading={loading} onClick={onSetName} variant="outline" disabled={loading}>
+                  <Button
+                    isLoading={loading}
+                    onClick={onSetName}
+                    variant="outline"
+                    disabled={loading || inputName.length === 0}
+                  >
                     Set Name
                   </Button>
                 </div>

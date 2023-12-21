@@ -25,7 +25,7 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
   const [selectedTrade, setSelectedTrade] = useState<MarketInterface | undefined>(undefined);
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
-  const [buildRoadToEntityId, setBuildRoadToEntityId] = useState<number | undefined>(undefined);
+  const [buildRoadToEntityId, setBuildRoadToEntityId] = useState<bigint | undefined>(undefined);
 
   const sortingParams = useMemo(() => {
     return [
@@ -66,7 +66,7 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
       <div className="fixed top-0 left-0">
         {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
         {showMarketplace && <MarketPopup onClose={() => setShowMarketplace(false)} />}
-        {buildRoadToEntityId && (
+        {buildRoadToEntityId !== undefined && (
           <RoadBuildPopup onClose={() => setBuildRoadToEntityId(undefined)} toEntityId={buildRoadToEntityId} />
         )}
         {selectedTrade && (

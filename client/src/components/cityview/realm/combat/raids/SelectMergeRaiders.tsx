@@ -61,8 +61,8 @@ export const SelectableMergeRaider = ({
   const originRealmName = originRealmId ? getRealmNameById(originRealmId) : undefined;
 
   const soldierProportion = useMemo(() => {
-    return (selectedRaiders[entityId] || 0) / raider.quantity;
-  }, [selectedRaiders[entityId]]);
+    return (selectedRaiders[Number(entityId)] || 0) / raider.quantity;
+  }, [selectedRaiders[Number(entityId)]]);
 
   const [totalAttack, totalDefence, totalHealth, totalQuantity] = useMemo(() => {
     return [
@@ -82,13 +82,13 @@ export const SelectableMergeRaider = ({
       className={`flex cursor-pointer flex-col p-2 mb-2 bg-black border border-gray-gold transition-all duration-200 rounded-md text-xxs text-gold`}
     >
       <div className="flex items-center text-xxs">
-        {entityId && (
+        {entityId.toString() && (
           <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
-            #{entityId}
+            #{entityId.toString()}
           </div>
         )}
         <div className="flex items-center ml-1 -mt-2">
-          {isTraveling && originRealmId && (
+          {isTraveling && originRealmId?.toString() && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Traveling from</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
@@ -98,7 +98,7 @@ export const SelectableMergeRaider = ({
               </div>
             </div>
           )}
-          {!isTraveling && originRealmId && (
+          {!isTraveling && originRealmId?.toString() && (
             <div className="flex items-center ml-1">
               {/* <span className="italic text-light-pink">Arrived from</span> */}
               <div className="flex items-center ml-1 mr-1 text-gold">
@@ -183,15 +183,15 @@ export const SelectableMergeRaider = ({
           <div className="italic text-light-pink">Amount</div>
           <NumberInput
             className="ml-2 mr-2"
-            value={selectedRaiders[entityId] || 0}
+            value={selectedRaiders[Number(entityId)] || 0}
             onChange={(value) =>
               setSelectedRaiders((prevSelectedRaiders) => {
                 const newSelectedRaiders = { ...prevSelectedRaiders };
                 if (value > 0) {
-                  newSelectedRaiders[entityId] = value;
+                  newSelectedRaiders[Number(entityId)] = value;
                 } else {
                   // delete from object
-                  delete newSelectedRaiders[entityId];
+                  delete newSelectedRaiders[Number(entityId)];
                 }
                 return newSelectedRaiders;
               })

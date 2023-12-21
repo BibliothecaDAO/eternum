@@ -15,7 +15,7 @@ type AcceptOfferPopupProps = {
 };
 
 export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupProps) => {
-  const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
+  const [selectedCaravan, setSelectedCaravan] = useState<bigint>(0n);
   const [isNewCaravan, setIsNewCaravan] = useState(false);
   const [donkeysCount, setDonkeysCount] = useState(1);
   const [hasEnoughDonkeys, setHasEnoughDonkeys] = useState(false);
@@ -67,7 +67,7 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
   let resourceWeight = getTotalResourceWeight(resourcesGet);
 
   const canAcceptOffer = useMemo(() => {
-    return selectedCaravan !== 0 || (isNewCaravan && hasEnoughDonkeys);
+    return selectedCaravan !== 0n || (isNewCaravan && hasEnoughDonkeys);
   }, [selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
 
   useEffect(() => {

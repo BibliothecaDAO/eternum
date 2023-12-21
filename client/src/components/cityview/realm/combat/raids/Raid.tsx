@@ -95,7 +95,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
       onClick={props.onClick}
     >
       <div className="flex absolute w-full -left-[1px] -top-[1px] items-center text-xxs">
-        {entityId && (
+        {entityId.toString() && (
           <div
             className={clsx(
               `flex items-center p-1 border text-light-pink rounded-br-md rounded-tl-md border-gray-gold`,
@@ -115,7 +115,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Traveling to</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
-                {destinationRealmId && (
+                {destinationRealmId?.toString() && (
                   <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xxs" />
                 )}
                 {destinationRealmName}
@@ -140,7 +140,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Waiting on</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
-                {destinationRealmId && (
+                {destinationRealmId?.toString() && (
                   <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xxs" />
                 )}
                 {destinationRealmName}
@@ -244,7 +244,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
                       type="vertical"
                       color="text-order-brilliance"
                       resourceId={resource.resourceId}
-                      amount={divideByPrecision(resource.amount)}
+                      amount={divideByPrecision(Number(resource.amount))}
                     />
                   ),
               )}

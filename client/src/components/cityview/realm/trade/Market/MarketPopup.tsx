@@ -27,6 +27,7 @@ interface DepthOfMarket {
   price: number;
   amount: number;
 }
+
 interface ResourceOffersSummary {
   resourceId: number;
   bestPrice: number;
@@ -34,6 +35,7 @@ interface ResourceOffersSummary {
   totalOffers: number;
   depthOfMarket: DepthOfMarket[];
 }
+
 export const MarketPopup = ({ onClose }: MarketPopupProps) => {
   const [selectedResource, setSelectedResource] = useState<number | null>(null);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
@@ -402,11 +404,11 @@ const OverviewResourceRow = ({
             </div>
           )}
           {askSummary &&
-            lastFive.map((depth) => {
+            lastFive.map((depth, i) => {
               accumulatedAmount += depth.amount;
               const width = (accumulatedAmount / askSummary.totalAmount) * 100;
               return (
-                <div className="w-full relative h-5 border-b border-white/30">
+                <div key={i} className="w-full relative h-5 border-b border-white/30">
                   <div className="flex mt-0.5 flex-1 w-full justify-between px-0.5 items-center">
                     <div className="relative z-10">
                       {Intl.NumberFormat("en-US", {
@@ -626,7 +628,7 @@ const ResourceOfferRow = ({
   isBuy,
   onClick,
 }: {
-  realmEntityId: number;
+  realmEntityId: bigint;
   offer: MarketInterface;
   isBuy: boolean;
   onClick: () => void;
@@ -662,7 +664,7 @@ const ResourceOfferRow = ({
       {makerRealm && (
         <div className="flex items-center">
           {<OrderIcon order={orderNameDict[makerRealm.order]} size="xs" className="mr-1" />}
-          {realmsData["features"][makerRealm.realmId - 1]?.name}
+          {realmsData["features"][Number(makerRealm.realmId - 1n)]?.name}
         </div>
       )}
       {offer.makerId !== realmEntityId && (

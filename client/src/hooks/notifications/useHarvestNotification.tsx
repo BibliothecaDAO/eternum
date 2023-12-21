@@ -1,7 +1,7 @@
 import { ReactComponent as Checkmark } from "../../assets/icons/common/checkmark.svg";
 import { OrderIcon } from "../../elements/OrderIcon";
 import { useDojo } from "../../DojoContext";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { Badge } from "../../elements/Badge";
 import { getEntityIdFromKeys } from "../../utils/utils";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
@@ -32,13 +32,13 @@ export const useHarvestNotification = (
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const realmEntityId = notification.keys ? parseInt(notification.keys[0]) : undefined;
+  const realmEntityId = notification.keys ? BigInt(notification.keys[0]) : undefined;
   const resourceType = notification.keys ? parseInt(notification.keys[1]) : undefined;
   const { play: playHarvest } = useUiSounds(soundSelector.harvest);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
-  const realm = realmEntityId ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)])) : undefined;
+  const realm = realmEntityId ? getComponentValue(Realm, getEntityIdFromKeys([realmEntityId])) : undefined;
 
   const realmName = realm ? getRealmNameById(realm.realm_id) : "";
   const realmOrderName = realm ? getRealmOrderNameById(realm?.realm_id) : "";

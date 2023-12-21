@@ -17,8 +17,8 @@ const MAX_HARVEST_NOTIFICATIONS = 11;
 const MAX_CLAIM_NOTIFICATIONS = 7;
 
 type sender = {
-  sender_id: number;
-  receiver_id: number;
+  sender_id: bigint;
+  receiver_id: bigint;
   indices: number[];
 };
 
@@ -72,7 +72,7 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
           let data = notification.data as EmptyChestData;
           if (notification?.keys) {
             return {
-              sender_id: parseInt(notification.keys[0]),
+              sender_id: BigInt(notification.keys[0]),
               receiver_id: data.realmEntityId,
               indices: data.indices,
             };
@@ -125,7 +125,7 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
   };
 
   return (
-    <div className={clsx("flex flex-col space-y-2 fixed right-4 bottom-4 top-4 events-none", className)}>
+    <div className={clsx("flex flex-col space-y-2 fixed right-4 bottom-4 top-4 pointer-events-none", className)}>
       <div className="w-full flex flex-cols justify-between">
         {
           <Button

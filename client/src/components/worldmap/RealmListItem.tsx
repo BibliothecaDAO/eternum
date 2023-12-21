@@ -18,7 +18,7 @@ export const RealmListItem = ({ realm }: RealmListItemProps) => {
 
   const { getRealmAddressName } = useRealm();
 
-  const addressName = getRealmAddressName(realm.entity_id);
+  const addressName = getRealmAddressName(BigInt(realm.entity_id));
 
   return (
     <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold">
@@ -26,19 +26,17 @@ export const RealmListItem = ({ realm }: RealmListItemProps) => {
         {realm && (
           <div className="flex items-center p-1 -mt-2 -ml-2 border border-t-0 border-l-0 rounded-br-md border-gray-gold">
             {realm.order && <OrderIcon order={orderNameDict[realm.order]} size="xs" className="mr-1" />}
-            {realmsData["features"][realm.realmId - 1].name}
+            {realmsData["features"][Number(realm.realmId) - 1].name}
           </div>
         )}
         <div className="-mt-2 ml-2 italic">
           owned by
-          {!addressName && realm?.owner && (
-            <span className="text-gold ml-1 mr-1">{displayAddress(realm.owner || "0x0")}</span>
-          )}
+          {realm && <span className="text-gold ml-1 mr-1">{displayAddress(realm?.owner?.toString() || "0x0")}</span>}
           {addressName && <span className="text-gold ml-1 mr-1">{addressName}</span>}
         </div>
         <div className=" text-gold flex ml-auto ">
           <Button
-            onClick={() => moveCameraToRealm(realm?.realmId as number)}
+            onClick={() => moveCameraToRealm(Number(realm?.realmId))}
             variant="outline"
             className="p-1 !h-4 text-xxs !rounded-md"
           >

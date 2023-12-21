@@ -120,14 +120,14 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   moveCameraToRealmView: () => {
     const pos = {
       x: 520.4138155171775,
-      y: 1962.1390819999998,
-      z: 1976.0299115304658,
+      y: 1084.1390819999998,
+      z: 1357.0299115304658,
       transitionDuration: 0.01,
     };
     const target = {
-      x: 188.3221210638067,
+      x: 40.3221210638067,
       y: 0.1390819999999989,
-      z: 6.35675413789002,
+      z: -33.35675413789002,
       transitionDuration: 0.01,
     };
     set({ cameraPosition: pos, cameraTarget: target });
@@ -135,13 +135,13 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   moveCameraToMarketView: () => {
     const pos = {
       x: 520.4138155171775,
-      y: 1962.1390819999998,
-      z: 1976.0299115304658,
+      y: 500.1390819999998,
+      z: 1357.0299115304658,
     };
     const target = {
-      x: 188.3221210638067,
+      x: 40.3221210638067,
       y: 0.1390819999999989,
-      z: 6.35675413789002,
+      z: -33.35675413789002,
     };
     set({ cameraPosition: pos, cameraTarget: target });
   },

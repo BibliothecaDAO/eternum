@@ -15,7 +15,7 @@ export const SmallResource = ({
   hideIfZero,
 }: {
   resourceId: number;
-  entity_id?: number;
+  entity_id?: bigint;
   vertical?: boolean;
   intlFormat?: boolean;
   hideIfZero?: boolean;
@@ -48,7 +48,7 @@ export const SmallResource = ({
           ? Intl.NumberFormat("en-US", {
               notation: "compact",
               maximumFractionDigits: 1,
-            }).format(divideByPrecision(resource?.balance || 0))
+            }).format(divideByPrecision(Number(resource?.balance) || 0))
           : currencyFormat(resource?.balance || 0, 2)}
       </div>
     </div>

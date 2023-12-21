@@ -14,7 +14,7 @@ import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../DojoContext";
 import { formatSecondsLeftInDaysHours } from "./laborUtils";
 import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { divideByPrecision, getEntityIdFromKeys, getPosition, getZone } from "../../../../utils/utils";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
@@ -117,7 +117,8 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
       );
       return (
         realmResource &&
-        realmResource.balance >= getTotalAmount(amount, isFood, multiplier, laborAmount, laborAuctionAverageCoefficient)
+        realmResource.balance >=
+          getTotalAmount(Number(amount), isFood, multiplier, laborAmount, laborAuctionAverageCoefficient)
       );
     });
 
@@ -329,7 +330,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
                     resourceId={resourceId}
                     amount={Number(
                       divideByPrecision(
-                        getTotalAmount(amount, isFood, multiplier, laborAmount, laborAuctionAverageCoefficient),
+                        getTotalAmount(Number(amount), isFood, multiplier, laborAmount, laborAuctionAverageCoefficient),
                       ).toFixed(2),
                     )}
                   />

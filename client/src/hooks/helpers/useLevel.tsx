@@ -1,4 +1,4 @@
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { getEntityIdFromKeys } from "../../utils/utils";
@@ -64,9 +64,9 @@ export function useLevel() {
     ];
   };
 
-  const getEntityLevel = (entityId: number): { level: number; timeLeft: number } | undefined => {
+  const getEntityLevel = (entityId: bigint): { level: number; timeLeft: number } | undefined => {
     if (!nextBlockTimestamp) return undefined;
-    const level = getComponentValue(Level, getEntityIdFromKeys([BigInt(entityId)])) || {
+    const level = getComponentValue(Level, getEntityIdFromKeys([entityId])) || {
       level: 0,
       valid_until: nextBlockTimestamp,
     };

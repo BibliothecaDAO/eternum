@@ -3,7 +3,7 @@ import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
 import Button from "../../../../../elements/Button";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../DojoContext";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import { SelectRealmForCombatPanel } from "./SelectRealmForCombatPanel";
@@ -23,7 +23,7 @@ export const TravelRaidsPopup = ({ selectedRaider, onClose }: TravelRaidsPopupPr
     account: { account },
   } = useDojo();
 
-  const [selectedEntityId, setSelectedEntityId] = useState<number | undefined>();
+  const [selectedEntityId, setSelectedEntityId] = useState<bigint | undefined>();
   const [canAttack, setCanAttack] = useState(true);
   const [loading, setLoading] = useState(false);
 

@@ -23,7 +23,8 @@ export const SettleRealmComponent = () => {
     setup: {
       systemCalls: { create_multiple_realms },
     },
-    account: { account, masterAccount },
+    account: { account },
+    masterAccount,
   } = useDojo();
 
   const { getHyperstructureIdByOrder } = useHyperstructure();
@@ -44,13 +45,14 @@ export const SettleRealmComponent = () => {
     setIsLoading(true);
     let calldata = [];
 
-    let new_realm_id = getNextRealmIdForOrder(chosenOrder || selectedOrder);
+    let new_realm_id = BigInt(getNextRealmIdForOrder(chosenOrder || selectedOrder));
+
     for (let i = 0; i < MAX_REALMS; i++) {
       // if no realm id latest realm id is 0
       // const realm_id = await getLatestRealmId();
 
       if (i > 0) {
-        new_realm_id = getRealmIdForOrderAfter(chosenOrder || selectedOrder, new_realm_id);
+        new_realm_id = BigInt(getRealmIdForOrderAfter(chosenOrder || selectedOrder, new_realm_id));
       }
       // take next realm id
       let realm = getRealm(new_realm_id);
@@ -62,7 +64,7 @@ export const SettleRealmComponent = () => {
       if (order_hyperstructure_id) {
         calldata.push({
           owner: BigInt(account.address),
-          realm_id: realm.realmId,
+          realm_id: Number(realm.realmId),
           order: realm.order,
           wonder: realm.wonder,
           regions: realm.regions,
@@ -72,6 +74,7 @@ export const SettleRealmComponent = () => {
           harbors: realm.harbors,
           cities: realm.cities,
           position,
+          // todo: fix this
           order_hyperstructure_id,
         });
       }

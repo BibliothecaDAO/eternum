@@ -28,6 +28,10 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
   const { getEntityLevel } = useLevel();
   const realm_level = getEntityLevel(realmEntityId)?.level;
 
+  useEffect(() => {
+    setShowAllResources(false);
+  }, [realmEntityId]);
+
   // unpack the resources
   useMemo((): any => {
     let realmResourceIds: number[] = [ResourcesIds["Lords"], ResourcesIds["Wheat"], ResourcesIds["Fish"]];
@@ -145,20 +149,20 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId, class
     <>
       <div
         onMouseEnter={() =>
-          (resourceId >= 22 || level > 0) &&
+          (resourceId >= 23 || level > 0) &&
           setTooltip({
             position: "bottom",
             content: (
               <div className="flex flex-col items-center justify-center">
                 <div className="font-bold">{findResourceById(resourceId)?.trait}</div>
-                <div>{currencyFormat(resource ? resource.balance : 0, 2)}</div>
+                <div>{currencyFormat(resource ? Number(resource.balance) : 0, 2)}</div>
               </div>
             ),
           })
         }
         onMouseLeave={() => setTooltip(null)}
         className={`flex relative group items-center text-sm ${
-          resourceId < 22 && level == 0 && "blur-sm"
+          resourceId < 23 && level == 0 && "blur-sm"
         } ${className}`}
       >
         <ResourceIcon
@@ -168,7 +172,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId, class
           className="mr-1"
         />
         <div className="flex text-xs">
-          {currencyIntlFormat(resource ? resource.balance : 0, 2)}
+          {currencyIntlFormat(resource ? Number(resource.balance) : 0, 2)}
           {resourceId !== 253 && canFarm && (
             <div
               className={clsx(

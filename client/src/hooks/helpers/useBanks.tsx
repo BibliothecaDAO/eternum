@@ -1,4 +1,4 @@
-import { Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
+import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { Position, Resource } from "@bibliothecadao/eternum";
 import { getContractPositionFromRealPosition, getEntityIdFromKeys } from "../../utils/utils";
@@ -29,22 +29,31 @@ export const useBanks = () => {
   const getResourceBankPrice = (auction: AuctionInterface, resourceId: 254 | 255): number | undefined => {
     const coefficient =
       auction && nextBlockTimestamp
-        ? computeCoefficient(auction.start_time, nextBlockTimestamp, auction.sold, 0.1, auction.per_time_unit)
+        ? computeCoefficient(
+            auction.start_time,
+            nextBlockTimestamp,
+            Number(auction.sold),
+            0.1,
+            Number(auction.per_time_unit),
+          )
         : undefined;
 
     return coefficient ? coefficient * targetPrices[resourceId] : undefined;
   };
 
-  const getBankEntityId = (bankPosition: Position): number | undefined => {
-    const entityIds = runQuery([Has(Bank), HasValue(Position, bankPosition)]);
-    return Array.from(entityIds).length === 1 ? Array.from(entityIds)[0] : undefined;
+  const getBankEntityId = (bankPosition: Position): bigint | undefined => {
+    const entityIds = Array.from(runQuery([Has(Bank), HasValue(Position, bankPosition)]));
+    if (entityIds.length === 1) {
+      let bank = getComponentValue(Bank, entityIds[0]);
+      return bank?.entity_id;
+    }
   };
 
   const getLordsAmountFromBank = (bankPosition: Position, resource: Resource): number | undefined => {
     const bankId = getBankEntityId(bankPosition);
     const auction =
       bankId !== undefined
-        ? getComponentValue(BankAuction, getEntityIdFromKeys([BigInt(bankId), BigInt(resource.resourceId)]))
+        ? getComponentValue(BankAuction, getEntityIdFromKeys([bankId, BigInt(resource.resourceId)]))
         : undefined;
 
     const { per_time_unit, sold, start_time, price_update_interval } = auction || {};
@@ -54,11 +63,11 @@ export const useBanks = () => {
           resource.amount,
           targetPrices[resource.resourceId as 254 | 255],
           BANK_AUCTION_DECAY,
-          per_time_unit,
+          Number(per_time_unit),
           start_time,
           nextBlockTimestamp,
-          sold,
-          price_update_interval,
+          Number(sold),
+          Number(price_update_interval),
         )
       : undefined;
   };

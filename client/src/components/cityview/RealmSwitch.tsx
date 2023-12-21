@@ -11,15 +11,15 @@ import realmsNames from "../../geodata/realms.json";
 import useUIStore from "../../hooks/store/useUIStore";
 import { getRealm } from "../../utils/realms";
 import { useDojo } from "../../DojoContext";
-import { Has, HasValue, getComponentValue } from "@latticexyz/recs";
+import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useEntityQuery } from "@dojoengine/react";
 
 type RealmSwitchProps = {} & ComponentPropsWithRef<"div">;
 
 // TODO: Remove
 export type RealmBubble = {
-  id: number;
-  realmId: number;
+  id: bigint;
+  realmId: bigint;
   name: string;
   order: string;
 };
@@ -46,9 +46,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
     setHyperstructureId,
   } = useRealmStore();
 
-  const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: account.address })]);
-  // const entityIds = useEntityQuery([Has(Realm)]);
-  // console.log({ account: account.address });
+  const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: BigInt(account.address) })]);
 
   // set realm entity ids everytime the entity ids change
   useEffect(() => {
@@ -61,11 +59,12 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
           if (hyperstructureId !== realm.order_hyperstructure_id) {
             setHyperstructureId(realm.order_hyperstructure_id);
           }
-          return { realmEntityId: Number(id), realmId: realm?.realm_id };
+          return { realmEntityId: realm.entity_id, realmId: realm.realm_id };
         }
       })
       .filter(Boolean)
-      .sort((a, b) => a!.realmId - b!.realmId) as { realmEntityId: number; realmId: number }[];
+      .sort((a, b) => Number(a!.realmId) - Number(b!.realmId)) as { realmEntityId: bigint; realmId: bigint }[];
+
     setRealmEntityIds(realmEntityIds);
   }, [entityIds]);
 
@@ -85,7 +84,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
     const fetchedYourRealms: RealmBubble[] = [];
     realmEntityIds.forEach(({ realmEntityId, realmId }) => {
       const realm = getRealm(realmId);
-      const name = realmsNames.features[realm.realmId - 1].name;
+      const name = realmsNames.features[Number(realm.realmId) - 1].name;
       fetchedYourRealms.push({
         id: realmEntityId,
         realmId: realm.realmId,
@@ -131,7 +130,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
                 if (location.includes(`/realm`)) {
                   setIsLoadingScreenEnabled(false);
                 }
-                setLocation(`/realm/${realm.id}`);
+                setLocation(`/realm/${Number(realm.realmId)}`);
                 setRealmEntityId(realm.id);
                 setRealmId(realm.realmId);
               }, 500);

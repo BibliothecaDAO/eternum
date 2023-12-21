@@ -28,7 +28,7 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
 
   const [step, setStep] = useState<number>(1);
   const [selectedRaiders, setSelectedRaiders] = useState<CombatInfo[]>([]);
-  const [targetRealmEntityId, setTargetRealmEntityId] = useState<number | null>(null);
+  const [targetRealmEntityId, setTargetRealmEntityId] = useState<bigint | null>(null);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
@@ -38,7 +38,7 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
   const attackingEntities = attackPosition ? getRealmRaidersOnPosition(realmEntityId, attackPosition) : [];
 
   const attackingRaiders = useMemo(() => {
-    return getEntitiesCombatInfo(attackingEntities);
+    return getEntitiesCombatInfo(attackingEntities.map((id) => BigInt(id)));
   }, [attackingEntities]);
 
   useEffect(() => {
@@ -71,7 +71,7 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
       <SecondaryPopup.Head onClose={onClose}>
         <div className="flex items-center space-x-1">
           <div className="mr-0.5">
-            Attacking {defendingRealmName} (#{defendingRealmId}):
+            Attacking {defendingRealmName} (#{defendingRealmId?.toString()}):
           </div>
         </div>
       </SecondaryPopup.Head>
@@ -94,13 +94,13 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
               selectedRaiders={selectedRaiders}
             ></AttackResultPanel>
           )}
-          {targetRealmEntityId && step == 3 && (
+          {targetRealmEntityId?.toString() && step == 3 && (
             <StealResultPanel
               targetFoodBalance={targetFoodBalance}
               targetRealmEntityId={targetRealmEntityId}
               onClose={onClose}
               selectedRaiders={selectedRaiders}
-            ></StealResultPanel>
+            />
           )}
         </div>
       </SecondaryPopup.Body>
@@ -126,7 +126,7 @@ const AttackResultPanel = ({
   const newWatchTowerHealth = watchTower?.entityId
     ? useComponentValue(Health, getEntityIdFromKeys([BigInt(watchTower.entityId)]))
     : undefined;
-  const success = newWatchTowerHealth ? newWatchTowerHealth.value !== watchTower.health : false;
+  const success = newWatchTowerHealth ? newWatchTowerHealth.value !== BigInt(watchTower.health) : false;
 
   return (
     <div className="flex flex-col items-center w-full">
@@ -175,7 +175,7 @@ const AttackResultPanel = ({
               <div>{"Watchtower Old Health:"}</div>
               <div className="text-order-brilliance">{watchTower.health}</div>
               <div>{"Watchtower New Health:"}</div>
-              <div className="text-order-giants">{newWatchTowerHealth.value}</div>
+              <div className="text-order-giants">{newWatchTowerHealth.value.toString()}</div>
             </div>
           </div>
         </>
@@ -249,7 +249,7 @@ const AttackerHealthChange = ({ selectedRaider }: { selectedRaider: CombatInfo }
       <div>Old Health</div>
       <div className="text-order-brilliance">{selectedRaider.health}</div>
       <div>New Health</div>
-      {newHealth && <div className="text-order-giants">{newHealth.value}</div>}
+      {newHealth && <div className="text-order-giants">{newHealth.value.toString()}</div>}
     </div>
   );
 };
@@ -261,7 +261,7 @@ const StealResultPanel = ({
   onClose,
 }: {
   targetFoodBalance: Resource[];
-  targetRealmEntityId: number;
+  targetRealmEntityId: bigint;
   selectedRaiders: CombatInfo[];
   onClose: () => void;
 }) => {
@@ -287,7 +287,7 @@ const StealResultPanel = ({
   const inventoryResources = useMemo(() => {
     return selectedRaiders[0].entityId ? getResourcesFromInventory(selectedRaiders[0].entityId) : undefined;
   }, [step === 3]);
-  const success = attackerHealth ? attackerHealth.value === selectedRaiders[0].health : undefined;
+  const success = attackerHealth ? attackerHealth.value === BigInt(selectedRaiders[0].health) : undefined;
 
   return (
     <div className="flex flex-col items-center w-full">
@@ -344,7 +344,7 @@ const StealResultPanel = ({
                             {Intl.NumberFormat("en-US", {
                               notation: "compact",
                               maximumFractionDigits: 1,
-                            }).format(divideByPrecision(resource.burntAmount) || 0)}
+                            }).format(divideByPrecision(Number(resource.burntAmount)) || 0)}
                           </div>
                         </div>
                       ),
@@ -370,7 +370,7 @@ const StealResultPanel = ({
                             {Intl.NumberFormat("en-US", {
                               notation: "compact",
                               maximumFractionDigits: 1,
-                            }).format(divideByPrecision(resource.amount) || 0)}
+                            }).format(divideByPrecision(Number(resource.amount)) || 0)}
                           </div>
                         </div>
                       ),
@@ -528,7 +528,7 @@ const SelectRaidersPanel = ({
     if (watchTower?.locationRealmEntityId) {
       await attack({
         signer: account,
-        attacker_ids: selectedRaiders.map((raider) => raider.entityId).filter(Boolean) as number[],
+        attacker_ids: selectedRaiders.map((raider) => Number(raider.entityId)).filter(Boolean) as number[],
         target_id: watchTower.locationRealmEntityId,
       });
       // when contract finished setloading false

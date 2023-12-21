@@ -5,7 +5,7 @@ import { getRealm } from "../../utils/realms";
 import { pollForEvents, Event } from "../../services/eventPoller";
 
 export interface LeaderboardInterface {
-  realmId: number;
+  realmId: bigint;
   realmName: string;
   realmOrder: string;
   total_transfers: number;
@@ -19,8 +19,8 @@ interface LeaderboardStore {
   progress: number;
   setProgress: (progress: number) => void;
   leaderboard: Record<number, LeaderboardInterface>;
-  addOrUpdateLeaderboardEntry: (realmId: number, resourceAmount: number, resourceId: number) => void;
-  syncData: (hyperstructureIds: number[]) => void;
+  addOrUpdateLeaderboardEntry: (realmId: bigint, resourceAmount: number, resourceId: number) => void;
+  syncData: (hyperstructureIds: bigint[]) => void;
 }
 
 const useLeaderBoardStore = create<LeaderboardStore>((set, get) => ({
@@ -32,17 +32,18 @@ const useLeaderBoardStore = create<LeaderboardStore>((set, get) => ({
   setProgress: (progress) => set({ progress }),
 
   // Function to add or update a leaderboard entry
-  addOrUpdateLeaderboardEntry: (realmId: number, resourceAmount: number, resourceId: number) => {
+  addOrUpdateLeaderboardEntry: (realmId: bigint, resourceAmount: number, resourceId: number) => {
+    let realmIdNumber = Number(realmId);
     set((state) => {
       const newLeaderboard = { ...state.leaderboard };
-      if (newLeaderboard[realmId]) {
-        newLeaderboard[realmId].total_transfers += 1;
-        newLeaderboard[realmId].total_amount += resourceAmount;
-        newLeaderboard[realmId].total_points += calculatePoints(resourceId, resourceAmount);
+      if (newLeaderboard[realmIdNumber]) {
+        newLeaderboard[realmIdNumber].total_transfers += 1;
+        newLeaderboard[realmIdNumber].total_amount += resourceAmount;
+        newLeaderboard[realmIdNumber].total_points += calculatePoints(resourceId, resourceAmount);
       } else {
         let realm = getRealm(realmId);
         let orderName = orderNameDict[realm.order];
-        newLeaderboard[realmId] = {
+        newLeaderboard[realmIdNumber] = {
           realmId,
           realmOrder: orderName,
           realmName: realm.name,
@@ -59,20 +60,20 @@ const useLeaderBoardStore = create<LeaderboardStore>((set, get) => ({
     set({ loading: true });
     set({ leaderboard: {} });
 
-    const syncDataInternal = async (hyperstructureId: number) => {
+    const syncDataInternal = async (hyperstructureId: bigint) => {
       const processEvents = (event: Event) => {
         const resources_len = parseInt(event.data[1]);
         for (let i = 0; i < resources_len; i += 1) {
           const resourceId = parseInt(event.data[2 + 2 * i]);
           const resourceAmount = parseInt(event.data[2 + 2 * i + 1]);
-          const realmId = parseInt(event.keys[2]);
-          if (realmId === 0) continue;
+          const realmId = BigInt(event.keys[2]);
+          if (realmId === 0n) continue;
           get().addOrUpdateLeaderboardEntry(realmId, resourceAmount, resourceId);
         }
       };
 
       // Keccak for Transfer event
-      await pollForEvents([TRANSFER_EVENT, numberToHex(hyperstructureId), "*"], processEvents);
+      await pollForEvents([TRANSFER_EVENT, numberToHex(Number(hyperstructureId)), "*"], processEvents);
     };
 
     await Promise.all(hyperstructureIds.map(syncDataInternal)).finally(() => {

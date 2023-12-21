@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-nocheck
 import WorldMap from "../../components/worldmap/WorldMap.jsx";
 // @ts-ignore
 import { Flags } from "../../components/worldmap/Flags.jsx";
@@ -9,7 +9,7 @@ import useUIStore from "../../hooks/store/useUIStore.js";
 // import { TransformControls } from "@react-three/drei";
 // @ts-ignore
 import Arcs from "../../components/worldmap/Arcs.jsx";
-import { useGetCaravansWithResourcesChest } from "../../hooks/helpers/useResources.js";
+import { useResources } from "../../hooks/helpers/useResources.js";
 import { useMemo, useRef } from "react";
 import { useCaravan } from "../../hooks/helpers/useCaravans.js";
 import useRealmStore from "../../hooks/store/useRealmStore.js";
@@ -22,9 +22,10 @@ export const WorldMapScene = () => {
   const worldRef = useRef();
 
   const hyperstructures = useUIStore((state) => state.hyperstructures);
+  const { getCaravansWithResourcesChest } = useResources();
 
   const { getCaravanInfo } = useCaravan();
-  const { caravansAtPositionWithInventory: caravanIds } = useGetCaravansWithResourcesChest();
+  const caravanIds = getCaravansWithResourcesChest();
   const { realmEntityId } = useRealmStore();
   const { realm } = useGetRealm(realmEntityId);
 
@@ -53,7 +54,8 @@ export const WorldMapScene = () => {
         </mesh>
       </TransformControls> */}
       <WorldMap ref={worldRef} />
-      {hyperstructures.map((hyperstructure, i) => {
+      <HyperstructureStarted />
+      {/* {hyperstructures.map((hyperstructure, i) => {
         if (hyperstructure) {
           if (hyperstructure.level >= 3) {
             return (
@@ -64,28 +66,27 @@ export const WorldMapScene = () => {
             );
           } else if (hyperstructure.level == 2) {
             return (
-              <HyperstructureHalf
-                key={i}
-                hyperstructure={hyperstructure}
-                position={[hyperstructure.uiPosition.x, hyperstructure.uiPosition.y, hyperstructure.uiPosition.z]}
-              />
+              <></>
+              // <HyperstructureHalf
+              //   key={i}
+              //   hyperstructure={hyperstructure}
+              //   position={[hyperstructure.uiPosition.x, hyperstructure.uiPosition.y, hyperstructure.uiPosition.z]}
+              // />
             );
           } else {
             return (
               <HyperstructureStarted
-                key={i}
-                position={[hyperstructure.uiPosition.x, hyperstructure.uiPosition.y, hyperstructure.uiPosition.z]}
-                hyperstructure={hyperstructure}
+
               />
             );
           }
         }
         return null;
-      })}
-      {banks.map((bank, i) => {
+      })} */}
+      {/* {banks.map((bank, i) => {
         return <Bank key={i} position={[bank.x, bank.y, bank.z]} />;
-      })}
-      <Arcs paths={destinations} />
+      })} */}
+      {/* <Arcs paths={destinations} /> */}
     </>
   );
 };

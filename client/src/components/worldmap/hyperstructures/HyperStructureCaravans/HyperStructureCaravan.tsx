@@ -5,13 +5,19 @@ import { ReactComponent as CaretDownFill } from "../../../../assets/icons/common
 import { ReactComponent as DonkeyIcon } from "../../../../assets/icons/units/donkey-circle.svg";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { getTotalResourceWeight } from "../../../cityview/realm/trade/TradeUtils";
-import { displayAddress, divideByPrecision, getEntityIdFromKeys, numberToHex } from "../../../../utils/utils";
+import {
+  displayAddress,
+  divideByPrecision,
+  getEntityIdFromKeys,
+  getForeignKeyEntityId,
+  numberToHex,
+} from "../../../../utils/utils";
 import { formatSecondsInHoursMinutes } from "../../../cityview/realm/labor/laborUtils";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import ProgressBar from "../../../../elements/ProgressBar";
 import { Dot } from "../../../../elements/Dot";
 import { CAPACITY_PER_DONKEY, CaravanInterface, HyperStructureInterface } from "@bibliothecadao/eternum";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../../../DojoContext";
 import Button from "../../../../elements/Button";
 import { useHyperstructure } from "../../../../hooks/helpers/useHyperstructure";
@@ -46,11 +52,11 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
   const returnPosition = useMemo(() => {
     const caravanMembers = getComponentValue(CaravanMembers, getEntityIdFromKeys([BigInt(caravan.caravanId)]));
     if (caravanMembers && caravanMembers.count > 0) {
-      let entity_id = getEntityIdFromKeys([BigInt(caravan.caravanId), BigInt(caravanMembers.key), BigInt(0)]);
+      let entity_id = getForeignKeyEntityId(caravan.caravanId, caravanMembers.key, 0n);
       let foreignKey = getComponentValue(ForeignKey, entity_id);
       if (foreignKey) {
         // @note: temp fix until we don't use entity_id as field name in foreign key
-        let ownerRealmEntityId = getComponentValue(EntityOwner, getEntityIdFromKeys([BigInt(caravan.caravanId - 2)]));
+        let ownerRealmEntityId = getComponentValue(EntityOwner, getEntityIdFromKeys([caravan.caravanId - 2n]));
         let homePosition = ownerRealmEntityId
           ? getComponentValue(Position, getEntityIdFromKeys([BigInt(ownerRealmEntityId.entity_owner_id)]))
           : undefined;
@@ -101,7 +107,7 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
     >
       <div className="flex items-center text-xxs">
         <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
-          {isMine ? "You" : displayAddress(owner || numberToHex(0))}
+          {isMine ? "You" : displayAddress(owner?.toString() || numberToHex(0))}
         </div>
         <div className="flex items-center ml-1 -mt-2">
           {capacity && resourceWeight !== undefined && capacity && (

@@ -12,7 +12,7 @@ interface Attribute {
   value: any;
 }
 
-export const getRealmIdByPosition = (positionRaw: { x: number; y: number }): number | undefined => {
+export const getRealmIdByPosition = (positionRaw: { x: number; y: number }): bigint | undefined => {
   let offset = 1800000;
   let position = { x: positionRaw.x - offset, y: positionRaw.y - offset };
   // TODO: find a better way to find position
@@ -21,22 +21,22 @@ export const getRealmIdByPosition = (positionRaw: { x: number; y: number }): num
       parseInt(realm["geometry"]["coordinates"][0]) === position.x &&
       parseInt(realm["geometry"]["coordinates"][1]) === position.y
     ) {
-      return realm["properties"]["tokenId"];
+      return BigInt(realm["properties"]["tokenId"]);
     }
   }
   return undefined;
 };
 
-export const getRealmNameById = (realmId: number): string => {
-  return realmsJson["features"][realmId - 1]["name"];
+export const getRealmNameById = (realmId: bigint): string => {
+  return realmsJson["features"][Number(realmId) - 1]["name"];
 };
 
-export const getRealmOrderNameById = (realmId: number): string => {
-  const orderName = realmsOrdersJson[realmId - 1].order;
+export const getRealmOrderNameById = (realmId: bigint): string => {
+  const orderName = realmsOrdersJson[Number(realmId) - 1].order;
   return orderName.toLowerCase().replace("the ", "");
 };
 
-export function getRealm(realmId: number): RealmInterface {
+export function getRealm(realmId: bigint): RealmInterface {
   const realmsData = realms as {
     [key: string]: any;
   };
@@ -44,7 +44,7 @@ export function getRealm(realmId: number): RealmInterface {
   const resourceIds = realm.attributes
     .filter(({ trait_type }: Attribute) => trait_type === "Resource")
     .map(({ value }: Attribute) => findResourceIdByTrait(value));
-  const resourceTypesPacked = parseInt(packResources(resourceIds));
+  const resourceTypesPacked = BigInt(packResources(resourceIds));
   let cities: number = 0;
   realm.attributes.forEach(({ trait_type, value }: Attribute) => {
     if (trait_type === "Cities") {
@@ -84,7 +84,7 @@ export function getRealm(realmId: number): RealmInterface {
     }
   });
 
-  let coords = realmsCoordsJson["features"][realmId]["geometry"]["coordinates"];
+  let coords = realmsCoordsJson["features"][Number(realmId)]["geometry"]["coordinates"];
   let position = getContractPositionFromRealPosition({ x: parseInt(coords[0]), y: parseInt(coords[1]) });
 
   return {

@@ -5,7 +5,7 @@ import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 import { ResourceCost } from "../../elements/ResourceCost";
 import { divideByPrecision, formatTimeLeftDaysHoursMinutes, getEntityIdFromKeys } from "../../utils/utils";
 import { CombatResultInterface, Winner } from "@bibliothecadao/eternum";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { NotificationType } from "../store/useNotificationsStore";
@@ -135,7 +135,7 @@ export const useStolenResourcesNotification = (
                 key={resourceId}
                 resourceId={resourceId}
                 color="text-order-brilliance"
-                amount={divideByPrecision(amount)}
+                amount={divideByPrecision(Number(amount))}
               />
             ))}
         </div>

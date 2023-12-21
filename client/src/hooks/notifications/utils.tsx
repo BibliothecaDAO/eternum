@@ -3,14 +3,17 @@ import { divideByPrecision, getEntityIdFromKeys, getPosition } from "../../utils
 import { LABOR_CONFIG, Position, Resource, ResourcesIds } from "@bibliothecadao/eternum";
 import { unpackResources } from "../../utils/packedData";
 import { getRealm } from "../../utils/realms";
-import { Component, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
-import { UpdatedEntity } from "../../dojo/createEntitySubscription";
+import { Component, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { CarrierType, EventType, NotificationType, extractAndCleanKey } from "../store/useNotificationsStore";
-import { LevelIndex } from "../helpers/useLevel";
 import { calculateNextHarvest } from "../../components/cityview/realm/labor/laborUtils";
+import { LevelIndex } from "../helpers/useLevel";
 
-export type realmsResources = { realmEntityId: number; resourceIds: number[] }[];
-export type realmsPosition = { realmId: number; position: Position }[];
+export type realmsResources = { realmEntityId: bigint; resourceIds: number[] }[];
+export type realmsPosition = { realmId: bigint; position: Position }[];
+export type UpdatedEntity = {
+  entityKeys: string[];
+  modelNames: string[];
+};
 
 /**
  * Get all resources present on each realm
@@ -19,8 +22,8 @@ export type realmsPosition = { realmId: number; position: Position }[];
  */
 export const useRealmsResource = (
   realms: {
-    realmEntityId: number;
-    realmId: number;
+    realmEntityId: bigint;
+    realmId: bigint;
   }[],
 ): realmsResources => {
   return useMemo(() => {
@@ -39,7 +42,7 @@ export const useRealmsResource = (
         }
         return null;
       })
-      .filter(Boolean) as { realmEntityId: number; resourceIds: number[] }[];
+      .filter(Boolean) as { realmEntityId: bigint; resourceIds: number[] }[];
   }, [realms]);
 };
 
@@ -50,8 +53,8 @@ export const useRealmsResource = (
  */
 export const useRealmsPosition = (
   realms: {
-    realmEntityId: number;
-    realmId: number;
+    realmEntityId: bigint;
+    realmId: bigint;
   }[],
 ): realmsPosition => {
   return useMemo(() => {
@@ -70,7 +73,7 @@ export const useRealmsPosition = (
 export const generateTradeNotifications = (entityUpdates: UpdatedEntity[], Status: Component) => {
   const notifications = entityUpdates
     .map((update) => {
-      if (update.model_names.includes("Trade")) {
+      if (update.modelNames.includes("Trade")) {
         const status = getComponentValue(Status, getEntityIdFromKeys(extractAndCleanKey(update.entityKeys)));
         switch (status?.value) {
           case 0:
@@ -110,7 +113,7 @@ export const generateTradeNotifications = (entityUpdates: UpdatedEntity[], Statu
  * @returns
  */
 export const generateLaborNotifications = (
-  resourcesPerRealm: { realmEntityId: number; resourceIds: number[] }[],
+  resourcesPerRealm: { realmEntityId: bigint; resourceIds: number[] }[],
   getRealmLevelBonus: (level: number, levelIndex: LevelIndex) => number,
   getHyperstructureLevelBonus: (level: number, levelIndex: LevelIndex) => number,
   nextBlockTimestamp: number,
@@ -178,7 +181,7 @@ export const generateEmptyChestNotifications = (
   Realm: Component,
   ForeignKey: Component,
   nextBlockTimestamp: number,
-  getResourcesFromInventory: (entityId: number) => {
+  getResourcesFromInventory: (entityId: bigint) => {
     resources: Resource[];
     indices: number[];
   },
@@ -195,17 +198,16 @@ export const generateEmptyChestNotifications = (
       }),
     ]);
 
-    const realms = runQuery([HasValue(Realm, { realm_id: realmId })]);
-    const realmEntityId = Number(realms.values().next().value);
+    const ids = Array.from(runQuery([HasValue(Realm, { realm_id: realmId })]));
+    let realmEntityId = ids.length > 0 ? getComponentValue(Realm, ids[0])!.entity_id : undefined;
 
-    for (const entityId of entitiesAtPositionWithInventory) {
-      const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([BigInt(entityId)])) as
-        | { arrives_at: number }
-        | undefined;
+    for (const id of entitiesAtPositionWithInventory) {
+      const arrivalTime = getComponentValue(ArrivalTime, id) as { arrives_at: number } | undefined;
+      const caravanMembers = getComponentValue(CaravanMembers, id);
 
+      // get key
+      let entityId = getComponentValue(Position, id)!.entity_id;
       const { resources, indices } = getResourcesFromInventory(entityId);
-
-      const caravanMembers = getComponentValue(CaravanMembers, getEntityIdFromKeys([BigInt(entityId)]));
 
       let carrierType = caravanMembers ? CarrierType.Caravan : CarrierType.Raiders;
 
@@ -217,7 +219,7 @@ export const generateEmptyChestNotifications = (
             destinationRealmId: realmId,
             carrierType,
             realmEntityId,
-            entityId,
+            entityId: BigInt(entityId),
             resources,
             indices,
           },

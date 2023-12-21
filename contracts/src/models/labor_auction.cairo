@@ -1,4 +1,4 @@
-use cubit::f128::math::core::ln;
+use cubit::f128::math::ops::ln;
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use starknet::get_block_timestamp;
 
@@ -51,12 +51,10 @@ impl LaborAuctionImpl of LaborAuctionTrait {
 
 #[cfg(test)]
 mod tests {
-    use eternum::models::labor_auction::{
-        LaborAuction, LaborAuctionTrait
-    };
+    use eternum::models::labor_auction::{LaborAuction, LaborAuctionTrait};
     use eternum::utils::vrgda::{LinearVRGDATrait, LinearVRGDA};
 
-    use cubit::f128::math::core::{ln, abs, exp, pow};
+    use cubit::f128::math::ops::{ln, abs, exp, pow};
 
     // testing
     use eternum::utils::testing::spawn_eternum;
@@ -109,5 +107,4 @@ mod tests {
             price, FixedTrait::new(_0_9, false), FixedTrait::new(DELTA_0_0005, false)
         )
     }
-
 }

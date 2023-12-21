@@ -1,4 +1,4 @@
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { getEntityIdFromKeys } from "../../utils/utils";
 import { unpackResources } from "../../utils/packedData";
@@ -29,7 +29,7 @@ export function useLabor() {
         LaborCostAmount,
         getEntityIdFromKeys([BigInt(resourceId), BigInt(costResourceId)]),
       );
-      let amount = laborCostAmount?.value || 0;
+      let amount = Number(laborCostAmount?.value) || 0;
       return { resourceId: costResourceId, amount };
     });
   };
@@ -38,7 +38,12 @@ export function useLabor() {
     let laborAuction = getComponentValue(LaborAuction, getEntityIdFromKeys([BigInt(zone)]));
 
     if (laborAuction && nextBlockTimestamp) {
-      return computeAverageCoefficient(laborAuction.start_time, nextBlockTimestamp, laborAuction.sold, laborUnits);
+      return computeAverageCoefficient(
+        laborAuction.start_time,
+        nextBlockTimestamp,
+        Number(laborAuction.sold),
+        laborUnits,
+      );
     }
   };
 
@@ -46,7 +51,7 @@ export function useLabor() {
     let laborAuction = getComponentValue(LaborAuction, getEntityIdFromKeys([BigInt(zone)]));
 
     if (laborAuction && nextBlockTimestamp) {
-      return computeCoefficient(laborAuction.start_time, nextBlockTimestamp, laborAuction.sold);
+      return computeCoefficient(laborAuction.start_time, nextBlockTimestamp, Number(laborAuction.sold));
     }
   };
 
@@ -54,7 +59,11 @@ export function useLabor() {
     let laborAuction = getComponentValue(LaborAuction, getEntityIdFromKeys([BigInt(zone)]));
 
     if (laborAuction && nextBlockTimestamp) {
-      return computeCoefficient(laborAuction.start_time, nextBlockTimestamp, laborAuction.sold + laborUnits);
+      return computeCoefficient(
+        laborAuction.start_time,
+        nextBlockTimestamp,
+        Number(laborAuction.sold + BigInt(laborUnits)),
+      );
     }
   };
 
@@ -65,7 +74,7 @@ export function useLabor() {
 
     useEffect(() => {
       if (laborAuction && nextBlockTimestamp) {
-        setLaborCoefficient(computeCoefficient(laborAuction.start_time, nextBlockTimestamp, laborAuction.sold));
+        setLaborCoefficient(computeCoefficient(laborAuction.start_time, nextBlockTimestamp, Number(laborAuction.sold)));
       }
     }, [laborAuction, nextBlockTimestamp]);
 

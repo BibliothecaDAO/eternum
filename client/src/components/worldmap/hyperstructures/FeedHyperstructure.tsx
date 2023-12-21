@@ -4,7 +4,7 @@ import Button from "../../../elements/Button";
 import { SelectCaravanPanel } from "../../cityview/realm/trade/CreateOffer";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { getRealm } from "../../../utils/realms";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import {
   divideByPrecision,
   getContractPositionFromRealPosition,
@@ -150,9 +150,20 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
   );
 };
 
-const SelectableRealm = ({ realm, selected = false, onClick, costs, ...props }: any) => {
+type SelectableRealmProps = {
+  realm: any;
+  selected: boolean;
+  onClick: () => void;
+  costs: {
+    resourceId: number;
+    currentAmount: number;
+    completeAmount: number;
+  }[];
+};
+
+const SelectableRealm = ({ realm, selected = false, onClick, costs, ...props }: SelectableRealmProps) => {
   const costById = useMemo(() => {
-    const costById: any = {};
+    const costById: Record<string, number> = {};
     costs &&
       costs.forEach((cost: { resourceId: number; currentAmount: number; completeAmount: number }) => {
         costById[cost.resourceId] = cost.completeAmount - cost.currentAmount;
@@ -218,7 +229,7 @@ const BuildHyperstructurePanel = ({
   onSendCaravan: () => void;
   hyperstructureData: HyperStructureInterface | undefined;
 }) => {
-  const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
+  const [selectedCaravan, setSelectedCaravan] = useState<bigint>(0n);
   const [isNewCaravan, setIsNewCaravan] = useState(false);
   const [donkeysCount, setDonkeysCount] = useState(1);
   const [hasEnoughDonkeys, setHasEnoughDonkeys] = useState(false);
@@ -324,10 +335,12 @@ const BuildHyperstructurePanel = ({
         const _resources = hyperstructureData?.hyperstructureResources.map((resource) => ({
           id: resource.resourceId,
           balance:
-            getComponentValue(
-              Resource,
-              getEntityIdFromKeys([BigInt(realmEntityId.realmEntityId), BigInt(resource.resourceId)]),
-            )?.balance || 0,
+            Number(
+              getComponentValue(
+                Resource,
+                getEntityIdFromKeys([BigInt(realmEntityId.realmEntityId), BigInt(resource.resourceId)]),
+              )?.balance,
+            ) || 0,
         }));
         return { ..._realm, entity_id: realmEntityId.realmEntityId, resources: _resources };
       }),
@@ -336,7 +349,7 @@ const BuildHyperstructurePanel = ({
 
   const canGoToNextStep = useMemo(() => {
     if (step === 3) {
-      return selectedCaravan !== 0 || (hasEnoughDonkeys && isNewCaravan);
+      return selectedCaravan !== 0n || (hasEnoughDonkeys && isNewCaravan);
     } else if (step == 2) {
       return false;
     } else {
@@ -353,13 +366,13 @@ const BuildHyperstructurePanel = ({
   }, [donkeysCount, resourceWeight]);
 
   const totalResources = useMemo(() => {
-    const totalResources: any = {};
+    const totalResources: Record<string, number> = {};
     hyperstructureData?.hyperstructureResources.forEach((resource) => {
       let resourceAmount = getComponentValue(
         Resource,
         getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resource.resourceId)]),
       );
-      totalResources[resource.resourceId] = resourceAmount?.balance || 0;
+      totalResources[resource.resourceId] = Number(resourceAmount?.balance) || 0;
     });
     return totalResources;
   }, [hyperstructureData, realmEntityId]);
@@ -466,20 +479,22 @@ const BuildHyperstructurePanel = ({
           <div className="text-xxs mb-2 italic text-gold">
             {`Press "Set the amounts" on any Realm with required resources, to set amounts and send caravan to Hyperstructure.`}
           </div>
-          <div className="h-72 flex flex-col w-full space-y-2 overflow-y-scroll">
-            {realms.map((realm) => (
-              <SelectableRealm
-                key={realm.realmId}
-                realm={realm}
-                onClick={() => {
-                  setRealmEntityId(realm.entity_id);
-                  setStep(step + 1);
-                }}
-                costs={hyperstructureData?.hyperstructureResources}
-                selected={realmEntityId === realm.entity_id}
-              />
-            ))}
-          </div>
+          {hyperstructureData && (
+            <div className="h-72 flex flex-col w-full space-y-2 overflow-y-scroll">
+              {realms.map((realm) => (
+                <SelectableRealm
+                  key={realm.realmId}
+                  realm={realm}
+                  onClick={() => {
+                    setRealmEntityId(realm.entity_id);
+                    setStep(step + 1);
+                  }}
+                  costs={hyperstructureData?.hyperstructureResources}
+                  selected={realmEntityId === realm.entity_id}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
       {step == 3 && (

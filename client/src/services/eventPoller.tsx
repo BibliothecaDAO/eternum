@@ -2,11 +2,11 @@ import { GraphQLClient } from "graphql-request";
 
 const OFFSET = 100;
 
-const client = new GraphQLClient(import.meta.env.VITE_TORII_URL!);
+const client = new GraphQLClient(import.meta.env.VITE_TORII_GRAPHQL!);
 
 type getEventsQuery = {
   events: {
-    total_count: number;
+    totalCount: number;
     edges: {
       cursor: string;
       node: Event;
@@ -35,7 +35,7 @@ export const pollForEvents = async (
     const queryBuilder = `
     query events {
       events(keys:[${formattedKeys}] ${cursor ? `after: "${cursor}"` : ""} first: ${OFFSET}) {
-        total_count
+        totalCount
         edges {
             cursor
             node {
