@@ -62,7 +62,7 @@ const fetchBlockTimestamp = async (): Promise<number | undefined> => {
       // it allows us to advance time. But current issue with next_block_timestamp is that
       // it does not get updated in katana until someone mints a new block. Since in prod we should
       // not be able to use advance time, we should use current block timestamp
-      return Date.now() / 1000;
+      return Math.floor(Date.now() / 1000);
     }
   } catch (error) {
     console.error("Error fetching block timestamp:", error);
