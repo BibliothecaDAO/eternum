@@ -32,7 +32,7 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
           Gather villagers
         </Button>
       </div>
-      <NpcChat spawned={spawned} realmId={realm.realm_id} />
+      <NpcChat spawned={spawned} realmId={realm?.realmId ?? BigInt(0)} />
     </div>
   );
 };
