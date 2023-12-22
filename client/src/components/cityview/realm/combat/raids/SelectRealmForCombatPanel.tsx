@@ -80,7 +80,7 @@ export const SelectRealmForCombatPanel = ({
             };
           }
         })
-        .filter((realm) => realm && realm.realmId !== realmId && realm.realmId !== 1n) as SelectableRealmInterface[];
+        .filter((realm) => realm && realm.realmId !== realmId) as SelectableRealmInterface[];
       setOriginalRealms(realms);
     };
     buildSelectableRealms();
@@ -216,20 +216,18 @@ export function sortRealms(realms: SelectableRealmInterface[], activeSort: SortI
       });
     } else if (activeSort.sortKey === "level") {
       return sortedRealms.sort((a, b) => {
-        if (!a.level || !b.level) return 1;
         if (activeSort.sort === "asc") {
-          return a.distance - b.distance;
+          return (a?.level || 0) - (b?.level || 0);
         } else {
-          return b.distance - a.distance;
+          return (b?.level || 0) - (a?.level || 0);
         }
       });
     } else if (activeSort.sortKey === "defence") {
       return sortedRealms.sort((a, b) => {
-        if (!a.defence?.defence || !b.defence?.defence) return 1;
         if (activeSort.sort === "asc") {
-          return a.defence.defence - b.defence.defence;
+          return (a?.defence?.defence || 0) - (b?.defence?.defence || 0);
         } else {
-          return b.defence.defence - a.defence.defence;
+          return (b?.defence?.defence || 0) - (a?.defence?.defence || 0);
         }
       });
     } else {

@@ -85,8 +85,6 @@ To build and preview the project, follow these steps:
    bun run preview
    ```
 
-Certainly! Here's the Deployment section integrated into the document with a revised structure and clarity:
-
 ---
 
 ## Deployment
