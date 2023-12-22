@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export WORLD_ADDRESS=$(cat ./target/dev/manifest.json | jq -r '.world.address')
+export SOZO_WORLD=$(cat ./target/dev/manifest.json | jq -r '.world.address')
 
 export CONFIG_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::config::contracts::config_systems" ).address')
 
@@ -31,7 +31,7 @@ export NAME_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | sel
 export BANK_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::bank::contracts::bank_systems" ).address')
 
 echo "-------------------------ADDRESS----------------------------------------"
-echo world : $WORLD_SYSTEMS
+echo world : $SOZO_WORLD
 echo config : $CONFIG_SYSTEMS
 echo labor : $LABOR_SYSTEMS
 echo trade : $TRADE_SYSTEMS

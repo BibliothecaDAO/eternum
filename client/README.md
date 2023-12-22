@@ -67,6 +67,7 @@ For local setup and execution on Katana, follow these steps:
    ```bash
    ./scripts/set_config.sh
    ```
+   Make sure to set a delay in seconds of at least 0.1 seconds between each transaction
 
 ### Building the Project
 
