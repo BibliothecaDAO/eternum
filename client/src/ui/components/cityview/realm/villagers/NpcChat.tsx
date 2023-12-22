@@ -13,8 +13,9 @@ const NpcChat = ({ spawned, realmId }: NpcChatProps) => {
   const chatIdentifier: string = `npc_chat_${realmId}`;
   const bottomRef = useRef<HTMLDivElement>(null);
   const [messageList, setMessageList] = useState<NpcChatMessageProps[]>(
-    JSON.parse(window.localStorage.getItem(chatIdentifier) ?? ""),
+    JSON.parse(window.localStorage.getItem(chatIdentifier) ?? "[]"),
   );
+
   const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket(import.meta.env.VITE_OVERLORE_WS_URL, {
     share: false,
     shouldReconnect: () => true,
@@ -67,9 +68,13 @@ const NpcChat = ({ spawned, realmId }: NpcChatProps) => {
         }
       >
         <>
-          {messageList?.map((message, index) => {
-            return <NpcChatMessage key={index} {...message} />;
-          })}
+          {messageList.length != 0 ? (
+            messageList?.map((message, index) => {
+              return <NpcChatMessage key={index} {...message} />;
+            })
+          ) : (
+            <></>
+          )}
           <span className="" ref={bottomRef}></span>
         </>
       </div>
