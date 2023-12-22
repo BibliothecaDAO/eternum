@@ -172,7 +172,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId, class
           className="mr-1"
         />
         <div className="flex text-xs">
-          {currencyIntlFormat(resource ? Number(resource.balance) : 0, 2)}
+          {currencyIntlFormat(resource ? divideByPrecision(Number(resource.balance)) : 0, 2)}
           {resourceId !== 253 && canFarm && (
             <div
               className={clsx(
