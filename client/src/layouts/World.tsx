@@ -24,7 +24,6 @@ import WorldMapMenuModule from "../modules/WorldMapMenuModule";
 import hyperStructures from "../data/hyperstructures.json";
 import { useHyperstructure } from "../hooks/helpers/useHyperstructure";
 import { Tooltip } from "../elements/Tooltip";
-import useLeaderBoardStore from "../hooks/store/useLeaderBoardStore";
 import useCombatHistoryStore from "../hooks/store/useCombatHistoryStore";
 import useRealmStore from "../hooks/store/useRealmStore";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
@@ -37,7 +36,6 @@ export const World = () => {
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const setHyperstructures = useUIStore((state) => state.setHyperstructures);
   const setMouseCoords = useUIStore((state) => state.setMouseCoords);
-  const syncData = useLeaderBoardStore((state) => state.syncData);
   const syncCombatHistory = useCombatHistoryStore((state) => state.syncData);
   const isSoundOn = useUIStore((state) => state.isSoundOn);
   const musicLevel = useUIStore((state) => state.musicLevel);
@@ -54,13 +52,6 @@ export const World = () => {
   useFetchBlockchainData();
 
   const { progress } = useProgress();
-
-  const { getHyperstructureIds } = useHyperstructure();
-
-  useEffect(() => {
-    let ids = getHyperstructureIds();
-    syncData(ids);
-  }, []);
 
   const { realmEntityId, realmEntityIds } = useRealmStore();
 

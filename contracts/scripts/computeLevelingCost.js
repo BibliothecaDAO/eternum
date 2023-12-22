@@ -1,3 +1,7 @@
+// multiplier = 1 for single realm
+// multiplier > 1 for hyperstructure leveling depending on the difficulty
+const multiplier = 1;
+
 let resourcesProbs = [
   ["WOOD", 0.2018109],
   ["STONE", 0.1585915],
@@ -35,7 +39,7 @@ const getResourceAmount = (resources) => {
 
   for (const resourceId of resources) {
     added = `,${resourceId},${Math.round(
-      (base_cost * 1000 * resourcesProbs[resourceId - 1][1]) /
+      (multiplier * base_cost * 1000 * resourcesProbs[resourceId - 1][1]) /
         resourcesProbs[0][1]
     )}`;
     amounts += added;
