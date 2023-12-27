@@ -9,6 +9,7 @@ import {
   EventType,
   NotificationType,
   generateUniqueId,
+  setLastLoginTimestamp,
   useNotificationsStore,
 } from "../hooks/store/useNotificationsStore";
 
@@ -138,7 +139,14 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
         }
         <div>
           {notifications.length > 0 && (
-            <Button variant="danger" className="pointer-events-auto mr-2" onClick={deleteAllNotifications}>
+            <Button
+              variant="danger"
+              className="pointer-events-auto mr-2"
+              onClick={() => {
+                deleteAllNotifications();
+                setLastLoginTimestamp();
+              }}
+            >
               {"Close All"}
             </Button>
           )}

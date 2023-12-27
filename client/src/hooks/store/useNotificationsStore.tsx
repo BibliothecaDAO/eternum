@@ -117,3 +117,14 @@ export function extractAndCleanKey(keys: string | null | undefined | string[]): 
     );
   }
 }
+
+// add last login timestamp to local storage and use it to filter notifications
+export const setLastLoginTimestamp = (): void => {
+  localStorage.setItem("notificationTimestamp", Math.round(Date.now() / 1000).toString());
+};
+
+// retrieve last login timestamp from local storage
+export const getLastLoginTimestamp = (): number | undefined => {
+  const lastLoginTimestamp = localStorage.getItem("notificationTimestamp");
+  return lastLoginTimestamp ? parseInt(lastLoginTimestamp) : undefined;
+};

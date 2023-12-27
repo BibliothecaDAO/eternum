@@ -5,6 +5,7 @@ import { getEntityIdFromKeys, getForeignKeyEntityId } from "../../utils/utils";
 import { useEntityQuery } from "@dojoengine/react";
 import { BigNumberish } from "starknet";
 import { Resource } from "@bibliothecadao/eternum";
+import { EventType, useNotificationsStore } from "../store/useNotificationsStore";
 
 export function useResources() {
   const {
@@ -17,6 +18,7 @@ export function useResources() {
   } = useDojo();
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
 
   // for any entity that has a resourceChest in its inventory,
   const getResourcesFromInventory = (entityId: bigint): { resources: Resource[]; indices: number[] } => {
@@ -131,7 +133,7 @@ export function useResources() {
     optimisticResourcesGet?: Resource[],
   ) => {
     if (optimisticResourcesGet) {
-      return await optimisticOffloadResources(
+      await optimisticOffloadResources(
         optimisticResourcesGet,
         transfer_items,
       )({
@@ -140,13 +142,15 @@ export function useResources() {
         sender_id: transport_id,
         indices: entity_index_in_inventory,
       });
+    } else {
+      await transfer_items({
+        signer: account,
+        sender_id: transport_id,
+        receiver_id: receiving_entity_id,
+        indices: entity_index_in_inventory,
+      });
     }
-    return await transfer_items({
-      signer: account,
-      sender_id: transport_id,
-      receiver_id: receiving_entity_id,
-      indices: entity_index_in_inventory,
-    });
+    deleteNotification([transport_id.toString()], EventType.EmptyChest);
   };
 
   return {

@@ -12,7 +12,7 @@ export async function setup() {
   const components = createClientComponents(network);
   const systemCalls = createSystemCalls(network);
   const optimisticSystemCalls = createOptimisticSystemCalls(components);
-  const updates = await createUpdates(components);
+  const updates = await createUpdates();
 
   // fetch all existing entities from torii
   await getSyncEntities(network.toriiClient, network.contractComponents as any);

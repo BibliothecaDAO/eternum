@@ -9,6 +9,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { NotificationType } from "../store/useNotificationsStore";
+import { useRealm } from "../helpers/useRealm";
 
 export const useAttackedNotification = (
   notification: NotificationType,
@@ -28,6 +29,8 @@ export const useAttackedNotification = (
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
+  const { getRealmAddressName } = useRealm();
+
   const { attackerRealmEntityId, targetRealmEntityId, damage, winner, attackTimestamp } = data;
   const { realm_id: attackerRealmId } =
     getComponentValue(Realm, getEntityIdFromKeys([BigInt(attackerRealmEntityId)])) || {};
@@ -35,7 +38,7 @@ export const useAttackedNotification = (
     getComponentValue(Realm, getEntityIdFromKeys([BigInt(targetRealmEntityId)])) || {};
   const attackerRealmOrderName = attackerRealmId ? getRealmOrderNameById(attackerRealmId) : "";
   const targetRealmOrderName = targetRealmId ? getRealmOrderNameById(targetRealmId) : "";
-  const attackerRealmName = attackerRealmId ? getRealmNameById(attackerRealmId) : "";
+  const attackerAddressName = getRealmAddressName(attackerRealmEntityId);
   const targetRealmName = targetRealmId ? getRealmNameById(targetRealmId) : "";
 
   const time =
@@ -65,8 +68,8 @@ export const useAttackedNotification = (
         {damage && damage > 0 && (
           <div className="flex mt-2 ml-2 mb-1 items-center space-x-1 flex-wrap">
             <OrderIcon size="xs" className="mx-1" order={attackerRealmOrderName} />{" "}
-            {winner === Winner.Attacker && <span className="text-white"> {`${attackerRealmName} gave`}</span>}
-            {winner === Winner.Target && <span className="text-white"> {`${attackerRealmName} received`}</span>}
+            {winner === Winner.Attacker && <span className="text-white"> {`${attackerAddressName} gave`}</span>}
+            {winner === Winner.Target && <span className="text-white"> {`${attackerAddressName} received`}</span>}
             <span className="text-anger-light"> -{damage} Damage</span>
           </div>
         )}
@@ -92,6 +95,7 @@ export const useStolenResourcesNotification = (
   const data = notification.data as CombatResultInterface;
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const { getRealmAddressName } = useRealm();
 
   const { attackerRealmEntityId, targetRealmEntityId, stolenResources, attackTimestamp } = data;
   const { realm_id: attackerRealmId } =
@@ -100,8 +104,8 @@ export const useStolenResourcesNotification = (
     getComponentValue(Realm, getEntityIdFromKeys([BigInt(targetRealmEntityId)])) || {};
   const attackerRealmOrderName = attackerRealmId ? getRealmOrderNameById(attackerRealmId) : "";
   const targetRealmOrderName = targetRealmId ? getRealmOrderNameById(targetRealmId) : "";
-  const attackerRealmName = attackerRealmId ? getRealmNameById(attackerRealmId) : "";
   const targetRealmName = targetRealmId ? getRealmNameById(targetRealmId) : "";
+  const attackerAddressName = getRealmAddressName(attackerRealmEntityId);
 
   const time =
     nextBlockTimestamp && attackTimestamp ? formatTimeLeftDaysHoursMinutes(nextBlockTimestamp - attackTimestamp) : "";
@@ -126,7 +130,7 @@ export const useStolenResourcesNotification = (
       <div className="flex flex-col">
         <div className="flex mt-2 w-full items-center flex-wrap space-x-2 space-y-1">
           <OrderIcon size="xs" className="mx-1" order={attackerRealmOrderName} />{" "}
-          <span className="text-white"> {`${attackerRealmName} stole`}</span>
+          <span className="text-white"> {`${attackerAddressName} stole`}</span>
           {stolenResources &&
             stolenResources.map(({ resourceId, amount }) => (
               <ResourceCost
@@ -134,8 +138,8 @@ export const useStolenResourcesNotification = (
                 withTooltip
                 key={resourceId}
                 resourceId={resourceId}
-                color="text-order-brilliance"
-                amount={divideByPrecision(Number(amount))}
+                color="text-order-giants"
+                amount={-divideByPrecision(Number(amount))}
               />
             ))}
         </div>

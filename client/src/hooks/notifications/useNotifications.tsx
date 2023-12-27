@@ -1,18 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDojo } from "../../DojoContext";
-import { numberToHex } from "../../utils/utils";
 import useBlockchainStore from "../store/useBlockchainStore";
 import useRealmStore from "../store/useRealmStore";
-import { COMBAT_EVENT } from "@bibliothecadao/eternum";
 import { createCombatNotification, parseCombatEvent } from "../../utils/combat";
-import { Event, pollForEvents } from "../../services/eventPoller";
 import { useLevel } from "../helpers/useLevel";
 import { useNotificationsStore } from "../store/useNotificationsStore";
 import { useResources } from "../helpers/useResources";
 import {
   generateEmptyChestNotifications,
   generateLaborNotifications,
-  // generateTradeNotifications,
   useRealmsPosition,
   useRealmsResource,
 } from "./utils";
@@ -44,21 +40,6 @@ export const useNotifications = () => {
     const hyperstructureLevel = hyperstructureId ? getEntityLevel(hyperstructureId)?.level || 0 : undefined;
     return [realmLevel, hyperstructureLevel];
   }, [realmEntityId]);
-
-  // TODO: find another way to do trade notifications, would suggest custom event rather than entity updates
-  // /**
-  //  * Trade notifications
-  //  */
-  // useEffect(() => {
-  //   const subscription = entityUpdates.subscribe((updates) => {
-  //     const newNotifications = generateTradeNotifications(updates, Status);
-  //     addUniqueNotifications(newNotifications);
-  //   });
-
-  //   return () => {
-  //     subscription.unsubscribe();
-  //   };
-  // }, []);
 
   /**
    * Labor notifications
@@ -93,27 +74,6 @@ export const useNotifications = () => {
 
   /**
    * Combat notifications
-   */
-  const setCombatNotificationsFromEvents = (event: Event) => {
-    const newNotification = createCombatNotification(parseCombatEvent(event));
-    addUniqueNotifications([newNotification]);
-  };
-
-  useEffect(() => {
-    // poll for each of the realmEntityIds
-    for (const realmEntityId of realmEntityIds) {
-      // Keccak for Combat event
-      pollForEvents(
-        // todo: bigint to hex
-        [COMBAT_EVENT, "*", numberToHex(Number(realmEntityId.realmEntityId))],
-        setCombatNotificationsFromEvents,
-        5,
-      );
-    }
-  }, [realmEntityIds]);
-
-  /**
-   * New Combat notifications
    */
   // New combat notitications from createCombatEvents (subscription)
   useEffect(() => {

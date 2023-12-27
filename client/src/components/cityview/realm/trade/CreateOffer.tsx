@@ -537,7 +537,7 @@ export const SelectCaravanPanel = ({
                       key={id}
                       className="!w-min  mb-2 mx-1"
                       type="vertical"
-                      color="text-brilliance"
+                      color="text-order-brilliance"
                       resourceId={id}
                       amount={selectedResourcesGetAmounts[id]}
                     />
