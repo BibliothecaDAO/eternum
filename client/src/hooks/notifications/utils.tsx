@@ -190,7 +190,7 @@ export const generateEmptyChestNotifications = (
   for (const { realmId, position: realmPosition } of realmPositions) {
     const entitiesAtPositionWithInventory = runQuery([
       HasValue(Inventory, {
-        items_count: 1,
+        items_count: 1n,
       }),
       HasValue(Position, {
         x: realmPosition?.x,

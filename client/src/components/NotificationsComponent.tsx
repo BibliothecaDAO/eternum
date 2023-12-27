@@ -14,7 +14,7 @@ import {
 
 // dev:max number of notifications before reach step limit
 const MAX_HARVEST_NOTIFICATIONS = 5;
-const MAX_CLAIM_NOTIFICATIONS = 7;
+const MAX_CLAIM_NOTIFICATIONS = 5;
 
 type sender = {
   sender_id: bigint;
