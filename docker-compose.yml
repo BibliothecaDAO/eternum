@@ -1,0 +1,37 @@
+version: "3.8"
+
+services:
+  katana:
+    build:
+      context: ./contracts
+      dockerfile: Dockerfile
+    volumes:
+      - ./volume:/volume
+    ports:
+      - "5050:5050"
+    entrypoint: /bin/bash -c "/app/scripts/katana.sh > /volume/katana.logs"
+
+  torii:
+    build:
+      context: ./contracts
+      dockerfile: Dockerfile
+    volumes:
+      - ./volume:/volume
+    ports:
+      - "8080:8080"
+    depends_on:
+      - katana
+    entrypoint: /bin/bash -c "/app/scripts/torii.sh > /volume/torii.logs"
+
+  lore-machine:
+    build:
+      context: .
+      dockerfile: ./Dockers/Dockerfile-lore-machine
+    volumes:
+      - ./volume:/volume
+    ports:
+      - "8765:8765"
+    depends_on:
+      - torii
+    tty: true
+    entrypoint: /bin/bash -c "/lore-machine/lore-machine.sh > /volume/lore-machine.logs"

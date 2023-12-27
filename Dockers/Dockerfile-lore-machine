@@ -1,0 +1,35 @@
+# Start from the Ubuntu 22.04 base image
+FROM ubuntu:22.04
+
+ARG PERSISTENT_STATE
+ENV PERSISTENT_STATE=$PERSISTENT_STATE
+
+ARG RESET_STATE
+ENV RESET_STATE=$RESET_STATE
+
+# Avoid prompts from apt
+ENV DEBIAN_FRONTEND=noninteractive
+
+SHELL ["/bin/bash", "-c"]
+
+ENV PATH="${PATH}:/root/.local/bin"
+
+# Update and install some common packages
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    vim \
+    wget \
+	jq \
+	bc \
+	python3.9 \
+	make \
+    && rm -rf /var/lib/apt/lists/* && \
+	git clone --depth 1 https://github.com/The-Overlore/lore-machine.git && \
+	curl -sSL https://install.python-poetry.org | python3 -
+
+COPY ./Dockers/lore-machine.sh /lore-machine
+
+EXPOSE 8765
+
+WORKDIR /lore-machine
