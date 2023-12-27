@@ -30,7 +30,7 @@ services:
     volumes:
       - ./volume:/volume
     ports:
-      - "8765:8765"
+      - "8766:8766"
     depends_on:
       - torii
     tty: true
