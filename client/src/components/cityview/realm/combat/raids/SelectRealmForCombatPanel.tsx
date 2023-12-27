@@ -12,6 +12,7 @@ import { SortPanel } from "../../../../../elements/SortPanel";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import { useCombat } from "../../../../../hooks/helpers/useCombat";
 import { useLevel } from "../../../../../hooks/helpers/useLevel";
+import { useRealm } from "../../../../../hooks/helpers/useRealm";
 
 export const SelectRealmForCombatPanel = ({
   selectedEntityId,
@@ -38,14 +39,16 @@ export const SelectRealmForCombatPanel = ({
 
   const { getRealmEntityIdFromRealmId } = useTrade();
   const { getEntityLevel } = useLevel();
+  const { getRealmAddressName } = useRealm();
 
   const { calculateDistance } = useCaravan();
 
   const sortingParams = useMemo(() => {
     return [
       { label: "Order", sortKey: "order" },
-      { label: "Realm ID", sortKey: "id", className: "ml-4" },
-      { label: "Name", sortKey: "name", className: "ml-4 mr-4" },
+      { label: "Owner", sortKey: "addressName", className: "ml-4 mr-4" },
+      // { label: "Realm ID", sortKey: "id", className: "ml-4" },
+      { label: "Realm", sortKey: "name", className: "ml-4 mr-4" },
       { label: "Distance", sortKey: "distance", className: "ml-auto" },
       { label: "Level", sortKey: "level", className: "ml-auto" },
       { label: "Defence", sortKey: "defence", className: "ml-auto" },
@@ -69,6 +72,7 @@ export const SelectRealmForCombatPanel = ({
             const distance = takerEntityId ? calculateDistance(realmEntityId, BigInt(takerEntityId)) ?? 0 : 0;
             const defence = takerEntityId ? getDefenceOnRealm(BigInt(takerEntityId)) : undefined;
             const level = takerEntityId ? getEntityLevel(BigInt(takerEntityId)) : undefined;
+            const addressName = takerEntityId ? getRealmAddressName(takerEntityId) : "";
             return {
               entityId: realm.entity_id,
               realmId: realm.realm_id,
@@ -77,6 +81,7 @@ export const SelectRealmForCombatPanel = ({
               distance,
               defence,
               level: level?.level,
+              addressName,
             };
           }
         })
@@ -130,7 +135,16 @@ export const SelectRealmForCombatPanel = ({
           <div className="flex flex-col px-1 mb-1 space-y-2 max-h-40 overflow-y-auto">
             {sortedRealms.map(
               (
-                { order, name, realmId: destinationRealmId, distance, level, entityId: destinationEntityId, defence },
+                {
+                  order,
+                  name,
+                  addressName,
+                  realmId: destinationRealmId,
+                  distance,
+                  level,
+                  entityId: destinationEntityId,
+                  defence,
+                },
                 i,
               ) => {
                 return (
@@ -151,13 +165,15 @@ export const SelectRealmForCombatPanel = ({
                         <OrderIcon order={order} size="xs" />
                       </div>
 
-                      <div className="flex-none w-20">{destinationRealmId.toString()}</div>
+                      <div className="flex-none w-20">{addressName}</div>
 
-                      <div className="flex-grow">{name}</div>
+                      {/* <div className="flex-none w-20">{destinationRealmId.toString()}</div> */}
 
-                      <div className="flex-grow">{`${distance.toFixed(0)} km`}</div>
+                      <div className="flex-none w-20 text-left">{name}</div>
 
-                      <div className="ml-auto">{level}</div>
+                      <div className="flex-none text-left w-10">{`${distance.toFixed(0)} km`}</div>
+
+                      <div className="flex-grow text-right">{level}</div>
 
                       <div className="flex-none w-16 text-right">
                         {/* <Shield className="text-gold" /> */}
@@ -196,6 +212,14 @@ export function sortRealms(realms: SelectableRealmInterface[], activeSort: SortI
           return a.name.localeCompare(b.name);
         } else {
           return b.name.localeCompare(a.name);
+        }
+      });
+    } else if (activeSort.sortKey === "addressName") {
+      return sortedRealms.sort((a, b) => {
+        if (activeSort.sort === "asc") {
+          return a.addressName.localeCompare(b.addressName);
+        } else {
+          return b.addressName.localeCompare(a.addressName);
         }
       });
     } else if (activeSort.sortKey === "distance") {

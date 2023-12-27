@@ -11,6 +11,7 @@ import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../../DojoContext";
 import { ReactComponent as CaretDownFill } from "../../../assets/icons/common/caret-down-fill.svg";
 import TextInput from "../../../elements/TextInput";
+import { useRealm } from "../../../hooks/helpers/useRealm";
 
 export const SelectRealmPanel = ({
   selectedRealmId,
@@ -31,6 +32,8 @@ export const SelectRealmPanel = ({
     },
   } = useDojo();
 
+  const { getRealmAddressName } = useRealm();
+
   const { realmId, realmEntityId } = useRealmStore();
 
   const { getRealmEntityIdFromRealmId } = useTrade();
@@ -41,7 +44,8 @@ export const SelectRealmPanel = ({
     return [
       { label: "Order", sortKey: "order" },
       { label: "Realm ID", sortKey: "id", className: "ml-4" },
-      { label: "Name", sortKey: "name", className: "ml-4 mr-4" },
+      { label: "Realm", sortKey: "name", className: "ml-4 mr-4" },
+      { label: "Name", sortKey: "addressName", className: "ml-4 mr-4" },
       { label: "Distance", sortKey: "distance", className: "ml-auto" },
     ];
   }, []);
@@ -61,12 +65,14 @@ export const SelectRealmPanel = ({
             const { name, order, realmId: takerRealmId } = getRealm(realm.realm_id);
             const takerEntityId = getRealmEntityIdFromRealmId(takerRealmId);
             const distance = takerEntityId ? calculateDistance(realmEntityId, takerEntityId) ?? 0 : 0;
+            const addressName = takerEntityId ? getRealmAddressName(takerEntityId) : "";
             return {
               entityId: realm.entity_id,
               realmId: realm.realm_id,
               name,
               order: getOrderName(order),
               distance,
+              addressName,
             };
           }
         })
@@ -135,7 +141,7 @@ export const SelectRealmPanel = ({
                 ))}
               </SortPanel>
               <div className="flex flex-col px-1 mb-1 space-y-2 max-h-40 overflow-y-auto">
-                {sortedRealms.map(({ order, name, realmId: takerRealmId, distance }, i) => {
+                {sortedRealms.map(({ order, name, addressName, realmId: takerRealmId, distance }, i) => {
                   return (
                     <div
                       key={i}
@@ -151,13 +157,15 @@ export const SelectRealmPanel = ({
                       }}
                     >
                       <div className="flex items-center justify-between text-xxs">
-                        <div className="flex-none mr-10">
+                        <div className="flex-none text-left w-20">
                           <OrderIcon order={order} size="xs" />
                         </div>
 
-                        <div className="flex-none w-20">{Number(takerRealmId)}</div>
+                        <div className="flex-none w-10">{Number(takerRealmId)}</div>
 
-                        <div className="flex-grow">{name}</div>
+                        <div className="flex-none text-left w-20">{name}</div>
+
+                        <div className="flex-grow">{addressName}</div>
 
                         <div className="flex-none w-16 text-right">{`${distance.toFixed(0)} km`}</div>
                       </div>
@@ -194,6 +202,14 @@ export function sortRealms(realms: SelectableRealmInterface[], activeSort: SortI
           return a.name.localeCompare(b.name);
         } else {
           return b.name.localeCompare(a.name);
+        }
+      });
+    } else if (activeSort.sortKey === "addressName") {
+      return sortedRealms.sort((a, b) => {
+        if (activeSort.sort === "asc") {
+          return a.addressName.localeCompare(b.addressName);
+        } else {
+          return b.addressName.localeCompare(a.addressName);
         }
       });
     } else if (activeSort.sortKey === "distance") {

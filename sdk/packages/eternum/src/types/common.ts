@@ -107,6 +107,7 @@ export interface SelectableRealmInterface {
   distance: number;
   defence?: CombatInfo;
   level?: number;
+  addressName: string;
 }
 
 export interface RealmInterface {
