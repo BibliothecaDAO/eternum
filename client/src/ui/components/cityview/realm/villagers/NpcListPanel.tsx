@@ -1,20 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { useRoute } from "wouter";
-// import { useDojo } from "../../../../DojoContext";
+import { useMemo, useState } from "react";
 import { NpcListComponent } from "./NpcListComponent";
 import { SortPanel } from "../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../elements/SortButton";
 
 export const NpcListPanel = () => {
-  // const {
-  //   setup: {
-  //     components: { Npc: NpcComponent },
-  //   //   systemCalls: { spawn_npc, change_mood },
-  //     // Not using this as the optimistic function isn't implemented
-  //   //   optimisticSystemCalls: { optimisticSpawnNpc },
-  //   },
-  //   // account: { account },
-  // } = useDojo();
 
   const dummyNpcs = [
     {
@@ -77,37 +66,22 @@ export const NpcListPanel = () => {
       belligerent: "hostile",
       description: "Description",
     },
-    // ... other NPC objects
   ];
 
-
-  const [match, params]: any = useRoute("/realm/:id/:tab");
-
-  useEffect(() => {}, [params]);
-
-  // const { realmEntityId } = useRealmStore();
-
-  // // const realm = useMemo(() => {
-  // //   return realmEntityId ? getRealm(realmEntityId) : undefined;
-  // // }, [realmEntityId]);
-  
   const sortingParams = useMemo(() => {
     return [
       { label: "Age", sortKey: "number", className: "mr-auto" },
       { label: "Role", sortKey: "balance", className: "mr-auto" },
       { label: "Happy", sortKey: "expires", className: "mr-auto" },
       { label: "Hungry", sortKey: "harvested", className: "mr-auto" },
-      { label: "Beligr.", sortKey: "belligrent", className: "mr-auto" },
+      { label: "Beligr.", sortKey: "belligerent", className: "mr-auto" },
     ];
   }, []);
 
-  // Not sure how/if it is supposed to work
   const [activeSort, setActiveSort] = useState<SortInterface>({
     sortKey: "number",
     sort: "none",
   });
-
-  const [showNpcStats, setShowNpcStats] = useState(false);
 
   return (
     <div className="flex flex-col">
@@ -128,14 +102,10 @@ export const NpcListPanel = () => {
           />
         ))}
       </SortPanel>
-
-      {/* Popup
-      {showNpcStats && <NpcStatsPopup onClose={() => setShowNpcStats(false)} npc={npc} />} */}
  
       {dummyNpcs.map((npc) => (
         <div className="flex flex-col p-2" key={npc.id}>
             <NpcListComponent
-                // onPopup{() => {}}
                 npc={npc}
             />
         </div>

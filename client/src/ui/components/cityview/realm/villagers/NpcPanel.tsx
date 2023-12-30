@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Button from "../../../../elements/Button";
 import NpcChat from "./NpcChat";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { useRoute } from "wouter";
 import { getRealm } from "../../../../utils/realms";
 
 type NpcPanelProps = {
