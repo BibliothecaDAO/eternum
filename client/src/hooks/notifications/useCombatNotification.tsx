@@ -8,7 +8,7 @@ import { CombatResultInterface, Winner } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
-import { NotificationType } from "../store/useNotificationsStore";
+import { NotificationType, RaidersData } from "../store/useNotificationsStore";
 import { useRealm } from "../helpers/useRealm";
 
 export const useAttackedNotification = (
@@ -142,6 +142,200 @@ export const useStolenResourcesNotification = (
                 amount={-divideByPrecision(Number(amount))}
               />
             ))}
+        </div>
+      </div>
+    ),
+  };
+};
+
+export const useEnemyRaidersHaveArrivedNotification = (
+  notification: NotificationType,
+): {
+  type: string;
+  time: string;
+  title: React.ReactElement;
+  content: (onClose: any) => React.ReactElement;
+} => {
+  const {
+    setup: {
+      components: { Realm },
+    },
+  } = useDojo();
+
+  const data = notification.data as RaidersData;
+
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const { getRealmAddressName } = useRealm();
+
+  const { raiders } = data;
+  const { realm_id: attackerRealmId } = raiders?.entityOwnerId
+    ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(raiders.entityOwnerId)])) || { realm_id: undefined }
+    : { realm_id: undefined };
+  const { realm_id: targetRealmId } = raiders?.locationRealmEntityId
+    ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(raiders.locationRealmEntityId)])) || { realm_id: undefined }
+    : { realm_id: undefined };
+  const attackerRealmOrderName = attackerRealmId ? getRealmOrderNameById(attackerRealmId) : "";
+  const targetRealmOrderName = targetRealmId ? getRealmOrderNameById(targetRealmId) : "";
+  const targetRealmName = targetRealmId ? getRealmNameById(targetRealmId) : "";
+  const attackerAddressName = raiders?.entityOwnerId ? getRealmAddressName(raiders.entityOwnerId) : "";
+
+  const time =
+    nextBlockTimestamp && raiders?.arrivalTime
+      ? formatTimeLeftDaysHoursMinutes(nextBlockTimestamp - raiders.arrivalTime)
+      : "";
+
+  return {
+    type: "danger",
+    time,
+    title: (
+      <div className="flex items-center">
+        <Badge size="lg" type="danger" className="mr-2">
+          <Checkmark className="fill-current mr-1" />
+          {`Enemy Raiders Have Arrived`}
+        </Badge>
+
+        <div className="flex items-center">
+          on <OrderIcon size="xs" className="mx-1" order={targetRealmOrderName} />{" "}
+          <div className="inline-block text-gold">{targetRealmName}</div>
+        </div>
+      </div>
+    ),
+    content: (onClose: () => void) => (
+      <div className="flex flex-col">
+        <div className="flex mt-2 w-full items-center flex-wrap space-x-2 space-y-1">
+          <OrderIcon size="xs" className="mx-1" order={attackerRealmOrderName} />{" "}
+          <span className="text-white">
+            {" "}
+            {`${raiders.attack / 10} raiders from ${attackerAddressName} have arrived`}
+          </span>
+        </div>
+      </div>
+    ),
+  };
+};
+
+export const useEnemyRaidersAreTravelingNotification = (
+  notification: NotificationType,
+): {
+  type: string;
+  time: string;
+  title: React.ReactElement;
+  content: (onClose: any) => React.ReactElement;
+} => {
+  const {
+    setup: {
+      components: { Realm },
+    },
+  } = useDojo();
+
+  const data = notification.data as RaidersData;
+
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const { getRealmAddressName } = useRealm();
+
+  const { raiders } = data;
+  const { realm_id: attackerRealmId } = raiders?.entityOwnerId
+    ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(raiders.entityOwnerId)])) || { realm_id: undefined }
+    : { realm_id: undefined };
+  const { realm_id: targetRealmId } = raiders?.locationRealmEntityId
+    ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(raiders.locationRealmEntityId)])) || { realm_id: undefined }
+    : { realm_id: undefined };
+  const attackerRealmOrderName = attackerRealmId ? getRealmOrderNameById(attackerRealmId) : "";
+  const targetRealmOrderName = targetRealmId ? getRealmOrderNameById(targetRealmId) : "";
+  const targetRealmName = targetRealmId ? getRealmNameById(targetRealmId) : "";
+  const attackerAddressName = raiders?.entityOwnerId ? getRealmAddressName(raiders.entityOwnerId) : "";
+
+  const time =
+    nextBlockTimestamp && raiders?.arrivalTime
+      ? formatTimeLeftDaysHoursMinutes(raiders.arrivalTime - nextBlockTimestamp)
+      : "";
+
+  return {
+    type: "danger",
+    time,
+    title: (
+      <div className="flex items-center">
+        <Badge size="lg" type="danger" className="mr-2">
+          <Checkmark className="fill-current mr-1" />
+          {`Enemy Raiders Are Coming`}
+        </Badge>
+
+        <div className="flex items-center">
+          on <OrderIcon size="xs" className="mx-1" order={targetRealmOrderName} />{" "}
+          <div className="inline-block text-gold">{targetRealmName}</div>
+        </div>
+      </div>
+    ),
+    content: (onClose: () => void) => (
+      <div className="flex flex-col">
+        <div className="flex mt-2 w-full items-center flex-wrap space-x-2 space-y-1">
+          <OrderIcon size="xs" className="mx-1" order={attackerRealmOrderName} />{" "}
+          <span className="text-white">
+            {" "}
+            {`${raiders.attack / 10} raiders from ${attackerAddressName} arriving in ${time}`}
+          </span>
+        </div>
+      </div>
+    ),
+  };
+};
+
+export const useYourRaidersHaveArrivedNotification = (
+  notification: NotificationType,
+): {
+  type: string;
+  time: string;
+  title: React.ReactElement;
+  content: (onClose: any) => React.ReactElement;
+} => {
+  const {
+    setup: {
+      components: { Realm },
+    },
+  } = useDojo();
+
+  const data = notification.data as RaidersData;
+
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+
+  const { raiders } = data;
+  const { realm_id: attackerRealmId } = raiders?.entityOwnerId
+    ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(raiders.entityOwnerId)])) || { realm_id: undefined }
+    : { realm_id: undefined };
+  const { realm_id: targetRealmId } = raiders?.locationRealmEntityId
+    ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(raiders.locationRealmEntityId)])) || { realm_id: undefined }
+    : { realm_id: undefined };
+  const attackerRealmOrderName = attackerRealmId ? getRealmOrderNameById(attackerRealmId) : "";
+  const targetRealmOrderName = targetRealmId ? getRealmOrderNameById(targetRealmId) : "";
+  const targetRealmName = targetRealmId ? getRealmNameById(targetRealmId) : "";
+  const attackerRealmName = attackerRealmId ? getRealmNameById(attackerRealmId) : "";
+
+  const time =
+    nextBlockTimestamp && raiders?.arrivalTime
+      ? formatTimeLeftDaysHoursMinutes(nextBlockTimestamp - raiders.arrivalTime)
+      : "";
+
+  return {
+    type: "success",
+    time,
+    title: (
+      <div className="flex items-center">
+        <Badge size="lg" type="success" className="mr-2">
+          <Checkmark className="fill-current mr-1" />
+          {`Your Raiders Have Arrived`}
+        </Badge>
+
+        <div className="flex items-center">
+          on <OrderIcon size="xs" className="mx-1" order={targetRealmOrderName} />{" "}
+          <div className="inline-block text-gold">{targetRealmName}</div>
+        </div>
+      </div>
+    ),
+    content: (onClose: () => void) => (
+      <div className="flex flex-col">
+        <div className="flex mt-2 w-full items-center flex-wrap space-x-2 space-y-1">
+          <OrderIcon size="xs" className="mx-1" order={attackerRealmOrderName} />{" "}
+          <span className="text-white"> {`${raiders.attack / 10} raiders from ${attackerRealmName} have arrived`}</span>
         </div>
       </div>
     ),

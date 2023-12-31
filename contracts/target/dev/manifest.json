@@ -3998,7 +3998,7 @@
     {
       "name": "eternum::systems::transport::contracts::travel_systems::travel_systems",
       "address": "0x740ea95e67b0b7533ee4891524c5c7edfd7fefc09297c0304b21515cc1223ec",
-      "class_hash": "0x616e17c006eb11d765338c359a6c5163823a1c0d3dfcc9bbcd527f6bef53cd9",
+      "class_hash": "0x102019ab9ffeb83c6b6a390fc4935a272323609cb82887c205fb141817a33fe",
       "abi": [
         {
           "type": "impl",
@@ -4137,12 +4137,44 @@
         },
         {
           "type": "event",
+          "name": "eternum::systems::transport::contracts::travel_systems::travel_systems::Travel",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "desintation_coord_x",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "desintation_coord_y",
+              "type": "core::integer::u32",
+              "kind": "key"
+            },
+            {
+              "name": "realm_entity_id",
+              "type": "core::integer::u128",
+              "kind": "key"
+            },
+            {
+              "name": "entity_id",
+              "type": "core::integer::u128",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "type": "event",
           "name": "eternum::systems::transport::contracts::travel_systems::travel_systems::Event",
           "kind": "enum",
           "variants": [
             {
               "name": "UpgradeableEvent",
               "type": "dojo::components::upgradeable::upgradeable::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "Travel",
+              "type": "eternum::systems::transport::contracts::travel_systems::travel_systems::Travel",
               "kind": "nested"
             }
           ]

@@ -2,24 +2,33 @@ import { useEffect, useMemo, useState } from "react";
 import { useDojo } from "../../DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
 import useRealmStore from "../store/useRealmStore";
-import { createCombatNotification, parseCombatEvent } from "../../utils/combat";
 import { useLevel } from "../helpers/useLevel";
-import { useNotificationsStore } from "../store/useNotificationsStore";
+import { EventType, NotificationType, useNotificationsStore } from "../store/useNotificationsStore";
 import { useResources } from "../helpers/useResources";
 import {
   generateEmptyChestNotifications,
   generateLaborNotifications,
-  useRealmsPosition,
-  useRealmsResource,
-} from "./utils";
+  generateArrivedAtBankNotifications,
+  generateArrivedAtHyperstructureNotifications,
+  generateEnemyRaidersHaveArrivedNotifications,
+  generateYourRaidersHaveArrivedNotifications,
+} from "./generateNotifications";
+import { useRealmsPosition, useRealmsResource, createCombatNotification } from "./utils";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { useCombat } from "../helpers/useCombat";
+import { useBanks } from "../helpers/useBanks";
+import { useHyperstructure } from "../helpers/useHyperstructure";
+import { parseCombatEvent } from "../../utils/combat";
 
 export const useNotifications = () => {
   const {
     setup: {
+      account: { account },
       updates: {
-        eventUpdates: { createCombatEvents },
+        eventUpdates: { createCombatEvents, createTravelEvents },
       },
-      components: { Realm, Labor, ArrivalTime, CaravanMembers, Position, Inventory, ForeignKey },
+      components,
     },
   } = useDojo();
 
@@ -29,8 +38,21 @@ export const useNotifications = () => {
   const realmsResources = useRealmsResource(realmEntityIds);
   const realmPositions = useRealmsPosition(realmEntityIds);
 
+  const { getBanks } = useBanks();
+  const banks = useMemo(() => getBanks(), []);
+
+  const { getHyperstructureIdByRealmEntityId } = useHyperstructure();
+  const hyperstructure = useMemo(() => {
+    const hyperstructureId = getHyperstructureIdByRealmEntityId(realmEntityId);
+    if (hyperstructureId) {
+      const position = getComponentValue(components.Position, getEntityIdFromKeys([hyperstructureId]));
+      return position ? { hyperstructureId, position: { x: position.x, y: position.y } } : undefined;
+    }
+  }, [hyperstructureId]);
+
   const { getEntityLevel, getHyperstructureLevelBonus, getRealmLevelBonus } = useLevel();
   const { getResourcesFromInventory } = useResources();
+  const { getEntitiesCombatInfo } = useCombat();
 
   const { notifications, addUniqueNotifications } = useNotificationsStore();
 
@@ -46,17 +68,64 @@ export const useNotifications = () => {
    */
   useEffect(() => {
     const updateNotifications = () => {
-      const newNotifications = nextBlockTimestamp
-        ? generateLaborNotifications(
-            realmsResources,
-            getRealmLevelBonus,
-            getHyperstructureLevelBonus,
+      let newNotifications: NotificationType[] = [];
+
+      if (nextBlockTimestamp) {
+        let laborNotifications = generateLaborNotifications(
+          realmsResources,
+          getRealmLevelBonus,
+          getHyperstructureLevelBonus,
+          nextBlockTimestamp,
+          realmLevel,
+          hyperstructureLevel || 0,
+          components,
+        );
+        newNotifications = newNotifications.concat(laborNotifications);
+
+        let emptyChestNotifications = generateEmptyChestNotifications(
+          realmPositions,
+          components,
+          nextBlockTimestamp,
+          getResourcesFromInventory,
+        );
+        newNotifications = newNotifications.concat(emptyChestNotifications);
+
+        let arrivedAtBankNotifications = generateArrivedAtBankNotifications(
+          BigInt(account.address),
+          components,
+          nextBlockTimestamp,
+          banks,
+          getResourcesFromInventory,
+        );
+        newNotifications = newNotifications.concat(arrivedAtBankNotifications);
+
+        if (hyperstructure) {
+          let arrivedAtHyperstructureNotifications = generateArrivedAtHyperstructureNotifications(
+            BigInt(account.address),
             nextBlockTimestamp,
-            realmLevel,
-            hyperstructureLevel || 0,
-            Labor,
-          )
-        : [];
+            components,
+            hyperstructure,
+            getResourcesFromInventory,
+          );
+          newNotifications = newNotifications.concat(arrivedAtHyperstructureNotifications);
+        }
+
+        let enemyRaidersHaveArrivedNotifications = generateEnemyRaidersHaveArrivedNotifications(
+          nextBlockTimestamp,
+          realmPositions,
+          components,
+          getEntitiesCombatInfo,
+        );
+        newNotifications = newNotifications.concat(enemyRaidersHaveArrivedNotifications);
+
+        let yourRaidersHaveArrivedNotifications = generateYourRaidersHaveArrivedNotifications(
+          nextBlockTimestamp,
+          realmPositions,
+          components,
+          getEntitiesCombatInfo,
+        );
+        newNotifications = newNotifications.concat(yourRaidersHaveArrivedNotifications);
+      }
       // add only add if not already in there
       addUniqueNotifications(newNotifications);
     };
@@ -89,7 +158,50 @@ export const useNotifications = () => {
       }
     };
     subscribeToCombatEvents();
-  }, [realmEntityId]);
+  }, [realmEntityIds]);
+
+  /**
+   * Enemies arriving notifications
+   */
+  useEffect(() => {
+    const subscribeToCombatEvents = async () => {
+      for (const { realmEntityId } of realmEntityIds) {
+        let position = getComponentValue(components.Position, getEntityIdFromKeys([realmEntityId]));
+        if (position) {
+          const observable = await createTravelEvents(position.x, position.y);
+          observable.subscribe((event) => {
+            if (event) {
+              let entityId = parseInt(event.data[0]);
+
+              let raidersList = getEntitiesCombatInfo([BigInt(entityId)]);
+              let raiders = raidersList.length === 1 ? raidersList[0] : undefined;
+
+              // check if not arrived yet
+              // and is enemy
+              if (
+                raiders?.arrivalTime &&
+                nextBlockTimestamp &&
+                raiders.arrivalTime > nextBlockTimestamp &&
+                raiders.entityOwnerId &&
+                !realmEntityIds.map(({ realmEntityId }) => realmEntityId).includes(raiders.entityOwnerId)
+              ) {
+                const newNotification = {
+                  eventType: EventType.EnemyRaidersArriving,
+                  // to have a unique key for each notification
+                  keys: [entityId.toString()],
+                  data: {
+                    raiders,
+                  },
+                };
+                addUniqueNotifications([newNotification]);
+              }
+            }
+          });
+        }
+      }
+    };
+    subscribeToCombatEvents();
+  }, [realmEntityIds]);
 
   /**
    * Claimable orders notifications
@@ -98,17 +210,7 @@ export const useNotifications = () => {
   useEffect(() => {
     const updateNotifications = () => {
       const newNotifications = nextBlockTimestamp
-        ? generateEmptyChestNotifications(
-            realmPositions,
-            Inventory,
-            Position,
-            ArrivalTime,
-            CaravanMembers,
-            Realm,
-            ForeignKey,
-            nextBlockTimestamp,
-            getResourcesFromInventory,
-          )
+        ? generateEmptyChestNotifications(realmPositions, components, nextBlockTimestamp, getResourcesFromInventory)
         : [];
 
       // add only add if not already in there

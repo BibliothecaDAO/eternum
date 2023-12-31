@@ -5,8 +5,16 @@ import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle
 import { useTradeNotification } from "../hooks/notifications/useTradeNotification";
 import { useHarvestNotification } from "../hooks/notifications/useHarvestNotification";
 import { useEmptyChestNotification } from "../hooks/notifications/useEmptyChestNotification";
-import { useAttackedNotification, useStolenResourcesNotification } from "../hooks/notifications/useCombatNotification";
+import {
+  useAttackedNotification,
+  useEnemyRaidersAreTravelingNotification,
+  useEnemyRaidersHaveArrivedNotification,
+  useStolenResourcesNotification,
+  useYourRaidersHaveArrivedNotification,
+} from "../hooks/notifications/useCombatNotification";
 import { EventType, NotificationType } from "../hooks/store/useNotificationsStore";
+import { useCaravanHasArrivedAtBankNotification } from "../hooks/notifications/useBankNotification";
+import { useCaravanHasArrivedAtHyperstructureNotification } from "../hooks/notifications/useHyperstructureNotification";
 
 const notificationHandlers = {
   [EventType.AcceptOffer]: useTradeNotification,
@@ -16,6 +24,11 @@ const notificationHandlers = {
   [EventType.EmptyChest]: useEmptyChestNotification,
   [EventType.StolenResource]: useStolenResourcesNotification,
   [EventType.Attacked]: useAttackedNotification,
+  [EventType.ArrivedAtBank]: useCaravanHasArrivedAtBankNotification,
+  [EventType.ArrivedAtHyperstructure]: useCaravanHasArrivedAtHyperstructureNotification,
+  [EventType.YourRaidersHaveArrived]: useYourRaidersHaveArrivedNotification,
+  [EventType.EnemyRaidersHaveArrived]: useEnemyRaidersHaveArrivedNotification,
+  [EventType.EnemyRaidersArriving]: useEnemyRaidersAreTravelingNotification,
 };
 
 type NotificationProps = {

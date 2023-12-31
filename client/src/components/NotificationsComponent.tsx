@@ -12,6 +12,7 @@ import {
   setLastLoginTimestamp,
   useNotificationsStore,
 } from "../hooks/store/useNotificationsStore";
+import useBlockchainStore from "../hooks/store/useBlockchainStore";
 
 // dev:max number of notifications before reach step limit
 const MAX_HARVEST_NOTIFICATIONS = 5;
@@ -34,6 +35,8 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
       systemCalls: { harvest_all_labor, transfer_items_from_multiple },
     },
   } = useDojo();
+
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp) || 0;
 
   const [showNotifications, setShowNotifications] = useState(true);
   const [isHarvestLoading, setIsHarvestLoading] = useState(false);
@@ -144,7 +147,7 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
               className="pointer-events-auto mr-2"
               onClick={() => {
                 deleteAllNotifications();
-                setLastLoginTimestamp();
+                setLastLoginTimestamp(nextBlockTimestamp);
               }}
             >
               {"Close All"}

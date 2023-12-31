@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { CombatResultInterface, Resource } from "@bibliothecadao/eternum";
+import { BankInterface, CombatInfo, CombatResultInterface, Position, Resource } from "@bibliothecadao/eternum";
 
 export enum EventType {
   MakeOffer,
@@ -9,6 +9,11 @@ export enum EventType {
   EmptyChest,
   StolenResource,
   Attacked,
+  ArrivedAtBank,
+  ArrivedAtHyperstructure,
+  EnemyRaidersHaveArrived,
+  YourRaidersHaveArrived,
+  EnemyRaidersArriving,
 }
 
 export enum CarrierType {
@@ -29,10 +34,40 @@ export type EmptyChestData = {
   resources: Resource[];
 };
 
+export type ArrivedAtBankData = {
+  bank: BankInterface;
+  realmEntityId: bigint;
+  caravanId: bigint;
+  indices: number[];
+  resources: Resource[];
+  lordsAmounts: number[];
+  homePosition: Position;
+};
+
+export type ArrivedAtHyperstructureData = {
+  hyperstructureId: bigint;
+  realmEntityId: bigint;
+  caravanId: bigint;
+  indices: number[];
+  resources: Resource[];
+  homePosition: Position;
+};
+
+export type RaidersData = {
+  raiders: CombatInfo;
+};
+
+// todo: use generic data type
 export type NotificationType = {
   eventType: EventType;
   keys: string[] | string | undefined;
-  data?: HarvestData | EmptyChestData | CombatResultInterface;
+  data?:
+    | HarvestData
+    | EmptyChestData
+    | CombatResultInterface
+    | ArrivedAtBankData
+    | ArrivedAtHyperstructureData
+    | RaidersData;
 };
 
 interface NotificationsStore {
@@ -118,13 +153,29 @@ export function extractAndCleanKey(keys: string | null | undefined | string[]): 
   }
 }
 
-// add last login timestamp to local storage and use it to filter notifications
-export const setLastLoginTimestamp = (): void => {
-  localStorage.setItem("notificationTimestamp", Math.round(Date.now() / 1000).toString());
+// Function to add last login timestamp to local storage and use it to filter notifications
+export const setLastLoginTimestamp = (nextBlockTimestamp: number): void => {
+  // Store the current timestamp and the next block timestamp as a string
+  const currentTimestamp = Math.round(Date.now() / 1000);
+  localStorage.setItem("notificationTimestamp", `${currentTimestamp}-${nextBlockTimestamp}`);
 };
 
-// retrieve last login timestamp from local storage
-export const getLastLoginTimestamp = (): number | undefined => {
-  const lastLoginTimestamp = localStorage.getItem("notificationTimestamp");
-  return lastLoginTimestamp ? parseInt(lastLoginTimestamp) : undefined;
+// Function to retrieve the last login timestamp from local storage
+export const getLastLoginTimestamp = (): { lastLoginTimestamp: number; lastLoginBlockTimestamp: number } => {
+  const storedValue = localStorage.getItem("notificationTimestamp");
+
+  // If there is no stored value or if it's invalid, return 0 for both timestamps
+  if (!storedValue) {
+    return { lastLoginTimestamp: 0, lastLoginBlockTimestamp: 0 };
+  }
+
+  const [lastLoginTimestamp, lastLoginBlockTimestamp] = storedValue.split("-").map(Number);
+
+  // Check if both numbers are valid; if not, return 0 for both
+  if (isNaN(lastLoginTimestamp) || isNaN(lastLoginBlockTimestamp)) {
+    return { lastLoginTimestamp: 0, lastLoginBlockTimestamp: 0 };
+  }
+
+  // Return the parsed numbers
+  return { lastLoginTimestamp, lastLoginBlockTimestamp };
 };

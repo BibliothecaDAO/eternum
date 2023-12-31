@@ -46,11 +46,11 @@ export async function createEventSubscription(keys: string[]): Promise<Observabl
 
   const { events }: getEventsQuery = await client.request(queryBuilder);
 
-  const lastLoginTimestamp = getLastLoginTimestamp();
+  const timestamps = getLastLoginTimestamp();
 
   events.edges
     .filter((event) => {
-      return dateToTimestamp(event.node.createdAt) > (lastLoginTimestamp || 0);
+      return dateToTimestamp(event.node.createdAt) > timestamps.lastLoginTimestamp;
     })
     .forEach((event) => {
       if (event.node) {
