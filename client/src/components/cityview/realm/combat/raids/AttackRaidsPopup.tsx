@@ -585,44 +585,58 @@ const SelectRaidersPanel = ({
             </div>
           </div>
           <div className="flex my-2 flex-col items-center justify-center w-full">
-            <div className={`grid mb-1 grid-cols-${watchTower ? "2" : "1"} gap-2 w-full`}>
-              <Button
-                className="w-full text-xxs h-[18px]"
-                disabled={selectedRaiders.length !== 1}
-                onClick={onSteal}
-                isLoading={loading}
-                variant="primary"
-              >
-                {`Pillage`}
-              </Button>
-              {watchTower && (
+            <div className={`grid mb-1 grid-cols-2 gap-2 w-full`}>
+              <div>
                 <Button
                   className="w-full text-xxs h-[18px]"
-                  disabled={!(selectedRaiders.length > 0 && watchTower?.health > 0)}
-                  onClick={onAttack}
+                  disabled={selectedRaiders.length !== 1}
+                  onClick={onSteal}
                   isLoading={loading}
-                  variant="outline"
+                  variant="primary"
                 >
-                  {`Attack Realm`}
+                  {`Pillage`}
                 </Button>
+                {selectedRaiders.length == 1 && (
+                  <div
+                    className={clsx(
+                      "text-xxs flex justify-around w-full",
+                      succesProb > 0.5 ? "text-order-brilliance/70" : "text-order-giants/70",
+                    )}
+                  >
+                    {(succesProb * 100).toFixed(0)}% success rate
+                  </div>
+                )}
+              </div>
+              {watchTower && (
+                <div>
+                  <Button
+                    className="w-full text-xxs h-[18px]"
+                    disabled={!(selectedRaiders.length > 0 && watchTower?.health > 0)}
+                    onClick={onAttack}
+                    isLoading={loading}
+                    variant="outline"
+                  >
+                    {`Attack Realm`}
+                  </Button>
+                  {selectedRaiders.length > 0 && (
+                    <div
+                      className={clsx(
+                        "text-xxs flex justify-around w-full",
+                        succesProb > 0.5 ? "text-order-brilliance/70" : "text-order-giants/70",
+                      )}
+                    >
+                      {(succesProb * 100).toFixed(0)}% success rate
+                    </div>
+                  )}
+                </div>
               )}
             </div>
-            {selectedRaiders.length > 0 && (
-              <div
-                className={clsx(
-                  "text-xxs flex justify-around w-full",
-                  succesProb > 0.5 ? "text-order-brilliance/70" : "text-order-giants/70",
-                )}
-              >
-                <div className="">{(succesProb * 100).toFixed(0)}% success rate</div>
-                {watchTower && <div className="">{(succesProb * 100).toFixed(0)}% success rate</div>}
-              </div>
-            )}
+
             {!(selectedRaiders.length > 0) && (
               <div className="text-xxs text-order-giants/70">Select at least 1 Raiders Group</div>
             )}
             {selectedRaiders.length > 0 && selectedRaiders.length !== 1 && (
-              <div className="text-xxs text-order-giants/70">Can only steal with 1 Raiders Group</div>
+              <div className="text-xxs text-order-giants/70">Can only pillage with 1 Raiders Group</div>
             )}
           </div>
         </div>

@@ -264,13 +264,15 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
                 {`Travel`}
               </Button>
             )}
-            {!isTraveling && !isHome && !isLoading && (
-              <Button size="xs" className="ml-auto" onClick={onReturn} variant="outline" withoutSound>
-                {`Return`}
-              </Button>
-            )}
-            {!isTraveling && !isHome && isLoading && (
-              <Button size="xs" className="ml-auto" onClick={() => {}} isLoading={true} variant="outline" withoutSound>
+            {!isTraveling && !isHome && (
+              <Button
+                size="xs"
+                className="ml-auto"
+                isLoading={isLoading}
+                onClick={onReturn}
+                variant="outline"
+                withoutSound
+              >
                 {`Return`}
               </Button>
             )}
