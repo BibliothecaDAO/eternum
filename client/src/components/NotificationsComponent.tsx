@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Notification } from "../elements/Notification";
 import clsx from "clsx";
 import Button from "../elements/Button";
@@ -38,7 +38,7 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp) || 0;
 
-  const [showNotifications, setShowNotifications] = useState(true);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [isHarvestLoading, setIsHarvestLoading] = useState(false);
   const [isClaimLoading, setIsClaimLoading] = useState(false);
 
@@ -128,52 +128,72 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
     });
   };
 
+  useEffect(() => {
+    if (notifications.length === 0) {
+      setShowNotifications(false);
+    }
+  }, [notifications]);
+
   return (
-    <div className={clsx("flex flex-col space-y-2 fixed right-4 bottom-4 top-4 pointer-events-none", className)}>
-      <div className="w-full flex flex-cols justify-between">
-        {
+    <div
+      className={clsx(
+        `w-full flex flex-col items-end space-y-2 fixed right-4 bottom-4 top-4 pointer-events-none`,
+        className,
+      )}
+    >
+      <div
+        className={`${
+          showNotifications ? "w-[330px]" : "w-[130px]"
+        } transition-all duration-300 flex flex-cols justify-between`}
+      >
+        <div className={`flex w-full`}>
           <Button
             variant="primary"
-            className="pointer-events-auto mr-2"
+            isPulsing={notifications.length > 0 && !showNotifications}
+            disabled={notifications.length === 0}
+            className="pointer-events-auto w-32 h-8 mr-2"
             onClick={() => setShowNotifications((prev) => !prev)}
           >
-            {showNotifications ? "Hide notifications" : "Show notifications"}
+            {showNotifications ? "Hide notifications" : `${notifications.length} Notifications`}
           </Button>
-        }
-        <div>
-          {notifications.length > 0 && (
+          {notifications.length > 0 && showNotifications && (
             <Button
               variant="danger"
               className="pointer-events-auto mr-2"
               onClick={() => {
                 deleteAllNotifications();
                 setLastLoginTimestamp(nextBlockTimestamp);
+                setShowNotifications(false);
               }}
             >
-              {"Close All"}
-            </Button>
-          )}
-          {hasHarvestNotification && (
-            <Button
-              variant="success"
-              className="pointer-events-auto mr-2"
-              isLoading={isHarvestLoading}
-              onClick={onHarvestAll}
-            >
-              {"Harvest All"}
-            </Button>
-          )}
-          {hasClaimNotifications && (
-            <Button
-              variant="success"
-              className="pointer-events-auto mr-2"
-              isLoading={isClaimLoading}
-              onClick={onClaimAll}
-            >
-              {"Claim All"}
+              {"Clear"}
             </Button>
           )}
         </div>
+        {showNotifications && (
+          <div className="flex flex-cols">
+            {hasHarvestNotification && (
+              <Button
+                variant="success"
+                className="pointer-events-auto mr-2"
+                isLoading={isHarvestLoading}
+                onClick={onHarvestAll}
+              >
+                {"Harvest"}
+              </Button>
+            )}
+            {hasClaimNotifications && (
+              <Button
+                variant="success"
+                className="pointer-events-auto mr-2"
+                isLoading={isClaimLoading}
+                onClick={onClaimAll}
+              >
+                {"Claim"}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
       <div className="overflow-auto">
         {showNotifications &&

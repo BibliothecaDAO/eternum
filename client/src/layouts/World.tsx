@@ -137,7 +137,7 @@ export const World = () => {
           <NetworkModule />
           <div className="flex">
             <NavigationModule />
-            <NotificationsComponent className="ml-auto" />
+            <NotificationsComponent className="" />
           </div>
           <RealmResourcesComponent />
           {/* <ContextsModule /> */}

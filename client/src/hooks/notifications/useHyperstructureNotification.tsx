@@ -87,7 +87,7 @@ export const useCaravanHasArrivedAtHyperstructureNotification = (
         <div className="flex items-center">
           on
           <OrderIcon size="xs" className="mx-1" order={realmOrderName} />{" "}
-          <div className="inline-block text-gold">{`${realmOrderName}`}</div>
+          <div className="inline-block text-gold">{`Hyperstructure`}</div>
         </div>
       </div>
     ),
