@@ -5,6 +5,7 @@ type ButtonProps = {
   onClick: () => void;
   children: React.ReactNode;
   className?: string;
+  isPulsing?: boolean;
   disabled?: boolean;
   variant?: "primary" | "secondary" | "success" | "red" | "danger" | "default" | "outline";
   isLoading?: boolean;
@@ -36,6 +37,7 @@ const Button: React.FC<ButtonProps> = ({
   onClick,
   children,
   className = "",
+  isPulsing = false,
   disabled = false,
   variant = "default",
   isLoading = false,
@@ -56,7 +58,7 @@ const Button: React.FC<ButtonProps> = ({
       }}
       className={`${STYLES.baseStyle} ${STYLES[variant]} ${disabled ? STYLES.disabledStyle : STYLES.enabledStyle} ${
         isLoading ? STYLES.loadingStyle : ""
-      } ${className} ${SIZES[size]}`}
+      } ${isPulsing ? "animate-pulse" : ""} ${className} ${SIZES[size]}`}
       disabled={disabled || isLoading}
       {...props}
     >

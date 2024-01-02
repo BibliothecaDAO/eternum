@@ -19,6 +19,23 @@ mod travel_systems {
 
     use eternum::systems::leveling::contracts::leveling_systems::{InternalLevelingSystemsImpl as leveling};
 
+    #[derive(Drop, starknet::Event)]
+    struct Travel {
+        #[key]
+        destination_coord_x: u32,
+        #[key]
+        destination_coord_y: u32,
+        #[key]
+        realm_entity_id: u128,
+        entity_id: u128,
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        Travel: Travel,
+    }
+
     #[external(v0)]
     impl TravelSystemsImpl of ITravelSystems<ContractState> {
 
@@ -57,6 +74,15 @@ mod travel_systems {
             let travelling_entity_position = get!(world, travelling_entity_id, Position);
             let travelling_entity_coord: Coord = travelling_entity_position.into();
             assert(travelling_entity_coord != destination_coord, 'entity is at destination');
+
+            let entity_owner = get!(world, travelling_entity_id, EntityOwner);
+
+            emit!(world, Travel { 
+                    destination_coord_x: destination_coord.x,
+                    destination_coord_y: destination_coord.y,
+                    realm_entity_id: entity_owner.entity_owner_id,
+                    entity_id: travelling_entity_id
+             });
             
             InternalTravelSystemsImpl::travel(world,
                 travelling_entity_id, travelling_entity_movable, 

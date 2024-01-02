@@ -27,7 +27,6 @@ export const HyperstructureLeaderboard = () => {
 
   useEffect(() => {
     if (Object.keys(leaderboard).length === 0) {
-      console.log("sync data");
       let ids = getHyperstructureIds();
       syncData(ids, components);
     }
