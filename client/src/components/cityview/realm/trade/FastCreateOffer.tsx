@@ -430,6 +430,10 @@ export const SelectCaravanPanel = ({
     }
   }, [realm, realmCaravans]);
 
+  useEffect(() => {
+    setDonkeysCount(Math.min(donkeysLeft || 0, Math.ceil(divideByPrecision(resourceWeight) / WEIGHT_PER_DONKEY_KG)));
+  }, [resourceWeight, donkeysLeft]);
+
   const canCarry = (caravan: CaravanInterface, resourceWeight: number) => {
     return caravan.capacity ? caravan.capacity >= resourceWeight : false;
   };
