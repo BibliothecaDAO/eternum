@@ -13,13 +13,14 @@ import { useComponentValue } from "@dojoengine/react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
 import { EventType, useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
+import { FoodType, useLabor } from "../../../../hooks/helpers/useLabor";
 
 type LaborComponentProps = {
   resourceId: number;
   realm: RealmInterface;
+  setBuildResource: (resourceId: number) => void;
   buildLoadingStates: { [key: number]: boolean };
   setBuildLoadingStates: (prevStates: any) => void;
-  onBuild: () => void;
   className?: string;
   locked?: boolean;
 };
@@ -27,7 +28,7 @@ type LaborComponentProps = {
 export const LaborComponent = ({
   resourceId,
   realm,
-  onBuild,
+  setBuildResource,
   setBuildLoadingStates,
   buildLoadingStates,
   className,
@@ -64,6 +65,8 @@ export const LaborComponent = ({
 
   const { play: playHarvest } = useUiSounds(soundSelector.harvest);
 
+  const { onBuildFood } = useLabor();
+
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 
   const { getEntityLevel, getRealmLevelBonus, getHyperstructureLevelBonus } = useLevel();
@@ -82,6 +85,16 @@ export const LaborComponent = ({
     );
     return [levelBonus, hyperstructureLevelBonus];
   }, [realmEntityId, isFood]);
+
+  const onBuild = async () => {
+    if (resourceId == ResourcesIds["Wheat"]) {
+      await onBuildFood(FoodType.Wheat, realm);
+    } else if (resourceId == ResourcesIds["Fish"]) {
+      await onBuildFood(FoodType.Fish, realm);
+    } else {
+      setBuildResource(resourceId);
+    }
+  };
 
   const onHarvest = () => {
     if (hyperstructureLevelBonus) {

@@ -1,21 +1,38 @@
 import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
-import { getEntityIdFromKeys } from "../../utils/utils";
+import { getEntityIdFromKeys, getPosition, getZone } from "../../utils/utils";
 import { unpackResources } from "../../utils/packedData";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { useComponentValue } from "@dojoengine/react";
 import { useEffect, useState } from "react";
-import { PRICE_UPDATE_INTERVAL } from "@bibliothecadao/eternum";
+import { PRICE_UPDATE_INTERVAL, RealmInterface } from "@bibliothecadao/eternum";
 import { Resource } from "@bibliothecadao/eternum";
+import useRealmStore from "../store/useRealmStore";
+
+// todo: move this to sdk
+const DECAY = 0.1;
+const UNITS_PER_DAY = 960;
+const SECONDS_PER_DAY = 86400;
+const FOOD_LABOR_UNITS = 12;
+
+export enum FoodType {
+  Wheat = 254,
+  Fish = 255,
+}
 
 export function useLabor() {
   const {
+    account: { account },
     setup: {
+      optimisticSystemCalls: { optimisticBuildLabor },
+      systemCalls: { purchase_and_build_labor },
       components: { LaborCostResources, LaborCostAmount, LaborAuction },
     },
   } = useDojo();
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const getLaborCost = (resourceId: number): Resource[] => {
     const laborCostResources = getComponentValue(LaborCostResources, getEntityIdFromKeys([BigInt(resourceId)]));
@@ -81,18 +98,48 @@ export function useLabor() {
     return laborCoefficient;
   };
 
+  const onBuildFood = async (foodType: FoodType, realm: RealmInterface) => {
+    const position = getPosition(realm.realmId);
+    const zone = getZone(position.x);
+
+    // match multiplier by food type
+    let multiplier = undefined;
+    switch (foodType) {
+      case FoodType.Wheat:
+        multiplier = realm.rivers;
+        break;
+      case FoodType.Fish:
+        multiplier = realm.harbors;
+        break;
+    }
+
+    let coefficient = zone ? getLaborAuctionAverageCoefficient(zone, FOOD_LABOR_UNITS * multiplier) : undefined;
+
+    if (coefficient) {
+      await optimisticBuildLabor(
+        nextBlockTimestamp || 0,
+        [],
+        coefficient,
+        purchase_and_build_labor,
+      )({
+        signer: account,
+        entity_id: realmEntityId,
+        resource_type: foodType,
+        labor_units: FOOD_LABOR_UNITS,
+        multiplier: multiplier,
+      });
+    }
+  };
+
   return {
     getLaborCost,
     getLaborAuctionCoefficient,
     useLaborAuctionCoefficient,
     getLaborAuctionAverageCoefficient,
     getNextLaborAuctionCoefficient,
+    onBuildFood,
   };
 }
-
-const DECAY = 0.1;
-const UNITS_PER_DAY = 960;
-const SECONDS_PER_DAY = 86400;
 
 function computeCoefficient(startTimestamp: number, nextBlockTimestamp: number, sold: number) {
   return Math.exp(

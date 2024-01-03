@@ -104,9 +104,7 @@ export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
         realmResourceIds.map((resourceId) => (
           <div className="flex flex-col p-2" key={resourceId}>
             <LaborComponent
-              onBuild={() => {
-                buildResource == resourceId ? setBuildResource(null) : setBuildResource(resourceId);
-              }}
+              setBuildResource={setBuildResource}
               resourceId={resourceId}
               realm={realm}
               setBuildLoadingStates={setBuildLoadingStates}
