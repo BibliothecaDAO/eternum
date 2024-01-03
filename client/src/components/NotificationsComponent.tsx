@@ -48,31 +48,49 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
 
   const onHarvestAll = async () => {
     setIsHarvestLoading(true);
-    const harvestKeys: string[][] = notifications
-      .map((notification: NotificationType) => {
-        if (notification.eventType === EventType.Harvest) {
-          return notification.keys as string[];
+
+    while (notifications.some((notification) => notification.eventType === EventType.Harvest)) {
+      // Process a batch of notifications
+      const batchNotifications = notifications
+        .filter((notification) => notification.eventType === EventType.Harvest)
+        .slice(0, MAX_HARVEST_NOTIFICATIONS);
+
+      const harvestKeys: string[][] = batchNotifications
+        .map((notification) => notification.keys as string[])
+        .filter(Boolean);
+
+      if (harvestKeys.length > 0) {
+        await harvest_all_labor({
+          signer: account,
+          entity_ids: harvestKeys,
+        });
+      }
+
+      // Remove processed notifications
+      for (let notification of batchNotifications) {
+        deleteNotification(notification.keys, notification.eventType);
+        // Remove notification from the notifications array
+        const index = notifications.indexOf(notification);
+        if (index > -1) {
+          notifications.splice(index, 1);
         }
-      })
-      .filter(Boolean)
-      .slice(0, MAX_HARVEST_NOTIFICATIONS) as string[][];
-    await harvest_all_labor({
-      signer: account,
-      entity_ids: harvestKeys,
-    });
-    for (let notification of notifications
-      .filter((notification) => notification.eventType === EventType.Harvest)
-      .slice(0, MAX_HARVEST_NOTIFICATIONS)) {
-      deleteNotification(notification.keys, notification.eventType);
+      }
     }
+
     setIsHarvestLoading(false);
   };
 
   const onClaimAll = async () => {
     setIsClaimLoading(true);
-    const senders: sender[] = notifications
-      .map((notification: NotificationType) => {
-        if (notification.eventType === EventType.EmptyChest) {
+
+    while (notifications.some((notification) => notification.eventType === EventType.EmptyChest)) {
+      // Create a batch of claim notifications to process
+      const batchNotifications = notifications
+        .filter((notification) => notification.eventType === EventType.EmptyChest)
+        .slice(0, MAX_CLAIM_NOTIFICATIONS);
+
+      const senders: sender[] = batchNotifications
+        .map((notification) => {
           let data = notification.data as EmptyChestData;
           if (notification?.keys) {
             return {
@@ -81,21 +99,27 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
               indices: data.indices,
             };
           }
+        })
+        .filter(Boolean) as sender[];
+
+      if (senders.length > 0) {
+        await transfer_items_from_multiple({
+          signer: account,
+          senders,
+        });
+      }
+
+      // Delete the processed notifications and update the notifications array
+      for (let notification of batchNotifications) {
+        deleteNotification(notification.keys, notification.eventType);
+        // Remove the notification from the notifications array
+        const index = notifications.indexOf(notification);
+        if (index > -1) {
+          notifications.splice(index, 1);
         }
-      })
-      .filter(Boolean)
-      .slice(0, MAX_CLAIM_NOTIFICATIONS) as sender[];
-
-    await transfer_items_from_multiple({
-      signer: account,
-      senders,
-    });
-
-    for (let notification of notifications
-      .filter((notification) => notification.eventType === EventType.EmptyChest)
-      .slice(0, MAX_CLAIM_NOTIFICATIONS)) {
-      deleteNotification(notification.keys, notification.eventType);
+      }
     }
+
     setIsClaimLoading(false);
   };
 
