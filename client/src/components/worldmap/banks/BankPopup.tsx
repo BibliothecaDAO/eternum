@@ -24,7 +24,7 @@ import { NumberInput } from "../../../elements/NumberInput";
 import { getLordsAmountFromBankAuction } from "./utils";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { useLevel } from "../../../hooks/helpers/useLevel";
-import { getTotalResourceWeight } from "../../cityview/realm/trade/TradeUtils";
+import { getTotalResourceWeight } from "../../cityview/realm/trade/utils";
 
 type BankPopupProps = {
   onClose: () => void;

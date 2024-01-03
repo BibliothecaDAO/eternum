@@ -23,7 +23,7 @@ import { SelectRealmPanel } from "../SelectRealmPanel";
 import clsx from "clsx";
 import { DONKEYS_PER_CITY, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 import { useResources } from "../../../../hooks/helpers/useResources";
-import { getTotalResourceWeight } from "./TradeUtils";
+import { getTotalResourceWeight } from "./utils";
 
 type CreateOfferPopupProps = {
   onClose: () => void;
@@ -592,12 +592,28 @@ export const SelectCaravanPanel = ({
               donkeysCount * WEIGHT_PER_DONKEY_KG
             }kg`}</div>
           </div>
+          <div className="w-1/2 flex flex-cols justify-between mb-2 ">
+            <div className="flex flex-col items-center">
+              <div className="flex text-xxs text-center text-white">Donkeys per city </div>
+              <div className="flex text-xxs text-center text-gold"> 10 </div>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="flex text-xxs text-center text-white">Capacity per donkey </div>
+              <div className="flex text-xxs text-center text-gold"> 100kg </div>
+            </div>
+          </div>
           {!hasEnoughDonkeys && (
             <div className="flex items-center mb-1 text-xs text-center text-white">
               <Danger />
               <div className="ml-1 uppercase text-danger">Increase the amount of units</div>
             </div>
           )}
+          <div className="flex items-center mb-1 text-xxs text-center text-white wrap-text">
+            <div className="ml-1 text-danger">
+              Warning: Once you have created a caravan of donkeys, they cannot be ungrouped. Please plan your strategy
+              accordingly
+            </div>
+          </div>
         </>
       )}
       {!isNewCaravan && (

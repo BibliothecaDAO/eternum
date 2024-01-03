@@ -12,7 +12,7 @@ import { CaravanInterface } from "@bibliothecadao/eternum";
 import { CAPACITY_PER_DONKEY } from "@bibliothecadao/eternum";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
-import { getTotalResourceWeight } from "../TradeUtils";
+import { getTotalResourceWeight } from "../utils";
 import { divideByPrecision } from "../../../../../utils/utils";
 import { useResources } from "../../../../../hooks/helpers/useResources";
 

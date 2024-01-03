@@ -11,7 +11,7 @@ import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import { useDojo } from "../../../../../DojoContext";
 import { useResources } from "../../../../../hooks/helpers/useResources";
-import { getTotalResourceWeight } from "../../trade/TradeUtils";
+import { getTotalResourceWeight } from "../../trade/utils";
 import { divideByPrecision } from "../../../../../utils/utils";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import useUIStore from "../../../../../hooks/store/useUIStore";

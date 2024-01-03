@@ -4,7 +4,7 @@ import { ReactComponent as Pen } from "../../../../assets/icons/common/pen.svg";
 import { ReactComponent as CaretDownFill } from "../../../../assets/icons/common/caret-down-fill.svg";
 import { ReactComponent as DonkeyIcon } from "../../../../assets/icons/units/donkey-circle.svg";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
-import { getTotalResourceWeight } from "../../../cityview/realm/trade/TradeUtils";
+import { getTotalResourceWeight } from "../../../cityview/realm/trade/utils";
 import {
   displayAddress,
   divideByPrecision,

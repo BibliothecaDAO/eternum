@@ -7,7 +7,7 @@ import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { useTrade } from "../../../../hooks/helpers/useTrade";
 import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
 import { WEIGHT_PER_DONKEY_KG, MarketInterface } from "@bibliothecadao/eternum";
-import { getTotalResourceWeight } from "./TradeUtils";
+import { getTotalResourceWeight } from "./utils";
 
 type AcceptOfferPopupProps = {
   onClose: () => void;

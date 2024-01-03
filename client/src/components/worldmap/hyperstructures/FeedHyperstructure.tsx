@@ -31,7 +31,7 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import { PercentageSelection } from "../../../elements/PercentageSelection";
 import { LevelingTable } from "../../cityview/realm/leveling/LevelingPopup";
 import { LevelIndex, useLevel } from "../../../hooks/helpers/useLevel";
-import { getTotalResourceWeight } from "../../cityview/realm/trade/TradeUtils";
+import { getTotalResourceWeight } from "../../cityview/realm/trade/utils";
 
 type FeedHyperstructurePopupProps = {
   onClose: () => void;
