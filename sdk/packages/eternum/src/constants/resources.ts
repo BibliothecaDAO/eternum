@@ -318,13 +318,47 @@ export const hyperstructureResourcesPerLevel = [
   [16, 1408500, 17, 1208500, 18, 965000, 19, 808500, 20, 478500, 21, 321500, 22, 200000],
 ];
 
-export const getHyperstructureResources = (level: number): { resourceId: number; amount: number }[] => {
-  let resourcesList = hyperstructureResourcesPerLevel[level];
-  let resources = [];
-  for (let i = 0; i < resourcesList.length; i += 2) {
-    resources.push({ resourceId: resourcesList[i], amount: resourcesList[i + 1] });
+const LEVELING_COST_MULTIPLIER = 1.25;
+
+export const getLevelingCost = (newLevel: number): { resourceId: number; amount: number }[] => {
+  const costMultiplier = LEVELING_COST_MULTIPLIER ** Math.floor((newLevel - 1) / 4);
+
+  const rem = newLevel % 4;
+
+  const baseAmounts =
+    rem === 0
+      ? // level 4 (resource tier 3)
+        [16, 24421, 17, 20954, 18, 16733, 19, 14020, 20, 8291, 21, 5578, 22, 3467]
+      : rem === 1
+      ? // level 1 (food)
+        [254, 11340000, 255, 3780000]
+      : rem === 2
+      ? // level 2 (resource tier 1)
+        [1, 756000, 2, 594097, 3, 577816, 4, 398426, 5, 334057, 6, 262452, 7, 177732]
+      : rem === 3
+      ? // level 3 (resource tier 2)
+        [8, 144266, 9, 137783, 10, 89544, 11, 45224, 12, 37235, 13, 36029, 14, 36029, 15, 25929]
+      : [];
+
+  const costResources = [];
+  for (let i = 0; i < baseAmounts.length; i = i + 2) {
+    costResources.push({
+      resourceId: baseAmounts[i],
+      amount: Math.floor(baseAmounts[i + 1] * costMultiplier),
+    });
   }
-  return resources;
+  return costResources;
+};
+
+// min number of realms that would be needed to collaborate to build a hyperstructure
+const HYPERSTRUCTURE_LEVELING_MULTIPLIER = 25;
+
+export const getHyperstructureResources = (currentLevel: number): { resourceId: number; amount: number }[] => {
+  let resourcesList = getLevelingCost(currentLevel + 1);
+  return resourcesList.map(({ resourceId, amount }) => ({
+    resourceId,
+    amount: Math.floor(amount * HYPERSTRUCTURE_LEVELING_MULTIPLIER),
+  }));
 };
 
 interface WeightMap {

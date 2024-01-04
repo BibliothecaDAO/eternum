@@ -1,4 +1,4 @@
-let structures = require("./hyperstructures.json");
+let structures = require("../../data/hyperstructures/hyperstructures.json");
 
 let commands = "";
 
