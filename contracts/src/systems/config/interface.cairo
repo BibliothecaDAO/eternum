@@ -109,7 +109,8 @@ trait ITransportConfig<TContractState> {
     
     fn set_road_config(
         self: @TContractState, world: IWorldDispatcher, 
-        fee_resource_type: u8, fee_amount: u128, speed_up_by: u64
+        resource_costs: Span<(u8, u128)>,
+        speed_up_by: u64
     );
 
     fn set_speed_config(

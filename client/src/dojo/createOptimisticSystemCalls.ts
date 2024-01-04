@@ -2,7 +2,7 @@ import { uuid } from "@latticexyz/utils";
 import { ClientComponents } from "./createClientComponents";
 import { getEntityIdFromKeys } from "../utils/utils";
 import { Type, getComponentValue } from "@dojoengine/recs";
-import { LABOR_CONFIG, ROAD_COST_PER_USAGE, Resource } from "@bibliothecadao/eternum";
+import { LABOR_CONFIG, Resource } from "@bibliothecadao/eternum";
 import {
   CancelFungibleOrderProps,
   TransferItemsProps,
@@ -346,7 +346,7 @@ export function createOptimisticSystemCalls({
     };
   }
 
-  function optimisticBuildRoad(systemCall: (args: CreateRoadProps) => Promise<void>) {
+  function optimisticBuildRoad(costResources: Resource[], systemCall: (args: CreateRoadProps) => Promise<void>) {
     return async function (this: any, args: CreateRoadProps) {
       const { creator_id, start_coord, end_coord, usage_count } = args;
       const overrideId = uuid();
@@ -362,25 +362,28 @@ export function createOptimisticSystemCalls({
         value: { usage_count: usageCount },
       });
 
-      let { balance } = getComponentValue(Resource, getEntityIdFromKeys([BigInt(creator_id), BigInt(2)])) || {
-        balance: 0n,
-      };
-
-      // change trade taker_id to realm
-      Resource.addOverride(overrideId, {
-        entity: getEntityIdFromKeys([BigInt(creator_id), BigInt(2)]),
-        value: {
-          // 10 stone per usage
-          balance: balance - BigInt(usageCount) * BigInt(ROAD_COST_PER_USAGE),
-        },
-      });
+      for (let i = 0; i < costResources.length; i++) {
+        let costId = getEntityIdFromKeys([BigInt(args.creator_id), BigInt(costResources[i].resourceId)]);
+        let currentResource = getComponentValue(Resource, costId) || {
+          balance: 0n,
+        };
+        let balance = Number(currentResource.balance) - costResources[i].amount;
+        Resource.addOverride(overrideId + i, {
+          entity: costId,
+          value: {
+            balance: BigInt(balance),
+          },
+        });
+      }
 
       try {
         await systemCall(args); // Call the original function with its arguments and correct context
       } finally {
         // remove overrides
         Road.removeOverride(overrideId);
-        Resource.removeOverride(overrideId);
+        for (let i = 0; i < costResources.length; i++) {
+          Resource.removeOverride(overrideId + i);
+        }
       }
     };
   }

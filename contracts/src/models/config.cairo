@@ -46,8 +46,8 @@ struct TravelConfig {
 struct RoadConfig {
     #[key]
     config_id: u128,
-    fee_resource_type: u8,
-    fee_amount: u128,
+    resource_cost_id: u128,
+    resource_cost_count: u32,
     speed_up_by: u64
 }
 

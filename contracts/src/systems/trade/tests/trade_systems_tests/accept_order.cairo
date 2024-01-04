@@ -84,7 +84,12 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, u128, ITrad
     // set road config
     ITransportConfigDispatcher {
         contract_address: config_systems_address
-    }.set_road_config(world, ResourceTypes::STONE, 9000, 2); 
+    }.set_road_config(world, 
+        array![ 
+            // pay for each soldier with the following
+            (ResourceTypes::STONE, 9000),
+        ].span(),
+    2); 
 
 
     // set weight configuration for stone

@@ -81,10 +81,9 @@ commands+=(
     "sozo execute $CONFIG_SYSTEMS set_capacity_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,256,$((100000 * resource_precision))"
 
     # ### ROAD ###
-    # # fee resource type = 2 # Stone
-    # # fee amount = 10
+    # # 10 wheat, fish, stone and wood per road usage
     # # speed up transit by 2x = 2
-    "sozo execute $CONFIG_SYSTEMS set_road_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2,$((10 * resource_precision)),2"
+    "sozo execute $CONFIG_SYSTEMS set_road_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,4,1,10000,2,10000,254,10000,255,10000,2"
 
 )
 

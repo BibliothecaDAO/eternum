@@ -519,19 +519,39 @@ mod config_systems {
         fn set_road_config(
             self: @ContractState, 
             world: IWorldDispatcher, 
-            fee_resource_type: u8, 
-            fee_amount: u128, 
+            resource_costs: Span<(u8, u128)>,
             speed_up_by: u64
         ) {
 
             assert_caller_is_admin(world); 
 
+            let resource_cost_id = world.uuid().into();
+            let mut index = 0;
+            loop {
+               
+                if index == resource_costs.len() {
+                    break;
+                }
+                let (resource_type, resource_amount) 
+                    = *resource_costs.at(index);
+                set!(world, (
+                    ResourceCost {
+                        entity_id: resource_cost_id,
+                        index,
+                        resource_type,
+                        amount: resource_amount
+                    }
+                ));
+
+                index += 1;
+            };
+
             set!(
                 world,
                 (RoadConfig {
                     config_id: ROAD_CONFIG_ID,
-                    fee_resource_type,
-                    fee_amount,
+                    resource_cost_id,
+                    resource_cost_count: resource_costs.len(),
                     speed_up_by
                 })
             );

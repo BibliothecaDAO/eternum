@@ -61,7 +61,9 @@ export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferPr
             variant="outline"
             onMouseLeave={() => setTooltip(null)}
             className="text-gold/50 relative group ml-2"
-            onClick={onBuildRoad}
+            onClick={() => {
+              if (!hasRoad) onBuildRoad();
+            }}
           >
             {hasRoad ? "x2 speed" : "Normal speed"}
           </Button>

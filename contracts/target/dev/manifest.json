@@ -1104,7 +1104,7 @@
     {
       "name": "eternum::systems::combat::contracts::combat_systems",
       "address": "0x1b0a83a27a357e0574393ab06c0c774db7312a0993538cc0186d054f75ee84e",
-      "class_hash": "0x287802bac159071e6a182872595a4a8203261be99a365b6d42b683f08d30459",
+      "class_hash": "0x240f8b65fb44cb4dea5251b60ad5d13a8ca762943ab17cb45e23938cdf12f1b",
       "abi": [
         {
           "type": "impl",
@@ -1457,7 +1457,7 @@
     {
       "name": "eternum::systems::config::contracts::config_systems",
       "address": "0x7fff06bbcbe4f42f22c86b14e7a80604495c8b2034d14cbb10d32402c933ca8",
-      "class_hash": "0xe6301f3f6c1c6f9823fc72c77e2fa5f07f13a7a6eb71e907aac8ba1f7b483",
+      "class_hash": "0x4498d0c8199de153830ba0721b39c426f8a4631d550a67d14266a4e4de49864",
       "abi": [
         {
           "type": "impl",
@@ -1940,12 +1940,8 @@
                   "type": "dojo::world::IWorldDispatcher"
                 },
                 {
-                  "name": "fee_resource_type",
-                  "type": "core::integer::u8"
-                },
-                {
-                  "name": "fee_amount",
-                  "type": "core::integer::u128"
+                  "name": "resource_costs",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                 },
                 {
                   "name": "speed_up_by",
@@ -3330,7 +3326,7 @@
     {
       "name": "eternum::systems::trade::contracts::trade_systems::trade_systems",
       "address": "0x63cbe849cf6325e727a8d6f82f25fad7dc7eb9433767f5c1b8c59189e36c9b6",
-      "class_hash": "0x2cc28709c89ec4b37e17ee24865cca41a494cef8734890830d66d8135864ac6",
+      "class_hash": "0x24051ef6e9f936215ed9c7e018f79509df34d3d7b4d30012d1c93abf9b4acea",
       "abi": [
         {
           "type": "impl",
@@ -3686,7 +3682,7 @@
     {
       "name": "eternum::systems::transport::contracts::road_systems::road_systems",
       "address": "0x5e434426794d353a5c2f5de42859a963d9b696db575cec07ca605d19bd83a99",
-      "class_hash": "0xc852c14930e5babd63d5afcd6ea486e05e53d66f5741f52241288d1f2af655",
+      "class_hash": "0x7f9077bfe7632ce15a3d6b63b0d16beb37bc58520504a47bf40fe54453d1662",
       "abi": [
         {
           "type": "impl",
@@ -3998,7 +3994,7 @@
     {
       "name": "eternum::systems::transport::contracts::travel_systems::travel_systems",
       "address": "0x740ea95e67b0b7533ee4891524c5c7edfd7fefc09297c0304b21515cc1223ec",
-      "class_hash": "0x102019ab9ffeb83c6b6a390fc4935a272323609cb82887c205fb141817a33fe",
+      "class_hash": "0x6cb1ee901034c9a04df26b28ddaea54e2c03535af3603f5c8f8afad50da9a56",
       "abi": [
         {
           "type": "impl",
@@ -4141,12 +4137,12 @@
           "kind": "struct",
           "members": [
             {
-              "name": "desintation_coord_x",
+              "name": "destination_coord_x",
               "type": "core::integer::u32",
               "kind": "key"
             },
             {
-              "name": "desintation_coord_y",
+              "name": "destination_coord_y",
               "type": "core::integer::u32",
               "kind": "key"
             },
@@ -8466,13 +8462,13 @@
           "key": true
         },
         {
-          "name": "fee_resource_type",
-          "type": "u8",
+          "name": "resource_cost_id",
+          "type": "u128",
           "key": false
         },
         {
-          "name": "fee_amount",
-          "type": "u128",
+          "name": "resource_cost_count",
+          "type": "u32",
           "key": false
         },
         {
@@ -8481,7 +8477,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x577e30522bab3ddc152d55c00689b4e3e9acb71e2a30042a778e436f0d6a1d7",
+      "class_hash": "0x2b42b96bcf38aa1b7a0b74ce5479c1a4e886b7505bbfafed9eeae8fcfd13b38",
       "abi": [
         {
           "type": "function",

@@ -1,7 +1,7 @@
 #[dojo::contract]
 mod road_systems {
     use eternum::models::position::{Coord};
-    use eternum::models::resources::Resource;
+    use eternum::models::resources::{Resource, ResourceCost};
     use eternum::models::road::{Road, RoadImpl};
     use eternum::models::owner::Owner;
     use eternum::models::config::RoadConfig;
@@ -40,11 +40,27 @@ mod road_systems {
             assert(road.usage_count == 0, 'road already exists');
 
             let road_config = get!(world, ROAD_CONFIG_ID, RoadConfig);
-            let fee: u128 = road_config.fee_amount * usage_count.into();
+            let mut index = 0;
+            loop {
+                if index == road_config.resource_cost_count {
+                    break;
+                }
 
-            // ensure fee payment
-            let entity_fee_resource = get!(world, (entity_id, road_config.fee_resource_type), Resource);
-            assert(entity_fee_resource.balance >= fee, 'insufficient stone balance');
+                let resource_cost 
+                    = get!(world, (road_config.resource_cost_id, index), ResourceCost);
+                let mut realm_resource 
+                    = get!(world, (entity_id, resource_cost.resource_type), Resource);
+
+                assert(
+                    realm_resource.balance >= resource_cost.amount * usage_count.into(),
+                        'insufficient resources'
+                );
+
+                realm_resource.balance -= resource_cost.amount * usage_count.into();
+                set!(world, (realm_resource));
+
+                index += 1;
+            };
             
             set!(world, (
                 Road {
@@ -54,11 +70,6 @@ mod road_systems {
                     end_coord_y: end_coord.y,
                     usage_count
                 },
-                Resource {
-                    entity_id: entity_fee_resource.entity_id,
-                    resource_type: entity_fee_resource.resource_type,
-                    balance: entity_fee_resource.balance -  fee
-                }
             ));
         }
 
