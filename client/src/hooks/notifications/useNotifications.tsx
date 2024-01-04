@@ -111,6 +111,7 @@ export const useNotifications = () => {
         }
 
         let enemyRaidersHaveArrivedNotifications = generateEnemyRaidersHaveArrivedNotifications(
+          BigInt(account.address),
           nextBlockTimestamp,
           realmPositions,
           components,

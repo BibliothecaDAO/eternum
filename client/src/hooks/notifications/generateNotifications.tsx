@@ -369,6 +369,7 @@ export const generateArrivedAtHyperstructureNotifications = (
 };
 
 export const generateEnemyRaidersHaveArrivedNotifications = (
+  address: BigInt,
   nextBlockTimestamp: number,
   realmPositions: realmsPosition,
   components: Components,
@@ -377,11 +378,15 @@ export const generateEnemyRaidersHaveArrivedNotifications = (
   let notifications: NotificationType[] = [];
   for (const { position } of realmPositions) {
     const entityIds = Array.from(
-      runQuery([Has(components["ArrivalTime"]), Has(components["Attack"]), HasValue(components["Position"], position)]),
+      runQuery([
+        Has(components["ArrivalTime"]),
+        Has(components["Attack"]),
+        HasValue(components["Position"], position),
+        NotValue(components["Owner"], { address }),
+      ]),
     );
 
     for (const id of entityIds) {
-      // const arrivalTime = getComponentValue(components["ArrivalTime"], id) as { arrives_at: number } | undefined;
       const entityOwner = getComponentValue(components["EntityOwner"], id) as
         | { entity_id: bigint; entity_owner_id: bigint }
         | undefined;
