@@ -9,7 +9,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../utils/utils";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
-import { getLevelingCost } from "@bibliothecadao/eternum";
+import { Resource, getLevelingCost } from "@bibliothecadao/eternum";
 
 type LevelingPopupProps = {
   onClose: () => void;
@@ -41,7 +41,7 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
     return [foodProdBonus, resourceProdBonus, travelSpeedBonus, combatBonus];
   }, [level]);
 
-  const [canBuild, setCanBuild] = useState(true);
+  const [missingResources, setMissingResources] = useState<Resource[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const [newLevel, newIndex, newBonus] = useMemo(() => {
@@ -69,7 +69,7 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
   };
 
   useEffect(() => {
-    let canBuild = true;
+    let missingResources: Resource[] = [];
     costResources.forEach(({ resourceId, amount }) => {
       const realmResource = getComponentValue(
         Resource,
@@ -77,10 +77,10 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
       );
 
       if (!realmResource || realmResource.balance < amount) {
-        canBuild = false;
+        missingResources.push({ resourceId, amount: amount - (Number(realmResource?.balance) || 0) });
       }
     });
-    setCanBuild(canBuild);
+    setMissingResources(missingResources);
   }, []);
 
   return (
@@ -101,14 +101,18 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
             <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
               <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
               <div className="grid grid-cols-4 gap-2">
-                {costResources.map(({ resourceId, amount }) => (
-                  <ResourceCost
-                    key={resourceId}
-                    type="vertical"
-                    resourceId={resourceId}
-                    amount={divideByPrecision(amount)}
-                  />
-                ))}
+                {costResources.map(({ resourceId, amount }) => {
+                  const isMissing = missingResources.find((resource) => resource.resourceId === resourceId);
+                  return (
+                    <ResourceCost
+                      key={resourceId}
+                      type="vertical"
+                      className={`${isMissing ? "text-order-giants" : ""}`}
+                      resourceId={resourceId}
+                      amount={divideByPrecision(amount)}
+                    />
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -133,7 +137,7 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
 
               <Button
                 className="!px-[6px] !py-[2px] text-xxs ml-auto"
-                disabled={!canBuild}
+                disabled={missingResources.length > 0}
                 isLoading={isLoading}
                 onClick={onBuild}
                 variant="outline"
@@ -142,7 +146,7 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
                 {`Level Up`}
               </Button>
             </div>
-            {!canBuild && <div className="text-xxs text-order-giants/70">Insufficient resources</div>}
+            {missingResources.length > 0 && <div className="text-xxs text-order-giants/70">Insufficient resources</div>}
           </div>
         </div>
       </SecondaryPopup.Body>

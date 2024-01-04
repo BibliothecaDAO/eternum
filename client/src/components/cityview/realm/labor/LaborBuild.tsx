@@ -4,7 +4,7 @@ import Button from "../../../../elements/Button";
 import { Headline } from "../../../../elements/Headline";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../elements/NumberInput";
-import { ResourcesIds, findResourceById, PurchaseLaborProps, BuildLaborProps } from "@bibliothecadao/eternum";
+import { ResourcesIds, findResourceById, PurchaseLaborProps, BuildLaborProps, Resource } from "@bibliothecadao/eternum";
 import { ReactComponent as FishingVillages } from "../../../../assets/icons/resources/FishingVillages.svg";
 import { ReactComponent as Farms } from "../../../../assets/icons/resources/Farms.svg";
 import { ResourceIcon } from "../../../../elements/ResourceIcon";
@@ -38,7 +38,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     account: { account },
   } = useDojo();
 
-  const [hasEnoughResources, setHasEnoughResources] = useState(true);
+  const [missingResources, setMissingResources] = useState<Resource[]>([]);
   const [laborAmount, setLaborAmount] = useState(6);
   const [multiplier, setMultiplier] = useState(1);
 
@@ -109,20 +109,23 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   };
 
   useEffect(() => {
-    setHasEnoughResources(false);
-    const hasEnough = costResources.every(({ resourceId, amount }) => {
+    let missingResources: Resource[] = [];
+    costResources.forEach(({ resourceId, amount }) => {
       const realmResource = getComponentValue(
         Resource,
         getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
       );
-      return (
-        realmResource &&
-        realmResource.balance >=
-          getTotalAmount(Number(amount), isFood, multiplier, laborAmount, laborAuctionAverageCoefficient)
-      );
+      let missingAmount =
+        Number(realmResource?.balance || 0) -
+        getTotalAmount(Number(amount), isFood, multiplier, laborAmount, laborAuctionAverageCoefficient);
+      if (missingAmount < 0) {
+        missingResources.push({
+          resourceId,
+          amount: missingAmount,
+        });
+      }
     });
-
-    setHasEnoughResources(hasEnough);
+    setMissingResources(missingResources);
   }, [laborAmount, multiplier, costResources]);
 
   const onBuild = () => {
@@ -322,19 +325,29 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
             <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/90">
               <div className="mb-1 ml-1 italic text-light-pink text-xxs">Cost of Production:</div>
               <div className="grid grid-cols-4 gap-2">
-                {costResources.map(({ resourceId, amount }) => (
-                  <ResourceCost
-                    withTooltip
-                    key={resourceId}
-                    type="vertical"
-                    resourceId={resourceId}
-                    amount={Number(
-                      divideByPrecision(
-                        getTotalAmount(Number(amount), isFood, multiplier, laborAmount, laborAuctionAverageCoefficient),
-                      ).toFixed(2),
-                    )}
-                  />
-                ))}
+                {costResources.map(({ resourceId, amount }) => {
+                  const missingResource = missingResources.find((resource) => resource.resourceId === resourceId);
+                  return (
+                    <ResourceCost
+                      withTooltip
+                      key={resourceId}
+                      type="vertical"
+                      resourceId={resourceId}
+                      className={missingResource ? "text-order-giants" : ""}
+                      amount={Number(
+                        divideByPrecision(
+                          getTotalAmount(
+                            Number(amount),
+                            isFood,
+                            multiplier,
+                            laborAmount,
+                            laborAuctionAverageCoefficient,
+                          ),
+                        ).toFixed(2),
+                      )}
+                    />
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -374,15 +387,14 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
           )}
           <div className="flex flex-col items-center justify-center">
             <Button
-              // className="!px-[6px] !py-[2px] text-xxs ml-auto"
-              disabled={!hasEnoughResources || (isFood && hasLaborLeft)}
+              disabled={missingResources.length > 0 || (isFood && hasLaborLeft)}
               onClick={() => onBuild()}
               variant="primary"
               withoutSound
             >
               Purchase & Build
             </Button>
-            {!hasEnoughResources && <div className="text-xxs text-order-giants/70">Insufficient resources</div>}
+            {missingResources.length > 0 && <div className="text-xxs text-order-giants/70">Insufficient resources</div>}
             {isFood && hasLaborLeft && <div className="text-xxs text-order-giants/70">Finish 24h cycle</div>}
           </div>
         </div>
