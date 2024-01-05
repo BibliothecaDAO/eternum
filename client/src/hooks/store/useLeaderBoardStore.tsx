@@ -1,6 +1,6 @@
 import { getOrderName, orders } from "@bibliothecadao/eternum";
 import { create } from "zustand";
-import { divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
+import { getEntityIdFromKeys } from "../../utils/utils";
 import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { useGetRealms, useRealm } from "../helpers/useRealm";
@@ -87,7 +87,7 @@ export const useComputeLordsLeaderboards = () => {
         address: owner,
         addressName: getAddressName(owner) || "",
         order,
-        totalLords: divideByPrecision(Number(lordsAmounts?.balance) || 0),
+        totalLords: Number(lordsAmounts?.balance) || 0,
         isYours,
       });
 
@@ -95,12 +95,12 @@ export const useComputeLordsLeaderboards = () => {
         orderLordsLeaderboard[order] = {
           order,
           realmCount: 1,
-          totalLords: divideByPrecision(Number(lordsAmounts?.balance) || 0),
+          totalLords: Number(lordsAmounts?.balance) || 0,
           isYours: order === playerOrder,
         };
       } else {
         orderLordsLeaderboard[order].realmCount++;
-        orderLordsLeaderboard[order].totalLords += divideByPrecision(Number(lordsAmounts?.balance) || 0);
+        orderLordsLeaderboard[order].totalLords += Number(lordsAmounts?.balance) || 0;
       }
     }
 
