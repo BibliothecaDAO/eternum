@@ -16,21 +16,7 @@ export const LeaderboardPanel = () => {
       {
         key: "leaderboard",
         label: (
-          <div
-            onMouseEnter={() =>
-              setTooltip({
-                position: "bottom",
-                content: (
-                  <>
-                    <p className="whitespace-nowrap">Leaderboard based on Hyperstructure feeding.</p>
-                    <p className="whitespace-nowrap">Resources give points based on rarity.</p>
-                  </>
-                ),
-              })
-            }
-            onMouseLeave={() => setTooltip(null)}
-            className="flex group relative flex-col items-center"
-          >
+          <div className="flex group relative flex-col items-center">
             <div>Realms</div>
           </div>
         ),
@@ -39,21 +25,7 @@ export const LeaderboardPanel = () => {
       {
         key: "leaderboard",
         label: (
-          <div
-            onMouseEnter={() =>
-              setTooltip({
-                position: "bottom",
-                content: (
-                  <>
-                    <p className="whitespace-nowrap">Leaderboard based on Hyperstructure feeding.</p>
-                    <p className="whitespace-nowrap">Resources give points based on rarity.</p>
-                  </>
-                ),
-              })
-            }
-            onMouseLeave={() => setTooltip(null)}
-            className="flex group relative flex-col items-center"
-          >
+          <div className="flex group relative flex-col items-center">
             <div>Orders</div>
           </div>
         ),

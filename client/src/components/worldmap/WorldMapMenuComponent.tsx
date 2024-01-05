@@ -93,8 +93,8 @@ const WorldMapMenuComponent = () => {
                 position: "bottom",
                 content: (
                   <>
-                    <p className="whitespace-nowrap">Swap food for Lords</p>
-                    <p className="whitespace-nowrap">Banks.</p>
+                    <p className="whitespace-nowrap">Swap food for</p>
+                    <p className="whitespace-nowrap">Lords.</p>
                   </>
                 ),
               })
@@ -116,8 +116,7 @@ const WorldMapMenuComponent = () => {
                 position: "bottom",
                 content: (
                   <>
-                    <p className="whitespace-nowrap">Swap food for Lords</p>
-                    <p className="whitespace-nowrap">Banks.</p>
+                    <p className="whitespace-nowrap">Lords Leaderboard</p>
                   </>
                 ),
               })
