@@ -31,7 +31,7 @@ export const useGoToMilitary = () => {
       if (location.includes(`/realm`)) {
         setIsLoadingScreenEnabled(false);
       }
-      setLocation(`/realm/${Number(realmId)}/${militaryLocation}`);
+      setLocation(`/realm/${Number(realmEntityId)}/${militaryLocation}`);
       setRealmEntityId(realmEntityId);
       setRealmId(realmId);
     }, 500);
@@ -420,7 +420,7 @@ export const useYourRaidersHaveArrivedNotification = (
         </div>
         <Button
           onClick={() => {
-            goToMilitary(targetRealmId || 0n, raiders.entityOwnerId || 0n, MilitaryLocation.Attack);
+            goToMilitary(attackerRealmId || 0n, raiders.entityOwnerId || 0n, MilitaryLocation.Attack);
           }}
           className="mt-2 w-full"
           variant="success"
