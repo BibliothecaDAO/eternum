@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { ReactComponent as Relic } from "../../assets/icons/common/relic.svg";
 import { ReactComponent as Bank } from "../../assets/icons/common/bank.svg";
+import { ReactComponent as Leaderboard } from "../../assets/icons/common/leaderboard.svg";
 import { ReactComponent as City } from "../../assets/icons/common/city.svg";
 import { ReactComponent as World } from "../../assets/icons/common/world.svg";
 import { useLocation } from "wouter";
@@ -11,6 +12,7 @@ import useUIStore from "../../hooks/store/useUIStore";
 import { BanksPanel } from "./banks/BanksPanel";
 import useRealmStore from "../../hooks/store/useRealmStore";
 import { useLevel } from "../../hooks/helpers/useLevel";
+import { LeaderboardPanel } from "./leaderboard/LeaderboardPanel";
 
 const WorldMapMenuComponent = () => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -104,6 +106,29 @@ const WorldMapMenuComponent = () => {
           </div>
         ),
         component: <BanksPanel minimumRealmLevel={minimumRealmLevel} />,
+      },
+      {
+        key: "leaderboard",
+        label: (
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Swap food for Lords</p>
+                    <p className="whitespace-nowrap">Banks.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex relative group flex-col items-center"
+          >
+            <Leaderboard className="mb-2 fill-gold" /> <div>Leaderboard</div>
+          </div>
+        ),
+        component: <LeaderboardPanel />,
       },
     ],
     [selectedTab],

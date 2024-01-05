@@ -1,49 +1,28 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
 import { OrderIcon } from "../../../elements/OrderIcon";
 import { ReactComponent as Refresh } from "../../../assets/icons/common/refresh.svg";
 import useUIStore from "../../../hooks/store/useUIStore";
-import useLeaderBoardStore, { LeaderboardInterface } from "../../../hooks/store/useLeaderBoardStore";
-import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
 import Button from "../../../elements/Button";
-import { displayAddress } from "../../../utils/utils";
-import { useDojo } from "../../../DojoContext";
-import { useRealm } from "../../../hooks/helpers/useRealm";
+import { currencyFormat } from "../../../utils/utils";
+import useLeaderBoardStore from "../../../hooks/store/useLeaderBoardStore";
+import { ResourceIcon } from "../../../elements/ResourceIcon";
 
-export const HyperstructureLeaderboard = () => {
-  const [sortedRealms, setSortedRealms] = useState<LeaderboardInterface[]>([]);
-
-  const {
-    setup: { components },
-  } = useDojo();
-
-  const { getAddressName } = useRealm();
-
+export const OrdersLeaderboard = () => {
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const { getHyperstructureIds } = useHyperstructure();
 
-  const { loading, leaderboard, syncData } = useLeaderBoardStore();
+  const [loading, _] = useState(false);
 
-  useEffect(() => {
-    if (Object.keys(leaderboard).length === 0) {
-      let ids = getHyperstructureIds();
-      syncData(ids, components);
-    }
-  }, []);
-
-  const onRefresh = () => {
-    let ids = getHyperstructureIds();
-    syncData(ids, components);
-  };
+  const orderLordsLeaderboard = useLeaderBoardStore((state) => state.orderLordsLeaderboard);
 
   const sortingParams = useMemo(() => {
     return [
       { label: "Rank", sortKey: "rank" },
       { label: "Order", sortKey: "order", className: "ml-4" },
-      { label: "Address", sortKey: "address", className: "ml-4" },
-      { label: "Lord Name", sortKey: "name", className: "ml-6" },
-      { label: "Total Points", sortKey: "total_points", className: "ml-auto mr-4" },
+      { label: "Name", sortKey: "name", className: "ml-6" },
+      { label: "Realm Count", sortKey: "count", className: "ml-6" },
+      { label: "Total Lords", sortKey: "total_lords", className: "ml-auto mr-4" },
     ];
   }, []);
 
@@ -51,10 +30,6 @@ export const HyperstructureLeaderboard = () => {
     sortKey: "number",
     sort: "none",
   });
-
-  useEffect(() => {
-    setSortedRealms(Object.values(leaderboard).sort((a, b) => b.total_points - a.total_points));
-  }, [loading]);
 
   return (
     <div className="flex flex-col">
@@ -76,7 +51,7 @@ export const HyperstructureLeaderboard = () => {
         ))}
         {!loading && (
           <Refresh
-            onClick={onRefresh}
+            onClick={() => {}}
             onMouseLeave={() => setTooltip(null)}
             onMouseEnter={() =>
               setTooltip({
@@ -93,21 +68,28 @@ export const HyperstructureLeaderboard = () => {
         )}
       </SortPanel>
       {!loading && (
-        <div className="flex flex-col p-2 space-y-2 max-h-40 overflow-y-auto">
-          {sortedRealms.map(({ order, address, total_points }, i) => {
+        <div className="flex flex-col p-2 space-y-2  overflow-y-auto">
+          {orderLordsLeaderboard.map(({ order, realmCount, totalLords, isYours }, i) => {
             return (
-              <div key={i} className={`flex flex-col p-2 border rounded-md text-xxs text-gold`}>
+              <div
+                key={i}
+                className={`flex flex-col p-2 border ${
+                  isYours ? "border-order-brilliance" : ""
+                } rounded-md text-xxs text-gold`}
+              >
                 <div className="flex items-center justify-between text-xxs">
                   <div className="flex-none mr-5">{`#${i + 1}`}</div>
                   <div className="flex-none w-10">
                     <OrderIcon order={order} size="xs" />
                   </div>
+                  <div className="flex-none w-20">{order}</div>
 
-                  <div className="flex-none text-left w-20">{displayAddress(address)}</div>
+                  <div className="flex-none w-20">{realmCount}</div>
 
-                  <div className="flex-none w-20">{getAddressName(address)}</div>
-
-                  <div className="flex-none w-16 text-left mr-2">{Math.floor(total_points)}</div>
+                  <div className="flex-none w-16 text-left mr-2 flex flex-cols">
+                    <div> {currencyFormat(totalLords, 0)}</div>
+                    <ResourceIcon resource="Lords" size="xs"></ResourceIcon>
+                  </div>
                 </div>
               </div>
             );

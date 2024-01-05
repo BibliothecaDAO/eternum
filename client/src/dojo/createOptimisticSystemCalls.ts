@@ -363,7 +363,7 @@ export function createOptimisticSystemCalls({
       });
 
       for (let i = 0; i < costResources.length; i++) {
-        let costId = getEntityIdFromKeys([BigInt(args.creator_id), BigInt(costResources[i].resourceId)]);
+        let costId = getEntityIdFromKeys([BigInt(creator_id), BigInt(costResources[i].resourceId)]);
         let currentResource = getComponentValue(Resource, costId) || {
           balance: 0n,
         };
