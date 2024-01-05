@@ -1,7 +1,6 @@
 import { defineContractComponents } from "./contractComponents";
 import { world } from "./world";
 import { EternumProvider } from "@bibliothecadao/eternum";
-import { Query } from "@dojoengine/core";
 import dev_manifest from "../../../contracts/target/dev/manifest.json";
 import prod_manifest from "../../../contracts/target/release/manifest.json";
 import * as torii from "@dojoengine/torii-client";
@@ -25,8 +24,6 @@ export async function setupNetwork() {
     toriiClient,
     contractComponents: defineContractComponents(world),
     provider,
-    entity: async (component: string, query: Query) => provider.entity(component, query),
-    entities: async (component: string, partition: number) => provider.entities(component, partition),
     world,
   };
 }
