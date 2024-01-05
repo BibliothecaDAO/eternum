@@ -118,7 +118,7 @@ export const SettleRealmComponent = () => {
             </div>
           ))}
         </div>
-        <div>
+        <div className="flex h-[200px] overflow-y-auto justify-center items-center">
           <div className="text-lg mt-2 italic text-gold">{order_statments[selectedOrder - 1]}</div>
         </div>
         <Button
