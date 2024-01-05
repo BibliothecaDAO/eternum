@@ -1,4 +1,4 @@
-import { RPCProvider } from "@dojoengine/core";
+import { DojoProvider } from "@dojoengine/core";
 import {
   AcceptOrderProps,
   AttachCaravanProps,
@@ -44,7 +44,7 @@ export const getContractByName = (manifest: any, name: string) => {
   );
 };
 
-export class EternumProvider extends RPCProvider {
+export class EternumProvider extends DojoProvider {
   constructor(world_address: string, url?: string, manifest: any = undefined) {
     super(world_address, manifest, url);
   }
