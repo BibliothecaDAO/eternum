@@ -102,7 +102,7 @@ export const Onboarding = () => {
 
             <h1 className="">{step_headings[currentStep - 1]}</h1>
           </div>
-          <div className=" pb-6 px-6 text-center text-xl">
+          <div className="max-w-[1000px] pb-6 px-6 text-center text-xl mx-auto">
             {currentStep === 1 && <StepOne onNext={nextStep} />}
             {currentStep === 2 && <Naming onNext={nextStep} />}
             {currentStep === 3 && <StepTwo onPrev={prevStep} onNext={nextStep} />}
