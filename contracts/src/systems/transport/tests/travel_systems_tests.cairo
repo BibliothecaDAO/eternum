@@ -1,5 +1,5 @@
 
-use eternum::models::resources::Resource;
+use eternum::models::resources::{Resource, ResourceCost};
 use eternum::models::owner::{Owner, EntityOwner};
 use eternum::models::position::{Coord, Position};
 use eternum::models::movable::{Movable, ArrivalTime};
@@ -355,10 +355,16 @@ fn test_travel_with_road(){
 
     set!(world, (
 
+        ResourceCost {
+            entity_id: 1,
+            index: 0,
+            resource_type: ResourceTypes::STONE,
+            amount: 10,
+        },
         RoadConfig {
-            config_id: ROAD_CONFIG_ID, 
-            fee_resource_type: ResourceTypes::STONE,
-            fee_amount: 10,
+            config_id: ROAD_CONFIG_ID,
+            resource_cost_id: 1,
+            resource_cost_count: 1,
             speed_up_by: 2
         },
         Road {

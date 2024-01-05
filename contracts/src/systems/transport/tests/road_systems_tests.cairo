@@ -1,5 +1,5 @@
 use eternum::models::position::{Coord};
-use eternum::models::resources::Resource;
+use eternum::models::resources::{Resource, ResourceCost};
 use eternum::models::road::{Road, RoadImpl};
 use eternum::models::owner::Owner;
 use eternum::models::config::RoadConfig;
@@ -60,10 +60,16 @@ fn test_create() {
             resource_type: ResourceTypes::STONE,
             balance: 400
         },
+        ResourceCost {
+            entity_id: 1,
+            index: 0,
+            resource_type: ResourceTypes::STONE,
+            amount: 10,
+        },
         RoadConfig {
             config_id: ROAD_CONFIG_ID,
-            fee_resource_type: ResourceTypes::STONE,
-            fee_amount: 10,
+            resource_cost_id: 1,
+            resource_cost_count: 1,
             speed_up_by: 2
         }
     ));
@@ -129,7 +135,7 @@ fn test_not_entity() {
 
 #[test]
 #[available_gas(3000000000000)]  
-#[should_panic(expected: ('insufficient stone balance', 'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected: ('insufficient resources', 'ENTRYPOINT_FAILED' ))]
 fn test_insufficient_balance() {
     let (world, road_systems_dispatcher) = setup();
 
@@ -143,10 +149,16 @@ fn test_insufficient_balance() {
             resource_type: ResourceTypes::STONE,
             balance: 400
         },
+        ResourceCost {
+            entity_id: 1,
+            index: 0,
+            resource_type: ResourceTypes::STONE,
+            amount: 10,
+        },
         RoadConfig {
             config_id: ROAD_CONFIG_ID,
-            fee_resource_type: ResourceTypes::STONE,
-            fee_amount: 10,
+            resource_cost_id: 1,
+            resource_cost_count: 1,
             speed_up_by: 2
         }
     ));
