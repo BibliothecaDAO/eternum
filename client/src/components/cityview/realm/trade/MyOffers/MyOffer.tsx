@@ -100,7 +100,7 @@ export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
             {resourcesGive &&
               resourcesGive.map(({ resourceId, amount }) => (
                 <div className="flex flex-col items-center mx-2 my-0.5" key={resourceId}>
-                  <ResourceIcon resource={getResourceTrait(resourceId)} size="xs" className="mb-1" />
+                  <ResourceIcon resource={getResourceTrait(resourceId)} size="sm" className="mb-1" />
                   {currencyFormat(amount, 0)}
                 </div>
               ))}
@@ -113,7 +113,7 @@ export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
             {resourcesGet &&
               resourcesGet.map(({ resourceId, amount }) => (
                 <div className="flex flex-col items-center mx-2 my-0.5" key={resourceId}>
-                  <ResourceIcon key={resourceId} resource={getResourceTrait(resourceId)} size="xs" />
+                  <ResourceIcon key={resourceId} resource={getResourceTrait(resourceId)} size="sm" />
                   {currencyFormat(amount, 0)}
                 </div>
               ))}

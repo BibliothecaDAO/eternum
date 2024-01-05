@@ -74,7 +74,7 @@ export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
                     key={resource.resourceId}
                     type="vertical"
                     color="text-order-brilliance"
-                    className="!w-5 mt-0.5"
+                    className="!w-9 mt-0.5"
                     resourceId={resource.resourceId}
                     amount={divideByPrecision(resource.amount)}
                   />

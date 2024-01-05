@@ -74,8 +74,8 @@ export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferPr
           <div className="flex-1 text-gold flex justify-center items-center flex-wrap">
             {resourcesGive &&
               resourcesGive.map(({ resourceId, amount }) => (
-                <div className="flex flex-col items-center mx-2 my-0.5" key={resourceId}>
-                  <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="xs" className="mb-1" />
+                <div className="flex flex-col items-center mx-1 my-0.5" key={resourceId}>
+                  <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="sm" className="mb-1" />
                   {currencyFormat(amount, 0)}
                 </div>
               ))}
@@ -87,8 +87,8 @@ export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferPr
           <div className="flex-1 text-gold flex justify-center items-center flex-wrap">
             {resourcesGet &&
               resourcesGet.map(({ resourceId, amount }) => (
-                <div className="flex flex-col items-center mx-2 my-0.5" key={resourceId}>
-                  <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="xs" />
+                <div className="flex flex-col items-center mx-1 my-0.5" key={resourceId}>
+                  <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="sm" />
                   {currencyFormat(amount, 0)}
                 </div>
               ))}
