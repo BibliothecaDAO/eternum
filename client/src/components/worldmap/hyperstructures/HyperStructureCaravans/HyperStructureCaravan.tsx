@@ -23,6 +23,7 @@ import Button from "../../../../elements/Button";
 import { useHyperstructure } from "../../../../hooks/helpers/useHyperstructure";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { useResources } from "../../../../hooks/helpers/useResources";
+import { EventType, useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
 
 type CaravanProps = {
   caravan: CaravanInterface;
@@ -33,6 +34,7 @@ type CaravanProps = {
 
 export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }: CaravanProps) => {
   const { isMine, owner, arrivalTime, capacity } = caravan;
+  const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const hyperstructures = useUIStore((state) => state.hyperstructures);
   const setHyperstructures = useUIStore((state) => state.setHyperstructures);
@@ -75,6 +77,7 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
       destination_coord_x: returnPosition?.x || 0,
       destination_coord_y: returnPosition?.y || 0,
     });
+    deleteNotification([caravan.caravanId.toString()], EventType.ArrivedAtHyperstructure);
   };
 
   const updateHyperStructure = () => {
