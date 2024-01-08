@@ -658,11 +658,11 @@ mod combat_systems {
 
             // need to divide by 100**2 because level_bonus in precision 100
             attackers_total_attack = (attackers_total_attack * attacker_level_bonus * attacker_order_level_bonus)/10000;
-            attackers_total_defence = (attackers_total_defence + attacker_level_bonus * attacker_order_level_bonus)/10000;
+            attackers_total_defence = (attackers_total_defence * attacker_level_bonus * attacker_order_level_bonus)/10000;
 
             // need to divide by 100**2 because level_bonus in precision 100
             let target_total_attack = (target_town_watch_attack.value * target_level_bonus * target_order_level_bonus)/10000;
-            let target_total_defence = (target_town_watch_defense.value + target_level_bonus * target_order_level_bonus)/10000;
+            let target_total_defence = (target_town_watch_defense.value * target_level_bonus * target_order_level_bonus)/10000;
 
             let mut damage: u128 = 0; 
 
@@ -821,11 +821,11 @@ mod combat_systems {
 
             // need to divide by 100**2 because level_bonus in precision 100
             let attackers_total_attack = (attacker_attack.value * attacker_level_bonus * attacker_order_level_bonus)/10000;
-            let attackers_total_defence = (attacker_defence.value + attacker_level_bonus * attacker_order_level_bonus)/10000;
+            let attackers_total_defence = (attacker_defence.value * attacker_level_bonus * attacker_order_level_bonus)/10000;
 
             // need to divide by 100**2 because level_bonus in precision 100
             let target_total_attack = (target_town_watch_attack.value * target_level_bonus * target_order_level_bonus)/10000;
-            let target_total_defence = (target_town_watch_defense.value + target_level_bonus * target_order_level_bonus)/10000;
+            let target_total_defence = (target_town_watch_defense.value * target_level_bonus * target_order_level_bonus)/10000;
 
             let attack_successful: bool = *random::choices(
                 array![true, false].span(), 
