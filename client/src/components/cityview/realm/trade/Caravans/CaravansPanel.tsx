@@ -18,10 +18,12 @@ export const CaravansPanel = ({}: CaravansPanelProps) => {
   const [showCaravanDetails, setShowCaravanDetails] = useState(false);
   const [selectedCaravan, setSelectedCaravan] = useState<CaravanInterface | null>(null);
 
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+
   const realmId = useRealmStore((state) => state.realmId);
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const { useGetPositionCaravans } = useCaravan();
+  const { useGetEntityCaravans } = useCaravan();
 
   const onClick = (caravan: CaravanInterface) => {
     // way to find if caravan has currently resources inside
@@ -35,7 +37,7 @@ export const CaravansPanel = ({}: CaravansPanelProps) => {
   const realmPosition = useMemo(() => {
     return realmId ? getPosition(realmId) : undefined;
   }, [realmId]);
-  const { caravans: realmCaravans } = useGetPositionCaravans(realmPosition?.x || 0, realmPosition?.y || 0);
+  const { caravans: realmCaravans } = useGetEntityCaravans(realmEntityId);
 
   const sortingParams = useMemo(() => {
     return [

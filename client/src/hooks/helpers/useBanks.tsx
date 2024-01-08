@@ -201,6 +201,7 @@ export const useBanks = () => {
   return {
     useGetBank,
     getBanks,
+    getBankEntityId,
     getBanksStatic,
     getResourceBankPrice,
     getLordsAmountFromBank,

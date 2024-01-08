@@ -145,6 +145,14 @@ mod travel_systems {
                     entity_id: transport_id,
                     x: to_coord.x,
                     y: to_coord.y
+                },
+                Movable {
+                    entity_id: transport_id,
+                    sec_per_km: transport_movable.sec_per_km,
+                    blocked: false,
+                    round_trip: false,
+                    intermediate_coord_x: 0,
+                    intermediate_coord_y: 0,
                 }
             ));
         }

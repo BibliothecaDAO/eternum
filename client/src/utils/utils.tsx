@@ -315,7 +315,7 @@ export const getContractPositionFromRealPosition = (position: Position): Positio
   };
 };
 
-export const getRealmPositionFromContractPosition = (position: Position): Position => {
+export const getUIPositionFromContractPosition = (position: Position): Position => {
   const { x, y } = position;
   return {
     x: (x - 1800000) / 10000,

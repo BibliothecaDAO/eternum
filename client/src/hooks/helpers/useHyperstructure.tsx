@@ -1,6 +1,6 @@
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
-import { UIPosition } from "@bibliothecadao/eternum";
+import { Position, UIPosition } from "@bibliothecadao/eternum";
 import { getContractPositionFromRealPosition, getEntityIdFromKeys } from "../../utils/utils";
 import { useLevel } from "./useLevel";
 import { HyperStructureInterface, getHyperstructureResources } from "@bibliothecadao/eternum";
@@ -14,7 +14,7 @@ export const useHyperstructure = () => {
 
   const { getEntityLevel } = useLevel();
 
-  const getHyperstructure = (orderId: number, uiPosition: UIPosition): HyperStructureInterface | undefined => {
+  const getHyperstructure = (uiPosition: UIPosition): HyperStructureInterface | undefined => {
     const { x, y } = getContractPositionFromRealPosition({ x: uiPosition.x, y: uiPosition.z });
     const entityIds = runQuery([Has(HyperStructure), HasValue(Position, { x, y })]);
 
@@ -50,7 +50,7 @@ export const useHyperstructure = () => {
 
         return {
           hyperstructureId,
-          orderId,
+          orderId: hyperstructure.order,
           progress,
           hyperstructureResources,
           position: { x, y },
@@ -82,10 +82,19 @@ export const useHyperstructure = () => {
     return realm ? getHyperstructureIdByOrder(realm.order) : undefined;
   };
 
+  const getHyperstructureEntityId = (hyperstructruePosition: Position): bigint | undefined => {
+    const entityIds = Array.from(runQuery([Has(HyperStructure), HasValue(Position, hyperstructruePosition)]));
+    if (entityIds.length === 1) {
+      let bank = getComponentValue(HyperStructure, entityIds[0]);
+      return bank?.entity_id;
+    }
+  };
+
   return {
     getHyperstructure,
     getHyperstructureIds,
     getHyperstructureIdByRealmEntityId,
     getHyperstructureIdByOrder,
+    getHyperstructureEntityId,
   };
 };

@@ -42,7 +42,7 @@ export const HyperstructuresListItem = ({
 
   const updateHyperStructure = () => {
     if (!hyperstructure) return;
-    const newHyperstructure = getHyperstructure(hyperstructure.orderId, hyperstructure.uiPosition);
+    const newHyperstructure = getHyperstructure(hyperstructure.uiPosition);
     hyperstructures[hyperstructure.orderId - 1] = newHyperstructure;
     setHyperstructures([...hyperstructures]);
   };

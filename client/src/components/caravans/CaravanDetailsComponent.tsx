@@ -16,7 +16,7 @@ type CaravanDetailsProps = {
 };
 
 export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
-  const { resourcesChestId, destination, arrivalTime, capacity, pickupArrivalTime } = caravan;
+  const { resourcesChestId, intermediateDestination, arrivalTime, capacity, pickupArrivalTime } = caravan;
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
@@ -30,10 +30,11 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
 
   let resourceWeight = 0;
 
-  const destinationRealmId = useMemo(() => {
-    return destination && getRealmIdByPosition(destination);
-  }, [destination]);
-  const destinationRealmName = destinationRealmId && getRealmNameById(destinationRealmId);
+  const intermediateDestinationRealmId = useMemo(() => {
+    return intermediateDestination && getRealmIdByPosition(intermediateDestination);
+  }, [intermediateDestination]);
+  const intermediateDestinationRealmName =
+    intermediateDestinationRealmId && getRealmNameById(intermediateDestinationRealmId);
   const hasArrivedPickupPosition =
     pickupArrivalTime !== undefined && nextBlockTimestamp !== undefined && pickupArrivalTime <= nextBlockTimestamp;
 
@@ -51,12 +52,16 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body>
-        {isTravelling?.toString() && destinationRealmName?.toString() && (
+        {isTravelling?.toString() && intermediateDestinationRealmName?.toString() && (
           <div className="flex items-center mt-2 ml-2 text-xxs">
             <span className="italic text-light-pink">Traveling {hasArrivedPickupPosition ? "from" : "to"}</span>
             <div className="flex items-center ml-1 mr-1 text-gold">
-              <OrderIcon order={getRealmOrderNameById(destinationRealmId || 0n)} className="mr-1" size="xs" />
-              {destinationRealmName.toString()}
+              <OrderIcon
+                order={getRealmOrderNameById(intermediateDestinationRealmId || 0n)}
+                className="mr-1"
+                size="xs"
+              />
+              {intermediateDestinationRealmName.toString()}
             </div>
             <span className="italic text-light-pink">{hasArrivedPickupPosition ? "with" : "to pick up"}</span>
           </div>

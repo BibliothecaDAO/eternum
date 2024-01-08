@@ -1,9 +1,11 @@
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
-import { CaravanInterface } from "@bibliothecadao/eternum";
+import { CaravanInterface, DESTINATION_TYPE } from "@bibliothecadao/eternum";
 import { useMemo, useState } from "react";
 import { divideByPrecision, getEntityIdFromKeys, getForeignKeyEntityId } from "../../utils/utils";
 import { useEntityQuery } from "@dojoengine/react";
+import { useHyperstructure } from "./useHyperstructure";
+import { useBanks } from "./useBanks";
 
 const FREE_TRANSPORT_ENTITY_TYPE = 256;
 
@@ -13,6 +15,7 @@ export function useCaravan() {
     setup: {
       components: {
         ArrivalTime,
+        EntityOwner,
         Movable,
         Capacity,
         Position,
@@ -26,6 +29,9 @@ export function useCaravan() {
     },
   } = useDojo();
 
+  const { getHyperstructureEntityId } = useHyperstructure();
+  const { getBankEntityId } = useBanks();
+
   const getCaravanInfo = (caravanId: bigint): CaravanInterface => {
     const arrivalTime = getComponentValue(ArrivalTime, getEntityIdFromKeys([caravanId]));
     const movable = getComponentValue(Movable, getEntityIdFromKeys([caravanId]));
@@ -35,9 +41,23 @@ export function useCaravan() {
     const resourceChest = resourcesChestId
       ? getComponentValue(ResourceChest, getEntityIdFromKeys([BigInt(resourcesChestId)]))
       : undefined;
-    // const resources_chest_id =
-    const rawDestination = movable ? { x: movable.intermediate_coord_x, y: movable.intermediate_coord_y } : undefined;
-    let destination = rawDestination ? { x: rawDestination.x, y: rawDestination.y } : undefined;
+    const rawIntermediateDestination = movable
+      ? { x: movable.intermediate_coord_x, y: movable.intermediate_coord_y }
+      : undefined;
+    const intermediateDestination = rawIntermediateDestination
+      ? { x: rawIntermediateDestination.x, y: rawIntermediateDestination.y }
+      : undefined;
+
+    const position = getComponentValue(Position, getEntityIdFromKeys([caravanId]));
+
+    let destinationType: DESTINATION_TYPE | undefined;
+    if (position && getHyperstructureEntityId({ x: position.x, y: position.y })) {
+      destinationType = DESTINATION_TYPE.HYPERSTRUCTURE;
+    } else if (position && getBankEntityId({ x: position.x, y: position.y })) {
+      destinationType = DESTINATION_TYPE.BANK;
+    } else {
+      destinationType = DESTINATION_TYPE.HOME;
+    }
 
     return {
       caravanId,
@@ -46,9 +66,12 @@ export function useCaravan() {
       resourcesChestId,
       blocked: movable?.blocked,
       capacity: divideByPrecision(Number(capacity?.weight_gram) || 0),
-      destination,
+      intermediateDestination,
+      position: position ? { x: position.x, y: position.y } : undefined,
       owner: owner?.address,
       isMine: owner?.address === BigInt(account.address),
+      isRoundTrip: movable?.round_trip || false,
+      destinationType,
     };
   };
 
@@ -84,7 +107,28 @@ export function useCaravan() {
 
     const entityIds = useEntityQuery([HasValue(Position, { x, y }), Has(CaravanMembers)]);
 
-    const { getCaravanInfo } = useCaravan();
+    useMemo((): any => {
+      const caravans = entityIds
+        .map((id) => {
+          const position = getComponentValue(Position, id);
+          return getCaravanInfo(position!.entity_id);
+        })
+        .filter(Boolean)
+        .sort((a, b) => Number(b!.caravanId - a!.caravanId)) as CaravanInterface[];
+      // DISCUSS: can add sorting logic here
+      setCaravans([...caravans]);
+      // only recompute when different number of orders
+    }, [entityIds.length]);
+
+    return {
+      caravans,
+    };
+  };
+
+  const useGetEntityCaravans = (entityId: bigint) => {
+    const [caravans, setCaravans] = useState<CaravanInterface[]>([]);
+
+    const entityIds = useEntityQuery([Has(CaravanMembers), HasValue(EntityOwner, { entity_owner_id: entityId })]);
 
     useMemo((): any => {
       const caravans = entityIds
@@ -127,6 +171,7 @@ export function useCaravan() {
   return {
     useGetPositionCaravansIds,
     useGetPositionCaravans,
+    useGetEntityCaravans,
     getCaravanInfo,
     calculateDistance,
     getRealmDonkeysCount,

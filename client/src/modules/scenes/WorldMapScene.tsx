@@ -14,7 +14,7 @@ import { useMemo, useRef } from "react";
 import { useCaravan } from "../../hooks/helpers/useCaravans.js";
 import useRealmStore from "../../hooks/store/useRealmStore.js";
 import { useGetRealm } from "../../hooks/helpers/useRealm.js";
-import { getRealmPositionFromContractPosition } from "../../utils/utils.js";
+import { getUIPositionFromContractPosition } from "../../utils/utils.js";
 import Bank from "../../components/worldmap/banks/models/Bank2.js";
 import banks from "../../data/banks.json";
 
@@ -36,8 +36,8 @@ export const WorldMapScene = () => {
         const { destination: from } = getCaravanInfo(caravanId);
         if (from) {
           return {
-            from: getRealmPositionFromContractPosition(from),
-            to: getRealmPositionFromContractPosition(realm.position),
+            from: getUIPositionFromContractPosition(from),
+            to: getUIPositionFromContractPosition(realm.position),
           };
         }
       })

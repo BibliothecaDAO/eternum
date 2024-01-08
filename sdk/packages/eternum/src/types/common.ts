@@ -4,6 +4,12 @@ export enum Winner {
   Target = "Target",
 }
 
+export enum DESTINATION_TYPE {
+  HOME,
+  HYPERSTRUCTURE,
+  BANK,
+}
+
 export interface CombatResultInterface {
   attackerRealmEntityId: bigint;
   targetRealmEntityId: bigint;
@@ -93,9 +99,12 @@ export interface CaravanInterface {
   arrivalTime: number | undefined;
   pickupArrivalTime: number | undefined;
   capacity: number | undefined;
-  destination: Position | undefined;
+  intermediateDestination: Position | undefined;
   owner: bigint | undefined;
   isMine: boolean;
+  isRoundTrip: boolean;
+  position: Position | undefined;
+  destinationType: DESTINATION_TYPE;
 }
 
 /// REALMS

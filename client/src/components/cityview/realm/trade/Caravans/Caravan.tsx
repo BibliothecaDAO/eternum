@@ -8,7 +8,7 @@ import { Dot } from "../../../../../elements/Dot";
 import clsx from "clsx";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
-import { CaravanInterface } from "@bibliothecadao/eternum";
+import { CaravanInterface, DESTINATION_TYPE } from "@bibliothecadao/eternum";
 import { CAPACITY_PER_DONKEY } from "@bibliothecadao/eternum";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
@@ -23,7 +23,16 @@ type CaravanProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Caravan = ({ caravan, ...props }: CaravanProps) => {
-  const { caravanId, arrivalTime, destination, blocked, capacity, pickupArrivalTime } = caravan;
+  const {
+    caravanId,
+    arrivalTime,
+    isRoundTrip,
+    intermediateDestination,
+    blocked,
+    capacity,
+    pickupArrivalTime,
+    destinationType,
+  } = caravan;
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const { getResourcesFromInventory } = useResources();
@@ -35,8 +44,12 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
     return getTotalResourceWeight([...resourcesGet.resources]);
   }, [resourcesGet]);
 
-  const destinationRealmId = destination ? getRealmIdByPosition(destination) : undefined;
-  const destinationRealmName = destinationRealmId ? getRealmNameById(destinationRealmId) : undefined;
+  const intermediateDestinationRealmId = intermediateDestination
+    ? getRealmIdByPosition(intermediateDestination)
+    : undefined;
+  const destinationRealmName = intermediateDestinationRealmId
+    ? getRealmNameById(intermediateDestinationRealmId)
+    : undefined;
 
   const isTraveling = !blocked && nextBlockTimestamp && arrivalTime && arrivalTime > nextBlockTimestamp;
   const isWaitingForDeparture = blocked;
@@ -49,6 +62,12 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
     return null;
   }
 
+  const isTrading =
+    isTraveling &&
+    destinationType === DESTINATION_TYPE.HOME &&
+    intermediateDestinationRealmId !== undefined &&
+    destinationRealmName;
+
   return (
     <div
       className={clsx("flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold", props.className)}
@@ -59,19 +78,50 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
           #{Number(caravan.caravanId)}
         </div>
         <div className="flex items-center ml-1 -mt-2">
-          {isTraveling && destinationRealmId !== undefined && destinationRealmName && (
+          {!isTraveling && (
+            <div className="flex items-center ml-1">
+              <span className="italic text-light-pink">{`Waiting ${
+                destinationType === DESTINATION_TYPE.HOME ? "" : "on"
+              }`}</span>
+              <div className="flex items-center ml-1 mr-1 text-gold">
+                {destinationType === DESTINATION_TYPE.BANK
+                  ? "bank"
+                  : destinationType === DESTINATION_TYPE.HYPERSTRUCTURE
+                  ? "hyperstructure"
+                  : "home"}
+              </div>
+            </div>
+          )}
+          {/* when you are trading */}
+          {isTrading && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Traveling {hasArrivedPickupPosition ? "from" : "to"}</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
-                <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xxs" />
+                <OrderIcon order={getRealmOrderNameById(intermediateDestinationRealmId)} className="mr-1" size="xxs" />
                 {destinationRealmName}
+                <span className="italic text-light-pink ml-1">with</span>
+              </div>
+            </div>
+          )}
+          {/* when you are not trading (trading is round trip) it means you are either going to/coming from bank/hyperstructure */}
+          {isTraveling && !isRoundTrip && (
+            <div className="flex items-center ml-1">
+              <span className="italic text-light-pink">{`Traveling ${
+                destinationType === DESTINATION_TYPE.HOME ? "" : "to"
+              }`}</span>
+              <div className="flex items-center ml-1 mr-1 text-gold">
+                {destinationType === DESTINATION_TYPE.BANK
+                  ? "bank"
+                  : destinationType === DESTINATION_TYPE.HYPERSTRUCTURE
+                  ? "hyperstructure"
+                  : "home"}
                 <span className="italic text-light-pink ml-1">with</span>
               </div>
             </div>
           )}
           {capacity && resourceWeight !== undefined && capacity && (
             <div className="flex items-center ml-1 text-gold">
-              {!isIdle && hasArrivedPickupPosition ? divideByPrecision(resourceWeight) : 0}
+              {!isIdle && hasArrivedPickupPosition ? divideByPrecision(Math.round(resourceWeight)) : 0}
               <div className="mx-0.5 italic text-light-pink">/</div>
               {`${capacity / 1000} kg`}
               <CaretDownFill className="ml-1 fill-current" />
@@ -88,7 +138,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
         }
         {isWaitingToOffload && (
           <div className="flex ml-auto -mt-2 italic text-gold">
-            Waiting to claim <Pen className="ml-1 fill-gold" />
+            Waiting to offload <Pen className="ml-1 fill-gold" />
           </div>
         )}
         {isIdle && (

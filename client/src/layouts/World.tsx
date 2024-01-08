@@ -85,8 +85,8 @@ export const World = () => {
 
   useEffect(() => {
     setHyperstructures(
-      hyperStructures.map((hyperstructure, index) =>
-        getHyperstructure(index + 1, { x: hyperstructure.x, y: hyperstructure.y, z: hyperstructure.z }),
+      hyperStructures.map((hyperstructure) =>
+        getHyperstructure({ x: hyperstructure.x, y: hyperstructure.y, z: hyperstructure.z }),
       ),
     );
   }, []);

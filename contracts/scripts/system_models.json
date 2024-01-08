@@ -73,7 +73,8 @@
     "TRAVEL_SYSTEMS": [
         "ArrivalTime",
         "Position",
-        "Road"
+        "Road",
+        "Movable"
     ],
     "COMBAT_SYSTEMS": [
         "Resource",

@@ -1104,7 +1104,7 @@
     {
       "name": "eternum::systems::combat::contracts::combat_systems",
       "address": "0x1b0a83a27a357e0574393ab06c0c774db7312a0993538cc0186d054f75ee84e",
-      "class_hash": "0x240f8b65fb44cb4dea5251b60ad5d13a8ca762943ab17cb45e23938cdf12f1b",
+      "class_hash": "0x144da5aa935f537c4545d24eb8494417f524cac49f8f153f380d691969a2894",
       "abi": [
         {
           "type": "impl",
@@ -3994,7 +3994,7 @@
     {
       "name": "eternum::systems::transport::contracts::travel_systems::travel_systems",
       "address": "0x740ea95e67b0b7533ee4891524c5c7edfd7fefc09297c0304b21515cc1223ec",
-      "class_hash": "0x6cb1ee901034c9a04df26b28ddaea54e2c03535af3603f5c8f8afad50da9a56",
+      "class_hash": "0x2ef12492dd583bcf7ecbdf26a229e1d4a0500f6460afafe3f739b4fe3eac311",
       "abi": [
         {
           "type": "impl",

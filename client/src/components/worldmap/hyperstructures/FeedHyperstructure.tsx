@@ -48,7 +48,7 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
   }, [order]);
 
   const { getHyperstructure } = useHyperstructure();
-  const hyperstructureData = getHyperstructure(order, {
+  const hyperstructureData = getHyperstructure({
     x: hyperStructures[order - 1].x,
     y: hyperStructures[order - 1].y,
     z: hyperStructures[order - 1].z,

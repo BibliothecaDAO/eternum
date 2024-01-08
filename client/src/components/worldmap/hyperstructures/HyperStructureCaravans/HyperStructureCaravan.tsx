@@ -78,7 +78,7 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
   };
 
   const updateHyperStructure = () => {
-    const newHyperstructure = getHyperstructure(hyperstructureData.orderId, hyperstructureData.uiPosition);
+    const newHyperstructure = getHyperstructure(hyperstructureData.uiPosition);
     hyperstructures[hyperstructureData.orderId - 1] = newHyperstructure;
     setHyperstructures([...hyperstructures]);
   };

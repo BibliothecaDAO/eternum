@@ -22,7 +22,7 @@ export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
   const { getResourcesFromInventory, offloadChests } = useResources();
   const { getCaravanInfo } = useCaravan();
 
-  const { destination, arrivalTime } = getCaravanInfo(caravanId);
+  const { intermediateDestination, arrivalTime } = getCaravanInfo(caravanId);
 
   const resourcesGet = getResourcesFromInventory(caravanId);
 
@@ -33,7 +33,9 @@ export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const pickupRealmId = destination ? getRealmIdByPosition({ x: destination.x, y: destination.y }) : undefined;
+  const pickupRealmId = intermediateDestination
+    ? getRealmIdByPosition({ x: intermediateDestination.x, y: intermediateDestination.y })
+    : undefined;
   const pickupRealmName = pickupRealmId ? getRealmNameById(pickupRealmId) : undefined;
   const hasArrivedOriginalPosition =
     arrivalTime !== undefined && nextBlockTimestamp !== undefined && arrivalTime <= nextBlockTimestamp;
