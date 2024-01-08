@@ -14,10 +14,12 @@ import * as realmsData from "../../../../../geodata/realms.json";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import { AcceptOfferPopup } from "../AcceptOffer";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import { divideByPrecision } from "../../../../../utils/utils";
+import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
 import clsx from "clsx";
 import { FastCreateOfferPopup } from "../FastCreateOffer";
 import useUIStore from "../../../../../hooks/store/useUIStore";
+import { getComponentValue } from "@dojoengine/recs";
+import { useDojo } from "../../../../../DojoContext";
 
 type MarketPopupProps = {
   onClose: () => void;
@@ -262,6 +264,7 @@ const MarketplaceOverviewPanel = ({
   const sortingParams = useMemo(() => {
     return [
       { label: "Resource", sortKey: "resource", className: "w-[120px]" },
+      { label: "Balance", sortKey: "balance", className: "w-[50px]" },
       { label: "Best Ask price", sortKey: "ask-price", className: "w-[100px] ml-auto !justify-end" },
       { label: "Ask Total Vol.", sortKey: "ask-vol", className: "ml-4 w-[100px] !justify-end" },
       { label: "Best Bid price", sortKey: "bid-price", className: "ml-4 w-[100px] !justify-end" },
@@ -341,8 +344,20 @@ const OverviewResourceRow = ({
   onBuy: () => void;
   onSell: () => void;
 }) => {
+  const {
+    setup: {
+      components: { Resource },
+    },
+  } = useDojo();
+
   const resource = findResourceById(bidSummary?.resourceId || 0);
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const setTooltip = useUIStore((state) => state.setTooltip);
+
+  const realmResource = getComponentValue(
+    Resource,
+    getEntityIdFromKeys([realmEntityId, BigInt(askSummary?.resourceId || 0n)]),
+  );
 
   const depthOfMarketBids = useMemo(() => {
     const lastFive = bidSummary?.depthOfMarket.slice(0, 5) || [];
@@ -435,13 +450,16 @@ const OverviewResourceRow = ({
   }, [askSummary?.depthOfMarket]);
 
   return (
-    <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-1 grid-cols-[120px,1fr,100px,100px,100px] gap-4 text-lightest text-xxs">
+    <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-1 grid-cols-[100px,50px,1fr,100px,100px,100px] gap-4 text-lightest text-xxs">
       {resource && (
         <div className="flex items-center">
           <ResourceIcon containerClassName="mr-2 w-min" withTooltip={false} resource={resource.trait} size="sm" />
           <div>{resource.trait}</div>
         </div>
       )}
+      <div className="flex justify-end  items-center">
+        <div>{currencyFormat(Number(realmResource?.balance || 0), 0)}</div>
+      </div>
       <div
         className="flex justify-end  items-center text-gold"
         onMouseEnter={() =>
