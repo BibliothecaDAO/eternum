@@ -54,7 +54,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
   const isTraveling = !blocked && nextBlockTimestamp && arrivalTime && arrivalTime > nextBlockTimestamp;
   const isWaitingForDeparture = blocked;
   const isIdle = !isTraveling && !isWaitingForDeparture && !resourceWeight;
-  const isWaitingToOffload = !blocked && !isTraveling && resourceWeight;
+  const isWaitingToOffload = !blocked && !isTraveling && resourceWeight > 0;
   const hasArrivedPickupPosition =
     pickupArrivalTime !== undefined && nextBlockTimestamp !== undefined && pickupArrivalTime <= nextBlockTimestamp;
 
@@ -89,6 +89,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
                   : destinationType === DESTINATION_TYPE.HYPERSTRUCTURE
                   ? "hyperstructure"
                   : "home"}
+                <span className="italic text-light-pink ml-1">with</span>
               </div>
             </div>
           )}
@@ -119,7 +120,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
               </div>
             </div>
           )}
-          {capacity && resourceWeight !== undefined && capacity && (
+          {capacity && resourceWeight !== undefined && (
             <div className="flex items-center ml-1 text-gold">
               {!isIdle && hasArrivedPickupPosition ? divideByPrecision(Math.round(resourceWeight)) : 0}
               <div className="mx-0.5 italic text-light-pink">/</div>
@@ -128,14 +129,11 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
             </div>
           )}
         </div>
-        {
-          // isWaitingForDeparture is '0' instead of false, need to fix that
-          isWaitingForDeparture == true && (
-            <div className="flex ml-auto -mt-2 italic text-gold">
-              Trade Bound <Pen className="ml-1 fill-gold" />
-            </div>
-          )
-        }
+        {isWaitingForDeparture && (
+          <div className="flex ml-auto -mt-2 italic text-gold">
+            Trade Bound <Pen className="ml-1 fill-gold" />
+          </div>
+        )}
         {isWaitingToOffload && (
           <div className="flex ml-auto -mt-2 italic text-gold">
             Waiting to offload <Pen className="ml-1 fill-gold" />

@@ -64,7 +64,7 @@ export function useCaravan() {
       arrivalTime: arrivalTime?.arrives_at,
       pickupArrivalTime: resourceChest?.locked_until,
       resourcesChestId,
-      blocked: movable?.blocked,
+      blocked: Boolean(movable?.blocked),
       capacity: divideByPrecision(Number(capacity?.weight_gram) || 0),
       intermediateDestination,
       position: position ? { x: position.x, y: position.y } : undefined,

@@ -109,6 +109,7 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
                       type="vertical"
                       className={`${isMissing ? "text-order-giants" : ""}`}
                       resourceId={resourceId}
+                      withTooltip={true}
                       amount={divideByPrecision(amount)}
                     />
                   );
