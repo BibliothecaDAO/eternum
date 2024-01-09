@@ -59,12 +59,29 @@ mod trade_systems {
         taker_gives_resources: Span<(u8, u128)>
     }
 
+    #[derive(Drop, starknet::Event)]
+    struct OrderAccepted {
+        #[key]
+        trade_id: u128,
+        maker_id: u128,
+        taker_id: u128,
+        maker_resources: Span<(u8, u128)>,
+        taker_resources: Span<(u8, u128)>,
+        timestamp: u64
+    }
+
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
         CreateOrder: CreateOrder,
+        OrderAccepted: OrderAccepted,
     }
 
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        OrderAccepted: OrderAccepted,
+    }
 
     #[abi(embed_v0)]
     impl TradeSystemsImpl of super::ITradeSystems<ContractState> {
@@ -263,6 +280,20 @@ mod trade_systems {
                 maker_receives_resources_hash == trade.taker_gives_resources_hash,
                 "wrong taker_gives_resources provided"
             );
+            
+            let maker_realm = get!(world, trade.maker_id, Realm );
+            let taker_realm = get!(world, trade.taker_id, Realm );
+
+            emit!(world, (Event::OrderAccepted(OrderAccepted {
+                trade_id, 
+                maker_realm_entity_id: maker_realm.entity_id,
+                maker_realm_id: maker_realm.realm_id,
+                taker_realm_entity_id: taker_realm.entity_id,
+                taker_realm_id: taker_realm.realm_id,
+                maker_resources: maker_gives_resources,
+                taker_resources: taker_gives_resources,
+                timestamp: ts
+            }), ));
         }
 
 

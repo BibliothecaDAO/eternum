@@ -12,9 +12,11 @@ use core::option::OptionTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-use eternum::systems::test::contracts::realm::test_realm_systems;
-use eternum::systems::test::interface::realm::{
-    IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,
+use eternum::systems::realm::contracts::realm_systems;
+
+use eternum::systems::realm::interface::{
+    IRealmSystemsDispatcher,
+    IRealmSystemsDispatcherTrait,
 };
 
 
@@ -38,7 +40,7 @@ fn test_spawning() {
     npc_config_dispatcher.set_spawn_config(world, 100);
 
     // set realm entity
-    let realm_systems_address = deploy_system(test_realm_systems::TEST_CLASS_HASH);
+    let realm_systems_address = deploy_system(realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -48,7 +50,6 @@ fn test_spawning() {
         .create(
             world,
             1, // realm id
-            starknet::get_contract_address(), // owner
             0x209, // resource_types_packed // 2,9 // stone and gold
             2, // resource_types_count
             5, // cities
@@ -57,6 +58,7 @@ fn test_spawning() {
             5, // regions
             1, // wonder
             1, // order
+            99, // order_hyperstructure_id
             Position { x: 1, y: 1, entity_id: 1_u128 }, // position  
         // x needs to be > 470200 to get zone
         );
