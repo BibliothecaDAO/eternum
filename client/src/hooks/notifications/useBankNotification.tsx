@@ -6,7 +6,7 @@ import { divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
 import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
-import { ArrivedAtBankData, NotificationType } from "../store/useNotificationsStore";
+import { ArrivedAtBankData, EventType, NotificationType, useNotificationsStore } from "../store/useNotificationsStore";
 import { useState } from "react";
 import { ResourceCost } from "../../elements/ResourceCost";
 import Button from "../../elements/Button";
@@ -33,6 +33,8 @@ export const useCaravanHasArrivedAtBankNotification = (
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
+  const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
+
   const time = nextBlockTimestamp?.toString() || "";
 
   const { realm_id } = getComponentValue(Realm, getEntityIdFromKeys([BigInt(data.realmEntityId)])) || {};
@@ -53,6 +55,7 @@ export const useCaravanHasArrivedAtBankNotification = (
       destination_coord_x: data.homePosition.x,
       destination_coord_y: data.homePosition.y,
     });
+    deleteNotification([data.caravanId.toString()], EventType.ArrivedAtBank);
   };
 
   return {
@@ -87,16 +90,14 @@ export const useCaravanHasArrivedAtBankNotification = (
               amount={divideByPrecision(Number(-amount))}
             />
           ))}
-          {data.lordsAmounts.map((amount) => (
-            <ResourceCost
-              // type="vertical"
-              withTooltip
-              key={253}
-              resourceId={253}
-              color="text-order-brilliance"
-              amount={Number(amount)}
-            />
-          ))}
+          <ResourceCost
+            // type="vertical"
+            withTooltip
+            key={253}
+            resourceId={253}
+            color="text-order-brilliance"
+            amount={data.lordsAmounts.reduce((acc, curr) => acc + curr, 0)}
+          />
         </div>
         <Button
           isLoading={isLoading}

@@ -6,7 +6,12 @@ import { divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
 import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
-import { ArrivedAtHyperstructureData, NotificationType } from "../store/useNotificationsStore";
+import {
+  ArrivedAtHyperstructureData,
+  EventType,
+  NotificationType,
+  useNotificationsStore,
+} from "../store/useNotificationsStore";
 import { ResourceCost } from "../../elements/ResourceCost";
 import Button from "../../elements/Button";
 import { useState } from "react";
@@ -33,6 +38,8 @@ export const useCaravanHasArrivedAtHyperstructureNotification = (
   const setHyperstructures = useUIStore((state) => state.setHyperstructures);
   const { getHyperstructure } = useHyperstructure();
 
+  const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
+
   const data = notification.data as ArrivedAtHyperstructureData;
 
   const [isLoading, setIsLoading] = useState(false);
@@ -55,6 +62,7 @@ export const useCaravanHasArrivedAtHyperstructureNotification = (
       destination_coord_x: data.homePosition.x,
       destination_coord_y: data.homePosition.y,
     });
+    deleteNotification([data.caravanId.toString()], EventType.ArrivedAtHyperstructure);
   };
 
   const hyperstructure = order ? hyperstructures[order - 1] : undefined;

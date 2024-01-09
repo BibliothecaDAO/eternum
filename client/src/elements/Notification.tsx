@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { ComponentPropsWithRef, useEffect, useState } from "react";
 import { Transition } from "@headlessui/react";
-import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
+// import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
 import { useTradeNotification } from "../hooks/notifications/useTradeNotification";
 import { useHarvestNotification } from "../hooks/notifications/useHarvestNotification";
 import { useEmptyChestNotification } from "../hooks/notifications/useEmptyChestNotification";
@@ -53,15 +53,14 @@ export const Notification = ({
   onClose,
   type = "primary",
 }: NotificationProps) => {
-  const [isShown, setIsShown] = useState(false);
-
-  useEffect(() => {
-    if (!closedNotifications[id]) {
-      setIsShown(true);
-    } else {
-      setIsShown(false);
-    }
-  }, [closedNotifications, id]);
+  // todo: find a better way to handle close notifications
+  // useEffect(() => {
+  //   if (!closedNotifications[id]) {
+  //     setIsShown(true);
+  //   } else {
+  //     setIsShown(false);
+  //   }
+  // }, [closedNotifications, id]);
 
   const handleNotification = notificationHandlers[notification.eventType];
 
@@ -69,7 +68,7 @@ export const Notification = ({
 
   return (
     <Transition
-      show={isShown}
+      show={true}
       appear={true}
       enter="transition-all duration-300"
       enterFrom="opacity-0 -translate-y-full"
@@ -79,12 +78,12 @@ export const Notification = ({
       leaveTo="opacity-0 translate-y-full"
     >
       <div className={clsx(" pointer-events-auto p-", STYLES.base, STYLES[type], className)}>
-        {
+        {/* {
           <CloseIcon
             className="absolute w-4 h-4 cursor-pointer top-2 right-2 fill-white opacity-30"
             onClick={onClose}
           />
-        }
+        } */}
         {time && <div className="absolute bottom-2 right-2 fill-white opacity-30">{time}</div>}
         {title}
         {typeof content === "function" ? content(onClose) : content}

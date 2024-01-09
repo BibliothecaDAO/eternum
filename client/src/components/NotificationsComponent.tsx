@@ -230,7 +230,8 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
                 key={id}
                 id={id}
                 onClose={() => {
-                  handleCloseNotification(id);
+                  // todo: find a better way to handle closing notifications
+                  // handleCloseNotification(id);
                   // deleteNotification(notification.keys, notification.eventType);
                 }}
               ></Notification>
