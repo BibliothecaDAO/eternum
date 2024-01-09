@@ -223,11 +223,11 @@ export function useGetMarket({
 
     if (directOffers) {
       baseFragments.push(HasValue(Trade, { taker_id: realmEntityId }));
-    } else if (filterOwnOffers) {
-      baseFragments.push(NotValue(Trade, { maker_id: realmEntityId }));
     } else {
       baseFragments.push(HasValue(Trade, { taker_id: 0n }));
     }
+
+    if (filterOwnOffers) baseFragments.push(NotValue(Trade, { maker_id: realmEntityId }));
 
     if (selectedOrders.length > 0) {
       baseFragments.push(

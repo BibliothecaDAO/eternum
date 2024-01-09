@@ -16,6 +16,7 @@ type TradeOfferProps = {
 };
 
 export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
+  // todo: make hasRoad reactive
   const { takerId, hasRoad, distance, resourcesGet, resourcesGive, ratio } = myOffer;
 
   const [isLoading, setIsLoading] = useState(false);
@@ -87,7 +88,11 @@ export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
               variant="outline"
               onMouseLeave={() => setTooltip(null)}
               className="text-gold/50 relative group ml-2"
-              onClick={onBuildRoad}
+              onClick={() => {
+                if (!hasRoad) {
+                  onBuildRoad();
+                }
+              }}
             >
               {hasRoad ? "x2 speed" : "Normal speed"}
             </Button>
