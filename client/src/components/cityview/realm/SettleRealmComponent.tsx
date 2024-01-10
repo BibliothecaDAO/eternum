@@ -35,7 +35,7 @@ export const SettleRealmComponent = () => {
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
   const chosenOrder = useMemo(
-    () => (realmEntityIds.length > 0 ? getRealm(realmEntityIds[0].realmId).order : undefined),
+    () => (realmEntityIds.length > 0 ? getRealm(realmEntityIds[0].realmId)?.order : undefined),
     [account, realmEntityIds],
   );
   const canSettle = realmEntityIds.length < MAX_REALMS;
@@ -55,6 +55,7 @@ export const SettleRealmComponent = () => {
       }
       // take next realm id
       let realm = getRealm(new_realm_id);
+      if (!realm) return;
 
       let position = getPosition(new_realm_id);
 
@@ -98,25 +99,28 @@ export const SettleRealmComponent = () => {
     <>
       <div className="flex flex-col h-min">
         <div className="grid grid-cols-8 gap-2 pt-4">
-          {orders.map(({ orderId }) => (
-            <div
-              key={orderId}
-              className={clsx(
-                " flex relative group items-center justify-center  w-16 h-16 bg-black rounded-xl border",
-                selectedOrder == orderId && !chosenOrder ? "border-gold !cursor-pointer" : "border-transparent",
-                chosenOrder && chosenOrder == orderId && "!border-gold",
-                chosenOrder && chosenOrder !== orderId && "opacity-30 cursor-not-allowed",
-                !chosenOrder && "hover:bg-white/10 cursor-pointer",
-              )}
-              onClick={() => (!chosenOrder ? setSelectedOrder(orderId) : null)}
-            >
-              <OrderIcon
-                size={"md"}
-                withTooltip={!chosenOrder || chosenOrder == orderId}
-                order={getOrderName(orderId)}
-              ></OrderIcon>
-            </div>
-          ))}
+          {orders
+            // remove the order of the gods
+            .filter((order) => order.orderId !== 17)
+            .map(({ orderId }) => (
+              <div
+                key={orderId}
+                className={clsx(
+                  " flex relative group items-center justify-center  w-16 h-16 bg-black rounded-xl border",
+                  selectedOrder == orderId && !chosenOrder ? "border-gold !cursor-pointer" : "border-transparent",
+                  chosenOrder && chosenOrder == orderId && "!border-gold",
+                  chosenOrder && chosenOrder !== orderId && "opacity-30 cursor-not-allowed",
+                  !chosenOrder && "hover:bg-white/10 cursor-pointer",
+                )}
+                onClick={() => (!chosenOrder ? setSelectedOrder(orderId) : null)}
+              >
+                <OrderIcon
+                  size={"md"}
+                  withTooltip={!chosenOrder || chosenOrder == orderId}
+                  order={getOrderName(orderId)}
+                ></OrderIcon>
+              </div>
+            ))}
         </div>
         <div className="h-[200px] mt-2 overflow-y-auto ">
           <div className="text-lg mt-2 italic text-gold text-left">{order_statments[selectedOrder - 1]}</div>

@@ -12,7 +12,7 @@ import { AcceptOfferPopup } from "../AcceptOffer";
 import { sortTrades, useGetMarket } from "../../../../../hooks/helpers/useTrade";
 import { RoadBuildPopup } from "../Roads/RoadBuildPopup";
 import { MarketPopup } from "./MarketPopup";
-import { MarketInterface } from "@bibliothecadao/eternum";
+import { MarketInterface, ResourcesIds } from "@bibliothecadao/eternum";
 
 type MarketPanelProps = {
   directOffers: boolean;
@@ -44,12 +44,29 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
 
   const market = useGetMarket({ selectedResources, selectedOrders, directOffers, filterOwnOffers: true });
 
+  const marketOffers = useMemo(() => {
+    if (!market) return [];
+
+    return market.filter(
+      // filter out orders that give only lords against one resource
+      // these can be find in marketplace
+      (offer) => {
+        return (
+          offer.resourcesGet.length !== 1 ||
+          offer.resourcesGive.length !== 1 ||
+          (offer.resourcesGet[0]?.resourceId !== ResourcesIds["Lords"] &&
+            offer.resourcesGive[0]?.resourceId !== ResourcesIds["Lords"])
+        );
+      },
+    );
+  }, [market]);
+
   const renderedMarketOffers = useMemo(() => {
-    if (!market) return null;
+    if (!marketOffers) return null;
 
     return (
       <div className="flex flex-col p-2 space-y-2">
-        {sortTrades(market, activeSort).map((trade) => (
+        {sortTrades(marketOffers, activeSort).map((trade) => (
           <MarketOffer
             key={trade.tradeId}
             marketOffer={trade}
@@ -59,7 +76,7 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
         ))}
       </div>
     );
-  }, [market, activeSort]);
+  }, [marketOffers, activeSort]);
 
   return (
     <>

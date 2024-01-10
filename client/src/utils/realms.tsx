@@ -28,19 +28,23 @@ export const getRealmIdByPosition = (positionRaw: { x: number; y: number }): big
 };
 
 export const getRealmNameById = (realmId: bigint): string => {
-  return realmsJson["features"][Number(realmId) - 1]["name"];
+  const features = realmsJson["features"][Number(realmId) - 1];
+  if (!features) return "";
+  return features["name"];
 };
 
 export const getRealmOrderNameById = (realmId: bigint): string => {
-  const orderName = realmsOrdersJson[Number(realmId) - 1].order;
-  return orderName.toLowerCase().replace("the ", "");
+  const orderName = realmsOrdersJson[Number(realmId) - 1];
+  if (!orderName) return "";
+  return orderName.order.toLowerCase().replace("the ", "");
 };
 
-export function getRealm(realmId: bigint): RealmInterface {
+export function getRealm(realmId: bigint): RealmInterface | undefined {
   const realmsData = realms as {
     [key: string]: any;
   };
   const realm = realmsData[realmId.toString()];
+  if (!realm) return;
   const resourceIds = realm.attributes
     .filter(({ trait_type }: Attribute) => trait_type === "Resource")
     .map(({ value }: Attribute) => findResourceIdByTrait(value));

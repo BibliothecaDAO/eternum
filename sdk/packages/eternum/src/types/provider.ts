@@ -130,7 +130,7 @@ export interface HarvestAllLaborProps extends SystemSigner {
 }
 
 export interface MintResourcesProps extends SystemSigner {
-  entity_id: num.BigNumberish;
+  receiver_id: num.BigNumberish;
   resources: num.BigNumberish[];
 }
 

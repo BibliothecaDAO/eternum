@@ -26,7 +26,7 @@ export const RealmListItem = ({ realm }: RealmListItemProps) => {
         {realm && (
           <div className="flex items-center p-1 -mt-2 -ml-2 border border-t-0 border-l-0 rounded-br-md border-gray-gold">
             {realm.order && <OrderIcon order={orderNameDict[realm.order]} size="xs" className="mr-1" />}
-            {realmsData["features"][Number(realm.realmId) - 1].name}
+            {realmsData["features"][Number(realm.realmId) - 1]?.name}
           </div>
         )}
         <div className="-mt-2 ml-2 italic">

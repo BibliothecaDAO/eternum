@@ -62,7 +62,9 @@ export const SelectRealmPanel = ({
         .map((entityId) => {
           const realm = getComponentValue(Realm, entityId);
           if (realm) {
-            const { name, order, realmId: takerRealmId } = getRealm(realm.realm_id);
+            const realmData = getRealm(realm.realm_id);
+            if (!realmData) return undefined;
+            const { name, order, realmId: takerRealmId } = realmData;
             const takerEntityId = getRealmEntityIdFromRealmId(takerRealmId);
             const distance = takerEntityId ? calculateDistance(realmEntityId, takerEntityId) ?? 0 : 0;
             const addressName = takerEntityId ? getRealmAddressName(takerEntityId) : "";

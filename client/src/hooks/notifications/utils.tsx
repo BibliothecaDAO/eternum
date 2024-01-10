@@ -23,7 +23,7 @@ export const useRealmsResource = (
     return realms
       .map(({ realmEntityId, realmId }) => {
         const { resourceTypesPacked, resourceTypesCount } = realmId
-          ? getRealm(realmId)
+          ? getRealm(realmId) || { resourceTypesPacked: 0, resourceTypesCount: 0 }
           : { resourceTypesPacked: 0, resourceTypesCount: 0 };
 
         if (realmId) {

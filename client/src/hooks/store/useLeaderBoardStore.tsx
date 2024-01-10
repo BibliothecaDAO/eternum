@@ -68,18 +68,22 @@ export const useComputeLordsLeaderboards = () => {
 
     const realmLordsLeaderboard: RealmLordsLeaderboardInterface[] = [];
     const orderLordsLeaderboard: Record<string, OrderLordsLeaderboardInterface> = {};
-    orders.forEach((order) => {
-      const isYours = order.orderName.toLowerCase() === playerOrder;
-      orderLordsLeaderboard[order.orderName] = {
-        order: order.orderName,
-        realmCount: 0,
-        totalLords: 0,
-        isYours,
-      };
-    });
+    orders
+      // don't include order of the gods
+      .filter((order) => order.orderId !== 17)
+      .forEach((order) => {
+        const isYours = order.orderName.toLowerCase() === playerOrder;
+        orderLordsLeaderboard[order.orderName] = {
+          order: order.orderName,
+          realmCount: 0,
+          totalLords: 0,
+          isYours,
+        };
+      });
 
     for (const realm of realms) {
       const lordsAmounts = getComponentValue(Resource, getEntityIdFromKeys([realm.entity_id, 253n]));
+      if (lordsAmounts && lordsAmounts?.balance > 100000000) continue;
       let order = getOrderName(realm.order);
       let owner = "0x" + realm.owner?.toString(16) || "0x0";
       const isYours = account.address === owner;
