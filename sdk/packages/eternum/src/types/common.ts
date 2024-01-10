@@ -46,12 +46,9 @@ export interface MarketInterface {
   // brillance, reflection, ...
   makerOrder: number;
   expiresAt: number;
-  resourcesGet: Resource[];
-  resourcesGive: Resource[];
-  canAccept?: boolean;
+  takerGets: Resource[];
+  makerGets: Resource[];
   ratio: number;
-  distance: number;
-  hasRoad: boolean | undefined;
 }
 
 export interface Trade {

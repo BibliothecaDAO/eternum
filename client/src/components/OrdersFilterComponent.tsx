@@ -44,24 +44,28 @@ export const OrdersFilter = ({ selectedOrders, setSelectedOrders }: OrdersFilter
           </SecondaryPopup.Head>
           <SecondaryPopup.Body width={"284px"}>
             <div className="grid grid-cols-4 gap-2 p-2">
-              {orders.map((order, index) => (
-                <div
-                  key={index}
-                  className={clsx(
-                    "flex cursor-pointer flex-col items-center py-2 hover:bg-dark rounded-xl text-gold text-xxs",
-                    selectedOrders.includes(order.orderName) && `bg-order-${order.orderName.toLowerCase()} !text-white`,
-                  )}
-                  onClick={() => selectOrder(order.orderName)}
-                >
-                  <OrderIcon
-                    color={selectedOrders.includes(order.orderName) ? "white" : undefined}
-                    order={order.orderName}
-                    size="xs"
-                    className="mb-2"
-                  />
-                  <div>{order.orderName}</div>
-                </div>
-              ))}
+              {orders
+                // remove order of gods
+                .filter((order) => order.orderId !== 17)
+                .map((order, index) => (
+                  <div
+                    key={index}
+                    className={clsx(
+                      "flex cursor-pointer flex-col items-center py-2 hover:bg-dark rounded-xl text-gold text-xxs",
+                      selectedOrders.includes(order.orderName) &&
+                        `bg-order-${order.orderName.toLowerCase()} !text-white`,
+                    )}
+                    onClick={() => selectOrder(order.orderName)}
+                  >
+                    <OrderIcon
+                      color={selectedOrders.includes(order.orderName) ? "white" : undefined}
+                      order={order.orderName}
+                      size="xs"
+                      className="mb-2"
+                    />
+                    <div>{order.orderName}</div>
+                  </div>
+                ))}
             </div>
             <div className="flex justify-start mx-2 mb-2">
               <Button onClick={() => setPopupOpened(false)} variant="primary">

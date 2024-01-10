@@ -7,7 +7,6 @@ import { OrdersLeaderboard } from "./OrdersLeaderboard";
 
 export const LeaderboardPanel = () => {
   const [selectedTab, setSelectedTab] = useState(0);
-  const setTooltip = useUIStore((state) => state.setTooltip);
 
   useComputeLordsLeaderboards();
 

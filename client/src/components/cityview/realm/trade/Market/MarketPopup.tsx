@@ -6,7 +6,7 @@ import { SortPanel } from "../../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../../elements/SortButton";
 import { MarketInterface, ResourcesIds, findResourceById, orderNameDict, resources } from "@bibliothecadao/eternum";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
-import { useGetMarket } from "../../../../../hooks/helpers/useTrade";
+import { useGetMyOffers, useTrade } from "../../../../../hooks/helpers/useTrade";
 import { FiltersPanel } from "../../../../../elements/FiltersPanel";
 import { FilterButton } from "../../../../../elements/FilterButton";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
@@ -20,6 +20,8 @@ import { FastCreateOfferPopup } from "../FastCreateOffer";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../../../../DojoContext";
+import useMarketStore from "../../../../../hooks/store/useMarketStore";
+import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
 
 type MarketPopupProps = {
   onClose: () => void;
@@ -43,26 +45,26 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
   const [showCreateOffer, setShowCreateOffer] = useState(false);
   const [isBuy, setIsBuy] = useState(false);
 
-  const marketOffers = useGetMarket({
-    selectedResources: [],
-    selectedOrders: [],
-    directOffers: false,
-    filterOwnOffers: false,
-  });
+  const marketOffers = useMarketStore((state) => state.lordsMarket);
+  const myOffers = useGetMyOffers({ selectedOrders: [], selectedResources: [] });
+
+  // @note: in open market, the current player will always be the taker so
+  // resourcesGet = takerGets
+  // resourcesGive = makerGets
 
   const bidOffers = useMemo(() => {
     if (!marketOffers) return [];
 
-    return marketOffers.filter(
-      (offer) => offer.resourcesGet.length === 1 && offer.resourcesGet[0]?.resourceId === ResourcesIds["Lords"],
-    );
+    return marketOffers
+      .concat(myOffers)
+      .filter((offer) => offer.takerGets.length === 1 && offer.takerGets[0]?.resourceId === ResourcesIds["Lords"]);
   }, [marketOffers]);
 
   const selectedResourceBidOffers = useMemo(() => {
     if (!bidOffers) return [];
 
     return bidOffers
-      .filter((offer) => (selectedResource ? offer.resourcesGive[0]?.resourceId === selectedResource : true))
+      .filter((offer) => (selectedResource ? offer.makerGets[0]?.resourceId === selectedResource : true))
       .sort((a, b) => b.ratio - a.ratio);
   }, [bidOffers, selectedResource]);
 
@@ -84,7 +86,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
     });
 
     bidOffers.forEach((offer) => {
-      offer.resourcesGive.forEach((resource) => {
+      offer.makerGets.forEach((resource) => {
         const resourceIndex = summary.findIndex((summary) => summary.resourceId === resource.resourceId);
 
         if (resourceIndex >= 0) {
@@ -92,16 +94,16 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
           summary[resourceIndex].totalOffers += 1;
           summary[resourceIndex].bestPrice = Math.max(
             summary[resourceIndex].bestPrice,
-            offer.resourcesGet[0].amount / resource.amount,
+            offer.takerGets[0].amount / resource.amount,
           );
           const depthOfMarketIndex = summary[resourceIndex].depthOfMarket.findIndex(
-            (depth) => depth.price === offer.resourcesGet[0].amount / resource.amount,
+            (depth) => depth.price === offer.takerGets[0].amount / resource.amount,
           );
           if (depthOfMarketIndex >= 0) {
             summary[resourceIndex].depthOfMarket[depthOfMarketIndex].amount += resource.amount;
           } else {
             summary[resourceIndex].depthOfMarket.push({
-              price: offer.resourcesGet[0].amount / resource.amount,
+              price: offer.takerGets[0].amount / resource.amount,
               amount: resource.amount,
             });
           }
@@ -110,8 +112,8 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
             resourceId: resource.resourceId,
             totalAmount: resource.amount,
             totalOffers: 1,
-            bestPrice: resource.amount / offer.resourcesGet[0].amount,
-            depthOfMarket: [{ price: resource.amount / offer.resourcesGet[0].amount, amount: resource.amount }],
+            bestPrice: resource.amount / offer.takerGets[0].amount,
+            depthOfMarket: [{ price: resource.amount / offer.takerGets[0].amount, amount: resource.amount }],
           });
         }
       });
@@ -127,16 +129,16 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
   const askOffers = useMemo(() => {
     if (!marketOffers) return [];
 
-    return marketOffers.filter(
-      (offer) => offer.resourcesGet.length === 1 && offer.resourcesGive[0]?.resourceId === ResourcesIds["Lords"],
-    );
+    return marketOffers
+      .concat(myOffers)
+      .filter((offer) => offer.takerGets.length === 1 && offer.makerGets[0]?.resourceId === ResourcesIds["Lords"]);
   }, [marketOffers]);
 
   const selectedResourceAskOffers = useMemo(() => {
     if (!askOffers) return [];
 
     return askOffers
-      .filter((offer) => offer.resourcesGet[0].resourceId === selectedResource)
+      .filter((offer) => offer.takerGets[0].resourceId === selectedResource)
       .sort((a, b) => b.ratio - a.ratio);
   }, [askOffers, selectedResource]);
 
@@ -158,7 +160,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
     });
 
     askOffers.forEach((offer) => {
-      offer.resourcesGet.forEach((resource) => {
+      offer.takerGets.forEach((resource) => {
         const resourceIndex = summary.findIndex((summary) => summary.resourceId === resource.resourceId);
 
         if (resourceIndex >= 0) {
@@ -166,18 +168,18 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
           summary[resourceIndex].totalOffers += 1;
           summary[resourceIndex].bestPrice = Math.min(
             summary[resourceIndex].bestPrice,
-            offer.resourcesGive[0].amount / resource.amount,
+            offer.makerGets[0].amount / resource.amount,
           );
 
           const depthOfMarketIndex = summary[resourceIndex].depthOfMarket.findIndex(
-            (depth) => depth.price === offer.resourcesGive[0].amount / resource.amount,
+            (depth) => depth.price === offer.makerGets[0].amount / resource.amount,
           );
 
           if (depthOfMarketIndex >= 0) {
             summary[resourceIndex].depthOfMarket[depthOfMarketIndex].amount += resource.amount;
           } else {
             summary[resourceIndex].depthOfMarket.push({
-              price: offer.resourcesGive[0].amount / resource.amount,
+              price: offer.makerGets[0].amount / resource.amount,
               amount: resource.amount,
             });
           }
@@ -186,8 +188,8 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
             resourceId: resource.resourceId,
             totalAmount: resource.amount,
             totalOffers: 1,
-            bestPrice: resource.amount / offer.resourcesGive[0].amount,
-            depthOfMarket: [{ price: resource.amount / offer.resourcesGive[0].amount, amount: resource.amount }],
+            bestPrice: resource.amount / offer.makerGets[0].amount,
+            depthOfMarket: [{ price: resource.amount / offer.makerGets[0].amount, amount: resource.amount }],
           });
         }
       });
@@ -651,8 +653,20 @@ const ResourceOfferRow = ({
   isBuy: boolean;
   onClick: () => void;
 }) => {
-  const resource = findResourceById(isBuy ? offer.resourcesGet[0].resourceId : offer.resourcesGive[0].resourceId);
+  const { makerGets: resourcesGive, makerId } = offer;
+  const resource = findResourceById(isBuy ? offer.takerGets[0].resourceId : offer.makerGets[0].resourceId);
   const { realm: makerRealm } = useGetRealm(offer.makerId);
+
+  const { canAcceptOffer } = useTrade();
+  const { calculateDistance } = useCaravan();
+
+  const canAccept = useMemo(() => {
+    return canAcceptOffer({ realmEntityId, resourcesGive });
+  }, [realmEntityId, resourcesGive]);
+
+  const distance = useMemo(() => {
+    return calculateDistance(makerId, realmEntityId) || 0;
+  }, [makerId, realmEntityId]);
 
   return (
     <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black px-1 grid-cols-5 gap-4 text-lightest text-xxs">
@@ -664,7 +678,7 @@ const ResourceOfferRow = ({
             resource={isBuy ? "Lords" : resource.trait}
             size="sm"
           />
-          {divideByPrecision(offer.resourcesGive[0].amount)}
+          {divideByPrecision(offer.makerGets[0].amount)}
         </div>
       )}
       <div>
@@ -674,7 +688,7 @@ const ResourceOfferRow = ({
       </div>
       {resource && (
         <div className="flex items-center text-gold">
-          {divideByPrecision(offer.resourcesGet[0].amount)}
+          {divideByPrecision(offer.takerGets[0].amount)}
           <ResourceIcon containerClassName="ml-2 w-min" resource={!isBuy ? "Lords" : resource.trait} size="sm" />
         </div>
       )}
@@ -687,8 +701,8 @@ const ResourceOfferRow = ({
       )}
       {offer.makerId !== realmEntityId && (
         <div className="flex item-center justify-end">
-          {`${offer.distance.toFixed(0)} km`}
-          <Button className="ml-2" onClick={onClick} disabled={!offer.canAccept} size="xs" variant="success">
+          {`${distance.toFixed(0)} km`}
+          <Button className="ml-2" onClick={onClick} disabled={!canAccept} size="xs" variant="success">
             Accept
           </Button>
         </div>

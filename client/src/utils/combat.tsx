@@ -13,11 +13,6 @@ export const calculateSuccess = (
   return success;
 };
 
-// note: placeholder
-export const calculateDamages = (attackers: number, defenders: number | undefined) => {
-  return 1;
-};
-
 export const getBuildResourceCost = (quantity: number): { resourceId: number; amount: number }[] => {
   return [
     { resourceId: 254, amount: 1512000 * quantity },

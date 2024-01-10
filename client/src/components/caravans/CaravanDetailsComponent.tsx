@@ -20,12 +20,12 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const { getTradeResources, getTradeIdFromResourcesChestId } = useTrade();
+  const { getTradeResourcesFromEntityViewpoint, getTradeIdFromResourcesChestId } = useTrade();
 
   let tradeId = resourcesChestId ? getTradeIdFromResourcesChestId(resourcesChestId) : undefined;
 
   let { resourcesGive, resourcesGet } = tradeId
-    ? getTradeResources(realmEntityId, tradeId)
+    ? getTradeResourcesFromEntityViewpoint(realmEntityId, tradeId)
     : { resourcesGive: [], resourcesGet: [] };
 
   let resourceWeight = 0;

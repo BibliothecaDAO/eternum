@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
@@ -9,6 +9,10 @@ import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { currencyFormat } from "../../../../../utils/utils";
 import useUIStore from "../../../../../hooks/store/useUIStore";
+import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
+import useRealmStore from "../../../../../hooks/store/useRealmStore";
+import { useRoads } from "../../../../../hooks/helpers/useRoads";
+import { useTrade } from "../../../../../hooks/helpers/useTrade";
 
 type TradeOfferProps = {
   marketOffer: MarketInterface;
@@ -17,12 +21,29 @@ type TradeOfferProps = {
 };
 
 export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferProps) => {
-  const { hasRoad, distance, resourcesGet, resourcesGive, canAccept, ratio } = marketOffer;
+  const { makerId, takerGets: resourcesGet, makerGets: resourcesGive, ratio } = marketOffer;
 
   let { realm: makerRealm } = useGetRealm(marketOffer.makerId);
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const [isLoading, setIsLoading] = useState(false);
+
+  const { calculateDistance } = useCaravan();
+  const { getHasRoad } = useRoads();
+  const { canAcceptOffer } = useTrade();
+
+  const distance = useMemo(() => {
+    return calculateDistance(makerId, realmEntityId) || 0;
+  }, [makerId, realmEntityId]);
+
+  const hasRoad = useMemo(() => {
+    return getHasRoad(realmEntityId, makerId);
+  }, [realmEntityId, makerId]);
+
+  const canAccept = useMemo(() => {
+    return canAcceptOffer({ realmEntityId, resourcesGive });
+  }, [realmEntityId, resourcesGive]);
 
   useEffect(() => {
     setIsLoading(false);

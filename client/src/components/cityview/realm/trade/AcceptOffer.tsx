@@ -8,6 +8,7 @@ import { useTrade } from "../../../../hooks/helpers/useTrade";
 import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
 import { WEIGHT_PER_DONKEY_KG, MarketInterface } from "@bibliothecadao/eternum";
 import { getTotalResourceWeight } from "./utils";
+import useMarketStore from "../../../../hooks/store/useMarketStore";
 
 type AcceptOfferPopupProps = {
   onClose: () => void;
@@ -54,15 +55,19 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
     }
   };
 
+  const deleteTrade = useMarketStore((state) => state.deleteTrade);
+
   const onAccept = () => {
     setIsLoading(true);
     optimisticAcceptOffer(selectedTrade.tradeId, realmEntityId, acceptOffer)();
+    // todo: only delete if success
+    deleteTrade(selectedTrade.tradeId);
     onClose();
   };
 
-  const { getTradeResources } = useTrade();
+  const { getTradeResourcesFromEntityViewpoint } = useTrade();
 
-  let { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, selectedTrade.tradeId);
+  let { resourcesGive, resourcesGet } = getTradeResourcesFromEntityViewpoint(realmEntityId, selectedTrade.tradeId);
 
   let resourceWeight = getTotalResourceWeight(resourcesGet);
 
