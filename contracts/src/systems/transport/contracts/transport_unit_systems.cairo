@@ -123,5 +123,95 @@ mod transport_unit_systems {
             );
             id.into()
         }
+
+        /// Return free transport units so that it 
+        /// can be respawned with a different configuration
+        ///
+        /// # Arguments
+        ///
+        /// * `unit_ids` - The ids of the transport units to return.
+        ///
+        fn return_free_units(self: @ContractState, world: IWorldDispatcher, unit_ids: Span<u128>) {
+            let mut unit_ids = unit_ids;
+            loop {
+                match unit_ids.pop_front() {
+                    Option::Some(unit_id) => {
+
+                        // Ensure that the unit is a free transport unit
+                        let unit_id = *unit_id;
+                        let entity_meta = get!(world, unit_id, EntityMetadata);
+                        assert(entity_meta.entity_type == FREE_TRANSPORT_ENTITY_TYPE, 'not a free transport unit');
+
+                        // Ensure the unit is owned by the caller
+                        let caller = starknet::get_caller_address();
+                        let unit_owner_addr = get!(world, unit_id, Owner).address;
+                        assert(caller == unit_owner_addr, 'unit not owned by caller');
+
+
+                        // Ensure that the unit is not blocked by any system
+                        let unit_movable = get!(world, unit_id, Movable);
+                        assert(unit_movable.blocked == false, 'unit is blocked');
+
+                        // Fetch the quantity of the transport unit
+                        let unit_quantity = get!(world, unit_id, Quantity).value;
+                        assert(unit_quantity > 0, 'unit has no quantity');
+
+                        // update quantity tracker
+                        let unit_owner_id = get!(world, unit_id, EntityOwner).entity_owner_id;
+                        let transport_quantity_tracker_arr = array![
+                            unit_owner_id.into(), FREE_TRANSPORT_ENTITY_TYPE.into()
+                        ];
+                        let transport_quantity_tracker_key = poseidon_hash_span(transport_quantity_tracker_arr.span());
+                        let mut transport_quantity_tracker = get!(world, transport_quantity_tracker_key, QuantityTracker);
+                        transport_quantity_tracker.count -= unit_quantity;
+                        set!(world, (transport_quantity_tracker));
+
+
+                        // Delete the transport unit
+                        set!(world, (
+                                EntityOwner {
+                                    entity_id: unit_id.into(),
+                                    entity_owner_id: 0
+                                },
+                                Position {
+                                    entity_id: unit_id.into(), 
+                                    x: 0, 
+                                    y: 0
+                                }, 
+                                EntityMetadata {
+                                    entity_id: unit_id.into(), 
+                                    entity_type: 0
+                                }, 
+                                Owner {
+                                    entity_id: unit_id.into(), 
+                                    address: Zeroable::zero()
+                                }, 
+                                Quantity {
+                                    entity_id: unit_id.into(), 
+                                    value: 0
+                                }, 
+                                Movable {
+                                    entity_id: unit_id.into(), 
+                                    sec_per_km: 0, 
+                                    blocked: false, 
+                                    round_trip: false,
+                                    intermediate_coord_x: 0,  
+                                    intermediate_coord_y: 0,  
+                                }, 
+                                ArrivalTime {
+                                    entity_id: unit_id.into(), 
+                                    arrives_at: 0, 
+                                }, 
+                                Capacity {
+                                    entity_id: unit_id.into(), 
+                                    weight_gram: 0
+                                }
+                            )
+                        );
+                    },
+                    Option::None => { break;}
+                }
+            }
+        }
     }
 }

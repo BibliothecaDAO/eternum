@@ -55,6 +55,8 @@ mod travel_systems {
             self: @ContractState, world: IWorldDispatcher, 
             travelling_entity_id: ID, destination_coord: Coord
         ) {
+            // todo@security prevent free transport units from travelling
+            // only caravans should be able to travel
 
             let travelling_entity_owner = get!(world, travelling_entity_id, Owner);
             assert(
