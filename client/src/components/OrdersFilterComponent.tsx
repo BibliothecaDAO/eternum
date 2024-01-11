@@ -1,24 +1,24 @@
 import { useState } from "react";
 import { FilterButton } from "../elements/FilterButton";
 import { SecondaryPopup } from "../elements/SecondaryPopup";
-import { orders } from "@bibliothecadao/eternum";
+import { getOrderName, orders } from "@bibliothecadao/eternum";
 import Button from "../elements/Button";
 import { OrderIcon } from "../elements/OrderIcon";
 import clsx from "clsx";
 
 type OrdersFilterProps = {
-  selectedOrders: string[];
-  setSelectedOrders: (orders: string[]) => void;
+  selectedOrders: number[];
+  setSelectedOrders: (orders: number[]) => void;
 };
 
 export const OrdersFilter = ({ selectedOrders, setSelectedOrders }: OrdersFilterProps) => {
   const [popupOpened, setPopupOpened] = useState<boolean>(false);
 
-  const selectOrder = (resource: string) => {
-    if (selectedOrders.includes(resource)) {
-      setSelectedOrders(selectedOrders.filter((r) => r !== resource));
+  const selectOrder = (order: number) => {
+    if (selectedOrders.includes(order)) {
+      setSelectedOrders(selectedOrders.filter((o) => o !== order));
     } else {
-      setSelectedOrders([...selectedOrders, resource]);
+      setSelectedOrders([...selectedOrders, order]);
     }
   };
 
@@ -33,7 +33,7 @@ export const OrdersFilter = ({ selectedOrders, setSelectedOrders }: OrdersFilter
             <div className="flex items-center space-x-1">
               <div className="mr-0.5">Orders:</div>
               {selectedOrders.map((order, index) => (
-                <OrderIcon key={index} order={order} size="xs" />
+                <OrderIcon key={index} order={getOrderName(order)} size="xs" />
               ))}
               {selectedOrders.length > 0 && (
                 <Button onClick={() => setSelectedOrders([])} variant="outline" size="xs">
@@ -52,13 +52,12 @@ export const OrdersFilter = ({ selectedOrders, setSelectedOrders }: OrdersFilter
                     key={index}
                     className={clsx(
                       "flex cursor-pointer flex-col items-center py-2 hover:bg-dark rounded-xl text-gold text-xxs",
-                      selectedOrders.includes(order.orderName) &&
-                        `bg-order-${order.orderName.toLowerCase()} !text-white`,
+                      selectedOrders.includes(order.orderId) && `bg-order-${order.orderName.toLowerCase()} !text-white`,
                     )}
-                    onClick={() => selectOrder(order.orderName)}
+                    onClick={() => selectOrder(order.orderId)}
                   >
                     <OrderIcon
-                      color={selectedOrders.includes(order.orderName) ? "white" : undefined}
+                      color={selectedOrders.includes(order.orderId) ? "white" : undefined}
                       order={order.orderName}
                       size="xs"
                       className="mb-2"

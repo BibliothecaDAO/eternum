@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FiltersPanel } from "../../../../../elements/FiltersPanel";
 import { ReactComponent as Refresh } from "../../../../../assets/icons/common/refresh.svg";
-import { FilterButton } from "../../../../../elements/FilterButton";
 import { SortPanel } from "../../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../../elements/SortButton";
 import { ResourceFilter } from "../../../../ResourceFilterComponent";
@@ -16,19 +15,23 @@ import { MarketPopup } from "./MarketPopup";
 import { MarketInterface } from "@bibliothecadao/eternum";
 import useMarketStore from "../../../../../hooks/store/useMarketStore";
 import useUIStore from "../../../../../hooks/store/useUIStore";
+import useRealmStore from "../../../../../hooks/store/useRealmStore";
+import { hasResources } from "../utils";
 
 type MarketPanelProps = {
   directOffers: boolean;
 };
 
 export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
-  const [activeFilter, setActiveFilter] = useState(false);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
   const [showMarketplace, setShowMarketplace] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<MarketInterface | undefined>(undefined);
-  const [selectedResources, setSelectedResources] = useState<string[]>([]);
-  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [selectedBuyResources, setSelectedBuyResources] = useState<number[]>([]);
+  const [selectedSellResources, setSelectedSellResources] = useState<number[]>([]);
+  const [selectedOrders, setSelectedOrders] = useState<number[]>([]);
   const [buildRoadToEntityId, setBuildRoadToEntityId] = useState<bigint | undefined>(undefined);
+
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const sortingParams = useMemo(() => {
     return [
@@ -49,7 +52,8 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
 
   const market = directOffers
     ? useMarketStore((state) => state.directOffers)
-    : useMarketStore((state) => state.generalMarket);
+    : // filter out your own offers
+      useMarketStore((state) => state.generalMarket).filter((offer) => offer.makerId !== realmEntityId);
 
   // const refreshMarket = useMarketStore((state) => state.refreshMarket);
 
@@ -68,6 +72,15 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
     return (
       <div className="flex flex-col p-2 space-y-2">
         {sortTrades(market, activeSort)
+          .filter((offer) => {
+            return hasResources(offer.takerGets, selectedBuyResources);
+          })
+          .filter((offer) => {
+            return hasResources(offer.makerGets, selectedSellResources);
+          })
+          .filter((offer) => {
+            return selectedOrders.length === 0 || selectedOrders.includes(offer.makerOrder);
+          })
           .slice(0, visibleOffersCount) // modify this line to control the number of displayed offers
           .map((trade) => (
             <MarketOffer
@@ -120,11 +133,25 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
       <div className="flex flex-col min-h-[125px] relative pb-3">
         <div className="flex justify-between">
           <FiltersPanel className="px-3 py-2">
-            <FilterButton active={activeFilter} onClick={() => setActiveFilter(!activeFilter)}>
-              Filter
-            </FilterButton>
-            <ResourceFilter selectedResources={selectedResources} setSelectedResources={setSelectedResources} />
+            <ResourceFilter selectedResources={selectedSellResources} setSelectedResources={setSelectedSellResources}>
+              Sell Resources
+            </ResourceFilter>
+            <ResourceFilter selectedResources={selectedBuyResources} setSelectedResources={setSelectedBuyResources}>
+              Buy Resources
+            </ResourceFilter>
             <OrdersFilter selectedOrders={selectedOrders} setSelectedOrders={setSelectedOrders} />
+            {(selectedBuyResources.length > 0 || selectedSellResources.length > 0 || selectedOrders.length > 0) && (
+              <button
+                onClick={() => {
+                  setSelectedBuyResources([]);
+                  setSelectedSellResources([]);
+                  setSelectedOrders([]);
+                }}
+                className="items-center border flex rounded border-gold py-0.5 px-1 text-xxs text-gold"
+              >
+                Clear All
+              </button>
+            )}
           </FiltersPanel>
           <div className="flex justify-content items-center mr-2">
             {!directOffers && (

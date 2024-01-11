@@ -8,14 +8,8 @@ import { HIGH_ENTITY_ID } from "../../dojo/createOptimisticSystemCalls";
 import { calculateRatio } from "../../components/cityview/realm/trade/Market/MarketOffer";
 import { QueryFragment, useTradeQuery } from "./useTradeQueries";
 import { SortInterface } from "../../elements/SortButton";
-import { getRealm } from "../../utils/realms";
 import useBlockchainStore from "../store/useBlockchainStore";
 import useMarketStore, { isLordsMarket } from "../store/useMarketStore";
-
-type useGetMyOffersProps = {
-  selectedResources: string[];
-  selectedOrders: string[];
-};
 
 type TradeResourcesFromViewpoint = {
   resourcesGet: Resource[];
@@ -116,12 +110,13 @@ export function useTrade() {
         let trade = getComponentValue(Trade, id);
         if (trade) {
           const { takerGets, makerGets } = getTradeResources(trade.trade_id);
+          const makerRealm = getComponentValue(Realm, getEntityIdFromKeys([trade.maker_id]));
           if (nextBlockTimestamp && trade.expires_at > nextBlockTimestamp) {
             return {
               tradeId: trade.trade_id,
               makerId: trade.maker_id,
               takerId: trade.taker_id,
-              makerOrder: getRealm(trade.maker_id)?.order,
+              makerOrder: makerRealm?.order,
               expiresAt: trade.expires_at,
               takerGets,
               makerGets,
@@ -174,7 +169,7 @@ export function useTrade() {
   };
 }
 
-export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): MarketInterface[] {
+export function useGetMyOffers(): MarketInterface[] {
   const {
     setup: {
       components: { Status, Trade },
@@ -194,7 +189,7 @@ export function useGetMyOffers({ selectedResources }: useGetMyOffersProps): Mark
     ];
 
     return baseFragments;
-  }, [selectedResources, realmEntityId]);
+  }, [realmEntityId]);
 
   const entityIds = useTradeQuery(fragments);
 
@@ -228,20 +223,11 @@ export function useSetMarket() {
   const { computeTrades } = useTrade();
   const setMarkets = useMarketStore((state) => state.setMarkets);
 
-  // todo: why not working with notvalue realmEntityids ?
-  const fragments = useMemo(() => {
-    let baseFragment = [HasValue(Status, { value: 0n }), HasValue(Trade, { taker_id: 0n })];
-    const filterOutOwn = realmEntityIds.map((realm) => NotValue(Trade, { maker_id: realm.realmEntityId }));
-    return [...baseFragment, ...filterOutOwn];
-  }, []);
-
   // note: market should only be computed once at the beginning and can be reloaded
   useEffect(() => {
     if ((nextBlockTimestamp && !isComputed) || refresh) {
-      const entityIds = Array.from(runQuery(fragments));
-      const trades = computeTrades(entityIds).filter(
-        (trade) => !realmEntityIds.map((realm) => realm.realmEntityId).includes(trade.makerId),
-      );
+      const entityIds = Array.from(runQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { taker_id: 0n })]));
+      const trades = computeTrades(entityIds);
       const generalMarket = trades.filter((order) => !isLordsMarket(order));
       const lordsMarket = trades.filter((order) => isLordsMarket(order));
       setMarkets([...generalMarket], [...lordsMarket]);

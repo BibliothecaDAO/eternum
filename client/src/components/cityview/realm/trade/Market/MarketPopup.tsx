@@ -55,10 +55,10 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
   const bidOffers = useMemo(() => {
     if (!marketOffers) return [];
 
-    return marketOffers
-      .concat(myOffers)
-      .filter((offer) => offer.takerGets.length === 1 && offer.takerGets[0]?.resourceId === ResourcesIds["Lords"]);
-  }, [marketOffers]);
+    return [...marketOffers, ...myOffers].filter(
+      (offer) => offer.takerGets.length === 1 && offer.takerGets[0]?.resourceId === ResourcesIds["Lords"],
+    );
+  }, [marketOffers, myOffers]);
 
   const selectedResourceBidOffers = useMemo(() => {
     if (!bidOffers) return [];
@@ -129,10 +129,10 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
   const askOffers = useMemo(() => {
     if (!marketOffers) return [];
 
-    return marketOffers
-      .concat(myOffers)
-      .filter((offer) => offer.takerGets.length === 1 && offer.makerGets[0]?.resourceId === ResourcesIds["Lords"]);
-  }, [marketOffers]);
+    return [...marketOffers, ...myOffers].filter(
+      (offer) => offer.takerGets.length === 1 && offer.makerGets[0]?.resourceId === ResourcesIds["Lords"],
+    );
+  }, [marketOffers, myOffers]);
 
   const selectedResourceAskOffers = useMemo(() => {
     if (!askOffers) return [];
@@ -694,7 +694,7 @@ const ResourceOfferRow = ({
       )}
 
       {makerRealm && (
-        <div className="flex items-center">
+        <div className="flex items-center justify-center">
           {<OrderIcon order={orderNameDict[makerRealm.order]} size="xs" className="mr-1" />}
           {realmsData["features"][Number(makerRealm.realmId - 1n)]?.name}
         </div>
