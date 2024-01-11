@@ -1,16 +1,37 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App'
-import './index.css'
-import { setup } from './dojo/setup';
-import { DojoProvider } from './DojoContext';
+import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+import "./index.css";
+import { SetupResult, setup } from "./dojo/setup";
+import { DojoProvider } from "./DojoContext";
+import { LoadingScreen } from "./LoadingScreen";
 
-const setupResult = await setup();
+const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
+function Main() {
+  const [setupResult, setSetupResult] = useState<SetupResult | null>(null);
+
+  useEffect(() => {
+    async function initialize() {
+      const result = await setup();
+      setSetupResult(result);
+    }
+
+    initialize();
+  }, []);
+
+  if (!setupResult) {
+    // Render the LoadingScreen component while setup is not complete
+    return <LoadingScreen />;
+  }
+
+  return (
+    <React.StrictMode>
       <DojoProvider value={setupResult}>
         <App />
       </DojoProvider>
-  </React.StrictMode>,
-)
+    </React.StrictMode>
+  );
+}
+
+root.render(<Main />);
