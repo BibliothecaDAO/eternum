@@ -84,6 +84,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
     const fetchedYourRealms: RealmBubble[] = [];
     realmEntityIds.forEach(({ realmEntityId, realmId }) => {
       const realm = getRealm(realmId);
+      if (!realm) return;
       const name = realmsNames.features[Number(realm.realmId) - 1].name;
       fetchedYourRealms.push({
         id: realmEntityId,

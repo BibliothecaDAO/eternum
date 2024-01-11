@@ -93,7 +93,9 @@ export function useGetRoads(entityId: bigint) {
 
           let startRealmName = startRealmId ? getRealmNameById(startRealmId) : "";
 
-          let { order: startRealmOrder } = startRealmId ? getRealm(startRealmId) : { order: undefined };
+          let { order: startRealmOrder } = startRealmId
+            ? getRealm(startRealmId) || { order: undefined }
+            : { order: undefined };
 
           let startRealmPosition = getPosition(startRealmId || 0n);
 
@@ -107,7 +109,7 @@ export function useGetRoads(entityId: bigint) {
           let destinationEntityId = getRealmEntityIdFromRealmId(BigInt(destinationRealmId || 0n)) || 0n;
 
           let { order: destinationRealmOrder } = destinationRealmId
-            ? getRealm(BigInt(destinationRealmId))
+            ? getRealm(BigInt(destinationRealmId)) || { order: undefined }
             : { order: undefined };
 
           return {

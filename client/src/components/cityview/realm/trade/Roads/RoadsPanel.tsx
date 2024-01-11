@@ -59,9 +59,12 @@ export const RoadsPanel = (props: RoadsPanelProps) => {
         <RoadBuildPopup onClose={() => setBuildRoadToEntityId(undefined)} toEntityId={buildRoadToEntityId} />
       )}
       <div className="flex flex-col p-2 space-y-2 relative">
-        {roads.map((road) => (
-          <Road road={road} onAddUsage={() => setBuildRoadToEntityId(road.destinationEntityId)} />
-        ))}
+        {roads
+          // filter out roads that are not connected to a realm
+          .filter((road) => road.destinationRealmName !== "")
+          .map((road) => (
+            <Road road={road} onAddUsage={() => setBuildRoadToEntityId(road.destinationEntityId)} />
+          ))}
       </div>
     </>
   );

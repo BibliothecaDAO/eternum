@@ -34,9 +34,6 @@ export const CaravansPanel = ({}: CaravansPanelProps) => {
     setSelectedCaravan(caravan);
   };
 
-  const realmPosition = useMemo(() => {
-    return realmId ? getPosition(realmId) : undefined;
-  }, [realmId]);
   const { caravans: realmCaravans } = useGetEntityCaravans(realmEntityId);
 
   const sortingParams = useMemo(() => {

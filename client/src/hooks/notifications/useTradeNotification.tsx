@@ -27,7 +27,7 @@ export const useTradeNotification = (
     },
   } = useDojo();
 
-  const { getTradeResources } = useTrade();
+  const { getTradeResourcesFromEntityViewpoint } = useTrade();
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   let trade = getComponentValue(Trade, getEntityIdFromKeys(extractAndCleanKey(notification.keys)));
@@ -47,7 +47,7 @@ export const useTradeNotification = (
 
   const takerOrderName = takerRealm ? getRealmOrderNameById(takerRealm?.realm_id) : "";
 
-  let { resourcesGet: orderResources1, resourcesGive: orderResources2 } = getTradeResources(
+  let { resourcesGet: orderResources1, resourcesGive: orderResources2 } = getTradeResourcesFromEntityViewpoint(
     realmEntityId,
     trade?.trade_id || 0n,
   );

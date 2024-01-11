@@ -28,6 +28,7 @@ import useCombatHistoryStore from "../hooks/store/useCombatHistoryStore";
 import useRealmStore from "../hooks/store/useRealmStore";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
 import { Onboarding } from "../plugins/onboarding/components/Onboarding";
+import { useComputeMarket } from "../hooks/store/useMarketStore";
 
 export const World = () => {
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
@@ -50,6 +51,7 @@ export const World = () => {
   // });
 
   useFetchBlockchainData();
+  useComputeMarket();
 
   const { progress } = useProgress();
 

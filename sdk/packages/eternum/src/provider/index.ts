@@ -30,6 +30,7 @@ import {
   HealSoldiersProps,
   HarvestAllLaborProps,
   SwapBankAndTravelBackProps,
+  MintResourcesProps,
 } from "../types/provider";
 import { Call } from "starknet";
 
@@ -173,6 +174,20 @@ export class EternumProvider extends DojoProvider {
     });
 
     const tx = await this.executeMulti(signer, transactions);
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async mint_resources(props: MintResourcesProps) {
+    const { receiver_id, resources } = props;
+
+    const tx = await this.executeMulti(props.signer, {
+      contractAddress: getContractByName(this.manifest, "test_resource_systems"),
+      entrypoint: "mint",
+      calldata: [this.getWorldAddress(), receiver_id, resources.length / 2, ...resources],
+    });
+
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
     });

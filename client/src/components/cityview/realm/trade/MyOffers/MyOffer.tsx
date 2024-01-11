@@ -9,6 +9,9 @@ import * as realmsData from "../../../../../geodata/realms.json";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import { currencyFormat } from "../../../../../utils/utils";
 import useUIStore from "../../../../../hooks/store/useUIStore";
+import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
+import { useRoads } from "../../../../../hooks/helpers/useRoads";
+import useRealmStore from "../../../../../hooks/store/useRealmStore";
 
 type TradeOfferProps = {
   myOffer: MarketInterface;
@@ -17,10 +20,24 @@ type TradeOfferProps = {
 
 export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
   // todo: make hasRoad reactive
-  const { takerId, hasRoad, distance, resourcesGet, resourcesGive, ratio } = myOffer;
+  // @note: in myoffers, player is always maker, so resourcesGet is always makerGets, resourcesGive is always takerGets
+  const { takerId, makerGets: resourcesGet, takerGets: resourcesGive, ratio } = myOffer;
+
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const [isLoading, setIsLoading] = useState(false);
   const setTooltip = useUIStore((state) => state.setTooltip);
+
+  const { calculateDistance } = useCaravan();
+  const { getHasRoad } = useRoads();
+
+  const distance = useMemo(() => {
+    return calculateDistance(takerId, realmEntityId) || 0;
+  }, [takerId, realmEntityId]);
+
+  const hasRoad = useMemo(() => {
+    return getHasRoad(realmEntityId, takerId);
+  }, [realmEntityId, takerId]);
 
   useEffect(() => {
     setIsLoading(false);
@@ -58,7 +75,7 @@ export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
           <div className="flex items-center p-1 -mt-2 -ml-2 border border-t-0 border-l-0 rounded-br-md border-gray-gold">
             {/* order of the order maker */}
             {takerRealm.order && <OrderIcon order={orderNameDict[takerRealm.order]} size="xs" className="mr-1" />}
-            {realmsData["features"][Number(takerRealm.realmId) - 1].name}
+            {realmsData["features"][Number(takerRealm.realmId) - 1]?.name || ""}
           </div>
         ) : (
           <div className="flex-1"></div>
@@ -112,7 +129,7 @@ export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
           </div>
           <div className="flex flex-col items-center text-white">
             <RatioIcon className="mb-1 fill-white" />
-            {ratio.toFixed(2)}
+            {(1 / ratio).toFixed(2)}
           </div>
           <div className="flex-1 text-gold flex justify-center items-center flex-wrap">
             {resourcesGet &&

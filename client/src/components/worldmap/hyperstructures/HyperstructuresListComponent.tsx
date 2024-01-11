@@ -22,7 +22,7 @@ export const HyperstructuresListComponent = ({ showOnlyPlayerOrder = false }: Hy
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
   const chosenOrder = useMemo(
-    () => (realmEntityIds.length > 0 ? getRealm(realmEntityIds[0].realmId).order : undefined),
+    () => (realmEntityIds.length > 0 ? getRealm(realmEntityIds[0].realmId)?.order : undefined),
     [account, realmEntityIds],
   );
 

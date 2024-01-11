@@ -559,7 +559,6 @@ const SelectRaidersPanel = ({
   return (
     <>
       <div className="flex flex-col items-center w-full">
-        {/* {toRealm && <Headline size="big">Build road to {realmsData["features"][toRealm.realmId - 1].name}</Headline>} */}
         <div className="p-2 rounded border border-gold w-full flex flex-col">
           {watchTower ? (
             <Defence

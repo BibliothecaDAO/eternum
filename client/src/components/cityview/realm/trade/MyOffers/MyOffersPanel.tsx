@@ -1,10 +1,7 @@
 import { useMemo, useState } from "react";
 import { FiltersPanel } from "../../../../../elements/FiltersPanel";
-import { FilterButton } from "../../../../../elements/FilterButton";
 import { SortPanel } from "../../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../../elements/SortButton";
-import { ResourceFilter } from "../../../../ResourceFilterComponent";
-import { OrdersFilter } from "../../../../OrdersFilterComponent";
 import { CreateOfferPopup } from "../CreateOffer";
 import Button from "../../../../../elements/Button";
 import { MyOffer } from "./MyOffer";
@@ -16,10 +13,7 @@ import { RoadBuildPopup } from "../Roads/RoadBuildPopup";
 type MarketPanelProps = {};
 
 export const MyOffersPanel = ({}: MarketPanelProps) => {
-  const [activeFilter, setActiveFilter] = useState(false);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
-  const [selectedResources, setSelectedResources] = useState<string[]>([]);
-  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [buildRoadToEntityId, setBuildRoadToEntityId] = useState<bigint | undefined>(undefined);
 
   const [activeSort, setActiveSort] = useState<SortInterface>({
@@ -27,7 +21,7 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
     sort: "none",
   });
 
-  const myOffers = useGetMyOffers({ selectedResources, selectedOrders });
+  const myOffers = useGetMyOffers();
 
   const { getCaravansWithResourcesChest } = useResources();
   const caravanIds = getCaravansWithResourcesChest();
@@ -44,13 +38,7 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
 
   return (
     <div className="relative flex flex-col pb-3 min-h-[120px]">
-      <FiltersPanel className="px-3 py-2">
-        <FilterButton active={activeFilter} onClick={() => setActiveFilter(!activeFilter)}>
-          Filter
-        </FilterButton>
-        <ResourceFilter selectedResources={selectedResources} setSelectedResources={setSelectedResources} />
-        <OrdersFilter selectedOrders={selectedOrders} setSelectedOrders={setSelectedOrders} />
-      </FiltersPanel>
+      <FiltersPanel className="px-3 py-2"></FiltersPanel>
       <SortPanel className="px-3 py-2">
         {sortingParams.map(({ label, sortKey, className }) => (
           <SortButton

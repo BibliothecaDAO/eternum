@@ -42,7 +42,7 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
   const [isHarvestLoading, setIsHarvestLoading] = useState(false);
   const [isClaimLoading, setIsClaimLoading] = useState(false);
 
-  const { closedNotifications, handleCloseNotification } = useNotifications();
+  const { closedNotifications } = useNotifications();
 
   const { notifications, deleteNotification, deleteAllNotifications } = useNotificationsStore();
 

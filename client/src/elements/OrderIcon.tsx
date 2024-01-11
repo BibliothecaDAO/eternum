@@ -15,7 +15,9 @@ import { ReactComponent as Skill } from "../assets/icons/orders/skill.svg";
 import { ReactComponent as Titans } from "../assets/icons/orders/titans.svg";
 import { ReactComponent as Twins } from "../assets/icons/orders/twins.svg";
 import { ReactComponent as Vitriol } from "../assets/icons/orders/vitriol.svg";
+import { ReactComponent as Gods } from "../assets/icons/orders/gods.svg";
 import useUIStore from "../hooks/store/useUIStore";
+import { orders } from "@bibliothecadao/eternum";
 
 export type Props = {
   order: string;
@@ -60,6 +62,10 @@ const getIcon = (order: string, color: string) => {
       return <Rage className={`fill-${color}`} />;
     case "protection":
       return <Protection className={`fill-${color}`} />;
+    case "gods":
+      return <Gods className={`stroke-[0.8px] stroke-${color}`} />;
+    default:
+      return <div />;
   }
 };
 
@@ -85,12 +91,7 @@ export const OrderIcon = ({ withTooltip = true, ...props }: Props) => {
         withTooltip &&
         setTooltip({
           position: "top",
-          content: (
-            <div className="flex">
-              Order of {order.includes("the") && "the "}
-              <span className="capitalize">{order.replace("the ", "")}</span>
-            </div>
-          ),
+          content: <div className="flex">{orders.find((o) => o.orderName.toLowerCase() === order)?.fullOrderName}</div>,
         })
       }
       onMouseLeave={() => withTooltip && setTooltip(null)}
