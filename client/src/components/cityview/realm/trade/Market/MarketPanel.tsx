@@ -9,7 +9,7 @@ import { CreateOfferPopup } from "../CreateOffer";
 import Button from "../../../../../elements/Button";
 import { MarketOffer } from "./MarketOffer";
 import { AcceptOfferPopup } from "../AcceptOffer";
-import { sortTrades } from "../../../../../hooks/helpers/useTrade";
+import { sortTrades, useTrade } from "../../../../../hooks/helpers/useTrade";
 import { RoadBuildPopup } from "../Roads/RoadBuildPopup";
 import { MarketPopup } from "./MarketPopup";
 import { MarketInterface } from "@bibliothecadao/eternum";
@@ -17,6 +17,7 @@ import useMarketStore from "../../../../../hooks/store/useMarketStore";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { hasResources } from "../utils";
+import { Checkbox } from "../../../../../elements/Checkbox";
 
 type MarketPanelProps = {
   directOffers: boolean;
@@ -29,9 +30,11 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
   const [selectedBuyResources, setSelectedBuyResources] = useState<number[]>([]);
   const [selectedSellResources, setSelectedSellResources] = useState<number[]>([]);
   const [selectedOrders, setSelectedOrders] = useState<number[]>([]);
+  const [canAcceptFilterActive, setCanAcceptFilterActive] = useState(true);
   const [buildRoadToEntityId, setBuildRoadToEntityId] = useState<bigint | undefined>(undefined);
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const { canAcceptOffer } = useTrade();
 
   const sortingParams = useMemo(() => {
     return [
@@ -72,6 +75,9 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
     return (
       <div className="flex flex-col p-2 space-y-2">
         {sortTrades(market, activeSort)
+          .filter((offer) => {
+            return canAcceptFilterActive ? canAcceptOffer({ realmEntityId, resourcesGive: offer.makerGets }) : true;
+          })
           .filter((offer) => {
             return hasResources(offer.takerGets, selectedBuyResources);
           })
@@ -153,6 +159,13 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
               </button>
             )}
           </FiltersPanel>
+          <div
+            className="flex text-xs text-gray-gold space-x-1 items-center cursor-pointer"
+            onClick={() => setCanAcceptFilterActive(!canAcceptFilterActive)}
+          >
+            <Checkbox enabled={canAcceptFilterActive} />
+            <div>Can Accept</div>
+          </div>
           <div className="flex justify-content items-center mr-2">
             {!directOffers && (
               <Refresh
