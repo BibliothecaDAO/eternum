@@ -159,14 +159,14 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
               </button>
             )}
           </FiltersPanel>
-          <div
-            className="flex text-xs text-gray-gold space-x-1 items-center cursor-pointer"
-            onClick={() => setCanAcceptFilterActive(!canAcceptFilterActive)}
-          >
-            <Checkbox enabled={canAcceptFilterActive} />
-            <div>Can Accept</div>
-          </div>
           <div className="flex justify-content items-center mr-2">
+            <div
+              className="flex text-xs text-gray-gold space-x-1 mr-2 items-center cursor-pointer"
+              onClick={() => setCanAcceptFilterActive(!canAcceptFilterActive)}
+            >
+              <Checkbox enabled={canAcceptFilterActive} />
+              <div>Accept</div>
+            </div>
             {!directOffers && (
               <Refresh
                 // onClick={() => refreshMarket()}
