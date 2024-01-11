@@ -46,7 +46,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
   const [isBuy, setIsBuy] = useState(false);
 
   const marketOffers = useMarketStore((state) => state.lordsMarket);
-  const myOffers = useGetMyOffers({ selectedOrders: [], selectedResources: [] });
+  const myOffers = useGetMyOffers();
 
   // @note: in open market, the current player will always be the taker so
   // resourcesGet = takerGets

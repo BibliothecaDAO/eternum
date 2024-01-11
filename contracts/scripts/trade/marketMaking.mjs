@@ -7,12 +7,12 @@ import {RESOURCE_WEIGHTS} from '../config/constants.js'
 // determine the wood price of lords, then create buy/sell orders for that price
 // use the weight of other resources
 
-const MINT_NEW_REALM = true;
-const MINT_ALL_RESOURCES = true;
+const MINT_NEW_REALM = false;
+const MINT_ALL_RESOURCES = false;
 const CREATE_ORDERS = true;
-const REALM_ENTITY_ID = undefined;
-const CURRENT_BLOCKTIME = 1705640737;
-// one month
+const REALM_ENTITY_ID = 2306;
+const CURRENT_BLOCKTIME = undefined;
+// one week
 const VALIDITY_TIME = 604800;
 const BASE_WOOD_AMOUNT = 252
 const BASE_LORDS_PER_WOOD = 3;

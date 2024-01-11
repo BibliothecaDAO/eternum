@@ -6,10 +6,10 @@ import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys } from "../../utils/utils";
 import { HIGH_ENTITY_ID } from "../../dojo/createOptimisticSystemCalls";
 import { calculateRatio } from "../../components/cityview/realm/trade/Market/MarketOffer";
-import { QueryFragment, useTradeQuery } from "./useTradeQueries";
 import { SortInterface } from "../../elements/SortButton";
 import useBlockchainStore from "../store/useBlockchainStore";
 import useMarketStore, { isLordsMarket } from "../store/useMarketStore";
+import { useEntityQuery } from "@dojoengine/react";
 
 type TradeResourcesFromViewpoint = {
   resourcesGet: Resource[];
@@ -182,16 +182,7 @@ export function useGetMyOffers(): MarketInterface[] {
 
   const [myOffers, setMyOffers] = useState<MarketInterface[]>([]);
 
-  const fragments = useMemo(() => {
-    const baseFragments: QueryFragment[] = [
-      HasValue(Status, { value: 0n }),
-      HasValue(Trade, { maker_id: realmEntityId }),
-    ];
-
-    return baseFragments;
-  }, [realmEntityId]);
-
-  const entityIds = useTradeQuery(fragments);
+  const entityIds = useEntityQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { maker_id: realmEntityId })]);
 
   useMemo((): any => {
     const optimisticTradeId = entityIds.indexOf(HIGH_ENTITY_ID.toString() as Entity);
@@ -213,8 +204,6 @@ export function useSetMarket() {
       components: { Status, Trade },
     },
   } = useDojo();
-
-  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const refresh = useMarketStore((state) => state.refresh);
@@ -250,27 +239,7 @@ export function useSetDirectOffers() {
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const setDirectOffers = useMarketStore((state) => state.setDirectOffers);
 
-  const fragments = useMemo(() => {
-    const baseFragments: QueryFragment[] = [
-      HasValue(Status, { value: 0n }),
-      HasValue(Trade, { taker_id: realmEntityId }),
-    ];
-
-    // if (selectedOrders.length > 0) {
-    //   baseFragments.push(
-    //     HasOrders(
-    //       Trade,
-    //       Realm,
-    //       selectedOrders.map((order) => orders.find((o) => o.orderName === order)?.orderId) as number[],
-    //     ),
-    //   );
-    // }
-
-    return baseFragments;
-    // }, [selectedOrders, selectedResources, realmEntityId]);
-  }, [realmEntityId]);
-
-  const entityIds = useTradeQuery(fragments);
+  const entityIds = useEntityQuery([HasValue(Status, { value: 0n }), HasValue(Trade, { taker_id: realmEntityId })]);
 
   useEffect(() => {
     const trades = computeTrades(entityIds);
