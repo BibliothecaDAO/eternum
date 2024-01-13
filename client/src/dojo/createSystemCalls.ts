@@ -3,6 +3,7 @@ import { SetupNetworkResult } from "./setupNetwork";
 import { Event } from "starknet";
 import { getEntityIdFromKeys } from "../utils/utils";
 import {
+  DisassembleCaravanAndReturnFreeUnitsProps,
   SwapBankAndTravelBackProps,
   AcceptOrderProps,
   AttachCaravanProps,
@@ -78,6 +79,13 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
 
   const create_caravan = async (props: CreateCaravanProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.create_caravan(props)));
+  };
+
+  const disassemble_caravan_and_return_free_units = async (props: DisassembleCaravanAndReturnFreeUnitsProps) => {
+    setComponentsFromEvents(
+      contractComponents,
+      getEvents(await provider.disassemble_caravan_and_return_free_units(props)),
+    );
   };
 
   const attach_caravan = async (props: AttachCaravanProps) => {
@@ -178,6 +186,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
   };
 
   return {
+    disassemble_caravan_and_return_free_units,
     swap_bank_and_travel_back,
     set_address_name,
     create_and_merge_soldiers,

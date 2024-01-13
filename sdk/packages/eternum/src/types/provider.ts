@@ -154,6 +154,11 @@ export interface CreateCaravanProps extends SystemSigner {
   entity_ids: num.BigNumberish[];
 }
 
+export interface DisassembleCaravanAndReturnFreeUnitsProps extends SystemSigner {
+  caravan_id: num.BigNumberish;
+  unit_ids: num.BigNumberish[];
+}
+
 export interface AttachCaravanProps extends SystemSigner {
   realm_id: num.BigNumberish;
   trade_id: num.BigNumberish;

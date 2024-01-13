@@ -1,9 +1,9 @@
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { CaravanInterface, DESTINATION_TYPE } from "@bibliothecadao/eternum";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { divideByPrecision, getEntityIdFromKeys, getForeignKeyEntityId } from "../../utils/utils";
-import { useEntityQuery } from "@dojoengine/react";
+import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { useHyperstructure } from "./useHyperstructure";
 import { useBanks } from "./useBanks";
 
@@ -81,6 +81,20 @@ export function useCaravan() {
       ? getComponentValue(ForeignKey, getForeignKeyEntityId(caravanId, inventory.items_key, 0n))
       : undefined;
     return foreignKey?.entity_id;
+  };
+
+  const getCaravanMembers = (caravanId: bigint): bigint[] => {
+    const caravanMembers = getComponentValue(CaravanMembers, getEntityIdFromKeys([caravanId]));
+    let unitIds: bigint[] = [];
+    if (!caravanMembers) return unitIds;
+    for (let i = 0; i < caravanMembers.count; i++) {
+      let entityId = getForeignKeyEntityId(caravanId, caravanMembers.key, BigInt(i));
+      let foreignKey = getComponentValue(ForeignKey, entityId);
+      if (foreignKey) {
+        unitIds.push(foreignKey.entity_id);
+      }
+    }
+    return unitIds;
   };
 
   function calculateDistance(startId: bigint, destinationId: bigint): number | undefined {
@@ -162,6 +176,11 @@ export function useCaravan() {
     });
   };
 
+  function useRealmDonkeysCount(realmEntityId: bigint) {
+    let hashedKeys = getEntityIdFromKeys([BigInt(realmEntityId), BigInt(FREE_TRANSPORT_ENTITY_TYPE)]);
+    return useComponentValue(QuantityTracker, getEntityIdFromKeys([BigInt(hashedKeys)]));
+  }
+
   function getRealmDonkeysCount(realmEntityId: bigint): number {
     let hashedKeys = getEntityIdFromKeys([BigInt(realmEntityId), BigInt(FREE_TRANSPORT_ENTITY_TYPE)]);
     const donkeysQuantity = getComponentValue(QuantityTracker, getEntityIdFromKeys([BigInt(hashedKeys)]));
@@ -169,12 +188,14 @@ export function useCaravan() {
     return Number(donkeysQuantity?.count) || 0;
   }
   return {
+    getCaravanMembers,
     useGetPositionCaravansIds,
     useGetPositionCaravans,
     useGetEntityCaravans,
     getCaravanInfo,
     calculateDistance,
     getRealmDonkeysCount,
+    useRealmDonkeysCount,
     getInventoryResourcesChestId,
   };
 }

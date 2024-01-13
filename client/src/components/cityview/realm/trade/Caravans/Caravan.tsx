@@ -15,6 +15,9 @@ import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from ".
 import { getTotalResourceWeight } from "../utils";
 import { divideByPrecision } from "../../../../../utils/utils";
 import { useResources } from "../../../../../hooks/helpers/useResources";
+import Button from "../../../../../elements/Button";
+import { useDojo } from "../../../../../DojoContext";
+import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
 
 type CaravanProps = {
   caravan: CaravanInterface;
@@ -34,8 +37,17 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
     destinationType,
   } = caravan;
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const {
+    account: { account },
+    setup: {
+      systemCalls: { disassemble_caravan_and_return_free_units },
+    },
+  } = useDojo();
+
+  const [isLoading, setIsLoading] = React.useState(false);
 
   const { getResourcesFromInventory } = useResources();
+  const { getCaravanMembers } = useCaravan();
 
   const resourcesGet = getResourcesFromInventory(caravanId);
 
@@ -67,6 +79,17 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
     destinationType === DESTINATION_TYPE.HOME &&
     intermediateDestinationRealmId !== undefined &&
     destinationRealmName;
+
+  const redeemDonkeys = async () => {
+    setIsLoading(true);
+    let unit_ids = getCaravanMembers(caravanId);
+    await disassemble_caravan_and_return_free_units({
+      signer: account,
+      caravan_id: caravanId,
+      unit_ids,
+    });
+    return unit_ids;
+  };
 
   return (
     <div
@@ -169,7 +192,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
               ),
           )}
       </div>
-      <div className="flex mt-2">
+      <div className="flex w-full mt-2">
         <div className="grid w-full grid-cols-1 gap-5">
           <div className="flex flex-col">
             <div className="grid grid-cols-12 gap-0.5">
@@ -198,6 +221,11 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
                   <Dot colorClass="bg-light-pink" />
                   <div className="mt-1 text-dark">{0}</div>
                 </div>
+              </div>
+              <div className="">
+                <Button variant="success" isLoading={isLoading} disabled={!isIdle} size="xs" onClick={redeemDonkeys}>
+                  Redeem
+                </Button>
               </div>
             </div>
           </div>

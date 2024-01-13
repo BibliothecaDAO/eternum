@@ -416,19 +416,18 @@ export const SelectCaravanPanel = ({
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const { getRealmDonkeysCount, useGetPositionCaravans } = useCaravan();
+  const { useRealmDonkeysCount, useGetPositionCaravans } = useCaravan();
   const { getResourcesFromInventory } = useResources();
   const { realm } = useGetRealm(realmEntityId);
   const { caravans: realmCaravans } = useGetPositionCaravans(realm?.position.x || 0, realm?.position.y || 0);
 
-  const donkeysLeft = useMemo(() => {
-    const realmDonkeysCount = getRealmDonkeysCount(realmEntityId);
+  const [donkeysLeft, setDonkeysLeft] = useState<number>(0);
+  const realmDonkeysCount = useRealmDonkeysCount(realmEntityId);
+  useEffect(() => {
     if (realmDonkeysCount && realm) {
-      return realm?.cities * DONKEYS_PER_CITY - realmDonkeysCount;
-    } else {
-      return (realm?.cities || 0) * DONKEYS_PER_CITY;
+      setDonkeysLeft(realm.cities * DONKEYS_PER_CITY - Number(realmDonkeysCount.count));
     }
-  }, [realm, realmCaravans]);
+  }, [realmDonkeysCount]);
 
   useEffect(() => {
     setDonkeysCount(Math.min(donkeysLeft || 0, Math.ceil(divideByPrecision(resourceWeight) / WEIGHT_PER_DONKEY_KG)));
