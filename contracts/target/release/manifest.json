@@ -3539,7 +3539,7 @@
     {
       "name": "eternum::systems::transport::contracts::caravan_systems::caravan_systems",
       "address": "0x3f8d39786c3f984482b25a770fc85fd2a4f45725e74fdd385c5c38e9f5681c6",
-      "class_hash": "0x26d8441fd2b13fe067a85fcb932c8ec28331b980dd6b4e22080590deaac377f",
+      "class_hash": "0x36b1420dee488031d45b4d66d581dd9a5af0baab1c91a5f505c370b82c827dc",
       "abi": [
         {
           "type": "impl",
@@ -3579,6 +3579,16 @@
           "interface_name": "eternum::systems::transport::interface::caravan_systems_interface::ICaravanSystems"
         },
         {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u128>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u128>"
+            }
+          ]
+        },
+        {
           "type": "interface",
           "name": "eternum::systems::transport::interface::caravan_systems_interface::ICaravanSystems",
           "items": [
@@ -3598,6 +3608,26 @@
               "outputs": [
                 {
                   "type": "core::integer::u128"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "disassemble",
+              "inputs": [
+                {
+                  "name": "world",
+                  "type": "dojo::world::IWorldDispatcher"
+                },
+                {
+                  "name": "caravan_id",
+                  "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "core::array::Span::<core::integer::u128>"
                 }
               ],
               "state_mutability": "view"
@@ -3847,7 +3877,7 @@
     {
       "name": "eternum::systems::transport::contracts::transport_unit_systems::transport_unit_systems",
       "address": "0x4146e12ea99aeb071b29776bd591bbc74174817dad41521650e9164e226b5eb",
-      "class_hash": "0x462ed4c61027d073e863fcf2a4f4e59653528e0598169300460b2b7f36730da",
+      "class_hash": "0x7f2ec7c0adb68ebe1f7d83db81c9dc19b47cca50076713befa53353f1a5a5ec",
       "abi": [
         {
           "type": "impl",
@@ -3887,6 +3917,16 @@
           "interface_name": "eternum::systems::transport::interface::transport_unit_systems_interface::ITransportUnitSystems"
         },
         {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u128>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u128>"
+            }
+          ]
+        },
+        {
           "type": "interface",
           "name": "eternum::systems::transport::interface::transport_unit_systems_interface::ITransportUnitSystems",
           "items": [
@@ -3912,6 +3952,22 @@
                   "type": "core::integer::u128"
                 }
               ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "return_free_units",
+              "inputs": [
+                {
+                  "name": "world",
+                  "type": "dojo::world::IWorldDispatcher"
+                },
+                {
+                  "name": "unit_ids",
+                  "type": "core::array::Span::<core::integer::u128>"
+                }
+              ],
+              "outputs": [],
               "state_mutability": "view"
             }
           ]
