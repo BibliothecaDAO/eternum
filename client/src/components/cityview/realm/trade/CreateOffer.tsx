@@ -39,7 +39,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   const [selectedCaravan, setSelectedCaravan] = useState<bigint>(0n);
   const [selectedRealmEntityId, setSelectedRealmEntityId] = useState<bigint | undefined>();
   const [selectedRealmId, setSelectedRealmId] = useState<bigint | undefined>();
-  const [isNewCaravan, setIsNewCaravan] = useState(false);
+  const [isNewCaravan, setIsNewCaravan] = useState(true);
   const [donkeysCount, setDonkeysCount] = useState(1);
   const [resourceWeight, setResourceWeight] = useState(0);
   const [hasEnoughDonkeys, setHasEnoughDonkeys] = useState(false);

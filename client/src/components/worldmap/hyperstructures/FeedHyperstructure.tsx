@@ -230,7 +230,7 @@ const BuildHyperstructurePanel = ({
   hyperstructureData: HyperStructureInterface | undefined;
 }) => {
   const [selectedCaravan, setSelectedCaravan] = useState<bigint>(0n);
-  const [isNewCaravan, setIsNewCaravan] = useState(false);
+  const [isNewCaravan, setIsNewCaravan] = useState(true);
   const [donkeysCount, setDonkeysCount] = useState(1);
   const [hasEnoughDonkeys, setHasEnoughDonkeys] = useState(false);
   const [step, setStep] = useState<number>(1);
@@ -349,7 +349,7 @@ const BuildHyperstructurePanel = ({
 
   const canGoToNextStep = useMemo(() => {
     if (step === 3) {
-      return selectedCaravan !== 0n || (hasEnoughDonkeys && isNewCaravan);
+      return (selectedCaravan !== 0n || (hasEnoughDonkeys && isNewCaravan)) && resourceWeight > 0;
     } else if (step == 2) {
       return false;
     } else {

@@ -17,7 +17,7 @@ type AcceptOfferPopupProps = {
 
 export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupProps) => {
   const [selectedCaravan, setSelectedCaravan] = useState<bigint>(0n);
-  const [isNewCaravan, setIsNewCaravan] = useState(false);
+  const [isNewCaravan, setIsNewCaravan] = useState(true);
   const [donkeysCount, setDonkeysCount] = useState(1);
   const [hasEnoughDonkeys, setHasEnoughDonkeys] = useState(false);
 
