@@ -90,17 +90,17 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
           <div className="mr-0.5">Level up:</div>
         </div>
       </SecondaryPopup.Head>
-      <SecondaryPopup.Body width={"500px"}>
+      <SecondaryPopup.Body withWrapper width={"400px"}>
         <div className="flex flex-col items-center p-2">
-          <Headline size="big">Level Realm to {newLevel}</Headline>
+          <Headline>Level Realm to {newLevel}</Headline>
           <div className={"relative w-full mt-3"}>
             <img
               src={`/images/levels/tier${tier.toString()}.png`}
               className="object-cover w-full h-full rounded-[10px]"
             />
-            <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
+            <div className="flex flex-col p-2 absolute left-2 bottom-2 right-2 rounded-[10px] bg-black/60">
               <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-8 gap-2">
                 {costResources.map(({ resourceId, amount }) => {
                   const isMissing = missingResources.find((resource) => resource.resourceId === resourceId);
                   return (
@@ -115,17 +115,18 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
                   );
                 })}
               </div>
+              <div className="h-[1px] w-full bg-white/20 my-2" />
+              <div className="w-full">
+                {newLevel >= 5 && (
+                  <LevelingTable updateLevel={{ newBonus, index: newIndex }} data={bonusData}></LevelingTable>
+                )}
+                {newLevel < 5 && <UnlockMessage newLevel={newLevel}></UnlockMessage>}
+              </div>
             </div>
           </div>
         </div>
         <div className="flex justify-between m-2 text-xxs">
           <div className="w-full flex flex-col items-center justify-center">
-            <div className="w-[90%] mb-3">
-              {newLevel >= 5 && (
-                <LevelingTable updateLevel={{ newBonus, index: newIndex }} data={bonusData}></LevelingTable>
-              )}
-              {newLevel < 5 && <UnlockMessage newLevel={newLevel}></UnlockMessage>}
-            </div>
             <div className="flex">
               <Button
                 className="!px-[6px] mr-2 !py-[2px] text-xxs ml-auto"
@@ -291,9 +292,9 @@ const UnlockMessage: React.FC<UnlockMessageProps> = ({ newLevel }) => {
   }
 
   return (
-    <div className={"flex flex-col items-center justify-center p-4 border border-gold rounded-lg text-gold"}>
-      <span className="uppercase mb-2">{`✨ ${title} ✨`}</span>
-      <span className="">{message}</span>
+    <div className={"flex flex-col leading-normal"}>
+      <span className=" text-lightest mb-2 text-xs">{title}</span>
+      <span className=" text-gray-gold text-xxs italic">{message}</span>
     </div>
   );
 };

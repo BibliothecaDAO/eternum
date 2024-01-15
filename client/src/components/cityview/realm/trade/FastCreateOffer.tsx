@@ -226,9 +226,7 @@ const SelectResourcesAmountPanel = ({
     <>
       <div className="grid w-full grid-cols-9 gap-2 p-2 max-h-[250px] overflow-y-auto overflow-x-hidden relative">
         <div className="flex flex-col items-center col-span-4 space-y-2">
-          <Headline size="big" className="mb-2">
-            You Sell
-          </Headline>
+          <Headline className="mb-2">You Sell</Headline>
           {selectedResourceIdsGive.map((id) => {
             let resource = getBalance(realmEntityId, id);
             return (
@@ -300,9 +298,7 @@ const SelectResourcesAmountPanel = ({
           </div>
         </div>
         <div className="flex flex-col items-center col-span-4 space-y-2">
-          <Headline size="big" className="mb-2">
-            You Buy
-          </Headline>
+          <Headline className="mb-2">You Buy</Headline>
           {selectedResourceIdsGet.map((id) => {
             let resource = getBalance(realmEntityId, id);
             return (
@@ -464,9 +460,7 @@ export const SelectCaravanPanel = ({
       {isNewCaravan && (
         <>
           <div className="flex flex-col">
-            <Headline className="mb-2" size="big">
-              Summon a New Caravan
-            </Headline>
+            <Headline className="mb-2">Summon a New Caravan</Headline>
             <div className="grid grid-cols-9 gap-2 p-2">
               <div className="flex items-center col-span-3">
                 <NumberInput

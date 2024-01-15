@@ -457,7 +457,7 @@ const BuildHyperstructurePanel = ({
                 </div>
               </div>
             </div>
-            <Headline size="big">
+            <Headline>
               {"Feed Hyperstructure"}- Step {step}
             </Headline>
             <div className="text-xxs mb-2 italic text-gold">
@@ -475,7 +475,7 @@ const BuildHyperstructurePanel = ({
       )}
       {step == 2 && (
         <div className="flex flex-col w-full space-y-2">
-          <Headline size="big">Select Realm - Step {step}</Headline>
+          <Headline>Select Realm - Step {step}</Headline>
           <div className="text-xxs mb-2 italic text-gold">
             {`Press "Set the amounts" on any Realm with required resources, to set amounts and send caravan to Hyperstructure.`}
           </div>

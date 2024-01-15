@@ -101,7 +101,7 @@ export const MergeExistingSoldiersPanel = ({ isDefence, selectedRaider, onClose 
   return (
     <div>
       <div className="flex flex-col items-center p-2">
-        <Headline size="big">Military units</Headline>
+        <Headline>Military units</Headline>
         <div className="flex relative mt-1 justify-between text-xxs text-lightest w-full">
           <div className="flex items-center">
             <div className="flex items-center h-6 mr-2">

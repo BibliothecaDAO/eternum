@@ -66,7 +66,7 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
           </SecondaryPopup.Head>
           <SecondaryPopup.Body width="400px">
             <div className="flex flex-col  space-y-2 p-3">
-              <Headline size="big">Video</Headline>
+              <Headline>Video</Headline>
               <div
                 className="flex text-xs text-gray-gold space-x-2 items-center cursor-pointer"
                 onClick={clickFullScreen}
@@ -74,7 +74,7 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
                 <Checkbox enabled={fullScreen} />
                 <div>Fullscreen</div>
               </div>
-              <Headline size="big">Sound</Headline>
+              <Headline>Sound</Headline>
               <RangeInput value={musicLevel} fromTitle="Mute" onChange={setMusicLevel} title="Music" />
               <RangeInput value={effectsLevel} fromTitle="Mute" onChange={setEffectsLevel} title="Effects" />
               <Button onClick={() => setShowSettings(false)} variant="outline" className="text-xxs !py-1 !px-2 mr-auto">

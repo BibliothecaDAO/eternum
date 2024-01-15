@@ -10,14 +10,22 @@ body {
   font-family: "Merriweather", serif;
   touch-action: none;
   @apply cursor-fancy;
-  
 }
 
 @keyframes dotAnimation {
-  0%, 100% { opacity: 0; }
-  20% { opacity: 1; } /* First dot appears */
-  40% { opacity: 1; } /* Second dot appears */
-  60% { opacity: 1; } /* Third dot appears */
+  0%,
+  100% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  } /* First dot appears */
+  40% {
+    opacity: 1;
+  } /* Second dot appears */
+  60% {
+    opacity: 1;
+  } /* Third dot appears */
 }
 
 .dot {
@@ -87,4 +95,3 @@ body {
 h1 {
   @apply text-4xl font-bold;
 }
-

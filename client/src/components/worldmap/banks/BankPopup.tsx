@@ -396,7 +396,7 @@ const SwapResourcesPanel = ({
                 )}
               </div>
             </div>
-            <Headline size="big"> Swap Food for Lords</Headline>
+            <Headline> Swap Food for Lords</Headline>
             <div className="text-xxs mb-2 italic text-gold">
               {`
                 To swap wheat or fish for Lords at the bank, you can send any amount you want. The amount of Lords you get in return depends on the market price of wheat and fish at that specific bank.
@@ -409,7 +409,7 @@ const SwapResourcesPanel = ({
       )}
       {step == 2 && (
         <div className="flex flex-col w-full space-y-2">
-          <Headline size="big">Select Realm - Step {step}</Headline>
+          <Headline>Select Realm - Step {step}</Headline>
           <div className="text-xxs mb-2 italic text-gold">
             {`Press "Set the amounts" on any Realm with required resources, to set amounts and send caravan to Hyperstructure.`}
           </div>
