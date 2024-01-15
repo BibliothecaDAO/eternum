@@ -35,7 +35,7 @@ export const generateTradeNotifications = (entityUpdates: UpdatedEntity[], compo
         );
         switch (status?.value) {
           case 0:
-            return { eventType: EventType.MakeOffer, keys: update.entityKeys };
+            return { eventType: EventType.DirectOffer, keys: update.entityKeys };
           case 1:
             return {
               eventType: EventType.AcceptOffer,
