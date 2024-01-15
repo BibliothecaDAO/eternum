@@ -424,8 +424,8 @@ export const SelectCaravanPanel = ({
   const [donkeysLeft, setDonkeysLeft] = useState<number>(0);
   const realmDonkeysCount = useRealmDonkeysCount(realmEntityId);
   useEffect(() => {
-    if (realmDonkeysCount && realm) {
-      setDonkeysLeft(realm.cities * DONKEYS_PER_CITY - Number(realmDonkeysCount.count));
+    if (realm) {
+      setDonkeysLeft(realm.cities * DONKEYS_PER_CITY - (Number(realmDonkeysCount?.count) || 0));
     }
   }, [realmDonkeysCount]);
 
