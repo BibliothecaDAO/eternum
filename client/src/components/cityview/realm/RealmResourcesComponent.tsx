@@ -57,7 +57,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
             showAllResources ? "max-h-[100px]" : "max-h-0",
           )}
         >
-          <div className=" flex flex-wrap  w-full p-3">
+          <div className=" flex justify-center flex-wrap  w-full p-3">
             {otherResources.map((resource) => (
               <ResourceComponent className="mr-3 mb-1" canFarm={false} key={resource.id} resourceId={resource.id} />
             ))}
