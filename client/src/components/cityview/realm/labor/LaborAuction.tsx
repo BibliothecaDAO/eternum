@@ -5,7 +5,11 @@ import { getPosition, getZone } from "../../../../utils/utils";
 import clsx from "clsx";
 import useUIStore from "../../../../hooks/store/useUIStore";
 
-export const LaborAuction = () => {
+type LaborAuctionProps = {
+  className?: string;
+};
+
+export const LaborAuction = ({ className }: LaborAuctionProps) => {
   const realmId = useRealmStore((state) => state.realmId);
 
   const { useLaborAuctionCoefficient } = useLabor();
@@ -99,7 +103,7 @@ export const LaborAuction = () => {
         })
       }
       onMouseLeave={() => setTooltip(null)}
-      className="flex flex-col items-center justify-center absolute top-2 right-20 w-14 -mt-1 h-14"
+      className={clsx("flex flex-col items-center  w-14 h-14 justify-center relative  -mt-2", className)}
     >
       <div className={clsx(demandColors.text, "text-[12px] font-bold")}>
         ×{coefficient ? coefficient.toFixed(2) : 1}

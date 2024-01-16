@@ -319,7 +319,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
                 className="object-cover w-full h-full rounded-[10px]"
               />
             )}
-            <div className="absolute top-2 left-2 bg-black/90 rounded-[10px] p-3 hover:bg-black">
+            <div className="absolute top-2 left-2 bg-black/90 rounded-[10px] p-3 pb-6 hover:bg-black">
               <LaborAuction />
             </div>
             <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/90">

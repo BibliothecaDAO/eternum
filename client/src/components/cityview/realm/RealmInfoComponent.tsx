@@ -149,9 +149,12 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
               />
             </div>
           </div>
-          <LaborAuction />
+          <LaborAuction className="!absolute top-2 right-2 !-mt-1" />
           {showRealmLevelUp && <LevelingPopup onClose={() => setShowRealmLevelUp(false)}></LevelingPopup>}
-          <div
+          <Leveling
+            className={"text-xxs cursor-pointer"}
+            setShowLevelUp={setShowHyperstructureLevelUp}
+            entityId={hyperstructureId}
             onMouseEnter={() => {
               if (!hyperstructureBonuses) return;
               setTooltip({
@@ -171,17 +174,10 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
             onMouseLeave={() => {
               setTooltip(null);
             }}
-            className="cursor-pointer"
-          >
-            {/* {showHyperstructureLevelUp && (
+          />
+          {/* {showHyperstructureLevelUp && (
               <LevelingPopup onClose={() => setShowHyperstructureLevelUp(false)}></LevelingPopup>
             )} */}
-            <Leveling
-              className={"text-xxs"}
-              setShowLevelUp={setShowHyperstructureLevelUp}
-              entityId={hyperstructureId}
-            />
-          </div>
         </div>
       )}
       <div className="flex space-x-2 mt-1 items-center px-4">
