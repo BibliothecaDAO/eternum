@@ -18,7 +18,7 @@ import { useCaravanHasArrivedAtHyperstructureNotification } from "../hooks/notif
 
 const notificationHandlers = {
   [EventType.AcceptOffer]: useTradeNotification,
-  [EventType.MakeOffer]: useTradeNotification,
+  [EventType.DirectOffer]: useTradeNotification,
   [EventType.CancelOffer]: useTradeNotification,
   [EventType.Harvest]: useHarvestNotification,
   [EventType.EmptyChest]: useEmptyChestNotification,

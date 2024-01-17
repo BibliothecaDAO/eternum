@@ -13,7 +13,7 @@ import {
   generateEnemyRaidersHaveArrivedNotifications,
   generateYourRaidersHaveArrivedNotifications,
 } from "./generateNotifications";
-import { useRealmsPosition, useRealmsResource, createCombatNotification } from "./utils";
+import { useRealmsPosition, useRealmsResource, createCombatNotification, createDirectOfferNotification } from "./utils";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCombat } from "../helpers/useCombat";
@@ -26,7 +26,7 @@ export const useNotifications = () => {
     setup: {
       account: { account },
       updates: {
-        eventUpdates: { createCombatEvents, createTravelEvents },
+        eventUpdates: { createCombatEvents, createTravelEvents, createDirectOffersEvents },
       },
       components,
     },
@@ -141,6 +141,25 @@ export const useNotifications = () => {
     // Clear interval on component unmount
     return () => clearInterval(intervalId);
   }, [nextBlockTimestamp]);
+
+  /**
+   * Direct Offers notifications
+   */
+  // New combat notitications from createCombatEvents (subscription)
+  useEffect(() => {
+    const subscribeToDirectOffersEvents = async () => {
+      for (const { realmEntityId } of realmEntityIds) {
+        const observable = await createDirectOffersEvents(realmEntityId);
+        observable.subscribe((event) => {
+          if (event) {
+            const newNotification = createDirectOfferNotification(event);
+            addUniqueNotifications([newNotification]);
+          }
+        });
+      }
+    };
+    subscribeToDirectOffersEvents();
+  }, [realmEntityIds]);
 
   /**
    * Combat notifications

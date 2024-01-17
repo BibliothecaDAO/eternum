@@ -3326,7 +3326,7 @@
     {
       "name": "eternum::systems::trade::contracts::trade_systems::trade_systems",
       "address": "0x63cbe849cf6325e727a8d6f82f25fad7dc7eb9433767f5c1b8c59189e36c9b6",
-      "class_hash": "0x24051ef6e9f936215ed9c7e018f79509df34d3d7b4d30012d1c93abf9b4acea",
+      "class_hash": "0x809d89839a6c8f424e1f9dd9dd7701e288b38dee6671a605bd94f8053d6af8",
       "abi": [
         {
           "type": "impl",
@@ -3521,12 +3521,49 @@
         },
         {
           "type": "event",
+          "name": "eternum::systems::trade::contracts::trade_systems::trade_systems::CreateOrder",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "taker_id",
+              "type": "core::integer::u128",
+              "kind": "key"
+            },
+            {
+              "name": "maker_id",
+              "type": "core::integer::u128",
+              "kind": "key"
+            },
+            {
+              "name": "trade_id",
+              "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "maker_gives_resources",
+              "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
+              "kind": "data"
+            },
+            {
+              "name": "taker_gives_resources",
+              "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
+              "kind": "data"
+            }
+          ]
+        },
+        {
+          "type": "event",
           "name": "eternum::systems::trade::contracts::trade_systems::trade_systems::Event",
           "kind": "enum",
           "variants": [
             {
               "name": "UpgradeableEvent",
               "type": "dojo::components::upgradeable::upgradeable::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "CreateOrder",
+              "type": "eternum::systems::trade::contracts::trade_systems::trade_systems::CreateOrder",
               "kind": "nested"
             }
           ]

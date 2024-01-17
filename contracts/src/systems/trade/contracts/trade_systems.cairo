@@ -34,6 +34,23 @@ mod trade_systems {
 
     use core::poseidon::poseidon_hash_span;
 
+    #[derive(Drop, starknet::Event)]
+    struct CreateOrder {
+        #[key]
+        taker_id: u128,
+        #[key]
+        maker_id: u128,
+        trade_id: u128,
+        maker_gives_resources: Span<(u8, u128)>,
+        taker_gives_resources: Span<(u8, u128)>
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        CreateOrder: CreateOrder,
+    }
+
 
     #[external(v0)]
     impl TradeSystemsImpl of ITradeSystems<ContractState> {
@@ -105,6 +122,14 @@ mod trade_systems {
                     }
                 ),
             );
+
+            emit!(world, CreateOrder { 
+                taker_id,
+                maker_id,
+                trade_id,
+                maker_gives_resources,
+                taker_gives_resources
+            });
 
             trade_id
         }

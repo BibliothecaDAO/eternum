@@ -4,6 +4,7 @@ import { CombatResultInterface, Position, ResourcesIds } from "@bibliothecadao/e
 import { unpackResources } from "../../utils/packedData";
 import { getRealm } from "../../utils/realms";
 import { EventType, NotificationType } from "../store/useNotificationsStore";
+import { Event } from "../../services/eventPoller";
 
 export type realmsResources = { realmEntityId: bigint; resourceIds: number[] }[];
 export type realmsPosition = { realmId: bigint; position: Position; realmEntityId: bigint }[];
@@ -67,5 +68,22 @@ export const createCombatNotification = (result: CombatResultInterface): Notific
     // to have a unique key for each notification
     keys: [result.attackTimestamp.toString()],
     data: result,
+  };
+};
+
+export const createDirectOfferNotification = (event: Event): NotificationType => {
+  let takerId = BigInt(event.keys[0]);
+  let makerId = BigInt(event.keys[1]);
+
+  let tradeId = BigInt(event.data[0]);
+
+  return {
+    eventType: EventType.DirectOffer,
+    keys: [tradeId.toString()],
+    data: {
+      takerId,
+      makerId,
+      tradeId,
+    },
   };
 };

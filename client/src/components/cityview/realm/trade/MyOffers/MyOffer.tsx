@@ -80,7 +80,7 @@ export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
         ) : (
           <div className="flex-1"></div>
         )}
-        {!takerRealm && <div className="-mt-2 text-gold">{timeLeft}</div>}
+        {!takerRealm && <div className="-mt-2 text-gold">{`Expires in ${timeLeft}`}</div>}
         {takerRealm && (
           <div className=" text-gold flex">
             <div className=" text-right">{`${distance.toFixed(0)} km`}</div>
@@ -157,5 +157,9 @@ const formatTimeLeft = (seconds: number) => {
   const hours = Math.floor((seconds % 86400) / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
 
-  return `${days} days ${hours}h:${minutes}m`;
+  if (days > 0) {
+    return `${days} days`;
+  } else {
+    return `${hours}h:${minutes}m`;
+  }
 };

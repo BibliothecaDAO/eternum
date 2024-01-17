@@ -9,6 +9,7 @@ import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils"
 import { WEIGHT_PER_DONKEY_KG, MarketInterface } from "@bibliothecadao/eternum";
 import { getTotalResourceWeight } from "./utils";
 import useMarketStore from "../../../../hooks/store/useMarketStore";
+import { EventType, useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
 
 type AcceptOfferPopupProps = {
   onClose: () => void;
@@ -56,12 +57,16 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
   };
 
   const deleteTrade = useMarketStore((state) => state.deleteTrade);
+  const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
 
   const onAccept = () => {
     setIsLoading(true);
     optimisticAcceptOffer(selectedTrade.tradeId, realmEntityId, acceptOffer)();
     // todo: only delete if success
     deleteTrade(selectedTrade.tradeId);
+    if (selectedTrade.takerId === realmEntityId) {
+      deleteNotification([selectedTrade.tradeId.toString()], EventType.DirectOffer);
+    }
     onClose();
   };
 

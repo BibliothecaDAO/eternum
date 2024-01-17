@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { BankInterface, CombatInfo, CombatResultInterface, Position, Resource } from "@bibliothecadao/eternum";
 
 export enum EventType {
-  MakeOffer,
+  DirectOffer,
   AcceptOffer,
   CancelOffer,
   Harvest,
@@ -20,6 +20,12 @@ export enum CarrierType {
   Caravan,
   Raiders,
 }
+
+export type DirectOfferData = {
+  takerId: bigint;
+  makerId: bigint;
+  tradeId: bigint;
+};
 
 export type HarvestData = {
   harvestAmount: number;
@@ -67,7 +73,8 @@ export type NotificationType = {
     | CombatResultInterface
     | ArrivedAtBankData
     | ArrivedAtHyperstructureData
-    | RaidersData;
+    | RaidersData
+    | DirectOfferData;
 };
 
 interface NotificationsStore {

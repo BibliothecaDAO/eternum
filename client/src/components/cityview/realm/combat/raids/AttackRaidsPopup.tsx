@@ -17,6 +17,7 @@ import { CombatInfo, Resource, findResourceById, resources } from "@bibliothecad
 import { getRealmIdByPosition, getRealmNameById } from "../../../../../utils/realms";
 import { SmallResource } from "../../SmallResource";
 import { LevelIndex, useLevel } from "../../../../../hooks/helpers/useLevel";
+// import { ReactComponent as Equation } from "../../../../../assets/icons/formula/equation.svg";
 
 type AttackRaidsPopupProps = {
   selectedRaider: CombatInfo;
@@ -507,10 +508,13 @@ const SelectRaidersPanel = ({
 
   const succesProb = useMemo(() => {
     return calculateSuccess(
-      { attack: (attackerTotalAttack * attackerLevelBonus) / 100, health: attackerTotalHealth },
+      {
+        attack: attackerTotalAttack * (attackerLevelBonus / 100) * (attackerHyperstructureLevelBonus / 100),
+        health: attackerTotalHealth,
+      },
       watchTower
         ? {
-            defence: (watchTower.defence * defenderLevelBonus * defenderHyperstructureLevelBonus) / 10000,
+            defence: watchTower.defence * (defenderLevelBonus / 100) * (defenderHyperstructureLevelBonus / 100),
             health: watchTower.health,
           }
         : undefined,
@@ -638,6 +642,10 @@ const SelectRaidersPanel = ({
               <div className="text-xxs text-order-giants/70">Can only pillage with 1 Raiders Group</div>
             )}
           </div>
+          {/* // note: add more combat info once combat system is more mature */}
+          {/* <div className="flex w-full">
+            <Equation className="text-white h-6"></Equation>
+          </div> */}
         </div>
 
         <div className={"relative w-full mt-2"}>
