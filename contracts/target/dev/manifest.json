@@ -1104,7 +1104,7 @@
     {
       "name": "eternum::systems::combat::contracts::combat_systems",
       "address": "0x1b0a83a27a357e0574393ab06c0c774db7312a0993538cc0186d054f75ee84e",
-      "class_hash": "0x3d8f65769dc5ec2dd36370f17edbd6633f1e27ab0e6372e01400716ad406039",
+      "class_hash": "0x5df10dcf9a128b79fca4a2fb47de02ed69fc3bc5ee81f6b6c4ec9f76f1f8cdd",
       "abi": [
         {
           "type": "impl",
@@ -1457,7 +1457,7 @@
     {
       "name": "eternum::systems::config::contracts::config_systems",
       "address": "0x7fff06bbcbe4f42f22c86b14e7a80604495c8b2034d14cbb10d32402c933ca8",
-      "class_hash": "0x4498d0c8199de153830ba0721b39c426f8a4631d550a67d14266a4e4de49864",
+      "class_hash": "0x537c1f5a3261eb0dadb3038469f5774a8d4b9ede5e2ba3cf241cc5744d6c719",
       "abi": [
         {
           "type": "impl",
@@ -2029,8 +2029,8 @@
                   "type": "eternum::models::position::Coord"
                 },
                 {
-                  "name": "order",
-                  "type": "core::integer::u8"
+                  "name": "completion_cost",
+                  "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                 }
               ],
               "outputs": [
@@ -2207,7 +2207,7 @@
     {
       "name": "eternum::systems::labor::contracts::labor_systems",
       "address": "0x38258ae4007920aacda4f00c6960837ff9b235e8af95f648347f36550e6d1ee",
-      "class_hash": "0x332f5ce561ff4b6b9ec3947a5e9ce5a53637b0131f87f029532090e87cc0fe6",
+      "class_hash": "0x14dc03dedf9a88111f08a9ef077bfe8300cd380732f8ad6e853a425794169b7",
       "abi": [
         {
           "type": "impl",
@@ -2402,7 +2402,7 @@
     {
       "name": "eternum::systems::leveling::contracts::leveling_systems",
       "address": "0x29ae99df03a05e0be62f21c42ed50e18c3c5eff9372030791e6f6ed8377b5b3",
-      "class_hash": "0x3bebafb096c5ff90466ccca710f83de2e87e1b35894133b7c37efc1533f2234",
+      "class_hash": "0x1285508c7650c1b619f184e08d892cd4803c54993fe98eb73ee15fcdd5c52db",
       "abi": [
         {
           "type": "impl",
@@ -3326,7 +3326,7 @@
     {
       "name": "eternum::systems::trade::contracts::trade_systems::trade_systems",
       "address": "0x63cbe849cf6325e727a8d6f82f25fad7dc7eb9433767f5c1b8c59189e36c9b6",
-      "class_hash": "0x809d89839a6c8f424e1f9dd9dd7701e288b38dee6671a605bd94f8053d6af8",
+      "class_hash": "0x51a4c83693b6e3a74b1f44ac4650071b2bd2e787c04b8a199ef99f5e222a67",
       "abi": [
         {
           "type": "impl",
@@ -4087,7 +4087,7 @@
     {
       "name": "eternum::systems::transport::contracts::travel_systems::travel_systems",
       "address": "0x740ea95e67b0b7533ee4891524c5c7edfd7fefc09297c0304b21515cc1223ec",
-      "class_hash": "0x2ef12492dd583bcf7ecbdf26a229e1d4a0500f6460afafe3f739b4fe3eac311",
+      "class_hash": "0x1c50063c68bd895328daaeaf169a24a5c1e857a4587bf13398ac8bd59bebfe5",
       "abi": [
         {
           "type": "impl",
@@ -9672,12 +9672,27 @@
           "key": false
         },
         {
-          "name": "order",
+          "name": "controlling_order",
           "type": "u8",
+          "key": false
+        },
+        {
+          "name": "completed",
+          "type": "bool",
+          "key": false
+        },
+        {
+          "name": "completion_cost_id",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "completion_resource_count",
+          "type": "u32",
           "key": false
         }
       ],
-      "class_hash": "0x61bb5546b8a5ed4ac19659818e01e5090500ce9e9d02f21b7c0b4c786d1a44d",
+      "class_hash": "0x5e2f9c8e16c89a647c588e81383c1d0404b928cc904af922f6a06760dda2c5e",
       "abi": [
         {
           "type": "function",
