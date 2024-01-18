@@ -32,6 +32,8 @@ import { PercentageSelection } from "../../../elements/PercentageSelection";
 import { LevelingTable } from "../../cityview/realm/leveling/LevelingPopup";
 import { LevelIndex, useLevel } from "../../../hooks/helpers/useLevel";
 import { getTotalResourceWeight } from "../../cityview/realm/trade/utils";
+import { useCombat } from "../../../hooks/helpers/useCombat";
+import { RaidsPanel } from "../../cityview/realm/combat/raids/RaidsPanel";
 
 type FeedHyperstructurePopupProps = {
   onClose: () => void;
@@ -39,6 +41,10 @@ type FeedHyperstructurePopupProps = {
 };
 
 export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePopupProps) => {
+  const {
+    account: { account },
+  } = useDojo();
+
   const [selectedTab, setSelectedTab] = useState(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -57,11 +63,19 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
   const { useGetPositionCaravans } = useCaravan();
 
   const { caravans } = useGetPositionCaravans(hyperStructurePosition.x, hyperStructurePosition.y);
+  const { useOwnerRaidersOnPosition, useEnemyRaidersOnPosition } = useCombat();
+
+  const enemyRaidersIds = hyperstructureData ? useEnemyRaidersOnPosition(hyperstructureData.position) : [];
+  const myRaidersIds = hyperstructureData
+    ? useOwnerRaidersOnPosition(BigInt(account.address), hyperstructureData.position)
+    : [];
+
+  const raiderIds = [...enemyRaidersIds, ...myRaidersIds];
 
   const tabs = useMemo(
     () => [
       {
-        key: "all",
+        key: "build",
         label: (
           <div
             onMouseEnter={() =>
@@ -90,7 +104,7 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
         ),
       },
       {
-        key: "my",
+        key: "caravans",
         label: (
           <div
             onMouseEnter={() =>
@@ -116,8 +130,31 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
           <></>
         ),
       },
+      {
+        key: "raides",
+        label: (
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Watch incoming raides.</p>
+                    <p className="whitespace-nowrap">Attack or defened hyperstructure on arrival.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex group relative flex-col items-center"
+          >
+            <div>{`Raiders (${enemyRaidersIds.length + myRaidersIds.length})`}</div>
+          </div>
+        ),
+        component: hyperstructureData ? <RaidsPanel raiderIds={raiderIds} /> : <></>,
+      },
     ],
-    [selectedTab, caravans],
+    [selectedTab, caravans, raiderIds],
   );
 
   return (
@@ -242,6 +279,7 @@ const BuildHyperstructurePanel = ({
       systemCalls: { send_resources_to_location },
     },
   } = useDojo();
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const sendResourcesToHyperStructure = async () => {
     setIsLoading(true);
@@ -377,28 +415,6 @@ const BuildHyperstructurePanel = ({
     return totalResources;
   }, [hyperstructureData, realmEntityId]);
 
-  const { getHyperstructureLevelBonus } = useLevel();
-
-  const bonusData = useMemo(() => {
-    if (hyperstructureData) {
-      const foodProdBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.FOOD);
-      const resourceProdBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.RESOURCE);
-      const travelSpeedBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.TRAVEL);
-      const combatBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.COMBAT);
-      return [foodProdBonus, resourceProdBonus, travelSpeedBonus, combatBonus];
-    }
-  }, [hyperstructureData]);
-
-  const [_, newIndex, newBonus] = useMemo(() => {
-    // don't update if click on level_up
-    const newLevel = (hyperstructureData?.level || 0) + 1;
-    let newIndex = newLevel % 4;
-    if (newIndex === 0) newIndex = 4;
-
-    let newBonus = getHyperstructureLevelBonus(newLevel, newIndex);
-    return [newLevel, newIndex, newBonus];
-  }, [hyperstructureData]);
-
   useEffect(() => {
     const feedResourcesGiveAmounts: Record<string, number> = {};
     Object.keys(totalResources).forEach((id) => {
@@ -456,6 +472,68 @@ const BuildHyperstructurePanel = ({
                     ))}
                 </div>
               </div>
+              <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
+                <div className="mb-1 ml-1 italic text-light-pink text-xxs">{"Hyperstructure Watch Tower:"}</div>
+                {hyperstructureData && (
+                  <div className="flex relative justify-between text-xxs text-lightest w-full">
+                    <div className="flex items-center">
+                      <div className="flex items-center h-6 mr-2">
+                        <img src="/images/units/troop-icon.png" className="h-[28px]" />
+                        <div className="flex ml-1 text-center">
+                          <div className="bold mr-1">x{hyperstructureData.watchTowerQuantity}</div>
+                          Raiders
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center">
+                      <div
+                        className="flex items-center h-6 mr-2"
+                        onMouseEnter={() =>
+                          setTooltip({
+                            position: "top",
+                            content: (
+                              <>
+                                <p className="whitespace-nowrap">Attack power</p>
+                              </>
+                            ),
+                          })
+                        }
+                        onMouseLeave={() => setTooltip(null)}
+                      >
+                        <img src="/images/icons/attack.png" className="h-full" />
+                        <div className="flex flex-col ml-1 text-center">
+                          <div className="bold ">{hyperstructureData.attack}</div>
+                        </div>
+                      </div>
+                      <div
+                        className="flex items-center h-6 mr-2"
+                        onMouseEnter={() =>
+                          setTooltip({
+                            position: "top",
+                            content: (
+                              <>
+                                <p className="whitespace-nowrap">Defence power</p>
+                              </>
+                            ),
+                          })
+                        }
+                        onMouseLeave={() => setTooltip(null)}
+                      >
+                        <img src="/images/icons/defence.png" className="h-full" />
+                        <div className="flex flex-col ml-1 text-center">
+                          <div className="bold ">{hyperstructureData.defence}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="text-order-brilliance">
+                        {hyperstructureData.health && hyperstructureData.health.toLocaleString()}
+                      </div>
+                      &nbsp;/ {10 * hyperstructureData.watchTowerQuantity} HP
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             <Headline size="big">
               {"Feed Hyperstructure"}- Step {step}
@@ -464,11 +542,11 @@ const BuildHyperstructurePanel = ({
               {`To level up the Hyperstructure you need to send a caravan with needed resources to the Hyperstructure location.
                You will be able to level up once all resources are sent for this level.`}
             </div>
-            <div className="mx-1">
+            {/* <div className="mx-1">
               {bonusData && (
                 <LevelingTable updateLevel={{ newBonus, index: newIndex }} data={bonusData}></LevelingTable>
               )}
-            </div>
+            </div> */}
             <div className="text-xxs mb-2 italic text-white">{`Click the "Next" button to select a Realm from which you want to spend resources.`}</div>
           </div>
         </>

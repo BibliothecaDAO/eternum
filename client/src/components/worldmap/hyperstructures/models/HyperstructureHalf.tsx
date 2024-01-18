@@ -28,14 +28,14 @@ export default function HyperstructureHalfFinished(
   const { nodes, materials } = useGLTF("/models/hyperstructure3_half-finished_LOW-transformed.glb") as GLTFResult;
   const { hyperstructure } = props;
 
-  const currentLevel = hyperstructure?.level || 0;
+  // const currentLevel = hyperstructure?.level || 0;
   return (
     <group {...props} dispose={null}>
       <group name="Scene">
         <Html position={[0, -1.1, 0]} distanceFactor={10}>
           <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
-            <div> Level {currentLevel}</div>
-            <div> Progress: {hyperstructure?.progress.toFixed(2)}%</div>
+            {/* <div> Level {currentLevel}</div>
+            <div> Progress: {hyperstructure?.progress.toFixed(2)}%</div> */}
           </div>
         </Html>
         <group name="tower_half-finished">

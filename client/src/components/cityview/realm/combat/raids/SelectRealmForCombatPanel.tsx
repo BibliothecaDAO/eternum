@@ -13,6 +13,7 @@ import { OrderIcon } from "../../../../../elements/OrderIcon";
 import { useCombat } from "../../../../../hooks/helpers/useCombat";
 import { useLevel } from "../../../../../hooks/helpers/useLevel";
 import { useRealm } from "../../../../../hooks/helpers/useRealm";
+import { useHyperstructure } from "../../../../../hooks/helpers/useHyperstructure";
 
 export const SelectRealmForCombatPanel = ({
   selectedEntityId,
@@ -263,3 +264,146 @@ export function sortRealms(realms: SelectableRealmInterface[], activeSort: SortI
     return sortedRealms.sort((a, b) => Number(b.realmId - a.realmId));
   }
 }
+
+export const SelectHyperstructureForCombat = ({
+  selectedEntityId,
+  setSelectedEntityId,
+  setCanAttack,
+}: {
+  selectedEntityId: bigint | undefined;
+  setSelectedEntityId: (selectedEntityId: bigint) => void;
+  setCanAttack: (canAttack: boolean) => void;
+}) => {
+  const [nameFilter, setNameFilter] = useState("");
+  // const [originalRealms, setOriginalRealms] = useState<SelectableRealmInterface[]>([]);
+  // const [sortedRealms, setSortedRealms] = useState<SelectableRealmInterface[]>([]);
+  // const deferredNameFilter = useDeferredValue(nameFilter);
+
+  const { calculateDistance } = useCaravan();
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+
+  const sortingParams = useMemo(() => {
+    return [
+      { label: "Order", sortKey: "order" },
+      { label: "Hyperstructure", sortKey: "name", className: "ml-4 mr-4" },
+      { label: "Distance", sortKey: "distance", className: "ml-auto" },
+      { label: "Completed", sortKey: "completed", className: "ml-auto" },
+      { label: "Progress", sortKey: "progress", className: "ml-auto" },
+      { label: "🗡️", sortKey: "attack", className: "ml-auto" },
+      { label: "🛡️", sortKey: "defence", className: "ml-auto" },
+      { label: "🩸", sortKey: "health", className: "ml-auto" },
+    ];
+  }, []);
+
+  const [activeSort, setActiveSort] = useState<SortInterface>({
+    sortKey: "number",
+    sort: "none",
+  });
+
+  const { getHyperstructures } = useHyperstructure();
+
+  const hyperstructures = useMemo(() => {
+    return getHyperstructures();
+  }, []);
+
+  // useEffect(() => {
+  //   const sorted = sortRealms(originalRealms, activeSort);
+  //   if (nameFilter.length > 0) {
+  //     const filtered = sorted.filter(
+  //       (realm) =>
+  //         realm.name.toLowerCase().includes(deferredNameFilter.toLowerCase()) ||
+  //         realm.realmId.toString().includes(deferredNameFilter),
+  //     );
+  //     setSortedRealms(filtered);
+  //     return;
+  //   }
+  //   setSortedRealms(sorted);
+  // }, [originalRealms, activeSort, deferredNameFilter]);
+
+  return (
+    <div className="flex flex-col p-1 rounded border-gold border w-full">
+      {realmEntityId.toString() && (
+        <div className="flex flex-col">
+          <TextInput
+            className="border border-gold mx-1 !w-auto !text-light-pink"
+            placeholder="Search by ID or name"
+            value={nameFilter}
+            onChange={setNameFilter}
+          />
+          <SortPanel className="px-2 py-2 border-b-0">
+            {sortingParams.map(({ label, sortKey, className }) => (
+              <SortButton
+                className={className}
+                key={sortKey}
+                label={label}
+                sortKey={sortKey}
+                activeSort={activeSort}
+                onChange={(_sortKey, _sort) => {
+                  setActiveSort({
+                    sortKey: _sortKey,
+                    sort: _sort,
+                  });
+                }}
+              />
+            ))}
+          </SortPanel>
+          <div className="flex flex-col px-1 mb-1 space-y-2 max-h-40 overflow-y-auto">
+            {hyperstructures.map(
+              (
+                {
+                  orderId: order,
+                  name,
+                  defence,
+                  completed,
+                  attack,
+                  hyperstructureId,
+                  health,
+                  watchTowerQuantity,
+                  progress,
+                },
+                i,
+              ) => {
+                const distance = calculateDistance(realmEntityId, hyperstructureId);
+                return (
+                  <div
+                    key={i}
+                    className={`flex cursor-pointer flex-col p-2 bg-black border border-transparent transition-all duration-200 rounded-md ${
+                      selectedEntityId === hyperstructureId ? "!border-order-brilliance" : ""
+                    } text-xxs text-gold`}
+                    onClick={() => {
+                      if (selectedEntityId !== hyperstructureId) {
+                        setCanAttack(true);
+                        setSelectedEntityId(hyperstructureId);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center justify-between text-xxs">
+                      <div className="flex-none mr-10">
+                        <OrderIcon order={getOrderName(order)} size="xs" />
+                      </div>
+                      <div className="flex-none w-20">{name}</div>
+
+                      <div className="flex-none text-left w-10">{`${distance?.toFixed(0)} km`}</div>
+
+                      <div className="flex-none w-20 text-left">{completed}</div>
+
+                      <div className="flex-grow text-right">{progress}</div>
+
+                      <div className="flex-grow text-right">{attack}</div>
+
+                      <div className="flex-none w-16 text-right">{defence}</div>
+
+                      <div className="flex-none w-16 text-right">
+                        {health}/{watchTowerQuantity * 10}
+                      </div>
+                    </div>
+                  </div>
+                );
+              },
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

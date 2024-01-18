@@ -4,6 +4,9 @@ import { Position, UIPosition } from "@bibliothecadao/eternum";
 import { getContractPositionFromRealPosition, getEntityIdFromKeys } from "../../utils/utils";
 import { useLevel } from "./useLevel";
 import { HyperStructureInterface, getHyperstructureResources } from "@bibliothecadao/eternum";
+import hyperStructures from "../../data/hyperstructures.json";
+import { useCombat } from "./useCombat";
+import { resources } from "@bibliothecadao/eternum";
 
 export const useHyperstructure = () => {
   const {
@@ -12,7 +15,7 @@ export const useHyperstructure = () => {
     },
   } = useDojo();
 
-  const { getEntityLevel } = useLevel();
+  const { getEntityWatchTowerId, getEntitiesCombatInfo } = useCombat();
 
   const getHyperstructure = (uiPosition: UIPosition): HyperStructureInterface | undefined => {
     const { x, y } = getContractPositionFromRealPosition({ x: uiPosition.x, y: uiPosition.z });
@@ -20,17 +23,21 @@ export const useHyperstructure = () => {
 
     if (entityIds.size > 0) {
       let id = Array.from(entityIds)[0];
-      let hyperstructureId = getComponentValue(HyperStructure, id)!.entity_id;
-      const level = getEntityLevel(hyperstructureId);
+      let hyperstructure = getComponentValue(HyperStructure, id);
 
-      let hyperstructure = getComponentValue(HyperStructure, getEntityIdFromKeys([hyperstructureId]));
-
-      if (hyperstructure) {
+      if (hyperstructure !== undefined) {
+        const hyperstructureId = hyperstructure.entity_id;
         let hyperstructureResources: { resourceId: number; currentAmount: number; completeAmount: number }[] = [];
-        getHyperstructureResources(level?.level || 0).forEach((resource) => {
+        // getHyperstructureResources().forEach((resource) => {
+        [
+          { resourceId: 1, amount: 1000 },
+          { resourceId: 2, amount: 1000 },
+          { resourceId: 254, amount: 1000 },
+          { resourceId: 255, amount: 1000 },
+        ].forEach((resource) => {
           let hyperstructureResource = getComponentValue(
             Resource,
-            getEntityIdFromKeys([hyperstructureId, BigInt(resource.resourceId)]),
+            getEntityIdFromKeys([BigInt(hyperstructureId), BigInt(resource.resourceId)]),
           );
           hyperstructureResources.push({
             resourceId: resource.resourceId,
@@ -48,16 +55,43 @@ export const useHyperstructure = () => {
         });
         let progress = (totCurrentAmount / totCompleteAmount) * 100;
 
+        let watchTowerId = getEntityWatchTowerId(hyperstructureId);
+        let combatInfo = watchTowerId ? getEntitiesCombatInfo([watchTowerId]) : undefined;
+
+        let defence = 0;
+        let attack = 0;
+        let health = 0;
+        let watchTowerQuantity = 0;
+
+        if (combatInfo?.length === 1) {
+          defence = combatInfo[0].defence;
+          attack = combatInfo[0].attack;
+          health = combatInfo[0].health;
+          watchTowerQuantity = combatInfo[0].quantity;
+        }
+
+        const name = hyperstructureResources
+          .filter((resourceCost) => ![254, 255].includes(resourceCost.resourceId))
+          .reduce(
+            (acc, resourceCost) =>
+              acc + resources.find((resource) => resourceCost.resourceId === resource.id)?.trait || "-",
+            "",
+          );
+
         return {
           hyperstructureId,
           orderId: hyperstructure.order,
+          name,
           progress,
           hyperstructureResources,
           position: { x, y },
           uiPosition,
           // completed means max level
-          completed: level?.level === 4,
-          level: level?.level || 0,
+          completed: hyperstructure.completed,
+          defence,
+          attack,
+          health,
+          watchTowerQuantity,
         };
       }
     }
@@ -90,11 +124,30 @@ export const useHyperstructure = () => {
     }
   };
 
+  const getConqueredHyperstructures = (orderId: number): HyperStructureInterface[] => {
+    return hyperStructures
+      .map((uiPosition) => {
+        return getHyperstructure(uiPosition);
+      })
+      .filter((hyperstructure) => hyperstructure?.completed && hyperstructure.orderId === orderId)
+      .filter(Boolean) as HyperStructureInterface[];
+  };
+
+  const getHyperstructures = (): HyperStructureInterface[] => {
+    return hyperStructures
+      .map((uiPosition) => {
+        return getHyperstructure(uiPosition);
+      })
+      .filter(Boolean) as HyperStructureInterface[];
+  };
+
   return {
     getHyperstructure,
+    getHyperstructures,
     getHyperstructureIds,
     getHyperstructureIdByRealmEntityId,
     getHyperstructureIdByOrder,
     getHyperstructureEntityId,
+    getConqueredHyperstructures,
   };
 };

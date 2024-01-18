@@ -33,9 +33,10 @@ export interface CombatInfo {
   position?: Position | undefined;
   homePosition?: Position | undefined;
   entityOwnerId?: bigint | undefined;
+  owner?: bigint | undefined;
   locationRealmEntityId?: bigint | undefined;
   originRealmId?: bigint | undefined;
-  hyperstructureId: bigint | undefined;
+  order: number;
 }
 
 /// TRADING
@@ -175,6 +176,7 @@ export interface UIPosition {
 /// HYPESTRUCTURE
 export interface HyperStructureInterface {
   hyperstructureId: bigint;
+  name: string;
   orderId: number;
   progress: number;
   hyperstructureResources: {
@@ -185,5 +187,8 @@ export interface HyperStructureInterface {
   completed: boolean;
   position: Position;
   uiPosition: UIPosition;
-  level: number;
+  defence: number;
+  attack: number;
+  health: number;
+  watchTowerQuantity: number;
 }

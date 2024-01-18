@@ -55,6 +55,10 @@ export const HyperstructuresListComponent = ({ showOnlyPlayerOrder = false }: Hy
                 hyperstructure={hyperstructure}
                 order={i + 1}
                 coords={hyperstructure?.uiPosition as any}
+                onFeed={() => {
+                  moveCameraToTarget(hyperstructures[i]?.uiPosition as any);
+                  setShowFeedPopup(true);
+                }}
               />
             ),
           )}

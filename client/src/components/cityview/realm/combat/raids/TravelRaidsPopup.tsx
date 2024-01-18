@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
+import { Tabs } from "../../../../../elements/tab";
 import Button from "../../../../../elements/Button";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../DojoContext";
@@ -8,6 +9,7 @@ import { getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import { SelectRealmForCombatPanel } from "./SelectRealmForCombatPanel";
 import { CombatInfo } from "@bibliothecadao/eternum";
+import { useLocation } from "wouter";
 
 type TravelRaidsPopupProps = {
   selectedRaider: CombatInfo;
@@ -23,6 +25,7 @@ export const TravelRaidsPopup = ({ selectedRaider, onClose }: TravelRaidsPopupPr
     account: { account },
   } = useDojo();
 
+  const [selectedTab, setSelectedTab] = useState(0);
   const [selectedEntityId, setSelectedEntityId] = useState<bigint | undefined>();
   const [canAttack, setCanAttack] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -50,6 +53,34 @@ export const TravelRaidsPopup = ({ selectedRaider, onClose }: TravelRaidsPopupPr
     }
   };
 
+  const tabs = useMemo(
+    () => [
+      {
+        key: "realms",
+        label: <div>Realms</div>,
+        component: (
+          <SelectRealmForCombatPanel
+            selectedEntityId={selectedEntityId}
+            setSelectedEntityId={setSelectedEntityId}
+            setCanAttack={setCanAttack}
+          ></SelectRealmForCombatPanel>
+        ),
+      },
+      {
+        key: "hyprestructures",
+        label: <div>Hyperstructures</div>,
+        component: (
+          <SelectRealmForCombatPanel
+            selectedEntityId={selectedEntityId}
+            setSelectedEntityId={setSelectedEntityId}
+            setCanAttack={setCanAttack}
+          ></SelectRealmForCombatPanel>
+        ),
+      },
+    ],
+    [selectedTab],
+  );
+
   return (
     <SecondaryPopup>
       <SecondaryPopup.Head onClose={onClose}>
@@ -59,11 +90,23 @@ export const TravelRaidsPopup = ({ selectedRaider, onClose }: TravelRaidsPopupPr
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"450px"}>
         <div className="flex flex-col items-center p-2">
-          <SelectRealmForCombatPanel
-            selectedEntityId={selectedEntityId}
-            setSelectedEntityId={setSelectedEntityId}
-            setCanAttack={setCanAttack}
-          ></SelectRealmForCombatPanel>
+          <Tabs
+            selectedIndex={selectedTab}
+            onChange={(index: any) => setSelectedTab(index)}
+            variant="default"
+            className="h-full"
+          >
+            <Tabs.List>
+              {tabs.map((tab, index) => (
+                <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+              ))}
+            </Tabs.List>
+            <Tabs.Panels className="overflow-hidden">
+              {tabs.map((tab, index) => (
+                <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+              ))}
+            </Tabs.Panels>
+          </Tabs>
           <div className="flex mt-2 flex-col items-center justify-center">
             <div className="flex">
               {!loading && (

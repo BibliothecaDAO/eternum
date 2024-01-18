@@ -17,6 +17,7 @@ import { CombatInfo, Resource, findResourceById, resources } from "@bibliothecad
 import { getRealmIdByPosition, getRealmNameById } from "../../../../../utils/realms";
 import { SmallResource } from "../../SmallResource";
 import { LevelIndex, useLevel } from "../../../../../hooks/helpers/useLevel";
+import { useHyperstructure } from "../../../../../hooks/helpers/useHyperstructure";
 // import { ReactComponent as Equation } from "../../../../../assets/icons/formula/equation.svg";
 
 type AttackRaidsPopupProps = {
@@ -474,6 +475,7 @@ const SelectRaidersPanel = ({
   const { realmEntityId, hyperstructureId } = useRealmStore();
 
   const { getEntityLevel, getRealmLevelBonus } = useLevel();
+  const { getConqueredHyperstructures } = useHyperstructure();
 
   const [attackerTotalAttack, attackerTotalHealth] = useMemo(() => {
     // sum attack of the list
@@ -484,6 +486,8 @@ const SelectRaidersPanel = ({
     ];
   }, [selectedRaiders]);
 
+  const hasWatchTower = watchTower && watchTower.health > 0;
+
   const [attackerLevelBonus, attackerHyperstructureLevelBonus] = useMemo(() => {
     let level = getEntityLevel(realmEntityId)?.level || 0;
     let hyperstructureLevel = hyperstructureId ? getEntityLevel(hyperstructureId)?.level || 0 : 0;
@@ -492,19 +496,24 @@ const SelectRaidersPanel = ({
     return [levelBonus, hyperstructureLevelBonus];
   }, [realmEntityId]);
 
+  const conqueredHyperstructures = useMemo(() => {
+    if (watchTower) {
+      return getConqueredHyperstructures(watchTower.order).length;
+    } else {
+      return 0;
+    }
+  }, []);
+
   const [defenderLevelBonus, defenderHyperstructureLevelBonus] = useMemo(() => {
     if (watchTower) {
       let level = watchTower.entityOwnerId ? getEntityLevel(watchTower.entityOwnerId)?.level || 0 : 0;
-      let hyperstructureLevel = watchTower.hyperstructureId
-        ? getEntityLevel(watchTower.hyperstructureId)?.level || 0
-        : 0;
       let levelBonus = getRealmLevelBonus(level, LevelIndex.COMBAT);
-      let hyperstructureLevelBonus = getRealmLevelBonus(hyperstructureLevel, LevelIndex.COMBAT);
+      let hyperstructureLevelBonus = conqueredHyperstructures * 25 + 100;
       return [levelBonus, hyperstructureLevelBonus];
     } else {
       return [100, 100];
     }
-  }, [watchTower]);
+  }, [watchTower, conqueredHyperstructures]);
 
   const succesProb = useMemo(() => {
     return calculateSuccess(
@@ -564,9 +573,9 @@ const SelectRaidersPanel = ({
     <>
       <div className="flex flex-col items-center w-full">
         <div className="p-2 rounded border border-gold w-full flex flex-col">
-          {watchTower ? (
+          {hasWatchTower ? (
             <Defence
-              hyperstructureLevelBonus={defenderHyperstructureLevelBonus}
+              conqueredHyperstructures={conqueredHyperstructures}
               levelBonus={defenderLevelBonus}
               watchTower={watchTower}
             ></Defence>
@@ -610,7 +619,7 @@ const SelectRaidersPanel = ({
                   </div>
                 )}
               </div>
-              {watchTower && (
+              {hasWatchTower && (
                 <div>
                   <Button
                     className="w-full text-xxs h-[18px]"

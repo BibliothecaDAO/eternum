@@ -473,11 +473,16 @@ export function defineContractComponents(world: World) {
     HyperStructure: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.BigInt, hyperstructure_type: RecsType.Number, order: RecsType.Number },
+        {
+          entity_id: RecsType.BigInt,
+          hyperstructure_type: RecsType.Number,
+          order: RecsType.Number,
+          completed: RecsType.Boolean,
+        },
         {
           metadata: {
             name: "HyperStructure",
-            types: ["u128", "u8", "u8"],
+            types: ["u128", "u8", "u8", "bool"],
             customTypes: [],
           },
         },

@@ -10,9 +10,11 @@ import { TravelRaidsPopup } from "./TravelRaidsPopup";
 import { HealPopup } from "../HealPopup";
 import { CombatInfo } from "@bibliothecadao/eternum";
 
-type RaidsPanelProps = {};
+type RaidsPanelProps = {
+  raiderIds: bigint[];
+};
 
-export const RaidsPanel = ({}: RaidsPanelProps) => {
+export const RaidsPanel = ({ raiderIds }: RaidsPanelProps) => {
   const [showBuildRaiders, setShowBuildRaiders] = useState(false);
   const [selectedRaider, setSelectedRaider] = useState<CombatInfo | null>(null);
 
@@ -21,14 +23,11 @@ export const RaidsPanel = ({}: RaidsPanelProps) => {
   const [showManageRaid, setShowManageRaid] = useState(false);
   const [showHealRaid, setShowHealRaid] = useState(false);
 
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
-
-  const { useRealmRaiders, getEntitiesCombatInfo } = useCombat();
-  const entities = useRealmRaiders(realmEntityId);
+  const { getEntitiesCombatInfo } = useCombat();
 
   const raiders = useMemo(() => {
-    return getEntitiesCombatInfo(entities);
-  }, [entities]);
+    return getEntitiesCombatInfo(raiderIds);
+  }, [raiderIds]);
 
   const onClose = () => {
     setShowBuildRaiders(false);

@@ -54,35 +54,30 @@ export const WorldMapScene = () => {
         </mesh>
       </TransformControls> */}
       <WorldMap ref={worldRef} />
-      <HyperstructureStarted />
-      {/* {hyperstructures.map((hyperstructure, i) => {
+      {/* <HyperstructureStarted /> */}
+      {hyperstructures.map((hyperstructure, i) => {
         if (hyperstructure) {
-          if (hyperstructure.level >= 3) {
+          if (hyperstructure.completed) {
             return (
               <HyperstructureFinished
                 key={i}
                 position={[hyperstructure.uiPosition.x, hyperstructure.uiPosition.y, hyperstructure.uiPosition.z]}
               />
             );
-          } else if (hyperstructure.level == 2) {
+          } else if (hyperstructure.progress > 50) {
             return (
-              <></>
-              // <HyperstructureHalf
-              //   key={i}
-              //   hyperstructure={hyperstructure}
-              //   position={[hyperstructure.uiPosition.x, hyperstructure.uiPosition.y, hyperstructure.uiPosition.z]}
-              // />
-            );
-          } else {
-            return (
-              <HyperstructureStarted
-
+              <HyperstructureHalf
+                key={i}
+                hyperstructure={hyperstructure}
+                position={[hyperstructure.uiPosition.x, hyperstructure.uiPosition.y, hyperstructure.uiPosition.z]}
               />
             );
+          } else {
+            return <HyperstructureStarted />;
           }
         }
         return null;
-      })} */}
+      })}
       {/* {banks.map((bank, i) => {
         return <Bank key={i} position={[bank.x, bank.y, bank.z]} />;
       })} */}

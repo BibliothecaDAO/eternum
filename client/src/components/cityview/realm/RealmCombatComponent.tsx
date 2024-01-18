@@ -6,16 +6,20 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import { RaidsPanel } from "./combat/raids/RaidsPanel";
 import { DefencePanel } from "./combat/defence/DefencePanel";
 import { useLevel } from "../../../hooks/helpers/useLevel";
+import { useCombat } from "../../../hooks/helpers/useCombat";
 
 type RealmCombatComponentProps = {};
 
 export const RealmCombatComponent = ({}: RealmCombatComponentProps) => {
   const [selectedTab, setSelectedTab] = useState(1);
   const { realmEntityId } = useRealmStore();
+  const { useRealmRaiders } = useCombat();
 
   const moveCameraToMarketView = useUIStore((state) => state.moveCameraToMarketView);
   const moveCameraToCaravansView = useUIStore((state) => state.moveCameraToCaravansView);
   const setTooltip = useUIStore((state) => state.setTooltip);
+
+  const raiderIds = useRealmRaiders(realmEntityId);
 
   // @ts-ignore
   const [location, setLocation] = useLocation();
@@ -59,7 +63,7 @@ export const RealmCombatComponent = ({}: RealmCombatComponentProps) => {
             <div>Raiders</div>
           </div>
         ),
-        component: <RaidsPanel />,
+        component: <RaidsPanel raiderIds={raiderIds} />,
       },
       {
         key: "defence",
@@ -84,7 +88,7 @@ export const RealmCombatComponent = ({}: RealmCombatComponentProps) => {
         component: <DefencePanel />,
       },
     ],
-    [selectedTab],
+    [selectedTab, raiderIds],
   );
 
   const { getEntityLevel } = useLevel();
