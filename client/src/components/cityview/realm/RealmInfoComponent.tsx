@@ -187,7 +187,7 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
       <div className="flex space-x-2 mt-1 items-center px-4">
         <div
           className={clsx(
-            "relative rounded-md bg-dark-green-accent text-xs text-order-brilliance px-2 py-1",
+            "relative rounded-md bg-dark-green-accent text-xs text-order-brilliance px-2 py-1 hover:opacity-70 opacity-100 !transition-all",
             canLevelUp && "text-transparent bg-transparent",
           )}
           onClick={() => setShowRealmLevelUp(true)}
