@@ -20,3 +20,4 @@ mod combat;
 mod level;
 mod name;
 mod bank;
+mod order;
