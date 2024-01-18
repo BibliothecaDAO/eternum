@@ -16,7 +16,7 @@ mod hyperstructure_systems {
     #[external(v0)]
     impl HyperstructureSystemsImpl of IHyperstructureSystems<ContractState> {
 
-        fn build(
+        fn control(
             self: @ContractState, world: IWorldDispatcher, hyperstructure_id: ID, order_id: u8
         ) {
 

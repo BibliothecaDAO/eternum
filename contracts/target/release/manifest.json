@@ -2207,7 +2207,7 @@
     {
       "name": "eternum::systems::hyperstructure::contracts::hyperstructure_systems",
       "address": null,
-      "class_hash": "0x2f4b59c3e88b84ca3a2b488acfac8a8444a2d03755d6eec24c7ae2e07ef073e",
+      "class_hash": "0x45512bfada679482cd6fb00045df968a08d5781bad84f42f398ebbd5d5559c9",
       "abi": [
         {
           "type": "impl",
@@ -2252,7 +2252,7 @@
           "items": [
             {
               "type": "function",
-              "name": "build",
+              "name": "control",
               "inputs": [
                 {
                   "name": "world",
