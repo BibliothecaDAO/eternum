@@ -2,6 +2,7 @@
 mod config_systems {
     use eternum::alias::ID;
 
+    use eternum::models::combat::TownWatch;
     use eternum::models::labor_auction::LaborAuction;
     use eternum::models::bank::{Bank, BankSwapResourceCost, BankAuction};
     use eternum::models::config::{
@@ -608,28 +609,61 @@ mod config_systems {
             world: IWorldDispatcher,
             hyperstructure_type: u8,
             coord: Coord,
-            order: u8,
+            completion_cost: Span<(u8, u128)>,
         ) -> ID {
 
             assert_caller_is_admin(world); 
 
             let hyperstructure_id: ID = world.uuid().into();
+            let hyperstructure_town_watch_id = world.uuid().into();
+
+            let completion_cost_id: ID = world.uuid().into();
+            let completion_resource_count = completion_cost.len();
+            let mut completion_cost = completion_cost;
+            let mut index = 0;
+            loop {
+                match completion_cost.pop_front() {
+                    Option::Some((resource_type, resource_amount)) => {
+                        assert(*resource_amount > 0, 'amount must not be 0');
+
+                        set!(world, (
+                            ResourceCost {
+                                entity_id: completion_cost_id,
+                                index,
+                                resource_type: *resource_type,
+                                amount: *resource_amount
+                            }
+                        ));
+
+                        index += 1;
+                    },
+                    Option::None => {break;}
+                };
+            };
+
 
             set!(world, (
                 HyperStructure {
                     entity_id: hyperstructure_id,
                     hyperstructure_type,
-                    order,
+                    controlling_order: 0,
+                    completed: false,
+                    completion_cost_id,
+                    completion_resource_count
                 },
                 Position {
                     entity_id: hyperstructure_id,
                     x: coord.x,
                     y: coord.y
+                },
+                TownWatch {
+                    entity_id: hyperstructure_id,
+                    town_watch_id: hyperstructure_town_watch_id,
                 }
             ));  
 
-            hyperstructure_id 
-                
+
+            hyperstructure_id
         }
 
     }

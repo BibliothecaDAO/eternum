@@ -900,10 +900,13 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
     let hyperstructure_id = get!(world, maker_id, Realm).order_hyperstructure_id; 
 
     set!(world, (
-        HyperStructure {
+        HyperStructure { 
             entity_id: hyperstructure_id,
-            hyperstructure_type: 1, 
-            order: 0
+            hyperstructure_type: 0,
+            controlling_order: 0,
+            completed: false,
+            completion_cost_id: 0,
+            completion_resource_count: 0
         },
         Level {
             entity_id: hyperstructure_id,

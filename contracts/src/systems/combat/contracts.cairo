@@ -367,17 +367,17 @@ mod combat_systems {
 
             assert(units.len() > 0, 'need at least one unit');
 
-            // ensure caller owns unit
+            // // ensure caller owns unit
             let caller = starknet::get_caller_address();
-            let merge_into_unit_owner = get!(world, merge_into_unit_id, Owner);
-            assert(merge_into_unit_owner.address == caller, 'not unit owner');
+            // let merge_into_unit_owner = get!(world, merge_into_unit_id, Owner);
+            // assert(merge_into_unit_owner.address == caller, 'not unit owner');
  
 
             // check that entity owner is a realm
-            let merge_into_unit_entity_owner = get!(world, merge_into_unit_id, EntityOwner);
-            let merge_into_unit_realm 
-                = get!(world, merge_into_unit_entity_owner.entity_owner_id, Realm);
-            assert(merge_into_unit_realm.realm_id != 0, 'not owned by realm');
+            // let merge_into_unit_entity_owner = get!(world, merge_into_unit_id, EntityOwner);
+            // let merge_into_unit_realm 
+            //     = get!(world, merge_into_unit_entity_owner.entity_owner_id, Realm);
+            // assert(merge_into_unit_realm.realm_id != 0, 'not owned by realm');
 
 
             // ensure unit is not blocked
@@ -415,16 +415,16 @@ mod combat_systems {
                 
                 assert(amount > 0, 'invalid amount');
 
+                // ensure all units are owned by same realm
                 let unit_owner = get!(world, unit_id, Owner);
                 assert(unit_owner.address == caller, 'not unit owner');
 
-                // ensure all units are owned by same realm
-                let unit_entity_owner = get!(world, unit_id, EntityOwner);
-                assert(
-                    unit_entity_owner.entity_owner_id 
-                        == merge_into_unit_entity_owner.entity_owner_id,
-                            'not same entity owner'
-                );
+                // let unit_entity_owner = get!(world, unit_id, EntityOwner);
+                // assert(
+                //     unit_entity_owner.entity_owner_id 
+                //         == merge_into_unit_entity_owner.entity_owner_id,
+                //             'not same entity owner'
+                // );
 
 
                 let mut unit_quantity = get!(world, unit_id, Quantity);
@@ -515,15 +515,15 @@ mod combat_systems {
 
             let caller = starknet::get_caller_address();
 
-            let unit_owner = get!(world, unit_id, Owner);
-            assert(unit_owner.address == caller, 'not unit owner');
+            // let unit_owner = get!(world, unit_id, Owner);
+            // assert(unit_owner.address == caller, 'not unit owner');
 
-            let unit_realm_entity_id = get!(world, unit_id, EntityOwner).entity_owner_id;
-            assert(unit_realm_entity_id != 0, 'invalid unit id');
+            // let unit_realm_entity_id = get!(world, unit_id, EntityOwner).entity_owner_id;
+            // assert(unit_realm_entity_id != 0, 'invalid unit id');
 
             // check that entity owner is a realm
-            let realm = get!(world, unit_realm_entity_id, Realm);
-            assert(realm.realm_id != 0, 'not a realm');
+            // let realm = get!(world, unit_realm_entity_id, Realm);
+            // assert(realm.realm_id != 0, 'not a realm');
 
             let mut unit_health = get!(world, unit_id, Health);
             let unit_quantity = get!(world, unit_id, Quantity);
