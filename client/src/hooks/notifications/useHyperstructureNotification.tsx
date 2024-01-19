@@ -2,7 +2,7 @@ import { ReactComponent as Checkmark } from "../../assets/icons/common/checkmark
 import { OrderIcon } from "../../elements/OrderIcon";
 import { Badge } from "../../elements/Badge";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
-import { divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
+import { divideByPrecision, getEntityIdFromKeys, getUIPositionFromContractPosition } from "../../utils/utils";
 import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
@@ -17,6 +17,8 @@ import Button from "../../elements/Button";
 import { useState } from "react";
 import useUIStore from "../store/useUIStore";
 import { useHyperstructure } from "../helpers/useHyperstructure";
+import { useRefreshHyperstructure } from "../store/useRefreshHyperstructure";
+import { HyperStructureInterface } from "@bibliothecadao/eternum";
 
 export const useCaravanHasArrivedAtHyperstructureNotification = (
   notification: NotificationType,
@@ -34,8 +36,6 @@ export const useCaravanHasArrivedAtHyperstructureNotification = (
     },
   } = useDojo();
 
-  const hyperstructures = useUIStore((state) => state.hyperstructures);
-  const setHyperstructures = useUIStore((state) => state.setHyperstructures);
   const { getHyperstructure } = useHyperstructure();
 
   const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
@@ -46,9 +46,11 @@ export const useCaravanHasArrivedAtHyperstructureNotification = (
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
+  const { refreshHyperstructure } = useRefreshHyperstructure();
+
   const time = nextBlockTimestamp?.toString() || "";
 
-  const { realm_id, order } = getComponentValue(Realm, getEntityIdFromKeys([BigInt(data.realmEntityId)])) || {};
+  const { realm_id } = getComponentValue(Realm, getEntityIdFromKeys([BigInt(data.realmEntityId)])) || {};
   const realmOrderName = realm_id ? getRealmOrderNameById(realm_id) : "";
   const realmName = realm_id ? getRealmNameById(realm_id) : "";
 
@@ -65,20 +67,16 @@ export const useCaravanHasArrivedAtHyperstructureNotification = (
     deleteNotification([data.caravanId.toString()], EventType.ArrivedAtHyperstructure);
   };
 
-  const hyperstructure = order ? hyperstructures[order - 1] : undefined;
-
-  const updateHyperStructure = () => {
-    if (hyperstructure) {
-      const newHyperstructure = getHyperstructure(hyperstructure.uiPosition);
-      hyperstructures[hyperstructure.orderId - 1] = newHyperstructure;
-      setHyperstructures([...hyperstructures]);
+  const updateHyperStructure = (hyperstructureId: bigint | undefined) => {
+    if (hyperstructureId) {
+      refreshHyperstructure(hyperstructureId);
     }
   };
 
   const onTransfer = async () => {
     setIsLoading(true);
     await transferAndReturn();
-    updateHyperStructure();
+    updateHyperStructure(data.hyperstructureId);
     setIsLoading(false);
   };
 

@@ -362,3 +362,17 @@ export function addressToNumber(address: string) {
   // Map the sum to a number between 1 and 10
   return (sum % 5) + 1;
 }
+
+export const calculateDistance = (start: Position, destination: Position): number => {
+  const x: number =
+    start.x > destination.x ? Math.pow(start.x - destination.x, 2) : Math.pow(destination.x - start.x, 2);
+
+  const y: number =
+    start.y > destination.y ? Math.pow(start.y - destination.y, 2) : Math.pow(destination.y - start.y, 2);
+
+  // Using bitwise shift for the square root approximation for BigInt.
+  // we store coords in x * 10000 to get precise distance
+  const distance = (x + y) ** 0.5 / 10000;
+
+  return distance;
+};

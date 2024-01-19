@@ -158,9 +158,12 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
         HyperStructure { 
                 entity_id: order_hyperstructure_id,
                 hyperstructure_type: 1,
-                order: 1,
+                controlling_order: 1,
+                completed: false,
+                completion_cost_id: 0,
+                completion_resource_count: 0
         }
-    ));
+    )); 
 
 
     // create attacker's realm

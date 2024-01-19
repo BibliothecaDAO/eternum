@@ -40,7 +40,7 @@ export const EnemyRaid = ({ raider, ...props }: EnemyRaidProps) => {
           </div>
         )}
         <div className="flex items-center ml-1 -mt-2">
-          {isTraveling.toString() && originRealmId?.toString() && (
+          {isTraveling && originRealmId?.toString() && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Traveling from</span>
               <div className="flex items-center ml-1 mr-1 text-gold">

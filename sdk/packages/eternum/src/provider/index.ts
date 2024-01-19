@@ -23,7 +23,8 @@ import {
   AttackProps,
   StealProps,
   LevelUpRealmProps,
-  LevelUpHyperstructureProps,
+  ControlHyperstructureProps,
+  CompleteHyperstructureProps,
   SetAddressNameProps,
   MergeSoldiersProps,
   CreateAndMergeSoldiersProps,
@@ -650,11 +651,23 @@ export class EternumProvider extends DojoProvider {
     });
   }
 
-  public async level_up_hyperstructure(props: LevelUpHyperstructureProps) {
+  public async control_hyperstructure(props: ControlHyperstructureProps) {
+    const { hyperstructure_id, order_id, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
+      entrypoint: "control",
+      calldata: [this.getWorldAddress(), hyperstructure_id, order_id],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async complete_hyperstructure(props: CompleteHyperstructureProps) {
     const { hyperstructure_id, signer } = props;
     const tx = await this.executeMulti(signer, {
-      contractAddress: getContractByName(this.manifest, "leveling_systems"),
-      entrypoint: "level_up_hyperstructure",
+      contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
+      entrypoint: "complete",
       calldata: [this.getWorldAddress(), hyperstructure_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {

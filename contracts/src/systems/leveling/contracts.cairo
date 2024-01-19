@@ -44,7 +44,7 @@ mod leveling_systems {
             hyperstructure_id: ID,
         ){
             let mut hyperstructure = get!(world, hyperstructure_id, HyperStructure);
-            assert(hyperstructure.order != 0, 'does not exist');
+            assert(hyperstructure.controlling_order != 0, 'does not exist');
 
             // todo burn resources
 

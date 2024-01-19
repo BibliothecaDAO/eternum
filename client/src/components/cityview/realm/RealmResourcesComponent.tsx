@@ -100,8 +100,9 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId, class
     },
   } = useDojo();
 
-  let { realmEntityId, hyperstructureId } = useRealmStore();
+  let { realmEntityId } = useRealmStore();
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const conqueredHyperstructureNumber = useUIStore((state) => state.conqueredHyperstructureNumber);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const [productivity, setProductivity] = useState<number>(0);
@@ -113,13 +114,8 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId, class
   const level = getEntityLevel(realmEntityId)?.level || 0;
   // get harvest bonuses
   const [levelBonus, hyperstructureLevelBonus] = useMemo(() => {
-    const hyperstructureLevel = hyperstructureId ? getEntityLevel(hyperstructureId)?.level || 0 : 0;
     const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
-    const hyperstructureLevelBonus = getHyperstructureLevelBonus(
-      hyperstructureLevel,
-      isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE,
-    );
-    return [levelBonus, hyperstructureLevelBonus];
+    return [levelBonus, conqueredHyperstructureNumber * 25 + 100];
   }, [realmEntityId, isFood]);
 
   const labor = useComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]));

@@ -11,8 +11,8 @@ if [[ ! -z "$1" ]]; then
     if [[ "$1" == "prod" ]]; then
         echo "is prod"
         STARKNET_RPC_URL="https://api.cartridge.gg/x/eternum2/katana"
-        DOJO_ACCOUNT_ADDRESS="0x2e9ddabb027df5caf5b5b89dd54cbe9d95a2fe843f7cabd38897f4354801ae7"
-        DOJO_PRIVATE_KEY="0x110c454ce82b356f60d18d1975a2347dbe6adc83256e98b2ad1346fbf440ad4"
+        DOJO_ACCOUNT_ADDRESS="0x178af2a04c0c16ad688ebac1c826b4be27b440979296b50947400691dcc4e7a"
+        DOJO_PRIVATE_KEY="0x22b6155e4cf0748ac40306efa1a42520705c956d0ce6331d72bc1579f7f9918"
     elif [[ "$1" != "dev" ]]; then
         echo "Invalid argument. Use 'dev' or 'prod'."
         exit 1

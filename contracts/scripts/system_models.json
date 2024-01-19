@@ -112,5 +112,9 @@
         "DetachedResource",
         "ForeignKey",
         "Inventory"
+    ],
+    "HYPERSTRUCTURE_SYSTEMS": [
+        "Orders",
+        "HyperStructure"
     ]
 }

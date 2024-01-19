@@ -5,12 +5,7 @@ import { SelectCaravanPanel } from "../../cityview/realm/trade/CreateOffer";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { getRealm } from "../../../utils/realms";
 import { getComponentValue } from "@dojoengine/recs";
-import {
-  divideByPrecision,
-  getContractPositionFromRealPosition,
-  getEntityIdFromKeys,
-  multiplyByPrecision,
-} from "../../../utils/utils";
+import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../utils/utils";
 import { useDojo } from "../../../DojoContext";
 import { Steps } from "../../../elements/Steps";
 import { Headline } from "../../../elements/Headline";
@@ -18,50 +13,53 @@ import { OrderIcon } from "../../../elements/OrderIcon";
 import { HyperStructureInterface, orderNameDict, orders } from "@bibliothecadao/eternum";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import clsx from "clsx";
-import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
 import { Tabs } from "../../../elements/tab";
 import ProgressBar from "../../../elements/ProgressBar";
 import { HyperStructureCaravansPanel } from "./HyperStructureCaravans/HyperStructureCaravansPanel";
-import hyperStructures from "../../../data/hyperstructures.json";
 import { useCaravan } from "../../../hooks/helpers/useCaravans";
 import { NumberInput } from "../../../elements/NumberInput";
 import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/arrow-separator.svg";
 import { WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { PercentageSelection } from "../../../elements/PercentageSelection";
-import { LevelingTable } from "../../cityview/realm/leveling/LevelingPopup";
-import { LevelIndex, useLevel } from "../../../hooks/helpers/useLevel";
+import { useLevel } from "../../../hooks/helpers/useLevel";
 import { getTotalResourceWeight } from "../../cityview/realm/trade/utils";
+import { useCombat } from "../../../hooks/helpers/useCombat";
+import { RaidsPanel } from "../../cityview/realm/combat/raids/RaidsPanel";
+import { EnnemyRaidersPanel } from "../../cityview/realm/combat/defence/EnnemyRaidsPanel";
+import { HyperStructureRaidersPanel } from "./HyperStructureRaiders/HyperStructureRaidersPanel";
 
 type FeedHyperstructurePopupProps = {
   onClose: () => void;
-  order: number;
+  selectedHyperstructure: HyperStructureInterface;
 };
 
-export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePopupProps) => {
+export const FeedHyperstructurePopup = ({ selectedHyperstructure, onClose }: FeedHyperstructurePopupProps) => {
+  const {
+    account: {
+      account: { address },
+    },
+  } = useDojo();
+
   const [selectedTab, setSelectedTab] = useState(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const hyperStructurePosition = useMemo(() => {
-    const { x, z } = hyperStructures[order - 1];
-    return getContractPositionFromRealPosition({ x, y: z });
-  }, [order]);
-
-  const { getHyperstructure } = useHyperstructure();
-  const hyperstructureData = getHyperstructure({
-    x: hyperStructures[order - 1].x,
-    y: hyperStructures[order - 1].y,
-    z: hyperStructures[order - 1].z,
-  });
-
   const { useGetPositionCaravans } = useCaravan();
 
-  const { caravans } = useGetPositionCaravans(hyperStructurePosition.x, hyperStructurePosition.y);
+  const { caravans } = useGetPositionCaravans(selectedHyperstructure.position.x, selectedHyperstructure.position.y);
+  const { useOwnerRaidersOnPosition, useEnemyRaidersOnPosition } = useCombat();
+
+  const enemyRaidersIds = selectedHyperstructure
+    ? useEnemyRaidersOnPosition(BigInt(address), selectedHyperstructure.position)
+    : [];
+  const myRaidersIds = selectedHyperstructure
+    ? useOwnerRaidersOnPosition(BigInt(address), selectedHyperstructure.position)
+    : [];
 
   const tabs = useMemo(
     () => [
       {
-        key: "all",
+        key: "build",
         label: (
           <div
             onMouseEnter={() =>
@@ -82,15 +80,15 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
         ),
         component: (
           <BuildHyperstructurePanel
-            order={order}
+            order={selectedHyperstructure.orderId}
             onSendCaravan={() => setSelectedTab(1)}
             onClose={onClose}
-            hyperstructureData={hyperstructureData}
+            hyperstructureData={selectedHyperstructure}
           />
         ),
       },
       {
-        key: "my",
+        key: "caravans",
         label: (
           <div
             onMouseEnter={() =>
@@ -110,14 +108,37 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
             <div>{`Caravans (${caravans.length})`}</div>
           </div>
         ),
-        component: hyperstructureData ? (
-          <HyperStructureCaravansPanel caravans={caravans} hyperstructureData={hyperstructureData} />
+        component: selectedHyperstructure ? (
+          <HyperStructureCaravansPanel caravans={caravans} hyperstructureData={selectedHyperstructure} />
         ) : (
           <></>
         ),
       },
+      {
+        key: "raides",
+        label: (
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Watch incoming raides.</p>
+                    <p className="whitespace-nowrap">Attack or defened hyperstructure on arrival.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex group relative flex-col items-center"
+          >
+            <div>{`Raiders (${enemyRaidersIds.length + myRaidersIds.length})`}</div>
+          </div>
+        ),
+        component: <HyperStructureRaidersPanel enemyRaidersIds={enemyRaidersIds} myRaidersIds={myRaidersIds} />,
+      },
     ],
-    [selectedTab, caravans],
+    [selectedTab, caravans, myRaidersIds, enemyRaidersIds],
   );
 
   return (
@@ -242,6 +263,7 @@ const BuildHyperstructurePanel = ({
       systemCalls: { send_resources_to_location },
     },
   } = useDojo();
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const sendResourcesToHyperStructure = async () => {
     setIsLoading(true);
@@ -353,7 +375,7 @@ const BuildHyperstructurePanel = ({
     } else if (step == 2) {
       return false;
     } else {
-      return true;
+      return !(hyperstructureData?.progress === 100);
     }
   }, [step, selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
 
@@ -377,28 +399,6 @@ const BuildHyperstructurePanel = ({
     return totalResources;
   }, [hyperstructureData, realmEntityId]);
 
-  const { getHyperstructureLevelBonus } = useLevel();
-
-  const bonusData = useMemo(() => {
-    if (hyperstructureData) {
-      const foodProdBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.FOOD);
-      const resourceProdBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.RESOURCE);
-      const travelSpeedBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.TRAVEL);
-      const combatBonus = getHyperstructureLevelBonus(hyperstructureData?.level, LevelIndex.COMBAT);
-      return [foodProdBonus, resourceProdBonus, travelSpeedBonus, combatBonus];
-    }
-  }, [hyperstructureData]);
-
-  const [_, newIndex, newBonus] = useMemo(() => {
-    // don't update if click on level_up
-    const newLevel = (hyperstructureData?.level || 0) + 1;
-    let newIndex = newLevel % 4;
-    if (newIndex === 0) newIndex = 4;
-
-    let newBonus = getHyperstructureLevelBonus(newLevel, newIndex);
-    return [newLevel, newIndex, newBonus];
-  }, [hyperstructureData]);
-
   useEffect(() => {
     const feedResourcesGiveAmounts: Record<string, number> = {};
     Object.keys(totalResources).forEach((id) => {
@@ -414,10 +414,17 @@ const BuildHyperstructurePanel = ({
     <div className="flex flex-col items-center p-2">
       <div className="flex flex-col space-y-2 text-xs w-full mb-3">
         <div className="flex justify-between">
-          <div className="flex items-center">
-            {<OrderIcon order={orderNameDict[order]} size="xs" className="mx-1" />}
-            <span className="text-white font-bold">{orders[order - 1].fullOrderName}</span>
-          </div>
+          {orders[order - 1] && (
+            <div className="flex items-center">
+              {<OrderIcon order={orderNameDict[order]} size="xs" className="mx-1" />}
+              <span className="text-white font-bold">{orders[order - 1].fullOrderName}</span>
+            </div>
+          )}
+          {!orders[order - 1] && (
+            <div className="flex items-center">
+              <span className="text-white font-bold">Not Conquered</span>
+            </div>
+          )}
           {/* <Leveling className="mt-2" entityId={hyperstructureData.hyperstructureId} /> */}
           <div className="flex flex-col text-xxs text-right">
             <span className="text-gray-gold italic">State</span>
@@ -442,7 +449,7 @@ const BuildHyperstructurePanel = ({
             <div className="relative w-full">
               <img src={`/images/buildings/hyperstructure.jpg`} className="object-cover w-full rounded-[10px]" />
               <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
-                <div className="mb-1 ml-1 italic text-light-pink text-xxs">{"Resources needed to level up:"}</div>
+                <div className="mb-1 ml-1 italic text-light-pink text-xxs">Resources needed to complete:</div>
                 <div className="grid grid-cols-4 gap-1">
                   {resourcesLeftToComplete &&
                     Object.keys(resourcesLeftToComplete).map((id) => (
@@ -456,6 +463,68 @@ const BuildHyperstructurePanel = ({
                     ))}
                 </div>
               </div>
+              <div className="flex flex-col p-2 w-[90%] absolute left-3 mx-2 top-2 rounded-[10px] bg-black/60">
+                <div className="mb-1 ml-1 italic text-light-pink text-xxs">Hyperstructure Watch Tower</div>
+                {hyperstructureData && (
+                  <div className="flex relative justify-between text-xxs text-lightest w-full">
+                    <div className="flex items-center">
+                      <div className="flex items-center h-6 ">
+                        <img src="/images/units/troop-icon.png" className="h-[28px]" />
+                        <div className="flex ml-1 text-center">
+                          <div className="bold mr-1">x{hyperstructureData.watchTowerQuantity}</div>
+                          Raiders
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center">
+                      <div
+                        className="flex items-center h-6 "
+                        onMouseEnter={() =>
+                          setTooltip({
+                            position: "top",
+                            content: (
+                              <>
+                                <p className="whitespace-nowrap">Attack power</p>
+                              </>
+                            ),
+                          })
+                        }
+                        onMouseLeave={() => setTooltip(null)}
+                      >
+                        <img src="/images/icons/attack.png" className="h-full" />
+                        <div className="flex flex-col ml-1 text-center">
+                          <div className="bold ">{hyperstructureData.attack}</div>
+                        </div>
+                      </div>
+                      <div
+                        className="flex items-center h-6 mr-2"
+                        onMouseEnter={() =>
+                          setTooltip({
+                            position: "top",
+                            content: (
+                              <>
+                                <p className="whitespace-nowrap">Defence power</p>
+                              </>
+                            ),
+                          })
+                        }
+                        onMouseLeave={() => setTooltip(null)}
+                      >
+                        <img src="/images/icons/defence.png" className="h-full" />
+                        <div className="flex flex-col ml-1 text-center">
+                          <div className="bold ">{hyperstructureData.defence}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="text-order-brilliance">
+                        {hyperstructureData.health && hyperstructureData.health.toLocaleString()}
+                      </div>
+                      &nbsp;/ {10 * hyperstructureData.watchTowerQuantity} HP
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             <Headline size="big">
               {"Feed Hyperstructure"}- Step {step}
@@ -464,11 +533,11 @@ const BuildHyperstructurePanel = ({
               {`To level up the Hyperstructure you need to send a caravan with needed resources to the Hyperstructure location.
                You will be able to level up once all resources are sent for this level.`}
             </div>
-            <div className="mx-1">
+            {/* <div className="mx-1">
               {bonusData && (
                 <LevelingTable updateLevel={{ newBonus, index: newIndex }} data={bonusData}></LevelingTable>
               )}
-            </div>
+            </div> */}
             <div className="text-xxs mb-2 italic text-white">{`Click the "Next" button to select a Realm from which you want to spend resources.`}</div>
           </div>
         </>
@@ -599,7 +668,7 @@ const BuildHyperstructurePanel = ({
             }}
             variant={canGoToNextStep ? "success" : "outline"}
           >
-            {step == 3 ? "Send Caravan" : hyperstructureData?.completed ? "Complete" : "Next Step"}
+            {step == 3 ? "Send Caravan" : hyperstructureData?.progress === 100 ? "Complete" : "Next Step"}
           </Button>
         )}
         {isLoading && (

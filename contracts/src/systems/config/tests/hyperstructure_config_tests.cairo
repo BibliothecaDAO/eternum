@@ -73,7 +73,7 @@ fn test_create_hyperstructure() {
     assert(hyperstructure.hyperstructure_type == hyperstructure_type, 
             'wrong hyperstructure type value'
     );
-    assert(hyperstructure.order == 3, 'wrong order');
+    assert(hyperstructure.controlling_order == 0, 'wrong order');
 
     // check that hyperstructure is in the right position
     let hyperstructure_position = get!(world, hyperstructure_id, Position);

@@ -9,13 +9,15 @@ import AttacksComponent from "./AttacksComponent";
 import { ManageSoldiersPopupTabs } from "../raids/ManageSoldiersPopupTabs";
 import { HealPopup } from "../HealPopup";
 import { LevelIndex, useLevel } from "../../../../../hooks/helpers/useLevel";
+import { getComponentValue } from "@dojoengine/recs";
+import { useHyperstructure } from "../../../../../hooks/helpers/useHyperstructure";
 
 type DefencePanelProps = {};
 
 export const DefencePanel = ({}: DefencePanelProps) => {
   const {
     setup: {
-      components: { Health },
+      components: { Health, Realm },
     },
   } = useDojo();
 
@@ -24,11 +26,21 @@ export const DefencePanel = ({}: DefencePanelProps) => {
 
   const [showHeal, setShowHeal] = useState(false);
 
-  const { getEntitiesCombatInfo, getRealmWatchTowerId } = useCombat();
+  const { getEntitiesCombatInfo, getEntityWatchTowerId } = useCombat();
 
   const { getEntityLevel, getRealmLevelBonus } = useLevel();
 
-  const watchTowerId = getRealmWatchTowerId(realmEntityId);
+  const { getConqueredHyperstructures } = useHyperstructure();
+  const conqueredHyperstructures = useMemo(() => {
+    if (realmEntityId) {
+      const order = getComponentValue(Realm, getEntityIdFromKeys([realmEntityId]))?.order;
+      return order ? getConqueredHyperstructures(order).length : 0;
+    } else {
+      return 0;
+    }
+  }, [realmEntityId]);
+
+  const watchTowerId = getEntityWatchTowerId(realmEntityId);
   const watchTowerHealth = watchTowerId
     ? useComponentValue(Health, getEntityIdFromKeys([BigInt(watchTowerId)]))
     : undefined;
@@ -44,13 +56,10 @@ export const DefencePanel = ({}: DefencePanelProps) => {
 
   const [defenderLevelBonus, defenderHyperstructureLevelBonus] = useMemo(() => {
     let level = watchTower?.entityOwnerId ? getEntityLevel(watchTower.entityOwnerId)?.level || 0 : 0;
-    let hyperstructureLevel = watchTower?.hyperstructureId
-      ? getEntityLevel(watchTower.hyperstructureId)?.level || 0
-      : 0;
     let levelBonus = getRealmLevelBonus(level, LevelIndex.COMBAT);
-    let hyperstructureLevelBonus = getRealmLevelBonus(hyperstructureLevel, LevelIndex.COMBAT);
+    let hyperstructureLevelBonus = conqueredHyperstructures * 25 + 100;
     return [levelBonus, hyperstructureLevelBonus];
-  }, [watchTower]);
+  }, [watchTower, conqueredHyperstructures]);
 
   return (
     <div className="relative flex flex-col p-2 min-h-[120px]">
@@ -67,7 +76,7 @@ export const DefencePanel = ({}: DefencePanelProps) => {
           <Defence
             onReinforce={() => setShowBuildDefence(!showBuildDefence)}
             levelBonus={defenderLevelBonus}
-            hyperstructureLevelBonus={defenderHyperstructureLevelBonus}
+            conqueredHyperstructures={conqueredHyperstructures}
             setShowHeal={setShowHeal}
             watchTower={watchTower}
           />

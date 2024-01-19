@@ -20,10 +20,9 @@ import { CAPACITY_PER_DONKEY, CaravanInterface, HyperStructureInterface } from "
 import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../../../DojoContext";
 import Button from "../../../../elements/Button";
-import { useHyperstructure } from "../../../../hooks/helpers/useHyperstructure";
-import useUIStore from "../../../../hooks/store/useUIStore";
 import { useResources } from "../../../../hooks/helpers/useResources";
 import { EventType, useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
+import { useRefreshHyperstructure } from "../../../../hooks/store/useRefreshHyperstructure";
 
 type CaravanProps = {
   caravan: CaravanInterface;
@@ -36,9 +35,7 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
   const { isMine, owner, arrivalTime, capacity } = caravan;
   const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const hyperstructures = useUIStore((state) => state.hyperstructures);
-  const setHyperstructures = useUIStore((state) => state.setHyperstructures);
-  const { getHyperstructure } = useHyperstructure();
+  const { refreshHyperstructure } = useRefreshHyperstructure();
 
   const [isLoading, setIsLoading] = useState(false);
   const hasArrived = arrivalTime !== undefined && nextBlockTimestamp !== undefined && arrivalTime <= nextBlockTimestamp;
@@ -81,9 +78,7 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
   };
 
   const updateHyperStructure = () => {
-    const newHyperstructure = getHyperstructure(hyperstructureData.uiPosition);
-    hyperstructures[hyperstructureData.orderId - 1] = newHyperstructure;
-    setHyperstructures([...hyperstructures]);
+    refreshHyperstructure(hyperstructureData.hyperstructureId);
   };
 
   const onClick = async () => {

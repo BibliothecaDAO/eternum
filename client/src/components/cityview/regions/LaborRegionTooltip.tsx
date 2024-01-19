@@ -10,6 +10,7 @@ import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { calculateNextHarvest, calculateProductivity, formatSecondsInHoursMinutes } from "../realm/labor/laborUtils";
 import ProgressBar from "../../../elements/ProgressBar";
 import { LevelIndex, useLevel } from "../../../hooks/helpers/useLevel";
+import useUIStore from "../../../hooks/store/useUIStore";
 
 type LaborRegionTooltipProps = {
   position: [number, number, number];
@@ -17,7 +18,7 @@ type LaborRegionTooltipProps = {
 };
 
 export const LaborRegionTooltip = ({ position, resourceId }: LaborRegionTooltipProps) => {
-  let { realmEntityId, hyperstructureId } = useRealmStore();
+  let { realmEntityId } = useRealmStore();
 
   const {
     setup: {
@@ -27,23 +28,20 @@ export const LaborRegionTooltip = ({ position, resourceId }: LaborRegionTooltipP
 
   const resource = findResourceById(resourceId);
 
+  const conqueredHyperstructureNumber = useUIStore((state) => state.conqueredHyperstructureNumber);
+
   const labor = useComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 
-  const { getEntityLevel, getRealmLevelBonus, getHyperstructureLevelBonus } = useLevel();
+  const { getEntityLevel, getRealmLevelBonus } = useLevel();
 
   // get harvest bonuses
   const [levelBonus, hyperstructureLevelBonus] = useMemo(() => {
     const level = getEntityLevel(realmEntityId)?.level || 0;
-    const hyperstructureLevel = hyperstructureId ? getEntityLevel(hyperstructureId)?.level || 0 : 0;
     const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
-    const hyperstructureLevelBonus = getHyperstructureLevelBonus(
-      hyperstructureLevel,
-      isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE,
-    );
-    return [levelBonus, hyperstructureLevelBonus];
+    return [levelBonus, conqueredHyperstructureNumber * 25 + 100];
   }, [realmEntityId, isFood]);
 
   const laborLeft = useMemo(() => {

@@ -8,5 +8,6 @@ mod combat;
 mod leveling;
 mod name;
 mod bank;
+mod hyperstructure;
 
 mod test;

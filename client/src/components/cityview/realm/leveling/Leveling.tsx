@@ -88,14 +88,15 @@ export const Leveling = ({ className, entityId, setShowLevelUp }: LevelingProps)
 
 type LevelingBonusIconsProps = {
   bonuses: { bonusType: number; bonusAmount: number }[];
+  includeZero?: boolean;
   className?: string;
 };
 
-export const LevelingBonusIcons = ({ className, bonuses }: LevelingBonusIconsProps) => {
+export const LevelingBonusIcons = ({ className, bonuses, includeZero }: LevelingBonusIconsProps) => {
   return (
     <div className={className}>
       {bonuses.map((bonus, i) => {
-        if (bonus.bonusAmount === 0) return null;
+        if (bonus.bonusAmount === 0 && !includeZero) return null;
         if (bonus.bonusType === LevelIndex.FOOD)
           return (
             <div key={i} className="flex flex-col items-center justify-center mr-1">
