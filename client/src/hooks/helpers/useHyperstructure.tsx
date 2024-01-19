@@ -12,7 +12,7 @@ import { useResources } from "./useResources";
 export const useHyperstructure = () => {
   const {
     setup: {
-      components: { HyperStructure, Resource, Position, Realm },
+      components: { HyperStructure, Resource, Position, TownWatch },
     },
   } = useDojo();
 
@@ -23,7 +23,11 @@ export const useHyperstructure = () => {
 
   const getHyperstructure = (uiPosition: UIPosition): HyperStructureInterface | undefined => {
     const position = getContractPositionFromRealPosition({ x: uiPosition.x, y: uiPosition.z });
-    const entityIds = runQuery([Has(HyperStructure), HasValue(Position, { x: position.x, y: position.y })]);
+    const entityIds = runQuery([
+      Has(HyperStructure),
+      Has(TownWatch),
+      HasValue(Position, { x: position.x, y: position.y }),
+    ]);
 
     if (entityIds.size > 0) {
       let id = Array.from(entityIds)[0];
@@ -105,14 +109,16 @@ export const useHyperstructure = () => {
   };
 
   const getHyperstructureIds = (): bigint[] => {
-    const entityIds = Array.from(runQuery([Has(HyperStructure), Has(Position)]));
+    const entityIds = Array.from(runQuery([Has(HyperStructure), Has(TownWatch), Has(Position)]));
     return entityIds.map((id) => {
       return getComponentValue(HyperStructure, id)!.entity_id;
     });
   };
 
   const getHyperstructureEntityId = (hyperstructruePosition: Position): bigint | undefined => {
-    const entityIds = Array.from(runQuery([Has(HyperStructure), HasValue(Position, hyperstructruePosition)]));
+    const entityIds = Array.from(
+      runQuery([Has(HyperStructure), Has(TownWatch), HasValue(Position, hyperstructruePosition)]),
+    );
     if (entityIds.length === 1) {
       let bank = getComponentValue(HyperStructure, entityIds[0]);
       return bank?.entity_id;

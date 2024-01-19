@@ -201,7 +201,9 @@ export function useCombat() {
 
       // if present on hyperstructure
       const locationHyperstructureIds = position
-        ? Array.from(runQuery([Has(HyperStructure), HasValue(Position, { x: position.x, y: position.y })]))
+        ? Array.from(
+            runQuery([Has(HyperStructure), Has(TownWatch), HasValue(Position, { x: position.x, y: position.y })]),
+          )
         : [];
       if (locationHyperstructureIds.length === 1) {
         locationEntityId = getComponentValue(HyperStructure, locationHyperstructureIds[0])?.entity_id;

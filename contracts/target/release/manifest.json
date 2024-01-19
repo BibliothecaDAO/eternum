@@ -1104,7 +1104,7 @@
     {
       "name": "eternum::systems::combat::contracts::combat_systems",
       "address": "0x1b0a83a27a357e0574393ab06c0c774db7312a0993538cc0186d054f75ee84e",
-      "class_hash": "0xa6277be559ef80a45c9468ab6e790865913f0378adcefbed9f94dc989e750c",
+      "class_hash": "0x47b341b5f87b6c913468f9040f44c92bdec46824e0e957b7226f26c80fecca7",
       "abi": [
         {
           "type": "impl",
@@ -1457,7 +1457,7 @@
     {
       "name": "eternum::systems::config::contracts::config_systems",
       "address": "0x7fff06bbcbe4f42f22c86b14e7a80604495c8b2034d14cbb10d32402c933ca8",
-      "class_hash": "0x537c1f5a3261eb0dadb3038469f5774a8d4b9ede5e2ba3cf241cc5744d6c719",
+      "class_hash": "0x4e2a8d89fe86e1120f19b3574b6bb98c9b68d1cca11c1292d1bc9bc0062edb8",
       "abi": [
         {
           "type": "impl",
@@ -2206,8 +2206,8 @@
     },
     {
       "name": "eternum::systems::hyperstructure::contracts::hyperstructure_systems",
-      "address": null,
-      "class_hash": "0x45512bfada679482cd6fb00045df968a08d5781bad84f42f398ebbd5d5559c9",
+      "address": "0x339507ba4d25807696b821ba93352aef4203e5f02f71928e15eadc9c200bef5",
+      "class_hash": "0x16ec0c7a84f2dc3f0e575250d65b56297171de6680834fa83b4234c3350e32c",
       "abi": [
         {
           "type": "impl",
@@ -11678,7 +11678,7 @@
       ]
     },
     {
-      "name": "eternum::models::order::order",
+      "name": "eternum::models::order::orders",
       "members": [
         {
           "name": "order_id",
@@ -11691,7 +11691,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x7acab29295141687754bcda1d5e465ab7d9e0ae3fe175b75eb9380c4c03097b",
+      "class_hash": "0x22f1d574d94a2c7ceafca1eba13f5d20a1d75325c076be4a589ddc40c61c737",
       "abi": [
         {
           "type": "function",
@@ -11848,7 +11848,7 @@
         },
         {
           "type": "event",
-          "name": "eternum::models::order::order::Event",
+          "name": "eternum::models::order::orders::Event",
           "kind": "enum",
           "variants": []
         }

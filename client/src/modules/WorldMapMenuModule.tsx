@@ -8,8 +8,6 @@ const WorldMapMenuModule = () => {
   const [location] = useLocation();
   const [showMenu, setShowMenu] = useState(false);
 
-  console.log("refreshing WorldMapMenuModule");
-
   useEffect(() => {
     if (location.includes("/map")) {
       setShowMenu(true);

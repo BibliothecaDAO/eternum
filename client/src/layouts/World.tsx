@@ -40,8 +40,6 @@ export const World = () => {
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
-  console.log("refreshing WOOOORLD");
-
   const { refreshAllHyperstructures } = useRefreshHyperstructure();
 
   // only for dev

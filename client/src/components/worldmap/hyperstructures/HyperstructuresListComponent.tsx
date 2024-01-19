@@ -30,8 +30,6 @@ export const HyperstructuresListComponent = ({ showOnlyPlayerOrder = false }: Hy
     [account, realmEntityIds],
   );
 
-  console.log("refreshing hyperstructure list component");
-
   // const bonusList = useMemo(() => {
   //   if (!hyperstructures) return [];
   //   const bonusAmount =

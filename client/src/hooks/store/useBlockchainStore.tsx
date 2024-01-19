@@ -23,7 +23,6 @@ export const useFetchBlockchainData = () => {
       // Update the state with the fetched timestamp
       if (timestamp && timestamp !== currentTimestamp) {
         // Check if fetched timestamp is different from current state
-        console.log("set next block");
         setNextBlockTimestamp(timestamp);
       }
     };
