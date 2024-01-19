@@ -148,7 +148,6 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
                 {`Level Up`}
               </Button>
             </div>
-            {missingResources.length > 0 && <div className="text-xxs text-order-giants/70">Insufficient resources</div>}
           </div>
         </div>
       </SecondaryPopup.Body>

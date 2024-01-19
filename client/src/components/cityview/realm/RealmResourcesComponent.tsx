@@ -50,10 +50,10 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
 
   if (realmResourceIds.length > 3) {
     return (
-      <div className="fixed top-3 left-3 right-3 z-50">
+      <div className="fixed top-3 left-3 right-3 z-50 !pointer-events-none">
         <div
           className={clsx(
-            "relativemt-1 rounded-t-xl overflow-hidden text-white bg-black font-bold duration-500 transition-all",
+            "relative pointer-events-auto mt-1 rounded-t-xl overflow-hidden text-white bg-black font-bold duration-500 transition-all",
             showAllResources ? "max-h-[100px]" : "max-h-0",
           )}
         >
@@ -63,7 +63,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
             ))}
           </div>
         </div>
-        <div className={clsx("relative mx-auto w-min bg-black/60 p-3 rounded-b-2xl", className)}>
+        <div className={clsx("relative mx-auto w-min bg-black/60 p-3 rounded-b-2xl pointer-events-auto", className)}>
           <div className="relative flex mx-auto space-x-3 overflow-visible text-white font-bold">
             {realmResourceIds.map((resourceId) => (
               <ResourceComponent key={resourceId} resourceId={resourceId} />
