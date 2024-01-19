@@ -1,13 +1,12 @@
 import { HyperstructuresListItem } from "./HyperstructuresListItem";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useMemo, useState } from "react";
-import { getRealm } from "../../../utils/realms";
+// import { getRealm } from "../../../utils/realms";
 import { useDojo } from "../../../DojoContext";
 import { FeedHyperstructurePopup } from "./FeedHyperstructure";
 import useUIStore from "../../../hooks/store/useUIStore";
-import { LevelingBonusIcons } from "../../cityview/realm/leveling/Leveling";
-import { LevelIndex } from "../../../hooks/helpers/useLevel";
-import { ConqueredHyperstructures } from "./ConqueredHyperstructures";
+// import { LevelIndex } from "../../../hooks/helpers/useLevel";
+import { HyperStructureInterface } from "@bibliothecadao/eternum";
 
 type HyperstructuresListComponentProps = {
   showOnlyPlayerOrder?: boolean;
@@ -15,6 +14,7 @@ type HyperstructuresListComponentProps = {
 
 export const HyperstructuresListComponent = ({ showOnlyPlayerOrder = false }: HyperstructuresListComponentProps) => {
   const [showFeedPopup, setShowFeedPopup] = useState(false);
+  const [selectedHyperstructure, setSelectedHyperstructure] = useState<HyperStructureInterface | undefined>(undefined);
   const moveCameraToTarget = useUIStore((state) => state.moveCameraToTarget);
   const hyperstructures = useUIStore((state) => state.hyperstructures);
 
@@ -24,41 +24,44 @@ export const HyperstructuresListComponent = ({ showOnlyPlayerOrder = false }: Hy
 
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
-  const chosenOrder = useMemo(
-    () => (realmEntityIds.length > 0 ? getRealm(realmEntityIds[0].realmId)?.order : undefined),
-    [account, realmEntityIds],
-  );
+  // const chosenOrder = useMemo(
+  //   () => (realmEntityIds.length > 0 ? getRealm(realmEntityIds[0].realmId)?.order : undefined),
+  //   [account, realmEntityIds],
+  // );
 
-  const bonusList = useMemo(() => {
-    if (!hyperstructures) return [];
-    const bonusAmount =
-      hyperstructures.filter((struct) => {
-        struct?.completed && struct.orderId === chosenOrder;
-      }).length * 25;
-    return [
-      {
-        bonusType: LevelIndex.FOOD,
-        bonusAmount,
-      },
-      {
-        bonusType: LevelIndex.RESOURCE,
-        bonusAmount,
-      },
-      {
-        bonusType: LevelIndex.TRAVEL,
-        bonusAmount,
-      },
-      {
-        bonusType: LevelIndex.COMBAT,
-        bonusAmount,
-      },
-    ];
-  }, [hyperstructures]);
+  // const bonusList = useMemo(() => {
+  //   if (!hyperstructures) return [];
+  //   const bonusAmount =
+  //     hyperstructures.filter((struct) => {
+  //       struct?.completed && struct.orderId === chosenOrder;
+  //     }).length * 25;
+  //   return [
+  //     {
+  //       bonusType: LevelIndex.FOOD,
+  //       bonusAmount,
+  //     },
+  //     {
+  //       bonusType: LevelIndex.RESOURCE,
+  //       bonusAmount,
+  //     },
+  //     {
+  //       bonusType: LevelIndex.TRAVEL,
+  //       bonusAmount,
+  //     },
+  //     {
+  //       bonusType: LevelIndex.COMBAT,
+  //       bonusAmount,
+  //     },
+  //   ];
+  // }, [hyperstructures]);
 
   return (
     <>
-      {chosenOrder && showFeedPopup && (
-        <FeedHyperstructurePopup onClose={() => setShowFeedPopup(false)} order={chosenOrder} />
+      {showFeedPopup && selectedHyperstructure && (
+        <FeedHyperstructurePopup
+          selectedHyperstructure={selectedHyperstructure}
+          onClose={() => setShowFeedPopup(false)}
+        />
       )}
       {/* // todo: work on that to show summary of the conquests */}
       {/* <div className="flex flex-row w-full justify-between">
@@ -81,6 +84,7 @@ export const HyperstructuresListComponent = ({ showOnlyPlayerOrder = false }: Hy
               coords={hyperstructure?.uiPosition as any}
               onFeed={() => {
                 moveCameraToTarget(hyperstructures[i]?.uiPosition as any);
+                setSelectedHyperstructure(hyperstructure);
                 setShowFeedPopup(true);
               }}
             />

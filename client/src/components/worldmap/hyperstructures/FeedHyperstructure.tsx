@@ -5,12 +5,7 @@ import { SelectCaravanPanel } from "../../cityview/realm/trade/CreateOffer";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { getRealm } from "../../../utils/realms";
 import { getComponentValue } from "@dojoengine/recs";
-import {
-  divideByPrecision,
-  getContractPositionFromRealPosition,
-  getEntityIdFromKeys,
-  multiplyByPrecision,
-} from "../../../utils/utils";
+import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../utils/utils";
 import { useDojo } from "../../../DojoContext";
 import { Steps } from "../../../elements/Steps";
 import { Headline } from "../../../elements/Headline";
@@ -18,11 +13,9 @@ import { OrderIcon } from "../../../elements/OrderIcon";
 import { HyperStructureInterface, orderNameDict, orders } from "@bibliothecadao/eternum";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import clsx from "clsx";
-import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
 import { Tabs } from "../../../elements/tab";
 import ProgressBar from "../../../elements/ProgressBar";
 import { HyperStructureCaravansPanel } from "./HyperStructureCaravans/HyperStructureCaravansPanel";
-import hyperStructures from "../../../data/hyperstructures.json";
 import { useCaravan } from "../../../hooks/helpers/useCaravans";
 import { NumberInput } from "../../../elements/NumberInput";
 import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/arrow-separator.svg";
@@ -37,10 +30,10 @@ import { EnnemyRaidersPanel } from "../../cityview/realm/combat/defence/EnnemyRa
 
 type FeedHyperstructurePopupProps = {
   onClose: () => void;
-  order: number;
+  selectedHyperstructure: HyperStructureInterface;
 };
 
-export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePopupProps) => {
+export const FeedHyperstructurePopup = ({ selectedHyperstructure, onClose }: FeedHyperstructurePopupProps) => {
   const {
     account: {
       account: { address },
@@ -50,28 +43,16 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
   const [selectedTab, setSelectedTab] = useState(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const hyperStructurePosition = useMemo(() => {
-    const { x, z } = hyperStructures[order - 1];
-    return getContractPositionFromRealPosition({ x, y: z });
-  }, [order]);
-
-  const { getHyperstructure } = useHyperstructure();
-  const hyperstructureData = getHyperstructure({
-    x: hyperStructures[order - 1].x,
-    y: hyperStructures[order - 1].y,
-    z: hyperStructures[order - 1].z,
-  });
-
   const { useGetPositionCaravans } = useCaravan();
 
-  const { caravans } = useGetPositionCaravans(hyperStructurePosition.x, hyperStructurePosition.y);
+  const { caravans } = useGetPositionCaravans(selectedHyperstructure.position.x, selectedHyperstructure.position.y);
   const { useOwnerRaidersOnPosition, useEnemyRaidersOnPosition } = useCombat();
 
-  const enemyRaidersIds = hyperstructureData
-    ? useEnemyRaidersOnPosition(BigInt(address), hyperstructureData.position)
+  const enemyRaidersIds = selectedHyperstructure
+    ? useEnemyRaidersOnPosition(BigInt(address), selectedHyperstructure.position)
     : [];
-  const myRaidersIds = hyperstructureData
-    ? useOwnerRaidersOnPosition(BigInt(address), hyperstructureData.position)
+  const myRaidersIds = selectedHyperstructure
+    ? useOwnerRaidersOnPosition(BigInt(address), selectedHyperstructure.position)
     : [];
 
   const tabs = useMemo(
@@ -98,10 +79,10 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
         ),
         component: (
           <BuildHyperstructurePanel
-            order={order}
+            order={selectedHyperstructure.orderId}
             onSendCaravan={() => setSelectedTab(1)}
             onClose={onClose}
-            hyperstructureData={hyperstructureData}
+            hyperstructureData={selectedHyperstructure}
           />
         ),
       },
@@ -126,8 +107,8 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
             <div>{`Caravans (${caravans.length})`}</div>
           </div>
         ),
-        component: hyperstructureData ? (
-          <HyperStructureCaravansPanel caravans={caravans} hyperstructureData={hyperstructureData} />
+        component: selectedHyperstructure ? (
+          <HyperStructureCaravansPanel caravans={caravans} hyperstructureData={selectedHyperstructure} />
         ) : (
           <></>
         ),
@@ -153,13 +134,21 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
             <div>{`Raiders (${enemyRaidersIds.length + myRaidersIds.length})`}</div>
           </div>
         ),
-        component: hyperstructureData ? (
+        component: (
           <div>
+            {myRaidersIds.length > 0 && (
+              <Headline className="mt-2" size="big">
+                Your Raiders
+              </Headline>
+            )}
             <RaidsPanel raiderIds={myRaidersIds} showCreateButton={false} />
+            {enemyRaidersIds.length > 0 && (
+              <Headline className="" size="big">
+                Other Raiders
+              </Headline>
+            )}
             <EnnemyRaidersPanel raiderIds={enemyRaidersIds} />
           </div>
-        ) : (
-          <></>
         ),
       },
     ],
@@ -439,10 +428,17 @@ const BuildHyperstructurePanel = ({
     <div className="flex flex-col items-center p-2">
       <div className="flex flex-col space-y-2 text-xs w-full mb-3">
         <div className="flex justify-between">
-          <div className="flex items-center">
-            {<OrderIcon order={orderNameDict[order]} size="xs" className="mx-1" />}
-            <span className="text-white font-bold">{orders[order - 1].fullOrderName}</span>
-          </div>
+          {orders[order - 1] && (
+            <div className="flex items-center">
+              {<OrderIcon order={orderNameDict[order]} size="xs" className="mx-1" />}
+              <span className="text-white font-bold">{orders[order - 1].fullOrderName}</span>
+            </div>
+          )}
+          {!orders[order - 1] && (
+            <div className="flex items-center">
+              <span className="text-white font-bold">Not Conquered</span>
+            </div>
+          )}
           {/* <Leveling className="mt-2" entityId={hyperstructureData.hyperstructureId} /> */}
           <div className="flex flex-col text-xxs text-right">
             <span className="text-gray-gold italic">State</span>
