@@ -63,7 +63,7 @@ export const RealmCombatComponent = ({}: RealmCombatComponentProps) => {
             <div>Raiders</div>
           </div>
         ),
-        component: <RaidsPanel raiderIds={raiderIds} />,
+        component: <RaidsPanel raiderIds={raiderIds} showCreateButton={true} />,
       },
       {
         key: "defence",

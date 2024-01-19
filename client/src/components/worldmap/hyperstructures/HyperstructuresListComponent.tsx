@@ -5,6 +5,9 @@ import { getRealm } from "../../../utils/realms";
 import { useDojo } from "../../../DojoContext";
 import { FeedHyperstructurePopup } from "./FeedHyperstructure";
 import useUIStore from "../../../hooks/store/useUIStore";
+import { LevelingBonusIcons } from "../../cityview/realm/leveling/Leveling";
+import { LevelIndex } from "../../../hooks/helpers/useLevel";
+import { ConqueredHyperstructures } from "./ConqueredHyperstructures";
 
 type HyperstructuresListComponentProps = {
   showOnlyPlayerOrder?: boolean;
@@ -26,42 +29,62 @@ export const HyperstructuresListComponent = ({ showOnlyPlayerOrder = false }: Hy
     [account, realmEntityIds],
   );
 
+  const bonusList = useMemo(() => {
+    if (!hyperstructures) return [];
+    const bonusAmount =
+      hyperstructures.filter((struct) => {
+        struct?.completed && struct.orderId === chosenOrder;
+      }).length * 25;
+    return [
+      {
+        bonusType: LevelIndex.FOOD,
+        bonusAmount,
+      },
+      {
+        bonusType: LevelIndex.RESOURCE,
+        bonusAmount,
+      },
+      {
+        bonusType: LevelIndex.TRAVEL,
+        bonusAmount,
+      },
+      {
+        bonusType: LevelIndex.COMBAT,
+        bonusAmount,
+      },
+    ];
+  }, [hyperstructures]);
+
   return (
     <>
       {chosenOrder && showFeedPopup && (
         <FeedHyperstructurePopup onClose={() => setShowFeedPopup(false)} order={chosenOrder} />
       )}
-      {chosenOrder && hyperstructures && (
-        <div className="space-y-2 px-2 my-2">
-          <div className="text-xs text-gold">Hyperstructure of your order: </div>
-          <HyperstructuresListItem
-            hyperstructure={hyperstructures[chosenOrder - 1]}
-            order={chosenOrder}
-            coords={hyperstructures[chosenOrder - 1]?.uiPosition}
-            onFeed={() => {
-              moveCameraToTarget(hyperstructures[chosenOrder - 1]?.uiPosition as any);
-              setShowFeedPopup(true);
-            }}
-          />
-        </div>
-      )}
+      {/* // todo: work on that to show summary of the conquests */}
+      {/* <div className="flex flex-row w-full justify-between">
+        {chosenOrder && <ConqueredHyperstructures className={"mt-2 relative mb-10 ml-4"} order={chosenOrder} />}
+        <LevelingBonusIcons
+          className="flex flex-row ml-4 mr-2 items-center justify-center -mt-4 !text-xxs"
+          bonuses={bonusList}
+          includeZero={true}
+        ></LevelingBonusIcons>
+        <div className="w-[30%] text-gold text-xxs">Some stats</div>
+      </div> */}
       {!showOnlyPlayerOrder && (
         <div className="flex flex-col space-y-2 px-2 mb-2">
-          <div className="text-xs text-gold">Other Hyperstructures: </div>
-          {hyperstructures.map((hyperstructure, i) =>
-            chosenOrder && i + 1 === chosenOrder ? null : (
-              <HyperstructuresListItem
-                key={i}
-                hyperstructure={hyperstructure}
-                order={i + 1}
-                coords={hyperstructure?.uiPosition as any}
-                onFeed={() => {
-                  moveCameraToTarget(hyperstructures[i]?.uiPosition as any);
-                  setShowFeedPopup(true);
-                }}
-              />
-            ),
-          )}
+          {/* <div className="text-xs text-gold">Hyperstructures: </div> */}
+          {[hyperstructures[0]].map((hyperstructure, i) => (
+            <HyperstructuresListItem
+              key={i}
+              hyperstructure={hyperstructure}
+              order={hyperstructure?.orderId || 0}
+              coords={hyperstructure?.uiPosition as any}
+              onFeed={() => {
+                moveCameraToTarget(hyperstructures[i]?.uiPosition as any);
+                setShowFeedPopup(true);
+              }}
+            />
+          ))}
         </div>
       )}
     </>

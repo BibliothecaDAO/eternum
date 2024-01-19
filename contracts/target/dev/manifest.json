@@ -1457,7 +1457,7 @@
     {
       "name": "eternum::systems::config::contracts::config_systems",
       "address": "0x7fff06bbcbe4f42f22c86b14e7a80604495c8b2034d14cbb10d32402c933ca8",
-      "class_hash": "0x537c1f5a3261eb0dadb3038469f5774a8d4b9ede5e2ba3cf241cc5744d6c719",
+      "class_hash": "0x4e2a8d89fe86e1120f19b3574b6bb98c9b68d1cca11c1292d1bc9bc0062edb8",
       "abi": [
         {
           "type": "impl",

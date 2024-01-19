@@ -29,11 +29,11 @@ import { ReactComponent as ArrowSeparator } from "../../../assets/icons/common/a
 import { WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { PercentageSelection } from "../../../elements/PercentageSelection";
-import { LevelingTable } from "../../cityview/realm/leveling/LevelingPopup";
-import { LevelIndex, useLevel } from "../../../hooks/helpers/useLevel";
+import { useLevel } from "../../../hooks/helpers/useLevel";
 import { getTotalResourceWeight } from "../../cityview/realm/trade/utils";
 import { useCombat } from "../../../hooks/helpers/useCombat";
 import { RaidsPanel } from "../../cityview/realm/combat/raids/RaidsPanel";
+import { EnnemyRaidersPanel } from "../../cityview/realm/combat/defence/EnnemyRaidsPanel";
 
 type FeedHyperstructurePopupProps = {
   onClose: () => void;
@@ -42,7 +42,9 @@ type FeedHyperstructurePopupProps = {
 
 export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePopupProps) => {
   const {
-    account: { account },
+    account: {
+      account: { address },
+    },
   } = useDojo();
 
   const [selectedTab, setSelectedTab] = useState(0);
@@ -65,12 +67,12 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
   const { caravans } = useGetPositionCaravans(hyperStructurePosition.x, hyperStructurePosition.y);
   const { useOwnerRaidersOnPosition, useEnemyRaidersOnPosition } = useCombat();
 
-  const enemyRaidersIds = hyperstructureData ? useEnemyRaidersOnPosition(hyperstructureData.position) : [];
-  const myRaidersIds = hyperstructureData
-    ? useOwnerRaidersOnPosition(BigInt(account.address), hyperstructureData.position)
+  const enemyRaidersIds = hyperstructureData
+    ? useEnemyRaidersOnPosition(BigInt(address), hyperstructureData.position)
     : [];
-
-  const raiderIds = [...enemyRaidersIds, ...myRaidersIds];
+  const myRaidersIds = hyperstructureData
+    ? useOwnerRaidersOnPosition(BigInt(address), hyperstructureData.position)
+    : [];
 
   const tabs = useMemo(
     () => [
@@ -151,10 +153,17 @@ export const FeedHyperstructurePopup = ({ onClose, order }: FeedHyperstructurePo
             <div>{`Raiders (${enemyRaidersIds.length + myRaidersIds.length})`}</div>
           </div>
         ),
-        component: hyperstructureData ? <RaidsPanel raiderIds={raiderIds} /> : <></>,
+        component: hyperstructureData ? (
+          <div>
+            <RaidsPanel raiderIds={myRaidersIds} showCreateButton={false} />
+            <EnnemyRaidersPanel raiderIds={enemyRaidersIds} />
+          </div>
+        ) : (
+          <></>
+        ),
       },
     ],
-    [selectedTab, caravans, raiderIds],
+    [selectedTab, caravans, myRaidersIds, enemyRaidersIds],
   );
 
   return (

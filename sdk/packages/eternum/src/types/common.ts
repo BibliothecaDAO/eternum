@@ -7,6 +7,7 @@ export enum Winner {
 export enum DESTINATION_TYPE {
   HOME,
   HYPERSTRUCTURE,
+  REALM,
   BANK,
 }
 
@@ -34,7 +35,8 @@ export interface CombatInfo {
   homePosition?: Position | undefined;
   entityOwnerId?: bigint | undefined;
   owner?: bigint | undefined;
-  locationRealmEntityId?: bigint | undefined;
+  locationEntityId?: bigint | undefined;
+  locationType?: DESTINATION_TYPE;
   originRealmId?: bigint | undefined;
   order: number;
 }
@@ -191,4 +193,5 @@ export interface HyperStructureInterface {
   attack: number;
   health: number;
   watchTowerQuantity: number;
+  distance: number;
 }

@@ -476,13 +476,15 @@ export function defineContractComponents(world: World) {
         {
           entity_id: RecsType.BigInt,
           hyperstructure_type: RecsType.Number,
-          order: RecsType.Number,
+          controlling_order: RecsType.Number,
           completed: RecsType.Boolean,
+          completion_cost_id: RecsType.BigInt,
+          completion_resource_count: RecsType.Number,
         },
         {
           metadata: {
             name: "HyperStructure",
-            types: ["u128", "u8", "u8", "bool"],
+            types: ["u128", "u8", "u8", "bool", "u128", "u32"],
             customTypes: [],
           },
         },

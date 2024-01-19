@@ -1,12 +1,10 @@
 import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
-import { Position } from "@bibliothecadao/eternum";
+import { DESTINATION_TYPE, Position } from "@bibliothecadao/eternum";
 import { useEntityQuery } from "@dojoengine/react";
 import useRealmStore from "../store/useRealmStore";
 import { divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
-import { useHyperstructure } from "./useHyperstructure";
 import { CombatInfo } from "@bibliothecadao/eternum";
-import hyperStructures from "../../data/hyperstructures.json";
 
 export function useCombat() {
   const {
@@ -64,7 +62,7 @@ export function useCombat() {
 
   const getDefenceOnPosition = (position: Position): CombatInfo | undefined => {
     const { x, y } = position;
-    const realmEntityIds = Array.from(runQuery([HasValue(Position, { x, y }), Has(Realm)]));
+    const realmEntityIds = Array.from(runQuery([HasValue(Position, { x, y }), Has(TownWatch)]));
     const watchTower = realmEntityIds.length === 1 ? getComponentValue(TownWatch, realmEntityIds[0]) : undefined;
     if (watchTower) {
       const watchTowerInfo = getEntitiesCombatInfo([watchTower.town_watch_id]);
@@ -74,13 +72,13 @@ export function useCombat() {
     }
   };
 
-  const useEnemyRaidersOnPosition = (position: Position) => {
+  const useEnemyRaidersOnPosition = (owner: bigint, position: Position) => {
     const { x, y } = position;
     const entityIds = useEntityQuery([
       Has(Attack),
       NotValue(Health, { value: 0n }),
       HasValue(Position, { x, y }),
-      NotValue(EntityOwner, { entity_owner_id: realmEntityId }),
+      NotValue(Owner, { address: owner }),
     ]);
 
     return entityIds.map((id) => {
@@ -144,20 +142,37 @@ export function useCombat() {
       const position = getComponentValue(Position, entityIndex);
       const entityOwner = getComponentValue(EntityOwner, entityIndex);
       const owner = getComponentValue(Owner, entityIndex);
+
+      /// @note: determine the type of position the raider is on (home, other realm, hyperstructure, bank)
+      let locationEntityId: bigint | undefined;
+      let locationType: DESTINATION_TYPE | undefined;
+      // if present on realm
       const locationRealmEntityIds = position
         ? Array.from(runQuery([Has(Realm), HasValue(Position, { x: position.x, y: position.y })]))
         : [];
-      const locationRealmEntityId =
-        locationRealmEntityIds.length === 1
-          ? getComponentValue(Realm, locationRealmEntityIds[0])!.entity_id
-          : undefined;
+      if (locationRealmEntityIds.length === 1) {
+        locationEntityId = getComponentValue(Realm, locationRealmEntityIds[0])?.entity_id;
+        locationType = DESTINATION_TYPE.REALM;
+      }
+
+      // if present on hyperstructure
+      const locationHyperstructureIds = position
+        ? Array.from(runQuery([Has(HyperStructure), HasValue(Position, { x: position.x, y: position.y })]))
+        : [];
+      if (locationHyperstructureIds.length === 1) {
+        locationEntityId = getComponentValue(HyperStructure, locationHyperstructureIds[0])?.entity_id;
+        locationType = DESTINATION_TYPE.HYPERSTRUCTURE;
+      }
+      if (locationEntityId === realmEntityId) {
+        locationType = DESTINATION_TYPE.HOME;
+      }
+
       const originRealm = entityOwner
         ? getComponentValue(Realm, getEntityIdFromKeys([entityOwner.entity_owner_id]))
         : undefined;
       const homePosition = entityOwner
         ? getComponentValue(Position, getEntityIdFromKeys([BigInt(entityOwner.entity_owner_id)]))
         : undefined;
-      const hyperstructure = getComponentValue(HyperStructure, getEntityIdFromKeys([entityId]));
 
       return {
         entityId,
@@ -173,9 +188,10 @@ export function useCombat() {
         entityOwnerId: entityOwner?.entity_owner_id,
         owner: owner?.address,
         homePosition: homePosition ? { x: homePosition.x, y: homePosition.y } : undefined,
-        locationRealmEntityId,
+        locationEntityId,
+        locationType,
         originRealmId: originRealm?.realm_id,
-        order: originRealm?.order || hyperstructure?.order || 0,
+        order: originRealm?.order || 0,
       };
     });
   };

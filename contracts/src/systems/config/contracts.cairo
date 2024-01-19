@@ -659,7 +659,12 @@ mod config_systems {
                 TownWatch {
                     entity_id: hyperstructure_id,
                     town_watch_id: hyperstructure_town_watch_id,
-                }
+                },
+                Position {
+                    entity_id: hyperstructure_town_watch_id,
+                    x: coord.x,
+                    y: coord.y
+                },
             ));  
 
 

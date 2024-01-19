@@ -1,32 +1,18 @@
 import { useMemo } from "react";
 import clsx from "clsx";
 import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useDojo } from "../../../DojoContext";
 import useUIStore from "../../../hooks/store/useUIStore";
 
 type ConqueredHyperstructuresProps = {
   className?: string;
-  entityId: bigint | undefined;
+  order: number;
 };
 
-export const ConqueredHyperstructures = ({ className, entityId }: ConqueredHyperstructuresProps) => {
-  const {
-    setup: {
-      components: { Realm },
-    },
-  } = useDojo();
-
+export const ConqueredHyperstructures = ({ className, order }: ConqueredHyperstructuresProps) => {
   const { getConqueredHyperstructures } = useHyperstructure();
   const conqueredHyperstructures = useMemo(() => {
-    if (entityId) {
-      const order = getComponentValue(Realm, getEntityIdFromKeys([entityId]))?.order;
-      return order ? getConqueredHyperstructures(order).length : 0;
-    } else {
-      return 0;
-    }
-  }, [entityId]);
+    return getConqueredHyperstructures(order).length;
+  }, [order]);
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -65,10 +51,7 @@ export const ConqueredHyperstructures = ({ className, entityId }: ConqueredHyper
           ),
         });
       }}
-      className={clsx(
-        className,
-        "flex flex-col items-center justify-center absolute top-2 right-2 w-14 h-14 -mt-1 cursor-pointer",
-      )}
+      className={clsx(className, clsx("flex flex-col items-center justify-center w-14 h-14 cursor-pointer", className))}
       onClick={() => {}}
     >
       {/* text-[13px] */}
@@ -98,7 +81,7 @@ export const ConqueredHyperstructures = ({ className, entityId }: ConqueredHyper
           className={timeLeftColors.bg}
         />
       </svg>
-      <div className="text-white text-xxs absolute -bottom-5">Conquered Hyperstructures</div>
+      <div className="text-white text-xxs absolute -bottom-5">Conquests</div>
     </div>
   );
 };

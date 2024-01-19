@@ -101,7 +101,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
   const isTraveling = raider.arrivalTime && nextBlockTimestamp ? raider.arrivalTime > nextBlockTimestamp : false;
   const hasMaxHealth = health === 10 * quantity;
   const destinationRealmId = raider.position ? getRealmIdByPosition(raider.position) : undefined;
-  const destinationRealmName = destinationRealmId ? getRealmNameById(destinationRealmId) : undefined;
+  const destinationName = destinationRealmId ? getRealmNameById(destinationRealmId) : "Hyperstructure";
   const isHome = destinationRealmId === realmId;
 
   // get info about the destination defence
@@ -124,24 +124,24 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
               `flex items-center p-1 border text-light-pink rounded-br-md rounded-tl-md border-gray-gold`,
               isTraveling && "!border-orange !text-orange",
               !isTraveling && isHome && "!text-order-brilliance !border-order-brilliance",
-              !isTraveling && destinationRealmName && !isHome && "!text-order-giants !border-order-giants",
+              !isTraveling && destinationName && !isHome && "!text-order-giants !border-order-giants",
             )}
           >
-            {isTraveling && destinationRealmName && !isHome && "Outgoing"}
+            {isTraveling && destinationName && !isHome && "Outgoing"}
             {isTraveling && isHome && "Incoming"}
             {!isTraveling && isHome && "At the base"}
-            {!isTraveling && destinationRealmName && !isHome && "Ready for attack"}
+            {!isTraveling && destinationName && !isHome && "Ready for attack"}
           </div>
         )}
         <div className="flex items-center ml-1">
-          {isTraveling && destinationRealmName && !isHome && (
+          {isTraveling && destinationName && !isHome && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Traveling to</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
                 {destinationRealmId?.toString() && (
                   <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xxs" />
                 )}
-                {destinationRealmName}
+                {destinationName}
                 <span className="italic text-light-pink ml-1">with</span>
               </div>
             </div>
@@ -159,14 +159,14 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
               <span className="italic text-light-pink">Home</span>
             </div>
           )}
-          {!isTraveling && destinationRealmName && !isHome && (
+          {!isTraveling && destinationName && !isHome && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Waiting on</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
                 {destinationRealmId?.toString() && (
                   <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xxs" />
                 )}
-                {destinationRealmName}
+                {destinationName}
                 <span className="italic text-light-pink ml-1">with</span>
               </div>
             </div>

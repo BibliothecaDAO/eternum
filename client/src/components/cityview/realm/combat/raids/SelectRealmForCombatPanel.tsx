@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { SelectableRealmInterface, getOrderName } from "@bibliothecadao/eternum";
+import { HyperStructureInterface, SelectableRealmInterface, getOrderName } from "@bibliothecadao/eternum";
 import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useTrade } from "../../../../../hooks/helpers/useTrade";
@@ -52,7 +52,9 @@ export const SelectRealmForCombatPanel = ({
       { label: "Realm", sortKey: "name", className: "ml-4 mr-4" },
       { label: "Distance", sortKey: "distance", className: "ml-auto" },
       { label: "Level", sortKey: "level", className: "ml-auto" },
-      { label: "Defence", sortKey: "defence", className: "ml-auto" },
+      { label: "🗡️", sortKey: "attack", className: "ml-auto" },
+      { label: "🛡️", sortKey: "defence", className: "ml-auto" },
+      { label: "🩸", sortKey: "health", className: "ml-auto" },
     ];
   }, []);
 
@@ -164,23 +166,17 @@ export const SelectRealmForCombatPanel = ({
                     }}
                   >
                     <div className="flex items-center justify-between text-xxs">
-                      <div className="flex-none mr-10">
+                      <div className="flex-none w-12">
                         <OrderIcon order={order} size="xs" />
                       </div>
-
-                      <div className="flex-none w-20">{addressName}</div>
-
-                      {/* <div className="flex-none w-20">{destinationRealmId.toString()}</div> */}
-
+                      <div className="flex-none w-16 text-left">{addressName}</div>
                       <div className="flex-none w-20 text-left">{name}</div>
-
-                      <div className="flex-none text-left w-10">{`${distance.toFixed(0)} km`}</div>
-
-                      <div className="flex-grow text-right">{level}</div>
-
-                      <div className="flex-none w-16 text-right">
-                        {/* <Shield className="text-gold" /> */}
-                        <div>{defence?.defence ? defence.defence : 0}</div>
+                      <div className="flex-none w-20 text-center">{`${distance.toFixed(0)} km`}</div>
+                      <div className="flex-none w-16 text-center">{level}</div>
+                      <div className="flex-none w-10 text-center">{defence?.attack || 0}</div>
+                      <div className="flex-none w-10 text-center">{defence?.defence || 0}</div>
+                      <div className="flex-none w-10 text-right">
+                        {((defence?.health || 0) / (defence?.quantity || 1)) * 10}%
                       </div>
                     </div>
                   </div>
@@ -275,11 +271,9 @@ export const SelectHyperstructureForCombat = ({
   setCanAttack: (canAttack: boolean) => void;
 }) => {
   const [nameFilter, setNameFilter] = useState("");
-  // const [originalRealms, setOriginalRealms] = useState<SelectableRealmInterface[]>([]);
-  // const [sortedRealms, setSortedRealms] = useState<SelectableRealmInterface[]>([]);
-  // const deferredNameFilter = useDeferredValue(nameFilter);
+  const [sortedHyperstructures, setSortedHyperstructures] = useState<HyperStructureInterface[]>([]);
+  const deferredNameFilter = useDeferredValue(nameFilter);
 
-  const { calculateDistance } = useCaravan();
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const sortingParams = useMemo(() => {
@@ -306,19 +300,17 @@ export const SelectHyperstructureForCombat = ({
     return getHyperstructures();
   }, []);
 
-  // useEffect(() => {
-  //   const sorted = sortRealms(originalRealms, activeSort);
-  //   if (nameFilter.length > 0) {
-  //     const filtered = sorted.filter(
-  //       (realm) =>
-  //         realm.name.toLowerCase().includes(deferredNameFilter.toLowerCase()) ||
-  //         realm.realmId.toString().includes(deferredNameFilter),
-  //     );
-  //     setSortedRealms(filtered);
-  //     return;
-  //   }
-  //   setSortedRealms(sorted);
-  // }, [originalRealms, activeSort, deferredNameFilter]);
+  useEffect(() => {
+    const sorted = sortHyperstructures(hyperstructures, activeSort);
+    if (nameFilter.length > 0) {
+      const filtered = sorted.filter((hyperstructure) =>
+        hyperstructure.name.toLowerCase().includes(deferredNameFilter.toLowerCase()),
+      );
+      setSortedHyperstructures(filtered);
+      return;
+    }
+    setSortedHyperstructures(sorted);
+  }, [hyperstructures, activeSort, deferredNameFilter]);
 
   return (
     <div className="flex flex-col p-1 rounded border-gold border w-full">
@@ -348,7 +340,7 @@ export const SelectHyperstructureForCombat = ({
             ))}
           </SortPanel>
           <div className="flex flex-col px-1 mb-1 space-y-2 max-h-40 overflow-y-auto">
-            {hyperstructures.map(
+            {sortedHyperstructures.map(
               (
                 {
                   orderId: order,
@@ -360,10 +352,10 @@ export const SelectHyperstructureForCombat = ({
                   health,
                   watchTowerQuantity,
                   progress,
+                  distance,
                 },
                 i,
               ) => {
-                const distance = calculateDistance(realmEntityId, hyperstructureId);
                 return (
                   <div
                     key={i}
@@ -378,24 +370,16 @@ export const SelectHyperstructureForCombat = ({
                     }}
                   >
                     <div className="flex items-center justify-between text-xxs">
-                      <div className="flex-none mr-10">
-                        <OrderIcon order={getOrderName(order)} size="xs" />
+                      <div className="flex-none w-12 text-left">
+                        {order !== 0 ? <OrderIcon order={getOrderName(order)} size="xs" /> : <div>None</div>}
                       </div>
-                      <div className="flex-none w-20">{name}</div>
-
-                      <div className="flex-none text-left w-10">{`${distance?.toFixed(0)} km`}</div>
-
-                      <div className="flex-none w-20 text-left">{completed}</div>
-
-                      <div className="flex-grow text-right">{progress}</div>
-
-                      <div className="flex-grow text-right">{attack}</div>
-
-                      <div className="flex-none w-16 text-right">{defence}</div>
-
-                      <div className="flex-none w-16 text-right">
-                        {health}/{watchTowerQuantity * 10}
-                      </div>
+                      <div className="flex-none w-24 truncate text-left">{name}</div>
+                      <div className="flex-none w-16 text-center">{`${distance?.toFixed(0)} km`}</div>
+                      <div className="flex-none w-16 text-right">{!completed ? "✅" : "❌"}</div>
+                      <div className="flex-none w-16 text-right">{progress}</div>
+                      <div className="flex-none w-10 text-right">{attack}</div>
+                      <div className="flex-none w-10 text-right">{defence}</div>
+                      <div className="flex-none w-10 text-right">{(health / watchTowerQuantity || 0) * 10}%</div>
                     </div>
                   </div>
                 );
@@ -407,3 +391,85 @@ export const SelectHyperstructureForCombat = ({
     </div>
   );
 };
+
+/**
+ * sort realms based on active filters
+ */
+export function sortHyperstructures(
+  hyperstructures: HyperStructureInterface[],
+  activeSort: SortInterface,
+): HyperStructureInterface[] {
+  const sortedHyperstructures = [...hyperstructures]; // Making a copy of the realms array
+
+  if (activeSort.sort !== "none") {
+    if (activeSort.sortKey === "name") {
+      return sortedHyperstructures.sort((a, b) => {
+        if (activeSort.sort === "asc") {
+          return a.name.localeCompare(b.name);
+        } else {
+          return b.name.localeCompare(a.name);
+        }
+      });
+    } else if (activeSort.sortKey === "progress") {
+      return sortedHyperstructures.sort((a, b) => {
+        if (activeSort.sort === "asc") {
+          return a.progress - b.progress;
+        } else {
+          return b.progress - a.progress;
+        }
+      });
+    } else if (activeSort.sortKey === "distance") {
+      return sortedHyperstructures.sort((a, b) => {
+        if (activeSort.sort === "asc") {
+          return a.distance - b.distance;
+        } else {
+          return b.distance - a.distance;
+        }
+      });
+    } else if (activeSort.sortKey === "order") {
+      return sortedHyperstructures.sort((a, b) => {
+        if (activeSort.sort === "asc") {
+          return a.orderId - b.orderId;
+        } else {
+          return b.orderId - a.orderId;
+        }
+      });
+    } else if (activeSort.sortKey === "progress") {
+      return sortedHyperstructures.sort((a, b) => {
+        if (activeSort.sort === "asc") {
+          return (a?.progress || 0) - (b?.progress || 0);
+        } else {
+          return (b?.progress || 0) - (a?.progress || 0);
+        }
+      });
+    } else if (activeSort.sortKey === "defence") {
+      return sortedHyperstructures.sort((a, b) => {
+        if (activeSort.sort === "asc") {
+          return (a?.defence || 0) - (b?.defence || 0);
+        } else {
+          return (b?.defence || 0) - (a?.defence || 0);
+        }
+      });
+    } else if (activeSort.sortKey === "attack") {
+      return sortedHyperstructures.sort((a, b) => {
+        if (activeSort.sort === "asc") {
+          return (a?.attack || 0) - (b?.attack || 0);
+        } else {
+          return (b?.attack || 0) - (a?.attack || 0);
+        }
+      });
+    } else if (activeSort.sortKey === "health") {
+      return sortedHyperstructures.sort((a, b) => {
+        if (activeSort.sort === "asc") {
+          return (a?.health || 0) - (b?.health || 0);
+        } else {
+          return (b?.health || 0) - (a?.health || 0);
+        }
+      });
+    } else {
+      return sortedHyperstructures;
+    }
+  } else {
+    return sortedHyperstructures.sort((a, b) => Number(b.distance - a.distance));
+  }
+}

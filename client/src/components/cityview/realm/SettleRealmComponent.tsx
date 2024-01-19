@@ -11,7 +11,6 @@ import { useRealm } from "../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { getPosition } from "../../../utils/utils";
 import { order_statments } from "../../../data/orders";
-import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
 
 export const MAX_REALMS = 5;
 
@@ -25,8 +24,6 @@ export const SettleRealmComponent = () => {
     },
     account: { account },
   } = useDojo();
-
-  const { getHyperstructureIdByOrder } = useHyperstructure();
 
   const { getNextRealmIdForOrder, getRealmIdForOrderAfter } = useRealm();
 
@@ -59,23 +56,20 @@ export const SettleRealmComponent = () => {
 
       let position = getPosition(new_realm_id);
 
-      const order_hyperstructure_id = getHyperstructureIdByOrder(realm.order);
-
-      if (order_hyperstructure_id) {
-        calldata.push({
-          realm_id: Number(realm.realmId),
-          order: realm.order,
-          wonder: realm.wonder,
-          regions: realm.regions,
-          resource_types_count: realm.resourceTypesCount,
-          resource_types_packed: realm.resourceTypesPacked,
-          rivers: realm.rivers,
-          harbors: realm.harbors,
-          cities: realm.cities,
-          position,
-          order_hyperstructure_id,
-        });
-      }
+      calldata.push({
+        realm_id: Number(realm.realmId),
+        order: realm.order,
+        wonder: realm.wonder,
+        regions: realm.regions,
+        resource_types_count: realm.resourceTypesCount,
+        resource_types_packed: realm.resourceTypesPacked,
+        rivers: realm.rivers,
+        harbors: realm.harbors,
+        cities: realm.cities,
+        position,
+        // todo: remove that after changed in contract
+        order_hyperstructure_id: 0,
+      });
     }
 
     // @dev: do it in 3 times because too many steps for 1 tx

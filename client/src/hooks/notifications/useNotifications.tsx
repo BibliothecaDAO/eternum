@@ -9,7 +9,7 @@ import {
   generateEmptyChestNotifications,
   generateLaborNotifications,
   generateArrivedAtBankNotifications,
-  generateArrivedAtHyperstructureNotifications,
+  // generateArrivedAtHyperstructureNotifications,
   generateEnemyRaidersHaveArrivedNotifications,
   generateYourRaidersHaveArrivedNotifications,
 } from "./generateNotifications";
@@ -18,7 +18,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCombat } from "../helpers/useCombat";
 import { useBanks } from "../helpers/useBanks";
-import { useHyperstructure } from "../helpers/useHyperstructure";
+// import { useHyperstructure } from "../helpers/useHyperstructure";
 import { parseCombatEvent } from "../../utils/combat";
 
 export const useNotifications = () => {
@@ -41,14 +41,13 @@ export const useNotifications = () => {
   const { getBanks } = useBanks();
   const banks = useMemo(() => getBanks(), []);
 
-  const { getHyperstructureIdByRealmEntityId } = useHyperstructure();
-  const hyperstructure = useMemo(() => {
-    const hyperstructureId = getHyperstructureIdByRealmEntityId(realmEntityId);
-    if (hyperstructureId) {
-      const position = getComponentValue(components.Position, getEntityIdFromKeys([hyperstructureId]));
-      return position ? { hyperstructureId, position: { x: position.x, y: position.y } } : undefined;
-    }
-  }, [hyperstructureId]);
+  // const hyperstructure = useMemo(() => {
+  //   const hyperstructureId = getHyperstructureIdByRealmEntityId(realmEntityId);
+  //   if (hyperstructureId) {
+  //     const position = getComponentValue(components.Position, getEntityIdFromKeys([hyperstructureId]));
+  //     return position ? { hyperstructureId, position: { x: position.x, y: position.y } } : undefined;
+  //   }
+  // }, [hyperstructureId]);
 
   const { getEntityLevel, getHyperstructureLevelBonus, getRealmLevelBonus } = useLevel();
   const { getResourcesFromInventory } = useResources();
@@ -99,16 +98,16 @@ export const useNotifications = () => {
         );
         newNotifications = newNotifications.concat(arrivedAtBankNotifications);
 
-        if (hyperstructure) {
-          let arrivedAtHyperstructureNotifications = generateArrivedAtHyperstructureNotifications(
-            BigInt(account.address),
-            nextBlockTimestamp,
-            components,
-            hyperstructure,
-            getResourcesFromInventory,
-          );
-          newNotifications = newNotifications.concat(arrivedAtHyperstructureNotifications);
-        }
+        // if (hyperstructure) {
+        //   let arrivedAtHyperstructureNotifications = generateArrivedAtHyperstructureNotifications(
+        //     BigInt(account.address),
+        //     nextBlockTimestamp,
+        //     components,
+        //     hyperstructure,
+        //     getResourcesFromInventory,
+        //   );
+        //   newNotifications = newNotifications.concat(arrivedAtHyperstructureNotifications);
+        // }
 
         let enemyRaidersHaveArrivedNotifications = generateEnemyRaidersHaveArrivedNotifications(
           BigInt(account.address),

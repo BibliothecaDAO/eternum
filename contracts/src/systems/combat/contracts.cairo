@@ -515,15 +515,15 @@ mod combat_systems {
 
             let caller = starknet::get_caller_address();
 
-            // let unit_owner = get!(world, unit_id, Owner);
-            // assert(unit_owner.address == caller, 'not unit owner');
+            let unit_owner = get!(world, unit_id, Owner);
+            assert(unit_owner.address == caller, 'not unit owner');
 
-            // let unit_realm_entity_id = get!(world, unit_id, EntityOwner).entity_owner_id;
-            // assert(unit_realm_entity_id != 0, 'invalid unit id');
+            let unit_realm_entity_id = get!(world, unit_id, EntityOwner).entity_owner_id;
+            assert(unit_realm_entity_id != 0, 'invalid unit id');
 
             // check that entity owner is a realm
-            // let realm = get!(world, unit_realm_entity_id, Realm);
-            // assert(realm.realm_id != 0, 'not a realm');
+            let realm = get!(world, unit_realm_entity_id, Realm);
+            assert(realm.realm_id != 0, 'not a realm');
 
             let mut unit_health = get!(world, unit_id, Health);
             let unit_quantity = get!(world, unit_id, Quantity);

@@ -12,9 +12,10 @@ import { CombatInfo } from "@bibliothecadao/eternum";
 
 type RaidsPanelProps = {
   raiderIds: bigint[];
+  showCreateButton: boolean;
 };
 
-export const RaidsPanel = ({ raiderIds }: RaidsPanelProps) => {
+export const RaidsPanel = ({ raiderIds, showCreateButton }: RaidsPanelProps) => {
   const [showBuildRaiders, setShowBuildRaiders] = useState(false);
   const [selectedRaider, setSelectedRaider] = useState<CombatInfo | null>(null);
 
@@ -73,11 +74,13 @@ export const RaidsPanel = ({ raiderIds }: RaidsPanelProps) => {
           />
         ))}
       </div>
-      <div className="sticky w-32 -translate-x-1/2 bottom-2 left-1/2 !rounded-full flex flex-col items-center">
-        <Button className="" onClick={() => setShowBuildRaiders(true)} variant="primary">
-          + New raiding party
-        </Button>
-      </div>
+      {showCreateButton && (
+        <div className="sticky w-32 -translate-x-1/2 bottom-2 left-1/2 !rounded-full flex flex-col items-center">
+          <Button className="" onClick={() => setShowBuildRaiders(true)} variant="primary">
+            + New raiding party
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
