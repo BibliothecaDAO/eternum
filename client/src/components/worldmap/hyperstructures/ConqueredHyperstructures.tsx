@@ -46,11 +46,15 @@ export const ConqueredHyperstructures = ({ className, order }: ConqueredHyperstr
           position: "top",
           content: (
             <>
-              <ConqueredHyperstructuresBonusIcons conqueredHyperstructures={conqueredHyperstructures} />
+              <ConqueredHyperstructuresBonusIcons
+                conqueredHyperstructures={conqueredHyperstructures}
+                className="flex flex-row"
+              />
             </>
           ),
         });
       }}
+      onMouseLeave={() => setTooltip(null)}
       className={clsx(className, clsx("flex flex-col items-center justify-center w-14 h-14 cursor-pointer", className))}
       onClick={() => {}}
     >
@@ -81,7 +85,7 @@ export const ConqueredHyperstructures = ({ className, order }: ConqueredHyperstr
           className={timeLeftColors.bg}
         />
       </svg>
-      <div className="text-white text-xxs absolute -bottom-5">Conquests</div>
+      <div className="text-white text-xxs absolute -bottom-5">Conquered</div>
     </div>
   );
 };

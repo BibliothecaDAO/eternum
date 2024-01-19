@@ -27,6 +27,7 @@ import { getTotalResourceWeight } from "../../cityview/realm/trade/utils";
 import { useCombat } from "../../../hooks/helpers/useCombat";
 import { RaidsPanel } from "../../cityview/realm/combat/raids/RaidsPanel";
 import { EnnemyRaidersPanel } from "../../cityview/realm/combat/defence/EnnemyRaidsPanel";
+import { HyperStructureRaidersPanel } from "./HyperStructureRaiders/HyperStructureRaidersPanel";
 
 type FeedHyperstructurePopupProps = {
   onClose: () => void;
@@ -134,22 +135,7 @@ export const FeedHyperstructurePopup = ({ selectedHyperstructure, onClose }: Fee
             <div>{`Raiders (${enemyRaidersIds.length + myRaidersIds.length})`}</div>
           </div>
         ),
-        component: (
-          <div>
-            {myRaidersIds.length > 0 && (
-              <Headline className="mt-2" size="big">
-                Your Raiders
-              </Headline>
-            )}
-            <RaidsPanel raiderIds={myRaidersIds} showCreateButton={false} />
-            {enemyRaidersIds.length > 0 && (
-              <Headline className="" size="big">
-                Other Raiders
-              </Headline>
-            )}
-            <EnnemyRaidersPanel raiderIds={enemyRaidersIds} />
-          </div>
-        ),
+        component: <HyperStructureRaidersPanel enemyRaidersIds={enemyRaidersIds} myRaidersIds={myRaidersIds} />,
       },
     ],
     [selectedTab, caravans, myRaidersIds, enemyRaidersIds],
@@ -389,7 +375,7 @@ const BuildHyperstructurePanel = ({
     } else if (step == 2) {
       return false;
     } else {
-      return true;
+      return !(hyperstructureData?.progress === 100);
     }
   }, [step, selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
 
@@ -463,7 +449,7 @@ const BuildHyperstructurePanel = ({
             <div className="relative w-full">
               <img src={`/images/buildings/hyperstructure.jpg`} className="object-cover w-full rounded-[10px]" />
               <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
-                <div className="mb-1 ml-1 italic text-light-pink text-xxs">{"Resources needed to level up:"}</div>
+                <div className="mb-1 ml-1 italic text-light-pink text-xxs">Resources needed to complete:</div>
                 <div className="grid grid-cols-4 gap-1">
                   {resourcesLeftToComplete &&
                     Object.keys(resourcesLeftToComplete).map((id) => (
@@ -477,12 +463,12 @@ const BuildHyperstructurePanel = ({
                     ))}
                 </div>
               </div>
-              <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
-                <div className="mb-1 ml-1 italic text-light-pink text-xxs">{"Hyperstructure Watch Tower:"}</div>
+              <div className="flex flex-col p-2 w-[90%] absolute left-3 mx-2 top-2 rounded-[10px] bg-black/60">
+                <div className="mb-1 ml-1 italic text-light-pink text-xxs">Hyperstructure Watch Tower</div>
                 {hyperstructureData && (
                   <div className="flex relative justify-between text-xxs text-lightest w-full">
                     <div className="flex items-center">
-                      <div className="flex items-center h-6 mr-2">
+                      <div className="flex items-center h-6 ">
                         <img src="/images/units/troop-icon.png" className="h-[28px]" />
                         <div className="flex ml-1 text-center">
                           <div className="bold mr-1">x{hyperstructureData.watchTowerQuantity}</div>
@@ -492,7 +478,7 @@ const BuildHyperstructurePanel = ({
                     </div>
                     <div className="flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center">
                       <div
-                        className="flex items-center h-6 mr-2"
+                        className="flex items-center h-6 "
                         onMouseEnter={() =>
                           setTooltip({
                             position: "top",
@@ -682,7 +668,7 @@ const BuildHyperstructurePanel = ({
             }}
             variant={canGoToNextStep ? "success" : "outline"}
           >
-            {step == 3 ? "Send Caravan" : hyperstructureData?.completed ? "Complete" : "Next Step"}
+            {step == 3 ? "Send Caravan" : hyperstructureData?.progress === 100 ? "Complete" : "Next Step"}
           </Button>
         )}
         {isLoading && (

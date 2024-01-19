@@ -7,6 +7,7 @@ import { FeedHyperstructurePopup } from "./FeedHyperstructure";
 import useUIStore from "../../../hooks/store/useUIStore";
 // import { LevelIndex } from "../../../hooks/helpers/useLevel";
 import { HyperStructureInterface } from "@bibliothecadao/eternum";
+import { getRealm } from "../../../utils/realms";
 
 type HyperstructuresListComponentProps = {
   showOnlyPlayerOrder?: boolean;
@@ -24,10 +25,12 @@ export const HyperstructuresListComponent = ({ showOnlyPlayerOrder = false }: Hy
 
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
-  // const chosenOrder = useMemo(
-  //   () => (realmEntityIds.length > 0 ? getRealm(realmEntityIds[0].realmId)?.order : undefined),
-  //   [account, realmEntityIds],
-  // );
+  const playerOrder = useMemo(
+    () => (realmEntityIds.length > 0 ? getRealm(realmEntityIds[0].realmId)?.order : undefined),
+    [account, realmEntityIds],
+  );
+
+  console.log("refreshing hyperstructure list component");
 
   // const bonusList = useMemo(() => {
   //   if (!hyperstructures) return [];
@@ -76,11 +79,11 @@ export const HyperstructuresListComponent = ({ showOnlyPlayerOrder = false }: Hy
       {!showOnlyPlayerOrder && (
         <div className="flex flex-col space-y-2 px-2 mb-2">
           {/* <div className="text-xs text-gold">Hyperstructures: </div> */}
-          {[hyperstructures[0]].map((hyperstructure, i) => (
+          {hyperstructures.map((hyperstructure, i) => (
             <HyperstructuresListItem
               key={i}
               hyperstructure={hyperstructure}
-              order={hyperstructure?.orderId || 0}
+              playerOrder={playerOrder || 0}
               coords={hyperstructure?.uiPosition as any}
               onFeed={() => {
                 moveCameraToTarget(hyperstructures[i]?.uiPosition as any);

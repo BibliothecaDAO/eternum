@@ -860,5 +860,18 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Orders: (() => {
+      return defineComponent(
+        world,
+        { order_id: RecsType.BigInt, hyperstructure_count: RecsType.BigInt },
+        {
+          metadata: {
+            name: "Orders",
+            types: ["u128", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
   };
 }

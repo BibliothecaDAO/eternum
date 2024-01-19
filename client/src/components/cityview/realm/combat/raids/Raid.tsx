@@ -62,10 +62,11 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
 
   // offload
   const onOffload = async () => {
-    setIsLoading(true);
+    // setIsLoading(true);
     if (raider?.entityId && inventoryResources) {
       await offloadChests(realmEntityId, raider.entityId, inventoryResources.indices, inventoryResources.resources);
     }
+    // setIsLoading(false);
   };
 
   // get entity on which they are
@@ -314,7 +315,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
                   {`Attack`}
                 </Button>
               )}
-              {!isTraveling && (
+              {!isTraveling && !hasResources && (
                 <Button
                   size="xs"
                   className="ml-auto"

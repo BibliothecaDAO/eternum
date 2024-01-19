@@ -375,8 +375,8 @@ export const SelectHyperstructureForCombat = ({
                       </div>
                       <div className="flex-none w-24 truncate text-left">{name}</div>
                       <div className="flex-none w-16 text-center">{`${distance?.toFixed(0)} km`}</div>
-                      <div className="flex-none w-16 text-right">{!completed ? "✅" : "❌"}</div>
-                      <div className="flex-none w-16 text-right">{progress}</div>
+                      <div className="flex-none w-16 text-right">{completed ? "✅" : "❌"}</div>
+                      <div className="flex-none w-16 text-right">{progress.toFixed(0)}%</div>
                       <div className="flex-none w-10 text-right">{attack}</div>
                       <div className="flex-none w-10 text-right">{defence}</div>
                       <div className="flex-none w-10 text-right">{(health / watchTowerQuantity || 0) * 10}%</div>
@@ -464,6 +464,14 @@ export function sortHyperstructures(
           return (a?.health || 0) - (b?.health || 0);
         } else {
           return (b?.health || 0) - (a?.health || 0);
+        }
+      });
+    } else if (activeSort.sortKey === "completed") {
+      return sortedHyperstructures.sort((a, b) => {
+        if (activeSort.sort === "asc") {
+          return a.completed === b.completed ? 0 : a.completed ? -1 : 1;
+        } else {
+          return b.completed === a.completed ? 0 : b.completed ? -1 : 1;
         }
       });
     } else {

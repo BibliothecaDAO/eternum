@@ -19,27 +19,30 @@ import { useProgress } from "@react-three/drei";
 import { BlurOverlayContainer } from "../containers/BlurOverlayContainer";
 import useSound from "use-sound";
 import { NotificationsComponent } from "../components/NotificationsComponent";
-// import { useSyncWorld } from "../hooks/graphql/useGraphQLQueries";
 import WorldMapMenuModule from "../modules/WorldMapMenuModule";
-import hyperStructures from "../data/hyperstructures.json";
-import { useHyperstructure } from "../hooks/helpers/useHyperstructure";
 import { Tooltip } from "../elements/Tooltip";
 import useCombatHistoryStore from "../hooks/store/useCombatHistoryStore";
 import useRealmStore from "../hooks/store/useRealmStore";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
 import { Onboarding } from "../plugins/onboarding/components/Onboarding";
 import { useComputeMarket } from "../hooks/store/useMarketStore";
+import { useRefreshHyperstructure } from "../hooks/store/useRefreshHyperstructure";
 
 export const World = () => {
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const setHyperstructures = useUIStore((state) => state.setHyperstructures);
   const setMouseCoords = useUIStore((state) => state.setMouseCoords);
   const syncCombatHistory = useCombatHistoryStore((state) => state.syncData);
   const isSoundOn = useUIStore((state) => state.isSoundOn);
   const musicLevel = useUIStore((state) => state.musicLevel);
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
+
+  console.log("refreshing WOOOORLD");
+
+  const { refreshAllHyperstructures } = useRefreshHyperstructure();
 
   // only for dev
   // useEffect(() => {
@@ -53,9 +56,7 @@ export const World = () => {
   useFetchBlockchainData();
   useComputeMarket();
 
-  const { progress } = useProgress();
-
-  const { realmEntityId, realmEntityIds } = useRealmStore();
+  const progress = useProgress((state) => state.progress);
 
   useEffect(() => {
     if (realmEntityIds.length > 4) {
@@ -83,15 +84,9 @@ export const World = () => {
     }
   }, [isSoundOn]);
 
-  const { getHyperstructure } = useHyperstructure();
-
   useEffect(() => {
-    setHyperstructures(
-      hyperStructures.map((hyperstructure) =>
-        getHyperstructure({ x: hyperstructure.x, y: hyperstructure.y, z: hyperstructure.z }),
-      ),
-    );
-  }, []);
+    refreshAllHyperstructures();
+  }, [realmEntityIds]);
 
   useEffect(() => {
     if (progress === 100) {

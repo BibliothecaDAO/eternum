@@ -5,7 +5,7 @@ mod hyperstructure_systems {
     use eternum::models::owner::Owner;
     use eternum::models::hyperstructure::{HyperStructure};
     use eternum::models::realm::{Realm};
-    use eternum::models::order::{Order};
+    use eternum::models::order::{Orders};
     use eternum::models::position::{Coord, Position, PositionTrait};
 
     use eternum::systems::hyperstructure::interface::IHyperstructureSystems;
@@ -44,7 +44,7 @@ mod hyperstructure_systems {
                 // update controlling order's hyperstructure count 
                 // if it completed the hyperstructure
                 if hyperstructure.completed {
-                    let mut order = get!(world, hyperstructure.controlling_order, Order);
+                    let mut order = get!(world, hyperstructure.controlling_order, Orders);
                     order.hyperstructure_count -= 1;
                     set!(world, (order));
                 }
@@ -86,7 +86,7 @@ mod hyperstructure_systems {
             set!(world, (hyperstructure));
 
             // update order hyperstructure count
-            let mut order = get!(world, hyperstructure.controlling_order, Order);
+            let mut order = get!(world, hyperstructure.controlling_order, Orders);
             order.hyperstructure_count += 1;
             set!(world, (order));
         }

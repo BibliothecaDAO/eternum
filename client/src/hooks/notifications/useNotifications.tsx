@@ -20,6 +20,7 @@ import { useCombat } from "../helpers/useCombat";
 import { useBanks } from "../helpers/useBanks";
 // import { useHyperstructure } from "../helpers/useHyperstructure";
 import { parseCombatEvent } from "../../utils/combat";
+import useUIStore from "../store/useUIStore";
 
 export const useNotifications = () => {
   const {
@@ -34,9 +35,10 @@ export const useNotifications = () => {
 
   const [closedNotifications, setClosedNotifications] = useState<Record<string, boolean>>({});
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const { realmEntityIds, realmEntityId, hyperstructureId } = useRealmStore();
+  const { realmEntityIds, realmEntityId } = useRealmStore();
   const realmsResources = useRealmsResource(realmEntityIds);
   const realmPositions = useRealmsPosition(realmEntityIds);
+  const conqueredHyperstructureNumber = useUIStore((state) => state.conqueredHyperstructureNumber);
 
   const { getBanks } = useBanks();
   const banks = useMemo(() => getBanks(), []);
@@ -58,8 +60,7 @@ export const useNotifications = () => {
   // get harvest bonuses
   const [realmLevel, hyperstructureLevel] = useMemo(() => {
     const realmLevel = getEntityLevel(realmEntityId)?.level || 0;
-    const hyperstructureLevel = hyperstructureId ? getEntityLevel(hyperstructureId)?.level || 0 : undefined;
-    return [realmLevel, hyperstructureLevel];
+    return [realmLevel, conqueredHyperstructureNumber * 25 + 100];
   }, [realmEntityId]);
 
   /**

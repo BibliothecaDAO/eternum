@@ -120,7 +120,9 @@ export const useHyperstructure = () => {
   };
 
   const getConqueredHyperstructures = (orderId: number): HyperStructureInterface[] => {
+    // @note: only 11 hyperstructures now
     return hyperStructures
+      .slice(0, 11)
       .map((uiPosition) => {
         return getHyperstructure(uiPosition);
       })

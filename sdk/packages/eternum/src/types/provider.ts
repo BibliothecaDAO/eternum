@@ -44,7 +44,11 @@ export interface StealProps extends SystemSigner {
   target_id: num.BigNumberish;
 }
 
-export interface LevelUpHyperstructureProps extends SystemSigner {
+export interface ControlHyperstructureProps extends SystemSigner {
+  hyperstructure_id: num.BigNumberish;
+  order_id: num.BigNumberish;
+}
+export interface CompleteHyperstructureProps extends SystemSigner {
   hyperstructure_id: num.BigNumberish;
 }
 

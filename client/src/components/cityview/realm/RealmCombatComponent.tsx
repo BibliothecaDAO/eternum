@@ -7,6 +7,7 @@ import { RaidsPanel } from "./combat/raids/RaidsPanel";
 import { DefencePanel } from "./combat/defence/DefencePanel";
 import { useLevel } from "../../../hooks/helpers/useLevel";
 import { useCombat } from "../../../hooks/helpers/useCombat";
+import { useDojo } from "../../../DojoContext";
 
 type RealmCombatComponentProps = {};
 
@@ -19,6 +20,7 @@ export const RealmCombatComponent = ({}: RealmCombatComponentProps) => {
   const moveCameraToCaravansView = useUIStore((state) => state.moveCameraToCaravansView);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
+  // @note: useOwnerRaiders would be useful for a all realms management window
   const raiderIds = useRealmRaiders(realmEntityId);
 
   // @ts-ignore
@@ -63,7 +65,7 @@ export const RealmCombatComponent = ({}: RealmCombatComponentProps) => {
             <div>Raiders</div>
           </div>
         ),
-        component: <RaidsPanel raiderIds={raiderIds} showCreateButton={true} />,
+        component: <RaidsPanel raiderIds={raiderIds} showCreateButton={true} className=" pb-3 min-h-[120px]" />,
       },
       {
         key: "defence",

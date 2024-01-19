@@ -2,7 +2,7 @@
 mod combat_systems {
     use eternum::alias::ID;
 
-    use eternum::models::order::{Order, OrderTrait};
+    use eternum::models::order::{Orders, OrdersTrait};
     use eternum::models::resources::{Resource, ResourceCost};
     use eternum::models::position::{Position};
     use eternum::models::config::{
@@ -646,13 +646,13 @@ mod combat_systems {
             ////// ORDER LEVEL BONUS //////
 
             // attacker order bonus
-            let attacker_order = get!(world, attacker_realm.order, Order);
+            let attacker_order = get!(world, attacker_realm.order, Orders);
             let attacker_order_bonus = attacker_order.get_bonus_multiplier();
             
 
             // defender order bonus (if it is a realm)      
             let target_realm = get!(world, target_entity_id, Realm);
-            let target_order = get!(world, target_realm.order, Order);
+            let target_order = get!(world, target_realm.order, Orders);
             let target_order_bonus = target_order.get_bonus_multiplier();
 
 
@@ -819,13 +819,13 @@ mod combat_systems {
             ////// ORDER LEVEL BONUS //////
 
             // attacker order bonus
-            let attacker_order = get!(world, attacker_realm.order, Order);
+            let attacker_order = get!(world, attacker_realm.order, Orders);
             let attacker_order_bonus = attacker_order.get_bonus_multiplier();
             
 
             // defender order bonus (if it is a realm)      
             let target_realm = get!(world, target_entity_id, Realm);
-            let target_order = get!(world, target_realm.order, Order);
+            let target_order = get!(world, target_realm.order, Orders);
             let target_order_bonus = target_order.get_bonus_multiplier();
 
 

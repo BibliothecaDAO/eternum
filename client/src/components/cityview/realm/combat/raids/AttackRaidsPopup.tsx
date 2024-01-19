@@ -18,6 +18,7 @@ import { getRealmIdByPosition, getRealmNameById } from "../../../../../utils/rea
 import { SmallResource } from "../../SmallResource";
 import { LevelIndex, useLevel } from "../../../../../hooks/helpers/useLevel";
 import { useHyperstructure } from "../../../../../hooks/helpers/useHyperstructure";
+import useUIStore from "../../../../../hooks/store/useUIStore";
 // import { ReactComponent as Equation } from "../../../../../assets/icons/formula/equation.svg";
 
 type AttackRaidsPopupProps = {
@@ -32,12 +33,10 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
   const [selectedRaiders, setSelectedRaiders] = useState<CombatInfo[]>([]);
   const [targetRealmEntityId, setTargetRealmEntityId] = useState<bigint | null>(null);
 
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
-
-  const { getEntitiesCombatInfo, getRealmRaidersOnPosition, getDefenceOnPosition } = useCombat();
+  const { getEntitiesCombatInfo, getOwnerRaidersOnPosition, getDefenceOnPosition } = useCombat();
   const { getFoodResources } = useResources();
 
-  const attackingEntities = attackPosition ? getRealmRaidersOnPosition(realmEntityId, attackPosition) : [];
+  const attackingEntities = attackPosition ? getOwnerRaidersOnPosition(attackPosition) : [];
 
   const attackingRaiders = useMemo(() => {
     return getEntitiesCombatInfo(attackingEntities.map((id) => BigInt(id)));
@@ -472,7 +471,8 @@ const SelectRaidersPanel = ({
 
   const [loading, setLoading] = useState(false);
 
-  const { realmEntityId, hyperstructureId } = useRealmStore();
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const conqueredHyperstructureNumber = useUIStore((state) => state.conqueredHyperstructureNumber);
 
   const { getEntityLevel, getRealmLevelBonus } = useLevel();
   const { getConqueredHyperstructures } = useHyperstructure();
@@ -491,10 +491,8 @@ const SelectRaidersPanel = ({
 
   const [attackerLevelBonus, attackerHyperstructureLevelBonus] = useMemo(() => {
     let level = getEntityLevel(realmEntityId)?.level || 0;
-    let hyperstructureLevel = hyperstructureId ? getEntityLevel(hyperstructureId)?.level || 0 : 0;
     let levelBonus = getRealmLevelBonus(level, LevelIndex.COMBAT);
-    let hyperstructureLevelBonus = getRealmLevelBonus(hyperstructureLevel, LevelIndex.COMBAT);
-    return [levelBonus, hyperstructureLevelBonus];
+    return [levelBonus, conqueredHyperstructureNumber * 25 + 100];
   }, [realmEntityId]);
 
   const conqueredHyperstructures = useMemo(() => {
@@ -573,9 +571,9 @@ const SelectRaidersPanel = ({
   const [resoureBalances, hasResources] = useMemo(() => {
     let resourceBalances: { resourceId: number; balance: number }[] = [];
     let hasResources = false;
-    if (watchTower) {
+    if (watchTower?.locationEntityId) {
       for (const resource of resources) {
-        const balance = getBalance(watchTower.entityId, resource.id);
+        const balance = getBalance(watchTower?.locationEntityId, resource.id);
         if (balance && balance.balance > 0) {
           hasResources = true;
           resourceBalances.push({ resourceId: balance.resource_type, balance: balance.balance });
@@ -646,7 +644,7 @@ const SelectRaidersPanel = ({
                     isLoading={loading}
                     variant="outline"
                   >
-                    {`Attack Realm`}
+                    {`Attack`}
                   </Button>
                   {selectedRaiders.length > 0 && (
                     <div

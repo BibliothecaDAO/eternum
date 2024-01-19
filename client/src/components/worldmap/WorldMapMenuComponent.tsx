@@ -35,6 +35,8 @@ const WorldMapMenuComponent = () => {
     return min;
   }, [realmEntityIds]);
 
+  console.log("refreshing WorldMapMenuComponent");
+
   const tabs = useMemo(
     () => [
       {

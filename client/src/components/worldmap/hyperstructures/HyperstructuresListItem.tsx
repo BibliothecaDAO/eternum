@@ -4,71 +4,82 @@ import { ReactComponent as Map } from "../../../assets/icons/common/map.svg";
 import { HyperStructureInterface, UIPosition, findResourceById, orderNameDict, orders } from "@bibliothecadao/eternum";
 import useUIStore from "../../../hooks/store/useUIStore";
 import ProgressBar from "../../../elements/ProgressBar";
-import { useHyperstructure } from "../../../hooks/helpers/useHyperstructure";
 import { ReactComponent as DonkeyIcon } from "../../../assets/icons/units/donkey-circle.svg";
 import { ReactComponent as Shield } from "../../../assets/icons/units/shield.svg";
 import { Dot } from "../../../elements/Dot";
 import clsx from "clsx";
 import { useMemo, useState } from "react";
 import { useDojo } from "../../../DojoContext";
-import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useCaravan } from "../../../hooks/helpers/useCaravans";
 import { useCombat } from "../../../hooks/helpers/useCombat";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
+import { useRefreshHyperstructure } from "../../../hooks/store/useRefreshHyperstructure";
 
 type HyperstructuresListItemProps = {
   hyperstructure: HyperStructureInterface | undefined;
-  order: number;
+  playerOrder: number;
   coords: UIPosition | undefined;
   onFeed?: () => void;
 };
 
 export const HyperstructuresListItem = ({
   hyperstructure,
-  order,
+  playerOrder,
   coords,
   onFeed = undefined,
 }: HyperstructuresListItemProps) => {
   const {
     account: { account },
     setup: {
-      systemCalls: {},
+      systemCalls: { control_hyperstructure, complete_hyperstructure },
     },
   } = useDojo();
 
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const hyperstructures = useUIStore((state) => state.hyperstructures);
-  const setHyperstructures = useUIStore((state) => state.setHyperstructures);
-  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
-
-  const { getHyperstructure } = useHyperstructure();
-  const { calculateDistance, useGetPositionCaravansIds } = useCaravan();
+  const { useGetPositionCaravansIds } = useCaravan();
   const { useOwnerRaidersOnPosition, useEnemyRaidersOnPosition } = useCombat();
 
   const moveCameraToTarget = useUIStore((state) => state.moveCameraToTarget);
   const [isLoading, setIsLoading] = useState(false);
+  const { refreshHyperstructure } = useRefreshHyperstructure();
 
   const updateHyperStructure = () => {
     if (!hyperstructure) return;
-    const newHyperstructure = getHyperstructure(hyperstructure.uiPosition);
-    hyperstructures[hyperstructure.orderId - 1] = newHyperstructure;
-    setHyperstructures([...hyperstructures]);
+    refreshHyperstructure(hyperstructure.hyperstructureId);
   };
 
-  const canComplete = hyperstructure?.progress === 100;
+  const canComplete =
+    hyperstructure?.progress === 100 && hyperstructure?.orderId === playerOrder && !hyperstructure?.completed;
+
+  const canControl =
+    // hyperstructure?.progress === 0 && hyperstructure.health === 0 && hyperstructure?.orderId !== playerOrder;
+    // todo: add health check when in contract
+    hyperstructure?.progress === 0 && hyperstructure?.orderId !== playerOrder;
 
   const onComplete = async () => {
     setIsLoading(true);
     if (!hyperstructure) return;
-    // await complete_hyperstructure({
-    //   signer: account,
-    //   hyperstructure_id: hyperstructure.hyperstructureId,
-    // });
-    updateHyperStructure();
+    await complete_hyperstructure({
+      signer: account,
+      hyperstructure_id: hyperstructure.hyperstructureId,
+    });
     setIsLoading(false);
+    updateHyperStructure();
   };
 
-  const isYoursAndCompleted = hyperstructure?.orderId === order && hyperstructure?.completed;
+  const onControl = async () => {
+    setIsLoading(true);
+    if (!hyperstructure) return;
+    await control_hyperstructure({
+      signer: account,
+      hyperstructure_id: hyperstructure.hyperstructureId,
+      order_id: playerOrder,
+    });
+    setIsLoading(false);
+    updateHyperStructure();
+  };
+
+  const isYoursAndCompleted = hyperstructure?.orderId === playerOrder && hyperstructure?.completed;
 
   const caravanIds = hyperstructure
     ? useGetPositionCaravansIds(hyperstructure.position.x, hyperstructure.position.y)
@@ -97,27 +108,23 @@ export const HyperstructuresListItem = ({
   return (
     <div className="flex flex-col p-2 border rounded-md border-gray-gold text-xxs text-gray-gold">
       <div className="flex w-full justify-between items-center">
-        {orderNameDict[order] ? (
+        {hyperstructure && orderNameDict[hyperstructure.orderId] ? (
           <div className="flex items-center p-1 -mt-2 -ml-2 border border-t-0 border-l-0 rounded-br-md border-gray-gold">
-            {<OrderIcon order={orderNameDict[order]} size="xs" className="mr-1" />}
-            {orders[order - 1].fullOrderName}
+            {<OrderIcon order={orderNameDict[hyperstructure.orderId]} size="xs" className="mr-1" />}
+            {orders[hyperstructure.orderId - 1].fullOrderName}
           </div>
         ) : (
           <div className="flex items-center p-1 -mt-2 -ml-2 border border-t-0 border-l-0 rounded-br-md border-gray-gold">
             Not Conquered
           </div>
         )}
-        <div className={clsx("flex items-center justify-around ml-3 flex-1 -mt-1")}>
-          <div className="flex-1 text-gold flex items-center flex-wrap">
+        <div className={clsx("flex items-center justify-around ml-1 flex-1 -mt-1")}>
+          <div className="flex-1 text-gold flex ml-3 items-center ">
             {hyperstructure &&
               hyperstructure.hyperstructureResources.map((resource) => (
-                <div className="flex flex-row items-center  my-0.5" key={resource.resourceId}>
-                  <div> {resource.currentAmount / resource.completeAmount}%</div>
-                  <ResourceIcon
-                    resource={findResourceById(resource.resourceId)?.trait as any}
-                    size="md"
-                    className="mb-1"
-                  />
+                <div className="flex flex-col items-center mx-1 my-0.5" key={resource.resourceId}>
+                  <ResourceIcon resource={findResourceById(resource.resourceId)?.trait as any} size="xs" className="" />
+                  <div> {((resource.currentAmount / resource.completeAmount) * 100).toFixed(0)}%</div>
                 </div>
               ))}
           </div>
@@ -132,7 +139,7 @@ export const HyperstructuresListItem = ({
               className="p-1 !h-4 text-xxs !rounded-md"
             >
               <Map className="mr-1 fill-current" />
-              <div className="flex-none w-8 text-right">{`${hyperstructure.distance.toFixed(0)} kms`}</div>
+              <div className="flex-none w-10 text-right">{`${hyperstructure.distance.toFixed(0)} kms`}</div>
             </Button>
           </div>
         )}
@@ -213,7 +220,7 @@ export const HyperstructuresListItem = ({
                 </div>
                 <div className="flex items-center">
                   <div className="text-order-brilliance">
-                    {(hyperstructure.health * hyperstructure.watchTowerQuantity) / 100}% HP
+                    {(hyperstructure.health / hyperstructure.watchTowerQuantity) * 10 || 0}% HP
                   </div>
                 </div>
               </div>
@@ -256,7 +263,8 @@ export const HyperstructuresListItem = ({
           <div
             className={clsx(
               "ml-1 italic ",
-              hyperstructure?.completed && "text-order-brilliance",
+              hyperstructure?.completed && hyperstructure?.orderId === playerOrder && "text-order-brilliance",
+              hyperstructure?.completed && hyperstructure?.orderId !== playerOrder && "text-order-giants",
               hyperstructure && hyperstructure?.progress >= 0 && !hyperstructure?.completed ? "text-gold" : "",
             )}
           >
@@ -264,7 +272,7 @@ export const HyperstructuresListItem = ({
           </div>
 
           <div className="text-xxs ml-auto">
-            {order === hyperstructure?.orderId && (
+            {playerOrder === hyperstructure?.orderId && (
               <Button
                 isLoading={isLoading}
                 disabled={!canComplete}
@@ -275,8 +283,24 @@ export const HyperstructuresListItem = ({
                 Complete
               </Button>
             )}
+            {playerOrder !== hyperstructure?.orderId && (
+              <Button
+                isLoading={isLoading}
+                disabled={!canControl}
+                className="!px-[6px] !py-[2px] mr-2"
+                variant="success"
+                onClick={onControl}
+              >
+                Control
+              </Button>
+            )}
             {onFeed && (
-              <Button className="!px-[6px] !py-[2px]" variant="outline" onClick={onFeed}>
+              <Button
+                className="!px-[6px] !py-[2px]"
+                variant="outline"
+                disabled={!hyperstructure?.orderId}
+                onClick={onFeed}
+              >
                 Manage
               </Button>
             )}

@@ -1,12 +1,14 @@
 import { useMemo } from "react";
 import { useCombat } from "../../../../../hooks/helpers/useCombat";
 import { EnemyRaid } from "./EnnemyRaid";
+import clsx from "clsx";
 
-type MarketPanelProps = {
+type EnnemyRaidersPanelProps = {
   raiderIds: bigint[];
+  className?: string;
 };
 
-export const EnnemyRaidersPanel = ({ raiderIds }: MarketPanelProps) => {
+export const EnnemyRaidersPanel = ({ raiderIds, className }: EnnemyRaidersPanelProps) => {
   const { getEntitiesCombatInfo } = useCombat();
 
   const attackingRaiders = useMemo(() => {
@@ -14,7 +16,7 @@ export const EnnemyRaidersPanel = ({ raiderIds }: MarketPanelProps) => {
   }, [raiderIds]);
 
   return (
-    <div className="relative flex flex-col p-2 min-h-[120px]">
+    <div className={clsx("relative flex flex-col", className)}>
       {attackingRaiders.length > 0 && (
         <>
           {attackingRaiders.map((raider) => (

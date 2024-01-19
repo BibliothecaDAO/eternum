@@ -71,7 +71,7 @@ export const AttacksComponent = ({}: AttacksComponentProps) => {
             <div> Current Attacks </div>
           </div>
         ),
-        component: <EnnemyRaidersPanel raiderIds={raiderIds} />,
+        component: <EnnemyRaidersPanel raiderIds={raiderIds} className="p-2 min-h-[120px]" />,
       },
       {
         key: "attack-history",
