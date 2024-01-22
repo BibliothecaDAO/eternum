@@ -89,7 +89,7 @@ export function getRealm(realmId: bigint): RealmInterface | undefined {
   });
 
   let coords = realmsCoordsJson["features"][Number(realmId)]["geometry"]["coordinates"];
-  let position = getContractPositionFromRealPosition({ x: parseInt(coords[0]), y: parseInt(coords[1]) });
+  let position = { x: parseInt(coords[0]) + 180000, y: parseInt(coords[1]) + 180000 };
 
   return {
     realmId,

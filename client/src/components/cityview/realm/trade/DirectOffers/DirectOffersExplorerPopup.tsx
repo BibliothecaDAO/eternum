@@ -1,17 +1,33 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
 import { Headline } from "../../../../../elements/Headline";
-import { ResourcesIds, findResourceById, resources } from "@bibliothecadao/eternum";
+import {
+  RealmInterface,
+  ResourcesIds,
+  SPEED_PER_DONKEY,
+  findResourceById,
+  getOrderName,
+  resources,
+} from "@bibliothecadao/eternum";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
 import { SortButton, SortInterface } from "../../../../../elements/SortButton";
 import { FiltersPanel } from "../../../../../elements/FiltersPanel";
 import Button from "../../../../../elements/Button";
 import { FilterButton } from "../../../../../elements/FilterButton";
 import { SortPanel } from "../../../../../elements/SortPanel";
-import { currencyIntlFormat, formatTimeLeftDaysHoursMinutes } from "../../../../../utils/utils";
+import {
+  calculateDistance,
+  currencyIntlFormat,
+  formatTimeLeft,
+  formatTimeLeftDaysHoursMinutes,
+} from "../../../../../utils/utils";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import { OnlineStatus } from "../../../../../elements/OnlineStatus";
 import { useLabor } from "../../../../../hooks/helpers/useLabor";
+import { useResources } from "../../../../../hooks/helpers/useResources";
+import { getRealm, getRealmOrderNameById } from "../../../../../utils/realms";
+import useUIStore from "../../../../../hooks/store/useUIStore";
+import useRealmStore from "../../../../../hooks/store/useRealmStore";
 
 type DirectOffersExplorerPopupProps = {
   onClose: () => void;
@@ -32,7 +48,7 @@ export const DirectOffersExplorerPopup = ({ onClose }: DirectOffersExplorerPopup
         </SecondaryPopup.Head>
         <SecondaryPopup.Body width={"660px"}>
           {selectedResourceId ? (
-            <RealmResourceExplorerPanel resourceId={selectedResourceId} />
+            <RealmResourceExplorerPanel resourceId={selectedResourceId} setSelectedResourceId={setSelectedResourceId} />
           ) : (
             <SelectResourcePanel setSelectedResourceId={(id: number) => setSelectedResourceId(id)} />
           )}
@@ -64,7 +80,13 @@ const SelectResourcePanel = ({ setSelectedResourceId }: { setSelectedResourceId:
   );
 };
 
-const RealmResourceExplorerPanel = ({ resourceId }: { resourceId: number }) => {
+const RealmResourceExplorerPanel = ({
+  resourceId,
+  setSelectedResourceId,
+}: {
+  resourceId: number;
+  setSelectedResourceId: (resourceId: number | null) => void;
+}) => {
   const sortingParams = useMemo(() => {
     return [
       { label: "Amount", sortKey: "amount", className: "w-[250px]" },
@@ -78,12 +100,30 @@ const RealmResourceExplorerPanel = ({ resourceId }: { resourceId: number }) => {
     sort: "none",
   });
 
+  const realmId = useRealmStore((state) => state.realmId);
+
+  // get realms that have that resource
+  const { getRealmsWithSpecificResource } = useResources();
+  const realms = getRealmsWithSpecificResource(resourceId, 1000).map((realm) => {
+    const realmData = getRealm(realm.realmId);
+    // counterparty
+    const realmPosition = realmData ? realmData.position : undefined;
+    // yours
+    const yourRealmPosition = realmId ? getRealm(realmId)?.position : undefined;
+    const distance = realmPosition && yourRealmPosition ? calculateDistance(realmPosition, yourRealmPosition) : 0;
+    return {
+      ...realm,
+      realm: realmData,
+      distance,
+    };
+  });
+
   return (
     <>
       <div className="flex flex-col p-2">
         <div className="flex items-center justify-between">
           <FiltersPanel>
-            <FilterButton active={true} onClick={() => {}}>
+            <FilterButton active={true} onClick={() => setSelectedResourceId(null)}>
               Resource: {findResourceById(resourceId)?.trait}
             </FilterButton>
           </FiltersPanel>
@@ -108,9 +148,19 @@ const RealmResourceExplorerPanel = ({ resourceId }: { resourceId: number }) => {
             />
           ))}
         </SortPanel>
-        <div className="mt-2">
-          <RealmResourceRow realmEntityId={} />
-        </div>
+        {realms
+          .filter((realm) => realmId !== realm.realmId)
+          .map(({ realmEntityId, amount, realm, distance }) => (
+            <div className="mt-2">
+              <RealmResourceRow
+                realmEntityId={realmEntityId}
+                balance={amount}
+                resourceId={resourceId}
+                realm={realm}
+                distance={distance}
+              />
+            </div>
+          ))}
       </div>
     </>
   );
@@ -118,10 +168,16 @@ const RealmResourceExplorerPanel = ({ resourceId }: { resourceId: number }) => {
 
 type RealmResourceRowProps = {
   realmEntityId: bigint;
+  balance: number;
+  resourceId: number;
+  realm: RealmInterface | undefined;
+  distance: number;
 };
 
-const RealmResourceRow = ({ realmEntityId }: RealmResourceRowProps) => {
+const RealmResourceRow = ({ realmEntityId, balance, resourceId, realm, distance }: RealmResourceRowProps) => {
   const { getLatestRealmActivity } = useLabor();
+
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const latestActivity = getLatestRealmActivity(realmEntityId);
 
@@ -140,18 +196,41 @@ const RealmResourceRow = ({ realmEntityId }: RealmResourceRowProps) => {
   return (
     <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black grid-cols-[250px,1fr,1fr] text-lightest text-xxs">
       <div className="flex items-center">
-        <ResourceIcon containerClassName="mr-2 w-min" withTooltip={false} resource={"Fish"} size="sm" />
-        {currencyIntlFormat(1000000)}
+        <ResourceIcon
+          containerClassName="mr-2 w-min"
+          withTooltip={false}
+          resource={findResourceById(resourceId)?.trait || ""}
+          size="sm"
+        />
+        {currencyIntlFormat(balance)}
       </div>
       <div className="flex mr-auto items-center text-light-pink">
-        <OnlineStatus status={status} className="mr-2" />
-        {latestActivity && <div>{`${formatTimeLeftDaysHoursMinutes(latestActivity)} ago`}</div>}
-        <OrderIcon className="mr-2" size="xs" order="fox" />
-        Machomanisland
+        <OnlineStatus
+          onMouseEnter={() =>
+            setTooltip({
+              position: "top",
+              content: (
+                <>
+                  <p className="whitespace-nowrap">
+                    {latestActivity ? `${formatTimeLeftDaysHoursMinutes(latestActivity)} ago` : "No Activity"}
+                  </p>
+                </>
+              ),
+            })
+          }
+          onMouseLeave={() => setTooltip(null)}
+          status={status}
+          className="mr-2"
+        />
+        {realm && <OrderIcon className="mr-2" size="xs" order={getOrderName(realm.order)} />}
+        {realm?.name}
       </div>
 
-      <div className="flex items-center justify-end text-lightest">
-        100 km <div className="text-light-pink inline-block ml-2">(12m)</div>
+      <div className="flex items-center justify-between text-lightest">
+        <div className="w-[40px] text-left">{distance.toFixed(0)} km </div>
+        <div className="text-light-pink inline-block ml-2">{`(${formatTimeLeft(
+          (distance / SPEED_PER_DONKEY) * 3600,
+        )})`}</div>
         <Button className="ml-2" onClick={() => {}} disabled={false} size="xs" variant="success">
           Create direct offer
         </Button>
