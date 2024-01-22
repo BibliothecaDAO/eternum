@@ -52,17 +52,9 @@ export const HyperStructureRaidersPanel = ({ myRaidersIds, enemyRaidersIds }: Hy
           />
         ))}
       </SortPanel>
-      {myRaidersIds.length > 0 && (
-        <Headline className="mt-2" size="big">
-          Your Raiders
-        </Headline>
-      )}
+      {myRaidersIds.length > 0 && <Headline className="mt-2">Your Raiders</Headline>}
       <RaidsPanel raiderIds={myRaidersIds} showCreateButton={false} className="h-max" />
-      {enemyRaidersIds.length > 0 && (
-        <Headline className="" size="big">
-          Other Raiders
-        </Headline>
-      )}
+      {enemyRaidersIds.length > 0 && <Headline className="">Other Raiders</Headline>}
       <EnnemyRaidersPanel raiderIds={enemyRaidersIds} />
     </div>
   );
