@@ -208,6 +208,7 @@ export const MarketPopup = ({ onClose }: MarketPopupProps) => {
         <FastCreateOfferPopup
           resourceId={selectedResource || 1}
           isBuy={isBuy}
+          marketplaceMode
           onClose={() => setShowCreateOffer(false)}
           onCreate={() => {}}
         />

@@ -19,27 +19,23 @@ import { DONKEYS_PER_CITY, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum"
 import { useResources } from "../../../../hooks/helpers/useResources";
 import ListSelect from "../../../../elements/ListSelect";
 import { getTotalResourceWeight } from "./utils";
+import { SelectRealmPanel } from "../SelectRealmPanel";
 
 type FastCreateOfferPopupProps = {
   resourceId: number;
   isBuy: boolean;
-  resourcesListEditDisabled?: boolean;
+  marketplaceMode?: boolean;
   onClose: () => void;
   onCreate: () => void;
 };
 
-export const FastCreateOfferPopup = ({
-  resourceId,
-  isBuy,
-  onClose,
-  resourcesListEditDisabled,
-}: FastCreateOfferPopupProps) => {
+export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose, marketplaceMode }: FastCreateOfferPopupProps) => {
   const [selectedResourceIdsGive, setSelectedResourceIdsGive] = useState<number[]>([]);
   const [selectedResourceIdsGet, setSelectedResourceIdsGet] = useState<number[]>([]);
   const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] = useState<{ [key: number]: number }>({});
   const [selectedResourcesGetAmounts, setSelectedResourcesGetAmounts] = useState<{ [key: number]: number }>({});
   const [selectedCaravan, setSelectedCaravan] = useState<bigint>(0n);
-  const [selectedRealmId, setSelectedRealmId] = useState<number | undefined>();
+  const [selectedRealmId, setSelectedRealmId] = useState<bigint | undefined>();
   const [isNewCaravan, setIsNewCaravan] = useState(true);
   const [donkeysCount, setDonkeysCount] = useState(1);
   const [resourceWeight, setResourceWeight] = useState(0);
@@ -141,7 +137,7 @@ export const FastCreateOfferPopup = ({
             setResourceWeight={setResourceWeight}
             selectedRealmId={selectedRealmId}
             setSelectedRealmId={setSelectedRealmId}
-            resourcesListEditDisabled={resourcesListEditDisabled}
+            marketplaceMode={marketplaceMode}
           />
 
           <SelectCaravanPanel
@@ -189,7 +185,9 @@ const SelectResourcesAmountPanel = ({
   setSelectedResourcesGiveAmounts,
   setSelectedResourcesGetAmounts,
   setResourceWeight,
-  resourcesListEditDisabled,
+  selectedRealmId,
+  setSelectedRealmId,
+  marketplaceMode,
 }: {
   selectedResourceIdsGive: number[];
   selectedResourceIdsGet: number[];
@@ -201,9 +199,9 @@ const SelectResourcesAmountPanel = ({
   setSelectedResourcesGiveAmounts: (selectedResourcesGiveAmounts: { [key: number]: number }) => void;
   setSelectedResourcesGetAmounts: (selectedResourcesGetAmounts: { [key: number]: number }) => void;
   setResourceWeight: (resourceWeight: number) => void;
-  selectedRealmId: number | undefined;
-  setSelectedRealmId: (selectedRealmId: number) => void;
-  resourcesListEditDisabled?: boolean;
+  selectedRealmId: bigint | undefined;
+  setSelectedRealmId: (selectedRealmId: bigint) => void;
+  marketplaceMode?: boolean;
 }) => {
   const { realmEntityId } = useRealmStore();
 
@@ -306,7 +304,7 @@ const SelectResourcesAmountPanel = ({
                     });
                   }}
                 />
-                {!resourcesListEditDisabled ? (
+                {id !== ResourcesIds.Lords || !marketplaceMode ? (
                   <ListSelect
                     className="w-full ml-2"
                     style="black"
@@ -337,7 +335,7 @@ const SelectResourcesAmountPanel = ({
               </div>
             );
           })}
-          {!resourcesListEditDisabled && (
+          {!marketplaceMode && (
             <Button className="w-full" variant="primary" size="md" onClick={() => addResourceGive()}>
               Add Resource
             </Button>
@@ -407,7 +405,7 @@ const SelectResourcesAmountPanel = ({
                     });
                   }}
                 />
-                {!resourcesListEditDisabled ? (
+                {id !== ResourcesIds.Lords || !marketplaceMode ? (
                   <ListSelect
                     className="ml-2 w-full"
                     style="black"
@@ -438,7 +436,7 @@ const SelectResourcesAmountPanel = ({
               </div>
             );
           })}
-          {!resourcesListEditDisabled && (
+          {!marketplaceMode && (
             <Button className="w-full" variant="primary" size="md" onClick={() => addResourceGet()}>
               Add Resource
             </Button>
@@ -462,6 +460,9 @@ const SelectResourcesAmountPanel = ({
           <div className="ml-1 text-gold">{`${WEIGHTS[253]}kg/unit`}</div>
         </div>
       </div>
+      {!marketplaceMode && (
+        <SelectRealmPanel selectedRealmId={selectedRealmId} setSelectedRealmId={setSelectedRealmId} />
+      )}
     </>
   );
 };
