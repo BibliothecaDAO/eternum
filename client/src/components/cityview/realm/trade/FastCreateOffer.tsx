@@ -26,6 +26,7 @@ type FastCreateOfferPopupProps = {
   resourceId?: number;
   isBuy?: boolean;
   marketplaceMode?: boolean;
+  directOfferRealmId?: bigint;
   onClose: () => void;
   onCreate: () => void;
 };
@@ -35,6 +36,7 @@ export const FastCreateOfferPopup = ({
   isBuy,
   onClose,
   marketplaceMode,
+  directOfferRealmId,
 }: FastCreateOfferPopupProps) => {
   const [selectedResourceIdsGive, setSelectedResourceIdsGive] = useState<number[]>([]);
   const [selectedResourceIdsGet, setSelectedResourceIdsGet] = useState<number[]>([]);
@@ -74,6 +76,12 @@ export const FastCreateOfferPopup = ({
       setSelectedResourcesGetAmounts({ [ResourcesIds.Lords]: 1 });
     }
   }, [resourceId, isBuy]);
+
+  useEffect(() => {
+    if (directOfferRealmId) {
+      setSelectedRealmId(directOfferRealmId);
+    }
+  }, [directOfferRealmId]);
 
   const createOrder = async () => {
     let selectedRealmEntityId = selectedRealmId ? getRealmEntityIdFromRealmId(selectedRealmId) : 0;

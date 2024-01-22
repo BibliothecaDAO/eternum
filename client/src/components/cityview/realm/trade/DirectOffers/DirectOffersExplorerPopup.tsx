@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
 import { Headline } from "../../../../../elements/Headline";
 import {
@@ -28,6 +28,8 @@ import { useResources } from "../../../../../hooks/helpers/useResources";
 import { getRealm, getRealmOrderNameById } from "../../../../../utils/realms";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
+import { FastCreateOfferPopup } from "../FastCreateOffer";
+import TextInput from "../../../../../elements/TextInput";
 
 type DirectOffersExplorerPopupProps = {
   onClose: () => void;
@@ -99,6 +101,10 @@ const RealmResourceExplorerPanel = ({
     sortKey: "number",
     sort: "none",
   });
+  const [showCreateOffer, setShowCreateOffer] = useState(false);
+  const [directOfferRealmId, setDirectOfferRealmId] = useState<bigint>();
+  const [nameFilter, setNameFilter] = useState("");
+  const deferredNameFilter = useDeferredValue(nameFilter);
 
   const realmId = useRealmStore((state) => state.realmId);
 
@@ -118,8 +124,27 @@ const RealmResourceExplorerPanel = ({
     };
   });
 
+  const realmsFilteredByName = useMemo(() => {
+    return realms.filter(
+      (realm) =>
+        realm.realm?.name.toLowerCase().includes(deferredNameFilter.toLowerCase()) ||
+        realm.realm?.realmId.toString().includes(deferredNameFilter),
+    );
+  }, [realms, deferredNameFilter]);
+
   return (
     <>
+      <div className="fixed top-0 left-0">
+        {showCreateOffer && (
+          <FastCreateOfferPopup
+            isBuy={true}
+            resourceId={resourceId}
+            directOfferRealmId={directOfferRealmId}
+            onClose={() => setShowCreateOffer(false)}
+            onCreate={() => {}}
+          />
+        )}
+      </div>
       <div className="flex flex-col p-2">
         <div className="flex items-center justify-between">
           <FiltersPanel>
@@ -127,9 +152,12 @@ const RealmResourceExplorerPanel = ({
               Resource: {findResourceById(resourceId)?.trait}
             </FilterButton>
           </FiltersPanel>
-          <Button onClick={() => {}} variant="primary">
-            + Create a new offer
-          </Button>
+          <TextInput
+            className="border border-gold ml-auto !w-40 !flex-grow-0 !text-light-pink text-xs"
+            placeholder="Search by ID or name"
+            value={nameFilter}
+            onChange={setNameFilter}
+          />
         </div>
         <SortPanel className="mt-2 py-2 border-b-0">
           {sortingParams.map(({ label, sortKey, className }) => (
@@ -148,7 +176,7 @@ const RealmResourceExplorerPanel = ({
             />
           ))}
         </SortPanel>
-        {realms
+        {realmsFilteredByName
           .filter((realm) => realmId !== realm.realmId)
           .map(({ realmEntityId, amount, realm, distance }) => (
             <div className="mt-2">
@@ -158,6 +186,10 @@ const RealmResourceExplorerPanel = ({
                 resourceId={resourceId}
                 realm={realm}
                 distance={distance}
+                onCreateDirectOffer={(realmId) => {
+                  setDirectOfferRealmId(realmId);
+                  setShowCreateOffer(true);
+                }}
               />
             </div>
           ))}
@@ -172,9 +204,17 @@ type RealmResourceRowProps = {
   resourceId: number;
   realm: RealmInterface | undefined;
   distance: number;
+  onCreateDirectOffer: (realmId: bigint) => void;
 };
 
-const RealmResourceRow = ({ realmEntityId, balance, resourceId, realm, distance }: RealmResourceRowProps) => {
+const RealmResourceRow = ({
+  realmEntityId,
+  balance,
+  resourceId,
+  realm,
+  distance,
+  onCreateDirectOffer,
+}: RealmResourceRowProps) => {
   const { getLatestRealmActivity } = useLabor();
 
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -231,7 +271,13 @@ const RealmResourceRow = ({ realmEntityId, balance, resourceId, realm, distance 
         <div className="text-light-pink inline-block ml-2">{`(${formatTimeLeft(
           (distance / SPEED_PER_DONKEY) * 3600,
         )})`}</div>
-        <Button className="ml-2" onClick={() => {}} disabled={false} size="xs" variant="success">
+        <Button
+          className="ml-2"
+          onClick={() => onCreateDirectOffer(realm?.realmId || 0n)}
+          disabled={false}
+          size="xs"
+          variant="success"
+        >
           Create direct offer
         </Button>
       </div>
