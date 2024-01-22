@@ -8,9 +8,10 @@ import { FiltersPanel } from "../../../../../elements/FiltersPanel";
 import Button from "../../../../../elements/Button";
 import { FilterButton } from "../../../../../elements/FilterButton";
 import { SortPanel } from "../../../../../elements/SortPanel";
-import { currencyIntlFormat } from "../../../../../utils/utils";
+import { currencyIntlFormat, formatTimeLeftDaysHoursMinutes } from "../../../../../utils/utils";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import { OnlineStatus } from "../../../../../elements/OnlineStatus";
+import { useLabor } from "../../../../../hooks/helpers/useLabor";
 
 type DirectOffersExplorerPopupProps = {
   onClose: () => void;
@@ -108,14 +109,34 @@ const RealmResourceExplorerPanel = ({ resourceId }: { resourceId: number }) => {
           ))}
         </SortPanel>
         <div className="mt-2">
-          <RealmResourceRow />
+          <RealmResourceRow realmEntityId={} />
         </div>
       </div>
     </>
   );
 };
 
-const RealmResourceRow = ({}: {}) => {
+type RealmResourceRowProps = {
+  realmEntityId: bigint;
+};
+
+const RealmResourceRow = ({ realmEntityId }: RealmResourceRowProps) => {
+  const { getLatestRealmActivity } = useLabor();
+
+  const latestActivity = getLatestRealmActivity(realmEntityId);
+
+  let status: "online" | "recently" | "offline" = "offline";
+
+  // 86400 = 1 day
+  // 259200 = 3 days
+  status = !latestActivity
+    ? "offline"
+    : latestActivity < 86400
+    ? "online"
+    : latestActivity < 259200
+    ? "recently"
+    : "offline";
+
   return (
     <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black grid-cols-[250px,1fr,1fr] text-lightest text-xxs">
       <div className="flex items-center">
@@ -123,7 +144,8 @@ const RealmResourceRow = ({}: {}) => {
         {currencyIntlFormat(1000000)}
       </div>
       <div className="flex mr-auto items-center text-light-pink">
-        <OnlineStatus status="online" className="mr-2" />
+        <OnlineStatus status={status} className="mr-2" />
+        {latestActivity && <div>{`${formatTimeLeftDaysHoursMinutes(latestActivity)} ago`}</div>}
         <OrderIcon className="mr-2" size="xs" order="fox" />
         Machomanisland
       </div>
