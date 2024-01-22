@@ -20,16 +20,22 @@ import { useResources } from "../../../../hooks/helpers/useResources";
 import ListSelect from "../../../../elements/ListSelect";
 import { getTotalResourceWeight } from "./utils";
 import { SelectRealmPanel } from "../SelectRealmPanel";
+import { useTrade } from "../../../../hooks/helpers/useTrade";
 
 type FastCreateOfferPopupProps = {
-  resourceId: number;
-  isBuy: boolean;
+  resourceId?: number;
+  isBuy?: boolean;
   marketplaceMode?: boolean;
   onClose: () => void;
   onCreate: () => void;
 };
 
-export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose, marketplaceMode }: FastCreateOfferPopupProps) => {
+export const FastCreateOfferPopup = ({
+  resourceId = 1,
+  isBuy,
+  onClose,
+  marketplaceMode,
+}: FastCreateOfferPopupProps) => {
   const [selectedResourceIdsGive, setSelectedResourceIdsGive] = useState<number[]>([]);
   const [selectedResourceIdsGet, setSelectedResourceIdsGet] = useState<number[]>([]);
   const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] = useState<{ [key: number]: number }>({});
@@ -53,6 +59,7 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose, marketplaceMo
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const { getRealmEntityIdFromRealmId } = useTrade();
 
   useEffect(() => {
     if (isBuy) {
@@ -69,6 +76,7 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose, marketplaceMo
   }, [resourceId, isBuy]);
 
   const createOrder = async () => {
+    let selectedRealmEntityId = selectedRealmId ? getRealmEntityIdFromRealmId(selectedRealmId) : 0;
     setIsLoading(true);
     if (!nextBlockTimestamp) return;
     if (isNewCaravan) {
@@ -79,7 +87,7 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose, marketplaceMo
         maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
           multiplyByPrecision(selectedResourcesGiveAmounts[id]),
         ),
-        taker_id: 0,
+        taker_id: selectedRealmEntityId || 0,
         taker_gives_resource_types: selectedResourceIdsGet,
         taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
           multiplyByPrecision(selectedResourcesGetAmounts[id]),
@@ -95,7 +103,7 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose, marketplaceMo
         maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
           multiplyByPrecision(selectedResourcesGiveAmounts[id]),
         ),
-        taker_id: 0,
+        taker_id: selectedRealmEntityId || 0,
         maker_transport_id: selectedCaravan,
         taker_gives_resource_types: selectedResourceIdsGet,
         taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>

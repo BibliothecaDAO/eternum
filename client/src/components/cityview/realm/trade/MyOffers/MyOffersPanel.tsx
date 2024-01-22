@@ -9,6 +9,7 @@ import { sortTrades, useGetMyOffers } from "../../../../../hooks/helpers/useTrad
 import { IncomingOrder } from "../Caravans/IncomingOrder";
 import { useResources } from "../../../../../hooks/helpers/useResources";
 import { RoadBuildPopup } from "../Roads/RoadBuildPopup";
+import { FastCreateOfferPopup } from "../FastCreateOffer";
 
 type MarketPanelProps = {};
 
@@ -57,7 +58,7 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
         ))}
       </SortPanel>
       {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
-      {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
+      {showCreateOffer && <FastCreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
       {buildRoadToEntityId !== undefined && (
         <RoadBuildPopup onClose={() => setBuildRoadToEntityId(undefined)} toEntityId={buildRoadToEntityId} />
       )}

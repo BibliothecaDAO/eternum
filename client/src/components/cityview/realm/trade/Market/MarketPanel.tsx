@@ -19,6 +19,7 @@ import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { hasResources } from "../utils";
 import { Checkbox } from "../../../../../elements/Checkbox";
 import { DirectOffersExplorerPopup } from "../DirectOffers/DirectOffersExplorerPopup";
+import { FastCreateOfferPopup } from "../FastCreateOffer";
 
 type MarketPanelProps = {
   directOffers: boolean;
@@ -124,7 +125,7 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
   return (
     <>
       <div className="fixed top-0 left-0">
-        {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
+        {showCreateOffer && <FastCreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
         {showMarketplace && <MarketPopup onClose={() => setShowMarketplace(false)} />}
         {showDirectOffersExplorer && <DirectOffersExplorerPopup onClose={() => setShowDirectOffersExplorer(false)} />}
         {buildRoadToEntityId !== undefined && (
