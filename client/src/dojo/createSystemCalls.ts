@@ -27,7 +27,8 @@ import {
   AttackProps,
   StealProps,
   LevelUpRealmProps,
-  LevelUpHyperstructureProps,
+  ControlHyperstructureProps,
+  CompleteHyperstructureProps,
   SetAddressNameProps,
   MergeSoldiersProps,
   CreateAndMergeSoldiersProps,
@@ -144,8 +145,12 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.level_up_realm(props)));
   };
 
-  const level_up_hyperstructure = async (props: LevelUpHyperstructureProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.level_up_hyperstructure(props)));
+  const control_hyperstructure = async (props: ControlHyperstructureProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.control_hyperstructure(props)));
+  };
+
+  const complete_hyperstructure = async (props: CompleteHyperstructureProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.complete_hyperstructure(props)));
   };
 
   const set_address_name = async (props: SetAddressNameProps) => {
@@ -186,12 +191,13 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
   };
 
   return {
+    control_hyperstructure,
+    complete_hyperstructure,
     disassemble_caravan_and_return_free_units,
     swap_bank_and_travel_back,
     set_address_name,
     create_and_merge_soldiers,
     level_up_realm,
-    level_up_hyperstructure,
     isLive,
     create_soldiers,
     detach_soldiers,

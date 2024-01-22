@@ -13,7 +13,7 @@ import RealmCombatComponent from "./RealmCombatComponent";
 import RealmInfoComponent from "./RealmInfoComponent";
 
 const RealmManagementComponent = () => {
-  const { realmEntityId } = useRealmStore();
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const [selectedTab, setSelectedTab] = useState(1);
 

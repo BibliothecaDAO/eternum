@@ -7,6 +7,7 @@ export enum Winner {
 export enum DESTINATION_TYPE {
   HOME,
   HYPERSTRUCTURE,
+  REALM,
   BANK,
 }
 
@@ -33,9 +34,11 @@ export interface CombatInfo {
   position?: Position | undefined;
   homePosition?: Position | undefined;
   entityOwnerId?: bigint | undefined;
-  locationRealmEntityId?: bigint | undefined;
+  owner?: bigint | undefined;
+  locationEntityId?: bigint | undefined;
+  locationType?: DESTINATION_TYPE;
   originRealmId?: bigint | undefined;
-  hyperstructureId: bigint | undefined;
+  order: number;
 }
 
 /// TRADING
@@ -175,6 +178,7 @@ export interface UIPosition {
 /// HYPESTRUCTURE
 export interface HyperStructureInterface {
   hyperstructureId: bigint;
+  name: string;
   orderId: number;
   progress: number;
   hyperstructureResources: {
@@ -185,5 +189,9 @@ export interface HyperStructureInterface {
   completed: boolean;
   position: Position;
   uiPosition: UIPosition;
-  level: number;
+  defence: number;
+  attack: number;
+  health: number;
+  watchTowerQuantity: number;
+  distance: number;
 }

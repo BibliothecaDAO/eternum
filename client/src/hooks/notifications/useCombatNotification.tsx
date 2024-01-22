@@ -229,8 +229,8 @@ export const useEnemyRaidersHaveArrivedNotification = (
   const { realm_id: attackerRealmId } = raiders?.entityOwnerId
     ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(raiders.entityOwnerId)])) || { realm_id: undefined }
     : { realm_id: undefined };
-  const { realm_id: targetRealmId } = raiders?.locationRealmEntityId
-    ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(raiders.locationRealmEntityId)])) || { realm_id: undefined }
+  const { realm_id: targetRealmId } = raiders?.locationEntityId
+    ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(raiders.locationEntityId)])) || { realm_id: undefined }
     : { realm_id: undefined };
   const attackerRealmOrderName = attackerRealmId ? getRealmOrderNameById(attackerRealmId) : "";
   const targetRealmOrderName = targetRealmId ? getRealmOrderNameById(targetRealmId) : "";
@@ -269,7 +269,7 @@ export const useEnemyRaidersHaveArrivedNotification = (
         </div>
         <Button
           onClick={() => {
-            goToMilitary(targetRealmId || 0n, raiders.locationRealmEntityId || 0n, MilitaryLocation.Defence);
+            goToMilitary(targetRealmId || 0n, raiders.locationEntityId || 0n, MilitaryLocation.Defence);
           }}
           className="mt-2 w-full"
           variant="success"
@@ -306,8 +306,8 @@ export const useEnemyRaidersAreTravelingNotification = (
   const { realm_id: attackerRealmId } = raiders?.entityOwnerId
     ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(raiders.entityOwnerId)])) || { realm_id: undefined }
     : { realm_id: undefined };
-  const { realm_id: targetRealmId } = raiders?.locationRealmEntityId
-    ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(raiders.locationRealmEntityId)])) || { realm_id: undefined }
+  const { realm_id: targetRealmId } = raiders?.locationEntityId
+    ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(raiders.locationEntityId)])) || { realm_id: undefined }
     : { realm_id: undefined };
   const attackerRealmOrderName = attackerRealmId ? getRealmOrderNameById(attackerRealmId) : "";
   const targetRealmOrderName = targetRealmId ? getRealmOrderNameById(targetRealmId) : "";
@@ -346,7 +346,7 @@ export const useEnemyRaidersAreTravelingNotification = (
         </div>
         <Button
           onClick={() => {
-            goToMilitary(targetRealmId || 0n, raiders.locationRealmEntityId || 0n, MilitaryLocation.Defence);
+            goToMilitary(targetRealmId || 0n, raiders.locationEntityId || 0n, MilitaryLocation.Defence);
           }}
           className="mt-2 w-full"
           variant="success"
@@ -383,8 +383,8 @@ export const useYourRaidersHaveArrivedNotification = (
   const { realm_id: attackerRealmId } = raiders?.entityOwnerId
     ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(raiders.entityOwnerId)])) || { realm_id: undefined }
     : { realm_id: undefined };
-  const { realm_id: targetRealmId } = raiders?.locationRealmEntityId
-    ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(raiders.locationRealmEntityId)])) || { realm_id: undefined }
+  const { realm_id: targetRealmId } = raiders?.locationEntityId
+    ? getComponentValue(Realm, getEntityIdFromKeys([BigInt(raiders.locationEntityId)])) || { realm_id: undefined }
     : { realm_id: undefined };
   const attackerRealmOrderName = attackerRealmId ? getRealmOrderNameById(attackerRealmId) : "";
   const targetRealmOrderName = targetRealmId ? getRealmOrderNameById(targetRealmId) : "";

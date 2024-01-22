@@ -282,11 +282,14 @@ fn test_travel_with_realm_and_hyperstructure_bonus() {
         EntityOwner {
             entity_id: travelling_entity_id.into(),
             entity_owner_id: realm_entity_id
-        }, 
-        HyperStructure {
+        },
+        HyperStructure { 
             entity_id: realm_order_hyperstructure_id,
             hyperstructure_type: 0,
-            order: 0,
+            controlling_order: 0,
+            completed: false,
+            completion_cost_id: 0,
+            completion_resource_count: 0
         },
         Level {
             entity_id: realm_order_hyperstructure_id,

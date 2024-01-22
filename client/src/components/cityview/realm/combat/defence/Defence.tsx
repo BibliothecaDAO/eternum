@@ -7,7 +7,7 @@ import { CombatInfo } from "@bibliothecadao/eternum";
 type DefenceProps = {
   watchTower: CombatInfo;
   levelBonus: number;
-  hyperstructureLevelBonus: number;
+  conqueredHyperstructures: number;
   onReinforce?: () => void;
   setShowHeal?: (show: boolean) => void;
 } & React.HTMLAttributes<HTMLDivElement>;
@@ -15,7 +15,7 @@ type DefenceProps = {
 export const Defence = ({
   watchTower,
   levelBonus,
-  hyperstructureLevelBonus,
+  conqueredHyperstructures,
   onReinforce,
   setShowHeal,
   ...props
@@ -26,7 +26,7 @@ export const Defence = ({
     <div className={clsx("flex flex-1 w-full", props.className)}>
       <img src={`/images/buildings/defence_tower.png`} className="object-cover rounded-md w-[107px]" />
       <div className="flex flex-col w-full min-w-[244px] h-full ml-2">
-        <div className="font-bold text-white text-xs mb-1">City Tower</div>
+        <div className="font-bold text-white text-xs mb-1">Defence Tower</div>
         <div className="flex text-white items-end mb-2">
           <div className="flex flex-col items-start">
             <div className="flex flex-row text-xxs justify-center">
@@ -35,7 +35,7 @@ export const Defence = ({
             </div>
             <div className="flex flex-row text-xxs justify-center">
               <span className="mr-1 text-gold">{`HyperStructure Bonus: `}</span>
-              <span className="text-order-brilliance">{`+${hyperstructureLevelBonus - 100}%`}</span>
+              <span className="text-order-brilliance">{`+${conqueredHyperstructures * 25}%`}</span>
             </div>
           </div>
           <div className="flex items-center text-xxs ml-auto">

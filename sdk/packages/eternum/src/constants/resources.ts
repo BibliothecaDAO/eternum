@@ -303,21 +303,6 @@ export const resourceProb = [
 // (415800000 / 43608500) * 0.2018109
 export const foodProb = [5.7727, 1.9242];
 
-// wheat / fish
-export const hyperstructureResourcesPerLevel = [
-  // level 1
-  [254, 1247400000, 255, 415800000],
-
-  // level 2
-  [1, 43608500, 2, 34269500, 3, 33330500, 4, 22982500, 5, 19269500, 6, 15138999, 7, 10252000],
-
-  // level 3
-  [8, 8321500, 9, 7948000, 10, 5165000, 11, 2608500, 12, 2148000, 13, 2078500, 14, 2078500, 15, 1495500],
-
-  // level 4
-  [16, 1408500, 17, 1208500, 18, 965000, 19, 808500, 20, 478500, 21, 321500, 22, 200000],
-];
-
 const LEVELING_COST_MULTIPLIER = 1.25;
 
 export const getLevelingCost = (newLevel: number): { resourceId: number; amount: number }[] => {

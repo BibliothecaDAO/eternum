@@ -320,33 +320,17 @@ commands+=(
     # create hyperstructures
     # @dev generated using data/hyperstructures/generateCommands.js
     # data => ./contracts/data/hyperstructures/hyperstructures.json
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,1652610,2103276,1"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2621909,1458147,2"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,1650208,1764081,3"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2919158,2127177,4"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,740492,1446359,5"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2445183,2275580,6"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,1954116,2171570,7"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,1412094,1993452,8"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,893997,1873356,9"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2509517,1884363,10"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,1097424,1476206,11"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,1572668,1517683,12"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,1906818,1409047,13"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2072443,1712964,14"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2844078,1697894,15"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,605410,2023632,16"
-
-    ## set leveling config
-    ## 1247400000 wheat (330x the realm leveling amount)
-    ## 415800000 fish (330x the realm leveling amount)
-    ## resources 1 costs
-    ## 1,43608500,2,34269500,3,33330500,4,22982500,5,19269500,6,15138999,7,10252000
-    ## resources 2 costs
-    ## 8,8321500,9,7948000,10,5165000,11,2608500,12,2148000,13,2078500,14,2078500,15,1495500
-    ## resources 3 costs
-    ## 16,1408500,17,1208500,18,965000,19,808500,20,478500,21,321500,22,200000
-    "sozo execute $CONFIG_SYSTEMS set_leveling_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999992,604800,4,1844674407370955161,4611686018427387904,25,283500000,94500000,7,1,18900000,2,14852416,3,14445404,4,9960652,5,8351429,6,6561299,7,4443292,8,8,3606643,9,3444587,10,2238602,11,1130605,12,930864,13,900717,14,900717,15,648213,7,16,610527,17,523852,18,418325,19,350493,20,207280,21,139439,22,86684"
+    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,1652610,2103276,4,1,9450000,2,7426208,254,45000000,255,15000000"
+    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2621909,1458147,4,3,7222702,4,4980326,254,45000000,255,15000000"
+    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,1650208,1764081,4,5,4175714,6,3280649,254,45000000,255,15000000"
+    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2919158,2127177,4,7,2221646,8,1803321,254,45000000,255,15000000"
+    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,740492,1446359,4,9,1722294,10,1119301,254,45000000,255,15000000"
+    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2445183,2275580,4,11,565302,12,465432,254,45000000,255,15000000"
+    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,1954116,2171570,4,13,450359,14,450359,254,45000000,255,15000000"
+    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,1412094,1993452,4,15,324106,16,305263,254,45000000,255,15000000"
+    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,893997,1873356,4,17,261926,18,209162,254,45000000,255,15000000"
+    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2509517,1884363,4,19,175246,20,103640,254,45000000,255,15000000"
+    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,1097424,1476206,4,21,69719,22,43342,254,45000000,255,15000000"
 )
 
 #### SET LABOR AUCTIONS ####

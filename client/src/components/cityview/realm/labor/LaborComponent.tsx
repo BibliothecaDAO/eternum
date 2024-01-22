@@ -14,6 +14,7 @@ import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
 import { EventType, useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
 import { FoodType, useLabor } from "../../../../hooks/helpers/useLabor";
+import useUIStore from "../../../../hooks/store/useUIStore";
 
 type LaborComponentProps = {
   resourceId: number;
@@ -45,7 +46,7 @@ export const LaborComponent = ({
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const { realmEntityId, hyperstructureId } = useRealmStore();
+  const { realmEntityId } = useRealmStore();
 
   const labor = useComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
 
@@ -69,7 +70,8 @@ export const LaborComponent = ({
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 
-  const { getEntityLevel, getRealmLevelBonus, getHyperstructureLevelBonus } = useLevel();
+  const { getEntityLevel, getRealmLevelBonus } = useLevel();
+  const conqueredHyperstructureNumber = useUIStore((state) => state.conqueredHyperstructureNumber);
 
   const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
 
@@ -77,13 +79,7 @@ export const LaborComponent = ({
   const [levelBonus, hyperstructureLevelBonus] = useMemo(() => {
     const level = getEntityLevel(realmEntityId)?.level || 0;
     const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
-    if (!hyperstructureId) return [levelBonus, undefined];
-    const hyperstructureLevel = getEntityLevel(hyperstructureId)?.level || 0;
-    const hyperstructureLevelBonus = getHyperstructureLevelBonus(
-      hyperstructureLevel,
-      isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE,
-    );
-    return [levelBonus, hyperstructureLevelBonus];
+    return [levelBonus, conqueredHyperstructureNumber * 25 + 100];
   }, [realmEntityId, isFood]);
 
   const onBuild = async () => {

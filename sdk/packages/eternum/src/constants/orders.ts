@@ -112,5 +112,5 @@ export const orders: IOrder[] = [
 ];
 
 export function getOrderName(orderId: number): string {
-  return orders[orderId - 1].orderName;
+  return orders[orderId - 1]?.orderName;
 }

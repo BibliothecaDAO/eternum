@@ -473,11 +473,18 @@ export function defineContractComponents(world: World) {
     HyperStructure: (() => {
       return defineComponent(
         world,
-        { entity_id: RecsType.BigInt, hyperstructure_type: RecsType.Number, order: RecsType.Number },
+        {
+          entity_id: RecsType.BigInt,
+          hyperstructure_type: RecsType.Number,
+          controlling_order: RecsType.Number,
+          completed: RecsType.Boolean,
+          completion_cost_id: RecsType.BigInt,
+          completion_resource_count: RecsType.Number,
+        },
         {
           metadata: {
             name: "HyperStructure",
-            types: ["u128", "u8", "u8"],
+            types: ["u128", "u8", "u8", "bool", "u128", "u32"],
             customTypes: [],
           },
         },
@@ -847,6 +854,19 @@ export function defineContractComponents(world: World) {
         {
           metadata: {
             name: "Weight",
+            types: ["u128", "u128"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    Orders: (() => {
+      return defineComponent(
+        world,
+        { order_id: RecsType.BigInt, hyperstructure_count: RecsType.BigInt },
+        {
+          metadata: {
+            name: "Orders",
             types: ["u128", "u128"],
             customTypes: [],
           },

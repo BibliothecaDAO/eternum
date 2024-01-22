@@ -8,7 +8,7 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 
 const RealmManagementModule = () => {
-  const { realmEntityId } = useRealmStore();
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const { realm } = useGetRealm(realmEntityId);
   const { getEntityLevel } = useLevel();
   const [location] = useLocation();

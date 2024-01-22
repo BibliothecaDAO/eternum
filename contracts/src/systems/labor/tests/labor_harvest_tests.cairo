@@ -270,10 +270,13 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
             cost_percentage_scaled: 0,
             base_multiplier: 25
         },
-        HyperStructure {
-            entity_id: hyperstructure_id, 
+        HyperStructure { 
+            entity_id: hyperstructure_id,
             hyperstructure_type: 0,
-            order: 0
+            controlling_order: 0,
+            completed: false,
+            completion_cost_id: 0,
+            completion_resource_count: 0
         },
         Level {
             entity_id: hyperstructure_id,
@@ -576,10 +579,13 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
             cost_percentage_scaled: 0,
             base_multiplier: 25
         },
-        HyperStructure {
-            entity_id: order_hyperstructure_id, 
+        HyperStructure { 
+            entity_id: order_hyperstructure_id,
             hyperstructure_type: 0,
-            order: 0
+            controlling_order: 0,
+            completed: false,
+            completion_cost_id: 0,
+            completion_resource_count: 0
         },
         Level {
             entity_id: order_hyperstructure_id,

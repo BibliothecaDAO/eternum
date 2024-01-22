@@ -30,11 +30,11 @@ trait ISoldierSystems<TContractState> {
 trait ICombatSystems<TContractState> {
     fn attack( 
         self: @TContractState, world: IWorldDispatcher, 
-        attacker_ids: Span<u128>, target_realm_entity_id: u128
+        attacker_ids: Span<u128>, target_entity_id: u128
     );
     
     fn steal(
         self: @TContractState, world: IWorldDispatcher,
-        attacker_id: u128, target_realm_entity_id: u128
+        attacker_id: u128, target_entity_id: u128
     );
 }

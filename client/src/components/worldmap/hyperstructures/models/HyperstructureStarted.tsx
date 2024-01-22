@@ -35,12 +35,12 @@ export default function HyperstructureStarted(
   const hyperstructures: (HyperStructureInterface | undefined)[] = useUIStore((state) => state.hyperstructures);
 
   const uninitializedHyperstructures = useMemo(
-    () => hyperstructures.filter((hyperstructure) => hyperstructure?.level === 0),
+    () => hyperstructures.filter((hyperstructure) => hyperstructure?.progress === 0),
     [hyperstructures],
   );
 
   const initializedHyperstructures = useMemo(
-    () => hyperstructures.filter((hyperstructure) => hyperstructure?.level === 1),
+    () => hyperstructures.filter((hyperstructure) => hyperstructure && hyperstructure?.progress > 1),
     [hyperstructures],
   );
 

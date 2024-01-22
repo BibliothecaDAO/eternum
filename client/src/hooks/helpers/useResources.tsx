@@ -11,7 +11,16 @@ export function useResources() {
   const {
     account: { account },
     setup: {
-      components: { Inventory, ForeignKey, ResourceChest, DetachedResource, Resource, CaravanMembers, Position },
+      components: {
+        Inventory,
+        ForeignKey,
+        ResourceChest,
+        DetachedResource,
+        Resource,
+        CaravanMembers,
+        Position,
+        ResourceCost,
+      },
       optimisticSystemCalls: { optimisticOffloadResources },
       systemCalls: { transfer_items },
     },
@@ -70,6 +79,17 @@ export function useResources() {
       : undefined;
 
     return foreignKey?.entity_id;
+  };
+
+  const getResourceCosts = (costUuid: bigint, count: number) => {
+    let resourceCosts = [];
+    for (let i = 0; i < count; i++) {
+      let resourceCost = getComponentValue(ResourceCost, getEntityIdFromKeys([costUuid, BigInt(i)]));
+      if (resourceCost) {
+        resourceCosts.push({ resourceId: resourceCost.resource_type, amount: Number(resourceCost.amount) });
+      }
+    }
+    return resourceCosts;
   };
 
   const getFoodResources = (entityId: bigint): Resource[] => {
@@ -160,5 +180,6 @@ export function useResources() {
     getResourceChestIdFromInventoryIndex,
     getBalance,
     getCaravansWithResourcesChest,
+    getResourceCosts,
   };
 }

@@ -16,6 +16,7 @@ import { divideByPrecision } from "../../../../../utils/utils";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import { CombatInfo } from "@bibliothecadao/eternum";
+import { useCombat } from "../../../../../hooks/helpers/useCombat";
 
 type RaidProps = {
   raider: CombatInfo;
@@ -33,9 +34,11 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
   const {
     account: { account },
     setup: {
-      systemCalls: { travel },
+      systemCalls: { travel, merge_soldiers },
     },
   } = useDojo();
+
+  const { getDefenceOnPosition } = useCombat();
 
   const { realmId, realmEntityId } = useRealmStore();
   const [isLoading, setIsLoading] = useState(false);
@@ -52,11 +55,30 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
     return getTotalResourceWeight([...(inventoryResources?.resources || [])]);
   }, [inventoryResources]);
 
+  const watchTowerId = useMemo(() => {
+    const defence = raider?.position ? getDefenceOnPosition(raider.position) : undefined;
+    return defence?.entityId;
+  }, [raider]);
+
   // offload
   const onOffload = async () => {
-    setIsLoading(true);
+    // setIsLoading(true);
     if (raider?.entityId && inventoryResources) {
       await offloadChests(realmEntityId, raider.entityId, inventoryResources.indices, inventoryResources.resources);
+    }
+    // setIsLoading(false);
+  };
+
+  // get entity on which they are
+  const onDefend = async () => {
+    if (watchTowerId) {
+      setIsLoading(true);
+      await merge_soldiers({
+        signer: account,
+        merge_into_unit_id: watchTowerId,
+        units: [raider.entityId, raider.quantity],
+      });
+      setIsLoading(false);
     }
   };
 
@@ -75,13 +97,15 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
     }
   };
 
+  const isYours = raider.owner === BigInt(account.address);
   const hasResources = inventoryResources && inventoryResources.resources.length > 0;
   const isTraveling = raider.arrivalTime && nextBlockTimestamp ? raider.arrivalTime > nextBlockTimestamp : false;
   const hasMaxHealth = health === 10 * quantity;
   const destinationRealmId = raider.position ? getRealmIdByPosition(raider.position) : undefined;
-  const destinationRealmName = destinationRealmId ? getRealmNameById(destinationRealmId) : undefined;
+  const destinationName = destinationRealmId ? getRealmNameById(destinationRealmId) : "Hyperstructure";
   const isHome = destinationRealmId === realmId;
 
+  // get info about the destination defence
   // const destinationDefence = getDefenceOnPosition(raider.position);
 
   return (
@@ -101,24 +125,24 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
               `flex items-center p-1 border text-light-pink rounded-br-md rounded-tl-md border-gray-gold`,
               isTraveling && "!border-orange !text-orange",
               !isTraveling && isHome && "!text-order-brilliance !border-order-brilliance",
-              !isTraveling && destinationRealmName && !isHome && "!text-order-giants !border-order-giants",
+              !isTraveling && destinationName && !isHome && "!text-order-giants !border-order-giants",
             )}
           >
-            {isTraveling && destinationRealmName && !isHome && "Outgoing"}
+            {isTraveling && destinationName && !isHome && "Outgoing"}
             {isTraveling && isHome && "Incoming"}
             {!isTraveling && isHome && "At the base"}
-            {!isTraveling && destinationRealmName && !isHome && "Ready for attack"}
+            {!isTraveling && destinationName && !isHome && "Ready for attack"}
           </div>
         )}
         <div className="flex items-center ml-1">
-          {isTraveling && destinationRealmName && !isHome && (
+          {isTraveling && destinationName && !isHome && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Traveling to</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
                 {destinationRealmId?.toString() && (
                   <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xxs" />
                 )}
-                {destinationRealmName}
+                {destinationName}
                 <span className="italic text-light-pink ml-1">with</span>
               </div>
             </div>
@@ -136,14 +160,14 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
               <span className="italic text-light-pink">Home</span>
             </div>
           )}
-          {!isTraveling && destinationRealmName && !isHome && (
+          {!isTraveling && destinationName && !isHome && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Waiting on</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
                 {destinationRealmId?.toString() && (
                   <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xxs" />
                 )}
-                {destinationRealmName}
+                {destinationName}
                 <span className="italic text-light-pink ml-1">with</span>
               </div>
             </div>
@@ -250,87 +274,102 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
               )}
             </div>
           )}
-          <div className="flex space-x-2">
-            {!hasResources && !isTraveling && isHome && (
-              <Button
-                size="xs"
-                className="ml-auto"
-                onClick={() => {
-                  setShowTravelRaid(true);
-                }}
-                variant="outline"
-                withoutSound
-              >
-                {`Travel`}
-              </Button>
-            )}
-            {!isTraveling && !isHome && (
-              <Button
-                size="xs"
-                className="ml-auto"
-                isLoading={isLoading}
-                onClick={onReturn}
-                variant="outline"
-                withoutSound
-              >
-                {`Return`}
-              </Button>
-            )}
-            {!isTraveling && !isHome && !isLoading && (
-              <Button
-                size="xs"
-                className="ml-auto"
-                disabled={false}
-                onClick={() => {
-                  setShowAttackRaid(true);
-                }}
-                variant="outline"
-                withoutSound
-              >
-                {`Attack`}
-              </Button>
-            )}
-            {!hasResources && !isTraveling && isHome && (
-              <Button
-                size="xs"
-                className="ml-auto"
-                disabled={false}
-                onClick={() => {
-                  setShowManageRaid(true);
-                }}
-                variant="outline"
-                withoutSound
-              >
-                {`Manage`}
-              </Button>
-            )}
-            {!isTraveling && isHome && !hasMaxHealth && (
-              <Button
-                size="xs"
-                className="ml-auto"
-                disabled={false}
-                onClick={() => {
-                  setShowHealRaid(true);
-                }}
-                variant="success"
-                withoutSound
-              >
-                {`Heal`}
-              </Button>
-            )}
-            {hasResources && isHome && (
-              <Button
-                size="xs"
-                className="ml-auto"
-                disabled={isTraveling}
-                onClick={onOffload}
-                variant={isTraveling ? "danger" : "success"}
-                withoutSound
-              >
-                {`Claim`}
-              </Button>
-            )}
-          </div>
+          {isYours && (
+            <div className="flex space-x-2">
+              {!hasResources && !isTraveling && isHome && (
+                <Button
+                  size="xs"
+                  className="ml-auto"
+                  onClick={() => {
+                    setShowTravelRaid(true);
+                  }}
+                  variant="outline"
+                  withoutSound
+                >
+                  {`Travel`}
+                </Button>
+              )}
+              {!isTraveling && !isHome && (
+                <Button
+                  size="xs"
+                  className="ml-auto"
+                  isLoading={isLoading}
+                  onClick={onReturn}
+                  variant="outline"
+                  withoutSound
+                >
+                  {`Return`}
+                </Button>
+              )}
+              {!isTraveling && !isHome && !isLoading && (
+                <Button
+                  size="xs"
+                  className="ml-auto"
+                  disabled={false}
+                  onClick={() => {
+                    setShowAttackRaid(true);
+                  }}
+                  variant="outline"
+                  withoutSound
+                >
+                  {`Attack`}
+                </Button>
+              )}
+              {!isTraveling && !hasResources && (
+                <Button
+                  size="xs"
+                  className="ml-auto"
+                  disabled={false}
+                  isLoading={isLoading}
+                  onClick={onDefend}
+                  variant="outline"
+                  withoutSound
+                >
+                  {`Defend`}
+                </Button>
+              )}
+              {!hasResources && !isTraveling && isHome && (
+                <Button
+                  size="xs"
+                  className="ml-auto"
+                  disabled={false}
+                  onClick={() => {
+                    setShowManageRaid(true);
+                  }}
+                  variant="outline"
+                  withoutSound
+                >
+                  {`Manage`}
+                </Button>
+              )}
+              {!isTraveling && isHome && !hasMaxHealth && (
+                <Button
+                  size="xs"
+                  className="ml-auto"
+                  disabled={false}
+                  onClick={() => {
+                    setShowHealRaid(true);
+                  }}
+                  variant="success"
+                  withoutSound
+                >
+                  {`Heal`}
+                </Button>
+              )}
+              {hasResources && isHome && (
+                <Button
+                  size="xs"
+                  className="ml-auto"
+                  disabled={isTraveling}
+                  onClick={onOffload}
+                  variant={isTraveling ? "danger" : "success"}
+                  withoutSound
+                >
+                  {`Claim`}
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

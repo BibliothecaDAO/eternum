@@ -3,16 +3,20 @@ import Button from "../../../../../elements/Button";
 import { Raid } from "./Raid";
 import { useCombat } from "../../../../../hooks/helpers/useCombat";
 import { CreateRaidersPopup } from "./CreateRaidersPopup";
-import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { ManageSoldiersPopupTabs } from "./ManageSoldiersPopupTabs";
 import { AttackRaidsPopup } from "./AttackRaidsPopup";
 import { TravelRaidsPopup } from "./TravelRaidsPopup";
 import { HealPopup } from "../HealPopup";
 import { CombatInfo } from "@bibliothecadao/eternum";
+import clsx from "clsx";
 
-type RaidsPanelProps = {};
+type RaidsPanelProps = {
+  raiderIds: bigint[];
+  showCreateButton: boolean;
+  className?: string;
+};
 
-export const RaidsPanel = ({}: RaidsPanelProps) => {
+export const RaidsPanel = ({ raiderIds, showCreateButton, className }: RaidsPanelProps) => {
   const [showBuildRaiders, setShowBuildRaiders] = useState(false);
   const [selectedRaider, setSelectedRaider] = useState<CombatInfo | null>(null);
 
@@ -21,14 +25,11 @@ export const RaidsPanel = ({}: RaidsPanelProps) => {
   const [showManageRaid, setShowManageRaid] = useState(false);
   const [showHealRaid, setShowHealRaid] = useState(false);
 
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
-
-  const { useRealmRaiders, getEntitiesCombatInfo } = useCombat();
-  const entities = useRealmRaiders(realmEntityId);
+  const { getEntitiesCombatInfo } = useCombat();
 
   const raiders = useMemo(() => {
-    return getEntitiesCombatInfo(entities);
-  }, [entities]);
+    return getEntitiesCombatInfo(raiderIds);
+  }, [raiderIds]);
 
   const onClose = () => {
     setShowBuildRaiders(false);
@@ -40,7 +41,7 @@ export const RaidsPanel = ({}: RaidsPanelProps) => {
   };
 
   return (
-    <div className="relative flex flex-col pb-3 min-h-[120px]">
+    <div className={clsx("relative flex flex-col", className)}>
       {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
       {showBuildRaiders && <CreateRaidersPopup onClose={onClose} />}
       {selectedRaider && showManageRaid && (
@@ -74,11 +75,13 @@ export const RaidsPanel = ({}: RaidsPanelProps) => {
           />
         ))}
       </div>
-      <div className="sticky w-32 -translate-x-1/2 bottom-2 left-1/2 !rounded-full flex flex-col items-center">
-        <Button className="" onClick={() => setShowBuildRaiders(true)} variant="primary">
-          + New raiding party
-        </Button>
-      </div>
+      {showCreateButton && (
+        <div className="sticky w-32 -translate-x-1/2 top-10 bottom-2 left-1/2 !rounded-full flex flex-col items-center">
+          <Button className="" onClick={() => setShowBuildRaiders(true)} variant="primary">
+            + New raiding party
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
