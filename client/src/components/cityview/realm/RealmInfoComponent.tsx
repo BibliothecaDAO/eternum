@@ -143,9 +143,9 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
               />
             </div>
           </div>
-          <LaborAuction className="!absolute top-2 right-2 !-mt-1" />
+          <LaborAuction className="!absolute top-2 r right-2 !-mt-1" />
           {showRealmLevelUp && <LevelingPopup onClose={() => setShowRealmLevelUp(false)}></LevelingPopup>}
-          <ConqueredHyperstructures className={"text-xxs absolute top-2 right-2 -mt-1"} order={realm.order} />
+          <ConqueredHyperstructures className={"text-xxs absolute top-2 right-16 -mt-1"} order={realm.order} />
         </div>
       )}
       <div className="flex space-x-2 mt-1 items-center px-4">
