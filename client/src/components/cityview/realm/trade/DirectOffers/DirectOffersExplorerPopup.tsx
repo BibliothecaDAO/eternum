@@ -145,7 +145,7 @@ const RealmResourceExplorerPanel = ({
           />
         )}
       </div>
-      <div className="flex flex-col p-2">
+      <div className="flex flex-col p-2 overflow-hidden">
         <div className="flex items-center justify-between">
           <FiltersPanel>
             <FilterButton active={true} onClick={() => setSelectedResourceId(null)}>
@@ -176,23 +176,25 @@ const RealmResourceExplorerPanel = ({
             />
           ))}
         </SortPanel>
-        {realmsFilteredByName
-          .filter((realm) => realmId !== realm.realmId)
-          .map(({ realmEntityId, amount, realm, distance }) => (
-            <div className="mt-2">
-              <RealmResourceRow
-                realmEntityId={realmEntityId}
-                balance={amount}
-                resourceId={resourceId}
-                realm={realm}
-                distance={distance}
-                onCreateDirectOffer={(realmId) => {
-                  setDirectOfferRealmId(realmId);
-                  setShowCreateOffer(true);
-                }}
-              />
-            </div>
-          ))}
+        <div className="flex flex-col overflow-auto">
+          {realmsFilteredByName
+            .filter((realm) => realmId !== realm.realmId)
+            .map(({ realmEntityId, amount, realm, distance }) => (
+              <div className="mt-2">
+                <RealmResourceRow
+                  realmEntityId={realmEntityId}
+                  balance={amount}
+                  resourceId={resourceId}
+                  realm={realm}
+                  distance={distance}
+                  onCreateDirectOffer={(realmId) => {
+                    setDirectOfferRealmId(realmId);
+                    setShowCreateOffer(true);
+                  }}
+                />
+              </div>
+            ))}
+        </div>
       </div>
     </>
   );
@@ -260,7 +262,6 @@ const RealmResourceRow = ({
           }
           onMouseLeave={() => setTooltip(null)}
           status={status}
-          className="mr-2"
         />
         {realm && <OrderIcon className="mr-2" size="xs" order={getOrderName(realm.order)} />}
         {realm?.name}
