@@ -50,35 +50,36 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
 
   if (realmResourceIds.length > 3) {
     return (
-      <div
-        className={clsx(
-          "fixed w-[1000px] top-3 left-1/2 -translate-x-1/2 bg-black/60 p-3 rounded-t-xl rounded-b-2xl",
-          className,
-        )}
-      >
-        <div className="relative flex mx-auto space-x-3 overflow-visible text-white font-bold">
-          {realmResourceIds.map((resourceId) => (
-            <ResourceComponent key={resourceId} resourceId={resourceId} />
-          ))}
-          <div
-            onClick={() => {
-              if (realm_level && realm_level > 0) setShowAllResources(!showAllResources);
-            }}
-            className={clsx("flex items-center !ml-auto", realm_level == 0 && "blur-sm")}
-          >
-            <MoreIcon className={clsx("mr-1 duration-300 transition-transform", showAllResources && "rotate-180")} />
-            <div className="text-xs">{showAllResources ? "Minimize" : "Show all"}</div>
-          </div>
-        </div>
+      <div className="fixed top-3 left-3 right-3 z-50 !pointer-events-none">
         <div
           className={clsx(
-            "relative flex flex-wrap mt-1 overflow-visible text-white font-bold duration-500 transition-all",
-            showAllResources ? "max-h-[100px] opacity-100" : "max-h-0 opacity-0",
+            "relative pointer-events-auto mt-1 rounded-t-xl overflow-hidden text-white bg-black font-bold duration-500 transition-all",
+            showAllResources ? "max-h-[100px]" : "max-h-0",
           )}
         >
-          {otherResources.map((resource) => (
-            <ResourceComponent className="mr-3 mb-1" canFarm={false} key={resource.id} resourceId={resource.id} />
-          ))}
+          <div className=" flex justify-center flex-wrap  w-full p-3">
+            {otherResources.map((resource) => (
+              <ResourceComponent className="mr-3 mb-1" canFarm={false} key={resource.id} resourceId={resource.id} />
+            ))}
+          </div>
+        </div>
+        <div className={clsx("relative mx-auto w-min bg-black/60 p-3 rounded-b-2xl pointer-events-auto", className)}>
+          <div className="relative flex mx-auto space-x-3 overflow-visible text-white font-bold">
+            {realmResourceIds.map((resourceId) => (
+              <ResourceComponent key={resourceId} resourceId={resourceId} />
+            ))}
+            <div
+              onClick={() => {
+                if (realm_level && realm_level > 0) setShowAllResources(!showAllResources);
+              }}
+              className={clsx("flex items-center ml-4", realm_level == 0 && "blur-sm")}
+            >
+              <MoreIcon className={clsx("mr-1 duration-300 transition-transform", showAllResources && "rotate-180")} />
+              <div className="text-xs  whitespace-nowrap w-16 text-center">
+                {showAllResources ? "Minimize" : "Show all"}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

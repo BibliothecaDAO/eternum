@@ -72,7 +72,7 @@ export const HealPopup = ({ selectedRaider, onClose }: HealPopupProps) => {
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"376px"}>
         <div className="flex flex-col items-center p-2">
-          <Headline size="big">Heal Units</Headline>
+          <Headline>Heal Units</Headline>
           <div className={"relative w-full mt-3"}>
             <img src={`/images/units/troop-heal.png`} className="object-cover w-full h-full rounded-[10px]" />
             <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">

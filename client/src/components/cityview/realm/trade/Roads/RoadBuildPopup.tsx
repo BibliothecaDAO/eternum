@@ -83,9 +83,7 @@ export const RoadBuildPopup = ({ toEntityId, onClose }: RoadBuildPopupProps) => 
       <SecondaryPopup.Body width={"376px"}>
         <div className="flex flex-col items-center p-2">
           {toRealm && (
-            <Headline size="big">
-              Build road to {toRealm && realmsData["features"][Number(toRealm.realmId - 1n)]?.name}
-            </Headline>
+            <Headline>Build road to {toRealm && realmsData["features"][Number(toRealm.realmId - 1n)]?.name}</Headline>
           )}
           <div className={"relative w-full mt-3"}>
             <img src={`/images/road.jpg`} className="object-cover w-full h-full rounded-[10px]" />

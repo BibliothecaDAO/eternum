@@ -126,7 +126,7 @@ export const SignUpComponent = ({ isWorldLive, worldLoading, worldProgress }: Si
         <div className="flex flex-col items-center p-3">
           <img src="/images/eternum-logo.svg" className=" w-48" alt="Eternum Logo" />
           <img src="/images/cover.png" className="w-full my-3 rounded-lg" alt="Eternum Logo" />
-          <Headline size="big">Testnet Sign Up</Headline>
+          <Headline>Testnet Sign Up</Headline>
           <div className="flex my-2 items-center space-x-2">
             <Button variant={"success"} onClick={create} disabled={isDeploying} isLoading={isDeploying}>
               {isDeploying ? "" : "Create a new wallet"}

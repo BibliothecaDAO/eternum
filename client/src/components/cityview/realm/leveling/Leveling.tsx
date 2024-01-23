@@ -7,9 +7,9 @@ type LevelingProps = {
   className?: string;
   entityId: bigint | undefined;
   setShowLevelUp?: (show: boolean) => void;
-};
+} & React.HTMLAttributes<HTMLDivElement>;
 
-export const Leveling = ({ className, entityId, setShowLevelUp }: LevelingProps) => {
+export const Leveling = ({ className, entityId, setShowLevelUp, ...props }: LevelingProps) => {
   const { getEntityLevel } = useLevel();
 
   const level = entityId ? getEntityLevel(entityId) : undefined;
@@ -50,9 +50,10 @@ export const Leveling = ({ className, entityId, setShowLevelUp }: LevelingProps)
     <div
       className={clsx(
         className,
-        "flex flex-col items-center justify-center absolute top-2 right-2 w-14 h-14 -mt-1 cursor-pointer",
+        "flex flex-col items-center justify-center absolute top-2 right-16 w-14 h-14 -mt-1 cursor-pointer",
       )}
       onClick={onClick}
+      {...props}
     >
       {/* text-[13px] */}
       <div className={clsx(timeLeftColors.text, "flex items-center justify-between text-[13px] font-bold")}>
@@ -81,7 +82,7 @@ export const Leveling = ({ className, entityId, setShowLevelUp }: LevelingProps)
           className={timeLeftColors.bg}
         />
       </svg>
-      <div className="text-white text-xxs absolute -bottom-5">Order LVL</div>
+      <div className="text-white text-xxs absolute -bottom-5 upp">Order LVL</div>
     </div>
   );
 };

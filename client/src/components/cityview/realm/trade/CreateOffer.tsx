@@ -503,9 +503,7 @@ export const SelectCaravanPanel = ({
                   selectedResourceIdsGet.length > 0 ? "col-span-4" : "col-span-9",
                 )}
               >
-                <Headline className="mb-2" size="big">
-                  {headline}
-                </Headline>
+                <Headline className="mb-2">{headline}</Headline>
                 <div className="flex items-center justify-center w-full flex-wrap">
                   {selectedResourceIdsGive.map((id) => (
                     <ResourceCost
@@ -527,9 +525,7 @@ export const SelectCaravanPanel = ({
                 <ArrowSeparator className="sticky top-1/2 -translate-y-1/2" />
               </div>
               <div className="flex flex-col items-center col-span-4 space-y-2 h-min">
-                <Headline className="mb-2" size="big">
-                  You Get
-                </Headline>
+                <Headline className="mb-2">You Get</Headline>
                 <div className="flex items-center justify-center w-full flex-wrap">
                   {selectedResourceIdsGet.map((id) => (
                     <ResourceCost
@@ -567,9 +563,7 @@ export const SelectCaravanPanel = ({
       {isNewCaravan && (
         <>
           <div className="flex flex-col">
-            <Headline className="mb-2" size="big">
-              Summon a New Caravan
-            </Headline>
+            <Headline className="mb-2">Summon a New Caravan</Headline>
             <div className="grid grid-cols-9 gap-2 p-2">
               <div className="flex items-center col-span-3">
                 <NumberInput

@@ -52,7 +52,7 @@ export const SeparateSoldiersPanel = ({ isDefence, selectedRaider, onClose }: Se
   return (
     <div>
       <div className="flex flex-col items-center p-2">
-        <Headline size="big">Military units 1</Headline>
+        <Headline>Military units 1</Headline>
         <div className="flex relative mt-1 mb-1 justify-between text-xxs text-lightest w-full">
           <div className="flex items-center">
             <div className="flex items-center h-6 mr-2">
@@ -104,7 +104,7 @@ export const SeparateSoldiersPanel = ({ isDefence, selectedRaider, onClose }: Se
           </div>
           <div className="flex items-center">{totalHealth} HP</div>
         </div>
-        <Headline size="big">Military units 2</Headline>
+        <Headline>Military units 2</Headline>
         <div className="flex relative mt-1 justify-between text-xxs text-lightest w-full">
           <div className="flex items-center">
             <div className="flex items-center h-6 mr-2">

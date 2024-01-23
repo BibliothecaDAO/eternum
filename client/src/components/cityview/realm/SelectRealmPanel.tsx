@@ -98,18 +98,30 @@ export const SelectRealmPanel = ({
     setSortedRealms(sorted);
   }, [originalRealms, activeSort, deferredNameFilter]);
 
+  const selectedRealm = useMemo(() => {
+    return sortedRealms.find((realm) => realm.realmId === selectedRealmId);
+  }, [sortedRealms, selectedRealmId]);
+
   return (
     <div className="flex flex-col items-center w-full p-2">
       {!specifyRealmId && (
         <div
           onClick={() => setSpecifyRealmId(true)}
-          className="w-full mx-4 h-8 py-[7px] bg-dark-brown cursor-pointer rounded justify-center items-center"
+          className="relative w-full mx-4 h-8 py-[7px] bg-dark-brown cursor-pointer rounded justify-center items-center box-border"
         >
-          <div className="text-xs text-center text-gold"> + Make Direct Offer</div>
+          {!selectedRealmId ? (
+            <div className="text-xs text-center text-gold"> + Make Direct Offer</div>
+          ) : (
+            <div className="text-xs text-center text-gold">
+              Direct offer for:
+              <span className="text-light-pink"> {selectedRealm?.name}</span>
+            </div>
+          )}
+          <CaretDownFill className="ml-1 fill-gold absolute top-1/2 right-2 -translate-y-1/2" />
         </div>
       )}
       {specifyRealmId && (
-        <div className="flex flex-col p-1 rounded border-gold border w-full">
+        <div className="flex flex-col p-1 rounded border-gold border w-full box-content">
           <div
             onClick={() => setSpecifyRealmId(false)}
             className="w-full p-2 mb-1 -mt-1 relative cursor-pointer rounded justify-center items-center"
@@ -120,7 +132,7 @@ export const SelectRealmPanel = ({
           {realmEntityId.toString() && (
             <div className="flex flex-col">
               <TextInput
-                className="border border-gold mx-1 !w-auto !text-light-pink"
+                className="border border-gold mx-1 !w-auto !text-light-pink text-xs"
                 placeholder="Search by ID or name"
                 value={nameFilter}
                 onChange={setNameFilter}

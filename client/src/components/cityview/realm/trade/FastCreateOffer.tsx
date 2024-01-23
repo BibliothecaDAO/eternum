@@ -19,21 +19,31 @@ import { DONKEYS_PER_CITY, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum"
 import { useResources } from "../../../../hooks/helpers/useResources";
 import ListSelect from "../../../../elements/ListSelect";
 import { getTotalResourceWeight } from "./utils";
+import { SelectRealmPanel } from "../SelectRealmPanel";
+import { useTrade } from "../../../../hooks/helpers/useTrade";
 
 type FastCreateOfferPopupProps = {
-  resourceId: number;
-  isBuy: boolean;
+  resourceId?: number;
+  isBuy?: boolean;
+  marketplaceMode?: boolean;
+  directOfferRealmId?: bigint;
   onClose: () => void;
   onCreate: () => void;
 };
 
-export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose }: FastCreateOfferPopupProps) => {
+export const FastCreateOfferPopup = ({
+  resourceId = 1,
+  isBuy,
+  onClose,
+  marketplaceMode,
+  directOfferRealmId,
+}: FastCreateOfferPopupProps) => {
   const [selectedResourceIdsGive, setSelectedResourceIdsGive] = useState<number[]>([]);
   const [selectedResourceIdsGet, setSelectedResourceIdsGet] = useState<number[]>([]);
   const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] = useState<{ [key: number]: number }>({});
   const [selectedResourcesGetAmounts, setSelectedResourcesGetAmounts] = useState<{ [key: number]: number }>({});
   const [selectedCaravan, setSelectedCaravan] = useState<bigint>(0n);
-  const [selectedRealmId, setSelectedRealmId] = useState<number | undefined>();
+  const [selectedRealmId, setSelectedRealmId] = useState<bigint | undefined>();
   const [isNewCaravan, setIsNewCaravan] = useState(true);
   const [donkeysCount, setDonkeysCount] = useState(1);
   const [resourceWeight, setResourceWeight] = useState(0);
@@ -51,6 +61,7 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose }: FastCreateO
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const { getRealmEntityIdFromRealmId } = useTrade();
 
   useEffect(() => {
     if (isBuy) {
@@ -66,7 +77,14 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose }: FastCreateO
     }
   }, [resourceId, isBuy]);
 
+  useEffect(() => {
+    if (directOfferRealmId) {
+      setSelectedRealmId(directOfferRealmId);
+    }
+  }, [directOfferRealmId]);
+
   const createOrder = async () => {
+    let selectedRealmEntityId = selectedRealmId ? getRealmEntityIdFromRealmId(selectedRealmId) : 0;
     setIsLoading(true);
     if (!nextBlockTimestamp) return;
     if (isNewCaravan) {
@@ -77,7 +95,7 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose }: FastCreateO
         maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
           multiplyByPrecision(selectedResourcesGiveAmounts[id]),
         ),
-        taker_id: 0,
+        taker_id: selectedRealmEntityId || 0,
         taker_gives_resource_types: selectedResourceIdsGet,
         taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
           multiplyByPrecision(selectedResourcesGetAmounts[id]),
@@ -93,7 +111,7 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose }: FastCreateO
         maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
           multiplyByPrecision(selectedResourcesGiveAmounts[id]),
         ),
-        taker_id: 0,
+        taker_id: selectedRealmEntityId || 0,
         maker_transport_id: selectedCaravan,
         taker_gives_resource_types: selectedResourceIdsGet,
         taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
@@ -121,7 +139,7 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose }: FastCreateO
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"550px"}>
-        <div className="flex flex-col items-center p-2">
+        <div className="flex flex-col items-center p-2 overflow-auto">
           <SelectResourcesAmountPanel
             selectedResourceIdsGive={selectedResourceIdsGive}
             selectedResourcesGiveAmounts={selectedResourcesGiveAmounts}
@@ -135,6 +153,7 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose }: FastCreateO
             setResourceWeight={setResourceWeight}
             selectedRealmId={selectedRealmId}
             setSelectedRealmId={setSelectedRealmId}
+            marketplaceMode={marketplaceMode}
           />
 
           <SelectCaravanPanel
@@ -152,7 +171,7 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose }: FastCreateO
             hasEnoughDonkeys={hasEnoughDonkeys}
           />
         </div>
-        <div className="flex justify-between m-2 text-xxs">
+        <div className="flex justify-between m-2  text-xxs">
           <Button
             className="!px-[6px] !py-[2px] w-full"
             disabled={!canCreateOffer}
@@ -163,7 +182,7 @@ export const FastCreateOfferPopup = ({ resourceId, isBuy, onClose }: FastCreateO
             size="md"
             variant={"primary"}
           >
-            Create Order
+            {selectedRealmId ? "Create Direct Offer" : "Create Order"}
           </Button>
         </div>
       </SecondaryPopup.Body>
@@ -182,6 +201,9 @@ const SelectResourcesAmountPanel = ({
   setSelectedResourcesGiveAmounts,
   setSelectedResourcesGetAmounts,
   setResourceWeight,
+  selectedRealmId,
+  setSelectedRealmId,
+  marketplaceMode,
 }: {
   selectedResourceIdsGive: number[];
   selectedResourceIdsGet: number[];
@@ -193,8 +215,9 @@ const SelectResourcesAmountPanel = ({
   setSelectedResourcesGiveAmounts: (selectedResourcesGiveAmounts: { [key: number]: number }) => void;
   setSelectedResourcesGetAmounts: (selectedResourcesGetAmounts: { [key: number]: number }) => void;
   setResourceWeight: (resourceWeight: number) => void;
-  selectedRealmId: number | undefined;
-  setSelectedRealmId: (selectedRealmId: number) => void;
+  selectedRealmId: bigint | undefined;
+  setSelectedRealmId: (selectedRealmId: bigint) => void;
+  marketplaceMode?: boolean;
 }) => {
   const { realmEntityId } = useRealmStore();
 
@@ -211,6 +234,28 @@ const SelectResourcesAmountPanel = ({
     setSelectedResourcesGetAmounts(tmpGiveAmounts);
   };
 
+  const unselectedResources = useMemo(
+    () =>
+      resources.filter((res) => !selectedResourceIdsGive.includes(res.id) && !selectedResourceIdsGet.includes(res.id)),
+    [selectedResourceIdsGive, selectedResourceIdsGet],
+  );
+
+  const addResourceGive = () => {
+    setSelectedResourceIdsGive([...selectedResourceIdsGive, unselectedResources[0].id]);
+    setSelectedResourcesGiveAmounts({
+      ...selectedResourcesGiveAmounts,
+      [unselectedResources[0].id]: 1,
+    });
+  };
+
+  const addResourceGet = () => {
+    setSelectedResourceIdsGet([...selectedResourceIdsGet, unselectedResources[0].id]);
+    setSelectedResourcesGetAmounts({
+      ...selectedResourcesGetAmounts,
+      [unselectedResources[0].id]: 1,
+    });
+  };
+
   useEffect(() => {
     // set resource weight in kg
     let resourcesGet = Object.keys(selectedResourcesGetAmounts).map((resourceId) => {
@@ -224,13 +269,44 @@ const SelectResourcesAmountPanel = ({
 
   return (
     <>
-      <div className="grid w-full grid-cols-9 gap-2 p-2 max-h-[250px] overflow-y-auto overflow-x-hidden relative">
+      <div className="grid w-full grid-cols-9 gap-2 p-2 relative">
         <div className="flex flex-col items-center col-span-4 space-y-2">
-          <Headline size="big" className="mb-2">
-            You Sell
-          </Headline>
-          {selectedResourceIdsGive.map((id) => {
+          <Headline className="mb-2">You Sell</Headline>
+          {selectedResourceIdsGive.map((id, index) => {
             let resource = getBalance(realmEntityId, id);
+            let options = [resources.find((res) => res.id === id), ...unselectedResources] as any;
+            options = options.map((res: any) => {
+              const bal = getBalance(realmEntityId, res.id);
+              return {
+                id: res.id,
+                label: (
+                  <ResourceCost
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setSelectedResourcesGiveAmounts({
+                        ...selectedResourcesGiveAmounts,
+                        [id]: divideByPrecision(bal?.balance || 0),
+                      });
+                    }}
+                    resourceId={res.id}
+                    amount={divideByPrecision(bal?.balance || 0)}
+                  />
+                ),
+              };
+            });
+            if (selectedResourceIdsGive.length > 1) {
+              options = [
+                {
+                  id: 0,
+                  label: (
+                    <div className="flex items-center justify-center">
+                      <div className="ml-1 text-danger">Remove item</div>
+                    </div>
+                  ),
+                },
+                ...options,
+              ];
+            }
             return (
               <div key={id} className="flex items-center w-full">
                 <NumberInput
@@ -244,34 +320,25 @@ const SelectResourcesAmountPanel = ({
                     });
                   }}
                 />
-                {id !== ResourcesIds.Lords ? (
+                {id !== ResourcesIds.Lords || !marketplaceMode ? (
                   <ListSelect
                     className="w-full ml-2"
                     style="black"
-                    options={resources
-                      .filter((res) => !selectedResourceIdsGet.includes(res.id))
-                      .map((res) => {
-                        const bal = getBalance(realmEntityId, res.id);
-                        return {
-                          id: res.id,
-                          label: (
-                            <ResourceCost
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setSelectedResourcesGiveAmounts({
-                                  ...selectedResourcesGiveAmounts,
-                                  [id]: divideByPrecision(bal?.balance || 0),
-                                });
-                              }}
-                              resourceId={res.id}
-                              amount={divideByPrecision(bal?.balance || 0)}
-                            />
-                          ),
-                        };
-                      })}
-                    value={selectedResourceIdsGive[0]}
+                    options={options}
+                    value={selectedResourceIdsGive[index]}
                     onChange={(value) => {
-                      setSelectedResourceIdsGive([value]);
+                      if (value === 0) {
+                        const tmp = [...selectedResourceIdsGive];
+                        tmp.splice(index, 1);
+                        setSelectedResourceIdsGive(tmp);
+                        const tmpAmounts = { ...selectedResourcesGiveAmounts };
+                        delete tmpAmounts[id];
+                        setSelectedResourcesGiveAmounts(tmpAmounts);
+                        return;
+                      }
+                      const tmp = [...selectedResourceIdsGive];
+                      tmp[index] = value;
+                      setSelectedResourceIdsGive(tmp);
                       setSelectedResourcesGiveAmounts({
                         ...selectedResourcesGiveAmounts,
                         [value]: 1,
@@ -284,6 +351,11 @@ const SelectResourcesAmountPanel = ({
               </div>
             );
           })}
+          {!marketplaceMode && (
+            <Button className="w-full" variant="primary" size="md" onClick={() => addResourceGive()}>
+              Add Resource
+            </Button>
+          )}
         </div>
         <div className="flex items-center justify-center">
           <div className="sticky top-1/2 -translate-y-1/2" onClick={() => swapResources()}>
@@ -300,11 +372,42 @@ const SelectResourcesAmountPanel = ({
           </div>
         </div>
         <div className="flex flex-col items-center col-span-4 space-y-2">
-          <Headline size="big" className="mb-2">
-            You Buy
-          </Headline>
-          {selectedResourceIdsGet.map((id) => {
+          <Headline className="mb-2">You Buy</Headline>
+          {selectedResourceIdsGet.map((id, index) => {
             let resource = getBalance(realmEntityId, id);
+            let options = [resources.find((res) => res.id === id), ...unselectedResources] as any;
+            options = options.map((res: any) => {
+              const bal = getBalance(realmEntityId, res.id);
+              return {
+                id: res.id,
+                label: (
+                  <ResourceCost
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setSelectedResourcesGetAmounts({
+                        ...selectedResourcesGetAmounts,
+                        [id]: divideByPrecision(bal?.balance || 0),
+                      });
+                    }}
+                    resourceId={res.id}
+                    amount={divideByPrecision(bal?.balance || 0)}
+                  />
+                ),
+              };
+            });
+            if (selectedResourceIdsGet.length > 1) {
+              options = [
+                {
+                  id: 0,
+                  label: (
+                    <div className="flex items-center justify-center">
+                      <div className="ml-1 text-danger">Remove item</div>
+                    </div>
+                  ),
+                },
+                ...options,
+              ];
+            }
             return (
               <div key={id} className="flex items-center w-full">
                 <NumberInput
@@ -318,34 +421,25 @@ const SelectResourcesAmountPanel = ({
                     });
                   }}
                 />
-                {id !== ResourcesIds.Lords ? (
+                {id !== ResourcesIds.Lords || !marketplaceMode ? (
                   <ListSelect
                     className="ml-2 w-full"
                     style="black"
-                    options={resources
-                      .filter((res) => !selectedResourceIdsGive.includes(res.id))
-                      .map((res) => {
-                        let bal = getBalance(realmEntityId, res.id);
-                        return {
-                          id: res.id,
-                          label: (
-                            <ResourceCost
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setSelectedResourcesGetAmounts({
-                                  ...selectedResourcesGetAmounts,
-                                  [id]: divideByPrecision(bal?.balance || 0),
-                                });
-                              }}
-                              resourceId={res.id}
-                              amount={divideByPrecision(bal?.balance || 0)}
-                            />
-                          ),
-                        };
-                      })}
-                    value={selectedResourceIdsGet[0]}
+                    options={options}
+                    value={selectedResourceIdsGet[index]}
                     onChange={(value) => {
-                      setSelectedResourceIdsGet([value]);
+                      if (value === 0) {
+                        const tmp = [...selectedResourceIdsGet];
+                        tmp.splice(index, 1);
+                        setSelectedResourceIdsGet(tmp);
+                        const tmpAmounts = { ...selectedResourcesGetAmounts };
+                        delete tmpAmounts[id];
+                        setSelectedResourcesGetAmounts(tmpAmounts);
+                        return;
+                      }
+                      const tmp = [...selectedResourceIdsGet];
+                      tmp[index] = value;
+                      setSelectedResourceIdsGet(tmp);
                       setSelectedResourcesGetAmounts({
                         ...selectedResourcesGetAmounts,
                         [value]: 1,
@@ -358,6 +452,11 @@ const SelectResourcesAmountPanel = ({
               </div>
             );
           })}
+          {!marketplaceMode && (
+            <Button className="w-full" variant="primary" size="md" onClick={() => addResourceGet()}>
+              Add Resource
+            </Button>
+          )}
         </div>
       </div>
       <div className="flex text-xs mt-2 text-center text-white">
@@ -377,6 +476,9 @@ const SelectResourcesAmountPanel = ({
           <div className="ml-1 text-gold">{`${WEIGHTS[253]}kg/unit`}</div>
         </div>
       </div>
+      {!marketplaceMode && (
+        <SelectRealmPanel selectedRealmId={selectedRealmId} setSelectedRealmId={setSelectedRealmId} />
+      )}
     </>
   );
 };
@@ -460,13 +562,11 @@ export const SelectCaravanPanel = ({
   );
 
   return (
-    <div className={clsx("flex flex-col items-center w-full p-2", className)}>
+    <div className={clsx("flex flex-col items-center w-full p-2 pb-0", className)}>
       {isNewCaravan && (
         <>
           <div className="flex flex-col">
-            <Headline className="mb-2" size="big">
-              Summon a New Caravan
-            </Headline>
+            <Headline className="mb-2">Summon a New Caravan</Headline>
             <div className="grid grid-cols-9 gap-2 p-2">
               <div className="flex items-center col-span-3">
                 <NumberInput
@@ -488,7 +588,7 @@ export const SelectCaravanPanel = ({
               donkeysCount * WEIGHT_PER_DONKEY_KG
             }kg`}</div>
           </div>
-          <div className="w-1/2 flex flex-cols justify-between mb-2 ">
+          <div className="w-1/2 flex flex-cols justify-between">
             <div className="flex flex-col items-center">
               <div className="flex text-xxs text-center text-white">Donkeys per city </div>
               <div className="flex text-xxs text-center text-gold"> 10 </div>
@@ -504,12 +604,12 @@ export const SelectCaravanPanel = ({
               <div className="ml-1 uppercase text-danger">Increase the amount of units</div>
             </div>
           )}
-          <div className="flex items-center mb-1 text-xxs text-center text-white wrap-text">
+          {/* <div className="flex items-center mb-1 text-xxs text-center text-white wrap-text">
             <div className="ml-1 text-danger">
               Warning: Once you have created a caravan of donkeys, they cannot be ungrouped. Please plan your strategy
               accordingly
             </div>
-          </div>
+          </div> */}
         </>
       )}
       {!isNewCaravan && (

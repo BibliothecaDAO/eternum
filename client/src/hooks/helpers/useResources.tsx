@@ -1,4 +1,4 @@
-import { Has, HasValue, NotValue, getComponentValue } from "@dojoengine/recs";
+import { Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys, getForeignKeyEntityId } from "../../utils/utils";
@@ -20,6 +20,7 @@ export function useResources() {
         CaravanMembers,
         Position,
         ResourceCost,
+        Realm,
       },
       optimisticSystemCalls: { optimisticOffloadResources },
       systemCalls: { transfer_items },
@@ -118,6 +119,32 @@ export function useResources() {
     }
   };
 
+  const getRealmsWithSpecificResource = (
+    resourceId: number,
+    minAmount: number,
+  ): { realmEntityId: bigint; realmId: bigint; amount: number }[] => {
+    const allRealms = Array.from(runQuery([Has(Realm)]));
+
+    const realmsWithResource = allRealms
+      .map((id: Entity) => {
+        const realm = getComponentValue(Realm, id);
+        const resource = realm
+          ? getComponentValue(Resource, getEntityIdFromKeys([realm?.entity_id, BigInt(resourceId)]))
+          : undefined;
+
+        if (resource && resource.balance > minAmount) {
+          return {
+            realmEntityId: realm?.entity_id,
+            realmId: realm?.realm_id,
+            amount: Number(resource.balance),
+          };
+        }
+      })
+      .filter(Boolean) as { realmEntityId: bigint; realmId: bigint; amount: number }[];
+
+    return realmsWithResource;
+  };
+
   //  caravans coming your way with a resource chest in their inventory
   const getCaravansWithResourcesChest = () => {
     const realmPosition = getComponentValue(Position, getEntityIdFromKeys([realmEntityId]));
@@ -174,6 +201,7 @@ export function useResources() {
   };
 
   return {
+    getRealmsWithSpecificResource,
     getResourcesFromInventory,
     offloadChests,
     getFoodResources,

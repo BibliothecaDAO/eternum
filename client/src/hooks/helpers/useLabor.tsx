@@ -26,7 +26,7 @@ export function useLabor() {
     setup: {
       optimisticSystemCalls: { optimisticBuildLabor },
       systemCalls: { purchase_and_build_labor },
-      components: { LaborCostResources, LaborCostAmount, LaborAuction },
+      components: { LaborCostResources, LaborCostAmount, LaborAuction, Labor },
     },
   } = useDojo();
 
@@ -131,7 +131,17 @@ export function useLabor() {
     }
   };
 
+  const getLatestRealmActivity = (realmEntityId: bigint) => {
+    // proxy to get latest activity through wheat balance
+    const labor = getComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(254)]));
+
+    if (labor && nextBlockTimestamp) {
+      return nextBlockTimestamp - (labor.balance - 86400);
+    }
+  };
+
   return {
+    getLatestRealmActivity,
     getLaborCost,
     getLaborAuctionCoefficient,
     useLaborAuctionCoefficient,

@@ -18,6 +18,8 @@ import useUIStore from "../../../../../hooks/store/useUIStore";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { hasResources } from "../utils";
 import { Checkbox } from "../../../../../elements/Checkbox";
+import { DirectOffersExplorerPopup } from "../DirectOffers/DirectOffersExplorerPopup";
+import { FastCreateOfferPopup } from "../FastCreateOffer";
 
 type MarketPanelProps = {
   directOffers: boolean;
@@ -26,6 +28,7 @@ type MarketPanelProps = {
 export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
   const [showCreateOffer, setShowCreateOffer] = useState(false);
   const [showMarketplace, setShowMarketplace] = useState(false);
+  const [showDirectOffersExplorer, setShowDirectOffersExplorer] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<MarketInterface | undefined>(undefined);
   const [selectedBuyResources, setSelectedBuyResources] = useState<number[]>([]);
   const [selectedSellResources, setSelectedSellResources] = useState<number[]>([]);
@@ -122,8 +125,9 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
   return (
     <>
       <div className="fixed top-0 left-0">
-        {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
+        {showCreateOffer && <FastCreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
         {showMarketplace && <MarketPopup onClose={() => setShowMarketplace(false)} />}
+        {showDirectOffersExplorer && <DirectOffersExplorerPopup onClose={() => setShowDirectOffersExplorer(false)} />}
         {buildRoadToEntityId !== undefined && (
           <RoadBuildPopup onClose={() => setBuildRoadToEntityId(undefined)} toEntityId={buildRoadToEntityId} />
         )}
@@ -207,12 +211,21 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
         </SortPanel>
         {renderedMarketOffers}
         <div className="flex items-center justify-center sticky w-32 -translate-x-1/2 bottom-2 left-1/2 ">
-          <Button className="!rounded-full" onClick={() => setShowCreateOffer(true)} variant="primary">
-            + Create new offer
-          </Button>
-          <Button className="!rounded-full ml-2" onClick={() => setShowMarketplace(true)} variant="primary">
-            Open Marketplace
-          </Button>
+          {!directOffers && (
+            <>
+              <Button className="!rounded-full" onClick={() => setShowCreateOffer(true)} variant="primary">
+                + Create new offer
+              </Button>
+              <Button className="!rounded-full ml-2" onClick={() => setShowMarketplace(true)} variant="primary">
+                Open Marketplace
+              </Button>
+            </>
+          )}
+          {directOffers && (
+            <Button className="!rounded-full ml-2" onClick={() => setShowDirectOffersExplorer(true)} variant="primary">
+              + Create direct offer
+            </Button>
+          )}
         </div>
       </div>
     </>

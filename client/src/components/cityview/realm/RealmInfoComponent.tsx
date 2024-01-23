@@ -47,7 +47,7 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
     },
   } = useDojo();
   const [_location, setLocation] = useLocation();
-  const [canLevelUp, setCanLevelUp] = useState(false);
+  const [levelUpProgress, setLevelUpProgress] = useState(0);
 
   const [showRealmLevelUp, setShowRealmLevelUp] = useState(false);
   const setTooltip = useUIStore((state) => state.setTooltip);
@@ -96,8 +96,12 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
         missingResources.push({ resourceId, amount: amount - (Number(realmResource?.balance) || 0) });
       }
     });
-    setCanLevelUp(missingResources.length === 0);
+    setLevelUpProgress(Math.round(((costResources.length - missingResources.length) / costResources.length) * 100));
   }, [costResources]);
+
+  const canLevelUp = useMemo(() => {
+    return levelUpProgress === 100;
+  }, [levelUpProgress]);
 
   return (
     <>
@@ -139,19 +143,47 @@ export const RealmInfoComponent = ({}: RealmInfoComponentProps) => {
               />
             </div>
           </div>
-          <LaborAuction />
+          <LaborAuction className="!absolute top-2 r right-2 !-mt-1" />
           {showRealmLevelUp && <LevelingPopup onClose={() => setShowRealmLevelUp(false)}></LevelingPopup>}
-          <ConqueredHyperstructures className={"text-xxs absolute top-2 right-2 -mt-1"} order={realm.order} />
+          <ConqueredHyperstructures className={"text-xxs absolute top-2 right-16 -mt-1"} order={realm.order} />
         </div>
       )}
       <div className="flex space-x-2 mt-1 items-center px-4">
-        <Button
+        <div
+          className={clsx(
+            "relative rounded-md bg-dark-green-accent text-xs text-order-brilliance px-2 py-1 hover:opacity-70 opacity-100 !transition-all",
+            canLevelUp && "text-transparent bg-transparent",
+          )}
           onClick={() => setShowRealmLevelUp(true)}
-          isPulsing={canLevelUp}
-          className="p-2 !py-1 !bg-order-brilliance border-0 !text-brown"
+          onMouseEnter={() =>
+            setTooltip({
+              position: "top",
+              content: (
+                <>
+                  <p>Upgrade your Realm to unlock</p>
+                  <p>new features and get buffs.</p>
+                </>
+              ),
+            })
+          }
+          onMouseLeave={() => setTooltip(null)}
         >
           Level UP
-        </Button>
+          <Button
+            onClick={() => {}}
+            isPulsing={canLevelUp}
+            className={clsx(
+              "!p-0 !bg-order-brilliance box-content !text-brown absolute left-0 top-0 bottom-0 text-right overflow-hidden",
+              canLevelUp && "border border-[#1C2313]",
+            )}
+            style={{
+              width: `${levelUpProgress}%`,
+            }}
+          >
+            <div className="absolute left-2 top-1/2 -translate-y-1/2">Level UP</div>
+          </Button>
+        </div>
+
         <Button variant="primary" onClick={showOnMap}>
           Show on Map
         </Button>

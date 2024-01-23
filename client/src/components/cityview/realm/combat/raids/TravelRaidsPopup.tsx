@@ -86,7 +86,7 @@ export const TravelRaidsPopup = ({ selectedRaider, onClose }: TravelRaidsPopupPr
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"550px"}>
         <div className="flex flex-col items-center p-2">
-          <Headline size="big">Choose Destination</Headline>
+          <Headline>Choose Destination</Headline>
           <div className="flex relative mt-1 justify-center text-xxs text-lightest w-full">
             <div className="flex flex-col w-full">
               <Tabs
