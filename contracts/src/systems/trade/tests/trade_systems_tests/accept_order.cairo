@@ -676,12 +676,12 @@ fn test_accept_order_with_realm_travel_bonus() {
     set!(world, (
         Level {
             entity_id: maker_id,
-            level: 7,
+            level: 12,
             valid_until: 100_000
         },
         Level {
             entity_id: taker_id,
-            level: 7,
+            level: 12,
             valid_until: 100_000
         }
     ));
@@ -689,22 +689,6 @@ fn test_accept_order_with_realm_travel_bonus() {
     set!(world, (
         LevelingConfig {
             config_id: REALM_LEVELING_CONFIG_ID,
-            decay_interval: 604800,
-            max_level: 1000,
-            wheat_base_amount: 0,
-            fish_base_amount: 0,
-            resource_1_cost_id: 0,
-            resource_1_cost_count: 0,
-            resource_2_cost_id: 0,
-            resource_2_cost_count: 0,
-            resource_3_cost_id: 0,
-            resource_3_cost_count: 0,
-            decay_scaled: 1844674407370955161,
-            cost_percentage_scaled: 4611686018427387904,
-            base_multiplier: 25
-        },
-        LevelingConfig {
-            config_id: HYPERSTRUCTURE_LEVELING_CONFIG_ID,
             decay_interval: 604800,
             max_level: 1000,
             wheat_base_amount: 0,
@@ -760,7 +744,7 @@ fn test_accept_order_with_realm_travel_bonus() {
     // check maker resource chest is locked
     let maker_resource_chest 
         = get!(world, trade.maker_resource_chest_id, ResourceChest);
-    assert(maker_resource_chest.locked_until == 600 , 'wrong chest locked_until');
+    assert(maker_resource_chest.locked_until == 544 , 'wrong chest locked_until');
     
     // check that the maker's resource chest was 
     // added their transport's inventory
@@ -798,7 +782,7 @@ fn test_accept_order_with_realm_travel_bonus() {
 
     // check maker transport arrival time
     let maker_transport_arrival_time = get!(world, trade.maker_transport_id, ArrivalTime);
-    assert(maker_transport_arrival_time.arrives_at == 600 * 2, 'wrong arrival time');
+    assert(maker_transport_arrival_time.arrives_at == 544 * 2, 'wrong arrival time');
 
     
     // check maker transport position
@@ -824,7 +808,7 @@ fn test_accept_order_with_realm_travel_bonus() {
     // check taker resource chest is locked
     let taker_resource_chest 
         = get!(world, trade.taker_resource_chest_id, ResourceChest);
-    assert(taker_resource_chest.locked_until == 600, 'wrong chest locked_until');
+    assert(taker_resource_chest.locked_until == 544, 'wrong chest locked_until');
     
     // check that the taker's resource chest was 
     // added their transport's inventory
@@ -859,7 +843,7 @@ fn test_accept_order_with_realm_travel_bonus() {
 
     // check taker transport arrival time
     let taker_transport_arrival_time = get!(world, trade.taker_transport_id, ArrivalTime);
-    assert(taker_transport_arrival_time.arrives_at == 600 * 2, 'wrong arrival time');
+    assert(taker_transport_arrival_time.arrives_at == 544 * 2, 'wrong arrival time');
 
     
     // check taker transport position
@@ -885,12 +869,12 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
     set!(world, (
         Level {
             entity_id: maker_id,
-            level: 7,
+            level: 12,
             valid_until: 100_000
         },
         Level {
             entity_id: taker_id,
-            level: 7,
+            level: 12,
             valid_until: 100_000
         }
     ));
@@ -966,7 +950,7 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
         = get!(world, trade.maker_resource_chest_id, ResourceChest);
 
 
-    assert(maker_resource_chest.locked_until == 400 , 'wrong chest locked_until');
+    assert(maker_resource_chest.locked_until == 435 , 'wrong chest locked_until');
     
     // check that the maker's resource chest was 
     // added their transport's inventory
@@ -1005,7 +989,7 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
     // check maker transport arrival time
     let maker_transport_arrival_time = get!(world, trade.maker_transport_id, ArrivalTime);
 
-    assert(maker_transport_arrival_time.arrives_at == 400 * 2, 'wrong arrival time');
+    assert(maker_transport_arrival_time.arrives_at == 435 * 2, 'wrong arrival time');
 
     
     // check maker transport position
@@ -1031,7 +1015,7 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
     // check taker resource chest is locked
     let taker_resource_chest 
         = get!(world, trade.taker_resource_chest_id, ResourceChest);
-    assert(taker_resource_chest.locked_until == 400 , 'wrong chest locked_until');
+    assert(taker_resource_chest.locked_until == 435 , 'wrong chest locked_until');
     
     // check that the taker's resource chest was 
     // added their transport's inventory
@@ -1066,7 +1050,7 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
 
     // check taker transport arrival time
     let taker_transport_arrival_time = get!(world, trade.taker_transport_id, ArrivalTime);
-    assert(taker_transport_arrival_time.arrives_at == 400 * 2, 'wrong arrival time');
+    assert(taker_transport_arrival_time.arrives_at == 435 * 2, 'wrong arrival time');
 
     
     // check taker transport position

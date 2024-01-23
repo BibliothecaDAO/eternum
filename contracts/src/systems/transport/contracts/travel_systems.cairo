@@ -99,11 +99,12 @@ mod travel_systems {
 
 
         fn use_travel_bonus(world: IWorldDispatcher, realm: @Realm, entity_owner: @EntityOwner, travel_time: u64) -> u64 {
+            
             // get realm level bonus
             let realm_level_bonus 
                 = leveling::get_realm_level_bonus(
                     world, (*entity_owner).entity_owner_id, LevelIndex::TRAVEL
-                ).try_into().unwrap() - 100;
+                ).try_into().unwrap();
             
 
             // get order hyperstructure bonus
@@ -111,11 +112,14 @@ mod travel_systems {
             let realm_order_bonus = realm_order.get_bonus_multiplier().try_into().unwrap();
 
             // apply bonuses
-            return (travel_time 
-                    - ((travel_time * realm_level_bonus) / 100)
-                    - ((travel_time * realm_order_bonus) / realm_order.get_bonus_denominator().try_into().unwrap()));
-        }
 
+            let new_travel_time = ((
+                travel_time * 100 * realm_order.get_bonus_denominator().try_into().unwrap() 
+                    / (realm_level_bonus * (100 + realm_order_bonus))));
+            
+            return new_travel_time;
+
+        }
 
 
         fn travel(

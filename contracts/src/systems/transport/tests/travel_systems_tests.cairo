@@ -203,7 +203,7 @@ fn test_travel_with_realm_bonus() {
     // verify arrival time and position of travelling_entity 
     let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
     let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
-    assert(travelling_entity_arrival_time.arrives_at == 600, 'arrival time not correct');
+    assert(travelling_entity_arrival_time.arrives_at == 640, 'arrival time not correct');
 
     assert(new_travelling_entity_position.x == destination_coord.x, 'coord x is not correct');
     assert(new_travelling_entity_position.y == destination_coord.y, 'coord y is not correct');
@@ -310,7 +310,7 @@ fn test_travel_with_realm_and_order_bonus() {
     let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
     let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
 
-    assert(travelling_entity_arrival_time.arrives_at == 400, 'arrival time not correct');
+    assert(travelling_entity_arrival_time.arrives_at == 512, 'arrival time not correct');
 
     assert(new_travelling_entity_position.x == destination_coord.x, 'coord x is not correct');
     assert(new_travelling_entity_position.y == destination_coord.y, 'coord y is not correct');
