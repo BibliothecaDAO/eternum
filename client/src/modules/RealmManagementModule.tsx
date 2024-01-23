@@ -33,10 +33,6 @@ const RealmManagementModule = () => {
     }
   }, [location, realm]);
 
-  useEffect(() => {
-    console.log(level);
-  }, [level]);
-
   return (
     <>
       {
