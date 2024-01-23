@@ -12,9 +12,16 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 SHELL ["/bin/bash", "-c"]
 
+ADD /config/litefs.static-lease.yml /etc/litefs.yml
+
+COPY --from=flyio/litefs:0.5 /usr/local/bin/litefs /usr/local/bin/litefs
+
 # Update and install some common packages
 RUN apt-get update && apt-get install -y \
+    ca-certificates \
     curl \
+    fuse3 \
+    sqlite \
     git \
     vim \
     wget \

@@ -19,19 +19,32 @@ services:
       - ./volume:/volume
     ports:
       - "8080:8080"
+    # starting with blindly following example, this flag has pretty big security impls  
+    privileged: true  
     depends_on:
       - katana
-    entrypoint: /bin/bash -c "/app/scripts/torii.sh > /volume/torii.logs"
+    environment:
+      IS_PRIMARY: "TRUE"
+      WORLD_DB: "/litefs/world.db"
+      ENTRY_CMD: "/bin/bash -c \"/app/scripts/torii.sh > /volume/torii.logs\""
+    entrypoint: litefs mount
 
   lore-machine:
     build:
       context: .
       dockerfile: ./Dockers/Dockerfile-lore-machine
+    # starting with blindly following example, this flag has pretty big security impls
+    privileged: true
     volumes:
       - ./volume:/volume
     ports:
       - "8766:8766"
     depends_on:
       - torii
+    environment:
+      IS_PRIMARY: "FALSE"
+      WORLD_DB: "/litefs/world.db"
+      DEV_TORII_WS: "ws://torii:8080/graphql/ws"
+      ENTRY_CMD: "/bin/bash -c /lore-machine/lore-machine.sh"
     tty: true
-    entrypoint: /bin/bash -c "/lore-machine/lore-machine.sh > /volume/lore-machine.logs"
+    entrypoint: litefs mount

@@ -2,6 +2,7 @@
 set -e
 
 SERVICES=("torii" "lore-machine" "katana")
+BASE_DIR=$(dirname "$(realpath "$0")")
 
 help() {
 	echo -e "Usage: $(basename $0) <command>\ncommand:\n  -start [service1 service2 ...]: starts all services if no service(s) name(s) is/are passed\n  -stop [service1 service2 ...]: stops all services if no service(s) name(s) is/are passed\n  -restart: [service1 service2 ...]: restarts all services if no service(s) name(s) is/are passed\n  -prune: clear the system of all images, volumes, networks, containers, etc. (!this will remove ALL docker data)\n  -clean_cache: cleans the client's cached files (node_modules and bun cache)\n  -build_client: builds all files necessary for the client, you still need to run it yourself\n  -build_contracts: builds all contracts"
@@ -20,6 +21,8 @@ start_services() {
 		done
 	fi
 	echo "👷 Building service(s)"
+
+  cp "${BASE_DIR}/Dockers/config/litefs.static-lease.yml" "${BASE_DIR}/contracts/config/"
 	docker compose build ${build_args} $@
 	echo "▶️ Starting service(s)"
 	docker compose up -d --no-deps $@
@@ -41,7 +44,7 @@ clean_cache() {
 }
 
 build_contracts() {
-	echo "📑 Building contrats"
+	echo "📑 Building contracts"
 	cd contracts && sozo build
 }
 
@@ -66,7 +69,7 @@ elif [ $COMMAND = "stop" ]; then
 elif [ $COMMAND = "restart" ]; then
 	stop_services $SERVICES
 	start_services true $SERVICES
-elif [ $COMMAND = "prune_docker" ]; then
+elif [ $COMMAND = "prune_services" ]; then
 	prune_services
 elif [ $COMMAND = "clean_cache" ]; then
 	clean_cache
