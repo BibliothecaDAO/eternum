@@ -1,5 +1,6 @@
 use eternum::alias::ID;
 use eternum::constants::ResourceTypes;
+use eternum::models::order::{Orders, OrdersTrait};
 use eternum::models::resources::Resource;
 use eternum::models::labor::Labor;
 use eternum::models::hyperstructure::HyperStructure;
@@ -87,7 +88,6 @@ fn test_harvest_labor_non_food() {
         5, // regions
         1, // wonder
         0, // order
-        9, // order hyperstructure id
         Position { x: 1, y: 1, entity_id: 1_u128 }, // position  
                 // x needs to be > 470200 to get zone
 
@@ -201,6 +201,7 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
     };
 
     // create realm
+    let order_id = 1;
     let realm_entity_id = realm_systems_dispatcher.create(
         world,
         1, // realm id
@@ -211,8 +212,7 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
         5, // rivers
         5, // regions
         1, // wonder
-        0, // order
-        9, // order hyperstructure id
+        order_id, // order
         Position { x: 1, y: 1, entity_id: 1_u128 }, // position  
                 // x needs to be > 470200 to get zone
             
@@ -245,8 +245,7 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
         }
     );
 
-    let hyperstructure_id 
-        = get!(world, realm_entity_id, Realm).order_hyperstructure_id;
+    let hyperstructure_id = 1; //temp
 
     set!(world, (
         Level {
@@ -270,36 +269,10 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
             cost_percentage_scaled: 0,
             base_multiplier: 25
         },
-        HyperStructure { 
-            entity_id: hyperstructure_id,
-            hyperstructure_type: 0,
-            controlling_order: 0,
-            completed: false,
-            completion_cost_id: 0,
-            completion_resource_count: 0
-        },
-        Level {
-            entity_id: hyperstructure_id,
-            level: LevelIndex::RESOURCE.into(),
-            valid_until: 10000000000000000000,
-        },
-        LevelingConfig {
-            config_id: HYPERSTRUCTURE_LEVELING_CONFIG_ID,
-            decay_interval: 0,
-            max_level: 1000,
-            wheat_base_amount: 0,
-            fish_base_amount: 0,
-            resource_1_cost_id: 0,
-            resource_1_cost_count: 0,
-            resource_2_cost_id: 0,
-            resource_2_cost_count: 0,
-            resource_3_cost_id: 0,
-            resource_3_cost_count: 0,
-            decay_scaled: 1844674407370955161,
-            cost_percentage_scaled: 0,
-            base_multiplier: 25
-        },
-
+        Orders { 
+            order_id: order_id.into(),
+            hyperstructure_count: 1,
+        }
     ));
     starknet::testing::set_contract_address(player_address);
 
@@ -341,13 +314,17 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
     let generated_labor = current_harvest_ts
         - last_harvest_ts; // because current_harvest_ts < balance
     let mut generated_units = generated_labor / labor_per_unit;
-    let realm_bonus = 125; 
-    let hyperstructure_bonus = 125;
-    let generated_resources = generated_units * base_resources_per_cycle * realm_bonus * hyperstructure_bonus / 10000;
+    let realm_bonus = 25; 
+    let order_bonus = 25;
+    let normal_generated_resources = generated_units * base_resources_per_cycle;
+    let boosted_generated_resources  
+                    = normal_generated_resources 
+                        + ((normal_generated_resources * realm_bonus) / 100)
+                        + ((normal_generated_resources * order_bonus) / 100);
 
     // verify resource is right amount
     assert(
-        gold_resource_after_harvest.balance == generated_resources, 'failed resource amount'
+        gold_resource_after_harvest.balance == boosted_generated_resources, 'failed resource amount'
     );
 }
 
@@ -395,7 +372,6 @@ fn test_harvest_labor_food() {
         5, // regions
         1, // wonder
         0, // order
-        9, // order hyperstructure id
 
         Position { x: 1, y: 1, entity_id: 1_u128 }, // position  
                 // x needs to be > 470200 to get zone
@@ -511,6 +487,7 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
     };
 
     // create realm
+    let order_id = 99;
     let realm_entity_id = realm_systems_dispatcher.create(
         world,
         1, // realm id
@@ -521,8 +498,7 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
         5, // rivers
         5, // regions
         1, // wonder
-        0, // order
-        9, // order hyperstructure id
+        order_id, // order
         Position { x: 1, y: 1, entity_id: 1_u128 }, // position  
                 // x needs to be > 470200 to get zone
 
@@ -555,7 +531,6 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
         }
     );
 
-    let order_hyperstructure_id = get!(world, realm_entity_id, Realm).order_hyperstructure_id;
 
     set!(world, (
         Level {
@@ -579,35 +554,10 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
             cost_percentage_scaled: 0,
             base_multiplier: 25
         },
-        HyperStructure { 
-            entity_id: order_hyperstructure_id,
-            hyperstructure_type: 0,
-            controlling_order: 0,
-            completed: false,
-            completion_cost_id: 0,
-            completion_resource_count: 0
-        },
-        Level {
-            entity_id: order_hyperstructure_id,
-            level: LevelIndex::FOOD.into(),
-            valid_until: 10000000000000000000,
-        },
-        LevelingConfig {
-            config_id: HYPERSTRUCTURE_LEVELING_CONFIG_ID,
-            decay_interval: 0,
-            max_level: 1000,
-            wheat_base_amount: 0,
-            fish_base_amount: 0,
-            resource_1_cost_id: 0,
-            resource_1_cost_count: 0,
-            resource_2_cost_id: 0,
-            resource_2_cost_count: 0,
-            resource_3_cost_id: 0,
-            resource_3_cost_count: 0,
-            decay_scaled: 1844674407370955161,
-            cost_percentage_scaled: 0,
-            base_multiplier: 25
-        },
+        Orders { 
+            order_id: order_id.into(),
+            hyperstructure_count: 1,
+        }
 
     ));
     starknet::testing::set_contract_address(player_address);
@@ -648,13 +598,17 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
     let generated_labor = current_harvest_ts
         - last_harvest_ts; // because current_harvest_ts < balance
     let mut generated_units = generated_labor / labor_per_unit;
-    let realm_bonus = 125; 
-    let hyperstructure_bonus = 125;
-    let generated_resources = generated_units * base_food_per_cycle * realm_bonus * hyperstructure_bonus / 10000;
-    
+
+    let realm_bonus = 25; 
+    let order_bonus = 25;
+    let normal_generated_resources = generated_units * base_food_per_cycle;
+    let boosted_generated_resources  
+                    = normal_generated_resources 
+                        + ((normal_generated_resources * realm_bonus) / 100)
+                        + ((normal_generated_resources * order_bonus) / 100);
     // verify resource is right amount
     assert(
-        wheat_resource_after_harvest.balance == generated_resources, 'failed resource amount'
+        wheat_resource_after_harvest.balance == boosted_generated_resources, 'failed resource amount'
     );
 }
 
