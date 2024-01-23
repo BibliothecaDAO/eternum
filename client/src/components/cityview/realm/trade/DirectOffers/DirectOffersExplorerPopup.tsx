@@ -227,13 +227,14 @@ const RealmResourceRow = ({
 
   // 86400 = 1 day
   // 259200 = 3 days
-  status = !latestActivity
-    ? "offline"
-    : latestActivity < 86400
-    ? "online"
-    : latestActivity < 259200
-    ? "recently"
-    : "offline";
+  status =
+    latestActivity === undefined
+      ? "offline"
+      : latestActivity < 86400
+      ? "online"
+      : latestActivity < 259200
+      ? "recently"
+      : "offline";
 
   return (
     <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black grid-cols-[250px,1fr,1fr] text-lightest text-xxs">
@@ -246,23 +247,25 @@ const RealmResourceRow = ({
         />
         {currencyIntlFormat(balance)}
       </div>
-      <div className="flex mr-auto items-center text-light-pink">
-        <OnlineStatus
-          onMouseEnter={() =>
-            setTooltip({
-              position: "top",
-              content: (
-                <>
-                  <p className="whitespace-nowrap">
-                    {latestActivity ? `${formatTimeLeftDaysHoursMinutes(latestActivity)} ago` : "No Activity"}
-                  </p>
-                </>
-              ),
-            })
-          }
-          onMouseLeave={() => setTooltip(null)}
-          status={status}
-        />
+      <div
+        onMouseEnter={() =>
+          setTooltip({
+            position: "top",
+            content: (
+              <>
+                <p className="whitespace-nowrap">
+                  {latestActivity !== undefined
+                    ? `${formatTimeLeftDaysHoursMinutes(latestActivity)} ago`
+                    : "No Activity"}
+                </p>
+              </>
+            ),
+          })
+        }
+        onMouseLeave={() => setTooltip(null)}
+        className="flex mr-auto items-center text-light-pink"
+      >
+        <OnlineStatus status={status} />
         {realm && <OrderIcon className="mr-2" size="xs" order={getOrderName(realm.order)} />}
         {realm?.name}
       </div>
