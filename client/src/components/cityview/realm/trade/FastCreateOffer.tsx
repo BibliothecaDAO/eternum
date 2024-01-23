@@ -139,7 +139,7 @@ export const FastCreateOfferPopup = ({
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"550px"}>
-        <div className="flex flex-col items-center p-2">
+        <div className="flex flex-col items-center p-2 overflow-auto">
           <SelectResourcesAmountPanel
             selectedResourceIdsGive={selectedResourceIdsGive}
             selectedResourcesGiveAmounts={selectedResourcesGiveAmounts}
@@ -171,7 +171,7 @@ export const FastCreateOfferPopup = ({
             hasEnoughDonkeys={hasEnoughDonkeys}
           />
         </div>
-        <div className="flex justify-between m-2 text-xxs">
+        <div className="flex justify-between m-2  text-xxs">
           <Button
             className="!px-[6px] !py-[2px] w-full"
             disabled={!canCreateOffer}
@@ -182,7 +182,7 @@ export const FastCreateOfferPopup = ({
             size="md"
             variant={"primary"}
           >
-            Create Order
+            {selectedRealmId ? "Create Direct Offer" : "Create Order"}
           </Button>
         </div>
       </SecondaryPopup.Body>
@@ -269,7 +269,7 @@ const SelectResourcesAmountPanel = ({
 
   return (
     <>
-      <div className="grid w-full grid-cols-9 gap-2 p-2 max-h-[250px] overflow-y-auto overflow-x-hidden relative">
+      <div className="grid w-full grid-cols-9 gap-2 p-2 relative">
         <div className="flex flex-col items-center col-span-4 space-y-2">
           <Headline className="mb-2">You Sell</Headline>
           {selectedResourceIdsGive.map((id, index) => {
@@ -384,8 +384,8 @@ const SelectResourcesAmountPanel = ({
                   <ResourceCost
                     onClick={(e) => {
                       e.preventDefault();
-                      setSelectedResourcesGiveAmounts({
-                        ...selectedResourcesGiveAmounts,
+                      setSelectedResourcesGetAmounts({
+                        ...selectedResourcesGetAmounts,
                         [id]: divideByPrecision(bal?.balance || 0),
                       });
                     }}
@@ -562,7 +562,7 @@ export const SelectCaravanPanel = ({
   );
 
   return (
-    <div className={clsx("flex flex-col items-center w-full p-2", className)}>
+    <div className={clsx("flex flex-col items-center w-full p-2 pb-0", className)}>
       {isNewCaravan && (
         <>
           <div className="flex flex-col">
@@ -588,7 +588,7 @@ export const SelectCaravanPanel = ({
               donkeysCount * WEIGHT_PER_DONKEY_KG
             }kg`}</div>
           </div>
-          <div className="w-1/2 flex flex-cols justify-between mb-2 ">
+          <div className="w-1/2 flex flex-cols justify-between">
             <div className="flex flex-col items-center">
               <div className="flex text-xxs text-center text-white">Donkeys per city </div>
               <div className="flex text-xxs text-center text-gold"> 10 </div>

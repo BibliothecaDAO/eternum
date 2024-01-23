@@ -37,11 +37,22 @@ type DirectOffersExplorerPopupProps = {
 
 export const DirectOffersExplorerPopup = ({ onClose }: DirectOffersExplorerPopupProps) => {
   const [selectedResourceId, setSelectedResourceId] = useState<any>(null);
+  const [showCreateOffer, setShowCreateOffer] = useState(false);
+  const [directOfferRealmId, setDirectOfferRealmId] = useState<bigint>();
 
   useEffect(() => {}, []);
 
   return (
     <>
+      {showCreateOffer && (
+        <FastCreateOfferPopup
+          isBuy={true}
+          resourceId={selectedResourceId}
+          directOfferRealmId={directOfferRealmId}
+          onClose={() => setShowCreateOffer(false)}
+          onCreate={() => {}}
+        />
+      )}
       <SecondaryPopup name="direct-offers-explorer">
         <SecondaryPopup.Head onClose={onClose}>
           <div className="flex items-center space-x-1">
@@ -50,7 +61,14 @@ export const DirectOffersExplorerPopup = ({ onClose }: DirectOffersExplorerPopup
         </SecondaryPopup.Head>
         <SecondaryPopup.Body width={"660px"}>
           {selectedResourceId ? (
-            <RealmResourceExplorerPanel resourceId={selectedResourceId} setSelectedResourceId={setSelectedResourceId} />
+            <RealmResourceExplorerPanel
+              resourceId={selectedResourceId}
+              setSelectedResourceId={setSelectedResourceId}
+              onCreateDirectOffer={(realmId) => {
+                setDirectOfferRealmId(realmId);
+                setShowCreateOffer(true);
+              }}
+            />
           ) : (
             <SelectResourcePanel setSelectedResourceId={(id: number) => setSelectedResourceId(id)} />
           )}
@@ -85,9 +103,11 @@ const SelectResourcePanel = ({ setSelectedResourceId }: { setSelectedResourceId:
 const RealmResourceExplorerPanel = ({
   resourceId,
   setSelectedResourceId,
+  onCreateDirectOffer,
 }: {
   resourceId: number;
   setSelectedResourceId: (resourceId: number | null) => void;
+  onCreateDirectOffer: (realmId: bigint) => void;
 }) => {
   const sortingParams = useMemo(() => {
     return [
@@ -101,8 +121,6 @@ const RealmResourceExplorerPanel = ({
     sortKey: "number",
     sort: "none",
   });
-  const [showCreateOffer, setShowCreateOffer] = useState(false);
-  const [directOfferRealmId, setDirectOfferRealmId] = useState<bigint>();
   const [nameFilter, setNameFilter] = useState("");
   const deferredNameFilter = useDeferredValue(nameFilter);
 
@@ -134,17 +152,6 @@ const RealmResourceExplorerPanel = ({
 
   return (
     <>
-      <div className="fixed top-0 left-0">
-        {showCreateOffer && (
-          <FastCreateOfferPopup
-            isBuy={true}
-            resourceId={resourceId}
-            directOfferRealmId={directOfferRealmId}
-            onClose={() => setShowCreateOffer(false)}
-            onCreate={() => {}}
-          />
-        )}
-      </div>
       <div className="flex flex-col p-2 overflow-hidden">
         <div className="flex items-center justify-between">
           <FiltersPanel>
@@ -187,10 +194,7 @@ const RealmResourceExplorerPanel = ({
                   resourceId={resourceId}
                   realm={realm}
                   distance={distance}
-                  onCreateDirectOffer={(realmId) => {
-                    setDirectOfferRealmId(realmId);
-                    setShowCreateOffer(true);
-                  }}
+                  onCreateDirectOffer={onCreateDirectOffer}
                 />
               </div>
             ))}
