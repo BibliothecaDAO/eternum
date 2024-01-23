@@ -1,7 +1,7 @@
 #[dojo::contract]
 mod bank_systems {
     use eternum::alias::ID;
-    use eternum::models::resources::{Resource, ResourceCost};
+    use eternum::models::resources::{Resource,ResourceTrait, ResourceCost};
     use eternum::models::owner::Owner;
     use eternum::models::weight::Weight;
     use eternum::models::config::WeightConfig;
@@ -110,19 +110,14 @@ mod bank_systems {
 
                 // deduct total swap cost for the current
                 // resource from entity's balance
-                let current_resource: Resource = get!(
+                let mut current_resource: Resource = get!(
                     world, (entity_id, swap_cost_resource.resource_type).into(), Resource
                 );
                 assert(current_resource.balance >= total_resource_swap_cost, 'not enough resources');
+                current_resource.balance -= total_resource_swap_cost;
+                current_resource.save(world);
                                 
-                set!(
-                    world,
-                    Resource {
-                        entity_id,
-                        resource_type: swap_cost_resource.resource_type,
-                        balance: current_resource.balance - total_resource_swap_cost
-                    }
-                );
+
 
                 // update swap resources weight
                 let swap_resource_type_weight 

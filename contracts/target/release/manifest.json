@@ -949,7 +949,7 @@
     {
       "name": "eternum::systems::bank::contracts::bank_systems",
       "address": "0x193936374e972c355f2246c66c62860c986dea275ce8fbd03d7d7a1d853a572",
-      "class_hash": "0x147e4758977b2b1928e38fbb36b17f57da8e456eed89712d03b0441ad01785f",
+      "class_hash": "0x5fd13c0e3555fbfe7ebee6658e5b6ecf4e355276f2a7edaaaa4873180b3fe2e",
       "abi": [
         {
           "type": "impl",
@@ -3312,7 +3312,7 @@
     {
       "name": "eternum::systems::test::contracts::resource::test_resource_systems",
       "address": "0x501733faf4b36b7359ecf918fa8437e1b6c4f23287ff3011d8a2eda6c6c2224",
-      "class_hash": "0x1a1d2a1477b8e7e0bcff4751a80a0903fc6b9dffe2431262adced7123e64d9b",
+      "class_hash": "0x16bd172136fefc5cb7833fd593e656edee1dd8eb38016022fd73bf16d33098d",
       "abi": [
         {
           "type": "impl",

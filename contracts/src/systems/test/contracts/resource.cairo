@@ -1,6 +1,6 @@
 #[dojo::contract]
 mod test_resource_systems {
-    use eternum::models::resources::Resource;
+    use eternum::models::resources::{Resource, ResourceTrait};
     use eternum::systems::config::contracts::config_systems::assert_caller_is_admin;
     use eternum::systems::test::interface::resource::IResourceSystems;
     use eternum::constants::ResourceTypes;
@@ -24,12 +24,10 @@ mod test_resource_systems {
                         let (resource_type, amount) = (*resource_type, *amount);
                         assert(amount > 0, 'amount must not be 0');
 
-                        let resource = get !(world, (entity_id, resource_type), Resource);
+                        let mut resource = get !(world, (entity_id, resource_type), Resource);
+                        resource.balance += amount;
+                        resource.save(world);
 
-                        set!(
-                            world,
-                            (Resource { entity_id, resource_type, balance: resource.balance + amount,  }, )
-                        );
                     },
 
                     Option::None => {break;}
