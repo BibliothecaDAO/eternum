@@ -1,7 +1,7 @@
 #[dojo::contract]
 mod resource_systems {
     use eternum::alias::ID;
-    use eternum::models::resources::{Resource, ResourceAllowance};
+    use eternum::models::resources::{Resource,ResourceTrait, ResourceAllowance};
     use eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
     use eternum::models::inventory::Inventory;
     use eternum::models::realm::Realm;
@@ -191,7 +191,7 @@ mod resource_systems {
                             = get!(world, (receiver_id, *resource_type), Resource);
 
                         entity_resource.balance += *resource_amount;
-                        set!(world, (entity_resource));                       
+                        entity_resource.save(world);
                     },
                     Option::None(()) => {break;}
                 }
@@ -345,7 +345,7 @@ mod resource_systems {
                 
                 // remove resources from donor's balance
                 donor_resource.balance -= detached_resource.resource_amount;
-                set!(world, (donor_resource));
+                donor_resource.save(world);
             
                 // update resources total weight
                 let resource_type_weight 
@@ -383,7 +383,7 @@ mod resource_systems {
                 
                 // remove resources from donor's balance
                 donor_resource.balance -= resource_amount;
-                set!(world, (donor_resource));
+                donor_resource.save(world);
 
                 // create detached resource
                 set!(world,(
@@ -482,7 +482,8 @@ mod resource_systems {
 
                 // update entity balance
                 receiving_entity_resource.balance += resource_chest_resource.resource_amount;
-                set!(world,( receiving_entity_resource ));
+                receiving_entity_resource.save(world);
+
 
                 resources.append((
                     resource_chest_resource.resource_type,

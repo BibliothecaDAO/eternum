@@ -3,6 +3,8 @@ mod combat_systems {
     use eternum::alias::ID;
 
     use eternum::models::order::{Orders, OrdersTrait};
+    use eternum::models::resources::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
+    
     use eternum::models::resources::{Resource, ResourceCost};
     use eternum::models::position::{Position};
     use eternum::models::config::{
@@ -37,7 +39,7 @@ mod combat_systems {
 
     use eternum::constants::{
         WORLD_CONFIG_ID, SOLDIER_ENTITY_TYPE, COMBAT_CONFIG_ID,
-        REALM_LEVELING_CONFIG_ID, get_unzipped_resource_probabilities,
+        REALM_LEVELING_CONFIG_ID,
         LevelIndex, HYPERSTRUCTURE_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_START_TIER,
         REALM_LEVELING_START_TIER
     };
@@ -638,10 +640,16 @@ mod combat_systems {
             /////// REALM LEVEL BONUS ///////
             let leveling_config: LevelingConfig = get!(world, REALM_LEVELING_CONFIG_ID, LevelingConfig);
             let attacker_level = get!(world, (attacker_realm_entity_id), Level);
-            let attacker_level_bonus = 100 - attacker_level.get_index_multiplier(leveling_config, LevelIndex::COMBAT, REALM_LEVELING_START_TIER);
+            let attacker_level_bonus 
+                = attacker_level.get_index_multiplier(
+                    leveling_config, LevelIndex::COMBAT, REALM_LEVELING_START_TIER
+                    ) - 100;
 
             let target_level = get!(world, (target_entity_id), Level);
-            let target_level_bonus = 100 - target_level.get_index_multiplier(leveling_config, LevelIndex::COMBAT, REALM_LEVELING_START_TIER);
+            let target_level_bonus 
+                = target_level.get_index_multiplier(
+                    leveling_config, LevelIndex::COMBAT, REALM_LEVELING_START_TIER
+                    ) - 100;
 
             ////// ORDER LEVEL BONUS //////
 
@@ -656,15 +664,11 @@ mod combat_systems {
             let target_order_bonus = target_order.get_bonus_multiplier();
 
 
+
             let attackers_total_attack 
                     = attackers_total_attack 
                         + ((attackers_total_attack * attacker_level_bonus) / 100) 
                         + ((attackers_total_attack * attacker_order_bonus) / attacker_order.get_bonus_denominator());
-
-            let attackers_total_defence = 
-                    attackers_total_defence 
-                        + ((attackers_total_defence * attacker_level_bonus) / 100) 
-                        + ((attackers_total_defence * attacker_order_bonus) / attacker_order.get_bonus_denominator());
 
             let target_total_attack = 
                     target_town_watch_attack.value 
@@ -674,7 +678,6 @@ mod combat_systems {
                     target_town_watch_defense.value 
                         + ((target_town_watch_defense.value * target_level_bonus) / 100) 
                         + ((target_town_watch_defense.value * target_order_bonus) / target_order.get_bonus_denominator());
-
 
 
             let mut damage: u128 = 0; 
@@ -719,14 +722,10 @@ mod combat_systems {
                     }
 
                     let attacker_id = *attacker_ids.at(index);
-                    
-                    let mut attacker_attack = get!(world, attacker_id, Attack);
-                    let mut attacker_defence = get!(world, attacker_id, Defence);
                     let mut attacker_health = get!(world, attacker_id, Health);
 
                     attacker_health.value -= min(damage, attacker_health.value);
-
-                    set!(world, (attacker_attack, attacker_defence, attacker_health));
+                    set!(world, (attacker_health));
 
                     index += 1;
                 };
@@ -810,10 +809,16 @@ mod combat_systems {
             /////// REALM LEVEL BONUS ///////
             let leveling_config: LevelingConfig = get!(world, REALM_LEVELING_CONFIG_ID, LevelingConfig);
             let attacker_level = get!(world, (attacker_realm_entity_id), Level);
-            let attacker_level_bonus = 100 - attacker_level.get_index_multiplier(leveling_config, LevelIndex::COMBAT, REALM_LEVELING_START_TIER);
+            let attacker_level_bonus 
+                = attacker_level.get_index_multiplier(
+                    leveling_config, LevelIndex::COMBAT, REALM_LEVELING_START_TIER
+                    ) - 100;
 
             let target_level = get!(world, (target_entity_id), Level);
-            let target_level_bonus = 100 - target_level.get_index_multiplier(leveling_config, LevelIndex::COMBAT, REALM_LEVELING_START_TIER);
+            let target_level_bonus 
+                = target_level.get_index_multiplier(
+                    leveling_config, LevelIndex::COMBAT, REALM_LEVELING_START_TIER
+                    ) - 100;
 
 
             ////// ORDER LEVEL BONUS //////
@@ -828,17 +833,11 @@ mod combat_systems {
             let target_order = get!(world, target_realm.order, Orders);
             let target_order_bonus = target_order.get_bonus_multiplier();
 
-
             // need to divide by 100**2 because level_bonus in precision 100
             let attackers_total_attack 
                     = attacker_attack.value 
                         + ((attacker_attack.value * attacker_level_bonus) / 100) 
                         + ((attacker_attack.value * attacker_order_bonus) / attacker_order.get_bonus_denominator());
-
-            let attackers_total_defence = 
-                    attacker_defence.value 
-                        + ((attacker_defence.value * attacker_level_bonus) / 100) 
-                        + ((attacker_defence.value * attacker_order_bonus) / attacker_order.get_bonus_denominator());
 
             // need to divide by 100**2 because level_bonus in precision 100
             let target_total_attack = 
@@ -892,18 +891,28 @@ mod combat_systems {
                 let mut attacker_remaining_weight 
                     = attacker_total_weight_capacity - attacker_current_weight; 
 
-                let (resource_types, resource_type_probabilities) 
-                    = get_unzipped_resource_probabilities();
+                // get all the (stealable) resources that the target owns
+                // and the probabilities of each resource's ocurence
+                let entitys_resources = get!(world, target_entity_id, OwnedResourcesTracker);
+                let (stealable_resource_types, stealable_resources_probs) 
+                    =  entitys_resources.get_owned_resources_and_probs();
+
+
+
+                let mut chosen_resource_types: Span<u8> = stealable_resource_types;
+                if combat_config.stealing_trial_count.into() <= stealable_resource_types.len() {
+                    // above, we use <= and not just < because if there are 2 resources and we want to choose 2
+                    // we still want to pick the more probable resource first (and not just the first one)
+
+                    // here we choose x number of resources that the attacker can get away with 
+                    let choose_with_replacement = false;
+                    chosen_resource_types = random::choices(
+                        stealable_resource_types, stealable_resources_probs, 
+                        array![].span(), combat_config.stealing_trial_count.into(), choose_with_replacement
+                    );
+                }
 
                 let mut index = 0;
-                let choose_with_replacement = false;
-
-                // here we choose x number of resources (without replacement)
-                // that the attacker can get away with 
-                let chosen_resource_types: Span<u8> = random::choices(
-                    resource_types, resource_type_probabilities, 
-                    array![].span(), combat_config.stealing_trial_count.into(), choose_with_replacement
-                );
 
                 loop {
 

@@ -3,7 +3,7 @@ use traits::TryInto;
 use option::OptionTrait;
 use debug::PrintTrait;
 
-use alexandria_math::math::pow;
+use alexandria_math::pow;
 
 // highest x = 1320937 + 1800000 = 3120937
 const HIGHEST_X: u32 = 3120937;

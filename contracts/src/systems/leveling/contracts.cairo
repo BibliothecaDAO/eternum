@@ -37,19 +37,6 @@ mod leveling_systems {
             leveling::level_up(world, realm_entity_id, REALM_LEVELING_CONFIG_ID);
         }
 
-
-        fn level_up_hyperstructure(
-            self: @ContractState,
-            world: IWorldDispatcher,
-            hyperstructure_id: ID,
-        ){
-            let mut hyperstructure = get!(world, hyperstructure_id, HyperStructure);
-            assert(hyperstructure.controlling_order != 0, 'does not exist');
-
-            // todo burn resources
-
-            leveling::level_up(world, hyperstructure_id, HYPERSTRUCTURE_LEVELING_CONFIG_ID);
-        }   
     }
 
 

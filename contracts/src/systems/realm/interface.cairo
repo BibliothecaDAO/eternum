@@ -16,7 +16,6 @@ trait IRealmSystems<TContractState> {
         rivers: u8, regions: u8, 
         wonder: u8, 
         order: u8, 
-        order_hyperstructure_id: u128,
         position: Position
     ) -> ID;
 }

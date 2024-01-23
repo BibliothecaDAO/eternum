@@ -2,9 +2,37 @@
 version = 1
 
 [[package]]
-name = "alexandria_math"
+name = "alexandria_data_structures"
+version = "0.2.0"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=98aadc7e3f12dbb026e853604fe2cc061451cc8a#98aadc7e3f12dbb026e853604fe2cc061451cc8a"
+dependencies = [
+ "alexandria_encoding",
+]
+
+[[package]]
+name = "alexandria_encoding"
 version = "0.1.0"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=e1aa42853815f04ff00e4ed3507cfd74d7b0c644#e1aa42853815f04ff00e4ed3507cfd74d7b0c644"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=98aadc7e3f12dbb026e853604fe2cc061451cc8a#98aadc7e3f12dbb026e853604fe2cc061451cc8a"
+dependencies = [
+ "alexandria_math",
+ "alexandria_numeric",
+]
+
+[[package]]
+name = "alexandria_math"
+version = "0.2.0"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=98aadc7e3f12dbb026e853604fe2cc061451cc8a#98aadc7e3f12dbb026e853604fe2cc061451cc8a"
+dependencies = [
+ "alexandria_data_structures",
+]
+
+[[package]]
+name = "alexandria_numeric"
+version = "0.1.0"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=98aadc7e3f12dbb026e853604fe2cc061451cc8a#98aadc7e3f12dbb026e853604fe2cc061451cc8a"
+dependencies = [
+ "alexandria_math",
+]
 
 [[package]]
 name = "cubit"
