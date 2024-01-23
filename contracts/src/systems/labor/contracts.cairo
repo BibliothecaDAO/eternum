@@ -5,10 +5,10 @@ mod labor_systems {
     use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
     use eternum::models::owner::Owner;
-    use eternum::models::hyperstructure::HyperStructure;
+    use eternum::models::order::{Orders, OrdersTrait};
     use eternum::models::realm::{Realm, RealmTrait};
     use eternum::models::position::{Position, PositionTrait};
-    use eternum::models::resources::Resource;
+    use eternum::models::resources::{Resource, ResourceTrait};
     use eternum::models::labor::{Labor, LaborTrait};
     use eternum::models::labor_auction::{LaborAuction, LaborAuctionTrait};
     use eternum::models::labor_auction::{LinearVRGDA, LinearVRGDATrait};
@@ -112,12 +112,7 @@ mod labor_systems {
                     }
                 }
 
-                let maybe_current_resource = get!(world, resource_query, Resource);
-
-                let mut current_resource = match maybe_current_resource.balance.into() {
-                    0 => Resource { entity_id: realm_id, resource_type, balance: 0 },
-                    _ => maybe_current_resource,
-                };
+                let mut realm_current_resource = get!(world, resource_query, Resource);
 
                 // if multiplier is different than previous multiplier, you need to harvest unharvested
                 if multiplier != labor.multiplier {
@@ -132,17 +127,15 @@ mod labor_systems {
                     let total_harvest_units = total_harvest
                         / labor_config.base_labor_units; // get current resource
                     // add these resources to balance
-                    set!(
-                        world,
-                        Resource {
-                            entity_id: realm_id,
-                            resource_type: current_resource.resource_type,
-                            balance: current_resource.balance
-                                + (total_harvest_units.into()
+
+                    realm_current_resource.balance +=  (
+                        total_harvest_units.into()
                                     * labor.multiplier.into()
-                                    * labor_config.base_food_per_cycle)
-                        }
-                    );
+                                    * labor_config.base_food_per_cycle
+                                    );
+                    realm_current_resource.save(world);
+                        
+                    
                     new_labor.harvest_unharvested(labor_unharvested, ts)
                 }
 
@@ -152,20 +145,13 @@ mod labor_systems {
                 let labor_resource_type = get_labor_resource_type(resource_type);
 
                 // pay for labor 
-                let labor_resources = get!(world, (realm_id, labor_resource_type), Resource);
+                let mut realm_labor_resources = get!(world, (realm_id, labor_resource_type), Resource);
                 assert(
-                    labor_resources.balance >= labor_units.into() * multiplier.into(),
+                    realm_labor_resources.balance >= labor_units.into() * multiplier.into(),
                     'Not enough labor resources'
                 );
-
-                set!(
-                    world,
-                    Resource {
-                        entity_id: realm_id,
-                        resource_type: labor_resource_type,
-                        balance: labor_resources.balance - labor_units.into() * multiplier.into()
-                    }
-                );
+                realm_labor_resources.balance -= (labor_units.into() * multiplier.into());
+                realm_labor_resources.save(world);
             }
 
 
@@ -212,13 +198,6 @@ mod labor_systems {
                 // if no labor, panic
                 let labor = get!(world, resource_query, Labor);
 
-                // TODO: Discuss
-                let maybe_resource = get!(world, resource_query, Resource);
-                let mut resource = match maybe_resource.balance.into() {
-                    0 => Resource { entity_id: realm_id, resource_type, balance: 0 },
-                    _ => maybe_resource,
-                };
-
                 // transform timestamp from u64 to u128
                 let ts = starknet::get_block_timestamp();
 
@@ -247,30 +226,26 @@ mod labor_systems {
                 /// REALM BONUS ///
                 let realm_leveling_config: LevelingConfig = get!(world, REALM_LEVELING_CONFIG_ID, LevelingConfig);
                 let realm_level = get!(world, (realm_id), Level);
-                
-                let realm_level_bonus = realm_level.get_index_multiplier(realm_leveling_config, level_index, REALM_LEVELING_START_TIER);
+                let realm_level_bonus 
+                    = realm_level.get_index_multiplier(realm_leveling_config, level_index, REALM_LEVELING_START_TIER)
+                         - 100;
 
-                /// HYPERSTRUCTURE BONUS ///
-                let hyperstructure = get!(world, (realm.order_hyperstructure_id), HyperStructure);
-                let hyperstructure_leveling_config: LevelingConfig = get!(world, HYPERSTRUCTURE_LEVELING_CONFIG_ID, LevelingConfig);
-                let hyperstructure_level = get!(world, (realm.order_hyperstructure_id), Level);
-                
-                let hyperstructure_level_bonus = hyperstructure_level.get_index_multiplier(hyperstructure_leveling_config, level_index, HYPERSTRUCTURE_LEVELING_START_TIER);
-
+                /// ORDER BONUS ///
+                let order = get!(world, (realm.order), Orders);
+                let order_level_bonus = order.get_bonus_multiplier();
+        
                 // update resources with multiplier
                 // and with level bonus
-                set!(
-                    world,
-                    Resource {
-                        entity_id: realm_id,
-                        resource_type: resource_type,
-                        balance: resource.balance
-                            + (labor_units_generated.into()
-                                * base_production_per_cycle
-                                // divide by 10000 because 100*100 (bonus precision)
-                                * labor.multiplier.into() * realm_level_bonus * hyperstructure_level_bonus) / 10000,
-                    }
-                );
+                let mut resource = get!(world, resource_query, Resource);
+                let generated_resources = (labor_units_generated.into()* base_production_per_cycle * labor.multiplier.into());
+                resource.balance 
+                    = generated_resources 
+                        + ((generated_resources * realm_level_bonus) / 100)
+                        + ((generated_resources * order_level_bonus) / order.get_bonus_denominator());
+
+                resource.save(world);
+
+
 
                 // if is complete, balance should be set to current ts
                 // remove the 
@@ -405,19 +380,12 @@ mod labor_systems {
 
                     // deduct total labor cost for the current
                     // resource from entity's balance
-                    let current_resource: Resource = get!(
+                    let mut current_resource: Resource = get!(
                         world, (entity_id, labor_cost_resource_type).into(), Resource
                     );
                     assert(current_resource.balance >= total_resource_labor_cost, 'Not enough resources');
-
-                    set!(
-                        world,
-                        Resource {
-                            entity_id,
-                            resource_type: labor_cost_resource_type,
-                            balance: current_resource.balance - total_resource_labor_cost
-                        }
-                    );
+                    current_resource.balance -= total_resource_labor_cost;
+                    current_resource.save(world);
 
                     // reset labor amount sold for next loop
                     labor_auction.sold -= labor_units;
@@ -430,17 +398,11 @@ mod labor_systems {
                 set!(world, (labor_auction));
 
                 let labor_resource_type: u8 = get_labor_resource_type(resource_type);
-                // increment new labor resource in entity balance
-                let labor_resource = get!(world, (entity_id, labor_resource_type), Resource);
 
-                set!(
-                    world,
-                    Resource {
-                        entity_id,
-                        resource_type: labor_resource.resource_type,
-                        balance: labor_resource.balance + labor_units
-                    }
-                );
+                // increment new labor resource in entity balance
+                let mut labor_resource = get!(world, (entity_id, labor_resource_type), Resource);
+                labor_resource.balance += labor_units;
+                labor_resource.save(world);
 
                 return ();
             }

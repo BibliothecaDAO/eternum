@@ -2,6 +2,7 @@ use eternum::models::resources::{Resource, ResourceChest};
 use eternum::models::owner::Owner;
 use eternum::models::level::{Level};
 use eternum::models::position::{Position, Coord};
+use eternum::models::order::{Orders, OrdersTrait};
 use eternum::models::weight::Weight;
 use eternum::models::metadata::ForeignKey;
 use eternum::models::hyperstructure::HyperStructure;
@@ -135,19 +136,18 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, u128, ITrad
     let regions = 5;
     let wonder = 1;
     let order = 0;
-    let order_hyperstructure_id = 999;
 
     // create maker's realm
     let maker_realm_entity_id = realm_systems_dispatcher.create(
         world, realm_id,
         resource_types_packed, resource_types_count, cities,
-        harbors, rivers, regions, wonder, order, order_hyperstructure_id, maker_position.clone(),
+        harbors, rivers, regions, wonder, order, maker_position.clone(),
     );
     // create taker's realm
     let taker_realm_entity_id = realm_systems_dispatcher.create(
         world, realm_id,
         resource_types_packed, resource_types_count, cities,
-        harbors, rivers, regions, wonder, order,order_hyperstructure_id, taker_position.clone(),
+        harbors, rivers, regions, wonder, order, taker_position.clone(),
         
     );
 
@@ -703,22 +703,6 @@ fn test_accept_order_with_realm_travel_bonus() {
             cost_percentage_scaled: 4611686018427387904,
             base_multiplier: 25
         },
-        LevelingConfig {
-            config_id: HYPERSTRUCTURE_LEVELING_CONFIG_ID,
-            decay_interval: 604800,
-            max_level: 1000,
-            wheat_base_amount: 0,
-            fish_base_amount: 0,
-            resource_1_cost_id: 0,
-            resource_1_cost_count: 0,
-            resource_2_cost_id: 0,
-            resource_2_cost_count: 0,
-            resource_3_cost_id: 0,
-            resource_3_cost_count: 0,
-            decay_scaled: 1844674407370955161,
-            cost_percentage_scaled: 4611686018427387904,
-            base_multiplier: 25
-        },
 
     ));
     starknet::testing::set_contract_address(caller_address);
@@ -895,23 +879,14 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
         }
     ));
 
-    // set hyperstructure level. 
+    // set order hyperstructure count. 
     // we assume here that they have the same order
-    let hyperstructure_id = get!(world, maker_id, Realm).order_hyperstructure_id; 
+    let order_id = 0; // set in setup fn 
 
     set!(world, (
-        HyperStructure { 
-            entity_id: hyperstructure_id,
-            hyperstructure_type: 0,
-            controlling_order: 0,
-            completed: false,
-            completion_cost_id: 0,
-            completion_resource_count: 0
-        },
-        Level {
-            entity_id: hyperstructure_id,
-            level: 12 - 4,
-            valid_until: 100_000
+        Orders{
+            order_id: order_id,
+            hyperstructure_count: 1
         }
     ));
 
@@ -933,23 +908,6 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
             cost_percentage_scaled: 4611686018427387904,
             base_multiplier: 25
         },
-        LevelingConfig {
-            config_id: HYPERSTRUCTURE_LEVELING_CONFIG_ID,
-            decay_interval: 604800,
-            max_level: 1000,
-            wheat_base_amount: 0,
-            fish_base_amount: 0,
-            resource_1_cost_id: 0,
-            resource_1_cost_count: 0,
-            resource_2_cost_id: 0,
-            resource_2_cost_count: 0,
-            resource_3_cost_id: 0,
-            resource_3_cost_count: 0,
-            decay_scaled: 1844674407370955161,
-            cost_percentage_scaled: 4611686018427387904,
-            base_multiplier: 25
-        },
-
     ));
     starknet::testing::set_contract_address(caller_address);
 
@@ -992,7 +950,7 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
         = get!(world, trade.maker_resource_chest_id, ResourceChest);
 
 
-    assert(maker_resource_chest.locked_until == 370 , 'wrong chest locked_until');
+    assert(maker_resource_chest.locked_until == 435 , 'wrong chest locked_until');
     
     // check that the maker's resource chest was 
     // added their transport's inventory
@@ -1031,7 +989,7 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
     // check maker transport arrival time
     let maker_transport_arrival_time = get!(world, trade.maker_transport_id, ArrivalTime);
 
-    assert(maker_transport_arrival_time.arrives_at == 370 * 2, 'wrong arrival time');
+    assert(maker_transport_arrival_time.arrives_at == 435 * 2, 'wrong arrival time');
 
     
     // check maker transport position
@@ -1057,7 +1015,7 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
     // check taker resource chest is locked
     let taker_resource_chest 
         = get!(world, trade.taker_resource_chest_id, ResourceChest);
-    assert(taker_resource_chest.locked_until == 370 , 'wrong chest locked_until');
+    assert(taker_resource_chest.locked_until == 435 , 'wrong chest locked_until');
     
     // check that the taker's resource chest was 
     // added their transport's inventory
@@ -1092,7 +1050,7 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
 
     // check taker transport arrival time
     let taker_transport_arrival_time = get!(world, trade.taker_transport_id, ArrivalTime);
-    assert(taker_transport_arrival_time.arrives_at == 370 * 2, 'wrong arrival time');
+    assert(taker_transport_arrival_time.arrives_at == 435 * 2, 'wrong arrival time');
 
     
     // check taker transport position

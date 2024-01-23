@@ -1,6 +1,7 @@
 
 use eternum::models::resources::{Resource, ResourceCost};
 use eternum::models::owner::{Owner, EntityOwner};
+use eternum::models::order::{Orders, OrdersTrait};
 use eternum::models::position::{Coord, Position};
 use eternum::models::movable::{Movable, ArrivalTime};
 use eternum::models::config::RoadConfig;
@@ -137,7 +138,6 @@ fn test_travel_with_realm_bonus() {
     ///////////////////////////////
 
     let realm_entity_id = 99;
-    let realm_order_hyperstructure_id = 44;
     starknet::testing::set_contract_address(world.executor());
     set!(world, (
         EntityOwner {
@@ -155,7 +155,6 @@ fn test_travel_with_realm_bonus() {
             regions: 0,
             wonder: 0,
             order: 0,
-            order_hyperstructure_id: realm_order_hyperstructure_id
         },
         Level {
             entity_id: realm_entity_id,
@@ -214,7 +213,7 @@ fn test_travel_with_realm_bonus() {
 
 #[test]
 #[available_gas(30000000000000)]
-fn test_travel_with_realm_and_hyperstructure_bonus() {
+fn test_travel_with_realm_and_order_bonus() {
 
     let (
         world, travelling_entity_id,
@@ -222,14 +221,12 @@ fn test_travel_with_realm_and_hyperstructure_bonus() {
     ) = setup();
 
 
-
-
     ///////////////////////////////
     // create realm and set level
     ///////////////////////////////
 
     let realm_entity_id = 99;
-    let realm_order_hyperstructure_id = 999;
+    let realm_order_id: u8 = 1;
     starknet::testing::set_contract_address(world.executor());
     set!(world, (
         EntityOwner {
@@ -246,8 +243,7 @@ fn test_travel_with_realm_and_hyperstructure_bonus() {
             rivers: 0,
             regions: 0,
             wonder: 0,
-            order: 0,
-            order_hyperstructure_id: realm_order_hyperstructure_id
+            order: realm_order_id.into(),
         },
         Level {
             entity_id: realm_entity_id,
@@ -274,7 +270,7 @@ fn test_travel_with_realm_and_hyperstructure_bonus() {
 
 
     ///////////////////////////////////////
-    // create hyperstructure and set level
+    //  set order level
     ///////////////////////////////////////
 
     starknet::testing::set_contract_address(world.executor());
@@ -283,34 +279,9 @@ fn test_travel_with_realm_and_hyperstructure_bonus() {
             entity_id: travelling_entity_id.into(),
             entity_owner_id: realm_entity_id
         },
-        HyperStructure { 
-            entity_id: realm_order_hyperstructure_id,
-            hyperstructure_type: 0,
-            controlling_order: 0,
-            completed: false,
-            completion_cost_id: 0,
-            completion_resource_count: 0
-        },
-        Level {
-            entity_id: realm_order_hyperstructure_id,
-            level: LevelIndex::TRAVEL.into(),
-            valid_until: 10000000,
-        },
-        LevelingConfig {
-            config_id: HYPERSTRUCTURE_LEVELING_CONFIG_ID,
-            decay_interval: 0,
-            max_level: 1000,
-            wheat_base_amount: 0,
-            fish_base_amount: 0,
-            resource_1_cost_id: 0,
-            resource_1_cost_count: 0,
-            resource_2_cost_id: 0,
-            resource_2_cost_count: 0,
-            resource_3_cost_id: 0,
-            resource_3_cost_count: 0,
-            decay_scaled: 1844674407370955161,
-            cost_percentage_scaled: 0,
-            base_multiplier: 25
+        Orders {
+            order_id: realm_order_id.into(),
+            hyperstructure_count: 1
         }
     ));
 

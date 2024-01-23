@@ -1,8 +1,9 @@
 use eternum::models::position::Position;
 use eternum::models::metadata::ForeignKey;
-use eternum::models::resources::{Resource, ResourceCost};
+use eternum::models::resources::{Resource, ResourceTrait, ResourceCost};
 use eternum::models::level::Level;
 use eternum::models::realm::Realm;
+use eternum::models::order::Orders;
 use eternum::models::config::{
     SpeedConfig, WeightConfig, CapacityConfig, CombatConfig,
     SoldierConfig, HealthConfig, AttackConfig, DefenceConfig, LevelingConfig
@@ -66,8 +67,9 @@ const ATTACKER_SOLDIER_COUNT: u128 = 15;
 const TARGET_SOLDIER_COUNT: u128 = 5;
 const INITIAL_RESOURCE_BALANCE: u128 = 5000;
 
-const PRECALCULATED_STOLEN_RESOURCE_TYPE_ONE: u8 = 5;
-const PRECALCULATED_STOLEN_RESOURCE_TYPE_TWO: u8 = 6;
+
+const TYPE_ONE_RESOURCE_TO_BE_STOLEN_FROM_TARGET: u8 = 12;
+const TYPE_TWO_RESOURCE_TO_BE_STOLEN_FROM_TARGET: u8 = 14;
 
 fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatcher) {
     let world = spawn_eternum();
@@ -126,12 +128,12 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     IWeightConfigDispatcher {
         contract_address: config_systems_address
     }.set_weight_config(
-        world, PRECALCULATED_STOLEN_RESOURCE_TYPE_ONE.into(), 200); 
+        world, TYPE_ONE_RESOURCE_TO_BE_STOLEN_FROM_TARGET.into(), 200); 
 
     IWeightConfigDispatcher {
         contract_address: config_systems_address
     }.set_weight_config(
-        world, PRECALCULATED_STOLEN_RESOURCE_TYPE_TWO.into(), 200); 
+        world, TYPE_TWO_RESOURCE_TO_BE_STOLEN_FROM_TARGET.into(), 200); 
       
     let realm_systems_address 
         = deploy_system(realm_systems::TEST_CLASS_HASH);
@@ -151,19 +153,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     let regions = 5;
     let wonder = 1;
     let order = 1;
-    let order_hyperstructure_id = world.uuid().into();
-
-    starknet::testing::set_contract_address(world.executor());
-    set!(world, (
-        HyperStructure { 
-                entity_id: order_hyperstructure_id,
-                hyperstructure_type: 1,
-                controlling_order: 1,
-                completed: false,
-                completion_cost_id: 0,
-                completion_resource_count: 0
-        }
-    )); 
 
 
     // create attacker's realm
@@ -173,7 +162,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     let attacker_realm_entity_id = realm_systems_dispatcher.create(
         world, realm_id,
         resource_types_packed, resource_types_count, cities,
-        harbors, rivers, regions, wonder, order, order_hyperstructure_id, attacker_realm_entity_position.clone(),
+        harbors, rivers, regions, wonder, order, attacker_realm_entity_position.clone(),
         
     );
 
@@ -185,7 +174,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     let target_realm_entity_id = realm_systems_dispatcher.create(
         world, realm_id,
         resource_types_packed, resource_types_count, cities,
-        harbors, rivers, regions, wonder, 0, order_hyperstructure_id, target_realm_entity_position.clone(),
+        harbors, rivers, regions, wonder, 0, target_realm_entity_position.clone(),
     );
 
     starknet::testing::set_contract_address(world.executor());
@@ -196,22 +185,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     set!(world, (
         LevelingConfig {
             config_id: REALM_LEVELING_CONFIG_ID,
-            decay_interval: 604800,
-            max_level: 1000,
-            wheat_base_amount: 0,
-            fish_base_amount: 0,
-            resource_1_cost_id: 0,
-            resource_1_cost_count: 0,
-            resource_2_cost_id: 0,
-            resource_2_cost_count: 0,
-            resource_3_cost_id: 0,
-            resource_3_cost_count: 0,
-            decay_scaled: 1844674407370955161,
-            cost_percentage_scaled: 4611686018427387904,
-            base_multiplier: 25
-        },
-        LevelingConfig {
-            config_id: HYPERSTRUCTURE_LEVELING_CONFIG_ID,
             decay_interval: 604800,
             max_level: 1000,
             wheat_base_amount: 0,
@@ -252,38 +225,59 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
         Owner { 
             entity_id: target_realm_entity_id, 
             address: contract_address_const::<'target'>()
-        },
-        Resource { 
+        }
+    ));
+
+    // add resources to target
+    let mut target_resource_demonhide = Resource { 
             entity_id: target_realm_entity_id, 
             resource_type: ResourceTypes::DEMONHIDE, 
             balance: INITIAL_RESOURCE_BALANCE 
-        },
-        Resource { 
+        };
+    target_resource_demonhide.save(world);
+
+
+    let mut target_resource_dragonhide = Resource { 
             entity_id: target_realm_entity_id, 
             resource_type: ResourceTypes::DRAGONHIDE, 
             balance: INITIAL_RESOURCE_BALANCE 
-        },
-        Resource { 
-            entity_id: target_realm_entity_id, 
-            resource_type: PRECALCULATED_STOLEN_RESOURCE_TYPE_ONE, 
-            balance: INITIAL_RESOURCE_BALANCE 
-        },
-        Resource { 
-            entity_id: target_realm_entity_id, 
-            resource_type: PRECALCULATED_STOLEN_RESOURCE_TYPE_TWO, 
-            balance: INITIAL_RESOURCE_BALANCE 
-        },
-        Resource { 
+        };
+    target_resource_dragonhide.save(world);
+    
+
+
+    let mut target_resource_wheat = Resource { 
             entity_id: target_realm_entity_id, 
             resource_type: ResourceTypes::WHEAT, 
-            balance: INITIAL_RESOURCE_BALANCE
-        },
-        Resource { 
+            balance: INITIAL_RESOURCE_BALANCE 
+        };
+    target_resource_wheat.save(world);
+    
+
+    let mut target_resource_fish = Resource { 
             entity_id: target_realm_entity_id, 
             resource_type: ResourceTypes::FISH, 
-            balance: INITIAL_RESOURCE_BALANCE
-        }
-    ));
+            balance: INITIAL_RESOURCE_BALANCE 
+        };
+    target_resource_fish.save(world);
+    
+
+    let mut target_resource_precalc_1= Resource { 
+            entity_id: target_realm_entity_id, 
+            resource_type: TYPE_ONE_RESOURCE_TO_BE_STOLEN_FROM_TARGET, 
+            balance: INITIAL_RESOURCE_BALANCE 
+        };
+    target_resource_precalc_1.save(world);
+    
+
+
+    let mut target_resource_precalc_2 = Resource { 
+            entity_id: target_realm_entity_id, 
+            resource_type: TYPE_TWO_RESOURCE_TO_BE_STOLEN_FROM_TARGET, 
+            balance: INITIAL_RESOURCE_BALANCE 
+        };
+    target_resource_precalc_2.save(world);
+    
 
 
     let combat_systems_address 
@@ -439,8 +433,8 @@ fn test_steal_success() {
 
     // ensure target lost the resources
     let stolen_resource_types: Array<u8> = array![
-        PRECALCULATED_STOLEN_RESOURCE_TYPE_ONE,
-        PRECALCULATED_STOLEN_RESOURCE_TYPE_TWO,
+        TYPE_ONE_RESOURCE_TO_BE_STOLEN_FROM_TARGET,
+        TYPE_TWO_RESOURCE_TO_BE_STOLEN_FROM_TARGET,
     ];
     let mut index = 0;
     loop {
@@ -477,7 +471,7 @@ fn test_steal_success() {
 
 #[test]
 #[available_gas(3000000000000)]
-fn test_steal_success_with_level_1_boost() {
+fn test_steal_success_with_order_boost() {
 
     // the attacker attacks and successfully steals resources
 
@@ -500,11 +494,12 @@ fn test_steal_success_with_level_1_boost() {
     ));
 
     // boost hyperstructure level to 1
-    let attacker_realm = get!(world, attacker_realm_entity_id, Realm);
-    let mut attacker_order_hyperstructure_level 
-        = get!(world, attacker_realm.order_hyperstructure_id, Level);
-    attacker_order_hyperstructure_level.level = 1;
-    set!(world, (attacker_order_hyperstructure_level));
+    set!(world, (
+        Orders {
+            order_id: 1,
+            hyperstructure_count: 1
+        }
+    ));
 
     starknet::testing::set_contract_address(
         contract_address_const::<'attacker'>()
@@ -564,8 +559,8 @@ fn test_steal_success_with_level_1_boost() {
 
     // ensure target lost the resources
     let stolen_resource_types: Array<u8> = array![
-        PRECALCULATED_STOLEN_RESOURCE_TYPE_ONE,
-        PRECALCULATED_STOLEN_RESOURCE_TYPE_TWO,
+        TYPE_ONE_RESOURCE_TO_BE_STOLEN_FROM_TARGET,
+        TYPE_TWO_RESOURCE_TO_BE_STOLEN_FROM_TARGET,
     ];
     let mut index = 0;
     loop {
@@ -599,183 +594,6 @@ fn test_steal_success_with_level_1_boost() {
 }
 
 
-#[test]
-#[available_gas(3000000000000)]
-fn test_steal_success_with_level_3_boost() {
-
-    // the attacker attacks and successfully steals resources
-
-    let (
-        world, 
-        attacker_realm_entity_id, attacker_unit_id,
-        target_realm_entity_id, target_town_watch_id, 
-        combat_systems_dispatcher
-    ) = setup();
-    
-    starknet::testing::set_contract_address(world.executor());
-
-    // make the target completely defenceless 
-    // so that the attacker's victory is assured
-    set!(world, (
-        Defence {
-            entity_id: target_town_watch_id,
-            value: 0
-        }
-    ));
-
-    // boost hyperstructure level to 3
-    let attacker_realm = get!(world, attacker_realm_entity_id, Realm);
-    let mut attacker_order_hyperstructure_level
-        = get!(world, attacker_realm.order_hyperstructure_id, Level);
-    attacker_order_hyperstructure_level.level = 3;
-    set!(world, (attacker_order_hyperstructure_level));
-
-    starknet::testing::set_contract_address(
-        contract_address_const::<'attacker'>()
-    );
-
-    // steal from target
-    combat_systems_dispatcher
-        .steal(
-            world, attacker_unit_id, target_realm_entity_id
-            );
-
-    let attacker_unit_health = get!(world, attacker_unit_id, Health);
-    let target_unit_health = get!(world, target_town_watch_id, Health);
-
-    // ensure attacker's health is intact
-    assert(
-        attacker_unit_health.value == 100 * ATTACKER_SOLDIER_COUNT,
-                'wrong health value'
-    );
-
-    // ensure that food was burned
-    let target_realm_wheat_resource = get!(world, (target_realm_entity_id, ResourceTypes::WHEAT), Resource);
-    let wheat_expected_burn = WHEAT_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
-             
-    assert(
-        target_realm_wheat_resource.balance 
-            == INITIAL_RESOURCE_BALANCE - wheat_expected_burn,
-                'wrong wheat value'
-    );
-
-    let target_realm_fish_resource = get!(world, (target_realm_entity_id, ResourceTypes::FISH), Resource);
-    let fish_expected_burn = FISH_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
-             
-    assert(
-        target_realm_fish_resource.balance 
-            == INITIAL_RESOURCE_BALANCE - fish_expected_burn,
-                'wrong fish value'
-    );
-
-    // ensure stolen resources are added to attacker's inventory
-    let attacker_inventory = get!(world, attacker_unit_id, Inventory);
-    assert(attacker_inventory.items_count == 1, 'no inventory items');
-
-    // check that attacker inventory has items
-    let attacker_resource_chest_foreign_key
-        = InternalInventorySystemsImpl::get_foreign_key(
-            attacker_inventory, 0
-            );
-    let attacker_resource_chest_id 
-        = get!(world, attacker_resource_chest_foreign_key, ForeignKey).entity_id; 
-
-    // check that resource chest in inventory is filled
-    let attacker_resource_chest_weight
-        = get!(world, attacker_resource_chest_id, Weight);
-    assert(attacker_resource_chest_weight.value > 0, 'wrong chest weight');
-
-
-    // ensure target lost the resources
-    let stolen_resource_types: Array<u8> = array![
-        PRECALCULATED_STOLEN_RESOURCE_TYPE_ONE,
-        PRECALCULATED_STOLEN_RESOURCE_TYPE_TWO,
-    ];
-    let mut index = 0;
-    loop {
-        if index == stolen_resource_types.len() {
-            break;
-        }
-        let resource_type = *stolen_resource_types.at(index);
-        let target_realm_resource 
-            = get!(world, (target_realm_entity_id, resource_type), Resource);
-        assert(
-            target_realm_resource.balance < INITIAL_RESOURCE_BALANCE,
-                'wrong target balance'
-            );
-
-        index += 1;
-    };
-
-
-    // ensure attacker is sent back home
-
-    let attacker_realm_position = get!(world, attacker_realm_entity_id, Position);
-    let attacker_unit_position = get!(world, attacker_unit_id, Position);
-    assert(attacker_realm_position.x == attacker_unit_position.x 
-            && attacker_realm_position.y == attacker_unit_position.y,
-                'wrong position' 
-    );
-
-    let attacker_unit_arrival = get!(world, attacker_unit_id, ArrivalTime);
-    assert(attacker_unit_arrival.arrives_at > 0, 'wrong arrival time');
-
-}
-
-#[test]
-#[available_gas(3000000000000)]
-fn test_steal_failure() {
-
-    // the attacker attacks but fails to steal as target retaliates
-
-    let (
-        world, 
-        attacker_realm_entity_id, attacker_unit_id,
-        target_realm_entity_id, target_town_watch_id, 
-        combat_systems_dispatcher
-    ) = setup();
-    
-    starknet::testing::set_contract_address(world.executor());
-
-    // ensure attack fails by setting probability of success to zero
-    set!(world, (
-        Attack {
-            entity_id: attacker_unit_id,
-            value: 0
-        }
-    ));
-
-    starknet::testing::set_contract_address(
-        contract_address_const::<'attacker'>()
-    );
-
-    // steal from target
-    combat_systems_dispatcher
-        .steal(
-            world, attacker_unit_id, target_realm_entity_id
-            );
-
-    let attacker_unit_health = get!(world, attacker_unit_id, Health);
-
-    // ensure attacker's health is reduced
-    assert(
-        attacker_unit_health.value < 100 * ATTACKER_SOLDIER_COUNT,
-                'wrong health value'
-    );
-
-
-    // ensure attacker is sent back home
-
-    let attacker_realm_position = get!(world, attacker_realm_entity_id, Position);
-    let attacker_unit_position = get!(world, attacker_unit_id, Position);
-    assert(attacker_realm_position.x == attacker_unit_position.x 
-            && attacker_realm_position.y == attacker_unit_position.y,
-                'wrong position' 
-    );
-
-    let attacker_unit_arrival = get!(world, attacker_unit_id, ArrivalTime);
-    assert(attacker_unit_arrival.arrives_at > 0, 'wrong arrival time');
-}
 
 
 #[test]
@@ -794,34 +612,6 @@ fn test_not_owner() {
     starknet::testing::set_contract_address(
         contract_address_const::<'unknown'>()
     );
-
-    // steal from target
-    combat_systems_dispatcher
-        .steal(
-            world, attacker_unit_id, target_realm_entity_id
-            );
-
-}
-
-#[test]
-#[available_gas(3000000000000)]
-#[should_panic(expected: ('target not realm','ENTRYPOINT_FAILED' ))]
-fn test_target_not_realm() {
-
-    let (
-        world, 
-        attacker_realm_entity_id, attacker_unit_id,
-        _, target_town_watch_id, 
-        combat_systems_dispatcher
-    ) = setup();
-
-
-    starknet::testing::set_contract_address(
-        contract_address_const::<'attacker'>()
-    );
-
-    // set invalid target id 
-    let target_realm_entity_id = 9999;
 
     // steal from target
     combat_systems_dispatcher

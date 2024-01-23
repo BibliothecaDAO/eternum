@@ -9,7 +9,7 @@ mod realm_systems {
     use eternum::models::position::Position;
     use eternum::models::metadata::EntityMetadata;
     use eternum::models::combat::TownWatch;
-    use eternum::models::resources::{DetachedResource, Resource};
+    use eternum::models::resources::{DetachedResource, Resource, ResourceTrait};
     use eternum::models::config::{ CapacityConfig, RealmFreeMintConfig };
     use eternum::constants::{ 
         WORLD_CONFIG_ID, REALM_FREE_MINT_CONFIG_ID, 
@@ -40,7 +40,6 @@ mod realm_systems {
             regions: u8,
             wonder: u8,
             order: u8,
-            order_hyperstructure_id: u128,
             position: Position,
         ) -> ID {
             let entity_id = world.uuid();
@@ -78,7 +77,6 @@ mod realm_systems {
                         regions,
                         wonder,
                         order,
-                        order_hyperstructure_id
                     }, 
                     Position {
                         entity_id: entity_id.into(), 
@@ -145,7 +143,7 @@ mod realm_systems {
                     = get!(world, (entity_id, detached_resource.resource_type), Resource);
                 
                 realm_resource.balance += detached_resource.resource_amount;
-                set!(world, (realm_resource));  
+                realm_resource.save(world);
 
                 index += 1;                  
             };
