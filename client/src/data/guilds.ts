@@ -1,0 +1,5 @@
+export const guild_description = [
+  "The Order of Power are one of the oldest orders and fixtures of the history of the realms. They compete by working harder and smarter than everyone else, are natural leaders, and have endless self-confidence. Their confidence can also be their greatest weakness.",
+  "The Order of Anger loves the intensity of high strung situations, their emotions welling deep inside to provide fuel for the challenge. They are always seeking conflict and particularly so with the Order of Protection, who despises their constant troublemaking. Their need for confrontation can often be their downfall, as there is always a bigger fish.",
+  "The Order of Brilliance believes that true perfection lies in the school of thought. They are renowned for their academies, in which they provide basic education in order to find the most promising minds. In the lifelong pursuit of knowledge they catalog and store the history of the realms and conduct extensive research into mana usage.",
+];

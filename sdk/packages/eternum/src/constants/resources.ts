@@ -288,6 +288,46 @@ export enum ResourcesIds {
   Fish = 255,
 }
 
+export enum Guild {
+  Harvesters,
+  Miners,
+  Collectors,
+  Hunters,
+}
+
+export const resourcesByGuild = {
+  [Guild.Harvesters]: [
+    ResourcesIds.Wood,
+    ResourcesIds.Stone,
+    ResourcesIds.Coal,
+    ResourcesIds.Ironwood,
+    ResourcesIds.Hartwood,
+    ResourcesIds.TrueIce,
+  ],
+  [Guild.Miners]: [
+    ResourcesIds.Copper,
+    ResourcesIds.Silver,
+    ResourcesIds.Gold,
+    ResourcesIds.ColdIron,
+    ResourcesIds.AlchemicalSilver,
+    ResourcesIds.Adamantine,
+  ],
+  [Guild.Collectors]: [
+    ResourcesIds.Diamonds,
+    ResourcesIds.Sapphire,
+    ResourcesIds.Ruby,
+    ResourcesIds.DeepCrystal,
+    ResourcesIds.TwilightQuartz,
+  ],
+  [Guild.Hunters]: [
+    ResourcesIds.Obsidian,
+    ResourcesIds.Ignium,
+    ResourcesIds.EtherealSilica,
+    ResourcesIds.Mithral,
+    ResourcesIds.Dragonhide,
+  ],
+};
+
 export const initialResources = [
   872.17, 685.39, 666.61, 459.65, 385.39, 302.78, 205.04, 166.43, 158.96, 103.3, 52.17, 42.96, 41.57, 41.57, 29.91,
   28.17, 24.17, 19.3, 16.17, 9.57, 6.43, 4,
