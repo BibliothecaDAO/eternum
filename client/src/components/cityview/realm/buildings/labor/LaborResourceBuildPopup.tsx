@@ -4,7 +4,14 @@ import Button from "../../../../../elements/Button";
 import { Headline } from "../../../../../elements/Headline";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../../elements/NumberInput";
-import { ResourcesIds, findResourceById, PurchaseLaborProps, BuildLaborProps, Resource } from "@bibliothecadao/eternum";
+import {
+  ResourcesIds,
+  findResourceById,
+  PurchaseLaborProps,
+  BuildLaborProps,
+  Resource,
+  Guilds,
+} from "@bibliothecadao/eternum";
 import { ReactComponent as FishingVillages } from "../../../../../assets/icons/resources/FishingVillages.svg";
 import { ReactComponent as Farms } from "../../../../../assets/icons/resources/Farms.svg";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
@@ -24,11 +31,12 @@ import { LABOR_CONFIG } from "@bibliothecadao/eternum";
 import { BuildingLevel } from "./BuildingLevel";
 
 type LaborResourceBuildPopupProps = {
+  guild: number;
   resourceId: number;
   onClose: () => void;
 };
 
-export const LaborResourceBuildPopup = ({ resourceId, onClose }: LaborResourceBuildPopupProps) => {
+export const LaborResourceBuildPopup = ({ guild, resourceId, onClose }: LaborResourceBuildPopupProps) => {
   const {
     setup: {
       components: { Resource, Labor },
@@ -251,6 +259,8 @@ export const LaborResourceBuildPopup = ({ resourceId, onClose }: LaborResourceBu
     }
   };
 
+  const totalDiscount = 0.8;
+
   return (
     <SecondaryPopup name="labor">
       <SecondaryPopup.Head onClose={onClose}>
@@ -260,7 +270,7 @@ export const LaborResourceBuildPopup = ({ resourceId, onClose }: LaborResourceBu
       </SecondaryPopup.Head>
       <SecondaryPopup.Body withWrapper width={"376px"}>
         <div className="flex flex-col items-center p-2">
-          <Headline>Produce More {resourceInfo?.trait}</Headline>
+          <Headline>Purchase {resourceInfo?.trait} Labor</Headline>
           <div className="relative flex justify-between w-full mt-1 text-xs text-lightest">
             <div className="flex items-center">
               {!isFood && (
@@ -282,18 +292,7 @@ export const LaborResourceBuildPopup = ({ resourceId, onClose }: LaborResourceBu
                 </div>
               )}
             </div>
-            <div className="flex items-center">
-              {`+${isFood ? divideByPrecision(LABOR_CONFIG.base_food_per_cycle * multiplier) / 2 : ""}${
-                isFood ? "" : divideByPrecision(LABOR_CONFIG.base_resources_per_cycle) / 2
-              }`}
-              <ResourceIcon
-                containerClassName="mx-0.5"
-                className="!w-[12px]"
-                resource={findResourceById(resourceId)?.trait as any}
-                size="xs"
-              />
-              /h
-            </div>
+            <div className="flex items-center text-gold">Price Discount: {totalDiscount}</div>
           </div>
           {isFood && (
             <BuildingsCount
@@ -304,24 +303,13 @@ export const LaborResourceBuildPopup = ({ resourceId, onClose }: LaborResourceBu
             />
           )}
           <div className={clsx("relative w-full", isFood ? "mt-2" : "mt-2")}>
-            {resourceId === 254 && (
-              <img src={`/images/buildings/farm.png`} className="object-cover w-full h-full rounded-[10px]" />
-            )}
-            {resourceId === 255 && (
-              <img
-                src={`/images/buildings/fishing_village.png`}
-                className="object-cover w-full h-full rounded-[10px]"
-              />
-            )}
-            {!isFood && (
-              <img
-                src={`/images/resource_buildings/${resourceId}.png`}
-                className="object-cover w-full h-full rounded-[10px]"
-              />
-            )}
+            <img
+              src={`/images/units/${Guilds[guild].toLowerCase()}.png`}
+              className="object-cover w-full h-full rounded-[10px]"
+            />
             <div className="absolute top-2 left-2 bg-black/90 rounded-[10px] p-3 pb-6 hover:bg-black">
               <LaborAuction />
-              <BuildingLevel />
+              <BuildingLevel className="mt-6" />
             </div>
             <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/90">
               <div className="mb-1 ml-1 italic text-light-pink text-xxs">Cost of Production:</div>
@@ -393,7 +381,7 @@ export const LaborResourceBuildPopup = ({ resourceId, onClose }: LaborResourceBu
               variant="primary"
               withoutSound
             >
-              Purchase & Build
+              Purchase Labor
             </Button>
             {missingResources.length > 0 && <div className="text-xxs text-order-giants/70">Insufficient resources</div>}
             {isFood && hasLaborLeft && <div className="text-xxs text-order-giants/70">Finish 24h cycle</div>}

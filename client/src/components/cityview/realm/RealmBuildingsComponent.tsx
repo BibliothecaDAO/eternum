@@ -13,7 +13,7 @@ import { LaborBuildingsPanel } from "./buildings/labor/LaborBuildingsPanel";
 type RealmBuildingsComponentProps = {};
 
 export const RealmBuildingsComponent = ({}: RealmBuildingsComponentProps) => {
-  const [selectedTab, setSelectedTab] = useState(1);
+  const [selectedTab, setSelectedTab] = useState(0);
   const { realmEntityId } = useRealmStore();
   const { useRealmRaiders } = useCombat();
 
@@ -40,14 +40,14 @@ export const RealmBuildingsComponent = ({}: RealmBuildingsComponentProps) => {
   useEffect(() => {
     const tabIndex = tabs.findIndex((tab) => tab.key === params?.tab);
     if (tabIndex >= 0) {
-      setSelectedTab(tabIndex);
+      if (tabIndex !== 1) setSelectedTab(tabIndex);
     }
   }, [params]);
 
   const tabs = useMemo(
     () => [
       {
-        key: "raids",
+        key: "labor-buildings",
         label: (
           <div
             onMouseEnter={() =>
@@ -69,7 +69,7 @@ export const RealmBuildingsComponent = ({}: RealmBuildingsComponentProps) => {
         component: <LaborBuildingsPanel />,
       },
       {
-        key: "military",
+        key: "military-buildings",
         label: (
           <div
             onMouseEnter={() =>
@@ -77,7 +77,7 @@ export const RealmBuildingsComponent = ({}: RealmBuildingsComponentProps) => {
                 position: "bottom",
                 content: (
                   <>
-                    <p className="whitespace-nowrap">Create army buildings</p>
+                    <p className="whitespace-nowrap">Coming Soon</p>
                   </>
                 ),
               })
@@ -99,7 +99,7 @@ export const RealmBuildingsComponent = ({}: RealmBuildingsComponentProps) => {
 
   return (
     <>
-      {realm_level === undefined || realm_level < 3 ? (
+      {realm_level === undefined || realm_level < 0 ? (
         <div className="text-gold p-4 border rounded border-gold m-2">Combat Locked until level 3</div>
       ) : (
         <Tabs

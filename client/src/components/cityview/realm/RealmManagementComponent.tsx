@@ -110,7 +110,7 @@ const RealmManagementComponent = () => {
         component: <RealmCombatComponent />,
       },
       {
-        key: "Buildings",
+        key: "buildings",
         label: (
           <div
             onMouseEnter={() =>
@@ -144,6 +144,8 @@ const RealmManagementComponent = () => {
       _tab = "labor";
     } else if (["military", "raids", "defence", "siege"].includes(params?.tab as string)) {
       _tab = "military";
+    } else if (["buildings"].includes(params?.tab as string)) {
+      _tab = "buildings";
     }
     const tabIndex = tabs.findIndex((tab) => tab.key === _tab);
     if (tabIndex >= 0) {

@@ -21,6 +21,7 @@ import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 import { useLabor } from "../../../../hooks/helpers/useLabor";
 import { LaborAuction } from "./LaborAuction";
 import { LABOR_CONFIG } from "@bibliothecadao/eternum";
+import Toggle from "../../../../elements/Toggle";
 
 type LaborBuildPopupProps = {
   resourceId: number;
@@ -41,6 +42,8 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   const [missingResources, setMissingResources] = useState<Resource[]>([]);
   const [laborAmount, setLaborAmount] = useState(6);
   const [multiplier, setMultiplier] = useState(1);
+
+  const [withLabor, setWithLabor] = useState(false);
 
   useEffect(() => {
     setMultiplier(1); // Reset the multiplier to 1 when the resourceId changes
@@ -294,6 +297,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               />
               /h
             </div>
+            <Toggle label="" checked={withLabor} onChange={() => setWithLabor(!withLabor)}></Toggle>
           </div>
           {isFood && (
             <BuildingsCount
@@ -325,29 +329,40 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
             <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/90">
               <div className="mb-1 ml-1 italic text-light-pink text-xxs">Cost of Production:</div>
               <div className="grid grid-cols-4 gap-2">
-                {costResources.map(({ resourceId, amount }) => {
-                  const missingResource = missingResources.find((resource) => resource.resourceId === resourceId);
-                  return (
-                    <ResourceCost
-                      withTooltip
-                      key={resourceId}
-                      type="vertical"
-                      resourceId={resourceId}
-                      className={missingResource ? "text-order-giants" : ""}
-                      amount={Number(
-                        divideByPrecision(
-                          getTotalAmount(
-                            Number(amount),
-                            isFood,
-                            multiplier,
-                            laborAmount,
-                            laborAuctionAverageCoefficient,
-                          ),
-                        ).toFixed(2),
-                      )}
-                    />
-                  );
-                })}
+                {!withLabor &&
+                  costResources.map(({ resourceId, amount }) => {
+                    const missingResource = missingResources.find((resource) => resource.resourceId === resourceId);
+                    return (
+                      <ResourceCost
+                        withTooltip
+                        key={resourceId}
+                        type="vertical"
+                        resourceId={resourceId}
+                        className={missingResource ? "text-order-giants" : ""}
+                        amount={Number(
+                          divideByPrecision(
+                            getTotalAmount(
+                              Number(amount),
+                              isFood,
+                              multiplier,
+                              laborAmount,
+                              laborAuctionAverageCoefficient,
+                            ),
+                          ).toFixed(2),
+                        )}
+                      />
+                    );
+                  })}
+                {withLabor && (
+                  <ResourceCost
+                    withTooltip
+                    key={resourceId}
+                    type="vertical"
+                    resourceId={resourceId}
+                    className={""}
+                    amount={Number(Number(laborAmount))}
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -392,7 +407,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               variant="primary"
               withoutSound
             >
-              Purchase & Build
+              {`${!withLabor ? "Purchase & " : ""}Build`}
             </Button>
             {missingResources.length > 0 && <div className="text-xxs text-order-giants/70">Insufficient resources</div>}
             {isFood && hasLaborLeft && <div className="text-xxs text-order-giants/70">Finish 24h cycle</div>}
