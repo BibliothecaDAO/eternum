@@ -245,6 +245,7 @@ export function setComponentFromEvent(components: Components, eventData: string[
 
   // retrieve the component from name
   const component = components[componentName];
+  if (!component) return;
 
   // get keys
   const keysNumber = parseInt(eventData[1]);

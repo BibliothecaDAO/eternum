@@ -192,7 +192,6 @@ interface Realm {
   regions: num.BigNumberish;
   wonder: num.BigNumberish;
   order: num.BigNumberish;
-  order_hyperstructure_id: num.BigNumberish;
   position: {
     x: num.BigNumberish;
     y: num.BigNumberish;

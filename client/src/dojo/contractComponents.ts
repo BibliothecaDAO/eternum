@@ -707,12 +707,11 @@ export function defineContractComponents(world: World) {
           regions: RecsType.Number,
           wonder: RecsType.Number,
           order: RecsType.Number,
-          order_hyperstructure_id: RecsType.BigInt,
         },
         {
           metadata: {
             name: "Realm",
-            types: ["u128", "u128", "u128", "u8", "u8", "u8", "u8", "u8", "u8", "u8", "u128"],
+            types: ["u128", "u128", "u128", "u8", "u8", "u8", "u8", "u8", "u8", "u8"],
             customTypes: [],
           },
         },
