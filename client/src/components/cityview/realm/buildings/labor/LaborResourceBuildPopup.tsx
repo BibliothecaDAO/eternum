@@ -265,7 +265,7 @@ export const LaborResourceBuildPopup = ({ guild, resourceId, onClose }: LaborRes
     <SecondaryPopup name="labor">
       <SecondaryPopup.Head onClose={onClose}>
         <div className="flex items-center space-x-1">
-          <div className="mr-0.5">Build Labor:</div>
+          <div className="mr-0.5">Purchase Labor:</div>
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body withWrapper width={"376px"}>
@@ -292,7 +292,9 @@ export const LaborResourceBuildPopup = ({ guild, resourceId, onClose }: LaborRes
                 </div>
               )}
             </div>
-            <div className="flex items-center text-gold">Price Discount: {totalDiscount}</div>
+            <div className="flex items-center text-white">
+              Final Discount: <div className="text-order-brilliance">×{totalDiscount}</div>
+            </div>
           </div>
           {isFood && (
             <BuildingsCount
@@ -312,7 +314,7 @@ export const LaborResourceBuildPopup = ({ guild, resourceId, onClose }: LaborRes
               <BuildingLevel className="mt-6" />
             </div>
             <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/90">
-              <div className="mb-1 ml-1 italic text-light-pink text-xxs">Cost of Production:</div>
+              <div className="mb-1 ml-1 italic text-light-pink text-xxs">Cost of Labor:</div>
               <div className="grid grid-cols-4 gap-2">
                 {costResources.map(({ resourceId, amount }) => {
                   const missingResource = missingResources.find((resource) => resource.resourceId === resourceId);

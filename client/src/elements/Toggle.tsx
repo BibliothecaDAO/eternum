@@ -1,10 +1,11 @@
 type ToggleProps = {
   label: string;
   checked: boolean;
+  children?: React.ReactNode;
   onChange: (checked: boolean) => void;
 };
 
-const Toggle = ({ label, checked, onChange }: ToggleProps) => {
+const Toggle = ({ children, label, checked, onChange }: ToggleProps) => {
   return (
     <label className="relative inline-flex items-center mb-1 cursor-pointer">
       <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="sr-only peer" />

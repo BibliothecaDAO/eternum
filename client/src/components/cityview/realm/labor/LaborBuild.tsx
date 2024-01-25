@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../elements/SecondaryPopup";
 import Button from "../../../../elements/Button";
 import { Headline } from "../../../../elements/Headline";
+import { ReactComponent as DonkeyIcon } from "../../../../assets/icons/units/donkey-circle.svg";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../elements/NumberInput";
 import { ResourcesIds, findResourceById, PurchaseLaborProps, BuildLaborProps, Resource } from "@bibliothecadao/eternum";
@@ -22,6 +23,7 @@ import { useLabor } from "../../../../hooks/helpers/useLabor";
 import { LaborAuction } from "./LaborAuction";
 import { LABOR_CONFIG } from "@bibliothecadao/eternum";
 import Toggle from "../../../../elements/Toggle";
+import useUIStore from "../../../../hooks/store/useUIStore";
 
 type LaborBuildPopupProps = {
   resourceId: number;
@@ -44,6 +46,8 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   const [multiplier, setMultiplier] = useState(1);
 
   const [withLabor, setWithLabor] = useState(false);
+
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   useEffect(() => {
     setMultiplier(1); // Reset the multiplier to 1 when the resourceId changes
@@ -297,7 +301,25 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               />
               /h
             </div>
-            <Toggle label="" checked={withLabor} onChange={() => setWithLabor(!withLabor)}></Toggle>
+            <div
+              onMouseEnter={() =>
+                setTooltip({
+                  position: "top",
+                  content: (
+                    <>
+                      <p className="whitespace-nowrap z-40">Use Balance Labor</p>
+                    </>
+                  ),
+                })
+              }
+              onMouseLeave={() => {
+                setTooltip(null);
+              }}
+            >
+              <Toggle label="" checked={withLabor} onChange={() => setWithLabor(!withLabor)}>
+                <DonkeyIcon />
+              </Toggle>
+            </div>
           </div>
           {isFood && (
             <BuildingsCount

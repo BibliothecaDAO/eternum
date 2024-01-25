@@ -17,7 +17,7 @@ export const LaborBuildingsPanel = ({}: LaborBuildingsPanelProps) => {
 
   const [selectedLaborResource, setSelectedLaborResource] = useState<number | undefined>(undefined);
 
-  const guild = 0;
+  const guild = 2;
   const hasGuild = true;
 
   return hasGuild ? (

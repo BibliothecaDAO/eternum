@@ -73,7 +73,7 @@ export const ChooseBuilding = ({}: ChooseBuildingProps) => {
               </div>
               <div className="flex items-end justify-center mt-1">
                 <Button
-                  disabled={!selectedGuild}
+                  disabled={selectedGuild === undefined}
                   size={"xs"}
                   className="!rounded-full"
                   onClick={() => {}}
