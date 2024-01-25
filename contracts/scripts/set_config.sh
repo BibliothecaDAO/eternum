@@ -60,6 +60,19 @@ commands+=(
     # realm_l2_contract
     "sozo execute $CONFIG_SYSTEMS set_world_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,$DOJO_ACCOUNT_ADDRESS,0"
 
+    ### BUILDINGS CONFIG ###
+    # level_multiplier = 10
+    # discount = 90% = 16602069666338596454
+    # resources 1 = [1, 2, 3, 7, 10, 17] = 1108152355345
+    # resources 1 count = 6
+    # resources 2 = [4, 6, 8, 9, 19, 20] = 4423951127316
+    # resources 2 count = 6
+    # resources 3 =  [11, 12, 13, 14, 18] = 47446822418
+    # resources 3 count = 5
+    # resources 4 = [5, 15, 16, 21, 22] = 21727548694
+    # resources 4 count = 5
+    "sozo execute $CONFIG_SYSTEMS set_labor_buildings_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,10,16602069666338596454,1108152355345,6,4423951127316,6,47446822418,5,21727548694,5,8,1,126000,2,99016,3,96303,7,29622,10,14924,17,3492,254,1890000,255,630000,8,4,66404,6,43742,8,24044,9,22964,19,2337,20,1382,254,1890000,255,630000,7,11,7537,12,6206,13,6005,14,6005,18,2789,254,1890000,255,630000,7,5,55676,15,4321,16,4070,21,930,22,578,254,1890000,255,630000"
+
     # ### LABOR ###
     # # base_labor_units 7200
     # # base_resources_per_cycle 21

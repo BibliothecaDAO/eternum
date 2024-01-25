@@ -2,7 +2,7 @@
 const PRODUCTION_PER_HOUR = 10.5;
 
 // Number of days of wood production for levelling up your realm
-const NUMBER_OF_DAYS_OF_WOOD_PRODUCTION = 3;
+const NUMBER_OF_DAYS_OF_WOOD_PRODUCTION = 0.5;
 
 // Food coefficient compared to wood production (% that should go to levelling up compared to other activities)
 const FOOD_COEFFICIENT = 0.5;
@@ -56,6 +56,12 @@ const RESOURCE_TIER_1 = [1, 2, 3, 4, 5, 6, 7];
 const RESOURCE_TIER_2 = [8, 9, 10, 11, 12, 13, 14, 15];
 const RESOURCE_TIER_3 = [16, 17, 18, 19, 20, 21, 22];
 
+// buildings/guild
+const RESOURCE_CATEGORY_1 = [1, 2, 3, 7, 10, 17];
+const RESOURCE_CATEGORY_2 = [4, 6, 8, 9, 19, 20];
+const RESOURCE_CATEGORY_3 = [11, 12, 13, 14, 18];
+const RESOURCE_CATEGORY_4 = [5, 15, 16, 21, 22];
+
 module.exports = {
   PRODUCTION_PER_HOUR,
   INITIAL_FOOD_COEFFICIENT,
@@ -70,5 +76,9 @@ module.exports = {
   RESOURCE_TIER_1,
   RESOURCE_TIER_2,
   RESOURCE_TIER_3,
+  RESOURCE_CATEGORY_1,
+  RESOURCE_CATEGORY_2,
+  RESOURCE_CATEGORY_3,
+  RESOURCE_CATEGORY_4,
   RESOURCE_IDS,
 };

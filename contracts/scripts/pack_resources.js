@@ -51,7 +51,7 @@ module.exports = {
 };
 
 // Example usage
-const numbers = [2, 3];
+const numbers = [5, 15, 16, 21, 22];
 const packedResult = packResources(numbers);
 const unpackedResult = unpackResources(packedResult, numbers.length);
 console.log({ packedResult });
