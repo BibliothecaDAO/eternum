@@ -192,7 +192,6 @@ interface Realm {
   regions: num.BigNumberish;
   wonder: num.BigNumberish;
   order: num.BigNumberish;
-  order_hyperstructure_id: num.BigNumberish;
   position: {
     x: num.BigNumberish;
     y: num.BigNumberish;
@@ -217,4 +216,13 @@ export interface TransferItemsFromMultipleProps extends SystemSigner {
     indices: num.BigNumberish[];
     receiver_id: num.BigNumberish;
   }[];
+}
+
+export interface CreateLaborBuildingProps extends SystemSigner {
+  realm_entity_id: num.BigNumberish;
+  building_type: num.BigNumberish;
+}
+
+export interface DestroyLaborBuildingProps extends SystemSigner {
+  realm_entity_id: num.BigNumberish;
 }

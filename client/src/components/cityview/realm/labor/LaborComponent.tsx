@@ -15,8 +15,10 @@ import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
 import { EventType, useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
 import { FoodType, useLabor } from "../../../../hooks/helpers/useLabor";
 import useUIStore from "../../../../hooks/store/useUIStore";
+import { ReactComponent as People } from "../../../../assets/icons/common/people.svg";
 
 type LaborComponentProps = {
+  hasGuild: boolean;
   resourceId: number;
   realm: RealmInterface;
   setBuildResource: (resourceId: number) => void;
@@ -27,6 +29,7 @@ type LaborComponentProps = {
 };
 
 export const LaborComponent = ({
+  hasGuild,
   resourceId,
   realm,
   setBuildResource,
@@ -46,7 +49,8 @@ export const LaborComponent = ({
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const { realmEntityId } = useRealmStore();
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const setTooltip = useUIStore((state) => state.setTooltip);
 
   const labor = useComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
 
@@ -184,6 +188,25 @@ export const LaborComponent = ({
                   <div className="px-2">{`${laborLeft > 0 && labor ? labor.multiplier : 0}/${realm?.harbors}`}</div>
                 )}
                 {/* // TODO: show visual cue that it's disabled */}
+                {hasGuild && (
+                  <div
+                    onMouseEnter={() =>
+                      setTooltip({
+                        position: "bottom",
+                        content: (
+                          <>
+                            <p className="whitespace-nowrap">Has guild for this resource</p>
+                          </>
+                        ),
+                      })
+                    }
+                    onMouseLeave={() => setTooltip(null)}
+                    className="flex flex-col justify-center align-center w-full items-center mr-2"
+                  >
+                    <People className="stroke-2 h-3 stroke-gold "></People>
+                    {/* <div className="w-full text-center">0</div> */}
+                  </div>
+                )}
                 <Button
                   variant="outline"
                   className="px-2 py-1"

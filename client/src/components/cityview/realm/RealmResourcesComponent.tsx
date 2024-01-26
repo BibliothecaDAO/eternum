@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
-import { ResourcesIds, findResourceById, resources } from "@bibliothecadao/eternum";
+import { ResourcesIds, findResourceById, getIconResourceId, resources } from "@bibliothecadao/eternum";
 import { currencyFormat, currencyIntlFormat, divideByPrecision, getEntityIdFromKeys } from "../../../utils/utils.jsx";
 import clsx from "clsx";
 import { unpackResources } from "../../../utils/packedData";
@@ -48,6 +48,8 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
     return resources.filter((resource) => !realmResourceIds.includes(resource.id));
   }, [realmResourceIds]);
 
+  const laborResources = [29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43];
+
   if (realmResourceIds.length > 3) {
     return (
       <div className="fixed top-3 left-3 right-3 z-50 !pointer-events-none">
@@ -60,6 +62,15 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
           <div className=" flex justify-center flex-wrap  w-full p-3">
             {otherResources.map((resource) => (
               <ResourceComponent className="mr-3 mb-1" canFarm={false} key={resource.id} resourceId={resource.id} />
+            ))}
+            {laborResources.map((resourceId) => (
+              <ResourceComponent
+                className="mr-3 mb-1"
+                isLabor={true}
+                canFarm={false}
+                key={resourceId}
+                resourceId={resourceId}
+              />
             ))}
           </div>
         </div>
@@ -89,12 +100,18 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
 };
 
 interface ResourceComponentProps {
+  isLabor?: boolean;
   resourceId: number;
   canFarm?: boolean;
   className?: string;
 }
 
-const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId, className, canFarm = true }) => {
+const ResourceComponent: React.FC<ResourceComponentProps> = ({
+  isLabor = false,
+  resourceId,
+  className,
+  canFarm = true,
+}) => {
   const {
     setup: {
       components: { Labor, Resource },
@@ -108,7 +125,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId, class
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const [productivity, setProductivity] = useState<number>(0);
 
-  const { getEntityLevel, getRealmLevelBonus, getHyperstructureLevelBonus } = useLevel();
+  const { getEntityLevel, getRealmLevelBonus } = useLevel();
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 
@@ -142,7 +159,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId, class
     setProductivity(productivity);
   }, [nextBlockTimestamp, labor]);
 
-  return (
+  return resource && resource.balance > 0 ? (
     <>
       <div
         onMouseEnter={() =>
@@ -163,13 +180,17 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId, class
         } ${className}`}
       >
         <ResourceIcon
+          isLabor={isLabor}
           withTooltip={false}
-          resource={findResourceById(resourceId)?.trait as string}
+          resource={findResourceById(getIconResourceId(resourceId, isLabor))?.trait as string}
           size="md"
           className="mr-1"
         />
         <div className="flex text-xs">
-          {currencyIntlFormat(resource ? divideByPrecision(Number(resource.balance)) : 0, 2)}
+          {currencyIntlFormat(
+            resource ? (!isLabor ? divideByPrecision(Number(resource.balance)) : Number(resource.balance)) : 0,
+            2,
+          )}
           {resourceId !== 253 && canFarm && (
             <div
               className={clsx(
@@ -186,7 +207,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({ resourceId, class
         </div>
       </div>
     </>
-  );
+  ) : null;
 };
 
 export default RealmResourcesComponent;

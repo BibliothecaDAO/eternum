@@ -1,65 +1,53 @@
 import { useEffect, useMemo, useState } from "react";
-import { SecondaryPopup } from "../../../../elements/SecondaryPopup";
-import Button from "../../../../elements/Button";
-import { Headline } from "../../../../elements/Headline";
-import { ReactComponent as DonkeyIcon } from "../../../../assets/icons/units/donkey-circle.svg";
-import { ResourceCost } from "../../../../elements/ResourceCost";
-import { NumberInput } from "../../../../elements/NumberInput";
-import {
-  ResourcesIds,
-  findResourceById,
-  PurchaseLaborProps,
-  BuildLaborProps,
-  Resource,
-  Guilds,
-  resourcesByGuild,
-  getIconResourceId,
-} from "@bibliothecadao/eternum";
-import { ReactComponent as FishingVillages } from "../../../../assets/icons/resources/FishingVillages.svg";
-import { ReactComponent as Farms } from "../../../../assets/icons/resources/Farms.svg";
-import { ResourceIcon } from "../../../../elements/ResourceIcon";
-import { BuildingsCount } from "../../../../elements/BuildingsCount";
+import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
+import Button from "../../../../../elements/Button";
+import { Headline } from "../../../../../elements/Headline";
+import { ResourceCost } from "../../../../../elements/ResourceCost";
+import { NumberInput } from "../../../../../elements/NumberInput";
+import { ResourcesIds, findResourceById, Resource, Guilds } from "@bibliothecadao/eternum";
+import { ReactComponent as FishingVillages } from "../../../../../assets/icons/resources/FishingVillages.svg";
+import { ReactComponent as Farms } from "../../../../../assets/icons/resources/Farms.svg";
+import { ResourceIcon } from "../../../../../elements/ResourceIcon";
+import { BuildingsCount } from "../../../../../elements/BuildingsCount";
 import clsx from "clsx";
-import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { useDojo } from "../../../../DojoContext";
-import { formatSecondsLeftInDaysHours } from "./laborUtils";
-import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
+import useRealmStore from "../../../../../hooks/store/useRealmStore";
+import { useDojo } from "../../../../../DojoContext";
+import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
+import { soundSelector, useUiSounds } from "../../../../../hooks/useUISound";
 import { getComponentValue } from "@dojoengine/recs";
-import { divideByPrecision, getEntityIdFromKeys, getPosition, getZone } from "../../../../utils/utils";
-import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
-import { useGetRealm } from "../../../../hooks/helpers/useRealm";
-import { useLabor } from "../../../../hooks/helpers/useLabor";
-import { LaborAuction } from "./LaborAuction";
+import { divideByPrecision, getEntityIdFromKeys, getPosition, getZone } from "../../../../../utils/utils";
+import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
+import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
+import { useLabor } from "../../../../../hooks/helpers/useLabor";
+import { LaborAuction } from "../../labor/LaborAuction";
 import { LABOR_CONFIG } from "@bibliothecadao/eternum";
-import Toggle from "../../../../elements/Toggle";
-import useUIStore from "../../../../hooks/store/useUIStore";
-import { useBuildings } from "../../../../hooks/helpers/useBuildings";
-import { BuildingLevel } from "../buildings/labor/BuildingLevel";
+import { BuildingLevel } from "./BuildingLevel";
+import { useBuildings } from "../../../../../hooks/helpers/useBuildings";
 
-type LaborBuildPopupProps = {
+type LaborResourceBuildPopupProps = {
+  guild: number;
   resourceId: number;
-  setBuildLoadingStates: (prevStates: any) => void;
   onClose: () => void;
 };
 
-export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: LaborBuildPopupProps) => {
+export const LaborResourceBuildPopup = ({ guild, resourceId, onClose }: LaborResourceBuildPopupProps) => {
   const {
     setup: {
       components: { Resource, Labor },
-      systemCalls: { purchase_and_build_labor, build_labor },
-      optimisticSystemCalls: { optimisticBuildLabor },
+      systemCalls: { purchase_labor },
     },
     account: { account },
   } = useDojo();
 
+  const realmId = useRealmStore((state) => state.realmId);
+
   const [missingResources, setMissingResources] = useState<Resource[]>([]);
   const [laborAmount, setLaborAmount] = useState(6);
   const [multiplier, setMultiplier] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const [withLabor, setWithLabor] = useState(false);
-
-  const setTooltip = useUIStore((state) => state.setTooltip);
+  const { getLaborCost, getLaborAuctionAverageCoefficient } = useLabor();
+  const { getLaborBuilding } = useBuildings();
 
   useEffect(() => {
     setMultiplier(1); // Reset the multiplier to 1 when the resourceId changes
@@ -73,7 +61,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     }
   };
 
-  let { realmEntityId, realmId } = useRealmStore();
+  let realmEntityId = useRealmStore((state) => state.realmEntityId);
   const { realm } = useGetRealm(realmEntityId);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
@@ -81,8 +69,6 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
   const laborUnits = useMemo(() => (isFood ? 12 : laborAmount), [laborAmount]);
   const resourceInfo = useMemo(() => findResourceById(resourceId), [resourceId]);
-
-  const { getLaborCost, getLaborAuctionAverageCoefficient } = useLabor();
 
   const labor = getComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
   const hasLaborLeft = useMemo(() => {
@@ -92,6 +78,10 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     return false;
   }, [nextBlockTimestamp, labor]);
 
+  const building = getLaborBuilding();
+  const guildLevel = Number(building?.level || 0);
+  const guildDiscount = 0.9 ** guildLevel;
+
   const position = realmId ? getPosition(realmId) : undefined;
   const zone = position ? getZone(position.x) : undefined;
 
@@ -100,30 +90,9 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     return coefficient || 1;
   }, [zone, laborUnits, multiplier]);
 
-  const { getLaborBuilding } = useBuildings();
-  const laborBuilding = getLaborBuilding();
-  const guild = laborBuilding?.building_type;
-  const guildLevel = Number(laborBuilding?.level || 0);
-  const guildDiscount = useMemo(() => {
-    if (guild && resourcesByGuild[Guilds[guild - 1]].includes(resourceId)) {
-      return 0.9 ** guildLevel;
-    } else {
-      return 1;
-    }
-  }, [guildLevel, resourceId]);
+  const totalDiscount = guildDiscount * laborAuctionAverageCoefficient;
 
-  const costResources = useMemo(() => {
-    if (withLabor) {
-      return [
-        {
-          resourceId: resourceId + 28,
-          amount: 1,
-        },
-      ];
-    } else {
-      return getLaborCost(resourceId);
-    }
-  }, [resourceId, guild, withLabor]);
+  const costResources = useMemo(() => getLaborCost(resourceId), [resourceId]);
 
   const getTotalAmount = (
     amount: number,
@@ -135,19 +104,17 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     return amount * multiplier * (isFood ? 12 : laborAmount) * totalDiscount;
   };
 
-  const buildLabor = async ({
-    entity_id,
-    resource_type,
-    labor_units,
-    multiplier,
-  }: PurchaseLaborProps & BuildLaborProps) => {
-    await purchase_and_build_labor({
+  const onBuild = async () => {
+    setIsLoading(true);
+    await purchase_labor({
       signer: account,
-      entity_id,
-      resource_type,
-      labor_units,
+      entity_id: realmEntityId,
+      resource_type: resourceId,
+      labor_units: laborUnits,
       multiplier,
     });
+    playLaborSound(resourceId);
+    onClose();
   };
 
   useEffect(() => {
@@ -159,15 +126,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
       );
       let missingAmount =
         Number(realmResource?.balance || 0) -
-        (!withLabor
-          ? getTotalAmount(
-              Number(amount),
-              isFood,
-              multiplier,
-              laborAmount,
-              laborAuctionAverageCoefficient * guildDiscount,
-            )
-          : amount * laborAmount);
+        getTotalAmount(Number(amount), isFood, multiplier, laborAmount, totalDiscount);
       if (missingAmount < 0) {
         missingResources.push({
           resourceId,
@@ -177,33 +136,6 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     });
     setMissingResources(missingResources);
   }, [laborAmount, multiplier, costResources]);
-
-  const onBuild = async () => {
-    setIsLoading(true);
-    !withLabor
-      ? optimisticBuildLabor(
-          nextBlockTimestamp || 0,
-          costResources,
-          laborAuctionAverageCoefficient,
-          buildLabor,
-        )({
-          signer: account,
-          entity_id: realmEntityId,
-          resource_type: resourceId,
-          labor_units: laborUnits,
-          multiplier,
-        })
-      : await build_labor({
-          entity_id: realmEntityId,
-          resource_type: resourceId,
-          labor_units: laborUnits,
-          multiplier,
-          signer: account,
-        }),
-      playLaborSound(resourceId);
-    setIsLoading(false);
-    onClose();
-  };
 
   const { play: playFarm } = useUiSounds(soundSelector.buildFarm);
   const { play: playFishingVillage } = useUiSounds(soundSelector.buildFishingVillage);
@@ -315,12 +247,12 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     <SecondaryPopup name="labor">
       <SecondaryPopup.Head onClose={onClose}>
         <div className="flex items-center space-x-1">
-          <div className="mr-0.5">Build Labor:</div>
+          <div className="mr-0.5">Purchase Labor:</div>
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body withWrapper width={"376px"}>
         <div className="flex flex-col items-center p-2">
-          <Headline>Produce More {resourceInfo?.trait}</Headline>
+          <Headline>Purchase {resourceInfo?.trait} Labor</Headline>
           <div className="relative flex justify-between w-full mt-1 text-xs text-lightest">
             <div className="flex items-center">
               {!isFood && (
@@ -342,36 +274,8 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
                 </div>
               )}
             </div>
-            <div className="flex items-center">
-              {`+${isFood ? divideByPrecision(LABOR_CONFIG.base_food_per_cycle * multiplier) / 2 : ""}${
-                isFood ? "" : divideByPrecision(LABOR_CONFIG.base_resources_per_cycle) / 2
-              }`}
-              <ResourceIcon
-                containerClassName="mx-0.5"
-                className="!w-[12px]"
-                resource={findResourceById(resourceId)?.trait as any}
-                size="xs"
-              />
-              /h
-            </div>
-            <div
-              onMouseEnter={() =>
-                setTooltip({
-                  position: "top",
-                  content: (
-                    <>
-                      <p className="whitespace-nowrap z-40">Use Balance Labor</p>
-                    </>
-                  ),
-                })
-              }
-              onMouseLeave={() => {
-                setTooltip(null);
-              }}
-            >
-              <Toggle label="" checked={withLabor} onChange={() => setWithLabor(!withLabor)}>
-                <DonkeyIcon />
-              </Toggle>
+            <div className="flex items-center text-white">
+              Final Discount: <div className="text-order-brilliance ml-1">×{totalDiscount.toFixed(2)}</div>
             </div>
           </div>
           {isFood && (
@@ -383,53 +287,32 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
             />
           )}
           <div className={clsx("relative w-full", isFood ? "mt-2" : "mt-2")}>
-            {resourceId === 254 && (
-              <img src={`/images/buildings/farm.png`} className="object-cover w-full h-full rounded-[10px]" />
-            )}
-            {resourceId === 255 && (
-              <img
-                src={`/images/buildings/fishing_village.png`}
-                className="object-cover w-full h-full rounded-[10px]"
-              />
-            )}
-            {!isFood && (
-              <img
-                src={`/images/resource_buildings/${resourceId}.png`}
-                className="object-cover w-full h-full rounded-[10px]"
-              />
-            )}
+            <img
+              src={`/images/units/${Guilds[guild - 1]?.toLowerCase()}.png`}
+              className="object-cover w-full h-full rounded-[10px]"
+            />
             <div className="absolute top-2 left-2 bg-black/90 rounded-[10px] p-3 pb-6 hover:bg-black">
               <LaborAuction />
-              {guildDiscount !== 1 && <BuildingLevel className="mt-6" />}
+              <BuildingLevel className="mt-6" />
             </div>
             <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/90">
-              <div className="mb-1 ml-1 italic text-light-pink text-xxs">Cost of Production:</div>
+              <div className="mb-1 ml-1 italic text-light-pink text-xxs">Cost of Labor:</div>
               <div className="grid grid-cols-4 gap-2">
                 {costResources.map(({ resourceId, amount }) => {
                   const missingResource = missingResources.find((resource) => resource.resourceId === resourceId);
-                  const finalAmount = !withLabor
-                    ? divideByPrecision(
-                        getTotalAmount(
-                          Number(amount),
-                          isFood,
-                          multiplier,
-                          laborAmount,
-                          laborAuctionAverageCoefficient * guildDiscount,
-                        ),
-                      )
-                    : amount * laborAmount;
                   return (
-                    <>
-                      <ResourceCost
-                        isLabor={withLabor}
-                        withTooltip
-                        key={resourceId}
-                        type="vertical"
-                        resourceId={getIconResourceId(resourceId, withLabor)}
-                        className={missingResource ? "text-order-giants" : ""}
-                        amount={finalAmount}
-                      />
-                    </>
+                    <ResourceCost
+                      withTooltip
+                      key={resourceId}
+                      type="vertical"
+                      resourceId={resourceId}
+                      className={missingResource ? "text-order-giants" : ""}
+                      amount={Number(
+                        divideByPrecision(
+                          getTotalAmount(Number(amount), isFood, multiplier, laborAmount, totalDiscount),
+                        ).toFixed(2),
+                      )}
+                    />
                   );
                 })}
               </div>
@@ -473,11 +356,11 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
             <Button
               isLoading={isLoading}
               disabled={missingResources.length > 0 || (isFood && hasLaborLeft)}
-              onClick={onBuild}
+              onClick={() => onBuild()}
               variant="primary"
               withoutSound
             >
-              {`${!withLabor ? "Purchase & " : ""}Build`}
+              Purchase Labor
             </Button>
             {missingResources.length > 0 && <div className="text-xxs text-order-giants/70">Insufficient resources</div>}
             {isFood && hasLaborLeft && <div className="text-xxs text-order-giants/70">Finish 24h cycle</div>}

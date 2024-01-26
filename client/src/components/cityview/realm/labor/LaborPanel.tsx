@@ -4,11 +4,12 @@ import { SortButton, SortInterface } from "../../../../elements/SortButton";
 import { LaborComponent } from "./LaborComponent";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { unpackResources } from "../../../../utils/packedData";
-import { ResourcesIds } from "@bibliothecadao/eternum";
+import { Guilds, ResourcesIds, resourcesByGuild } from "@bibliothecadao/eternum";
 import { LaborBuildPopup } from "./LaborBuild";
 import { useRoute } from "wouter";
 import { getRealm } from "../../../../utils/realms";
 import { useLevel } from "../../../../hooks/helpers/useLevel";
+import { useBuildings } from "../../../../hooks/helpers/useBuildings";
 
 type LaborPanelProps = {
   type?: "all" | "food" | "mines";
@@ -23,6 +24,9 @@ export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
   // @ts-ignore
   // TODO remove any
   const [match, params]: any = useRoute("/realm/:id/:tab");
+
+  const { getLaborBuilding } = useBuildings();
+  const laborBuilding = getLaborBuilding();
 
   useEffect(() => {
     if (params?.tab == "fish" && buildResource != ResourcesIds["Fish"]) {
@@ -101,18 +105,24 @@ export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
         />
       )}
       {realm &&
-        realmResourceIds.map((resourceId) => (
-          <div className="flex flex-col p-2" key={resourceId}>
-            <LaborComponent
-              setBuildResource={setBuildResource}
-              resourceId={resourceId}
-              realm={realm}
-              setBuildLoadingStates={setBuildLoadingStates}
-              buildLoadingStates={buildLoadingStates}
-              locked={realm_level == 0 && resourceId <= 22}
-            />
-          </div>
-        ))}
+        realmResourceIds.map((resourceId) => {
+          const hasGuild = laborBuilding
+            ? resourcesByGuild[Guilds[laborBuilding.building_type - 1]]?.includes(resourceId) || false
+            : false;
+          return (
+            <div className="flex flex-col p-2" key={resourceId}>
+              <LaborComponent
+                hasGuild={hasGuild}
+                setBuildResource={setBuildResource}
+                resourceId={resourceId}
+                realm={realm}
+                setBuildLoadingStates={setBuildLoadingStates}
+                buildLoadingStates={buildLoadingStates}
+                locked={realm_level == 0 && resourceId <= 22}
+              />
+            </div>
+          );
+        })}
     </div>
   );
 };

@@ -11,6 +11,7 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import RealmCombatComponent from "./RealmCombatComponent";
 import RealmInfoComponent from "./RealmInfoComponent";
+import { RealmBuildingsComponent } from "./RealmBuildingsComponent";
 
 const RealmManagementComponent = () => {
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
@@ -109,7 +110,7 @@ const RealmManagementComponent = () => {
         component: <RealmCombatComponent />,
       },
       {
-        key: "Crafting",
+        key: "buildings",
         label: (
           <div
             onMouseEnter={() =>
@@ -117,7 +118,7 @@ const RealmManagementComponent = () => {
                 position: "top",
                 content: (
                   <>
-                    <p className="whitespace-nowrap">Coming Soon</p>
+                    <p className="whitespace-nowrap">Create buildings on your Realm.</p>
                   </>
                 ),
               })
@@ -126,10 +127,10 @@ const RealmManagementComponent = () => {
             className="flex flex-col items-center"
             title="Not implemented"
           >
-            <City className="mb-2 fill-gold" /> <div>Crafting</div>
+            <City className="mb-2 fill-gold" /> <div>Buildings</div>
           </div>
         ),
-        component: <div></div>,
+        component: <RealmBuildingsComponent />,
       },
     ],
     [selectedTab],
@@ -143,6 +144,8 @@ const RealmManagementComponent = () => {
       _tab = "labor";
     } else if (["military", "raids", "defence", "siege"].includes(params?.tab as string)) {
       _tab = "military";
+    } else if (["buildings"].includes(params?.tab as string)) {
+      _tab = "buildings";
     }
     const tabIndex = tabs.findIndex((tab) => tab.key === _tab);
     if (tabIndex >= 0) {

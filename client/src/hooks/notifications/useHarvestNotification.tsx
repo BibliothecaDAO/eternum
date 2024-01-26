@@ -52,13 +52,8 @@ export const useHarvestNotification = (
     if (!realm || !realmEntityId || !resourceType) return [undefined, undefined];
     const isFood = [254, 255].includes(resourceType);
     const level = getEntityLevel(realmEntityId)?.level || 0;
-    const hyperstructureLevel = getEntityLevel(realm.order_hyperstructure_id)?.level || 0;
     const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
-    const hyperstructureLevelBonus = getHyperstructureLevelBonus(
-      hyperstructureLevel,
-      isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE,
-    );
-    return [levelBonus, hyperstructureLevelBonus];
+    return [levelBonus, 0];
   }, [realmEntityId]);
 
   const onHarvest = async () => {

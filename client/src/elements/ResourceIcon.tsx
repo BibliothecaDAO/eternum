@@ -7,8 +7,10 @@ import { ReactComponent as DesertGlass } from "../assets/icons/resources/DesertG
 import { ReactComponent as Ore } from "../assets/icons/resources/Ore.svg";
 import { ReactComponent as Lords } from "../assets/icons/resources/Lords.svg";
 import { ReactComponent as Spores } from "../assets/icons/resources/Spores.svg";
+import { ReactComponent as People } from "../assets/icons/common/people.svg";
 
 export type Props = {
+  isLabor?: boolean;
   resource: string;
   size: keyof (typeof STYLES)["size"];
   className?: string;
@@ -71,13 +73,14 @@ const STYLES = {
   },
 } as const;
 
-export const ResourceIcon = ({ withTooltip = true, ...props }: Props) => {
+export const ResourceIcon = ({ isLabor = false, withTooltip = true, ...props }: Props) => {
   const Icon = (
     <div
       className={`flex self-center paper relative group rounded-xl justify-center w-full ${props.containerClassName}`}
     >
-      <div className={` mx-auto ${clsx(STYLES.size[props.size], props.className)} `}>
+      <div className={`relative mx-auto ${clsx(STYLES.size[props.size], props.className)} `}>
         {Components[props.resource.replace(" ", "").replace("'", "")]?.component}
+        {isLabor && <People className="absolute left-4 h-2.5 top-3"></People>}
       </div>
 
       {props.label && (

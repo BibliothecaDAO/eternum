@@ -1,4 +1,5 @@
 use eternum::constants::{WORLD_CONFIG_ID};
+use eternum::utils::unpack::unpack_resource_types;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
@@ -20,7 +21,7 @@ struct WorldConfig {
 struct RealmFreeMintConfig {
     #[key]
     config_id: u128,
-    detached_resource_id: u128, 
+    detached_resource_id: u128,
     detached_resource_count: u32
 }
 
@@ -52,41 +53,10 @@ struct RoadConfig {
 }
 
 
-#[derive(Model, Copy, Drop, Serde)]
-struct BuildingConfig {
-    #[key]
-    config_id: u128,
-    base_sqm: u128,
-    workhut_cost: u128,
-}
-
 //
 // ENTITY SPECIFIC CONFIGS
 // We use component key to store the config id
 //
-
-#[derive(Model, Copy, Drop, Serde)]
-struct BuildingCost {
-    #[key]
-    config_id: u128,
-    #[key]
-    building_cost_config_id: u128,
-    resource_type: felt252,
-    cost: u128,
-}
-
-#[derive(Model, Copy, Drop, Serde)]
-struct BuildingTypeConfig {
-    #[key]
-    config_id: u128,
-    #[key]
-    building_type_config_id: u128,
-    id: felt252,
-    sqm: u128,
-    resource_types_packed: u256,
-    resource_types_count: u8,
-}
-
 
 // labor cost resources
 #[derive(Model, Copy, Drop, Serde)]
@@ -191,13 +161,12 @@ struct WeightConfig {
 
 
 trait WeightConfigTrait {
-    fn get_weight(world: IWorldDispatcher, resource_type: u8, amount: u128 ) -> u128;
+    fn get_weight(world: IWorldDispatcher, resource_type: u8, amount: u128) -> u128;
 }
 
 impl WeightConfigImpl of WeightConfigTrait {
-    fn get_weight(world: IWorldDispatcher, resource_type: u8, amount: u128 ) -> u128 {
-        let resource_weight_config 
-            = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig);
+    fn get_weight(world: IWorldDispatcher, resource_type: u8, amount: u128) -> u128 {
+        let resource_weight_config = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig);
 
         return resource_weight_config.weight_gram * amount;
     }
@@ -223,4 +192,144 @@ struct LevelingConfig {
     // high tier resources
     resource_3_cost_id: u128,
     resource_3_cost_count: u32
+}
+
+#[derive(Model, Copy, Drop, Serde)]
+struct LaborBuildingsConfig {
+    #[key]
+    config_id: u128,
+    // e.g: 10 for every level you need to create 10x the number of labor_units
+    // for level 5, need to create 50 more labor_units
+    level_multiplier: u128,
+    // e.g 10% everytime you level up, price decreases by 10%
+    level_discount_mag: u128,
+    // store the 4 types of labor to have 4 guilds
+    resources_category_1: u128,
+    resources_category_1_count: u8,
+    resources_category_2: u128,
+    resources_category_2_count: u8,
+    resources_category_3: u128,
+    resources_category_3_count: u8,
+    resources_category_4: u128,
+    resources_category_4_count: u8,
+}
+
+
+#[generate_trait]
+impl LaborBuildingsConfigImpl of LaborBuildingsConfigTrait {
+    fn get_building_type(self: LaborBuildingsConfig, resource_type: u8) -> u8 {
+        let mut building_type: u8 = 0;
+
+        let mut resource_types_1: Span<u8> = unpack_resource_types(
+            self.resources_category_1, self.resources_category_1_count
+        );
+        loop {
+            match resource_types_1.pop_front() {
+                Option::Some(v) => {
+                    if resource_type == *v {
+                        building_type = 1;
+                        break ();
+                    };
+                },
+                Option::None(_) => {
+                    break ();
+                },
+            };
+        };
+
+        let mut resource_types_2: Span<u8> = unpack_resource_types(
+            self.resources_category_2, self.resources_category_2_count
+        );
+
+        loop {
+            match resource_types_2.pop_front() {
+                Option::Some(v) => {
+                    if resource_type == *v {
+                        building_type = 2;
+                        break ();
+                    };
+                },
+                Option::None(_) => {
+                    break ();
+                },
+            };
+        };
+
+        let mut resource_types_3: Span<u8> = unpack_resource_types(
+            self.resources_category_3, self.resources_category_3_count
+        );
+
+        loop {
+            match resource_types_3.pop_front() {
+                Option::Some(v) => {
+                    if resource_type == *v {
+                        building_type = 3;
+                        break ();
+                    };
+                },
+                Option::None(_) => {
+                    break ();
+                },
+            };
+        };
+
+        let mut resource_types_4: Span<u8> = unpack_resource_types(
+            self.resources_category_4, self.resources_category_4_count
+        );
+
+        loop {
+            match resource_types_4.pop_front() {
+                Option::Some(v) => {
+                    if resource_type == *v {
+                        building_type = 4;
+                        break ();
+                    };
+                },
+                Option::None(_) => {
+                    break ();
+                },
+            };
+        };
+
+        building_type
+    }
+}
+
+
+#[derive(Model, Copy, Drop, Serde)]
+struct LaborBuildingCost {
+    #[key]
+    config_id: u128,
+    #[key]
+    labor_category: u8,
+    resource_cost_id: u128,
+    resource_cost_count: u32,
+}
+
+
+#[cfg(test)]
+mod tests {
+    use debug::PrintTrait;
+    use eternum::models::config::{LaborBuildingsConfig, LaborBuildingsConfigTrait};
+
+    #[test]
+    #[available_gas(30000000)]
+    fn test_get_building_type() {
+        let config = LaborBuildingsConfig {
+            config_id: 1,
+            level_multiplier: 10,
+            level_discount_mag: 16602069666338596454,
+            resources_category_1: 1108152355345,
+            resources_category_1_count: 6,
+            resources_category_2: 4423951127316,
+            resources_category_2_count: 6,
+            resources_category_3: 47446822418,
+            resources_category_3_count: 5,
+            resources_category_4: 21727548694,
+            resources_category_4_count: 5,
+        };
+
+        let building_type = config.get_building_type(16);
+        assert(building_type == 4, 'wrong building type')
+    }
 }

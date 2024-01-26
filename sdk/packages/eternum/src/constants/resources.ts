@@ -288,6 +288,46 @@ export enum ResourcesIds {
   Fish = 255,
 }
 
+export const Guilds = ["Harvesters", "Miners", "Collectors", "Hunters"];
+
+export const resourcesByGuild = {
+  [Guilds[0]]: [
+    ResourcesIds.Wood,
+    ResourcesIds.Stone,
+    ResourcesIds.Coal,
+    ResourcesIds.Ironwood,
+    ResourcesIds.Hartwood,
+    ResourcesIds.TrueIce,
+  ],
+  [Guilds[1]]: [
+    ResourcesIds.Copper,
+    ResourcesIds.Silver,
+    ResourcesIds.Gold,
+    ResourcesIds.ColdIron,
+    ResourcesIds.AlchemicalSilver,
+    ResourcesIds.Adamantine,
+  ],
+  [Guilds[2]]: [
+    ResourcesIds.Diamonds,
+    ResourcesIds.Sapphire,
+    ResourcesIds.Ruby,
+    ResourcesIds.DeepCrystal,
+    ResourcesIds.TwilightQuartz,
+  ],
+  [Guilds[3]]: [
+    ResourcesIds.Obsidian,
+    ResourcesIds.Ignium,
+    ResourcesIds.EtherealSilica,
+    ResourcesIds.Mithral,
+    ResourcesIds.Dragonhide,
+  ],
+};
+
+// if it's labor, then remove 28 to get the icon resource id
+export const getIconResourceId = (resourceId: number, isLabor: boolean) => {
+  return isLabor ? resourceId - 28 : resourceId;
+};
+
 export const initialResources = [
   872.17, 685.39, 666.61, 459.65, 385.39, 302.78, 205.04, 166.43, 158.96, 103.3, 52.17, 42.96, 41.57, 41.57, 29.91,
   28.17, 24.17, 19.3, 16.17, 9.57, 6.43, 4,
@@ -304,6 +344,27 @@ export const resourceProb = [
 export const foodProb = [5.7727, 1.9242];
 
 const LEVELING_COST_MULTIPLIER = 1.25;
+
+// guild 1, 2, 3, 4
+export const getBuildingsCost = (guild: number) => {
+  const costs = [
+    [1, 126000, 2, 99016, 3, 96303, 7, 29622, 10, 14924, 17, 3492, 254, 1890000, 255, 630000], // guild 1
+    [4, 66404, 6, 43742, 8, 24044, 9, 22964, 19, 2337, 20, 1382, 254, 1890000, 255, 630000], // guild 2
+    [11, 7537, 12, 6206, 13, 6005, 14, 6005, 18, 2789, 254, 1890000, 255, 630000], // guild 3
+    [5, 55676, 15, 4321, 16, 4070, 21, 930, 22, 578, 254, 1890000, 255, 630000], // guild 4
+  ];
+
+  const baseAmounts = costs[guild - 1];
+
+  const costResources = [];
+  for (let i = 0; i < baseAmounts.length; i = i + 2) {
+    costResources.push({
+      resourceId: baseAmounts[i],
+      amount: Math.floor(baseAmounts[i + 1]),
+    });
+  }
+  return costResources;
+};
 
 export const getLevelingCost = (newLevel: number): { resourceId: number; amount: number }[] => {
   const costMultiplier = LEVELING_COST_MULTIPLIER ** Math.floor((newLevel - 1) / 4);

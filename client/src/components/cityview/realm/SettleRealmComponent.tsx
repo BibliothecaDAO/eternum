@@ -67,23 +67,30 @@ export const SettleRealmComponent = () => {
         harbors: realm.harbors,
         cities: realm.cities,
         position,
-        // todo: remove that after changed in contract
-        order_hyperstructure_id: 0,
       });
     }
 
-    // @dev: do it in 3 times because too many steps for 1 tx
+    // @dev: do it in 1 times because too many steps for 1 tx
+    // before could do it in 3 times, but now, takes too many steps so cannot multicall
     await create_multiple_realms({
       signer: account,
-      realms: calldata.slice(0, 2),
+      realms: [calldata[0]],
     });
     await create_multiple_realms({
       signer: account,
-      realms: calldata.slice(2, 4),
+      realms: [calldata[1]],
     });
     await create_multiple_realms({
       signer: account,
-      realms: calldata.slice(4, 5),
+      realms: [calldata[2]],
+    });
+    await create_multiple_realms({
+      signer: account,
+      realms: [calldata[3]],
+    });
+    await create_multiple_realms({
+      signer: account,
+      realms: [calldata[4]],
     });
     setIsLoading(false);
     playSign();

@@ -4,6 +4,7 @@ import { ResourceIcon } from "./ResourceIcon";
 import clsx from "clsx";
 
 type ResourceCostProps = {
+  isLabor?: boolean;
   resourceId: number;
   amount: number;
   color?: string;
@@ -15,6 +16,7 @@ type ResourceCostProps = {
 
 export const ResourceCost = ({
   type = "horizontal",
+  isLabor = false,
   className,
   withTooltip = false,
   onClick,
@@ -29,7 +31,7 @@ export const ResourceCost = ({
         className,
       )}
     >
-      <ResourceIcon withTooltip={withTooltip} resource={trait || ""} size="md" />
+      <ResourceIcon isLabor={isLabor} withTooltip={withTooltip} resource={trait || ""} size="md" />
       <div
         className={clsx(
           "relative flex flex-col shrink-0",
