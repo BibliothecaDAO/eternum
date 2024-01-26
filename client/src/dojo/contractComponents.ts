@@ -162,52 +162,19 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    BuildingConfig: (() => {
-      return defineComponent(
-        world,
-        { config_id: RecsType.BigInt, base_sqm: RecsType.BigInt, workhut_cost: RecsType.BigInt },
-        {
-          metadata: {
-            name: "BuildingConfig",
-            types: ["u128", "u128", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    BuildingCost: (() => {
+    LaborBuilding: (() => {
       return defineComponent(
         world,
         {
-          config_id: RecsType.BigInt,
-          building_cost_config_id: RecsType.BigInt,
-          resource_type: RecsType.BigInt,
-          cost: RecsType.BigInt,
+          realm_entity_id: RecsType.BigInt,
+          building_type: RecsType.Number,
+          labor_count: RecsType.BigInt,
+          level: RecsType.BigInt,
         },
         {
           metadata: {
-            name: "BuildingCost",
-            types: ["u128", "u128", "felt252", "u128"],
-            customTypes: [],
-          },
-        },
-      );
-    })(),
-    BuildingTypeConfig: (() => {
-      return defineComponent(
-        world,
-        {
-          config_id: RecsType.BigInt,
-          building_type_config_id: RecsType.BigInt,
-          id: RecsType.BigInt,
-          sqm: RecsType.BigInt,
-          resource_types_packed: RecsType.BigInt,
-          resource_types_count: RecsType.Number,
-        },
-        {
-          metadata: {
-            name: "BuildingTypeConfig",
-            types: ["u128", "u128", "felt252", "u128", "u256", "u8"],
+            name: "LaborBuilding",
+            types: ["u128", "u8", "u128", "u128"],
             customTypes: [],
           },
         },

@@ -1,10 +1,15 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import clsx from "clsx";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import Button from "../../../../../elements/Button";
 import { Guilds } from "@bibliothecadao/eternum";
 import { SelectLaborResourceComponent } from "./SelectLaborResourceComponent";
 import useUIStore from "../../../../../hooks/store/useUIStore";
+import { useDojo } from "../../../../../DojoContext";
+import useRealmStore from "../../../../../hooks/store/useRealmStore";
+import { useBuildings } from "../../../../../hooks/helpers/useBuildings";
+import { useLabor } from "../../../../../hooks/helpers/useLabor";
+import { getPosition, getZone } from "../../../../../utils/utils";
 
 type LaborBuildingProps = {
   guild: number;
@@ -20,25 +25,52 @@ export const LaborBuilding = ({
   setShowPopup,
   ...props
 }: LaborBuildingProps) => {
+  const {
+    account: { account },
+    setup: {
+      systemCalls: { destroy_labor_building },
+    },
+  } = useDojo();
+
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const realmId = useRealmStore((state) => state.realmId);
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const onDestroy = async () => {
+    setIsLoading(true);
+    await destroy_labor_building({
+      realm_entity_id: realmEntityId,
+      signer: account,
+    });
+    setIsLoading(false);
+  };
+
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const { getLaborBuilding } = useBuildings();
+  const { useLaborAuctionCoefficient } = useLabor();
 
-  const { health, quantity, attack, defence } = { health: 0, quantity: 0, attack: 0, defence: 0 };
+  const building = getLaborBuilding();
 
-  const guildLevel = 10;
-  const experienceDiscount = 0.84;
-  const zoneDiscount = 0.5;
-  const totalDiscount = 0.75;
+  const guildLevel = Number(building?.level || 0);
+  const experienceDiscount = 0.9 ** guildLevel;
+
+  const position = realmId ? getPosition(realmId) : undefined;
+  const zone = position ? getZone(position.x) : undefined;
+  const zoneDiscount = zone ? useLaborAuctionCoefficient(zone) || 0 : 0;
+
+  const totalDiscount = experienceDiscount * zoneDiscount;
 
   return (
     <div className={clsx("flex flex-1 w-full", props.className)}>
       <img
-        src={`/images/buildings/${Guilds[guild].toLowerCase()}-building.png`}
+        src={`/images/buildings/${Guilds[guild - 1]?.toLowerCase()}-building.png`}
         className="object-cover rounded-md w-[107px]"
       />
       <div className="flex flex-col w-full min-w-[244px] h-full ml-2">
         <div className="flex flex-row mb-2 justify-between">
           <div className="flex flex-row">
-            <div className="flex items-center font-bold text-white text-xs mr-2">{Guilds[guild]} Guild </div>
+            <div className="flex items-center font-bold text-white text-xs mr-2">{Guilds[guild - 1]} Guild </div>
             <div className={" p-1 bg-gold/10 rounded-xl text-gold font-bold text-xxs"}>LVL {guildLevel}</div>
           </div>
           <div
@@ -46,13 +78,15 @@ export const LaborBuilding = ({
               setTooltip({
                 position: "top",
                 content: (
-                  <>
+                  <div className="z-50 ">
                     <p className="whitespace-nowrap">Labor units before next level</p>
-                    <div className="flex flex-row mt-1">
+                    <div className="flex flex-row justify-center mt-1">
                       <p className="whitespace-nowrap">Next discount:</p>
-                      <p className="whitespace-nowrap text-order-brilliance">×{0.75}</p>
+                      <p className="whitespace-nowrap text-order-brilliance ml-1">
+                        ×{(0.9 ** (guildLevel + 1)).toFixed(2)}
+                      </p>
                     </div>
-                  </>
+                  </div>
                 ),
               })
             }
@@ -61,20 +95,22 @@ export const LaborBuilding = ({
             }}
             className="flex flex-row ml-2"
           >
-            <div className="flex items-center font-bold text-white text-xs mr-2">100 / 400 </div>
+            <div className="flex items-center font-bold text-white text-xs mr-2">
+              {`${building?.labor_count || 0} / ${(guildLevel + 1) * 10}`}{" "}
+            </div>
           </div>
         </div>
         <div className="flex flex-row w-full items-center align-center justify-between mb-3">
           <div className="flex flex-col text-xxs justify-center text-center rounded-md border  bg-black p-1">
-            <span className="text-order-brilliance text-xl mb-1">{`×${experienceDiscount}`}</span>
+            <span className="text-order-brilliance text-xl mb-1">{`×${experienceDiscount.toFixed(2)}`}</span>
             <span className="mr-1 text-gold">{`Guild Discount`}</span>
           </div>
           <div className="flex flex-col text-xxs justify-center text-center rounded-md border  bg-black p-1">
-            <span className="text-order-brilliance text-xl mb-1">{`×${zoneDiscount}`}</span>
+            <span className="text-order-brilliance text-xl mb-1">{`×${zoneDiscount.toFixed(2)}`}</span>
             <span className="mr-1 text-gold ">{`Zone Discount`}</span>
           </div>
           <div className="flex flex-col text-xxs justify-center text-center rounded-md border  bg-black p-1">
-            <span className="text-order-brilliance text-xl mb-1">{`×${totalDiscount}`}</span>
+            <span className="text-order-brilliance text-xl mb-1">{`×${totalDiscount.toFixed(2)}`}</span>
             <span className="mr-1 text-gold">{`Final Discount`}</span>
           </div>
         </div>
@@ -84,7 +120,7 @@ export const LaborBuilding = ({
           guild={guild}
         />
         <div className="flex flex-row justify-between">
-          <Button className="mt-2 w-full mr-2" onClick={() => {}} variant="outline" size="xs">
+          <Button className="mt-2 w-full mr-2" isLoading={isLoading} onClick={onDestroy} variant="outline" size="xs">
             Destroy Guild
           </Button>
           <Button

@@ -41,7 +41,8 @@
         "Labor",
         "Resource",
         "OwnedResourcesTracker",
-        "LaborAuction"
+        "LaborAuction",
+        "LaborBuilding"
     ],
     "TRADE_SYSTEMS": [
         "Caravan",
@@ -125,5 +126,10 @@
     "HYPERSTRUCTURE_SYSTEMS": [
         "Orders",
         "HyperStructure"
+    ],
+    "BUILDINGS_SYSTEMS": [
+        "Resource",
+        "OwnedResourcesTracker",
+        "LaborBuilding"
     ]
 }

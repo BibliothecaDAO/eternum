@@ -340,6 +340,27 @@ export const foodProb = [5.7727, 1.9242];
 
 const LEVELING_COST_MULTIPLIER = 1.25;
 
+// guild 1, 2, 3, 4
+export const getBuildingsCost = (guild: number) => {
+  const costs = [
+    [1, 126000, 2, 99016, 3, 96303, 7, 29622, 10, 14924, 17, 3492, 254, 1890000, 255, 630000], // guild 1
+    [4, 66404, 6, 43742, 8, 24044, 9, 22964, 19, 2337, 20, 1382, 254, 1890000, 255, 630000], // guild 2
+    [11, 7537, 12, 6206, 13, 6005, 14, 6005, 18, 2789, 254, 1890000, 255, 630000], // guild 3
+    [5, 55676, 15, 4321, 16, 4070, 21, 930, 22, 578, 254, 1890000, 255, 630000], // guild 4
+  ];
+
+  const baseAmounts = costs[guild - 1];
+
+  const costResources = [];
+  for (let i = 0; i < baseAmounts.length; i = i + 2) {
+    costResources.push({
+      resourceId: baseAmounts[i],
+      amount: Math.floor(baseAmounts[i + 1]),
+    });
+  }
+  return costResources;
+};
+
 export const getLevelingCost = (newLevel: number): { resourceId: number; amount: number }[] => {
   const costMultiplier = LEVELING_COST_MULTIPLIER ** Math.floor((newLevel - 1) / 4);
 

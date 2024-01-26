@@ -35,6 +35,8 @@ import {
   HealSoldiersProps,
   CreateMultipleRealmsProps,
   TransferItemsFromMultipleProps,
+  CreateLaborBuildingProps,
+  DestroyLaborBuildingProps,
 } from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -181,6 +183,14 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.transfer_items_from_multiple(props)));
   };
 
+  const create_labor_building = async (props: CreateLaborBuildingProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.create_labor_building(props)));
+  };
+
+  const destroy_labor_building = async (props: DestroyLaborBuildingProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.destroy_labor_building(props)));
+  };
+
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -191,6 +201,8 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
   };
 
   return {
+    create_labor_building,
+    destroy_labor_building,
     control_hyperstructure,
     complete_hyperstructure,
     disassemble_caravan_and_return_free_units,

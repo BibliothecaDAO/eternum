@@ -8,7 +8,7 @@ mod buildings_systems {
     use eternum::models::owner::{Owner};
     use eternum::models::buildings::{LaborBuilding};
     use eternum::models::config::{LaborBuildingsConfig, LaborBuildingCost};
-    use eternum::models::resources::{Resource, ResourceCost};
+    use eternum::models::resources::{Resource, ResourceTrait, ResourceCost};
 
     #[external(v0)]
     impl BuildingsSystemsImpl of IBuildingsSystems<ContractState> {
@@ -17,6 +17,7 @@ mod buildings_systems {
         ) {
             // assert owner of the realm
             let owner = get!(world, realm_entity_id, Owner);
+            assert(owner.address == starknet::get_caller_address(), 'caller must be owner');
 
             let building = get!(world, (realm_entity_id), LaborBuilding);
 
@@ -40,7 +41,7 @@ mod buildings_systems {
                 assert(realm_resource.balance >= resource_cost.amount, 'insufficient resources');
 
                 realm_resource.balance -= resource_cost.amount;
-                set!(world, (realm_resource));
+                realm_resource.save(world);
 
                 index += 1;
             };
@@ -53,6 +54,7 @@ mod buildings_systems {
         fn destroy(self: @ContractState, world: IWorldDispatcher, realm_entity_id: u128) {
             // assert owner of the realm
             let owner = get!(world, realm_entity_id, Owner);
+            assert(owner.address == starknet::get_caller_address(), 'caller must be owner');
 
             // remove building to LaborBuilding
             let mut building = get!(world, (realm_entity_id), LaborBuilding);
@@ -60,6 +62,8 @@ mod buildings_systems {
             building.building_type = 0;
             building.labor_count = 0;
             building.level = 0;
+
+            set!(world, (building));
         }
     }
 }

@@ -1,18 +1,21 @@
 import { useMemo } from "react";
 import clsx from "clsx";
 import useUIStore from "../../../../../hooks/store/useUIStore";
+import { useBuildings } from "../../../../../hooks/helpers/useBuildings";
 
 type BuildingLevelProps = {
   className?: string;
 };
 
 export const BuildingLevel = ({ className }: BuildingLevelProps) => {
-  const level = 0;
+  const { getLaborBuilding } = useBuildings();
+  const building = getLaborBuilding();
+  const guildLevel = Number(building?.level || 0);
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   //   const coefficient = zone ? useLaborAuctionCoefficient(zone) || 0 : 0;
-  const coefficient = 1;
+  const coefficient = 0.9 ** guildLevel;
 
   const demandColors = useMemo(() => {
     if (coefficient <= 1) {
@@ -125,7 +128,7 @@ export const BuildingLevel = ({ className }: BuildingLevelProps) => {
           className={demandColors.bg}
         />
       </svg>
-      <div className="text-white text-xxs absolute -bottom-5">Level: {`${level || 0}`}</div>
+      <div className="text-white text-xxs absolute -bottom-5">Guild lvl: {`${building?.level || 0}`}</div>
     </div>
   );
 };

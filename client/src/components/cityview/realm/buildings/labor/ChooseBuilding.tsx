@@ -1,25 +1,42 @@
 import { useState } from "react";
-import { Guilds, ResourcesIds, resourcesByGuild } from "@bibliothecadao/eternum";
+import { Guilds, ResourcesIds, getBuildingsCost, resourcesByGuild } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { guild_description } from "../../../../../data/guilds";
 import Button from "../../../../../elements/Button";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { divideByPrecision } from "../../../../../utils/utils";
+import { useDojo } from "../../../../../DojoContext";
+import useRealmStore from "../../../../../hooks/store/useRealmStore";
 
 type ChooseBuildingProps = {};
 
 export const ChooseBuilding = ({}: ChooseBuildingProps) => {
+  const {
+    account: { account },
+    setup: {
+      systemCalls: { create_labor_building },
+    },
+  } = useDojo();
+
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+
   const [selectedGuild, setSelectedGuild] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const onCreate = () => {};
+  const onCreate = async () => {
+    setIsLoading(true);
+    await create_labor_building({
+      realm_entity_id: realmEntityId,
+      building_type: selectedGuild + 1,
+      signer: account,
+    });
+    setIsLoading(false);
+  };
 
-  const costResources = resourcesByGuild[Guilds[selectedGuild]].map((resourceId) => {
-    return {
-      resourceId,
-      amount: 100,
-    };
-  });
+  // guild 1, 2, 3, 4
+  // todo: use enum instead of numbers
+  const costResources = getBuildingsCost(selectedGuild + 1);
 
   return (
     <div className="m-2">
@@ -75,8 +92,9 @@ export const ChooseBuilding = ({}: ChooseBuildingProps) => {
                 <Button
                   disabled={selectedGuild === undefined}
                   size={"xs"}
+                  isLoading={isLoading}
                   className="!rounded-full"
-                  onClick={() => {}}
+                  onClick={onCreate}
                   variant="success"
                 >
                   Create Building

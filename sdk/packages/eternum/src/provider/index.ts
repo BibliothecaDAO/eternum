@@ -33,6 +33,8 @@ import {
   SwapBankAndTravelBackProps,
   MintResourcesProps,
   DisassembleCaravanAndReturnFreeUnitsProps,
+  CreateLaborBuildingProps,
+  DestroyLaborBuildingProps,
 } from "../types/provider";
 import { Call } from "starknet";
 
@@ -737,6 +739,32 @@ export class EternumProvider extends DojoProvider {
       contractAddress: getContractByName(this.manifest, "name_systems"),
       entrypoint: "set_address_name",
       calldata: [this.getWorldAddress(), name],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async create_labor_building(props: CreateLaborBuildingProps) {
+    const { realm_entity_id, building_type } = props;
+
+    const tx = await this.executeMulti(props.signer, {
+      contractAddress: getContractByName(this.manifest, "buildings_systems"),
+      entrypoint: "create",
+      calldata: [this.getWorldAddress(), realm_entity_id, building_type],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async destroy_labor_building(props: DestroyLaborBuildingProps) {
+    const { realm_entity_id } = props;
+
+    const tx = await this.executeMulti(props.signer, {
+      contractAddress: getContractByName(this.manifest, "buildings_systems"),
+      entrypoint: "destroy",
+      calldata: [this.getWorldAddress(), realm_entity_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,

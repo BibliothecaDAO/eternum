@@ -3,6 +3,8 @@ import { useDojo } from "../../../../../DojoContext";
 import { LaborBuilding } from "./LaborBuilding";
 import { LaborResourceBuildPopup } from "./LaborResourceBuildPopup";
 import { ChooseBuilding } from "./ChooseBuilding";
+import { useBuildings } from "../../../../../hooks/helpers/useBuildings";
+import useRealmStore from "../../../../../hooks/store/useRealmStore";
 
 type LaborBuildingsPanelProps = {};
 
@@ -13,14 +15,18 @@ export const LaborBuildingsPanel = ({}: LaborBuildingsPanelProps) => {
     },
   } = useDojo();
 
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+
   const [showPopup, setShowPopup] = useState(false);
+  const { getLaborBuilding } = useBuildings();
 
   const [selectedLaborResource, setSelectedLaborResource] = useState<number | undefined>(undefined);
 
-  const guild = 2;
-  const hasGuild = true;
+  const laborBuilding = getLaborBuilding();
 
-  return hasGuild ? (
+  const guild = laborBuilding?.building_type;
+
+  return guild ? (
     <div className="relative flex flex-col p-2 min-h-[120px]">
       {showPopup && selectedLaborResource && (
         <LaborResourceBuildPopup guild={guild} resourceId={selectedLaborResource} onClose={() => setShowPopup(false)} />

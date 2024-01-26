@@ -22,7 +22,7 @@ mod labor_systems {
     use eternum::systems::labor::utils::{assert_harvestable_resource, get_labor_resource_type};
     use eternum::constants::{
         LABOR_CONFIG_ID, WORLD_CONFIG_ID, HYPERSTRUCTURE_LEVELING_START_TIER,
-        REALM_LEVELING_START_TIER, ResourceTypes, LevelIndex
+        REALM_LEVELING_START_TIER, ResourceTypes, LevelIndex, BUILDING_CONFIG_ID
     };
     use eternum::utils::unpack::unpack_resource_types;
 
@@ -318,11 +318,12 @@ mod labor_systems {
 
             // get buildings config
             let buildings_config: LaborBuildingsConfig = get!(
-                world, LABOR_CONFIG_ID, LaborBuildingsConfig
+                world, BUILDING_CONFIG_ID, LaborBuildingsConfig
             );
 
             let mut building_multiplier: Fixed = FixedTrait::new_unscaled(1, false);
             let building_type = buildings_config.get_building_type(resource_type);
+
             // check if there's that type of building on the realm
             let mut building = get!(world, (entity_id), LaborBuilding);
 
@@ -333,12 +334,18 @@ mod labor_systems {
                 building_multiplier = pow(discount_fixed, level_fixed);
 
                 // update level
-                let count_to_levelup = buildings_config.level_multiplier * (building.level + 1);
+                let mut count_to_levelup = buildings_config.level_multiplier * (building.level + 1);
                 let mut new_count = building.labor_count + labor_units;
 
-                if new_count >= count_to_levelup {
-                    new_count -= count_to_levelup;
-                    building.level += 1;
+                loop {
+                    if new_count >= count_to_levelup {
+                        new_count -= count_to_levelup;
+                        building.level += 1;
+                        count_to_levelup = buildings_config.level_multiplier * (building.level + 1);
+                    } else {
+                        building.labor_count = new_count;
+                        break ();
+                    };
                 };
 
                 set!(world, (building));

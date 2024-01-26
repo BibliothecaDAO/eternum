@@ -1104,7 +1104,7 @@
     {
       "name": "eternum::systems::buildings::contracts::buildings_systems",
       "address": "0x10b9759a8a59aa0bd2122d708b2d55f96223958de6ae1fab5420b5d941ea3ad",
-      "class_hash": "0x6dee9a398678a0b1faae55f114d2655c70a656f9c65eea57e307370f7d5b3ba",
+      "class_hash": "0x5aaaf83daff7ba635d502ee70b9ef1a0124f0bf3863df225f158f2a3e56d0c8",
       "abi": [
         {
           "type": "impl",
@@ -1616,7 +1616,7 @@
     {
       "name": "eternum::systems::config::contracts::config_systems",
       "address": "0x7fff06bbcbe4f42f22c86b14e7a80604495c8b2034d14cbb10d32402c933ca8",
-      "class_hash": "0x440ff3d33cca2389a707d6574d8db20fffd47cb960d5475d8dff9c899ae0643",
+      "class_hash": "0x5ba6bfaaffc39e7393cadb3a27ec853bbc4030317a08660470f8ed645bbf83c",
       "abi": [
         {
           "type": "impl",
@@ -2604,7 +2604,7 @@
     {
       "name": "eternum::systems::labor::contracts::labor_systems",
       "address": "0x38258ae4007920aacda4f00c6960837ff9b235e8af95f648347f36550e6d1ee",
-      "class_hash": "0x1a7f952576e8fbc362574b79ebe77e311b19e8bb34e409510138e3d9d3bfc14",
+      "class_hash": "0x2f8d320843d1571d66a9e60c7c76939467e36c97533a3fd31799425c70fb9df",
       "abi": [
         {
           "type": "impl",

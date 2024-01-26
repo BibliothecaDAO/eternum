@@ -727,7 +727,7 @@ mod config_systems {
                 world,
                 (
                     LaborBuildingsConfig {
-                        config_id: LABOR_CONFIG_ID,
+                        config_id: BUILDING_CONFIG_ID,
                         level_multiplier,
                         level_discount_mag,
                         resources_category_1,
