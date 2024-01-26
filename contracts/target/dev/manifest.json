@@ -1104,7 +1104,7 @@
     {
       "name": "eternum::systems::buildings::contracts::buildings_systems",
       "address": "0x10b9759a8a59aa0bd2122d708b2d55f96223958de6ae1fab5420b5d941ea3ad",
-      "class_hash": "0x32e4181d904fadbb52c1f8834dd25dc76a3e674c6455f6cf942793e1aef8de3",
+      "class_hash": "0x1330f179a31fb1e455ef7e641133cb51c5d3e0791ce469c75d766d315ab30ea",
       "abi": [
         {
           "type": "impl",
