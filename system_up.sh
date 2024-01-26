@@ -12,7 +12,6 @@ help() {
 start_services() {
 	local build_args=""
 	if [ $1 = true ]; then
-		shift 1
 		for service in "$@"; do
 			if [[ ! $(echo ${SERVICES[@]} | fgrep -w ${service}) ]]; then
 				help "restart"
@@ -20,9 +19,13 @@ start_services() {
 			build_args+="--build-arg RESTART_$(echo ${service} | tr [a-z]- [A-Z]_ )=true "
 		done
 	fi
+
+	shift 1
+
 	echo "👷 Building service(s)"
 
-  cp "${BASE_DIR}/Dockers/config/litefs.static-lease.yml" "${BASE_DIR}/contracts/config/"
+	mkdir -p "${BASE_DIR}/contracts/config/"
+	cp "${BASE_DIR}/Dockers/config/litefs.static-lease.yml" "${BASE_DIR}/contracts/config/"
 	docker compose build ${build_args} $@
 	echo "▶️ Starting service(s)"
 	docker compose up -d --no-deps $@
@@ -63,7 +66,7 @@ SERVICES=$@
 
 if [ $COMMAND = "start" ]; then
 	build_contracts
-	start_services $SERVICES
+	start_services false $SERVICES
 elif [ $COMMAND = "stop" ]; then
 	stop_services $SERVICES
 elif [ $COMMAND = "restart" ]; then
