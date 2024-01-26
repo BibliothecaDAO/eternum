@@ -51,6 +51,23 @@ export function useLabor() {
     });
   };
 
+  const getProductionCost = (resourceId: number): Resource[] => {
+    const laborCostResources = getComponentValue(LaborCostResources, getEntityIdFromKeys([BigInt(resourceId)]));
+
+    const resourceIds = laborCostResources
+      ? unpackResources(BigInt(laborCostResources.resource_types_packed), laborCostResources.resource_types_count)
+      : [];
+
+    return resourceIds.map((costResourceId) => {
+      const laborCostAmount = getComponentValue(
+        LaborCostAmount,
+        getEntityIdFromKeys([BigInt(resourceId), BigInt(costResourceId)]),
+      );
+      let amount = Number(laborCostAmount?.value) || 0;
+      return { resourceId: costResourceId, amount };
+    });
+  };
+
   const getLaborAuctionAverageCoefficient = (zone: number, laborUnits: number): number | undefined => {
     let laborAuction = getComponentValue(LaborAuction, getEntityIdFromKeys([BigInt(zone)]));
 

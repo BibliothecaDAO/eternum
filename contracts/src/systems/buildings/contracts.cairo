@@ -19,6 +19,9 @@ mod buildings_systems {
             let owner = get!(world, realm_entity_id, Owner);
             assert(owner.address == starknet::get_caller_address(), 'caller must be owner');
 
+            // assert building type is between 1 and 4 (inclusive)
+            assert(building_type >= 1 && building_type <= 4, 'invalid building type');
+
             let building = get!(world, (realm_entity_id), LaborBuilding);
 
             // remove the cost from the realm balance

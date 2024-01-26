@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import clsx from "clsx";
-import ProgressBar from "../../../../../elements/ProgressBar";
 import Button from "../../../../../elements/Button";
 import { Guilds } from "@bibliothecadao/eternum";
 import { SelectLaborResourceComponent } from "./SelectLaborResourceComponent";
@@ -57,9 +56,9 @@ export const LaborBuilding = ({
 
   const position = realmId ? getPosition(realmId) : undefined;
   const zone = position ? getZone(position.x) : undefined;
-  const zoneDiscount = zone ? useLaborAuctionCoefficient(zone) || 0 : 0;
+  const zoneDiscount = zone ? useLaborAuctionCoefficient(zone) : undefined;
 
-  const totalDiscount = experienceDiscount * zoneDiscount;
+  const totalDiscount = zoneDiscount ? experienceDiscount * zoneDiscount : undefined;
 
   return (
     <div className={clsx("flex flex-1 w-full", props.className)}>
@@ -105,14 +104,18 @@ export const LaborBuilding = ({
             <span className="text-order-brilliance text-xl mb-1">{`×${experienceDiscount.toFixed(2)}`}</span>
             <span className="mr-1 text-gold">{`Guild Discount`}</span>
           </div>
-          <div className="flex flex-col text-xxs justify-center text-center rounded-md border  bg-black p-1">
-            <span className="text-order-brilliance text-xl mb-1">{`×${zoneDiscount.toFixed(2)}`}</span>
-            <span className="mr-1 text-gold ">{`Zone Discount`}</span>
-          </div>
-          <div className="flex flex-col text-xxs justify-center text-center rounded-md border  bg-black p-1">
-            <span className="text-order-brilliance text-xl mb-1">{`×${totalDiscount.toFixed(2)}`}</span>
-            <span className="mr-1 text-gold">{`Final Discount`}</span>
-          </div>
+          {zoneDiscount && (
+            <div className="flex flex-col text-xxs justify-center text-center rounded-md border  bg-black p-1">
+              <span className="text-order-brilliance text-xl mb-1">{`×${zoneDiscount.toFixed(2)}`}</span>
+              <span className="mr-1 text-gold ">{`Zone Discount`}</span>
+            </div>
+          )}
+          {totalDiscount && (
+            <div className="flex flex-col text-xxs justify-center text-center rounded-md border  bg-black p-1">
+              <span className="text-order-brilliance text-xl mb-1">{`×${totalDiscount.toFixed(2)}`}</span>
+              <span className="mr-1 text-gold">{`Final Discount`}</span>
+            </div>
+          )}
         </div>
         <SelectLaborResourceComponent
           selectedLaborResource={selectedLaborResource}
@@ -120,12 +123,12 @@ export const LaborBuilding = ({
           guild={guild}
         />
         <div className="flex flex-row justify-between">
-          <Button className="mt-2 w-full mr-2" isLoading={isLoading} onClick={onDestroy} variant="outline" size="xs">
+          <Button className="mt-2 w-full mr-2" isLoading={isLoading} onClick={onDestroy} variant="outline" size="md">
             Destroy Guild
           </Button>
           <Button
             disabled={!selectedLaborResource}
-            size="xs"
+            size="md"
             className="mt-2 w-full"
             onClick={() => {
               setShowPopup(true);

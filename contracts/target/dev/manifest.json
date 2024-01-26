@@ -1104,7 +1104,7 @@
     {
       "name": "eternum::systems::buildings::contracts::buildings_systems",
       "address": "0x10b9759a8a59aa0bd2122d708b2d55f96223958de6ae1fab5420b5d941ea3ad",
-      "class_hash": "0x5aaaf83daff7ba635d502ee70b9ef1a0124f0bf3863df225f158f2a3e56d0c8",
+      "class_hash": "0x32e4181d904fadbb52c1f8834dd25dc76a3e674c6455f6cf942793e1aef8de3",
       "abi": [
         {
           "type": "impl",
@@ -1616,7 +1616,7 @@
     {
       "name": "eternum::systems::config::contracts::config_systems",
       "address": "0x7fff06bbcbe4f42f22c86b14e7a80604495c8b2034d14cbb10d32402c933ca8",
-      "class_hash": "0x5ba6bfaaffc39e7393cadb3a27ec853bbc4030317a08660470f8ed645bbf83c",
+      "class_hash": "0x5c183bd884d1d42f7640fedd78d26b2bd8822403566cc4688a3da7d7a3eefe8",
       "abi": [
         {
           "type": "impl",

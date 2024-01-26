@@ -44,7 +44,7 @@ export const BuildingLevel = ({ className }: BuildingLevelProps) => {
     if (coefficient <= 0.65) {
       return (
         <div className="flex flex-col items-center text-xxs">
-          <div className={clsx("font-bold text-xxs", demandColors.text)}>No Demand</div>
+          <div className={clsx("font-bold text-xxs", demandColors.text)}>Highly Skilled Labor</div>
           <div>
             <span className={clsx("italic", demandColors.text)}>{discount}% discount</span> on next build.
           </div>
@@ -54,26 +54,16 @@ export const BuildingLevel = ({ className }: BuildingLevelProps) => {
     if (coefficient <= 1) {
       return (
         <div className="flex flex-col items-center text-xxs">
-          <div className={clsx("font-bold text-xxs", demandColors.text)}>Low Demand</div>
+          <div className={clsx("font-bold text-xxs", demandColors.text)}>Medium Skilled Labor</div>
           <div>
             <span className={clsx("italic", demandColors.text)}>{discount}% discount</span> on next build.
           </div>
         </div>
       );
     }
-    if (coefficient <= 1.25) {
-      return (
-        <div className="flex flex-col items-center text-xxs">
-          <div className={clsx("font-bold text-xxs", demandColors.text)}>Increased Demand</div>
-          <div>
-            <span className={clsx("italic", demandColors.text)}>{discount}% higher cost</span> on next build.
-          </div>
-        </div>
-      );
-    }
     return (
       <div className="flex flex-col items-center text-xxs">
-        <div className={clsx("font-bold text-xxs", demandColors.text)}>High Demand</div>
+        <div className={clsx("font-bold text-xxs", demandColors.text)}>Low Skilled Labor</div>
         <div>
           <span className={clsx("italic", demandColors.text)}>{discount}% higher cost</span> on next build.
         </div>

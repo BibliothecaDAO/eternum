@@ -323,6 +323,11 @@ export const resourcesByGuild = {
   ],
 };
 
+// if it's labor, then remove 28 to get the icon resource id
+export const getIconResourceId = (resourceId: number, isLabor: boolean) => {
+  return isLabor ? resourceId - 28 : resourceId;
+};
+
 export const initialResources = [
   872.17, 685.39, 666.61, 459.65, 385.39, 302.78, 205.04, 166.43, 158.96, 103.3, 52.17, 42.96, 41.57, 41.57, 29.91,
   28.17, 24.17, 19.3, 16.17, 9.57, 6.43, 4,

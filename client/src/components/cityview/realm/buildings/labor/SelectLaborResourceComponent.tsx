@@ -35,6 +35,7 @@ export const SelectLaborResourceComponent = ({
           return (
             <SelectableLaborResource
               key={resource.resourceId}
+              guild={guild}
               resourceId={resource.resourceId}
               selected={selectedLaborResource === resource.resourceId}
               amount={resource.amount}

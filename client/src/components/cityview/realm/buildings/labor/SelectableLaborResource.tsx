@@ -1,12 +1,12 @@
 import React from "react";
-import { ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
+import { Guilds, ResourcesIds, findResourceById } from "@bibliothecadao/eternum";
 import clsx from "clsx";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
 import { soundSelector, useUiSounds } from "../../../../../hooks/useUISound";
-import { currencyFormat } from "../../../../../utils/utils";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 
 type SelectableLaborResourceProps = {
+  guild: number;
   resourceId: number;
   amount: number;
   selected?: boolean;
@@ -14,6 +14,7 @@ type SelectableLaborResourceProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const SelectableLaborResource = ({
+  guild,
   resourceId,
   amount,
   selected,
@@ -137,8 +138,8 @@ export const SelectableLaborResource = ({
           content: (
             <>
               <div className="relative z-50 flex flex-col items-center justify-center mb-1 text-xs text-center text-lightest">
-                {resource?.trait}
-                <div className="mt-0.5 font-bold">{currencyFormat(amount || 0, 0)}</div>
+                {`${resource?.trait} ${Guilds[guild - 1]}`}
+                <div className="mt-0.5 font-bold">{amount || 0}</div>
               </div>
             </>
           ),
@@ -157,7 +158,13 @@ export const SelectableLaborResource = ({
         disabled && "opacity-30 cursor-not-allowed pointer-events-none",
       )}
     >
-      <ResourceIcon withTooltip={false} resource={resource?.trait || ""} size="sm" />
+      <ResourceIcon
+        isLabor={true}
+        withTooltip={false}
+        resource={resource?.trait || ""}
+        size="sm"
+        className="text-white"
+      />
     </div>
   );
 };

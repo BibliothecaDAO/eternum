@@ -5,7 +5,16 @@ import { Headline } from "../../../../elements/Headline";
 import { ReactComponent as DonkeyIcon } from "../../../../assets/icons/units/donkey-circle.svg";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../elements/NumberInput";
-import { ResourcesIds, findResourceById, PurchaseLaborProps, BuildLaborProps, Resource } from "@bibliothecadao/eternum";
+import {
+  ResourcesIds,
+  findResourceById,
+  PurchaseLaborProps,
+  BuildLaborProps,
+  Resource,
+  Guilds,
+  resourcesByGuild,
+  getIconResourceId,
+} from "@bibliothecadao/eternum";
 import { ReactComponent as FishingVillages } from "../../../../assets/icons/resources/FishingVillages.svg";
 import { ReactComponent as Farms } from "../../../../assets/icons/resources/Farms.svg";
 import { ResourceIcon } from "../../../../elements/ResourceIcon";
@@ -24,6 +33,8 @@ import { LaborAuction } from "./LaborAuction";
 import { LABOR_CONFIG } from "@bibliothecadao/eternum";
 import Toggle from "../../../../elements/Toggle";
 import useUIStore from "../../../../hooks/store/useUIStore";
+import { useBuildings } from "../../../../hooks/helpers/useBuildings";
+import { BuildingLevel } from "../buildings/labor/BuildingLevel";
 
 type LaborBuildPopupProps = {
   resourceId: number;
@@ -35,7 +46,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   const {
     setup: {
       components: { Resource, Labor },
-      systemCalls: { purchase_and_build_labor },
+      systemCalls: { purchase_and_build_labor, build_labor },
       optimisticSystemCalls: { optimisticBuildLabor },
     },
     account: { account },
@@ -44,6 +55,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   const [missingResources, setMissingResources] = useState<Resource[]>([]);
   const [laborAmount, setLaborAmount] = useState(6);
   const [multiplier, setMultiplier] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [withLabor, setWithLabor] = useState(false);
 
@@ -88,16 +100,39 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     return coefficient || 1;
   }, [zone, laborUnits, multiplier]);
 
-  const costResources = useMemo(() => getLaborCost(resourceId), [resourceId]);
+  const { getLaborBuilding } = useBuildings();
+  const laborBuilding = getLaborBuilding();
+  const guild = laborBuilding?.building_type;
+  const guildLevel = Number(laborBuilding?.level || 0);
+  const guildDiscount = useMemo(() => {
+    if (guild && resourcesByGuild[Guilds[guild - 1]].includes(resourceId)) {
+      return 0.9 ** guildLevel;
+    } else {
+      return 1;
+    }
+  }, [guildLevel, resourceId]);
+
+  const costResources = useMemo(() => {
+    if (withLabor) {
+      return [
+        {
+          resourceId: resourceId + 28,
+          amount: 1,
+        },
+      ];
+    } else {
+      return getLaborCost(resourceId);
+    }
+  }, [resourceId, guild, withLabor]);
 
   const getTotalAmount = (
     amount: number,
     isFood: boolean,
     multiplier: number,
     laborAmount: number,
-    laborCoefficient: number,
+    totalDiscount: number,
   ) => {
-    return amount * multiplier * (isFood ? 12 : laborAmount) * laborCoefficient;
+    return amount * multiplier * (isFood ? 12 : laborAmount) * totalDiscount;
   };
 
   const buildLabor = async ({
@@ -124,7 +159,15 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
       );
       let missingAmount =
         Number(realmResource?.balance || 0) -
-        getTotalAmount(Number(amount), isFood, multiplier, laborAmount, laborAuctionAverageCoefficient);
+        (!withLabor
+          ? getTotalAmount(
+              Number(amount),
+              isFood,
+              multiplier,
+              laborAmount,
+              laborAuctionAverageCoefficient * guildDiscount,
+            )
+          : amount * laborAmount);
       if (missingAmount < 0) {
         missingResources.push({
           resourceId,
@@ -135,20 +178,30 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
     setMissingResources(missingResources);
   }, [laborAmount, multiplier, costResources]);
 
-  const onBuild = () => {
-    optimisticBuildLabor(
-      nextBlockTimestamp || 0,
-      costResources,
-      laborAuctionAverageCoefficient,
-      buildLabor,
-    )({
-      signer: account,
-      entity_id: realmEntityId,
-      resource_type: resourceId,
-      labor_units: laborUnits,
-      multiplier: multiplier,
-    }),
+  const onBuild = async () => {
+    setIsLoading(true);
+    !withLabor
+      ? optimisticBuildLabor(
+          nextBlockTimestamp || 0,
+          costResources,
+          laborAuctionAverageCoefficient,
+          buildLabor,
+        )({
+          signer: account,
+          entity_id: realmEntityId,
+          resource_type: resourceId,
+          labor_units: laborUnits,
+          multiplier,
+        })
+      : await build_labor({
+          entity_id: realmEntityId,
+          resource_type: resourceId,
+          labor_units: laborUnits,
+          multiplier,
+          signer: account,
+        }),
       playLaborSound(resourceId);
+    setIsLoading(false);
     onClose();
   };
 
@@ -347,44 +400,38 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
             )}
             <div className="absolute top-2 left-2 bg-black/90 rounded-[10px] p-3 pb-6 hover:bg-black">
               <LaborAuction />
+              {guildDiscount !== 1 && <BuildingLevel className="mt-6" />}
             </div>
             <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/90">
               <div className="mb-1 ml-1 italic text-light-pink text-xxs">Cost of Production:</div>
               <div className="grid grid-cols-4 gap-2">
-                {!withLabor &&
-                  costResources.map(({ resourceId, amount }) => {
-                    const missingResource = missingResources.find((resource) => resource.resourceId === resourceId);
-                    return (
+                {costResources.map(({ resourceId, amount }) => {
+                  const missingResource = missingResources.find((resource) => resource.resourceId === resourceId);
+                  const finalAmount = !withLabor
+                    ? divideByPrecision(
+                        getTotalAmount(
+                          Number(amount),
+                          isFood,
+                          multiplier,
+                          laborAmount,
+                          laborAuctionAverageCoefficient * guildDiscount,
+                        ),
+                      )
+                    : amount * laborAmount;
+                  return (
+                    <>
                       <ResourceCost
+                        isLabor={withLabor}
                         withTooltip
                         key={resourceId}
                         type="vertical"
-                        resourceId={resourceId}
+                        resourceId={getIconResourceId(resourceId, withLabor)}
                         className={missingResource ? "text-order-giants" : ""}
-                        amount={Number(
-                          divideByPrecision(
-                            getTotalAmount(
-                              Number(amount),
-                              isFood,
-                              multiplier,
-                              laborAmount,
-                              laborAuctionAverageCoefficient,
-                            ),
-                          ).toFixed(2),
-                        )}
+                        amount={finalAmount}
                       />
-                    );
-                  })}
-                {withLabor && (
-                  <ResourceCost
-                    withTooltip
-                    key={resourceId}
-                    type="vertical"
-                    resourceId={resourceId}
-                    className={""}
-                    amount={Number(Number(laborAmount))}
-                  />
-                )}
+                    </>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -424,8 +471,9 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
           )}
           <div className="flex flex-col items-center justify-center">
             <Button
+              isLoading={isLoading}
               disabled={missingResources.length > 0 || (isFood && hasLaborLeft)}
-              onClick={() => onBuild()}
+              onClick={onBuild}
               variant="primary"
               withoutSound
             >

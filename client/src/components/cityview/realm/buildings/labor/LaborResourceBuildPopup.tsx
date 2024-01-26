@@ -4,14 +4,7 @@ import Button from "../../../../../elements/Button";
 import { Headline } from "../../../../../elements/Headline";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../../elements/NumberInput";
-import {
-  ResourcesIds,
-  findResourceById,
-  PurchaseLaborProps,
-  BuildLaborProps,
-  Resource,
-  Guilds,
-} from "@bibliothecadao/eternum";
+import { ResourcesIds, findResourceById, Resource, Guilds } from "@bibliothecadao/eternum";
 import { ReactComponent as FishingVillages } from "../../../../../assets/icons/resources/FishingVillages.svg";
 import { ReactComponent as Farms } from "../../../../../assets/icons/resources/Farms.svg";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
@@ -106,9 +99,9 @@ export const LaborResourceBuildPopup = ({ guild, resourceId, onClose }: LaborRes
     isFood: boolean,
     multiplier: number,
     laborAmount: number,
-    laborCoefficient: number,
+    totalDiscount: number,
   ) => {
-    return amount * multiplier * (isFood ? 12 : laborAmount) * laborCoefficient;
+    return amount * multiplier * (isFood ? 12 : laborAmount) * totalDiscount;
   };
 
   const onBuild = async () => {
@@ -133,7 +126,7 @@ export const LaborResourceBuildPopup = ({ guild, resourceId, onClose }: LaborRes
       );
       let missingAmount =
         Number(realmResource?.balance || 0) -
-        getTotalAmount(Number(amount), isFood, multiplier, laborAmount, laborAuctionAverageCoefficient);
+        getTotalAmount(Number(amount), isFood, multiplier, laborAmount, totalDiscount);
       if (missingAmount < 0) {
         missingResources.push({
           resourceId,
@@ -316,13 +309,7 @@ export const LaborResourceBuildPopup = ({ guild, resourceId, onClose }: LaborRes
                       className={missingResource ? "text-order-giants" : ""}
                       amount={Number(
                         divideByPrecision(
-                          getTotalAmount(
-                            Number(amount),
-                            isFood,
-                            multiplier,
-                            laborAmount,
-                            laborAuctionAverageCoefficient,
-                          ),
+                          getTotalAmount(Number(amount), isFood, multiplier, laborAmount, totalDiscount),
                         ).toFixed(2),
                       )}
                     />

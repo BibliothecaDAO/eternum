@@ -8,7 +8,8 @@ mod config_systems {
     use eternum::models::config::{
         LaborCostResources, LaborCostAmount, LaborConfig, CapacityConfig, RoadConfig, SpeedConfig,
         TravelConfig, WeightConfig, WorldConfig, SoldierConfig, HealthConfig, AttackConfig,
-        DefenceConfig, CombatConfig, LevelingConfig, RealmFreeMintConfig, LaborBuildingsConfig
+        DefenceConfig, CombatConfig, LevelingConfig, RealmFreeMintConfig, LaborBuildingsConfig,
+        LaborBuildingCost
     };
 
     use eternum::systems::config::interface::{
@@ -746,6 +747,17 @@ mod config_systems {
             let labor_category = 1;
             let resource_cost_id: u128 = world.uuid().into();
             let mut index = 0;
+
+            set!(
+                world,
+                LaborBuildingCost {
+                    config_id: BUILDING_CONFIG_ID,
+                    labor_category: labor_category,
+                    resource_cost_id: resource_cost_id,
+                    resource_cost_count: building_costs.len(),
+                }
+            );
+
             loop {
                 match building_costs.pop_front() {
                     Option::Some((
@@ -774,6 +786,17 @@ mod config_systems {
             let labor_category = 2;
             let resource_cost_id: u128 = world.uuid().into();
             let mut index = 0;
+
+            set!(
+                world,
+                LaborBuildingCost {
+                    config_id: BUILDING_CONFIG_ID,
+                    labor_category: labor_category,
+                    resource_cost_id: resource_cost_id,
+                    resource_cost_count: building_costs.len(),
+                }
+            );
+
             loop {
                 match building_costs.pop_front() {
                     Option::Some((
@@ -802,6 +825,17 @@ mod config_systems {
             let labor_category = 3;
             let resource_cost_id: u128 = world.uuid().into();
             let mut index = 0;
+
+            set!(
+                world,
+                LaborBuildingCost {
+                    config_id: BUILDING_CONFIG_ID,
+                    labor_category: labor_category,
+                    resource_cost_id: resource_cost_id,
+                    resource_cost_count: building_costs.len(),
+                }
+            );
+
             loop {
                 match building_costs.pop_front() {
                     Option::Some((
@@ -830,6 +864,17 @@ mod config_systems {
             let labor_category = 4;
             let resource_cost_id: u128 = world.uuid().into();
             let mut index = 0;
+
+            set!(
+                world,
+                LaborBuildingCost {
+                    config_id: BUILDING_CONFIG_ID,
+                    labor_category: labor_category,
+                    resource_cost_id: resource_cost_id,
+                    resource_cost_count: building_costs.len(),
+                }
+            );
+
             loop {
                 match building_costs.pop_front() {
                     Option::Some((
