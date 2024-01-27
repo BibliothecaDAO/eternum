@@ -3,7 +3,6 @@ import { useMemo } from "react";
 export interface NpcChatMessageProps {
   sender: string;
   message: string;
-  //   avatar: string;
 }
 
 const NpcChatMessage = (props: NpcChatMessageProps) => {
@@ -28,7 +27,7 @@ const NpcChatMessage = (props: NpcChatMessageProps) => {
         <div className="flex flex-col w-full">
           <div className="flex text-[10px] justify-between">
             <div className="flex">
-              <div className="text-white/30">{sender}</div>
+              <div className="text-white/50">{sender}</div>
             </div>
           </div>
           <div className="mt-1 text-xs text-white/70">{message}</div>

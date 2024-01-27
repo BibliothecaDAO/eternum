@@ -1,6 +1,11 @@
 import { SecondaryPopup } from "../../../../elements/SecondaryPopup";
 
-export const NpcPopup = ({ onClose, npc }) => {
+interface NpcPopupProps {
+  onClose: () => void;
+  npc: any;
+}
+
+export const NpcPopup = ({ onClose, npc }: NpcPopupProps) => {
     return (
       <SecondaryPopup name="NpcStats-popup">
         <SecondaryPopup.Head onClose={onClose}>
