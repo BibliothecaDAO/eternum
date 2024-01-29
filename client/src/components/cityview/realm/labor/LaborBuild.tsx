@@ -35,6 +35,7 @@ import Toggle from "../../../../elements/Toggle";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { useBuildings } from "../../../../hooks/helpers/useBuildings";
 import { BuildingLevel } from "../buildings/labor/BuildingLevel";
+import BlurryLoadingImage from "../../../../elements/BlurryLoadingImage";
 
 type LaborBuildPopupProps = {
   resourceId: number;
@@ -393,10 +394,16 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               />
             )}
             {!isFood && (
-              <img
+              // <img
+              //   src={`/images/resource_buildings/${resourceId}.png`}
+              //   className="object-cover w-full h-full rounded-[10px] h-[340px]"
+              // />
+              <BlurryLoadingImage
                 src={`/images/resource_buildings/${resourceId}.png`}
-                className="object-cover w-full h-full rounded-[10px] h-[340px]"
-              />
+                height="340px"
+                width="100%"
+                blurhash="LBHLO~W9x.F^Atoy%2Ri~TA0Myxt"
+              ></BlurryLoadingImage>
             )}
             <div className="absolute top-2 left-2 bg-black/90 rounded-[10px] p-3 pb-6 hover:bg-black">
               <LaborAuction />
