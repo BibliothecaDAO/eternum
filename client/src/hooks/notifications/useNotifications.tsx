@@ -21,6 +21,7 @@ import { useBanks } from "../helpers/useBanks";
 // import { useHyperstructure } from "../helpers/useHyperstructure";
 import { parseCombatEvent } from "../../utils/combat";
 import useUIStore from "../store/useUIStore";
+import { Subscription } from "rxjs";
 
 export const useNotifications = () => {
   const {
@@ -147,18 +148,28 @@ export const useNotifications = () => {
    */
   // New combat notitications from createCombatEvents (subscription)
   useEffect(() => {
+    const subscriptions: Subscription[] = [];
+
     const subscribeToDirectOffersEvents = async () => {
       for (const { realmEntityId } of realmEntityIds) {
         const observable = await createDirectOffersEvents(realmEntityId);
-        observable.subscribe((event) => {
+        const subscription = observable.subscribe((event) => {
           if (event) {
             const newNotification = createDirectOfferNotification(event);
             addUniqueNotifications([newNotification]);
           }
         });
+        subscriptions.push(subscription);
       }
     };
     subscribeToDirectOffersEvents();
+
+    // Cleanup function
+    return () => {
+      subscriptions.forEach((subscription) => {
+        subscription.unsubscribe();
+      });
+    };
   }, [realmEntityIds]);
 
   /**
@@ -166,38 +177,49 @@ export const useNotifications = () => {
    */
   // New combat notitications from createCombatEvents (subscription)
   useEffect(() => {
+    const subscriptions: Subscription[] = [];
+
     const subscribeToCombatEvents = async () => {
       for (const { realmEntityId } of realmEntityIds) {
         const observable = await createCombatEvents(realmEntityId);
-        observable.subscribe((event) => {
+        const subscription = observable.subscribe((event) => {
           if (event) {
             const newNotification = createCombatNotification(parseCombatEvent(event));
             addUniqueNotifications([newNotification]);
           }
         });
+        subscriptions.push(subscription);
       }
     };
+
     subscribeToCombatEvents();
+
+    // Cleanup function
+    return () => {
+      subscriptions.forEach((subscription) => {
+        subscription.unsubscribe();
+      });
+    };
   }, [realmEntityIds]);
 
   /**
    * Enemies arriving notifications
    */
   useEffect(() => {
+    const subscriptions: Subscription[] = [];
+
     const subscribeToCombatEvents = async () => {
       for (const { realmEntityId } of realmEntityIds) {
         let position = getComponentValue(components.Position, getEntityIdFromKeys([realmEntityId]));
         if (position) {
           const observable = await createTravelEvents(position.x, position.y);
-          observable.subscribe((event) => {
+          const subscription = observable.subscribe((event) => {
             if (event) {
               let entityId = parseInt(event.data[0]);
 
               let raidersList = getEntitiesCombatInfo([BigInt(entityId)]);
               let raiders = raidersList.length === 1 ? raidersList[0] : undefined;
 
-              // check if not arrived yet
-              // and is enemy
               if (
                 raiders?.arrivalTime &&
                 nextBlockTimestamp &&
@@ -207,7 +229,6 @@ export const useNotifications = () => {
               ) {
                 const newNotification = {
                   eventType: EventType.EnemyRaidersArriving,
-                  // to have a unique key for each notification
                   keys: [entityId.toString()],
                   data: {
                     raiders,
@@ -217,11 +238,28 @@ export const useNotifications = () => {
               }
             }
           });
+          subscriptions.push(subscription);
         }
       }
     };
+
     subscribeToCombatEvents();
-  }, [realmEntityIds]);
+
+    // Cleanup function
+    return () => {
+      subscriptions.forEach((subscription) => {
+        subscription.unsubscribe();
+      });
+    };
+  }, [
+    realmEntityIds,
+    components,
+    getEntityIdFromKeys,
+    createTravelEvents,
+    getComponentValue,
+    addUniqueNotifications,
+    nextBlockTimestamp,
+  ]);
 
   /**
    * Claimable orders notifications
