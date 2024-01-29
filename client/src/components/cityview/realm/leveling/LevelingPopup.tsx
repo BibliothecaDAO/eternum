@@ -10,6 +10,7 @@ import { divideByPrecision, getEntityIdFromKeys } from "../../../../utils/utils"
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
 import { Resource, getLevelingCost } from "@bibliothecadao/eternum";
+import BlurryLoadingImage from "../../../../elements/BlurryLoadingImage";
 
 type LevelingPopupProps = {
   onClose: () => void;
@@ -94,10 +95,13 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
         <div className="flex flex-col items-center p-2">
           <Headline>Level Realm to {newLevel}</Headline>
           <div className={"relative w-full mt-3"}>
-            <img
+            <BlurryLoadingImage
+              blurhash="LBHLO~W9x.F^Atoy%2Ri~TA0Myxt"
+              height="340px"
+              width="100%"
               src={`/images/levels/tier${newLevel > 3 ? 3 : newLevel}.png`}
-              className="object-cover w-full h-full rounded-[10px] h-[340px]"
-            />
+              imageStyleClass="object-cover w-full rounded-[10px] h-[340px]"
+            ></BlurryLoadingImage>
             <div className="flex flex-col p-2 absolute left-2 bottom-2 right-2 rounded-[10px] bg-black/90">
               <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
               <div className="grid grid-cols-8 gap-2">

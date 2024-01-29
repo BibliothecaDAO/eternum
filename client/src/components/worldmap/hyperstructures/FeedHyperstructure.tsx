@@ -25,9 +25,8 @@ import { PercentageSelection } from "../../../elements/PercentageSelection";
 import { useLevel } from "../../../hooks/helpers/useLevel";
 import { getTotalResourceWeight } from "../../cityview/realm/trade/utils";
 import { useCombat } from "../../../hooks/helpers/useCombat";
-import { RaidsPanel } from "../../cityview/realm/combat/raids/RaidsPanel";
-import { EnnemyRaidersPanel } from "../../cityview/realm/combat/defence/EnnemyRaidsPanel";
 import { HyperStructureRaidersPanel } from "./HyperStructureRaiders/HyperStructureRaidersPanel";
+import BlurryLoadingImage from "../../../elements/BlurryLoadingImage";
 
 type FeedHyperstructurePopupProps = {
   onClose: () => void;
@@ -447,7 +446,13 @@ const BuildHyperstructurePanel = ({
         <>
           <div className="flex flex-col space-y-2 text-xs">
             <div className="relative w-full">
-              <img src={`/images/buildings/hyperstructure.jpg`} className="object-cover w-full rounded-[10px]" />
+              <BlurryLoadingImage
+                blurhash="LBHLO~W9x.F^Atoy%2Ri~TA0Myxt"
+                height="340px"
+                width="100%"
+                src={`/images/buildings/hyperstructure.jpg`}
+                imageStyleClass="object-cover w-full h-[340px] rounded-[10px]"
+              ></BlurryLoadingImage>
               <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
                 <div className="mb-1 ml-1 italic text-light-pink text-xxs">Resources needed to complete:</div>
                 <div className="grid grid-cols-4 gap-1">

@@ -394,15 +394,12 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
               />
             )}
             {!isFood && (
-              // <img
-              //   src={`/images/resource_buildings/${resourceId}.png`}
-              //   className="object-cover w-full h-full rounded-[10px] h-[340px]"
-              // />
               <BlurryLoadingImage
                 src={`/images/resource_buildings/${resourceId}.png`}
                 height="340px"
                 width="100%"
                 blurhash="LBHLO~W9x.F^Atoy%2Ri~TA0Myxt"
+                imageStyleClass="object-cover rounded-[10px]"
               ></BlurryLoadingImage>
             )}
             <div className="absolute top-2 left-2 bg-black/90 rounded-[10px] p-3 pb-6 hover:bg-black">

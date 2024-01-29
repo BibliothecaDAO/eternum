@@ -9,6 +9,7 @@ import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useBuildings } from "../../../../../hooks/helpers/useBuildings";
 import { useLabor } from "../../../../../hooks/helpers/useLabor";
 import { getPosition, getZone } from "../../../../../utils/utils";
+import BlurryLoadingImage from "../../../../../elements/BlurryLoadingImage";
 
 type LaborBuildingProps = {
   guild: number;
@@ -63,10 +64,13 @@ export const LaborBuilding = ({
   return (
     <div className={clsx("flex flex-1 w-full", props.className)}>
       <div className="w-[160px] h-[230px] overflow-hidden">
-        <img
+        <BlurryLoadingImage
+          blurhash="LBHLO~W9x.F^Atoy%2Ri~TA0Myxt"
+          height="230px"
+          width="107px"
           src={`/images/buildings/${Guilds[guild - 1]?.toLowerCase()}-building.png`}
-          className="object-cover rounded-md w-[107px] h-[230px]"
-        />
+          imageStyleClass="object-cover rounded-md w-[107px] h-[230px]"
+        ></BlurryLoadingImage>
       </div>
       <div className="flex flex-col w-full min-w-[244px] h-full ml-2">
         <div className="flex flex-row mb-2 justify-between">

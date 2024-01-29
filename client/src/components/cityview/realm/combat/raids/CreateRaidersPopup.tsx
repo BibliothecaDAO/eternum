@@ -11,6 +11,7 @@ import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import { getBuildResourceCost } from "../../../../../utils/combat";
 import { Headline } from "../../../../../elements/Headline";
 import useUIStore from "../../../../../hooks/store/useUIStore";
+import BlurryLoadingImage from "../../../../../elements/BlurryLoadingImage";
 
 type CreateRaidersPopupProps = {
   onClose: () => void;
@@ -130,7 +131,13 @@ export const CreateRaidersPopup = ({ onClose }: CreateRaidersPopupProps) => {
             <div className="flex items-center">{totalHealth} HP</div>
           </div>
           <div className={"relative w-full mt-3"}>
-            <img src={`/images/units/troop.png`} className="object-cover w-full h-[340px] rounded-[10px]" />
+            <BlurryLoadingImage
+              blurhash="LBHLO~W9x.F^Atoy%2Ri~TA0Myxt"
+              height="340px"
+              width="100%"
+              src={`/images/units/troop.png`}
+              imageStyleClass="object-cover w-full h-[340px] rounded-[10px]"
+            ></BlurryLoadingImage>
             <div className="flex absolute flex-col p-2 left-2 bottom-2 rounded-[10px] bg-black/60">
               <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
               <div className="grid grid-cols-4 gap-2">
