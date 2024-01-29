@@ -161,7 +161,7 @@ export const ManageSoldiersPopupTabs = ({ headline, selectedRaider, onClose }: M
                 selectedIndex={selectedTab}
                 onChange={(index: any) => setLocation(`/realm/${realmEntityId}/${tabs[index].key}`)}
                 variant="default"
-                className="h-full"
+                className="h-full "
               >
                 <Tabs.List>
                   {tabs.map((tab, index) => (

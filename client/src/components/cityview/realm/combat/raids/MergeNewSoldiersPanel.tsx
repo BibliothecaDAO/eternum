@@ -85,7 +85,7 @@ export const MergeNewSoldiersPanel = ({ isDefence, selectedRaider, onClose }: Me
 
   return (
     <div>
-      <div className="flex flex-col items-center p-2">
+      <div className="flex flex-col items-center  h-[410px] p-2">
         <Headline>Military units</Headline>
         <div className="flex relative mt-1 justify-between text-xxs text-lightest w-full">
           <div className="flex items-center">
@@ -142,7 +142,7 @@ export const MergeNewSoldiersPanel = ({ isDefence, selectedRaider, onClose }: Me
           <BlurryLoadingImage
             blurhash="LBHLO~W9x.F^Atoy%2Ri~TA0Myxt"
             height="340px"
-            width="100%"
+            width="340px"
             src={`/images/units/troop.png`}
             imageStyleClass="object-cover w-full h-[340px] rounded-[10px]"
           ></BlurryLoadingImage>

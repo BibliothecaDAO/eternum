@@ -76,7 +76,7 @@ export const CreateRaidersPopup = ({ onClose }: CreateRaidersPopupProps) => {
           <div className="mr-0.5">Build Battalion:</div>
         </div>
       </SecondaryPopup.Head>
-      <SecondaryPopup.Body width={"376px"}>
+      <SecondaryPopup.Body width={"360px"}>
         <div className="flex flex-col items-center p-2">
           <Headline>Military units</Headline>
           <div className="flex relative mt-1 justify-between text-xxs text-lightest w-full">
@@ -134,7 +134,7 @@ export const CreateRaidersPopup = ({ onClose }: CreateRaidersPopupProps) => {
             <BlurryLoadingImage
               blurhash="LBHLO~W9x.F^Atoy%2Ri~TA0Myxt"
               height="340px"
-              width="100%"
+              width="340px"
               src={`/images/units/troop.png`}
               imageStyleClass="object-cover w-full h-[340px] rounded-[10px]"
             ></BlurryLoadingImage>

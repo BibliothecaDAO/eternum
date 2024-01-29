@@ -319,8 +319,8 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
           <div className="mr-0.5">Build Labor:</div>
         </div>
       </SecondaryPopup.Head>
-      <SecondaryPopup.Body withWrapper width={"376px"}>
-        <div className="flex flex-col items-center p-2">
+      <SecondaryPopup.Body withWrapper width={"376px"} height={"480px"}>
+        <div className="flex flex-col items-center h-[400px] p-2">
           <Headline>Produce More {resourceInfo?.trait}</Headline>
           <div className="relative flex justify-between w-full mt-1 text-xs text-lightest">
             <div className="flex items-center">
@@ -440,7 +440,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
             </div>
           </div>
         </div>
-        <div className="flex justify-between m-2 text-xxs">
+        <div className="flex justify-between h-[40px] m-2 text-xxs">
           {!isFood && (
             <div className="flex items-center">
               {/* <div className="italic text-light-pink">Units</div> */}
