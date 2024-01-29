@@ -96,7 +96,7 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
           <div className={"relative w-full mt-3"}>
             <img
               src={`/images/levels/tier${newLevel > 3 ? 3 : newLevel}.png`}
-              className="object-cover w-full h-full rounded-[10px]"
+              className="object-cover w-full h-full rounded-[10px] h-[340px]"
             />
             <div className="flex flex-col p-2 absolute left-2 bottom-2 right-2 rounded-[10px] bg-black/90">
               <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>

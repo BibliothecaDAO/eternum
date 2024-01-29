@@ -62,10 +62,12 @@ export const LaborBuilding = ({
 
   return (
     <div className={clsx("flex flex-1 w-full", props.className)}>
-      <img
-        src={`/images/buildings/${Guilds[guild - 1]?.toLowerCase()}-building.png`}
-        className="object-cover rounded-md w-[107px] h-[230px]"
-      />
+      <div className="w-[160px] h-[230px] overflow-hidden">
+        <img
+          src={`/images/buildings/${Guilds[guild - 1]?.toLowerCase()}-building.png`}
+          className="object-cover rounded-md w-[107px] h-[230px]"
+        />
+      </div>
       <div className="flex flex-col w-full min-w-[244px] h-full ml-2">
         <div className="flex flex-row mb-2 justify-between">
           <div className="flex flex-row">

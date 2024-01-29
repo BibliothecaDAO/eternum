@@ -318,7 +318,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
           <div className="mr-0.5">Build Labor:</div>
         </div>
       </SecondaryPopup.Head>
-      <SecondaryPopup.Body withWrapper width={"376px"} height={"476px"}>
+      <SecondaryPopup.Body withWrapper width={"376px"}>
         <div className="flex flex-col items-center p-2">
           <Headline>Produce More {resourceInfo?.trait}</Headline>
           <div className="relative flex justify-between w-full mt-1 text-xs text-lightest">
@@ -384,18 +384,18 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
           )}
           <div className={clsx("relative w-full", isFood ? "mt-2" : "mt-2")}>
             {resourceId === 254 && (
-              <img src={`/images/buildings/farm.png`} className="object-cover w-full h-full rounded-[10px]" />
+              <img src={`/images/buildings/farm.png`} className="object-cover w-full h-full rounded-[10px] h-[340px]" />
             )}
             {resourceId === 255 && (
               <img
                 src={`/images/buildings/fishing_village.png`}
-                className="object-cover w-full h-full rounded-[10px]"
+                className="object-cover w-full h-full rounded-[10px] h-[340px]"
               />
             )}
             {!isFood && (
               <img
                 src={`/images/resource_buildings/${resourceId}.png`}
-                className="object-cover w-full h-full rounded-[10px]"
+                className="object-cover w-full h-full rounded-[10px] h-[340px]"
               />
             )}
             <div className="absolute top-2 left-2 bg-black/90 rounded-[10px] p-3 pb-6 hover:bg-black">

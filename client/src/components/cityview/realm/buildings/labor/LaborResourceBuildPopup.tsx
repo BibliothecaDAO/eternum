@@ -289,7 +289,7 @@ export const LaborResourceBuildPopup = ({ guild, resourceId, onClose }: LaborRes
           <div className={clsx("relative w-full", isFood ? "mt-2" : "mt-2")}>
             <img
               src={`/images/units/${Guilds[guild - 1]?.toLowerCase()}.png`}
-              className="object-cover w-full h-full rounded-[10px]"
+              className="object-cover w-full h-full rounded-[10px] h-[340px]"
             />
             <div className="absolute top-2 left-2 bg-black/90 rounded-[10px] p-3 pb-6 hover:bg-black">
               <LaborAuction />
