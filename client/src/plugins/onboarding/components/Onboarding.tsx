@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Button from "../../../elements/Button";
 import useUIStore from "../../../hooks/store/useUIStore";
 import SettleRealmComponent, { MAX_REALMS } from "../../../components/cityview/realm/SettleRealmComponent";
@@ -27,6 +27,7 @@ import { useRealm } from "../../../hooks/helpers/useRealm";
 export const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState(1);
 
+  const skipOrderSelection = () => setCurrentStep(currentStep + 2);
   const nextStep = () => setCurrentStep(currentStep + 1);
   const prevStep = () => setCurrentStep(currentStep - 1);
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
@@ -87,6 +88,23 @@ export const Onboarding = () => {
     return fetchedYourRealms;
   }, [realmEntityIds, realm]);
 
+  const canSettle = realmEntityIds.length < MAX_REALMS;
+
+  const handleNamingNext = useCallback(() => {
+    if (canSettle) {
+      nextStep();
+    } else {
+      skipOrderSelection();
+    }
+  }, [canSettle, nextStep, skipOrderSelection]);
+
+  // if on step 3 and can now settle, skip to next
+  useEffect(() => {
+    if (!canSettle && currentStep === 3) {
+      nextStep();
+    }
+  }, [canSettle, currentStep]);
+
   useEffect(() => {
     setYourRealms(realms);
   }, [realms]);
@@ -105,7 +123,7 @@ export const Onboarding = () => {
           </div>
           <div className="max-w-[1000px] pb-6 px-6 text-center text-xl mx-auto">
             {currentStep === 1 && <StepOne onNext={nextStep} />}
-            {currentStep === 2 && <Naming onNext={nextStep} />}
+            {currentStep === 2 && <Naming onNext={handleNamingNext} />}
             {currentStep === 3 && <StepTwo onPrev={prevStep} onNext={nextStep} />}
             {currentStep === 4 && <StepThree onPrev={prevStep} />}
           </div>
@@ -369,17 +387,7 @@ const Naming = ({ onNext }: { onNext: () => void }) => {
     </div>
   );
 };
-const StepTwo = ({ onPrev, onNext }: { onPrev: () => void; onNext: () => void }) => {
-  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
-
-  const canSettle = realmEntityIds.length < MAX_REALMS;
-
-  useEffect(() => {
-    if (!canSettle) {
-      onNext();
-    }
-  }, [canSettle]);
-
+const StepTwo = ({ onPrev }: { onPrev: () => void; onNext: () => void }) => {
   return (
     <div>
       <SettleRealmComponent />
