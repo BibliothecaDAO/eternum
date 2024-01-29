@@ -115,10 +115,12 @@ SecondaryPopup.Head = ({
 
 SecondaryPopup.Body = ({
   width = null,
+  height = null,
   withWrapper = false,
   children,
 }: {
   width?: string | null;
+  height?: string | null;
   withWrapper?: boolean;
   children: React.ReactNode;
 }) => {
@@ -151,10 +153,11 @@ SecondaryPopup.Body = ({
       ref={ref}
       className={clsx(
         width ? "" : "min-w-[438px]",
+        height ? "" : "min-h-[438px]",
         withWrapper ? "p-3" : "",
         `relative z-10 bg-gray border flex flex-col border-white rounded-tr-[4px] rounded-b-[4px] overflow-hidden`,
       )}
-      style={{ width: width ? width : "", maxHeight: maxHeight ? `${maxHeight}px` : "" }}
+      style={{ width: width ? width : "", height: height ? height : "", maxHeight: maxHeight ? `${maxHeight}px` : "" }}
     >
       {withWrapper ? (
         <div className="relative z-10 border flex flex-col border-gray-gold rounded-md overflow-auto">{children}</div>

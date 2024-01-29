@@ -318,7 +318,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
           <div className="mr-0.5">Build Labor:</div>
         </div>
       </SecondaryPopup.Head>
-      <SecondaryPopup.Body withWrapper width={"376px"}>
+      <SecondaryPopup.Body withWrapper width={"376px"} height={"476px"}>
         <div className="flex flex-col items-center p-2">
           <Headline>Produce More {resourceInfo?.trait}</Headline>
           <div className="relative flex justify-between w-full mt-1 text-xs text-lightest">
