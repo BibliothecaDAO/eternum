@@ -17,6 +17,7 @@ import { useGetRealm } from "../../hooks/helpers/useRealm.js";
 import { getUIPositionFromContractPosition } from "../../utils/utils.js";
 import Bank from "../../components/worldmap/banks/models/Bank2.js";
 import banks from "../../data/banks.json";
+import { Map } from "../../components/worldmap/HexGrid.js";
 
 export const WorldMapScene = () => {
   const worldRef = useRef();
@@ -53,8 +54,9 @@ export const WorldMapScene = () => {
           <meshBasicMaterial color="red" />
         </mesh>
       </TransformControls> */}
-      <WorldMap ref={worldRef} />
+      {/* <WorldMap ref={worldRef} /> */}
       {/* <HyperstructureStarted /> */}
+      <Map />
       {hyperstructures.map((hyperstructure, i) => {
         if (hyperstructure) {
           if (hyperstructure.completed) {
