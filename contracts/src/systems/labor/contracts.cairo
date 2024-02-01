@@ -265,7 +265,7 @@ mod labor_systems {
                     Labor {
                         entity_id: realm_id,
                         resource_type: resource_type,
-                        balance: ts + remainder,
+                        balance: ts.into() + remainder,
                         last_harvest: ts,
                         multiplier: labor.multiplier,
                     }

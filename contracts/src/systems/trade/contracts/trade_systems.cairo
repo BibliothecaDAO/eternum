@@ -5,7 +5,7 @@ mod trade_systems {
     use eternum::models::resources::Resource;
     use eternum::models::resources::{ResourceChest, DetachedResource};
     use eternum::models::owner::Owner;
-    use eternum::models::position::{Position, PositionTrait, Coord, CoordTrait};
+    use eternum::models::position::{Position, PositionTrait, Coord, TravelTrait};
     use eternum::models::realm::Realm;
     use eternum::models::weight::Weight;
     use eternum::models::trade::{Trade, Status, TradeStatus};
@@ -252,7 +252,7 @@ mod trade_systems {
                 set!(world, (
                     ArrivalTime {
                         entity_id: trade.maker_transport_id,
-                        arrives_at: ts + maker_transport_round_trip_time
+                        arrives_at: ts.into() + maker_transport_round_trip_time
                     },
                     Position {
                         entity_id: trade.maker_transport_id,
@@ -293,7 +293,7 @@ mod trade_systems {
                 set!(world, (
                     ArrivalTime {
                         entity_id: taker_transport_id,
-                        arrives_at: ts + taker_transport_round_trip_time
+                        arrives_at: ts.into() + taker_transport_round_trip_time
                     },
                     Position {
                         entity_id: taker_transport_id,

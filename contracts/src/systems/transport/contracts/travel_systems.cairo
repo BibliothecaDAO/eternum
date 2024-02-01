@@ -6,7 +6,7 @@ mod travel_systems {
     use eternum::models::realm::Realm;
     use eternum::models::order::{Orders, OrdersTrait};
     use eternum::models::hyperstructure::HyperStructure;
-    use eternum::models::position::{Coord, CoordTrait, Position};
+    use eternum::models::position::{Coord, Position, TravelTrait};
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::level::{Level, LevelTrait};
     use eternum::models::road::RoadImpl;
@@ -23,9 +23,9 @@ mod travel_systems {
     #[derive(Drop, starknet::Event)]
     struct Travel {
         #[key]
-        destination_coord_x: u32,
+        destination_coord_x: u128,
         #[key]
-        destination_coord_y: u32,
+        destination_coord_y: u128,
         #[key]
         realm_entity_id: u128,
         entity_id: u128,
@@ -71,7 +71,7 @@ mod travel_systems {
             
             let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
             let ts = starknet::get_block_timestamp();
-            assert(travelling_entity_arrival_time.arrives_at <= ts, 'entity is in transit');
+            assert(travelling_entity_arrival_time.arrives_at <= ts.into(), 'entity is in transit');
 
 
             let travelling_entity_position = get!(world, travelling_entity_id, Position);
@@ -150,7 +150,7 @@ mod travel_systems {
             set!(world,(
                 ArrivalTime {
                     entity_id: transport_id,
-                    arrives_at: starknet::get_block_timestamp() + travel_time
+                    arrives_at: starknet::get_block_timestamp().into() + travel_time
                 },
                 Position {
                     entity_id: transport_id,

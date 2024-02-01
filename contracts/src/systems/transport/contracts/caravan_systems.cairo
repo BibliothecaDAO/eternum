@@ -9,7 +9,7 @@ mod caravan_systems {
     use eternum::models::weight::Weight;
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::owner::{Owner, EntityOwner};
-    use eternum::models::position::{Position, PositionTrait, Coord, CoordTrait};
+    use eternum::models::position::{Position, PositionTrait, Coord, TravelTrait};
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::capacity::{Capacity, CapacityTrait};
     use eternum::models::road::RoadImpl;
@@ -203,7 +203,7 @@ mod caravan_systems {
 
             // ensure that it is not in transit
             let caravan_arrival_time = get!(world, caravan_id, ArrivalTime);
-            assert(caravan_arrival_time.arrives_at <= starknet::get_block_timestamp(),
+            assert(caravan_arrival_time.arrives_at <= starknet::get_block_timestamp().into(),
                          'caravan in transit'
             );
 
@@ -310,7 +310,7 @@ mod caravan_systems {
         fn check_arrival_time(world: IWorldDispatcher, transport_id: ID) {
             let transport_arrival_time = get!(world, transport_id, ArrivalTime);
             assert(
-                transport_arrival_time.arrives_at <= starknet::get_block_timestamp(), 
+                transport_arrival_time.arrives_at <= starknet::get_block_timestamp().into(), 
                         'transport has not arrived'
             );
         }
@@ -373,7 +373,7 @@ mod caravan_systems {
             assert(transport_movable.blocked == false, 'transport is blocked');
 
             let transport_arrival_time = get!(world, transport_id, ArrivalTime);
-            assert(transport_arrival_time.arrives_at <= starknet::get_block_timestamp(),
+            assert(transport_arrival_time.arrives_at <= starknet::get_block_timestamp().into(),
                          'transport in transit'
             );
             
