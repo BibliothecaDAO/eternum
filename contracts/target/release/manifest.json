@@ -949,7 +949,7 @@
     {
       "name": "eternum::systems::bank::contracts::bank_systems",
       "address": "0x193936374e972c355f2246c66c62860c986dea275ce8fbd03d7d7a1d853a572",
-      "class_hash": "0x5fd13c0e3555fbfe7ebee6658e5b6ecf4e355276f2a7edaaaa4873180b3fe2e",
+      "class_hash": "0x7cc1c9701619e5f526fb57f1dc1eaf89bf3d938447f876dc81d1b3c0cdebf5a",
       "abi": [
         {
           "type": "impl",
@@ -1263,7 +1263,7 @@
     {
       "name": "eternum::systems::combat::contracts::combat_systems",
       "address": "0x1b0a83a27a357e0574393ab06c0c774db7312a0993538cc0186d054f75ee84e",
-      "class_hash": "0x173ca5c49724c074eb62ba686acf36ebd2c849769f6787476e59efd3545166f",
+      "class_hash": "0x1547eadbcc33cecd0aba39c3e744f5badae8c883c89a937d439528160d70146",
       "abi": [
         {
           "type": "impl",
@@ -1616,7 +1616,7 @@
     {
       "name": "eternum::systems::config::contracts::config_systems",
       "address": "0x7fff06bbcbe4f42f22c86b14e7a80604495c8b2034d14cbb10d32402c933ca8",
-      "class_hash": "0x5c183bd884d1d42f7640fedd78d26b2bd8822403566cc4688a3da7d7a3eefe8",
+      "class_hash": "0x75b65f739c60e4586dad95f443a502ee2d5b1468f45c047bd4a1025e7372194",
       "abi": [
         {
           "type": "impl",
@@ -2159,11 +2159,11 @@
           "members": [
             {
               "name": "x",
-              "type": "core::integer::u32"
+              "type": "core::integer::u128"
             },
             {
               "name": "y",
-              "type": "core::integer::u32"
+              "type": "core::integer::u128"
             }
           ]
         },
@@ -2604,7 +2604,7 @@
     {
       "name": "eternum::systems::labor::contracts::labor_systems",
       "address": "0x38258ae4007920aacda4f00c6960837ff9b235e8af95f648347f36550e6d1ee",
-      "class_hash": "0x2f8d320843d1571d66a9e60c7c76939467e36c97533a3fd31799425c70fb9df",
+      "class_hash": "0x1673b3b731dec9c3a5524568f2ac365072c592bb84ec65bc3984ee19f166b7e",
       "abi": [
         {
           "type": "impl",
@@ -2799,7 +2799,7 @@
     {
       "name": "eternum::systems::leveling::contracts::leveling_systems",
       "address": "0x29ae99df03a05e0be62f21c42ed50e18c3c5eff9372030791e6f6ed8377b5b3",
-      "class_hash": "0x1f93fff7e3cbd6724a123d42df808838cbc98de8a9def49a11200fe72acffae",
+      "class_hash": "0x6440d6bb0df3aeaddc56489bfe064429468c74157bf13fd150a92711890432f",
       "abi": [
         {
           "type": "impl",
@@ -3077,7 +3077,7 @@
     {
       "name": "eternum::systems::realm::contracts::realm_systems",
       "address": "0x25df90992b8eebca69f08035ceda822dee73028e828ceb8421895814eacd3d",
-      "class_hash": "0x6827e21f990df7b7e8dd68986d2b2db1e72ed9870296c51cf1f3337947b7bf6",
+      "class_hash": "0x1022e72f15b1553cc30f815cb5416aaaed381d42ff83005b7562479d83f79cc",
       "abi": [
         {
           "type": "impl",
@@ -3126,11 +3126,11 @@
             },
             {
               "name": "x",
-              "type": "core::integer::u32"
+              "type": "core::integer::u128"
             },
             {
               "name": "y",
-              "type": "core::integer::u32"
+              "type": "core::integer::u128"
             }
           ]
         },
@@ -3274,7 +3274,7 @@
     {
       "name": "eternum::systems::resources::contracts::resource_systems",
       "address": "0x406b259886beb36b2474c7a85ad8298b948eeca68b3a185ee7ba870dbc025c8",
-      "class_hash": "0x1a5a5866aa113304c5fcf476d352fb442e356bc443d37e6a32e9d3206f6e3d5",
+      "class_hash": "0x433791ce67dd040e48387b1b2b501d89dcf7ed760325087610fd68b3328d6b",
       "abi": [
         {
           "type": "impl",
@@ -3703,7 +3703,7 @@
     {
       "name": "eternum::systems::trade::contracts::trade_systems::trade_systems",
       "address": "0x63cbe849cf6325e727a8d6f82f25fad7dc7eb9433767f5c1b8c59189e36c9b6",
-      "class_hash": "0x3752564568fbe474b70a20d094b263889fa7edf1dd8d0f0c5bbfca1dfd30d2a",
+      "class_hash": "0x2131d9a082dc53450ecafd6c6d20d2bdc2d846978f8cdc37ce4b9aac8664813",
       "abi": [
         {
           "type": "impl",
@@ -3953,7 +3953,7 @@
     {
       "name": "eternum::systems::transport::contracts::caravan_systems::caravan_systems",
       "address": "0x3f8d39786c3f984482b25a770fc85fd2a4f45725e74fdd385c5c38e9f5681c6",
-      "class_hash": "0x36b1420dee488031d45b4d66d581dd9a5af0baab1c91a5f505c370b82c827dc",
+      "class_hash": "0x6281af56d38145c85ae5f7dff0ce7f2c07d4bb3ed6a0b8674e8cbf9dcab2cef",
       "abi": [
         {
           "type": "impl",
@@ -4126,7 +4126,7 @@
     {
       "name": "eternum::systems::transport::contracts::road_systems::road_systems",
       "address": "0x5e434426794d353a5c2f5de42859a963d9b696db575cec07ca605d19bd83a99",
-      "class_hash": "0x7f9077bfe7632ce15a3d6b63b0d16beb37bc58520504a47bf40fe54453d1662",
+      "class_hash": "0x5e198fd7101a43e80a5a4d9257934fee0975ebfe19725b584c2a2f62984f5cd",
       "abi": [
         {
           "type": "impl",
@@ -4171,11 +4171,11 @@
           "members": [
             {
               "name": "x",
-              "type": "core::integer::u32"
+              "type": "core::integer::u128"
             },
             {
               "name": "y",
-              "type": "core::integer::u32"
+              "type": "core::integer::u128"
             }
           ]
         },
@@ -4291,7 +4291,7 @@
     {
       "name": "eternum::systems::transport::contracts::transport_unit_systems::transport_unit_systems",
       "address": "0x4146e12ea99aeb071b29776bd591bbc74174817dad41521650e9164e226b5eb",
-      "class_hash": "0x534d64b234e0055a861ee302f07b7b4ba2cc49ebf5d8d8bb2cdd991164332dc",
+      "class_hash": "0x720bf8056daebc38ab979584bdd60cb9dcb4cbfa67bf09a0fc74b98723c7298",
       "abi": [
         {
           "type": "impl",
@@ -4464,7 +4464,7 @@
     {
       "name": "eternum::systems::transport::contracts::travel_systems::travel_systems",
       "address": "0x740ea95e67b0b7533ee4891524c5c7edfd7fefc09297c0304b21515cc1223ec",
-      "class_hash": "0x18eafa49db1582adedd4ba7b09016b74d06c44b5cd011aacb63414c63d6af08",
+      "class_hash": "0x101e88fc5d6f41243f362405f6771b59067fdd7537b4ed51a3cf5c9ddb86aba",
       "abi": [
         {
           "type": "impl",
@@ -4509,11 +4509,11 @@
           "members": [
             {
               "name": "x",
-              "type": "core::integer::u32"
+              "type": "core::integer::u128"
             },
             {
               "name": "y",
-              "type": "core::integer::u32"
+              "type": "core::integer::u128"
             }
           ]
         },
@@ -4608,12 +4608,12 @@
           "members": [
             {
               "name": "destination_coord_x",
-              "type": "core::integer::u32",
+              "type": "core::integer::u128",
               "kind": "key"
             },
             {
               "name": "destination_coord_y",
-              "type": "core::integer::u32",
+              "type": "core::integer::u128",
               "kind": "key"
             },
             {
@@ -11576,16 +11576,16 @@
         },
         {
           "name": "intermediate_coord_x",
-          "type": "u32",
+          "type": "u128",
           "key": false
         },
         {
           "name": "intermediate_coord_y",
-          "type": "u32",
+          "type": "u128",
           "key": false
         }
       ],
-      "class_hash": "0x46e532862114506ceeea8c3b18bd84a22456b220595260662672a3d0680fe98",
+      "class_hash": "0x3c28da1485fdea7603d90b22df8cd4d1ca8b327ffb35d0fc4f9bffc3ad51905",
       "abi": [
         {
           "type": "function",
@@ -12466,16 +12466,16 @@
         },
         {
           "name": "x",
-          "type": "u32",
+          "type": "u128",
           "key": false
         },
         {
           "name": "y",
-          "type": "u32",
+          "type": "u128",
           "key": false
         }
       ],
-      "class_hash": "0x7dee1518a765fa6624aa522a09cdde2ffe3df8f5bb78d9e12a1edbdb1b2d776",
+      "class_hash": "0x5a4593da850aa98a36a037229374f0e1ee2755702d5d9003a03f7bb2fe05e7b",
       "abi": [
         {
           "type": "function",
@@ -14316,22 +14316,22 @@
       "members": [
         {
           "name": "start_coord_x",
-          "type": "u32",
+          "type": "u128",
           "key": true
         },
         {
           "name": "start_coord_y",
-          "type": "u32",
+          "type": "u128",
           "key": true
         },
         {
           "name": "end_coord_x",
-          "type": "u32",
+          "type": "u128",
           "key": true
         },
         {
           "name": "end_coord_y",
-          "type": "u32",
+          "type": "u128",
           "key": true
         },
         {
@@ -14340,7 +14340,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x5ad3ef41648ce9327561b2600d76aa12a036ecc794f8c50fea13ddbba880d2f",
+      "class_hash": "0x64466d6234bdb03059bc5bda7c0625e924d4c0de1af042cf21b015a5b9d055a",
       "abi": [
         {
           "type": "function",
