@@ -33,15 +33,15 @@ const CameraControls = ({ position, target }: Props) => {
   const [isMapView] = useRoute("/map");
 
   const maxDistance = useMemo(() => {
-    return isMapView ? 500 : 1800;
+    return isMapView ? 400 : 1800;
   }, [isMapView]);
 
   const minDistance = useMemo(() => {
-    return isMapView ? 25 : 1000;
+    return isMapView ? 40 : 1000;
   }, [isMapView]);
 
-  var minPan = new THREE.Vector3(-175, -Infinity, -150);
-  var maxPan = new THREE.Vector3(300, Infinity, 100);
+  var minPan = isMapView ? new THREE.Vector3(0, -Infinity, -1300) : new THREE.Vector3(-175, -Infinity, -150);
+  var maxPan = isMapView ? new THREE.Vector3(1500, Infinity, -80) : new THREE.Vector3(300, Infinity, 100);
   var _v = new THREE.Vector3();
 
   useControls({
@@ -94,6 +94,7 @@ const CameraControls = ({ position, target }: Props) => {
       ref={ref}
       args={[camera, domElement]}
       panSpeed={2}
+      enableRotate={!isMapView} // Disable rotation
       maxDistance={maxDistance}
       minDistance={minDistance}
       maxPolarAngle={Math.PI / 3}

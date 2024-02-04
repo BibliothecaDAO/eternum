@@ -27,7 +27,7 @@ export const RealmLaborComponent = ({}: RealmLaborComponentProps) => {
       moveCameraToFoodView();
     } else {
       _tab = params?.tab as any;
-      moveCameraToLaborView();
+      // moveCameraToLaborView();
     }
     const tabIndex = tabs.findIndex((tab) => tab.key === _tab);
     if (tabIndex >= 0) {

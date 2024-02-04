@@ -29,7 +29,7 @@ const RealmManagementComponent = () => {
 
   useEffect(() => {
     if (selectedTab == 0) {
-      moveCameraToLaborView();
+      // moveCameraToLaborView();
     } else {
       moveCameraToMarketView();
     }

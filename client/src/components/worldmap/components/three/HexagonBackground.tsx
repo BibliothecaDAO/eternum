@@ -11,7 +11,6 @@ import { Has, HasValue } from "@dojoengine/recs";
 // import { SquadOnHex } from "./SquadOnHex";
 import { snoise } from "@dojoengine/utils";
 // import { useGameState } from "@/hooks/useGameState";
-extend({ OrbitControls });
 
 export const MAP_AMPLITUDE = 10;
 
@@ -193,7 +192,7 @@ export const HexagonBackground = ({ position, radius, col, row }: any) => {
       >
         <meshStandardMaterial color={backgroundColor} />
       </mesh>
-      {/* <lineSegments
+      <lineSegments
         geometry={new THREE.EdgesGeometry(hexagonGeometry)}
         material={
           new THREE.LineBasicMaterial({
@@ -202,35 +201,7 @@ export const HexagonBackground = ({ position, radius, col, row }: any) => {
           })
         }
         position={linePosition}
-      /> */}
+      />
     </>
   );
-};
-
-export const getBiome = (col: number, row: number) => {
-  const seed = Math.floor(((snoise([col / MAP_AMPLITUDE, 0, row / MAP_AMPLITUDE]) + 1) / 2) * 100);
-  // Determine background color based on different conditions
-  let backgroundColor = "white";
-  let depth = 1;
-  if (seed > 60) {
-    backgroundColor = "blue";
-    depth = 0.4;
-  } else if (seed > 40) {
-    backgroundColor = "#4F9153";
-    depth = 0.7;
-  } else if (seed > 30) {
-    backgroundColor = "#002D04";
-    depth = 1.4;
-  } else if (seed > 20) {
-    backgroundColor = "#2c4c3b";
-    depth = 1.6;
-  } else if (seed > 15) {
-    backgroundColor = "gray";
-    depth = 2;
-  } else {
-    backgroundColor = "black";
-    depth = 3;
-  }
-
-  return { backgroundColor, depth };
 };

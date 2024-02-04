@@ -3,7 +3,7 @@ import { WorldMapScene } from "./WorldMapScene";
 import { RealmCityViewScene } from "./RealmCityViewScene";
 import useUIStore from "../../hooks/store/useUIStore";
 import { Perf } from "r3f-perf";
-import { useLocation, Switch, Route } from "wouter";
+import { useLocation, Switch, Route, useRoute } from "wouter";
 import { a } from "@react-spring/three";
 import { Sky, AdaptiveDpr, useHelper, Clouds, Cloud, CameraShake } from "@react-three/drei";
 import { Suspense, useMemo, useRef } from "react";
@@ -17,8 +17,10 @@ import * as THREE from "three";
 import FPSLimiter from "../../utils/FPSLimiter";
 
 export const Camera = () => {
-  const cameraPosition = useUIStore((state) => state.cameraPosition);
-  const cameraTarget = useUIStore((state) => state.cameraTarget);
+  const [isMapView] = useRoute("/map");
+
+  const cameraPosition = !isMapView ? useUIStore((state) => state.cameraPosition) : { x: 0, y: 50, z: -500 };
+  const cameraTarget = !isMapView ? useUIStore((state) => state.cameraTarget) : { x: 100, y: 30, z: -500 };
 
   const dLightRef = useRef<any>();
   if (import.meta.env.DEV) {
@@ -27,7 +29,7 @@ export const Camera = () => {
 
   const { lightPosition, bias } = useControls({
     lightPosition: {
-      value: { x: 0, y: 100, z: 200 },
+      value: { x: 0, y: 1000, z: 0 }, // Adjust y value to position the light above
       step: 0.01,
     },
     bias: {
@@ -165,7 +167,7 @@ export const MainScene = () => {
     >
       {import.meta.env.DEV && <Perf position="bottom-left" />}
       <FPSLimiter>
-        <Sky azimuth={0.1} inclination={0.6} distance={3000} />
+        <Sky azimuth={1} inclination={0.6} distance={3000} />
         <ambientLight />
         <Camera />
         <CameraShake {...shakeConfig} />
@@ -193,6 +195,7 @@ export const MainScene = () => {
             seed={7331}
             speed={0.06}
             segments={100}
+            castShadow={true}
             opacity={cloudsConfig.opacity}
             bounds={cloudsConfig.bounds as any}
             volume={cloudsConfig.volume}
@@ -201,6 +204,7 @@ export const MainScene = () => {
           <Cloud
             concentrate="random"
             seed={1337}
+            castShadow={true}
             speed={0.03}
             segments={100}
             opacity={cloudsConfig.opacity}
