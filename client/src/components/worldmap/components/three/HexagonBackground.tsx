@@ -32,12 +32,13 @@ export const createHexagonGeometry = (radius: number, depth: number) => {
 
   // Extrude settings
   const extrudeSettings = {
-    steps: 2,
+    steps: 1,
     depth,
-    bevelEnabled: true,
-    bevelThickness: 0.1,
-    bevelSize: 0.1,
-    bevelSegments: 1,
+    bevelEnabled: false,
+    // bevelEnabled: true,
+    // bevelThickness: 0.1,
+    // bevelSize: 0.1,
+    // bevelSegments: 1,
   };
 
   // Create a geometry by extruding the shape
