@@ -102,7 +102,7 @@ const determineEnvironment = (elevation, moisture) => {
     }
   }
 
-  return { backgroundColor: biome.color, depth: biome.depth };
+  return { backgroundColor: biome.color, depth: biome.depth, name: biome.name };
 };
 
 export {

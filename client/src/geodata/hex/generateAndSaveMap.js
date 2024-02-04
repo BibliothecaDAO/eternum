@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 
 import { NPARTS, COLS, START_X, START_Y, ROWS } from "./params.js";
 import { getBiome } from "./getBiome.js";
+import * as BIOMES from "./biomes.js";
 
 /**
  * Generate the map and save it in a JSON file
@@ -71,52 +72,52 @@ const generateAndSaveMap = () => {
       }
 
       // calculate the number of pixels for all biomes
-      if (biome.backgroundColor === "#000080") {
+      if (biome.backgroundColor === BIOMES.DEEP_OCEAN.color) {
         ocean_pixels++;
       }
-      if (biome.backgroundColor === "#0000FF") {
+      if (biome.backgroundColor === BIOMES.OCEAN.color) {
         sea_pixels++;
       }
-      if (biome.backgroundColor === "#F5DEB3") {
+      if (biome.backgroundColor === BIOMES.BEACH.color) {
         beach_pixels++;
       }
-      if (biome.backgroundColor === "#555555") {
+      if (biome.backgroundColor === BIOMES.SCORCHED.color) {
         scorched_pixels++;
       }
-      if (biome.backgroundColor === "#BCB6B6") {
+      if (biome.backgroundColor === BIOMES.BARE.color) {
         bare_pixels++;
       }
-      if (biome.backgroundColor === "#ACE5EE") {
+      if (biome.backgroundColor === BIOMES.TUNDRA.color) {
         tundra_pixels++;
       }
-      if (biome.backgroundColor === "#FFFFFF") {
+      if (biome.backgroundColor === BIOMES.SNOW.color) {
         snow_pixels++;
       }
-      if (biome.backgroundColor === "#C2B280") {
+      if (biome.backgroundColor === BIOMES.TEMPERATE_DESERT.color) {
         temperate_desert_pixels++;
       }
-      if (biome.backgroundColor === "#708238") {
+      if (biome.backgroundColor === BIOMES.SHRUBLAND.color) {
         shrubland_pixels++;
       }
-      if (biome.backgroundColor === "#004000") {
+      if (biome.backgroundColor === BIOMES.TAIGA.color) {
         taiga_pixels++;
       }
-      if (biome.backgroundColor === "#7CFC00") {
+      if (biome.backgroundColor === BIOMES.GRASSLAND.color) {
         grassland_pixels++;
       }
-      if (biome.backgroundColor === "#228B22") {
+      if (biome.backgroundColor === BIOMES.TEMPERATE_DECIDUOUS_FOREST.color) {
         temperate_deciduous_forest_pixels++;
       }
-      if (biome.backgroundColor === "#013220") {
+      if (biome.backgroundColor === BIOMES.TEMPERATE_RAIN_FOREST.color) {
         temperate_rain_forest_pixels++;
       }
-      if (biome.backgroundColor === "#F0E68C") {
+      if (biome.backgroundColor === BIOMES.SUBTROPICAL_DESERT.color) {
         subtropical_desert_pixels++;
       }
-      if (biome.backgroundColor === "#32CD32") {
+      if (biome.backgroundColor === BIOMES.TROPICAL_SEASONAL_FOREST.color) {
         tropical_seasonal_forest_pixels++;
       }
-      if (biome.backgroundColor === "#006400") {
+      if (biome.backgroundColor === BIOMES.TROPICAL_RAIN_FOREST.color) {
         tropical_rain_forest_pixels++;
       }
 
@@ -125,8 +126,11 @@ const generateAndSaveMap = () => {
         idx: idx,
         col: col,
         row: row,
-        position: { x: x, y: y },
+        x,
+        y,
         color: biome.backgroundColor, // Extract the color for this index
+        depth: biome.depth,
+        biome: biome.name,
       });
 
       idx++;
