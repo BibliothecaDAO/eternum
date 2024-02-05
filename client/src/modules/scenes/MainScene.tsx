@@ -17,10 +17,12 @@ import * as THREE from "three";
 import FPSLimiter from "../../utils/FPSLimiter";
 
 export const Camera = () => {
-  const [isMapView] = useRoute("/map");
+  // const [isMapView] = useRoute("/map");
 
-  const cameraPosition = !isMapView ? useUIStore((state) => state.cameraPosition) : { x: 0, y: 50, z: -500 };
-  const cameraTarget = !isMapView ? useUIStore((state) => state.cameraTarget) : { x: 100, y: 30, z: -500 };
+  const cameraPosition = useUIStore((state) => state.cameraPosition);
+  // const camera1 = { x: 0, y: 50, z: -500 };
+  // const camera2 = { x: 100, y: 30, z: -500 }
+  const cameraTarget = useUIStore((state) => state.cameraTarget);
 
   const dLightRef = useRef<any>();
   if (import.meta.env.DEV) {
