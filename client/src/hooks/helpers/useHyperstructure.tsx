@@ -1,9 +1,14 @@
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { Position, UIPosition } from "@bibliothecadao/eternum";
-import { calculateDistance, getContractPositionFromRealPosition, getEntityIdFromKeys } from "../../utils/utils";
+import {
+  calculateDistance,
+  getContractPositionFromRealPosition,
+  getEntityIdFromKeys,
+  getUIPositionFromColRow,
+} from "../../utils/utils";
 import { HyperStructureInterface } from "@bibliothecadao/eternum";
-import hyperStructures from "../../data/hyperstructures.json";
+import hyperstructuresHexPositions from "../../geodata/hex/hyperstructuresHexPositions.json";
 import { useCombat } from "./useCombat";
 import { resources } from "@bibliothecadao/eternum";
 import useRealmStore from "../store/useRealmStore";
@@ -21,13 +26,8 @@ export const useHyperstructure = () => {
 
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
-  const getHyperstructure = (uiPosition: UIPosition): HyperStructureInterface | undefined => {
-    const position = getContractPositionFromRealPosition({ x: uiPosition.x, y: uiPosition.z });
-    const entityIds = runQuery([
-      Has(HyperStructure),
-      Has(TownWatch),
-      HasValue(Position, { x: position.x, y: position.y }),
-    ]);
+  const getHyperstructure = (x: number, y: number): HyperStructureInterface | undefined => {
+    const entityIds = runQuery([Has(HyperStructure), Has(TownWatch), HasValue(Position, { x, y })]);
 
     if (entityIds.size > 0) {
       let id = Array.from(entityIds)[0];
@@ -87,7 +87,10 @@ export const useHyperstructure = () => {
         let realmPosition = realmEntityIds[0]?.realmEntityId
           ? getComponentValue(Position, getEntityIdFromKeys([realmEntityIds[0].realmEntityId]))
           : undefined;
-        let distance = realmPosition ? calculateDistance(realmPosition, { x: position.x, y: position.y }) : 0;
+        // todo: find true distance between 2 hex
+        let distance = realmPosition ? calculateDistance(realmPosition, { x, y }) : 0;
+
+        const uiPosition = getUIPositionFromColRow(x, y);
 
         return {
           hyperstructureId,
@@ -95,8 +98,8 @@ export const useHyperstructure = () => {
           name,
           progress,
           hyperstructureResources,
-          position: { x: position.x, y: position.y },
-          uiPosition,
+          position: { x, y },
+          uiPosition: { x: uiPosition.x, y: 0.528415243525413, z: uiPosition.y },
           completed: hyperstructure.completed,
           defence,
           attack,
@@ -127,19 +130,22 @@ export const useHyperstructure = () => {
 
   const getConqueredHyperstructures = (orderId: number): HyperStructureInterface[] => {
     // @note: only 11 hyperstructures now
-    return hyperStructures
-      .slice(0, 11)
-      .map((uiPosition) => {
-        return getHyperstructure(uiPosition);
+    return Object.values(hyperstructuresHexPositions)
+      .map((values) => {
+        const col = values[0].col;
+        const row = values[0].row;
+        return getHyperstructure(col, row);
       })
       .filter((hyperstructure) => hyperstructure?.completed && hyperstructure.orderId === orderId)
       .filter(Boolean) as HyperStructureInterface[];
   };
 
   const getHyperstructures = (): HyperStructureInterface[] => {
-    return hyperStructures
-      .map((uiPosition) => {
-        return getHyperstructure(uiPosition);
+    return Object.values(hyperstructuresHexPositions)
+      .map((values) => {
+        const col = values[0].col;
+        const row = values[0].row;
+        return getHyperstructure(col, row);
       })
       .filter(Boolean) as HyperStructureInterface[];
   };

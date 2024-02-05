@@ -73,6 +73,7 @@ export const WorldMapScene = () => {
             return (
               <HyperstructureFinished
                 key={i}
+                scale={100}
                 position={[hyperstructure.uiPosition.x, hyperstructure.uiPosition.y, hyperstructure.uiPosition.z]}
               />
             );
@@ -80,12 +81,21 @@ export const WorldMapScene = () => {
             return (
               <HyperstructureHalf
                 key={i}
+                scale={100}
                 hyperstructure={hyperstructure}
                 position={[hyperstructure.uiPosition.x, hyperstructure.uiPosition.y, hyperstructure.uiPosition.z]}
               />
             );
           } else {
-            return <HyperstructureStarted />;
+            return (
+              <HyperstructureStarted
+                key={i}
+                hyperstructure={hyperstructure}
+                scale={5}
+                // position={[hyperstructure.uiPosition.x, hyperstructure.uiPosition.y, hyperstructure.uiPosition.z]}
+                position={[0, 0, 0]}
+              />
+            );
           }
         }
         return null;

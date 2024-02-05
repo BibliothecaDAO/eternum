@@ -6,6 +6,7 @@ import { Entity, setComponent, Component, Schema, Components } from "@dojoengine
 import { Position } from "@bibliothecadao/eternum";
 import realmCoords from "../geodata/coords.json";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import realmHexPositions from "../geodata/hex/realmHexPositions.json";
 
 export { getEntityIdFromKeys };
 
@@ -375,4 +376,32 @@ export const calculateDistance = (start: Position, destination: Position): numbe
   const distance = (x + y) ** 0.5 / 10000;
 
   return distance;
+};
+
+export const getUIPositionFromColRow = (col: number, row: number): Position => {
+  const hexRadius = 3;
+  const hexHeight = hexRadius * 2;
+  const hexWidth = Math.sqrt(3) * hexRadius;
+  const vertDist = hexHeight * 0.75;
+  const horizDist = hexWidth;
+
+  const colNorm = col - 2147483647;
+  const rowNorm = row - 2147483647;
+  const x = colNorm * horizDist + ((rowNorm % 2) * horizDist) / 2;
+  const y = rowNorm * vertDist;
+  return {
+    x,
+    y,
+  };
+};
+
+export interface HexPositions {
+  [key: string]: { col: number; row: number }[];
+}
+
+export const getRealmUIPosition = (realm_id: bigint): Position => {
+  const realmPositions = realmHexPositions as HexPositions;
+  const colrow = realmPositions[Number(realm_id).toString()];
+
+  return getUIPositionFromColRow(colrow[0].col, colrow[0].row);
 };

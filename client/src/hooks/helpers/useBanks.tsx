@@ -1,13 +1,19 @@
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { Position, Resource } from "@bibliothecadao/eternum";
-import { getContractPositionFromRealPosition, getEntityIdFromKeys } from "../../utils/utils";
+import {
+  HexPositions,
+  getContractPositionFromRealPosition,
+  getEntityIdFromKeys,
+  getUIPositionFromColRow,
+} from "../../utils/utils";
 import banks from "../../data/banks.json";
 import { computeCoefficient, getLordsAmountFromBankAuction } from "../../components/worldmap/banks/utils";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { useComponentValue } from "@dojoengine/react";
 import useRealmStore from "../store/useRealmStore";
 import { AuctionInterface, BankInterface, BankStaticInterface } from "@bibliothecadao/eternum";
+import bankHexPositions from "../../geodata/hex/bankHexPositions.json";
 
 export const targetPrices = {
   254: 10,
@@ -73,10 +79,12 @@ export const useBanks = () => {
   };
 
   const getBanks = (): BankInterface[] => {
+    const bankPositions = bankHexPositions as HexPositions;
     return banks
-      .map((bank) => {
-        const { name, x, y, z } = bank;
-        const position = getContractPositionFromRealPosition({ x, y: z });
+      .map((bank, i) => {
+        const { name } = bank;
+        const colrows = bankPositions[(i + 1).toString()];
+        const position = { x: colrows[0].col, y: colrows[0].row };
         const bankId = getBankEntityId(position);
         const wheatAuction =
           bankId !== undefined
@@ -112,13 +120,15 @@ export const useBanks = () => {
           }
         }
 
+        const uiPosition = getUIPositionFromColRow(colrows[0].col, colrows[0].row);
+
         if (bankId) {
           return {
             name,
             bankId,
             wheatPrice,
             fishPrice,
-            uiPosition: { x, y, z },
+            uiPosition: { x: uiPosition.x, y: 0.528415243525413, z: uiPosition.y },
             position,
             wheatAuction,
             fishAuction,
@@ -159,10 +169,13 @@ export const useBanks = () => {
   };
 
   const getBanksStatic = (): BankStaticInterface[] => {
+    const bankPositions = bankHexPositions as HexPositions;
     return banks
       .map((bank, i) => {
-        const { name, x, y, z } = bank;
-        const position = getContractPositionFromRealPosition({ x, y: z });
+        const { name } = bank;
+        const colrows = bankPositions[(i + 1).toString()];
+        const position = { x: colrows[0].col, y: colrows[0].row };
+        const uiPosition = getUIPositionFromColRow(colrows[0].col, colrows[0].row);
 
         let distance = 0;
         if (realmEntityIds.length > 0) {
@@ -190,7 +203,7 @@ export const useBanks = () => {
 
         return {
           name,
-          uiPosition: { x, y, z },
+          uiPosition: { x: uiPosition.x, y: 0.528415243525413, z: uiPosition.y },
           position,
           distance,
         };

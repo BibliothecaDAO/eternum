@@ -1,9 +1,11 @@
 import { create } from "zustand";
 import { createPopupsSlice, PopupsStore } from "./_popups";
 import realmsJson from "../../geodata/realms.json";
+import realmHexPositions from "../../geodata/hex/realmHexPositions.json";
 import { Vector3 } from "three";
 import { createDataStoreSlice, DataStore } from "./_dataStore";
 import React from "react";
+import { getRealmUIPosition } from "../../utils/utils";
 export type Background = "map" | "realmView" | "combat" | "bastion";
 
 interface UIStore {
@@ -84,9 +86,8 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   mouseCoords: { x: 0, y: 0 },
   setMouseCoords: (coords) => set({ mouseCoords: coords }),
   moveCameraToRealm: (realmId) => {
-    const x = realmsJson.features[realmId - 1].xy[0] * -1;
-    const y = realmsJson.features[realmId - 1].xy[1] * -1;
-    const targetPos = new Vector3(x, 0.7, y);
+    const { x, y } = getRealmUIPosition(BigInt(realmId));
+    const targetPos = new Vector3(x, 50, y);
     const cameraPos = new Vector3(x + 25 * (Math.random() < 0.5 ? 1 : -1), 25, y + 25 * (Math.random() < 0.5 ? 1 : -1));
     set({ cameraPosition: cameraPos });
     set({ cameraTarget: targetPos });
@@ -100,7 +101,7 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
     set({ cameraPosition: cameraPos });
     set({ cameraTarget: target });
   },
-  showRealmsFlags: false,
+  showRealmsFlags: true,
   setShowRealmsFlags: (show) => set({ showRealmsFlags: show }),
   moveCameraToWorldMapView: () => {
     const pos = {

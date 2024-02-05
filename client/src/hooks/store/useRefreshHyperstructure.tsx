@@ -1,13 +1,12 @@
-import { UIPosition } from "@bibliothecadao/eternum";
 import { useHyperstructure } from "../helpers/useHyperstructure";
 import useUIStore from "./useUIStore";
-import hyperStructures from "../../data/hyperstructures.json";
 import { useCallback, useMemo, useState } from "react";
 import useRealmStore from "./useRealmStore";
 import { useDojo } from "../../DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys, getUIPositionFromContractPosition } from "../../utils/utils";
 import { getRealm } from "../../utils/realms";
+import hyperstructuresHex from "../../geodata/hex/hyperstructuresHexPositions.json";
 
 export const useRefreshHyperstructure = () => {
   const {
@@ -33,9 +32,7 @@ export const useRefreshHyperstructure = () => {
   const refreshHyperstructure = useCallback(
     (hyperstructureId: bigint) => {
       const position = getComponentValue(Position, getEntityIdFromKeys([hyperstructureId]));
-      const uiPosition = position ? getUIPositionFromContractPosition({ x: position.x, y: position.y }) : undefined;
-      if (!uiPosition) return;
-      const info = getHyperstructure({ x: uiPosition.x, z: uiPosition.y, y: 0 });
+      const info = position ? getHyperstructure(position.x, position.y) : undefined;
       let updated = false;
       const updatedHyperstructures = hyperstructures.map((h) => {
         if (h?.hyperstructureId === info?.hyperstructureId) {
@@ -59,9 +56,9 @@ export const useRefreshHyperstructure = () => {
   const refreshAllHyperstructures = () => {
     setIsLoading(true);
     setTimeout(() => {
-      const newHyperstructures = hyperStructures
-        .slice(0, 11)
-        .map((hyperstructure) => getHyperstructure({ x: hyperstructure.x, y: hyperstructure.y, z: hyperstructure.z }));
+      const newHyperstructures = Object.values(hyperstructuresHex).map((hyperstructure) =>
+        getHyperstructure(hyperstructure[0].col, hyperstructure[0].row),
+      );
       const conqueredHyperstructureNumber = newHyperstructures.filter(
         (struct) => struct?.completed && struct.orderId === playerOrder,
       ).length;

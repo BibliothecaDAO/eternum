@@ -11,6 +11,7 @@ import { useRealm } from "../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { getPosition } from "../../../utils/utils";
 import { order_statments } from "../../../data/orders";
+import realmsHexPositions from "../../../geodata/hex/realmHexPositions.json";
 
 export const MAX_REALMS = 5;
 
@@ -45,8 +46,6 @@ export const SettleRealmComponent = () => {
 
     for (let i = 0; i < MAX_REALMS; i++) {
       // if no realm id latest realm id is 0
-      // const realm_id = await getLatestRealmId();
-
       if (i > 0) {
         new_realm_id = BigInt(getRealmIdForOrderAfter(chosenOrder || selectedOrder, new_realm_id));
       }
@@ -54,7 +53,8 @@ export const SettleRealmComponent = () => {
       let realm = getRealm(new_realm_id);
       if (!realm) return;
 
-      let position = getPosition(new_realm_id);
+      let realmPositions = realmsHexPositions as { [key: number]: { col: number; row: number }[] };
+      let position = realmPositions[Number(new_realm_id)][0];
 
       calldata.push({
         realm_id: Number(realm.realmId),
@@ -66,7 +66,7 @@ export const SettleRealmComponent = () => {
         rivers: realm.rivers,
         harbors: realm.harbors,
         cities: realm.cities,
-        position,
+        position: { x: position.row, y: position.col },
       });
     }
 

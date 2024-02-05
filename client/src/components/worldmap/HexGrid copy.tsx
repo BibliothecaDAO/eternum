@@ -69,8 +69,6 @@ const HexagonGrid = ({ rows, cols, hexRadius }: any) => {
     hexGroups.push(groupData);
   }
 
-  console.log({ hexGroups });
-
   const hexMeshes = hexGroups.map((group, index) => {
     const mesh = new InstancedMesh(hexagonGeometry, hexMaterial, group.length);
     mesh.name = `hexMesh_${index}`;
@@ -96,7 +94,6 @@ const HexagonGrid = ({ rows, cols, hexRadius }: any) => {
     });
 
     const colorAttribute = new InstancedBufferAttribute(new Float32Array(colors), 3);
-    console.log({ colorAttribute });
     mesh.geometry.setAttribute("color", colorAttribute);
 
     return mesh;

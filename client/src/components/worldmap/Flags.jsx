@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useGLTF, Html } from "@react-three/drei";
 import realmsJson from "../../geodata/realms.json";
+import realmHexPositions from "../../geodata/hex/realmHexPositions.json"
 import flagsHeights from "../../geodata/flags_heights.json";
 import realmsOrders from "../../geodata/realms_raw.json";
 import * as THREE from "three";
@@ -11,6 +12,7 @@ import gsap from "gsap";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useControls } from "leva";
 import { orderNameDict } from "@bibliothecadao/eternum";
+import { getUIPositionFromColRow } from "../../utils/utils";
 
 const count = realmsJson.features.length;
 
@@ -85,7 +87,8 @@ export function Flags(props) {
   useFrame(({ camera }) => {
     const pos = camera.position;
     if (pos) {
-      const needShowFlags = pos.y <= 50;
+      // const needShowFlags = pos.y <= 50;
+      const needShowFlags = true;
       if (needShowFlags !== showRealmsFlags) {
         setShowRealmsFlags(needShowFlags);
       }
@@ -97,7 +100,7 @@ export function Flags(props) {
 
     const scales = {
       startScale: showRealmsFlags ? 0.01 : 1,
-      endScale: showRealmsFlags ? 1 : 0.01,
+      endScale: showRealmsFlags ? 10 : 0.01,
     };
     const tl = gsap.timeline();
     tl.to(scales, {
@@ -160,10 +163,12 @@ export function Flags(props) {
 
     ordersRealms.forEach((orderRealms, index) => {
       orderRealms.forEach((realm, i) => {
-        const x = realmsJson.features[Number(realm.realmId) - 1].xy[0];
-        const y = realmsJson.features[Number(realm.realmId) - 1].xy[1];
-        const z = -0.92 - flagsHeights[Number(realm.realmId) - 1];
-        _position.set(x, y, z);
+        const position = realmHexPositions[Number(realm.realmId)][0];
+        const UIPosition = getUIPositionFromColRow(position.col, position.row);
+        const z = -0 - flagsHeights[Number(realm.realmId) - 1];
+        console.log({z})
+        console.log({UIPosition})
+        _position.set(-UIPosition.y, UIPosition.x, -20);
         dummy.position.copy(_position);
         dummy.rotateZ(
           //random

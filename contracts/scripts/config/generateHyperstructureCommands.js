@@ -1,4 +1,4 @@
-let structures = require("../../data/hyperstructures/hyperstructures.json");
+let hyperstructuresHexPositions = require("../../../client/src/geodata/hex/hyperstructuresHexPositions.json");
 const { RESOURCE_WEIGHTS } = require("./constants.js");
 
 let commands = "";
@@ -26,12 +26,9 @@ for (let i = 0; i < RESOURCE_WEIGHTS.length; i += 2) {
   weightArray.push(combinedElement);
 }
 
-structures.slice(0, 11).forEach((structure, i) => {
-  const { x, z: y } = structure;
-
-  // Formatting the coords
-  const coordX = parseInt(x * 10000 + 1800000);
-  const coordY = parseInt(y * 10000 + 1800000);
+Object.values(hyperstructuresHexPositions).forEach((structure, i) => {
+  // const { x, z: y } = structure;
+  const { col: coordX, row: coordY } = structure[0];
 
   let resourceAmounts = `4,${weightArray[i][0][0]},${weightArray[i][0][1]},${weightArray[i][1][0]},${weightArray[i][1][1]},254,${WHEAT_AMOUNT},255,${FISH_AMOUNT}`;
 
