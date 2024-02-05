@@ -33,7 +33,7 @@ const CameraControls = ({ position, target }: Props) => {
   const [isMapView] = useRoute("/map");
 
   const maxDistance = useMemo(() => {
-    return isMapView ? 400 : 1800;
+    return isMapView ? 1000 : 1800;
   }, [isMapView]);
 
   const minDistance = useMemo(() => {
@@ -94,7 +94,8 @@ const CameraControls = ({ position, target }: Props) => {
       ref={ref}
       args={[camera, domElement]}
       panSpeed={2}
-      enableRotate={!isMapView} // Disable rotation
+      // enableRotate={!isMapView} // Disable rotation
+      enableRotate={true} // Disable rotation
       maxDistance={maxDistance}
       minDistance={minDistance}
       maxPolarAngle={Math.PI / 3}

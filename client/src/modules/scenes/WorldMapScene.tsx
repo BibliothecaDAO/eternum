@@ -10,7 +10,7 @@ import useUIStore from "../../hooks/store/useUIStore.js";
 // @ts-ignore
 import Arcs from "../../components/worldmap/Arcs.jsx";
 import { useResources } from "../../hooks/helpers/useResources.js";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useCaravan } from "../../hooks/helpers/useCaravans.js";
 import useRealmStore from "../../hooks/store/useRealmStore.js";
 import { useGetRealm } from "../../hooks/helpers/useRealm.js";
@@ -18,12 +18,22 @@ import { getUIPositionFromContractPosition } from "../../utils/utils.js";
 import Bank from "../../components/worldmap/banks/models/Bank2.js";
 import banks from "../../data/banks.json";
 import { Map } from "../../components/worldmap/HexGrid.js";
+import { useRoute } from "wouter";
 
 export const WorldMapScene = () => {
   const worldRef = useRef();
 
   const hyperstructures = useUIStore((state) => state.hyperstructures);
   const { getCaravansWithResourcesChest } = useResources();
+  const [isMapView] = useRoute("/map");
+
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+
+  useEffect(() => {
+    setTimeout(() => {
+      setIsLoadingScreenEnabled(false);
+    }, 300);
+  }, []);
 
   const { getCaravanInfo } = useCaravan();
   const caravanIds = getCaravansWithResourcesChest();
@@ -56,7 +66,7 @@ export const WorldMapScene = () => {
       </TransformControls> */}
       {/* <WorldMap ref={worldRef} /> */}
       {/* <HyperstructureStarted /> */}
-      <Map />
+      {isMapView && <Map />}
       {hyperstructures.map((hyperstructure, i) => {
         if (hyperstructure) {
           if (hyperstructure.completed) {
