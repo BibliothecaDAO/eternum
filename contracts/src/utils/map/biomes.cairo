@@ -1,117 +1,101 @@
-mod levels {
-    use cubit::f128::types::fixed::{FixedTrait, Fixed,ONE_u128};
-    use eternum::utils::map::constants::fixed_constants::{_0_25, _0_5, _0_53, _0_6,_0_72, _0_8};
+#[derive(Copy, Drop, Serde, Introspect)]
+enum Biome {
+    DeepOcean,
+    Ocean,
+    Beach,
+    Scorched,
+    Bare,
+    Tundra,
+    Snow,
+    TemperateDesert,
+    Shrubland,
+    Taiga,
+    Grassland,
+    TemperateDeciduousForest,
+    TemperateRainForest,
+    SubtropicalDesert,
+    TropicalSeasonalForest,
+    TropicalRainForest,
+}
 
-    fn DEEP_OCEAN_LEVEL() -> Fixed {
-        _0_25()
-    }
-
-    fn OCEAN_LEVEL() -> Fixed {
-        _0_5()
-    }
-
-    fn SAND_LEVEL() -> Fixed {
-        _0_53()
-    }
-
-    fn FOREST_LEVEL() -> Fixed {
-        _0_6()
-    }
-
-    fn DESERT_LEVEL() -> Fixed {
-        _0_72()
-    }
-
-    fn MOUNTAIN_LEVEL() -> Fixed {
-        _0_8()
+impl BiomeIntoFelt252 of Into<Biome, felt252> {
+    fn into(self: Biome) -> felt252 {
+        match self {
+            Biome::DeepOcean => 'Deep Ocean',
+            Biome::Ocean => 'Ocean',
+            Biome::Beach => 'Beach',
+            Biome::Scorched => 'Scorched',
+            Biome::Bare => 'Bare',
+            Biome::Tundra => 'Tundra',
+            Biome::Snow => 'Snow',
+            Biome::TemperateDesert => 'Temperate Desert',
+            Biome::Shrubland => 'Shrubland',
+            Biome::Taiga => 'Taiga',
+            Biome::Grassland => 'Grassland',
+            Biome::TemperateDeciduousForest => 'Temperate Deciduous Forest',
+            Biome::TemperateRainForest => 'Temperate Rain Forest',
+            Biome::SubtropicalDesert => 'Subtropical Desert',
+            Biome::TropicalSeasonalForest => 'Tropical Seasonal Forest',
+            Biome::TropicalRainForest => 'Tropical Rain Forest',
+        }
     }
 }
 
-
-mod biomes {
-    use cubit::f128::types::fixed::{FixedTrait, Fixed,ONE_u128};
-    use eternum::utils::map::constants::fixed_constants::{
-        _0_1, _0_2, _0_3, _0_4, _0_5, _0_6, _0_7, _0_8, _1, _2, _100
-    };
-    
-    fn DEEP_OCEAN() -> (Fixed, felt252) {
-        (_0_1(), 'Deep Ocean')
-    } 
-
-    fn OCEAN() -> (Fixed, felt252) {
-        (_0_1(), 'Ocean')
-    }
-
-    fn BEACH() -> (Fixed, felt252) {
-        (_0_2(), 'Beach')
-    }
-
-    fn SCORCHED() -> (Fixed, felt252) {
-        (_0_8(), 'Scorched')
-    }
-
-    fn BARE() -> (Fixed, felt252) {
-        (_0_7(), 'Bare')
-    }
-
-    fn TUNDRA() -> (Fixed, felt252) {
-        (_0_6(), 'Tundra')
-    }
-
-    fn SNOW() -> (Fixed, felt252) {
-       (_0_5(), 'Snow')
-    }
-
-    fn TEMPERATE_DESERT() -> (Fixed, felt252) {
-        (_0_4(), 'Temperate Desert')
-    }
-
-    fn SHRUBLAND() -> (Fixed, felt252) {
-        (_0_5(), 'Shrubland')
-    }
-
-    fn TAIGA() -> (Fixed, felt252) {
-        (_0_6(), 'Taiga')
-    }
-
-    fn GRASSLAND() -> (Fixed, felt252) {
-        (_0_4(), 'Grassland')
-    }
-
-    fn TEMPERATE_DECIDUOUS_FOREST() -> (Fixed, felt252) {
-        (_0_5(), 'Temperate Deciduous Forest')
-    }
-
-    fn TEMPERATE_RAIN_FOREST() -> (Fixed, felt252) {
-        (_0_7(), 'Temperate Rain Forest')
-    }
-
-    fn SUBTROPICAL_DESERT() -> (Fixed, felt252) {
-        (_0_3(), 'Subtropical Desert')
-    }
-
-    fn TROPICAL_SEASONAL_FOREST() -> (Fixed, felt252) {
-       ( _0_5(), 'Tropical Seasonal Forest')
-    }
-
-    fn TROPICAL_RAIN_FOREST() -> (Fixed, felt252) {
-        (_0_6(), 'Tropical Rain Forest')
+use eternum::utils::map::constants::fixed_constants as fc;
+fn bdepth(biome: Biome) -> Fixed {
+    match biome {
+        Biome::DeepOcean => fc::_0_1(),
+        Biome::Ocean => fc::_0_1(),
+        Biome::Beach => fc::_0_2(),
+        Biome::Scorched => fc::_0_8(),
+        Biome::Bare => fc::_0_7(),
+        Biome::Tundra => fc::_0_6(),
+        Biome::Snow => fc::_0_5(),
+        Biome::TemperateDesert => fc::_0_4(),
+        Biome::Shrubland => fc::_0_5(),
+        Biome::Taiga => fc::_0_6(),
+        Biome::Grassland => fc::_0_4(),
+        Biome::TemperateDeciduousForest => fc::_0_5(),
+        Biome::TemperateRainForest => fc::_0_7(),
+        Biome::SubtropicalDesert => fc::_0_3(),
+        Biome::TropicalSeasonalForest => fc::_0_5(),
+        Biome::TropicalRainForest => fc::_0_6(),
     }
 
 }
 
+mod LEVEL {
+    use cubit::f128::types::fixed::{FixedTrait, Fixed,ONE_u128};
+    use eternum::utils::map::constants::fixed_constants as fc;
 
+    fn DEEP_OCEAN() -> Fixed {
+        fc::_0_25()
+    }
+
+    fn OCEAN() -> Fixed {
+        fc::_0_5()
+    }
+
+    fn SAND() -> Fixed {
+        fc::_0_53()
+    }
+
+    fn FOREST() -> Fixed {
+        fc::_0_6()
+    }
+
+    fn DESERT() -> Fixed {
+        fc::_0_72()
+    }
+
+    fn MOUNTAIN() -> Fixed {
+        fc::_0_8()
+    }
+}
 
 use cubit::f128::procgen::simplex3;
 use cubit::f128::types::fixed::{FixedTrait, Fixed};
 use cubit::f128::types::vec3::{Vec3, Vec3Trait};
-use eternum::utils::map::constants::fixed_constants::{
-    _0,_0_16,_0_33, _0_66, _0_83, _1, _2, _0_4, _0_5, _100, _0_25, _0_1
-};
-use eternum::utils::map::biomes::biomes as BIOMES;
-use eternum::utils::map::biomes::levels::{
-    DEEP_OCEAN_LEVEL, OCEAN_LEVEL, SAND_LEVEL, FOREST_LEVEL, DESERT_LEVEL, MOUNTAIN_LEVEL
-};
 
 
 
@@ -120,16 +104,19 @@ fn MAP_AMPLITUDE() -> Fixed {
 }
 
 
+fn MOISTURE_OCTAVE() -> Fixed {
+    fc::_2()
+}
 
 fn ELEVATION_OCTAVES() -> Array<Fixed> {
-    array![_1(), _0_25(), _0_1()]
+    array![fc::_1(), fc::_0_25(), fc::_0_1()]
 }
 
 
 
 fn ELEVATION_OCTAVES_SUM() -> Fixed {
     let mut octaves = ELEVATION_OCTAVES();
-    let mut sum = _0();
+    let mut sum = fc::_0();
     loop {
         match octaves.pop_front() {
             Option::Some(octave) => {
@@ -143,7 +130,7 @@ fn ELEVATION_OCTAVES_SUM() -> Fixed {
 
 
 
-fn get_biome(col: u128, row: u128) -> (Fixed, felt252) {
+fn get_biome(col: u128, row: u128) -> Biome {
     let col_fixed = FixedTrait::new_unscaled(col, false);
     let row_fixed = FixedTrait::new_unscaled(row, false);
     let elevation = _elevation(col_fixed, row_fixed);
@@ -155,7 +142,7 @@ fn get_biome(col: u128, row: u128) -> (Fixed, felt252) {
 
 fn _elevation(col: Fixed, row: Fixed) -> Fixed {
     
-    let mut elevation = _0();
+    let mut elevation = fc::_0();
     let mut octaves = ELEVATION_OCTAVES();
     let MAP_AMPLITUDE = MAP_AMPLITUDE();
     loop {
@@ -163,11 +150,9 @@ fn _elevation(col: Fixed, row: Fixed) -> Fixed {
             Option::Some(octave) => {
                 let x = (col / octave) / MAP_AMPLITUDE;
                 let z = (row / octave) / MAP_AMPLITUDE;
-                let vec = Vec3Trait::new(x, _0(), z);
-                let noise = simplex3::noise(vec);
-                let noise = noise + _1();
-                let noise = noise * _100();
-                let noise = noise / _2();
+                let vec = Vec3Trait::new(x, fc::_0(), z);
+                let noise 
+                    = ((simplex3::noise(vec) + fc::_1()) * fc::_100()) / fc::_2();
                 elevation += octave * noise.floor();
             },
             Option::None => {break;},
@@ -175,76 +160,73 @@ fn _elevation(col: Fixed, row: Fixed) -> Fixed {
     };
 
     elevation = elevation / ELEVATION_OCTAVES_SUM();
-    elevation = elevation / _100();
+    elevation = elevation / fc::_100();
     elevation
 }
 
 
 fn _moisture(col: Fixed, row: Fixed) -> Fixed {
-    let MOISTURE_OCTAVE = _2();
+    let MOISTURE_OCTAVE = MOISTURE_OCTAVE();
     let MAP_AMPLITUDE = MAP_AMPLITUDE();
     let moisture_x = (MOISTURE_OCTAVE * col) / MAP_AMPLITUDE; 
     let moisture_z = (MOISTURE_OCTAVE * row) / MAP_AMPLITUDE;
-    let vec = Vec3Trait::new(moisture_x, _0(), moisture_z);
-    let noise = simplex3::noise(vec);
-    let noise = noise + _1();
-    let noise = noise * _100();
-    let noise = noise / _2();
-    let moisture = noise.floor() / _100();
+    let vec = Vec3Trait::new(moisture_x, fc::_0(), moisture_z);
+    let noise = ((simplex3::noise(vec) + fc::_1()) * fc::_100()) / fc::_2();
+    let moisture = noise.floor() / fc::_100();
     moisture
 }
 
 
 
-fn _environment(elevation: Fixed, moisture: Fixed) -> (Fixed, felt252) {
+fn _environment(elevation: Fixed, moisture: Fixed) -> Biome {
 
-    let (depth, name) = if elevation < DEEP_OCEAN_LEVEL(){
-            BIOMES::DEEP_OCEAN()
-        } else if elevation < OCEAN_LEVEL() {
-            BIOMES::OCEAN()
-        } else if elevation < SAND_LEVEL() {
-            BIOMES::BEACH()
-        } else if elevation > MOUNTAIN_LEVEL() {
-            if moisture < _0_1() {
-                BIOMES::SCORCHED()
-            } else if moisture < _0_4() {
-                BIOMES::BARE()
-            } else if moisture < _0_5() {
-                BIOMES::TUNDRA()
+    let biome = if elevation < LEVEL::DEEP_OCEAN(){
+            Biome::DeepOcean
+        } else if elevation < LEVEL::OCEAN() {
+            Biome::Ocean
+        } else if elevation < LEVEL::SAND() {
+            Biome::Beach
+        } else if elevation > LEVEL::MOUNTAIN() {
+            if moisture < fc::_0_1() {
+                Biome::Scorched
+            } else if moisture < fc::_0_4() {
+                Biome::Bare
+            } else if moisture < fc::_0_5() {
+                Biome::Tundra
             } else {
-                BIOMES::SNOW()
+                Biome::Snow
             }
-        } else if elevation > DESERT_LEVEL() {
-            if moisture < _0_33() {
-                BIOMES::TEMPERATE_DESERT()
-            } else if moisture < _0_66() {
-                BIOMES::SHRUBLAND()
+        } else if elevation > LEVEL::DESERT() {
+            if moisture < fc::_0_33() {
+                Biome::TemperateDesert
+            } else if moisture < fc::_0_66() {
+                Biome::Shrubland
             } else {
-                BIOMES::TAIGA()
+                Biome::Taiga
             }
-        } else if elevation > FOREST_LEVEL() {
-            if moisture < _0_16() {
-                BIOMES::TEMPERATE_DESERT()
-            } else if moisture < _0_5() {
-                BIOMES::GRASSLAND()
-            } else if moisture < _0_83() {
-                BIOMES::TEMPERATE_DECIDUOUS_FOREST()
+        } else if elevation > LEVEL::FOREST() {
+            if moisture < fc::_0_16() {
+                Biome::TemperateDesert
+            } else if moisture < fc::_0_5() {
+                Biome::Grassland
+            } else if moisture < fc::_0_83() {
+                Biome::TemperateDeciduousForest
             } else {
-                BIOMES::TEMPERATE_RAIN_FOREST()
+                Biome::TemperateRainForest
             }
         } else {
-            if moisture < _0_16() {
-                BIOMES::SUBTROPICAL_DESERT()
-            } else if moisture < _0_33() {
-                BIOMES::GRASSLAND()
-            } else if moisture < _0_66() {
-                BIOMES::TROPICAL_SEASONAL_FOREST()
+            if moisture < fc::_0_16() {
+                Biome::SubtropicalDesert
+            } else if moisture < fc::_0_33() {
+                Biome::Grassland
+            } else if moisture < fc::_0_66() {
+                Biome::TropicalSeasonalForest
             } else {
-                BIOMES::TROPICAL_RAIN_FOREST()
+                Biome::TropicalRainForest
             }
         };
 
-    return (depth, name);    
+    return biome;    
 }
 
 
@@ -258,6 +240,6 @@ mod tests {
 
     #[test]
     fn test_noisy() {
-        get_biome(1128, 389);
+        let x = get_biome(1128, 389);
     }
 }
