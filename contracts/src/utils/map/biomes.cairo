@@ -34,72 +34,71 @@ mod biomes {
         _0_1, _0_2, _0_3, _0_4, _0_5, _0_6, _0_7, _0_8, _1, _2, _100
     };
     
-    fn DEEP_OCEAN() -> Fixed {
-        _0_1()
+    fn DEEP_OCEAN() -> (Fixed, felt252) {
+        (_0_1(), 'Deep Ocean')
     } 
 
-    fn OCEAN() -> Fixed {
-        _0_1()
+    fn OCEAN() -> (Fixed, felt252) {
+        (_0_1(), 'Ocean')
     }
 
-    fn BEACH() -> Fixed {
-        _0_2()
+    fn BEACH() -> (Fixed, felt252) {
+        (_0_2(), 'Beach')
     }
 
-    fn SCORCHED() -> Fixed {
-        _0_8()
+    fn SCORCHED() -> (Fixed, felt252) {
+        (_0_8(), 'Scorched')
     }
 
-    fn BARE() -> Fixed {
-        _0_7()
+    fn BARE() -> (Fixed, felt252) {
+        (_0_7(), 'Bare')
     }
 
-    fn TUNDRA() -> Fixed {
-        _0_6()
+    fn TUNDRA() -> (Fixed, felt252) {
+        (_0_6(), 'Tundra')
     }
 
-    fn SNOW() -> Fixed {
-        _0_5()
+    fn SNOW() -> (Fixed, felt252) {
+       (_0_5(), 'Snow')
     }
 
-    fn TEMPERATE_DESERT() -> Fixed {
-        _0_4()
+    fn TEMPERATE_DESERT() -> (Fixed, felt252) {
+        (_0_4(), 'Temperate Desert')
     }
 
-    fn SHRUBLAND() -> Fixed {
-        _0_5()
+    fn SHRUBLAND() -> (Fixed, felt252) {
+        (_0_5(), 'Shrubland')
     }
 
-    fn TAIGA() -> Fixed {
-        _0_6()
+    fn TAIGA() -> (Fixed, felt252) {
+        (_0_6(), 'Taiga')
     }
 
-    fn GRASSLAND() -> Fixed {
-        _0_4()
+    fn GRASSLAND() -> (Fixed, felt252) {
+        (_0_4(), 'Grassland')
     }
 
-    fn TEMPERATE_DECIDUOUS_FOREST() -> Fixed {
-        _0_5()
+    fn TEMPERATE_DECIDUOUS_FOREST() -> (Fixed, felt252) {
+        (_0_5(), 'Temperate Deciduous Forest')
     }
 
-    fn TEMPERATE_RAIN_FOREST() -> Fixed {
-        _0_7()
+    fn TEMPERATE_RAIN_FOREST() -> (Fixed, felt252) {
+        (_0_7(), 'Temperate Rain Forest')
     }
 
-    fn SUBTROPICAL_DESERT() -> Fixed {
-        _0_3()
+    fn SUBTROPICAL_DESERT() -> (Fixed, felt252) {
+        (_0_3(), 'Subtropical Desert')
     }
 
-    fn TROPICAL_SEASONAL_FOREST() -> Fixed {
-        _0_5()
+    fn TROPICAL_SEASONAL_FOREST() -> (Fixed, felt252) {
+       ( _0_5(), 'Tropical Seasonal Forest')
     }
 
-    fn TROPICAL_RAIN_FOREST() -> Fixed {
-        _0_6()
+    fn TROPICAL_RAIN_FOREST() -> (Fixed, felt252) {
+        (_0_6(), 'Tropical Rain Forest')
     }
 
 }
-
 
 
 
@@ -144,7 +143,7 @@ fn ELEVATION_OCTAVES_SUM() -> Fixed {
 
 
 
-fn get_biome(col: u128, row: u128) -> Fixed {
+fn get_biome(col: u128, row: u128) -> (Fixed, felt252) {
     let col_fixed = FixedTrait::new_unscaled(col, false);
     let row_fixed = FixedTrait::new_unscaled(row, false);
     let elevation = _elevation(col_fixed, row_fixed);
@@ -197,9 +196,9 @@ fn _moisture(col: Fixed, row: Fixed) -> Fixed {
 
 
 
-fn _environment(elevation: Fixed, moisture: Fixed) -> Fixed {
+fn _environment(elevation: Fixed, moisture: Fixed) -> (Fixed, felt252) {
 
-    let depth = if elevation < DEEP_OCEAN_LEVEL(){
+    let (depth, name) = if elevation < DEEP_OCEAN_LEVEL(){
             BIOMES::DEEP_OCEAN()
         } else if elevation < OCEAN_LEVEL() {
             BIOMES::OCEAN()
@@ -245,7 +244,7 @@ fn _environment(elevation: Fixed, moisture: Fixed) -> Fixed {
             }
         };
 
-    return depth;    
+    return (depth, name);    
 }
 
 
