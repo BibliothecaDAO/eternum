@@ -9,13 +9,13 @@ mod config_systems {
         LaborCostResources, LaborCostAmount, LaborConfig, CapacityConfig, RoadConfig, SpeedConfig,
         TravelConfig, WeightConfig, WorldConfig, SoldierConfig, HealthConfig, AttackConfig,
         DefenceConfig, CombatConfig, LevelingConfig, RealmFreeMintConfig, LaborBuildingsConfig,
-        LaborBuildingCost
+        LaborBuildingCost, MapExploreConfig
     };
 
     use eternum::systems::config::interface::{
         IWorldConfig, IWeightConfig, ICapacityConfig, ILaborConfig, ITransportConfig,
         IHyperstructureConfig, ICombatConfig, ILevelingConfig, IBankConfig, IRealmFreeMintConfig,
-        IBuildingsConfig
+        IBuildingsConfig, IMapConfig
     };
 
     use eternum::constants::{
@@ -98,6 +98,25 @@ mod config_systems {
                     config_id: REALM_FREE_MINT_CONFIG_ID,
                     detached_resource_id,
                     detached_resource_count
+                })
+            );
+        }
+    }
+
+
+    #[external(v0)]
+    impl MapConfigImpl of IMapConfig<ContractState> {
+        fn set_exploration_config(
+            self: @ContractState, world: IWorldDispatcher, wheat_burn_amount: u128, fish_burn_amount: u128
+        ) {
+            assert_caller_is_admin(world);
+
+            set!(
+                world,
+                (MapExploreConfig {
+                    config_id: WORLD_CONFIG_ID,
+                    wheat_burn_amount,
+                    fish_burn_amount
                 })
             );
         }

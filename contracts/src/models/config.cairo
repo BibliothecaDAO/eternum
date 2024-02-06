@@ -148,6 +148,16 @@ struct DefenceConfig {
     max_value: u128, // max value for a single unit
 }
 
+
+#[derive(Model, Copy, Drop, Serde)]
+struct MapExploreConfig {
+    #[key]
+    config_id: u128,
+    wheat_burn_amount: u128,
+    fish_burn_amount: u128
+}
+
+
 // weight
 #[derive(Model, Copy, Drop, Serde)]
 struct WeightConfig {
@@ -171,6 +181,7 @@ impl WeightConfigImpl of WeightConfigTrait {
         return resource_weight_config.weight_gram * amount;
     }
 }
+
 
 #[derive(Model, Copy, Drop, Serde)]
 struct LevelingConfig {
