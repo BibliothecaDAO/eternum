@@ -5,7 +5,7 @@ mod combat_systems {
     use eternum::models::order::{Orders, OrdersTrait};
     use eternum::models::resources::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
     
-    use eternum::models::resources::{Resource, ResourceCost};
+    use eternum::models::resources::{Resource, ResourceCost, ResourceFoodImpl};
     use eternum::models::position::{Position};
     use eternum::models::config::{
         SpeedConfig, WeightConfig, CapacityConfig, CombatConfig,
@@ -865,19 +865,11 @@ mod combat_systems {
 
                 // burn target's food (fish and wheat)
                 let attacker_quantity = get!(world, attacker_id, Quantity);
-
                 let mut wheat_burn_amount = combat_config.wheat_burn_per_soldier * attacker_quantity.value;
                 let mut fish_burn_amount = combat_config.fish_burn_per_soldier * attacker_quantity.value;
-                
-                let mut target_wheat_resource
-                    = get!(world, (target_entity_id, ResourceTypes::WHEAT), Resource);
-                target_wheat_resource.balance -= min(wheat_burn_amount, target_wheat_resource.balance);
-
-                let mut target_fish_resource 
-                    = get!(world, (target_entity_id, ResourceTypes::FISH), Resource);
-                target_fish_resource.balance -= min(fish_burn_amount, target_fish_resource.balance);
-
-                set!(world, (target_fish_resource, target_wheat_resource));
+                ResourceFoodImpl::burn_food(
+                    world, target_entity_id, wheat_burn_amount, fish_burn_amount, check_balance: false
+                );
 
 
                 // steal resources
