@@ -1263,7 +1263,7 @@
     {
       "name": "eternum::systems::combat::contracts::combat_systems",
       "address": "0x1b0a83a27a357e0574393ab06c0c774db7312a0993538cc0186d054f75ee84e",
-      "class_hash": "0x3eb8c5b0c8223cbb71a1c1a13ff0eadd0d286d9f3f1e4aa894566370e90d655",
+      "class_hash": "0x65d47ca41869e2253db389ce12e9128d5732fa7737f0b76eaddfc54453715be",
       "abi": [
         {
           "type": "impl",
@@ -1616,7 +1616,7 @@
     {
       "name": "eternum::systems::config::contracts::config_systems",
       "address": "0x7fff06bbcbe4f42f22c86b14e7a80604495c8b2034d14cbb10d32402c933ca8",
-      "class_hash": "0x76f3b5ae344ae5a618b59fe60ff09c676a6a1a243a50198a31fb56901247d17",
+      "class_hash": "0x6ffd6c1568e08a30748861a93a3132fafbf5ba5c29eb0f498f555d1e200452b",
       "abi": [
         {
           "type": "impl",
@@ -1741,6 +1741,10 @@
                 },
                 {
                   "name": "fish_burn_amount",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "random_mint_amount",
                   "type": "core::integer::u128"
                 }
               ],
@@ -2969,7 +2973,7 @@
     {
       "name": "eternum::systems::map::contracts::map_systems",
       "address": null,
-      "class_hash": "0x5359d21922e4f22efb9d0810d7e5c270abfbe6c051cf05a431e47ac5e8a916f",
+      "class_hash": "0x5479c7e9eb390aa9ea4a7eeaf8ae43c78ba3188a5d8127b16ab9fbbc1aa1b3f",
       "abi": [
         {
           "type": "impl",
@@ -8966,9 +8970,14 @@
           "name": "fish_burn_amount",
           "type": "u128",
           "key": false
+        },
+        {
+          "name": "random_mint_amount",
+          "type": "u128",
+          "key": false
         }
       ],
-      "class_hash": "0x44c7ac971a96c2c05bbfcae0b7f83a9103f4523cf2fee973f88af36d145b7df",
+      "class_hash": "0x25ee5c3ba6cea14d81d6c4e2520c688731f8917b4521967dc6ee0dd5f613718",
       "abi": [
         {
           "type": "function",
