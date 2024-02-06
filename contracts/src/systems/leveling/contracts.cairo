@@ -124,7 +124,7 @@ mod leveling_systems {
             // one week of leveling
             let ts = starknet::get_block_timestamp();
             // 604800
-            level.valid_until = ts + leveling_config.decay_interval;
+            level.valid_until = ts.into() + leveling_config.decay_interval;
             set!(world, (level));
         }
     }

@@ -3,54 +3,103 @@ use traits::TryInto;
 use option::OptionTrait;
 use debug::PrintTrait;
 
-use alexandria_math::pow;
+use eternum::utils::number::{NumberTrait, i128Div};
+
+// todo@credence revisit zone calculation
 
 // highest x = 1320937 + 1800000 = 3120937
-const HIGHEST_X: u32 = 3120937;
+const HIGHEST_X: u128 = 3120937;
 // lowest x = -1329800 + 1800000 = 470200
-const LOWEST_X: u32 = 470200;
+const LOWEST_X: u128 = 470200;
 // highest y = 612800 + 1800000 = 2412800
-const HIGHEST_Y: u32 = 2412800;
+const HIGHEST_Y:u128 = 2412800;
 // lowest y = -618996 + 1800000 = 1181004
-const LOWEST_Y: u32 = 1181004;
+const LOWEST_Y: u128 = 1181004;
 
-#[derive(Copy, Drop, PartialEq, Serde, Print, Introspect)]
-struct Coord {
-    x: u32,
-    y: u32
+
+
+// https://www.redblobgames.com/grids/hexagons/#coordinates-cube
+
+#[derive(Copy, Drop, PartialEq, Serde)]
+struct Cube {
+    q: i128,
+    r: i128,
+    s: i128
+}
+
+impl CubeZeroable of Zeroable<Cube> {
+    fn zero() -> Cube {
+        Cube { q: 0, r: 0, s: 0 }
+    }
+    #[inline(always)]
+    fn is_zero(self: Cube) -> bool {
+        self.q == 0 && self.r == 0 && self.s == 0
+    }
+    
+    #[inline(always)]
+    fn is_non_zero(self: Cube) -> bool {
+        !self.is_zero()
+    }
 }
 
 #[generate_trait]
-impl CoordImpl of CoordTrait {
-
-    fn calculate_distance(self: Coord, destination: Coord) -> u32 {
-        // d = √((x2-x1)² + (y2-y1)²)
-        let x: u128 = if self.x > destination.x {
-            pow((self.x - destination.x).into(), 2)
-        } else {
-            pow((destination.x - self.x).into(), 2)
-        };
-        let y: u128 = if self.y > destination.y {
-            pow((self.y - destination.y).into(), 2)
-        } else {
-            pow((destination.y - self.y).into(), 2)
-        };
-
-        // we store coords in x * 10000 to get precise distance
-        let distance = u128_sqrt(x + y) / 10000;
-
-        distance.try_into().unwrap()
+impl CubeImpl of CubeTrait {
+    fn subtract(self: Cube, other: Cube) -> Cube {
+        Cube {
+            q: self.q - other.q,
+            r: self.r - other.r,
+            s: self.s - other.s
+        }
     }
 
+    fn abs(self: Cube) -> Cube {
+        Cube {
+            q: self.q.abs(),
+            r: self.r.abs(),
+            s: self.s.abs()
+        }
+    }
 
-    fn calculate_travel_time(self: Coord, destination: Coord, sec_per_km: u16) -> u64 {
-        let distance: u32 = self.calculate_distance(destination);
+    fn distance(self: Cube, other: Cube) -> u128 {
+
+        // https://www.redblobgames.com/grids/hexagons/#distances
+
+        // calculate difference between cubes
+        let cube_diff = self.subtract(other);
+        let abs_cube_diff = cube_diff.abs();
+ 
+        // get max(abs_cube_diff.q, abs_cube_diff.r, abs_cube_diff.s)
+        let max = if abs_cube_diff.q > abs_cube_diff.r {
+            if abs_cube_diff.q > abs_cube_diff.s {
+                abs_cube_diff.q
+            } else {
+                abs_cube_diff.s
+            }
+        } else {
+            if abs_cube_diff.r > abs_cube_diff.s {
+                abs_cube_diff.r
+            } else {
+                abs_cube_diff.s
+            }
+        };
+
+        max.try_into().unwrap()
+    }
+
+    fn travel_time(self: Cube, other: Cube, sec_per_km: u16) -> u64 {
+        let distance = self.distance(other);
         let time = distance * sec_per_km.into();
-        time.into()
+        time.try_into().unwrap()
     }
 }
 
 
+
+#[derive(Copy, Drop, PartialEq, Serde, Print, Introspect)]
+struct Coord {
+    x: u128,
+    y: u128
+}
 
 impl CoordZeroable of Zeroable<Coord> {
     fn zero() -> Coord {
@@ -67,34 +116,72 @@ impl CoordZeroable of Zeroable<Coord> {
     }
 }
 
-impl PositionIntoCoord of Into<Position, Coord> {
-    fn into(self: Position) -> Coord {
-        return Coord {
-            x: self.x,
-            y: self.y
-        };
+
+
+
+impl CoordIntoCube of Into<Coord, Cube> {
+    fn into(self: Coord) -> Cube {
+        // https://www.redblobgames.com/grids/hexagons/#conversions-offset
+        // convert odd-r to cube coordinates
+        let col: i128 = self.x.try_into().unwrap();
+        let row: i128 = self.y.try_into().unwrap();
+        let q = col - ((row - (self.y % 2).try_into().unwrap()) / 2); 
+        // (self.y % 2) and not (col % 2) because col is i128 
+        // and modulo for negative numbers is different if it
+        // was col, it would be (col & 1) where `&` is bitwise AND
+        let r = row;
+        let s = -q-r;
+        Cube { q, r, s }
+    }
+}
+
+trait TravelTrait<T> {
+    fn calculate_distance(self: T, destination: T) -> u128;
+    fn calculate_travel_time(self:T, destination: T, sec_per_km: u16) -> u64;
+}
+
+impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
+
+    fn calculate_distance(self: T, destination: T) -> u128 {
+        let cube: Cube = self.into();
+       CubeImpl::distance(self.into(), destination.into())
+    }
+
+    fn calculate_travel_time(self:T, destination: T, sec_per_km: u16) -> u64 {
+       CubeImpl::travel_time(self.into(), destination.into(), sec_per_km)
     }
 }
 
 
-#[derive(Model, PartialEq, Copy, Drop, Serde)]
+#[derive(Model, PartialEq, Copy, Drop, Serde, PrintTrait)]
 struct Position {
     #[key]
     entity_id: u128,
-    x: u32,
-    y: u32
+    x: u128,
+    y: u128,
 }
+
+
+impl PositionIntoCoord of Into<Position, Coord> {
+    fn into(self: Position) -> Coord {
+        Coord { x: self.x, y: self.y }
+    }
+}
+
+
+impl PositionIntoCube of Into<Position, Cube> {
+    fn into(self: Position) -> Cube {
+        Into::<Coord, Cube>::into(
+            Into::<Position, Coord>::into(self)
+        )
+    }
+}
+
 
 #[generate_trait]
 impl PositionImpl of PositionTrait {
-    fn calculate_distance(self: Position, destination: Position) -> u32 {
-       CoordImpl::calculate_distance(self.into(), destination.into())
-    }
-    fn calculate_travel_time(self: Position, destination: Position, sec_per_km: u16) -> u64 {
-        CoordImpl::calculate_travel_time(self.into(), destination.into(), sec_per_km)
-    }
     // world is divided into 10 timezones
-    fn get_zone(self: Position) -> u32 {
+    fn get_zone(self: Position) -> u128 {
         // use highest and lowest x to divide map into 10 timezones
         1 + (self.x - LOWEST_X) * 10 / (HIGHEST_X - LOWEST_X)
     }
@@ -102,39 +189,107 @@ impl PositionImpl of PositionTrait {
 
 #[cfg(test)]
 mod tests {
-    use super::{Position, PositionTrait};
+    use super::{Position, PositionTrait, Cube, CubeTrait, NumberTrait, TravelTrait};
+    use debug::PrintTrait;
+    use traits::Into;
+    use traits::TryInto;
+
+    #[test]
+    fn test_position_into_cube_0_0() {
+        let pos = Position { 
+            entity_id: 0, 
+            x: 0,
+            y: 0
+        };
+
+        let cube: Cube = pos.into();
+        assert(cube.q == 0, 'incorrect cube.q');
+        assert(cube.r == 0, 'incorrect cube.r');
+        assert(cube.s == 0, 'incorrect cube.s');
+    }
+
+    #[test]
+    fn test_position_into_cube_1_2() {
+        let pos = Position { 
+            entity_id: 0, 
+            x: 1,
+            y: 2
+        };
+
+        let cube: Cube = pos.into();
+        assert(cube.q == 0, 'incorrect cube.q');
+        assert(cube.r == 2, 'incorrect cube.r');
+        assert(cube.s == -2, 'incorrect cube.s');
+    }
+
+
+
+    #[test]
+    fn test_position_into_cube_2_1() {
+        let pos = Position { 
+            entity_id: 0, 
+            x: 2,
+            y: 1
+        };
+
+        let cube: Cube = pos.into();
+        assert(cube.q == 2, 'incorrect cube.q');
+        assert(cube.r == 1, 'incorrect cube.r');
+        assert(cube.s == -3, 'incorrect cube.s');
+    }
+
+
+    #[test]
+    fn test_position_into_cube_2_2() {
+        let pos = Position { 
+            entity_id: 0, 
+            x: 2,
+            y: 2
+        };
+
+        let cube: Cube = pos.into();
+        assert(cube.q == 1, 'incorrect cube.q');
+        assert(cube.r == 2, 'incorrect cube.r');
+        assert(cube.s == -3, 'incorrect cube.s');
+    }
+
+
 
     #[test]
     #[available_gas(30000000)]
     fn test_calculate_distance() {
-        let a = Position { entity_id: 0, x: 100000, y: 200000 };
-        let b = Position { entity_id: 0, x: 200000, y: 1000000 };
-        let distance = a.calculate_distance(b);
-        assert(distance == 80, 'distance should be 1');
+
+        let start = Position { entity_id: 0, x: 2, y: 1 };
+        let end = Position { entity_id: 0, x: 1, y: 3 };
+        let distance = start.calculate_distance(end);
+
+        assert(distance == 2, 'wrong distance');
+    }
+
+
+    #[test]
+    #[available_gas(30000000)]
+    fn test_calculate_distance_large_values() {
+
+        let start = Position { entity_id: 0, x: 432788918, y: 999990130 };
+        let end = Position { entity_id: 0, x: 81839812, y: 318939024 };
+        let distance = start.calculate_distance(end);
+
+        assert(distance == 691474659, 'wrong distance');
     }
 
     #[test]
     #[available_gas(30000000)]
     fn test_calculate_travel_time() {
-        let a = Position { entity_id: 0, x: 100000, y: 200000 };
-        let b = Position { entity_id: 0, x: 200000, y: 1000000 };
+        let start = Position { entity_id: 0, x: 432788918, y: 999990130 };
+        let end = Position { entity_id: 0, x: 81839812, y: 318939024 };        
+
         // 720 sec per km = 5 kmh
-        let time = a.calculate_travel_time(b, 720);
-        assert(time == 57600, 'time should be 57600');
+        let time = start.calculate_travel_time(end, 720);
+        assert(time == 497861754480, 'time should be 57600');
     }
 
-    #[test]
-    fn test_position_equal() {
-        let a = Position { entity_id: 0, x: 1, y: 2 };
-        let b = Position { entity_id: 0, x: 1, y: 2 };
-        assert(a == b, 'a should equal b');
-    }
-    #[test]
-    fn test_position_non_equal() {
-        let a = Position { entity_id: 0, x: 1, y: 2 };
-        let b = Position { entity_id: 0, x: 2, y: 1 };
-        assert(a != b, 'a should not equal b');
-    }
+
 
     #[test]
     fn test_get_zone() { 
@@ -143,3 +298,4 @@ mod tests {
         assert(zone == 4, 'zone should be 4');
     }
 }
+

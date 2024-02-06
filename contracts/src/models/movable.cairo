@@ -8,8 +8,8 @@ struct Movable {
     sec_per_km: u16,
     blocked: bool,
     round_trip: bool,
-    intermediate_coord_x: u32,
-    intermediate_coord_y: u32
+    intermediate_coord_x: u128,
+    intermediate_coord_y: u128
 }
 
 // DISCUSS: separated from the Movable component because

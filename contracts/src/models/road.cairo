@@ -10,13 +10,13 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 #[derive(Model, Copy, Drop, Serde)]
 struct Road {
     #[key]
-    start_coord_x: u32,
+    start_coord_x: u128,
     #[key]
-    start_coord_y: u32,
+    start_coord_y: u128,
     #[key]
-    end_coord_x: u32,
+    end_coord_x: u128,
     #[key]
-    end_coord_y: u32,
+    end_coord_y: u128,
     usage_count: u32
 }
 

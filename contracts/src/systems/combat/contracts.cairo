@@ -250,7 +250,7 @@ mod combat_systems {
 
             let unit_arrival = get!(world, unit_id, ArrivalTime);
             assert(
-                unit_arrival.arrives_at <= starknet::get_block_timestamp(), 
+                unit_arrival.arrives_at <= starknet::get_block_timestamp().into(), 
                     'unit is travelling'
             );
 
@@ -394,7 +394,7 @@ mod combat_systems {
             // ensure unit is not travelling 
             let merge_into_unit_arrival = get!(world, merge_into_unit_id, ArrivalTime);
             assert(
-                merge_into_unit_arrival.arrives_at <= starknet::get_block_timestamp(),
+                merge_into_unit_arrival.arrives_at <= starknet::get_block_timestamp().into(),
                     'unit is travelling'
             );
 
@@ -447,7 +447,7 @@ mod combat_systems {
                 // ensure units are not travelling 
                 let unit_arrival = get!(world, unit_id, ArrivalTime);
                 assert(
-                    unit_arrival.arrives_at <= starknet::get_block_timestamp(),
+                    unit_arrival.arrives_at <= starknet::get_block_timestamp().into(),
                         'unit is travelling'
                 );
 
@@ -604,7 +604,7 @@ mod combat_systems {
 
                 let attacker_arrival = get!(world, attacker_id, ArrivalTime);
                 assert(
-                    attacker_arrival.arrives_at <= ts,
+                    attacker_arrival.arrives_at <= ts.into(),
                         'attacker is travelling'
                 );
 
@@ -774,7 +774,7 @@ mod combat_systems {
 
             let attacker_arrival = get!(world, attacker_id, ArrivalTime);
             assert(
-                attacker_arrival.arrives_at <= ts,
+                attacker_arrival.arrives_at <= ts.into(),
                     'attacker is travelling'
             );
             
