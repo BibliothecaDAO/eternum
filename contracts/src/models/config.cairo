@@ -154,7 +154,8 @@ struct MapExploreConfig {
     #[key]
     config_id: u128,
     wheat_burn_amount: u128,
-    fish_burn_amount: u128
+    fish_burn_amount: u128,
+    random_mint_amount: u128
 }
 
 

@@ -34,6 +34,8 @@ const INITIAL_FISH_BALANCE : u128 = 2000;
 
 const MAP_EXPLORE_WHEAT_BURN_AMOUNT : u128 = 1000;
 const MAP_EXPLORE_FISH_BURN_AMOUNT: u128 = 500;
+const MAP_EXPLORE_RANDOM_MINT_AMOUNT: u128 = 3000;
+const MAP_EXPLORE_PRECOMPUTED_RANDOM_MINT_RESOURCE : u8 = 6; // silver
 
 fn setup() -> (IWorldDispatcher, u128, IMapSystemsDispatcher) {
     let world = spawn_eternum();
@@ -87,7 +89,7 @@ fn setup() -> (IWorldDispatcher, u128, IMapSystemsDispatcher) {
     IMapConfigDispatcher {
         contract_address: config_systems_address
     }.set_exploration_config(world,
-        MAP_EXPLORE_WHEAT_BURN_AMOUNT, MAP_EXPLORE_FISH_BURN_AMOUNT
+        MAP_EXPLORE_WHEAT_BURN_AMOUNT, MAP_EXPLORE_FISH_BURN_AMOUNT,  MAP_EXPLORE_RANDOM_MINT_AMOUNT
     );
 
 
@@ -113,6 +115,7 @@ fn test_map_explore() {
 
     let now = 10000;
     starknet::testing::set_block_timestamp(now);
+    starknet::testing::set_transaction_hash('hellothash');
 
     let col = 8;
     let row = 8;
@@ -134,5 +137,10 @@ fn test_map_explore() {
 
     assert_eq!(realm_wheat.balance, expected_wheat_balance, "wrong wheat balance");
     assert_eq!(realm_fish.balance, expected_fish_balance, "wrong wheat balance");
+
+    // ensure a random resource is minted to explorer
+    let expected_mint_resource 
+        = get!(world, (realm_entity_id, MAP_EXPLORE_PRECOMPUTED_RANDOM_MINT_RESOURCE), Resource);
+    assert_eq!(expected_mint_resource.balance, MAP_EXPLORE_RANDOM_MINT_AMOUNT, "wrong mint amount");
 }
 

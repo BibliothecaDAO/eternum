@@ -12,7 +12,8 @@ mod map_systems {
     use eternum::models::config::MapExploreConfig;
     use eternum::systems::map::interface::IMapSystems;
     use eternum::utils::map::biomes::{Biome, get_biome};
-    use eternum::constants::WORLD_CONFIG_ID;
+    use eternum::utils::random;
+    use eternum::constants::{WORLD_CONFIG_ID, split_resources_and_probs};
 
 
     use starknet::ContractAddress;
@@ -58,6 +59,20 @@ mod map_systems {
                 world, realm_entity_id, 
                 explore_config.wheat_burn_amount, explore_config.fish_burn_amount, check_balance: true
             );
+
+
+            // mint one random resource
+            let (resource_types, resources_probs) = split_resources_and_probs();
+            let random_resource_id: u8 = *random::choices(
+                resource_types, resources_probs, 
+                array![].span(), 1, true
+            ).at(0);
+
+            let mut realm_random_resource 
+                = get!(world, (realm_entity_id, random_resource_id), Resource);
+            realm_random_resource.add(world, explore_config.random_mint_amount);
+            
+
         }
 
     }

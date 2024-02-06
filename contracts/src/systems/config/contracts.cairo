@@ -107,7 +107,8 @@ mod config_systems {
     #[external(v0)]
     impl MapConfigImpl of IMapConfig<ContractState> {
         fn set_exploration_config(
-            self: @ContractState, world: IWorldDispatcher, wheat_burn_amount: u128, fish_burn_amount: u128
+            self: @ContractState, world: IWorldDispatcher, 
+            wheat_burn_amount: u128, fish_burn_amount: u128, random_mint_amount: u128
         ) {
             assert_caller_is_admin(world);
 
@@ -116,7 +117,8 @@ mod config_systems {
                 (MapExploreConfig {
                     config_id: WORLD_CONFIG_ID,
                     wheat_burn_amount,
-                    fish_burn_amount
+                    fish_burn_amount, 
+                    random_mint_amount
                 })
             );
         }
