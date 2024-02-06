@@ -33,11 +33,11 @@ const CameraControls = ({ position, target }: Props) => {
   const [isMapView] = useRoute("/map");
 
   const maxDistance = useMemo(() => {
-    return isMapView ? 1000 : 1800;
+    return isMapView ? 200 : 1800;
   }, [isMapView]);
 
   const minDistance = useMemo(() => {
-    return isMapView ? 40 : 1000;
+    return isMapView ? 100 : 1000;
   }, [isMapView]);
 
   var minPan = isMapView ? new THREE.Vector3(0, -Infinity, -1300) : new THREE.Vector3(-175, -Infinity, -150);
@@ -94,11 +94,10 @@ const CameraControls = ({ position, target }: Props) => {
       ref={ref}
       args={[camera, domElement]}
       panSpeed={2}
-      // enableRotate={!isMapView} // Disable rotation
-      enableRotate={true} // Disable rotation
+      enableRotate={!isMapView} // Disable rotation
       // maxDistance={maxDistance}
       // minDistance={minDistance}
-      // maxPolarAngle={Math.PI / 3}
+      maxPolarAngle={Math.PI / 3}
       makeDefault
       onChange={(e) => {
         const controls = e?.target;

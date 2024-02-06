@@ -110,10 +110,11 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
       z: 204.31967964950695,
       transitionDuration: 0.01,
     };
+    // does not work
     const target = {
-      x: -0.26346999995776943,
-      y: 0.027105,
-      z: 0.007405999987503547,
+      x: 200,
+      y: 20,
+      z: 0,
       transitionDuration: 0.01,
     };
     set({ cameraPosition: pos, cameraTarget: target });
