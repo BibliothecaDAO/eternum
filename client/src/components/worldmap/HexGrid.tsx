@@ -93,7 +93,7 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexRadius, selectedHe
 };
 
 export const Map = () => {
-  const rows = 200;
+  const rows = 300;
   const cols = 500;
 
   const hexagonGrids = useMemo(() => {
@@ -115,7 +115,7 @@ export const Map = () => {
       <ambientLight color={"white"} intensity={1} />
       <pointLight rotation={[Math.PI / -2, 0, 0]} position={[10, 20, 10]} intensity={20} />
       <mesh rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>
-        <HexagonGrid startRow={0} endRow={200} startCol={0} endCol={500} hexRadius={3} index={0} />
+        <HexagonGrid startRow={0} endRow={rows} startCol={0} endCol={cols} hexRadius={3} index={0} />
       </mesh>
       {/* <mesh>
         {hexagonGrids.map((grid, index) => {
