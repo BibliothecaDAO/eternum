@@ -1,5 +1,6 @@
 use eternum::utils::math::{is_u32_bit_set, set_u32_bit};
 use eternum::constants::get_resource_probabilities;
+use eternum::constants::ResourceTypes;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 // Used as helper struct throughout the world
@@ -14,7 +15,45 @@ struct Resource {
 }
 
 #[generate_trait]
+impl ResourceFoodImpl of ResourceFoodTrait {
+    fn get_food(world: IWorldDispatcher, entity_id: u128) -> (Resource, Resource) {
+        let wheat = get!(world, (entity_id, ResourceTypes::WHEAT), Resource);
+        let fish = get!(world, (entity_id, ResourceTypes::FISH), Resource);
+        (wheat, fish)
+    }
+
+    fn burn_food(world: IWorldDispatcher, entity_id: u128, wheat_amount: u128, fish_amount: u128, check_balance: bool) {
+        let mut wheat: Resource = get!(world, (entity_id, ResourceTypes::WHEAT), Resource);
+        let mut fish : Resource = get!(world, (entity_id, ResourceTypes::FISH), Resource);
+        wheat.deduct(world, wheat_amount, check_balance);
+        fish.deduct(world, fish_amount, check_balance);
+    }
+}
+
+
+
+#[generate_trait]
 impl ResourceImpl of ResourceTrait {
+
+    fn deduct(ref self: Resource, world: IWorldDispatcher, amount: u128, check_balance: bool) {
+        let mut amount = amount;
+        if check_balance {
+            assert(self.balance >= amount, 'insufficient balance');
+        } else {
+            if amount > self.balance {
+                amount = self.balance
+            }
+        }
+        self.balance -= amount;
+        self.save(world);
+    }
+
+
+    fn add(ref self: Resource, world: IWorldDispatcher, amount: u128) {
+        self.balance += amount;
+        self.save(world);
+    }
+
     fn save(ref self: Resource, world: IWorldDispatcher, ) {
 
         // Save the resource

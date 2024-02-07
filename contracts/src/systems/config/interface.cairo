@@ -198,3 +198,13 @@ trait IBuildingsConfig<TContractState> {
         building_category_4_resource_costs: Span<(u8, u128)>,
     );
 }
+
+
+
+#[starknet::interface]
+trait IMapConfig<TContractState> {
+    fn set_exploration_config(
+        self: @TContractState, world: IWorldDispatcher, wheat_burn_amount: u128, fish_burn_amount: u128, random_mint_amount: u128
+    );
+}
+
