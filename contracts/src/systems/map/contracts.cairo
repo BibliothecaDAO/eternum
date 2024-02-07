@@ -18,6 +18,27 @@ mod map_systems {
 
     use starknet::ContractAddress;
 
+
+    #[derive(Drop, starknet::Event)]
+    struct MapExplored {
+        #[key]
+        entity_id: u128,
+        #[key]
+        col: u128,
+        #[key]
+        row: u128,
+        biome: Biome,
+        minted_resource_id: u8,
+        minted_resource_amount: u128
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        MapExplored: MapExplored,
+    }
+
+
     #[external(v0)]
     impl MapSystemsImpl of IMapSystems<ContractState> {
 
@@ -63,14 +84,27 @@ mod map_systems {
 
             // mint one random resource
             let (resource_types, resources_probs) = split_resources_and_probs();
-            let random_resource_id: u8 = *random::choices(
+            let mint_resource_id: u8 = *random::choices(
                 resource_types, resources_probs, 
                 array![].span(), 1, true
             ).at(0);
+            let mint_resource_amount: u128 = explore_config.random_mint_amount;
 
-            let mut realm_random_resource 
-                = get!(world, (realm_entity_id, random_resource_id), Resource);
-            realm_random_resource.add(world, explore_config.random_mint_amount);
+            let mut mint_resource 
+                = get!(world, (realm_entity_id, mint_resource_id), Resource);
+            mint_resource.add(world, mint_resource_amount);
+
+
+
+            // emit explored event
+            emit!(world,  MapExplored {
+                    entity_id: realm_entity_id,
+                    col,
+                    row,
+                    biome: explored_map.biome,
+                    minted_resource_id: mint_resource_id,
+                    minted_resource_amount: mint_resource_amount
+                });
             
 
         }
