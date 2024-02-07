@@ -22,3 +22,4 @@ mod name;
 mod bank;
 mod order;
 mod buildings;
+mod map;

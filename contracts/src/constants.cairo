@@ -96,6 +96,24 @@ fn get_resource_probabilities() -> Span<(u8, u128)> {
 }
 
 
+fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
+    let mut zipped = get_resource_probabilities();
+    let mut resource_types = array![];
+    let mut resource_probabilities = array![];
+    loop {
+        match zipped.pop_front() {
+            Option::Some((resource_type, probability)) => {
+                resource_types.append(*resource_type);
+                resource_probabilities.append(*probability);
+            },
+            Option::None => {break;},
+        }
+    };
+
+    return (resource_types.span(), resource_probabilities.span());
+}
+
+
 
 
 // DISCUSS: instead of using constants for entity_type, store the entity_type in the storage
