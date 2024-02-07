@@ -4,7 +4,7 @@ import { FeedHyperstructurePopup } from "../components/worldmap/hyperstructures/
 import useUIStore from "../hooks/store/useUIStore";
 import { ExploreMapPopup } from "../components/worldmap/explore/ExploreHexPopup";
 
-export const Popups = () => {
+export const WorldPopups = () => {
   const [showFeedPopup, setShowFeedPopup] = useState(false);
   const [selectedHyperstructure, setSelectedHyperstructure] = useState<HyperStructureInterface | undefined>(undefined);
   const [showExplore, setShowExplore] = useState(false);

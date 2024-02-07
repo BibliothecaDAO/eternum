@@ -839,5 +839,26 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    ExploredMap: (() => {
+      return defineComponent(
+        world,
+        {
+          _col: RecsType.BigInt,
+          _row: RecsType.BigInt,
+          col: RecsType.BigInt,
+          row: RecsType.BigInt,
+          explored_by_id: RecsType.BigInt,
+          explored_at: RecsType.Number,
+          biome: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: "ExploredMap",
+            types: ["u128", "u128", "u128", "u128", "u128", "u64", "u8"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
   };
 }

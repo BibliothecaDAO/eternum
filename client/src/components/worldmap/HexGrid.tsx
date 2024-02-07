@@ -16,6 +16,9 @@ import { useThree } from "@react-three/fiber";
 import { OutlineEffect } from "three-stdlib";
 import useUIStore from "../../hooks/store/useUIStore";
 import { remove } from "mobx";
+import { useExplore } from "../../hooks/helpers/useExplore";
+import { useDojo } from "../../DojoContext";
+import { Subscription } from "rxjs";
 
 interface Hexagon {
   idx: number;
@@ -41,7 +44,66 @@ type HexagonGridProps = {
 };
 
 const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexRadius, selectedHex, index }: HexagonGridProps) => {
+  const {
+    setup: {
+      updates: {
+        eventUpdates: { exploreMapEvents },
+      },
+    },
+  } = useDojo();
+
   const hexMeshRef = useRef<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>>();
+
+  const { exploredColsRows, useExplorationClickedHex } = useExplore();
+
+  useEffect(() => {
+    const colsRows = exploredColsRows(startCol, endCol, startRow, endRow);
+
+    // change color back to original for explored hexes
+    const colors = getColorFromMesh(hexMeshRef.current);
+    if (!colors) return;
+    colsRows.forEach((hex) => {
+      const hexIndex = hexData.findIndex((h) => h.col === hex.col && h.row === hex.row);
+      if (hexIndex !== -1) {
+        const color = new Color(hexData[hexIndex].color);
+        color.toArray(colors, hexIndex * 3);
+      }
+    });
+
+    hexMeshRef.current.geometry.attributes.color.array = new Float32Array(colors);
+    hexMeshRef.current.geometry.attributes.color.needsUpdate = true;
+  }, []);
+
+  // another use effect to change the color of the selected hex if it's been successfuly explored
+  useEffect(() => {
+    let subscription: Subscription | undefined;
+
+    const subscribeToExploreEvents = async () => {
+      const observable = await exploreMapEvents();
+      const sub = observable.subscribe((event) => {
+        if (event) {
+          console.log({ exploreMapEvent: event });
+          const col = event.data[0];
+          const row = event.data[1];
+          const hexIndex = hexData.findIndex((h) => h.col === col && h.row === row);
+          if (hexIndex !== -1) {
+            const color = new Color(hexData[hexIndex].color);
+            const colors = getColorFromMesh(hexMeshRef.current);
+            if (!colors) return;
+            color.toArray(colors, hexIndex * 3);
+            hexMeshRef.current.geometry.attributes.color.array = new Float32Array(colors);
+            hexMeshRef.current.geometry.attributes.color.needsUpdate = true;
+          }
+        }
+      });
+      subscription = sub;
+    };
+    subscribeToExploreEvents();
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
 
   useHighlightHex(hexMeshRef);
 

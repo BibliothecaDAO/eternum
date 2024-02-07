@@ -275,7 +275,7 @@ const ExploreResultPanel = ({ onClose }: { onClose: () => void }) => {
           }}
           variant="outline"
         >
-          {step === 1 ? "Steal Resources" : success && step === 2 ? `Open Chest` : "Close"}
+          {step === 1 ? "Search For Chest" : success && step === 2 ? `Open Chest` : "Close"}
         </Button>
       </div>
     </div>
