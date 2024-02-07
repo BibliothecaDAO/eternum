@@ -13,6 +13,9 @@ import {
 } from "three";
 import hexDataJson from "../../geodata/hex/hexData.json";
 import { useThree } from "@react-three/fiber";
+import { OutlineEffect } from "three-stdlib";
+import useUIStore from "../../hooks/store/useUIStore";
+import { remove } from "mobx";
 
 interface Hexagon {
   idx: number;
@@ -40,7 +43,7 @@ type HexagonGridProps = {
 const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexRadius, selectedHex, index }: HexagonGridProps) => {
   const hexMeshRef = useRef<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>>();
 
-  useHighlightHex(hexMeshRef, index);
+  useHighlightHex(hexMeshRef);
 
   const depth = 10;
   const radiusPosition = hexRadius;
@@ -74,7 +77,13 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexRadius, selectedHe
     const y = row * vertDist;
 
     const color = new Color(hex.color);
-    color.toArray(colors, idx * 3);
+
+    // Calculate the luminance of the color
+    const luminance = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
+
+    const grayScaleColor = new Color(luminance, luminance, luminance);
+
+    grayScaleColor.toArray(colors, idx * 3);
 
     let matrix = new Matrix4();
     matrix.setPosition(x, y, hex.depth * 10);
@@ -133,12 +142,12 @@ export const Map = () => {
 
 const useHighlightHex = (
   hexMeshRef: MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>,
-  index: number,
 ) => {
   const camera = useThree((state) => state.camera);
+  const setClickedHex = useUIStore((state) => state.setClickedHex);
 
   // store hexId and color of highlighed hex
-  const highlightedHex = useRef<{ hexId: number; color: Color | null }>({ hexId: -1, color: null });
+  const highlightedHexRef = useRef<{ hexId: number; color: Color | null }>({ hexId: -1, color: null });
   const raycaster = new Raycaster();
   const mouse = new Vector2();
 
@@ -159,55 +168,37 @@ const useHighlightHex = (
     if (intersects.length > 0) {
       // Get the first intersected object
       const intersectedHex = intersects[0];
+      const hexIndex = intersectedHex.instanceId;
+      if (!hexIndex) return;
+      updateHighlight(highlightedHexRef, hexIndex, colors, mesh);
+    } else {
+      resetHighlight(highlightedHexRef, colors, mesh);
+    }
+  };
+
+  const onMouseClick = (event: any) => {
+    const mesh = hexMeshRef?.current;
+    if (!mesh) return;
+    // Calculate mouse position in normalized device coordinates (-1 to +1) for both components
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    // Update the ray with the camera and mouse position
+    raycaster.setFromCamera(mouse, camera); // assuming 'camera' is your Three.js camera
+
+    // Calculate objects intersecting the picking ray. Assume hexMeshRef.current is the instanced mesh
+    const intersects = raycaster.intersectObject(hexMeshRef.current, false);
+
+    if (intersects.length > 0) {
+      // Get the first intersected object
+      const intersectedHex = intersects[0];
 
       const hexIndex = intersectedHex.instanceId;
+      const hex = hexIndex ? hexData[hexIndex] : undefined;
 
-      // set back previous highlighted hex color to original
-      if (highlightedHex.current.hexId !== -1) {
-        const color = highlightedHex.current.color;
-        if (color) {
-          color.toArray(colors, highlightedHex.current.hexId * 3);
-        }
+      if (hex && hexIndex) {
+        setClickedHex({ col: hex.col, row: hex.row, hexIndex });
       }
-
-      // store new highlight
-      highlightedHex.current.hexId = hexIndex;
-      const r = colors[hexIndex * 3];
-      const g = colors[hexIndex * 3 + 1];
-      const b = colors[hexIndex * 3 + 2];
-      const prevColor = new Color().setRGB(r, g, b);
-      highlightedHex.current.color = prevColor;
-
-      // Change current highlight to red
-      // Step 2: Blend with light red
-      const lightRed = new Color(0xff6666); // Adjust the shade of red as needed
-      const blendFactor = 0.8; // Adjust this value for more or less red
-      const blendedColor = prevColor.clone().lerp(lightRed, blendFactor);
-
-      // Step 3: Increase brightness
-      const hsl = { h: 0, s: 0, l: 0 };
-      blendedColor.getHSL(hsl);
-      hsl.l = Math.min(1, hsl.l * 1.2); // Increase lightness, ensure it's no more than 1
-      blendedColor.setHSL(hsl.h, hsl.s, hsl.l);
-
-      // Step 4: Apply the new color
-      blendedColor.toArray(colors, hexIndex * 3);
-
-      // Update the color attribute
-      // hexMeshRef.current.geometry.attributes.color.needsUpdate = true;
-      hexMeshRef.current.geometry.attributes.color.array = new Float32Array(colors);
-      hexMeshRef.current.geometry.attributes.color.needsUpdate = true;
-    } else {
-      // if out of hex, set back previous highlighted hex color to original
-      if (highlightedHex.current.hexId !== -1) {
-        const color = highlightedHex.current.color;
-        if (color) {
-          color.toArray(colors, highlightedHex.current.hexId * 3);
-          hexMeshRef.current.geometry.attributes.color.array = new Float32Array(colors);
-          hexMeshRef.current.geometry.attributes.color.needsUpdate = true;
-        }
-      }
-      highlightedHex.current.hexId = -1;
     }
   };
 
@@ -215,15 +206,17 @@ const useHighlightHex = (
     // only add it
     // Add event listener for mouse move
     document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("click", onMouseClick);
 
     return () => {
       // Remove event listener when the component is unmounted
       document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("click", onMouseClick);
     };
   }, []);
 };
 
-const getColorFromMesh = (mesh) => {
+const getColorFromMesh = (mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>): number[] | null => {
   if (!mesh || !mesh.isInstancedMesh) {
     console.error("The provided mesh is not an InstancedMesh.");
     return null;
@@ -238,4 +231,60 @@ const getColorFromMesh = (mesh) => {
   const colors = colorAttribute.array; // This is a Float32Array
 
   return colors;
+};
+
+const updateHighlight = (
+  highlightedHexRef: MutableRefObject<{ hexId: number; color: Color | null }>,
+  hexIndex: number,
+  colors: number[],
+  mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>,
+) => {
+  // Reset previous highlight
+  if (highlightedHexRef.current.hexId !== -1) {
+    const color = highlightedHexRef.current.color;
+    if (color) {
+      color.toArray(colors, highlightedHexRef.current.hexId * 3);
+    }
+  }
+
+  // Store new highlight
+  highlightedHexRef.current.hexId = hexIndex;
+  const prevColor = new Color().fromArray(colors, hexIndex * 3);
+  highlightedHexRef.current.color = prevColor;
+
+  // Blend with light red for highlight effect
+  const lightRed = new Color(0xff6666);
+  const blendFactor = 0.8;
+  const blendedColor = prevColor.clone().lerp(lightRed, blendFactor);
+
+  // Increase brightness
+  const hsl = blendedColor.getHSL({ h: 0, s: 0, l: 0 });
+  hsl.l = Math.min(1, hsl.l * 1.2);
+  blendedColor.setHSL(hsl.h, hsl.s, hsl.l);
+
+  // Apply new color
+  blendedColor.toArray(colors, hexIndex * 3);
+
+  // Update the color attribute of the mesh
+  mesh.geometry.attributes.color.array = new Float32Array(colors);
+  mesh.geometry.attributes.color.needsUpdate = true;
+};
+
+const resetHighlight = (
+  highlightedHexRef: MutableRefObject<{ hexId: number; color: Color | null }>,
+  colors: number[],
+  mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>,
+) => {
+  if (highlightedHexRef.current.hexId !== -1) {
+    // Reset to original color
+    const color = highlightedHexRef.current.color;
+    if (color) {
+      color.toArray(colors, highlightedHexRef.current.hexId * 3);
+
+      // Update the color attribute of the mesh
+      mesh.geometry.attributes.color.array = new Float32Array(colors);
+      mesh.geometry.attributes.color.needsUpdate = true;
+    }
+    highlightedHexRef.current.hexId = -1;
+  }
 };

@@ -46,6 +46,8 @@ interface UIStore {
   moveCameraToFoodView: () => void;
   isLoadingScreenEnabled: boolean;
   setIsLoadingScreenEnabled: (enabled: boolean) => void;
+  clickedHex: { col: number; row: number; hexIndex: number };
+  setClickedHex: (hex: { col: number; row: number; hexIndex: number }) => void;
 }
 
 const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
@@ -190,6 +192,8 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
   ...createPopupsSlice(set),
   ...createDataStoreSlice(set),
+  clickedHex: { col: 0, row: 0, hexIndex: 0, color: null },
+  setClickedHex: (hex) => set({ clickedHex: hex }),
 }));
 
 export default useUIStore;
