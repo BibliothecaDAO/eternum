@@ -2973,7 +2973,7 @@
     {
       "name": "eternum::systems::map::contracts::map_systems",
       "address": null,
-      "class_hash": "0x5479c7e9eb390aa9ea4a7eeaf8ae43c78ba3188a5d8127b16ab9fbbc1aa1b3f",
+      "class_hash": "0x771acda4db5e67cc03e3a16b2452b9932873d680f9a89851a1a54a9244f84ae",
       "abi": [
         {
           "type": "impl",
@@ -3101,6 +3101,113 @@
           ]
         },
         {
+          "type": "enum",
+          "name": "eternum::utils::map::biomes::Biome",
+          "variants": [
+            {
+              "name": "DeepOcean",
+              "type": "()"
+            },
+            {
+              "name": "Ocean",
+              "type": "()"
+            },
+            {
+              "name": "Beach",
+              "type": "()"
+            },
+            {
+              "name": "Scorched",
+              "type": "()"
+            },
+            {
+              "name": "Bare",
+              "type": "()"
+            },
+            {
+              "name": "Tundra",
+              "type": "()"
+            },
+            {
+              "name": "Snow",
+              "type": "()"
+            },
+            {
+              "name": "TemperateDesert",
+              "type": "()"
+            },
+            {
+              "name": "Shrubland",
+              "type": "()"
+            },
+            {
+              "name": "Taiga",
+              "type": "()"
+            },
+            {
+              "name": "Grassland",
+              "type": "()"
+            },
+            {
+              "name": "TemperateDeciduousForest",
+              "type": "()"
+            },
+            {
+              "name": "TemperateRainForest",
+              "type": "()"
+            },
+            {
+              "name": "SubtropicalDesert",
+              "type": "()"
+            },
+            {
+              "name": "TropicalSeasonalForest",
+              "type": "()"
+            },
+            {
+              "name": "TropicalRainForest",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::systems::map::contracts::map_systems::MapExplored",
+          "kind": "struct",
+          "members": [
+            {
+              "name": "entity_id",
+              "type": "core::integer::u128",
+              "kind": "key"
+            },
+            {
+              "name": "col",
+              "type": "core::integer::u128",
+              "kind": "key"
+            },
+            {
+              "name": "row",
+              "type": "core::integer::u128",
+              "kind": "key"
+            },
+            {
+              "name": "biome",
+              "type": "eternum::utils::map::biomes::Biome",
+              "kind": "data"
+            },
+            {
+              "name": "minted_resource_id",
+              "type": "core::integer::u8",
+              "kind": "data"
+            },
+            {
+              "name": "minted_resource_amount",
+              "type": "core::integer::u128",
+              "kind": "data"
+            }
+          ]
+        },
+        {
           "type": "event",
           "name": "eternum::systems::map::contracts::map_systems::Event",
           "kind": "enum",
@@ -3108,6 +3215,11 @@
             {
               "name": "UpgradeableEvent",
               "type": "dojo::components::upgradeable::upgradeable::Event",
+              "kind": "nested"
+            },
+            {
+              "name": "MapExplored",
+              "type": "eternum::systems::map::contracts::map_systems::MapExplored",
               "kind": "nested"
             }
           ]
