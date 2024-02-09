@@ -17,6 +17,10 @@ const HIGHEST_Y:u128 = 2412800;
 const LOWEST_Y: u128 = 1181004;
 
 
+// multiplier to convert hex distance to km
+const HEX_DISTANCE_TO_KM : u128 = 1; 
+
+
 
 // https://www.redblobgames.com/grids/hexagons/#coordinates-cube
 
@@ -83,7 +87,7 @@ impl CubeImpl of CubeTrait {
             }
         };
 
-        max.try_into().unwrap()
+        max.try_into().unwrap() * HEX_DISTANCE_TO_KM
     }
 
     fn travel_time(self: Cube, other: Cube, sec_per_km: u16) -> u64 {
