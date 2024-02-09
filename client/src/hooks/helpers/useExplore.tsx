@@ -88,7 +88,6 @@ export function useExplore() {
   const isValidExplore = (col: number, row: number) => {
     // check if not explored yet
     if (isExplored(col, row)) {
-      console.log("already explored");
       return false;
     }
 
@@ -107,9 +106,7 @@ export function useExplore() {
         ExploredMap,
         getEntityIdFromKeys([BigInt(col + offset.i), BigInt(row + offset.j)]),
       );
-      console.log({ exploration });
       if (exploration && exploration.explored_by_id === realmEntityIds[0]?.realmEntityId) {
-        console.log("has neighbor explored", exploration);
         return true;
       }
     }

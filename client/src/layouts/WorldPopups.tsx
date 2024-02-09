@@ -6,7 +6,6 @@ import { ExploreMapPopup } from "../components/worldmap/explore/ExploreHexPopup"
 import { useThree } from "@react-three/fiber";
 
 export const WorldPopups = () => {
-  // console.log("world map popups");
   const setClickedHex = useUIStore((state) => state.setClickedHex);
   const [showFeedPopup, setShowFeedPopup] = useState(false);
   const [selectedHyperstructure, setSelectedHyperstructure] = useState<HyperStructureInterface | undefined>(undefined);

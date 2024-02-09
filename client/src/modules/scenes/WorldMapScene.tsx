@@ -70,35 +70,34 @@ export const WorldMapScene = () => {
       {/* <WorldMap ref={worldRef} /> */}
       {/* <HyperstructureStarted /> */}
       {!showBlankOverlay && isMapView && <Map />}
-      {hyperstructures.map((hyperstructure, i) => {
+      {/* {hyperstructures.map((hyperstructure, i) => {
         if (hyperstructure) {
-          console.log({ hyperstructures });
-          // if (hyperstructure.completed) {
-          let uiPosition = hyperstructure.uiPosition;
-          return <HyperstructureFinished key={i} scale={1.8} position={[uiPosition.x, 15, -uiPosition.y]} />;
-          // } else if (hyperstructure.progress > 50) {
-          //   return (
-          //     <HyperstructureHalf
-          //       key={i}
-          //       scale={100}
-          //       hyperstructure={hyperstructure}
-          //       position={[hyperstructure.uiPosition.x, hyperstructure.uiPosition.y, hyperstructure.uiPosition.z]}
-          //     />
-          //   );
-          // } else {
-          //   return (
-          //     <HyperstructureStarted
-          //       key={i}
-          //       hyperstructure={hyperstructure}
-          //       scale={5}
-          //       // position={[hyperstructure.uiPosition.x, hyperstructure.uiPosition.y, hyperstructure.uiPosition.z]}
-          //       position={[0, 0, 0]}
-          //     />
-          //   );
-          // }
+          if (hyperstructure.completed) {
+            let uiPosition = hyperstructure.uiPosition;
+            return <HyperstructureFinished key={i} scale={1.8} position={[uiPosition.x, 15, -uiPosition.y]} />;
+          } else if (hyperstructure.progress > 50) {
+            return (
+              <HyperstructureHalf
+                key={i}
+                scale={100}
+                hyperstructure={hyperstructure}
+                position={[hyperstructure.uiPosition.x, hyperstructure.uiPosition.y, hyperstructure.uiPosition.z]}
+              />
+            );
+          } else {
+            return (
+              <HyperstructureStarted
+                key={i}
+                hyperstructure={hyperstructure}
+                scale={5}
+                // position={[hyperstructure.uiPosition.x, hyperstructure.uiPosition.y, hyperstructure.uiPosition.z]}
+                position={[0, 0, 0]}
+              />
+            );
+          }
         }
         return null;
-      })}
+      })} */}
       {/* {banks.map((bank, i) => {
         return <Bank key={i} position={[bank.x, bank.y, bank.z]} />;
       })} */}

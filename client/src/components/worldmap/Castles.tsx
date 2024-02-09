@@ -1,5 +1,6 @@
 import { useGLTF } from "@react-three/drei";
-import { MutableRefObject, useMemo } from "react";
+import realmHexPositions from "../../geodata/hex/realmHexPositions.json";
+import { MutableRefObject, useEffect, useMemo } from "react";
 import { useRealm } from "../../hooks/helpers/useRealm";
 import { useDojo } from "../../DojoContext";
 import useRealmStore from "../../hooks/store/useRealmStore";
@@ -7,9 +8,9 @@ import hexDataJson from "../../geodata/hex/hexData.json";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Position } from "@bibliothecadao/eternum";
-import { getRealmUIPosition, getUIPositionFromColRow } from "../../utils/utils";
+import { HexPositions, getRealmUIPosition, getUIPositionFromColRow } from "../../utils/utils";
 import { GLTF } from "three-stdlib";
-import { Hexagon, getPositionsFromMesh } from "./HexGrid";
+import { DEPTH, Hexagon, getPositionsAtIndex } from "./HexGrid";
 import { ExtrudeGeometry, InstancedMesh, MeshBasicMaterial } from "three";
 
 // @ts-nocheck
@@ -130,25 +131,26 @@ export const Castles = ({ meshRef }: CastlesProps) => {
 
   const { nodes, materials } = useGLTF("/models/realm-buildings-transformed.glb") as GLTFResult;
 
+  const realmPositions = realmHexPositions as HexPositions;
+
   let castles = useMemo(() => {
     return realmEntityIds
       .map((entity) => {
-        const hexIndex = hexData.findIndex((h) => h.col === entity.col && h.row === entity.row);
+        const colrow = realmPositions[Number(entity.realmId).toString()][0];
+        const hexIndex = hexData.findIndex((h) => h.col === colrow.col && h.row === colrow.row);
+        // to have the exact height of the hexagon and place castle on top
         return { position: getRealmUIPosition(entity.realmId), index: hexIndex };
       })
       .filter(Boolean);
   }, []);
 
-  const meshPositions = meshRef ? getPositionsFromMesh(meshRef.current) : undefined;
-  console.log({ meshPositions });
-
   return (
     <group>
       {castles.map((castle) => {
         const { position, index } = castle;
-        if (index === -1 || !meshPositions) return null;
-        const height = meshPositions[index * 3];
-        console.log({ height });
+        if (index === -1 || !meshRef.current) return null;
+        // const height = meshPositions[index * 3];
+        const matrix = getPositionsAtIndex(meshRef.current, index);
         return (
           <mesh
             scale={0.03}
@@ -156,7 +158,7 @@ export const Castles = ({ meshRef }: CastlesProps) => {
             castShadow
             geometry={nodes.castle.geometry}
             material={materials.PaletteMaterial004}
-            position={[position.x, 15, -position.y]}
+            position={[position.x, DEPTH + (matrix?.z || 0), -position.y]}
             // position={[position.x, height + 1, -position.y]}
           />
         );

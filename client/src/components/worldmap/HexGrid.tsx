@@ -11,6 +11,7 @@ import {
   Matrix4,
   MeshBasicMaterial,
   Vector2,
+  Vector3,
 } from "three";
 import hexDataJson from "../../geodata/hex/hexData.json";
 import { useThree } from "@react-three/fiber";
@@ -20,9 +21,10 @@ import { useDojo } from "../../DojoContext";
 import { Subscription } from "rxjs";
 import { getUIPositionFromColRow } from "../../utils/utils";
 import { Castles } from "./Castles";
+import { Hyperstructures } from "./Hyperstructures";
 
-const DEPTH = 10;
-const HEX_RADIUS = 3;
+export const DEPTH = 10;
+export const HEX_RADIUS = 3;
 
 export interface Hexagon {
   idx: number;
@@ -192,7 +194,8 @@ export const Map = () => {
       <mesh rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>
         <HexagonGrid hexMeshRef={hexMeshRef} startRow={0} endRow={rows} startCol={0} endCol={cols} />
       </mesh>
-      {/* <Castles meshRef={hexMeshRef}></Castles> */}
+      <Castles meshRef={hexMeshRef} />
+      <Hyperstructures hexMeshRef={hexMeshRef} />
       {/* <Flags></Flags> */}
       {/* <mesh>
         {hexagonGrids.map((grid, index) => {
@@ -268,7 +271,6 @@ const useHighlightHex = (
       const hex = hexIndex ? hexData[hexIndex] : undefined;
 
       if (hex && hexIndex) {
-        console.log({ col: hex.col, row: hex.row, hexIndex });
         setClickedHex({ col: hex.col, row: hex.row, hexIndex });
       }
     }
@@ -325,19 +327,23 @@ const getColorFromMesh = (mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial
   return colors;
 };
 
-export const getPositionsFromMesh = (mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>): number[] | null => {
+export const getPositionsAtIndex = (mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>, index: number) => {
   if (!mesh || !mesh.isInstancedMesh) {
     console.error("The provided mesh is not an InstancedMesh.");
     return null;
   }
 
-  const positionAttribute = mesh.geometry.getAttribute("position");
-  if (!positionAttribute) {
-    console.error("No position attribute found in the mesh.");
-    return null;
-  }
+  const matrix = new Matrix4();
+  mesh.getMatrixAt(index, matrix);
+  const positions = new Vector3();
+  positions.setFromMatrixPosition(matrix);
 
-  const positions = positionAttribute.array; // This is a Float32Array
+  // if (!positionAttribute) {
+  //   console.error("No position attribute found in the mesh.");
+  //   return null;
+  // }
+
+  // const positions = positionAttribute.array; // This is a Float32Array
 
   return positions;
 };
