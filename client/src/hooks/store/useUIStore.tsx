@@ -101,13 +101,17 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
     set({ cameraTarget: targetPos });
   },
   moveCameraToTarget: (target, distance = 25) => {
+    const x = target.x;
+    const y = target.y * -1;
+    const z = target.z;
+    const trueTarget = { x, y, z };
     const cameraPos = new Vector3(
-      target.x + distance * (Math.random() < 0.5 ? 1 : -1),
+      x + distance * (Math.random() < 0.5 ? 1 : -1),
       distance / 2,
-      target.y + distance * (Math.random() < 0.5 ? 1 : -1),
+      y + distance * (Math.random() < 0.5 ? 1 : -1),
     );
     set({ cameraPosition: cameraPos });
-    set({ cameraTarget: target });
+    set({ cameraTarget: trueTarget });
   },
   showRealmsFlags: true,
   setShowRealmsFlags: (show) => set({ showRealmsFlags: show }),

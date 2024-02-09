@@ -1,5 +1,5 @@
 import { useGLTF } from "@react-three/drei";
-import { useMemo } from "react";
+import { MutableRefObject, useMemo } from "react";
 import { useRealm } from "../../hooks/helpers/useRealm";
 import { useDojo } from "../../DojoContext";
 import useRealmStore from "../../hooks/store/useRealmStore";
@@ -121,7 +121,11 @@ type ContextType = Record<string, React.ForwardRefExoticComponent<JSX.IntrinsicE
 
 const hexData: Hexagon[] = hexDataJson as Hexagon[];
 
-export const Castles = (mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>) => {
+type CastlesProps = {
+  meshRef: MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>;
+};
+
+export const Castles = ({ meshRef }: CastlesProps) => {
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
   const { nodes, materials } = useGLTF("/models/realm-buildings-transformed.glb") as GLTFResult;
@@ -135,7 +139,8 @@ export const Castles = (mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>)
       .filter(Boolean);
   }, []);
 
-  const meshPositions = getPositionsFromMesh(mesh);
+  const meshPositions = meshRef ? getPositionsFromMesh(meshRef.current) : undefined;
+  console.log({ meshPositions });
 
   return (
     <group>

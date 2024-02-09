@@ -133,7 +133,7 @@ export const HyperstructuresListItem = ({
           <div className=" text-gold flex">
             <Button
               onClick={() => {
-                moveCameraToTarget(coords as any);
+                moveCameraToTarget(coords as any, 100);
               }}
               variant="outline"
               className="p-1 !h-4 text-xxs !rounded-md"

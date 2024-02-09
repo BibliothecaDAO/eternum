@@ -1,6 +1,8 @@
 import { Environment } from "@react-three/drei";
 import { createHexagonGeometry } from "./components/three/HexagonBackground";
 import { MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
+// @ts-ignore
+import { Flags } from "../../components/worldmap/Flags.jsx";
 import {
   Color,
   ExtrudeGeometry,
@@ -17,6 +19,7 @@ import { useExplore } from "../../hooks/helpers/useExplore";
 import { useDojo } from "../../DojoContext";
 import { Subscription } from "rxjs";
 import { getUIPositionFromColRow } from "../../utils/utils";
+import { Castles } from "./Castles";
 
 const DEPTH = 10;
 const HEX_RADIUS = 3;
@@ -39,11 +42,10 @@ type HexagonGridProps = {
   endRow: number;
   startCol: number;
   endCol: number;
-  selectedHex?: { col: number; row: number };
-  index: number;
+  hexMeshRef: MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>;
 };
 
-const HexagonGrid = ({ startRow, endRow, startCol, endCol, selectedHex, index }: HexagonGridProps) => {
+const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: HexagonGridProps) => {
   const {
     setup: {
       updates: {
@@ -52,7 +54,7 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, selectedHex, index }:
     },
   } = useDojo();
 
-  const hexMeshRef = useRef<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>>();
+  // const hexMeshRef = useRef<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>>();
 
   const clickedHex = useUIStore((state) => state.clickedHex);
 
@@ -181,13 +183,17 @@ export const Map = () => {
     return hexagonGrids;
   }, []);
 
+  const hexMeshRef = useRef<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>>();
+
   return (
     <mesh>
       <ambientLight color={"white"} intensity={1} />
       <pointLight rotation={[Math.PI / -2, 0, 0]} position={[10, 20, 10]} intensity={20} />
       <mesh rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>
-        <HexagonGrid startRow={0} endRow={rows} startCol={0} endCol={cols} index={0} />
+        <HexagonGrid hexMeshRef={hexMeshRef} startRow={0} endRow={rows} startCol={0} endCol={cols} />
       </mesh>
+      {/* <Castles meshRef={hexMeshRef}></Castles> */}
+      {/* <Flags></Flags> */}
       {/* <mesh>
         {hexagonGrids.map((grid, index) => {
           return (
