@@ -8,6 +8,8 @@ import * as THREE from "three";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { HyperStructureInterface } from "@bibliothecadao/eternum";
+import { useEffect, useRef } from "react";
+import useUIStore from "../../../../hooks/store/useUIStore";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -29,8 +31,16 @@ export default function HyperstructureFinished(
 ) {
   const { nodes, materials } = useGLTF("/models/hyperstructure-finished-transformed.glb") as GLTFResult;
 
+  const setClickedHyperstructure = useUIStore((state) => state.setClickedHyperstructure);
+
+  const onClick = () => {
+    if (props.hyperstructure) {
+      setClickedHyperstructure(props.hyperstructure);
+    }
+  };
+
   return (
-    <group {...props} dispose={null}>
+    <group {...props} id={props.id} onClick={onClick} dispose={null}>
       <group name="Scene">
         <group name="tower_finished" position={[0, -0.096, 0]}>
           <mesh name="tower" geometry={nodes.tower.geometry} material={materials.Stone} />

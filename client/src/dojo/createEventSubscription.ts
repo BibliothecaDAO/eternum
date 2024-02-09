@@ -25,7 +25,8 @@ type getEventsQuery = {
 
 export async function createEventSubscription(
   keys: string[],
-  addPast?: boolean = true,
+  addPast: boolean = true,
+  maxEvents: number = MAX_EVENTS,
 ): Promise<Observable<Event | null>> {
   const lastUpdate$ = new ReplaySubject<Event | null>();
 
@@ -34,7 +35,7 @@ export async function createEventSubscription(
   if (addPast) {
     const queryBuilder = `
     query {
-      events(keys: [${formattedKeys}] last: ${MAX_EVENTS}) {
+      events(keys: [${formattedKeys}] last: ${maxEvents}) {
         edges {
           node {
             id

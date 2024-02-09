@@ -6,6 +6,7 @@ import { Vector3 } from "three";
 import { createDataStoreSlice, DataStore } from "./_dataStore";
 import React from "react";
 import { getRealmUIPosition } from "../../utils/utils";
+import { HyperStructureInterface } from "@bibliothecadao/eternum";
 export type Background = "map" | "realmView" | "combat" | "bastion";
 
 interface UIStore {
@@ -48,6 +49,8 @@ interface UIStore {
   setIsLoadingScreenEnabled: (enabled: boolean) => void;
   clickedHex: { col: number; row: number; hexIndex: number } | undefined;
   setClickedHex: (hex: { col: number; row: number; hexIndex: number } | undefined) => void;
+  setClickedHyperstructure: (hyperstructure: HyperStructureInterface | undefined) => void;
+  clickedHyperstructure: HyperStructureInterface | undefined;
 }
 
 const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
@@ -204,6 +207,8 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   ...createDataStoreSlice(set),
   clickedHex: undefined,
   setClickedHex: (hex) => set({ clickedHex: hex }),
+  setClickedHyperstructure: (hyperstructure) => set({ clickedHyperstructure: hyperstructure }),
+  clickedHyperstructure: undefined,
 }));
 
 export default useUIStore;

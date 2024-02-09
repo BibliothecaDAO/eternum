@@ -1,6 +1,6 @@
 import { HyperstructuresListItem } from "./HyperstructuresListItem";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 // import { getRealm } from "../../../utils/realms";
 import { useDojo } from "../../../DojoContext";
 import { FeedHyperstructurePopup } from "./FeedHyperstructure";

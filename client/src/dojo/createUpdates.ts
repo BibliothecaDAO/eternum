@@ -18,7 +18,7 @@ export const createUpdates = async () => {
       createEventSubscription([TRAVEL_EVENT, numberToHex(x), numberToHex(y)]),
     createDirectOffersEvents: async (entityId: bigint) =>
       createEventSubscription([CREATE_ORDER_EVENT, numberToHex(Number(entityId)), "*"]),
-    exploreMapEvents: async () => createEventSubscription([MAP_EXPLORED_EVENT], true),
+    exploreMapEvents: async () => createEventSubscription([MAP_EXPLORED_EVENT], true, 1000),
     exploreEntityMapEvents: async (entityId: bigint) =>
       createEventSubscription([MAP_EXPLORED_EVENT, numberToHex(Number(entityId))], false),
   };

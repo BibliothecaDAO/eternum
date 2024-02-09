@@ -70,6 +70,8 @@ const STYLES = {
     sm: "w-4 h-4 md:w-6 md:h-6",
     md: "w-6 h-6",
     lg: "w-8 h-8 md:w-12 md:h-16",
+    xl: "w-12 h-12 md:w-16 md:h-16",
+    xxl: "w-16 h-16 md:w-20 md:h-20",
   },
 } as const;
 

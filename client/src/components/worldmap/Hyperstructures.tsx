@@ -1,9 +1,11 @@
 import { HyperStructureInterface } from "@bibliothecadao/eternum";
-import { BufferGeometry, ExtrudeGeometry, InstancedMesh, MeshBasicMaterial } from "three";
+import { BufferGeometry, ExtrudeGeometry, InstancedMesh, MeshBasicMaterial, Vector2 } from "three";
 import HyperstructureFinished from "./hyperstructures/models/HyperstructureFinished";
 import { DEPTH, Hexagon, getPositionsAtIndex } from "./HexGrid";
 import hexDataJson from "../../geodata/hex/hexData.json";
 import useUIStore from "../../hooks/store/useUIStore";
+import { useThree } from "@react-three/fiber";
+import { useEffect, useRef } from "react";
 
 type Hyperstructures = {
   hexMeshRef: React.MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>;
@@ -17,7 +19,7 @@ export const Hyperstructures = ({ hexMeshRef }: Hyperstructures) => {
   const hyperstructures = useUIStore((state) => state.hyperstructures);
 
   return (
-    <>
+    <group>
       {hyperstructures.map((hyperstructure, i) => {
         if (hyperstructure) {
           const {
@@ -30,12 +32,13 @@ export const Hyperstructures = ({ hexMeshRef }: Hyperstructures) => {
           return (
             <HyperstructureFinished
               key={i}
-              scale={1.8}
+              hyperstructure={hyperstructure}
+              scale={6}
               position={[uiPosition.x, 10 + (hexPosition?.z || 0), -uiPosition.y]}
             />
           );
         }
       })}
-    </>
+    </group>
   );
 };

@@ -20,7 +20,7 @@ import { useExplore } from "../../hooks/helpers/useExplore";
 import { useDojo } from "../../DojoContext";
 import { Subscription } from "rxjs";
 import { getUIPositionFromColRow } from "../../utils/utils";
-import { Castles } from "./Castles";
+import { MyCastles, OtherCastles } from "./Castles";
 import { Hyperstructures } from "./Hyperstructures";
 
 export const DEPTH = 10;
@@ -155,10 +155,11 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
     });
 
     const colorAttribute = new InstancedBufferAttribute(new Float32Array(colors), 3);
+    console.log("set old colors");
     instancedMesh.geometry.setAttribute("color", colorAttribute);
 
     return instancedMesh;
-  }, [group, colors, HEX_RADIUS, DEPTH]);
+  }, [group, colors]);
 
   return (
     <>
@@ -194,7 +195,8 @@ export const Map = () => {
       <mesh rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>
         <HexagonGrid hexMeshRef={hexMeshRef} startRow={0} endRow={rows} startCol={0} endCol={cols} />
       </mesh>
-      <Castles meshRef={hexMeshRef} />
+      <MyCastles meshRef={hexMeshRef} />
+      <OtherCastles meshRef={hexMeshRef} />
       <Hyperstructures hexMeshRef={hexMeshRef} />
       {/* <Flags></Flags> */}
       {/* <mesh>

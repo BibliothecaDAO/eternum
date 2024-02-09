@@ -1,13 +1,9 @@
 import { useGLTF } from "@react-three/drei";
 import realmHexPositions from "../../geodata/hex/realmHexPositions.json";
-import { MutableRefObject, useEffect, useMemo } from "react";
-import { useRealm } from "../../hooks/helpers/useRealm";
-import { useDojo } from "../../DojoContext";
+import { MutableRefObject, useMemo } from "react";
+import { useGetRealms } from "../../hooks/helpers/useRealm";
 import useRealmStore from "../../hooks/store/useRealmStore";
 import hexDataJson from "../../geodata/hex/hexData.json";
-import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { Position } from "@bibliothecadao/eternum";
 import { HexPositions, getRealmUIPosition, getUIPositionFromColRow } from "../../utils/utils";
 import { GLTF } from "three-stdlib";
 import { DEPTH, Hexagon, getPositionsAtIndex } from "./HexGrid";
@@ -126,7 +122,46 @@ type CastlesProps = {
   meshRef: MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>;
 };
 
-export const Castles = ({ meshRef }: CastlesProps) => {
+export const OtherCastles = ({ meshRef }: CastlesProps) => {
+  const { nodes, materials } = useGLTF("/models/realm-buildings-transformed.glb") as GLTFResult;
+  const realms = useGetRealms();
+
+  const realmPositions = realmHexPositions as HexPositions;
+
+  let castles = useMemo(() => {
+    return realms
+      .map((realm) => {
+        const colrow = realmPositions[Number(realm.realmId).toString()][0];
+        const hexIndex = hexData.findIndex((h) => h.col === colrow.col && h.row === colrow.row);
+        // to have the exact height of the hexagon and place castle on top
+        return { position: getRealmUIPosition(realm.realmId), index: hexIndex };
+      })
+      .filter(Boolean);
+  }, []);
+
+  return (
+    <group>
+      {castles.map((castle) => {
+        const { position, index } = castle;
+        if (index === -1 || !meshRef.current) return null;
+        const matrix = getPositionsAtIndex(meshRef.current, index);
+        return (
+          <mesh
+            key={index}
+            scale={0.03}
+            name="castle"
+            castShadow
+            geometry={nodes.castle.geometry}
+            material={materials.PaletteMaterial011}
+            position={[position.x, DEPTH + (matrix?.z || 0), -position.y]}
+          />
+        );
+      })}
+    </group>
+  );
+};
+
+export const MyCastles = ({ meshRef }: CastlesProps) => {
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
   const { nodes, materials } = useGLTF("/models/realm-buildings-transformed.glb") as GLTFResult;
@@ -153,11 +188,14 @@ export const Castles = ({ meshRef }: CastlesProps) => {
         const matrix = getPositionsAtIndex(meshRef.current, index);
         return (
           <mesh
+            key={index}
             scale={0.03}
             name="castle"
             castShadow
             geometry={nodes.castle.geometry}
             material={materials.PaletteMaterial004}
+            // rotate the castle in a random manner based on a seed
+            rotation={[0, Math.random() * 2 * Math.PI, 0]}
             position={[position.x, DEPTH + (matrix?.z || 0), -position.y]}
             // position={[position.x, height + 1, -position.y]}
           />

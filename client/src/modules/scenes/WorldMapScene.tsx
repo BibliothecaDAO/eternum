@@ -59,7 +59,6 @@ export const WorldMapScene = () => {
 
   return (
     <>
-      {/* <Castles /> */}
       {/* <Flags /> */}
       {/* <TransformControls mode="translate" onChange={(e) => console.log(e?.target?.object?.position)}>
         <mesh>
