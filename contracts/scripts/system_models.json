@@ -131,5 +131,10 @@
         "Resource",
         "OwnedResourcesTracker",
         "LaborBuilding"
+    ],
+    "MAP_SYSTEMS": [
+        "ExploredMap",
+        "Resource",
+        "OwnedResourcesTracker"
     ]
 }

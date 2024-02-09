@@ -33,7 +33,6 @@ export default function HyperstructureStarted(
   };
 
   const hyperstructures: (HyperStructureInterface | undefined)[] = useUIStore((state) => state.hyperstructures);
-  // console.log({ hyperstructures });
 
   const uninitializedHyperstructures = useMemo(
     () => hyperstructures.filter((hyperstructure) => hyperstructure?.progress === 0),

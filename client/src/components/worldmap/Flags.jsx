@@ -12,7 +12,7 @@ import gsap from "gsap";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useControls } from "leva";
 import { orderNameDict } from "@bibliothecadao/eternum";
-import { getUIPositionFromColRow } from "../../utils/utils";
+import { getRealmUIPosition, getUIPositionFromColRow } from "../../utils/utils";
 
 const count = realmsJson.features.length;
 
@@ -163,12 +163,10 @@ export function Flags(props) {
 
     ordersRealms.forEach((orderRealms, index) => {
       orderRealms.forEach((realm, i) => {
-        const position = realmHexPositions[Number(realm.realmId)][0];
-        const UIPosition = getUIPositionFromColRow(position.col, position.row);
+        const {x, y} = getRealmUIPosition(realm.realmId);
         const z = -0 - flagsHeights[Number(realm.realmId) - 1];
-        console.log({z})
-        console.log({UIPosition})
-        _position.set(-UIPosition.y, UIPosition.x, -20);
+        // _position.set(-y, -x, -20);
+        _position.set(-x, y, -20);
         dummy.position.copy(_position);
         dummy.rotateZ(
           //random

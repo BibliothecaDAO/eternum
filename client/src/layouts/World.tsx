@@ -27,6 +27,7 @@ import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
 import { Onboarding } from "../plugins/onboarding/components/Onboarding";
 import { useComputeMarket } from "../hooks/store/useMarketStore";
 import { useRefreshHyperstructure } from "../hooks/store/useRefreshHyperstructure";
+import { WorldPopups } from "./WorldPopups";
 
 export const World = () => {
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
@@ -114,9 +115,12 @@ export const World = () => {
       }
       className="fixed antialiased top-0 left-0 z-0 w-screen h-screen p-2 overflow-hidden"
     >
+      <WorldPopups />
       <BackgroundContainer className="border-2 border-[#E0AF65] rounded-xl relative">
         <div className="absolute top-0 left-0 z-10 w-full pointer-events-none rounded-xl h-44 bg-gradient-to-b from-black to-transparent opacity-90" />
-        <MainScene />
+        <div className="h-full w-full main-scene">
+          <MainScene />
+        </div>
         <div className="absolute bottom-0 left-0 z-10 w-full pointer-events-none rounded-xl h-44 bg-gradient-to-t from-black to-transparent opacity-90" />
         <div
           className={clsx(

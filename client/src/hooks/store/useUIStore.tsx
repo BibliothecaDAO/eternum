@@ -46,8 +46,8 @@ interface UIStore {
   moveCameraToFoodView: () => void;
   isLoadingScreenEnabled: boolean;
   setIsLoadingScreenEnabled: (enabled: boolean) => void;
-  clickedHex: { col: number; row: number; hexIndex: number };
-  setClickedHex: (hex: { col: number; row: number; hexIndex: number }) => void;
+  clickedHex: { col: number; row: number; hexIndex: number } | undefined;
+  setClickedHex: (hex: { col: number; row: number; hexIndex: number } | undefined) => void;
 }
 
 const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
@@ -88,9 +88,15 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   mouseCoords: { x: 0, y: 0 },
   setMouseCoords: (coords) => set({ mouseCoords: coords }),
   moveCameraToRealm: (realmId) => {
-    const { x, y } = getRealmUIPosition(BigInt(realmId));
+    const pos = getRealmUIPosition(BigInt(realmId));
+    const x = pos.x;
+    const y = pos.y * -1;
     const targetPos = new Vector3(x, 50, y);
-    const cameraPos = new Vector3(x + 25 * (Math.random() < 0.5 ? 1 : -1), 25, y + 25 * (Math.random() < 0.5 ? 1 : -1));
+    const cameraPos = new Vector3(
+      x + 25 * (Math.random() < 0.5 ? 1 : -1),
+      120,
+      y + 25 * (Math.random() < 0.5 ? 1 : -1),
+    );
     set({ cameraPosition: cameraPos });
     set({ cameraTarget: targetPos });
   },
@@ -192,7 +198,7 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
   ...createPopupsSlice(set),
   ...createDataStoreSlice(set),
-  clickedHex: { col: 0, row: 0, hexIndex: 0, color: null },
+  clickedHex: undefined,
   setClickedHex: (hex) => set({ clickedHex: hex }),
 }));
 

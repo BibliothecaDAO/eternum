@@ -378,17 +378,22 @@ export const calculateDistance = (start: Position, destination: Position): numbe
   return distance;
 };
 
-export const getUIPositionFromColRow = (col: number, row: number): Position => {
+export const getUIPositionFromColRow = (col: number, row: number, log: boolean = false): Position => {
   const hexRadius = 3;
   const hexHeight = hexRadius * 2;
   const hexWidth = Math.sqrt(3) * hexRadius;
   const vertDist = hexHeight * 0.75;
   const horizDist = hexWidth;
 
+  if (log) {
+    console.log({ getUiPosColRow: { col, row } });
+  }
+
   const colNorm = col - 2147483647;
   const rowNorm = row - 2147483647;
   const x = colNorm * horizDist + ((rowNorm % 2) * horizDist) / 2;
   const y = rowNorm * vertDist;
+
   return {
     x,
     y,
@@ -401,7 +406,9 @@ export interface HexPositions {
 
 export const getRealmUIPosition = (realm_id: bigint): Position => {
   const realmPositions = realmHexPositions as HexPositions;
-  const colrow = realmPositions[Number(realm_id).toString()];
+  const colrow = realmPositions[Number(realm_id).toString()][0];
+  console.log({ Cameracolrow: colrow });
+  // const uiRow = 2147483647 + 300 - (colrow.row - 2147483647);
 
-  return getUIPositionFromColRow(colrow[0].col, colrow[0].row);
+  return getUIPositionFromColRow(colrow.col, colrow.row, true);
 };

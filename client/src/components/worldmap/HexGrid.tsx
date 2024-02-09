@@ -1,6 +1,6 @@
 import { Environment } from "@react-three/drei";
 import { createHexagonGeometry } from "./components/three/HexagonBackground";
-import { MutableRefObject, useEffect, useMemo, useRef } from "react";
+import { MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
 import {
   Color,
   ExtrudeGeometry,
@@ -8,19 +8,20 @@ import {
   InstancedMesh,
   Matrix4,
   MeshBasicMaterial,
-  Raycaster,
   Vector2,
 } from "three";
 import hexDataJson from "../../geodata/hex/hexData.json";
 import { useThree } from "@react-three/fiber";
-import { OutlineEffect } from "three-stdlib";
 import useUIStore from "../../hooks/store/useUIStore";
-import { remove } from "mobx";
 import { useExplore } from "../../hooks/helpers/useExplore";
 import { useDojo } from "../../DojoContext";
 import { Subscription } from "rxjs";
+import { getUIPositionFromColRow } from "../../utils/utils";
 
-interface Hexagon {
+const DEPTH = 10;
+const HEX_RADIUS = 3;
+
+export interface Hexagon {
   idx: number;
   col: number;
   row: number;
@@ -38,12 +39,11 @@ type HexagonGridProps = {
   endRow: number;
   startCol: number;
   endCol: number;
-  hexRadius: number;
   selectedHex?: { col: number; row: number };
   index: number;
 };
 
-const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexRadius, selectedHex, index }: HexagonGridProps) => {
+const HexagonGrid = ({ startRow, endRow, startCol, endCol, selectedHex, index }: HexagonGridProps) => {
   const {
     setup: {
       updates: {
@@ -54,25 +54,27 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexRadius, selectedHe
 
   const hexMeshRef = useRef<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>>();
 
+  const clickedHex = useUIStore((state) => state.clickedHex);
+
   const { exploredColsRows, useExplorationClickedHex } = useExplore();
 
-  useEffect(() => {
-    const colsRows = exploredColsRows(startCol, endCol, startRow, endRow);
+  // useEffect(() => {
+  //   const colsRows = exploredColsRows(startCol, endCol, startRow, endRow);
 
-    // change color back to original for explored hexes
-    const colors = getColorFromMesh(hexMeshRef.current);
-    if (!colors) return;
-    colsRows.forEach((hex) => {
-      const hexIndex = hexData.findIndex((h) => h.col === hex.col && h.row === hex.row);
-      if (hexIndex !== -1) {
-        const color = new Color(hexData[hexIndex].color);
-        color.toArray(colors, hexIndex * 3);
-      }
-    });
+  //   // change color back to original for explored hexes
+  //   const colors = getColorFromMesh(hexMeshRef.current);
+  //   if (!colors) return;
+  //   colsRows.forEach((hex) => {
+  //     const hexIndex = hexData.findIndex((h) => h.col === hex.col && h.row === hex.row);
+  //     if (hexIndex !== -1) {
+  //       const color = new Color(hexData[hexIndex].color);
+  //       color.toArray(colors, hexIndex * 3);
+  //     }
+  //   });
 
-    hexMeshRef.current.geometry.attributes.color.array = new Float32Array(colors);
-    hexMeshRef.current.geometry.attributes.color.needsUpdate = true;
-  }, []);
+  //   hexMeshRef.current.geometry.attributes.color.array = new Float32Array(colors);
+  //   hexMeshRef.current.geometry.attributes.color.needsUpdate = true;
+  // }, []);
 
   // another use effect to change the color of the selected hex if it's been successfuly explored
   useEffect(() => {
@@ -82,9 +84,8 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexRadius, selectedHe
       const observable = await exploreMapEvents();
       const sub = observable.subscribe((event) => {
         if (event) {
-          console.log({ exploreMapEvent: event });
-          const col = event.data[0];
-          const row = event.data[1];
+          const col = Number(event.keys[2]);
+          const row = Number(event.keys[3]);
           const hexIndex = hexData.findIndex((h) => h.col === col && h.row === row);
           if (hexIndex !== -1) {
             const color = new Color(hexData[hexIndex].color);
@@ -107,54 +108,53 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexRadius, selectedHe
 
   useHighlightHex(hexMeshRef);
 
-  const depth = 10;
-  const radiusPosition = hexRadius;
-  const hexagonGeometry = useMemo(() => createHexagonGeometry(radiusPosition, depth), [radiusPosition, depth]);
+  // Calculate group and colors only once when the component is mounted
+  const { group, colors } = useMemo(() => {
+    const filteredGroup = hexData.filter((hex) => {
+      const col = hex.col - 2147483647;
+      const row = hex.row - 2147483647;
+      return col >= startCol && col <= endCol && row >= startRow && row <= endRow;
+    });
 
-  const hexHeight = hexRadius * 2;
-  const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
+    let colorValues: number[] = [];
+    let idx = 0;
 
-  const hexMaterial = new MeshBasicMaterial({
-    color: 0xffffff,
-    vertexColors: true,
-  });
+    filteredGroup.forEach((hex) => {
+      const color = new Color(hex.color);
+      const luminance = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
+      const grayScaleColor = new Color(luminance, luminance, luminance);
+      grayScaleColor.toArray(colorValues, idx * 3);
+      idx++;
+    });
 
-  const group = hexData.filter((hex) => {
-    const col = hex.col - 2147483647;
-    const row = hex.row - 2147483647;
-    return col >= startCol && col <= endCol && row >= startRow && row <= endRow;
-  });
+    return { group: filteredGroup, colors: colorValues };
+  }, [startRow, endRow, startCol, endCol, HEX_RADIUS]);
 
-  const mesh = new InstancedMesh(hexagonGeometry, hexMaterial, group.length);
+  // Create the mesh only once when the component is mounted
+  const mesh = useMemo(() => {
+    const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
+    const hexMaterial = new MeshBasicMaterial({
+      color: 0xffffff,
+      vertexColors: true,
+    });
 
-  let idx = 0;
-  let colors: number[] = []; // Initialize the colors array
+    const instancedMesh = new InstancedMesh(hexagonGeometry, hexMaterial, group.length);
+    let idx = 0;
 
-  group.forEach((hex) => {
-    const col = hex.col - 2147483647;
-    const row = hex.row - 2147483647;
-    const x = col * horizDist + ((row % 2) * horizDist) / 2;
-    const y = row * vertDist;
+    group.forEach((hex) => {
+      const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
 
-    const color = new Color(hex.color);
+      let matrix = new Matrix4();
+      matrix.setPosition(x, y, hex.depth * 10);
+      instancedMesh.setMatrixAt(idx, matrix);
+      idx++;
+    });
 
-    // Calculate the luminance of the color
-    const luminance = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
+    const colorAttribute = new InstancedBufferAttribute(new Float32Array(colors), 3);
+    instancedMesh.geometry.setAttribute("color", colorAttribute);
 
-    const grayScaleColor = new Color(luminance, luminance, luminance);
-
-    grayScaleColor.toArray(colors, idx * 3);
-
-    let matrix = new Matrix4();
-    matrix.setPosition(x, y, hex.depth * 10);
-    mesh.setMatrixAt(idx, matrix);
-    idx++;
-  });
-
-  const colorAttribute = new InstancedBufferAttribute(new Float32Array(colors), 3);
-  mesh.geometry.setAttribute("color", colorAttribute);
+    return instancedMesh;
+  }, [group, colors, HEX_RADIUS, DEPTH]);
 
   return (
     <>
@@ -186,13 +186,13 @@ export const Map = () => {
       <ambientLight color={"white"} intensity={1} />
       <pointLight rotation={[Math.PI / -2, 0, 0]} position={[10, 20, 10]} intensity={20} />
       <mesh rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>
-        <HexagonGrid startRow={0} endRow={rows} startCol={0} endCol={cols} hexRadius={3} index={0} />
+        <HexagonGrid startRow={0} endRow={rows} startCol={0} endCol={cols} index={0} />
       </mesh>
       {/* <mesh>
         {hexagonGrids.map((grid, index) => {
           return (
             <mesh key={index} rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>
-              <HexagonGrid {...grid} hexRadius={3} index={index} />
+              <HexagonGrid {...grid} index={index} />
             </mesh>
           );
         })}
@@ -208,15 +208,18 @@ const useHighlightHex = (
   const camera = useThree((state) => state.camera);
   const setClickedHex = useUIStore((state) => state.setClickedHex);
 
+  const { raycaster } = useThree();
+  raycaster.firstHitOnly = true;
+
   // store hexId and color of highlighed hex
   const highlightedHexRef = useRef<{ hexId: number; color: Color | null }>({ hexId: -1, color: null });
-  const raycaster = new Raycaster();
   const mouse = new Vector2();
 
   const onMouseMove = (event: any) => {
     const mesh = hexMeshRef?.current;
-    let colors = getColorFromMesh(mesh);
     if (!mesh) return;
+    let colors = getColorFromMesh(mesh);
+    if (!colors) return;
     // Calculate mouse position in normalized device coordinates (-1 to +1) for both components
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -259,21 +262,42 @@ const useHighlightHex = (
       const hex = hexIndex ? hexData[hexIndex] : undefined;
 
       if (hex && hexIndex) {
+        console.log({ col: hex.col, row: hex.row, hexIndex });
         setClickedHex({ col: hex.col, row: hex.row, hexIndex });
       }
     }
   };
 
+  /**
+   * Detects if the user clicked or dragged the mouse (depending on time mouse down)
+   */
+  let mouseDownTime = 0;
+  const onMouseDown = () => {
+    mouseDownTime = new Date().getTime();
+  };
+  const onMouseUp = (event: any) => {
+    const mouseUpTime = new Date().getTime();
+    const timeDiff = mouseUpTime - mouseDownTime;
+
+    // Assume it's a click if the time difference is less than 200ms (adjust as needed)
+    if (timeDiff < 200) {
+      onMouseClick(event);
+    }
+  };
+
   useEffect(() => {
+    const scene = document.querySelector(".main-scene");
     // only add it
     // Add event listener for mouse move
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("click", onMouseClick);
+    scene?.addEventListener("mousemove", onMouseMove);
+    scene?.addEventListener("mousedown", onMouseDown);
+    scene?.addEventListener("mouseup", onMouseUp);
 
     return () => {
       // Remove event listener when the component is unmounted
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("click", onMouseClick);
+      scene?.removeEventListener("mousemove", onMouseMove);
+      scene?.removeEventListener("mousedown", onMouseDown);
+      scene?.removeEventListener("mouseup", onMouseUp);
     };
   }, []);
 };
@@ -293,6 +317,23 @@ const getColorFromMesh = (mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial
   const colors = colorAttribute.array; // This is a Float32Array
 
   return colors;
+};
+
+export const getPositionsFromMesh = (mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>): number[] | null => {
+  if (!mesh || !mesh.isInstancedMesh) {
+    console.error("The provided mesh is not an InstancedMesh.");
+    return null;
+  }
+
+  const positionAttribute = mesh.geometry.getAttribute("position");
+  if (!positionAttribute) {
+    console.error("No position attribute found in the mesh.");
+    return null;
+  }
+
+  const positions = positionAttribute.array; // This is a Float32Array
+
+  return positions;
 };
 
 const updateHighlight = (

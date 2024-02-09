@@ -2972,7 +2972,7 @@
     },
     {
       "name": "eternum::systems::map::contracts::map_systems",
-      "address": null,
+      "address": "0x3fda5d1f7500f799eb30aa1293b2b6c354d350ed359593eb75390893cc7ec3d",
       "class_hash": "0x771acda4db5e67cc03e3a16b2452b9932873d680f9a89851a1a54a9244f84ae",
       "abi": [
         {

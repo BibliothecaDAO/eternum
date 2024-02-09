@@ -66,7 +66,7 @@ export const SettleRealmComponent = () => {
         rivers: realm.rivers,
         harbors: realm.harbors,
         cities: realm.cities,
-        position: { x: position.row, y: position.col },
+        position: { x: position.col, y: position.row },
       });
     }
 

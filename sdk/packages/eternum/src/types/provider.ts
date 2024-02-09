@@ -106,6 +106,12 @@ export interface PurchaseLaborProps extends SystemSigner {
   multiplier: num.BigNumberish;
 }
 
+export interface ExploreProps extends SystemSigner {
+  realm_entity_id: num.BigNumberish;
+  col: num.BigNumberish;
+  row: num.BigNumberish;
+}
+
 export interface BuildLaborProps extends SystemSigner {
   entity_id: num.BigNumberish;
   resource_type: num.BigNumberish;

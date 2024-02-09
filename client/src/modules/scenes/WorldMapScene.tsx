@@ -19,6 +19,7 @@ import Bank from "../../components/worldmap/banks/models/Bank2.js";
 import banks from "../../data/banks.json";
 import { Map } from "../../components/worldmap/HexGrid.js";
 import { useRoute } from "wouter";
+import { Castles } from "../../components/worldmap/Castles.js";
 
 export const WorldMapScene = () => {
   const worldRef = useRef();
@@ -26,6 +27,7 @@ export const WorldMapScene = () => {
   const hyperstructures = useUIStore((state) => state.hyperstructures);
   const { getCaravansWithResourcesChest } = useResources();
   const [isMapView] = useRoute("/map");
+  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
 
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
@@ -57,6 +59,7 @@ export const WorldMapScene = () => {
 
   return (
     <>
+      {/* <Castles /> */}
       <Flags />
       {/* <TransformControls mode="translate" onChange={(e) => console.log(e?.target?.object?.position)}>
         <mesh>
@@ -66,7 +69,7 @@ export const WorldMapScene = () => {
       </TransformControls> */}
       {/* <WorldMap ref={worldRef} /> */}
       {/* <HyperstructureStarted /> */}
-      {isMapView && <Map />}
+      {!showBlankOverlay && isMapView && <Map />}
       {hyperstructures.map((hyperstructure, i) => {
         if (hyperstructure) {
           if (hyperstructure.completed) {

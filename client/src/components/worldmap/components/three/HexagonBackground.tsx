@@ -12,7 +12,7 @@ import { Has, HasValue } from "@dojoengine/recs";
 import { snoise } from "@dojoengine/utils";
 // import { useGameState } from "@/hooks/useGameState";
 
-export const MAP_AMPLITUDE = 10;
+// export const MAP_AMPLITUDE = 10;
 
 export const createHexagonGeometry = (radius: number, depth: number) => {
   const shape = new THREE.Shape();

@@ -37,6 +37,7 @@ import {
   TransferItemsFromMultipleProps,
   CreateLaborBuildingProps,
   DestroyLaborBuildingProps,
+  ExploreProps,
 } from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -191,6 +192,10 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     setComponentsFromEvents(contractComponents, getEvents(await provider.destroy_labor_building(props)));
   };
 
+  const explore = async (props: ExploreProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.explore(props)));
+  };
+
   const isLive = async () => {
     try {
       await provider.uuid();
@@ -201,6 +206,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
   };
 
   return {
+    explore,
     create_labor_building,
     destroy_labor_building,
     control_hyperstructure,

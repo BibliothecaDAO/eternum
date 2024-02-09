@@ -1,5 +1,6 @@
 import { DojoProvider } from "@dojoengine/core";
 import {
+  ExploreProps,
   AcceptOrderProps,
   AttachCaravanProps,
   BuildLaborProps,
@@ -765,6 +766,19 @@ export class EternumProvider extends DojoProvider {
       contractAddress: getContractByName(this.manifest, "buildings_systems"),
       entrypoint: "destroy",
       calldata: [this.getWorldAddress(), realm_entity_id],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
+  public async explore(props: ExploreProps) {
+    const { realm_entity_id, col, row, signer } = props;
+
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "map_systems"),
+      entrypoint: "explore",
+      calldata: [this.getWorldAddress(), realm_entity_id, col, row],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,

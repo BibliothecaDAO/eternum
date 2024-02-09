@@ -55,6 +55,14 @@ commands=(
 "sozo execute $CONFIG_SYSTEMS set_bank_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,45,2,253,0,253,1,1844674407370955161,100000,100000"
 )
 
+## set exploration config
+commands+=(
+    # wheat_burn_amount = 100000
+    # fish_burn_amount = 50000
+    # random_mint_amount = 20000
+    "sozo execute $CONFIG_SYSTEMS set_exploration_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,100000,50000,20000"
+)
+
 commands+=(
     ### WORLD ###
     # realm_l2_contract
