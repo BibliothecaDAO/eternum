@@ -1,7 +1,8 @@
 #[dojo::contract]
 mod realm_systems {
 
-    use eternum::models::realm::Realm;
+    use core::traits::Into;
+use eternum::models::realm::Realm;
     use eternum::models::movable::Movable;
     use eternum::models::quantity::QuantityTracker;
     use eternum::models::capacity::Capacity;
@@ -17,6 +18,7 @@ mod realm_systems {
      };
 
     use eternum::systems::realm::interface::IRealmSystems;
+    use eternum::systems::map::contracts::map_systems::InternalMapSystemsImpl;
 
     use eternum::constants::REALM_ENTITY_TYPE;
 
@@ -147,6 +149,13 @@ mod realm_systems {
 
                 index += 1;                  
             };
+
+
+            // set realm's position tile to explored
+            InternalMapSystemsImpl::explore(
+                world, entity_id.into(), position.into(), 0 , 0 
+            );
+            
 
             entity_id.into()
 

@@ -97,13 +97,54 @@ impl CubeImpl of CubeTrait {
     }
 }
 
+#[derive(Drop, Copy, Serde)]
+enum Direction {
+    East: (),
+    NorthEast: (),
+    NorthWest: (),
+    West: (),
+    SouthWest: (),
+    SouthEast: (),
+}
 
-
-#[derive(Copy, Drop, PartialEq, Serde, Print, Introspect)]
+#[derive(Copy, Drop, PartialEq, Serde, Print, Introspect, Debug)]
 struct Coord {
     x: u128,
     y: u128
 }
+
+#[generate_trait]
+impl CoordImpl of CoordTrait {
+    fn neighbor(self: Coord, direction: Direction) -> Coord{
+
+        // https://www.redblobgames.com/grids/hexagons/#neighbors-offset
+
+        if self.y & 1 == 0 {
+            // where self.y (row) is even 
+            match direction {
+                Direction::East(()) => Coord{ x: self.x + 1, y: self.y },
+                Direction::NorthEast(()) => Coord{ x: self.x, y: self.y - 1 },
+                Direction::NorthWest(()) => Coord{ x: self.x - 1, y: self.y - 1 },
+                Direction::West(()) => Coord{ x: self.x - 1, y: self.y },
+                Direction::SouthWest(()) => Coord{ x: self.x -1 , y: self.y + 1 },
+                Direction::SouthEast(()) => Coord{ x: self.x, y: self.y + 1 },
+            }
+        } else {
+            // where self.y (row) is odd
+            match direction {
+                Direction::East(()) => Coord{ x: self.x + 1, y: self.y },
+                Direction::NorthEast(()) => Coord{ x: self.x + 1, y: self.y - 1 },
+                Direction::NorthWest(()) => Coord{ x: self.x, y: self.y - 1 },
+                Direction::West(()) => Coord{ x: self.x - 1, y: self.y },
+                Direction::SouthWest(()) => Coord{ x: self.x, y: self.y + 1 },
+                Direction::SouthEast(()) => Coord{ x: self.x + 1, y: self.y + 1 },
+            }
+
+        }
+        
+    }
+}
+    
 
 impl CoordZeroable of Zeroable<Coord> {
     fn zero() -> Coord {
@@ -300,6 +341,151 @@ mod tests {
         let a = Position { entity_id: 0, x: 1333333, y: 200000 };
         let zone = a.get_zone();
         assert(zone == 4, 'zone should be 4');
+    }
+
+    mod coord {
+        use super::super::{Coord, CoordTrait, Direction};
+
+
+            fn odd_row_coord() -> Coord {
+                Coord {x: 7, y: 7}
+            }
+
+            fn even_row_coord() -> Coord {
+                Coord {x: 7, y: 6}
+            }
+
+
+            //- Even row 
+
+            #[test]
+            fn test_neighbor_even_row_east() { 
+                let start = even_row_coord();
+                
+                assert_eq!(
+                    start.neighbor(Direction::East), 
+                    Coord{x: start.x + 1, y: start.y}
+                );
+            }
+
+            #[test]
+            fn test_neighbor_even_row_north_east() { 
+                let start = even_row_coord();
+                
+                assert_eq!(
+                    start.neighbor(Direction::NorthEast), 
+                    Coord{x: start.x , y: start.y - 1}
+                );
+            }
+
+            #[test]
+            fn test_neighbor_even_row_north_west() { 
+                let start = even_row_coord();
+                
+                assert_eq!(
+                    start.neighbor(Direction::NorthWest), 
+                    Coord{x: start.x - 1, y: start.y - 1}
+                );
+            }
+
+            #[test]
+            fn test_neighbor_even_row_west() { 
+                let start = even_row_coord();
+                
+                assert_eq!(
+                    start.neighbor(Direction::West), 
+                    Coord{x: start.x - 1, y: start.y}
+                );
+            }
+
+
+            #[test]
+            fn test_neighbor_even_row_south_west() { 
+                let start = even_row_coord();
+                
+                assert_eq!(
+                    start.neighbor(Direction::SouthWest), 
+                    Coord{x: start.x - 1, y: start.y + 1}
+                );
+            }
+
+
+            #[test]
+            fn test_neighbor_even_row_south_east() { 
+                let start = even_row_coord();
+                
+                assert_eq!(
+                    start.neighbor(Direction::SouthEast), 
+                    Coord{x: start.x, y: start.y + 1 }
+                );
+            }
+
+
+            //- Odd row 
+
+            #[test]
+            fn test_neighbor_odd_row_east() { 
+                let start = odd_row_coord();
+                
+                assert_eq!(
+                    start.neighbor(Direction::East), 
+                    Coord{x: start.x + 1, y: start.y}
+                );
+            }
+
+            #[test]
+            fn test_neighbor_odd_row_north_east() { 
+                let start = odd_row_coord();
+                
+                assert_eq!(
+                    start.neighbor(Direction::NorthEast), 
+                    Coord{x: start.x + 1 , y: start.y - 1}
+                );
+            }
+
+            #[test]
+            fn test_neighbor_odd_row_north_west() { 
+                let start = odd_row_coord();
+                
+                assert_eq!(
+                    start.neighbor(Direction::NorthWest), 
+                    Coord{x: start.x, y: start.y - 1}
+                );
+            }
+
+            #[test]
+            fn test_neighbor_odd_row_west() { 
+                let start = odd_row_coord();
+                
+                assert_eq!(
+                    start.neighbor(Direction::West), 
+                    Coord{x: start.x - 1, y: start.y}
+                );
+            }
+
+
+            #[test]
+            fn test_neighbor_odd_row_south_west() { 
+                let start = odd_row_coord();
+                
+                assert_eq!(
+                    start.neighbor(Direction::SouthWest), 
+                    Coord{x: start.x, y: start.y + 1}
+                );
+            }
+
+
+            #[test]
+            fn test_neighbor_odd_row_south_east() { 
+                let start = odd_row_coord();
+                
+                assert_eq!(
+                    start.neighbor(Direction::SouthEast), 
+                    Coord{x: start.x + 1, y: start.y + 1 }
+                );
+            }
+
+
     }
 }
 
