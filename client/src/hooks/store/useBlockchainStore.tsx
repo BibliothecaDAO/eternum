@@ -27,13 +27,14 @@ export const useFetchBlockchainData = () => {
       }
     };
 
-    fetchBlockchainTimestamp(); // Initial fetch
+    // fetchBlockchainTimestamp(); // Initial fetch
+    setNextBlockTimestamp(1000);
 
-    const intervalId = setInterval(fetchBlockchainTimestamp, 10000); // Fetch every 10 seconds
+    // const intervalId = setInterval(fetchBlockchainTimestamp, 10000); // Fetch every 10 seconds
 
-    return () => {
-      clearInterval(intervalId); // Clear interval on component unmount
-    };
+    // return () => {
+    //   clearInterval(intervalId); // Clear interval on component unmount
+    // };
   }, []);
 };
 
