@@ -3,7 +3,7 @@ import { createSystemCalls } from "./createSystemCalls";
 import { createOptimisticSystemCalls } from "./createOptimisticSystemCalls";
 import { setupNetwork } from "./setupNetwork";
 import { createUpdates } from "./createUpdates";
-import { getSyncEntities } from "@dojoengine/react";
+import { getSyncEntities } from "@dojoengine/state";
 
 export type SetupResult = Awaited<ReturnType<typeof setup>>;
 

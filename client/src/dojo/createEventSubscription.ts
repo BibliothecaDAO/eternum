@@ -63,18 +63,20 @@ export async function createEventSubscription(
       });
   }
 
+  let subscriptionQuery = gql`
+    subscription {
+      eventEmitted(keys: [${formattedKeys}]) {
+        id
+        keys
+        data
+        createdAt
+      }
+    }
+      `;
+
   wsClient.subscribe(
     {
-      query: gql`
-        subscription {
-          eventEmitted(keys: [${formattedKeys}]) {
-            id
-            keys
-            data
-            createdAt
-          }
-        }
-      `,
+      query: subscriptionQuery,
     },
     {
       next: ({ data }) => {
@@ -87,7 +89,7 @@ export async function createEventSubscription(
           console.log({ error });
         }
       },
-      error: (error) => console.log({ error }),
+      error: () => console.log("ws error"),
       complete: () => console.log("complete"),
     },
   );
