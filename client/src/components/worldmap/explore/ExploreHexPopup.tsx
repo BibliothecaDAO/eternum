@@ -126,10 +126,8 @@ export const ExplorePanel = ({ explorationStart, foundResource, onClose, setStep
   }, [realmEntityIds]);
 
   useEffect(() => {
-    if (idsCanExplore.length > 0) {
-      setSelectedEntityId(idsCanExplore[0]);
-    }
-  }, [idsCanExplore]);
+    setSelectedEntityId(explorationStart.exploration.explored_by_id);
+  }, [explorationStart]);
 
   const onClick = () => {
     // do something
@@ -180,10 +178,11 @@ export const ExplorePanel = ({ explorationStart, foundResource, onClose, setStep
           </div>
         </div>
       </div>
-      <div className="flex flex-col m-2 text-xxs">
-        {/* <div className="flex items-center mb-2">
+      <div className="w-full flex flex-col m-2 items-center text-xxs">
+        {/* <div className="flex w-[80%] justify-between items-center mb-2">
           <SelectEntityId
             entityIds={realmEntityIds.map((realmEntityId) => realmEntityId.realmEntityId)}
+            selectedEntityId={selectedEntityId}
             idsCanExplore={idsCanExplore}
             setSelectedEntityId={setSelectedEntityId}
           ></SelectEntityId>
@@ -220,7 +219,7 @@ type SelectEntityIdProps = {
   entityIds: bigint[];
   idsCanExplore: bigint[];
   setSelectedEntityId: (id: bigint) => void;
-  selectedEntityId: bigint;
+  selectedEntityId: bigint | undefined;
 };
 
 const SelectEntityId = ({ entityIds, idsCanExplore, setSelectedEntityId, selectedEntityId }: SelectEntityIdProps) => {
