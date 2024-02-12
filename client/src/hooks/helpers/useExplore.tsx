@@ -84,7 +84,7 @@ export function useExplore() {
     }
 
     // if row is even
-    const neighborOffsetsEven = [
+    const neighborOffsetsOdd = [
       { i: 1, j: 0, direction: 0 },
       { i: 0, j: 1, direction: 1 },
       { i: -1, j: 1, direction: 2 },
@@ -94,7 +94,7 @@ export function useExplore() {
     ];
 
     // if row is odd
-    const neighborOffsetsOdd = [
+    const neighborOffsetsEven = [
       { i: 1, j: 0, direction: 0 },
       { i: 1, j: 1, direction: 1 },
       { i: 0, j: 1, direction: 2 },

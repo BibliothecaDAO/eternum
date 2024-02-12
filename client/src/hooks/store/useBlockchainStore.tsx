@@ -27,14 +27,13 @@ export const useFetchBlockchainData = () => {
       }
     };
 
-    // fetchBlockchainTimestamp(); // Initial fetch
-    setNextBlockTimestamp(1000);
+    fetchBlockchainTimestamp(); // Initial fetch
 
-    // const intervalId = setInterval(fetchBlockchainTimestamp, 10000); // Fetch every 10 seconds
+    const intervalId = setInterval(fetchBlockchainTimestamp, 10000); // Fetch every 10 seconds
 
-    // return () => {
-    //   clearInterval(intervalId); // Clear interval on component unmount
-    // };
+    return () => {
+      clearInterval(intervalId); // Clear interval on component unmount
+    };
   }, []);
 };
 
@@ -51,13 +50,13 @@ const fetchBlockTimestamp = async (): Promise<number | undefined> => {
         },
         body: JSON.stringify({
           jsonrpc: "2.0",
-          method: "katana_nextBlockTimestamp",
-          params: {},
+          method: "starknet_getBlockWithTxs",
+          params: { block_id: "latest" },
           id: 1,
         }),
       });
       const data = await response.json();
-      return data.result;
+      return data.result.timestamp;
     } else {
       // NOTE: if we are using Katana in dev, we should use next block timestmamp because
       // it allows us to advance time. But current issue with next_block_timestamp is that
