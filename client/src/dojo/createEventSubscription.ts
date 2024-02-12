@@ -2,6 +2,7 @@ import { GraphQLClient, gql } from "graphql-request";
 import { createClient } from "graphql-ws";
 import { ReplaySubject, Observable } from "rxjs";
 import { getLastLoginTimestamp } from "../hooks/store/useNotificationsStore";
+import { MAP_EXPLORED_EVENT } from "@bibliothecadao/eternum";
 
 const MAX_EVENTS = 50;
 
@@ -28,6 +29,9 @@ export async function createEventSubscription(
   addPast: boolean = true,
   maxEvents: number = MAX_EVENTS,
 ): Promise<Observable<Event | null>> {
+  if (keys[0] === MAP_EXPLORED_EVENT) {
+    console.log("create entity usbs for", keys);
+  }
   const lastUpdate$ = new ReplaySubject<Event | null>();
 
   const formattedKeys = keys.map((key) => `"${key}"`).join(",");

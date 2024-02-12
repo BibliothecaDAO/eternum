@@ -1,9 +1,9 @@
 use eternum::models::resources::{Resource, ResourceFoodImpl};
 use eternum::models::owner::Owner;
-use eternum::models::position::Position;
+use eternum::models::position::{Position, Coord, CoordTrait, Direction};
 use eternum::models::realm::Realm;
 
-use eternum::models::map::ExploredMap;
+use eternum::models::map::Tile;
 
 use eternum::systems::map::interface::{
     IMapSystemsDispatcher, IMapSystemsDispatcherTrait
@@ -28,7 +28,7 @@ use eternum::utils::testing::{spawn_eternum, deploy_system};
 use dojo::world::{ IWorldDispatcher, IWorldDispatcherTrait};
 use starknet::contract_address_const;
 
-
+const TIMESTAMP: u64 = 10000;
 const INITIAL_WHEAT_BALANCE : u128 = 7000;
 const INITIAL_FISH_BALANCE : u128 = 2000;
 
@@ -39,6 +39,9 @@ const MAP_EXPLORE_PRECOMPUTED_RANDOM_MINT_RESOURCE : u8 = 6; // silver
 
 fn setup() -> (IWorldDispatcher, u128, IMapSystemsDispatcher) {
     let world = spawn_eternum();
+
+    starknet::testing::set_block_timestamp(TIMESTAMP);
+
 
     let config_systems_address 
         = deploy_system(config_systems::TEST_CLASS_HASH);    
@@ -113,21 +116,24 @@ fn test_map_explore() {
         contract_address_const::<'realm_owner'>()
     );
 
-    let now = 10000;
-    starknet::testing::set_block_timestamp(now);
     starknet::testing::set_transaction_hash('hellothash');
 
-    let col = 8;
-    let row = 8;
-    map_systems_dispatcher
-        .explore(world, realm_entity_id, col, row);
+    let realm_position: Position  = get!(world, realm_entity_id, Position);
+    let explore_tile_direction: Direction = Direction::West;
 
-    // ensure that ExploredMap model is correct
-    let explored_map: ExploredMap = get!(world, (col, row), ExploredMap);
-    assert_eq!(explored_map.col, explored_map._col, "wrong col");
-    assert_eq!(explored_map.row, explored_map._row, "wrong row");
-    assert_eq!(explored_map.explored_by_id, realm_entity_id, "wrong realm owner");
-    assert_eq!(explored_map.explored_at, now, "wrong exploration time");
+    map_systems_dispatcher
+        .explore(world, realm_entity_id, realm_position.into(), explore_tile_direction);
+
+    let expected_explored_coord 
+        = Into::<Position, Coord>::into(realm_position).neighbor(explore_tile_direction);
+
+    // ensure that Tile model is correct
+    let explored_tile: Tile 
+        = get!(world, (expected_explored_coord.x, expected_explored_coord.y), Tile);
+    assert_eq!(explored_tile.col, explored_tile._col, "wrong col");
+    assert_eq!(explored_tile.row, explored_tile._row, "wrong row");
+    assert_eq!(explored_tile.explored_by_id, realm_entity_id, "wrong realm owner");
+    assert_eq!(explored_tile.explored_at, TIMESTAMP, "wrong exploration time");
 
     // ensure that the realm's food was deducted
 

@@ -24,19 +24,21 @@ type RoadBuildPopupProps = {
 
 export const ExploreMapPopup = ({ onClose }: RoadBuildPopupProps) => {
   const [step, setStep] = useState(1);
+  const [explorationInfo, setExplorationInfo] = useState<{ exploration: any; direction: number } | undefined>();
 
   const clickedHex = useUIStore((state) => state.clickedHex);
 
-  const { useFoundResources } = useExplore();
-  let foundResource = useFoundResources(92n);
+  const { getExplorationInput } = useExplore();
 
-  const { isValidExplore } = useExplore();
-  const canExplore = useMemo(() => {
+  useEffect(() => {
     if (clickedHex) {
-      return isValidExplore(clickedHex.col, clickedHex.row);
+      const explorationInfo = getExplorationInput(clickedHex.col, clickedHex.row);
+      setExplorationInfo(explorationInfo);
     }
-    return false;
   }, [clickedHex]);
+
+  const { useFoundResources } = useExplore();
+  let foundResource = useFoundResources(explorationInfo?.exploration.explored_by_id);
 
   const biome = useMemo(() => {
     if (clickedHex) {
@@ -45,7 +47,7 @@ export const ExploreMapPopup = ({ onClose }: RoadBuildPopupProps) => {
     }
   }, [clickedHex]);
 
-  if (!canExplore || !biome) return null;
+  if (!explorationInfo || !biome) return null;
 
   return (
     <SecondaryPopup name="explore">
@@ -57,7 +59,12 @@ export const ExploreMapPopup = ({ onClose }: RoadBuildPopupProps) => {
       <SecondaryPopup.Body width={"800px"} height={"550px"}>
         {step === 1 && (
           <div className="flex flex-col items-center p-2">
-            <ExplorePanel foundResource={foundResource} setStep={setStep} onClose={onClose} />
+            <ExplorePanel
+              explorationStart={explorationInfo}
+              foundResource={foundResource}
+              setStep={setStep}
+              onClose={onClose}
+            />
           </div>
         )}
         {step === 2 && (
@@ -71,13 +78,14 @@ export const ExploreMapPopup = ({ onClose }: RoadBuildPopupProps) => {
 };
 
 type ExplorePanelProps = {
+  explorationStart: { exploration: any; direction: number };
   foundResource: Resource | undefined;
   targetHex?: { col: number; row: number };
   setStep: Dispatch<React.SetStateAction<number>>;
   onClose: () => void;
 };
 
-export const ExplorePanel = ({ foundResource, onClose, setStep }: ExplorePanelProps) => {
+export const ExplorePanel = ({ explorationStart, foundResource, onClose, setStep }: ExplorePanelProps) => {
   const {
     setup: {
       systemCalls: { explore },
@@ -134,9 +142,11 @@ export const ExplorePanel = ({ foundResource, onClose, setStep }: ExplorePanelPr
     setIsLoading(true);
     if (!selectedEntityId || !clickedHexMemoized) return;
     await explore({
-      realm_entity_id: selectedEntityId,
-      col: clickedHexMemoized.col,
-      row: clickedHexMemoized.row,
+      //   realm_entity_id: selectedEntityId,
+      realm_entity_id: explorationStart.exploration.explored_by_id,
+      col: explorationStart.exploration.col,
+      row: explorationStart.exploration.row,
+      direction: explorationStart.direction,
       signer: account,
     });
   };
@@ -195,7 +205,7 @@ export const ExplorePanel = ({ foundResource, onClose, setStep }: ExplorePanelPr
               size="md"
               disabled={idsCanExplore.find((id) => id === selectedEntityId) ? false : true}
               isLoading={isLoading}
-              onClick={(event) => onClick(event)}
+              onClick={onClick}
               variant="outline"
               withoutSound
             >

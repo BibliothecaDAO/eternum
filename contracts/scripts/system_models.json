@@ -14,7 +14,8 @@
         "Movable",
         "QuantityTracker",
         "Resource",
-        "OwnedResourcesTracker"
+        "OwnedResourcesTracker",
+        "Tile"
     ],
     "CARAVAN_SYSTEMS": [
         "Movable",
@@ -133,7 +134,7 @@
         "LaborBuilding"
     ],
     "MAP_SYSTEMS": [
-        "ExploredMap",
+        "Tile",
         "Resource",
         "OwnedResourcesTracker"
     ]

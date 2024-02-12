@@ -12,7 +12,7 @@ import useRealmStore from "../store/useRealmStore";
 export function useExplore() {
   const {
     setup: {
-      components: { ExploredMap },
+      components: { Tile },
       updates: {
         eventUpdates: { exploreEntityMapEvents },
       },
@@ -23,7 +23,7 @@ export function useExplore() {
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
   const isExplored = (col: number, row: number) => {
-    const exploredMap = getComponentValue(ExploredMap, getEntityIdFromKeys([BigInt(col), BigInt(row)]));
+    const exploredMap = getComponentValue(Tile, getEntityIdFromKeys([BigInt(col), BigInt(row)]));
 
     return exploredMap ? true : false;
   };
@@ -45,28 +45,17 @@ export function useExplore() {
     return explored;
   };
 
-  // add a custom event
-  const useExplorationClickedHex = () => {
-    const exploredColsRows = useComponentValue(
-      ExploredMap,
-      getEntityIdFromKeys([BigInt(clickedHex.col), BigInt(clickedHex.row)]),
-    );
-
-    if (exploredColsRows) {
-    }
-
-    return exploredColsRows;
-  };
-
   const useFoundResources = (realmEntityId: bigint | undefined) => {
     const [foundResources, setFoundResources] = useState<Resource | undefined>();
 
+    let isSubscribed = true; // flag to handle async state updates
+
     useEffect(() => {
       if (!realmEntityId) return;
-      const subscribeToDirectOffersEvents = async () => {
+      const subscribeToFoundResources = async () => {
         const observable = await exploreEntityMapEvents(realmEntityId);
         const subscription = observable.subscribe((event) => {
-          if (event) {
+          if (event && isSubscribed) {
             const resourceId = Number(event.data[1]);
             const amount = Number(event.data[2]);
             setFoundResources({ resourceId, amount });
@@ -74,43 +63,57 @@ export function useExplore() {
         });
         return subscription;
       };
-      const sub = subscribeToDirectOffersEvents();
+      const sub = subscribeToFoundResources();
 
       // Cleanup function
       return () => {
-        sub.then((sub) => sub.unsubscribe());
+        isSubscribed = false; // prevent state update on unmounted component
+        sub.then((sub) => {
+          sub.unsubscribe();
+        });
       };
     }, [realmEntityId]);
 
     return foundResources;
   };
 
-  const isValidExplore = (col: number, row: number) => {
+  const getExplorationInput = (col: number, row: number) => {
     // check if not explored yet
     if (isExplored(col, row)) {
-      return false;
+      return;
     }
 
+    // if even
     const neighborOffsets = [
-      { i: 1, j: 0 },
-      { i: -1, j: -1 },
-      { i: 0, j: -1 },
-      { i: -1, j: 0 },
-      { i: -1, j: 1 },
-      { i: 0, j: 1 },
+      { i: 1, j: 0, direction: 0 },
+      { i: 0, j: -1, direction: 1 },
+      { i: -1, j: -1, direction: 2 },
+      { i: -1, j: 0, direction: 3 },
+      { i: -1, j: 1, direction: 4 },
+      { i: 0, j: 1, direction: 5 },
     ];
+
+    // if odd
+    // const neighborOffsets = [
+    //   { i: 1, j: 0, direction: 0 },
+    //   { i: 1, j: -1, direction: 1 },
+    //   { i: 0, j: -1, direction: 2 },
+    //   { i: -1, j: 0, direction: 3 },
+    //   { i: 0, j: 1, direction: 4 },
+    //   { i: 1, j: 1, direction: 5 },
+    // ];
 
     // check if the neighbor hexes have been explored by the same player
     for (let offset of neighborOffsets) {
-      let exploration = getComponentValue(
-        ExploredMap,
-        getEntityIdFromKeys([BigInt(col + offset.i), BigInt(row + offset.j)]),
-      );
-      if (exploration && exploration.explored_by_id === realmEntityIds[0]?.realmEntityId) {
-        return true;
+      let exploration = getComponentValue(Tile, getEntityIdFromKeys([BigInt(col + offset.i), BigInt(row + offset.j)]));
+      if (
+        exploration &&
+        realmEntityIds.some((realmEntity) => (exploration?.explored_by_id || 0) === realmEntity.realmEntityId)
+      ) {
+        return { exploration, direction: offset.direction };
       }
     }
   };
 
-  return { isExplored, exploredColsRows, useExplorationClickedHex, useFoundResources, isValidExplore };
+  return { isExplored, exploredColsRows, useFoundResources, getExplorationInput };
 }

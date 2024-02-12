@@ -110,6 +110,7 @@ export interface ExploreProps extends SystemSigner {
   realm_entity_id: num.BigNumberish;
   col: num.BigNumberish;
   row: num.BigNumberish;
+  direction: num.BigNumberish;
 }
 
 export interface BuildLaborProps extends SystemSigner {

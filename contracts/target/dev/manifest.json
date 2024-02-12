@@ -1285,7 +1285,7 @@
     {
       "name": "eternum::systems::combat::contracts::combat_systems",
       "address": "0x1b0a83a27a357e0574393ab06c0c774db7312a0993538cc0186d054f75ee84e",
-      "class_hash": "0x5846846eb47c3940e980a9938061a334d1d0b96586ed35e3836d96233049f6c",
+      "class_hash": "0x2edadb5248ce87b8d18c499ddfaac19cb7875f0dc2928cfba2f7675e5fa643a",
       "abi": [
         {
           "type": "impl",
@@ -3050,7 +3050,7 @@
     {
       "name": "eternum::systems::map::contracts::map_systems",
       "address": "0x3fda5d1f7500f799eb30aa1293b2b6c354d350ed359593eb75390893cc7ec3d",
-      "class_hash": "0x31a3662f6a6c1af2aee94afb84837673f81996ea685b5807a052c68d963e3d8",
+      "class_hash": "0x493cf9668d3d4272dc17b8abaa55166b5fe49a436dcba492575372ae40d8b31",
       "abi": [
         {
           "type": "impl",
@@ -3112,6 +3112,50 @@
           "interface_name": "eternum::systems::map::interface::IMapSystems"
         },
         {
+          "type": "struct",
+          "name": "eternum::models::position::Coord",
+          "members": [
+            {
+              "name": "x",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "y",
+              "type": "core::integer::u128"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "eternum::models::position::Direction",
+          "variants": [
+            {
+              "name": "East",
+              "type": "()"
+            },
+            {
+              "name": "NorthEast",
+              "type": "()"
+            },
+            {
+              "name": "NorthWest",
+              "type": "()"
+            },
+            {
+              "name": "West",
+              "type": "()"
+            },
+            {
+              "name": "SouthWest",
+              "type": "()"
+            },
+            {
+              "name": "SouthEast",
+              "type": "()"
+            }
+          ]
+        },
+        {
           "type": "interface",
           "name": "eternum::systems::map::interface::IMapSystems",
           "items": [
@@ -3128,12 +3172,12 @@
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "col",
-                  "type": "core::integer::u128"
+                  "name": "from_coord",
+                  "type": "eternum::models::position::Coord"
                 },
                 {
-                  "name": "row",
-                  "type": "core::integer::u128"
+                  "name": "direction",
+                  "type": "eternum::models::position::Direction"
                 }
               ],
               "outputs": [],
@@ -3470,7 +3514,7 @@
     {
       "name": "eternum::systems::realm::contracts::realm_systems",
       "address": "0x25df90992b8eebca69f08035ceda822dee73028e828ceb8421895814eacd3d",
-      "class_hash": "0x29689b7dd3ea7502ee32585d94be9af663024026a4fdbf0914a367cba260caf",
+      "class_hash": "0x7b9990b9c820c9292c6393cc9d758654eb4dcfe19a26b94d7e456a23ace3fb1",
       "abi": [
         {
           "type": "impl",
@@ -4129,7 +4173,7 @@
     {
       "name": "eternum::systems::trade::contracts::trade_systems::trade_systems",
       "address": "0x63cbe849cf6325e727a8d6f82f25fad7dc7eb9433767f5c1b8c59189e36c9b6",
-      "class_hash": "0x617b6ec223dddc1b822148250f9f3e7e5c26a3e12fd35c00cdfcfe1228f8eef",
+      "class_hash": "0x2dbd00712a4782077f7a25d4119109f83ac069bd885d2b0510bc0434ec98911",
       "abi": [
         {
           "type": "impl",
@@ -4934,7 +4978,7 @@
     {
       "name": "eternum::systems::transport::contracts::travel_systems::travel_systems",
       "address": "0x740ea95e67b0b7533ee4891524c5c7edfd7fefc09297c0304b21515cc1223ec",
-      "class_hash": "0x24f8035ac2db50e69e1687be38b2e4981b2da39d5c43de0217d95219be29732",
+      "class_hash": "0xf4f908ed6af7695709d3c2ddb6d8b0f2aec46e0e394c7c002c34416ca1723",
       "abi": [
         {
           "type": "impl",
@@ -13713,7 +13757,7 @@
       ]
     },
     {
-      "name": "eternum::models::map::explored_map",
+      "name": "eternum::models::map::tile",
       "members": [
         {
           "name": "_col",
@@ -13751,7 +13795,7 @@
           "key": false
         }
       ],
-      "class_hash": "0xa428a7035e08cf9f6971a0b191cb2b479f2b194c611b442559f2cc0edeb112",
+      "class_hash": "0x3d52f8e83d0c2fecbfe445793fc681e51aaf060dd18cfafd540fec873f79655",
       "abi": [
         {
           "type": "impl",
@@ -13919,8 +13963,8 @@
         },
         {
           "type": "impl",
-          "name": "explored_mapImpl",
-          "interface_name": "eternum::models::map::Iexplored_map"
+          "name": "tileImpl",
+          "interface_name": "eternum::models::map::Itile"
         },
         {
           "type": "enum",
@@ -13994,7 +14038,7 @@
         },
         {
           "type": "struct",
-          "name": "eternum::models::map::ExploredMap",
+          "name": "eternum::models::map::Tile",
           "members": [
             {
               "name": "_col",
@@ -14028,7 +14072,7 @@
         },
         {
           "type": "interface",
-          "name": "eternum::models::map::Iexplored_map",
+          "name": "eternum::models::map::Itile",
           "items": [
             {
               "type": "function",
@@ -14036,7 +14080,7 @@
               "inputs": [
                 {
                   "name": "model",
-                  "type": "eternum::models::map::ExploredMap"
+                  "type": "eternum::models::map::Tile"
                 }
               ],
               "outputs": [],
@@ -14046,7 +14090,7 @@
         },
         {
           "type": "event",
-          "name": "eternum::models::map::explored_map::Event",
+          "name": "eternum::models::map::tile::Event",
           "kind": "enum",
           "variants": []
         }

@@ -46,11 +46,11 @@ const CameraControls = ({ position, target }: Props) => {
 
   useControls({
     saveCameraPosition: button(() => {
-      console.log(
-        camera,
-        { x: camera.position.x, y: camera.position.y, z: camera.position.z },
-        { ...ref.current.target },
-      );
+      // console.log(
+      //   camera,
+      //   { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+      //   { ...ref.current.target },
+      // );
     }),
   });
 

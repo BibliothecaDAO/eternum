@@ -839,7 +839,7 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
-    ExploredMap: (() => {
+    Tile: (() => {
       return defineComponent(
         world,
         {
@@ -853,7 +853,7 @@ export function defineContractComponents(world: World) {
         },
         {
           metadata: {
-            name: "ExploredMap",
+            name: "Tile",
             types: ["u128", "u128", "u128", "u128", "u128", "u64", "u8"],
             customTypes: [],
           },

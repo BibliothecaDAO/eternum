@@ -773,12 +773,12 @@ export class EternumProvider extends DojoProvider {
   }
 
   public async explore(props: ExploreProps) {
-    const { realm_entity_id, col, row, signer } = props;
+    const { realm_entity_id, col, row, direction, signer } = props;
 
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "map_systems"),
       entrypoint: "explore",
-      calldata: [this.getWorldAddress(), realm_entity_id, col, row],
+      calldata: [this.getWorldAddress(), realm_entity_id, col, row, direction],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,

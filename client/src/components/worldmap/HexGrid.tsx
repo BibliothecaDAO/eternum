@@ -60,7 +60,7 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
 
   const clickedHex = useUIStore((state) => state.clickedHex);
 
-  const { exploredColsRows, useExplorationClickedHex } = useExplore();
+  const { exploredColsRows } = useExplore();
 
   // useEffect(() => {
   //   const colsRows = exploredColsRows(startCol, endCol, startRow, endRow);
@@ -155,7 +155,6 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
     });
 
     const colorAttribute = new InstancedBufferAttribute(new Float32Array(colors), 3);
-    console.log("set old colors");
     instancedMesh.geometry.setAttribute("color", colorAttribute);
 
     return instancedMesh;
