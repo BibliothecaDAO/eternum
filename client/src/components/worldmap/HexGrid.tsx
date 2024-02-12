@@ -56,31 +56,10 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
     },
   } = useDojo();
 
-  // const hexMeshRef = useRef<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>>();
+  const highlightedHexRef = useRef<{ hexId: number; color: Color | null }>({ hexId: -1, color: null });
+  useHighlightHex(hexMeshRef, highlightedHexRef);
 
-  const clickedHex = useUIStore((state) => state.clickedHex);
-
-  const { exploredColsRows } = useExplore();
-
-  // useEffect(() => {
-  //   const colsRows = exploredColsRows(startCol, endCol, startRow, endRow);
-
-  //   // change color back to original for explored hexes
-  //   const colors = getColorFromMesh(hexMeshRef.current);
-  //   if (!colors) return;
-  //   colsRows.forEach((hex) => {
-  //     const hexIndex = hexData.findIndex((h) => h.col === hex.col && h.row === hex.row);
-  //     if (hexIndex !== -1) {
-  //       const color = new Color(hexData[hexIndex].color);
-  //       color.toArray(colors, hexIndex * 3);
-  //     }
-  //   });
-
-  //   hexMeshRef.current.geometry.attributes.color.array = new Float32Array(colors);
-  //   hexMeshRef.current.geometry.attributes.color.needsUpdate = true;
-  // }, []);
-
-  // another use effect to change the color of the selected hex if it's been successfuly explored
+  // use effect to change the color of the selected hex if it's been successfuly explored
   useEffect(() => {
     let subscription: Subscription | undefined;
 
@@ -98,6 +77,9 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
             color.toArray(colors, hexIndex * 3);
             hexMeshRef.current.geometry.attributes.color.array = new Float32Array(colors);
             hexMeshRef.current.geometry.attributes.color.needsUpdate = true;
+            if (highlightedHexRef.current.hexId === hexIndex) {
+              highlightedHexRef.current.color = new Color(hexData[hexIndex].color);
+            }
           }
         }
       });
@@ -109,8 +91,6 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
       subscription?.unsubscribe();
     };
   }, []);
-
-  useHighlightHex(hexMeshRef);
 
   // Calculate group and colors only once when the component is mounted
   const { group, colors } = useMemo(() => {
@@ -214,6 +194,7 @@ export const Map = () => {
 
 const useHighlightHex = (
   hexMeshRef: MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>,
+  highlightedHexRef: MutableRefObject<{ hexId: number; color: Color | null }>,
 ) => {
   const camera = useThree((state) => state.camera);
   const setClickedHex = useUIStore((state) => state.setClickedHex);
@@ -222,7 +203,6 @@ const useHighlightHex = (
   raycaster.firstHitOnly = true;
 
   // store hexId and color of highlighed hex
-  const highlightedHexRef = useRef<{ hexId: number; color: Color | null }>({ hexId: -1, color: null });
   const mouse = new Vector2();
 
   const onMouseMove = (event: any) => {
@@ -247,7 +227,7 @@ const useHighlightHex = (
       if (!hexIndex) return;
       updateHighlight(highlightedHexRef, hexIndex, colors, mesh);
     } else {
-      resetHighlight(highlightedHexRef, colors, mesh);
+      // resetHighlight(highlightedHexRef, colors, mesh);
     }
   };
 
@@ -338,13 +318,6 @@ export const getPositionsAtIndex = (mesh: InstancedMesh<ExtrudeGeometry, MeshBas
   mesh.getMatrixAt(index, matrix);
   const positions = new Vector3();
   positions.setFromMatrixPosition(matrix);
-
-  // if (!positionAttribute) {
-  //   console.error("No position attribute found in the mesh.");
-  //   return null;
-  // }
-
-  // const positions = positionAttribute.array; // This is a Float32Array
 
   return positions;
 };

@@ -123,21 +123,21 @@ impl CoordImpl of CoordTrait {
             // where self.y (row) is even 
             match direction {
                 Direction::East(()) => Coord{ x: self.x + 1, y: self.y },
-                Direction::NorthEast(()) => Coord{ x: self.x, y: self.y - 1 },
-                Direction::NorthWest(()) => Coord{ x: self.x - 1, y: self.y - 1 },
+                Direction::NorthEast(()) => Coord{ x: self.x, y: self.y + 1 },
+                Direction::NorthWest(()) => Coord{ x: self.x -1 , y: self.y + 1 },
                 Direction::West(()) => Coord{ x: self.x - 1, y: self.y },
-                Direction::SouthWest(()) => Coord{ x: self.x -1 , y: self.y + 1 },
-                Direction::SouthEast(()) => Coord{ x: self.x, y: self.y + 1 },
+                Direction::SouthWest(()) => Coord{ x: self.x - 1, y: self.y - 1 },
+                Direction::SouthEast(()) => Coord{ x: self.x, y: self.y - 1 },
             }
         } else {
             // where self.y (row) is odd
             match direction {
                 Direction::East(()) => Coord{ x: self.x + 1, y: self.y },
-                Direction::NorthEast(()) => Coord{ x: self.x + 1, y: self.y - 1 },
-                Direction::NorthWest(()) => Coord{ x: self.x, y: self.y - 1 },
+                Direction::NorthEast(()) => Coord{ x: self.x + 1, y: self.y + 1 },
+                Direction::NorthWest(()) => Coord{ x: self.x, y: self.y + 1 },
                 Direction::West(()) => Coord{ x: self.x - 1, y: self.y },
-                Direction::SouthWest(()) => Coord{ x: self.x, y: self.y + 1 },
-                Direction::SouthEast(()) => Coord{ x: self.x + 1, y: self.y + 1 },
+                Direction::SouthWest(()) => Coord{ x: self.x, y: self.y - 1 },
+                Direction::SouthEast(()) => Coord{ x: self.x + 1, y: self.y - 1 },
             }
 
         }

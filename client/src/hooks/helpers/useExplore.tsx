@@ -4,7 +4,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useComponentValue } from "@dojoengine/react";
 import { useUiSounds } from "../useUISound";
 import useUIStore from "../store/useUIStore";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Subscription } from "rxjs";
 import { Resource } from "@bibliothecadao/eternum";
 import useRealmStore from "../store/useRealmStore";
@@ -48,14 +48,14 @@ export function useExplore() {
   const useFoundResources = (realmEntityId: bigint | undefined) => {
     const [foundResources, setFoundResources] = useState<Resource | undefined>();
 
-    let isSubscribed = true; // flag to handle async state updates
+    const subscriptionRef = useRef(null);
 
     useEffect(() => {
       if (!realmEntityId) return;
       const subscribeToFoundResources = async () => {
         const observable = await exploreEntityMapEvents(realmEntityId);
         const subscription = observable.subscribe((event) => {
-          if (event && isSubscribed) {
+          if (event) {
             const resourceId = Number(event.data[1]);
             const amount = Number(event.data[2]);
             setFoundResources({ resourceId, amount });
@@ -67,10 +67,10 @@ export function useExplore() {
 
       // Cleanup function
       return () => {
-        isSubscribed = false; // prevent state update on unmounted component
-        sub.then((sub) => {
-          sub.unsubscribe();
-        });
+        if (subscriptionRef.current) {
+          // @ts-ignore
+          subscriptionRef.current.unsubscribe();
+        }
       };
     }, [realmEntityId]);
 
@@ -83,25 +83,37 @@ export function useExplore() {
       return;
     }
 
-    // if even
-    const neighborOffsets = [
+    // if row is even
+    const neighborOffsetsEven = [
       { i: 1, j: 0, direction: 0 },
-      { i: 0, j: -1, direction: 1 },
-      { i: -1, j: -1, direction: 2 },
+      { i: 0, j: 1, direction: 1 },
+      { i: -1, j: 1, direction: 2 },
       { i: -1, j: 0, direction: 3 },
-      { i: -1, j: 1, direction: 4 },
-      { i: 0, j: 1, direction: 5 },
+      { i: -1, j: -1, direction: 4 },
+      { i: 0, j: -1, direction: 5 },
     ];
 
-    // if odd
-    // const neighborOffsets = [
-    //   { i: 1, j: 0, direction: 0 },
-    //   { i: 1, j: -1, direction: 1 },
-    //   { i: 0, j: -1, direction: 2 },
-    //   { i: -1, j: 0, direction: 3 },
-    //   { i: 0, j: 1, direction: 4 },
-    //   { i: 1, j: 1, direction: 5 },
-    // ];
+    // if row is odd
+    const neighborOffsetsOdd = [
+      { i: 1, j: 0, direction: 0 },
+      { i: 1, j: 1, direction: 1 },
+      { i: 0, j: 1, direction: 2 },
+      { i: -1, j: 0, direction: 3 },
+      { i: 0, j: -1, direction: 4 },
+      { i: 1, j: -1, direction: 5 },
+    ];
+
+    const neighborOffsets = row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+
+    const findDirection = (startPos: { col: number; row: number }, endPos: { col: number; row: number }) => {
+      // give the direction
+      const neighborOffsets = startPos.row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+      for (let offset of neighborOffsets) {
+        if (startPos.col + offset.i === endPos.col && startPos.row + offset.j === endPos.row) {
+          return offset.direction;
+        }
+      }
+    };
 
     // check if the neighbor hexes have been explored by the same player
     for (let offset of neighborOffsets) {
@@ -110,7 +122,10 @@ export function useExplore() {
         exploration &&
         realmEntityIds.some((realmEntity) => (exploration?.explored_by_id || 0) === realmEntity.realmEntityId)
       ) {
-        return { exploration, direction: offset.direction };
+        return {
+          exploration,
+          direction: findDirection({ col: Number(exploration.col), row: Number(exploration.row) }, { col, row }),
+        };
       }
     }
   };

@@ -3050,7 +3050,7 @@
     {
       "name": "eternum::systems::map::contracts::map_systems",
       "address": "0x3fda5d1f7500f799eb30aa1293b2b6c354d350ed359593eb75390893cc7ec3d",
-      "class_hash": "0x493cf9668d3d4272dc17b8abaa55166b5fe49a436dcba492575372ae40d8b31",
+      "class_hash": "0x1f113fc420b2ed2876917ce49cf888659f136e964794e9196197fde0215ffcc",
       "abi": [
         {
           "type": "impl",

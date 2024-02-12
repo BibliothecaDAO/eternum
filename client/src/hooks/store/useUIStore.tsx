@@ -206,7 +206,9 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   ...createPopupsSlice(set),
   ...createDataStoreSlice(set),
   clickedHex: undefined,
-  setClickedHex: (hex) => set({ clickedHex: hex }),
+  setClickedHex: (hex) => {
+    set({ clickedHex: hex });
+  },
   setClickedHyperstructure: (hyperstructure) => set({ clickedHyperstructure: hyperstructure }),
   clickedHyperstructure: undefined,
 }));

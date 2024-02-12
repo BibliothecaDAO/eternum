@@ -29,9 +29,6 @@ export async function createEventSubscription(
   addPast: boolean = true,
   maxEvents: number = MAX_EVENTS,
 ): Promise<Observable<Event | null>> {
-  if (keys[0] === MAP_EXPLORED_EVENT) {
-    console.log("create entity usbs for", keys);
-  }
   const lastUpdate$ = new ReplaySubject<Event | null>();
 
   const formattedKeys = keys.map((key) => `"${key}"`).join(",");

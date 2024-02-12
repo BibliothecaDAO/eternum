@@ -24,16 +24,14 @@ type RoadBuildPopupProps = {
 
 export const ExploreMapPopup = ({ onClose }: RoadBuildPopupProps) => {
   const [step, setStep] = useState(1);
-  const [explorationInfo, setExplorationInfo] = useState<{ exploration: any; direction: number } | undefined>();
 
   const clickedHex = useUIStore((state) => state.clickedHex);
 
   const { getExplorationInput } = useExplore();
 
-  useEffect(() => {
+  const explorationInfo = useMemo(() => {
     if (clickedHex) {
-      const explorationInfo = getExplorationInput(clickedHex.col, clickedHex.row);
-      setExplorationInfo(explorationInfo);
+      return getExplorationInput(clickedHex.col, clickedHex.row);
     }
   }, [clickedHex]);
 
