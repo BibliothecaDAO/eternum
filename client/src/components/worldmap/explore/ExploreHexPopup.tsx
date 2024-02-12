@@ -104,9 +104,9 @@ export const ExplorePanel = ({ explorationStart, foundResource, onClose, setStep
   const explorationCost: Resource[] = [
     {
       resourceId: 254,
-      amount: 100000,
+      amount: 300000,
     },
-    { resourceId: 255, amount: 50000 },
+    { resourceId: 255, amount: 150000 },
   ];
 
   useEffect(() => {
