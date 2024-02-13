@@ -12,7 +12,7 @@ export async function setupNetwork() {
 
   const manifest = import.meta.env.VITE_DEV === "true" ? dev_manifest : prod_manifest;
 
-  const provider = new EternumProvider(VITE_PUBLIC_WORLD_ADDRESS, VITE_PUBLIC_NODE_URL, manifest);
+  const provider = new EternumProvider(VITE_PUBLIC_NODE_URL, manifest);
 
   const toriiClient = await torii.createClient([], {
     rpcUrl: VITE_PUBLIC_NODE_URL,

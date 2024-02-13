@@ -51,8 +51,8 @@ export const getContractByName = (manifest: any, name: string) => {
 };
 
 export class EternumProvider extends DojoProvider {
-  constructor(world_address: string, url?: string, manifest: any = undefined) {
-    super(world_address, manifest, url);
+  constructor(url?: string, manifest: any = undefined) {
+    super(manifest, url);
   }
 
   public async purchase_labor(props: PurchaseLaborProps): Promise<any> {

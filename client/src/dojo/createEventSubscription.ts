@@ -79,7 +79,7 @@ export async function createEventSubscription(
       query: subscriptionQuery,
     },
     {
-      next: ({ data }) => {
+      next: ({ data }: any) => {
         try {
           const event = data?.eventEmitted as Event;
           if (event) {
