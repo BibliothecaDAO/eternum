@@ -12,7 +12,6 @@ import Button from "../../../elements/Button";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useExplore } from "../../../hooks/helpers/useExplore";
-import { Hexagon } from "../HexGrid";
 
 type RoadBuildPopupProps = {
   onClose: () => void;

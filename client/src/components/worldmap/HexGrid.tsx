@@ -1,5 +1,4 @@
 import { Environment } from "@react-three/drei";
-import React from "react";
 import { createHexagonGeometry } from "./components/three/HexagonBackground";
 import { MutableRefObject, useEffect, useMemo, useRef } from "react";
 // @ts-ignore

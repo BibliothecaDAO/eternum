@@ -1,12 +1,11 @@
 import { useGLTF } from "@react-three/drei";
-import React from "react";
 import realmHexPositions from "../../geodata/hex/realmHexPositions.json";
 import { MutableRefObject, useMemo } from "react";
 import { useGetRealms } from "../../hooks/helpers/useRealm";
 import useRealmStore from "../../hooks/store/useRealmStore";
 import { HexPositions, getRealmUIPosition } from "../../utils/utils";
 import { GLTF } from "three-stdlib";
-import { DEPTH, Hexagon, getPositionsAtIndex } from "./HexGrid";
+import { DEPTH, Hexagon } from "./HexGrid";
 import { ExtrudeGeometry, InstancedMesh, MeshBasicMaterial } from "three";
 import { biomes } from "@bibliothecadao/eternum";
 
@@ -134,7 +133,6 @@ export const OtherCastles = ({ hexData, meshRef }: CastlesProps) => {
       {castles.map((castle) => {
         const { position, index, depth } = castle;
         if (index === -1 || !meshRef.current) return null;
-        const matrix = getPositionsAtIndex(meshRef.current, index);
         return (
           <mesh
             key={index}
@@ -179,7 +177,6 @@ export const MyCastles = ({ hexData, meshRef }: CastlesProps) => {
         const { position, index, depth } = castle;
         if (index === -1 || !meshRef.current) return null;
         // const height = meshPositions[index * 3];
-        const matrix = getPositionsAtIndex(meshRef.current, index);
         return (
           <mesh
             key={index}

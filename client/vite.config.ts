@@ -23,7 +23,7 @@ export default defineConfig({
       },
       maxParallelFileOps: 2,
       cache: false,
-      external: ["react", "react-dom"],
+      // external: ["react", "react-dom"],
       output: {
         globals: {
           react: "React",
