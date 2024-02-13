@@ -19,12 +19,13 @@ import { useThree } from "@react-three/fiber";
 import useUIStore from "../../hooks/store/useUIStore";
 import { useDojo } from "../../DojoContext";
 import { Subscription } from "rxjs";
-import { getUIPositionFromColRow } from "../../utils/utils";
+import { getEntityIdFromKeys, getUIPositionFromColRow } from "../../utils/utils";
 import { MyCastles, OtherCastles } from "./Castles";
 import { Hyperstructures } from "./Hyperstructures";
-import { biomes } from "@bibliothecadao/eternum";
+import { biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { getComponentValue } from "@dojoengine/recs";
 
-export const DEPTH = 3;
+export const DEPTH = 10;
 export const HEX_RADIUS = 3;
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
@@ -34,6 +35,9 @@ export interface Hexagon {
   col: number;
   row: number;
   biome: string;
+  explored: boolean | undefined;
+  // address
+  exploredBy: bigint | undefined;
 }
 
 const hexData: Hexagon[] = hexDataJson as Hexagon[];
@@ -49,6 +53,8 @@ type HexagonGridProps = {
 const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: HexagonGridProps) => {
   const {
     setup: {
+      account: { account },
+      components: { Owner },
       updates: {
         eventUpdates: { exploreMapEvents },
       },
@@ -70,6 +76,14 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
           const row = Number(event.keys[3]);
           const hexIndex = hexData.findIndex((h) => h.col === col && h.row === row);
           if (hexIndex !== -1 && hexMeshRef?.current) {
+            // store which hex has been explored
+            hexData[hexIndex].explored = true;
+            const keys = [BigInt(Number(event.keys[1]))];
+            const owner = getComponentValue(Owner, getEntityIdFromKeys(keys));
+            if (owner) {
+              hexData[hexIndex].exploredBy = owner.address;
+            }
+
             const color = new Color(BIOMES[hexData[hexIndex].biome].color);
             const colors = getColorFromMesh(hexMeshRef.current);
             if (!colors) return;
@@ -81,8 +95,32 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
               return null;
             }
 
+            if (owner && account && owner.address === BigInt(account.address)) {
+              // also change to gray scale all hex that are neighbors
+              // if they are not already explored
+              const neighborOffsets = row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+
+              for (const { i, j } of neighborOffsets) {
+                const neighborIndex = hexData.findIndex((h) => h.col === col + i && h.row === row + j);
+                if (hexData[neighborIndex] && !hexData[neighborIndex].explored) {
+                  const color = new Color(BIOMES[hexData[neighborIndex].biome].color);
+                  const grayscaleColor = getGrayscaleColor(color);
+                  grayscaleColor.toArray(colors, neighborIndex * 3);
+                }
+              }
+            }
+
             hexMeshRef.current.geometry.attributes.color.array = new Float32Array(colors);
             hexMeshRef.current.geometry.attributes.color.needsUpdate = true;
+
+            // add the depth to the position
+            const matrix = new Matrix4();
+            hexMeshRef.current.getMatrixAt(hexIndex, matrix);
+            matrix.setPosition(matrix.elements[12], matrix.elements[13], BIOMES[hexData[hexIndex].biome].depth * DEPTH);
+            hexMeshRef.current.setMatrixAt(hexIndex, matrix);
+            // needs update
+            hexMeshRef.current.instanceMatrix.needsUpdate = true;
+
             if (highlightedHexRef.current.hexId === hexIndex) {
               highlightedHexRef.current.color = new Color(BIOMES[hexData[hexIndex].biome].color);
             }
@@ -110,12 +148,12 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
     let idx = 0;
 
     filteredGroup.forEach((hex) => {
-      // const color = new Color("#202124");
-      const color = new Color(BIOMES[hex.biome].color);
-      const luminance = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
-      const grayScaleColor = new Color(luminance, luminance, luminance);
-      // color.toArray(colorValues, idx * 3);
-      grayScaleColor.toArray(colorValues, idx * 3);
+      const color = new Color("#202124");
+      // const color = new Color(BIOMES[hex.biome].color);
+      // const luminance = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
+      // const grayScaleColor = new Color(luminance, luminance, luminance);
+      color.toArray(colorValues, idx * 3);
+      // grayScaleColor.toArray(colorValues, idx * 3);
       idx++;
     });
 
@@ -397,3 +435,8 @@ const updateHighlight = (
 //     highlightedHexRef.current.hexId = -1;
 //   }
 // };
+
+const getGrayscaleColor = (color: Color) => {
+  const luminance = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
+  return new Color(luminance, luminance, luminance);
+};

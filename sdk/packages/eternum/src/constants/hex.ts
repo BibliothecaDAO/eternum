@@ -16,3 +16,23 @@ export const biomes = {
   tropical_seasonal_forest: { color: "#6A8035", depth: 0.5, name: "tropical_seasonal_forest" },
   tropical_rain_forest: { color: "#005824", depth: 0.6, name: "tropical_rain_forest" },
 };
+
+// if row is odd
+export const neighborOffsetsOdd = [
+  { i: 1, j: 0, direction: 0 },
+  { i: 0, j: 1, direction: 1 },
+  { i: -1, j: 1, direction: 2 },
+  { i: -1, j: 0, direction: 3 },
+  { i: -1, j: -1, direction: 4 },
+  { i: 0, j: -1, direction: 5 },
+];
+
+// if row is even
+export const neighborOffsetsEven = [
+  { i: 1, j: 0, direction: 0 },
+  { i: 1, j: 1, direction: 1 },
+  { i: 0, j: 1, direction: 2 },
+  { i: -1, j: 0, direction: 3 },
+  { i: 0, j: -1, direction: 4 },
+  { i: 1, j: -1, direction: 5 },
+];

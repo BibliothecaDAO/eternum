@@ -4,4 +4,4 @@ export * from "./resources";
 export * from "./events";
 export * from "./travel";
 export * from "./trade";
-export * from "./biomes";
+export * from "./hex";

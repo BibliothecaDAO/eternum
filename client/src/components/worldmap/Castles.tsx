@@ -7,6 +7,7 @@ import { HexPositions, getRealmUIPosition } from "../../utils/utils";
 import { GLTF } from "three-stdlib";
 import { DEPTH, Hexagon, getPositionsAtIndex } from "./HexGrid";
 import { ExtrudeGeometry, InstancedMesh, MeshBasicMaterial } from "three";
+import { biomes } from "@bibliothecadao/eternum";
 
 // @ts-nocheck
 type GLTFResult = GLTF & {
@@ -104,6 +105,8 @@ type CastlesProps = {
   meshRef: MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>;
 };
 
+const BIOMES = biomes as Record<string, { color: string; depth: number }>;
+
 export const OtherCastles = ({ hexData, meshRef }: CastlesProps) => {
   const { nodes, materials } = useGLTF("/models/realm-buildings-transformed.glb") as GLTFResult;
   const realms = useGetRealms();
@@ -116,7 +119,11 @@ export const OtherCastles = ({ hexData, meshRef }: CastlesProps) => {
         const colrow = realmPositions[Number(realm.realmId).toString()][0];
         const hexIndex = hexData.findIndex((h) => h.col === colrow.col && h.row === colrow.row);
         // to have the exact height of the hexagon and place castle on top
-        return { position: getRealmUIPosition(realm.realmId), index: hexIndex };
+        return {
+          position: getRealmUIPosition(realm.realmId),
+          index: hexIndex,
+          depth: BIOMES[hexData[hexIndex].biome].depth,
+        };
       })
       .filter(Boolean);
   }, []);
@@ -124,7 +131,7 @@ export const OtherCastles = ({ hexData, meshRef }: CastlesProps) => {
   return (
     <group>
       {castles.map((castle) => {
-        const { position, index } = castle;
+        const { position, index, depth } = castle;
         if (index === -1 || !meshRef.current) return null;
         const matrix = getPositionsAtIndex(meshRef.current, index);
         return (
@@ -135,7 +142,7 @@ export const OtherCastles = ({ hexData, meshRef }: CastlesProps) => {
             castShadow
             geometry={nodes.castle.geometry}
             material={materials.PaletteMaterial011}
-            position={[position.x, DEPTH + (matrix?.z || 0), -position.y]}
+            position={[position.x, DEPTH + depth * DEPTH, -position.y]}
           />
         );
       })}
@@ -156,7 +163,11 @@ export const MyCastles = ({ hexData, meshRef }: CastlesProps) => {
         const colrow = realmPositions[Number(entity.realmId).toString()][0];
         const hexIndex = hexData.findIndex((h) => h.col === colrow.col && h.row === colrow.row);
         // to have the exact height of the hexagon and place castle on top
-        return { position: getRealmUIPosition(entity.realmId), index: hexIndex };
+        return {
+          position: getRealmUIPosition(entity.realmId),
+          index: hexIndex,
+          depth: BIOMES[hexData[hexIndex].biome].depth,
+        };
       })
       .filter(Boolean);
   }, []);
@@ -164,7 +175,7 @@ export const MyCastles = ({ hexData, meshRef }: CastlesProps) => {
   return (
     <group>
       {castles.map((castle) => {
-        const { position, index } = castle;
+        const { position, index, depth } = castle;
         if (index === -1 || !meshRef.current) return null;
         // const height = meshPositions[index * 3];
         const matrix = getPositionsAtIndex(meshRef.current, index);
@@ -178,7 +189,7 @@ export const MyCastles = ({ hexData, meshRef }: CastlesProps) => {
             material={materials.PaletteMaterial004}
             // rotate the castle in a random manner based on a seed
             rotation={[0, Math.random() * 2 * Math.PI, 0]}
-            position={[position.x, DEPTH + (matrix?.z || 0), -position.y]}
+            position={[position.x, DEPTH + depth * DEPTH, -position.y]}
             // position={[position.x, height + 1, -position.y]}
           />
         );

@@ -2,7 +2,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useEffect, useRef, useState } from "react";
-import { Resource } from "@bibliothecadao/eternum";
+import { Resource, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import useRealmStore from "../store/useRealmStore";
 
 export function useExplore() {
@@ -77,26 +77,6 @@ export function useExplore() {
     if (isExplored(col, row)) {
       return;
     }
-
-    // if row is even
-    const neighborOffsetsOdd = [
-      { i: 1, j: 0, direction: 0 },
-      { i: 0, j: 1, direction: 1 },
-      { i: -1, j: 1, direction: 2 },
-      { i: -1, j: 0, direction: 3 },
-      { i: -1, j: -1, direction: 4 },
-      { i: 0, j: -1, direction: 5 },
-    ];
-
-    // if row is odd
-    const neighborOffsetsEven = [
-      { i: 1, j: 0, direction: 0 },
-      { i: 1, j: 1, direction: 1 },
-      { i: 0, j: 1, direction: 2 },
-      { i: -1, j: 0, direction: 3 },
-      { i: 0, j: -1, direction: 4 },
-      { i: 1, j: -1, direction: 5 },
-    ];
 
     const neighborOffsets = row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
 
