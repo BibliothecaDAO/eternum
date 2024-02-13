@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "scripts": {
     "build-packages": "bun run --cwd sdk/packages/eternum build",
-    "build-client": "bun run --cwd ./client build"
+    "build-client": "cross-env NODE_OPTIONS=\"--max_old_space_size=8096\" bun run --cwd ./client build"
   },
   "workspaces": [
     "sdk/packages/eternum",
