@@ -1,16 +1,14 @@
 import { ExtrudeGeometry, InstancedMesh, MeshBasicMaterial } from "three";
 import HyperstructureFinished from "./hyperstructures/models/HyperstructureFinished";
 import { Hexagon, getPositionsAtIndex } from "./HexGrid";
-import hexDataJson from "../../geodata/hex/hexData.json";
 import useUIStore from "../../hooks/store/useUIStore";
 
 type Hyperstructures = {
+  hexData: Hexagon[];
   hexMeshRef: React.MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>;
 };
 
-const hexData: Hexagon[] = hexDataJson as Hexagon[];
-
-export const Hyperstructures = ({ hexMeshRef }: Hyperstructures) => {
+export const Hyperstructures = ({ hexData, hexMeshRef }: Hyperstructures) => {
   const mesh = hexMeshRef.current;
 
   const hyperstructures = useUIStore((state) => state.hyperstructures);

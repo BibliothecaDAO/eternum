@@ -22,18 +22,17 @@ import { Subscription } from "rxjs";
 import { getUIPositionFromColRow } from "../../utils/utils";
 import { MyCastles, OtherCastles } from "./Castles";
 import { Hyperstructures } from "./Hyperstructures";
+import { biomes } from "@bibliothecadao/eternum";
 
 export const DEPTH = 10;
 export const HEX_RADIUS = 3;
+
+const BIOMES = biomes as Record<string, { color: string; depth: number }>;
 
 export interface Hexagon {
   idx: number;
   col: number;
   row: number;
-  x: number;
-  y: number;
-  color: string;
-  depth: number;
   biome: string;
 }
 
@@ -71,7 +70,7 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
           const row = Number(event.keys[3]);
           const hexIndex = hexData.findIndex((h) => h.col === col && h.row === row);
           if (hexIndex !== -1 && hexMeshRef?.current) {
-            const color = new Color(hexData[hexIndex].color);
+            const color = new Color(BIOMES[hexData[hexIndex].biome].color);
             const colors = getColorFromMesh(hexMeshRef.current);
             if (!colors) return;
             color.toArray(colors, hexIndex * 3);
@@ -85,7 +84,7 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
             hexMeshRef.current.geometry.attributes.color.array = new Float32Array(colors);
             hexMeshRef.current.geometry.attributes.color.needsUpdate = true;
             if (highlightedHexRef.current.hexId === hexIndex) {
-              highlightedHexRef.current.color = new Color(hexData[hexIndex].color);
+              highlightedHexRef.current.color = new Color(BIOMES[hexData[hexIndex].biome].color);
             }
           }
         }
@@ -137,7 +136,7 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
       const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
 
       let matrix = new Matrix4();
-      matrix.setPosition(x, y, hex.depth * 10);
+      matrix.setPosition(x, y, BIOMES[hex.biome].depth * 10);
       instancedMesh.setMatrixAt(idx, matrix);
       idx++;
     });
@@ -183,9 +182,9 @@ export const Map = () => {
       <mesh rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>
         <HexagonGrid hexMeshRef={hexMeshRef} startRow={0} endRow={rows} startCol={0} endCol={cols} />
       </mesh>
-      <MyCastles meshRef={hexMeshRef} />
-      <OtherCastles meshRef={hexMeshRef} />
-      <Hyperstructures hexMeshRef={hexMeshRef} />
+      <MyCastles hexData={hexData} meshRef={hexMeshRef} />
+      <OtherCastles hexData={hexData} meshRef={hexMeshRef} />
+      <Hyperstructures hexData={hexData} hexMeshRef={hexMeshRef} />
       {/* <Flags></Flags> */}
       {/* <mesh>
         {hexagonGrids.map((grid, index) => {

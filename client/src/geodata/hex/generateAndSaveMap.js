@@ -127,10 +127,10 @@ const generateAndSaveMap = () => {
         idx: idx,
         col: col,
         row: row,
-        x,
-        y,
-        color: biome.backgroundColor, // Extract the color for this index
-        depth: biome.depth,
+        // x,
+        // y,
+        // color: biome.backgroundColor, // Extract the color for this index
+        // depth: biome.depth,
         biome: biome.name,
       });
 
@@ -172,40 +172,40 @@ const generateAndSaveMap = () => {
   });
 };
 
-//generateAndSaveMap();
+generateAndSaveMap();
 // const res = getBiome(2147484078, 2147483853);
 // console.log({ res });
 
-const res = getBiome(300, 500);
-console.log({ res });
+// const res = getBiome(300, 500);
+// console.log({ res });
 
-const noise = snoise([0, 0, 0]);
-console.log({ noise });
+// const noise = snoise([0, 0, 0]);
+// console.log({ noise });
 
-//35791401.3, 0, 35791397.55
-const noise2 = snoise([35991.3, 0, 35791.55]);
-console.log({ noise2 });
+// //35791401.3, 0, 35791397.55
+// const noise2 = snoise([35991.3, 0, 35791.55]);
+// console.log({ noise2 });
 
-// [10000, 0, 10000]
-const noise3 = snoise([1000000, 0, 1000000]);
-console.log({ noise3 });
+// // [10000, 0, 10000]
+// const noise3 = snoise([1000000, 0, 1000000]);
+// console.log({ noise3 });
 
-// // [-9.99, 8.25, 6.98]
-const noise4 = snoise([-9.99, 8.25, 6.98]);
-console.log({ noise4 });
+// // // [-9.99, 8.25, 6.98]
+// const noise4 = snoise([-9.99, 8.25, 6.98]);
+// console.log({ noise4 });
 
-// [-0.005, 12.578, -2.87]
-const noise5 = snoise([-0.005, 12.578, -2.87]);
-console.log({ noise5 });
+// // [-0.005, 12.578, -2.87]
+// const noise5 = snoise([-0.005, 12.578, -2.87]);
+// console.log({ noise5 });
 
-// [0, 2, 0.5]
-const noise6 = snoise([0, 2, 0.5]);
-console.log({ noise6 });
+// // [0, 2, 0.5]
+// const noise6 = snoise([0, 2, 0.5]);
+// console.log({ noise6 });
 
-// [150, 0, 150]
-const noise7 = snoise([150, 0, 150]);
-console.log({ noise7 });
+// // [150, 0, 150]
+// const noise7 = snoise([150, 0, 150]);
+// console.log({ noise7 });
 
-// [200, 0, 200]
-const noise8 = snoise([200, 0, 200]);
-console.log({ noise8 });
+// // [200, 0, 200]
+// const noise8 = snoise([200, 0, 200]);
+// console.log({ noise8 });

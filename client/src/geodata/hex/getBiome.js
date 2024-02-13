@@ -10,8 +10,8 @@ export const getBiome = (col, row) => {
     const noise = snoise([((1 / octave) * col) / MAP_AMPLITUDE, 0, ((1 / octave) * row) / MAP_AMPLITUDE]);
     const x = ((1 / octave) * col) / MAP_AMPLITUDE;
     const y = ((1 / octave) * row) / MAP_AMPLITUDE;
-    console.log({ col, row });
-    console.log({ noise, x, y });
+    // console.log({ col, row });
+    // console.log({ noise, x, y });
     elevation +=
       octave *
       Math.floor(
@@ -23,7 +23,7 @@ export const getBiome = (col, row) => {
 
   elevation = elevation / 100;
 
-  console.log({ elevation });
+  // console.log({ elevation });
 
   let moisture = 0;
 
@@ -49,7 +49,7 @@ export const getBiome = (col, row) => {
       ((snoise([(MOISTURE_OCTAVE * col) / MAP_AMPLITUDE, 0, (MOISTURE_OCTAVE * row) / MAP_AMPLITUDE]) + 1) / 2) * 100,
     ) / 100;
 
-  console.log({ moisture });
+  // console.log({ moisture });
 
   return determineEnvironment(elevation, moisture);
 };

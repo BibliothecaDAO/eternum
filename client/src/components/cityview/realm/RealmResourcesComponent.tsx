@@ -21,7 +21,7 @@ export const RealmResourcesComponent = ({ className }: RealmResourcesComponentPr
   const [showAllResources, setShowAllResources] = useState<boolean>(false);
   const [realmResourceIds, setRealmResourceIds] = useState<number[]>([]);
 
-  let { realmEntityId } = useRealmStore();
+  let realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const { realm } = useGetRealm(realmEntityId);
 

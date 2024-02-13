@@ -3,7 +3,6 @@ import realmHexPositions from "../../geodata/hex/realmHexPositions.json";
 import { MutableRefObject, useMemo } from "react";
 import { useGetRealms } from "../../hooks/helpers/useRealm";
 import useRealmStore from "../../hooks/store/useRealmStore";
-import hexDataJson from "../../geodata/hex/hexData.json";
 import { HexPositions, getRealmUIPosition } from "../../utils/utils";
 import { GLTF } from "three-stdlib";
 import { DEPTH, Hexagon, getPositionsAtIndex } from "./HexGrid";
@@ -100,13 +99,12 @@ type GLTFResult = GLTF & {
   };
 };
 
-const hexData: Hexagon[] = hexDataJson as Hexagon[];
-
 type CastlesProps = {
+  hexData: Hexagon[];
   meshRef: MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>;
 };
 
-export const OtherCastles = ({ meshRef }: CastlesProps) => {
+export const OtherCastles = ({ hexData, meshRef }: CastlesProps) => {
   const { nodes, materials } = useGLTF("/models/realm-buildings-transformed.glb") as GLTFResult;
   const realms = useGetRealms();
 
@@ -145,7 +143,7 @@ export const OtherCastles = ({ meshRef }: CastlesProps) => {
   );
 };
 
-export const MyCastles = ({ meshRef }: CastlesProps) => {
+export const MyCastles = ({ hexData, meshRef }: CastlesProps) => {
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
   const { nodes, materials } = useGLTF("/models/realm-buildings-transformed.glb") as GLTFResult;
