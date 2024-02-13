@@ -1,7 +1,5 @@
 import { create } from "zustand";
 import { createPopupsSlice, PopupsStore } from "./_popups";
-import realmsJson from "../../geodata/realms.json";
-import realmHexPositions from "../../geodata/hex/realmHexPositions.json";
 import { Vector3 } from "three";
 import { createDataStoreSlice, DataStore } from "./_dataStore";
 import React from "react";

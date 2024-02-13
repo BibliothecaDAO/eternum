@@ -3,7 +3,7 @@ import { WorldMapScene } from "./WorldMapScene";
 import { RealmCityViewScene } from "./RealmCityViewScene";
 import useUIStore from "../../hooks/store/useUIStore";
 import { Perf } from "r3f-perf";
-import { useLocation, Switch, Route, useRoute } from "wouter";
+import { useLocation, Switch, Route } from "wouter";
 import { a } from "@react-spring/three";
 import { Sky, AdaptiveDpr, useHelper, Clouds, Cloud, CameraShake } from "@react-three/drei";
 import { Suspense, useMemo, useRef } from "react";

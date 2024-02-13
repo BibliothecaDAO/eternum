@@ -1,11 +1,8 @@
-import { HyperStructureInterface } from "@bibliothecadao/eternum";
-import { BufferGeometry, ExtrudeGeometry, InstancedMesh, MeshBasicMaterial, Vector2 } from "three";
+import { ExtrudeGeometry, InstancedMesh, MeshBasicMaterial } from "three";
 import HyperstructureFinished from "./hyperstructures/models/HyperstructureFinished";
-import { DEPTH, Hexagon, getPositionsAtIndex } from "./HexGrid";
+import { Hexagon, getPositionsAtIndex } from "./HexGrid";
 import hexDataJson from "../../geodata/hex/hexData.json";
 import useUIStore from "../../hooks/store/useUIStore";
-import { useThree } from "@react-three/fiber";
-import { useEffect, useRef } from "react";
 
 type Hyperstructures = {
   hexMeshRef: React.MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>;

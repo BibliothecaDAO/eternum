@@ -8,7 +8,6 @@ import * as THREE from "three";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { HyperStructureInterface } from "@bibliothecadao/eternum";
-import { useEffect, useRef } from "react";
 import useUIStore from "../../../../hooks/store/useUIStore";
 
 type GLTFResult = GLTF & {

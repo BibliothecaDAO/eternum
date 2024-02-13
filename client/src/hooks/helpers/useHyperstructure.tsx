@@ -1,12 +1,7 @@
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
-import { Position, UIPosition } from "@bibliothecadao/eternum";
-import {
-  calculateDistance,
-  getContractPositionFromRealPosition,
-  getEntityIdFromKeys,
-  getUIPositionFromColRow,
-} from "../../utils/utils";
+import { Position } from "@bibliothecadao/eternum";
+import { calculateDistance, getEntityIdFromKeys, getUIPositionFromColRow } from "../../utils/utils";
 import { HyperStructureInterface } from "@bibliothecadao/eternum";
 import hyperstructuresHexPositions from "../../geodata/hex/hyperstructuresHexPositions.json";
 import { useCombat } from "./useCombat";

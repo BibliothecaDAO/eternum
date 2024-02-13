@@ -6,10 +6,8 @@ import { useDojo } from "../../../DojoContext";
 import { Headline } from "../../../elements/Headline";
 import { SecondaryPopup } from "../../../elements/SecondaryPopup";
 import { ResourceCost } from "../../../elements/ResourceCost";
-import { divideByPrecision, getEntityIdFromKeys } from "../../../utils/utils";
+import { divideByPrecision } from "../../../utils/utils";
 import Button from "../../../elements/Button";
-import { getRealm } from "../../../utils/realms";
-import { getComponentValue } from "@dojoengine/recs";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useExplore } from "../../../hooks/helpers/useExplore";
@@ -76,7 +74,7 @@ export const ExploreMapPopup = ({ onClose }: RoadBuildPopupProps) => {
 };
 
 type ExplorePanelProps = {
-  explorationStart: { exploration: any; direction: number };
+  explorationStart: { exploration: any; direction: number | undefined };
   foundResource: Resource | undefined;
   targetHex?: { col: number; row: number };
   setStep: Dispatch<React.SetStateAction<number>>;
@@ -136,7 +134,7 @@ export const ExplorePanel = ({ explorationStart, foundResource, onClose, setStep
 
   const onExplore = async () => {
     setIsLoading(true);
-    if (!selectedEntityId || !clickedHexMemoized) return;
+    if (!selectedEntityId || !clickedHexMemoized || !explorationStart.direction) return;
     await explore({
       //   realm_entity_id: selectedEntityId,
       realm_entity_id: explorationStart.exploration.explored_by_id,
@@ -215,44 +213,44 @@ export const ExplorePanel = ({ explorationStart, foundResource, onClose, setStep
   );
 };
 
-type SelectEntityIdProps = {
-  entityIds: bigint[];
-  idsCanExplore: bigint[];
-  setSelectedEntityId: (id: bigint) => void;
-  selectedEntityId: bigint | undefined;
-};
+// type SelectEntityIdProps = {
+//   entityIds: bigint[];
+//   idsCanExplore: bigint[];
+//   setSelectedEntityId: (id: bigint) => void;
+//   selectedEntityId: bigint | undefined;
+// };
 
-const SelectEntityId = ({ entityIds, idsCanExplore, setSelectedEntityId, selectedEntityId }: SelectEntityIdProps) => {
-  const {
-    setup: {
-      components: { Realm },
-    },
-  } = useDojo();
+// const SelectEntityId = ({ entityIds, idsCanExplore, setSelectedEntityId, selectedEntityId }: SelectEntityIdProps) => {
+//   const {
+//     setup: {
+//       components: { Realm },
+//     },
+//   } = useDojo();
 
-  const names = entityIds.map((entityId) => {
-    // get the name
-    const realm = getComponentValue(Realm, getEntityIdFromKeys([entityId]));
-    return { entityId, name: realm ? getRealm(realm?.realm_id)?.name : "" };
-  });
+//   const names = entityIds.map((entityId) => {
+//     // get the name
+//     const realm = getComponentValue(Realm, getEntityIdFromKeys([entityId]));
+//     return { entityId, name: realm ? getRealm(realm?.realm_id)?.name : "" };
+//   });
 
-  return (
-    <div className="w-full flex flex-row justify-between">
-      {names.map((name, index) => (
-        <Button
-          variant={selectedEntityId === name.entityId ? "primary" : "outline"}
-          size="xs"
-          className={""}
-          disabled={!idsCanExplore.find((id) => id === BigInt(name.entityId))}
-          onClick={() => setSelectedEntityId(name.entityId)}
-          key={index}
-        >
-          {name.name}
-        </Button>
-      ))}
-      ;
-    </div>
-  );
-};
+//   return (
+//     <div className="w-full flex flex-row justify-between">
+//       {names.map((name, index) => (
+//         <Button
+//           variant={selectedEntityId === name.entityId ? "primary" : "outline"}
+//           size="xs"
+//           className={""}
+//           disabled={!idsCanExplore.find((id) => id === BigInt(name.entityId))}
+//           onClick={() => setSelectedEntityId(name.entityId)}
+//           key={index}
+//         >
+//           {name.name}
+//         </Button>
+//       ))}
+//       ;
+//     </div>
+//   );
+// };
 
 type ExploreResultPanelProps = {
   biome: string;

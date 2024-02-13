@@ -9,7 +9,6 @@ import { CaravanInterface } from "@bibliothecadao/eternum";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
-import { getPosition } from "../../../../../utils/utils";
 
 type CaravansPanelProps = {};
 
@@ -20,7 +19,6 @@ export const CaravansPanel = ({}: CaravansPanelProps) => {
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const realmId = useRealmStore((state) => state.realmId);
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const { useGetEntityCaravans } = useCaravan();

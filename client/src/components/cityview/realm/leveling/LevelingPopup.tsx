@@ -29,7 +29,7 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
 
   const { getEntityLevel, getRealmLevelBonus } = useLevel();
 
-  const [level, tier] = useMemo(() => {
+  const [level, _] = useMemo(() => {
     let level = getEntityLevel(realmEntityId)?.level || 0;
     return [level, Math.floor(level / 4) + 1];
   }, [realmEntityId]);

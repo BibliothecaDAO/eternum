@@ -5,7 +5,6 @@ import realmsOrdersJson from "../geodata/realms_raw.json";
 import { findResourceIdByTrait, orders } from "@bibliothecadao/eternum";
 import { packResources } from "../utils/packedData";
 import { RealmInterface } from "@bibliothecadao/eternum";
-import { getContractPositionFromRealPosition } from "./utils";
 
 interface Attribute {
   trait_type: string;

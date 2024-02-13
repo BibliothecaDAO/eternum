@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { Tabs } from "../../../elements/tab";
-import useUIStore from "../../../hooks/store/useUIStore";
 import { RealmsLeaderboard } from "./RealmsLeaderboard";
 import { useComputeLordsLeaderboards } from "../../../hooks/store/useLeaderBoardStore";
 import { OrdersLeaderboard } from "./OrdersLeaderboard";

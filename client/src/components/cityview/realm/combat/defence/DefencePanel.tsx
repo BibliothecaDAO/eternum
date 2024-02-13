@@ -54,7 +54,7 @@ export const DefencePanel = ({}: DefencePanelProps) => {
     }
   }, [watchTowerId, watchTowerHealth]);
 
-  const [defenderLevelBonus, defenderHyperstructureLevelBonus] = useMemo(() => {
+  const [defenderLevelBonus, _] = useMemo(() => {
     let level = watchTower?.entityOwnerId ? getEntityLevel(watchTower.entityOwnerId)?.level || 0 : 0;
     let levelBonus = getRealmLevelBonus(level, LevelIndex.COMBAT);
     let hyperstructureLevelBonus = conqueredHyperstructures * 25 + 100;

@@ -1,11 +1,7 @@
 import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useComponentValue } from "@dojoengine/react";
-import { useUiSounds } from "../useUISound";
-import useUIStore from "../store/useUIStore";
 import { useEffect, useRef, useState } from "react";
-import { Subscription } from "rxjs";
 import { Resource } from "@bibliothecadao/eternum";
 import useRealmStore from "../store/useRealmStore";
 
@@ -19,7 +15,6 @@ export function useExplore() {
     },
   } = useDojo();
 
-  const clickedHex = useUIStore((state) => state.clickedHex);
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
   const isExplored = (col: number, row: number) => {
@@ -63,7 +58,7 @@ export function useExplore() {
         });
         return subscription;
       };
-      const sub = subscribeToFoundResources();
+      subscribeToFoundResources();
 
       // Cleanup function
       return () => {

@@ -1,4 +1,4 @@
-import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
 import { Headline } from "../../../../../elements/Headline";
 import {
@@ -25,7 +25,7 @@ import { OrderIcon } from "../../../../../elements/OrderIcon";
 import { OnlineStatus } from "../../../../../elements/OnlineStatus";
 import { useLabor } from "../../../../../hooks/helpers/useLabor";
 import { useResources } from "../../../../../hooks/helpers/useResources";
-import { getRealm, getRealmOrderNameById } from "../../../../../utils/realms";
+import { getRealm } from "../../../../../utils/realms";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { FastCreateOfferPopup } from "../FastCreateOffer";

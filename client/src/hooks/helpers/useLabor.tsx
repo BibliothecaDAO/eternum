@@ -165,6 +165,7 @@ export function useLabor() {
     getLaborAuctionAverageCoefficient,
     getNextLaborAuctionCoefficient,
     onBuildFood,
+    getProductionCost,
   };
 }
 

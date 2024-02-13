@@ -4,7 +4,6 @@ import { LaborBuilding } from "./LaborBuilding";
 import { LaborResourceBuildPopup } from "./LaborResourceBuildPopup";
 import { ChooseBuilding } from "./ChooseBuilding";
 import { useBuildings } from "../../../../../hooks/helpers/useBuildings";
-import useRealmStore from "../../../../../hooks/store/useRealmStore";
 
 type LaborBuildingsPanelProps = {};
 
@@ -14,8 +13,6 @@ export const LaborBuildingsPanel = ({}: LaborBuildingsPanelProps) => {
       components: {},
     },
   } = useDojo();
-
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const [showPopup, setShowPopup] = useState(false);
   const { getLaborBuilding } = useBuildings();

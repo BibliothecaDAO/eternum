@@ -2,7 +2,6 @@ import { GraphQLClient, gql } from "graphql-request";
 import { createClient } from "graphql-ws";
 import { ReplaySubject, Observable } from "rxjs";
 import { getLastLoginTimestamp } from "../hooks/store/useNotificationsStore";
-import { MAP_EXPLORED_EVENT } from "@bibliothecadao/eternum";
 
 const MAX_EVENTS = 50;
 

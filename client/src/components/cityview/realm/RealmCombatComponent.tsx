@@ -7,7 +7,6 @@ import { RaidsPanel } from "./combat/raids/RaidsPanel";
 import { DefencePanel } from "./combat/defence/DefencePanel";
 import { useLevel } from "../../../hooks/helpers/useLevel";
 import { useCombat } from "../../../hooks/helpers/useCombat";
-import { useDojo } from "../../../DojoContext";
 
 type RealmCombatComponentProps = {};
 

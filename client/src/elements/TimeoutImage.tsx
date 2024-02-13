@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 export type TimeoutImageProps = {
   image: string;
@@ -16,7 +16,7 @@ const TimeoutImage = ({
   bgColor = "transparent",
 }: TimeoutImageProps) => {
   const [currentImage, setCurrentImage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [_, setLoading] = useState(true);
 
   const fetchImage = (src: string) => {
     const loadingImage = new Image();

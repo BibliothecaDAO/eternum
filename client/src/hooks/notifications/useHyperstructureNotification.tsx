@@ -2,7 +2,7 @@ import { ReactComponent as Checkmark } from "../../assets/icons/common/checkmark
 import { OrderIcon } from "../../elements/OrderIcon";
 import { Badge } from "../../elements/Badge";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
-import { divideByPrecision, getEntityIdFromKeys, getUIPositionFromContractPosition } from "../../utils/utils";
+import { divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
 import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
@@ -15,10 +15,7 @@ import {
 import { ResourceCost } from "../../elements/ResourceCost";
 import Button from "../../elements/Button";
 import { useState } from "react";
-import useUIStore from "../store/useUIStore";
-import { useHyperstructure } from "../helpers/useHyperstructure";
 import { useRefreshHyperstructure } from "../store/useRefreshHyperstructure";
-import { HyperStructureInterface } from "@bibliothecadao/eternum";
 
 export const useCaravanHasArrivedAtHyperstructureNotification = (
   notification: NotificationType,
@@ -35,8 +32,6 @@ export const useCaravanHasArrivedAtHyperstructureNotification = (
       components: { Realm },
     },
   } = useDojo();
-
-  const { getHyperstructure } = useHyperstructure();
 
   const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
 

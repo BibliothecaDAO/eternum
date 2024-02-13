@@ -45,7 +45,7 @@ export const useHarvestNotification = (
 
   const harvestAmount = notification.data && "harvestAmount" in notification.data ? notification.data.harvestAmount : 0;
 
-  const { getEntityLevel, getRealmLevelBonus, getHyperstructureLevelBonus } = useLevel();
+  const { getEntityLevel, getRealmLevelBonus } = useLevel();
 
   // get harvest bonuses
   const [levelBonus, hyperstructureLevelBonus] = useMemo(() => {

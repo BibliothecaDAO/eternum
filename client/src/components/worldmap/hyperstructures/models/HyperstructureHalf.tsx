@@ -26,9 +26,7 @@ export default function HyperstructureHalfFinished(
   props: JSX.IntrinsicElements["group"] & { hyperstructure?: HyperStructureInterface },
 ) {
   const { nodes, materials } = useGLTF("/models/hyperstructure3_half-finished_LOW-transformed.glb") as GLTFResult;
-  const { hyperstructure } = props;
 
-  // const currentLevel = hyperstructure?.level || 0;
   return (
     <group {...props} dispose={null}>
       <group name="Scene">

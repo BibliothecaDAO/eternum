@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { ComponentPropsWithRef, useEffect, useState } from "react";
+import { ComponentPropsWithRef } from "react";
 import { Transition } from "@headlessui/react";
 // import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
 import { useTradeNotification } from "../hooks/notifications/useTradeNotification";

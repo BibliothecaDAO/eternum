@@ -1,8 +1,6 @@
 import { findResourceById } from "@bibliothecadao/eternum";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
-import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "../../../utils/utils";
-import { useDojo } from "../../../DojoContext";
-import useRealmStore from "../../../hooks/store/useRealmStore";
+import { currencyFormat, divideByPrecision } from "../../../utils/utils";
 import useUIStore from "../../../hooks/store/useUIStore";
 import clsx from "clsx";
 
@@ -20,13 +18,6 @@ export const SmallResource = ({
   intlFormat?: boolean;
   hideIfZero?: boolean;
 }) => {
-  const {
-    setup: {
-      components: { Resource },
-    },
-  } = useDojo();
-
-  const { realmEntityId } = useRealmStore();
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   return balance > 0 ? (

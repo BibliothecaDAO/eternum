@@ -2,14 +2,11 @@ import { useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
 import { Tabs } from "../../../../../elements/tab";
 import Button from "../../../../../elements/Button";
-import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "../../../../../utils/utils";
-import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import { SelectHyperstructureForCombat, SelectRealmForCombatPanel } from "./SelectRealmForCombatPanel";
 import { CombatInfo } from "@bibliothecadao/eternum";
-import { useLocation } from "wouter";
 import { Headline } from "../../../../../elements/Headline";
 
 type TravelRaidsPopupProps = {

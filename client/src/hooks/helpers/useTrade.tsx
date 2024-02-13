@@ -1,4 +1,4 @@
-import { HasValue, getComponentValue, runQuery, Entity, NotValue } from "@dojoengine/recs";
+import { HasValue, getComponentValue, runQuery, Entity } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { MarketInterface, Resource } from "@bibliothecadao/eternum";
 import { useEffect, useMemo, useState } from "react";

@@ -9,7 +9,6 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import { OrderIcon } from "../../../elements/OrderIcon";
 import { useRealm } from "../../../hooks/helpers/useRealm";
 import clsx from "clsx";
-import { getPosition } from "../../../utils/utils";
 import { order_statments } from "../../../data/orders";
 import realmsHexPositions from "../../../geodata/hex/realmHexPositions.json";
 

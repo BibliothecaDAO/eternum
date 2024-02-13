@@ -1,12 +1,7 @@
 import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { Position, Resource } from "@bibliothecadao/eternum";
-import {
-  HexPositions,
-  getContractPositionFromRealPosition,
-  getEntityIdFromKeys,
-  getUIPositionFromColRow,
-} from "../../utils/utils";
+import { HexPositions, getEntityIdFromKeys, getUIPositionFromColRow } from "../../utils/utils";
 import banks from "../../data/banks.json";
 import { computeCoefficient, getLordsAmountFromBankAuction } from "../../components/worldmap/banks/utils";
 import useBlockchainStore from "../store/useBlockchainStore";

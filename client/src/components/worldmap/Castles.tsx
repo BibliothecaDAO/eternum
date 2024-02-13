@@ -4,7 +4,7 @@ import { MutableRefObject, useMemo } from "react";
 import { useGetRealms } from "../../hooks/helpers/useRealm";
 import useRealmStore from "../../hooks/store/useRealmStore";
 import hexDataJson from "../../geodata/hex/hexData.json";
-import { HexPositions, getRealmUIPosition, getUIPositionFromColRow } from "../../utils/utils";
+import { HexPositions, getRealmUIPosition } from "../../utils/utils";
 import { GLTF } from "three-stdlib";
 import { DEPTH, Hexagon, getPositionsAtIndex } from "./HexGrid";
 import { ExtrudeGeometry, InstancedMesh, MeshBasicMaterial } from "three";
@@ -14,16 +14,10 @@ type GLTFResult = GLTF & {
   nodes: {
     bridge: THREE.Mesh;
     bridge_1: THREE.Mesh;
-    bridge: THREE.Mesh;
-    bridge_1: THREE.Mesh;
     archer_tower: THREE.Mesh;
     barracks: THREE.Mesh;
     mage_tower: THREE.Mesh;
     castle: THREE.Mesh;
-    banner: THREE.Mesh;
-    banner_1: THREE.Mesh;
-    banner: THREE.Mesh;
-    banner_1: THREE.Mesh;
     banner: THREE.Mesh;
     banner_1: THREE.Mesh;
     ["market-stall"]: THREE.Mesh;
@@ -42,15 +36,7 @@ type GLTFResult = GLTF & {
     ["mount-rest034"]: THREE.Mesh;
     pier: THREE.Mesh;
     pier_1: THREE.Mesh;
-    pier: THREE.Mesh;
-    pier_1: THREE.Mesh;
-    pier: THREE.Mesh;
-    pier_1: THREE.Mesh;
     ["pier-small021"]: THREE.Mesh;
-    boat: THREE.Mesh;
-    boat_1: THREE.Mesh;
-    boat: THREE.Mesh;
-    boat_1: THREE.Mesh;
     boat: THREE.Mesh;
     boat_1: THREE.Mesh;
     tower: THREE.Mesh;
@@ -113,8 +99,6 @@ type GLTFResult = GLTF & {
     PaletteMaterial011: THREE.MeshStandardMaterial;
   };
 };
-
-type ContextType = Record<string, React.ForwardRefExoticComponent<JSX.IntrinsicElements["mesh"]>>;
 
 const hexData: Hexagon[] = hexDataJson as Hexagon[];
 

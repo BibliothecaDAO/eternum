@@ -3,11 +3,8 @@ import { Tabs } from "../../../elements/tab";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useRoute, useLocation } from "wouter";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { RaidsPanel } from "./combat/raids/RaidsPanel";
-import { DefencePanel } from "./combat/defence/DefencePanel";
 import { useLevel } from "../../../hooks/helpers/useLevel";
 import { useCombat } from "../../../hooks/helpers/useCombat";
-import { useDojo } from "../../../DojoContext";
 import { LaborBuildingsPanel } from "./buildings/labor/LaborBuildingsPanel";
 
 type RealmBuildingsComponentProps = {};

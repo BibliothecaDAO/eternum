@@ -79,7 +79,7 @@ export const HyperstructuresListItem = ({
     updateHyperStructure();
   };
 
-  const isYoursAndCompleted = hyperstructure?.orderId === playerOrder && hyperstructure?.completed;
+  // const isYoursAndCompleted = hyperstructure?.orderId === playerOrder && hyperstructure?.completed;
 
   const caravanIds = hyperstructure
     ? useGetPositionCaravansIds(hyperstructure.position.x, hyperstructure.position.y)

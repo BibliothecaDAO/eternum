@@ -1,9 +1,10 @@
 import { Environment } from "@react-three/drei";
 import { createHexagonGeometry } from "./components/three/HexagonBackground";
-import { MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
+import { MutableRefObject, useEffect, useMemo, useRef } from "react";
 // @ts-ignore
 import { Flags } from "../../components/worldmap/Flags.jsx";
 import {
+  BufferAttribute,
   Color,
   ExtrudeGeometry,
   InstancedBufferAttribute,
@@ -16,7 +17,6 @@ import {
 import hexDataJson from "../../geodata/hex/hexData.json";
 import { useThree } from "@react-three/fiber";
 import useUIStore from "../../hooks/store/useUIStore";
-import { useExplore } from "../../hooks/helpers/useExplore";
 import { useDojo } from "../../DojoContext";
 import { Subscription } from "rxjs";
 import { getUIPositionFromColRow } from "../../utils/utils";
@@ -70,11 +70,18 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
           const col = Number(event.keys[2]);
           const row = Number(event.keys[3]);
           const hexIndex = hexData.findIndex((h) => h.col === col && h.row === row);
-          if (hexIndex !== -1) {
+          if (hexIndex !== -1 && hexMeshRef?.current) {
             const color = new Color(hexData[hexIndex].color);
             const colors = getColorFromMesh(hexMeshRef.current);
             if (!colors) return;
             color.toArray(colors, hexIndex * 3);
+
+            // Assert that colorAttribute is of type BufferAttribute
+            if (!(hexMeshRef.current.geometry.attributes.color instanceof BufferAttribute)) {
+              console.error("colorAttribute is not an instance of THREE.BufferAttribute.");
+              return null;
+            }
+
             hexMeshRef.current.geometry.attributes.color.array = new Float32Array(colors);
             hexMeshRef.current.geometry.attributes.color.needsUpdate = true;
             if (highlightedHexRef.current.hexId === hexIndex) {
@@ -151,19 +158,20 @@ export const Map = () => {
   const rows = 300;
   const cols = 500;
 
-  const hexagonGrids = useMemo(() => {
-    const hexagonGrids = [];
-    for (let i = 0; i < rows; i += 100) {
-      const startRow = i;
-      const endRow = startRow + 100;
-      for (let j = 0; j < cols; j += 100) {
-        const startCol = j;
-        const endCol = startCol + 100;
-        hexagonGrids.push({ startRow, endRow, startCol, endCol });
-      }
-    }
-    return hexagonGrids;
-  }, []);
+  // @dev: in case we want to use multiple smaller mesh instances
+  // const hexagonGrids = useMemo(() => {
+  //   const hexagonGrids = [];
+  //   for (let i = 0; i < rows; i += 100) {
+  //     const startRow = i;
+  //     const endRow = startRow + 100;
+  //     for (let j = 0; j < cols; j += 100) {
+  //       const startCol = j;
+  //       const endCol = startCol + 100;
+  //       hexagonGrids.push({ startRow, endRow, startCol, endCol });
+  //     }
+  //   }
+  //   return hexagonGrids;
+  // }, []);
 
   const hexMeshRef = useRef<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>>();
 
@@ -206,8 +214,8 @@ const useHighlightHex = (
   const mouse = new Vector2();
 
   const onMouseMove = (event: any) => {
+    if (!hexMeshRef?.current) return;
     const mesh = hexMeshRef?.current;
-    if (!mesh) return;
     let colors = getColorFromMesh(mesh);
     if (!colors) return;
     // Calculate mouse position in normalized device coordinates (-1 to +1) for both components
@@ -232,8 +240,7 @@ const useHighlightHex = (
   };
 
   const onMouseClick = (event: any) => {
-    const mesh = hexMeshRef?.current;
-    if (!mesh) return;
+    if (!hexMeshRef?.current) return;
     // Calculate mouse position in normalized device coordinates (-1 to +1) for both components
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -303,9 +310,15 @@ const getColorFromMesh = (mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial
     return null;
   }
 
+  // Assert that colorAttribute is of type BufferAttribute
+  if (!(colorAttribute instanceof BufferAttribute)) {
+    console.error("colorAttribute is not an instance of THREE.BufferAttribute.");
+    return null;
+  }
+
   const colors = colorAttribute.array; // This is a Float32Array
 
-  return colors;
+  return Array.from(colors);
 };
 
 export const getPositionsAtIndex = (mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>, index: number) => {
@@ -354,26 +367,32 @@ const updateHighlight = (
   // Apply new color
   blendedColor.toArray(colors, hexIndex * 3);
 
+  // Assert that colorAttribute is of type BufferAttribute
+  if (!(mesh.geometry.attributes.color instanceof BufferAttribute)) {
+    console.error("colorAttribute is not an instance of THREE.BufferAttribute.");
+    return null;
+  }
+
   // Update the color attribute of the mesh
   mesh.geometry.attributes.color.array = new Float32Array(colors);
   mesh.geometry.attributes.color.needsUpdate = true;
 };
 
-const resetHighlight = (
-  highlightedHexRef: MutableRefObject<{ hexId: number; color: Color | null }>,
-  colors: number[],
-  mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>,
-) => {
-  if (highlightedHexRef.current.hexId !== -1) {
-    // Reset to original color
-    const color = highlightedHexRef.current.color;
-    if (color) {
-      color.toArray(colors, highlightedHexRef.current.hexId * 3);
+// const resetHighlight = (
+//   highlightedHexRef: MutableRefObject<{ hexId: number; color: Color | null }>,
+//   colors: number[],
+//   mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>,
+// ) => {
+//   if (highlightedHexRef.current.hexId !== -1) {
+//     // Reset to original color
+//     const color = highlightedHexRef.current.color;
+//     if (color) {
+//       color.toArray(colors, highlightedHexRef.current.hexId * 3);
 
-      // Update the color attribute of the mesh
-      mesh.geometry.attributes.color.array = new Float32Array(colors);
-      mesh.geometry.attributes.color.needsUpdate = true;
-    }
-    highlightedHexRef.current.hexId = -1;
-  }
-};
+//       // Update the color attribute of the mesh
+//       mesh.geometry.attributes.color.array = new Float32Array(colors);
+//       mesh.geometry.attributes.color.needsUpdate = true;
+//     }
+//     highlightedHexRef.current.hexId = -1;
+//   }
+// };

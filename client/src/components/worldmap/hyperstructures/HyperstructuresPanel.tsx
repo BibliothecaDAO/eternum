@@ -2,12 +2,10 @@ import { useMemo, useState } from "react";
 import { Tabs } from "../../../elements/tab";
 import { HyperstructuresListComponent } from "./HyperstructuresListComponent";
 import useUIStore from "../../../hooks/store/useUIStore";
-import { ReactComponent as Refresh } from "../../../assets/icons/common/refresh.svg";
+// import { ReactComponent as Refresh } from "../../../assets/icons/common/refresh.svg";
 import { useRefreshHyperstructure } from "../../../hooks/store/useRefreshHyperstructure";
 import Button from "../../../elements/Button";
 import { LevelingBonusIcons } from "../../cityview/realm/leveling/Leveling";
-import { getRealm } from "../../../utils/realms";
-import useRealmStore from "../../../hooks/store/useRealmStore";
 import { LevelIndex } from "../../../hooks/helpers/useLevel";
 
 type HyperstructuresPanelProps = {
@@ -19,12 +17,10 @@ export const HyperstructuresPanel = ({ minimumRealmLevel }: HyperstructuresPanel
   const setTooltip = useUIStore((state) => state.setTooltip);
   const conqueredHyperstructureNumber = useUIStore((state) => state.conqueredHyperstructureNumber);
   const hyperstructures = useUIStore((state) => state.hyperstructures);
-  const realmId = useRealmStore((state) => state.realmEntityId);
 
   const { refreshAllHyperstructures, isLoading } = useRefreshHyperstructure();
 
   const bonusList = useMemo(() => {
-    const realmOrder = getRealm(realmId)?.order;
     if (!hyperstructures) return [];
     const bonusAmount = conqueredHyperstructureNumber * 25;
 

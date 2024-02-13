@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import clsx from "clsx";
 import Button from "../../../../../elements/Button";
 import { Guilds } from "@bibliothecadao/eternum";

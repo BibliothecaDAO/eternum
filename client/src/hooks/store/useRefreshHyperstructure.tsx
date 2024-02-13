@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import useRealmStore from "./useRealmStore";
 import { useDojo } from "../../DojoContext";
 import { getComponentValue } from "@dojoengine/recs";
-import { getEntityIdFromKeys, getUIPositionFromContractPosition } from "../../utils/utils";
+import { getEntityIdFromKeys } from "../../utils/utils";
 import { getRealm } from "../../utils/realms";
 import hyperstructuresHex from "../../geodata/hex/hyperstructuresHexPositions.json";
 
