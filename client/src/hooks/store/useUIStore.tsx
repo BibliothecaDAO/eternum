@@ -92,11 +92,11 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
     const pos = getRealmUIPosition(BigInt(realmId));
     const x = pos.x;
     const y = pos.y * -1;
-    const targetPos = new Vector3(x, 50, y);
+    const targetPos = new Vector3(x, 0, y);
     const cameraPos = new Vector3(
-      x + 25 * (Math.random() < 0.5 ? 1 : -1),
-      120,
-      y + 25 * (Math.random() < 0.5 ? 1 : -1),
+      x + 125 * (Math.random() < 0.5 ? 1 : -1),
+      100,
+      y + 75 * (Math.random() < 0.5 ? 1 : -1),
     );
     set({ cameraPosition: cameraPos });
     set({ cameraTarget: targetPos });

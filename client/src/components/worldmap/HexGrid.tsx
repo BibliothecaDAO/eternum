@@ -24,7 +24,7 @@ import { MyCastles, OtherCastles } from "./Castles";
 import { Hyperstructures } from "./Hyperstructures";
 import { biomes } from "@bibliothecadao/eternum";
 
-export const DEPTH = 10;
+export const DEPTH = 3;
 export const HEX_RADIUS = 3;
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
@@ -128,6 +128,7 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
     const hexMaterial = new MeshBasicMaterial({
       color: 0xffffff,
       vertexColors: true,
+      wireframe: false,
     });
 
     const instancedMesh = new InstancedMesh(hexagonGeometry, hexMaterial, group.length);
@@ -179,9 +180,7 @@ export const Map = () => {
 
   return (
     <mesh>
-      <ambientLight color={"white"} intensity={1} />
-      <pointLight rotation={[Math.PI / -2, 0, 0]} position={[10, 20, 10]} intensity={20} />
-      <mesh rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>
+      <mesh rotation={[Math.PI / -2, 0, 0]} position={[0, 0, 0]} frustumCulled={true}>
         <HexagonGrid hexMeshRef={hexMeshRef} startRow={0} endRow={rows} startCol={0} endCol={cols} />
       </mesh>
       <MyCastles hexData={hexData} meshRef={hexMeshRef} />
