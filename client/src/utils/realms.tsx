@@ -1,5 +1,4 @@
 import realmsJson from "../geodata/realms.json";
-import realms from "../data/realms.json";
 import realmsOrdersJson from "../geodata/realms_raw.json";
 import realmsHexPositions from "../geodata/hex/realmHexPositions.json";
 import { findResourceIdByTrait, orders } from "@bibliothecadao/eternum";
@@ -11,6 +10,18 @@ interface Attribute {
   trait_type: string;
   value: any;
 }
+
+let realms: {
+  [key: string]: any;
+} = {};
+
+export const loadRealms = async () => {
+  const response = await fetch("/jsons/realms.json");
+  realms = await response.json();
+  console.log("realms loaded");
+};
+
+loadRealms();
 
 export const getRealmIdByPosition = (position: { x: number; y: number }): bigint | undefined => {
   let realmPositions = realmsHexPositions as { [key: number]: { col: number; row: number }[] };
@@ -38,9 +49,7 @@ export const getRealmOrderNameById = (realmId: bigint): string => {
 };
 
 export function getRealm(realmId: bigint): RealmInterface | undefined {
-  const realmsData = realms as {
-    [key: string]: any;
-  };
+  const realmsData = realms;
   const realm = realmsData[realmId.toString()];
   if (!realm) return;
   const resourceIds = realm.attributes
