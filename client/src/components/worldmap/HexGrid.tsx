@@ -111,9 +111,10 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
 
     filteredGroup.forEach((hex) => {
       // const color = new Color("#202124");
-      const color = new Color();
+      const color = new Color(BIOMES[hex.biome].color);
       const luminance = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
       const grayScaleColor = new Color(luminance, luminance, luminance);
+      // color.toArray(colorValues, idx * 3);
       grayScaleColor.toArray(colorValues, idx * 3);
       idx++;
     });
@@ -136,7 +137,8 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
       const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
 
       let matrix = new Matrix4();
-      matrix.setPosition(x, y, BIOMES[hex.biome].depth * 10);
+      matrix.setPosition(x, y, 0);
+      // matrix.setPosition(x, y, BIOMES[hex.biome].depth * 10);
       instancedMesh.setMatrixAt(idx, matrix);
       idx++;
     });
