@@ -362,7 +362,7 @@ mod labor_systems {
             );
 
             let zone = position.get_zone();
-            let mut labor_auction = get!(world, zone, (LaborAuction));
+            let mut labor_auction = get!(world, (zone), (LaborAuction));
             let mut labor_auction_vrgda = labor_auction.to_LinearVRGDA();
             let mut labor_auction_time_since_start_fixed = labor_auction
                 .get_time_since_start_fixed();

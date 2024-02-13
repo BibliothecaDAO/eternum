@@ -102,15 +102,13 @@ export function useCaravan() {
     let start = getComponentValue(Position, getEntityIdFromKeys([startId]));
     let destination = getComponentValue(Position, getEntityIdFromKeys([destinationId]));
     if (start && destination) {
-      const x: number =
-        start.x > destination.x ? Math.pow(start.x - destination.x, 2) : Math.pow(destination.x - start.x, 2);
+      // Calculate the difference in x and y coordinates
+      const deltaX = Math.abs(start.x - destination.x);
+      const deltaY = Math.abs(start.y - destination.y);
 
-      const y: number =
-        start.y > destination.y ? Math.pow(start.y - destination.y, 2) : Math.pow(destination.y - start.y, 2);
-
-      // Using bitwise shift for the square root approximation for BigInt.
-      // we store coords in x * 10000 to get precise distance
-      const distance = (x + y) ** 0.5 / 10000;
+      // Calculate the distance using the Pythagorean theorem
+      // Each tile is 1 km, so we don't need to divide by 10000 here
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
       return distance;
     }

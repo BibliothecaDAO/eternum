@@ -7,14 +7,14 @@ use eternum::utils::number::{NumberTrait, i128Div};
 
 // todo@credence revisit zone calculation
 
-// highest x = 1320937 + 1800000 = 3120937
-const HIGHEST_X: u128 = 3120937;
-// lowest x = -1329800 + 1800000 = 470200
-const LOWEST_X: u128 = 470200;
-// highest y = 612800 + 1800000 = 2412800
-const HIGHEST_Y:u128 = 2412800;
-// lowest y = -618996 + 1800000 = 1181004
-const LOWEST_Y: u128 = 1181004;
+
+// start col and row for eternum = 2147483647
+// nb of cols = 500
+const HIGHEST_COL: u128 = 2147484147;
+const LOWEST_COL: u128 = 2147483647;
+// nb of rows = 300
+const HIGHEST_ROW:u128 = 2147483947;
+const LOWEST_ROW: u128 = 2147483647;
 
 
 // multiplier to convert hex distance to km
@@ -228,7 +228,7 @@ impl PositionImpl of PositionTrait {
     // world is divided into 10 timezones
     fn get_zone(self: Position) -> u128 {
         // use highest and lowest x to divide map into 10 timezones
-        1 + (self.x - LOWEST_X) * 10 / (HIGHEST_X - LOWEST_X)
+        1 + (self.x - LOWEST_COL) * 10 / (HIGHEST_COL - LOWEST_COL)
     }
 }
 

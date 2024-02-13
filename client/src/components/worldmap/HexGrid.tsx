@@ -111,7 +111,8 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
     let idx = 0;
 
     filteredGroup.forEach((hex) => {
-      const color = new Color(hex.color);
+      // const color = new Color("#202124");
+      const color = new Color();
       const luminance = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
       const grayScaleColor = new Color(luminance, luminance, luminance);
       grayScaleColor.toArray(colorValues, idx * 3);

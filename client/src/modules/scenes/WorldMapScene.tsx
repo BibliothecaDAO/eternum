@@ -8,18 +8,15 @@ import HyperstructureFinished from "../../components/worldmap/hyperstructures/mo
 import useUIStore from "../../hooks/store/useUIStore.js";
 // import { TransformControls } from "@react-three/drei";
 // @ts-ignore
-import Arcs from "../../components/worldmap/Arcs.jsx";
+// import Arcs from "../../components/worldmap/Arcs.jsx";
 import { useResources } from "../../hooks/helpers/useResources.js";
 import { useEffect, useMemo, useRef } from "react";
 import { useCaravan } from "../../hooks/helpers/useCaravans.js";
 import useRealmStore from "../../hooks/store/useRealmStore.js";
 import { useGetRealm } from "../../hooks/helpers/useRealm.js";
 import { getUIPositionFromContractPosition } from "../../utils/utils.js";
-import Bank from "../../components/worldmap/banks/models/Bank2.js";
-import banks from "../../data/banks.json";
 import { Map } from "../../components/worldmap/HexGrid.js";
 import { useRoute } from "wouter";
-// import { Castles } from "../../components/worldmap/Castles.js";
 
 export const WorldMapScene = () => {
   const worldRef = useRef();

@@ -1,26 +1,25 @@
-import realmsCoordsJson from "../geodata/coords.json";
 import realmsJson from "../geodata/realms.json";
 import realms from "../data/realms.json";
 import realmsOrdersJson from "../geodata/realms_raw.json";
+import realmsHexPositions from "../geodata/hex/realmHexPositions.json";
 import { findResourceIdByTrait, orders } from "@bibliothecadao/eternum";
 import { packResources } from "../utils/packedData";
 import { RealmInterface } from "@bibliothecadao/eternum";
+import { getPosition } from "./utils";
 
 interface Attribute {
   trait_type: string;
   value: any;
 }
 
-export const getRealmIdByPosition = (positionRaw: { x: number; y: number }): bigint | undefined => {
-  let offset = 1800000;
-  let position = { x: positionRaw.x - offset, y: positionRaw.y - offset };
-  // TODO: find a better way to find position
-  for (let realm of realmsCoordsJson["features"]) {
+export const getRealmIdByPosition = (position: { x: number; y: number }): bigint | undefined => {
+  let realmPositions = realmsHexPositions as { [key: number]: { col: number; row: number }[] };
+  for (let realmId of Object.keys(realmPositions)) {
     if (
-      parseInt(realm["geometry"]["coordinates"][0]) === position.x &&
-      parseInt(realm["geometry"]["coordinates"][1]) === position.y
+      realmPositions[Number(realmId)][0].col === position.x &&
+      realmPositions[Number(realmId)][0].row === position.y
     ) {
-      return BigInt(realm["properties"]["tokenId"]);
+      return BigInt(realmId);
     }
   }
   return undefined;
@@ -87,8 +86,7 @@ export function getRealm(realmId: bigint): RealmInterface | undefined {
     }
   });
 
-  let coords = realmsCoordsJson["features"][Number(realmId)]["geometry"]["coordinates"];
-  let position = { x: parseInt(coords[0]) + 180000, y: parseInt(coords[1]) + 180000 };
+  let position = getPosition(realmId);
 
   return {
     realmId,

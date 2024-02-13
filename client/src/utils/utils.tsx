@@ -4,7 +4,7 @@ import { useThree } from "@react-three/fiber";
 import { BlendFunction } from "postprocessing";
 import { Entity, setComponent, Component, Schema, Components } from "@dojoengine/recs";
 import { Position } from "@bibliothecadao/eternum";
-import realmCoords from "../geodata/coords.json";
+import realmsHexPositions from "../geodata/hex/realmHexPositions.json";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import realmHexPositions from "../geodata/hex/realmHexPositions.json";
 
@@ -335,14 +335,13 @@ export function divideByPrecision(value: number): number {
 }
 
 export function getPosition(realm_id: bigint): { x: number; y: number } {
-  const data = realmCoords.features[Number(realm_id) - 1];
-  if (!data) return { x: 0, y: 0 };
-  const coords = data.geometry.coordinates.map((value) => parseInt(value));
-  return { x: coords[0] + 1800000, y: coords[1] + 1800000 };
+  let realmPositions = realmsHexPositions as { [key: number]: { col: number; row: number }[] };
+  let position = realmPositions[Number(realm_id)][0];
+  return { x: position.col, y: position.row };
 }
 
-const HIGHEST_X = 3120937;
-const LOWEST_X = 470200;
+const HIGHEST_X = 2147484147;
+const LOWEST_X = 2147483647;
 
 // get zone for labor auction
 export function getZone(x: number): number {
