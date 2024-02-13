@@ -9,6 +9,10 @@ help() {
 	exit 22
 }
 
+if [$# -eq 0]; then
+    help
+fi
+
 start_services() {
 	local build_args=""
 	if [ $1 = true ]; then
