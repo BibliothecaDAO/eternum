@@ -1,4 +1,5 @@
 import { Environment } from "@react-three/drei";
+import React from "react";
 import { createHexagonGeometry } from "./components/three/HexagonBackground";
 import { MutableRefObject, useEffect, useMemo, useRef } from "react";
 // @ts-ignore
@@ -70,7 +71,7 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
     const subscribeToExploreEvents = async () => {
       const observable = await exploreMapEvents();
       const sub = observable.subscribe((event) => {
-        if (event) {
+        if (event && hexData) {
           const col = Number(event.keys[2]);
           const row = Number(event.keys[3]);
           const hexIndex = hexData.findIndex((h) => h.col === col && h.row === row);
@@ -137,6 +138,7 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
 
   // Calculate group and colors only once when the component is mounted
   const { group, colors } = useMemo(() => {
+    if (!hexData) return { group: [], colors: [] };
     const filteredGroup = hexData.filter((hex) => {
       const col = hex.col - 2147483647;
       const row = hex.row - 2147483647;
@@ -229,9 +231,9 @@ export const Map = () => {
       <mesh rotation={[Math.PI / -2, 0, 0]} position={[0, 0, 0]} frustumCulled={true}>
         <HexagonGrid hexMeshRef={hexMeshRef} startRow={0} endRow={rows} startCol={0} endCol={cols} />
       </mesh>
-      <MyCastles hexData={hexData} meshRef={hexMeshRef} />
-      <OtherCastles hexData={hexData} meshRef={hexMeshRef} />
-      <Hyperstructures hexData={hexData} hexMeshRef={hexMeshRef} />
+      {hexData && <MyCastles hexData={hexData} meshRef={hexMeshRef} />}
+      {hexData && <OtherCastles hexData={hexData} meshRef={hexMeshRef} />}
+      {hexData && <Hyperstructures hexData={hexData} hexMeshRef={hexMeshRef} />}
       {/* <Flags></Flags> */}
       {/* <mesh>
         {hexagonGrids.map((grid, index) => {
@@ -253,6 +255,11 @@ const useHighlightHex = (
 ) => {
   const camera = useThree((state) => state.camera);
   const hexData = useUIStore((state) => state.hexData);
+
+  const hexDataRef = useRef(hexData);
+  useEffect(() => {
+    hexDataRef.current = hexData;
+  }, [hexData]);
 
   const setClickedHex = useUIStore((state) => state.setClickedHex);
 
@@ -289,7 +296,7 @@ const useHighlightHex = (
   };
 
   const onMouseClick = (event: any) => {
-    if (!hexMeshRef?.current) return;
+    if (!hexMeshRef?.current || !hexDataRef.current) return;
     // Calculate mouse position in normalized device coordinates (-1 to +1) for both components
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -305,8 +312,9 @@ const useHighlightHex = (
       const intersectedHex = intersects[0];
 
       const hexIndex = intersectedHex.instanceId;
-      const hex = hexIndex ? hexData[hexIndex] : undefined;
+      const hex = hexIndex ? hexDataRef.current[hexIndex] : undefined;
 
+      console.log({ hex, hexIndex });
       if (hex && hexIndex) {
         setClickedHex({ col: hex.col, row: hex.row, hexIndex });
       }

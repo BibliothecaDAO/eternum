@@ -1,4 +1,5 @@
 import { Dispatch, useEffect, useMemo, useState } from "react";
+import React from "react";
 import { Resource, findResourceById } from "@bibliothecadao/eternum";
 import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useResources } from "../../../hooks/helpers/useResources";
@@ -35,11 +36,11 @@ export const ExploreMapPopup = ({ onClose }: RoadBuildPopupProps) => {
   let foundResource = useFoundResources(explorationInfo?.exploration.explored_by_id);
 
   const biome = useMemo(() => {
-    if (clickedHex) {
+    if (clickedHex && hexData) {
       const hexIndex = hexData.findIndex((h) => h.col === clickedHex.col && h.row === clickedHex.row);
       return hexData[hexIndex].biome;
     }
-  }, [clickedHex]);
+  }, [clickedHex, hexData]);
 
   if (!explorationInfo || !biome) return null;
 

@@ -50,7 +50,7 @@ interface UIStore {
   setClickedHex: (hex: { col: number; row: number; hexIndex: number } | undefined) => void;
   setClickedHyperstructure: (hyperstructure: HyperStructureInterface | undefined) => void;
   clickedHyperstructure: HyperStructureInterface | undefined;
-  hexData: Hexagon[];
+  hexData: Hexagon[] | undefined;
   setHexData: (hexData: Hexagon[]) => void;
 }
 
@@ -212,8 +212,10 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   },
   setClickedHyperstructure: (hyperstructure) => set({ clickedHyperstructure: hyperstructure }),
   clickedHyperstructure: undefined,
-  hexData: [],
-  setHexData: (hexData) => set({ hexData }),
+  hexData: undefined,
+  setHexData: (hexData) => {
+    set({ hexData });
+  },
 }));
 
 export default useUIStore;

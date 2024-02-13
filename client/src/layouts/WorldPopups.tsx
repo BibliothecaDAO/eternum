@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { FeedHyperstructurePopup } from "../components/worldmap/hyperstructures/FeedHyperstructure";
 import useUIStore from "../hooks/store/useUIStore";
 import { ExploreMapPopup } from "../components/worldmap/explore/ExploreHexPopup";
+import React from "react";
 
 export const WorldPopups = () => {
   const setClickedHex = useUIStore((state) => state.setClickedHex);
