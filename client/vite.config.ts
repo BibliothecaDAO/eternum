@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, splitVendorChunkPlugin } from "vite";
 import { resolve } from "path";
 import react from "@vitejs/plugin-react";
 import svgr from "vite-plugin-svgr";
@@ -7,7 +7,7 @@ import topLevelAwait from "vite-plugin-top-level-await";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [svgr(), react(), wasm(), topLevelAwait()],
+  plugins: [svgr(), react(), wasm(), topLevelAwait(), splitVendorChunkPlugin()],
   resolve: {
     alias: {
       events: "events",

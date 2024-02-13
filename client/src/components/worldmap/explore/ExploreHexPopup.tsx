@@ -11,10 +11,7 @@ import Button from "../../../elements/Button";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useExplore } from "../../../hooks/helpers/useExplore";
-import hexDataJson from "../../../geodata/hex/hexData.json";
 import { Hexagon } from "../HexGrid";
-
-const hexData: Hexagon[] = hexDataJson as Hexagon[];
 
 type RoadBuildPopupProps = {
   onClose: () => void;
@@ -24,6 +21,7 @@ export const ExploreMapPopup = ({ onClose }: RoadBuildPopupProps) => {
   const [step, setStep] = useState(1);
 
   const clickedHex = useUIStore((state) => state.clickedHex);
+  const hexData = useUIStore((state) => state.hexData);
 
   const { getExplorationInput } = useExplore();
 

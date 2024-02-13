@@ -5,6 +5,7 @@ import { createDataStoreSlice, DataStore } from "./_dataStore";
 import React from "react";
 import { getRealmUIPosition } from "../../utils/utils";
 import { HyperStructureInterface } from "@bibliothecadao/eternum";
+import { Hexagon } from "../../components/worldmap/HexGrid";
 export type Background = "map" | "realmView" | "combat" | "bastion";
 
 interface UIStore {
@@ -49,6 +50,8 @@ interface UIStore {
   setClickedHex: (hex: { col: number; row: number; hexIndex: number } | undefined) => void;
   setClickedHyperstructure: (hyperstructure: HyperStructureInterface | undefined) => void;
   clickedHyperstructure: HyperStructureInterface | undefined;
+  hexData: Hexagon[];
+  setHexData: (hexData: Hexagon[]) => void;
 }
 
 const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
@@ -118,16 +121,16 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   setShowRealmsFlags: (show) => set({ showRealmsFlags: show }),
   moveCameraToWorldMapView: () => {
     const pos = {
-      x: -17.044911069418,
-      y: 118.38408187955699,
-      z: 204.31967964950695,
+      x: 298.2009515928887,
+      y: 113.9047011776059,
+      z: -26.116329229297378,
       transitionDuration: 0.01,
     };
     // does not work
     const target = {
-      x: 200,
+      x: 302,
       y: 20,
-      z: 0,
+      z: -209,
       transitionDuration: 0.01,
     };
     set({ cameraPosition: pos, cameraTarget: target });
@@ -209,6 +212,8 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   },
   setClickedHyperstructure: (hyperstructure) => set({ clickedHyperstructure: hyperstructure }),
   clickedHyperstructure: undefined,
+  hexData: [],
+  setHexData: (hexData) => set({ hexData }),
 }));
 
 export default useUIStore;

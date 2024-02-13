@@ -14,7 +14,6 @@ import {
   Vector2,
   Vector3,
 } from "three";
-import hexDataJson from "../../geodata/hex/hexData.json";
 import { useThree } from "@react-three/fiber";
 import useUIStore from "../../hooks/store/useUIStore";
 import { useDojo } from "../../DojoContext";
@@ -40,8 +39,6 @@ export interface Hexagon {
   exploredBy: bigint | undefined;
 }
 
-const hexData: Hexagon[] = hexDataJson as Hexagon[];
-
 type HexagonGridProps = {
   startRow: number;
   endRow: number;
@@ -51,6 +48,8 @@ type HexagonGridProps = {
 };
 
 const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: HexagonGridProps) => {
+  const hexData = useUIStore((state) => state.hexData);
+
   const {
     setup: {
       account: { account },
@@ -134,7 +133,7 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
     return () => {
       subscription?.unsubscribe();
     };
-  }, []);
+  }, [hexData]);
 
   // Calculate group and colors only once when the component is mounted
   const { group, colors } = useMemo(() => {
@@ -158,7 +157,7 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
     });
 
     return { group: filteredGroup, colors: colorValues };
-  }, [startRow, endRow, startCol, endCol, HEX_RADIUS]);
+  }, [startRow, endRow, startCol, endCol, HEX_RADIUS, hexData]);
 
   // Create the mesh only once when the component is mounted
   const mesh = useMemo(() => {
@@ -196,6 +195,15 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
 };
 
 export const Map = () => {
+  const hexData = useUIStore((state) => state.hexData);
+  const setHexData = useUIStore((state) => state.setHexData);
+
+  useEffect(() => {
+    fetch("/jsons/hexData.json")
+      .then((response) => response.json())
+      .then((data) => setHexData(data as Hexagon[]));
+  }, []);
+
   const rows = 300;
   const cols = 500;
 
@@ -244,6 +252,8 @@ const useHighlightHex = (
   highlightedHexRef: MutableRefObject<{ hexId: number; color: Color | null }>,
 ) => {
   const camera = useThree((state) => state.camera);
+  const hexData = useUIStore((state) => state.hexData);
+
   const setClickedHex = useUIStore((state) => state.setClickedHex);
 
   const { raycaster } = useThree();
