@@ -141,6 +141,7 @@ export const OtherCastles = ({ hexData, meshRef }: CastlesProps) => {
             castShadow
             geometry={nodes.castle.geometry}
             material={materials.PaletteMaterial011}
+            rotation={[0, pseudoRandom(position.x, position.y) * 2 * Math.PI, 0]}
             position={[position.x, DEPTH + depth * DEPTH, -position.y]}
           />
         );
@@ -186,7 +187,7 @@ export const MyCastles = ({ hexData, meshRef }: CastlesProps) => {
             geometry={nodes.castle.geometry}
             material={materials.PaletteMaterial004}
             // rotate the castle in a random manner based on a seed
-            rotation={[0, Math.random() * 2 * Math.PI, 0]}
+            rotation={[0, pseudoRandom(position.x, position.y) * 2 * Math.PI, 0]}
             position={[position.x, DEPTH + depth * DEPTH, -position.y]}
             // position={[position.x, height + 1, -position.y]}
           />
@@ -194,4 +195,9 @@ export const MyCastles = ({ hexData, meshRef }: CastlesProps) => {
       })}
     </group>
   );
+};
+
+const pseudoRandom = (x: number, y: number) => {
+  let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
+  return n - Math.floor(n);
 };

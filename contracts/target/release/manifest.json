@@ -2694,7 +2694,7 @@
     {
       "name": "eternum::systems::labor::contracts::labor_systems",
       "address": "0x38258ae4007920aacda4f00c6960837ff9b235e8af95f648347f36550e6d1ee",
-      "class_hash": "0x656a7f9bc9babc66a5897395f9586f5f36ece432dedae1f819d962b89cf5106",
+      "class_hash": "0x52a16f0f7340aff6baa385bbf82e96cd05597259204fefd1743dac424049845",
       "abi": [
         {
           "type": "impl",

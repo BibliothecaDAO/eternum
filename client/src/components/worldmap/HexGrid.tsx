@@ -11,6 +11,7 @@ import {
   InstancedMesh,
   Matrix4,
   MeshBasicMaterial,
+  MeshStandardMaterial,
   Vector2,
   Vector3,
 } from "three";
@@ -47,7 +48,7 @@ type HexagonGridProps = {
   hexMeshRef: MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>;
 };
 
-const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: HexagonGridProps) => {
+export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: HexagonGridProps) => {
   const hexData = useUIStore((state) => state.hexData);
 
   const {
@@ -148,12 +149,11 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
     let idx = 0;
 
     filteredGroup.forEach((hex) => {
-      const color = new Color("#202124");
-      // const color = new Color(BIOMES[hex.biome].color);
-      // const luminance = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
-      // const grayScaleColor = new Color(luminance, luminance, luminance);
-      color.toArray(colorValues, idx * 3);
-      // grayScaleColor.toArray(colorValues, idx * 3);
+      // const color = new Color("#202124");
+      const color = new Color(BIOMES[hex.biome].color);
+      const grayScaleColor = getGrayscaleColor(color);
+      // color.toArray(colorValues, idx * 3);
+      grayScaleColor.toArray(colorValues, idx * 3);
       idx++;
     });
 
@@ -163,20 +163,23 @@ const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: Hexagon
   // Create the mesh only once when the component is mounted
   const mesh = useMemo(() => {
     const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
-    const hexMaterial = new MeshBasicMaterial({
+    const hexMaterial = new MeshStandardMaterial({
       color: 0xffffff,
       vertexColors: true,
       wireframe: false,
+      roughness: 0.5, // Adjust this value between 0.0 and 1.0 to control the roughness
+      metalness: 0.5, // Adjust this value between 0.0 and 1.0 to control the metalness/reflection
     });
 
     const instancedMesh = new InstancedMesh(hexagonGeometry, hexMaterial, group.length);
-    let idx = 0;
 
+    let idx = 0;
     group.forEach((hex) => {
       const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
 
       let matrix = new Matrix4();
-      matrix.setPosition(x, y, 0);
+      // set the z position with math.random to have a random height
+      matrix.setPosition(x, y, Math.random() * 0.3);
       // matrix.setPosition(x, y, BIOMES[hex.biome].depth * 10);
       instancedMesh.setMatrixAt(idx, matrix);
       idx++;
