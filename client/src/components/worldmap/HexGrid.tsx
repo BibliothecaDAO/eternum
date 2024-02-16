@@ -1,6 +1,6 @@
 import { Environment } from "@react-three/drei";
 import { createHexagonGeometry } from "./components/three/HexagonBackground";
-import { MutableRefObject, useEffect, useMemo, useRef } from "react";
+import { MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
 // @ts-ignore
 import { Flags } from "../../components/worldmap/Flags.jsx";
 import {
@@ -24,6 +24,7 @@ import { MyCastles, OtherCastles } from "./Castles";
 import { Hyperstructures } from "./Hyperstructures";
 import { biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
+import { throttle } from "lodash";
 
 export const DEPTH = 0.3;
 export const HEX_RADIUS = 3;
@@ -62,7 +63,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: 
   } = useDojo();
 
   const highlightedHexRef = useRef<{ hexId: number; color: Color | null }>({ hexId: -1, color: null });
-  useHighlightHex(hexMeshRef, highlightedHexRef);
+  // useHighlightHex(hexMeshRef, highlightedHexRef);
 
   // use effect to change the color of the selected hex if it's been successfuly explored
   useEffect(() => {
@@ -114,16 +115,16 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: 
             hexMeshRef.current.geometry.attributes.color.needsUpdate = true;
 
             // add the depth to the position
-            const matrix = new Matrix4();
-            hexMeshRef.current.getMatrixAt(hexIndex, matrix);
-            matrix.setPosition(matrix.elements[12], matrix.elements[13], BIOMES[hexData[hexIndex].biome].depth * DEPTH);
-            hexMeshRef.current.setMatrixAt(hexIndex, matrix);
-            // needs update
-            hexMeshRef.current.instanceMatrix.needsUpdate = true;
+            // const matrix = new Matrix4();
+            // hexMeshRef.current.getMatrixAt(hexIndex, matrix);
+            // matrix.setPosition(matrix.elements[12], matrix.elements[13], BIOMES[hexData[hexIndex].biome].depth * DEPTH);
+            // hexMeshRef.current.setMatrixAt(hexIndex, matrix);
+            // // needs update
+            // hexMeshRef.current.instanceMatrix.needsUpdate = true;
 
-            if (highlightedHexRef.current.hexId === hexIndex) {
-              highlightedHexRef.current.color = new Color(BIOMES[hexData[hexIndex].biome].color);
-            }
+            // if (highlightedHexRef.current.hexId === hexIndex) {
+            //   highlightedHexRef.current.color = new Color(BIOMES[hexData[hexIndex].biome].color);
+            // }
           }
         }
       });
@@ -213,12 +214,12 @@ export const Map = () => {
   // @dev: in case we want to use multiple smaller mesh instances
   const hexagonGrids = useMemo(() => {
     const hexagonGrids = [];
-    for (let i = 0; i < rows; i += 100) {
+    for (let i = 0; i < rows; i += 50) {
       const startRow = i;
-      const endRow = startRow + 100;
-      for (let j = 0; j < cols; j += 100) {
+      const endRow = startRow + 50;
+      for (let j = 0; j < cols; j += 50) {
         const startCol = j;
-        const endCol = startCol + 100;
+        const endCol = startCol + 50;
         hexagonGrids.push({ startRow, endRow, startCol, endCol });
       }
     }
@@ -227,13 +228,40 @@ export const Map = () => {
 
   const hexMeshRef = useRef<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>>();
 
+  const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
+  const [highlightPosition, setHighlightPosition] = useState<[number, number]>([0, 0]);
+
+  const hoverHandler = (e: any, index: any) => {
+    if (e.intersections.length > 0) {
+      const instanceId = e.intersections[0].instanceId;
+      const hexRow = -1 * Math.floor(instanceId / 51);
+      const hexCol = hexRow % 2 === 0 ? instanceId % 51 : (instanceId % 51) + 1;
+      console.log("col:", hexCol, "row", hexRow, instanceId);
+      const { x, y } = getUIPositionFromColRow(hexCol + 50 * index + 2147483647, hexRow + 2147483647);
+      setHighlightPosition([x, y]);
+    }
+  };
+
+  const throttledHoverHandler = useMemo(() => throttle(hoverHandler, 150), []);
+
   return (
     <group>
       <mesh rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>
         {/* <HexagonGrid hexMeshRef={hexMeshRef} startRow={0} endRow={rows} startCol={0} endCol={cols} /> */}
         {hexagonGrids.map((grid, index) => {
-          return <HexagonGrid {...grid} hexMeshRef={hexMeshRef} />;
+          return (
+            <group onPointerEnter={(e) => throttledHoverHandler(e, index)}>
+              <HexagonGrid {...grid} hexMeshRef={hexMeshRef} />
+            </group>
+          );
         })}
+      </mesh>
+      <mesh
+        geometry={hexagonGeometry}
+        rotation={[Math.PI / -2, 0, 0]}
+        position={[highlightPosition[0], 0.31, highlightPosition[1]]}
+      >
+        <meshBasicMaterial color={0x00ff00} />
       </mesh>
       {hexData && <MyCastles hexData={hexData} meshRef={hexMeshRef} />}
       {hexData && <OtherCastles hexData={hexData} meshRef={hexMeshRef} />}
