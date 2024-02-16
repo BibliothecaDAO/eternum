@@ -52,6 +52,10 @@ interface UIStore {
   clickedHyperstructure: HyperStructureInterface | undefined;
   hexData: Hexagon[] | undefined;
   setHexData: (hexData: Hexagon[]) => void;
+  travelingEntity: bigint | undefined;
+  setTravelingEntity: (entity: bigint | undefined) => void;
+  selectedDestination: { col: number; row: number } | undefined;
+  setSelectedDestination: (destination: { col: number; row: number }) => void;
 }
 
 const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
@@ -216,6 +220,10 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   setHexData: (hexData) => {
     set({ hexData });
   },
+  travelingEntity: undefined,
+  setTravelingEntity: (entity) => set({ travelingEntity: entity }),
+  selectedDestination: undefined,
+  setSelectedDestination: (destination) => set({ selectedDestination: destination }),
 }));
 
 export default useUIStore;

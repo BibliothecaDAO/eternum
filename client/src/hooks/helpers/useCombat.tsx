@@ -5,6 +5,7 @@ import { useEntityQuery } from "@dojoengine/react";
 import useRealmStore from "../store/useRealmStore";
 import { divideByPrecision, getEntityIdFromKeys } from "../../utils/utils";
 import { CombatInfo } from "@bibliothecadao/eternum";
+import useBlockchainStore from "../store/useBlockchainStore";
 
 export function useCombat() {
   const {
@@ -31,6 +32,7 @@ export function useCombat() {
   } = useDojo();
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const getEntityWatchTowerId = (entityId: bigint): bigint | undefined => {
     // find realm watchtower
@@ -51,6 +53,37 @@ export function useCombat() {
       const attack = getComponentValue(Attack, id);
       return attack!.entity_id;
     });
+  };
+
+  const getStationaryRealmRaiders = (realmEntityId: bigint) => {
+    if (!nextBlockTimestamp) return [];
+    return getRealmRaiders(realmEntityId).filter((id) => {
+      const arrivalTime = getComponentValue(ArrivalTime, id);
+      if (!arrivalTime || arrivalTime.arrives_at <= nextBlockTimestamp) {
+        return id;
+      }
+    });
+  };
+
+  const getMovingRealmRaiders = (realmEntityId: bigint) => {
+    if (!nextBlockTimestamp) return [];
+    return getRealmRaiders(realmEntityId).filter((id) => {
+      const arrivalTime = getComponentValue(ArrivalTime, id);
+      if (arrivalTime && arrivalTime.arrives_at > nextBlockTimestamp) {
+        return id;
+      }
+    });
+  };
+
+  const getRealmRaiders = (realmEntityId: bigint) => {
+    return Array.from(
+      runQuery([
+        Has(Attack),
+        HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
+        NotValue(Health, { value: 0n }),
+        NotValue(Movable, { sec_per_km: 0 }),
+      ]),
+    );
   };
 
   const useOwnerRaiders = (owner: bigint) => {
@@ -246,6 +279,9 @@ export function useCombat() {
     getEntityWatchTowerId,
     getDefenceOnRealm,
     getDefenceOnPosition,
+    getRealmRaiders,
+    getStationaryRealmRaiders,
+    getMovingRealmRaiders,
     useRealmRaiders,
     useOwnerRaiders,
     useRealmRaidersOnPosition,

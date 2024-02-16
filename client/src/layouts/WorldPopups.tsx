@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { FeedHyperstructurePopup } from "../components/worldmap/hyperstructures/FeedHyperstructure";
 import useUIStore from "../hooks/store/useUIStore";
 import { ExploreMapPopup } from "../components/worldmap/explore/ExploreHexPopup";
+import { TravelPopup } from "../components/worldmap/traveling/TravelPopup";
 
 export const WorldPopups = () => {
   const setClickedHex = useUIStore((state) => state.setClickedHex);
@@ -11,6 +12,7 @@ export const WorldPopups = () => {
   const [showExplore, setShowExplore] = useState(false);
 
   const clickedHex = useUIStore((state) => state.clickedHex);
+  const travelingEntity = useUIStore((state) => state.travelingEntity);
 
   useEffect(() => {
     if (clickedHex) {
@@ -46,6 +48,7 @@ export const WorldPopups = () => {
       {showFeedPopup && selectedHyperstructure && (
         <FeedHyperstructurePopup selectedHyperstructure={selectedHyperstructure} onClose={onCloseHyperstructure} />
       )}
+      {travelingEntity !== undefined && <TravelPopup />}
       {showExplore && <ExploreMapPopup onClose={onCloseExplore}></ExploreMapPopup>}
     </div>
   );

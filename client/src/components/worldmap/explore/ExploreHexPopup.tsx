@@ -13,11 +13,11 @@ import { ResourceIcon } from "../../../elements/ResourceIcon";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useExplore } from "../../../hooks/helpers/useExplore";
 
-type RoadBuildPopupProps = {
+type ExploreMapPopupProps = {
   onClose: () => void;
 };
 
-export const ExploreMapPopup = ({ onClose }: RoadBuildPopupProps) => {
+export const ExploreMapPopup = ({ onClose }: ExploreMapPopupProps) => {
   const [step, setStep] = useState(1);
 
   const clickedHex = useUIStore((state) => state.clickedHex);

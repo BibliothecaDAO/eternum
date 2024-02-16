@@ -24,6 +24,7 @@ import { MyCastles, OtherCastles } from "./Castles";
 import { Hyperstructures } from "./Hyperstructures";
 import { biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
+import { Armies } from "./armies/Armies";
 
 export const DEPTH = 10;
 export const HEX_RADIUS = 3;
@@ -236,6 +237,8 @@ export const Map = () => {
       {hexData && <MyCastles hexData={hexData} meshRef={hexMeshRef} />}
       {hexData && <OtherCastles hexData={hexData} meshRef={hexMeshRef} />}
       {hexData && <Hyperstructures hexData={hexData} hexMeshRef={hexMeshRef} />}
+      {<Armies />}
+      {<TravelingArmies />}
       {/* <Flags></Flags> */}
       {/* <mesh>
         {hexagonGrids.map((grid, index) => {
@@ -264,6 +267,9 @@ const useHighlightHex = (
   }, [hexData]);
 
   const setClickedHex = useUIStore((state) => state.setClickedHex);
+  const travelingEntity = useUIStore((state) => state.travelingEntity);
+  const hoverColor = new Color(0xff6666);
+  const clickColor = new Color(0x3cb93c);
 
   const { raycaster } = useThree();
   raycaster.firstHitOnly = true;
@@ -284,14 +290,14 @@ const useHighlightHex = (
     raycaster.setFromCamera(mouse, camera); // assuming 'camera' is your Three.js camera
 
     // Calculate objects intersecting the picking ray. Assume hexMeshRef.current is the instanced mesh
-    const intersects = raycaster.intersectObject(hexMeshRef.current, false);
+    const intersects = raycaster.intersectObject(mesh, false);
 
     if (intersects.length > 0) {
       // Get the first intersected object
       const intersectedHex = intersects[0];
       const hexIndex = intersectedHex.instanceId;
       if (!hexIndex) return;
-      updateHighlight(highlightedHexRef, hexIndex, colors, mesh);
+      updateHighlight(highlightedHexRef, hexIndex, colors, hoverColor, mesh);
     } else {
       // resetHighlight(highlightedHexRef, colors, mesh);
     }
@@ -299,15 +305,18 @@ const useHighlightHex = (
 
   const onMouseClick = (event: any) => {
     if (!hexMeshRef?.current || !hexDataRef.current) return;
+    const mesh = hexMeshRef?.current;
     // Calculate mouse position in normalized device coordinates (-1 to +1) for both components
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    let colors = getColorFromMesh(mesh);
+    if (!colors) return;
 
     // Update the ray with the camera and mouse position
     raycaster.setFromCamera(mouse, camera); // assuming 'camera' is your Three.js camera
 
     // Calculate objects intersecting the picking ray. Assume hexMeshRef.current is the instanced mesh
-    const intersects = raycaster.intersectObject(hexMeshRef.current, false);
+    const intersects = raycaster.intersectObject(mesh, false);
 
     if (intersects.length > 0) {
       // Get the first intersected object
@@ -316,9 +325,9 @@ const useHighlightHex = (
       const hexIndex = intersectedHex.instanceId;
       const hex = hexIndex ? hexDataRef.current[hexIndex] : undefined;
 
-      console.log({ hex, hexIndex });
       if (hex && hexIndex) {
         setClickedHex({ col: hex.col, row: hex.row, hexIndex });
+        travelingEntity && updateHighlight(highlightedHexRef, hexIndex, colors, clickColor, mesh);
       }
     }
   };
@@ -398,6 +407,7 @@ const updateHighlight = (
   highlightedHexRef: MutableRefObject<{ hexId: number; color: Color | null }>,
   hexIndex: number,
   colors: number[],
+  highlightColor: Color,
   mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>,
 ) => {
   // Reset previous highlight
@@ -414,7 +424,7 @@ const updateHighlight = (
   highlightedHexRef.current.color = prevColor;
 
   // Blend with light red for highlight effect
-  const lightRed = new Color(0xff6666);
+  const lightRed = highlightColor;
   const blendFactor = 0.8;
   const blendedColor = prevColor.clone().lerp(lightRed, blendFactor);
 
