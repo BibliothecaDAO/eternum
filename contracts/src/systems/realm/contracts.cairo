@@ -104,6 +104,8 @@ mod realm_systems {
                         sec_per_km: 0,
                         blocked: false,
                         round_trip: false,
+                        start_coord_x: 0,
+                        start_coord_y: 0,
                         intermediate_coord_x: 0,
                         intermediate_coord_y: 0,
                     },
