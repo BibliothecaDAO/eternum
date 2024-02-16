@@ -23,5 +23,5 @@ export const createHexagonGeometry = (radius: number, depth: number) => {
   };
 
   // Create a geometry by extruding the shape
-  return new THREE.ExtrudeGeometry(shape, extrudeSettings);
+  return new THREE.ShapeGeometry(shape);
 };

@@ -31,7 +31,7 @@ export const Camera = () => {
 
   const { lightPosition, bias } = useControls({
     lightPosition: {
-      value: { x: 0, y: 1000, z: 0 }, // Adjust y value to position the light above
+      value: { x: 0, y: 100, z: 200 }, // Adjust y value to position the light above
       step: 0.01,
     },
     bias: {
@@ -74,7 +74,7 @@ export const MainScene = () => {
   }, [location]);
 
   const data = useControls("GL", {
-    exposure: { value: 0.4, min: -5, max: 5 },
+    exposure: { value: 1.6, min: -5, max: 5 },
     toneMapping: {
       options: {
         filmic: THREE.ACESFilmicToneMapping,
@@ -108,28 +108,35 @@ export const MainScene = () => {
     [],
   );
 
+  const { mapFogNear, mapFogFar, realmFogNear, realmFogFar } = useControls("Fog", {
+    mapFogNear: { value: 831, min: 0, max: 3000, step: 1 },
+    mapFogFar: { value: 1426, min: 0, max: 3000, step: 1 },
+    realmFogNear: { value: 1885, min: 0, max: 1000, step: 1 },
+    realmFogFar: { value: 2300, min: 0, max: 1000, step: 1 },
+  });
+
   const fogDistance = useMemo(
     () =>
       locationType === "map"
         ? {
-            near: 507,
-            far: 725,
+            near: mapFogNear,
+            far: mapFogFar,
           }
         : {
             near: 1885,
             far: 2300,
           },
-    [locationType],
+    [locationType, mapFogFar, mapFogNear, realmFogFar, realmFogNear],
   );
 
   const cloudsConfig = useMemo(
     () =>
       locationType === "map"
         ? {
-            position: [0, 75, 50],
+            position: [1250, 400, -650],
             opacity: 0.05,
-            bounds: [200, 1, 100],
-            volume: 50,
+            bounds: [1500, 1, 700],
+            volume: 700,
           }
         : {
             position: [0, 255, -250],
@@ -140,12 +147,19 @@ export const MainScene = () => {
     [locationType],
   );
 
+  const { azimuth, inclination, distance, sunPosition } = useControls("Sky", {
+    azimuth: { value: 0.1, min: 0, max: 1, step: 0.01 },
+    inclination: { value: 0.6, min: 0, max: 1, step: 0.01 },
+    distance: { value: 3000, min: 0, max: 10000, step: 100 },
+    sunPosition: { value: { x: 0, y: 0, z: 0 } },
+  });
+
   return (
     <Canvas
       frameloop="demand" // for fps limiter
       raycaster={{ params: { Points: { threshold: 0.2 } } }}
       className="rounded-xl"
-      camera={{ fov: 15, position: [0, 700, 0], far: 3500 }}
+      camera={{ fov: 15, position: [0, 700, 0], far: 10000 }}
       dpr={[0.5, 1]}
       performance={{
         min: 0.1,
@@ -169,10 +183,10 @@ export const MainScene = () => {
     >
       {import.meta.env.DEV && <Perf position="bottom-left" />}
       <FPSLimiter>
-        <Sky azimuth={1} inclination={0.6} distance={3000} />
+        <Sky azimuth={azimuth} inclination={inclination} distance={distance} />
         <ambientLight />
         <Camera />
-        <CameraShake {...shakeConfig} />
+        {/* <CameraShake {...shakeConfig} /> */}
         <Suspense fallback={null}>
           <a.group>
             <Switch location={locationType}>

@@ -66,6 +66,10 @@ export const WorldMapScene = () => {
       {/* <WorldMap ref={worldRef} /> */}
       {/* <HyperstructureStarted /> */}
       {!showBlankOverlay && isMapView && <Map />}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.1, 0]}>
+        <planeGeometry args={[6000, 6000]} />
+        <meshBasicMaterial color="#8294ae" />
+      </mesh>
       {/* {hyperstructures.map((hyperstructure, i) => {
         if (hyperstructure) {
           if (hyperstructure.completed) {

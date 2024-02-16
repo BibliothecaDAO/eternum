@@ -25,7 +25,7 @@ import { Hyperstructures } from "./Hyperstructures";
 import { biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 
-export const DEPTH = 10;
+export const DEPTH = 0.3;
 export const HEX_RADIUS = 3;
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
@@ -172,14 +172,12 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: 
     });
 
     const instancedMesh = new InstancedMesh(hexagonGeometry, hexMaterial, group.length);
-
     let idx = 0;
+    let matrix = new Matrix4();
     group.forEach((hex) => {
       const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
-
-      let matrix = new Matrix4();
       // set the z position with math.random to have a random height
-      matrix.setPosition(x, y, Math.random() * 0.3);
+      matrix.setPosition(x, y, 0.3);
       // matrix.setPosition(x, y, BIOMES[hex.biome].depth * 10);
       instancedMesh.setMatrixAt(idx, matrix);
       idx++;
@@ -187,7 +185,8 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: 
 
     const colorAttribute = new InstancedBufferAttribute(new Float32Array(colors), 3);
     instancedMesh.geometry.setAttribute("color", colorAttribute);
-
+    //instancedMesh.computeBoundingSphere();
+    //instancedMesh.frustumCulled = true;
     return instancedMesh;
   }, [group, colors]);
 
@@ -212,26 +211,29 @@ export const Map = () => {
   const cols = 500;
 
   // @dev: in case we want to use multiple smaller mesh instances
-  // const hexagonGrids = useMemo(() => {
-  //   const hexagonGrids = [];
-  //   for (let i = 0; i < rows; i += 100) {
-  //     const startRow = i;
-  //     const endRow = startRow + 100;
-  //     for (let j = 0; j < cols; j += 100) {
-  //       const startCol = j;
-  //       const endCol = startCol + 100;
-  //       hexagonGrids.push({ startRow, endRow, startCol, endCol });
-  //     }
-  //   }
-  //   return hexagonGrids;
-  // }, []);
+  const hexagonGrids = useMemo(() => {
+    const hexagonGrids = [];
+    for (let i = 0; i < rows; i += 100) {
+      const startRow = i;
+      const endRow = startRow + 100;
+      for (let j = 0; j < cols; j += 100) {
+        const startCol = j;
+        const endCol = startCol + 100;
+        hexagonGrids.push({ startRow, endRow, startCol, endCol });
+      }
+    }
+    return hexagonGrids;
+  }, []);
 
   const hexMeshRef = useRef<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>>();
 
   return (
-    <mesh>
-      <mesh rotation={[Math.PI / -2, 0, 0]} position={[0, 0, 0]} frustumCulled={true}>
-        <HexagonGrid hexMeshRef={hexMeshRef} startRow={0} endRow={rows} startCol={0} endCol={cols} />
+    <group>
+      <mesh rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>
+        {/* <HexagonGrid hexMeshRef={hexMeshRef} startRow={0} endRow={rows} startCol={0} endCol={cols} /> */}
+        {hexagonGrids.map((grid, index) => {
+          return <HexagonGrid {...grid} hexMeshRef={hexMeshRef} />;
+        })}
       </mesh>
       {hexData && <MyCastles hexData={hexData} meshRef={hexMeshRef} />}
       {hexData && <OtherCastles hexData={hexData} meshRef={hexMeshRef} />}
@@ -246,8 +248,8 @@ export const Map = () => {
           );
         })}
       </mesh> */}
-      <Environment preset="dawn" />
-    </mesh>
+      {/* <Environment preset="dawn" /> */}
+    </group>
   );
 };
 
@@ -340,21 +342,21 @@ const useHighlightHex = (
     }
   };
 
-  useEffect(() => {
-    const scene = document.querySelector(".main-scene");
-    // only add it
-    // Add event listener for mouse move
-    scene?.addEventListener("mousemove", onMouseMove);
-    scene?.addEventListener("mousedown", onMouseDown);
-    scene?.addEventListener("mouseup", onMouseUp);
+  // useEffect(() => {
+  //   const scene = document.querySelector(".main-scene");
+  //   // only add it
+  //   // Add event listener for mouse move
+  //   scene?.addEventListener("mousemove", onMouseMove);
+  //   scene?.addEventListener("mousedown", onMouseDown);
+  //   scene?.addEventListener("mouseup", onMouseUp);
 
-    return () => {
-      // Remove event listener when the component is unmounted
-      scene?.removeEventListener("mousemove", onMouseMove);
-      scene?.removeEventListener("mousedown", onMouseDown);
-      scene?.removeEventListener("mouseup", onMouseUp);
-    };
-  }, []);
+  //   return () => {
+  //     // Remove event listener when the component is unmounted
+  //     scene?.removeEventListener("mousemove", onMouseMove);
+  //     scene?.removeEventListener("mousedown", onMouseDown);
+  //     scene?.removeEventListener("mouseup", onMouseUp);
+  //   };
+  // }, []);
 };
 
 const getColorFromMesh = (mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>): number[] | null => {

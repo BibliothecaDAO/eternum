@@ -29,7 +29,7 @@ export const Hyperstructures = ({ hexData, hexMeshRef }: Hyperstructures) => {
               key={i}
               hyperstructure={hyperstructure}
               scale={6}
-              position={[uiPosition.x, 10 + (hexPosition?.z || 0), -uiPosition.y]}
+              position={[uiPosition.x, 0 + (hexPosition?.z || 0), -uiPosition.y]}
             />
           );
         }
