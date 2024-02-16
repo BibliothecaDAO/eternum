@@ -247,14 +247,14 @@ export const Map = () => {
   return (
     <group>
       <mesh rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>
-        {/* <HexagonGrid hexMeshRef={hexMeshRef} startRow={0} endRow={rows} startCol={0} endCol={cols} /> */}
-        {hexagonGrids.map((grid, index) => {
+        <HexagonGrid hexMeshRef={hexMeshRef} startRow={0} endRow={rows} startCol={0} endCol={cols} />
+        {/* {hexagonGrids.map((grid, index) => {
           return (
             <group onPointerEnter={(e) => throttledHoverHandler(e, index)}>
               <HexagonGrid {...grid} hexMeshRef={hexMeshRef} />
             </group>
           );
-        })}
+        })} */}
       </mesh>
       <mesh
         geometry={hexagonGeometry}
