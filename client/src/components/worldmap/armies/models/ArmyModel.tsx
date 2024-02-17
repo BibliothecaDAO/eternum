@@ -42,8 +42,6 @@ export function ArmyModel(props: JSX.IntrinsicElements["group"]) {
           geometry={nodes.unit.geometry}
           material={material}
           rotation={[0, -Math.PI / 2, 0]}
-          scale={0.802783}
-          position={props.position}
           onPointerEnter={onPointerEnter}
           onPointerLeave={onPointerLeave}
         />

@@ -9,6 +9,8 @@ import { getUIPositionFromColRow } from "../../../utils/utils";
 import { Position } from "@bibliothecadao/eternum";
 // @ts-ignore
 import Arcs from "../../worldmap/Arcs.jsx";
+import { useEffect, useRef, useState } from "react";
+import { CSS2DObject } from "three-stdlib";
 
 type ArmiesProps = {
   props?: any;
@@ -31,6 +33,16 @@ export const Armies = ({}: ArmiesProps) => {
     return getStationaryRealmRaiders(realmEntityId);
   });
 
+  const [hoveredArmy, setHoveredArmy] = useState<{ id: bigint; position: Position } | undefined>(undefined);
+
+  const onHover = (armyId: bigint, position: Position) => {
+    setHoveredArmy({ id: armyId, position });
+  };
+
+  const onUnhover = () => {
+    setHoveredArmy(undefined);
+  };
+
   const positions = armies
     .map((armyId) => {
       const position = getComponentValue(Position, armyId);
@@ -47,9 +59,18 @@ export const Armies = ({}: ArmiesProps) => {
   return (
     <group>
       {positions.map(({ pos, id }, i) => {
-        // todo: check
-        return <ArmyModel onClick={() => onClick(id)} key={i} position={[pos.x, 10, -pos.y]}></ArmyModel>;
+        return (
+          <ArmyModel
+            scale={1}
+            onPointerOver={() => onHover(id, pos)}
+            onPointerOut={onUnhover}
+            onClick={() => onClick(id)}
+            key={i}
+            position={[pos.x, 12, -pos.y]}
+          ></ArmyModel>
+        );
       })}
+      {hoveredArmy && <ArmyInfoLabel position={hoveredArmy.position} armyId={hoveredArmy.id} />}
     </group>
   );
 };
@@ -129,4 +150,24 @@ export const TravelingArmies = ({}: TravelingArmiesProps) => {
       })}
     </group>
   );
+};
+
+type ArmyInfoLabelProps = {
+  position: Position;
+  armyId: bigint;
+};
+
+const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
+  const labelRef = useRef<CSS2DObject | undefined>();
+
+  useEffect(() => {
+    const div = document.createElement("div");
+    div.className = "army-info-label"; // Use this class to style your label
+    div.textContent = `Army ID: ${armyId}`;
+    const label = new CSS2DObject(div);
+    labelRef.current = label;
+  }, [armyId]);
+
+  if (!labelRef.current) return null;
+  return <primitive object={labelRef.current} position={[position.x, 15, -position.y]} />;
 };

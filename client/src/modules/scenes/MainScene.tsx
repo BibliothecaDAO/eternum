@@ -85,7 +85,7 @@ export const MainScene = () => {
       },
     },
     legacyLights: { value: false },
-    fog: "#fff",
+    // fog: "#fff",
     encoding: {
       options: {
         rgb: THREE.sRGBEncoding,
@@ -215,7 +215,7 @@ export const MainScene = () => {
             color="white"
           />
         </Clouds>
-        <fog attach="fog" color={data.fog} near={fogDistance.near} far={fogDistance.far} />
+        {/* <fog attach="fog" color={data.fog} near={fogDistance.near} far={fogDistance.far} /> */}
       </FPSLimiter>
     </Canvas>
   );

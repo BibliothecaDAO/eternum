@@ -24,7 +24,7 @@ import { MyCastles, OtherCastles } from "./Castles";
 import { Hyperstructures } from "./Hyperstructures";
 import { biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
-import { Armies } from "./armies/Armies";
+import { Armies, TravelingArmies } from "./armies/Armies";
 
 export const DEPTH = 10;
 export const HEX_RADIUS = 3;
@@ -164,12 +164,17 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: 
   // Create the mesh only once when the component is mounted
   const mesh = useMemo(() => {
     const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
-    const hexMaterial = new MeshStandardMaterial({
+    // const hexMaterial = new MeshStandardMaterial({
+    //   color: 0xffffff,
+    //   vertexColors: true,
+    //   wireframe: false,
+    //   roughness: 0.5, // Adjust this value between 0.0 and 1.0 to control the roughness
+    //   metalness: 0.5, // Adjust this value between 0.0 and 1.0 to control the metalness/reflection
+    // });
+    const hexMaterial = new MeshBasicMaterial({
       color: 0xffffff,
       vertexColors: true,
       wireframe: false,
-      roughness: 0.5, // Adjust this value between 0.0 and 1.0 to control the roughness
-      metalness: 0.5, // Adjust this value between 0.0 and 1.0 to control the metalness/reflection
     });
 
     const instancedMesh = new InstancedMesh(hexagonGeometry, hexMaterial, group.length);
@@ -267,6 +272,7 @@ const useHighlightHex = (
   }, [hexData]);
 
   const setClickedHex = useUIStore((state) => state.setClickedHex);
+  const setSelectedDestination = useUIStore((state) => state.setSelectedDestination);
   const travelingEntity = useUIStore((state) => state.travelingEntity);
   const hoverColor = new Color(0xff6666);
   const clickColor = new Color(0x3cb93c);
@@ -297,7 +303,11 @@ const useHighlightHex = (
       const intersectedHex = intersects[0];
       const hexIndex = intersectedHex.instanceId;
       if (!hexIndex) return;
-      updateHighlight(highlightedHexRef, hexIndex, colors, hoverColor, mesh);
+      if (travelingEntity) {
+        updateHighlight(highlightedHexRef, hexIndex, colors, clickColor, mesh);
+      } else {
+        updateHighlight(highlightedHexRef, hexIndex, colors, hoverColor, mesh);
+      }
     } else {
       // resetHighlight(highlightedHexRef, colors, mesh);
     }
@@ -326,8 +336,11 @@ const useHighlightHex = (
       const hex = hexIndex ? hexDataRef.current[hexIndex] : undefined;
 
       if (hex && hexIndex) {
-        setClickedHex({ col: hex.col, row: hex.row, hexIndex });
-        travelingEntity && updateHighlight(highlightedHexRef, hexIndex, colors, clickColor, mesh);
+        if (travelingEntity) {
+          setSelectedDestination({ col: hex.col, row: hex.row });
+        } else {
+          setClickedHex({ col: hex.col, row: hex.row, hexIndex });
+        }
       }
     }
   };
@@ -363,7 +376,7 @@ const useHighlightHex = (
       scene?.removeEventListener("mousedown", onMouseDown);
       scene?.removeEventListener("mouseup", onMouseUp);
     };
-  }, []);
+  }, [travelingEntity]);
 };
 
 const getColorFromMesh = (mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>): number[] | null => {
