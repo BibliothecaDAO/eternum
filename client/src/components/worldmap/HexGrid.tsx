@@ -242,8 +242,8 @@ export const Map = () => {
       {hexData && <MyCastles hexData={hexData} meshRef={hexMeshRef} />}
       {hexData && <OtherCastles hexData={hexData} meshRef={hexMeshRef} />}
       {hexData && <Hyperstructures hexData={hexData} hexMeshRef={hexMeshRef} />}
-      {<Armies />}
-      {<TravelingArmies />}
+      {hexData && <Armies hexData={hexData} />}
+      {hexData && <TravelingArmies hexData={hexData} />}
       {/* <Flags></Flags> */}
       {/* <mesh>
         {hexagonGrids.map((grid, index) => {
@@ -437,9 +437,8 @@ const updateHighlight = (
   highlightedHexRef.current.color = prevColor;
 
   // Blend with light red for highlight effect
-  const lightRed = highlightColor;
   const blendFactor = 0.8;
-  const blendedColor = prevColor.clone().lerp(lightRed, blendFactor);
+  const blendedColor = prevColor.clone().lerp(highlightColor, blendFactor);
 
   // Increase brightness
   const hsl = blendedColor.getHSL({ h: 0, s: 0, l: 0 });

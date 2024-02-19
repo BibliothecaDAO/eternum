@@ -57,7 +57,7 @@ export function useCombat() {
 
   const getStationaryRealmRaiders = (realmEntityId: bigint) => {
     if (!nextBlockTimestamp) return [];
-    return getRealmRaiders(realmEntityId).filter((id) => {
+    return getRealmRaidersEntities(realmEntityId).filter((id) => {
       const arrivalTime = getComponentValue(ArrivalTime, id);
       if (!arrivalTime || arrivalTime.arrives_at <= nextBlockTimestamp) {
         return id;
@@ -67,7 +67,7 @@ export function useCombat() {
 
   const getMovingRealmRaiders = (realmEntityId: bigint) => {
     if (!nextBlockTimestamp) return [];
-    return getRealmRaiders(realmEntityId).filter((id) => {
+    return getRealmRaidersEntities(realmEntityId).filter((id) => {
       const arrivalTime = getComponentValue(ArrivalTime, id);
       if (arrivalTime && arrivalTime.arrives_at > nextBlockTimestamp) {
         return id;
@@ -75,7 +75,7 @@ export function useCombat() {
     });
   };
 
-  const getRealmRaiders = (realmEntityId: bigint) => {
+  const getRealmRaidersEntities = (realmEntityId: bigint) => {
     return Array.from(
       runQuery([
         Has(Attack),
@@ -84,6 +84,13 @@ export function useCombat() {
         NotValue(Movable, { sec_per_km: 0 }),
       ]),
     );
+  };
+
+  const getRealmRaidersIds = (realmEntityId: bigint) => {
+    return getRealmRaidersEntities(realmEntityId).map((id) => {
+      const attack = getComponentValue(Attack, id);
+      return attack!.entity_id;
+    });
   };
 
   const useOwnerRaiders = (owner: bigint) => {
@@ -279,7 +286,8 @@ export function useCombat() {
     getEntityWatchTowerId,
     getDefenceOnRealm,
     getDefenceOnPosition,
-    getRealmRaiders,
+    getRealmRaidersEntities,
+    getRealmRaidersIds,
     getStationaryRealmRaiders,
     getMovingRealmRaiders,
     useRealmRaiders,

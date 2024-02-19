@@ -6,17 +6,19 @@ import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 import { ReactComponent as Pen } from "../../../../../assets/icons/common/pen.svg";
+import { ReactComponent as Map } from "../../../../../assets/icons/common/map.svg";
 import { ReactComponent as CaretDownFill } from "../../../../../assets/icons/common/caret-down-fill.svg";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import { useDojo } from "../../../../../DojoContext";
 import { useResources } from "../../../../../hooks/helpers/useResources";
 import { getTotalResourceWeight } from "../../trade/utils";
-import { divideByPrecision } from "../../../../../utils/utils";
+import { divideByPrecision, getUIPositionFromColRow } from "../../../../../utils/utils";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import useUIStore from "../../../../../hooks/store/useUIStore";
-import { CombatInfo } from "@bibliothecadao/eternum";
+import { CombatInfo, UIPosition } from "@bibliothecadao/eternum";
 import { useCombat } from "../../../../../hooks/helpers/useCombat";
+import { useLocation } from "wouter";
 
 type RaidProps = {
   raider: CombatInfo;
@@ -181,16 +183,16 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
             </div>
           )}
         </div>
-        {!isTraveling && (
-          <div className="flex ml-auto italic text-gold mr-1">
-            Idle
-            <Pen className="ml-1 fill-gold" />
-          </div>
-        )}
+        {!isTraveling && <div className="flex ml-auto italic text-gold mr-1">Idle</div>}
         {raider.arrivalTime && isTraveling && nextBlockTimestamp && (
           <div className="flex ml-auto italic text-light-pink mr-1">
             {formatSecondsLeftInDaysHours(raider.arrivalTime - nextBlockTimestamp)}
           </div>
+        )}
+        {raider.position && (
+          <ShowOnMapButton
+            uIPosition={{ ...getUIPositionFromColRow(raider.position.x, raider.position.y), z: 0 }}
+          ></ShowOnMapButton>
         )}
       </div>
       <div className="flex flex-col mt-6 space-y-2">
@@ -372,6 +374,45 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
           )}
         </div>
       </div>
+    </div>
+  );
+};
+
+type ShowOnMapButtonProps = {
+  className?: string;
+  uIPosition: UIPosition;
+};
+
+const ShowOnMapButton = ({ className, uIPosition }: ShowOnMapButtonProps) => {
+  const [location, setLocation] = useLocation();
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const moveCameraToWorldMapView = useUIStore((state) => state.moveCameraToWorldMapView);
+  const moveCameraToTarget = useUIStore((state) => state.moveCameraToTarget);
+
+  const [color, setColor] = useState("gold");
+
+  const onHover = () => {
+    setColor("white");
+  };
+
+  const onHoverOut = () => {
+    setColor("gold");
+  };
+
+  const showOnMap = () => {
+    // if location does not have map in it, then set it to map
+    if (!location.includes("/map")) {
+      setLocation("/map");
+      setIsLoadingScreenEnabled(true);
+    }
+    setTimeout(() => {
+      moveCameraToTarget(uIPosition);
+    }, 300);
+  };
+
+  return (
+    <div className="mr-1 cursor-pointer" onPointerEnter={onHover} onPointerLeave={onHoverOut} onClick={showOnMap}>
+      <Map className={clsx(`ml-1 fill-${color}`, className)} />
     </div>
   );
 };

@@ -54,8 +54,8 @@ interface UIStore {
   setHexData: (hexData: Hexagon[]) => void;
   travelingEntity: bigint | undefined;
   setTravelingEntity: (entity: bigint | undefined) => void;
-  selectedDestination: { col: number; row: number } | undefined;
-  setSelectedDestination: (destination: { col: number; row: number }) => void;
+  selectedDestination: { col: number; row: number; hexIndex: number } | undefined;
+  setSelectedDestination: (destination: { col: number; row: number; hexIndex: number }) => void;
 }
 
 const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
