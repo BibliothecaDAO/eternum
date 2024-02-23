@@ -47,7 +47,7 @@ prune_services() {
 
 clean_cache() {
 	echo "🧹 cleaning client cache"
-	rm -rf node_modules || rm -rf ./client/node_modules || rm -rf ~/.bun/install/cache
+	rm -rf node_modules | rm -rf ./client/node_modules | rm -rf ~/.bun/install/cache
 }
 
 build_contracts() {

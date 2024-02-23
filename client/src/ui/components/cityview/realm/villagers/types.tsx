@@ -19,17 +19,26 @@ export type NpcTownhallMessage = {
   dialogueSegment: string;
 };
 
-export type TownhallRecord = {
-  [key: string]: NpcTownhallMessage[];
+export type StorageTownhall = {
+  viewed: boolean;
+  discussion: NpcTownhallMessage[];
+};
+
+export type StorageTownhalls = {
+  [key: number]: StorageTownhall;
 };
 
 export type NpcChatProps = {
-  spawned: number;
-  realmId: bigint;
-  selectedTownhall: string | null;
-  setSelectedTownhall: (newIndex: string | null) => void; 
-}
+  townHallRequest: number;
+  selectedTownhall: number | null;
+  setSelectedTownhall: (newIndex: number | null) => void;
+  loadingTownhall: boolean;
+  setLoadingTownhall: (loading: boolean) => void;
+  lastMessageDisplayedIndex: number;
+  setLastMessageDisplayedIndex: (newIndex: number) => void;
+};
 
 export type Message = {
-  [key: string]: string;
-}
+  id: number;
+  townhall: string;
+};
