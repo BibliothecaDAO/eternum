@@ -55,6 +55,7 @@ use eternum::systems::transport::interface::{
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
 use starknet::contract_address_const;
+use starknet::testing::pop_log_raw;
 
 
 fn setup(
@@ -843,6 +844,98 @@ fn test_accept_order_with_road() {
 
     let road = get!(world, (maker_coord.x, maker_coord.y, taker_coord.x, taker_coord.y), Road);
     assert(road.usage_count == 0, 'wrong usage count');
+}
+
+
+#[test]
+#[available_gas(3000000000000)]
+fn test_emitted_order_accepted() {
+    let (world, trade_id, maker_id, taker_id, taker_transport_id, trade_systems_dispatcher) = setup(
+        false
+    );
+
+    // accept order 
+    trade_systems_dispatcher.accept_order(world, taker_id, taker_transport_id, trade_id);
+
+    // check that taker balance is correct
+    let taker_wood_resource = get!(world, (taker_id, ResourceTypes::WOOD), Resource);
+    assert(taker_wood_resource.balance == 300, 'wrong taker balance');
+
+    let taker_silver_resource = get!(world, (taker_id, ResourceTypes::SILVER), Resource);
+    assert(taker_silver_resource.balance == 300, 'wrong taker balance');
+
+    let trade = get!(world, trade_id, Trade);
+    assert(trade.taker_id == taker_id, 'wrong taker id');
+    assert(trade.taker_transport_id == taker_transport_id, 'wrong taker transport id');
+
+    let trade_status = get!(world, trade_id, Status);
+    assert(trade_status.value == TradeStatus::ACCEPTED, 'wrong trade status');
+
+    let order_accepted_hash = 0x20e86edfa14c93309aa6559742e993d42d48507f3bf654a12d77a54f10f8945;
+
+    let mut found = false;
+    loop {
+        let mut event_option = pop_log_raw(world.contract_address);
+        match event_option {
+            Option::Some(val) => {
+                let (mut keys, mut data) = val;
+
+                let event_selector = *keys.at(0);
+
+                if (event_selector != order_accepted_hash) {
+                    continue;
+                }
+
+                found = true;
+
+                let trade_id = (*keys.at(1));
+                let maker_realm_entity_id = (*data.at(0));
+                let maker_realm_id = (*data.at(1));
+
+                let taker_realm_entity_id = (*data.at(2));
+                let taker_realm_id = (*data.at(3));
+
+                let maker_resources_len = (*data.at(4));
+                let maker_0_type = (*data.at(5));
+                let maker_0_amount = (*data.at(6));
+                let maker_1_type = (*data.at(7));
+                let maker_1_amount = (*data.at(8));
+
+                let taker_resources_len = (*data.at(9));
+                let taker_0_type = (*data.at(10));
+                let taker_0_amount = (*data.at(11));
+                let taker_1_type = (*data.at(12));
+                let taker_1_amount = (*data.at(13));
+
+                let timestamp = (*data.at(14));
+
+                assert(maker_realm_entity_id == maker_id.into(), 'wrong maker_id');
+                assert(maker_realm_id == 1, 'wrong maker_realm_id');
+
+                assert(taker_realm_entity_id == taker_id.into(), 'wrong taker_id');
+                assert(taker_realm_id == 1, 'wrong taker_realm_id');
+
+                assert(maker_resources_len == 2, 'wrong maker resources len');
+                assert(maker_0_type == (ResourceTypes::STONE).into(), 'wrong maker 0 type');
+                assert(maker_0_amount == 100, 'wrong maker 0 amount');
+                assert(maker_1_type == (ResourceTypes::GOLD).into(), 'wrong maker 1 type');
+                assert(maker_1_amount == 100, 'wrong maker 1 amount');
+
+                assert(taker_resources_len == 2, 'wrong taker resources len');
+                assert(taker_0_type == (ResourceTypes::WOOD).into(), 'wrong taker 0 type');
+                assert(taker_0_amount == 200, 'wrong taker 0 type');
+                assert(taker_1_type == (ResourceTypes::SILVER).into(), 'wrong taker 1 type');
+                assert(taker_1_amount == 200, 'wrong taker 1 amount');
+
+                assert(timestamp == 0, 'wrong timestamp');
+                break;
+            },
+            Option::None => {
+                break;
+            },
+        }
+    };
+    assert(found == true, 'OrderAccepted not found');
 }
 
 

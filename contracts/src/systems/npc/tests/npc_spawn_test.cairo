@@ -14,10 +14,7 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
 use eternum::systems::realm::contracts::realm_systems;
 
-use eternum::systems::realm::interface::{
-    IRealmSystemsDispatcher,
-    IRealmSystemsDispatcherTrait,
-};
+use eternum::systems::realm::interface::{IRealmSystemsDispatcher, IRealmSystemsDispatcherTrait,};
 
 
 use eternum::systems::config::contracts::config_systems;
@@ -66,21 +63,19 @@ fn test_spawning() {
     let npc_systems_address = deploy_system(npc_systems::TEST_CLASS_HASH);
     let npc_dispatcher = INpcDispatcher { contract_address: npc_systems_address };
 
-    let npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into());
-
-    let realm_entity_id: felt252 = realm_entity_id.into();
+    let npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id, 0x1, 'brave', 'john');
 
     let npc = get!(world, (npc_id), (Npc));
 
     assert(npc.entity_id == npc_id, 'should allow npc spawning');
 
     starknet::testing::set_block_timestamp(75);
-    let maybe_new_npc = npc_dispatcher.spawn_npc(world, realm_entity_id.into());
+    let maybe_new_npc = npc_dispatcher.spawn_npc(world, realm_entity_id, 0x1, 'brave', 'john');
 
     assert(maybe_new_npc == 0, 'should not allow npc spawning');
 
     starknet::testing::set_block_timestamp(120);
-    let new_npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id.into());
+    let new_npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id, 0x1, 'brave', 'john');
     let new_npc = get!(world, (new_npc_id), (Npc));
 
     assert(new_npc.entity_id == new_npc_id, 'should allow npc spawning');

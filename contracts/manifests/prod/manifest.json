@@ -3842,6 +3842,7 @@
                   "type": "core::felt252"
                 }
               ],
+              "outputs": [],
               "state_mutability": "view"
             }
           ]
@@ -15537,6 +15538,16 @@
           "name": "entity_id",
           "type": "u128",
           "key": true
+        },
+        {
+          "name": "name",
+          "type": "felt252",
+          "key": false
+        },
+        {
+          "name": "character_trait",
+          "type": "felt252",
+          "key": false
         },
         {
           "name": "name",

@@ -15542,6 +15542,16 @@
           "name": "name",
           "type": "felt252",
           "key": false
+        },
+        {
+          "name": "character_trait",
+          "type": "felt252",
+          "key": false
+        },
+        {
+          "name": "name",
+          "type": "felt252",
+          "key": false
         }
       ],
       "class_hash": "0x4e0e623668c0286cf7fff807bda0c55cf1dbd6e3393d851f17e4fa228dc1b00",

@@ -63,8 +63,10 @@ mod trade_systems {
     struct OrderAccepted {
         #[key]
         trade_id: u128,
-        maker_id: u128,
-        taker_id: u128,
+        maker_realm_entity_id: u128,
+        maker_realm_id: u128,
+        taker_realm_entity_id: u128,
+        taker_realm_id: u128,
         maker_resources: Span<(u8, u128)>,
         taker_resources: Span<(u8, u128)>,
         timestamp: u64
@@ -74,12 +76,6 @@ mod trade_systems {
     #[derive(Drop, starknet::Event)]
     enum Event {
         CreateOrder: CreateOrder,
-        OrderAccepted: OrderAccepted,
-    }
-
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
         OrderAccepted: OrderAccepted,
     }
 
