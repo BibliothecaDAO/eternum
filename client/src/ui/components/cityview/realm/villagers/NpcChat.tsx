@@ -1,5 +1,4 @@
 import { useEffect, useRef, useMemo } from "react";
-import useWebSocket from "react-use-websocket";
 import { NpcChatMessage } from "./NpcChatMessage";
 import { StorageTownhalls, StorageTownhall, TownhallResponse, NpcChatProps } from "./types";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
@@ -7,7 +6,7 @@ import { getRealm } from "../../../../utils/realms";
 import { scrollToElement } from "./utils";
 import { useNpcContext } from "./NpcContext";
 
-const NpcChat = ({ townHallRequest }: NpcChatProps) => {
+const NpcChat = ({ LastWsMessage }: NpcChatProps) => {
   const {
     selectedTownhall,
     setSelectedTownhall,
@@ -19,10 +18,6 @@ const NpcChat = ({ townHallRequest }: NpcChatProps) => {
 
   const { realmId } = useRealmStore();
   const LOCAL_STORAGE_ID: string = `npc_chat_${realmId}`;
-  const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket(import.meta.env.VITE_OVERLORE_WS_URL, {
-    share: false,
-    shouldReconnect: () => true,
-  });
 
   const realm = useMemo(() => {
     return realmId ? getRealm(realmId) : undefined;
@@ -40,7 +35,9 @@ const NpcChat = ({ townHallRequest }: NpcChatProps) => {
   }, [selectedTownhall]);
 
   useEffect(() => {
-    scrollToElement(bottomRef);
+    if (lastMessageDisplayedIndex !== 0) {
+      scrollToElement(bottomRef);
+    }
 
     if (selectedTownhall === null) {
       return;
@@ -50,33 +47,15 @@ const NpcChat = ({ townHallRequest }: NpcChatProps) => {
   }, [lastMessageDisplayedIndex]);
 
   useEffect(() => {
-    if (lastJsonMessage === null) {
+    if (LastWsMessage === null) {
       return;
     }
 
     setLastMessageDisplayedIndex(0);
-
-    const townhallKey = addTownHallToStorage(lastJsonMessage as TownhallResponse, LOCAL_STORAGE_ID);
-
+    const townhallKey = addTownHallToStorage(LastWsMessage as TownhallResponse, LOCAL_STORAGE_ID);
     setSelectedTownhall(townhallKey);
-
     setLoadingTownhall(false);
-  }, [lastJsonMessage]);
-
-  useEffect(() => {
-    if (townHallRequest === -1) {
-      return;
-    }
-
-    sendJsonMessage({
-      realm_id: realmId!.toString(),
-      orderId: realm!.order,
-    });
-  }, [townHallRequest]);
-
-  useEffect(() => {
-    console.log("Connection state changed");
-  }, [readyState]);
+  }, [LastWsMessage]);
 
   useEffect(() => {}, []);
   return (

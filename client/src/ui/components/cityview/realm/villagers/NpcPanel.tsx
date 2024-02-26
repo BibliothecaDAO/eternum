@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import useWebSocket from "react-use-websocket";
 import Button from "../../../../elements/Button";
 import NpcChat from "./NpcChat";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
@@ -15,6 +16,15 @@ type NpcPanelProps = {
 
 export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
   const {
+    sendJsonMessage,
+    lastJsonMessage: LastWsMessage,
+    readyState: wsReadyState,
+  } = useWebSocket(import.meta.env.VITE_OVERLORE_WS_URL, {
+    share: false,
+    shouldReconnect: () => true,
+  });
+
+  const {
     setup: {
       systemCalls: { spawn_npc },
     },
@@ -25,6 +35,10 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
   const { realmId, realmEntityId } = useRealmStore();
 
   const LOCAL_STORAGE_ID = `npc_chat_${realmId}`;
+
+  useEffect(() => {
+    console.log(`Connection state changed ${wsReadyState}`);
+  }, [wsReadyState]);
 
   const realm = useMemo(() => {
     return realmEntityId ? getRealm(realmId!) : undefined;
@@ -38,8 +52,6 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
     setLoadingTownhall,
     npcs,
   } = useNpcContext();
-
-  const [townHallRequest, setTownHallRequest] = useState(-1);
 
   const setSelectedTownhallFromDirection = (direction: number) => {
     const newKey = getNewTownhallKeyFromDirection(selectedTownhall, direction, LOCAL_STORAGE_ID);
@@ -73,7 +85,14 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
   }, [realmId]);
 
   const gatherVillagers = () => {
-    setTownHallRequest(townHallRequest + 1);
+    const npcsToSend = npcs.map((npc): any => {
+      return { ...npc, entityId: npc.entityId.valueOf() };
+    });
+    sendJsonMessage({
+      realm_id: realmId!.toString(),
+      orderId: realm!.order,
+      npcs: npcsToSend,
+    });
     setLoadingTownhall(true);
   };
 
@@ -101,7 +120,7 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
           </Button>
         </div>
       </div>
-      <NpcChat townHallRequest={townHallRequest} />
+      <NpcChat LastWsMessage={LastWsMessage} />
     </div>
   );
 };
