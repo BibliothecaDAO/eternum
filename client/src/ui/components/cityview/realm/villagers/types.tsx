@@ -6,12 +6,18 @@ export type Mood = {
   beligerent: Number;
 };
 
+export type Characteristics = {
+  age: number;
+  role: number;
+  sex: number;
+};
+
 export type Npc = {
   entityId: BigNumberish;
-  mood: Mood;
-  role: Number;
-  sex: Number;
-  realm_id: Number;
+  realmId: Number;
+  characteristics: Characteristics;
+  characterTrait: string;
+  name: string;
 };
 
 export type NpcTownhallMessage = {
