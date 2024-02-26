@@ -1,19 +1,22 @@
 import { useEffect, useRef, useMemo } from "react";
 import useWebSocket from "react-use-websocket";
 import { NpcChatMessage } from "./NpcChatMessage";
-import { StorageTownhalls, StorageTownhall, Message, NpcChatProps } from "./types";
+import { StorageTownhalls, StorageTownhall, TownhallResponse, NpcChatProps } from "./types";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { getRealm } from "../../../../utils/realms";
+import { scrollToElement } from "./utils";
+import { useNpcContext } from "./NpcContext";
 
-const NpcChat = ({
-  townHallRequest,
-  selectedTownhall,
-  setSelectedTownhall,
-  loadingTownhall,
-  setLoadingTownhall,
-  lastMessageDisplayedIndex,
-  setLastMessageDisplayedIndex,
-}: NpcChatProps) => {
+const NpcChat = ({ townHallRequest }: NpcChatProps) => {
+  const {
+    selectedTownhall,
+    setSelectedTownhall,
+    lastMessageDisplayedIndex,
+    setLastMessageDisplayedIndex,
+    loadingTownhall,
+    setLoadingTownhall,
+  } = useNpcContext();
+
   const { realmId } = useRealmStore();
   const LOCAL_STORAGE_ID: string = `npc_chat_${realmId}`;
   const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket(import.meta.env.VITE_OVERLORE_WS_URL, {
@@ -25,33 +28,27 @@ const NpcChat = ({
     return realmId ? getRealm(realmId) : undefined;
   }, [realmId]);
 
+  const topRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setTimeout(() => {
-      if (bottomRef.current) {
-        bottomRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      }
-    }, 1);
+    if (selectedTownhall === null) {
+      return;
+    }
+    setLastMessageDisplayedIndex(0);
+    scrollToElement(topRef);
+  }, [selectedTownhall]);
+
+  useEffect(() => {
+    scrollToElement(bottomRef);
 
     if (selectedTownhall === null) {
       return;
     }
 
-    const townhallsInLocalStorage: StorageTownhalls = JSON.parse(localStorage.getItem(LOCAL_STORAGE_ID) ?? "{}");
-    const storageTownhall: StorageTownhall = townhallsInLocalStorage[selectedTownhall!];
-
-    // Until we haven't reached the last message displayed, don't set the local storage to true. Otherwise the scroll stops after we displayed the first message
-    if (lastMessageDisplayedIndex != storageTownhall["discussion"].length - 1) return;
-
-    if (storageTownhall["viewed"] === false) {
-      storageTownhall["viewed"] = true;
-      townhallsInLocalStorage[selectedTownhall] = storageTownhall;
-      localStorage.setItem(LOCAL_STORAGE_ID, JSON.stringify(townhallsInLocalStorage));
-    }
+    setStoredTownhallToViewedIfFullyDisplayed(selectedTownhall, lastMessageDisplayedIndex, LOCAL_STORAGE_ID);
   }, [lastMessageDisplayedIndex]);
 
-  // Runs when a new WebSocket message is received (lastJsonMessage)
   useEffect(() => {
     if (lastJsonMessage === null) {
       return;
@@ -59,26 +56,10 @@ const NpcChat = ({
 
     setLastMessageDisplayedIndex(0);
 
-    const message: Message = lastJsonMessage as Message;
-    const townhallKey = message["id"];
-    const townhallDiscussion: string[] = message["townhall"].split(/\n+/);
+    const townhallKey = addTownHallToStorage(lastJsonMessage as TownhallResponse, LOCAL_STORAGE_ID);
 
-    if (townhallDiscussion[townhallDiscussion.length - 1] === "") {
-      townhallDiscussion.pop();
-    }
-
-    const discussionsByNpc = townhallDiscussion.map((msg) => {
-      const splitMessage = msg.split(":");
-      return { npcName: splitMessage[0], dialogueSegment: splitMessage[1] };
-    });
-
-    const newEntry: StorageTownhall = { viewed: false, discussion: discussionsByNpc };
-
-    const townhallsInLocalStorage = localStorage.getItem(LOCAL_STORAGE_ID);
-    const storedTownhalls: StorageTownhalls = JSON.parse(townhallsInLocalStorage ?? "{}");
-    storedTownhalls[townhallKey] = newEntry;
-    localStorage.setItem(LOCAL_STORAGE_ID, JSON.stringify(storedTownhalls));
     setSelectedTownhall(townhallKey);
+
     setLoadingTownhall(false);
   }, [lastJsonMessage]);
 
@@ -105,6 +86,7 @@ const NpcChat = ({
         style={{ scrollbarWidth: "unset" }}
       >
         <>
+          <span className="" ref={topRef}></span>
           {loadingTownhall ? (
             <div className="absolute h-full w-[100%] overflow-hidden text-white text-center flex justify-center">
               <div className="self-center">
@@ -112,44 +94,83 @@ const NpcChat = ({
               </div>
             </div>
           ) : (
-            (() => {
-              const townhallsInLocalStorage: StorageTownhalls = JSON.parse(
-                localStorage.getItem(LOCAL_STORAGE_ID) ?? "{}",
-              );
-
-              const storageTownhall: StorageTownhall | null =
-                selectedTownhall != null ? townhallsInLocalStorage[selectedTownhall] : null;
-
-              if (storageTownhall && storageTownhall["discussion"].length) {
-                const isViewed = storageTownhall["viewed"];
-
-                return storageTownhall["discussion"].map((message: any, index: number) => {
-                  if (!isViewed && index > lastMessageDisplayedIndex) {
-                    return <></>;
-                  }
-                  return (
-                    <NpcChatMessage
-                      key={index}
-                      index={index}
-                      lastMessageDisplayedIndex={lastMessageDisplayedIndex}
-                      setLastMessageDisplayedIndex={setLastMessageDisplayedIndex}
-                      selectedTownhall={selectedTownhall}
-                      bottomRef={bottomRef}
-                      viewed={isViewed}
-                      {...message}
-                    />
-                  );
-                });
-              } else {
-                return <div></div>;
-              }
-            })()
+            getDisplayableChatMessages(lastMessageDisplayedIndex, selectedTownhall!, bottomRef, LOCAL_STORAGE_ID)
           )}
           <span className="" ref={bottomRef}></span>;
         </>
       </div>
     </div>
   );
+};
+
+const getTownhallFromStorage = (index: number, localStorageId: string): StorageTownhall => {
+  const townhallsInLocalStorage: StorageTownhalls = JSON.parse(localStorage.getItem(localStorageId) ?? "{}");
+
+  return townhallsInLocalStorage[index];
+};
+
+const addTownHallToStorage = (message: TownhallResponse, localStorageId: string): number => {
+  const townhallKey = message["id"];
+  const townhallDiscussion: string[] = message["townhall"].split(/\n+/);
+
+  if (townhallDiscussion[townhallDiscussion.length - 1] === "") {
+    townhallDiscussion.pop();
+  }
+
+  const discussionsByNpc = townhallDiscussion.map((msg) => {
+    const splitMessage = msg.split(":");
+    return { npcName: splitMessage[0], dialogueSegment: splitMessage[1] };
+  });
+
+  const newEntry: StorageTownhall = { viewed: false, discussion: discussionsByNpc };
+
+  const townhallsInLocalStorage = localStorage.getItem(localStorageId);
+  const storedTownhalls: StorageTownhalls = JSON.parse(townhallsInLocalStorage ?? "{}");
+  storedTownhalls[townhallKey] = newEntry;
+  localStorage.setItem(localStorageId, JSON.stringify(storedTownhalls));
+
+  return townhallKey;
+};
+
+const setStoredTownhallToViewedIfFullyDisplayed = (
+  townhallIndex: number,
+  lastMessageDisplayedIndex: number,
+  localStorageId: string,
+) => {
+  const townhall: StorageTownhall = getTownhallFromStorage(townhallIndex, localStorageId);
+
+  // Until we haven't displayed the last message, don't set the local storage to true. Otherwise the scroll stops after we displayed the first message
+  if (lastMessageDisplayedIndex != townhall.discussion.length - 1) return;
+
+  if (townhall.viewed === false) {
+    const townhallsInLocalStorage: StorageTownhalls = JSON.parse(localStorage.getItem(localStorageId)!);
+    townhallsInLocalStorage[townhallIndex].viewed = true;
+    localStorage.setItem(localStorageId, JSON.stringify(townhallsInLocalStorage));
+  }
+};
+
+const getDisplayableChatMessages = (
+  lastMessageDisplayedIndex: number,
+  selectedTownhall: number,
+  bottomRef: React.RefObject<HTMLDivElement>,
+  localStorageId: string,
+) => {
+  const storageTownhall: StorageTownhall = getTownhallFromStorage(selectedTownhall ?? 0, localStorageId);
+
+  if (!storageTownhall) {
+    return;
+  }
+
+  const shouldBeUsingTypingEffect = storageTownhall.viewed == false;
+
+  return storageTownhall.discussion.map((message: any, index: number) => {
+    if (shouldBeUsingTypingEffect && index > lastMessageDisplayedIndex) {
+      return;
+    }
+    return (
+      <NpcChatMessage key={index} msgIndex={index} bottomRef={bottomRef} viewed={storageTownhall.viewed} {...message} />
+    );
+  });
 };
 
 export default NpcChat;

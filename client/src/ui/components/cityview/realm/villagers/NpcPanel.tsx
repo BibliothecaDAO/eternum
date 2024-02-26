@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "../../../../elements/Button";
 import NpcChat from "./NpcChat";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { getRealm } from "../../../../utils/realms";
 import { ReactComponent as ArrowPrev } from "../../../../assets/icons/common/arrow-left.svg";
 import { ReactComponent as ArrowNext } from "../../../../assets/icons/common/arrow-right.svg";
 import { useDojo } from "../../../../DojoContext";
+import { useNpcContext } from "./NpcContext";
+import { StorageTownhalls } from "./types";
 
 type NpcPanelProps = {
   type?: "all" | "farmers" | "miners";
@@ -18,54 +19,38 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
     },
     account: { account },
   } = useDojo();
-  const [townHallRequest, setTownHallRequest] = useState(-1);
-  const [selectedTownhall, setSelectedTownhall] = useState<number | null>(null);
-  const [loadingTownhall, setLoadingTownhall] = useState<boolean>(false);
-  const [lastMessageDisplayedIndex, setLastMessageDisplayedIndex] = useState(0);
+
   const { realmId, realmEntityId } = useRealmStore();
 
-  const parseTownhalls = (direction: string) => {
-    const chatIdentifier = `npc_chat_${realm?.realmId ?? BigInt(0)}`;
-    const townhallsInLocalStorage = localStorage.getItem(chatIdentifier);
+  const LOCAL_STORAGE_ID = `npc_chat_${realmId}`;
 
-    if (townhallsInLocalStorage && selectedTownhall !== null) {
-      const townhallsAsObject = JSON.parse(townhallsInLocalStorage);
-      const keys = Object.keys(townhallsAsObject);
-      const currentKey = keys.indexOf(String(selectedTownhall));
-      let newKey = keys[keys.indexOf(String(selectedTownhall))];
+  const { selectedTownhall, setSelectedTownhall, setLastMessageDisplayedIndex, loadingTownhall, setLoadingTownhall } =
+    useNpcContext();
 
-      if (direction == "previous" && currentKey > 0) {
-        newKey = keys[currentKey - 1];
-      } else if (direction == "next" && currentKey >= 0 && currentKey < keys.length - 1) {
-        newKey = keys[currentKey + 1];
-      }
-      if (Number(newKey) != selectedTownhall) {
-        setLastMessageDisplayedIndex(0);
-        setSelectedTownhall(Number(newKey));
-      }
+  const [townHallRequest, setTownHallRequest] = useState(-1);
+
+  const setSelectedTownhallFromDirection = (direction: number) => {
+    const newKey = getNewTownhallKeyFromDirection(selectedTownhall, direction, LOCAL_STORAGE_ID);
+
+    if (newKey == -1) {
+      return;
     }
+
+    setLastMessageDisplayedIndex(0);
+    setSelectedTownhall(newKey);
   };
 
-  const realm = useMemo(() => {
-    return realmId ? getRealm(realmId) : undefined;
-  }, [realmId]);
-
   const spawnNpc = async () => {
-    let npcId = await spawn_npc({ signer: account, realm_id: realmEntityId });
+    let _npcId = await spawn_npc({ signer: account, realm_id: realmEntityId });
   };
 
   useEffect(() => {
-    const chatIdentifier = `npc_chat_${realm?.realmId ?? BigInt(0)}`;
-    const townhallsInLocalStorage = localStorage.getItem(chatIdentifier);
-    if (townhallsInLocalStorage) {
-      const townhallsAsObject = JSON.parse(townhallsInLocalStorage);
-      const keys = Object.keys(townhallsAsObject);
-      if (keys.length > 0) {
-        const lastKey = Number(keys[keys.length - 1]);
-        setSelectedTownhall(lastKey);
-      }
+    const lastKey = getLastStorageTownhallKey(LOCAL_STORAGE_ID);
+    if (lastKey == -1) {
+      return;
     }
-  }, [realm?.realmId]);
+    setSelectedTownhall(lastKey);
+  }, [realmId]);
 
   const gatherVillagers = () => {
     setTownHallRequest(townHallRequest + 1);
@@ -82,30 +67,54 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
           className="mx-2 w-32 bottom-2 !rounded-full"
           onClick={gatherVillagers}
           variant={loadingTownhall ? "default" : "primary"}
-          disabled={loadingTownhall}
         >
           Gather villagers
         </Button>
 
         <div className="flex relative">
-          <Button onClick={() => parseTownhalls("previous")}>
+          <Button onClick={() => setSelectedTownhallFromDirection(-1)}>
             <ArrowPrev />
           </Button>
           <div className="text-white">{selectedTownhall}</div>
-          <Button onClick={() => parseTownhalls("next")} className="mr-2">
+          <Button onClick={() => setSelectedTownhallFromDirection(+1)} className="mr-2">
             <ArrowNext />
           </Button>
         </div>
       </div>
-      <NpcChat
-        townHallRequest={townHallRequest}
-        selectedTownhall={selectedTownhall}
-        setSelectedTownhall={setSelectedTownhall}
-        loadingTownhall={loadingTownhall}
-        setLoadingTownhall={setLoadingTownhall}
-        lastMessageDisplayedIndex={lastMessageDisplayedIndex}
-        setLastMessageDisplayedIndex={setLastMessageDisplayedIndex}
-      />
+      <NpcChat townHallRequest={townHallRequest} />
     </div>
   );
+};
+
+const getNewTownhallKeyFromDirection = (
+  selectedTownhall: number | null,
+  direction: number,
+  localStorageId: string,
+): number => {
+  if (selectedTownhall === null) {
+    return -1;
+  }
+
+  const storedTownhalls: StorageTownhalls = JSON.parse(localStorage.getItem(localStorageId) ?? "{}");
+
+  const keys = Object.keys(storedTownhalls).map((val) => Number(val));
+
+  const currentKey = keys.indexOf(selectedTownhall);
+  let newKey = keys[currentKey];
+
+  if (currentKey + direction >= keys.length || currentKey + direction < 0) {
+    return -1;
+  }
+  newKey = keys[currentKey + direction];
+  return newKey;
+};
+
+const getLastStorageTownhallKey = (localStorageId: string): number => {
+  const storageTownhalls: StorageTownhalls = JSON.parse(localStorage.getItem(localStorageId) ?? "{}");
+  const keys = Object.keys(storageTownhalls).map((val) => Number(val));
+  if (keys.length <= 0) {
+    return -1;
+  }
+  const lastKey = keys[keys.length - 1];
+  return lastKey;
 };
