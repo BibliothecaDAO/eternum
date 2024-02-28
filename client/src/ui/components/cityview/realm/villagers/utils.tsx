@@ -1,5 +1,12 @@
 import { BigNumberish } from "starknet";
 import { Characteristics } from "./types";
+import { SEX, ROLES } from "./constants";
+
+const U2_MASK: bigint = BigInt(0x3);
+const U8_MASK: bigint = BigInt(0xff);
+
+const TWO_POW_8 = 0x100;
+const TWO_POW_16 = 0x10000;
 
 export const scrollToElement = (bottomRef: React.RefObject<HTMLDivElement>) => {
   setTimeout(() => {
@@ -9,20 +16,21 @@ export const scrollToElement = (bottomRef: React.RefObject<HTMLDivElement>) => {
   }, 1);
 };
 
-export const unpackCharacteristics = (characteristics: BigNumberish): Characteristics => {
-  const U2_MASK = 0x4;
-  const U8_MASK = 0xff;
-
-  let characs: number = Number(characteristics.valueOf());
-  const age = characs & U8_MASK;
-  characs /= Math.pow(2, 8);
-  const role = characs & U8_MASK;
-  characs /= Math.pow(2, 8);
-  const sex = characs * U2_MASK;
+export const unpackCharacteristics = (characteristics: bigint): Characteristics => {
+  const age = characteristics & U8_MASK;
+  characteristics = characteristics >> BigInt(8);
+  const role = characteristics & U8_MASK;
+  characteristics = characteristics >> BigInt(8);
+  const sex = characteristics & U2_MASK;
 
   return {
-    age,
-    role,
-    sex,
+    age: Number(age),
+    role: ROLES[Number(role)],
+    sex: SEX[Number(sex)],
   };
+};
+
+export const packCharacteristics = (age: number, role: number, sex: number): BigNumberish => {
+  const packed = age + role * TWO_POW_8 + sex * TWO_POW_16;
+  return packed;
 };

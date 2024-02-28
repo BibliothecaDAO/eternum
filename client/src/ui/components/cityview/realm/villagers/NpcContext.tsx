@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useState } from "react";
+import { createContext, useContext, ReactNode, useState, useMemo } from "react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { Npc } from "./types";
 import { HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
@@ -14,6 +14,9 @@ type NpcContextProps = {
   loadingTownhall: boolean;
   setLoadingTownhall: (newValue: boolean) => void;
   npcs: Npc[];
+  spawned: number;
+  setSpawned: (newNumber: number) => void;
+  LOCAL_STORAGE_ID: string;
 };
 
 type Props = {
@@ -24,6 +27,7 @@ const NpcContext = createContext<NpcContextProps | null>(null);
 
 export const NpcProvider = ({ children }: Props) => {
   const currentContext = useContext(NpcContext);
+  if (currentContext) throw new Error("NpcProvider can only be used once");
 
   const {
     setup: {
@@ -31,12 +35,17 @@ export const NpcProvider = ({ children }: Props) => {
     },
   } = useDojo();
 
-  const { realmEntityId } = useRealmStore();
+  const { realmEntityId, realmId } = useRealmStore();
+  const LOCAL_STORAGE_ID: string = `npc_chat_${realmId}`;
 
-  if (currentContext) throw new Error("NpcProvider can only be used once");
   const [selectedTownhall, setSelectedTownhall] = useState<number | null>(null);
   const [lastMessageDisplayedIndex, setLastMessageDisplayedIndex] = useState(0);
   const [loadingTownhall, setLoadingTownhall] = useState<boolean>(false);
+  const [spawned, setSpawned] = useState(0);
+
+  const npcs = useMemo(() => {
+    return getNpcs(realmEntityId, NpcComponent);
+  }, [realmEntityId, spawned]);
 
   const contextValue: NpcContextProps = {
     selectedTownhall,
@@ -45,7 +54,10 @@ export const NpcProvider = ({ children }: Props) => {
     setLastMessageDisplayedIndex,
     loadingTownhall,
     setLoadingTownhall,
-    npcs: getNpcs(realmEntityId, NpcComponent),
+    npcs,
+    spawned,
+    setSpawned,
+    LOCAL_STORAGE_ID,
   };
   return <NpcContext.Provider value={contextValue}>{children}</NpcContext.Provider>;
 };
@@ -56,10 +68,10 @@ const getNpcs = (realmEntityId: BigInt, NpcComponent: any): Npc[] => {
     let npc = getComponentValue(NpcComponent, entityId);
     return {
       entityId: entityId,
-      realmEntityId: Number(npc!.realm_id),
+      realmEntityId: BigInt(npc!.realm_id),
       characteristics: unpackCharacteristics(npc!.characteristics),
-      characterTrait: shortString.decodeShortString(String(npc!.character_trait)),
-      name: shortString.decodeShortString(String(npc!.name)),
+      characterTrait: shortString.decodeShortString(npc!.character_trait.toString()),
+      name: shortString.decodeShortString(npc!.name.toString()),
     };
   });
   return npcs;

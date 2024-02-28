@@ -1,7 +1,7 @@
 import { useState, useEffect, RefObject } from "react";
 import { useNpcContext } from "./NpcContext";
 
-const INTERKEY_STROKEN_DURATION_MS = 25;
+const INTERKEY_STROKEN_DURATION_MS = 35;
 const CHARACTER_NUMBER_PER_LINE = 64;
 
 export interface NpcChatMessageProps {
@@ -18,12 +18,16 @@ export function useTypingEffect(
   textToType: string,
   interKeyStrokeDurationInMs: number,
   setTypingCompleted: (state: boolean) => void,
-  wasAlreadyViewed: boolean
+  wasAlreadyViewed: boolean,
 ) {
   const [displayedText, setDisplayedText] = useState("");
   const { selectedTownhall, setLastMessageDisplayedIndex } = useNpcContext();
+
+  if (textToType === undefined) {
+    return;
+  }
+
   useEffect(() => {
-    
     if (wasAlreadyViewed) {
       setDisplayedText(textToType);
       return;
@@ -59,14 +63,21 @@ export function useTypingEffect(
 export const NpcChatMessage = (props: NpcChatMessageProps) => {
   const { msgIndex, npcName, dialogueSegment, bottomRef, viewed: wasAlreadyViewed } = props;
   const { setLastMessageDisplayedIndex } = useNpcContext();
-  const [typingCompleted, setTypingCompleted] = useState(false);
+  const [typingCompleted, setTypingComplete] = useState(false);
 
-  const displayedDialogSegment = useTypingEffect(msgIndex, bottomRef, dialogueSegment, INTERKEY_STROKEN_DURATION_MS, setTypingCompleted, wasAlreadyViewed);
+  const displayedDialogSegment = useTypingEffect(
+    msgIndex,
+    bottomRef,
+    dialogueSegment,
+    INTERKEY_STROKEN_DURATION_MS,
+    setTypingComplete,
+    wasAlreadyViewed,
+  );
 
   useEffect(() => {
     if (typingCompleted) {
       setLastMessageDisplayedIndex(msgIndex + 1);
-      setTypingCompleted(false);
+      setTypingComplete(false);
     }
   }, [typingCompleted, msgIndex, setLastMessageDisplayedIndex]);
 

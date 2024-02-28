@@ -7,8 +7,10 @@ import { ReactComponent as ArrowPrev } from "../../../../assets/icons/common/arr
 import { ReactComponent as ArrowNext } from "../../../../assets/icons/common/arrow-right.svg";
 import { useDojo } from "../../../../DojoContext";
 import { useNpcContext } from "./NpcContext";
-import { StorageTownhalls } from "./types";
+import { NpcSpawnResponse, StorageTownhalls, WsMsgType, TownhallResponse, StorageTownhall, WsResponse } from "./types";
 import { getRealm } from "../../../../utils/realms";
+import { packCharacteristics } from "./utils";
+import { shortString } from "starknet";
 
 type NpcPanelProps = {
   type?: "all" | "farmers" | "miners";
@@ -16,8 +18,8 @@ type NpcPanelProps = {
 
 export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
   const {
-    sendJsonMessage,
-    lastJsonMessage: LastWsMessage,
+    sendJsonMessage: sendWsMsg,
+    lastJsonMessage: lastWsMsg,
     readyState: wsReadyState,
   } = useWebSocket(import.meta.env.VITE_OVERLORE_WS_URL, {
     share: false,
@@ -31,10 +33,7 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
     account: { account },
   } = useDojo();
 
-  const [spawned, setSpawned] = useState(0);
   const { realmId, realmEntityId } = useRealmStore();
-
-  const LOCAL_STORAGE_ID = `npc_chat_${realmId}`;
 
   useEffect(() => {
     console.log(`Connection state changed ${wsReadyState}`);
@@ -51,6 +50,9 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
     loadingTownhall,
     setLoadingTownhall,
     npcs,
+    LOCAL_STORAGE_ID,
+    spawned,
+    setSpawned,
   } = useNpcContext();
 
   const setSelectedTownhallFromDirection = (direction: number) => {
@@ -64,16 +66,25 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
     setSelectedTownhall(newKey);
   };
 
-  const spawnNpc = async () => {
-    // TODO make call to lore-machine backend to generate random name, ?characteristics? and character_trait (https://github.com/The-Overlore/eternum/issues/40)
-    let npcId = await spawn_npc({
-      signer: account,
-      realm_id: realmEntityId,
-      characteristics: 0,
-      character_trait: "Helpful",
-      name: "John",
+  const gatherVillagers = () => {
+    const npcsToSend = npcs.map((npc): any => {
+      return { ...npc, entityId: npc.entityId.valueOf(), realmEntityId: Number(npc.realmEntityId) };
     });
-    setSpawned(spawned + 1);
+    sendWsMsg({
+      type: WsMsgType.TOWNHALL,
+      realm_id: realmId!.toString(),
+      orderId: realm!.order,
+      npcs: npcsToSend,
+    });
+    setLoadingTownhall(true);
+  };
+
+  const spawnNpc = async () => {
+    sendWsMsg({
+      type: WsMsgType.SPAWN_NPC,
+      realm_id: realmId!.toString(),
+      orderId: realm!.order,
+    });
   };
 
   useEffect(() => {
@@ -84,17 +95,37 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
     setSelectedTownhall(lastKey);
   }, [realmId]);
 
-  const gatherVillagers = () => {
-    const npcsToSend = npcs.map((npc): any => {
-      return { ...npc, entityId: npc.entityId.valueOf() };
-    });
-    sendJsonMessage({
-      realm_id: realmId!.toString(),
-      orderId: realm!.order,
-      npcs: npcsToSend,
-    });
-    setLoadingTownhall(true);
+  const treatTownhallResponse = (response: TownhallResponse) => {
+    setLastMessageDisplayedIndex(0);
+    const townhallKey = addTownHallToStorage(response, LOCAL_STORAGE_ID);
+    setSelectedTownhall(townhallKey);
+    setLoadingTownhall(false);
   };
+
+  const treatSpawnNpcResponse = async (response: NpcSpawnResponse) => {
+    let npcId = await spawn_npc({
+      signer: account,
+      realm_id: realmEntityId,
+      characteristics: packCharacteristics(response.npc.age, response.npc.role, response.npc.sex),
+      character_trait: shortString.encodeShortString(response.npc.characterTrait),
+      name: shortString.encodeShortString(response.npc.fullName),
+    });
+    setSpawned(spawned + 1);
+  };
+
+  useEffect(() => {
+    if (lastWsMsg === null || lastWsMsg === undefined || Object.is(lastWsMsg, {})) {
+      return;
+    }
+
+    const response = lastWsMsg as WsResponse;
+
+    if (response.type === WsMsgType.SPAWN_NPC) {
+      treatSpawnNpcResponse(response as unknown as NpcSpawnResponse);
+    } else if (response.type === WsMsgType.TOWNHALL) {
+      treatTownhallResponse(response as unknown as TownhallResponse);
+    }
+  }, [lastWsMsg]);
 
   return (
     <div className="flex flex-col h-[250px] relative pb-3">
@@ -120,7 +151,7 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
           </Button>
         </div>
       </div>
-      <NpcChat LastWsMessage={LastWsMessage} />
+      <NpcChat />
     </div>
   );
 };
@@ -156,4 +187,27 @@ const getLastStorageTownhallKey = (localStorageId: string): number => {
   }
   const lastKey = keys[keys.length - 1];
   return lastKey;
+};
+
+const addTownHallToStorage = (message: TownhallResponse, localStorageId: string): number => {
+  const townhallKey = message["id"];
+  const townhallDiscussion: string[] = message["townhall"].split(/\n+/);
+
+  if (townhallDiscussion[townhallDiscussion.length - 1] === "") {
+    townhallDiscussion.pop();
+  }
+
+  const discussionsByNpc = townhallDiscussion.map((msg) => {
+    const splitMessage = msg.split(":");
+    return { npcName: splitMessage[0], dialogueSegment: splitMessage[1] };
+  });
+
+  const newEntry: StorageTownhall = { viewed: false, discussion: discussionsByNpc };
+
+  const townhallsInLocalStorage = localStorage.getItem(localStorageId);
+  const storedTownhalls: StorageTownhalls = JSON.parse(townhallsInLocalStorage ?? "{}");
+  storedTownhalls[townhallKey] = newEntry;
+  localStorage.setItem(localStorageId, JSON.stringify(storedTownhalls));
+
+  return townhallKey;
 };

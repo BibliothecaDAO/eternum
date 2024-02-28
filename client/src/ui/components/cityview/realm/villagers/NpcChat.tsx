@@ -1,27 +1,17 @@
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef } from "react";
 import { NpcChatMessage } from "./NpcChatMessage";
-import { StorageTownhalls, StorageTownhall, TownhallResponse, NpcChatProps } from "./types";
-import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { getRealm } from "../../../../utils/realms";
+import { StorageTownhalls, StorageTownhall, NpcChatProps } from "./types";
 import { scrollToElement } from "./utils";
 import { useNpcContext } from "./NpcContext";
 
-const NpcChat = ({ LastWsMessage }: NpcChatProps) => {
+const NpcChat = ({}: NpcChatProps) => {
   const {
-    selectedTownhall,
-    setSelectedTownhall,
-    lastMessageDisplayedIndex,
     setLastMessageDisplayedIndex,
+    selectedTownhall,
+    lastMessageDisplayedIndex,
     loadingTownhall,
-    setLoadingTownhall,
+    LOCAL_STORAGE_ID,
   } = useNpcContext();
-
-  const { realmId } = useRealmStore();
-  const LOCAL_STORAGE_ID: string = `npc_chat_${realmId}`;
-
-  const realm = useMemo(() => {
-    return realmId ? getRealm(realmId) : undefined;
-  }, [realmId]);
 
   const topRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -45,17 +35,6 @@ const NpcChat = ({ LastWsMessage }: NpcChatProps) => {
 
     setStoredTownhallToViewedIfFullyDisplayed(selectedTownhall, lastMessageDisplayedIndex, LOCAL_STORAGE_ID);
   }, [lastMessageDisplayedIndex]);
-
-  useEffect(() => {
-    if (LastWsMessage === null) {
-      return;
-    }
-
-    setLastMessageDisplayedIndex(0);
-    const townhallKey = addTownHallToStorage(LastWsMessage as TownhallResponse, LOCAL_STORAGE_ID);
-    setSelectedTownhall(townhallKey);
-    setLoadingTownhall(false);
-  }, [LastWsMessage]);
 
   useEffect(() => {}, []);
   return (
@@ -86,29 +65,6 @@ const getTownhallFromStorage = (index: number, localStorageId: string): StorageT
   const townhallsInLocalStorage: StorageTownhalls = JSON.parse(localStorage.getItem(localStorageId) ?? "{}");
 
   return townhallsInLocalStorage[index];
-};
-
-const addTownHallToStorage = (message: TownhallResponse, localStorageId: string): number => {
-  const townhallKey = message["id"];
-  const townhallDiscussion: string[] = message["townhall"].split(/\n+/);
-
-  if (townhallDiscussion[townhallDiscussion.length - 1] === "") {
-    townhallDiscussion.pop();
-  }
-
-  const discussionsByNpc = townhallDiscussion.map((msg) => {
-    const splitMessage = msg.split(":");
-    return { npcName: splitMessage[0], dialogueSegment: splitMessage[1] };
-  });
-
-  const newEntry: StorageTownhall = { viewed: false, discussion: discussionsByNpc };
-
-  const townhallsInLocalStorage = localStorage.getItem(localStorageId);
-  const storedTownhalls: StorageTownhalls = JSON.parse(townhallsInLocalStorage ?? "{}");
-  storedTownhalls[townhallKey] = newEntry;
-  localStorage.setItem(localStorageId, JSON.stringify(storedTownhalls));
-
-  return townhallKey;
 };
 
 const setStoredTownhallToViewedIfFullyDisplayed = (

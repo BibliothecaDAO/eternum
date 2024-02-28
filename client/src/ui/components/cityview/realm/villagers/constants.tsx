@@ -1,8 +1,2 @@
-export enum Role {
-  Farmer = 0,
-  Miner = 1,
-  Fisherman,
-  Merchant,
-  Trader,
-  Soldier,
-}
+export const SEX = ["male", "female"];
+export const ROLES = ["farmer", "miner", "fisherman", "merchant", "trader", "soldier"];
