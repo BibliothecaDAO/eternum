@@ -6,7 +6,7 @@ import HyperstructureStarted from "../../components/worldmap/hyperstructures/mod
 import HyperstructureHalf from "../../components/worldmap/hyperstructures/models/HyperstructureHalf";
 import HyperstructureFinished from "../../components/worldmap/hyperstructures/models/HyperstructureFinished";
 import useUIStore from "../../hooks/store/useUIStore.js";
-// import { TransformControls } from "@react-three/drei";
+import { Stars } from "@react-three/drei";
 // @ts-ignore
 // import Arcs from "../../components/worldmap/Arcs.jsx";
 import { useResources } from "../../hooks/helpers/useResources.js";
@@ -66,10 +66,14 @@ export const WorldMapScene = () => {
       {/* <WorldMap ref={worldRef} /> */}
       {/* <HyperstructureStarted /> */}
       {!showBlankOverlay && isMapView && <Map />}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.1, 0]}>
-        <planeGeometry args={[6000, 6000]} />
-        <meshBasicMaterial color="#8294ae" />
-      </mesh>
+      <group position={[1200, 0, -600]}>
+        <Stars depth={600} saturation={1} factor={1} speed={10} radius={600} />
+      </group>
+      {/* <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.1, 0]}>
+        <planeGeometry args={[6, 6]} />
+        <meshBasicMaterial color="red" />
+      </mesh> */}
+      <axesHelper />
       {/* {hyperstructures.map((hyperstructure, i) => {
         if (hyperstructure) {
           if (hyperstructure.completed) {

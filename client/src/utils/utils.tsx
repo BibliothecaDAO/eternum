@@ -399,6 +399,25 @@ export const getUIPositionFromColRow = (col: number, row: number, log: boolean =
   };
 };
 
+export const getColRowFromUIPosition = (x: number, y: number): { col: number; row: number } => {
+  const hexRadius = 3;
+  const hexHeight = hexRadius * 2;
+  const hexWidth = Math.sqrt(3) * hexRadius;
+  const vertDist = hexHeight * 0.75;
+  const horizDist = hexWidth;
+
+  const rowNorm = Math.round(y / vertDist);
+  const colNorm = Math.round((x - ((rowNorm % 2) * horizDist) / 2) / horizDist);
+
+  const col = colNorm + 2147483647;
+  const row = rowNorm + 2147483647;
+
+  return {
+    col,
+    row,
+  };
+};
+
 export interface HexPositions {
   [key: string]: { col: number; row: number }[];
 }

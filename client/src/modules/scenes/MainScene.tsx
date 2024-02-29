@@ -5,7 +5,7 @@ import useUIStore from "../../hooks/store/useUIStore";
 import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
 import { a } from "@react-spring/three";
-import { Sky, AdaptiveDpr, useHelper, Clouds, Cloud, CameraShake } from "@react-three/drei";
+import { Sky, AdaptiveDpr, useHelper, Clouds, Cloud, CameraShake, Bvh } from "@react-three/drei";
 import { Suspense, useMemo, useRef } from "react";
 import { EffectComposer, Bloom, Noise, SMAA } from "@react-three/postprocessing";
 // @ts-ignore
@@ -147,6 +147,11 @@ export const MainScene = () => {
     [locationType],
   );
 
+  const { ambientColor, ambientIntensity } = useControls("Ambient Light", {
+    ambientColor: { value: "#d7eaff", label: "Color" },
+    ambientIntensity: { value: 0.5, min: 0, max: 1, step: 0.01 },
+  });
+
   const { azimuth, inclination, distance, sunPosition } = useControls("Sky", {
     azimuth: { value: 0.1, min: 0, max: 1, step: 0.01 },
     inclination: { value: 0.6, min: 0, max: 1, step: 0.01 },
@@ -183,29 +188,31 @@ export const MainScene = () => {
     >
       {import.meta.env.DEV && <Perf position="bottom-left" />}
       <FPSLimiter>
-        <Sky azimuth={azimuth} inclination={inclination} distance={distance} />
-        <ambientLight />
+        {/* <Sky azimuth={azimuth} inclination={inclination} distance={distance} /> */}
+        <ambientLight color={ambientColor} intensity={ambientIntensity} />
         <Camera />
         {/* <CameraShake {...shakeConfig} /> */}
-        <Suspense fallback={null}>
-          <a.group>
-            <Switch location={locationType}>
-              <Route path="map">
-                <WorldMapScene />
-              </Route>
-              <Route path="realm">
-                <RealmCityViewScene />
-              </Route>
-            </Switch>
-          </a.group>
-        </Suspense>
+        <Bvh firstHitOnly>
+          <Suspense fallback={null}>
+            <a.group>
+              <Switch location={locationType}>
+                <Route path="map">
+                  <WorldMapScene />
+                </Route>
+                <Route path="realm">
+                  <RealmCityViewScene />
+                </Route>
+              </Switch>
+            </a.group>
+          </Suspense>
+        </Bvh>
         <EffectComposer multisampling={0}>
           <Bloom luminanceThreshold={0} intensity={0.1} mipmapBlur />
-          <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.3} />
+          {/* <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.3} /> */}
           <SMAA />
         </EffectComposer>
         <AdaptiveDpr pixelated />
-        <Clouds position={cloudsConfig.position as any} material={THREE.MeshBasicMaterial}>
+        {/* <Clouds position={cloudsConfig.position as any} material={THREE.MeshBasicMaterial}>
           <Cloud
             concentrate="random"
             seed={7331}
@@ -228,8 +235,8 @@ export const MainScene = () => {
             volume={cloudsConfig.volume}
             color="white"
           />
-        </Clouds>
-        <fog attach="fog" color={data.fog} near={fogDistance.near} far={fogDistance.far} />
+        </Clouds> */}
+        {/* <fog attach="fog" color={data.fog} near={fogDistance.near} far={fogDistance.far} /> */}
       </FPSLimiter>
     </Canvas>
   );
