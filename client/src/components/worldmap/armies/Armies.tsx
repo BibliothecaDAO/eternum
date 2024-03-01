@@ -7,10 +7,9 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { ArmyModel } from "./models/ArmyModel";
 import { getUIPositionFromColRow } from "../../../utils/utils";
-import { CombatInfo, UIPosition, biomes } from "@bibliothecadao/eternum";
+import { CombatInfo, Position, UIPosition, biomes } from "@bibliothecadao/eternum";
 // @ts-ignore
-import Arcs from "../../worldmap/Arcs.jsx";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Html } from "@react-three/drei";
 import { getRealmNameById, getRealmOrderNameById } from "../../../utils/realms";
 import clsx from "clsx";
@@ -20,6 +19,8 @@ import ProgressBar from "../../../elements/ProgressBar";
 import { useRealm } from "../../../hooks/helpers/useRealm";
 import { DEPTH, Hexagon } from "../HexGrid";
 import { useExplore } from "../../../hooks/helpers/useExplore";
+import { useFrame } from "@react-three/fiber";
+import { Group } from "three";
 
 type ArmiesProps = {
   props?: any;
@@ -36,6 +37,7 @@ export const Armies = ({ hexData }: ArmiesProps) => {
   } = useDojo();
 
   const setTravelingEntity = useUIStore((state) => state.setTravelingEntity);
+  const animationPath = useUIStore((state) => state.animationPath);
 
   const positionOffset: Record<string, number> = {};
 
@@ -61,44 +63,49 @@ export const Armies = ({ hexData }: ArmiesProps) => {
   const positions = armies
     .map((armyId) => {
       const position = getComponentValue(Position, armyId);
-      if (!position) return;
+      // if animated army dont display
+      if (!position || animationPath?.id === position.entity_id) return;
       const hexIndex = hexData.findIndex((h) => h.col === position.x && h.row === position.y);
       const hex = hexData[hexIndex];
       let z = DEPTH;
       if (hexIndex !== -1 && isExplored(position.x, position.y)) {
         z += BIOMES[hex.biome].depth * DEPTH;
       }
-      return { pos: { ...getUIPositionFromColRow(position.x, position.y), z: z }, id: position.entity_id };
+      return {
+        contractPos: { x: position.x, y: position.y },
+        uiPos: { ...getUIPositionFromColRow(position.x, position.y), z: z },
+        id: position.entity_id,
+      };
     })
-    .filter(Boolean) as { pos: UIPosition; id: bigint }[];
+    .filter(Boolean) as { contractPos: Position; uiPos: UIPosition; id: bigint }[];
 
   // clickable
-  const onClick = (id: bigint) => {
-    setTravelingEntity(id);
+  const onClick = (id: bigint, position: Position) => {
+    setTravelingEntity({ id, position });
   };
 
   return (
     <group>
-      {positions.map(({ pos, id }, i) => {
+      {positions.map(({ contractPos, uiPos, id }, i) => {
         let offset = 0;
-        if (positionOffset[JSON.stringify(pos)]) {
-          positionOffset[JSON.stringify(pos)] += 1;
-          if (positionOffset[JSON.stringify(pos)] % 2 === 0) {
-            offset = positionOffset[JSON.stringify(pos)] * -0.3;
+        if (positionOffset[JSON.stringify(uiPos)]) {
+          positionOffset[JSON.stringify(uiPos)] += 1;
+          if (positionOffset[JSON.stringify(uiPos)] % 2 === 0) {
+            offset = positionOffset[JSON.stringify(uiPos)] * -0.3;
           } else {
-            offset = positionOffset[JSON.stringify(pos)] * 0.3;
+            offset = positionOffset[JSON.stringify(uiPos)] * 0.3;
           }
         } else {
-          positionOffset[JSON.stringify(pos)] = 1;
+          positionOffset[JSON.stringify(uiPos)] = 1;
         }
         return (
           <ArmyModel
-            onPointerOver={() => onHover(id, pos)}
+            onPointerOver={() => onHover(id, uiPos)}
             onPointerOut={onUnhover}
-            onClick={() => onClick(id)}
+            onClick={() => onClick(id, contractPos)}
             key={i}
             scale={1}
-            position={[pos.x + offset, pos.z, -pos.y]}
+            position={[uiPos.x + offset, uiPos.z, -uiPos.y]}
           ></ArmyModel>
         );
       })}
@@ -115,14 +122,19 @@ type TravelingArmiesProps = {
 export const TravelingArmies = ({ hexData }: TravelingArmiesProps) => {
   const {
     setup: {
-      components: { Movable, Position, ArrivalTime },
+      components: { Position },
     },
   } = useDojo();
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   // stary only by showing your armies for now
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
+  const animationPath = useUIStore((state) => state.animationPath);
+  const setAnimationPath = useUIStore((state) => state.setAnimationPath);
+
   const { getMovingRealmRaiders } = useCombat();
   const { isExplored } = useExplore();
+
+  const startAnimationTimeRef = useRef<number | undefined>(undefined);
+  const animatedArmyRef = useRef<Group | null>(null);
 
   const [hoveredArmy, setHoveredArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
 
@@ -138,82 +150,188 @@ export const TravelingArmies = ({ hexData }: TravelingArmiesProps) => {
     setHoveredArmy(undefined);
   };
 
-  const travelPosition = armies
-    .map((armyId) => {
-      const movable = getComponentValue(Movable, armyId);
-      const position = getComponentValue(Position, armyId);
-      const arrivalTime = getComponentValue(ArrivalTime, armyId);
-      if (!movable || !position || !nextBlockTimestamp || !arrivalTime) return;
+  useFrame(() => {
+    // animate
+    if (animationPath && animatedArmyRef.current && startAnimationTimeRef.current) {
+      const uiPath = animationPath.path.map((pos) => getUIPositionFromColRow(pos.x, pos.y));
+      const now = Date.now();
+      const timeElapsed = now - startAnimationTimeRef.current!;
+      const timeToComplete = uiPath.length * 1000;
+      const progress = Math.min(timeElapsed / timeToComplete, 1);
 
-      const start = { col: movable.start_coord_x, row: movable.start_coord_y };
-      const end = { col: position.x, row: position.y };
-      const speed = movable.sec_per_km;
-      const hexSizeInKm = 1;
+      const pathIndex = Math.floor(progress * uiPath.length);
+      const currentPath: Position[] = uiPath.slice(pathIndex, pathIndex + 2);
 
-      // Calculate total distance
-      const distance = Math.sqrt(Math.pow(end.col - start.col, 2) + Math.pow(end.row - start.row, 2)) * hexSizeInKm;
-
-      // Calculate total travel time
-      const totalTravelTime = distance * speed;
-
-      // Reverse-engineer start time using the arrival time and total travel time
-      const startTime = arrivalTime.arrives_at - totalTravelTime;
-
-      // Calculate elapsed time
-      const elapsedTime = nextBlockTimestamp - startTime;
-
-      // Calculate progress percentage
-      const progress = Math.min(elapsedTime / totalTravelTime, 1); // Ensure it doesn't exceed 100%
-
-      // Interpolate current position
-      const currentPos = {
-        col: start.col + progress * (end.col - start.col),
-        row: start.row + progress * (end.row - start.row),
-      };
-
-      let z = DEPTH;
-      const roundedCol = Math.round(currentPos.col);
-      const roundedRow = Math.round(currentPos.row);
-      const hexIndex = hexData.findIndex((h) => h.col === roundedCol && h.row === roundedRow);
-      const hex = hexData[hexIndex];
-      const explored = isExplored(roundedCol, roundedRow);
-      if (hexIndex !== -1 && explored) {
-        z = z + BIOMES[hex.biome].depth * DEPTH;
+      // stop if progress is >= 1
+      if (progress >= 1 || currentPath.length < 2) {
+        // reset all
+        startAnimationTimeRef.current = undefined;
+        setAnimationPath(undefined);
+        animatedArmyRef.current = null;
+        return;
       }
 
+      // calculate progress between 2 points
+      const progressBetweenPoints = (progress - (1 / uiPath.length) * pathIndex) / (1 / uiPath.length);
+
+      const currentPos = {
+        x: currentPath[0].x + (currentPath[1].x - currentPath[0].x) * progressBetweenPoints,
+        y: currentPath[0].y + (currentPath[1].y - currentPath[0].y) * progressBetweenPoints,
+      };
+
+      const z = DEPTH;
+      animatedArmyRef.current.position.set(currentPos.x, z, -currentPos.y);
+    }
+  });
+
+  useEffect(() => {
+    if (animationPath) {
+      // animate
+      startAnimationTimeRef.current = Date.now();
+    }
+  }, [animationPath]);
+
+  const positions = armies
+    .map((armyId) => {
+      const position = getComponentValue(Position, armyId);
+      if (!position) return;
+      const hexIndex = hexData.findIndex((h) => h.col === position.x && h.row === position.y);
+      const hex = hexData[hexIndex];
+      let z = DEPTH;
+      if (hexIndex !== -1 && isExplored(position.x, position.y)) {
+        z += BIOMES[hex.biome].depth * DEPTH;
+      }
       return {
-        armyId: arrivalTime.entity_id,
-        currentPos: { ...getUIPositionFromColRow(currentPos.col, currentPos.row), z },
-        endPos: { ...getUIPositionFromColRow(end.col, end.row), z: DEPTH },
+        contractPos: { x: position.x, y: position.y },
+        uiPos: { ...getUIPositionFromColRow(position.x, position.y), z: z },
+        id: position.entity_id,
       };
     })
-    .filter(Boolean) as { armyId: bigint; currentPos: UIPosition; endPos: UIPosition }[];
+    .filter(Boolean) as { contractPos: Position; uiPos: UIPosition; id: bigint }[];
 
   return (
     <group>
-      <Arcs
-        paths={travelPosition.map(({ currentPos, endPos }) => {
-          return {
-            from: currentPos,
-            to: endPos,
-          };
+      {positions
+        .filter(({ id }) => id !== animationPath?.id)
+        .map(({ uiPos, id }, i) => {
+          return (
+            <ArmyModel
+              onPointerOver={() => onHover(id, uiPos)}
+              onPointerOut={onUnhover}
+              key={i}
+              scale={1}
+              position={[uiPos.x, uiPos.z, -uiPos.y]}
+            ></ArmyModel>
+          );
         })}
-      />
-      {travelPosition.map(({ currentPos, armyId }, i) => {
-        return (
-          <ArmyModel
-            onPointerOver={() => onHover(armyId, currentPos)}
-            onPointerOut={onUnhover}
-            key={i}
-            scale={1}
-            position={[currentPos.x, currentPos.z, -currentPos.y]}
-          ></ArmyModel>
-        );
-      })}
+      {animationPath && <ArmyModel ref={animatedArmyRef} scale={1}></ArmyModel>}
       {hoveredArmy && <ArmyInfoLabel position={hoveredArmy.position} armyId={hoveredArmy.id} />}
     </group>
   );
 };
+
+// export const TravelingArmies = ({ hexData }: TravelingArmiesProps) => {
+//   const {
+//     setup: {
+//       components: { Movable, Position, ArrivalTime },
+//     },
+//   } = useDojo();
+//   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+//   // stary only by showing your armies for now
+//   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
+//   const { getMovingRealmRaiders } = useCombat();
+//   const { isExplored } = useExplore();
+
+//   const [hoveredArmy, setHoveredArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
+
+//   const armies = realmEntityIds.flatMap(({ realmEntityId }) => {
+//     return getMovingRealmRaiders(realmEntityId);
+//   });
+
+//   const onHover = (armyId: bigint, position: UIPosition) => {
+//     setHoveredArmy({ id: armyId, position });
+//   };
+
+//   const onUnhover = () => {
+//     setHoveredArmy(undefined);
+//   };
+
+//   const travelPosition = armies
+//     .map((armyId) => {
+//       const movable = getComponentValue(Movable, armyId);
+//       const position = getComponentValue(Position, armyId);
+//       const arrivalTime = getComponentValue(ArrivalTime, armyId);
+//       if (!movable || !position || !nextBlockTimestamp || !arrivalTime) return;
+
+//       const start = { col: movable.start_coord_x, row: movable.start_coord_y };
+//       const end = { col: position.x, row: position.y };
+//       const speed = movable.sec_per_km;
+//       const hexSizeInKm = 1;
+
+//       // Calculate total distance
+//       const distance = Math.sqrt(Math.pow(end.col - start.col, 2) + Math.pow(end.row - start.row, 2)) * hexSizeInKm;
+
+//       // Calculate total travel time
+//       const totalTravelTime = distance * speed;
+
+//       // Reverse-engineer start time using the arrival time and total travel time
+//       const startTime = arrivalTime.arrives_at - totalTravelTime;
+
+//       // Calculate elapsed time
+//       const elapsedTime = nextBlockTimestamp - startTime;
+
+//       // Calculate progress percentage
+//       const progress = Math.min(elapsedTime / totalTravelTime, 1); // Ensure it doesn't exceed 100%
+
+//       // Interpolate current position
+//       const currentPos = {
+//         col: start.col + progress * (end.col - start.col),
+//         row: start.row + progress * (end.row - start.row),
+//       };
+
+//       let z = DEPTH;
+//       const roundedCol = Math.round(currentPos.col);
+//       const roundedRow = Math.round(currentPos.row);
+//       const hexIndex = hexData.findIndex((h) => h.col === roundedCol && h.row === roundedRow);
+//       const hex = hexData[hexIndex];
+//       const explored = isExplored(roundedCol, roundedRow);
+//       if (hexIndex !== -1 && explored) {
+//         z = z + BIOMES[hex.biome].depth * DEPTH;
+//       }
+
+//       return {
+//         armyId: arrivalTime.entity_id,
+//         currentPos: { ...getUIPositionFromColRow(currentPos.col, currentPos.row), z },
+//         endPos: { ...getUIPositionFromColRow(end.col, end.row), z: DEPTH },
+//       };
+//     })
+//     .filter(Boolean) as { armyId: bigint; currentPos: UIPosition; endPos: UIPosition }[];
+
+//   return (
+//     <group>
+//       <Arcs
+//         paths={travelPosition.map(({ currentPos, endPos }) => {
+//           return {
+//             from: currentPos,
+//             to: endPos,
+//           };
+//         })}
+//       />
+//       {travelPosition.map(({ currentPos, armyId }, i) => {
+//         return (
+//           <ArmyModel
+//             onPointerOver={() => onHover(armyId, currentPos)}
+//             onPointerOut={onUnhover}
+//             key={i}
+//             scale={1}
+//             position={[currentPos.x, currentPos.z, -currentPos.y]}
+//           ></ArmyModel>
+//         );
+//       })}
+//       {hoveredArmy && <ArmyInfoLabel position={hoveredArmy.position} armyId={hoveredArmy.id} />}
+//     </group>
+//   );
+// };
 
 type ArmyInfoLabelProps = {
   position: UIPosition;

@@ -22,14 +22,17 @@ export const TravelPopup = ({}: TravelPopupProps) => {
 
   const travelingEntity = useUIStore((state) => state.travelingEntity);
   const setTravelingEntity = useUIStore((state) => state.setTravelingEntity);
+  const setSelectedPath = useUIStore((state) => state.setSelectedPath);
+  const setAnimationPath = useUIStore((state) => state.setAnimationPath);
+  const selectedPath = useUIStore((state) => state.selectedPath);
   const selectedDestination = useUIStore((state) => state.selectedDestination);
   const moveCameraToTarget = useUIStore((state) => state.moveCameraToTarget);
 
   // calculate distance between selected destination and selected entity
   const [distance, travelTime, start] = useMemo(() => {
     if (!travelingEntity || !selectedDestination) return [undefined, undefined, undefined];
-    const movable = getComponentValue(Movable, getEntityIdFromKeys([travelingEntity]));
-    const position = getComponentValue(Position, getEntityIdFromKeys([travelingEntity]));
+    const movable = getComponentValue(Movable, getEntityIdFromKeys([travelingEntity.id]));
+    const position = getComponentValue(Position, getEntityIdFromKeys([travelingEntity.id]));
     if (!movable || !position) return [undefined, undefined, undefined];
 
     const start = { col: position.x, row: position.y };
@@ -52,11 +55,14 @@ export const TravelPopup = ({}: TravelPopupProps) => {
     setIsLoading(true);
     await travel({
       signer: account,
-      travelling_entity_id: travelingEntity,
+      travelling_entity_id: travelingEntity.id,
       destination_coord_x: selectedDestination.col,
       destination_coord_y: selectedDestination.row,
     });
+    selectedPath && setAnimationPath({ id: selectedPath.id, path: selectedPath.path });
+    // reset the state
     setTravelingEntity(undefined);
+    setSelectedPath(undefined);
   };
 
   const onClose = () => {

@@ -11,7 +11,6 @@ import {
   InstancedMesh,
   Matrix4,
   MeshBasicMaterial,
-  MeshStandardMaterial,
   Vector2,
   Vector3,
 } from "three";
@@ -22,7 +21,7 @@ import { Subscription } from "rxjs";
 import { getEntityIdFromKeys, getUIPositionFromColRow } from "../../utils/utils";
 import { MyCastles, OtherCastles } from "./Castles";
 import { Hyperstructures } from "./Hyperstructures";
-import { biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { Position, biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { Armies, TravelingArmies } from "./armies/Armies";
 
@@ -62,8 +61,9 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: 
     },
   } = useDojo();
 
-  const highlightedHexRef = useRef<{ hexId: number; color: Color | null }>({ hexId: -1, color: null });
-  useHighlightHex(hexMeshRef, highlightedHexRef);
+  const highlightedHexesRef = useRef<{ hexId: number; color: Color | null }[]>([]);
+  // const highlightedHexesRef = useRef<{ hexId: number; color: Color | null }>({ hexId: -1, color: null });
+  useHighlightHex(hexMeshRef, highlightedHexesRef);
 
   // use effect to change the color of the selected hex if it's been successfuly explored
   useEffect(() => {
@@ -122,9 +122,13 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: 
             // needs update
             hexMeshRef.current.instanceMatrix.needsUpdate = true;
 
-            if (highlightedHexRef.current.hexId === hexIndex) {
-              highlightedHexRef.current.color = new Color(BIOMES[hexData[hexIndex].biome].color);
-            }
+            // todo; check later
+            // if (highlightedHexRef.current.length === hexIndex) {
+            //   highlightedHexRef.current.color = new Color(BIOMES[hexData[hexIndex].biome].color);
+            // }
+            // if (highlightedHexesRef.current.hexId === hexIndex) {
+            //   highlightedHexesRef.current.color = new Color(BIOMES[hexData[hexIndex].biome].color);
+            // }
           }
         }
       });
@@ -204,7 +208,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: 
   );
 };
 
-export const Map = () => {
+export const HexMap = () => {
   const hexData = useUIStore((state) => state.hexData);
   const setHexData = useUIStore((state) => state.setHexData);
 
@@ -261,21 +265,30 @@ export const Map = () => {
 
 const useHighlightHex = (
   hexMeshRef: MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>,
-  highlightedHexRef: MutableRefObject<{ hexId: number; color: Color | null }>,
+  highlightedHexesRef: MutableRefObject<{ hexId: number; color: Color | null }[]>,
+  // highlightedHexesRef: MutableRefObject<{ hexId: number; color: Color | null }>,
 ) => {
   const camera = useThree((state) => state.camera);
   const hexData = useUIStore((state) => state.hexData);
 
   const hexDataRef = useRef(hexData);
+  const currentHoveredHex = useRef<number | undefined>(undefined);
+  const travelingEntityRef = useRef<{ id: bigint; position: Position } | undefined>(undefined);
+
   useEffect(() => {
     hexDataRef.current = hexData;
   }, [hexData]);
 
+  const setSelectedPath = useUIStore((state) => state.setSelectedPath);
   const setClickedHex = useUIStore((state) => state.setClickedHex);
   const setSelectedDestination = useUIStore((state) => state.setSelectedDestination);
   const travelingEntity = useUIStore((state) => state.travelingEntity);
   const hoverColor = new Color(0xff6666);
   const clickColor = new Color(0x3cb93c);
+
+  useEffect(() => {
+    travelingEntityRef.current = travelingEntity;
+  }, [travelingEntity]);
 
   const { raycaster } = useThree();
   raycaster.firstHitOnly = true;
@@ -302,12 +315,31 @@ const useHighlightHex = (
       // Get the first intersected object
       const intersectedHex = intersects[0];
       const hexIndex = intersectedHex.instanceId;
-      if (!hexIndex) return;
-      if (travelingEntity) {
-        updateHighlight(highlightedHexRef, hexIndex, colors, clickColor, mesh);
+
+      if (!hexIndex || !hexDataRef?.current) return;
+      // only update if the current hovered hex is different
+      if (currentHoveredHex.current === hexIndex) return;
+
+      const hex = hexDataRef.current[hexIndex];
+      if (travelingEntityRef?.current) {
+        let start = travelingEntityRef.current.position;
+        let end = { x: hex.col, y: hex.row };
+        let path = findShortestPathBFS(start, end, hexDataRef.current, 3);
+        updateHighlightHexes(
+          highlightedHexesRef,
+          path.map(({ x, y }) => hexDataRef.current!.findIndex((h) => h.col === x && h.row === y)),
+          colors,
+          clickColor,
+          mesh,
+        );
       } else {
-        updateHighlight(highlightedHexRef, hexIndex, colors, hoverColor, mesh);
+        // console.log("updating highlight for one hexIndex");
+        // updateHighlightHexes(highlightedHexesRef, [hexIndex], colors, hoverColor, mesh);
+        // updateHighlight(highlightedHexesRef, hexIndex, colors, hoverColor, mesh);
       }
+
+      // change the current hovered hex
+      currentHoveredHex.current = hexIndex;
     } else {
       // resetHighlight(highlightedHexRef, colors, mesh);
     }
@@ -336,9 +368,15 @@ const useHighlightHex = (
       const hex = hexIndex ? hexDataRef.current[hexIndex] : undefined;
 
       if (hex && hexIndex) {
-        if (travelingEntity) {
-          setSelectedDestination({ col: hex.col, row: hex.row });
+        if (travelingEntityRef.current) {
+          let start = travelingEntityRef.current.position;
+          let end = { x: hex.col, y: hex.row };
+          let path = findShortestPathBFS(start, end, hexDataRef.current, 3);
+          console.log({ clickedPath: path });
+          setSelectedPath({ id: travelingEntityRef.current.id, path });
+          setSelectedDestination({ col: hex.col, row: hex.row, hexIndex });
         } else {
+          console.log({ hex });
           setClickedHex({ col: hex.col, row: hex.row, hexIndex });
         }
       }
@@ -372,11 +410,11 @@ const useHighlightHex = (
 
     return () => {
       // Remove event listener when the component is unmounted
-      scene?.removeEventListener("mousemove", onMouseMove);
+      scene?.removeEventListener("mousemove", () => onMouseMove);
       scene?.removeEventListener("mousedown", onMouseDown);
       scene?.removeEventListener("mouseup", onMouseUp);
     };
-  }, [travelingEntity]);
+  }, []);
 };
 
 const getColorFromMesh = (mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>): number[] | null => {
@@ -414,6 +452,59 @@ export const getPositionsAtIndex = (mesh: InstancedMesh<ExtrudeGeometry, MeshBas
   positions.setFromMatrixPosition(matrix);
 
   return positions;
+};
+
+const updateHighlightHexes = (
+  highlightedHexesRef: MutableRefObject<{ hexId: number; color: Color | null }[]>,
+  hexIndices: number[],
+  colors: number[],
+  highlightColor: Color,
+  mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>,
+) => {
+  // Assuming highlightColor is already a THREE.Color
+  const blendFactor = 0.8;
+  const increaseFactor = 1.2; // Factor to increase brightness
+
+  // Reset previous highlight
+  if (highlightedHexesRef.current.length !== 0) {
+    highlightedHexesRef.current.forEach(({ color, hexId }) => {
+      if (color) {
+        color.toArray(colors, hexId * 3);
+      }
+    });
+  }
+
+  let newValue = [];
+  const tempColor = new Color(); // Reuse this color object
+
+  for (let i = 0; i < hexIndices.length; i++) {
+    const hexIndex = hexIndices[i];
+    const colorIndex = hexIndex * 3;
+    tempColor.fromArray(colors, colorIndex);
+
+    newValue.push({ hexId: hexIndex, color: tempColor.clone() });
+
+    // Blending and adjusting brightness could be optimized further by manipulating
+    // the color's r, g, b properties directly, if applicable to your use case.
+
+    // Apply new color directly to avoid additional toArray() call
+    tempColor.lerp(highlightColor, blendFactor);
+    const hsl = tempColor.getHSL({ h: 0, s: 0, l: 0 });
+    hsl.l = Math.min(1, hsl.l * increaseFactor);
+    tempColor.setHSL(hsl.h, hsl.s, hsl.l).toArray(colors, colorIndex);
+  }
+
+  highlightedHexesRef.current = newValue;
+
+  // Assert that colorAttribute is of type BufferAttribute
+  if (!(mesh.geometry.attributes.color instanceof BufferAttribute)) {
+    console.error("colorAttribute is not an instance of THREE.BufferAttribute.");
+    return null;
+  }
+
+  // Update the color attribute of the mesh
+  mesh.geometry.attributes.color.array = new Float32Array(colors);
+  mesh.geometry.attributes.color.needsUpdate = true;
 };
 
 const updateHighlight = (
@@ -457,6 +548,141 @@ const updateHighlight = (
   // Update the color attribute of the mesh
   mesh.geometry.attributes.color.array = new Float32Array(colors);
   mesh.geometry.attributes.color.needsUpdate = true;
+};
+
+// const findShortestPathBFS = (startPos: Position, endPos: Position, hexData: Hexagon[], maxHex: number) => {
+//   // Each queue element now includes the position and its distance from the start
+//   const queue: { position: Position; distance: number }[] = [{ position: startPos, distance: 0 }];
+//   const visited = new Set<string>();
+//   const path = new Map<string, Position>();
+
+//   const posKey = (pos: Position) => `${pos.x},${pos.y}`;
+
+//   while (queue.length > 0) {
+//     const { position: current, distance } = queue.shift()!;
+//     if (current.x === endPos.x && current.y === endPos.y) {
+//       // Reconstruct the path upon reaching the end position
+//       const result = [current];
+//       let next = path.get(posKey(current));
+//       console.log({ current });
+//       while (next) {
+//         console.log({ next });
+//         result.push(next);
+//         next = path.get(posKey(next));
+//       }
+//       return result.reverse();
+//     }
+
+//     if (distance > maxHex) {
+//       // Stop processing if the current distance exceeds maxHex
+//       break;
+//     }
+
+//     const currentKey = posKey(current);
+//     if (!visited.has(currentKey)) {
+//       visited.add(currentKey);
+//       const neighbors = getNeighbors(current, hexData); // Assuming getNeighbors is defined elsewhere
+//       console.log({ neighbors });
+//       for (const neighbor of neighbors) {
+//         const neighborKey = posKey(neighbor);
+//         if (!visited.has(neighborKey)) {
+//           path.set(neighborKey, current);
+//           queue.push({ position: neighbor, distance: distance + 1 });
+//         }
+//       }
+//     }
+//   }
+
+//   return []; // Return empty array if no path is found within maxHex distance
+// };
+const findShortestPathBFS = (startPos: Position, endPos: Position, hexData: Hexagon[], maxHex: number) => {
+  const queue: { position: Position; distance: number }[] = [{ position: startPos, distance: 0 }];
+  const visited = new Set<string>();
+  const path = new Map<string, Position>();
+
+  const posKey = (pos: Position) => `${pos.x},${pos.y}`;
+
+  while (queue.length > 0) {
+    const { position: current, distance } = queue.shift()!;
+    if (current.x === endPos.x && current.y === endPos.y) {
+      // Reconstruct the path upon reaching the end position
+      let temp = current;
+      const result = [];
+      while (temp) {
+        result.unshift(temp); // Add to the beginning of the result array
+        temp = path.get(posKey(temp)); // Move backwards through the path
+      }
+      return result;
+    }
+
+    if (distance > maxHex) {
+      break; // Stop processing if the current distance exceeds maxHex
+    }
+
+    const currentKey = posKey(current);
+    if (!visited.has(currentKey)) {
+      visited.add(currentKey);
+      const neighbors = getNeighbors(current, hexData); // Assuming getNeighbors is defined elsewhere
+      for (const neighbor of neighbors) {
+        const neighborKey = posKey(neighbor);
+        if (!visited.has(neighborKey) && !queue.some((e) => posKey(e.position) === neighborKey)) {
+          path.set(neighborKey, current); // Map each neighbor back to the current position
+          queue.push({ position: neighbor, distance: distance + 1 });
+        }
+      }
+    }
+  }
+
+  return []; // Return empty array if no path is found within maxHex distance
+};
+
+const findShortestPathDFS = (startPos: Position, endPos: Position, hexData: Hexagon[], maxHex: number) => {
+  const stack = [startPos];
+  const visited = new Set<Position>();
+  const path = new Map<string, Position>();
+  let count = 0;
+
+  const posKey = (pos: Position) => `${pos.x},${pos.y}`; // Create a unique string key for each position
+
+  while (stack.length > 0 && count <= maxHex) {
+    const current = stack.pop() as Position; // Use pop to take from the stack
+    if (current.x === endPos.x && current.y === endPos.y) {
+      const result = [current];
+      let next = path.get(posKey(current));
+      while (next) {
+        result.push(next);
+        next = path.get(posKey(next));
+      }
+      return result.reverse();
+    }
+
+    if (!visited.has(current)) {
+      visited.add(current);
+      const neighbors = getNeighbors(current, hexData);
+      count++;
+      for (const neighbor of neighbors) {
+        if (!visited.has(neighbor)) {
+          path.set(posKey(neighbor), current);
+          stack.push(neighbor); // Push neighbors onto the stack
+        }
+      }
+    }
+  }
+
+  return [];
+};
+
+const getNeighbors = (pos: Position, hexData: Hexagon[]) => {
+  const neighborOffsets = pos.y % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+
+  return neighborOffsets
+    .map((offset) => {
+      const col = pos.x + offset.i;
+      const row = pos.y + offset.j;
+      const hex = hexData.find((h) => h.col === col && h.row === row);
+      return hex ? { x: hex.col, y: hex.row } : null;
+    })
+    .filter(Boolean) as Position[];
 };
 
 // const resetHighlight = (

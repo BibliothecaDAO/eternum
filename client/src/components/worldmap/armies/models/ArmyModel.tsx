@@ -5,7 +5,7 @@ Files: client/public/models/unit.glb [2.62KB] > /Users/aymericdelabrousse/Projec
 */
 
 import * as THREE from "three";
-import React, { useRef, useState } from "react";
+import React, { forwardRef, useRef, useState } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 
@@ -20,11 +20,10 @@ type GLTFResult = GLTF & {
 
 type ContextType = Record<string, React.ForwardRefExoticComponent<JSX.IntrinsicElements["mesh"]>>;
 
-export function ArmyModel(props: JSX.IntrinsicElements["group"]) {
+export const ArmyModel = forwardRef((props: JSX.IntrinsicElements["group"], ref) => {
   const { nodes, materials } = useGLTF("/models/unit-transformed.glb") as GLTFResult;
   const [color, setColor] = useState("red");
 
-  const meshRef = useRef<THREE.Mesh>(null);
   const onPointerEnter = () => setColor("blue");
   const onPointerLeave = () => setColor("red");
 
@@ -34,10 +33,9 @@ export function ArmyModel(props: JSX.IntrinsicElements["group"]) {
   material.color.set(color); // Set the color separately
 
   return (
-    <group {...props} dispose={null}>
+    <group {...props} ref={ref} dispose={null}>
       <group name="Scene">
         <mesh
-          ref={meshRef}
           name="unit"
           geometry={nodes.unit.geometry}
           material={material}
@@ -48,6 +46,6 @@ export function ArmyModel(props: JSX.IntrinsicElements["group"]) {
       </group>
     </group>
   );
-}
+});
 
 useGLTF.preload("/unit-transformed.glb");

@@ -4,7 +4,7 @@ import { Vector3 } from "three";
 import { createDataStoreSlice, DataStore } from "./_dataStore";
 import React from "react";
 import { getRealmUIPosition } from "../../utils/utils";
-import { HyperStructureInterface } from "@bibliothecadao/eternum";
+import { HyperStructureInterface, Position } from "@bibliothecadao/eternum";
 import { Hexagon } from "../../components/worldmap/HexGrid";
 export type Background = "map" | "realmView" | "combat" | "bastion";
 
@@ -52,10 +52,14 @@ interface UIStore {
   clickedHyperstructure: HyperStructureInterface | undefined;
   hexData: Hexagon[] | undefined;
   setHexData: (hexData: Hexagon[]) => void;
-  travelingEntity: bigint | undefined;
-  setTravelingEntity: (entity: bigint | undefined) => void;
+  travelingEntity: { id: bigint; position: Position } | undefined;
+  setTravelingEntity: (travelingEntity: { id: bigint; position: Position } | undefined) => void;
   selectedDestination: { col: number; row: number; hexIndex: number } | undefined;
   setSelectedDestination: (destination: { col: number; row: number; hexIndex: number }) => void;
+  animationPath: { id: bigint; path: Position[] } | undefined;
+  setAnimationPath: (path: { id: bigint; path: Position[] } | undefined) => void;
+  selectedPath: { id: bigint; path: Position[] } | undefined;
+  setSelectedPath: (path: { id: bigint; path: Position[] } | undefined) => void;
 }
 
 const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
@@ -223,6 +227,10 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   setTravelingEntity: (entity) => set({ travelingEntity: entity }),
   selectedDestination: undefined,
   setSelectedDestination: (destination) => set({ selectedDestination: destination }),
+  animationPath: undefined,
+  setAnimationPath: (animationPath) => set({ animationPath }),
+  selectedPath: undefined,
+  setSelectedPath: (selectedPath) => set({ selectedPath }),
 }));
 
 export default useUIStore;

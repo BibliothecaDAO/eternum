@@ -15,7 +15,7 @@ import { useCaravan } from "../../hooks/helpers/useCaravans.js";
 import useRealmStore from "../../hooks/store/useRealmStore.js";
 import { useGetRealm } from "../../hooks/helpers/useRealm.js";
 import { getUIPositionFromContractPosition } from "../../utils/utils.js";
-import { Map } from "../../components/worldmap/HexGrid.js";
+import { HexMap } from "../../components/worldmap/HexGrid.js";
 import { useRoute } from "wouter";
 
 export const WorldMapScene = () => {
@@ -65,7 +65,7 @@ export const WorldMapScene = () => {
       </TransformControls> */}
       {/* <WorldMap ref={worldRef} /> */}
       {/* <HyperstructureStarted /> */}
-      {!showBlankOverlay && isMapView && <Map />}
+      {!showBlankOverlay && isMapView && <HexMap />}
       {/* {hyperstructures.map((hyperstructure, i) => {
         if (hyperstructure) {
           if (hyperstructure.completed) {
