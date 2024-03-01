@@ -200,47 +200,45 @@ export const MainScene = () => {
         {/* <Sky azimuth={azimuth} inclination={inclination} distance={distance} /> */}
         <ambientLight color={ambientColor} intensity={ambientIntensity} />
         <Camera />
-        <CameraShake {...shakeConfig} />
         <DirectionalLightAndHelper locationType={locationType} />
 
-        <Bvh>
-          <Suspense fallback={null}>
-            <a.group>
-              <Switch location={locationType}>
-                <Route path="map">
-                  <WorldMapScene />
-                </Route>
-                <Route path="realm">
-                  <RealmCityViewScene />
-                  <Clouds position={cloudsConfig.position as any} material={THREE.MeshBasicMaterial}>
-                    <Cloud
-                      concentrate="random"
-                      seed={7331}
-                      speed={0.06}
-                      segments={100}
-                      castShadow={true}
-                      opacity={cloudsConfig.opacity}
-                      bounds={cloudsConfig.bounds as any}
-                      volume={cloudsConfig.volume}
-                      color="white"
-                    />
-                    <Cloud
-                      concentrate="random"
-                      seed={1337}
-                      castShadow={true}
-                      speed={0.03}
-                      segments={100}
-                      opacity={cloudsConfig.opacity}
-                      bounds={cloudsConfig.bounds as any}
-                      volume={cloudsConfig.volume}
-                      color="white"
-                    />
-                  </Clouds>
-                </Route>
-              </Switch>
-            </a.group>
-          </Suspense>
-        </Bvh>
+        <Suspense fallback={null}>
+          <a.group>
+            <Switch location={locationType}>
+              <Route path="map">
+                <WorldMapScene />
+              </Route>
+              <Route path="realm">
+                <CameraShake {...shakeConfig} />
+                <RealmCityViewScene />
+                <Clouds position={cloudsConfig.position as any} material={THREE.MeshBasicMaterial}>
+                  <Cloud
+                    concentrate="random"
+                    seed={7331}
+                    speed={0.06}
+                    segments={100}
+                    castShadow={true}
+                    opacity={cloudsConfig.opacity}
+                    bounds={cloudsConfig.bounds as any}
+                    volume={cloudsConfig.volume}
+                    color="white"
+                  />
+                  <Cloud
+                    concentrate="random"
+                    seed={1337}
+                    castShadow={true}
+                    speed={0.03}
+                    segments={100}
+                    opacity={cloudsConfig.opacity}
+                    bounds={cloudsConfig.bounds as any}
+                    volume={cloudsConfig.volume}
+                    color="white"
+                  />
+                </Clouds>
+              </Route>
+            </Switch>
+          </a.group>
+        </Suspense>
         <EffectComposer multisampling={0}>
           <Bloom luminanceThreshold={0} intensity={0.1} mipmapBlur />
           <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.3} />

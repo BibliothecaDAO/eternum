@@ -91,9 +91,11 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: 
     const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
     const hexMaterial = new THREE.MeshPhongMaterial({
       color: 0xffffff,
-      vertexColors: true,
+      vertexColors: false,
       wireframe: false,
     });
+
+    const color = new THREE.Color("red");
 
     const instancedMesh = new InstancedMesh(hexagonGeometry, hexMaterial, group.length);
     let idx = 0;
@@ -104,6 +106,8 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: 
       matrix.setPosition(x, y, 0.3);
       // matrix.setPosition(x, y, BIOMES[hex.biome].depth * 10);
       instancedMesh.setMatrixAt(idx, matrix);
+      color.setStyle(BIOMES[hex.biome].color);
+      instancedMesh.setColorAt(idx, color);
       idx++;
     });
 
@@ -162,12 +166,14 @@ export const Map = () => {
       const pos = getPositionsAtIndex(mesh, instanceId);
       if (pos) {
         setHighlightPosition([pos.x, -pos.y]);
+        //mesh.setColorAt(instanceId, color.setHex(Math.random() * 0xffffff));
+        //mesh.instanceColor.needsUpdate = true;
       }
     }
   };
 
   const setClickedHex = useUIStore((state) => state.setClickedHex);
-
+  // const color = new THREE.Color("red");
   const clickHandler = (e: any) => {
     if (e.intersections.length > 0) {
       const intersect = e.intersections[0];
@@ -177,6 +183,7 @@ export const Map = () => {
       if (pos) {
         const { col, row } = getColRowFromUIPosition(pos.x, pos.y);
         setClickedHex({ col, row, hexIndex: instanceId });
+        //change color
       }
     }
   };
@@ -185,7 +192,7 @@ export const Map = () => {
   const flatMode = localStorage.getItem("flatMode");
 
   return (
-    <group onPointerEnter={(e) => throttledHoverHandler(e)}>
+    <group onPointerLeave={(e) => throttledHoverHandler(e)}>
       <mesh rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>
         {/* <HexagonGrid hexMeshRef={hexMeshRef} startRow={0} endRow={rows} startCol={0} endCol={cols} /> */}
         {hexagonGrids.map((grid, index) => {
@@ -196,13 +203,13 @@ export const Map = () => {
           );
         })}
       </mesh>
-      <mesh
+      {/* <mesh
         geometry={hexagonGeometry}
         rotation={[Math.PI / -2, 0, 0]}
         position={[highlightPosition[0], flatMode === "true" ? 0.31 : 1.6, highlightPosition[1]]}
       >
         <meshBasicMaterial color={0x00ff00} />
-      </mesh>
+      </mesh> */}
       {hexData && <MyCastles hexData={hexData} meshRef={hexMeshRef} />}
       {/* {hexData && <OtherCastles hexData={hexData} meshRef={hexMeshRef} />}
       {hexData && <Hyperstructures hexData={hexData} hexMeshRef={hexMeshRef} />} */}
@@ -353,7 +360,7 @@ const getColorFromMesh = (mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial
 const matrix = new Matrix4();
 const positions = new Vector3();
 
-export const getPositionsAtIndex = (mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>, index: number) => {
+export const getPositionsAtIndex = (mesh: InstancedMesh<any, any>, index: number) => {
   if (!mesh || !mesh.isInstancedMesh) {
     console.error("The provided mesh is not an InstancedMesh.");
     return null;
