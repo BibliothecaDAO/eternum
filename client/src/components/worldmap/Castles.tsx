@@ -188,7 +188,7 @@ export const MyCastles = ({ hexData, meshRef }: CastlesProps) => {
             material={materials.PaletteMaterial004}
             // rotate the castle in a random manner based on a seed
             rotation={[0, pseudoRandom(position.x, position.y) * 2 * Math.PI, 0]}
-            position={[position.x, DEPTH + depth * DEPTH, -position.y]}
+            position={[position.x, DEPTH * 1.5, -position.y]}
             // position={[position.x, height + 1, -position.y]}
           />
         );

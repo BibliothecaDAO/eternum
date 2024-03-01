@@ -66,14 +66,13 @@ export const WorldMapScene = () => {
       {/* <WorldMap ref={worldRef} /> */}
       {/* <HyperstructureStarted /> */}
       {!showBlankOverlay && isMapView && <Map />}
-      <group position={[1200, 0, -600]}>
+      {/* <group position={[1200, 0, -600]}>
         <Stars depth={600} saturation={1} factor={1} speed={10} radius={600} />
-      </group>
-      {/* <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.1, 0]}>
-        <planeGeometry args={[6, 6]} />
-        <meshBasicMaterial color="red" />
-      </mesh> */}
-      <axesHelper />
+      </group> */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.1, -695.175]}>
+        <planeGeometry args={[2668, 1390.35]} />
+        <meshBasicMaterial color="green" transparent opacity={0.3} />
+      </mesh>
       {/* {hyperstructures.map((hyperstructure, i) => {
         if (hyperstructure) {
           if (hyperstructure.completed) {

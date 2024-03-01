@@ -24,6 +24,14 @@ export const Camera = () => {
   // const camera2 = { x: 100, y: 30, z: -500 }
   const cameraTarget = useUIStore((state) => state.cameraTarget);
 
+  return (
+    <>
+      <CameraControls position={cameraPosition} target={cameraTarget} />
+    </>
+  );
+};
+
+export const DirectionalLightAndHelper = ({ locationType }: { locationType: string }) => {
   const dLightRef = useRef<any>();
   if (import.meta.env.DEV) {
     useHelper(dLightRef, THREE.DirectionalLightHelper, 50, "hotpink");
@@ -42,23 +50,24 @@ export const Camera = () => {
     },
   });
 
+  const yPos = useMemo(() => {
+    return locationType === "map" ? 100 : 300;
+  }, [locationType]);
+
   return (
-    <>
-      <CameraControls position={cameraPosition} target={cameraTarget} />
-      <directionalLight
-        ref={dLightRef}
-        castShadow
-        shadow-mapSize={[4096, 4096]}
-        shadow-camera-far={3000}
-        shadow-camera-left={-3000}
-        shadow-camera-right={3000}
-        shadow-camera-top={3000}
-        shadow-camera-bottom={-3000}
-        shadow-bias={bias}
-        position={[lightPosition.x, lightPosition.y, lightPosition.z]}
-        intensity={1}
-      ></directionalLight>
-    </>
+    <directionalLight
+      ref={dLightRef}
+      castShadow
+      shadow-mapSize={[4096, 4096]}
+      shadow-camera-far={3000}
+      shadow-camera-left={-3000}
+      shadow-camera-right={3000}
+      shadow-camera-top={3000}
+      shadow-camera-bottom={-3000}
+      shadow-bias={bias}
+      position={[lightPosition.x, yPos, lightPosition.z]}
+      intensity={2}
+    ></directionalLight>
   );
 };
 
@@ -191,8 +200,10 @@ export const MainScene = () => {
         {/* <Sky azimuth={azimuth} inclination={inclination} distance={distance} /> */}
         <ambientLight color={ambientColor} intensity={ambientIntensity} />
         <Camera />
-        {/* <CameraShake {...shakeConfig} /> */}
-        <Bvh firstHitOnly>
+        <CameraShake {...shakeConfig} />
+        <DirectionalLightAndHelper locationType={locationType} />
+
+        <Bvh>
           <Suspense fallback={null}>
             <a.group>
               <Switch location={locationType}>
@@ -201,6 +212,30 @@ export const MainScene = () => {
                 </Route>
                 <Route path="realm">
                   <RealmCityViewScene />
+                  <Clouds position={cloudsConfig.position as any} material={THREE.MeshBasicMaterial}>
+                    <Cloud
+                      concentrate="random"
+                      seed={7331}
+                      speed={0.06}
+                      segments={100}
+                      castShadow={true}
+                      opacity={cloudsConfig.opacity}
+                      bounds={cloudsConfig.bounds as any}
+                      volume={cloudsConfig.volume}
+                      color="white"
+                    />
+                    <Cloud
+                      concentrate="random"
+                      seed={1337}
+                      castShadow={true}
+                      speed={0.03}
+                      segments={100}
+                      opacity={cloudsConfig.opacity}
+                      bounds={cloudsConfig.bounds as any}
+                      volume={cloudsConfig.volume}
+                      color="white"
+                    />
+                  </Clouds>
                 </Route>
               </Switch>
             </a.group>
@@ -208,35 +243,10 @@ export const MainScene = () => {
         </Bvh>
         <EffectComposer multisampling={0}>
           <Bloom luminanceThreshold={0} intensity={0.1} mipmapBlur />
-          {/* <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.3} /> */}
+          <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.3} />
           <SMAA />
         </EffectComposer>
         <AdaptiveDpr pixelated />
-        {/* <Clouds position={cloudsConfig.position as any} material={THREE.MeshBasicMaterial}>
-          <Cloud
-            concentrate="random"
-            seed={7331}
-            speed={0.06}
-            segments={100}
-            castShadow={true}
-            opacity={cloudsConfig.opacity}
-            bounds={cloudsConfig.bounds as any}
-            volume={cloudsConfig.volume}
-            color="white"
-          />
-          <Cloud
-            concentrate="random"
-            seed={1337}
-            castShadow={true}
-            speed={0.03}
-            segments={100}
-            opacity={cloudsConfig.opacity}
-            bounds={cloudsConfig.bounds as any}
-            volume={cloudsConfig.volume}
-            color="white"
-          />
-        </Clouds> */}
-        {/* <fog attach="fog" color={data.fog} near={fogDistance.near} far={fogDistance.far} /> */}
       </FPSLimiter>
     </Canvas>
   );
