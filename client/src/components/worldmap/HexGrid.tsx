@@ -27,7 +27,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { throttle } from "lodash";
 import * as THREE from "three";
 
-export const DEPTH = 1;
+export const DEPTH = 10;
 export const HEX_RADIUS = 3;
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
@@ -89,7 +89,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: 
   // Create the mesh only once when the component is mounted
   const mesh = useMemo(() => {
     const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
-    const hexMaterial = new THREE.MeshPhongMaterial({
+    const hexMaterial = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
       vertexColors: false,
       wireframe: false,
@@ -103,8 +103,10 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: 
     group.forEach((hex) => {
       const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
       // set the z position with math.random to have a random height
-      matrix.setPosition(x, y, 0.3);
-      // matrix.setPosition(x, y, BIOMES[hex.biome].depth * 10);
+      matrix.setPosition(x, y, BIOMES[hex.biome].depth * 10);
+      // set height of hex
+      // matrix.setPosition(x, y, BIOMES[hex.biome].depth);
+
       instancedMesh.setMatrixAt(idx, matrix);
       color.setStyle(BIOMES[hex.biome].color);
       instancedMesh.setColorAt(idx, color);

@@ -83,7 +83,7 @@ export const MainScene = () => {
   }, [location]);
 
   const data = useControls("GL", {
-    exposure: { value: 1.6, min: -5, max: 5 },
+    exposure: { value: 0.9, min: -5, max: 5 },
     toneMapping: {
       options: {
         filmic: THREE.ACESFilmicToneMapping,
@@ -157,8 +157,8 @@ export const MainScene = () => {
   );
 
   const { ambientColor, ambientIntensity } = useControls("Ambient Light", {
-    ambientColor: { value: "#d7eaff", label: "Color" },
-    ambientIntensity: { value: 0.5, min: 0, max: 1, step: 0.01 },
+    ambientColor: { value: "#fff", label: "Color" },
+    ambientIntensity: { value: 1, min: 0, max: 1, step: 0.01 },
   });
 
   const { azimuth, inclination, distance, sunPosition } = useControls("Sky", {
