@@ -5001,7 +5001,7 @@
     {
       "name": "eternum::systems::transport::contracts::travel_systems::travel_systems",
       "address": "0x740ea95e67b0b7533ee4891524c5c7edfd7fefc09297c0304b21515cc1223ec",
-      "class_hash": "0x314b1faf5f03eb651c7ea10c153fbc732347f72968ca65196a78f533b8e084a",
+      "class_hash": "0x3a48d0189820e4fdec91806de4bb4b723a8a7792271da176136db7715b615aa",
       "abi": [
         {
           "type": "impl",
@@ -5142,7 +5142,7 @@
             },
             {
               "type": "function",
-              "name": "travel_instant",
+              "name": "travel_hex",
               "inputs": [
                 {
                   "name": "world",

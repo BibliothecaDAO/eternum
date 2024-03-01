@@ -11,7 +11,7 @@ trait ITravelSystems<TContractState> {
         travelling_entity_id: ID, destination_coord: Coord
     );
 
-    fn travel_instant(
+    fn travel_hex(
         self: @TContractState, world: IWorldDispatcher, 
         travelling_entity_id: ID, directions: Span<Direction>
     );

@@ -98,7 +98,7 @@ mod map_systems {
             InternalMapSystemsImpl::explore(world, unit_id, next_coord, exploration_reward);
 
             // travel to explored tile location 
-            InternalTravelSystemsImpl::travel_instant(
+            InternalTravelSystemsImpl::travel_hex(
                 world, unit_id, current_coord, array![direction].span()
             );
             

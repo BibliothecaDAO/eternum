@@ -90,7 +90,7 @@ mod travel_systems {
         }
 
 
-        fn travel_instant(
+        fn travel_hex(
             self: @ContractState, world: IWorldDispatcher, 
             travelling_entity_id: ID, directions: Span<Direction>
         ) {
@@ -114,7 +114,7 @@ mod travel_systems {
             let travelling_entity_coord: Coord = travelling_entity_position.into();
 
             
-            InternalTravelSystemsImpl::travel_instant(world,
+            InternalTravelSystemsImpl::travel_hex(world,
                 travelling_entity_id, travelling_entity_coord, directions
             );
         }
@@ -153,7 +153,7 @@ mod travel_systems {
 
         }
 
-        fn travel_instant(
+        fn travel_hex(
             world: IWorldDispatcher, transport_id: ID,
             from_coord: Coord, mut directions: Span<Direction>
         ){
