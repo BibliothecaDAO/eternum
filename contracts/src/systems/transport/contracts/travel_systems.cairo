@@ -6,11 +6,13 @@ mod travel_systems {
     use eternum::models::realm::Realm;
     use eternum::models::order::{Orders, OrdersTrait};
     use eternum::models::hyperstructure::HyperStructure;
-    use eternum::models::position::{Coord, Position, TravelTrait};
+    use eternum::models::position::{Coord, Position, TravelTrait, CoordTrait, Direction};
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::level::{Level, LevelTrait};
     use eternum::models::road::RoadImpl;
+    use eternum::models::tick::{TickMove, TickMoveTrait};
     use eternum::models::config::{RoadConfig, LevelingConfig};
+    use eternum::models::map::Tile;
 
     use eternum::constants::{ROAD_CONFIG_ID, REALM_LEVELING_CONFIG_ID, LevelIndex};
     
@@ -78,24 +80,52 @@ mod travel_systems {
             let travelling_entity_coord: Coord = travelling_entity_position.into();
             assert(travelling_entity_coord != destination_coord, 'entity is at destination');
 
-            let entity_owner = get!(world, travelling_entity_id, EntityOwner);
-
-            emit!(world, Travel { 
-                    destination_coord_x: destination_coord.x,
-                    destination_coord_y: destination_coord.y,
-                    realm_entity_id: entity_owner.entity_owner_id,
-                    entity_id: travelling_entity_id
-             });
             
             InternalTravelSystemsImpl::travel(world,
                 travelling_entity_id, travelling_entity_movable, 
                 travelling_entity_coord, destination_coord
             );
-        }        
+        }
+
+
+        fn travel_instant(
+            self: @ContractState, world: IWorldDispatcher, 
+            travelling_entity_id: ID, directions: Span<Direction>
+        ) {
+
+            let travelling_entity_owner = get!(world, travelling_entity_id, Owner);
+            assert(
+                travelling_entity_owner.address == starknet::get_caller_address(), 
+                    'not owner of entity'
+            );
+
+            let travelling_entity_movable = get!(world, travelling_entity_id, Movable);      
+            assert(travelling_entity_movable.sec_per_km != 0, 'entity has no speed');  
+            assert(travelling_entity_movable.blocked == false, 'entity is blocked');  
+            
+            let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
+            let ts = starknet::get_block_timestamp();
+            assert(travelling_entity_arrival_time.arrives_at <= ts.into(), 'entity is in transit');
+
+
+            let travelling_entity_position = get!(world, travelling_entity_id, Position);
+            let travelling_entity_coord: Coord = travelling_entity_position.into();
+
+            
+            InternalTravelSystemsImpl::travel_instant(world,
+                travelling_entity_id, travelling_entity_coord, directions
+            );
+        }
     }
 
     #[generate_trait]
     impl InternalTravelSystemsImpl of InternalTravelSystemsTrait {
+
+        fn assert_tile_explored(world: IWorldDispatcher, coord: Coord) {
+            let mut tile: Tile
+                 = get!(world, (coord.x, coord.y), Tile);
+            assert(tile.explored_at != 0, 'tile not explored');
+        }
 
 
         fn use_travel_bonus(world: IWorldDispatcher, realm: @Realm, entity_owner: @EntityOwner, travel_time: u64) -> u64 {
@@ -121,11 +151,73 @@ mod travel_systems {
 
         }
 
+        fn travel_instant(
+            world: IWorldDispatcher, transport_id: ID,
+            from_coord: Coord, mut directions: Span<Direction>
+        ){
+
+
+          
+            // check if entity owner is a realm and apply bonuses if it is
+            let entity_owner = get!(world, (transport_id), EntityOwner);
+            let realm = get!(world, entity_owner.entity_owner_id, Realm);
+
+            // check and update tick move steps
+            let mut tick_move = get!(world, transport_id, TickMove);
+            tick_move.add(world, directions.len().try_into().unwrap());
+
+
+            // get destination coordinate
+            let mut to_coord = from_coord;
+            loop {
+                match directions.pop_front() {
+                    Option::Some(direction) => {
+                        // update destination to  next tile
+                        to_coord = to_coord.neighbor(*direction);
+
+                        // ensure tile is explored
+                        InternalTravelSystemsImpl::assert_tile_explored(world, to_coord);
+                    },
+                    Option::None => {break;}
+                }
+            };
+
+            let mut transport_movable : Movable = get!(world, transport_id, Movable);
+            transport_movable.blocked = false;
+            transport_movable.round_trip = false;
+            transport_movable.intermediate_coord_x = 0;
+            transport_movable.intermediate_coord_y = 0;
+
+            set!(world,(transport_movable));
+            set!(world,(
+                ArrivalTime {
+                    entity_id: transport_id,
+                    arrives_at: starknet::get_block_timestamp().into() 
+                },
+                Position {
+                    entity_id: transport_id,
+                    x: to_coord.x,
+                    y: to_coord.y
+                }
+            ));
+
+            // emit travel event 
+            let entity_owner = get!(world, transport_id, EntityOwner);
+            emit!(world, Travel { 
+                    destination_coord_x: to_coord.x,
+                    destination_coord_y: to_coord.y,
+                    realm_entity_id: entity_owner.entity_owner_id,
+                    entity_id: transport_id
+             });
+        }
+
 
         fn travel(
             world: IWorldDispatcher, transport_id: ID, transport_movable: Movable, 
             from_coord: Coord, to_coord: Coord
         ){
+            // ensure destination tile is explored
+            InternalTravelSystemsImpl::assert_tile_explored(world, to_coord);
 
             let mut travel_time = from_coord.calculate_travel_time(
                 to_coord, transport_movable.sec_per_km
@@ -166,6 +258,15 @@ mod travel_systems {
                     intermediate_coord_y: 0,
                 }
             ));
+
+            // emit travel event 
+            let entity_owner = get!(world, transport_id, EntityOwner);
+            emit!(world, Travel { 
+                    destination_coord_x: to_coord.x,
+                    destination_coord_y: to_coord.y,
+                    realm_entity_id: entity_owner.entity_owner_id,
+                    entity_id: transport_id
+             });
         }
 
     }

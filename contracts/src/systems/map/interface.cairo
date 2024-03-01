@@ -6,6 +6,6 @@ use eternum::models::position::{Coord, Direction};
 trait IMapSystems<TContractState> {
     fn explore(
         self: @TContractState, world: IWorldDispatcher, 
-        realm_entity_id: u128,  from_coord: Coord, direction: Direction
+        unit_id: u128, direction: Direction
     );
 }

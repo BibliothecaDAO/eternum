@@ -377,14 +377,15 @@ mod resource_systems {
                 }
                 
                 let (resource_type, resource_amount) = *resources.at(index);
-
-                let mut donor_resource = get!(world, (donor_id, resource_type), Resource);
-                assert(donor_resource.balance >= resource_amount, 'insufficient balance');
+                if donor_id != 0 {
+                    let mut donor_resource = get!(world, (donor_id, resource_type), Resource);
+                    assert(donor_resource.balance >= resource_amount, 'insufficient balance');
+                    
+                    // remove resources from donor's balance
+                    donor_resource.balance -= resource_amount;
+                    donor_resource.save(world);
+                }
                 
-                // remove resources from donor's balance
-                donor_resource.balance -= resource_amount;
-                donor_resource.save(world);
-
                 // create detached resource
                 set!(world,(
                     DetachedResource {
