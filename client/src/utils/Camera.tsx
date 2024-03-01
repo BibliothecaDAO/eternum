@@ -40,8 +40,8 @@ const CameraControls = ({ position, target }: Props) => {
     return isMapView ? 100 : 1000;
   }, [isMapView]);
 
-  var minPan = isMapView ? new THREE.Vector3(0, -Infinity, -1300) : new THREE.Vector3(-175, -Infinity, -150);
-  var maxPan = isMapView ? new THREE.Vector3(2700, Infinity, -80) : new THREE.Vector3(300, Infinity, 100);
+  var minPan = isMapView ? new THREE.Vector3(0, -Infinity, -1400) : new THREE.Vector3(-175, -Infinity, -150);
+  var maxPan = isMapView ? new THREE.Vector3(2700, Infinity, 0) : new THREE.Vector3(300, Infinity, 100);
   var _v = new THREE.Vector3();
 
   useControls({

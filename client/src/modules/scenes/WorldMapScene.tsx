@@ -26,7 +26,7 @@ const StarsSky = () => {
   for (let i = 0; i < particlesCount; i += 3) {
     position[i] = Math.random() * 4000 - 750;
     position[i + 1] = Math.random() * 100 - 200;
-    position[i + 2] = Math.random() * 2400 - 1800;
+    position[i + 2] = Math.random() * 2400 - 2200;
   }
 
   particlesGeometry.setAttribute("position", new THREE.BufferAttribute(position, 3));
