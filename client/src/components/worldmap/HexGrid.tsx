@@ -50,6 +50,8 @@ type HexagonGridProps = {
   hexMeshRef: MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>;
 };
 
+const color = new Color();
+
 export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: HexagonGridProps) => {
   const hexData = useUIStore((state) => state.hexData);
 
@@ -74,14 +76,14 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: 
     let colorValues: number[] = [];
     let idx = 0;
 
-    filteredGroup.forEach((hex) => {
-      // const color = new Color("#202124");
-      const color = new Color(BIOMES[hex.biome].color);
-      const grayScaleColor = color; //getGrayscaleColor(color);
-      // color.toArray(colorValues, idx * 3);
-      grayScaleColor.toArray(colorValues, idx * 3);
-      idx++;
-    });
+    // filteredGroup.forEach((hex) => {
+    //   // const color = new Color("#202124");
+    //   color.setStyle(BIOMES[hex.biome].color);
+    //   const grayScaleColor = color; //getGrayscaleColor(color);
+    //   // color.toArray(colorValues, idx * 3);
+    //   grayScaleColor.toArray(colorValues, idx * 3);
+    //   idx++;
+    // });
 
     return { group: filteredGroup, colors: colorValues };
   }, [startRow, endRow, startCol, endCol, HEX_RADIUS, hexData]);
@@ -94,8 +96,6 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: 
       vertexColors: false,
       wireframe: false,
     });
-
-    const color = new THREE.Color("red");
 
     const instancedMesh = new InstancedMesh(hexagonGeometry, hexMaterial, group.length);
     let idx = 0;
@@ -113,8 +113,8 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: 
       idx++;
     });
 
-    const colorAttribute = new InstancedBufferAttribute(new Float32Array(colors), 3);
-    instancedMesh.geometry.setAttribute("color", colorAttribute);
+    // const colorAttribute = new InstancedBufferAttribute(new Float32Array(colors), 3);
+    // instancedMesh.geometry.setAttribute("color", colorAttribute);
     instancedMesh.computeBoundingSphere();
     instancedMesh.frustumCulled = true;
     return instancedMesh;
@@ -158,7 +158,7 @@ export const Map = () => {
   const hexMeshRef = useRef<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>>();
 
   const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
-  const [highlightPosition, setHighlightPosition] = useState<[number, number]>([0, 0]);
+  const [highlightPosition, setHighlightPosition] = useState<[number, number, number]>([0, 0, 0]);
 
   const hoverHandler = (e: any) => {
     if (e.intersections.length > 0) {
@@ -167,9 +167,9 @@ export const Map = () => {
       const mesh = e.intersections[0].object;
       const pos = getPositionsAtIndex(mesh, instanceId);
       if (pos) {
-        setHighlightPosition([pos.x, -pos.y]);
-        //mesh.setColorAt(instanceId, color.setHex(Math.random() * 0xffffff));
-        //mesh.instanceColor.needsUpdate = true;
+        setHighlightPosition([pos.x, -pos.y, pos.z]);
+        // mesh.setColorAt(instanceId, color.setHex(0xffffff));
+        // mesh.instanceColor.needsUpdate = true;
       }
     }
   };
@@ -194,7 +194,7 @@ export const Map = () => {
   const flatMode = localStorage.getItem("flatMode");
 
   return (
-    <group onPointerLeave={(e) => throttledHoverHandler(e)}>
+    <group onPointerEnter={(e) => throttledHoverHandler(e)}>
       <mesh rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>
         {/* <HexagonGrid hexMeshRef={hexMeshRef} startRow={0} endRow={rows} startCol={0} endCol={cols} /> */}
         {hexagonGrids.map((grid, index) => {
@@ -205,13 +205,13 @@ export const Map = () => {
           );
         })}
       </mesh>
-      {/* <mesh
+      <mesh
         geometry={hexagonGeometry}
         rotation={[Math.PI / -2, 0, 0]}
-        position={[highlightPosition[0], flatMode === "true" ? 0.31 : 1.6, highlightPosition[1]]}
+        position={[highlightPosition[0], highlightPosition[2] + 10.3, highlightPosition[1]]}
       >
-        <meshBasicMaterial color={0x00ff00} />
-      </mesh> */}
+        <meshMatcapMaterial color={0xffffff} transparent opacity={0.75} />
+      </mesh>
       {hexData && <MyCastles hexData={hexData} meshRef={hexMeshRef} />}
       {/* {hexData && <OtherCastles hexData={hexData} meshRef={hexMeshRef} />}
       {hexData && <Hyperstructures hexData={hexData} hexMeshRef={hexMeshRef} />} */}
