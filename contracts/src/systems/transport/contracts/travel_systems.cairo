@@ -31,6 +31,8 @@ mod travel_systems {
         #[key]
         realm_entity_id: u128,
         entity_id: u128,
+        travel_time: u64,
+        travel_path: Span<Coord>,
     }
 
     #[event]
@@ -168,18 +170,23 @@ mod travel_systems {
 
 
             // get destination coordinate
+            let mut travel_path = array![from_coord];
             let mut to_coord = from_coord;
+            let mut index = 0;
             loop {
-                match directions.pop_front() {
-                    Option::Some(direction) => {
-                        // update destination to  next tile
-                        to_coord = to_coord.neighbor(*direction);
-
-                        // ensure tile is explored
-                        InternalTravelSystemsImpl::assert_tile_explored(world, to_coord);
-                    },
-                    Option::None => {break;}
+                if index == directions.len() {
+                    break;
                 }
+                 // update destination to  next tile
+                to_coord = to_coord.neighbor(*directions.at(index));
+
+                // ensure tile is explored
+                InternalTravelSystemsImpl::assert_tile_explored(world, to_coord);
+
+                // add coord to travel path 
+                travel_path.append(to_coord);
+
+                index += 1;
             };
 
             let mut transport_movable : Movable = get!(world, transport_id, Movable);
@@ -206,6 +213,8 @@ mod travel_systems {
             emit!(world, Travel { 
                     destination_coord_x: to_coord.x,
                     destination_coord_y: to_coord.y,
+                    travel_time: 0,
+                    travel_path: travel_path.span(), 
                     realm_entity_id: entity_owner.entity_owner_id,
                     entity_id: transport_id
              });
@@ -264,6 +273,8 @@ mod travel_systems {
             emit!(world, Travel { 
                     destination_coord_x: to_coord.x,
                     destination_coord_y: to_coord.y,
+                    travel_time,
+                    travel_path: array![from_coord, to_coord].span(),
                     realm_entity_id: entity_owner.entity_owner_id,
                     entity_id: transport_id
              });

@@ -1285,7 +1285,7 @@
     {
       "name": "eternum::systems::combat::contracts::combat_systems",
       "address": "0x1b0a83a27a357e0574393ab06c0c774db7312a0993538cc0186d054f75ee84e",
-      "class_hash": "0x36e489c60dfc5b8f037da7747ecb7b0c7ec8bc8e211066dfb4c42026f8635a4",
+      "class_hash": "0x703ce86d1aab6f96ffee61e98134201792282cb095ea171fde3a2f310828cb7",
       "abi": [
         {
           "type": "impl",
@@ -3081,7 +3081,7 @@
     {
       "name": "eternum::systems::map::contracts::map_systems",
       "address": "0x3fda5d1f7500f799eb30aa1293b2b6c354d350ed359593eb75390893cc7ec3d",
-      "class_hash": "0x62945c372c7fe9248da6a758cf3b0ef34dc6c1fcb91f07ff55ea0eb4ccfb2cc",
+      "class_hash": "0x25ff4d44f11ccb3c92ed67a512e8d6093a63b2f24c4aabbfe94f77bbdd35a1b",
       "abi": [
         {
           "type": "impl",
@@ -5001,7 +5001,7 @@
     {
       "name": "eternum::systems::transport::contracts::travel_systems::travel_systems",
       "address": "0x740ea95e67b0b7533ee4891524c5c7edfd7fefc09297c0304b21515cc1223ec",
-      "class_hash": "0x48738c98e940cb716ffd21db54222f7fdec351133eef6f6e81b795eef79c590",
+      "class_hash": "0x314b1faf5f03eb651c7ea10c153fbc732347f72968ca65196a78f533b8e084a",
       "abi": [
         {
           "type": "impl",
@@ -5210,6 +5210,16 @@
           ]
         },
         {
+          "type": "struct",
+          "name": "core::array::Span::<eternum::models::position::Coord>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<eternum::models::position::Coord>"
+            }
+          ]
+        },
+        {
           "type": "event",
           "name": "eternum::systems::transport::contracts::travel_systems::travel_systems::Travel",
           "kind": "struct",
@@ -5232,6 +5242,16 @@
             {
               "name": "entity_id",
               "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "travel_time",
+              "type": "core::integer::u64",
+              "kind": "data"
+            },
+            {
+              "name": "travel_path",
+              "type": "core::array::Span::<eternum::models::position::Coord>",
               "kind": "data"
             }
           ]
