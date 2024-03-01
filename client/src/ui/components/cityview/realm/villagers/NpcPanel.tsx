@@ -7,10 +7,18 @@ import { ReactComponent as ArrowPrev } from "../../../../assets/icons/common/arr
 import { ReactComponent as ArrowNext } from "../../../../assets/icons/common/arrow-right.svg";
 import { useDojo } from "../../../../DojoContext";
 import { useNpcContext } from "./NpcContext";
-import { NpcSpawnResponse, StorageTownhalls, WsMsgType, TownhallResponse, StorageTownhall, WsResponse } from "./types";
+import {
+  NpcSpawnResponse,
+  StorageTownhalls,
+  WsMsgType,
+  TownhallResponse,
+  StorageTownhall,
+  WsResponse,
+  ErrorResponse,
+} from "./types";
 import { getRealm } from "../../../../utils/realms";
 import { packCharacteristics } from "./utils";
-import { shortString } from "starknet";
+import { BigNumberish, shortString } from "starknet";
 
 type NpcPanelProps = {
   type?: "all" | "farmers" | "miners";
@@ -68,22 +76,29 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
 
   const gatherVillagers = () => {
     const npcsToSend = npcs.map((npc): any => {
-      return { ...npc, entityId: npc.entityId.valueOf(), realmEntityId: Number(npc.realmEntityId) };
+      return {
+        characteristics: npc.characteristics,
+        character_trait: npc.characterTrait,
+        full_name: npc.fullName,
+      };
     });
     sendWsMsg({
-      type: WsMsgType.TOWNHALL,
-      realm_id: realmId!.toString(),
-      orderId: realm!.order,
-      npcs: npcsToSend,
+      msg_type: WsMsgType.TOWNHALL,
+      data: {
+        realm_id: realmId!.toString(),
+        order_id: realm!.order,
+        npcs: npcsToSend,
+      },
     });
     setLoadingTownhall(true);
   };
 
   const spawnNpc = async () => {
     sendWsMsg({
-      type: WsMsgType.SPAWN_NPC,
-      realm_id: realmId!.toString(),
-      orderId: realm!.order,
+      msg_type: WsMsgType.SPAWN_NPC,
+      data: {
+        realm_entity_id: Number(realmEntityId),
+      },
     });
   };
 
@@ -105,10 +120,11 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
   const treatSpawnNpcResponse = async (response: NpcSpawnResponse) => {
     let npcId = await spawn_npc({
       signer: account,
-      realm_id: realmEntityId,
-      characteristics: packCharacteristics(response.npc.age, response.npc.role, response.npc.sex),
-      character_trait: shortString.encodeShortString(response.npc.characterTrait),
-      name: shortString.encodeShortString(response.npc.fullName),
+      realm_entity_id: realmEntityId,
+      characteristics: packCharacteristics(response.npc.characteristics),
+      character_trait: shortString.encodeShortString(response.npc.character_trait),
+      full_name: shortString.encodeShortString(response.npc.full_name),
+      signature: response.signature as BigNumberish[],
     });
     setSpawned(spawned + 1);
   };
@@ -117,13 +133,14 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
     if (lastWsMsg === null || lastWsMsg === undefined || Object.is(lastWsMsg, {})) {
       return;
     }
-
     const response = lastWsMsg as WsResponse;
-
-    if (response.type === WsMsgType.SPAWN_NPC) {
-      treatSpawnNpcResponse(response as unknown as NpcSpawnResponse);
-    } else if (response.type === WsMsgType.TOWNHALL) {
-      treatTownhallResponse(response as unknown as TownhallResponse);
+    const msg_type = response.msg_type;
+    if (msg_type === WsMsgType.SPAWN_NPC) {
+      treatSpawnNpcResponse(response.data as NpcSpawnResponse);
+    } else if (msg_type === WsMsgType.TOWNHALL) {
+      treatTownhallResponse(response.data as TownhallResponse);
+    } else if (msg_type === WsMsgType.ERROR) {
+      console.log(`Failure in lore machine: ${(lastWsMsg as ErrorResponse).reason}`);
     }
   }, [lastWsMsg]);
 
@@ -190,7 +207,7 @@ const getLastStorageTownhallKey = (localStorageId: string): number => {
 };
 
 const addTownHallToStorage = (message: TownhallResponse, localStorageId: string): number => {
-  const townhallKey = message["id"];
+  const townhallKey = message["townhall_id"];
   const townhallDiscussion: string[] = message["townhall"].split(/\n+/);
 
   if (townhallDiscussion[townhallDiscussion.length - 1] === "") {
@@ -199,7 +216,7 @@ const addTownHallToStorage = (message: TownhallResponse, localStorageId: string)
 
   const discussionsByNpc = townhallDiscussion.map((msg) => {
     const splitMessage = msg.split(":");
-    return { npcName: splitMessage[0], dialogueSegment: splitMessage[1] };
+    return { npcName: splitMessage[0], dialogueSegment: splitMessage[1] === undefined ? "" : splitMessage[1] };
   });
 
   const newEntry: StorageTownhall = { viewed: false, discussion: discussionsByNpc };

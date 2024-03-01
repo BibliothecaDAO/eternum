@@ -1,7 +1,7 @@
 #[derive(Model, Copy, Drop, Serde)]
 struct LastSpawned {
     #[key]
-    realm_id: u128,
+    realm_entity_id: u128,
     last_spawned_ts: u128,
 }
 

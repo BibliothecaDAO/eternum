@@ -30,7 +30,7 @@ export const unpackCharacteristics = (characteristics: bigint): Characteristics 
   };
 };
 
-export const packCharacteristics = (age: number, role: number, sex: number): BigNumberish => {
+export const packCharacteristics = ({ age, role, sex }: any): BigNumberish => {
   const packed = age + role * TWO_POW_8 + sex * TWO_POW_16;
   return packed;
 };

@@ -63,15 +63,15 @@ export const NpcProvider = ({ children }: Props) => {
 };
 
 const getNpcs = (realmEntityId: BigInt, NpcComponent: any): Npc[] => {
-  const entityIds = runQuery([HasValue(NpcComponent, { realm_id: realmEntityId })]);
+  const entityIds = runQuery([HasValue(NpcComponent, { realm_entity_id: realmEntityId })]);
   let npcs: Npc[] = Array.from(entityIds).map((entityId) => {
     let npc = getComponentValue(NpcComponent, entityId);
     return {
       entityId: entityId,
-      realmEntityId: BigInt(npc!.realm_id),
+      realmEntityId: BigInt(npc!.realm_entity_id),
       characteristics: unpackCharacteristics(npc!.characteristics),
       characterTrait: shortString.decodeShortString(npc!.character_trait.toString()),
-      name: shortString.decodeShortString(npc!.name.toString()),
+      fullName: shortString.decodeShortString(npc!.full_name.toString()),
     };
   });
   return npcs;

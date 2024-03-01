@@ -16,7 +16,7 @@ mod npc_systems {
     #[derive(Drop, starknet::Event)]
     struct NpcSpawned {
         #[key]
-        realm_id: u128,
+        realm_entity_id: u128,
         npc_id: u128,
     }
 
@@ -31,24 +31,24 @@ mod npc_systems {
         fn change_characteristics(
             self: @ContractState,
             world: IWorldDispatcher,
-            realm_id: u128,
+            realm_entity_id: u128,
             npc_id: u128,
             characteristics: felt252
         ) {
-            assert_ownership(world, realm_id);
+            assert_ownership(world, realm_entity_id);
 
             let caller_address = get_caller_address();
             let old_npc = get!(world, npc_id, (Npc));
             // otherwise seeing this error on compilation
-            // let __set_macro_value__ = Npc { entity_id: npc_id, realm_id, mood, role: old_role.sex, sex: old_sex.role};
+            // let __set_macro_value__ = Npc { entity_id: npc_id, realm_entity_id, mood, role: old_role.sex, sex: old_sex.role};
             set!(
                 world,
                 (Npc {
                     entity_id: npc_id,
-                    realm_id,
+                    realm_entity_id,
                     characteristics,
                     character_trait: old_npc.character_trait,
-                    name: old_npc.name
+                    full_name: old_npc.full_name
                 })
             );
         }
@@ -59,18 +59,19 @@ mod npc_systems {
         fn spawn_npc(
             self: @ContractState,
             world: IWorldDispatcher,
-            realm_id: u128,
+            realm_entity_id: u128,
             characteristics: felt252,
             character_trait: felt252,
-            name: felt252
+            full_name: felt252,
+            signature: Span<felt252>
         ) -> u128 {
             // check that entity is a realm
-            let realm = get!(world, realm_id, (Realm));
+            let realm = get!(world, realm_entity_id, (Realm));
             assert(realm.realm_id != 0, 'not a realm');
 
-            assert_ownership(world, realm_id);
+            assert_ownership(world, realm_entity_id);
 
-            let last_spawned = get!(world, realm_id, (LastSpawned));
+            let last_spawned = get!(world, realm_entity_id, (LastSpawned));
 
             let npc_config = get!(world, NPC_CONFIG_ID, (NpcConfig));
 
@@ -82,9 +83,9 @@ mod npc_systems {
                 let mut randomness = array![ts, Into::<u64, u128>::into(block.block_number)];
                 let entity_id: u128 = world.uuid().into();
 
-                set!(world, (Npc { entity_id, realm_id, characteristics, character_trait, name, }));
-                set!(world, (LastSpawned { realm_id, last_spawned_ts: ts }));
-                emit!(world, NpcSpawned { realm_id, npc_id: entity_id });
+                set!(world, (Npc { entity_id, realm_entity_id, characteristics, character_trait, full_name, }));
+                set!(world, (LastSpawned { realm_entity_id, last_spawned_ts: ts }));
+                emit!(world, NpcSpawned { realm_entity_id, npc_id: entity_id });
                 entity_id
             } else {
                 0
@@ -94,11 +95,11 @@ mod npc_systems {
         fn change_character_trait(
             self: @ContractState,
             world: IWorldDispatcher,
-            realm_id: u128,
+            realm_entity_id: u128,
             npc_id: u128,
             character_trait: felt252,
         ) {
-            assert_ownership(world, realm_id);
+            assert_ownership(world, realm_entity_id);
 
             let caller_address = get_caller_address();
             let old_npc = get!(world, npc_id, (Npc));
@@ -106,10 +107,10 @@ mod npc_systems {
                 world,
                 (Npc {
                     entity_id: npc_id,
-                    realm_id,
+                    realm_entity_id,
                     characteristics: old_npc.characteristics,
                     character_trait,
-                    name: old_npc.name
+                    full_name: old_npc.full_name
                 })
             );
         }

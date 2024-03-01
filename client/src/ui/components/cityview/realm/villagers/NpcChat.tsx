@@ -103,7 +103,13 @@ const getDisplayableChatMessages = (
       return;
     }
     return (
-      <NpcChatMessage key={index} msgIndex={index} bottomRef={bottomRef} viewed={storageTownhall.viewed} {...message} />
+      <NpcChatMessage
+        key={index}
+        msgIndex={index}
+        bottomRef={bottomRef}
+        wasAlreadyViewed={storageTownhall.viewed}
+        {...message}
+      />
     );
   });
 };

@@ -3,7 +3,7 @@ use eternum::constants::ResourceTypes;
 use eternum::models::resources::Resource;
 use eternum::models::labor::Labor;
 use eternum::models::position::Position;
-use eternum::models::npc::{Npc};
+use eternum::models::npc::{Npc, Characteristics, pack_characs};
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};
 
@@ -63,19 +63,26 @@ fn test_spawning() {
     let npc_systems_address = deploy_system(npc_systems::TEST_CLASS_HASH);
     let npc_dispatcher = INpcDispatcher { contract_address: npc_systems_address };
 
-    let npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id, 0x1, 'brave', 'john');
+    let characs = pack_characs(Characteristics { age: 30, role: 10, sex: 1, });
+    let r_sign = 0x6a43f62142ac80f794378d1298d429b77c068cba42f884b1856f2087cdaf0c6;
+    let s_sign = 0x1171a4553f2b9d6a053f4e60c35b5c329931c7b353324f03f7ec5055f48f1ec;
+    // set caller address to new one for nonce at 0
+    let npc_id = npc_dispatcher
+        .spawn_npc(world, realm_entity_id, characs, 'brave', 'John', array![r_sign, s_sign].span());
 
     let npc = get!(world, (npc_id), (Npc));
 
     assert(npc.entity_id == npc_id, 'should allow npc spawning');
 
     starknet::testing::set_block_timestamp(75);
-    let maybe_new_npc = npc_dispatcher.spawn_npc(world, realm_entity_id, 0x1, 'brave', 'john');
+    let maybe_new_npc = npc_dispatcher
+        .spawn_npc(world, realm_entity_id, characs, 'brave', 'John', array![r_sign, s_sign].span());
 
     assert(maybe_new_npc == 0, 'should not allow npc spawning');
 
     starknet::testing::set_block_timestamp(120);
-    let new_npc_id = npc_dispatcher.spawn_npc(world, realm_entity_id, 0x1, 'brave', 'john');
+    let new_npc_id = npc_dispatcher
+        .spawn_npc(world, realm_entity_id, characs, 'brave', 'John', array![r_sign, s_sign].span());
     let new_npc = get!(world, (new_npc_id), (Npc));
 
     assert(new_npc.entity_id == new_npc_id, 'should allow npc spawning');

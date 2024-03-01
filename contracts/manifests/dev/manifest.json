@@ -15549,7 +15549,7 @@
           "key": false
         },
         {
-          "name": "name",
+          "name": "full_name",
           "type": "felt252",
           "key": false
         }

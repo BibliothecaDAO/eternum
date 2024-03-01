@@ -11,7 +11,7 @@ export type Npc = {
   realmEntityId: BigInt;
   characteristics: Characteristics;
   characterTrait: string;
-  name: string;
+  fullName: string;
 };
 
 export type NpcTownhallMessage = {
@@ -31,31 +31,31 @@ export type StorageTownhalls = {
 export type NpcChatProps = {};
 
 export type TownhallResponse = {
-  type: WsMsgType;
-  id: number;
+  townhall_id: number;
   townhall: string;
 };
 
-export type NpcProfile = {
-  fullName: string;
-  characterTrait: string;
-  sex: number;
-  description: string;
-  age: number;
-  role: number;
+export type NpcSpawnResponse = {
+  npc: {
+    characteristics: { age: number; role: number; sex: number };
+    character_trait: string;
+    full_name: string;
+    description: string;
+  };
+  signature: BigInt[];
 };
 
-export type NpcSpawnResponse = {
-  type: WsMsgType;
-  npc: NpcProfile;
+export type ErrorResponse = {
+  reason: string;
 };
 
 export type WsResponse = {
-  type: WsMsgType;
-  data: any;
+  msg_type: WsMsgType;
+  data: NpcSpawnResponse | TownhallResponse | ErrorResponse;
 };
 
 export enum WsMsgType {
   TOWNHALL = 0,
   SPAWN_NPC = 1,
+  ERROR = 255,
 }
