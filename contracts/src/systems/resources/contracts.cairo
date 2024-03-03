@@ -1,9 +1,10 @@
 #[dojo::contract]
 mod resource_systems {
-    use eternum::alias::ID;
+    use core::array::SpanTrait;
+use eternum::alias::ID;
     use eternum::models::resources::{Resource,ResourceTrait, ResourceAllowance};
     use eternum::models::owner::{Owner, EntityOwner, EntityOwnerTrait};
-    use eternum::models::inventory::Inventory;
+    use eternum::models::inventory::{Inventory, InventoryTrait};
     use eternum::models::realm::Realm;
     use eternum::models::metadata::ForeignKey;
     use eternum::models::position::{Position, Coord};
@@ -249,6 +250,39 @@ mod resource_systems {
                     resources 
                 });
         }
+
+
+
+        fn check_capacity(
+                world: IWorldDispatcher, 
+                entity_capacity: Capacity, 
+                mut entity_current_weight: Weight, 
+                additional_weight: u128, 
+                throw_error: bool
+            ) -> bool {
+            // ensure that receiver has enough weight capacity
+            if entity_capacity.is_capped() {
+                let entity_id = entity_current_weight.entity_id;
+
+                let entity_quantity = get!(world, entity_id, Quantity);
+                entity_current_weight.value += additional_weight;
+
+                let can_carry 
+                    = entity_capacity
+                        .can_carry_weight(
+                                entity_quantity.get_value(), 
+                                entity_current_weight.value
+                            );
+
+                if throw_error {
+                    assert(can_carry, 'not enough capacity');
+                }
+
+                return can_carry;
+            }
+
+            return true;
+        }
     }
 
 
@@ -454,7 +488,6 @@ mod resource_systems {
                 assert(
                     receiver_capacity
                         .can_carry_weight(
-                                receiving_entity_id, 
                                 receiver_quantity.get_value(), 
                                 receiver_weight.value
                             ),
@@ -555,19 +588,7 @@ mod resource_systems {
 
                 // add item to inventory
                 let mut inventory = get!(world, entity_id, Inventory);
-
-                let foreign_key 
-                    = InternalInventorySystemsImpl::get_foreign_key(inventory, inventory.items_count);
-                set!(world, (
-                    ForeignKey {
-                        foreign_key: foreign_key,
-                        entity_id: item_id
-                    }
-                ));
-
-                // update entity's inventory
-                inventory.items_count += 1;
-                set!(world, (inventory));
+                inventory.set_next_item(world, item_id);
         }
 
 
@@ -601,17 +622,7 @@ mod resource_systems {
                         }  
 
                         // add item to inventory
-                        let foreign_key 
-                            = InternalInventorySystemsImpl::get_foreign_key(inventory, inventory.items_count);
-                        set!(world, (
-                            ForeignKey {
-                                foreign_key: foreign_key,
-                                entity_id: *item_id
-                            }
-                        ));
-
-                        // update inventory item count
-                        inventory.items_count += 1;
+                        inventory.set_next_item(world, *item_id);
 
                     },
                     Option::None => {break;}
@@ -626,80 +637,139 @@ mod resource_systems {
             set!(world, (inventory));
         }
 
+        /// transfer all items from sender inventory to receiver 
+        /// inventory until the receiver reaches capacity
+        ///
+        /// we assume `indexes` is in ascending order
+        fn transfer_max_between_inventories(
+            world: IWorldDispatcher, sender_inventory: Inventory, receiver_inventory: Inventory
+        ) -> Span<u128> {
+
+            let mut sender_chests_indexes = array![];
+            let mut index = 0;
+            loop {
+                if index == sender_inventory.items_count {
+                    break;
+                }
+                sender_chests_indexes.append(index);
+            };
+
+            let sent_chests_ids = InternalInventorySystemsImpl::transfer_between_inventories(
+                world, sender_inventory, receiver_inventory, sender_chests_indexes.span()
+            );
+
+            sent_chests_ids
+        }
+
+
+
+        /// transfer items from sender inventory to receiver inventory
+        /// until the receiver reaches capacity
+        /// indexes - the indexes of items in sender's inventory to be 
+        ///             transferred to receiver
+        ///
+        /// we assume `indexes` is in ascending order
+        fn transfer_between_inventories(
+            world: IWorldDispatcher, mut sender_inventory: Inventory, mut receiver_inventory: Inventory, mut indexes_asc: Span<u128>
+        ) -> Span<u128> {
+            assert(sender_inventory.items_count > 0, 'inventory is empty');
+
+            let mut sent_chest_ids = array![];
+
+            let sender_id = sender_inventory.entity_id;
+            let receiver_id = receiver_inventory.entity_id;
+
+            let sender_inventory_items_count = sender_inventory.items_count;
+
+            let mut last_selected_index = sender_inventory.items_count;
+            let mut sender_weight = get!(world, sender_id, Weight);
+            let mut receiver_weight = get!(world, receiver_id, Weight);
+            let mut receiver_capacity = get!(world, receiver_id, Capacity);
+
+            loop {
+                match indexes_asc.pop_back() {
+                    Option::Some(index) => {
+
+                        // ensure indexes are in ascending order
+                        assert(*index < last_selected_index, 'not ascending order');
+                        last_selected_index = *index;
+
+                        // ensure that receiver can carry item
+                        let mut sender_item_fk = sender_inventory.item_fk(world, *index);
+                        let mut sender_item_id = sender_item_fk.entity_id;
+                        let mut sent_item_weight = get!(world, sender_item_id, Weight);
+                        let receiver_cant_carry: bool = InternalResourceSystemsImpl::check_capacity(
+                            world, receiver_capacity, receiver_weight, sent_item_weight.value, false
+                        ) == false;
+
+                        if receiver_cant_carry { continue; }
+
+                        // add item to receiver's inventory
+                        let mut receiver_item_fk 
+                            = receiver_inventory.item_fk(world, receiver_inventory.items_count);
+                        receiver_item_fk.entity_id = sender_item_fk.entity_id;
+                        receiver_inventory.items_count += 1;
+                        sent_chest_ids.append(sender_item_fk.entity_id);
+                        set!(world, (receiver_item_fk));
+
+                        
+                        // remove item from sender's inventory by swapping it with 
+                        /// last inventory item and removing the last item
+                        sender_item_fk.entity_id = sender_inventory.last_item_id(world);
+                        sender_inventory.items_count -= 1;
+                        set!(world, (sender_item_fk));
+
+
+                        // + and - weights of receiver and sender
+                        sender_weight.value -= sent_item_weight.value;
+                        receiver_weight.value += sent_item_weight.value;
+
+                    },
+                    Option::None => {break;}
+                }
+                
+            };
+
+            // update sender and receiver weights
+            set!(world, (sender_weight, receiver_weight));
+
+            // update sender and receiver inventory
+            set!(world, (sender_inventory, receiver_inventory));
+
+            sent_chest_ids.span()
+
+        }
+
         /// Remove an item from an inventory
         fn remove(
             world: IWorldDispatcher, entity_id: ID, index: u128
         ) -> u128 {
-            let mut inventory = get!(world, entity_id, Inventory);
+            let mut inventory: Inventory = get!(world, entity_id, Inventory);
             assert(inventory.items_count > 0, 'inventory is empty');
-
-            let last_inventory_item_foreign_key 
-                = InternalInventorySystemsImpl::get_foreign_key(inventory, inventory.items_count);
-            let last_inventory_item = get!(world, last_inventory_item_foreign_key, ForeignKey);
- 
-                
-            let current_inventory_item_foreign_key 
-                = InternalInventorySystemsImpl::get_foreign_key(inventory, index);
-            let mut current_inventory_item 
-                = get!(world, current_inventory_item_foreign_key, ForeignKey);
-
-            let item_id = current_inventory_item.entity_id;
-
 
             // remove weight from entity
             let mut entity_weight = get!(world, entity_id, Weight);
-            let mut item_weight = get!(world, item_id, Weight);
-            entity_weight.value -= item_weight.value;
+            let mut current_item_fk = inventory.item_fk(world, index);
+            let mut current_item_id = current_item_fk.entity_id;
+            let mut current_item_weight = get!(world, current_item_id, Weight);
+            entity_weight.value -= current_item_weight.value;
             set!(world, (entity_weight));
 
 
-            current_inventory_item.entity_id = last_inventory_item.entity_id;
+            // swap last item with current item to 
+            // then reduce inventory item count by 1
+
+            let last_item_id = inventory.last_item_id(world);
+            current_item_fk.entity_id = last_item_id;
             inventory.items_count -= 1;
 
-            set!(world, (current_inventory_item));
+            set!(world, (current_item_fk));
             set!(world, (inventory));
 
-            item_id
+            current_item_id
         }
 
-        /// Remove all items from inventory
-        fn clear(
-            world: IWorldDispatcher, entity_id: ID
-        ) -> Span<u128> {
-            let mut deleted_item_ids = array![];
-            let mut deleted_item_weight = 0;
-            
-            let mut inventory = get!(world, entity_id, Inventory);
-            if inventory.items_count > 0 {
-                let mut index = 0;
-                loop {
-                    if index == inventory.items_count {
-                        break;
-                    }
-    
-                    let current_inventory_item_foreign_key 
-                        = InternalInventorySystemsImpl::get_foreign_key(inventory, index);
-                    let current_inventory_item 
-                        = get!(world, current_inventory_item_foreign_key, ForeignKey);
-                    
-                    deleted_item_ids.append(current_inventory_item.entity_id);
-                    deleted_item_weight += get!(world, current_inventory_item.entity_id, Weight).value;
-                
-                    index += 1;
-                };
-
-                // remove items from inventory
-                inventory.items_count = 0;
-                set!(world, (inventory));
-
-                // remove weight from entity
-                let mut entity_weight = get!(world, entity_id, Weight);
-                entity_weight.value -= deleted_item_weight;
-                set!(world, (entity_weight));
-            }
-
-            deleted_item_ids.span()
-        }
+       
     }
     
 }

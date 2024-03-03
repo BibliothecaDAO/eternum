@@ -325,7 +325,6 @@ mod caravan_systems {
             assert(
                 transport_capacity
                     .can_carry_weight(
-                            transport_id, 
                             transport_quantity.get_value(), 
                             transport_weight.value + weight
                         ),
