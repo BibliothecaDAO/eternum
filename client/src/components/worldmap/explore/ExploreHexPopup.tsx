@@ -13,15 +13,14 @@ import { ResourceIcon } from "../../../elements/ResourceIcon";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useExplore } from "../../../hooks/helpers/useExplore";
 
-type ExploreMapPopupProps = {
-  onClose: () => void;
-};
+type ExploreMapPopupProps = {};
 
-export const ExploreMapPopup = ({ onClose }: ExploreMapPopupProps) => {
+export const ExploreMapPopup = ({}: ExploreMapPopupProps) => {
   const [step, setStep] = useState(1);
 
   const clickedHex = useUIStore((state) => state.clickedHex);
   const hexData = useUIStore((state) => state.hexData);
+  const setIsExploreMode = useUIStore((state) => state.setIsExploreMode);
 
   const { getExplorationInput } = useExplore();
 
@@ -42,6 +41,10 @@ export const ExploreMapPopup = ({ onClose }: ExploreMapPopupProps) => {
   }, [clickedHex, hexData]);
 
   if (!explorationInfo || !biome) return null;
+
+  const onClose = () => {
+    setIsExploreMode(false);
+  };
 
   return (
     <SecondaryPopup name="explore">

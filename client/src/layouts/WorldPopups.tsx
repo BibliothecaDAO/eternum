@@ -4,28 +4,24 @@ import { FeedHyperstructurePopup } from "../components/worldmap/hyperstructures/
 import useUIStore from "../hooks/store/useUIStore";
 import { ExploreMapPopup } from "../components/worldmap/explore/ExploreHexPopup";
 import { TravelPopup } from "../components/worldmap/traveling/TravelPopup";
+import { ChooseActionPopup } from "../components/worldmap/ChooseActionPopup";
 
 export const WorldPopups = () => {
   const setClickedHex = useUIStore((state) => state.setClickedHex);
   const [showFeedPopup, setShowFeedPopup] = useState(false);
   const [selectedHyperstructure, setSelectedHyperstructure] = useState<HyperStructureInterface | undefined>(undefined);
-  const [showExplore, setShowExplore] = useState(false);
 
-  const clickedHex = useUIStore((state) => state.clickedHex);
-  const travelingEntity = useUIStore((state) => state.travelingEntity);
+  // select mode after selecting entity
+  const isTravelMode = useUIStore((state) => state.isTravelMode);
+  const setIsTravelMode = useUIStore((state) => state.setIsTravelMode);
+  const isExploreMode = useUIStore((state) => state.isExploreMode);
+  const setIsExploreMode = useUIStore((state) => state.setIsExploreMode);
+  const isAttackMode = useUIStore((state) => state.isAttackMode);
+  const setIsAttackMode = useUIStore((state) => state.setIsAttackMode);
 
-  useEffect(() => {
-    if (clickedHex) {
-      // check if hex is unexplored
-
-      setShowExplore(true);
-    }
-  }, [clickedHex]);
-
-  const onCloseExplore = () => {
-    setShowExplore(false);
-    setClickedHex(undefined);
-  };
+  // no more interaction when clicking on hex for now
+  // const clickedHex = useUIStore((state) => state.clickedHex);
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
 
   const clickedHyperstructure = useUIStore((state) => state.clickedHyperstructure);
   const setClickedHyperstructure = useUIStore((state) => state.setClickedHyperstructure);
@@ -48,8 +44,9 @@ export const WorldPopups = () => {
       {showFeedPopup && selectedHyperstructure && (
         <FeedHyperstructurePopup selectedHyperstructure={selectedHyperstructure} onClose={onCloseHyperstructure} />
       )}
-      {travelingEntity !== undefined && <TravelPopup />}
-      {showExplore && <ExploreMapPopup onClose={onCloseExplore}></ExploreMapPopup>}
+      {selectedEntity && <ChooseActionPopup />}
+      {isTravelMode && <TravelPopup />}
+      {isExploreMode && <ExploreMapPopup />}
     </div>
   );
 };

@@ -20,34 +20,21 @@ export const TravelPopup = ({}: TravelPopupProps) => {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const travelingEntity = useUIStore((state) => state.travelingEntity);
-  const setTravelingEntity = useUIStore((state) => state.setTravelingEntity);
-  const setSelectedPath = useUIStore((state) => state.setSelectedPath);
+  const setIsTravelMode = useUIStore((state) => state.setIsTravelMode);
+  const travelingEntity = useUIStore((state) => state.selectedEntity);
+  const setTravelingEntity = useUIStore((state) => state.setSelectedEntity);
   const setAnimationPath = useUIStore((state) => state.setAnimationPath);
   const selectedPath = useUIStore((state) => state.selectedPath);
+  const setSelectedPath = useUIStore((state) => state.setSelectedPath);
   const selectedDestination = useUIStore((state) => state.selectedDestination);
-  const moveCameraToTarget = useUIStore((state) => state.moveCameraToTarget);
 
-  // calculate distance between selected destination and selected entity
-  const [distance, travelTime, start] = useMemo(() => {
-    if (!travelingEntity || !selectedDestination) return [undefined, undefined, undefined];
-    const movable = getComponentValue(Movable, getEntityIdFromKeys([travelingEntity.id]));
-    const position = getComponentValue(Position, getEntityIdFromKeys([travelingEntity.id]));
-    if (!movable || !position) return [undefined, undefined, undefined];
+  const onCancelSelection = () => {
+    setSelectedPath(undefined);
+  };
 
-    const start = { col: position.x, row: position.y };
-    const end = { col: selectedDestination.col, row: selectedDestination.row };
-    const speed = movable.sec_per_km;
-    const hexSizeInKm = 1;
-
-    // Calculate total distance
-    const distance = Math.sqrt(Math.pow(end.col - start.col, 2) + Math.pow(end.row - start.row, 2)) * hexSizeInKm;
-
-    // Calculate total travel time
-    const totalTravelTime = distance * speed;
-
-    return [distance, totalTravelTime, start];
-  }, [travelingEntity, selectedDestination]);
+  const onCancelTravel = () => {
+    setIsTravelMode(false);
+  };
 
   const onTravel = async () => {
     // travelingEntity
@@ -63,15 +50,16 @@ export const TravelPopup = ({}: TravelPopupProps) => {
     // reset the state
     setTravelingEntity(undefined);
     setSelectedPath(undefined);
+    setIsTravelMode(false);
   };
 
   const onClose = () => {
-    if (start) {
-      // move camera back to the entity
-      const startPos = getUIPositionFromColRow(start.col, start.row);
-      moveCameraToTarget({ x: startPos.x, y: startPos.y, z: 0 });
-    }
-    setTravelingEntity(undefined);
+    // if (start) {
+    //   // move camera back to the entity
+    //   const startPos = getUIPositionFromColRow(start.col, start.row);
+    //   moveCameraToTarget({ x: startPos.x, y: startPos.y, z: 0 });
+    // }
+    setIsTravelMode(false);
   };
 
   return (
@@ -81,21 +69,26 @@ export const TravelPopup = ({}: TravelPopupProps) => {
           <div className="mr-0.5">Move your army</div>
         </div>
       </SecondaryPopup.Head>
-      <SecondaryPopup.Body width={"200px"} height={"80px"}>
-        <div className="flex text-white text-xs justify-center my-1">
-          <div className="flex flex-col items-center mr-2">
-            <div className="text-gold">Distance </div>
-            <div>{distance?.toFixed(2)} km</div>
-          </div>
-          <div className="flex flex-col items-center ml-2">
-            <div className="text-gold">Travel Time</div>
-            {travelTime && <div>{formatTimeLeftDaysHoursMinutes(travelTime)}</div>}
-          </div>
+      <SecondaryPopup.Body width={"250px"} height={"80px"}>
+        <div className="flex flex-col items-center mr-2">
+          <div className="text-gold">Choose Hex </div>
         </div>
-        <div className="flex mt-1 w-full items-center justify-center">
-          <Button variant="primary" size="md" isLoading={isLoading} onClick={onTravel}>
-            Travel
-          </Button>
+        <div className="flex w-full items-center justify-center mt-1">
+          <div className="flex mt-1 w-[80%] items-center justify-between">
+            <Button variant="primary" size="md" isLoading={isLoading} onClick={onTravel} className="ml-3">
+              Travel
+            </Button>
+            {selectedPath && (
+              <Button variant="primary" size="md" onClick={onCancelSelection} className="mr-3">
+                Cancel Selection
+              </Button>
+            )}
+            {!selectedPath && (
+              <Button variant="primary" size="md" onClick={onCancelTravel} className="mr-3">
+                Cancel
+              </Button>
+            )}
+          </div>
         </div>
       </SecondaryPopup.Body>
     </SecondaryPopup>

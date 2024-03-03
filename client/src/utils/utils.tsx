@@ -384,10 +384,6 @@ export const getUIPositionFromColRow = (col: number, row: number, log: boolean =
   const vertDist = hexHeight * 0.75;
   const horizDist = hexWidth;
 
-  // if (log) {
-  //   console.log({ getUiPosColRow: { col, row } });
-  // }
-
   const colNorm = col - 2147483647;
   const rowNorm = row - 2147483647;
   const x = colNorm * horizDist + ((rowNorm % 2) * horizDist) / 2;
@@ -406,8 +402,6 @@ export interface HexPositions {
 export const getRealmUIPosition = (realm_id: bigint): Position => {
   const realmPositions = realmHexPositions as HexPositions;
   const colrow = realmPositions[Number(realm_id).toString()][0];
-  // console.log({ Cameracolrow: colrow });
-  // const uiRow = 2147483647 + 300 - (colrow.row - 2147483647);
 
   return getUIPositionFromColRow(colrow.col, colrow.row, true);
 };

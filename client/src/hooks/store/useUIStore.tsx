@@ -2,10 +2,9 @@ import { create } from "zustand";
 import { createPopupsSlice, PopupsStore } from "./_popups";
 import { Vector3 } from "three";
 import { createDataStoreSlice, DataStore } from "./_dataStore";
+import { createMapStoreSlice, MapStore } from "./_mapStore";
 import React from "react";
 import { getRealmUIPosition } from "../../utils/utils";
-import { HyperStructureInterface, Position } from "@bibliothecadao/eternum";
-import { Hexagon } from "../../components/worldmap/HexGrid";
 export type Background = "map" | "realmView" | "combat" | "bastion";
 
 interface UIStore {
@@ -46,23 +45,9 @@ interface UIStore {
   moveCameraToFoodView: () => void;
   isLoadingScreenEnabled: boolean;
   setIsLoadingScreenEnabled: (enabled: boolean) => void;
-  clickedHex: { col: number; row: number; hexIndex: number } | undefined;
-  setClickedHex: (hex: { col: number; row: number; hexIndex: number } | undefined) => void;
-  setClickedHyperstructure: (hyperstructure: HyperStructureInterface | undefined) => void;
-  clickedHyperstructure: HyperStructureInterface | undefined;
-  hexData: Hexagon[] | undefined;
-  setHexData: (hexData: Hexagon[]) => void;
-  travelingEntity: { id: bigint; position: Position } | undefined;
-  setTravelingEntity: (travelingEntity: { id: bigint; position: Position } | undefined) => void;
-  selectedDestination: { col: number; row: number; hexIndex: number } | undefined;
-  setSelectedDestination: (destination: { col: number; row: number; hexIndex: number }) => void;
-  animationPath: { id: bigint; path: Position[] } | undefined;
-  setAnimationPath: (path: { id: bigint; path: Position[] } | undefined) => void;
-  selectedPath: { id: bigint; path: Position[] } | undefined;
-  setSelectedPath: (path: { id: bigint; path: Position[] } | undefined) => void;
 }
 
-const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
+const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) => ({
   theme: "light",
   setTheme: (theme) => set({ theme }),
   showBlurOverlay: false,
@@ -213,24 +198,7 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
   ...createPopupsSlice(set),
   ...createDataStoreSlice(set),
-  clickedHex: undefined,
-  setClickedHex: (hex) => {
-    set({ clickedHex: hex });
-  },
-  setClickedHyperstructure: (hyperstructure) => set({ clickedHyperstructure: hyperstructure }),
-  clickedHyperstructure: undefined,
-  hexData: undefined,
-  setHexData: (hexData) => {
-    set({ hexData });
-  },
-  travelingEntity: undefined,
-  setTravelingEntity: (entity) => set({ travelingEntity: entity }),
-  selectedDestination: undefined,
-  setSelectedDestination: (destination) => set({ selectedDestination: destination }),
-  animationPath: undefined,
-  setAnimationPath: (animationPath) => set({ animationPath }),
-  selectedPath: undefined,
-  setSelectedPath: (selectedPath) => set({ selectedPath }),
+  ...createMapStoreSlice(set),
 }));
 
 export default useUIStore;

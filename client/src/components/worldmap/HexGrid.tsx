@@ -1,6 +1,6 @@
 import { Environment } from "@react-three/drei";
 import { createHexagonGeometry } from "./components/three/HexagonBackground";
-import { MutableRefObject, useEffect, useMemo, useRef } from "react";
+import { MutableRefObject, useCallback, useEffect, useMemo, useRef } from "react";
 // @ts-ignore
 import { Flags } from "../../components/worldmap/Flags.jsx";
 import {
@@ -266,155 +266,129 @@ export const HexMap = () => {
 const useHighlightHex = (
   hexMeshRef: MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>,
   highlightedHexesRef: MutableRefObject<{ hexId: number; color: Color | null }[]>,
-  // highlightedHexesRef: MutableRefObject<{ hexId: number; color: Color | null }>,
 ) => {
-  const camera = useThree((state) => state.camera);
+  const { camera, raycaster } = useThree((state) => ({ camera: state.camera, raycaster: state.raycaster }));
   const hexData = useUIStore((state) => state.hexData);
+  const setSelectedPath = useUIStore((state) => state.setSelectedPath);
+  const selectedPath = useUIStore((state) => state.selectedPath);
+  const setClickedHex = useUIStore((state) => state.setClickedHex);
+  const setSelectedDestination = useUIStore((state) => state.setSelectedDestination);
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
+  const isTravelMode = useUIStore((state) => state.isTravelMode);
+  const isExploreMode = useUIStore((state) => state.isExploreMode);
+  const isAttackMode = useUIStore((state) => state.isAttackMode);
 
   const hexDataRef = useRef(hexData);
   const currentHoveredHex = useRef<number | undefined>(undefined);
-  const travelingEntityRef = useRef<{ id: bigint; position: Position } | undefined>(undefined);
+  const selectedEntityRef = useRef(selectedEntity);
+  const selectedPathRef = useRef(selectedPath);
+  const isTravelModeRef = useRef(false);
+  const isExploreModeRef = useRef(false);
+  const isAttackModeRef = useRef(false);
+  const selectedEntityHexIndex = useRef<number | undefined>(undefined);
+  const mouse = new Vector2();
 
   useEffect(() => {
     hexDataRef.current = hexData;
-  }, [hexData]);
-
-  const setSelectedPath = useUIStore((state) => state.setSelectedPath);
-  const setClickedHex = useUIStore((state) => state.setClickedHex);
-  const setSelectedDestination = useUIStore((state) => state.setSelectedDestination);
-  const travelingEntity = useUIStore((state) => state.travelingEntity);
-  const hoverColor = new Color(0xff6666);
-  const clickColor = new Color(0x3cb93c);
+    selectedEntityRef.current = selectedEntity;
+    selectedPathRef.current = selectedPath;
+    isTravelModeRef.current = isTravelMode;
+    isExploreModeRef.current = isExploreMode;
+    isAttackModeRef.current = isAttackMode;
+  }, [hexData, selectedEntity, selectedPath, isTravelMode, isExploreMode, isAttackMode]);
 
   useEffect(() => {
-    travelingEntityRef.current = travelingEntity;
-  }, [travelingEntity]);
+    const hexIndex = hexData?.findIndex(
+      (h) => h.col === selectedEntity?.position.x && h.row === selectedEntity?.position.y,
+    );
+    hexIndex !== -1 ? (selectedEntityHexIndex.current = hexIndex) : (selectedEntityHexIndex.current = undefined);
+  }, [selectedEntity]);
 
-  const { raycaster } = useThree();
-  raycaster.firstHitOnly = true;
+  const updateHighlighting = useCallback(
+    (event: any) => {
+      if (!hexMeshRef.current) return;
+      const mesh = hexMeshRef.current;
+      let colors = getColorFromMesh(mesh);
+      if (!colors) return;
 
-  // store hexId and color of highlighed hex
-  const mouse = new Vector2();
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObject(mesh, false);
 
-  const onMouseMove = (event: any) => {
-    if (!hexMeshRef?.current) return;
-    const mesh = hexMeshRef?.current;
-    let colors = getColorFromMesh(mesh);
-    if (!colors) return;
-    // Calculate mouse position in normalized device coordinates (-1 to +1) for both components
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      if (intersects.length > 0) {
+        const { instanceId: hexIndex } = intersects[0];
+        if (hexIndex !== currentHoveredHex.current) {
+          currentHoveredHex.current = hexIndex;
+          handleHexInteraction(hexIndex, colors, mesh);
+        }
+      }
+    },
+    [camera, hexMeshRef, raycaster],
+  );
 
-    // Update the ray with the camera and mouse position
-    raycaster.setFromCamera(mouse, camera); // assuming 'camera' is your Three.js camera
+  const handleHexInteraction = (
+    hexIndex: number | undefined,
+    colors: number[],
+    mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>,
+  ) => {
+    if (!hexDataRef.current || !hexIndex) return;
+    const hex = hexDataRef.current[hexIndex];
+    const hoverColor = new Color(0xff6666);
+    const clickColor = new Color(0x3cb93c);
 
-    // Calculate objects intersecting the picking ray. Assume hexMeshRef.current is the instanced mesh
-    const intersects = raycaster.intersectObject(mesh, false);
-
-    if (intersects.length > 0) {
-      // Get the first intersected object
-      const intersectedHex = intersects[0];
-      const hexIndex = intersectedHex.instanceId;
-
-      if (!hexIndex || !hexDataRef?.current) return;
-      // only update if the current hovered hex is different
-      if (currentHoveredHex.current === hexIndex) return;
-
-      const hex = hexDataRef.current[hexIndex];
-      if (travelingEntityRef?.current) {
-        let start = travelingEntityRef.current.position;
+    if (isTravelModeRef.current) {
+      if (!selectedPathRef.current) {
+        let start = selectedEntityRef!.current!.position;
         let end = { x: hex.col, y: hex.row };
         let path = findShortestPathBFS(start, end, hexDataRef.current, 3);
         updateHighlightHexes(
           highlightedHexesRef,
-          path.map(({ x, y }) => hexDataRef.current!.findIndex((h) => h.col === x && h.row === y)),
+          path.map(({ x, y }) => hexDataRef!.current!.findIndex((h) => h.col === x && h.row === y)),
           colors,
           clickColor,
           mesh,
         );
-      } else {
-        // console.log("updating highlight for one hexIndex");
-        // updateHighlightHexes(highlightedHexesRef, [hexIndex], colors, hoverColor, mesh);
-        // updateHighlight(highlightedHexesRef, hexIndex, colors, hoverColor, mesh);
       }
-
-      // change the current hovered hex
-      currentHoveredHex.current = hexIndex;
+    } else if (selectedEntityHexIndex.current) {
+      updateHighlightHexes(highlightedHexesRef, [selectedEntityHexIndex.current], colors, hoverColor, mesh);
     } else {
-      // resetHighlight(highlightedHexRef, colors, mesh);
+      updateHighlightHexes(highlightedHexesRef, [hexIndex], colors, hoverColor, mesh);
     }
   };
 
-  const onMouseClick = (event: any) => {
-    if (!hexMeshRef?.current || !hexDataRef.current) return;
-    const mesh = hexMeshRef?.current;
-    // Calculate mouse position in normalized device coordinates (-1 to +1) for both components
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    let colors = getColorFromMesh(mesh);
-    if (!colors) return;
-
-    // Update the ray with the camera and mouse position
-    raycaster.setFromCamera(mouse, camera); // assuming 'camera' is your Three.js camera
-
-    // Calculate objects intersecting the picking ray. Assume hexMeshRef.current is the instanced mesh
-    const intersects = raycaster.intersectObject(mesh, false);
-
-    if (intersects.length > 0) {
-      // Get the first intersected object
-      const intersectedHex = intersects[0];
-
-      const hexIndex = intersectedHex.instanceId;
-      const hex = hexIndex ? hexDataRef.current[hexIndex] : undefined;
-
-      if (hex && hexIndex) {
-        if (travelingEntityRef.current) {
-          let start = travelingEntityRef.current.position;
+  const handleMouseClick = useCallback(
+    (event: any) => {
+      if (!hexMeshRef.current || !hexDataRef.current) return;
+      updateHighlighting(event);
+      const hexIndex = currentHoveredHex.current;
+      if (hexIndex === undefined) return;
+      const hex = hexDataRef.current[hexIndex];
+      if (hex) {
+        if (selectedEntityRef.current) {
+          let start = selectedEntityRef.current.position;
           let end = { x: hex.col, y: hex.row };
           let path = findShortestPathBFS(start, end, hexDataRef.current, 3);
-          console.log({ clickedPath: path });
-          setSelectedPath({ id: travelingEntityRef.current.id, path });
+          setSelectedPath({ id: selectedEntityRef.current.id, path });
           setSelectedDestination({ col: hex.col, row: hex.row, hexIndex });
         } else {
-          console.log({ hex });
           setClickedHex({ col: hex.col, row: hex.row, hexIndex });
         }
       }
-    }
-  };
-
-  /**
-   * Detects if the user clicked or dragged the mouse (depending on time mouse down)
-   */
-  let mouseDownTime = 0;
-  const onMouseDown = () => {
-    mouseDownTime = new Date().getTime();
-  };
-  const onMouseUp = (event: any) => {
-    const mouseUpTime = new Date().getTime();
-    const timeDiff = mouseUpTime - mouseDownTime;
-
-    // Assume it's a click if the time difference is less than 200ms (adjust as needed)
-    if (timeDiff < 200) {
-      onMouseClick(event);
-    }
-  };
+    },
+    [hexMeshRef, setSelectedPath, setClickedHex, setSelectedDestination],
+  );
 
   useEffect(() => {
     const scene = document.querySelector(".main-scene");
-    // only add it
-    // Add event listener for mouse move
-    scene?.addEventListener("mousemove", onMouseMove);
-    scene?.addEventListener("mousedown", onMouseDown);
-    scene?.addEventListener("mouseup", onMouseUp);
+    scene?.addEventListener("mousemove", updateHighlighting);
+    scene?.addEventListener("click", handleMouseClick);
 
     return () => {
-      // Remove event listener when the component is unmounted
-      scene?.removeEventListener("mousemove", () => onMouseMove);
-      scene?.removeEventListener("mousedown", onMouseDown);
-      scene?.removeEventListener("mouseup", onMouseUp);
+      scene?.removeEventListener("mousemove", updateHighlighting);
+      scene?.removeEventListener("click", handleMouseClick);
     };
-  }, []);
+  }, [updateHighlighting, handleMouseClick]);
 };
 
 const getColorFromMesh = (mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>): number[] | null => {
@@ -550,51 +524,6 @@ const updateHighlight = (
   mesh.geometry.attributes.color.needsUpdate = true;
 };
 
-// const findShortestPathBFS = (startPos: Position, endPos: Position, hexData: Hexagon[], maxHex: number) => {
-//   // Each queue element now includes the position and its distance from the start
-//   const queue: { position: Position; distance: number }[] = [{ position: startPos, distance: 0 }];
-//   const visited = new Set<string>();
-//   const path = new Map<string, Position>();
-
-//   const posKey = (pos: Position) => `${pos.x},${pos.y}`;
-
-//   while (queue.length > 0) {
-//     const { position: current, distance } = queue.shift()!;
-//     if (current.x === endPos.x && current.y === endPos.y) {
-//       // Reconstruct the path upon reaching the end position
-//       const result = [current];
-//       let next = path.get(posKey(current));
-//       console.log({ current });
-//       while (next) {
-//         console.log({ next });
-//         result.push(next);
-//         next = path.get(posKey(next));
-//       }
-//       return result.reverse();
-//     }
-
-//     if (distance > maxHex) {
-//       // Stop processing if the current distance exceeds maxHex
-//       break;
-//     }
-
-//     const currentKey = posKey(current);
-//     if (!visited.has(currentKey)) {
-//       visited.add(currentKey);
-//       const neighbors = getNeighbors(current, hexData); // Assuming getNeighbors is defined elsewhere
-//       console.log({ neighbors });
-//       for (const neighbor of neighbors) {
-//         const neighborKey = posKey(neighbor);
-//         if (!visited.has(neighborKey)) {
-//           path.set(neighborKey, current);
-//           queue.push({ position: neighbor, distance: distance + 1 });
-//         }
-//       }
-//     }
-//   }
-
-//   return []; // Return empty array if no path is found within maxHex distance
-// };
 const findShortestPathBFS = (startPos: Position, endPos: Position, hexData: Hexagon[], maxHex: number) => {
   const queue: { position: Position; distance: number }[] = [{ position: startPos, distance: 0 }];
   const visited = new Set<string>();

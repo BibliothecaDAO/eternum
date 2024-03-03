@@ -36,7 +36,7 @@ export const Armies = ({ hexData }: ArmiesProps) => {
     },
   } = useDojo();
 
-  const setTravelingEntity = useUIStore((state) => state.setTravelingEntity);
+  const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
   const animationPath = useUIStore((state) => state.animationPath);
 
   const positionOffset: Record<string, number> = {};
@@ -81,7 +81,7 @@ export const Armies = ({ hexData }: ArmiesProps) => {
 
   // clickable
   const onClick = (id: bigint, position: Position) => {
-    setTravelingEntity({ id, position });
+    setSelectedEntity({ id, position });
   };
 
   return (
