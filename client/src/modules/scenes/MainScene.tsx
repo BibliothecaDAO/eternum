@@ -201,7 +201,6 @@ export const MainScene = () => {
         <ambientLight color={ambientColor} intensity={ambientIntensity} />
         <Camera />
         <DirectionalLightAndHelper locationType={locationType} />
-
         <Suspense fallback={null}>
           <a.group>
             <Switch location={locationType}>

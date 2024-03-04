@@ -176,6 +176,7 @@ export const MyCastles = ({ hexData, meshRef }: CastlesProps) => {
     <group>
       {castles.map((castle) => {
         const { position, index, depth } = castle;
+
         if (index === -1 || !meshRef.current) return null;
         // const height = meshPositions[index * 3];
         return (
@@ -188,7 +189,7 @@ export const MyCastles = ({ hexData, meshRef }: CastlesProps) => {
             material={materials.PaletteMaterial004}
             // rotate the castle in a random manner based on a seed
             rotation={[0, pseudoRandom(position.x, position.y) * 2 * Math.PI, 0]}
-            position={[position.x, DEPTH * 1.5, -position.y]}
+            position={[position.x, depth * 10 + 10.3, -position.y]}
             // position={[position.x, height + 1, -position.y]}
           />
         );

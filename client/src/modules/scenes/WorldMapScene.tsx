@@ -1,5 +1,5 @@
 // @ts-nocheck
-import WorldMap from "../../components/worldmap/WorldMap.jsx";
+// import WorldMap from "../../components/worldmap/WorldMap.jsx";
 // @ts-ignore
 import { Flags } from "../../components/worldmap/Flags.jsx";
 import HyperstructureStarted from "../../components/worldmap/hyperstructures/models/HyperstructureStarted";
@@ -14,7 +14,7 @@ import { useCaravan } from "../../hooks/helpers/useCaravans.js";
 import useRealmStore from "../../hooks/store/useRealmStore.js";
 import { useGetRealm } from "../../hooks/helpers/useRealm.js";
 import { getUIPositionFromContractPosition } from "../../utils/utils.js";
-import { Map } from "../../components/worldmap/HexGrid.js";
+import { WorldMap } from "../../components/worldmap/HexGrid.js";
 import { useRoute } from "wouter";
 import * as THREE from "three";
 
@@ -87,7 +87,7 @@ export const WorldMapScene = () => {
       </TransformControls> */}
       {/* <WorldMap ref={worldRef} /> */}
       {/* <HyperstructureStarted /> */}
-      {!showBlankOverlay && isMapView && <Map />}
+      {!showBlankOverlay && isMapView && <WorldMap />}
       <StarsSky />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.1, -695.175]}>
         <planeGeometry args={[2668, 1390.35]} />
