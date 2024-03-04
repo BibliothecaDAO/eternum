@@ -350,6 +350,24 @@ const useHighlightHex = (
           mesh,
         );
       }
+      // if exploring
+    } else if (isExploreModeRef.current) {
+      // needs to be neighbor and not explored
+      if (
+        selectedEntityHexIndex.current &&
+        !selectedPathRef.current &&
+        isNeighbor(
+          { x: hex.col, y: hex.row },
+          {
+            x: hexDataRef.current[selectedEntityHexIndex.current].col,
+            y: hexDataRef.current[selectedEntityHexIndex.current].row,
+          },
+        ) &&
+        !hex.explored
+      ) {
+        let path = !hex.explored ? [selectedEntityHexIndex.current, hexIndex] : [selectedEntityHexIndex.current];
+        updateHighlightHexes(highlightedHexesRef, path, colors, hoverColor, mesh);
+      }
     } else if (selectedEntityHexIndex.current) {
       updateHighlightHexes(highlightedHexesRef, [selectedEntityHexIndex.current], colors, hoverColor, mesh);
     } else {
@@ -371,6 +389,21 @@ const useHighlightHex = (
           let path = findShortestPathBFS(start, end, hexDataRef.current, 3);
           setSelectedPath({ id: selectedEntityRef.current.id, path });
           setSelectedDestination({ col: hex.col, row: hex.row, hexIndex });
+        } else if (isExploreModeRef.current) {
+          if (
+            selectedEntityHexIndex.current &&
+            !selectedPathRef.current &&
+            isNeighbor(
+              { x: hex.col, y: hex.row },
+              {
+                x: hexDataRef.current[selectedEntityHexIndex.current].col,
+                y: hexDataRef.current[selectedEntityHexIndex.current].row,
+              },
+            ) &&
+            !hex.explored
+          ) {
+            setClickedHex({ col: hex.col, row: hex.row, hexIndex });
+          }
         } else {
           setClickedHex({ col: hex.col, row: hex.row, hexIndex });
         }
@@ -599,6 +632,16 @@ const findShortestPathDFS = (startPos: Position, endPos: Position, hexData: Hexa
   }
 
   return [];
+};
+
+const isNeighbor = (pos1: Position, pos2: Position) => {
+  const neighborOffsets = pos1.y % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+  for (const { i, j } of neighborOffsets) {
+    if (pos1.x + i === pos2.x && pos1.y + j === pos2.y) {
+      return true;
+    }
+  }
+  return false;
 };
 
 const getNeighbors = (pos: Position, hexData: Hexagon[]) => {

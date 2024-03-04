@@ -2,8 +2,6 @@ import { HyperStructureInterface } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 import { FeedHyperstructurePopup } from "../components/worldmap/hyperstructures/FeedHyperstructure";
 import useUIStore from "../hooks/store/useUIStore";
-import { ExploreMapPopup } from "../components/worldmap/explore/ExploreHexPopup";
-import { TravelPopup } from "../components/worldmap/traveling/TravelPopup";
 import { ChooseActionPopup } from "../components/worldmap/ChooseActionPopup";
 
 export const WorldPopups = () => {
@@ -18,6 +16,8 @@ export const WorldPopups = () => {
   const setIsExploreMode = useUIStore((state) => state.setIsExploreMode);
   const isAttackMode = useUIStore((state) => state.isAttackMode);
   const setIsAttackMode = useUIStore((state) => state.setIsAttackMode);
+
+  console.log({ isExploreMode });
 
   // no more interaction when clicking on hex for now
   // const clickedHex = useUIStore((state) => state.clickedHex);
@@ -45,8 +45,6 @@ export const WorldPopups = () => {
         <FeedHyperstructurePopup selectedHyperstructure={selectedHyperstructure} onClose={onCloseHyperstructure} />
       )}
       {selectedEntity && <ChooseActionPopup />}
-      {isTravelMode && <TravelPopup />}
-      {isExploreMode && <ExploreMapPopup />}
     </div>
   );
 };

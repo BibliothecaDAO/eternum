@@ -3,7 +3,7 @@ import { Vector2 } from "three";
 import { useThree } from "@react-three/fiber";
 import { BlendFunction } from "postprocessing";
 import { Entity, setComponent, Component, Schema, Components } from "@dojoengine/recs";
-import { Position } from "@bibliothecadao/eternum";
+import { Position, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import realmsHexPositions from "../geodata/hex/realmHexPositions.json";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import realmHexPositions from "../geodata/hex/realmHexPositions.json";
@@ -404,4 +404,14 @@ export const getRealmUIPosition = (realm_id: bigint): Position => {
   const colrow = realmPositions[Number(realm_id).toString()][0];
 
   return getUIPositionFromColRow(colrow.col, colrow.row, true);
+};
+
+export const findDirection = (startPos: { col: number; row: number }, endPos: { col: number; row: number }) => {
+  // give the direction
+  const neighborOffsets = startPos.row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+  for (let offset of neighborOffsets) {
+    if (startPos.col + offset.i === endPos.col && startPos.row + offset.j === endPos.row) {
+      return offset.direction;
+    }
+  }
 };

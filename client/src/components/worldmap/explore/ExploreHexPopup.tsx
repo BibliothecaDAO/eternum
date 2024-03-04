@@ -2,103 +2,96 @@ import { Dispatch, useEffect, useMemo, useState } from "react";
 import React from "react";
 import { Resource, findResourceById } from "@bibliothecadao/eternum";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { useResources } from "../../../hooks/helpers/useResources";
 import { useDojo } from "../../../DojoContext";
-import { Headline } from "../../../elements/Headline";
-import { SecondaryPopup } from "../../../elements/SecondaryPopup";
 import { ResourceCost } from "../../../elements/ResourceCost";
-import { divideByPrecision } from "../../../utils/utils";
+import { divideByPrecision, findDirection, getEntityIdFromKeys } from "../../../utils/utils";
 import Button from "../../../elements/Button";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useExplore } from "../../../hooks/helpers/useExplore";
+import { useResources } from "../../../hooks/helpers/useResources";
+import { getComponentValue } from "@dojoengine/recs";
 
 type ExploreMapPopupProps = {};
 
 export const ExploreMapPopup = ({}: ExploreMapPopupProps) => {
   const [step, setStep] = useState(1);
 
-  const clickedHex = useUIStore((state) => state.clickedHex);
+  const selectedPath = useUIStore((state) => state.selectedPath);
   const hexData = useUIStore((state) => state.hexData);
   const setIsExploreMode = useUIStore((state) => state.setIsExploreMode);
 
-  const { getExplorationInput } = useExplore();
-
-  const explorationInfo = useMemo(() => {
-    if (clickedHex) {
-      return getExplorationInput(clickedHex.col, clickedHex.row);
-    }
-  }, [clickedHex]);
-
   const { useFoundResources } = useExplore();
-  let foundResource = useFoundResources(explorationInfo?.exploration.explored_by_id);
+  let foundResource = useFoundResources(selectedPath?.id || 0n);
 
   const biome = useMemo(() => {
-    if (clickedHex && hexData) {
-      const hexIndex = hexData.findIndex((h) => h.col === clickedHex.col && h.row === clickedHex.row);
+    if (selectedPath?.path.length === 2 && hexData) {
+      const hexIndex = hexData.findIndex((h) => h.col === selectedPath?.path[1].x && h.row === selectedPath?.path[1].y);
       return hexData[hexIndex].biome;
     }
-  }, [clickedHex, hexData]);
-
-  if (!explorationInfo || !biome) return null;
+  }, [selectedPath, hexData]);
 
   const onClose = () => {
     setIsExploreMode(false);
   };
 
+  const direction =
+    selectedPath?.path.length === 2
+      ? findDirection(
+          { col: selectedPath.path[0].x, row: selectedPath.path[0].y },
+          { col: selectedPath.path[1].x, row: selectedPath.path[1].y },
+        )
+      : undefined;
+
   return (
-    <SecondaryPopup name="explore">
-      <SecondaryPopup.Head onClose={onClose}>
-        <div className="flex items-center space-x-1">
-          <div className="mr-0.5">Explore the map</div>
+    <div>
+      {step === 1 && (
+        <ExplorePanel
+          explorerId={selectedPath?.id}
+          explorationStart={selectedPath?.path[0]}
+          direction={direction}
+          foundResource={foundResource}
+          setStep={setStep}
+          onClose={onClose}
+        />
+      )}
+      {step === 2 && biome && (
+        <div className="flex flex-col items-center p-2">
+          <ExploreResultPanel biome={biome} foundResource={foundResource} onClose={onClose} />
         </div>
-      </SecondaryPopup.Head>
-      <SecondaryPopup.Body width={"800px"} height={"550px"}>
-        {step === 1 && (
-          <div className="flex flex-col items-center p-2">
-            <ExplorePanel
-              explorationStart={explorationInfo}
-              foundResource={foundResource}
-              setStep={setStep}
-              onClose={onClose}
-            />
-          </div>
-        )}
-        {step === 2 && (
-          <div className="flex flex-col items-center p-2">
-            <ExploreResultPanel biome={biome} foundResource={foundResource} onClose={onClose} />
-          </div>
-        )}
-      </SecondaryPopup.Body>
-    </SecondaryPopup>
+      )}
+    </div>
   );
 };
 
 type ExplorePanelProps = {
-  explorationStart: { exploration: any; direction: number | undefined };
+  explorerId: bigint | undefined;
+  explorationStart: { x: number; y: number } | undefined;
+  direction: number | undefined;
   foundResource: Resource | undefined;
   targetHex?: { col: number; row: number };
   setStep: Dispatch<React.SetStateAction<number>>;
   onClose: () => void;
 };
 
-export const ExplorePanel = ({ explorationStart, foundResource, onClose, setStep }: ExplorePanelProps) => {
+export const ExplorePanel = ({
+  explorerId,
+  explorationStart,
+  direction,
+  foundResource,
+  onClose,
+  setStep,
+}: ExplorePanelProps) => {
   const {
     setup: {
+      components: { EntityOwner },
       systemCalls: { explore },
     },
     account: { account },
   } = useDojo();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedEntityId, setSelectedEntityId] = useState<bigint>();
-  const [idsCanExplore, setIdsCanExplore] = useState<bigint[]>([]);
   const { getFoodResources } = useResources();
-
-  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
-  const clickedHex = useUIStore((state) => state.clickedHex);
-
-  const clickedHexMemoized = useMemo(() => clickedHex, []);
 
   const explorationCost: Resource[] = [
     {
@@ -109,24 +102,11 @@ export const ExplorePanel = ({ explorationStart, foundResource, onClose, setStep
   ];
 
   useEffect(() => {
-    let ids: bigint[] = [];
-    const wheatCost = explorationCost.find((resource) => resource.resourceId === 254)?.amount || 0;
-    const fishCost = explorationCost.find((resource) => resource.resourceId === 255)?.amount || 0;
-    realmEntityIds.forEach(({ realmEntityId }) => {
-      const food = getFoodResources(realmEntityId);
-      const wheatBalance = food.find((resource) => resource.resourceId === 254)?.amount || 0;
-      const fishBalance = food.find((resource) => resource.resourceId === 255)?.amount || 0;
-
-      if (wheatBalance && wheatBalance >= wheatCost && fishBalance && fishBalance >= fishCost) {
-        ids.push(realmEntityId);
-      }
-    });
-    setIdsCanExplore(ids);
-  }, [realmEntityIds]);
-
-  useEffect(() => {
-    setSelectedEntityId(explorationStart.exploration.explored_by_id);
-  }, [explorationStart]);
+    if (!explorerId) return;
+    // get the food resources
+    const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([explorerId]));
+    if (!entityOwner) return;
+  }, [explorerId]);
 
   const onClick = () => {
     // do something
@@ -135,13 +115,12 @@ export const ExplorePanel = ({ explorationStart, foundResource, onClose, setStep
 
   const onExplore = async () => {
     setIsLoading(true);
-    if (!selectedEntityId || !clickedHexMemoized || !explorationStart.direction) return;
+    if (!explorerId || !explorationStart || !direction) return;
     await explore({
-      //   realm_entity_id: selectedEntityId,
-      realm_entity_id: explorationStart.exploration.explored_by_id,
-      col: explorationStart.exploration.col,
-      row: explorationStart.exploration.row,
-      direction: explorationStart.direction,
+      realm_entity_id: explorerId,
+      col: explorationStart.x,
+      row: explorationStart.y,
+      direction,
       signer: account,
     });
   };
@@ -158,22 +137,19 @@ export const ExplorePanel = ({ explorationStart, foundResource, onClose, setStep
 
   return (
     <>
-      <div className="flex flex-col items-center p-2">
-        <Headline> Explore the map</Headline>
-        <div className={"relative w-full mt-3"}>
-          <img src={`/images/biomes/exploration.png`} className="object-cover w-full h-full rounded-[10px]" />
-          <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
-            <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
-            <div className="grid grid-cols-4 gap-2">
-              {explorationCost.map(({ resourceId, amount }) => (
-                <ResourceCost
-                  key={resourceId}
-                  type="vertical"
-                  resourceId={resourceId}
-                  amount={divideByPrecision(amount)}
-                />
-              ))}
-            </div>
+      <div className={"relative w-full mt-3"}>
+        <img src={`/images/biomes/exploration.png`} className="object-cover w-full h-full rounded-[10px]" />
+        <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
+          <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
+          <div className="grid grid-cols-4 gap-2">
+            {explorationCost.map(({ resourceId, amount }) => (
+              <ResourceCost
+                key={resourceId}
+                type="vertical"
+                resourceId={resourceId}
+                amount={divideByPrecision(amount)}
+              />
+            ))}
           </div>
         </div>
       </div>
@@ -199,7 +175,8 @@ export const ExplorePanel = ({ explorationStart, foundResource, onClose, setStep
             <Button
               className="!px-[8px] !py-[5px] ml-auto text-lg h-7 "
               size="md"
-              disabled={idsCanExplore.find((id) => id === selectedEntityId) ? false : true}
+              // disabled={idsCanExplore.find((id) => id === explorerId) ? false : true}
+              disabled={!direction || !explorerId || !explorationStart}
               isLoading={isLoading}
               onClick={onClick}
               variant="outline"

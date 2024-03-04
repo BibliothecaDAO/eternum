@@ -4,6 +4,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useEffect, useRef, useState } from "react";
 import { Resource, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import useRealmStore from "../store/useRealmStore";
+import { findDirection } from "../../utils/utils";
 
 export function useExplore() {
   const {
@@ -79,16 +80,6 @@ export function useExplore() {
     }
 
     const neighborOffsets = row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
-
-    const findDirection = (startPos: { col: number; row: number }, endPos: { col: number; row: number }) => {
-      // give the direction
-      const neighborOffsets = startPos.row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
-      for (let offset of neighborOffsets) {
-        if (startPos.col + offset.i === endPos.col && startPos.row + offset.j === endPos.row) {
-          return offset.direction;
-        }
-      }
-    };
 
     // check if the neighbor hexes have been explored by the same player
     for (let offset of neighborOffsets) {
