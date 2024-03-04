@@ -9,13 +9,13 @@ mod config_systems {
         LaborCostResources, LaborCostAmount, LaborConfig, CapacityConfig, RoadConfig, SpeedConfig,
         TravelConfig, WeightConfig, WorldConfig, SoldierConfig, HealthConfig, AttackConfig,
         DefenceConfig, CombatConfig, LevelingConfig, RealmFreeMintConfig, LaborBuildingsConfig,
-        LaborBuildingCost, MapExploreConfig
+        LaborBuildingCost, MapExploreConfig, TickConfig
     };
 
     use eternum::systems::config::interface::{
         IWorldConfig, IWeightConfig, ICapacityConfig, ILaborConfig, ITransportConfig,
         IHyperstructureConfig, ICombatConfig, ILevelingConfig, IBankConfig, IRealmFreeMintConfig,
-        IBuildingsConfig, IMapConfig
+        IBuildingsConfig, IMapConfig, ITickConfig
     };
 
     use eternum::constants::{
@@ -108,7 +108,7 @@ mod config_systems {
     impl MapConfigImpl of IMapConfig<ContractState> {
         fn set_exploration_config(
             self: @ContractState, world: IWorldDispatcher, 
-            wheat_burn_amount: u128, fish_burn_amount: u128, random_mint_amount: u128
+            wheat_burn_amount: u128, fish_burn_amount: u128, reward_resource_amount: u128
         ) {
             assert_caller_is_admin(world);
 
@@ -118,7 +118,7 @@ mod config_systems {
                     config_id: WORLD_CONFIG_ID,
                     wheat_burn_amount,
                     fish_burn_amount, 
-                    random_mint_amount
+                    reward_resource_amount
                 })
             );
         }
@@ -159,6 +159,27 @@ mod config_systems {
                     entity_type,
                     weight_gram,
                 })
+            );
+        }
+    }
+
+    #[external(v0)]
+    impl TickConfigImpl of ITickConfig<ContractState> {
+        fn set_tick_config(
+            self: @ContractState,
+            world: IWorldDispatcher,
+            max_moves_per_tick: u8,
+            tick_interval_in_seconds: u64
+        ) {
+            assert_caller_is_admin(world);
+
+            set!( world,(
+                TickConfig { 
+                    config_id: WORLD_CONFIG_ID, 
+                    max_moves_per_tick, 
+                    tick_interval_in_seconds
+                }
+            )
             );
         }
     }
