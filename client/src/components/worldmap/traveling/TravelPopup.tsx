@@ -13,7 +13,6 @@ export const TravelPopup = ({}: TravelPopupProps) => {
   const {
     account: { account },
     setup: {
-      components: { Movable, Position },
       systemCalls: { travel },
     },
   } = useDojo();
@@ -53,44 +52,23 @@ export const TravelPopup = ({}: TravelPopupProps) => {
     setIsTravelMode(false);
   };
 
-  const onClose = () => {
-    // if (start) {
-    //   // move camera back to the entity
-    //   const startPos = getUIPositionFromColRow(start.col, start.row);
-    //   moveCameraToTarget({ x: startPos.x, y: startPos.y, z: 0 });
-    // }
-    setIsTravelMode(false);
-  };
-
   return (
-    <SecondaryPopup className={"absolute !left-1/2 !top-[70px]"} name="explore">
-      <SecondaryPopup.Head onClose={onClose}>
-        <div className="flex items-center space-x-1">
-          <div className="mr-0.5">Move your army</div>
-        </div>
-      </SecondaryPopup.Head>
-      <SecondaryPopup.Body width={"250px"} height={"80px"}>
-        <div className="flex flex-col items-center mr-2">
-          <div className="text-gold">Choose Hex </div>
-        </div>
-        <div className="flex w-full items-center justify-center mt-1">
-          <div className="flex mt-1 w-[80%] items-center justify-between">
-            <Button variant="primary" size="md" isLoading={isLoading} onClick={onTravel} className="ml-3">
-              Travel
-            </Button>
-            {selectedPath && (
-              <Button variant="primary" size="md" onClick={onCancelSelection} className="mr-3">
-                Cancel Selection
-              </Button>
-            )}
-            {!selectedPath && (
-              <Button variant="primary" size="md" onClick={onCancelTravel} className="mr-3">
-                Cancel
-              </Button>
-            )}
-          </div>
-        </div>
-      </SecondaryPopup.Body>
-    </SecondaryPopup>
+    <div className="flex w-full items-center justify-center mt-1">
+      <div className="flex mt-1 w-[80%] items-center justify-between">
+        <Button variant="primary" size="md" isLoading={isLoading} onClick={onTravel} className="ml-3">
+          Travel
+        </Button>
+        {selectedPath && (
+          <Button variant="primary" size="md" onClick={onCancelSelection} className="mr-3">
+            Cancel Selection
+          </Button>
+        )}
+        {!selectedPath && (
+          <Button variant="primary" size="md" onClick={onCancelTravel} className="mr-3">
+            Cancel
+          </Button>
+        )}
+      </div>
+    </div>
   );
 };

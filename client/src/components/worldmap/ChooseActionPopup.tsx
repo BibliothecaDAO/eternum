@@ -13,6 +13,7 @@ type ChooseActionPopupProps = {};
 
 export const ChooseActionPopup = ({}: ChooseActionPopupProps) => {
   const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
+  const setSelectedPath = useUIStore((state) => state.setSelectedPath);
   const setIsTravelMode = useUIStore((state) => state.setIsTravelMode);
   const isTravelMode = useUIStore((state) => state.isTravelMode);
   const setIsExploreMode = useUIStore((state) => state.setIsExploreMode);
@@ -40,6 +41,7 @@ export const ChooseActionPopup = ({}: ChooseActionPopupProps) => {
     setIsExploreMode(false);
     setIsTravelMode(false);
     setSelectedEntity(undefined);
+    setSelectedPath(undefined);
   };
 
   return (
