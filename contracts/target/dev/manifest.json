@@ -949,7 +949,7 @@
     {
       "name": "eternum::systems::bank::contracts::bank_systems",
       "address": "0x193936374e972c355f2246c66c62860c986dea275ce8fbd03d7d7a1d853a572",
-      "class_hash": "0x59830dc8272c77116f255dbf5aef76243fc5201df8ddcf230ad2e95cac63817",
+      "class_hash": "0x1db1c857699322be219c06b46d575d01c8bbd0f051295759acdbdbe3f89fd12",
       "abi": [
         {
           "type": "impl",
@@ -1285,7 +1285,7 @@
     {
       "name": "eternum::systems::combat::contracts::combat_systems",
       "address": "0x1b0a83a27a357e0574393ab06c0c774db7312a0993538cc0186d054f75ee84e",
-      "class_hash": "0x232597c9c9280e73a4544245fe658953c14939a26dd56396cc4a94a7820ca2",
+      "class_hash": "0x56cb91660d9c0b5a093d145a52259467c034df260c8110fd41f883de75305d2",
       "abi": [
         {
           "type": "impl",
@@ -3086,7 +3086,7 @@
     {
       "name": "eternum::systems::map::contracts::map_systems",
       "address": "0x3fda5d1f7500f799eb30aa1293b2b6c354d350ed359593eb75390893cc7ec3d",
-      "class_hash": "0x31698d54138398ee153f95a8df762ff5932c7a13c67dec14b8644de48a95cec",
+      "class_hash": "0x57b3be7b157b6779554a810488572c18ff25f28d004e63fc0d71dff25573a92",
       "abi": [
         {
           "type": "impl",
@@ -3542,7 +3542,7 @@
     {
       "name": "eternum::systems::realm::contracts::realm_systems",
       "address": "0x25df90992b8eebca69f08035ceda822dee73028e828ceb8421895814eacd3d",
-      "class_hash": "0x401fcd33234c05249d84cc5182b71ddc9d21bd22e14072fccb65df550a3ab3c",
+      "class_hash": "0x2c1d9e86e956db523187bb2543cc61e47971f9e8f97583510e626595266d40",
       "abi": [
         {
           "type": "impl",
@@ -3750,7 +3750,7 @@
     {
       "name": "eternum::systems::resources::contracts::resource_systems",
       "address": "0x406b259886beb36b2474c7a85ad8298b948eeca68b3a185ee7ba870dbc025c8",
-      "class_hash": "0x1b3d6c112240eaeb749320df26452c96d56c468786874108c9b5e60c51b0704",
+      "class_hash": "0x7c26def04e0839987c7ccce80c8ad6d8b65e70485bfd88624a792c92b661f8a",
       "abi": [
         {
           "type": "impl",
@@ -4201,7 +4201,7 @@
     {
       "name": "eternum::systems::trade::contracts::trade_systems::trade_systems",
       "address": "0x63cbe849cf6325e727a8d6f82f25fad7dc7eb9433767f5c1b8c59189e36c9b6",
-      "class_hash": "0x27ae1e424104954e898f7a80a43c96cfa701fcb60f6b65c01f235bdbf906718",
+      "class_hash": "0x6dc1212674cc94d5f4b3d1695d357b6e16e7a4b3b5d53141fda42781744e6e0",
       "abi": [
         {
           "type": "impl",
@@ -5006,7 +5006,7 @@
     {
       "name": "eternum::systems::transport::contracts::travel_systems::travel_systems",
       "address": "0x740ea95e67b0b7533ee4891524c5c7edfd7fefc09297c0304b21515cc1223ec",
-      "class_hash": "0x3a48d0189820e4fdec91806de4bb4b723a8a7792271da176136db7715b615aa",
+      "class_hash": "0xeeb2f00c0c30cd94e91e6eb9da08e94d0a6d5402662e0de36cdcc4f7e7487e",
       "abi": [
         {
           "type": "impl",
