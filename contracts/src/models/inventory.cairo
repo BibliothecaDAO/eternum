@@ -13,7 +13,6 @@ struct Inventory {
 impl InventoryImpl of InventoryTrait {
 
     fn item_fk(self: Inventory, world: IWorldDispatcher, item_index: u128) -> ForeignKey {
-        assert(item_index < self.items_count, 'wrong inventory item index');
         let foreign_key_arr : Array<felt252>
             = array![
                 self.entity_id.into(), 
