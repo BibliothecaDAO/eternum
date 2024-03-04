@@ -5,22 +5,10 @@ import useUIStore from "../hooks/store/useUIStore";
 import { ChooseActionPopup } from "../components/worldmap/ChooseActionPopup";
 
 export const WorldPopups = () => {
-  const setClickedHex = useUIStore((state) => state.setClickedHex);
   const [showFeedPopup, setShowFeedPopup] = useState(false);
   const [selectedHyperstructure, setSelectedHyperstructure] = useState<HyperStructureInterface | undefined>(undefined);
 
-  // select mode after selecting entity
-  const isTravelMode = useUIStore((state) => state.isTravelMode);
-  const setIsTravelMode = useUIStore((state) => state.setIsTravelMode);
-  const isExploreMode = useUIStore((state) => state.isExploreMode);
-  const setIsExploreMode = useUIStore((state) => state.setIsExploreMode);
-  const isAttackMode = useUIStore((state) => state.isAttackMode);
-  const setIsAttackMode = useUIStore((state) => state.setIsAttackMode);
-
-  console.log({ isExploreMode });
-
   // no more interaction when clicking on hex for now
-  // const clickedHex = useUIStore((state) => state.clickedHex);
   const selectedEntity = useUIStore((state) => state.selectedEntity);
 
   const clickedHyperstructure = useUIStore((state) => state.clickedHyperstructure);
