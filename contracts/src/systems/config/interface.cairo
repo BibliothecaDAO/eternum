@@ -36,6 +36,12 @@ trait ICapacityConfig<TContractState> {
 
 
 #[starknet::interface]
+trait ITickConfig<TContractState> {
+    fn set_tick_config(self: @TContractState, world: IWorldDispatcher, max_moves_per_tick: u8, tick_interval_in_seconds: u64 );
+}
+
+
+#[starknet::interface]
 trait ICombatConfig<TContractState> {
     fn set_combat_config(
         self: @TContractState,
@@ -204,7 +210,7 @@ trait IBuildingsConfig<TContractState> {
 #[starknet::interface]
 trait IMapConfig<TContractState> {
     fn set_exploration_config(
-        self: @TContractState, world: IWorldDispatcher, wheat_burn_amount: u128, fish_burn_amount: u128, random_mint_amount: u128
+        self: @TContractState, world: IWorldDispatcher, wheat_burn_amount: u128, fish_burn_amount: u128, reward_resource_amount: u128
     );
 }
 

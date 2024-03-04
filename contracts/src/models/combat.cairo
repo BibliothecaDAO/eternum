@@ -33,3 +33,11 @@ enum Duty {
     Attack,
     Defence
 }
+
+
+#[derive(Copy, Drop, Serde)]
+enum TargetType {
+    RealmTownWatch,
+    Army
+}
+

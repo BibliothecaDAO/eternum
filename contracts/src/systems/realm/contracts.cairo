@@ -138,7 +138,7 @@ mod realm_systems {
 
             // set realm's position tile to explored
             InternalMapSystemsImpl::explore(
-                world, entity_id.into(), position.into(), 0 , 0 
+                world, entity_id.into(), position.into(), array![].span()
             );
             
 

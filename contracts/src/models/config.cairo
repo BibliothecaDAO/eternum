@@ -155,7 +155,27 @@ struct MapExploreConfig {
     config_id: u128,
     wheat_burn_amount: u128,
     fish_burn_amount: u128,
-    random_mint_amount: u128
+    reward_resource_amount: u128
+}
+
+
+#[derive(Model, Copy, Drop, Serde)]
+struct TickConfig {
+    #[key]
+    config_id: u128, 
+    max_moves_per_tick: u8,
+    tick_interval_in_seconds: u64
+}
+
+
+
+#[generate_trait]
+impl TickConfigImpl of TickConfigTrait {
+
+    fn current(self: TickConfig) -> u64 {
+        let now = starknet::get_block_timestamp();
+        now / self.tick_interval_in_seconds
+    }
 }
 
 

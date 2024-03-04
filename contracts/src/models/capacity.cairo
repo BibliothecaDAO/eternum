@@ -8,7 +8,7 @@ struct Capacity {
 
 #[generate_trait]
 impl CapacityImpl of CapacityTrait {
-    fn can_carry_weight(self: Capacity, entity_id: u128, quantity: u128, weight: u128) -> bool {
+    fn can_carry_weight(self: Capacity, quantity: u128, weight: u128) -> bool {
         if self.is_capped() {
             let entity_total_weight_capacity = self.weight_gram * quantity;
             if entity_total_weight_capacity < weight {
