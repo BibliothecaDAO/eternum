@@ -374,7 +374,7 @@ mod tests {
                 
                 assert_eq!(
                     start.neighbor(Direction::NorthEast), 
-                    Coord{x: start.x , y: start.y - 1}
+                    Coord{x: start.x + 1 , y: start.y + 1}
                 );
             }
 
@@ -384,7 +384,7 @@ mod tests {
                 
                 assert_eq!(
                     start.neighbor(Direction::NorthWest), 
-                    Coord{x: start.x - 1, y: start.y - 1}
+                    Coord{x: start.x , y: start.y + 1}
                 );
             }
 
@@ -405,7 +405,7 @@ mod tests {
                 
                 assert_eq!(
                     start.neighbor(Direction::SouthWest), 
-                    Coord{x: start.x - 1, y: start.y + 1}
+                    Coord{x: start.x, y: start.y - 1}
                 );
             }
 
@@ -416,7 +416,7 @@ mod tests {
                 
                 assert_eq!(
                     start.neighbor(Direction::SouthEast), 
-                    Coord{x: start.x, y: start.y + 1 }
+                    Coord{x: start.x + 1, y: start.y - 1 }
                 );
             }
 
@@ -439,7 +439,7 @@ mod tests {
                 
                 assert_eq!(
                     start.neighbor(Direction::NorthEast), 
-                    Coord{x: start.x + 1 , y: start.y - 1}
+                    Coord{x: start.x , y: start.y + 1}
                 );
             }
 
@@ -449,7 +449,7 @@ mod tests {
                 
                 assert_eq!(
                     start.neighbor(Direction::NorthWest), 
-                    Coord{x: start.x, y: start.y - 1}
+                    Coord{x: start.x -1 , y: start.y + 1}
                 );
             }
 
@@ -470,7 +470,7 @@ mod tests {
                 
                 assert_eq!(
                     start.neighbor(Direction::SouthWest), 
-                    Coord{x: start.x, y: start.y + 1}
+                    Coord{x: start.x - 1 , y: start.y - 1}
                 );
             }
 
@@ -481,7 +481,7 @@ mod tests {
                 
                 assert_eq!(
                     start.neighbor(Direction::SouthEast), 
-                    Coord{x: start.x + 1, y: start.y + 1 }
+                    Coord{x: start.x, y: start.y - 1 }
                 );
             }
 
