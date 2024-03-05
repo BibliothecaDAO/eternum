@@ -37,7 +37,7 @@ export const ExploreMapPopup = ({ onClose }: RoadBuildPopupProps) => {
   const biome = useMemo(() => {
     if (clickedHex && hexData) {
       const hexIndex = hexData.findIndex((h) => h.col === clickedHex.col && h.row === clickedHex.row);
-      return hexData[hexIndex].biome;
+      return hexData[hexIndex]?.biome;
     }
   }, [clickedHex, hexData]);
 
