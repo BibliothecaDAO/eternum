@@ -1,18 +1,19 @@
-import { ExtrudeGeometry, InstancedMesh, MeshBasicMaterial } from "three";
 import HyperstructureFinished from "./hyperstructures/models/HyperstructureFinished";
-import { Hexagon, getPositionsAtIndex } from "./HexGrid";
+import { Hexagon } from "./HexGrid";
 import useUIStore from "../../hooks/store/useUIStore";
+import { getUIPositionFromColRow } from "../../utils/utils";
+import { biomes } from "@bibliothecadao/eternum";
+import { Detailed } from "@react-three/drei";
+import HyperstructureFinishedLowpoly from "./hyperstructures/models/HyperstructureFinishedLowpoly";
 
 type Hyperstructures = {
   hexData: Hexagon[];
-  hexMeshRef: React.MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>;
 };
 
-export const Hyperstructures = ({ hexData, hexMeshRef }: Hyperstructures) => {
-  const mesh = hexMeshRef.current;
+const BIOMES = biomes as Record<string, { color: string; depth: number }>;
 
+export const Hyperstructures = ({ hexData }: Hyperstructures) => {
   const hyperstructures = useUIStore((state) => state.hyperstructures);
-
   return (
     <group>
       {hyperstructures.map((hyperstructure, i) => {
@@ -22,15 +23,22 @@ export const Hyperstructures = ({ hexData, hexMeshRef }: Hyperstructures) => {
             uiPosition,
           } = hyperstructure;
           const hexIndex = hexData.findIndex((h) => h.col === x && h.row === y);
+          const depth = BIOMES[hexData[hexIndex].biome].depth;
           // to have the exact height of the hexagon and place hyperstructure on top
-          const hexPosition = mesh ? getPositionsAtIndex(mesh, hexIndex) : undefined;
+          const hexPosition = getUIPositionFromColRow(x, y);
           return (
-            <HyperstructureFinished
-              key={i}
-              hyperstructure={hyperstructure}
-              scale={6}
-              position={[uiPosition.x, 10 + (hexPosition?.z || 0), -uiPosition.y]}
-            />
+            <Detailed distances={[0, 550]} key={i}>
+              <HyperstructureFinished
+                hyperstructure={hyperstructure}
+                scale={6}
+                position={[uiPosition.x, depth * 10 + 10.3, -uiPosition.y]}
+              />
+              <HyperstructureFinishedLowpoly
+                hyperstructure={hyperstructure}
+                scale={6}
+                position={[uiPosition.x, depth * 10 + 10.3, -uiPosition.y]}
+              />
+            </Detailed>
           );
         }
       })}

@@ -1,8 +1,5 @@
 import { Environment } from "@react-three/drei";
-import { createHexagonGeometry } from "./components/three/HexagonBackground";
-import { MutableRefObject, useCallback, useEffect, useMemo, useRef } from "react";
-// @ts-ignore
-import { Flags } from "../../components/worldmap/Flags.jsx";
+import { MutableRefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BufferAttribute,
   Color,
@@ -15,15 +12,19 @@ import {
   Vector3,
 } from "three";
 import { useThree } from "@react-three/fiber";
+import { createHexagonGeometry, createHexagonShape } from "./components/three/HexagonBackground";
+// @ts-ignore
+import { Flags } from "../../components/worldmap/Flags.jsx";
 import useUIStore from "../../hooks/store/useUIStore";
 import { useDojo } from "../../DojoContext";
 import { Subscription } from "rxjs";
-import { getEntityIdFromKeys, getUIPositionFromColRow } from "../../utils/utils";
+import { getColRowFromUIPosition, getUIPositionFromColRow } from "../../utils/utils";
 import { MyCastles, OtherCastles } from "./Castles";
 import { Hyperstructures } from "./Hyperstructures";
 import { Position, biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
-import { getComponentValue } from "@dojoengine/recs";
 import { Armies, TravelingArmies } from "./armies/Armies";
+import { throttle } from "lodash";
+import * as THREE from "three";
 
 export const DEPTH = 10;
 export const HEX_RADIUS = 3;
@@ -45,103 +46,14 @@ type HexagonGridProps = {
   endRow: number;
   startCol: number;
   endCol: number;
-  hexMeshRef: MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>;
+  explored: Map<number, Set<number>>;
 };
 
-export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: HexagonGridProps) => {
+const color = new Color();
+
+export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: HexagonGridProps) => {
   const hexData = useUIStore((state) => state.hexData);
 
-  const {
-    setup: {
-      account: { account },
-      components: { Owner },
-      updates: {
-        eventUpdates: { exploreMapEvents },
-      },
-    },
-  } = useDojo();
-
-  const highlightedHexesRef = useRef<{ hexId: number; color: Color | null }[]>([]);
-  // const highlightedHexesRef = useRef<{ hexId: number; color: Color | null }>({ hexId: -1, color: null });
-  useHighlightHex(hexMeshRef, highlightedHexesRef);
-
-  // use effect to change the color of the selected hex if it's been successfuly explored
-  useEffect(() => {
-    let subscription: Subscription | undefined;
-
-    const subscribeToExploreEvents = async () => {
-      const observable = await exploreMapEvents();
-      const sub = observable.subscribe((event) => {
-        if (event && hexData) {
-          const col = Number(event.keys[2]);
-          const row = Number(event.keys[3]);
-          const hexIndex = hexData.findIndex((h) => h.col === col && h.row === row);
-          if (hexIndex !== -1 && hexMeshRef?.current) {
-            // store which hex has been explored
-            hexData[hexIndex].explored = true;
-            const keys = [BigInt(Number(event.keys[1]))];
-            const owner = getComponentValue(Owner, getEntityIdFromKeys(keys));
-            if (owner) {
-              hexData[hexIndex].exploredBy = owner.address;
-            }
-
-            const color = new Color(BIOMES[hexData[hexIndex].biome].color);
-            const colors = getColorFromMesh(hexMeshRef.current);
-            if (!colors) return;
-            color.toArray(colors, hexIndex * 3);
-
-            // Assert that colorAttribute is of type BufferAttribute
-            if (!(hexMeshRef.current.geometry.attributes.color instanceof BufferAttribute)) {
-              console.error("colorAttribute is not an instance of THREE.BufferAttribute.");
-              return null;
-            }
-
-            // if (owner && account && owner.address === BigInt(account.address)) {
-            //   // also change to gray scale all hex that are neighbors
-            //   // if they are not already explored
-            //   const neighborOffsets = row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
-
-            //   for (const { i, j } of neighborOffsets) {
-            //     const neighborIndex = hexData.findIndex((h) => h.col === col + i && h.row === row + j);
-            //     if (hexData[neighborIndex] && !hexData[neighborIndex].explored) {
-            //       const color = new Color(BIOMES[hexData[neighborIndex].biome].color);
-            //       const grayscaleColor = getGrayscaleColor(color);
-            //       grayscaleColor.toArray(colors, neighborIndex * 3);
-            //     }
-            //   }
-            // }
-
-            hexMeshRef.current.geometry.attributes.color.array = new Float32Array(colors);
-            hexMeshRef.current.geometry.attributes.color.needsUpdate = true;
-
-            // add the depth to the position
-            const matrix = new Matrix4();
-            hexMeshRef.current.getMatrixAt(hexIndex, matrix);
-            matrix.setPosition(matrix.elements[12], matrix.elements[13], BIOMES[hexData[hexIndex].biome].depth * DEPTH);
-            hexMeshRef.current.setMatrixAt(hexIndex, matrix);
-            // needs update
-            hexMeshRef.current.instanceMatrix.needsUpdate = true;
-
-            // todo; check later
-            // if (highlightedHexRef.current.length === hexIndex) {
-            //   highlightedHexRef.current.color = new Color(BIOMES[hexData[hexIndex].biome].color);
-            // }
-            // if (highlightedHexesRef.current.hexId === hexIndex) {
-            //   highlightedHexesRef.current.color = new Color(BIOMES[hexData[hexIndex].biome].color);
-            // }
-          }
-        }
-      });
-      subscription = sub;
-    };
-    subscribeToExploreEvents();
-
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, [hexData]);
-
-  // Calculate group and colors only once when the component is mounted
   const { group, colors } = useMemo(() => {
     if (!hexData) return { group: [], colors: [] };
     const filteredGroup = hexData.filter((hex) => {
@@ -153,62 +65,86 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: 
     let colorValues: number[] = [];
     let idx = 0;
 
-    filteredGroup.forEach((hex) => {
-      // const color = new Color("#202124");
-      const color = new Color(BIOMES[hex.biome].color);
-      const grayScaleColor = getGrayscaleColor(color);
-      // color.toArray(colorValues, idx * 3);
-      grayScaleColor.toArray(colorValues, idx * 3);
-      idx++;
-    });
+    // filteredGroup.forEach((hex) => {
+    //   // const color = new Color("#202124");
+    //   color.setStyle(BIOMES[hex.biome].color);
+    //   const grayScaleColor = color; //getGrayscaleColor(color);
+    //   // color.toArray(colorValues, idx * 3);
+    //   grayScaleColor.toArray(colorValues, idx * 3);
+    //   idx++;
+    // });
 
     return { group: filteredGroup, colors: colorValues };
   }, [startRow, endRow, startCol, endCol, HEX_RADIUS, hexData]);
 
   // Create the mesh only once when the component is mounted
-  const mesh = useMemo(() => {
+  const mesh: InstancedMesh = useMemo(() => {
     const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
-    // const hexMaterial = new MeshStandardMaterial({
-    //   color: 0xffffff,
-    //   vertexColors: true,
-    //   wireframe: false,
-    //   roughness: 0.5, // Adjust this value between 0.0 and 1.0 to control the roughness
-    //   metalness: 0.5, // Adjust this value between 0.0 and 1.0 to control the metalness/reflection
-    // });
-    const hexMaterial = new MeshBasicMaterial({
+    const hexMaterial = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
-      vertexColors: true,
+      vertexColors: false,
       wireframe: false,
     });
 
     const instancedMesh = new InstancedMesh(hexagonGeometry, hexMaterial, group.length);
-
     let idx = 0;
+    let matrix = new Matrix4();
     group.forEach((hex) => {
       const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
-
-      let matrix = new Matrix4();
       // set the z position with math.random to have a random height
-      matrix.setPosition(x, y, Math.random() * 0.3);
-      // matrix.setPosition(x, y, BIOMES[hex.biome].depth * 10);
+      matrix.setPosition(x, y, BIOMES[hex.biome].depth * 10);
+      // set height of hex
+      // matrix.setPosition(x, y, BIOMES[hex.biome].depth);
+
       instancedMesh.setMatrixAt(idx, matrix);
+
+      color.setStyle(BIOMES[hex.biome].color);
+      const luminance = getGrayscaleColor(color);
+      color.setRGB(luminance, luminance, luminance);
+      instancedMesh.setColorAt(idx, color);
       idx++;
     });
 
-    const colorAttribute = new InstancedBufferAttribute(new Float32Array(colors), 3);
-    instancedMesh.geometry.setAttribute("color", colorAttribute);
-
+    // const colorAttribute = new InstancedBufferAttribute(new Float32Array(colors), 3);
+    // instancedMesh.geometry.setAttribute("color", colorAttribute);
+    instancedMesh.computeBoundingSphere();
+    instancedMesh.frustumCulled = true;
     return instancedMesh;
   }, [group, colors]);
 
+  useEffect(() => {
+    explored.forEach((rowSet, col) => {
+      if (col < startCol || col > endCol) return;
+      rowSet.forEach((row) => {
+        if (row < startRow || row > endRow) return;
+        const tmpCol = col + 2147483647;
+        const tmpRow = row + 2147483647;
+        const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
+        if (group[hexIndex] && mesh) {
+          color.setStyle(BIOMES[group[hexIndex].biome].color);
+          mesh.setColorAt(hexIndex, color);
+          if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        }
+      });
+    });
+  }, [startRow, startCol, endRow, endCol, explored, group, mesh]);
+
   return (
     <>
-      <primitive ref={hexMeshRef} object={mesh} />
+      <primitive object={mesh} />
     </>
   );
 };
 
-export const HexMap = () => {
+export const WorldMap2 = () => {
+  const {
+    setup: {
+      updates: {
+        eventUpdates: { exploreMapEvents },
+      },
+    },
+  } = useDojo();
+
   const hexData = useUIStore((state) => state.hexData);
   const setHexData = useUIStore((state) => state.setHexData);
 
@@ -263,6 +199,245 @@ export const HexMap = () => {
   );
 };
 
+export const WorldMap = () => {
+  const {
+    setup: {
+      updates: {
+        eventUpdates: { exploreMapEvents },
+      },
+    },
+  } = useDojo();
+
+  const hexData = useUIStore((state) => state.hexData);
+  const setHexData = useUIStore((state) => state.setHexData);
+
+  useEffect(() => {
+    fetch("/jsons/hexData.json")
+      .then((response) => response.json())
+      .then((data) => setHexData(data as Hexagon[]));
+  }, []);
+
+  const rows = 300;
+  const cols = 500;
+
+  const hexagonGrids = useMemo(() => {
+    const hexagonGrids = [];
+    for (let i = 0; i < rows; i += 25) {
+      const startRow = i;
+      const endRow = startRow + 25;
+      for (let j = 0; j < cols; j += 25) {
+        const startCol = j;
+        const endCol = startCol + 25;
+        hexagonGrids.push({ startRow, endRow, startCol, endCol });
+      }
+    }
+    return hexagonGrids;
+  }, []);
+
+  const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
+  const [highlightPosition, setHighlightPosition] = useState<[number, number, number]>([0, 0, 0]);
+
+  const hoverHandler = (e: any) => {
+    const intersect = e.intersections.find((intersect: any) => intersect.object instanceof THREE.InstancedMesh);
+    if (intersect) {
+      const instanceId = intersect.instanceId;
+      const mesh = intersect.object;
+      const pos = getPositionsAtIndex(mesh, instanceId);
+      if (pos) {
+        setHighlightPosition([pos.x, -pos.y, pos.z]);
+        //mesh.setColorAt(instanceId, color.setHex(0xffffff));
+        //mesh.instanceColor.needsUpdate = true;
+      }
+    }
+  };
+  //   [camera, hexMeshRef, raycaster],
+  // );
+
+  // const handleHexInteraction = (
+  //   hexIndex: number | undefined,
+  //   colors: number[],
+  //   mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>,
+  // ) => {
+  //   if (!hexDataRef.current || !hexIndex) return;
+  //   const hex = hexDataRef.current[hexIndex];
+  //   const hoverColor = new Color(0xff6666);
+  //   const clickColor = new Color(0x3cb93c);
+
+  //   if (isTravelModeRef.current) {
+  //     if (!selectedPathRef.current) {
+  //       let start = selectedEntityRef!.current!.position;
+  //       let end = { x: hex.col, y: hex.row };
+  //       let path = findShortestPathBFS(start, end, hexDataRef.current, 3);
+  //       updateHighlightHexes(
+  //         highlightedHexesRef,
+  //         path.map(({ x, y }) => hexDataRef!.current!.findIndex((h) => h.col === x && h.row === y)),
+  //         colors,
+  //         clickColor,
+  //         mesh,
+  //       );
+  //     }
+  //     // if exploring
+  //   } else if (isExploreModeRef.current) {
+  //     // needs to be neighbor and not explored
+  //     if (
+  //       selectedEntityHexIndex.current &&
+  //       !selectedPathRef.current &&
+  //       isNeighbor(
+  //         { x: hex.col, y: hex.row },
+  //         {
+  //           x: hexDataRef.current[selectedEntityHexIndex.current].col,
+  //           y: hexDataRef.current[selectedEntityHexIndex.current].row,
+  //         },
+  //       ) &&
+  //       !hex.explored
+  //     ) {
+  //       let path = !hex.explored ? [selectedEntityHexIndex.current, hexIndex] : [selectedEntityHexIndex.current];
+  //       updateHighlightHexes(highlightedHexesRef, path, colors, hoverColor, mesh);
+  //     }
+  //   } else if (selectedEntityHexIndex.current) {
+  //     updateHighlightHexes(highlightedHexesRef, [selectedEntityHexIndex.current], colors, hoverColor, mesh);
+  //   } else {
+  //     updateHighlightHexes(highlightedHexesRef, [hexIndex], colors, hoverColor, mesh);
+  //   }
+  // };
+
+  // const handleMouseClick = useCallback(
+  //   (event: any) => {
+  //     if (!hexMeshRef.current || !hexDataRef.current) return;
+  //     updateHighlight(event);
+  //     const hexIndex = currentHoveredHex.current;
+  //     if (hexIndex === undefined) return;
+  //     const hex = hexDataRef.current[hexIndex];
+  //     if (hex) {
+  //       if (selectedEntityRef.current) {
+  //         let start = selectedEntityRef.current.position;
+  //         let end = { x: hex.col, y: hex.row };
+  //         let path = findShortestPathBFS(start, end, hexDataRef.current, 3);
+  //         setSelectedPath({ id: selectedEntityRef.current.id, path });
+  //         setSelectedDestination({ col: hex.col, row: hex.row, hexIndex });
+  //       } else if (isExploreModeRef.current) {
+  //         if (
+  //           selectedEntityHexIndex.current &&
+  //           !selectedPathRef.current &&
+  //           isNeighbor(
+  //             { x: hex.col, y: hex.row },
+  //             {
+  //               x: hexDataRef.current[selectedEntityHexIndex.current].col,
+  //               y: hexDataRef.current[selectedEntityHexIndex.current].row,
+  //             },
+  //           ) &&
+  //           !hex.explored
+  //         ) {
+  //           setClickedHex({ col: hex.col, row: hex.row, hexIndex });
+  //         }
+  //       } else {
+  //         setClickedHex({ col: hex.col, row: hex.row, hexIndex });
+  //       }
+  //     }
+  //   },
+  //   [hexMeshRef, setSelectedPath, setClickedHex, setSelectedDestination],
+  // );
+
+  const setClickedHex = useUIStore((state) => state.setClickedHex);
+
+  const clickHandler = (e: any) => {
+    const intersect = e.intersections.find((intersect: any) => intersect.object instanceof THREE.InstancedMesh);
+    if (intersect) {
+      const instanceId = intersect.instanceId;
+      const mesh = intersect.object;
+      const pos = getPositionsAtIndex(mesh, instanceId);
+      if (pos) {
+        const { col, row } = getColRowFromUIPosition(pos.x, pos.y);
+        setClickedHex({ col, row, hexIndex: instanceId });
+        //change color
+      }
+    }
+  };
+
+  const throttledHoverHandler = useMemo(() => throttle(hoverHandler, 50), []);
+  const flatMode = localStorage.getItem("flatMode");
+  const [exploredHexes, setExploredHexes] = useState<Map<number, Set<number>>>(new Map());
+
+  // use effect to change the color of the selected hex if it's been successfuly explored
+  // useEffect(() => {
+  //   const scene = document.querySelector(".main-scene");
+  //   scene?.addEventListener("mousemove", updateHighlighting);
+  //   scene?.addEventListener("click", handleMouseClick);
+
+  //   return () => {
+  //     scene?.removeEventListener("mousemove", updateHighlighting);
+  //     scene?.removeEventListener("click", handleMouseClick);
+  //   };
+  // }, [updateHighlighting, handleMouseClick]);
+
+  useEffect(() => {
+    let subscription: Subscription | undefined;
+
+    const subscribeToExploreEvents = async () => {
+      const observable = await exploreMapEvents();
+      const sub = observable.subscribe((event) => {
+        if (event && hexData) {
+          const col = Number(event.keys[2]) - 2147483647;
+          const row = Number(event.keys[3]) - 2147483647;
+          setExploredHexes((prev) => {
+            const newMap = new Map(prev);
+            const rowSet = newMap.get(col) || new Set();
+            rowSet.add(row);
+            newMap.set(col, rowSet);
+            return newMap;
+          });
+        }
+      });
+      subscription = sub;
+    };
+    subscribeToExploreEvents();
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, [hexData]);
+
+  return (
+    <group onPointerEnter={(e) => throttledHoverHandler(e)}>
+      <mesh rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>
+        {hexagonGrids.map((grid, index) => {
+          return (
+            <group onClick={clickHandler} key={index}>
+              <HexagonGrid {...grid} explored={exploredHexes} />
+            </group>
+          );
+        })}
+      </mesh>
+      <mesh
+        geometry={hexagonGeometry}
+        rotation={[Math.PI / -2, 0, 0]}
+        position={[highlightPosition[0], highlightPosition[2] + 10.3, highlightPosition[1]]}
+      >
+        <meshMatcapMaterial color={0xffffff} transparent opacity={0.75} />
+      </mesh>
+      {hexData && <MyCastles hexData={hexData} />}
+      {hexData && <OtherCastles hexData={hexData} />}
+      {hexData && <Hyperstructures hexData={hexData} />}
+      <Flags></Flags>
+    </group>
+  );
+};
+
+const matrix = new Matrix4();
+const positions = new Vector3();
+
+export const getPositionsAtIndex = (mesh: InstancedMesh<any, any>, index: number) => {
+  if (!mesh || !mesh.isInstancedMesh) {
+    console.error("The provided mesh is not an InstancedMesh.");
+    return null;
+  }
+
+  mesh.getMatrixAt(index, matrix);
+  positions.setFromMatrixPosition(matrix);
+
+  return positions;
+};
+
 const useHighlightHex = (
   hexMeshRef: MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>,
   highlightedHexesRef: MutableRefObject<{ hexId: number; color: Color | null }[]>,
@@ -304,161 +479,25 @@ const useHighlightHex = (
     hexIndex !== -1 ? (selectedEntityHexIndex.current = hexIndex) : (selectedEntityHexIndex.current = undefined);
   }, [selectedEntity]);
 
-  const updateHighlighting = useCallback(
-    (event: any) => {
-      if (!hexMeshRef.current) return;
-      const mesh = hexMeshRef.current;
-      let colors = getColorFromMesh(mesh);
-      if (!colors) return;
+  const updateHighlighting = useCallback((event: any) => {
+    if (!hexMeshRef.current) return;
+    const mesh = hexMeshRef.current;
+    let colors = getColorFromMesh(mesh);
+    if (!colors) return;
 
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObject(mesh, false);
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObject(mesh, false);
 
-      if (intersects.length > 0) {
-        const { instanceId: hexIndex } = intersects[0];
-        if (hexIndex !== currentHoveredHex.current) {
-          currentHoveredHex.current = hexIndex;
-          handleHexInteraction(hexIndex, colors, mesh);
-        }
+    if (intersects.length > 0) {
+      const { instanceId: hexIndex } = intersects[0];
+      if (hexIndex !== currentHoveredHex.current) {
+        currentHoveredHex.current = hexIndex;
+        handleHexInteraction(hexIndex, colors, mesh);
       }
-    },
-    [camera, hexMeshRef, raycaster],
-  );
-
-  const handleHexInteraction = (
-    hexIndex: number | undefined,
-    colors: number[],
-    mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>,
-  ) => {
-    if (!hexDataRef.current || !hexIndex) return;
-    const hex = hexDataRef.current[hexIndex];
-    const hoverColor = new Color(0xff6666);
-    const clickColor = new Color(0x3cb93c);
-
-    if (isTravelModeRef.current) {
-      if (!selectedPathRef.current) {
-        let start = selectedEntityRef!.current!.position;
-        let end = { x: hex.col, y: hex.row };
-        let path = findShortestPathBFS(start, end, hexDataRef.current, 3);
-        updateHighlightHexes(
-          highlightedHexesRef,
-          path.map(({ x, y }) => hexDataRef!.current!.findIndex((h) => h.col === x && h.row === y)),
-          colors,
-          clickColor,
-          mesh,
-        );
-      }
-      // if exploring
-    } else if (isExploreModeRef.current) {
-      // needs to be neighbor and not explored
-      if (
-        selectedEntityHexIndex.current &&
-        !selectedPathRef.current &&
-        isNeighbor(
-          { x: hex.col, y: hex.row },
-          {
-            x: hexDataRef.current[selectedEntityHexIndex.current].col,
-            y: hexDataRef.current[selectedEntityHexIndex.current].row,
-          },
-        ) &&
-        !hex.explored
-      ) {
-        let path = !hex.explored ? [selectedEntityHexIndex.current, hexIndex] : [selectedEntityHexIndex.current];
-        updateHighlightHexes(highlightedHexesRef, path, colors, hoverColor, mesh);
-      }
-    } else if (selectedEntityHexIndex.current) {
-      updateHighlightHexes(highlightedHexesRef, [selectedEntityHexIndex.current], colors, hoverColor, mesh);
-    } else {
-      updateHighlightHexes(highlightedHexesRef, [hexIndex], colors, hoverColor, mesh);
     }
-  };
-
-  const handleMouseClick = useCallback(
-    (event: any) => {
-      if (!hexMeshRef.current || !hexDataRef.current) return;
-      updateHighlighting(event);
-      const hexIndex = currentHoveredHex.current;
-      if (hexIndex === undefined) return;
-      const hex = hexDataRef.current[hexIndex];
-      if (hex) {
-        if (selectedEntityRef.current) {
-          let start = selectedEntityRef.current.position;
-          let end = { x: hex.col, y: hex.row };
-          let path = findShortestPathBFS(start, end, hexDataRef.current, 3);
-          setSelectedPath({ id: selectedEntityRef.current.id, path });
-          setSelectedDestination({ col: hex.col, row: hex.row, hexIndex });
-        } else if (isExploreModeRef.current) {
-          if (
-            selectedEntityHexIndex.current &&
-            !selectedPathRef.current &&
-            isNeighbor(
-              { x: hex.col, y: hex.row },
-              {
-                x: hexDataRef.current[selectedEntityHexIndex.current].col,
-                y: hexDataRef.current[selectedEntityHexIndex.current].row,
-              },
-            ) &&
-            !hex.explored
-          ) {
-            setClickedHex({ col: hex.col, row: hex.row, hexIndex });
-          }
-        } else {
-          setClickedHex({ col: hex.col, row: hex.row, hexIndex });
-        }
-      }
-    },
-    [hexMeshRef, setSelectedPath, setClickedHex, setSelectedDestination],
-  );
-
-  useEffect(() => {
-    const scene = document.querySelector(".main-scene");
-    scene?.addEventListener("mousemove", updateHighlighting);
-    scene?.addEventListener("click", handleMouseClick);
-
-    return () => {
-      scene?.removeEventListener("mousemove", updateHighlighting);
-      scene?.removeEventListener("click", handleMouseClick);
-    };
-  }, [updateHighlighting, handleMouseClick]);
-};
-
-const getColorFromMesh = (mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>): number[] | null => {
-  if (!mesh || !mesh.isInstancedMesh) {
-    console.error("The provided mesh is not an InstancedMesh.");
-    return null;
-  }
-
-  const colorAttribute = mesh.geometry.getAttribute("color");
-  if (!colorAttribute) {
-    console.error("No color attribute found in the mesh.");
-    return null;
-  }
-
-  // Assert that colorAttribute is of type BufferAttribute
-  if (!(colorAttribute instanceof BufferAttribute)) {
-    console.error("colorAttribute is not an instance of THREE.BufferAttribute.");
-    return null;
-  }
-
-  const colors = colorAttribute.array; // This is a Float32Array
-
-  return Array.from(colors);
-};
-
-export const getPositionsAtIndex = (mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>, index: number) => {
-  if (!mesh || !mesh.isInstancedMesh) {
-    console.error("The provided mesh is not an InstancedMesh.");
-    return null;
-  }
-
-  const matrix = new Matrix4();
-  mesh.getMatrixAt(index, matrix);
-  const positions = new Vector3();
-  positions.setFromMatrixPosition(matrix);
-
-  return positions;
+  }, []);
 };
 
 const updateHighlightHexes = (
@@ -678,5 +717,5 @@ const getNeighbors = (pos: Position, hexData: Hexagon[]) => {
 
 const getGrayscaleColor = (color: Color) => {
   const luminance = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
-  return new Color(luminance, luminance, luminance);
+  return luminance;
 };

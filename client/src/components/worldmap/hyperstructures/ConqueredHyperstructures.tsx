@@ -68,7 +68,7 @@ export const ConqueredHyperstructures = ({ className, order }: ConqueredHyperstr
           cy="145"
           r="120"
           stroke="currentColor"
-          stroke-width="10"
+          strokeWidth="10"
           fill="transparent"
           className={timeLeftColors.container}
         />
@@ -78,10 +78,10 @@ export const ConqueredHyperstructures = ({ className, order }: ConqueredHyperstr
           cy="145"
           r="120"
           stroke="currentColor"
-          stroke-width="10"
+          strokeWidth="10"
           fill="transparent"
-          stroke-dasharray={((2 * 22) / 7) * 120}
-          stroke-dashoffset={((2 * 22) / 7) * 120 - (((conqueredHyperstructures / 16) * 2 * 22) / 7) * 120}
+          strokeDasharray={((2 * 22) / 7) * 120}
+          strokeDashoffset={((2 * 22) / 7) * 120 - (((conqueredHyperstructures / 16) * 2 * 22) / 7) * 120}
           className={timeLeftColors.bg}
         />
       </svg>
