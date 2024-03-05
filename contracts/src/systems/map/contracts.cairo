@@ -76,7 +76,7 @@ mod map_systems {
 
             // ensure unit can move
             let unit_movable = get!(world, unit_id, Movable);      
-            assert(unit_movable.sec_per_km != 0, 'entity has no speed');  
+            assert(unit_movable.sec_per_km != 0, 'entity cant move');  
             assert(unit_movable.blocked == false, 'entity is blocked');  
 
             // ensure unit is not in transit

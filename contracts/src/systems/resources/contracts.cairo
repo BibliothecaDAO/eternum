@@ -680,7 +680,6 @@ use eternum::alias::ID;
         fn transfer_between_inventories(
             world: IWorldDispatcher, mut sender_inventory: Inventory, mut receiver_inventory: Inventory, mut indexes_asc: Span<u128>
         ) -> Span<u128> {
-            println!("\n\n entyy    {}", sender_inventory.entity_id);
             assert(sender_inventory.items_count > 0, 'inventory is empty');
 
             let mut sent_chest_ids = array![];

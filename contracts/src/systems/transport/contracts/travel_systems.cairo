@@ -158,14 +158,8 @@ mod travel_systems {
             from_coord: Coord, mut directions: Span<Direction>
         ){
 
-
-          
-            // check if entity owner is a realm and apply bonuses if it is
-            let entity_owner = get!(world, (transport_id), EntityOwner);
-            let realm = get!(world, entity_owner.entity_owner_id, Realm);
-
             // check and update tick move steps
-            let mut tick_move = get!(world, transport_id, TickMove);
+            let mut tick_move: TickMove = get!(world, transport_id, TickMove);
             tick_move.add(world, directions.len().try_into().unwrap());
 
 
