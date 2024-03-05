@@ -85,9 +85,9 @@ mod map_systems {
             assert(unit_arrival_time.arrives_at <= ts.into(), 'entity is in transit');
 
 
-            // check that unit isn't carrying anything
-            let unit_inventory = get!(world, unit_id, Inventory);
-            assert(unit_inventory.items_count == 0, 'unit inventory not empty');
+            // // check that unit isn't carrying anything
+            // let unit_inventory = get!(world, unit_id, Inventory);
+            // assert(unit_inventory.items_count == 0, 'unit inventory not empty');
 
             // explore coordinate and mint reward
             let exploration_reward = InternalMapSystemsImpl::get_explore_reward(world);

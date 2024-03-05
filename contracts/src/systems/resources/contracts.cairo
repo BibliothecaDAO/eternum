@@ -566,7 +566,7 @@ use eternum::alias::ID;
                 assert(inventory.items_key != 0, 'entity has no inventory');
 
                 let item_weight = get!(world, item_id, Weight);
-                assert(item_weight.value > 0, 'item is empty');
+                assert(item_weight.value > 0, 'no item weight');
 
                 // ensure entity can carry the weight
                 let mut entity_weight = get!(world, entity_id, Weight);
@@ -613,7 +613,7 @@ use eternum::alias::ID;
 
                         // ensure entity can carry the weight
                         let item_weight = get!(world, *item_id, Weight);
-                        assert(item_weight.value > 0, 'item is empty');
+                        assert(item_weight.value > 0, 'no item weight');
                         InternalResourceSystemsImpl::check_capacity(
                             world, entity_capacity, entity_quantity,
                             entity_weight, item_weight.value, true

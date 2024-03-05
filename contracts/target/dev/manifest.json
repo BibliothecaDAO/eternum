@@ -949,7 +949,7 @@
     {
       "name": "eternum::systems::bank::contracts::bank_systems",
       "address": "0x193936374e972c355f2246c66c62860c986dea275ce8fbd03d7d7a1d853a572",
-      "class_hash": "0x59830dc8272c77116f255dbf5aef76243fc5201df8ddcf230ad2e95cac63817",
+      "class_hash": "0x1d4b3a169ebf294764d1b51abd0b142a8a2bc4a1e0523c4f8015e99b85a9545",
       "abi": [
         {
           "type": "impl",
@@ -1285,7 +1285,7 @@
     {
       "name": "eternum::systems::combat::contracts::combat_systems",
       "address": "0x1b0a83a27a357e0574393ab06c0c774db7312a0993538cc0186d054f75ee84e",
-      "class_hash": "0x232597c9c9280e73a4544245fe658953c14939a26dd56396cc4a94a7820ca2",
+      "class_hash": "0x52ae21e9d59865e4b163516400e12b0fd918c06af4a68b0a8153125f7542433",
       "abi": [
         {
           "type": "impl",
@@ -1654,7 +1654,7 @@
     {
       "name": "eternum::systems::config::contracts::config_systems",
       "address": "0x7fff06bbcbe4f42f22c86b14e7a80604495c8b2034d14cbb10d32402c933ca8",
-      "class_hash": "0x61196b011c25f71150df09eee22c1479442a4f6d95e4bca8b37bd9300cfad3c",
+      "class_hash": "0x6a4e1b60ef5541cb256b6cc4be6745bdadecbde2487b581dfc50756c5e181b6",
       "abi": [
         {
           "type": "impl",
@@ -1794,14 +1794,6 @@
                 {
                   "name": "world",
                   "type": "dojo::world::IWorldDispatcher"
-                },
-                {
-                  "name": "wheat_burn_amount",
-                  "type": "core::integer::u128"
-                },
-                {
-                  "name": "fish_burn_amount",
-                  "type": "core::integer::u128"
                 },
                 {
                   "name": "reward_resource_amount",
@@ -3086,7 +3078,7 @@
     {
       "name": "eternum::systems::map::contracts::map_systems",
       "address": "0x3fda5d1f7500f799eb30aa1293b2b6c354d350ed359593eb75390893cc7ec3d",
-      "class_hash": "0x31698d54138398ee153f95a8df762ff5932c7a13c67dec14b8644de48a95cec",
+      "class_hash": "0x355b2b41de7266b0b7216a8d9e43fecf4fb2bcf67cc6b0f2cf34b4022a69858",
       "abi": [
         {
           "type": "impl",
@@ -3750,7 +3742,7 @@
     {
       "name": "eternum::systems::resources::contracts::resource_systems",
       "address": "0x406b259886beb36b2474c7a85ad8298b948eeca68b3a185ee7ba870dbc025c8",
-      "class_hash": "0x1b3d6c112240eaeb749320df26452c96d56c468786874108c9b5e60c51b0704",
+      "class_hash": "0x5bb8008600c68b7171521a5da7abf5d2a2b00f14c1397990ae635005f5bcaf5",
       "abi": [
         {
           "type": "impl",
@@ -4201,7 +4193,7 @@
     {
       "name": "eternum::systems::trade::contracts::trade_systems::trade_systems",
       "address": "0x63cbe849cf6325e727a8d6f82f25fad7dc7eb9433767f5c1b8c59189e36c9b6",
-      "class_hash": "0x27ae1e424104954e898f7a80a43c96cfa701fcb60f6b65c01f235bdbf906718",
+      "class_hash": "0x38ba253be63a6edf5818ec961e40522d45d62e5e50669f71145ce64af072b4a",
       "abi": [
         {
           "type": "impl",
@@ -5006,7 +4998,7 @@
     {
       "name": "eternum::systems::transport::contracts::travel_systems::travel_systems",
       "address": "0x740ea95e67b0b7533ee4891524c5c7edfd7fefc09297c0304b21515cc1223ec",
-      "class_hash": "0x3a48d0189820e4fdec91806de4bb4b723a8a7792271da176136db7715b615aa",
+      "class_hash": "0x3a53263685abc7e92fbe939ec54077dcab9975cf82501a74591d2360d650558",
       "abi": [
         {
           "type": "impl",
@@ -10677,22 +10669,12 @@
           "key": true
         },
         {
-          "name": "wheat_burn_amount",
-          "type": "u128",
-          "key": false
-        },
-        {
-          "name": "fish_burn_amount",
-          "type": "u128",
-          "key": false
-        },
-        {
           "name": "reward_resource_amount",
           "type": "u128",
           "key": false
         }
       ],
-      "class_hash": "0x469a5d35ed69798e93a0cca2a2ad833f8770de7b4d843f597d0bf255a563ca4",
+      "class_hash": "0x6bdfa042d7ef2892ab7a734f560820ff40618351d3b34d4e00f8ea3b9061a4b",
       "abi": [
         {
           "type": "impl",
@@ -10869,14 +10851,6 @@
           "members": [
             {
               "name": "config_id",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "wheat_burn_amount",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "fish_burn_amount",
               "type": "core::integer::u128"
             },
             {
