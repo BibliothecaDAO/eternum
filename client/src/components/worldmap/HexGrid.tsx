@@ -2,18 +2,7 @@ import { createHexagonGeometry, createHexagonShape } from "./components/three/He
 import { MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
 // @ts-ignore
 import { Flags } from "../../components/worldmap/Flags.jsx";
-import {
-  BufferAttribute,
-  Color,
-  ExtrudeGeometry,
-  InstancedBufferAttribute,
-  InstancedMesh,
-  Matrix4,
-  MeshBasicMaterial,
-  MeshStandardMaterial,
-  Vector2,
-  Vector3,
-} from "three";
+import { Color, ExtrudeGeometry, InstancedMesh, Matrix4, Vector3 } from "three";
 import { useThree } from "@react-three/fiber";
 import useUIStore from "../../hooks/store/useUIStore";
 import { useDojo } from "../../DojoContext";
@@ -21,8 +10,7 @@ import { Subscription } from "rxjs";
 import { getColRowFromUIPosition, getEntityIdFromKeys, getUIPositionFromColRow } from "../../utils/utils";
 import { MyCastles, OtherCastles } from "./Castles";
 import { Hyperstructures } from "./Hyperstructures";
-import { biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
-import { getComponentValue } from "@dojoengine/recs";
+import { biomes } from "@bibliothecadao/eternum";
 import { throttle } from "lodash";
 import * as THREE from "three";
 
@@ -47,12 +35,11 @@ type HexagonGridProps = {
   startCol: number;
   endCol: number;
   explored: Map<number, Set<number>>;
-  hexMeshRef: MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>;
 };
 
 const color = new Color();
 
-export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef, explored }: HexagonGridProps) => {
+export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: HexagonGridProps) => {
   const hexData = useUIStore((state) => state.hexData);
 
   const { group, colors } = useMemo(() => {
@@ -132,7 +119,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef, ex
 
   return (
     <>
-      <primitive ref={hexMeshRef} object={mesh} />
+      <primitive object={mesh} />
     </>
   );
 };
@@ -140,8 +127,6 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef, ex
 export const WorldMap = () => {
   const {
     setup: {
-      account: { account },
-      components: { Owner },
       updates: {
         eventUpdates: { exploreMapEvents },
       },
@@ -174,8 +159,6 @@ export const WorldMap = () => {
     }
     return hexagonGrids;
   }, []);
-
-  const hexMeshRef = useRef<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>>();
 
   const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
   const [highlightPosition, setHighlightPosition] = useState<[number, number, number]>([0, 0, 0]);
@@ -231,17 +214,6 @@ export const WorldMap = () => {
             newMap.set(col, rowSet);
             return newMap;
           });
-          // const hexIndex = hexData.findIndex((h) => h.col === col && h.row === row);
-          // if (hexIndex !== -1 && hexMeshRef?.current) {
-          //   // store which hex has been explored
-          //   hexData[hexIndex].explored = true;
-          //   const keys = [BigInt(Number(event.keys[1]))];
-          //   const owner = getComponentValue(Owner, getEntityIdFromKeys(keys));
-          //   if (owner) {
-          //     hexData[hexIndex].exploredBy = owner.address;
-          //   }
-          //   const color = new Color(BIOMES[hexData[hexIndex].biome].color);
-          // }
         }
       });
       subscription = sub;
@@ -256,11 +228,10 @@ export const WorldMap = () => {
   return (
     <group onPointerEnter={(e) => throttledHoverHandler(e)}>
       <mesh rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>
-        {/* <HexagonGrid hexMeshRef={hexMeshRef} startRow={0} endRow={rows} startCol={0} endCol={cols} /> */}
         {hexagonGrids.map((grid, index) => {
           return (
-            <group onClick={clickHandler}>
-              <HexagonGrid {...grid} hexMeshRef={hexMeshRef} explored={exploredHexes} />
+            <group onClick={clickHandler} key={index}>
+              <HexagonGrid {...grid} explored={exploredHexes} />
             </group>
           );
         })}
@@ -272,151 +243,12 @@ export const WorldMap = () => {
       >
         <meshMatcapMaterial color={0xffffff} transparent opacity={0.75} />
       </mesh>
-      {hexData && <MyCastles hexData={hexData} meshRef={hexMeshRef} />}
-      {/* {hexData && <OtherCastles hexData={hexData} meshRef={hexMeshRef} />}
-      {hexData && <Hyperstructures hexData={hexData} hexMeshRef={hexMeshRef} />} */}
+      {hexData && <MyCastles hexData={hexData} />}
+      {hexData && <OtherCastles hexData={hexData} />}
+      {hexData && <Hyperstructures hexData={hexData} />}
       {/* <Flags></Flags> */}
-      {/* <mesh>
-        {hexagonGrids.map((grid, index) => {
-          return (
-            <mesh key={index} rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>
-              <HexagonGrid {...grid} index={index} />
-            </mesh>
-          );
-        })}
-      </mesh> */}
-      {/* <Environment preset="dawn" /> */}
     </group>
   );
-};
-
-const useHighlightHex = (
-  hexMeshRef: MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>,
-  highlightedHexRef: MutableRefObject<{ hexId: number; color: Color | null }>,
-) => {
-  const camera = useThree((state) => state.camera);
-  const hexData = useUIStore((state) => state.hexData);
-
-  const hexDataRef = useRef(hexData);
-  useEffect(() => {
-    hexDataRef.current = hexData;
-  }, [hexData]);
-
-  const setClickedHex = useUIStore((state) => state.setClickedHex);
-
-  const { raycaster } = useThree();
-  raycaster.firstHitOnly = true;
-
-  // store hexId and color of highlighed hex
-  const mouse = new Vector2();
-
-  const onMouseMove = (event: any) => {
-    if (!hexMeshRef?.current) return;
-    const mesh = hexMeshRef?.current;
-    let colors = getColorFromMesh(mesh);
-    if (!colors) return;
-    // Calculate mouse position in normalized device coordinates (-1 to +1) for both components
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-    // Update the ray with the camera and mouse position
-    raycaster.setFromCamera(mouse, camera); // assuming 'camera' is your Three.js camera
-
-    // Calculate objects intersecting the picking ray. Assume hexMeshRef.current is the instanced mesh
-    const intersects = raycaster.intersectObject(hexMeshRef.current, false);
-
-    if (intersects.length > 0) {
-      // Get the first intersected object
-      const intersectedHex = intersects[0];
-      const hexIndex = intersectedHex.instanceId;
-      if (!hexIndex) return;
-      updateHighlight(highlightedHexRef, hexIndex, colors, mesh);
-    } else {
-      // resetHighlight(highlightedHexRef, colors, mesh);
-    }
-  };
-
-  const onMouseClick = (event: any) => {
-    if (!hexMeshRef?.current || !hexDataRef.current) return;
-    // Calculate mouse position in normalized device coordinates (-1 to +1) for both components
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-    // Update the ray with the camera and mouse position
-    raycaster.setFromCamera(mouse, camera); // assuming 'camera' is your Three.js camera
-
-    // Calculate objects intersecting the picking ray. Assume hexMeshRef.current is the instanced mesh
-    const intersects = raycaster.intersectObject(hexMeshRef.current, false);
-
-    if (intersects.length > 0) {
-      // Get the first intersected object
-      const intersectedHex = intersects[0];
-
-      const hexIndex = intersectedHex.instanceId;
-      const hex = hexIndex ? hexDataRef.current[hexIndex] : undefined;
-
-      console.log({ hex, hexIndex });
-      if (hex && hexIndex) {
-        setClickedHex({ col: hex.col, row: hex.row, hexIndex });
-      }
-    }
-  };
-
-  /**
-   * Detects if the user clicked or dragged the mouse (depending on time mouse down)
-   */
-  let mouseDownTime = 0;
-  const onMouseDown = () => {
-    mouseDownTime = new Date().getTime();
-  };
-  const onMouseUp = (event: any) => {
-    const mouseUpTime = new Date().getTime();
-    const timeDiff = mouseUpTime - mouseDownTime;
-
-    // Assume it's a click if the time difference is less than 200ms (adjust as needed)
-    if (timeDiff < 200) {
-      onMouseClick(event);
-    }
-  };
-
-  // useEffect(() => {
-  //   const scene = document.querySelector(".main-scene");
-  //   // only add it
-  //   // Add event listener for mouse move
-  //   scene?.addEventListener("mousemove", onMouseMove);
-  //   scene?.addEventListener("mousedown", onMouseDown);
-  //   scene?.addEventListener("mouseup", onMouseUp);
-
-  //   return () => {
-  //     // Remove event listener when the component is unmounted
-  //     scene?.removeEventListener("mousemove", onMouseMove);
-  //     scene?.removeEventListener("mousedown", onMouseDown);
-  //     scene?.removeEventListener("mouseup", onMouseUp);
-  //   };
-  // }, []);
-};
-
-const getColorFromMesh = (mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>): number[] | null => {
-  if (!mesh || !mesh.isInstancedMesh) {
-    console.error("The provided mesh is not an InstancedMesh.");
-    return null;
-  }
-
-  const colorAttribute = mesh.geometry.getAttribute("color");
-  if (!colorAttribute) {
-    console.error("No color attribute found in the mesh.");
-    return null;
-  }
-
-  // Assert that colorAttribute is of type BufferAttribute
-  if (!(colorAttribute instanceof BufferAttribute)) {
-    console.error("colorAttribute is not an instance of THREE.BufferAttribute.");
-    return null;
-  }
-
-  const colors = colorAttribute.array; // This is a Float32Array
-
-  return Array.from(colors);
 };
 
 const matrix = new Matrix4();
@@ -433,68 +265,6 @@ export const getPositionsAtIndex = (mesh: InstancedMesh<any, any>, index: number
 
   return positions;
 };
-
-const updateHighlight = (
-  highlightedHexRef: MutableRefObject<{ hexId: number; color: Color | null }>,
-  hexIndex: number,
-  colors: number[],
-  mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>,
-) => {
-  // Reset previous highlight
-  if (highlightedHexRef.current.hexId !== -1) {
-    const color = highlightedHexRef.current.color;
-    if (color) {
-      color.toArray(colors, highlightedHexRef.current.hexId * 3);
-    }
-  }
-
-  // Store new highlight
-  highlightedHexRef.current.hexId = hexIndex;
-  const prevColor = new Color().fromArray(colors, hexIndex * 3);
-  highlightedHexRef.current.color = prevColor;
-
-  // Blend with light red for highlight effect
-  const lightRed = new Color(0xff6666);
-  const blendFactor = 0.8;
-  const blendedColor = prevColor.clone().lerp(lightRed, blendFactor);
-
-  // Increase brightness
-  const hsl = blendedColor.getHSL({ h: 0, s: 0, l: 0 });
-  hsl.l = Math.min(1, hsl.l * 1.2);
-  blendedColor.setHSL(hsl.h, hsl.s, hsl.l);
-
-  // Apply new color
-  blendedColor.toArray(colors, hexIndex * 3);
-
-  // Assert that colorAttribute is of type BufferAttribute
-  if (!(mesh.geometry.attributes.color instanceof BufferAttribute)) {
-    console.error("colorAttribute is not an instance of THREE.BufferAttribute.");
-    return null;
-  }
-
-  // Update the color attribute of the mesh
-  mesh.geometry.attributes.color.array = new Float32Array(colors);
-  mesh.geometry.attributes.color.needsUpdate = true;
-};
-
-// const resetHighlight = (
-//   highlightedHexRef: MutableRefObject<{ hexId: number; color: Color | null }>,
-//   colors: number[],
-//   mesh: InstancedMesh<ExtrudeGeometry, MeshBasicMaterial>,
-// ) => {
-//   if (highlightedHexRef.current.hexId !== -1) {
-//     // Reset to original color
-//     const color = highlightedHexRef.current.color;
-//     if (color) {
-//       color.toArray(colors, highlightedHexRef.current.hexId * 3);
-
-//       // Update the color attribute of the mesh
-//       mesh.geometry.attributes.color.array = new Float32Array(colors);
-//       mesh.geometry.attributes.color.needsUpdate = true;
-//     }
-//     highlightedHexRef.current.hexId = -1;
-//   }
-// };
 
 const getGrayscaleColor = (color: Color) => {
   const luminance = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;

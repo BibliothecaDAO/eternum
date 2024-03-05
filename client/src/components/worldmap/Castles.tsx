@@ -1,12 +1,11 @@
 import { useGLTF } from "@react-three/drei";
 import realmHexPositions from "../../geodata/hex/realmHexPositions.json";
-import { MutableRefObject, useMemo } from "react";
+import { useMemo } from "react";
 import { useGetRealms } from "../../hooks/helpers/useRealm";
 import useRealmStore from "../../hooks/store/useRealmStore";
 import { HexPositions, getRealmUIPosition } from "../../utils/utils";
 import { GLTF } from "three-stdlib";
 import { DEPTH, Hexagon } from "./HexGrid";
-import { ExtrudeGeometry, InstancedMesh, MeshBasicMaterial } from "three";
 import { biomes } from "@bibliothecadao/eternum";
 
 // @ts-nocheck
@@ -102,12 +101,11 @@ type GLTFResult = GLTF & {
 
 type CastlesProps = {
   hexData: Hexagon[];
-  meshRef: MutableRefObject<InstancedMesh<ExtrudeGeometry, MeshBasicMaterial> | undefined>;
 };
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
 
-export const OtherCastles = ({ hexData, meshRef }: CastlesProps) => {
+export const OtherCastles = ({ hexData }: CastlesProps) => {
   const { nodes, materials } = useGLTF("/models/realm-buildings-transformed.glb") as GLTFResult;
   const realms = useGetRealms();
 
@@ -132,7 +130,7 @@ export const OtherCastles = ({ hexData, meshRef }: CastlesProps) => {
     <group>
       {castles.map((castle) => {
         const { position, index, depth } = castle;
-        if (index === -1 || !meshRef.current) return null;
+        if (index === -1) return null;
         return (
           <mesh
             key={index}
@@ -150,7 +148,7 @@ export const OtherCastles = ({ hexData, meshRef }: CastlesProps) => {
   );
 };
 
-export const MyCastles = ({ hexData, meshRef }: CastlesProps) => {
+export const MyCastles = ({ hexData }: CastlesProps) => {
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
   const { nodes, materials } = useGLTF("/models/realm-buildings-transformed.glb") as GLTFResult;
@@ -177,7 +175,7 @@ export const MyCastles = ({ hexData, meshRef }: CastlesProps) => {
       {castles.map((castle) => {
         const { position, index, depth } = castle;
 
-        if (index === -1 || !meshRef.current) return null;
+        if (index === -1) return null;
         // const height = meshPositions[index * 3];
         return (
           <mesh
