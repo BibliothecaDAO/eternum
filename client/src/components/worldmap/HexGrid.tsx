@@ -1,13 +1,12 @@
 import { createHexagonGeometry, createHexagonShape } from "./components/three/HexagonBackground";
-import { MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 // @ts-ignore
 import { Flags } from "../../components/worldmap/Flags.jsx";
-import { Color, ExtrudeGeometry, InstancedMesh, Matrix4, Vector3 } from "three";
-import { useThree } from "@react-three/fiber";
+import { Color, InstancedMesh, Matrix4, Vector3 } from "three";
 import useUIStore from "../../hooks/store/useUIStore";
 import { useDojo } from "../../DojoContext";
 import { Subscription } from "rxjs";
-import { getColRowFromUIPosition, getEntityIdFromKeys, getUIPositionFromColRow } from "../../utils/utils";
+import { getColRowFromUIPosition, getUIPositionFromColRow } from "../../utils/utils";
 import { MyCastles, OtherCastles } from "./Castles";
 import { Hyperstructures } from "./Hyperstructures";
 import { biomes } from "@bibliothecadao/eternum";
@@ -246,7 +245,7 @@ export const WorldMap = () => {
       {hexData && <MyCastles hexData={hexData} />}
       {hexData && <OtherCastles hexData={hexData} />}
       {hexData && <Hyperstructures hexData={hexData} />}
-      {/* <Flags></Flags> */}
+      <Flags></Flags>
     </group>
   );
 };

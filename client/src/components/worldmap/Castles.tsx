@@ -140,7 +140,7 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
             geometry={nodes.castle.geometry}
             material={materials.PaletteMaterial011}
             rotation={[0, pseudoRandom(position.x, position.y) * 2 * Math.PI, 0]}
-            position={[position.x, DEPTH + depth * DEPTH, -position.y]}
+            position={[position.x, depth * 10 + 10.3, -position.y]}
           />
         );
       })}
