@@ -85,6 +85,7 @@ fn spawn_eternum() -> IWorldDispatcher {
         labor_auction::TEST_CLASS_HASH,
         road_config::TEST_CLASS_HASH,
         hyper_structure::TEST_CLASS_HASH,
+        
     ];
 
     spawn_test_world(models)

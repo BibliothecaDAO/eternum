@@ -256,6 +256,7 @@ use eternum::alias::ID;
         fn check_capacity(
                 world: IWorldDispatcher, 
                 entity_capacity: Capacity, 
+                entity_quantity: Quantity, 
                 mut entity_current_weight: Weight, 
                 additional_weight: u128, 
                 throw_error: bool
@@ -263,8 +264,6 @@ use eternum::alias::ID;
             // ensure that receiver has enough weight capacity
             if entity_capacity.is_capped() {
                 let entity_id = entity_current_weight.entity_id;
-
-                let entity_quantity = get!(world, entity_id, Quantity);
                 entity_current_weight.value += additional_weight;
 
                 let can_carry 
@@ -571,24 +570,27 @@ use eternum::alias::ID;
 
                 // ensure entity can carry the weight
                 let mut entity_weight = get!(world, entity_id, Weight);
-                entity_weight.value += item_weight.value;
-
                 let entity_capacity = get!(world, entity_id, Capacity); 
-                if entity_capacity.weight_gram != 0  {
-                    let entity_quantity = get!(world, entity_id, Quantity);
-                    let entity_quantity = entity_quantity.get_value();
-                    assert(
-                        entity_capacity.weight_gram * entity_quantity 
-                            >= entity_weight.value,
-                            'capacity is not enough'
-                    );
-                }  
+                let entity_quantity = get!(world, entity_id, Quantity);
+                
+                InternalResourceSystemsImpl::check_capacity(
+                    world, entity_capacity, entity_quantity,
+                    entity_weight, item_weight.value, true
+                );  
 
+                entity_weight.value += item_weight.value;
                 set!(world, (entity_weight));
 
                 // add item to inventory
                 let mut inventory = get!(world, entity_id, Inventory);
-                inventory.set_next_item(world, item_id);
+                let mut item_fk = inventory.next_item_fk(world);
+                item_fk.entity_id = item_id;
+                set!(world, (item_fk));
+
+                inventory.items_count += 1;
+                set!(world, (inventory));
+
+
         }
 
 
@@ -596,8 +598,9 @@ use eternum::alias::ID;
 
             let mut entity_weight = get!(world, entity_id, Weight);
             let entity_capacity = get!(world, entity_id, Capacity); 
-            let entity_quantity = get!(world, entity_id, Quantity).get_value();
-            let entity_total_capacity = entity_capacity.weight_gram * entity_quantity;
+            let entity_quantity = get!(world, entity_id, Quantity);
+            let entity_total_capacity 
+                = entity_capacity.weight_gram * entity_quantity.get_value();
             
             let mut inventory = get!(world, entity_id, Inventory);
             assert(inventory.items_key != 0, 'entity has no inventory');
@@ -607,33 +610,36 @@ use eternum::alias::ID;
                 
                 match item_ids.pop_front() {
                     Option::Some(item_id) => {
+
                         // ensure entity can carry the weight
                         let item_weight = get!(world, *item_id, Weight);
                         assert(item_weight.value > 0, 'item is empty');
+                        InternalResourceSystemsImpl::check_capacity(
+                            world, entity_capacity, entity_quantity,
+                            entity_weight, item_weight.value, true
+                        );
 
+                        // update entity weight
                         entity_weight.value += item_weight.value;
 
-                        if entity_capacity.weight_gram != 0  {
-                            // when weight_gram == 0, there is no capacity limit
-                            assert(
-                                entity_total_capacity >= entity_weight.value,
-                                    'capacity is not enough'
-                            );
-                        }  
-
                         // add item to inventory
-                        inventory.set_next_item(world, *item_id);
+                        let mut inventory = get!(world, entity_id, Inventory);
+                        let mut item_fk = inventory.next_item_fk(world);
+                        item_fk.entity_id = *item_id;
+                        set!(world, (item_fk));
 
+                        // update inventory item count
+                        inventory.items_count += 1;
                     },
                     Option::None => {break;}
 
                 }
             };
 
-            // update entity's weight
+            // update entity's final weight
             set!(world, (entity_weight));
 
-            // update entity's inventory
+            // update entity's final inventory
             set!(world, (inventory));
         }
 
@@ -652,6 +658,8 @@ use eternum::alias::ID;
                     break;
                 }
                 sender_chests_indexes.append(index);
+
+                index+= 1;
             };
 
             let sent_chests_ids = InternalInventorySystemsImpl::transfer_between_inventories(
@@ -672,6 +680,7 @@ use eternum::alias::ID;
         fn transfer_between_inventories(
             world: IWorldDispatcher, mut sender_inventory: Inventory, mut receiver_inventory: Inventory, mut indexes_asc: Span<u128>
         ) -> Span<u128> {
+            println!("\n\n entyy    {}", sender_inventory.entity_id);
             assert(sender_inventory.items_count > 0, 'inventory is empty');
 
             let mut sent_chest_ids = array![];
@@ -685,6 +694,7 @@ use eternum::alias::ID;
             let mut sender_weight = get!(world, sender_id, Weight);
             let mut receiver_weight = get!(world, receiver_id, Weight);
             let mut receiver_capacity = get!(world, receiver_id, Capacity);
+            let mut receiver_quantity = get!(world, receiver_id, Quantity);
 
             loop {
                 match indexes_asc.pop_back() {
@@ -699,7 +709,8 @@ use eternum::alias::ID;
                         let mut sender_item_id = sender_item_fk.entity_id;
                         let mut sent_item_weight = get!(world, sender_item_id, Weight);
                         let receiver_cant_carry: bool = InternalResourceSystemsImpl::check_capacity(
-                            world, receiver_capacity, receiver_weight, sent_item_weight.value, false
+                            world, receiver_capacity, receiver_quantity, 
+                            receiver_weight, sent_item_weight.value, false
                         ) == false;
 
                         if receiver_cant_carry { continue; }

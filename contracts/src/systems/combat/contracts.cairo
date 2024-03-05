@@ -1,6 +1,7 @@
 #[dojo::contract]
 mod combat_systems {
-    use eternum::alias::ID;
+    use core::debug::PrintTrait;
+use eternum::alias::ID;
 
     use eternum::models::order::{Orders, OrdersTrait};
     use eternum::models::resources::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
@@ -866,7 +867,7 @@ mod combat_systems {
             if attack_successful {
 
                 let target_type 
-                    = InternalCombatSystemsImpl::target_type(world, target_entity_id);
+                    = InternalCombatSystemsImpl::target_type(world, target_realm_entity_id, target_entity_id);
                 let (stolen_resources, stolen_chests) = match target_type {
                     TargetType::RealmTownWatch => {
                         let stolen_resources 
@@ -943,8 +944,8 @@ mod combat_systems {
     #[generate_trait]
     impl InternalCombatSystemsImpl of InternalCombatSystemsTrait {
 
-        fn target_type(world: IWorldDispatcher, target_entity_id: u128 ) -> TargetType {
-            if get!(world, target_entity_id, TownWatch).town_watch_id == 0 {
+        fn target_type(world: IWorldDispatcher, target_realm_entity_id: u128, target_entity_id: u128 ) -> TargetType {
+            if get!(world, target_realm_entity_id, TownWatch).town_watch_id != target_entity_id {
                 return TargetType::Army;
             } else {
                 return TargetType::RealmTownWatch;
@@ -961,6 +962,7 @@ mod combat_systems {
             //          items causing call to exceed katana step limit
             let attacker_inventory: Inventory = get!(world, attacker_entity_id, Inventory);
             let target_inventory: Inventory = get!(world, target_entity_id, Inventory);
+            target_inventory.items_count.print();
 
             let stolen_chests = InternalInventorySystemsImpl::transfer_max_between_inventories(
                 world, target_inventory, attacker_inventory
@@ -976,7 +978,7 @@ mod combat_systems {
                 let mut wheat_burn_amount = combat_config.wheat_burn_per_soldier * attacker_quantity.value;
                 let mut fish_burn_amount = combat_config.fish_burn_per_soldier * attacker_quantity.value;
                 ResourceFoodImpl::burn_food(
-                    world, target_entity_id, wheat_burn_amount, fish_burn_amount, check_balance: false
+                    world, target_realm_entity_id, wheat_burn_amount, fish_burn_amount, check_balance: false
                 );
 
 
@@ -992,7 +994,7 @@ mod combat_systems {
 
                 // get all the (stealable) resources that the target owns
                 // and the probabilities of each resource's ocurence
-                let entitys_resources = get!(world, target_entity_id, OwnedResourcesTracker);
+                let entitys_resources = get!(world, target_realm_entity_id, OwnedResourcesTracker);
                 let (stealable_resource_types, stealable_resources_probs) 
                     =  entitys_resources.get_owned_resources_and_probs();
 
@@ -1024,7 +1026,7 @@ mod combat_systems {
                         = get!(world, (WORLD_CONFIG_ID, resource_type), WeightConfig).weight_gram;
 
                     let target_resource 
-                        = get!(world, (target_entity_id, resource_type), Resource);
+                        = get!(world, (target_realm_entity_id, resource_type), Resource);
                     let target_resource_weight = resource_weight * target_resource.balance;
 
                     if target_resource_weight > 0 {
@@ -1057,7 +1059,7 @@ mod combat_systems {
 
                     InternalResourceSystemsImpl::transfer(
                         world,
-                        target_entity_id,
+                        target_realm_entity_id,
                         attacker_entity_id,
                         stolen_resources.span()
                     );

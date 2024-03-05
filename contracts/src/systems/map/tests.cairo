@@ -122,7 +122,7 @@ fn test_map_explore() {
     let explore_tile_direction: Direction = Direction::West;
 
     map_systems_dispatcher
-        .explore(world, realm_entity_id, realm_position.into(), explore_tile_direction);
+        .explore(world, realm_entity_id, explore_tile_direction);
 
     let expected_explored_coord 
         = Into::<Position, Coord>::into(realm_position).neighbor(explore_tile_direction);

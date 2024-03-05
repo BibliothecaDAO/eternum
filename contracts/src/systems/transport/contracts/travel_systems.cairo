@@ -126,7 +126,7 @@ mod travel_systems {
         fn assert_tile_explored(world: IWorldDispatcher, coord: Coord) {
             let mut tile: Tile
                  = get!(world, (coord.x, coord.y), Tile);
-            assert(tile.explored_at != 0, 'tile not explored');
+            assert(tile.explored_by_id != 0, 'tile not explored');
         }
 
 
