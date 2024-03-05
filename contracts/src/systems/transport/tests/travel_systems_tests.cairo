@@ -66,6 +66,12 @@ fn setup() -> (IWorldDispatcher, u64, Position, Coord, ITravelSystemsDispatcher)
         y: 100_000
     };
 
+    // make destination coord explored
+    let mut destination_tile: Tile = get!(world, (destination_coord.x, destination_coord.y), Tile);
+    destination_tile.explored_by_id = 800;
+    destination_tile.explored_at = 78671;
+    set!(world, (destination_tile));
+
 
     let travel_systems_address 
         = deploy_system(travel_systems::TEST_CLASS_HASH);

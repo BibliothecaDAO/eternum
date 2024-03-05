@@ -175,7 +175,7 @@ mod resource_transfer_system_tests {
 
     #[test]
     #[available_gas(30000000000000)]
-    #[should_panic(expected: ('capacity is not enough','ENTRYPOINT_FAILED' ))]
+    #[should_panic(expected: ('not enough capacity','ENTRYPOINT_FAILED' ))]
     fn test_transfer__not_enough_capacity() {
         
         let (world, resource_systems_dispatcher) = setup();

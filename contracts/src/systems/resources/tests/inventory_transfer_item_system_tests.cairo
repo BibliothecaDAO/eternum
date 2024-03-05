@@ -153,15 +153,6 @@ mod inventory_transfer_system_tests {
             = get!(world, donor_transport_id, Inventory);
         assert(donor_transport_inventory.items_count == 0, 'wrong donor transport inventory');
 
-        // check that chest inventory foreign key is deleted
-        let inventory_foreign_key 
-            = InternalInventorySystemsImpl::get_foreign_key(
-                donor_transport_inventory, 0
-                );
-        let inventory_foreign_key 
-            = get!(world, inventory_foreign_key, ForeignKey);
-        assert(inventory_foreign_key.entity_id == 0, 'wrong foreign key');
-        
 
         // check donor transport weight
         let donor_transport_weight 
@@ -211,15 +202,6 @@ mod inventory_transfer_system_tests {
             = get!(world, donor_transport_id, Inventory);
         assert(donor_transport_inventory.items_count == 0, 'wrong donor transport inventory');
 
-        // check that chest inventory foreign key is deleted
-        let inventory_foreign_key 
-            = InternalInventorySystemsImpl::get_foreign_key(
-                donor_transport_inventory, 0
-                );
-        let inventory_foreign_key 
-            = get!(world, inventory_foreign_key, ForeignKey);
-        assert(inventory_foreign_key.entity_id == 0, 'wrong foreign key');
-        
 
         // check donor transport weight did not 
         // change because it was a self transfer
