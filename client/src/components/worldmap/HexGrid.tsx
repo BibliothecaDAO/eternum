@@ -96,20 +96,20 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, hexMeshRef }: 
               return null;
             }
 
-            if (owner && account && owner.address === BigInt(account.address)) {
-              // also change to gray scale all hex that are neighbors
-              // if they are not already explored
-              const neighborOffsets = row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+            // if (owner && account && owner.address === BigInt(account.address)) {
+            //   // also change to gray scale all hex that are neighbors
+            //   // if they are not already explored
+            //   const neighborOffsets = row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
 
-              for (const { i, j } of neighborOffsets) {
-                const neighborIndex = hexData.findIndex((h) => h.col === col + i && h.row === row + j);
-                if (hexData[neighborIndex] && !hexData[neighborIndex].explored) {
-                  const color = new Color(BIOMES[hexData[neighborIndex].biome].color);
-                  const grayscaleColor = getGrayscaleColor(color);
-                  grayscaleColor.toArray(colors, neighborIndex * 3);
-                }
-              }
-            }
+            //   for (const { i, j } of neighborOffsets) {
+            //     const neighborIndex = hexData.findIndex((h) => h.col === col + i && h.row === row + j);
+            //     if (hexData[neighborIndex] && !hexData[neighborIndex].explored) {
+            //       const color = new Color(BIOMES[hexData[neighborIndex].biome].color);
+            //       const grayscaleColor = getGrayscaleColor(color);
+            //       grayscaleColor.toArray(colors, neighborIndex * 3);
+            //     }
+            //   }
+            // }
 
             hexMeshRef.current.geometry.attributes.color.array = new Float32Array(colors);
             hexMeshRef.current.geometry.attributes.color.needsUpdate = true;

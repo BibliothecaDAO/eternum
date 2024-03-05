@@ -38,6 +38,7 @@ import {
   CreateLaborBuildingProps,
   DestroyLaborBuildingProps,
   ExploreProps,
+  TravelHexProps,
 } from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -126,6 +127,10 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
 
   const travel = async (props: TravelProps) => {
     setComponentsFromEvents(contractComponents, getEvents(await provider.travel(props)));
+  };
+
+  const travel_hex = async (props: TravelHexProps) => {
+    setComponentsFromEvents(contractComponents, getEvents(await provider.travel_hex(props)));
   };
 
   const create_soldiers = async (props: CreateSoldiersProps) => {
@@ -241,6 +246,7 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
     send_resources_to_location,
     feed_hyperstructure_and_travel_back,
     travel,
+    travel_hex,
     merge_soldiers,
     heal_soldiers,
     uuid,

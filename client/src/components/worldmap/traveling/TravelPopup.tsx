@@ -5,7 +5,7 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { SecondaryPopup } from "../../../elements/SecondaryPopup";
-import { formatTimeLeftDaysHoursMinutes, getUIPositionFromColRow } from "../../../utils/utils";
+import { findDirection, formatTimeLeftDaysHoursMinutes, getUIPositionFromColRow } from "../../../utils/utils";
 
 type TravelPopupProps = {};
 
@@ -13,7 +13,7 @@ export const TravelPopup = ({}: TravelPopupProps) => {
   const {
     account: { account },
     setup: {
-      systemCalls: { travel },
+      systemCalls: { travel_hex },
     },
   } = useDojo();
 
@@ -35,15 +35,30 @@ export const TravelPopup = ({}: TravelPopupProps) => {
     setIsTravelMode(false);
   };
 
+  const directions = useMemo(() => {
+    if (!selectedPath?.path) return [];
+    const { path } = selectedPath;
+    return path
+      .map((_, i) => {
+        if (path[i + 1] === undefined) return undefined;
+        const direction = findDirection({ col: path[i].x, row: path[i].y }, { col: path[i + 1].x, row: path[i + 1].y });
+        console.log({ direction });
+        if (direction !== undefined) return direction;
+      })
+      .filter(Boolean) as number[];
+  }, [selectedPath]);
+
+  console.log({ directions });
+
   const onTravel = async () => {
+    console.log({ test: "helrg", selectedPath, directions });
     // travelingEntity
     if (!travelingEntity || !selectedDestination) return;
     setIsLoading(true);
-    await travel({
+    await travel_hex({
       signer: account,
       travelling_entity_id: travelingEntity.id,
-      destination_coord_x: selectedDestination.col,
-      destination_coord_y: selectedDestination.row,
+      directions,
     });
     selectedPath && setAnimationPath({ id: selectedPath.id, path: selectedPath.path });
     // reset the state

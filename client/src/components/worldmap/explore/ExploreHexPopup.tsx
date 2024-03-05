@@ -108,18 +108,11 @@ export const ExplorePanel = ({
     if (!entityOwner) return;
   }, [explorerId]);
 
-  const onClick = () => {
-    // do something
-    onExplore();
-  };
-
   const onExplore = async () => {
     setIsLoading(true);
     if (!explorerId || !explorationStart || !direction) return;
     await explore({
-      realm_entity_id: explorerId,
-      col: explorationStart.x,
-      row: explorationStart.y,
+      unit_id: explorerId,
       direction,
       signer: account,
     });
@@ -178,7 +171,7 @@ export const ExplorePanel = ({
               // disabled={idsCanExplore.find((id) => id === explorerId) ? false : true}
               disabled={!direction || !explorerId || !explorationStart}
               isLoading={isLoading}
-              onClick={onClick}
+              onClick={onExplore}
               variant="outline"
               withoutSound
             >
@@ -260,11 +253,6 @@ const ExploreResultPanel = ({ biome, foundResource, onClose }: ExploreResultPane
               <circle cx="17.5" cy="6" r="1.5" fill="#1B1B1B" />
               <circle cx="6" cy="6" r="1" fill="#1B1B1B" />
             </svg>
-
-            {step === 1 && (
-              <div className="text-[#86C16A] text-xs mx-2 flex-1 text-center">You discovered a new environment !</div>
-            )}
-            {step !== 1 && <div className="text-[#86C16A] text-xs mx-2 flex-1 text-center">You found a chess!</div>}
             <svg width="132" height="12" viewBox="0 0 132 12" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
                 d="M0.113249 6L3 8.88675L5.88675 6L3 3.11325L0.113249 6ZM3 6.5L130.761 6.50001L130.761 5.50001L3 5.5L3 6.5Z"
