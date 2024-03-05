@@ -1,3 +1,4 @@
+use core::debug::PrintTrait;
 use eternum::models::position::Position;
 use eternum::models::metadata::ForeignKey;
 use eternum::models::resources::{Resource, ResourceTrait, ResourceCost};
@@ -19,6 +20,8 @@ use eternum::models::combat::{
     Attack,   
     Health, Defence, Duty, TownWatch
 };
+
+use eternum::systems::resources::tests::internal::inventory_transfer_between_inventories::internal_transfer_between_inventories_tests::InventoryTraitForTest;
 use eternum::systems::resources::contracts::resource_systems::{
     InternalInventorySystemsImpl, 
 };
@@ -388,7 +391,7 @@ fn test_steal_success() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, target_realm_entity_id
+            world, attacker_unit_id, target_town_watch_id
             );
 
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
@@ -508,7 +511,7 @@ fn test_steal_success_with_order_boost() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, target_realm_entity_id
+            world, attacker_unit_id, target_town_watch_id
             );
 
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
@@ -616,7 +619,7 @@ fn test_not_owner() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, target_realm_entity_id
+            world, attacker_unit_id, target_town_watch_id
             );
 
 }
@@ -653,7 +656,7 @@ fn test_attacker_in_transit() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, target_realm_entity_id
+            world, attacker_unit_id, target_town_watch_id
             );
 
 }
@@ -689,7 +692,7 @@ fn test_attacker_dead() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, target_realm_entity_id
+            world, attacker_unit_id, target_town_watch_id
             );
 
 }
@@ -729,7 +732,7 @@ fn test_wrong_position() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, target_realm_entity_id
+            world, attacker_unit_id, target_town_watch_id
             );
 
 }
@@ -738,4 +741,122 @@ fn test_wrong_position() {
 
 
 
+#[test]
+#[available_gas(3000000000000)]
+fn test_steal_success_army_to_army() {
+
+    // the attacker attacks and successfully steals resources
+
+    let (world, attacker_realm_entity_id, attacker_unit_id, _, _ ,combat_systems_dispatcher ) 
+        = setup();
+    
+    starknet::testing::set_contract_address(world.executor());
+
+
+    let target_unit_id = 48445;
+    // make both be at same location
+    let attacker_unit_position = get!(world, attacker_unit_id, Position);
+    let target_unit_position = Position {
+        entity_id: target_unit_id, 
+        x: attacker_unit_position.x,
+        y: attacker_unit_position.y,
+    };
+    set!(world, (target_unit_position));
+
+
+    let target_unit_loot_id = 1007;
+    let mut target_unit_inventory = Inventory {
+        entity_id: target_unit_id,
+        items_key: 'some value',
+        items_count: 0
+    };
+
+    let mut attacker_unit_inventory = Inventory {
+        entity_id: attacker_unit_id,
+        items_key: 'anor value',
+        items_count: 0
+    };
+
+    set!(world, (attacker_unit_inventory, target_unit_inventory));
+
+    // set attacker and defender capacity
+    let attacker_capacity = Capacity {
+        entity_id: attacker_unit_id,
+        weight_gram: 500
+    };
+
+    let defender_capacity = Capacity {
+        entity_id: target_unit_id,
+        weight_gram: 500
+    };
+    set!(world, (attacker_capacity, defender_capacity));
+
+
+
+    target_unit_inventory
+        .add_test_item(world, target_unit_loot_id);
+
+
+
+
+    set!(world, (
+        Defence {
+            entity_id: target_unit_id,
+            value: 0
+        }
+    ));
+
+    starknet::testing::set_contract_address(
+        contract_address_const::<'attacker'>()
+    );
+
+    // steal from target
+    combat_systems_dispatcher
+        .steal(
+            world, attacker_unit_id, target_unit_id
+            );
+
+    let attacker_unit_health = get!(world, attacker_unit_id, Health);
+
+    // ensure attacker's health is intact
+    assert(
+        attacker_unit_health.value == 100 * ATTACKER_SOLDIER_COUNT,
+                'wrong health value'
+    );
+
+
+
+    // ensure stolen resources are added to attacker's inventory
+    let attacker_inventory = get!(world, attacker_unit_id, Inventory);
+    assert(attacker_inventory.items_count == 1, 'no inventory items');
+
+    // check that attacker inventory has items
+    let attacker_resource_chest_foreign_key
+        = InternalInventorySystemsImpl::get_foreign_key(
+            attacker_inventory, 0
+            );
+    let attacker_resource_chest_id 
+        = get!(world, attacker_resource_chest_foreign_key, ForeignKey).entity_id;
+    assert_eq!(attacker_resource_chest_id, target_unit_loot_id); 
+
+    // check that resource chest in inventory is filled
+    let attacker_resource_chest_weight
+        = get!(world, attacker_resource_chest_id, Weight);
+    assert(attacker_resource_chest_weight.value > 0, 'wrong chest weight');
+
+ 
+
+    // ensure attacker is sent back home
+
+    let attacker_realm_position = get!(world, attacker_realm_entity_id, Position);
+    let attacker_unit_position = get!(world, attacker_unit_id, Position);
+    assert(attacker_realm_position.x == attacker_unit_position.x 
+            && attacker_realm_position.y == attacker_unit_position.y,
+                'wrong position' 
+    );
+
+    let attacker_unit_arrival = get!(world, attacker_unit_id, ArrivalTime);
+    assert(attacker_unit_arrival.arrives_at > 0, 'wrong arrival time');
+
+}
 

@@ -238,7 +238,7 @@ fn test_attack() {
         .attack(
             world, 
             array![attacker_unit_id].span(),
-            target_realm_entity_id
+            target_town_watch_id
         );
 
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
@@ -276,7 +276,7 @@ fn test_not_owner() {
         .attack(
             world, 
             array![attacker_unit_id].span(),
-            target_realm_entity_id
+            target_town_watch_id
         );
 
 }
@@ -316,7 +316,7 @@ fn test_attacker_in_transit() {
         .attack(
             world, 
             array![attacker_unit_id].span(),
-            target_realm_entity_id
+            target_town_watch_id
         );
 
 }
@@ -354,7 +354,7 @@ fn test_attacker_dead() {
         .attack(
             world, 
             array![attacker_unit_id].span(),
-            target_realm_entity_id
+            target_town_watch_id
         );
 
 }
@@ -392,7 +392,7 @@ fn test_target_dead() {
         .attack(
             world, 
             array![attacker_unit_id].span(),
-            target_realm_entity_id
+            target_town_watch_id
         );
 
 }
@@ -431,7 +431,7 @@ fn test_wrong_position() {
         .attack(
             world, 
             array![attacker_unit_id].span(),
-            target_realm_entity_id
+            target_town_watch_id
         );
 
 }
