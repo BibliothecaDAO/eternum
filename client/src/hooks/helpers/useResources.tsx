@@ -40,7 +40,8 @@ export function useResources() {
       return { resources: [], indices: [] };
     }
 
-    for (let i = 0; i < inventory.items_count; i++) {
+    // todo: switch back to items_count when working
+    for (let i = 0; i < 4; i++) {
       let foreignKey = inventory
         ? getComponentValue(ForeignKey, getForeignKeyEntityId(entityId, inventory.items_key, BigInt(i)))
         : undefined;
@@ -60,6 +61,9 @@ export function useResources() {
               (resources[resource.resource_type] || 0) + Number(resource.resource_amount);
           }
         }
+      }
+      if (!resourcesChest) {
+        break;
       }
       indices.push(i);
     }

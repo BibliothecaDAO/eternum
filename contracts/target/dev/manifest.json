@@ -949,7 +949,7 @@
     {
       "name": "eternum::systems::bank::contracts::bank_systems",
       "address": "0x193936374e972c355f2246c66c62860c986dea275ce8fbd03d7d7a1d853a572",
-      "class_hash": "0x1db1c857699322be219c06b46d575d01c8bbd0f051295759acdbdbe3f89fd12",
+      "class_hash": "0xefad37f87c76a0add94964e771219e45d1e96ac33e773246e927814dc91dfc",
       "abi": [
         {
           "type": "impl",
@@ -1285,7 +1285,7 @@
     {
       "name": "eternum::systems::combat::contracts::combat_systems",
       "address": "0x1b0a83a27a357e0574393ab06c0c774db7312a0993538cc0186d054f75ee84e",
-      "class_hash": "0x56cb91660d9c0b5a093d145a52259467c034df260c8110fd41f883de75305d2",
+      "class_hash": "0x5e375bcc589c62d0fc1c8dcd616211b29f3598685398b3faec352aa70b4d0eb",
       "abi": [
         {
           "type": "impl",
@@ -3086,7 +3086,7 @@
     {
       "name": "eternum::systems::map::contracts::map_systems",
       "address": "0x3fda5d1f7500f799eb30aa1293b2b6c354d350ed359593eb75390893cc7ec3d",
-      "class_hash": "0x57b3be7b157b6779554a810488572c18ff25f28d004e63fc0d71dff25573a92",
+      "class_hash": "0x182dcb08ba3f5465ffafcdd29360f83c8708c19436c44cc90c6fadea2035e4c",
       "abi": [
         {
           "type": "impl",
@@ -3750,7 +3750,7 @@
     {
       "name": "eternum::systems::resources::contracts::resource_systems",
       "address": "0x406b259886beb36b2474c7a85ad8298b948eeca68b3a185ee7ba870dbc025c8",
-      "class_hash": "0x7c26def04e0839987c7ccce80c8ad6d8b65e70485bfd88624a792c92b661f8a",
+      "class_hash": "0x6e7263d373667be797acf83a42942792edd8afbef0361b4f621d08c102e045",
       "abi": [
         {
           "type": "impl",
@@ -4201,7 +4201,7 @@
     {
       "name": "eternum::systems::trade::contracts::trade_systems::trade_systems",
       "address": "0x63cbe849cf6325e727a8d6f82f25fad7dc7eb9433767f5c1b8c59189e36c9b6",
-      "class_hash": "0x6dc1212674cc94d5f4b3d1695d357b6e16e7a4b3b5d53141fda42781744e6e0",
+      "class_hash": "0x766df3ce262a9966b18bd0f9093ab1e19d5442bc403e42ad9a3d76fd55331c9",
       "abi": [
         {
           "type": "impl",

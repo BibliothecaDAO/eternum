@@ -33,6 +33,7 @@ export const ArmyModel = forwardRef((props: JSX.IntrinsicElements["group"], ref)
   material.color.set(color); // Set the color separately
 
   return (
+    // @ts-ignore
     <group {...props} ref={ref} dispose={null}>
       <group name="Scene">
         <mesh

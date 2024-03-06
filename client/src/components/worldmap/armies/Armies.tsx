@@ -6,8 +6,13 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import useUIStore from "../../../hooks/store/useUIStore";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { ArmyModel } from "./models/ArmyModel";
-import { getUIPositionFromColRow } from "../../../utils/utils";
-import { CombatInfo, Position, UIPosition, biomes } from "@bibliothecadao/eternum";
+import {
+  divideByPrecision,
+  getColRowFromUIPosition,
+  getEntityIdFromKeys,
+  getUIPositionFromColRow,
+} from "../../../utils/utils";
+import { CombatInfo, Position, Resource, UIPosition, biomes } from "@bibliothecadao/eternum";
 // @ts-ignore
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Html } from "@react-three/drei";
@@ -21,6 +26,10 @@ import { DEPTH, Hexagon } from "../HexGrid";
 import { useExplore } from "../../../hooks/helpers/useExplore";
 import { useFrame } from "@react-three/fiber";
 import { Group } from "three";
+import { useResources } from "../../../hooks/helpers/useResources";
+import { ResourceCost } from "../../../elements/ResourceCost";
+import { TIME_PER_TICK } from "../../network/EpochCountdown";
+import { get } from "lodash";
 
 type ArmiesProps = {
   props?: any;
@@ -36,6 +45,7 @@ export const Armies = ({ hexData }: ArmiesProps) => {
     },
   } = useDojo();
 
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
   const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
   const animationPath = useUIStore((state) => state.animationPath);
 
@@ -51,6 +61,7 @@ export const Armies = ({ hexData }: ArmiesProps) => {
   });
 
   const [hoveredArmy, setHoveredArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
+  const [selectedArmy, setSelectedArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
 
   const onHover = (armyId: bigint, position: UIPosition) => {
     setHoveredArmy({ id: armyId, position });
@@ -60,29 +71,39 @@ export const Armies = ({ hexData }: ArmiesProps) => {
     setHoveredArmy(undefined);
   };
 
-  const positions = armies
-    .map((armyId) => {
-      const position = getComponentValue(Position, armyId);
-      // if animated army dont display
-      if (!position || animationPath?.id === position.entity_id) return;
-      const hexIndex = hexData.findIndex((h) => h.col === position.x && h.row === position.y);
-      const hex = hexData[hexIndex];
-      let z = DEPTH;
-      if (hexIndex !== -1 && isExplored(position.x, position.y)) {
-        z += BIOMES[hex.biome].depth * DEPTH;
-      }
-      return {
-        contractPos: { x: position.x, y: position.y },
-        uiPos: { ...getUIPositionFromColRow(position.x, position.y), z: z },
-        id: position.entity_id,
-      };
-    })
-    .filter(Boolean) as { contractPos: Position; uiPos: UIPosition; id: bigint }[];
+  const positions = useMemo(
+    () =>
+      armies
+        .map((armyId) => {
+          const position = getComponentValue(Position, armyId);
+          // if animated army dont display
+          if (!position || animationPath?.id === position.entity_id) return;
+          const hexIndex = hexData.findIndex((h) => h.col === position.x && h.row === position.y);
+          const hex = hexData[hexIndex];
+          let z = DEPTH;
+          if (hexIndex !== -1 && isExplored(position.x, position.y)) {
+            z += BIOMES[hex.biome].depth * DEPTH;
+          }
+          return {
+            contractPos: { x: position.x, y: position.y },
+            uiPos: { ...getUIPositionFromColRow(position.x, position.y), z: z },
+            id: position.entity_id,
+          };
+        })
+        .filter(Boolean) as { contractPos: Position; uiPos: UIPosition; id: bigint }[],
+    [armies],
+  );
 
   // clickable
   const onClick = (id: bigint, position: Position) => {
     setSelectedEntity({ id, position });
   };
+
+  // useEffect(() => {
+  //   const army = positions.find((army) => army.id === selectedEntity?.id);
+  //   if (!selectedEntity) setSelectedArmy(undefined);
+  //   if (army) setSelectedArmy({ id: army.id, position: army.uiPos });
+  // }, [selectedEntity, positions]);
 
   return (
     <group>
@@ -110,6 +131,7 @@ export const Armies = ({ hexData }: ArmiesProps) => {
         );
       })}
       {hoveredArmy && <ArmyInfoLabel position={hoveredArmy.position} armyId={hoveredArmy.id} />}
+      {selectedArmy && <ArmyInfoLabel position={selectedArmy.position} armyId={selectedArmy.id} />}
     </group>
   );
 };
@@ -129,6 +151,7 @@ export const TravelingArmies = ({ hexData }: TravelingArmiesProps) => {
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const animationPath = useUIStore((state) => state.animationPath);
   const setAnimationPath = useUIStore((state) => state.setAnimationPath);
+  // const selectedEntity = useUIStore((state) => state.selectedEntity);
 
   const { getMovingRealmRaiders } = useCombat();
   const { isExplored } = useExplore();
@@ -137,6 +160,7 @@ export const TravelingArmies = ({ hexData }: TravelingArmiesProps) => {
   const animatedArmyRef = useRef<Group | null>(null);
 
   const [hoveredArmy, setHoveredArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
+  const [selectedArmy, setSelectedArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
 
   const armies = realmEntityIds.flatMap(({ realmEntityId }) => {
     return getMovingRealmRaiders(realmEntityId);
@@ -179,7 +203,10 @@ export const TravelingArmies = ({ hexData }: TravelingArmiesProps) => {
         y: currentPath[0].y + (currentPath[1].y - currentPath[0].y) * progressBetweenPoints,
       };
 
-      const z = DEPTH;
+      const currentColRow = getColRowFromUIPosition(currentPos.x, currentPos.y);
+      const hex = hexData.find((h) => h.col === currentColRow.col && h.row === currentColRow.row);
+      const z = DEPTH + (hex ? BIOMES[hex.biome].depth * DEPTH : 0);
+
       animatedArmyRef.current.position.set(currentPos.x, z, -currentPos.y);
     }
   });
@@ -191,23 +218,32 @@ export const TravelingArmies = ({ hexData }: TravelingArmiesProps) => {
     }
   }, [animationPath]);
 
-  const positions = armies
-    .map((armyId) => {
-      const position = getComponentValue(Position, armyId);
-      if (!position) return;
-      const hexIndex = hexData.findIndex((h) => h.col === position.x && h.row === position.y);
-      const hex = hexData[hexIndex];
-      let z = DEPTH;
-      if (hexIndex !== -1 && isExplored(position.x, position.y)) {
-        z += BIOMES[hex.biome].depth * DEPTH;
-      }
-      return {
-        contractPos: { x: position.x, y: position.y },
-        uiPos: { ...getUIPositionFromColRow(position.x, position.y), z: z },
-        id: position.entity_id,
-      };
-    })
-    .filter(Boolean) as { contractPos: Position; uiPos: UIPosition; id: bigint }[];
+  const positions = useMemo(
+    () =>
+      armies
+        .map((armyId) => {
+          const position = getComponentValue(Position, armyId);
+          if (!position) return;
+          const hexIndex = hexData.findIndex((h) => h.col === position.x && h.row === position.y);
+          const hex = hexData[hexIndex];
+          let z = DEPTH;
+          if (hexIndex !== -1 && isExplored(position.x, position.y)) {
+            z += BIOMES[hex.biome].depth * DEPTH;
+          }
+          return {
+            contractPos: { x: position.x, y: position.y },
+            uiPos: { ...getUIPositionFromColRow(position.x, position.y), z: z },
+            id: position.entity_id,
+          };
+        })
+        .filter(Boolean) as { contractPos: Position; uiPos: UIPosition; id: bigint }[],
+    [armies],
+  );
+
+  // useEffect(() => {
+  //   const army = positions.find((army) => army.id === selectedEntity?.id);
+  //   if (army) setSelectedArmy({ id: army.id, position: army.uiPos });
+  // }, [selectedEntity, positions]);
 
   return (
     <group>
@@ -226,112 +262,10 @@ export const TravelingArmies = ({ hexData }: TravelingArmiesProps) => {
         })}
       {animationPath && <ArmyModel ref={animatedArmyRef} scale={1}></ArmyModel>}
       {hoveredArmy && <ArmyInfoLabel position={hoveredArmy.position} armyId={hoveredArmy.id} />}
+      {selectedArmy && <ArmyInfoLabel position={selectedArmy.position} armyId={selectedArmy.id} />}
     </group>
   );
 };
-
-// export const TravelingArmies = ({ hexData }: TravelingArmiesProps) => {
-//   const {
-//     setup: {
-//       components: { Movable, Position, ArrivalTime },
-//     },
-//   } = useDojo();
-//   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-//   // stary only by showing your armies for now
-//   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
-//   const { getMovingRealmRaiders } = useCombat();
-//   const { isExplored } = useExplore();
-
-//   const [hoveredArmy, setHoveredArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
-
-//   const armies = realmEntityIds.flatMap(({ realmEntityId }) => {
-//     return getMovingRealmRaiders(realmEntityId);
-//   });
-
-//   const onHover = (armyId: bigint, position: UIPosition) => {
-//     setHoveredArmy({ id: armyId, position });
-//   };
-
-//   const onUnhover = () => {
-//     setHoveredArmy(undefined);
-//   };
-
-//   const travelPosition = armies
-//     .map((armyId) => {
-//       const movable = getComponentValue(Movable, armyId);
-//       const position = getComponentValue(Position, armyId);
-//       const arrivalTime = getComponentValue(ArrivalTime, armyId);
-//       if (!movable || !position || !nextBlockTimestamp || !arrivalTime) return;
-
-//       const start = { col: movable.start_coord_x, row: movable.start_coord_y };
-//       const end = { col: position.x, row: position.y };
-//       const speed = movable.sec_per_km;
-//       const hexSizeInKm = 1;
-
-//       // Calculate total distance
-//       const distance = Math.sqrt(Math.pow(end.col - start.col, 2) + Math.pow(end.row - start.row, 2)) * hexSizeInKm;
-
-//       // Calculate total travel time
-//       const totalTravelTime = distance * speed;
-
-//       // Reverse-engineer start time using the arrival time and total travel time
-//       const startTime = arrivalTime.arrives_at - totalTravelTime;
-
-//       // Calculate elapsed time
-//       const elapsedTime = nextBlockTimestamp - startTime;
-
-//       // Calculate progress percentage
-//       const progress = Math.min(elapsedTime / totalTravelTime, 1); // Ensure it doesn't exceed 100%
-
-//       // Interpolate current position
-//       const currentPos = {
-//         col: start.col + progress * (end.col - start.col),
-//         row: start.row + progress * (end.row - start.row),
-//       };
-
-//       let z = DEPTH;
-//       const roundedCol = Math.round(currentPos.col);
-//       const roundedRow = Math.round(currentPos.row);
-//       const hexIndex = hexData.findIndex((h) => h.col === roundedCol && h.row === roundedRow);
-//       const hex = hexData[hexIndex];
-//       const explored = isExplored(roundedCol, roundedRow);
-//       if (hexIndex !== -1 && explored) {
-//         z = z + BIOMES[hex.biome].depth * DEPTH;
-//       }
-
-//       return {
-//         armyId: arrivalTime.entity_id,
-//         currentPos: { ...getUIPositionFromColRow(currentPos.col, currentPos.row), z },
-//         endPos: { ...getUIPositionFromColRow(end.col, end.row), z: DEPTH },
-//       };
-//     })
-//     .filter(Boolean) as { armyId: bigint; currentPos: UIPosition; endPos: UIPosition }[];
-
-//   return (
-//     <group>
-//       <Arcs
-//         paths={travelPosition.map(({ currentPos, endPos }) => {
-//           return {
-//             from: currentPos,
-//             to: endPos,
-//           };
-//         })}
-//       />
-//       {travelPosition.map(({ currentPos, armyId }, i) => {
-//         return (
-//           <ArmyModel
-//             onPointerOver={() => onHover(armyId, currentPos)}
-//             onPointerOut={onUnhover}
-//             key={i}
-//             scale={1}
-//             position={[currentPos.x, currentPos.z, -currentPos.y]}
-//           ></ArmyModel>
-//         );
-//       })}
-//       {hoveredArmy && <ArmyInfoLabel position={hoveredArmy.position} armyId={hoveredArmy.id} />}
-//     </group>
-//   );
-// };
 
 type ArmyInfoLabelProps = {
   position: UIPosition;
@@ -341,12 +275,25 @@ type ArmyInfoLabelProps = {
 const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
   const { getEntitiesCombatInfo } = useCombat();
 
+  const {
+    setup: {
+      components: { TickMove },
+    },
+  } = useDojo();
+
+  const { getResourcesFromInventory } = useResources();
+  const { getRealmAddressName } = useRealm();
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+
   const raider = useMemo(() => {
     return getEntitiesCombatInfo([armyId])[0];
   }, [armyId]);
 
-  const { getRealmAddressName } = useRealm();
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const tickMove = raider.entityId ? getComponentValue(TickMove, getEntityIdFromKeys([raider.entityId])) : undefined;
+  const isPassiveTravel = raider.arrivalTime && nextBlockTimestamp ? raider.arrivalTime > nextBlockTimestamp : false;
+
+  const currentTick = nextBlockTimestamp ? Math.floor(nextBlockTimestamp / TIME_PER_TICK) : 0;
+  const isActiveTravel = tickMove !== undefined ? tickMove.tick >= currentTick : false;
 
   return (
     <Html scale={1} position={[position.x, position.z, -position.y]}>
@@ -354,7 +301,10 @@ const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
         key={raider.entityId}
         raider={raider}
         getRealmAddressName={getRealmAddressName}
+        getResourcesFromInventory={getResourcesFromInventory}
         nextBlockTimestamp={nextBlockTimestamp}
+        isPassiveTravel={isPassiveTravel}
+        isActiveTravel={isActiveTravel}
       />
     </Html>
   );
@@ -363,19 +313,28 @@ const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
 const RaiderInfo = ({
   raider,
   getRealmAddressName,
+  getResourcesFromInventory,
   nextBlockTimestamp,
+  isPassiveTravel,
+  isActiveTravel,
 }: {
   raider: CombatInfo;
   getRealmAddressName: (name: bigint) => string;
+  getResourcesFromInventory: (entityId: bigint) => { resources: Resource[]; indices: number[] };
   nextBlockTimestamp: number | undefined;
+  isPassiveTravel: boolean;
+  isActiveTravel: boolean;
 }) => {
-  const { entityOwnerId, entityId, health, quantity, attack, defence, originRealmId, arrivalTime } = raider;
+  const { entityOwnerId, entityId, health, quantity, attack, defence, originRealmId } = raider;
 
   const setTooltip = useUIStore((state) => state.setTooltip);
   const attackerAddressName = entityOwnerId ? getRealmAddressName(entityOwnerId) : "";
 
-  const isTraveling = arrivalTime && nextBlockTimestamp ? arrivalTime > nextBlockTimestamp : false;
   const originRealmName = originRealmId ? getRealmNameById(originRealmId) : "";
+
+  const inventoryResources = raider.entityId ? getResourcesFromInventory(raider.entityId) : undefined;
+
+  const isTraveling = isPassiveTravel || isActiveTravel;
 
   return (
     <div
@@ -392,11 +351,10 @@ const RaiderInfo = ({
         <div className="flex items-center ml-1 -mt-2">
           {isTraveling && originRealmId?.toString() && (
             <div className="flex items-center ml-1">
-              <span className="italic text-light-pink">Traveling from</span>
+              <span className="italic text-light-pink">From</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
                 <OrderIcon order={getRealmOrderNameById(originRealmId)} className="mr-1" size="xxs" />
                 {originRealmName}
-                <span className="italic text-light-pink ml-1">with</span>
               </div>
             </div>
           )}
@@ -419,7 +377,9 @@ const RaiderInfo = ({
         )}
         {raider.arrivalTime && isTraveling && nextBlockTimestamp && (
           <div className="flex ml-auto -mt-2 italic text-light-pink">
-            {formatSecondsLeftInDaysHours(raider.arrivalTime - nextBlockTimestamp)}
+            {isPassiveTravel
+              ? formatSecondsLeftInDaysHours(raider.arrivalTime - nextBlockTimestamp)
+              : "Arrives Next Tick"}
           </div>
         )}
       </div>
@@ -487,6 +447,24 @@ const RaiderInfo = ({
             />
           </div>
         )}
+        <div className="flex items-center justify-between mt-[8px] text-xxs">
+          {inventoryResources && (
+            <div className="flex justify-center items-center space-x-1 flex-wrap">
+              {inventoryResources.resources.map(
+                (resource) =>
+                  resource && (
+                    <ResourceCost
+                      key={resource.resourceId}
+                      type="vertical"
+                      color="text-order-brilliance"
+                      resourceId={resource.resourceId}
+                      amount={divideByPrecision(Number(resource.amount))}
+                    />
+                  ),
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

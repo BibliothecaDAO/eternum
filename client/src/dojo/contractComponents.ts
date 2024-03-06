@@ -862,5 +862,22 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    TickMove: (() => {
+      return defineComponent(
+        world,
+        {
+          entity_id: RecsType.BigInt,
+          tick: RecsType.Number,
+          count: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: "TickMove",
+            types: ["u128", "u64", "u8"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
   };
 }

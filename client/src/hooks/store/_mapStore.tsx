@@ -9,8 +9,6 @@ export interface MapStore {
   setHexData: (hexData: Hexagon[]) => void;
   selectedEntity: { id: bigint; position: Position } | undefined;
   setSelectedEntity: (entity: { id: bigint; position: Position } | undefined) => void;
-  selectedDestination: { col: number; row: number; hexIndex: number } | undefined;
-  setSelectedDestination: (destination: { col: number; row: number; hexIndex: number }) => void;
   animationPath: { id: bigint; path: Position[] } | undefined;
   setAnimationPath: (path: { id: bigint; path: Position[] } | undefined) => void;
   selectedPath: { id: bigint; path: Position[] } | undefined;
@@ -36,9 +34,6 @@ export const createMapStoreSlice = (set: any) => ({
   },
   selectedEntity: undefined,
   setSelectedEntity: (entity: { id: bigint; position: Position } | undefined) => set({ selectedEntity: entity }),
-  selectedDestination: undefined,
-  setSelectedDestination: (destination: { col: number; row: number; hexIndex: number }) =>
-    set({ selectedDestination: destination }),
   animationPath: undefined,
   setAnimationPath: (animationPath: { id: bigint; path: Position[] } | undefined) => set({ animationPath }),
   selectedPath: undefined,

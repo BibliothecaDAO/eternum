@@ -17,12 +17,14 @@ type ExploreMapPopupProps = {};
 export const ExploreMapPopup = ({}: ExploreMapPopupProps) => {
   const [step, setStep] = useState(1);
 
+  const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
+  const setSelectedPath = useUIStore((state) => state.setSelectedPath);
   const selectedPath = useUIStore((state) => state.selectedPath);
   const hexData = useUIStore((state) => state.hexData);
   const setIsExploreMode = useUIStore((state) => state.setIsExploreMode);
 
   const { useFoundResources } = useExplore();
-  let foundResource = useFoundResources(selectedPath?.id || 0n);
+  let foundResource = useFoundResources(selectedPath?.id);
 
   const biome = useMemo(() => {
     if (selectedPath?.path.length === 2 && hexData) {
@@ -32,6 +34,8 @@ export const ExploreMapPopup = ({}: ExploreMapPopupProps) => {
   }, [selectedPath, hexData]);
 
   const onClose = () => {
+    setSelectedEntity(undefined);
+    setSelectedPath(undefined);
     setIsExploreMode(false);
   };
 
@@ -91,7 +95,8 @@ export const ExplorePanel = ({
   } = useDojo();
 
   const [isLoading, setIsLoading] = useState(false);
-  const { getFoodResources } = useResources();
+  const setSelectedPath = useUIStore((state) => state.setSelectedPath);
+  const setIsExploreMode = useUIStore((state) => state.setIsExploreMode);
 
   const explorationCost: Resource[] = [
     {
@@ -110,12 +115,13 @@ export const ExplorePanel = ({
 
   const onExplore = async () => {
     setIsLoading(true);
-    if (!explorerId || !explorationStart || !direction) return;
+    if (!explorerId || !explorationStart || direction === undefined) return;
     await explore({
       unit_id: explorerId,
       direction,
       signer: account,
     });
+    // setStep(2);
   };
 
   useEffect(() => {
@@ -127,11 +133,20 @@ export const ExplorePanel = ({
 
   // do a use component value to wait for the exploration tx to be finished
   // then go to next step
+  const onCancelSelection = () => {
+    setSelectedPath(undefined);
+  };
+
+  const onCancelExplore = () => {
+    setIsExploreMode(false);
+  };
+
+  const canExplore = explorerId !== undefined && explorationStart !== undefined && direction !== undefined;
 
   return (
     <>
       <div className={"relative w-full mt-3"}>
-        <img src={`/images/biomes/exploration.png`} className="object-cover w-full h-full rounded-[10px]" />
+        <img src={`/images/biomes/exploration.png`} className="object-cover w-full h-[200px] rounded-[10px]" />
         <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
           <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
           <div className="grid grid-cols-4 gap-2">
@@ -147,81 +162,34 @@ export const ExplorePanel = ({
         </div>
       </div>
       <div className="w-full flex flex-col m-2 items-center text-xxs">
-        {/* <div className="flex w-[80%] justify-between items-center mb-2">
-          <SelectEntityId
-            entityIds={realmEntityIds.map((realmEntityId) => realmEntityId.realmEntityId)}
-            selectedEntityId={selectedEntityId}
-            idsCanExplore={idsCanExplore}
-            setSelectedEntityId={setSelectedEntityId}
-          ></SelectEntityId>
-        </div> */}
-        <div className="flex flex-col items-center justify-center">
-          <div className="flex">
-            {/* <Button
-              className="!px-[6px] mr-2 !py-[2px] text-xxs ml-auto"
-              onClick={onClose}
-              variant="outline"
-              withoutSound
-            >
-              {`Cancel`}
-            </Button> */}
+        <div className="flex w-full items-center justify-center">
+          <div className="flex mt-1 w-[85%] items-center justify-center">
             <Button
-              className="!px-[8px] !py-[5px] ml-auto text-lg h-7 "
+              variant="primary"
               size="md"
-              // disabled={idsCanExplore.find((id) => id === explorerId) ? false : true}
-              disabled={!direction || !explorerId || !explorationStart}
               isLoading={isLoading}
+              disabled={!canExplore}
               onClick={onExplore}
-              variant="outline"
-              withoutSound
+              className="mr-3"
             >
-              {`Explore`}
+              Explore
             </Button>
+            {canExplore && (
+              <Button variant="primary" size="md" onClick={onCancelSelection} className="mr-3">
+                Cancel Selection
+              </Button>
+            )}
+            {!canExplore && (
+              <Button variant="primary" size="md" onClick={onCancelExplore} className="mr-3">
+                Cancel
+              </Button>
+            )}
           </div>
         </div>
       </div>
     </>
   );
 };
-
-// type SelectEntityIdProps = {
-//   entityIds: bigint[];
-//   idsCanExplore: bigint[];
-//   setSelectedEntityId: (id: bigint) => void;
-//   selectedEntityId: bigint | undefined;
-// };
-
-// const SelectEntityId = ({ entityIds, idsCanExplore, setSelectedEntityId, selectedEntityId }: SelectEntityIdProps) => {
-//   const {
-//     setup: {
-//       components: { Realm },
-//     },
-//   } = useDojo();
-
-//   const names = entityIds.map((entityId) => {
-//     // get the name
-//     const realm = getComponentValue(Realm, getEntityIdFromKeys([entityId]));
-//     return { entityId, name: realm ? getRealm(realm?.realm_id)?.name : "" };
-//   });
-
-//   return (
-//     <div className="w-full flex flex-row justify-between">
-//       {names.map((name, index) => (
-//         <Button
-//           variant={selectedEntityId === name.entityId ? "primary" : "outline"}
-//           size="xs"
-//           className={""}
-//           disabled={!idsCanExplore.find((id) => id === BigInt(name.entityId))}
-//           onClick={() => setSelectedEntityId(name.entityId)}
-//           key={index}
-//         >
-//           {name.name}
-//         </Button>
-//       ))}
-//       ;
-//     </div>
-//   );
-// };
 
 type ExploreResultPanelProps = {
   biome: string;
@@ -238,7 +206,7 @@ const ExploreResultPanel = ({ biome, foundResource, onClose }: ExploreResultPane
     <div className="flex flex-col items-center w-full">
       {success && (
         <>
-          <div className="flex w-full items-center">
+          {/* <div className="flex w-full items-center">
             <svg width="132" height="12" viewBox="0 0 132 12" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
                 d="M131.887 6L129 8.88675L126.113 6L129 3.11325L131.887 6ZM129 6.5L1.23874 6.50001L1.23874 5.50001L129 5.5L129 6.5Z"
@@ -267,23 +235,23 @@ const ExploreResultPanel = ({ biome, foundResource, onClose }: ExploreResultPane
               <circle cx="1.5" cy="1.5" r="1.5" transform="matrix(-1 0 0 1 116 4.5)" fill="#1B1B1B" />
               <circle cx="1" cy="1" r="1" transform="matrix(-1 0 0 1 127 5)" fill="#1B1B1B" />
             </svg>
-          </div>
-          {step === 1 && (
+          </div> */}
+          {/* {step === 1 && (
             <div className="italic text-light-pink text-xxs my-2 uppercase"> {biome.split("_").join(" ")} </div>
           )}
-          {step !== 1 && <div className="italic text-light-pink text-xxs my-2">You’ve got a golden chest:</div>}
+          {step !== 1 && <div className="italic text-light-pink text-xxs my-2">You’ve got a golden chest:</div>} */}
           {step === 1 && (
             <div className="flex relative">
               <img
                 src={`/images/biomes/${biome.toLowerCase()}.png`}
-                className="object-cover w-full h-full rounded-[10px]"
+                className="object-cover w-full h-[230px] rounded-[10px]"
               />
             </div>
           )}
-          {step === 2 && <img src={`/images/chest.png`} className="object-contain w-full h-[450px] rounded-[10px]" />}
+          {step === 2 && <img src={`/images/chest.png`} className="object-cover rounded-[10px]" />}
           {step === 3 && (
             <div className="flex relative">
-              <img src={`/images/opened_chest.png`} className="object-contain w-full h-[450px] rounded-[10px]" />
+              <img src={`/images/opened_chest.png`} className="object-cover rounded-[10px]" />
               {foundResource && (
                 <div className="flex justify-center items-center space-x-1 flex-wrap p-2 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                   <div className="text-light-pink text-lg w-full mb-2 text-center italic">You won!</div>

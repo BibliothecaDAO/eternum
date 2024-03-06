@@ -41,19 +41,19 @@ export function useExplore() {
     return explored;
   };
 
-  const useFoundResources = (realmEntityId: bigint | undefined) => {
+  const useFoundResources = (entityId: bigint | undefined) => {
     const [foundResources, setFoundResources] = useState<Resource | undefined>();
 
     const subscriptionRef = useRef(null);
 
     useEffect(() => {
-      if (!realmEntityId) return;
+      if (!entityId) return;
       const subscribeToFoundResources = async () => {
-        const observable = await exploreEntityMapEvents(realmEntityId);
+        const observable = await exploreEntityMapEvents(entityId);
         const subscription = observable.subscribe((event) => {
           if (event) {
-            const resourceId = Number(event.data[1]);
-            const amount = Number(event.data[2]);
+            const resourceId = Number(event.data[3]);
+            const amount = Number(event.data[4]);
             setFoundResources({ resourceId, amount });
           }
         });
@@ -68,7 +68,7 @@ export function useExplore() {
           subscriptionRef.current.unsubscribe();
         }
       };
-    }, [realmEntityId]);
+    }, [entityId]);
 
     return foundResources;
   };
