@@ -21,8 +21,8 @@ export const ManageSoldiersPopupTabs = ({ headline, selectedRaider, onClose }: M
 
   const { realmEntityId } = useRealmStore();
 
-  const moveCameraToMarketView = useUIStore((state) => state.moveCameraToMarketView);
-  const moveCameraToCaravansView = useUIStore((state) => state.moveCameraToCaravansView);
+  // const moveCameraToMarketView = useUIStore((state) => state.moveCameraToMarketView);
+  // const moveCameraToCaravansView = useUIStore((state) => state.moveCameraToCaravansView);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   // @ts-ignore
@@ -34,13 +34,13 @@ export const ManageSoldiersPopupTabs = ({ headline, selectedRaider, onClose }: M
     return selectedRaider.sec_per_km === 0;
   }, [selectedRaider]);
 
-  useEffect(() => {
-    if ([0, 1, 2].includes(selectedTab)) {
-      moveCameraToMarketView();
-    } else if ([3, 4].includes(selectedTab)) {
-      moveCameraToCaravansView();
-    }
-  }, [selectedTab]);
+  // useEffect(() => {
+  //   if ([0, 1, 2].includes(selectedTab)) {
+  //     moveCameraToMarketView();
+  //   } else if ([3, 4].includes(selectedTab)) {
+  //     moveCameraToCaravansView();
+  //   }
+  // }, [selectedTab]);
 
   useEffect(() => {
     const tabIndex = tabs.findIndex((tab) => tab.key === params?.tab);

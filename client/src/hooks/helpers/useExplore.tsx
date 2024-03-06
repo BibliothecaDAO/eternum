@@ -52,8 +52,8 @@ export function useExplore() {
         const observable = await exploreEntityMapEvents(realmEntityId);
         const subscription = observable.subscribe((event) => {
           if (event) {
-            const resourceId = Number(event.data[1]);
-            const amount = Number(event.data[2]);
+            const resourceId = Number(event.data[3]);
+            const amount = Number(event.data[4]);
             setFoundResources({ resourceId, amount });
           }
         });
