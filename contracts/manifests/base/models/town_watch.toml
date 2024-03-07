@@ -1,0 +1,13 @@
+kind = "DojoModel"
+class_hash = "0x7d26b34fe238e9bc274a79ed60d7619d2e9d67c0c2dff2208c5738280f64dc2"
+name = "eternum::models::combat::town_watch"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "town_watch_id"
+type = "u128"
+key = false

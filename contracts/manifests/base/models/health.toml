@@ -1,0 +1,13 @@
+kind = "DojoModel"
+class_hash = "0x7b7c34925f04f8e57f39a6752552428376eb59b8ac8f5d52d42c864a40677d6"
+name = "eternum::models::combat::health"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "value"
+type = "u128"
+key = false

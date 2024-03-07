@@ -1,0 +1,18 @@
+kind = "DojoModel"
+class_hash = "0x5182a364642a812f44f663150f9cbd5f55a21f9cda255b9c7d9bf09a1643fe9"
+name = "eternum::models::config::tick_config"
+
+[[members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "max_moves_per_tick"
+type = "u8"
+key = false
+
+[[members]]
+name = "tick_interval_in_seconds"
+type = "u64"
+key = false

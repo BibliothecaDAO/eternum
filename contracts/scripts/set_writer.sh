@@ -15,7 +15,7 @@ for system in $(echo $system_models_json | jq -r 'keys[]'); do
         system_var="${system}"
         contract_address="${!system_var}"
         # make the system a writer of the component
-        commands+=("sozo auth writer --world "$SOZO_WORLD" $model $contract_address")
+        commands+=("sozo auth grant writer $model,$contract_address")
     done
 done
 

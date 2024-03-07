@@ -1,0 +1,13 @@
+kind = "DojoModel"
+class_hash = "0x4f3e029d9b2d4d416abf8a19a0e46d6cdb8803c7e042ca4f32efd0914994960"
+name = "eternum::models::resources::owned_resources_tracker"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "resource_types"
+type = "u32"
+key = false

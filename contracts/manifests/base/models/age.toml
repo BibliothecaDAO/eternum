@@ -1,0 +1,13 @@
+kind = "DojoModel"
+class_hash = "0x131b15492d7e276078ade476e8a6d14ee6811c88934c71e0e8173dfca6613d0"
+name = "eternum::models::age::age"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "born_at"
+type = "u64"
+key = false

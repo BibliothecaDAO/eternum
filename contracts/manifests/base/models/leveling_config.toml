@@ -1,0 +1,73 @@
+kind = "DojoModel"
+class_hash = "0x7f84be5353ef6079f425362ac570a844a1ed7264167ed6a39961f1cfa3f99f9"
+name = "eternum::models::config::leveling_config"
+
+[[members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "decay_interval"
+type = "u64"
+key = false
+
+[[members]]
+name = "max_level"
+type = "u64"
+key = false
+
+[[members]]
+name = "decay_scaled"
+type = "u128"
+key = false
+
+[[members]]
+name = "cost_percentage_scaled"
+type = "u128"
+key = false
+
+[[members]]
+name = "base_multiplier"
+type = "u128"
+key = false
+
+[[members]]
+name = "wheat_base_amount"
+type = "u128"
+key = false
+
+[[members]]
+name = "fish_base_amount"
+type = "u128"
+key = false
+
+[[members]]
+name = "resource_1_cost_id"
+type = "u128"
+key = false
+
+[[members]]
+name = "resource_1_cost_count"
+type = "u32"
+key = false
+
+[[members]]
+name = "resource_2_cost_id"
+type = "u128"
+key = false
+
+[[members]]
+name = "resource_2_cost_count"
+type = "u32"
+key = false
+
+[[members]]
+name = "resource_3_cost_id"
+type = "u128"
+key = false
+
+[[members]]
+name = "resource_3_cost_count"
+type = "u32"
+key = false

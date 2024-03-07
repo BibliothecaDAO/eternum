@@ -1,0 +1,13 @@
+kind = "DojoModel"
+class_hash = "0x7471acaca862042a38e73fb4a4eef2fea795ce79155d77e574013bcec07b34c"
+name = "eternum::models::combat::attack"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "value"
+type = "u128"
+key = false

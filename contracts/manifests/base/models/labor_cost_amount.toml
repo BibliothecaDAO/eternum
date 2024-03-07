@@ -1,0 +1,18 @@
+kind = "DojoModel"
+class_hash = "0x55712b7c24eca365cb08512ba84414f058431df050164f3abcb07d72c3c6e3f"
+name = "eternum::models::config::labor_cost_amount"
+
+[[members]]
+name = "resource_type_labor"
+type = "felt252"
+key = true
+
+[[members]]
+name = "resource_type_cost"
+type = "felt252"
+key = true
+
+[[members]]
+name = "value"
+type = "u128"
+key = false

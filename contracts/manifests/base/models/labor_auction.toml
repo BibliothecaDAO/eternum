@@ -1,0 +1,38 @@
+kind = "DojoModel"
+class_hash = "0xdd46877224aaed8920380d266c32492561b9546c8c10c4ea279469d09e644c"
+name = "eternum::models::labor_auction::labor_auction"
+
+[[members]]
+name = "zone"
+type = "u8"
+key = true
+
+[[members]]
+name = "decay_constant_mag"
+type = "u128"
+key = false
+
+[[members]]
+name = "decay_constant_sign"
+type = "bool"
+key = false
+
+[[members]]
+name = "per_time_unit"
+type = "u128"
+key = false
+
+[[members]]
+name = "start_time"
+type = "u64"
+key = false
+
+[[members]]
+name = "sold"
+type = "u128"
+key = false
+
+[[members]]
+name = "price_update_interval"
+type = "u128"
+key = false

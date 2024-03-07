@@ -1,0 +1,298 @@
+[
+  {
+    "type": "impl",
+    "name": "DojoResourceProviderImpl",
+    "interface_name": "dojo::world::IDojoResourceProvider"
+  },
+  {
+    "type": "interface",
+    "name": "dojo::world::IDojoResourceProvider",
+    "items": [
+      {
+        "type": "function",
+        "name": "dojo_resource",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::felt252"
+          }
+        ],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "WorldProviderImpl",
+    "interface_name": "dojo::world::IWorldProvider"
+  },
+  {
+    "type": "struct",
+    "name": "dojo::world::IWorldDispatcher",
+    "members": [
+      {
+        "name": "contract_address",
+        "type": "core::starknet::contract_address::ContractAddress"
+      }
+    ]
+  },
+  {
+    "type": "interface",
+    "name": "dojo::world::IWorldProvider",
+    "items": [
+      {
+        "type": "function",
+        "name": "world",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "dojo::world::IWorldDispatcher"
+          }
+        ],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "MapSystemsImpl",
+    "interface_name": "eternum::systems::map::interface::IMapSystems"
+  },
+  {
+    "type": "enum",
+    "name": "eternum::models::position::Direction",
+    "variants": [
+      {
+        "name": "East",
+        "type": "()"
+      },
+      {
+        "name": "NorthEast",
+        "type": "()"
+      },
+      {
+        "name": "NorthWest",
+        "type": "()"
+      },
+      {
+        "name": "West",
+        "type": "()"
+      },
+      {
+        "name": "SouthWest",
+        "type": "()"
+      },
+      {
+        "name": "SouthEast",
+        "type": "()"
+      }
+    ]
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::map::interface::IMapSystems",
+    "items": [
+      {
+        "type": "function",
+        "name": "explore",
+        "inputs": [
+          {
+            "name": "world",
+            "type": "dojo::world::IWorldDispatcher"
+          },
+          {
+            "name": "unit_id",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "direction",
+            "type": "eternum::models::position::Direction"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
+    "name": "UpgradableImpl",
+    "interface_name": "dojo::components::upgradeable::IUpgradeable"
+  },
+  {
+    "type": "interface",
+    "name": "dojo::components::upgradeable::IUpgradeable",
+    "items": [
+      {
+        "type": "function",
+        "name": "upgrade",
+        "inputs": [
+          {
+            "name": "new_class_hash",
+            "type": "core::starknet::class_hash::ClassHash"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "dojo::components::upgradeable::upgradeable::Upgraded",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "class_hash",
+        "type": "core::starknet::class_hash::ClassHash",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "dojo::components::upgradeable::upgradeable::Event",
+    "kind": "enum",
+    "variants": [
+      {
+        "name": "Upgraded",
+        "type": "dojo::components::upgradeable::upgradeable::Upgraded",
+        "kind": "nested"
+      }
+    ]
+  },
+  {
+    "type": "enum",
+    "name": "eternum::utils::map::biomes::Biome",
+    "variants": [
+      {
+        "name": "DeepOcean",
+        "type": "()"
+      },
+      {
+        "name": "Ocean",
+        "type": "()"
+      },
+      {
+        "name": "Beach",
+        "type": "()"
+      },
+      {
+        "name": "Scorched",
+        "type": "()"
+      },
+      {
+        "name": "Bare",
+        "type": "()"
+      },
+      {
+        "name": "Tundra",
+        "type": "()"
+      },
+      {
+        "name": "Snow",
+        "type": "()"
+      },
+      {
+        "name": "TemperateDesert",
+        "type": "()"
+      },
+      {
+        "name": "Shrubland",
+        "type": "()"
+      },
+      {
+        "name": "Taiga",
+        "type": "()"
+      },
+      {
+        "name": "Grassland",
+        "type": "()"
+      },
+      {
+        "name": "TemperateDeciduousForest",
+        "type": "()"
+      },
+      {
+        "name": "TemperateRainForest",
+        "type": "()"
+      },
+      {
+        "name": "SubtropicalDesert",
+        "type": "()"
+      },
+      {
+        "name": "TropicalSeasonalForest",
+        "type": "()"
+      },
+      {
+        "name": "TropicalRainForest",
+        "type": "()"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
+    "members": [
+      {
+        "name": "snapshot",
+        "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "eternum::systems::map::contracts::map_systems::MapExplored",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "entity_id",
+        "type": "core::integer::u128",
+        "kind": "key"
+      },
+      {
+        "name": "entity_owner_id",
+        "type": "core::integer::u128",
+        "kind": "data"
+      },
+      {
+        "name": "col",
+        "type": "core::integer::u128",
+        "kind": "key"
+      },
+      {
+        "name": "row",
+        "type": "core::integer::u128",
+        "kind": "key"
+      },
+      {
+        "name": "biome",
+        "type": "eternum::utils::map::biomes::Biome",
+        "kind": "data"
+      },
+      {
+        "name": "reward",
+        "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "eternum::systems::map::contracts::map_systems::Event",
+    "kind": "enum",
+    "variants": [
+      {
+        "name": "UpgradeableEvent",
+        "type": "dojo::components::upgradeable::upgradeable::Event",
+        "kind": "nested"
+      },
+      {
+        "name": "MapExplored",
+        "type": "eternum::systems::map::contracts::map_systems::MapExplored",
+        "kind": "nested"
+      }
+    ]
+  }
+]

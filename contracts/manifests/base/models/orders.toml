@@ -1,0 +1,13 @@
+kind = "DojoModel"
+class_hash = "0x235f9c1b430ddbdfd6eb2c2d4794b7a6818ff06b15c85c4725021cddd0636a3"
+name = "eternum::models::order::orders"
+
+[[members]]
+name = "order_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "hyperstructure_count"
+type = "u128"
+key = false

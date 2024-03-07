@@ -1,0 +1,18 @@
+kind = "DojoModel"
+class_hash = "0xa49f8bc4b3c48055ab5b3100be48a9e6bc35982646ddd92d141a94bc109f26"
+name = "eternum::models::resources::resource"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "resource_type"
+type = "u8"
+key = true
+
+[[members]]
+name = "balance"
+type = "u128"
+key = false
