@@ -395,6 +395,7 @@ const findShortestPathBFS = (
       const result = [];
       while (temp) {
         result.unshift(temp); // Add to the beginning of the result array
+        //@ts-ignore:
         temp = path.get(posKey(temp)); // Move backwards through the path
       }
       return result;
