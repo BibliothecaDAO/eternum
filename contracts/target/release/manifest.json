@@ -949,7 +949,7 @@
     {
       "name": "eternum::systems::bank::contracts::bank_systems",
       "address": "0x193936374e972c355f2246c66c62860c986dea275ce8fbd03d7d7a1d853a572",
-      "class_hash": "0x7222e8a23319bc0e233f0b075663f521a213ce22cf68aeff72421c0757d3808",
+      "class_hash": "0xefad37f87c76a0add94964e771219e45d1e96ac33e773246e927814dc91dfc",
       "abi": [
         {
           "type": "impl",
@@ -1285,7 +1285,7 @@
     {
       "name": "eternum::systems::combat::contracts::combat_systems",
       "address": "0x1b0a83a27a357e0574393ab06c0c774db7312a0993538cc0186d054f75ee84e",
-      "class_hash": "0x757baffba6384ef7baf9e0b4336bfd9bf9d6a01751c3537fa74a8798805515",
+      "class_hash": "0x5e375bcc589c62d0fc1c8dcd616211b29f3598685398b3faec352aa70b4d0eb",
       "abi": [
         {
           "type": "impl",
@@ -1608,6 +1608,11 @@
               "kind": "data"
             },
             {
+              "name": "stolen_chests",
+              "type": "core::array::Span::<core::integer::u128>",
+              "kind": "data"
+            },
+            {
               "name": "winner",
               "type": "eternum::systems::combat::contracts::combat_systems::Winner",
               "kind": "data"
@@ -1649,7 +1654,7 @@
     {
       "name": "eternum::systems::config::contracts::config_systems",
       "address": "0x7fff06bbcbe4f42f22c86b14e7a80604495c8b2034d14cbb10d32402c933ca8",
-      "class_hash": "0x1683df19ef6f3c93e221b7194773328ee7bfa14397487a347079fa2bc799a0e",
+      "class_hash": "0x61196b011c25f71150df09eee22c1479442a4f6d95e4bca8b37bd9300cfad3c",
       "abi": [
         {
           "type": "impl",
@@ -1799,7 +1804,7 @@
                   "type": "core::integer::u128"
                 },
                 {
-                  "name": "random_mint_amount",
+                  "name": "reward_resource_amount",
                   "type": "core::integer::u128"
                 }
               ],
@@ -1863,6 +1868,37 @@
                 {
                   "name": "weight_gram",
                   "type": "core::integer::u128"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "TickConfigImpl",
+          "interface_name": "eternum::systems::config::interface::ITickConfig"
+        },
+        {
+          "type": "interface",
+          "name": "eternum::systems::config::interface::ITickConfig",
+          "items": [
+            {
+              "type": "function",
+              "name": "set_tick_config",
+              "inputs": [
+                {
+                  "name": "world",
+                  "type": "dojo::world::IWorldDispatcher"
+                },
+                {
+                  "name": "max_moves_per_tick",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "tick_interval_in_seconds",
+                  "type": "core::integer::u64"
                 }
               ],
               "outputs": [],
@@ -3050,7 +3086,7 @@
     {
       "name": "eternum::systems::map::contracts::map_systems",
       "address": "0x3fda5d1f7500f799eb30aa1293b2b6c354d350ed359593eb75390893cc7ec3d",
-      "class_hash": "0x7f62cf3ed595714625b5ef9e6c8bd025aa2f0f51228279e380ec3cb39b56c14",
+      "class_hash": "0x182dcb08ba3f5465ffafcdd29360f83c8708c19436c44cc90c6fadea2035e4c",
       "abi": [
         {
           "type": "impl",
@@ -3112,20 +3148,6 @@
           "interface_name": "eternum::systems::map::interface::IMapSystems"
         },
         {
-          "type": "struct",
-          "name": "eternum::models::position::Coord",
-          "members": [
-            {
-              "name": "x",
-              "type": "core::integer::u128"
-            },
-            {
-              "name": "y",
-              "type": "core::integer::u128"
-            }
-          ]
-        },
-        {
           "type": "enum",
           "name": "eternum::models::position::Direction",
           "variants": [
@@ -3168,12 +3190,8 @@
                   "type": "dojo::world::IWorldDispatcher"
                 },
                 {
-                  "name": "realm_entity_id",
+                  "name": "unit_id",
                   "type": "core::integer::u128"
-                },
-                {
-                  "name": "from_coord",
-                  "type": "eternum::models::position::Coord"
                 },
                 {
                   "name": "direction",
@@ -3303,6 +3321,16 @@
           ]
         },
         {
+          "type": "struct",
+          "name": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::integer::u8, core::integer::u128)>"
+            }
+          ]
+        },
+        {
           "type": "event",
           "name": "eternum::systems::map::contracts::map_systems::MapExplored",
           "kind": "struct",
@@ -3311,6 +3339,11 @@
               "name": "entity_id",
               "type": "core::integer::u128",
               "kind": "key"
+            },
+            {
+              "name": "entity_owner_id",
+              "type": "core::integer::u128",
+              "kind": "data"
             },
             {
               "name": "col",
@@ -3328,13 +3361,8 @@
               "kind": "data"
             },
             {
-              "name": "minted_resource_id",
-              "type": "core::integer::u8",
-              "kind": "data"
-            },
-            {
-              "name": "minted_resource_amount",
-              "type": "core::integer::u128",
+              "name": "reward",
+              "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>",
               "kind": "data"
             }
           ]
@@ -3514,7 +3542,7 @@
     {
       "name": "eternum::systems::realm::contracts::realm_systems",
       "address": "0x25df90992b8eebca69f08035ceda822dee73028e828ceb8421895814eacd3d",
-      "class_hash": "0x350b5257207d66a03678de818fb42d15be609cd29b6cb6e45324d413f013d06",
+      "class_hash": "0x2c1d9e86e956db523187bb2543cc61e47971f9e8f97583510e626595266d40",
       "abi": [
         {
           "type": "impl",
@@ -3722,7 +3750,7 @@
     {
       "name": "eternum::systems::resources::contracts::resource_systems",
       "address": "0x406b259886beb36b2474c7a85ad8298b948eeca68b3a185ee7ba870dbc025c8",
-      "class_hash": "0x5fc8be6ae8da77e7964ebb5256961989debfa0f5dbff754045b2bb7e6d3e038",
+      "class_hash": "0x6e7263d373667be797acf83a42942792edd8afbef0361b4f621d08c102e045",
       "abi": [
         {
           "type": "impl",
@@ -4173,7 +4201,7 @@
     {
       "name": "eternum::systems::trade::contracts::trade_systems::trade_systems",
       "address": "0x63cbe849cf6325e727a8d6f82f25fad7dc7eb9433767f5c1b8c59189e36c9b6",
-      "class_hash": "0x6c539df3974ef5705a6ca4167673d4a7aebc1c199155bef18f2014af55700c9",
+      "class_hash": "0x766df3ce262a9966b18bd0f9093ab1e19d5442bc403e42ad9a3d76fd55331c9",
       "abi": [
         {
           "type": "impl",
@@ -4978,7 +5006,7 @@
     {
       "name": "eternum::systems::transport::contracts::travel_systems::travel_systems",
       "address": "0x740ea95e67b0b7533ee4891524c5c7edfd7fefc09297c0304b21515cc1223ec",
-      "class_hash": "0x6ed0369fba9f942aa62893eed289a2231816c6c271318835552c0c4e7801527",
+      "class_hash": "0xeeb2f00c0c30cd94e91e6eb9da08e94d0a6d5402662e0de36cdcc4f7e7487e",
       "abi": [
         {
           "type": "impl",
@@ -5054,6 +5082,46 @@
           ]
         },
         {
+          "type": "enum",
+          "name": "eternum::models::position::Direction",
+          "variants": [
+            {
+              "name": "East",
+              "type": "()"
+            },
+            {
+              "name": "NorthEast",
+              "type": "()"
+            },
+            {
+              "name": "NorthWest",
+              "type": "()"
+            },
+            {
+              "name": "West",
+              "type": "()"
+            },
+            {
+              "name": "SouthWest",
+              "type": "()"
+            },
+            {
+              "name": "SouthEast",
+              "type": "()"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<eternum::models::position::Direction>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<eternum::models::position::Direction>"
+            }
+          ]
+        },
+        {
           "type": "interface",
           "name": "eternum::systems::transport::interface::travel_systems_interface::ITravelSystems",
           "items": [
@@ -5072,6 +5140,26 @@
                 {
                   "name": "destination_coord",
                   "type": "eternum::models::position::Coord"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "travel_hex",
+              "inputs": [
+                {
+                  "name": "world",
+                  "type": "dojo::world::IWorldDispatcher"
+                },
+                {
+                  "name": "travelling_entity_id",
+                  "type": "core::integer::u128"
+                },
+                {
+                  "name": "directions",
+                  "type": "core::array::Span::<eternum::models::position::Direction>"
                 }
               ],
               "outputs": [],
@@ -5127,6 +5215,16 @@
           ]
         },
         {
+          "type": "struct",
+          "name": "core::array::Span::<eternum::models::position::Coord>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<eternum::models::position::Coord>"
+            }
+          ]
+        },
+        {
           "type": "event",
           "name": "eternum::systems::transport::contracts::travel_systems::travel_systems::Travel",
           "kind": "struct",
@@ -5149,6 +5247,16 @@
             {
               "name": "entity_id",
               "type": "core::integer::u128",
+              "kind": "data"
+            },
+            {
+              "name": "travel_time",
+              "type": "core::integer::u64",
+              "kind": "data"
+            },
+            {
+              "name": "travel_path",
+              "type": "core::array::Span::<eternum::models::position::Coord>",
               "kind": "data"
             }
           ]
@@ -10579,12 +10687,12 @@
           "key": false
         },
         {
-          "name": "random_mint_amount",
+          "name": "reward_resource_amount",
           "type": "u128",
           "key": false
         }
       ],
-      "class_hash": "0x3774324bf826a5240e094e61d2fe8c5b2bea39541cb664a7f87086b2acceb82",
+      "class_hash": "0x469a5d35ed69798e93a0cca2a2ad833f8770de7b4d843f597d0bf255a563ca4",
       "abi": [
         {
           "type": "impl",
@@ -10772,7 +10880,7 @@
               "type": "core::integer::u128"
             },
             {
-              "name": "random_mint_amount",
+              "name": "reward_resource_amount",
               "type": "core::integer::u128"
             }
           ]
@@ -11770,6 +11878,240 @@
         {
           "type": "event",
           "name": "eternum::models::config::speed_config::Event",
+          "kind": "enum",
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "eternum::models::config::tick_config",
+      "members": [
+        {
+          "name": "config_id",
+          "type": "u128",
+          "key": true
+        },
+        {
+          "name": "max_moves_per_tick",
+          "type": "u8",
+          "key": false
+        },
+        {
+          "name": "tick_interval_in_seconds",
+          "type": "u64",
+          "key": false
+        }
+      ],
+      "class_hash": "0x58a0049bfded77d8f63339cc57b891d248f3d4372c800fdde58579f1bfcc871",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "DojoModelImpl",
+          "interface_name": "dojo::model::IDojoModel"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::felt252>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::felt252>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::Struct",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::Enum",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "dojo::database::introspect::Ty",
+          "variants": [
+            {
+              "name": "Primitive",
+              "type": "core::felt252"
+            },
+            {
+              "name": "Struct",
+              "type": "dojo::database::introspect::Struct"
+            },
+            {
+              "name": "Enum",
+              "type": "dojo::database::introspect::Enum"
+            },
+            {
+              "name": "Tuple",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::model::IDojoModel",
+          "items": [
+            {
+              "type": "function",
+              "name": "name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::felt252"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "unpacked_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u32"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "packed_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u32"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "layout",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::array::Span::<core::integer::u8>"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "schema",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::database::introspect::Ty"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "tick_configImpl",
+          "interface_name": "eternum::models::config::Itick_config"
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::config::TickConfig",
+          "members": [
+            {
+              "name": "config_id",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "max_moves_per_tick",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "tick_interval_in_seconds",
+              "type": "core::integer::u64"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::models::config::Itick_config",
+          "items": [
+            {
+              "type": "function",
+              "name": "ensure_abi",
+              "inputs": [
+                {
+                  "name": "model",
+                  "type": "eternum::models::config::TickConfig"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::config::tick_config::Event",
           "kind": "enum",
           "variants": []
         }
@@ -18614,6 +18956,240 @@
         {
           "type": "event",
           "name": "eternum::models::road::road::Event",
+          "kind": "enum",
+          "variants": []
+        }
+      ]
+    },
+    {
+      "name": "eternum::models::tick::tick_move",
+      "members": [
+        {
+          "name": "entity_id",
+          "type": "u128",
+          "key": true
+        },
+        {
+          "name": "tick",
+          "type": "u64",
+          "key": false
+        },
+        {
+          "name": "count",
+          "type": "u8",
+          "key": false
+        }
+      ],
+      "class_hash": "0x6d70cf4b0efe9a00f1d4f2dcc034a12ac78586a89151360acef6bb62ddf7046",
+      "abi": [
+        {
+          "type": "impl",
+          "name": "DojoModelImpl",
+          "interface_name": "dojo::model::IDojoModel"
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::integer::u8>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::integer::u8>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::felt252>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::felt252>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<core::array::Span::<core::felt252>>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::Struct",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>",
+          "members": [
+            {
+              "name": "snapshot",
+              "type": "@core::array::Array::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "dojo::database::introspect::Enum",
+          "members": [
+            {
+              "name": "name",
+              "type": "core::felt252"
+            },
+            {
+              "name": "attrs",
+              "type": "core::array::Span::<core::felt252>"
+            },
+            {
+              "name": "children",
+              "type": "core::array::Span::<(core::felt252, core::array::Span::<core::felt252>)>"
+            }
+          ]
+        },
+        {
+          "type": "enum",
+          "name": "dojo::database::introspect::Ty",
+          "variants": [
+            {
+              "name": "Primitive",
+              "type": "core::felt252"
+            },
+            {
+              "name": "Struct",
+              "type": "dojo::database::introspect::Struct"
+            },
+            {
+              "name": "Enum",
+              "type": "dojo::database::introspect::Enum"
+            },
+            {
+              "name": "Tuple",
+              "type": "core::array::Span::<core::array::Span::<core::felt252>>"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "dojo::model::IDojoModel",
+          "items": [
+            {
+              "type": "function",
+              "name": "name",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::felt252"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "unpacked_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u32"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "packed_size",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::integer::u32"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "layout",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "core::array::Span::<core::integer::u8>"
+                }
+              ],
+              "state_mutability": "view"
+            },
+            {
+              "type": "function",
+              "name": "schema",
+              "inputs": [],
+              "outputs": [
+                {
+                  "type": "dojo::database::introspect::Ty"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "impl",
+          "name": "tick_moveImpl",
+          "interface_name": "eternum::models::tick::Itick_move"
+        },
+        {
+          "type": "struct",
+          "name": "eternum::models::tick::TickMove",
+          "members": [
+            {
+              "name": "entity_id",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "tick",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "count",
+              "type": "core::integer::u8"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::models::tick::Itick_move",
+          "items": [
+            {
+              "type": "function",
+              "name": "ensure_abi",
+              "inputs": [
+                {
+                  "name": "model",
+                  "type": "eternum::models::tick::TickMove"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::models::tick::tick_move::Event",
           "kind": "enum",
           "variants": []
         }

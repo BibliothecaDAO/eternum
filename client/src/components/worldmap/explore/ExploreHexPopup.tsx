@@ -24,7 +24,7 @@ export const ExploreMapPopup = ({}: ExploreMapPopupProps) => {
   const setIsExploreMode = useUIStore((state) => state.setIsExploreMode);
 
   const { useFoundResources } = useExplore();
-  let foundResource = useFoundResources(selectedPath?.id || 0n);
+  let foundResource = useFoundResources(selectedPath?.id);
 
   const biome = useMemo(() => {
     if (selectedPath?.path.length === 2 && hexData) {
