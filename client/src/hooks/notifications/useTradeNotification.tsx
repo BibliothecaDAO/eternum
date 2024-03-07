@@ -2,16 +2,40 @@ import { ReactComponent as Checkmark } from "../../assets/icons/common/checkmark
 import { OrderIcon } from "../../elements/OrderIcon";
 import { ReactComponent as RatioIcon } from "../../assets/icons/common/ratio.svg";
 import { useDojo } from "../../DojoContext";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { Badge } from "../../elements/Badge";
-import { currencyFormat, extractAndCleanKey, getEntityIdFromKeys } from "../../utils/utils";
+import { divideByPrecision, extractAndCleanKey, getEntityIdFromKeys } from "../../utils/utils";
 import { useTrade } from "../helpers/useTrade";
-import { ResourceIcon } from "../../elements/ResourceIcon";
-import { findResourceById } from "@bibliothecadao/eternum";
 import { calculateRatio } from "../../components/cityview/realm/trade/Market/MarketOffer";
-import { EventType, NotificationType } from "./useNotifications";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 import useRealmStore from "../store/useRealmStore";
+import { EventType, NotificationType } from "../store/useNotificationsStore";
+import { ResourceCost } from "../../elements/ResourceCost";
+import Button from "../../elements/Button";
+import { useLocation } from "wouter";
+import useUIStore from "../store/useUIStore";
+
+export const useGoToDirectOffers = () => {
+  const { setRealmId, setRealmEntityId } = useRealmStore();
+  const [location, setLocation] = useLocation();
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+
+  const goToDirectOffers = (realmId: bigint, realmEntityId: bigint) => {
+    setIsLoadingScreenEnabled(true);
+    setTimeout(() => {
+      if (location.includes(`/realm`)) {
+        setIsLoadingScreenEnabled(false);
+      }
+      setLocation(`/realm/${Number(realmEntityId)}/direct-offers`);
+      setRealmEntityId(realmEntityId);
+      setRealmId(realmId);
+    }, 500);
+  };
+
+  return {
+    goToDirectOffers,
+  };
+};
 
 export const useTradeNotification = (
   notification: NotificationType,
@@ -27,8 +51,7 @@ export const useTradeNotification = (
     },
   } = useDojo();
 
-  const { getTradeResources } = useTrade();
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const { getTradeResourcesFromEntityViewpoint } = useTrade();
 
   let trade = getComponentValue(Trade, getEntityIdFromKeys(extractAndCleanKey(notification.keys)));
 
@@ -47,17 +70,19 @@ export const useTradeNotification = (
 
   const takerOrderName = takerRealm ? getRealmOrderNameById(takerRealm?.realm_id) : "";
 
-  let { resourcesGet: orderResources1, resourcesGive: orderResources2 } = getTradeResources(
-    realmEntityId,
-    trade?.trade_id || 0,
+  let { resourcesGet: orderResources1, resourcesGive: orderResources2 } = getTradeResourcesFromEntityViewpoint(
+    takerId || 0n,
+    trade?.trade_id || 0n,
   );
+
+  const { goToDirectOffers } = useGoToDirectOffers();
 
   let type: "primary" | "success" | "danger";
   let msg: string;
   switch (notification.eventType) {
-    case EventType.MakeOffer:
+    case EventType.DirectOffer:
       type = "primary";
-      msg = "Order Created";
+      msg = "Direct Order";
       break;
     case EventType.AcceptOffer:
       type = "success";
@@ -83,14 +108,20 @@ export const useTradeNotification = (
         </Badge>
 
         <div className="flex items-center">
-          by{" "}
+          from
           <OrderIcon
             size="xs"
-            className="mx-2"
+            className="mx-1"
             order={notification.eventType === EventType.AcceptOffer ? takerOrderName : makerOrderName}
           />{" "}
           <div className="inline-block text-gold">
             {notification.eventType === EventType.AcceptOffer ? takerRealmName : makerRealmName}
+          </div>
+        </div>
+        <div className="flex ml-1 items-center">
+          for
+          <div className="inline-block ml-1 text-gold">
+            {notification.eventType === EventType.AcceptOffer ? makerRealmName : takerRealmName}
           </div>
         </div>
       </div>
@@ -102,8 +133,13 @@ export const useTradeNotification = (
             {orderResources1 &&
               orderResources1.map(({ resourceId, amount }) => (
                 <div className="flex flex-col items-center mx-2 my-1" key={resourceId}>
-                  <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="xs" className="mb-1" />
-                  {currencyFormat(amount, 0)}
+                  <ResourceCost
+                    amount={divideByPrecision(amount)}
+                    resourceId={resourceId}
+                    color="text-order-brilliance"
+                    type="vertical"
+                    className="mb-1"
+                  />
                 </div>
               ))}
           </div>
@@ -115,12 +151,29 @@ export const useTradeNotification = (
             {orderResources2 &&
               orderResources2.map(({ resourceId, amount }) => (
                 <div className="flex flex-col items-center mx-2 my-1" key={resourceId}>
-                  <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="xs" />
-                  {currencyFormat(amount, 0)}
+                  <ResourceCost
+                    amount={-divideByPrecision(amount)}
+                    resourceId={resourceId}
+                    color="text-order-giants"
+                    type="vertical"
+                    className="mb-1"
+                  />
                 </div>
               ))}
           </div>
         </div>
+        {takerRealm && takerId !== undefined && (
+          <Button
+            onClick={() => {
+              goToDirectOffers(takerRealm?.realm_id, takerId || 0n);
+            }}
+            className="w-full"
+            variant="success"
+            size="xs"
+          >
+            Go to realm
+          </Button>
+        )}
       </div>
     ),
   };

@@ -1,36 +1,85 @@
-import { gql } from "graphql-request";
+import { GraphQLClient, gql } from "graphql-request";
 import { createClient } from "graphql-ws";
-import { BehaviorSubject, Observable } from "rxjs";
+import { ReplaySubject, Observable } from "rxjs";
+import { getLastLoginTimestamp } from "../hooks/store/useNotificationsStore";
+
+const MAX_EVENTS = 50;
+
+const client = new GraphQLClient(import.meta.env.VITE_TORII_GRAPHQL!);
+const wsClient = createClient({ url: import.meta.env.VITE_TORII_WS });
 
 type Event = {
   id: string[];
   keys: string[];
   data: any;
-  created_at: string;
+  createdAt: string;
 };
 
-export async function createEventSubscription(keys: string[]): Promise<Observable<Event>> {
-  const wsClient = createClient({ url: import.meta.env.VITE_TORII_WS });
+type getEventsQuery = {
+  events: {
+    edges: {
+      node: Event;
+    }[];
+  };
+};
 
-  const lastUpdate$ = new BehaviorSubject<Event>(null);
+export async function createEventSubscription(
+  keys: string[],
+  addPast: boolean = true,
+  maxEvents: number = MAX_EVENTS,
+): Promise<Observable<Event | null>> {
+  const lastUpdate$ = new ReplaySubject<Event | null>();
 
   const formattedKeys = keys.map((key) => `"${key}"`).join(",");
 
-  wsClient.subscribe(
-    {
-      query: gql`
-        subscription {
-          eventEmitted(keys: [${formattedKeys}]) {
+  if (addPast) {
+    const queryBuilder = `
+    query {
+      events(keys: [${formattedKeys}] last: ${maxEvents}) {
+        edges {
+          node {
             id
             keys
             data
-            created_at
+            createdAt
           }
         }
-      `,
+        }
+    }
+  `;
+
+    const { events }: getEventsQuery = await client.request(queryBuilder);
+
+    const timestamps = getLastLoginTimestamp();
+
+    events.edges
+      .filter((event) => {
+        return dateToTimestamp(event.node.createdAt) > timestamps.lastLoginTimestamp;
+      })
+      .forEach((event) => {
+        if (event.node) {
+          lastUpdate$.next(event.node);
+        }
+      });
+  }
+
+  let subscriptionQuery = gql`
+    subscription {
+      eventEmitted(keys: [${formattedKeys}]) {
+        id
+        keys
+        data
+        createdAt
+      }
+    }
+      `;
+
+  wsClient.subscribe(
+    {
+      query: subscriptionQuery,
     },
     {
-      next: ({ data }) => {
+      next: ({ data }: any) => {
         try {
           const event = data?.eventEmitted as Event;
           if (event) {
@@ -40,9 +89,15 @@ export async function createEventSubscription(keys: string[]): Promise<Observabl
           console.log({ error });
         }
       },
-      error: (error) => console.log({ error }),
+      error: () => console.log("ws error"),
       complete: () => console.log("complete"),
     },
   );
   return lastUpdate$;
+}
+
+function dateToTimestamp(dateStr: string): number {
+  const date = new Date(`${dateStr}Z`);
+  let ts = Math.floor(date.getTime() / 1000);
+  return ts;
 }

@@ -2,30 +2,59 @@
 version = 1
 
 [[package]]
-name = "alexandria_math"
+name = "alexandria_data_structures"
+version = "0.2.0"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=98aadc7e3f12dbb026e853604fe2cc061451cc8a#98aadc7e3f12dbb026e853604fe2cc061451cc8a"
+dependencies = [
+ "alexandria_encoding",
+]
+
+[[package]]
+name = "alexandria_encoding"
 version = "0.1.0"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=e1aa42853815f04ff00e4ed3507cfd74d7b0c644#e1aa42853815f04ff00e4ed3507cfd74d7b0c644"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=98aadc7e3f12dbb026e853604fe2cc061451cc8a#98aadc7e3f12dbb026e853604fe2cc061451cc8a"
+dependencies = [
+ "alexandria_math",
+ "alexandria_numeric",
+]
+
+[[package]]
+name = "alexandria_math"
+version = "0.2.0"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=98aadc7e3f12dbb026e853604fe2cc061451cc8a#98aadc7e3f12dbb026e853604fe2cc061451cc8a"
+dependencies = [
+ "alexandria_data_structures",
+]
+
+[[package]]
+name = "alexandria_numeric"
+version = "0.1.0"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=98aadc7e3f12dbb026e853604fe2cc061451cc8a#98aadc7e3f12dbb026e853604fe2cc061451cc8a"
+dependencies = [
+ "alexandria_math",
+]
 
 [[package]]
 name = "cubit"
-version = "1.2.0"
-source = "git+https://github.com/influenceth/cubit#b4590530d5aeae9aabd36740cc2a3d9e6adc5fde"
+version = "1.3.0"
+source = "git+https://github.com/akhercha/cubit?rev=d3869a3f0c47e5ed229bbbfe2fce3fc0510cbc8a#d3869a3f0c47e5ed229bbbfe2fce3fc0510cbc8a"
 
 [[package]]
 name = "dojo"
-version = "0.3.10"
-source = "git+https://github.com/dojoengine/dojo?tag=v0.3.10#be1676252c41f8188465741edcbcb381d2c12080"
+version = "0.5.1"
+source = "git+https://github.com/dojoengine/dojo?tag=v0.6.0-alpha.4#8bfd5ada1a0263df155d0848a9a3c0996d8967bd"
 dependencies = [
  "dojo_plugin",
 ]
 
 [[package]]
 name = "dojo_plugin"
-version = "0.3.10"
+version = "0.3.11"
+source = "git+https://github.com/dojoengine/dojo?tag=v0.3.11#1e651b5d4d3b79b14a7d8aa29a92062fcb9e6659"
 
 [[package]]
 name = "eternum"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "alexandria_math",
  "cubit",

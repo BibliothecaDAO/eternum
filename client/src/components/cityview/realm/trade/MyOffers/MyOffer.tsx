@@ -2,14 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
-import { findResourceById, orderNameDict } from "@bibliothecadao/eternum";
+import { MarketInterface, findResourceById, orderNameDict } from "@bibliothecadao/eternum";
 import { ReactComponent as RatioIcon } from "../../../../../assets/icons/common/ratio.svg";
 import { useDojo } from "../../../../../DojoContext";
 import * as realmsData from "../../../../../geodata/realms.json";
-import { MarketInterface } from "../../../../../hooks/helpers/useTrade";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import { currencyFormat } from "../../../../../utils/utils";
 import useUIStore from "../../../../../hooks/store/useUIStore";
+import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
+import { useRoads } from "../../../../../hooks/helpers/useRoads";
+import useRealmStore from "../../../../../hooks/store/useRealmStore";
 
 type TradeOfferProps = {
   myOffer: MarketInterface;
@@ -17,10 +19,25 @@ type TradeOfferProps = {
 };
 
 export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
-  const { takerId, hasRoad, distance, resourcesGet, resourcesGive, ratio } = myOffer;
+  // todo: make hasRoad reactive
+  // @note: in myoffers, player is always maker, so resourcesGet is always makerGets, resourcesGive is always takerGets
+  const { takerId, makerGets: resourcesGet, takerGets: resourcesGive, ratio } = myOffer;
+
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const [isLoading, setIsLoading] = useState(false);
   const setTooltip = useUIStore((state) => state.setTooltip);
+
+  const { calculateDistance } = useCaravan();
+  const { getHasRoad } = useRoads();
+
+  const distance = useMemo(() => {
+    return calculateDistance(takerId, realmEntityId) || 0;
+  }, [takerId, realmEntityId]);
+
+  const hasRoad = useMemo(() => {
+    return getHasRoad(realmEntityId, takerId);
+  }, [realmEntityId, takerId]);
 
   useEffect(() => {
     setIsLoading(false);
@@ -58,12 +75,12 @@ export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
           <div className="flex items-center p-1 -mt-2 -ml-2 border border-t-0 border-l-0 rounded-br-md border-gray-gold">
             {/* order of the order maker */}
             {takerRealm.order && <OrderIcon order={orderNameDict[takerRealm.order]} size="xs" className="mr-1" />}
-            {realmsData["features"][takerRealm.realmId - 1].name}
+            {realmsData["features"][Number(takerRealm.realmId) - 1]?.name || ""}
           </div>
         ) : (
           <div className="flex-1"></div>
         )}
-        {!takerRealm && <div className="-mt-2 text-gold">{timeLeft}</div>}
+        {!takerRealm && <div className="-mt-2 text-gold">{`Expires in ${timeLeft}`}</div>}
         {takerRealm && (
           <div className=" text-gold flex">
             <div className=" text-right">{`${distance.toFixed(0)} km`}</div>
@@ -88,7 +105,11 @@ export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
               variant="outline"
               onMouseLeave={() => setTooltip(null)}
               className="text-gold/50 relative group ml-2"
-              onClick={onBuildRoad}
+              onClick={() => {
+                if (!hasRoad) {
+                  onBuildRoad();
+                }
+              }}
             >
               {hasRoad ? "x2 speed" : "Normal speed"}
             </Button>
@@ -101,42 +122,31 @@ export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
             {resourcesGive &&
               resourcesGive.map(({ resourceId, amount }) => (
                 <div className="flex flex-col items-center mx-2 my-0.5" key={resourceId}>
-                  <ResourceIcon resource={getResourceTrait(resourceId)} size="xs" className="mb-1" />
+                  <ResourceIcon resource={getResourceTrait(resourceId)} size="sm" className="mb-1" />
                   {currencyFormat(amount, 0)}
                 </div>
               ))}
           </div>
           <div className="flex flex-col items-center text-white">
             <RatioIcon className="mb-1 fill-white" />
-            {ratio.toFixed(2)}
+            {(1 / ratio).toFixed(2)}
           </div>
           <div className="flex-1 text-gold flex justify-center items-center flex-wrap">
             {resourcesGet &&
               resourcesGet.map(({ resourceId, amount }) => (
                 <div className="flex flex-col items-center mx-2 my-0.5" key={resourceId}>
-                  <ResourceIcon key={resourceId} resource={getResourceTrait(resourceId)} size="xs" />
+                  <ResourceIcon key={resourceId} resource={getResourceTrait(resourceId)} size="sm" />
                   {currencyFormat(amount, 0)}
                 </div>
               ))}
           </div>
         </div>
-        {!isLoading && (
-          <Button
-            onClick={onCancel}
-            variant={"danger"}
-            className="ml-auto p-2 !h-4 text-xxs !rounded-md"
-          >{`Cancel`}</Button>
-        )}
-        {isLoading && (
-          <Button
-            isLoading={true}
-            onClick={() => {}}
-            variant="danger"
-            className="ml-auto p-2 !h-4 text-xxs !rounded-md"
-          >
-            {}
-          </Button>
-        )}
+        <Button
+          isLoading={isLoading}
+          onClick={onCancel}
+          variant={"danger"}
+          className="ml-auto p-2 !h-4 text-xxs !rounded-md"
+        >{`Cancel`}</Button>
       </div>
     </div>
   );
@@ -147,5 +157,9 @@ const formatTimeLeft = (seconds: number) => {
   const hours = Math.floor((seconds % 86400) / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
 
-  return `${days} days ${hours}h:${minutes}m`;
+  if (days > 0) {
+    return `${days} days`;
+  } else {
+    return `${hours}h:${minutes}m`;
+  }
 };

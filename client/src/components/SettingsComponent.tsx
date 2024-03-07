@@ -3,24 +3,40 @@ import { ReactComponent as Crown } from "../assets/icons/common/crown-circle-out
 import { ReactComponent as Settings } from "../assets/icons/common/settings.svg";
 import { ReactComponent as Muted } from "../assets/icons/common/muted.svg";
 import { ReactComponent as Unmuted } from "../assets/icons/common/unmuted.svg";
+import { ReactComponent as DojoMark } from "../assets/icons/dojo-mark-full-dark.svg";
+import { ReactComponent as RealmsWorld } from "../assets/icons/rw-logo.svg";
 import { SecondaryPopup } from "../elements/SecondaryPopup";
 import { Headline } from "../elements/Headline";
-import SettleRealmComponent from "./cityview/realm/SettleRealmComponent";
 import Button from "../elements/Button";
 import { Checkbox } from "../elements/Checkbox";
 import { RangeInput } from "../elements/RangeInput";
 import useUIStore from "../hooks/store/useUIStore";
 import useScreenOrientation from "../hooks/useScreenOrientation";
 import { useDojo } from "../DojoContext";
-import { useAddressStore } from "../hooks/store/useAddressStore";
+import { useRealm } from "../hooks/helpers/useRealm";
 type SettingsComponentProps = {};
 
 export const SettingsComponent = ({}: SettingsComponentProps) => {
   const {
-    account: { accountDisplay },
+    account: { accountDisplay, account },
   } = useDojo();
 
-  const addressName = useAddressStore((state) => state.addressName);
+  const flatMode = localStorage.getItem("flatMode");
+  const toggleFlatMode = () => {
+    if (flatMode) {
+      localStorage.removeItem("flatMode");
+    } else {
+      localStorage.setItem("flatMode", "true");
+    }
+    window.location.reload();
+  };
+
+  const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+
+  const { getAddressName } = useRealm();
+  const addressName = getAddressName(account.address);
+
+  // const addressName = useAddressStore((state) => state.addressName);
   const [showSettings, setShowSettings] = useState(false);
   const musicLevel = useUIStore((state) => state.musicLevel);
   const effectsLevel = useUIStore((state) => state.effectsLevel);
@@ -60,7 +76,7 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
           </SecondaryPopup.Head>
           <SecondaryPopup.Body width="400px">
             <div className="flex flex-col  space-y-2 p-3">
-              <Headline size="big">Video</Headline>
+              <Headline>Video</Headline>
               <div
                 className="flex text-xs text-gray-gold space-x-2 items-center cursor-pointer"
                 onClick={clickFullScreen}
@@ -68,22 +84,51 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
                 <Checkbox enabled={fullScreen} />
                 <div>Fullscreen</div>
               </div>
-              <Headline size="big">Sound</Headline>
+              <div
+                className="flex text-xs text-gray-gold space-x-2 items-center cursor-pointer"
+                onClick={toggleFlatMode}
+              >
+                <Checkbox enabled={flatMode === "true"} />
+                <div>Flat Hexagons (Light mode)</div>
+              </div>
+              <Headline>Sound</Headline>
               <RangeInput value={musicLevel} fromTitle="Mute" onChange={setMusicLevel} title="Music" />
               <RangeInput value={effectsLevel} fromTitle="Mute" onChange={setEffectsLevel} title="Effects" />
-              <Headline size="big">Testnet Menu</Headline>
-              <div className="flex justify-center">
-                <SettleRealmComponent />
-              </div>
               <Button onClick={() => setShowSettings(false)} variant="outline" className="text-xxs !py-1 !px-2 mr-auto">
                 Done
               </Button>
+              <div className="flex space-x-3 py-3">
+                <a target="_blank" href="https://realms.world">
+                  <RealmsWorld className="w-16" />
+                </a>
+                <a href="https://www.dojoengine.org/en/">
+                  <DojoMark className="w-16" />
+                </a>
+              </div>
+
               <div className="text-xs text-white/40">
-                This client is open source on{" "}
+                Built by{" "}
+                <a className="underline" href="https://realms.world">
+                  Realms.World
+                </a>
+                , powered by{" "}
+                <a className="underline" href="https://www.dojoengine.org/en/">
+                  dojo
+                </a>{" "}
+                <br /> Fork and modify this client on{" "}
                 <a className="underline" href="https://github.com/BibliothecaDAO/eternum">
                   Github
                 </a>
               </div>
+
+              <Button
+                onClick={() => {
+                  setShowSettings(false);
+                  setBlankOverlay(true);
+                }}
+              >
+                onboarding
+              </Button>
             </div>
           </SecondaryPopup.Body>
         </SecondaryPopup>

@@ -1,10 +1,6 @@
 {
   "name": "eternum",
   "version": "0.1.0",
-  "workspaces": [
-    "sdk/packages/eternum",
-    "client"
-  ],
   "scripts": {
     "build-packages": "bun run --cwd sdk/packages/eternum build",
     "build-client": "bun run --cwd ./client build"

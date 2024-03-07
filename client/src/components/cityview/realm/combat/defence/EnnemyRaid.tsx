@@ -4,11 +4,11 @@ import clsx from "clsx";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 import { ReactComponent as Pen } from "../../../../../assets/icons/common/pen.svg";
-import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import { useRealm } from "../../../../../hooks/helpers/useRealm";
+import { CombatInfo } from "@bibliothecadao/eternum";
 
 type EnemyRaidProps = {
   raider: CombatInfo;
@@ -20,10 +20,10 @@ export const EnemyRaid = ({ raider, ...props }: EnemyRaidProps) => {
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const setTooltip = useUIStore((state) => state.setTooltip);
   const { getRealmAddressName } = useRealm();
-  const attackerAddressName = getRealmAddressName(entityOwnerId);
+  const attackerAddressName = entityOwnerId ? getRealmAddressName(entityOwnerId) : "";
 
-  const isTraveling = arrivalTime ? arrivalTime > nextBlockTimestamp : false;
-  const originRealmName = originRealmId ? getRealmNameById(raider.originRealmId) : undefined;
+  const isTraveling = arrivalTime && nextBlockTimestamp ? arrivalTime > nextBlockTimestamp : false;
+  const originRealmName = originRealmId ? getRealmNameById(originRealmId) : "";
 
   return (
     <div
@@ -34,13 +34,13 @@ export const EnemyRaid = ({ raider, ...props }: EnemyRaidProps) => {
       onClick={props.onClick}
     >
       <div className="flex items-center text-xxs">
-        {entityId && (
+        {entityId.toString() && (
           <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
-            #{entityId}
+            #{entityId.toString()}
           </div>
         )}
         <div className="flex items-center ml-1 -mt-2">
-          {isTraveling && originRealmId && (
+          {isTraveling && originRealmId?.toString() && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Traveling from</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
@@ -50,7 +50,7 @@ export const EnemyRaid = ({ raider, ...props }: EnemyRaidProps) => {
               </div>
             </div>
           )}
-          {!isTraveling && originRealmId && (
+          {!isTraveling && originRealmId?.toString() && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Arrived from</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
@@ -80,7 +80,7 @@ export const EnemyRaid = ({ raider, ...props }: EnemyRaidProps) => {
               <img src="/images/units/troop-icon.png" className="h-[28px]" />
               <div className="flex ml-1 text-center">
                 <div className="bold mr-1">x{quantity}</div>
-                Battalions
+                Raiders
               </div>
             </div>
           </div>

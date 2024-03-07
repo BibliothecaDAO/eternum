@@ -1,37 +1,26 @@
 import { findResourceById } from "@bibliothecadao/eternum";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
-import { currencyFormat, divideByPrecision, getEntityIdFromKeys } from "../../../utils/utils";
-import { useComponentValue } from "@dojoengine/react";
-import { useDojo } from "../../../DojoContext";
-import useRealmStore from "../../../hooks/store/useRealmStore";
+import { currencyFormat, divideByPrecision } from "../../../utils/utils";
 import useUIStore from "../../../hooks/store/useUIStore";
 import clsx from "clsx";
 
 export const SmallResource = ({
   resourceId,
-  entity_id,
+  balance,
   vertical,
   intlFormat,
   hideIfZero,
 }: {
   resourceId: number;
-  entity_id?: number;
+  balance: number;
+  entity_id?: bigint;
   vertical?: boolean;
   intlFormat?: boolean;
   hideIfZero?: boolean;
 }) => {
-  const {
-    setup: {
-      components: { Resource },
-    },
-  } = useDojo();
-
-  const { realmEntityId } = useRealmStore();
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const _entity_id = entity_id || realmEntityId;
-  const resource = useComponentValue(Resource, getEntityIdFromKeys([BigInt(_entity_id ?? 0), BigInt(resourceId)]));
 
-  return resource?.balance ? (
+  return balance > 0 ? (
     <div
       onMouseEnter={() =>
         setTooltip({
@@ -48,8 +37,8 @@ export const SmallResource = ({
           ? Intl.NumberFormat("en-US", {
               notation: "compact",
               maximumFractionDigits: 1,
-            }).format(divideByPrecision(resource?.balance || 0))
-          : currencyFormat(resource?.balance || 0, 2)}
+            }).format(divideByPrecision(balance))
+          : currencyFormat(balance, 2)}
       </div>
     </div>
   ) : null;

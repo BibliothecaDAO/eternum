@@ -6,8 +6,8 @@ use eternum::models::owner::Owner;
 use eternum::models::metadata::EntityMetadata;
 use eternum::models::quantity::{Quantity, QuantityTracker};
 
-use eternum::systems::test::contracts::realm::test_realm_systems;
-use eternum::systems::test::interface::realm::{
+use eternum::systems::realm::contracts::realm_systems;
+use eternum::systems::realm::interface::{
     IRealmSystemsDispatcher,
     IRealmSystemsDispatcherTrait,
 };
@@ -38,6 +38,7 @@ use core::poseidon::poseidon_hash_span;
 use core::traits::Into;
 use core::array::ArrayTrait;
 use core::clone::Clone;
+use core::zeroable::Zeroable;
 
 
 fn setup() -> (IWorldDispatcher, u128, ITransportUnitSystemsDispatcher) {
@@ -45,7 +46,7 @@ fn setup() -> (IWorldDispatcher, u128, ITransportUnitSystemsDispatcher) {
 
     // set realm entity
     let realm_systems_address 
-        = deploy_system(test_realm_systems::TEST_CLASS_HASH);
+        = deploy_system(realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -63,9 +64,10 @@ fn setup() -> (IWorldDispatcher, u128, ITransportUnitSystemsDispatcher) {
     let order = 1;
 
     let realm_entity_id = realm_systems_dispatcher.create(
-        world, realm_id, starknet::get_contract_address(), // owner
+        world, realm_id,
         resource_types_packed, resource_types_count, cities,
-        harbors, rivers, regions, wonder, order, position.clone(),
+        harbors, rivers, regions, wonder, order,
+        position.clone(),
     );
 
 
@@ -156,7 +158,7 @@ fn test_create_free_transport_unit() {
 #[test]
 #[available_gas(300000000000)]
 #[should_panic(expected: ('entity is not owned by caller', 'ENTRYPOINT_FAILED' ))]
-fn test_not_owner() {
+fn test_create_unit__not_owner() {
 
     let (world, realm_entity_id, transport_unit_systems_dispatcher) = setup();
 
@@ -173,7 +175,7 @@ fn test_not_owner() {
 #[test]
 #[available_gas(300000000000)]
 #[should_panic(expected: ('not enough free transport unit', 'ENTRYPOINT_FAILED' ))]
-fn test_not_enough_free_transport_unit() {
+fn test_create_unit__not_enough_free_transport_unit() {
 
     let (world, realm_entity_id, transport_unit_systems_dispatcher) = setup();
 
@@ -186,3 +188,163 @@ fn test_not_enough_free_transport_unit() {
 
 
 
+#[test]
+#[available_gas(300000000000)]
+fn test_return_free_transport_unit() {
+
+    let (world, realm_entity_id, transport_unit_systems_dispatcher) = setup();
+
+    // create 2 free transport unit of 10 quantity each
+    let free_transport_unit_id_1 
+        = transport_unit_systems_dispatcher.create_free_unit(
+            world, realm_entity_id, 10
+        );
+    let free_transport_unit_id_2
+        = transport_unit_systems_dispatcher.create_free_unit(
+            world, realm_entity_id, 10
+        );
+
+    // check that the number of transport units in the realm == 20 before deletion
+    let quantity_tracker_arr = array![realm_entity_id.into(), FREE_TRANSPORT_ENTITY_TYPE.into()];
+    let quantity_tracker_key = poseidon_hash_span(quantity_tracker_arr.span());
+    let quantity_tracker = get!(world, quantity_tracker_key, QuantityTracker);
+    assert(quantity_tracker.count == 20, 'quantity tracker not updated 1');
+
+
+    // return free transport unit 1
+    transport_unit_systems_dispatcher.return_free_units(
+        world, array![free_transport_unit_id_1].span()
+    );
+    
+
+    // check that the free transport unit 1 has been returned
+    let (quantity, position, metadata, owner, capacity, movable, arrival_time) 
+    = get!(world, free_transport_unit_id_1, (Quantity, Position, EntityMetadata, Owner, Capacity, Movable, ArrivalTime));
+
+    assert(quantity.value == 0, 'unit not returnd');
+
+    assert(position.x == 0, 'position is set');
+    assert(position.y == 0, 'position is set');
+
+    assert(metadata.entity_type == 0, 'entity type is set');
+
+    assert(owner.address == Zeroable::zero(), 'owner is set');
+
+    assert(capacity.weight_gram == 0, 'capacity is set');
+
+    assert(movable.sec_per_km == 0, 'speed is set');
+
+    // check that the number of transport units in the realm == 10 after deletion
+    let quantity_tracker = get!(world, quantity_tracker_key, QuantityTracker);
+    assert(quantity_tracker.count == 10, 'quantity tracker not updated 2');
+}
+
+
+#[test]
+#[available_gas(300000000000)]
+#[should_panic(expected: ('not a free transport unit', 'ENTRYPOINT_FAILED' ))]
+fn test_return__wrong_unit_type() {
+
+    let (world, realm_entity_id, transport_unit_systems_dispatcher) = setup();
+
+    // create a free transport unit of 10 quantity 
+    let free_transport_unit_id
+        = transport_unit_systems_dispatcher.create_free_unit(
+            world, realm_entity_id, 10
+        );
+
+    
+    // set the entity type to 0
+    starknet::testing::set_contract_address(world.executor());
+    let mut metadata = get!(world, free_transport_unit_id, EntityMetadata);
+    metadata.entity_type = 0;
+    set!(world, (metadata));
+
+
+    // return free transport unit 
+    starknet::testing::set_contract_address(contract_address_const::<0>());
+    transport_unit_systems_dispatcher.return_free_units(
+        world, array![free_transport_unit_id].span()
+    );
+}
+
+
+
+#[test]
+#[available_gas(300000000000)]
+#[should_panic(expected: ('unit not owned by caller', 'ENTRYPOINT_FAILED' ))]
+fn test_return__not_owner() {
+
+    let (world, realm_entity_id, transport_unit_systems_dispatcher) = setup();
+
+    // create a free transport unit of 10 quantity 
+    let free_transport_unit_id
+        = transport_unit_systems_dispatcher.create_free_unit(
+            world, realm_entity_id, 10
+        );
+
+    // return free transport unit 
+    starknet::testing::set_contract_address(contract_address_const::<'unknown'>());
+    transport_unit_systems_dispatcher.return_free_units(
+        world, array![free_transport_unit_id].span()
+    );
+}
+
+
+
+#[test]
+#[available_gas(300000000000)]
+#[should_panic(expected: ('unit is blocked', 'ENTRYPOINT_FAILED' ))]
+fn test_return__movable_blocked() {
+
+    let (world, realm_entity_id, transport_unit_systems_dispatcher) = setup();
+
+    // create a free transport unit of 10 quantity 
+    let free_transport_unit_id
+        = transport_unit_systems_dispatcher.create_free_unit(
+            world, realm_entity_id, 10
+        );
+
+    // set the unit as blocked
+    starknet::testing::set_contract_address(world.executor());
+    let mut unit_movable = get!(world, free_transport_unit_id, Movable);
+    unit_movable.blocked = true;
+    set!(world, (unit_movable));
+
+    
+
+    // return free transport unit 
+    starknet::testing::set_contract_address(contract_address_const::<0>());
+    transport_unit_systems_dispatcher.return_free_units(
+        world, array![free_transport_unit_id].span()
+    );
+}
+
+
+
+#[test]
+#[available_gas(300000000000)]
+#[should_panic(expected: ('unit has no quantity', 'ENTRYPOINT_FAILED' ))]
+fn test_return__no_quantity() {
+
+    let (world, realm_entity_id, transport_unit_systems_dispatcher) = setup();
+
+    // create a free transport unit of 10 quantity 
+    let free_transport_unit_id
+        = transport_unit_systems_dispatcher.create_free_unit(
+            world, realm_entity_id, 10
+        );
+
+    // set the quantity to 0
+    starknet::testing::set_contract_address(world.executor());
+    let mut unit_quantity = get!(world, free_transport_unit_id, Quantity);
+    unit_quantity.value = 0;
+    set!(world, (unit_quantity));
+
+
+    // return free transport unit again
+    starknet::testing::set_contract_address(contract_address_const::<0>());
+    transport_unit_systems_dispatcher.return_free_units(
+        world, array![free_transport_unit_id].span()
+    );
+}

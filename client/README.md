@@ -67,6 +67,7 @@ For local setup and execution on Katana, follow these steps:
    ```bash
    ./scripts/set_config.sh
    ```
+   Make sure to set a delay in seconds of at least 0.1 seconds between each transaction
 
 ### Building the Project
 
@@ -84,8 +85,6 @@ To build and preview the project, follow these steps:
    ```bash
    bun run preview
    ```
-
-Certainly! Here's the Deployment section integrated into the document with a revised structure and clarity:
 
 ---
 

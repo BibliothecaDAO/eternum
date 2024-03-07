@@ -3,17 +3,26 @@ mod caravan_systems {
     use eternum::alias::ID;
     use eternum::models::metadata::ForeignKey;
     use eternum::models::caravan::CaravanMembers;
+    use eternum::models::realm::Realm;
+    use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::inventory::Inventory;
     use eternum::models::weight::Weight;
     use eternum::models::quantity::{Quantity, QuantityTrait};
     use eternum::models::owner::{Owner, EntityOwner};
-    use eternum::models::position::{Position, PositionTrait, Coord, CoordTrait};
+    use eternum::models::position::{Position, PositionTrait, Coord, TravelTrait};
     use eternum::models::movable::{Movable, ArrivalTime};
     use eternum::models::capacity::{Capacity, CapacityTrait};
     use eternum::models::road::RoadImpl;
     use eternum::systems::transport::interface::caravan_systems_interface::{
         ICaravanSystems
     };
+    use eternum::systems::transport::contracts::travel_systems::travel_systems::{
+        InternalTravelSystemsImpl
+    };
+    
+    use eternum::systems::leveling::contracts::leveling_systems::{InternalLevelingSystemsImpl as leveling};
+
+    use eternum::constants::{LevelIndex};
 
     use starknet::ContractAddress;
 
@@ -98,6 +107,8 @@ mod caravan_systems {
                         sec_per_km: movable.sec_per_km, 
                         blocked: true,
                         round_trip: false,
+                        start_coord_x: 0,
+                        start_coord_y: 0,
                         intermediate_coord_x: 0,  
                         intermediate_coord_y: 0,  
                     })
@@ -135,6 +146,8 @@ mod caravan_systems {
                         sec_per_km: average_speed, 
                         blocked: false, 
                         round_trip: false,
+                        start_coord_x: 0,
+                        start_coord_y: 0,
                         intermediate_coord_x: 0,  
                         intermediate_coord_y: 0,  
                     }, 
@@ -161,6 +174,126 @@ mod caravan_systems {
             );
             caravan_id
         }
+
+
+
+        /// Disassemble a caravan entity
+        ///
+        /// # Arguments
+        ///
+        /// * `caravan_id` - The caravan entity id
+        ///
+        /// # Returns
+        ///
+        /// * `transport_ids` - The id of transport units used to form the caravan
+        ///
+        fn disassemble(self: @ContractState, world: IWorldDispatcher, caravan_id: ID) -> Span<ID> {
+            // ensure that caller is the owner
+            let caravan_owner = get!(world, caravan_id, Owner);
+            let caller = starknet::get_caller_address();
+            assert(caravan_owner.address == caller, 'caller not owner');
+
+            // ensure that it is a caravan
+            let caravan_members = get!(world, caravan_id, CaravanMembers);
+            assert(caravan_members.count > 0, 'not a caravan');
+
+            // ensure that its inventory is empty
+            let caravan_inventory = get!(world, caravan_id, Inventory);
+            assert(caravan_inventory.items_count == 0, 'inventory not empty');
+
+            // ensure that it is not blocked
+            let caravan_movable = get!(world, caravan_id, Movable);
+            assert(caravan_movable.blocked == false, 'caravan is blocked');
+
+            // ensure that it is not in transit
+            let caravan_arrival_time = get!(world, caravan_id, ArrivalTime);
+            assert(caravan_arrival_time.arrives_at <= starknet::get_block_timestamp().into(),
+                         'caravan in transit'
+            );
+
+            // ensure that caravan is at home position
+            let caravan_position = get!(world, caravan_id, Position);
+            let owner_entity = get!(world, caravan_id, EntityOwner);
+            let owner_position = get!(world, owner_entity.entity_owner_id, Position);
+            assert(caravan_position.x == owner_position.x, 'mismatched positions');
+            assert(caravan_position.y == owner_position.y, 'mismatched positions');
+
+
+            let mut index = 0;
+            let mut transport_ids = array![];
+            loop {
+                if index == caravan_members.count {
+                    break;
+                }
+
+                // get transport id
+                let foreign_key_arr = array![
+                    caravan_id.into(), caravan_members.key.into(), index.into()
+                ];
+                let foreign_key = poseidon_hash_span(foreign_key_arr.span());
+                let mut foreign_key = get!(world, foreign_key, ForeignKey);
+                let transport_id = foreign_key.entity_id;
+
+                // unblock the transport
+                let mut transport_movable = get!(world, transport_id, Movable);
+                transport_movable.blocked = false;
+                set!(world, (transport_movable));
+
+                // delete foreign key
+                foreign_key.entity_id = 0; 
+                set!(world, (foreign_key));
+
+                // add transport id to array
+                transport_ids.append(transport_id);
+
+                index += 1;
+            };
+
+
+            // reset all caravan components
+            set!(world, (
+                    Owner {
+                        entity_id: caravan_id, 
+                        address: Zeroable::zero(), 
+                    }, 
+                    EntityOwner {
+                        entity_id: caravan_id,
+                        entity_owner_id: 0,
+                    },
+                    Movable {
+                        entity_id: caravan_id, 
+                        sec_per_km: 0, 
+                        blocked: false, 
+                        round_trip: false,
+                        start_coord_x: 0,
+                        start_coord_y: 0,
+                        intermediate_coord_x: 0,  
+                        intermediate_coord_y: 0,  
+                    }, 
+                    Capacity {
+                        entity_id: caravan_id, 
+                        weight_gram: 0, 
+                    }, 
+                    CaravanMembers {
+                        entity_id: caravan_id, 
+                        key: 0, 
+                        count: 0
+                    }, 
+                    Inventory {
+                        entity_id: caravan_id, 
+                        items_key: 0, 
+                        items_count: 0
+                    }, 
+                    Position {
+                        entity_id: caravan_id, 
+                        x: 0, 
+                        y: 0
+                    }
+                )
+            );            
+
+            return transport_ids.span();
+        }
     }
 
 
@@ -183,7 +316,7 @@ mod caravan_systems {
         fn check_arrival_time(world: IWorldDispatcher, transport_id: ID) {
             let transport_arrival_time = get!(world, transport_id, ArrivalTime);
             assert(
-                transport_arrival_time.arrives_at <= starknet::get_block_timestamp(), 
+                transport_arrival_time.arrives_at <= starknet::get_block_timestamp().into(), 
                         'transport has not arrived'
             );
         }
@@ -198,7 +331,6 @@ mod caravan_systems {
             assert(
                 transport_capacity
                     .can_carry_weight(
-                            transport_id, 
                             transport_quantity.get_value(), 
                             transport_weight.value + weight
                         ),
@@ -208,16 +340,27 @@ mod caravan_systems {
 
 
         fn get_travel_time(
-            world: IWorldDispatcher, transport_id: ID, from_pos: Position, to_pos: Position, 
+            world: IWorldDispatcher, transport_id: ID, from_pos: Position, to_pos: Position
             ) -> (u64, u64) {
-
+                      
             let (caravan_movable, caravan_position) 
                 = get!(world, transport_id, (Movable, Position));
             let mut one_way_trip_time 
                 = from_pos.calculate_travel_time(
                     to_pos, caravan_movable.sec_per_km
                     );
-                    
+
+            // check if entity owner is a realm and apply bonuses if it is
+            let entity_owner = get!(world, (transport_id), EntityOwner);
+            let realm = get!(world, entity_owner.entity_owner_id, Realm);
+
+            if realm.cities > 0 {
+                one_way_trip_time 
+                    = InternalTravelSystemsImpl::use_travel_bonus(
+                        world, @realm, @entity_owner, one_way_trip_time
+                        );
+            }
+
             let round_trip_time: u64 = 2 * one_way_trip_time;
             // reduce round trip time if there is a road
             let round_trip_time = RoadImpl::use_road(
@@ -235,7 +378,7 @@ mod caravan_systems {
             assert(transport_movable.blocked == false, 'transport is blocked');
 
             let transport_arrival_time = get!(world, transport_id, ArrivalTime);
-            assert(transport_arrival_time.arrives_at <= starknet::get_block_timestamp(),
+            assert(transport_arrival_time.arrives_at <= starknet::get_block_timestamp().into(),
                          'transport in transit'
             );
             

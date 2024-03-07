@@ -4,9 +4,12 @@ import Button from "../../../../elements/Button";
 import { SelectCaravanPanel } from "./CreateOffer";
 import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { MarketInterface, useTrade } from "../../../../hooks/helpers/useTrade";
+import { useTrade } from "../../../../hooks/helpers/useTrade";
 import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
-import { WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
+import { WEIGHT_PER_DONKEY_KG, MarketInterface } from "@bibliothecadao/eternum";
+import { getTotalResourceWeight } from "./utils";
+import useMarketStore from "../../../../hooks/store/useMarketStore";
+import { EventType, useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
 
 type AcceptOfferPopupProps = {
   onClose: () => void;
@@ -14,8 +17,8 @@ type AcceptOfferPopupProps = {
 };
 
 export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupProps) => {
-  const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
-  const [isNewCaravan, setIsNewCaravan] = useState(false);
+  const [selectedCaravan, setSelectedCaravan] = useState<bigint>(0n);
+  const [isNewCaravan, setIsNewCaravan] = useState(true);
   const [donkeysCount, setDonkeysCount] = useState(1);
   const [hasEnoughDonkeys, setHasEnoughDonkeys] = useState(false);
 
@@ -53,23 +56,28 @@ export const AcceptOfferPopup = ({ onClose, selectedTrade }: AcceptOfferPopupPro
     }
   };
 
+  const deleteTrade = useMarketStore((state) => state.deleteTrade);
+  const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
+
   const onAccept = () => {
     setIsLoading(true);
     optimisticAcceptOffer(selectedTrade.tradeId, realmEntityId, acceptOffer)();
+    // todo: only delete if success
+    deleteTrade(selectedTrade.tradeId);
+    if (selectedTrade.takerId === realmEntityId) {
+      deleteNotification([selectedTrade.tradeId.toString()], EventType.DirectOffer);
+    }
     onClose();
   };
 
-  const { getTradeResources } = useTrade();
+  const { getTradeResourcesFromEntityViewpoint } = useTrade();
 
-  let { resourcesGive, resourcesGet } = getTradeResources(realmEntityId, selectedTrade.tradeId);
+  let { resourcesGive, resourcesGet } = getTradeResourcesFromEntityViewpoint(realmEntityId, selectedTrade.tradeId);
 
-  let resourceWeight = 0;
-  for (const [_, amount] of Object.entries(resourcesGet.map((resource) => resource.amount) || {})) {
-    resourceWeight += amount * 1;
-  }
+  let resourceWeight = getTotalResourceWeight(resourcesGet);
 
   const canAcceptOffer = useMemo(() => {
-    return selectedCaravan !== 0 || (isNewCaravan && hasEnoughDonkeys);
+    return selectedCaravan !== 0n || (isNewCaravan && hasEnoughDonkeys);
   }, [selectedCaravan, hasEnoughDonkeys, isNewCaravan]);
 
   useEffect(() => {

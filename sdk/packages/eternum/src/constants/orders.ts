@@ -15,6 +15,7 @@ export const orderNameDict: { [key: number]: string } = {
   14: "vitriol",
   15: "rage",
   16: "protection",
+  17: "gods",
 };
 interface IOrder {
   orderId: number;
@@ -103,8 +104,13 @@ export const orders: IOrder[] = [
     orderName: "Protection",
     fullOrderName: "Order of Protection",
   },
+  {
+    orderId: 17,
+    orderName: "Gods",
+    fullOrderName: "Order of the Gods",
+  },
 ];
 
 export function getOrderName(orderId: number): string {
-  return orders[orderId - 1].orderName;
+  return orders[orderId - 1]?.orderName;
 }

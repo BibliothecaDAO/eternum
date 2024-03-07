@@ -1,0 +1,18 @@
+kind = "DojoModel"
+class_hash = "0x6de04b3aec5ee36031fd6630ddced30f43eb9353c3572601a55a30e6301e5de"
+name = "eternum::models::tick::tick_move"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "tick"
+type = "u64"
+key = false
+
+[[members]]
+name = "count"
+type = "u8"
+key = false

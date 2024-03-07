@@ -12,8 +12,8 @@ use core::option::OptionTrait;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-use eternum::systems::test::contracts::realm::test_realm_systems;
-use eternum::systems::test::interface::realm::{
+use eternum::systems::realm::contracts::realm_systems;
+use eternum::systems::realm::interface::{
     IRealmSystemsDispatcher,
     IRealmSystemsDispatcherTrait,
 };
@@ -51,7 +51,7 @@ fn setup() -> (IWorldDispatcher, ID, ILaborSystemsDispatcher) {
 
     // set realm entity
     let realm_systems_address 
-        = deploy_system(test_realm_systems::TEST_CLASS_HASH);
+        = deploy_system(realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -60,7 +60,6 @@ fn setup() -> (IWorldDispatcher, ID, ILaborSystemsDispatcher) {
     let realm_entity_id = realm_systems_dispatcher.create(
         world,
         1, // realm id
-        starknet::get_contract_address(), // owner
         0x20309, // resource_types_packed // 2,3,9 // stone, coal, gold
         3, // resource_types_count
         5, // cities

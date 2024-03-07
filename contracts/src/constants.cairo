@@ -13,11 +13,20 @@ const LABOR_CONFIG_ID: u128 = 999999999999999997;
 const TRANSPORT_CONFIG_ID: u128 = 999999999999999996;
 const ROAD_CONFIG_ID: u128 = 999999999999999995;
 const COMBAT_CONFIG_ID: u128 = 999999999999999994;
-const LEVELING_CONFIG_ID: u128 = 999999999999999993;
+const REALM_LEVELING_CONFIG_ID: u128 = 999999999999999993;
+const HYPERSTRUCTURE_LEVELING_CONFIG_ID: u128 = 999999999999999992;
+const REALM_FREE_MINT_CONFIG_ID: u128 = 999999999999999991;
 
 // 8 bits
 const RESOURCE_IDS_PACKED_SIZE: usize = 8_usize;
 const REALMS_DATA_PACKED_SIZE: usize = 8_usize;
+
+// leveling tiers
+const HYPERSTRUCTURE_LEVELING_START_TIER: u64 = 0;
+const REALM_LEVELING_START_TIER: u64 = 1;
+
+// max realms per user
+const MAX_REALMS_PER_ADDRESS: u8 = 5;
 
 
 mod ResourceTypes {
@@ -49,13 +58,16 @@ mod ResourceTypes {
     const UNREFINED_ORE: u8 = 26;
     const SUNKEN_SHEKEL: u8 = 27;
     const DEMONHIDE: u8 = 28;
-    const SHEKELS: u8 = 253;
+    const LORDS: u8 = 253;
     const WHEAT: u8 = 254;
     const FISH: u8 = 255;
+
+    // note: update _resource_type_to_position 
+    //  function is any new resources are added
 }
 
 /// Get resource occurence probabilities
-fn get_zipped_resource_probabilities() -> Span<(u8, u128)> {
+fn get_resource_probabilities() -> Span<(u8, u128)> {
 
     return array![
         (ResourceTypes::WOOD, 2018108),
@@ -84,24 +96,24 @@ fn get_zipped_resource_probabilities() -> Span<(u8, u128)> {
 }
 
 
-fn get_unzipped_resource_probabilities() -> (Span<u8>, Span<u128>) {
-    let zipped = get_zipped_resource_probabilities();
+fn split_resources_and_probs() -> (Span<u8>, Span<u128>) {
+    let mut zipped = get_resource_probabilities();
     let mut resource_types = array![];
-    let mut probabilities = array![];
-    let mut index = 0;
+    let mut resource_probabilities = array![];
     loop {
-        if index >= zipped.len() {
-            break;
+        match zipped.pop_front() {
+            Option::Some((resource_type, probability)) => {
+                resource_types.append(*resource_type);
+                resource_probabilities.append(*probability);
+            },
+            Option::None => {break;},
         }
-        let (resource_type, probability) = *zipped.at(index);
-        resource_types.append(resource_type);
-        probabilities.append(probability);    
-        index += 1;
     };
 
-    return (resource_types.span(), probabilities.span());
-
+    return (resource_types.span(), resource_probabilities.span());
 }
+
+
 
 
 // DISCUSS: instead of using constants for entity_type, store the entity_type in the storage
@@ -123,4 +135,11 @@ enum BuildingTypes {
     MAGE_TOWER: u8,
     ARCHER_TOWER: u8,
     CASTLE: u8,
+}
+
+mod LevelIndex {
+    const FOOD: u8 = 1;
+    const RESOURCE: u8 = 2;
+    const TRAVEL: u8 = 3;
+    const COMBAT: u8 = 4;
 }

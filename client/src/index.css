@@ -9,7 +9,37 @@ body {
   overflow: hidden;
   font-family: "Merriweather", serif;
   touch-action: none;
-  
+  @apply cursor-fancy;
+}
+
+@keyframes dotAnimation {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  } /* First dot appears */
+  40% {
+    opacity: 1;
+  } /* Second dot appears */
+  60% {
+    opacity: 1;
+  } /* Third dot appears */
+}
+
+.dot {
+  display: inline-block;
+  opacity: 0;
+  animation: dotAnimation 5s infinite;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 1.66s; /* Adjusted for the new total duration */
+}
+
+.dot:nth-child(3) {
+  animation-delay: 3.33s; /* Adjusted for the new total duration */
 }
 
 .container-bg-gradient {
@@ -60,4 +90,8 @@ body {
 
 .root-container > * {
   pointer-events: auto;
+}
+
+h1 {
+  @apply text-4xl font-bold;
 }

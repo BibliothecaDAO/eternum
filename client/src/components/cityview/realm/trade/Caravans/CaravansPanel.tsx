@@ -5,11 +5,10 @@ import { SortPanel } from "../../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../../elements/SortButton";
 import { Caravan } from "./Caravan";
 import { CaravanDetails } from "../../../../caravans/CaravanDetailsComponent";
-import { CaravanInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
+import { CaravanInterface } from "@bibliothecadao/eternum";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
-import { useGetPositionCaravans } from "../../../../../hooks/helpers/useCaravans";
-import { getPosition } from "../../../../../utils/utils";
+import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
 
 type CaravansPanelProps = {};
 
@@ -18,8 +17,11 @@ export const CaravansPanel = ({}: CaravansPanelProps) => {
   const [showCaravanDetails, setShowCaravanDetails] = useState(false);
   const [selectedCaravan, setSelectedCaravan] = useState<CaravanInterface | null>(null);
 
-  const realmId = useRealmStore((state) => state.realmId);
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+
+  const { useGetEntityCaravans } = useCaravan();
 
   const onClick = (caravan: CaravanInterface) => {
     // way to find if caravan has currently resources inside
@@ -30,10 +32,7 @@ export const CaravansPanel = ({}: CaravansPanelProps) => {
     setSelectedCaravan(caravan);
   };
 
-  const realmPosition = useMemo(() => {
-    return realmId ? getPosition(realmId) : undefined;
-  }, [realmId]);
-  const { caravans: realmCaravans } = useGetPositionCaravans(realmPosition?.x || 0, realmPosition?.y || 0);
+  const { caravans: realmCaravans } = useGetEntityCaravans(realmEntityId);
 
   const sortingParams = useMemo(() => {
     return [

@@ -1,17 +1,17 @@
 import { ReactComponent as Checkmark } from "../../assets/icons/common/checkmark.svg";
 import { OrderIcon } from "../../elements/OrderIcon";
 import { useDojo } from "../../DojoContext";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { Badge } from "../../elements/Badge";
 import { getEntityIdFromKeys } from "../../utils/utils";
-import { NotificationType } from "./useNotifications";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 import Button from "../../elements/Button";
 import { ResourceCost } from "../../elements/ResourceCost";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { soundSelector, useUiSounds } from "../useUISound";
-import { useState } from "react";
-import { useRealm } from "../helpers/useRealm";
+import { useMemo, useState } from "react";
+import { LevelIndex, useLevel } from "../helpers/useLevel";
+import { NotificationType, useNotificationsStore } from "../store/useNotificationsStore";
 
 export const useHarvestNotification = (
   notification: NotificationType,
@@ -32,33 +32,48 @@ export const useHarvestNotification = (
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const realmEntityId = notification.keys[0];
+  const realmEntityId = notification.keys ? BigInt(notification.keys[0]) : undefined;
+  const resourceType = notification.keys ? parseInt(notification.keys[1]) : undefined;
   const { play: playHarvest } = useUiSounds(soundSelector.harvest);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const realm = getComponentValue(Realm, getEntityIdFromKeys([BigInt(realmEntityId)]));
+  const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
+  const realm = realmEntityId ? getComponentValue(Realm, getEntityIdFromKeys([realmEntityId])) : undefined;
 
   const realmName = realm ? getRealmNameById(realm.realm_id) : "";
   const realmOrderName = realm ? getRealmOrderNameById(realm?.realm_id) : "";
 
   const harvestAmount = notification.data && "harvestAmount" in notification.data ? notification.data.harvestAmount : 0;
 
-  const { getRealmLevel } = useRealm();
-  const level = getRealmLevel(parseInt(realmEntityId))?.level || 0;
+  const { getEntityLevel, getRealmLevelBonus } = useLevel();
+
+  // get harvest bonuses
+  const [levelBonus, hyperstructureLevelBonus] = useMemo(() => {
+    if (!realm || !realmEntityId || !resourceType) return [undefined, undefined];
+    const isFood = [254, 255].includes(resourceType);
+    const level = getEntityLevel(realmEntityId)?.level || 0;
+    const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
+    return [levelBonus, 0];
+  }, [realmEntityId]);
 
   const onHarvest = async () => {
     setIsLoading(true);
-    await optimisticHarvestLabor(
-      nextBlockTimestamp || 0,
-      level,
-      harvest_labor,
-    )({
-      signer: account,
-      realm_id: realmEntityId,
-      resource_type: parseInt(notification.keys[1]),
-    });
-    playHarvest();
-    setIsLoading(false);
+    if (!realmEntityId || !resourceType) return;
+    if (levelBonus && resourceType) {
+      await optimisticHarvestLabor(
+        nextBlockTimestamp || 0,
+        levelBonus,
+        hyperstructureLevelBonus,
+        harvest_labor,
+      )({
+        signer: account,
+        realm_id: realmEntityId,
+        resource_type: resourceType,
+      });
+      deleteNotification(notification.keys, notification.eventType);
+      playHarvest();
+      setIsLoading(false);
+    }
   };
 
   return {
@@ -80,11 +95,9 @@ export const useHarvestNotification = (
     content: (onClose: () => void) => (
       <div className="flex flex-col">
         <div className="mt-2 flex items-center">
-          <ResourceCost
-            resourceId={parseInt(notification.keys[1])}
-            amount={harvestAmount}
-            color="text-order-brilliance"
-          />
+          {resourceType && (
+            <ResourceCost resourceId={resourceType} amount={harvestAmount} color="text-order-brilliance" />
+          )}
         </div>
         <Button
           isLoading={isLoading}

@@ -1,49 +1,60 @@
-import realmsCoordsJson from "../geodata/coords.json";
 import realmsJson from "../geodata/realms.json";
-import realms from "../data/realms.json";
 import realmsOrdersJson from "../geodata/realms_raw.json";
+import realmsHexPositions from "../geodata/hex/realmHexPositions.json";
 import { findResourceIdByTrait, orders } from "@bibliothecadao/eternum";
 import { packResources } from "../utils/packedData";
-import { Realm } from "../types";
+import { RealmInterface } from "@bibliothecadao/eternum";
+import { getPosition } from "./utils";
 
 interface Attribute {
   trait_type: string;
   value: any;
 }
 
-export const getRealmIdByPosition = (positionRaw: { x: number; y: number }): number | undefined => {
-  let offset = 1800000;
-  let position = { x: positionRaw.x - offset, y: positionRaw.y - offset };
-  // TODO: find a better way to find position
-  for (let realm of realmsCoordsJson["features"]) {
+let realms: {
+  [key: string]: any;
+} = {};
+
+export const loadRealms = async () => {
+  const response = await fetch("/jsons/realms.json");
+  realms = await response.json();
+};
+
+loadRealms();
+
+export const getRealmIdByPosition = (position: { x: number; y: number }): bigint | undefined => {
+  let realmPositions = realmsHexPositions as { [key: number]: { col: number; row: number }[] };
+  for (let realmId of Object.keys(realmPositions)) {
     if (
-      parseInt(realm["geometry"]["coordinates"][0]) === position.x &&
-      parseInt(realm["geometry"]["coordinates"][1]) === position.y
+      realmPositions[Number(realmId)][0].col === position.x &&
+      realmPositions[Number(realmId)][0].row === position.y
     ) {
-      return realm["properties"]["tokenId"];
+      return BigInt(realmId);
     }
   }
   return undefined;
 };
 
-export const getRealmNameById = (realmId: number): string => {
-  return realmsJson["features"][realmId - 1]["name"];
+export const getRealmNameById = (realmId: bigint): string => {
+  const features = realmsJson["features"][Number(realmId) - 1];
+  if (!features) return "";
+  return features["name"];
 };
 
-export const getRealmOrderNameById = (realmId: number): string => {
-  const orderName = realmsOrdersJson[realmId - 1].order;
-  return orderName.toLowerCase().replace("the ", "");
+export const getRealmOrderNameById = (realmId: bigint): string => {
+  const orderName = realmsOrdersJson[Number(realmId) - 1];
+  if (!orderName) return "";
+  return orderName.order.toLowerCase().replace("the ", "");
 };
 
-export function getRealm(realm_id: number): Realm {
-  const realmsData = realms as {
-    [key: string]: any;
-  };
-  const realm = realmsData[realm_id.toString()];
+export function getRealm(realmId: bigint): RealmInterface | undefined {
+  const realmsData = realms;
+  const realm = realmsData[realmId.toString()];
+  if (!realm) return;
   const resourceIds = realm.attributes
     .filter(({ trait_type }: Attribute) => trait_type === "Resource")
     .map(({ value }: Attribute) => findResourceIdByTrait(value));
-  const resource_types_packed = parseInt(packResources(resourceIds));
+  const resourceTypesPacked = BigInt(packResources(resourceIds));
   let cities: number = 0;
   realm.attributes.forEach(({ trait_type, value }: Attribute) => {
     if (trait_type === "Cities") {
@@ -83,16 +94,19 @@ export function getRealm(realm_id: number): Realm {
     }
   });
 
+  let position = getPosition(realmId);
+
   return {
-    realm_id,
-    name: getRealmNameById(realm_id),
-    resource_types_packed,
-    resource_types_count: resourceIds.length,
+    realmId,
+    name: getRealmNameById(realmId),
+    resourceTypesPacked,
+    resourceTypesCount: resourceIds.length,
     cities,
     harbors,
     rivers,
     regions,
     wonder,
     order,
+    position,
   };
 }

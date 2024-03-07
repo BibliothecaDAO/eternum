@@ -9,7 +9,8 @@ import { LABOR_CONFIG, findResourceById } from "@bibliothecadao/eternum";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { calculateNextHarvest, calculateProductivity, formatSecondsInHoursMinutes } from "../realm/labor/laborUtils";
 import ProgressBar from "../../../elements/ProgressBar";
-import { useRealm } from "../../../hooks/helpers/useRealm";
+import { LevelIndex, useLevel } from "../../../hooks/helpers/useLevel";
+import useUIStore from "../../../hooks/store/useUIStore";
 
 type LaborRegionTooltipProps = {
   position: [number, number, number];
@@ -27,11 +28,21 @@ export const LaborRegionTooltip = ({ position, resourceId }: LaborRegionTooltipP
 
   const resource = findResourceById(resourceId);
 
+  const conqueredHyperstructureNumber = useUIStore((state) => state.conqueredHyperstructureNumber);
+
   const labor = useComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const { getRealmLevel } = useRealm();
-  const level = getRealmLevel(realmEntityId)?.level || 0;
+  const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
+
+  const { getEntityLevel, getRealmLevelBonus } = useLevel();
+
+  // get harvest bonuses
+  const [levelBonus, hyperstructureLevelBonus] = useMemo(() => {
+    const level = getEntityLevel(realmEntityId)?.level || 0;
+    const levelBonus = getRealmLevelBonus(level, isFood ? LevelIndex.FOOD : LevelIndex.RESOURCE);
+    return [levelBonus, conqueredHyperstructureNumber * 25 + 100];
+  }, [realmEntityId, isFood]);
 
   const laborLeft = useMemo(() => {
     if (nextBlockTimestamp && labor && LABOR_CONFIG && labor.balance > nextBlockTimestamp) {
@@ -60,7 +71,8 @@ export const LaborRegionTooltip = ({ position, resourceId }: LaborRegionTooltipP
         LABOR_CONFIG.base_labor_units,
         LABOR_CONFIG.base_resources_per_cycle,
         nextBlockTimestamp,
-        level,
+        levelBonus,
+        hyperstructureLevelBonus,
       );
     } else {
       return 0;
@@ -70,8 +82,8 @@ export const LaborRegionTooltip = ({ position, resourceId }: LaborRegionTooltipP
   return (
     <BaseRegionTooltip position={position} distanceFactor={400}>
       <div className="flex items-center">
-        <ResourceIcon resource={resource.trait} size="sm" />
-        <div className=" ml-2 text-sm text-gold font-bold">{resource.trait} Mine</div>
+        <ResourceIcon resource={resource?.trait || ""} size="sm" />
+        <div className=" ml-2 text-sm text-gold font-bold">{resource?.trait} Mine</div>
         <div className="flex flex-col ml-auto text-xxs">
           <div className="flex items-center mx-auto text-white/70">
             {labor && laborLeft > 0
@@ -80,7 +92,8 @@ export const LaborRegionTooltip = ({ position, resourceId }: LaborRegionTooltipP
                     LABOR_CONFIG.base_resources_per_cycle,
                     labor.multiplier,
                     LABOR_CONFIG.base_labor_units,
-                    level,
+                    levelBonus,
+                    hyperstructureLevelBonus,
                   ),
                 ).toFixed(0)}`
               : "+0"}
@@ -104,7 +117,7 @@ export const LaborRegionTooltip = ({ position, resourceId }: LaborRegionTooltipP
           {laborLeft > 60 ? `${formatSecondsInHoursMinutes(laborLeft)}` : "Idle"}
         </div>
         <div className="flex ml-auto">
-          <ResourceIcon resource={resource.trait as any} size="xs" className="!w-[12px]" />
+          <ResourceIcon resource={resource?.trait || ""} size="xs" className="!w-[12px]" />
           <div className="mx-1 text-brilliance">{`+${divideByPrecision(nextHarvest)}`}</div>
         </div>
       </div>

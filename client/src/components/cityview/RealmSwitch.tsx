@@ -11,14 +11,15 @@ import realmsNames from "../../geodata/realms.json";
 import useUIStore from "../../hooks/store/useUIStore";
 import { getRealm } from "../../utils/realms";
 import { useDojo } from "../../DojoContext";
-import { Has, HasValue, getComponentValue } from "@latticexyz/recs";
+import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useEntityQuery } from "@dojoengine/react";
 
 type RealmSwitchProps = {} & ComponentPropsWithRef<"div">;
 
-type Realm = {
-  id: number;
-  realmId: number;
+// TODO: Remove
+export type RealmBubble = {
+  id: bigint;
+  realmId: bigint;
   name: string;
   order: string;
 };
@@ -32,11 +33,11 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
   } = useDojo();
 
   const [showRealms, setShowRealms] = useState(false);
-  const [yourRealms, setYourRealms] = useState<Realm[]>([]);
+  const [yourRealms, setYourRealms] = useState<RealmBubble[]>([]);
 
   const { realmEntityId, realmId, setRealmId, setRealmEntityId, realmEntityIds, setRealmEntityIds } = useRealmStore();
 
-  const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: account.address })]);
+  const entityIds = useEntityQuery([Has(Realm), HasValue(Owner, { address: BigInt(account.address) })]);
 
   // set realm entity ids everytime the entity ids change
   useEffect(() => {
@@ -44,11 +45,14 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
       .map((id) => {
         const realm = getComponentValue(Realm, id);
         if (realm) {
-          return { realmEntityId: Number(id), realmId: realm?.realm_id };
+          // const owner = getComponentValue(Owner, id);
+          // console.log({ owner });
+          return { realmEntityId: realm.entity_id, realmId: realm.realm_id };
         }
       })
       .filter(Boolean)
-      .sort((a, b) => a!.realmId - b!.realmId) as { realmEntityId: number; realmId: number }[];
+      .sort((a, b) => Number(a!.realmId) - Number(b!.realmId)) as { realmEntityId: bigint; realmId: bigint }[];
+
     setRealmEntityIds(realmEntityIds);
   }, [entityIds]);
 
@@ -65,13 +69,14 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
   }, [location]);
 
   const realms = useMemo(() => {
-    const fetchedYourRealms: Realm[] = [];
+    const fetchedYourRealms: RealmBubble[] = [];
     realmEntityIds.forEach(({ realmEntityId, realmId }) => {
       const realm = getRealm(realmId);
-      const name = realmsNames.features[realm.realm_id - 1].name;
+      if (!realm) return;
+      const name = realmsNames.features[Number(realm.realmId) - 1].name;
       fetchedYourRealms.push({
         id: realmEntityId,
-        realmId: realm.realm_id,
+        realmId: realm.realmId,
         name,
         order: orderNameDict[realm.order],
       });
@@ -114,7 +119,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
                 if (location.includes(`/realm`)) {
                   setIsLoadingScreenEnabled(false);
                 }
-                setLocation(`/realm/${realm.id}`);
+                setLocation(`/realm/${Number(realm.realmId)}`);
                 setRealmEntityId(realm.id);
                 setRealmId(realm.realmId);
               }, 500);

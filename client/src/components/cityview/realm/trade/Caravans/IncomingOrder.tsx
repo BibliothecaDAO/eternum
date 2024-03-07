@@ -13,28 +13,30 @@ import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
 import { divideByPrecision } from "../../../../../utils/utils";
 
 type IncomingOrderProps = {
-  caravanId: number;
+  caravanId: bigint;
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const [isLoading, setIsLoading] = useState(false);
-  const { getResourcesFromInventory, offloadChest } = useResources();
+  const { getResourcesFromInventory, offloadChests } = useResources();
   const { getCaravanInfo } = useCaravan();
 
-  const { resourcesChestId, destination, arrivalTime } = getCaravanInfo(caravanId);
+  const { intermediateDestination, arrivalTime } = getCaravanInfo(caravanId);
 
   const resourcesGet = getResourcesFromInventory(caravanId);
 
   const offload = async () => {
     setIsLoading(true);
-    await offloadChest(realmEntityId, caravanId, resourcesChestId, 0, resourcesGet);
+    await offloadChests(realmEntityId, caravanId, resourcesGet.indices, resourcesGet.resources);
   };
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const pickupRealmId = destination && getRealmIdByPosition({ x: destination.x, y: destination.y });
-  const pickupRealmName = pickupRealmId && getRealmNameById(pickupRealmId);
+  const pickupRealmId = intermediateDestination
+    ? getRealmIdByPosition({ x: intermediateDestination.x, y: intermediateDestination.y })
+    : undefined;
+  const pickupRealmName = pickupRealmId ? getRealmNameById(pickupRealmId) : undefined;
   const hasArrivedOriginalPosition =
     arrivalTime !== undefined && nextBlockTimestamp !== undefined && arrivalTime <= nextBlockTimestamp;
 
@@ -45,9 +47,9 @@ export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
     >
       <div className="flex items-center text-xxs">
         <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
-          #{caravanId}
+          #{Number(caravanId)}
         </div>
-        {!hasArrivedOriginalPosition && pickupRealmName && (
+        {!hasArrivedOriginalPosition && pickupRealmId !== undefined && pickupRealmName !== undefined && (
           <div className="flex items-center ml-1 -mt-2">
             <span className="italic text-light-pink">Coming from</span>
             <div className="flex items-center ml-1 mr-1 text-gold">
@@ -67,14 +69,14 @@ export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
       <div className="flex mt-1">
         {resourcesGet && (
           <div className="flex justify-center items-center space-x-2 flex-wrap mt-2">
-            {resourcesGet.map(
+            {resourcesGet.resources.map(
               (resource) =>
                 resource && (
                   <ResourceCost
                     key={resource.resourceId}
                     type="vertical"
                     color="text-order-brilliance"
-                    className="!w-5 mt-0.5"
+                    className="!w-9 mt-0.5"
                     resourceId={resource.resourceId}
                     amount={divideByPrecision(resource.amount)}
                   />
@@ -82,28 +84,17 @@ export const IncomingOrder = ({ caravanId, ...props }: IncomingOrderProps) => {
             )}
           </div>
         )}
-        {!isLoading && (
-          <Button
-            onClick={() => {
-              offload();
-            }}
-            disabled={!hasArrivedOriginalPosition}
-            variant={hasArrivedOriginalPosition ? "success" : "danger"}
-            className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
-          >
-            {hasArrivedOriginalPosition ? `Claim` : "On the way"}
-          </Button>
-        )}
-        {isLoading && (
-          <Button
-            isLoading={true}
-            onClick={() => {}}
-            variant="danger"
-            className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
-          >
-            {}
-          </Button>
-        )}
+        <Button
+          isLoading={isLoading}
+          onClick={() => {
+            offload();
+          }}
+          disabled={!hasArrivedOriginalPosition}
+          variant={hasArrivedOriginalPosition ? "success" : "danger"}
+          className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
+        >
+          {hasArrivedOriginalPosition ? `Claim` : "On the way"}
+        </Button>
       </div>
     </div>
   );

@@ -1,24 +1,9 @@
 import { create } from "zustand";
 import { numberToHex } from "../../utils/utils";
 import { pollForEvents, Event } from "../../services/eventPoller";
-import { Resource } from "../../types";
 import { parseCombatEvent } from "../../utils/combat";
 import { COMBAT_EVENT } from "@bibliothecadao/eternum";
-
-export enum Winner {
-  Attacker = "Attacker",
-  Target = "Target",
-}
-
-export interface CombatResultInterface {
-  attackerRealmEntityId: number;
-  targetRealmEntityId: number;
-  attackingEntityIds: number[];
-  winner: Winner;
-  stolenResources: Resource[];
-  damage: number | undefined;
-  attackTimestamp: number | undefined;
-}
+import { CombatResultInterface } from "@bibliothecadao/eternum";
 
 interface CombatHistoryStore {
   loading: boolean;
@@ -27,7 +12,7 @@ interface CombatHistoryStore {
   setProgress: (progress: number) => void;
   combatHistory: CombatResultInterface[];
   addOrUpdateCombatEntry: (result: CombatResultInterface) => void;
-  syncData: (realmEntityId: number) => void;
+  syncData: (realmEntityId: bigint) => void;
 }
 
 const useCombatHistoryStore = create<CombatHistoryStore>((set, get) => ({
@@ -49,14 +34,14 @@ const useCombatHistoryStore = create<CombatHistoryStore>((set, get) => ({
     set({ loading: true });
     set({ combatHistory: [] });
 
-    const syncDataInternal = async (realmEntityId: number) => {
+    const syncDataInternal = async (realmEntityId: bigint) => {
       const processEvents = (event: Event) => {
         let result = parseCombatEvent(event);
         get().addOrUpdateCombatEntry(result);
       };
 
       // Keccak for Combat event
-      await pollForEvents([COMBAT_EVENT, "*", numberToHex(realmEntityId)], processEvents, 20);
+      await pollForEvents([COMBAT_EVENT, "*", numberToHex(Number(realmEntityId))], processEvents, 20);
     };
 
     syncDataInternal(realmEntityId).then(() => {

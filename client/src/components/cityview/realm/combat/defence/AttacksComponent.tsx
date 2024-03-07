@@ -5,22 +5,29 @@ import { useRoute, useLocation } from "wouter";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { EnnemyRaidersPanel } from "./EnnemyRaidsPanel";
 import { AttackHistoryPanel } from "./AttackHistoryPanel";
-
-export type Order = {
-  orderId: number;
-  counterpartyOrderId: number;
-  tradeId: number;
-};
+import { getPosition } from "../../../../../utils/utils";
+import { useCombat } from "../../../../../hooks/helpers/useCombat";
+import { useDojo } from "../../../../../DojoContext";
 
 type AttacksComponentProps = {};
 
 export const AttacksComponent = ({}: AttacksComponentProps) => {
+  const {
+    account: {
+      account: { address },
+    },
+  } = useDojo();
+
   const [selectedTab, setSelectedTab] = useState(0);
-  const { realmEntityId } = useRealmStore();
+  const { realmEntityId, realmId } = useRealmStore();
 
   const moveCameraToMarketView = useUIStore((state) => state.moveCameraToMarketView);
   const moveCameraToCaravansView = useUIStore((state) => state.moveCameraToCaravansView);
   const setTooltip = useUIStore((state) => state.setTooltip);
+
+  const { useEnemyRaidersOnPosition } = useCombat();
+  const realmPosition = realmId ? getPosition(realmId) : undefined;
+  const raiderIds = realmPosition ? useEnemyRaidersOnPosition(BigInt(address), realmPosition) : [];
 
   // @ts-ignore
   const [location, setLocation] = useLocation();
@@ -64,7 +71,7 @@ export const AttacksComponent = ({}: AttacksComponentProps) => {
             <div> Current Attacks </div>
           </div>
         ),
-        component: <EnnemyRaidersPanel />,
+        component: <EnnemyRaidersPanel raiderIds={raiderIds} className="p-2 min-h-[120px]" />,
       },
       {
         key: "attack-history",

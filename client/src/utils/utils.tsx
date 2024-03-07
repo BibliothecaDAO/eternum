@@ -2,10 +2,22 @@ import { forwardRef, useMemo, useLayoutEffect } from "react";
 import { Vector2 } from "three";
 import { useThree } from "@react-three/fiber";
 import { BlendFunction } from "postprocessing";
-import { EntityIndex, setComponent, Component, Schema, Components } from "@latticexyz/recs";
-import { poseidonHashMany } from "micro-starknet";
-import { Position } from "../types";
-import realmCoords from "../geodata/coords.json";
+import { Entity, setComponent, Component, Schema, Components } from "@dojoengine/recs";
+import { Position, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import realmsHexPositions from "../geodata/hex/realmHexPositions.json";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
+import realmHexPositions from "../geodata/hex/realmHexPositions.json";
+
+export { getEntityIdFromKeys };
+
+export const getForeignKeyEntityId = (entityId: bigint, key: bigint, index: bigint) => {
+  let keyHash = getEntityIdFromKeys([entityId, key, BigInt(index)]);
+  return getEntityIdFromKeys([BigInt(keyHash)]);
+};
+
+export const formatEntityId = (entityId: bigint): Entity => {
+  return ("0x" + entityId.toString(16)) as Entity;
+};
 
 const isRef = (ref: any) => !!ref.current;
 
@@ -16,6 +28,13 @@ export const currencyFormat = (num: any, decimals: number) => {
     .toFixed(decimals)
     .replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
 };
+
+export function currencyIntlFormat(num: any, decimals: number = 2) {
+  return Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: decimals,
+  }).format(num || 0);
+}
 
 export const wrapEffect = (effectImpl: any, defaultBlendMode = BlendFunction.ALPHA) =>
   forwardRef(function Wrap({ blendFunction, opacity, ...props }: any, ref) {
@@ -64,14 +83,14 @@ export function extractAndCleanKey(keys: string | null | undefined | string[]): 
   }
 }
 
-export type Entity = {
+export type NodeEntity = {
   __typename?: "Entity";
   // keys?: (string | null)[] | null | undefined;
   keys?: string | null | undefined | string[];
   models?: any | null[];
 };
 
-export function setComponentsFromEntity(entity: Entity, components: Components) {
+export function setComponentsFromEntity(entity: NodeEntity, components: Components) {
   if (!entity || !entity.models) return;
 
   // Pre-calculate these to avoid redundancy
@@ -93,7 +112,7 @@ export function setComponentsFromEntity(entity: Entity, components: Components) 
   }
 }
 
-export function setComponentFromEntity(entity: Entity, componentName: string, components: Components) {
+export function setComponentFromEntity(entity: NodeEntity, componentName: string, components: Components) {
   if (entity) {
     let component = components[componentName];
     let rawComponentValues = entity?.models?.find((component: any) => {
@@ -138,7 +157,7 @@ export const padAddress = (address: string) => {
   return "0x" + address.substring(2).padStart(64, "0");
 };
 
-export function getFirstComponentByType(entities: Entity[] | null | undefined, typename: string): any | null {
+export function getFirstComponentByType(entities: NodeEntity[] | null | undefined, typename: string): any | null {
   if (!isValidArray(entities)) return null;
 
   for (let entity of entities) {
@@ -178,17 +197,6 @@ export function getAllSystemNamesAsFelt(manifest: any): any {
   return manifest.systems.map((system: any) => strTofelt252Felt(system.name));
 }
 
-// DISCUSSION: MUD expects Numbers, but entities in Starknet are BigInts (from poseidon hash)
-// so I am converting them to Numbers here, but it means that there is a bigger risk of collisions
-export function getEntityIdFromKeys(keys: bigint[]): EntityIndex {
-  if (keys.length === 1) {
-    return parseInt(keys[0].toString()) as EntityIndex;
-  }
-  // calculate the poseidon hash of the keys
-  let poseidon = poseidonHashMany(keys);
-  return parseInt(poseidon.toString()) as EntityIndex;
-}
-
 export function setComponentFromEntitiesQuery(component: Component, entities: bigint[]) {
   let index = 0;
 
@@ -214,14 +222,14 @@ export function setComponentFromEntitiesQuery(component: Component, entities: bi
       return acc;
     }, {});
 
-    const entityIndex = parseInt(entityIds[i].toString()) as EntityIndex;
+    const entityIndex = entityIds[i].toString() as Entity;
     setComponent(component, entityIndex, componentValues);
 
     index += numValues;
   }
 }
 
-export function setComponentFromEntitiesGraphqlQuery(component: Component, entities: Entity[]) {
+export function setComponentFromEntitiesGraphqlQuery(component: Component, entities: NodeEntity[]) {
   entities.forEach((entity) => {
     const keys = extractAndCleanKey(entity.keys);
     const entityIndex = getEntityIdFromKeys(keys);
@@ -308,7 +316,7 @@ export const getContractPositionFromRealPosition = (position: Position): Positio
   };
 };
 
-export const getRealmPositionFromContractPosition = (position: Position): Position => {
+export const getUIPositionFromContractPosition = (position: Position): Position => {
   const { x, y } = position;
   return {
     x: (x - 1800000) / 10000,
@@ -326,20 +334,21 @@ export function divideByPrecision(value: number): number {
   return value / PRECISION;
 }
 
-export function getPosition(realm_id: number): { x: number; y: number } {
-  const coords = realmCoords.features[realm_id - 1].geometry.coordinates.map((value) => parseInt(value));
-  return { x: coords[0] + 1800000, y: coords[1] + 1800000 };
+export function getPosition(realm_id: bigint): { x: number; y: number } {
+  let realmPositions = realmsHexPositions as { [key: number]: { col: number; row: number }[] };
+  let position = realmPositions[Number(realm_id)][0];
+  return { x: position.col, y: position.row };
 }
 
-const HIGHEST_X = 3120937;
-const LOWEST_X = 470200;
+const HIGHEST_X = 2147484147;
+const LOWEST_X = 2147483647;
 
 // get zone for labor auction
 export function getZone(x: number): number {
   return 1 + Math.floor(((x - LOWEST_X) * 10) / (HIGHEST_X - LOWEST_X));
 }
 
-export function addressToNumber(address) {
+export function addressToNumber(address: string) {
   // Convert the address to a big integer
   let numericValue = BigInt(address);
 
@@ -353,3 +362,75 @@ export function addressToNumber(address) {
   // Map the sum to a number between 1 and 10
   return (sum % 5) + 1;
 }
+
+export const calculateDistance = (start: Position, destination: Position): number => {
+  const x: number =
+    start.x > destination.x ? Math.pow(start.x - destination.x, 2) : Math.pow(destination.x - start.x, 2);
+
+  const y: number =
+    start.y > destination.y ? Math.pow(start.y - destination.y, 2) : Math.pow(destination.y - start.y, 2);
+
+  // Using bitwise shift for the square root approximation for BigInt.
+  // we store coords in x * 10000 to get precise distance
+  const distance = (x + y) ** 0.5 / 10000;
+
+  return distance;
+};
+
+export const getUIPositionFromColRow = (col: number, row: number, log: boolean = false): Position => {
+  const hexRadius = 3;
+  const hexHeight = hexRadius * 2;
+  const hexWidth = Math.sqrt(3) * hexRadius;
+  const vertDist = hexHeight * 0.75 + 0.2;
+  const horizDist = hexWidth + 0.2;
+
+  const colNorm = col - 2147483647;
+  const rowNorm = row - 2147483647;
+  const x = colNorm * horizDist + ((rowNorm % 2) * horizDist) / 2;
+  const y = rowNorm * vertDist;
+
+  return {
+    x,
+    y,
+  };
+};
+
+export const getColRowFromUIPosition = (x: number, y: number): { col: number; row: number } => {
+  const hexRadius = 3;
+  const hexHeight = hexRadius * 2;
+  const hexWidth = Math.sqrt(3) * hexRadius;
+  const vertDist = hexHeight * 0.75 + 0.2;
+  const horizDist = hexWidth + 0.2;
+
+  const rowNorm = Math.round(y / vertDist);
+  const colNorm = Math.round((x - ((rowNorm % 2) * horizDist) / 2) / horizDist);
+
+  const col = colNorm + 2147483647;
+  const row = rowNorm + 2147483647;
+
+  return {
+    col,
+    row,
+  };
+};
+
+export interface HexPositions {
+  [key: string]: { col: number; row: number }[];
+}
+
+export const getRealmUIPosition = (realm_id: bigint): Position => {
+  const realmPositions = realmHexPositions as HexPositions;
+  const colrow = realmPositions[Number(realm_id).toString()][0];
+
+  return getUIPositionFromColRow(colrow.col, colrow.row, true);
+};
+
+export const findDirection = (startPos: { col: number; row: number }, endPos: { col: number; row: number }) => {
+  // give the direction
+  const neighborOffsets = startPos.row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+  for (let offset of neighborOffsets) {
+    if (startPos.col + offset.i === endPos.col && startPos.row + offset.j === endPos.row) {
+      return offset.direction;
+    }
+  }
+};

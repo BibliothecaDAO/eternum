@@ -1,15 +1,21 @@
-use eternum::constants::ResourceTypes;
 use eternum::models::hyperstructure::HyperStructure;
 use eternum::models::resources::ResourceCost;
+use eternum::models::combat::TownWatch;
 use eternum::models::position::{Position, Coord};
+use eternum::models::config::LevelingConfig;
 
 use eternum::systems::config::interface::{
     IHyperstructureConfigDispatcher, 
-    IHyperstructureConfigDispatcherTrait
+    IHyperstructureConfigDispatcherTrait,
+    ILevelingConfigDispatcher,
+    ILevelingConfigDispatcherTrait,
 };
 use eternum::systems::config::contracts::config_systems;
 
 use eternum::utils::testing::{spawn_eternum, deploy_system};
+
+use eternum::constants::HYPERSTRUCTURE_LEVELING_CONFIG_ID;
+use eternum::constants::ResourceTypes;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
@@ -28,6 +34,7 @@ fn setup() -> (IWorldDispatcher, IHyperstructureConfigDispatcher) {
         contract_address: config_systems_address
     };
 
+
     (world, hyperstructure_config_dispatcher)
 }
 
@@ -43,67 +50,62 @@ fn test_create_hyperstructure() {
     );
 
     let hyperstructure_type = 1_u8;
-    let initialization_resources = array![
-        (ResourceTypes::STONE, 10_u128), // 10 stone
-        (ResourceTypes::WOOD, 13_u128)  // 13 wood
-    ];
-    let construction_resources = array![
-        (ResourceTypes::STONE, 40_u128), // 40 stone
-        (ResourceTypes::WOOD, 50_u128)  // 50 wood
-    ];
     let hyperstructure_coord = Coord{ x:20, y:30 };
+    let completion_cost = array![
+        (ResourceTypes::STONE, 10_u128)
+     ].span();
 
 
+    // let world.uuid start from 1
+    world.uuid();
+    
     let hyperstructure_id 
         = hyperstructure_config_dispatcher.create_hyperstructure(
             world,
             hyperstructure_type,
-            initialization_resources.span(),
-            construction_resources.span(),
-            hyperstructure_coord
+            hyperstructure_coord,
+            completion_cost,
         );
-
 
     let hyperstructure = get!(world, hyperstructure_id, HyperStructure);
     assert(hyperstructure.hyperstructure_type == hyperstructure_type, 
-            'wrong hyperstructure_type value'
-    );
-    assert(hyperstructure.initialized_at == 0, 'wrong initialized_at value');
-    assert(hyperstructure.completed_at == 0, 'wrong completed_at value');
-    assert(hyperstructure.initialization_resource_count == 2, 'wrong resource count');
-    assert(hyperstructure.construction_resource_count == 2, 'wrong resource count');
-
-    let hyperstructure = get!(world, hyperstructure_id, HyperStructure);
-
-    let hyperstructure_initialization_stone_cost = get!(world, (hyperstructure.initialization_resource_id, 0), ResourceCost);
-    assert(hyperstructure_initialization_stone_cost.amount == 10, 'wrong amount value');
-    assert(hyperstructure_initialization_stone_cost.resource_type == ResourceTypes::STONE, 
-            'wrong resource_type value'
+            'wrong hyperstructure type value'
     );
 
 
-    let hyperstructure_initialization_wood_cost = get!(world, (hyperstructure.initialization_resource_id, 1), ResourceCost);
-    assert(hyperstructure_initialization_wood_cost.amount == 13, 'wrong amount value');
-    assert(hyperstructure_initialization_wood_cost.resource_type == ResourceTypes::WOOD, 
-            'wrong resource_type value'
+    assert(hyperstructure.controlling_order == 0, 'wrong order');
+    assert(hyperstructure.completed == false, 'wrong completed value');
+    assert(hyperstructure.completion_cost_id != 0, 'wrong completion cost id');
+    assert(hyperstructure.completion_resource_count == 1, 
+            'wrong completion resource count'
     );
 
-    let hyperstructure_construction_stone_cost = get!(world, (hyperstructure.construction_resource_id, 0), ResourceCost);
-    assert(hyperstructure_construction_stone_cost.amount == 40, 'wrong amount value');
-    assert(hyperstructure_construction_stone_cost.resource_type == ResourceTypes::STONE, 
-            'wrong resource_type value'
+    // check that hyperstructure is in the right position
+    let hyperstructure_position = get!(world, hyperstructure_id, Position);
+    assert(hyperstructure_position.x == hyperstructure_coord.x, 'wrong x value');
+    assert(hyperstructure_position.y == hyperstructure_coord.y, 'wrong y value');
+
+    // check that completion cost is set correctly
+    let completion_cost_stone 
+        = get!(world, (hyperstructure.completion_cost_id, 0), ResourceCost);
+    assert(completion_cost_stone.resource_type == ResourceTypes::STONE, 
+            'wrong resource type'
+    );
+    assert(completion_cost_stone.amount == 10, 'wrong amount');
+
+
+    // check that hyperstructure town watch was created
+    let hyperstructure_town_watch = get!(world, hyperstructure_id, TownWatch);
+    assert(hyperstructure_town_watch.town_watch_id != 0, 
+            'town watch not created'
     );
 
 
-    let hyperstructure_construction_wood_cost = get!(world, (hyperstructure.construction_resource_id, 1), ResourceCost);
-    assert(hyperstructure_construction_wood_cost.amount == 50, 'wrong amount value');
-    assert(hyperstructure_construction_wood_cost.resource_type == ResourceTypes::WOOD, 
-            'wrong resource_type value'
-    );
-
-
-    assert(hyperstructure.coord_x == hyperstructure_coord.x, 'wrong x value');
-    assert(hyperstructure.coord_y == hyperstructure_coord.y, 'wrong y value');
+    // check that hyperstructure town watch position is correct
+    let town_watch_position 
+        = get!(world, hyperstructure_town_watch.town_watch_id, Position);
+    assert(town_watch_position.x == hyperstructure_coord.x, 'wrong hyp x value');
+    assert(town_watch_position.y == hyperstructure_coord.y, 'wrong hyp y value');
 }
 
 

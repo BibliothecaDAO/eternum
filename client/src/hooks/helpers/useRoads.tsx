@@ -2,18 +2,10 @@ import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { useDojo } from "../../DojoContext";
 import { getEntityIdFromKeys, getPosition } from "../../utils/utils";
 import { useEffect, useMemo, useState } from "react";
-import { EntityIndex, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
+import { Entity, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import useRealmStore from "../store/useRealmStore";
 import { getRealm, getRealmIdByPosition, getRealmNameById } from "../../utils/realms";
-
-export interface RoadInterface {
-  startRealmName: string;
-  startRealmOrder: number | undefined;
-  destinationEntityId: number;
-  destinationRealmName: string;
-  destinationRealmOrder: number | undefined;
-  usageLeft: number;
-}
+import { RoadInterface } from "@bibliothecadao/eternum";
 
 export function useRoads() {
   const {
@@ -22,7 +14,7 @@ export function useRoads() {
     },
   } = useDojo();
 
-  const getHasRoad = (entityA: number | undefined, entityB: number | undefined): boolean | undefined => {
+  const getHasRoad = (entityA: bigint | undefined, entityB: bigint | undefined): boolean | undefined => {
     if (entityA && entityB) {
       const positionA = getComponentValue(Position, getEntityIdFromKeys([BigInt(entityA)]));
       const positionB = getComponentValue(Position, getEntityIdFromKeys([BigInt(entityB)]));
@@ -59,7 +51,7 @@ export function useRoads() {
   return { getHasRoad };
 }
 
-export function useGetRoads(entityId: number) {
+export function useGetRoads(entityId: bigint) {
   const {
     setup: {
       components: { Road, Position, Realm },
@@ -78,37 +70,48 @@ export function useGetRoads(entityId: number) {
 
   const entityIds2 = useEntityQuery([HasValue(Road, { end_coord_x: position?.x || 0, end_coord_y: position?.y || 0 })]);
 
-  const entityIds: EntityIndex[] = useMemo(() => {
+  const entityIds: Entity[] = useMemo(() => {
     return [...entityIds1, ...entityIds2];
   }, [entityIds1, entityIds2]);
 
   // TODO: put somewhere else for reuse
-  const getRealmEntityIdFromRealmId = (realmId: number): number | undefined => {
-    const realms = runQuery([HasValue(Realm, { realm_id: realmId })]);
-    if (realms.size > 0) {
-      return Number(realms.values().next().value);
+  const getRealmEntityIdFromRealmId = (realmId: bigint): bigint | undefined => {
+    const entityIds = Array.from(runQuery([HasValue(Realm, { realm_id: realmId })]));
+    if (entityIds.length > 0) {
+      let realm = getComponentValue(Realm, entityIds[0]);
+      return realm!.entity_id;
     }
   };
 
   useEffect(() => {
     let roads: RoadInterface[] = entityIds
-      .map((entityId: EntityIndex) => {
+      .map((entityId: Entity) => {
         let road = getComponentValue(Road, entityId);
         if (road) {
           // TODO: refactor to just do one query per realm
           let startRealmId = realmId;
+
           let startRealmName = startRealmId ? getRealmNameById(startRealmId) : "";
-          let { order: startRealmOrder } = startRealmId ? getRealm(startRealmId) : { order: undefined };
-          let startRealmPosition = getPosition(startRealmId || 0);
+
+          let { order: startRealmOrder } = startRealmId
+            ? getRealm(startRealmId) || { order: undefined }
+            : { order: undefined };
+
+          let startRealmPosition = getPosition(startRealmId || 0n);
+
           let destinationRealmId =
             startRealmPosition.x === road.start_coord_x && startRealmPosition.y === road.start_coord_y
               ? getRealmIdByPosition({ x: road.end_coord_x, y: road.end_coord_y })
               : getRealmIdByPosition({ x: road.start_coord_x, y: road.start_coord_y });
-          let destinationRealmName = destinationRealmId ? getRealmNameById(destinationRealmId) : "";
-          let destinationEntityId = getRealmEntityIdFromRealmId(destinationRealmId || 0) || 0;
+
+          let destinationRealmName = destinationRealmId ? getRealmNameById(BigInt(destinationRealmId)) : "";
+
+          let destinationEntityId = getRealmEntityIdFromRealmId(BigInt(destinationRealmId || 0n)) || 0n;
+
           let { order: destinationRealmOrder } = destinationRealmId
-            ? getRealm(destinationRealmId)
+            ? getRealm(BigInt(destinationRealmId)) || { order: undefined }
             : { order: undefined };
+
           return {
             startRealmName,
             startRealmOrder,

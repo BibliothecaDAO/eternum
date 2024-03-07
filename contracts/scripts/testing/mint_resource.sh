@@ -7,7 +7,7 @@ read -p "Enter amount: " amount
 world="$SOZO_WORLD"
 
 commands=(
-    "sozo execute --world $world MintResources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $entity_id,$resource_type,$amount"
+    "sozo execute $TEST_RESOURCE_SYSTEMS mint --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,$entity_id,1,$resource_type,$amount"
 )
 
 for cmd in "${commands[@]}"; do

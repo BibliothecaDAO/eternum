@@ -5,10 +5,12 @@ import { ReactComponent as Cloth } from "../assets/icons/resources/Cloth.svg";
 import { ReactComponent as DemonHide } from "../assets/icons/resources/DemonHide.svg";
 import { ReactComponent as DesertGlass } from "../assets/icons/resources/DesertGlass.svg";
 import { ReactComponent as Ore } from "../assets/icons/resources/Ore.svg";
-import { ReactComponent as Shekels } from "../assets/icons/resources/Shekels.svg";
+import { ReactComponent as Lords } from "../assets/icons/resources/Lords.svg";
 import { ReactComponent as Spores } from "../assets/icons/resources/Spores.svg";
+import { ReactComponent as People } from "../assets/icons/common/people.svg";
 
 export type Props = {
+  isLabor?: boolean;
   resource: string;
   size: keyof (typeof STYLES)["size"];
   className?: string;
@@ -55,9 +57,9 @@ const Components: { [key: string]: Resource } = Object.freeze({
   StoneTemple: { component: <Cloth className="w-full h-full" />, name: "Cloth" },
   DesertOasis: { component: <DesertGlass className="w-full h-full" />, name: "Desert Glass" },
   MountainDeep: { component: <Ore className="w-full h-full" />, name: "Ore" },
-  UnderwaterKeep: { component: <Shekels className="w-full h-full" />, name: "Shekels" },
+  UnderwaterKeep: { component: <Lords className="w-full h-full" />, name: "Lords" },
   ForestRuins: { component: <Spores className="w-full h-full" />, name: "Spores" },
-  Shekels: { component: <Shekels className="w-full h-full" />, name: "Shekels" },
+  Lords: { component: <img src={`/images/resources/coin.png`} />, name: "Lords" },
   Fish: { component: <img src={`/images/resources/255.png`} />, name: "Fish" },
   Wheat: { component: <img src={`/images/resources/254.png`} />, name: "Wheat" },
 });
@@ -66,18 +68,21 @@ const STYLES = {
   size: {
     xs: "w-2 h-2 md:w-4 md:h-4",
     sm: "w-4 h-4 md:w-6 md:h-6",
-    md: "w-6 h-6 md:w-8 md:h-8",
+    md: "w-6 h-6",
     lg: "w-8 h-8 md:w-12 md:h-16",
+    xl: "w-12 h-12 md:w-16 md:h-16",
+    xxl: "w-16 h-16 md:w-20 md:h-20",
   },
 } as const;
 
-export const ResourceIcon = ({ withTooltip = true, ...props }: Props) => {
+export const ResourceIcon = ({ isLabor = false, withTooltip = true, ...props }: Props) => {
   const Icon = (
     <div
-      className={`flex self-center w-min paper relative group rounded-xl justify-center w-full ${props.containerClassName}`}
+      className={`flex self-center paper relative group rounded-xl justify-center w-full ${props.containerClassName}`}
     >
-      <div className={` mx-auto ${clsx(STYLES.size[props.size], props.className)} `}>
+      <div className={`relative mx-auto ${clsx(STYLES.size[props.size], props.className)} `}>
         {Components[props.resource.replace(" ", "").replace("'", "")]?.component}
+        {isLabor && <People className="absolute left-4 h-2.5 top-3"></People>}
       </div>
 
       {props.label && (

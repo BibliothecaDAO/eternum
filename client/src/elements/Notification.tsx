@@ -1,21 +1,34 @@
 import clsx from "clsx";
-import { ComponentPropsWithRef, useEffect, useState } from "react";
+import { ComponentPropsWithRef } from "react";
 import { Transition } from "@headlessui/react";
-import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
-import { EventType, NotificationType } from "../hooks/notifications/useNotifications";
+// import { ReactComponent as CloseIcon } from "../assets/icons/common/cross-circle.svg";
 import { useTradeNotification } from "../hooks/notifications/useTradeNotification";
 import { useHarvestNotification } from "../hooks/notifications/useHarvestNotification";
 import { useEmptyChestNotification } from "../hooks/notifications/useEmptyChestNotification";
-import { useAttackedNotification, useStolenResourcesNotification } from "../hooks/notifications/useCombatNotification";
+import {
+  useAttackedNotification,
+  useEnemyRaidersAreTravelingNotification,
+  useEnemyRaidersHaveArrivedNotification,
+  useStolenResourcesNotification,
+  useYourRaidersHaveArrivedNotification,
+} from "../hooks/notifications/useCombatNotification";
+import { EventType, NotificationType } from "../hooks/store/useNotificationsStore";
+import { useCaravanHasArrivedAtBankNotification } from "../hooks/notifications/useBankNotification";
+import { useCaravanHasArrivedAtHyperstructureNotification } from "../hooks/notifications/useHyperstructureNotification";
 
 const notificationHandlers = {
   [EventType.AcceptOffer]: useTradeNotification,
-  [EventType.MakeOffer]: useTradeNotification,
+  [EventType.DirectOffer]: useTradeNotification,
   [EventType.CancelOffer]: useTradeNotification,
   [EventType.Harvest]: useHarvestNotification,
-  [EventType.OrderClaimable]: useEmptyChestNotification,
+  [EventType.EmptyChest]: useEmptyChestNotification,
   [EventType.StolenResource]: useStolenResourcesNotification,
   [EventType.Attacked]: useAttackedNotification,
+  [EventType.ArrivedAtBank]: useCaravanHasArrivedAtBankNotification,
+  [EventType.ArrivedAtHyperstructure]: useCaravanHasArrivedAtHyperstructureNotification,
+  [EventType.YourRaidersHaveArrived]: useYourRaidersHaveArrivedNotification,
+  [EventType.EnemyRaidersHaveArrived]: useEnemyRaidersHaveArrivedNotification,
+  [EventType.EnemyRaidersArriving]: useEnemyRaidersAreTravelingNotification,
 };
 
 type NotificationProps = {
@@ -40,15 +53,14 @@ export const Notification = ({
   onClose,
   type = "primary",
 }: NotificationProps) => {
-  const [isShown, setIsShown] = useState(false);
-
-  useEffect(() => {
-    if (!closedNotifications[id]) {
-      setIsShown(true);
-    } else {
-      setIsShown(false);
-    }
-  }, [closedNotifications, id]);
+  // todo: find a better way to handle close notifications
+  // useEffect(() => {
+  //   if (!closedNotifications[id]) {
+  //     setIsShown(true);
+  //   } else {
+  //     setIsShown(false);
+  //   }
+  // }, [closedNotifications, id]);
 
   const handleNotification = notificationHandlers[notification.eventType];
 
@@ -56,7 +68,7 @@ export const Notification = ({
 
   return (
     <Transition
-      show={isShown}
+      show={true}
       appear={true}
       enter="transition-all duration-300"
       enterFrom="opacity-0 -translate-y-full"
@@ -66,12 +78,12 @@ export const Notification = ({
       leaveTo="opacity-0 translate-y-full"
     >
       <div className={clsx(" pointer-events-auto p-", STYLES.base, STYLES[type], className)}>
-        {
+        {/* {
           <CloseIcon
             className="absolute w-4 h-4 cursor-pointer top-2 right-2 fill-white opacity-30"
             onClick={onClose}
           />
-        }
+        } */}
         {time && <div className="absolute bottom-2 right-2 fill-white opacity-30">{time}</div>}
         {title}
         {typeof content === "function" ? content(onClose) : content}

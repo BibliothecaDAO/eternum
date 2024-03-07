@@ -7,11 +7,11 @@ import { useRoute, useLocation } from "wouter";
 
 type RealmLaborComponentProps = {};
 
-export const RealmLaborComponent = ({ }: RealmLaborComponentProps) => {
+export const RealmLaborComponent = ({}: RealmLaborComponentProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const { realmEntityId } = useRealmStore();
 
-  const moveCameraToLaborView = useUIStore((state) => state.moveCameraToLaborView);
+  // const moveCameraToLaborView = useUIStore((state) => state.moveCameraToLaborView);
   const moveCameraToFoodView = useUIStore((state) => state.moveCameraToFoodView);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
@@ -27,7 +27,7 @@ export const RealmLaborComponent = ({ }: RealmLaborComponentProps) => {
       moveCameraToFoodView();
     } else {
       _tab = params?.tab as any;
-      moveCameraToLaborView();
+      // moveCameraToLaborView();
     }
     const tabIndex = tabs.findIndex((tab) => tab.key === _tab);
     if (tabIndex >= 0) {

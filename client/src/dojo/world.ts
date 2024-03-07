@@ -1,3 +1,3 @@
-import { createWorld } from "@latticexyz/recs";
+import { createWorld } from "@dojoengine/recs";
 
-export const world = createWorld(); 
+export const world = createWorld();

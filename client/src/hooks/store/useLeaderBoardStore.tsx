@@ -1,90 +1,119 @@
-import { TRANSFER_EVENT, orderNameDict, resourceProb } from "@bibliothecadao/eternum";
+import { getOrderName, orders } from "@bibliothecadao/eternum";
 import { create } from "zustand";
-import { divideByPrecision, numberToHex } from "../../utils/utils";
-import { getRealm } from "../../utils/realms";
-import { pollForEvents, Event } from "../../services/eventPoller";
+import { getEntityIdFromKeys } from "../../utils/utils";
+import { getComponentValue } from "@dojoengine/recs";
+import { useDojo } from "../../DojoContext";
+import { useGetRealms, useRealm } from "../helpers/useRealm";
+import { useEffect } from "react";
+import useRealmStore from "./useRealmStore";
+import { getRealmOrderNameById } from "../../utils/realms";
 
-export interface LeaderboardInterface {
-  realmId: number;
-  realmName: string;
-  realmOrder: string;
-  total_transfers: number;
-  total_amount: number;
-  total_points: number;
+export interface RealmLordsLeaderboardInterface {
+  address: string;
+  addressName: string;
+  order: string;
+  totalLords: number;
+  isYours: boolean;
+}
+
+export interface OrderLordsLeaderboardInterface {
+  order: string;
+  realmCount: number;
+  totalLords: number;
+  isYours: boolean;
 }
 
 interface LeaderboardStore {
   loading: boolean;
   setLoading: (loading: boolean) => void;
-  progress: number;
-  setProgress: (progress: number) => void;
-  leaderboard: Record<number, LeaderboardInterface>;
-  addOrUpdateLeaderboardEntry: (realmId: number, resourceAmount: number, resourceId: number) => void;
-  syncData: (hyperstructureIds: number[]) => void;
+  realmLordsLeaderboard: RealmLordsLeaderboardInterface[];
+  orderLordsLeaderboard: OrderLordsLeaderboardInterface[];
+  setLordsLeaderboards: (
+    realmLordsLeaderboard: RealmLordsLeaderboardInterface[],
+    orderLordsLeaderboard: OrderLordsLeaderboardInterface[],
+  ) => void;
 }
 
-const useLeaderBoardStore = create<LeaderboardStore>((set, get) => ({
-  loading: false,
-  progress: 0,
-  leaderboard: {},
+const useLeaderBoardStore = create<LeaderboardStore>((set, get) => {
+  return {
+    loading: false,
+    realmLordsLeaderboard: [],
+    orderLordsLeaderboard: [],
+    setLordsLeaderboards: (
+      realmLordsLeaderboard: RealmLordsLeaderboardInterface[],
+      orderLordsLeaderboard: OrderLordsLeaderboardInterface[],
+    ) => set({ realmLordsLeaderboard, orderLordsLeaderboard }),
+    setLoading: (loading) => set({ loading }),
+  };
+});
 
-  setLoading: (loading) => set({ loading }),
-  setProgress: (progress) => set({ progress }),
+export const useComputeLordsLeaderboards = () => {
+  const {
+    account: { account },
+    setup: {
+      components: { Resource },
+    },
+  } = useDojo();
 
-  // Function to add or update a leaderboard entry
-  addOrUpdateLeaderboardEntry: (realmId: number, resourceAmount: number, resourceId: number) => {
-    set((state) => {
-      const newLeaderboard = { ...state.leaderboard };
-      if (newLeaderboard[realmId]) {
-        newLeaderboard[realmId].total_transfers += 1;
-        newLeaderboard[realmId].total_amount += resourceAmount;
-        newLeaderboard[realmId].total_points += calculatePoints(resourceId, resourceAmount);
-      } else {
-        let realm = getRealm(realmId);
-        let orderName = orderNameDict[realm.order];
-        newLeaderboard[realmId] = {
-          realmId,
-          realmOrder: orderName,
-          realmName: realm.name,
-          total_transfers: 1,
-          total_amount: resourceAmount,
-          total_points: calculatePoints(resourceId, resourceAmount),
+  const { setLordsLeaderboards } = useLeaderBoardStore();
+  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
+
+  const { getAddressName } = useRealm();
+
+  const realms = useGetRealms();
+
+  useEffect(() => {
+    // todo: add player order to the useRealmStore
+    const playerOrder = getRealmOrderNameById(realmEntityIds[0].realmId);
+
+    const realmLordsLeaderboard: RealmLordsLeaderboardInterface[] = [];
+    const orderLordsLeaderboard: Record<string, OrderLordsLeaderboardInterface> = {};
+    orders
+      // don't include order of the gods
+      .filter((order) => order.orderId !== 17)
+      .forEach((order) => {
+        const isYours = order.orderName.toLowerCase() === playerOrder;
+        orderLordsLeaderboard[order.orderName] = {
+          order: order.orderName,
+          realmCount: 0,
+          totalLords: 0,
+          isYours,
         };
+      });
+
+    for (const realm of realms) {
+      const lordsAmounts = getComponentValue(Resource, getEntityIdFromKeys([realm.entity_id, 253n]));
+      if (lordsAmounts && lordsAmounts?.balance > 100000000) continue;
+      let order = getOrderName(realm.order);
+      let owner = "0x" + realm.owner?.toString(16) || "0x0";
+      const isYours = account.address === owner;
+      realmLordsLeaderboard.push({
+        address: owner,
+        addressName: getAddressName(owner) || "",
+        order,
+        totalLords: Number(lordsAmounts?.balance) || 0,
+        isYours,
+      });
+
+      if (!orderLordsLeaderboard[order]) {
+        orderLordsLeaderboard[order] = {
+          order,
+          realmCount: 1,
+          totalLords: Number(lordsAmounts?.balance) || 0,
+          isYours: order === playerOrder,
+        };
+      } else {
+        orderLordsLeaderboard[order].realmCount++;
+        orderLordsLeaderboard[order].totalLords += Number(lordsAmounts?.balance) || 0;
       }
-      return { leaderboard: newLeaderboard };
-    });
-  },
+    }
 
-  syncData: async (hyperstructureIds) => {
-    set({ loading: true });
-    set({ leaderboard: {} });
-
-    const syncDataInternal = async (hyperstructureId: number) => {
-      const processEvents = (event: Event) => {
-        const resources_len = parseInt(event.data[1]);
-        for (let i = 0; i < resources_len; i += 1) {
-          const resourceId = parseInt(event.data[2 + 2 * i]);
-          const resourceAmount = parseInt(event.data[2 + 2 * i + 1]);
-          const realmId = parseInt(event.keys[2]);
-          get().addOrUpdateLeaderboardEntry(realmId, resourceAmount, resourceId);
-        }
-      };
-
-      // Keccak for Transfer event
-      await pollForEvents([TRANSFER_EVENT, numberToHex(hyperstructureId), "*"], processEvents);
-    };
-
-    await Promise.all(hyperstructureIds.map(syncDataInternal)).finally(() => {
-      set({ loading: false });
-    });
-  },
-}));
-
-export const calculatePoints = (resourceId: number, amount: number): number => {
-  const prob = resourceProb[resourceId - 1];
-  const weight = 1 / prob;
-
-  return divideByPrecision(amount) * weight;
+    // sort by total lords
+    setLordsLeaderboards(
+      realmLordsLeaderboard.sort((a, b) => b.totalLords - a.totalLords),
+      Object.values(orderLordsLeaderboard).sort((a, b) => b.totalLords - a.totalLords),
+    );
+  }, []);
 };
 
 export default useLeaderBoardStore;

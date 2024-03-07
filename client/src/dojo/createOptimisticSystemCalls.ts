@@ -1,28 +1,25 @@
 import { uuid } from "@latticexyz/utils";
 import { ClientComponents } from "./createClientComponents";
 import { getEntityIdFromKeys } from "../utils/utils";
-import { Type, getComponentValue } from "@latticexyz/recs";
-import { Resource } from "../types";
-import { LaborCostInterface } from "../hooks/helpers/useLabor";
-import { LABOR_CONFIG, ROAD_COST_PER_USAGE } from "@bibliothecadao/eternum";
+import { Type, getComponentValue } from "@dojoengine/recs";
+import { LABOR_CONFIG, Resource } from "@bibliothecadao/eternum";
 import {
   CancelFungibleOrderProps,
-  OffloadResourcesProps,
+  TransferItemsProps,
   CreateOrderProps,
   CreateRoadProps,
   HarvestLaborProps,
   PurchaseLaborProps,
   BuildLaborProps,
 } from "@bibliothecadao/eternum";
-import { calculateLevelMultiplier } from "../components/cityview/realm/labor/laborUtils";
 
-export const HIGH_ENTITY_ID = 9999999999;
+export const HIGH_ENTITY_ID = 9999999999n;
 
 export function createOptimisticSystemCalls({
   Trade,
   Status,
   Labor,
-  Level,
+  ForeignKey,
   Resource,
   Road,
   DetachedResource,
@@ -46,25 +43,25 @@ export function createOptimisticSystemCalls({
       // optimisitc rendering of trade
       const overrideId = uuid();
       const trade_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID)]);
-      const maker_resource_chest_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 1)]);
-      const taker_resource_chest_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 2)]);
-      const maker_transport_id = transport_id || getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 3)]);
+      const maker_resource_chest_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 1n)]);
+      const taker_resource_chest_id = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 2n)]);
+      const maker_transport_id = transport_id || getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 3n)]);
       // const key = getEntityIdFromKeys([BigInt(HIGH_ENTITY_ID + 4)]);
 
       Trade.addOverride(overrideId, {
         entity: trade_id,
         value: {
-          maker_id: maker_id as Type.Number,
-          taker_id: taker_id as Type.Number,
-          maker_resource_chest_id,
-          taker_resource_chest_id,
-          maker_transport_id: maker_transport_id as Type.Number,
+          maker_id: BigInt(maker_id),
+          taker_id: BigInt(taker_id),
+          maker_resource_chest_id: BigInt(maker_resource_chest_id),
+          taker_resource_chest_id: BigInt(taker_resource_chest_id),
+          maker_transport_id: BigInt(maker_transport_id),
           expires_at,
         },
       });
       Status.addOverride(overrideId, {
         entity: trade_id,
-        value: { value: 0 },
+        value: { value: 0n },
       });
       ResourceChest.addOverride(overrideId, {
         entity: maker_resource_chest_id,
@@ -79,7 +76,7 @@ export function createOptimisticSystemCalls({
           entity: getEntityIdFromKeys([BigInt(maker_resource_chest_id), BigInt(i)]),
           value: {
             resource_type: maker_gives_resource_types[i] as Type.Number,
-            resource_amount: maker_gives_resource_amounts[i] as Type.Number,
+            resource_amount: BigInt(maker_gives_resource_amounts[i]),
           },
         });
       }
@@ -88,7 +85,7 @@ export function createOptimisticSystemCalls({
           entity: getEntityIdFromKeys([BigInt(taker_resource_chest_id), BigInt(i)]),
           value: {
             resource_type: taker_gives_resource_types[i] as Type.Number,
-            resource_amount: taker_gives_resource_amounts[i] as Type.Number,
+            resource_amount: BigInt(taker_gives_resource_amounts[i]),
           },
         });
       }
@@ -105,10 +102,23 @@ export function createOptimisticSystemCalls({
   // note: claim fungible order is actually transferring from the resourceschest to the realm
   function optimisticOffloadResources(
     resourcesGet: Resource[],
-    systemCall: (args: OffloadResourcesProps) => Promise<void>,
+    systemCall: (args: TransferItemsProps) => Promise<void>,
   ) {
-    return async function (this: any, args: OffloadResourcesProps) {
-      const { receiving_entity_id, transport_id, entity_id: resources_chest_id } = args;
+    return async function (this: any, args: TransferItemsProps) {
+      const { receiver_id: receiving_entity_id, indices, sender_id: transport_id } = args;
+
+      const resources_chest_ids = indices
+        .map((index) => {
+          let inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(transport_id)]));
+          let foreignKey = inventory
+            ? getComponentValue(
+                ForeignKey,
+                getEntityIdFromKeys([BigInt(transport_id), BigInt(inventory.items_key), BigInt(index)]),
+              )
+            : undefined;
+          return foreignKey?.entity_id;
+        })
+        .filter(Boolean) as bigint[];
 
       let overrideId = uuid();
 
@@ -116,25 +126,27 @@ export function createOptimisticSystemCalls({
       Inventory.addOverride(overrideId, {
         entity: getEntityIdFromKeys([BigInt(transport_id)]),
         value: {
-          items_count: 0,
+          items_count: 0n,
         },
       });
 
-      // remove resources from chest
-      ResourceChest.addOverride(overrideId, {
-        entity: getEntityIdFromKeys([BigInt(resources_chest_id)]),
-        value: {
-          resources_count: 0,
-        },
+      resources_chest_ids.forEach((resources_chest_id) => {
+        // remove resources from chest
+        ResourceChest.addOverride(overrideId, {
+          entity: getEntityIdFromKeys([BigInt(resources_chest_id)]),
+          value: {
+            resources_count: 0,
+          },
+        });
       });
 
       // add resources to balance
       for (let resource of resourcesGet) {
         let resource_id = getEntityIdFromKeys([BigInt(receiving_entity_id), BigInt(resource.resourceId)]);
         let currentResource = getComponentValue(Resource, resource_id) || {
-          balance: 0,
+          balance: 0n,
         };
-        let balance = currentResource.balance + resource.amount;
+        let balance = currentResource.balance + BigInt(resource.amount);
         Resource.addOverride(overrideId + resource.resourceId, {
           entity: resource_id,
           value: {
@@ -154,7 +166,7 @@ export function createOptimisticSystemCalls({
     };
   }
 
-  function optimisticAcceptOffer(tradeId: number, takerId: number, systemCall: () => Promise<void>) {
+  function optimisticAcceptOffer(tradeId: bigint, takerId: bigint, systemCall: () => Promise<void>) {
     return async function (this: any) {
       const overrideId = uuid();
       let trade_id = getEntityIdFromKeys([BigInt(tradeId)]);
@@ -162,12 +174,12 @@ export function createOptimisticSystemCalls({
       // change status from open to accepted
       Status.addOverride(overrideId, {
         entity: trade_id,
-        value: { value: 1 },
+        value: { value: 1n },
       });
       // change trade taker_id to realm
       Trade.addOverride(overrideId, {
         entity: trade_id,
-        value: { taker_id },
+        value: { taker_id: BigInt(taker_id) },
       });
 
       // TODO: remove resources from the realm balance
@@ -191,7 +203,7 @@ export function createOptimisticSystemCalls({
       // change status from open to accepted
       Status.addOverride(overrideId, {
         entity: trade_id,
-        value: { value: 2 },
+        value: { value: 2n },
       });
 
       try {
@@ -205,7 +217,7 @@ export function createOptimisticSystemCalls({
 
   function optimisticBuildLabor(
     ts: number,
-    costResources: LaborCostInterface[],
+    costResources: Resource[],
     laborAuctionAverageCoefficient: number,
     systemCall: (args: PurchaseLaborProps & BuildLaborProps) => Promise<void>,
   ) {
@@ -218,17 +230,17 @@ export function createOptimisticSystemCalls({
       for (let i = 0; i < costResources.length; i++) {
         let costId = getEntityIdFromKeys([BigInt(realmEntityId), BigInt(costResources[i].resourceId)]);
         let currentResource = getComponentValue(Resource, costId) || {
-          balance: 0,
+          balance: 0n,
         };
         let balance =
-          currentResource.balance -
+          Number(currentResource.balance) -
           Math.floor(
             (laborUnits as number) * (multiplier as number) * costResources[i].amount * laborAuctionAverageCoefficient,
           );
         Resource.addOverride(overrideId + i, {
           entity: costId,
           value: {
-            balance,
+            balance: BigInt(balance),
           },
         });
       }
@@ -272,7 +284,12 @@ export function createOptimisticSystemCalls({
     };
   }
 
-  function optimisticHarvestLabor(ts: number, level: number, systemCall: (args: HarvestLaborProps) => Promise<void>) {
+  function optimisticHarvestLabor(
+    ts: number,
+    levelBonus: number,
+    hyperstructureLevelBonus: number,
+    systemCall: (args: HarvestLaborProps) => Promise<void>,
+  ) {
     return async function (this: any, args: HarvestLaborProps) {
       const { realm_id, resource_type } = args;
 
@@ -285,7 +302,6 @@ export function createOptimisticSystemCalls({
         last_harvest: ts,
         multiplier: 1,
       };
-      let levelMultiplier = calculateLevelMultiplier(level);
       let laborGenerated = labor.balance <= ts ? labor.balance - labor.last_harvest : ts - labor.last_harvest;
       let laborUnharvested = labor.balance <= ts ? 0 : labor.balance - ts;
       let laborUnitsGenerated = Math.floor(laborGenerated / LABOR_CONFIG.base_labor_units);
@@ -303,15 +319,20 @@ export function createOptimisticSystemCalls({
       });
 
       let currentResource = getComponentValue(Resource, resource_id) || {
-        balance: 0,
+        balance: 0n,
       };
       let resourceBalance = isFood
-        ? laborUnitsGenerated * LABOR_CONFIG.base_food_per_cycle * labor.multiplier * levelMultiplier
-        : laborUnitsGenerated * LABOR_CONFIG.base_resources_per_cycle * levelMultiplier;
+        ? (laborUnitsGenerated *
+            LABOR_CONFIG.base_food_per_cycle *
+            labor.multiplier *
+            levelBonus *
+            hyperstructureLevelBonus) /
+          10000
+        : (laborUnitsGenerated * LABOR_CONFIG.base_resources_per_cycle * levelBonus * hyperstructureLevelBonus) / 10000;
       Resource.addOverride(overrideId, {
         entity: resource_id,
         value: {
-          balance: resourceBalance + currentResource.balance,
+          balance: BigInt(resourceBalance) + currentResource.balance,
         },
       });
 
@@ -325,7 +346,7 @@ export function createOptimisticSystemCalls({
     };
   }
 
-  function optimisticBuildRoad(systemCall: (args: CreateRoadProps) => Promise<void>) {
+  function optimisticBuildRoad(costResources: Resource[], systemCall: (args: CreateRoadProps) => Promise<void>) {
     return async function (this: any, args: CreateRoadProps) {
       const { creator_id, start_coord, end_coord, usage_count } = args;
       const overrideId = uuid();
@@ -341,25 +362,28 @@ export function createOptimisticSystemCalls({
         value: { usage_count: usageCount },
       });
 
-      let { balance } = getComponentValue(Resource, getEntityIdFromKeys([BigInt(creator_id), BigInt(2)])) || {
-        balance: 0,
-      };
-
-      // change trade taker_id to realm
-      Resource.addOverride(overrideId, {
-        entity: getEntityIdFromKeys([BigInt(creator_id), BigInt(2)]),
-        value: {
-          // 10 stone per usage
-          balance: balance - usageCount * ROAD_COST_PER_USAGE,
-        },
-      });
+      for (let i = 0; i < costResources.length; i++) {
+        let costId = getEntityIdFromKeys([BigInt(creator_id), BigInt(costResources[i].resourceId)]);
+        let currentResource = getComponentValue(Resource, costId) || {
+          balance: 0n,
+        };
+        let balance = Number(currentResource.balance) - costResources[i].amount;
+        Resource.addOverride(overrideId + i, {
+          entity: costId,
+          value: {
+            balance: BigInt(balance),
+          },
+        });
+      }
 
       try {
         await systemCall(args); // Call the original function with its arguments and correct context
       } finally {
         // remove overrides
         Road.removeOverride(overrideId);
-        Resource.removeOverride(overrideId);
+        for (let i = 0; i < costResources.length; i++) {
+          Resource.removeOverride(overrideId + i);
+        }
       }
     };
   }

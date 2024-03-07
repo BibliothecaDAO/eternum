@@ -113,13 +113,57 @@ SecondaryPopup.Head = ({
   </div>
 );
 
-SecondaryPopup.Body = ({ width = null, children }: { width?: string | null; children: React.ReactNode }) => (
-  <div
-    className={`${
-      width ? "" : "min-w-[438px]"
-    } relative z-10 bg-gray border flex flex-col border-white rounded-tr-[4px] rounded-b-[4px]`}
-    style={{ width: width ? width : "" }}
-  >
-    {children}
-  </div>
-);
+SecondaryPopup.Body = ({
+  width = null,
+  height = null,
+  withWrapper = false,
+  children,
+}: {
+  width?: string | null;
+  height?: string | null;
+  withWrapper?: boolean;
+  children: React.ReactNode;
+}) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [maxHeight, setMaxHeight] = useState<number | null>(null);
+
+  const calculateMaxHeight = () => {
+    if (ref && ref.current) {
+      // get top position of the popup
+      const popupTop = ref.current.getBoundingClientRect().top;
+      // get the height of the window
+      const windowHeight = window.innerHeight;
+      // calculate the max height of the popup
+      const maxHeight = windowHeight - popupTop - 24;
+      // set the max height of the popup
+      setMaxHeight(maxHeight);
+    }
+  };
+  // handle resize
+  useEffect(() => {
+    calculateMaxHeight();
+    window.addEventListener("resize", calculateMaxHeight);
+    return () => {
+      window.removeEventListener("resize", calculateMaxHeight);
+    };
+  }, [ref]);
+
+  return (
+    <div
+      ref={ref}
+      className={clsx(
+        width ? "" : "min-w-[438px]",
+        height ? "" : "min-h-[438px]",
+        withWrapper ? "p-3" : "",
+        `relative z-10 bg-gray border flex flex-col border-white rounded-tr-[4px] rounded-b-[4px] overflow-hidden`,
+      )}
+      style={{ width: width ? width : "", height: height ? height : "", maxHeight: maxHeight ? `${maxHeight}px` : "" }}
+    >
+      {withWrapper ? (
+        <div className="relative z-10 border flex flex-col border-gray-gold rounded-md overflow-auto">{children}</div>
+      ) : (
+        children
+      )}
+    </div>
+  );
+};

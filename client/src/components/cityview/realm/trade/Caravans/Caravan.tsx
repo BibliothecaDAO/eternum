@@ -8,13 +8,16 @@ import { Dot } from "../../../../../elements/Dot";
 import clsx from "clsx";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
-import { CaravanInterface } from "../../../../../hooks/graphql/useGraphQLQueries";
+import { CaravanInterface, DESTINATION_TYPE } from "@bibliothecadao/eternum";
 import { CAPACITY_PER_DONKEY } from "@bibliothecadao/eternum";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
-import { getTotalResourceWeight } from "../TradeUtils";
+import { getTotalResourceWeight } from "../utils";
 import { divideByPrecision } from "../../../../../utils/utils";
 import { useResources } from "../../../../../hooks/helpers/useResources";
+import Button from "../../../../../elements/Button";
+import { useDojo } from "../../../../../DojoContext";
+import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
 
 type CaravanProps = {
   caravan: CaravanInterface;
@@ -23,31 +26,70 @@ type CaravanProps = {
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export const Caravan = ({ caravan, ...props }: CaravanProps) => {
-  const { caravanId, arrivalTime, destination, blocked, capacity, pickupArrivalTime } = caravan;
+  const {
+    caravanId,
+    arrivalTime,
+    isRoundTrip,
+    intermediateDestination,
+    blocked,
+    capacity,
+    pickupArrivalTime,
+    destinationType,
+  } = caravan;
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+  const {
+    account: { account },
+    setup: {
+      systemCalls: { disassemble_caravan_and_return_free_units },
+    },
+  } = useDojo();
+
+  const [isLoading, setIsLoading] = React.useState(false);
 
   const { getResourcesFromInventory } = useResources();
+  const { getCaravanMembers } = useCaravan();
 
   const resourcesGet = getResourcesFromInventory(caravanId);
 
   // capacity
   let resourceWeight = useMemo(() => {
-    return getTotalResourceWeight([...resourcesGet]);
+    return getTotalResourceWeight([...resourcesGet.resources]);
   }, [resourcesGet]);
 
-  const destinationRealmId = destination && getRealmIdByPosition(destination);
-  const destinationRealmName = destinationRealmId && getRealmNameById(destinationRealmId);
+  const intermediateDestinationRealmId = intermediateDestination
+    ? getRealmIdByPosition(intermediateDestination)
+    : undefined;
+  const destinationRealmName = intermediateDestinationRealmId
+    ? getRealmNameById(intermediateDestinationRealmId)
+    : undefined;
 
   const isTraveling = !blocked && nextBlockTimestamp && arrivalTime && arrivalTime > nextBlockTimestamp;
   const isWaitingForDeparture = blocked;
   const isIdle = !isTraveling && !isWaitingForDeparture && !resourceWeight;
-  const isWaitingToOffload = !blocked && !isTraveling && resourceWeight;
+  const isWaitingToOffload = !blocked && !isTraveling && resourceWeight > 0;
   const hasArrivedPickupPosition =
     pickupArrivalTime !== undefined && nextBlockTimestamp !== undefined && pickupArrivalTime <= nextBlockTimestamp;
 
   if ((blocked || isTraveling) && props.idleOnly) {
     return null;
   }
+
+  const isTrading =
+    isTraveling &&
+    destinationType === DESTINATION_TYPE.HOME &&
+    intermediateDestinationRealmId !== undefined &&
+    destinationRealmName;
+
+  const redeemDonkeys = async () => {
+    setIsLoading(true);
+    let unit_ids = getCaravanMembers(caravanId);
+    await disassemble_caravan_and_return_free_units({
+      signer: account,
+      caravan_id: caravanId,
+      unit_ids,
+    });
+    return unit_ids;
+  };
 
   return (
     <div
@@ -56,39 +98,68 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
     >
       <div className="flex items-center text-xxs">
         <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
-          #{caravan.caravanId}
+          #{Number(caravan.caravanId)}
         </div>
         <div className="flex items-center ml-1 -mt-2">
-          {isTraveling && destinationRealmName && (
+          {!isTraveling && (
+            <div className="flex items-center ml-1">
+              <span className="italic text-light-pink">{`Waiting ${
+                destinationType === DESTINATION_TYPE.HOME ? "" : "on"
+              }`}</span>
+              <div className="flex items-center ml-1 mr-1 text-gold">
+                {destinationType === DESTINATION_TYPE.BANK
+                  ? "bank"
+                  : destinationType === DESTINATION_TYPE.HYPERSTRUCTURE
+                  ? "hyperstructure"
+                  : "home"}
+                <span className="italic text-light-pink ml-1">with</span>
+              </div>
+            </div>
+          )}
+          {/* when you are trading */}
+          {isTrading && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Traveling {hasArrivedPickupPosition ? "from" : "to"}</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
-                <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xxs" />
+                <OrderIcon order={getRealmOrderNameById(intermediateDestinationRealmId)} className="mr-1" size="xxs" />
                 {destinationRealmName}
                 <span className="italic text-light-pink ml-1">with</span>
               </div>
             </div>
           )}
-          {capacity && resourceWeight !== undefined && capacity && (
+          {/* when you are not trading (trading is round trip) it means you are either going to/coming from bank/hyperstructure */}
+          {isTraveling && !isRoundTrip && (
+            <div className="flex items-center ml-1">
+              <span className="italic text-light-pink">{`Traveling ${
+                destinationType === DESTINATION_TYPE.HOME ? "" : "to"
+              }`}</span>
+              <div className="flex items-center ml-1 mr-1 text-gold">
+                {destinationType === DESTINATION_TYPE.BANK
+                  ? "bank"
+                  : destinationType === DESTINATION_TYPE.HYPERSTRUCTURE
+                  ? "hyperstructure"
+                  : "home"}
+                <span className="italic text-light-pink ml-1">with</span>
+              </div>
+            </div>
+          )}
+          {capacity && resourceWeight !== undefined && (
             <div className="flex items-center ml-1 text-gold">
-              {!isIdle && hasArrivedPickupPosition ? divideByPrecision(resourceWeight) : 0}
+              {!isIdle && hasArrivedPickupPosition ? divideByPrecision(Math.round(resourceWeight)) : 0}
               <div className="mx-0.5 italic text-light-pink">/</div>
               {`${capacity / 1000} kg`}
               <CaretDownFill className="ml-1 fill-current" />
             </div>
           )}
         </div>
-        {
-          // isWaitingForDeparture is '0' instead of false, need to fix that
-          isWaitingForDeparture == true && (
-            <div className="flex ml-auto -mt-2 italic text-gold">
-              Trade Bound <Pen className="ml-1 fill-gold" />
-            </div>
-          )
-        }
+        {isWaitingForDeparture && (
+          <div className="flex ml-auto -mt-2 italic text-gold">
+            Trade Bound <Pen className="ml-1 fill-gold" />
+          </div>
+        )}
         {isWaitingToOffload && (
           <div className="flex ml-auto -mt-2 italic text-gold">
-            Waiting to claim <Pen className="ml-1 fill-gold" />
+            Waiting to offload <Pen className="ml-1 fill-gold" />
           </div>
         )}
         {isIdle && (
@@ -108,7 +179,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
           !isWaitingForDeparture &&
           hasArrivedPickupPosition &&
           resourcesGet &&
-          resourcesGet.map(
+          resourcesGet.resources.map(
             (resource) =>
               resource && (
                 <ResourceCost
@@ -121,7 +192,7 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
               ),
           )}
       </div>
-      <div className="flex mt-2">
+      <div className="flex w-full mt-2">
         <div className="grid w-full grid-cols-1 gap-5">
           <div className="flex flex-col">
             <div className="grid grid-cols-12 gap-0.5">
@@ -150,6 +221,11 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
                   <Dot colorClass="bg-light-pink" />
                   <div className="mt-1 text-dark">{0}</div>
                 </div>
+              </div>
+              <div className="">
+                <Button variant="success" isLoading={isLoading} disabled={!isIdle} size="xs" onClick={redeemDonkeys}>
+                  Redeem
+                </Button>
               </div>
             </div>
           </div>

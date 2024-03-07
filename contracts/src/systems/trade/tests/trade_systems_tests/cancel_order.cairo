@@ -23,8 +23,8 @@ use eternum::systems::config::interface::{
     ICapacityConfigDispatcher, ICapacityConfigDispatcherTrait,
 };
 
-use eternum::systems::test::contracts::realm::test_realm_systems;
-use eternum::systems::test::interface::realm::{
+use eternum::systems::realm::contracts::realm_systems;
+use eternum::systems::realm::interface::{
     IRealmSystemsDispatcher,
     IRealmSystemsDispatcherTrait,
 };
@@ -101,7 +101,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
 
 
     let realm_systems_address 
-        = deploy_system(test_realm_systems::TEST_CLASS_HASH);
+        = deploy_system(realm_systems::TEST_CLASS_HASH);
     let realm_systems_dispatcher = IRealmSystemsDispatcher {
         contract_address: realm_systems_address
     };
@@ -123,13 +123,13 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
 
     // create maker's realm
     let maker_realm_entity_id = realm_systems_dispatcher.create(
-        world, realm_id, starknet::get_contract_address(), // owner
+        world, realm_id, 
         resource_types_packed, resource_types_count, cities,
         harbors, rivers, regions, wonder, order, maker_position.clone(),
     );
     // create taker's realm
     let taker_realm_entity_id = realm_systems_dispatcher.create(
-        world, realm_id, starknet::get_contract_address(), // owner
+        world, realm_id,
         resource_types_packed, resource_types_count, cities,
         harbors, rivers, regions, wonder, order, taker_position.clone(),
     );
@@ -198,12 +198,16 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     let trade_id = trade_systems_dispatcher.create_order(
             world,
             maker_id,
-            array![ResourceTypes::STONE, ResourceTypes::GOLD].span(),
-            array![100, 100].span(),
+            array![
+                (ResourceTypes::STONE, 100), 
+                (ResourceTypes::GOLD, 100), 
+            ].span(),
             maker_transport_id,
             taker_id,
-            array![ResourceTypes::WOOD, ResourceTypes::SILVER].span(),
-            array![200, 200].span(),
+            array![
+                (ResourceTypes::WOOD, 200), 
+                (ResourceTypes::SILVER, 200), 
+            ].span(),
             100
     );
 
@@ -264,11 +268,14 @@ fn test_cancel_after_acceptance() {
         = setup();
 
     // accept order 
-    starknet::testing::set_contract_address(
-        contract_address_const::<'taker'>()
-    );
-    trade_systems_dispatcher
-        .accept_order(world, taker_id, 0, trade_id);
+    starknet::testing::set_contract_address(world.executor());
+    set!(world, (
+            Status {
+                trade_id,
+                value: TradeStatus::ACCEPTED,
+            }
+        ),
+    );     
 
     // cancel order 
     starknet::testing::set_contract_address(

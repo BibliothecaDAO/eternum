@@ -1,6 +1,5 @@
 import clsx from "clsx";
-import { CombatResultInterface, Winner } from "../../../../../hooks/store/useCombatHistoryStore";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useDojo } from "../../../../../DojoContext";
 import { getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
@@ -12,6 +11,7 @@ import { ResourceCost } from "../../../../../elements/ResourceCost";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import { useRealm } from "../../../../../hooks/helpers/useRealm";
+import { CombatResultInterface, Winner } from "@bibliothecadao/eternum";
 
 type AttackHistoryProps = {
   combatResult: CombatResultInterface;
@@ -31,41 +31,42 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
   const setTooltip = useUIStore((state) => state.setTooltip);
   const { getRealmAddressName } = useRealm();
 
-  let { realm_id: attackerRealmId } = getComponentValue(Realm, getEntityIdFromKeys([BigInt(attackerRealmEntityId)]));
+  let { realm_id: attackerRealmId } =
+    getComponentValue(Realm, getEntityIdFromKeys([BigInt(attackerRealmEntityId)])) || {};
   let attackerName = attackerRealmId ? getRealmNameById(attackerRealmId) : undefined;
   let attackerAddressName = getRealmAddressName(attackerRealmEntityId);
 
   const attackerTotalSoldiers = useMemo(() => {
-    let total = 0;
+    let total = 0n;
     for (const id of attackingEntityIds) {
-      let { value } = getComponentValue(Quantity, getEntityIdFromKeys([BigInt(id)]));
+      let { value } = getComponentValue(Quantity, getEntityIdFromKeys([BigInt(id)])) || { value: 0n };
       total += value;
     }
     return total;
   }, [attackingEntityIds]);
 
   const attackerTotalAttack = useMemo(() => {
-    let total = 0;
+    let total = 0n;
     for (const id of attackingEntityIds) {
-      let { value } = getComponentValue(Attack, getEntityIdFromKeys([BigInt(id)]));
+      let { value } = getComponentValue(Attack, getEntityIdFromKeys([BigInt(id)])) || { value: 0n };
       total += value;
     }
     return total;
   }, [attackingEntityIds]);
 
   const attackerTotalHealth = useMemo(() => {
-    let total = 0;
+    let total = 0n;
     for (const id of attackingEntityIds) {
-      let { value } = getComponentValue(Health, getEntityIdFromKeys([BigInt(id)]));
+      let { value } = getComponentValue(Health, getEntityIdFromKeys([BigInt(id)])) || { value: 0n };
       total += value;
     }
     return total;
   }, [attackingEntityIds]);
 
   const attackerTotalDefence = useMemo(() => {
-    let total = 0;
+    let total = 0n;
     for (const id of attackingEntityIds) {
-      let { value } = getComponentValue(Defence, getEntityIdFromKeys([BigInt(id)]));
+      let { value } = getComponentValue(Defence, getEntityIdFromKeys([BigInt(id)])) || { value: 0n };
       total += value;
     }
     return total;
@@ -93,7 +94,7 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
           </div>
         )}
         <div className="flex items-center pt-1 ml-1 -mt-2">
-          {stolenResources.length === 0 && attackerRealmId && (
+          {stolenResources.length === 0 && attackerRealmId?.toString() && (
             <div className="flex items-center">
               <div className="flex items-center ml-1 mr-1 text-gold">
                 <span className={"mr-1"}>{attackerAddressName.slice(0, 10)}</span>
@@ -101,14 +102,14 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
                 {attackerName}
               </div>
               {winner === Winner.Attacker && (
-                <span className="italic text-light-pink">{`Attacked with ${attackerTotalSoldiers} battalions`}</span>
+                <span className="italic text-light-pink">{`Attacked with ${attackerTotalSoldiers} raiders`}</span>
               )}
               {winner === Winner.Target && (
-                <span className="italic text-light-pink">{`Failed to attack with ${attackerTotalSoldiers} battalions`}</span>
+                <span className="italic text-light-pink">{`Failed to attack with ${attackerTotalSoldiers} raiders`}</span>
               )}
             </div>
           )}
-          {stolenResources.length > 0 && attackerRealmId && (
+          {stolenResources.length > 0 && attackerRealmId?.toString() && (
             <div className="flex items-center">
               <div className="flex items-center ml-1 mr-1 text-gold">
                 <span className={"mr-1"}>{attackerAddressName.slice(0, 10)}</span>
@@ -131,8 +132,8 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
             <div className="flex items-center h-6 mr-2">
               <img src="/images/units/troop-icon.png" className="h-[28px]" />
               <div className="flex ml-1 text-center">
-                <div className="bold mr-1">x{attackerTotalSoldiers}</div>
-                Battalions
+                <div className="bold mr-1">x{attackerTotalSoldiers?.toString()}</div>
+                Raiders
               </div>
             </div>
           </div>
@@ -153,7 +154,7 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
             >
               <img src="/images/icons/attack.png" className="h-full" />
               <div className="flex flex-col ml-1 text-center">
-                <div className="bold ">{attackerTotalAttack}</div>
+                <div className="bold ">{attackerTotalAttack?.toString()}</div>
               </div>
             </div>
             <div
@@ -172,13 +173,13 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
             >
               <img src="/images/icons/defence.png" className="h-full" />
               <div className="flex flex-col ml-1 text-center">
-                <div className="bold ">{attackerTotalDefence}</div>
+                <div className="bold ">{attackerTotalDefence?.toString()}</div>
               </div>
             </div>
           </div>
           <div className="flex items-center">
-            <div className="text-order-brilliance">{attackerTotalHealth && attackerTotalHealth.toLocaleString()}</div>
-            &nbsp;/ {10 * attackerTotalSoldiers} HP
+            <div className="text-order-brilliance">{attackerTotalHealth.toString()}</div>
+            &nbsp;/ {Number(10n * attackerTotalSoldiers)} HP
           </div>
         </div>
         {/* {attackerTotalHealth !== undefined && (
@@ -201,7 +202,7 @@ export const AttackHistory = ({ combatResult, ...props }: AttackHistoryProps) =>
                       type="vertical"
                       color="text-order-brilliance"
                       resourceId={resource.resourceId}
-                      amount={divideByPrecision(resource.amount)}
+                      amount={divideByPrecision(Number(resource.amount))}
                     />
                   ),
               )}

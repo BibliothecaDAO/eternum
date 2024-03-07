@@ -1,49 +1,46 @@
 import { useMemo, useState } from "react";
-import { RealmInterface } from "../graphql/useGraphQLQueries";
-import { EntityIndex, Has, HasValue, getComponentValue, runQuery } from "@latticexyz/recs";
+import { Has, HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import { getEntityIdFromKeys, hexToAscii, numberToHex } from "../../utils/utils";
 import { getOrderName } from "@bibliothecadao/eternum";
 import realmIdsByOrder from "../../data/realmids_by_order.json";
-import realmsData from "../../geodata/realms.json";
 import { unpackResources } from "../../utils/packedData";
 import { useEntityQuery } from "@dojoengine/react";
-import useBlockchainStore from "../store/useBlockchainStore";
-import { Realm } from "../../types";
+import { RealmInterface } from "@bibliothecadao/eternum";
+import { getRealm, getRealmNameById } from "../../utils/realms";
 
-export type RealmExtended = Realm & {
-  entity_id: EntityIndex;
-  name: string;
-  owner?: { address: number };
+export type RealmExtended = RealmInterface & {
+  entity_id: bigint;
   resources: number[];
 };
 
 export function useRealm() {
   const {
     setup: {
-      components: { Realm, Level, AddressName, Owner },
+      components: { Realm, AddressName, Owner },
     },
   } = useDojo();
-
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const getNextRealmIdForOrder = (order: number) => {
     const orderName = getOrderName(order);
 
-    const entityIds = runQuery([HasValue(Realm, { order })]);
+    const entityIds = Array.from(runQuery([HasValue(Realm, { order })]));
+    const realmEntityIds = entityIds.map((id) => {
+      return getComponentValue(Realm, id)!.entity_id;
+    });
 
-    let latestRealmIdFromOrder = 0;
+    let latestRealmIdFromOrder = 0n;
 
     // sort from biggest to lowest
-    if (entityIds.size > 0) {
-      const realmEntityId = Array.from(entityIds).sort((a, b) => b - a)[0];
-      const latestRealmFromOrder = getComponentValue(Realm, realmEntityId);
+    if (realmEntityIds.length > 0) {
+      const realmEntityId = realmEntityIds.sort((a, b) => Number(b) - Number(a))[0];
+      const latestRealmFromOrder = getComponentValue(Realm, getEntityIdFromKeys([realmEntityId]));
       if (latestRealmFromOrder) {
         latestRealmIdFromOrder = latestRealmFromOrder.realm_id;
       }
     }
     const orderRealmIds = (realmIdsByOrder as { [key: string]: number[] })[orderName];
-    const latestIndex = orderRealmIds.indexOf(latestRealmIdFromOrder);
+    const latestIndex = orderRealmIds.indexOf(Number(latestRealmIdFromOrder));
 
     if (latestIndex === -1 || latestIndex === orderRealmIds.length - 1) {
       return orderRealmIds[0];
@@ -52,70 +49,46 @@ export function useRealm() {
     }
   };
 
-  const getRealmLevel = (
-    realmEntityId: number,
-  ): { level: number; timeLeft: number; percentage: number } | undefined => {
-    const level = getComponentValue(Level, getEntityIdFromKeys([BigInt(realmEntityId)])) || {
-      level: 0,
-      valid_until: nextBlockTimestamp,
-    };
+  const getRealmIdForOrderAfter = (order: number, realmId: bigint) => {
+    const orderName = getOrderName(order);
 
-    let trueLevel = level.level;
-    // calculate true level
-    if (level.valid_until > nextBlockTimestamp) {
-      trueLevel = level.level;
+    const orderRealmIds = (realmIdsByOrder as { [key: string]: number[] })[orderName];
+    const latestIndex = orderRealmIds.indexOf(Number(realmId));
+
+    if (latestIndex === -1 || latestIndex === orderRealmIds.length - 1) {
+      return orderRealmIds[0];
     } else {
-      const weeksPassed = Math.floor((nextBlockTimestamp - level.valid_until) / 604800) + 1;
-      trueLevel = Math.max(0, level.level - weeksPassed);
+      return orderRealmIds[latestIndex + 1];
     }
-
-    let timeLeft: number;
-    if (trueLevel === 0) {
-      timeLeft = 0;
-    } else {
-      if (nextBlockTimestamp >= level.valid_until) {
-        timeLeft = 604800 - ((nextBlockTimestamp - level.valid_until) % 604800);
-      } else {
-        timeLeft = level.valid_until - nextBlockTimestamp;
-      }
-    }
-
-    let percentage = 100;
-    if (trueLevel === 1) {
-      percentage = 125;
-    } else if (trueLevel === 2) {
-      percentage = 150;
-    } else if (trueLevel === 3) {
-      percentage = 200;
-    }
-    return { level: trueLevel, timeLeft, percentage };
   };
 
   const getAddressName = (address: string) => {
     const addressName = getComponentValue(AddressName, getEntityIdFromKeys([BigInt(address)]));
-    return addressName ? hexToAscii(numberToHex(addressName.name)) : undefined;
+    return addressName ? hexToAscii(numberToHex(Number(addressName.name))) : undefined;
   };
 
-  const getRealmAddressName = (realmEntityId: number) => {
+  const getRealmAddressName = (realmEntityId: bigint) => {
     const owner = getComponentValue(Owner, getEntityIdFromKeys([BigInt(realmEntityId)]));
     const addressName = owner
       ? getComponentValue(AddressName, getEntityIdFromKeys([BigInt(owner.address)]))
       : undefined;
 
     if (addressName) {
-      return hexToAscii(numberToHex(addressName.name));
+      return hexToAscii(numberToHex(Number(addressName.name)));
+    } else {
+      return "";
     }
   };
 
   return {
     getNextRealmIdForOrder,
-    getRealmLevel,
     getAddressName,
     getRealmAddressName,
+    getRealmIdForOrderAfter,
   };
 }
 
-export function useGetRealm(realmEntityId: number | undefined) {
+export function useGetRealm(realmEntityId: bigint | undefined) {
   const {
     setup: {
       components: { Realm, Position, Owner },
@@ -126,7 +99,7 @@ export function useGetRealm(realmEntityId: number | undefined) {
 
   useMemo((): any => {
     if (realmEntityId) {
-      let entityId = getEntityIdFromKeys([BigInt(realmEntityId)]);
+      let entityId = getEntityIdFromKeys([realmEntityId]);
       const realm = getComponentValue(Realm, entityId);
       const owner = getComponentValue(Owner, entityId);
       const position = getComponentValue(Position, entityId);
@@ -143,16 +116,20 @@ export function useGetRealm(realmEntityId: number | undefined) {
           resource_types_packed,
           order,
         } = realm;
+
+        const name = getRealmNameById(realm_id);
+
         const { address } = owner;
         setRealm({
           realmId: realm_id,
+          name,
           cities,
           rivers,
           wonder,
           harbors,
           regions,
-          resource_types_count,
-          resource_types_packed,
+          resourceTypesCount: resource_types_count,
+          resourceTypesPacked: resource_types_packed,
           order,
           position,
           owner: address,
@@ -166,7 +143,7 @@ export function useGetRealm(realmEntityId: number | undefined) {
   };
 }
 
-export function useGetRealms(): { realms: RealmExtended[] } {
+export function useGetRealms(): RealmExtended[] {
   const {
     setup: {
       components: { Realm, Owner },
@@ -177,18 +154,39 @@ export function useGetRealms(): { realms: RealmExtended[] } {
 
   const realms: RealmExtended[] = useMemo(
     () =>
-      Array.from(realmEntityIds).map((entityId) => {
-        const realm = getComponentValue(Realm, entityId) as any;
-        realm.entity_id = entityId;
-        realm.name = realmsData["features"][realm.realm_id - 1].name;
-        realm.owner = getComponentValue(Owner, entityId);
-        realm.resources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
-        return realm;
-      }),
+      realmEntityIds
+        .map((entityId) => {
+          const realm = getComponentValue(Realm, entityId);
+          if (realm) {
+            const realmData = getRealm(realm.realm_id);
+            if (!realmData) return undefined;
+            let name = realmData.name;
+            let owner = getComponentValue(Owner, entityId);
+            let resources = unpackResources(BigInt(realm.resource_types_packed), realm.resource_types_count);
+
+            if (name) {
+              return {
+                realmId: realm.realm_id,
+                name,
+                cities: realm.cities,
+                rivers: realm.rivers,
+                wonder: realm.wonder,
+                harbors: realm.harbors,
+                regions: realm.regions,
+                resourceTypesCount: realm.resource_types_count,
+                resourceTypesPacked: realm.resource_types_packed,
+                order: realm.order,
+                position: realmData.position,
+                owner: owner?.address,
+                entity_id: realm.entity_id,
+                resources,
+              };
+            }
+          }
+        })
+        .filter(Boolean) as RealmExtended[],
     [realmEntityIds],
   );
 
-  return {
-    realms,
-  };
+  return realms;
 }

@@ -1,16 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
-import { findResourceById, orderNameDict } from "@bibliothecadao/eternum";
+import { MarketInterface, Resource, findResourceById, orderNameDict } from "@bibliothecadao/eternum";
 import { ReactComponent as RatioIcon } from "../../../../../assets/icons/common/ratio.svg";
 import * as realmsData from "../../../../../geodata/realms.json";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
-import { ResourcesOffer } from "../../../../../types";
-import { MarketInterface } from "../../../../../hooks/helpers/useTrade";
 import { currencyFormat } from "../../../../../utils/utils";
 import useUIStore from "../../../../../hooks/store/useUIStore";
+import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
+import useRealmStore from "../../../../../hooks/store/useRealmStore";
+import { useRoads } from "../../../../../hooks/helpers/useRoads";
+import { useTrade } from "../../../../../hooks/helpers/useTrade";
 
 type TradeOfferProps = {
   marketOffer: MarketInterface;
@@ -19,12 +21,29 @@ type TradeOfferProps = {
 };
 
 export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferProps) => {
-  const { hasRoad, distance, resourcesGet, resourcesGive, canAccept, ratio } = marketOffer;
+  const { makerId, takerGets: resourcesGet, makerGets: resourcesGive, ratio } = marketOffer;
 
   let { realm: makerRealm } = useGetRealm(marketOffer.makerId);
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const [isLoading, setIsLoading] = useState(false);
+
+  const { calculateDistance } = useCaravan();
+  const { getHasRoad } = useRoads();
+  const { canAcceptOffer } = useTrade();
+
+  const distance = useMemo(() => {
+    return calculateDistance(makerId, realmEntityId) || 0;
+  }, [makerId, realmEntityId]);
+
+  const hasRoad = useMemo(() => {
+    return getHasRoad(realmEntityId, makerId);
+  }, [realmEntityId, makerId]);
+
+  const canAccept = useMemo(() => {
+    return canAcceptOffer({ realmEntityId, resourcesGive });
+  }, [realmEntityId, resourcesGive]);
 
   useEffect(() => {
     setIsLoading(false);
@@ -37,7 +56,7 @@ export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferPr
           <div className="flex items-center p-1 -mt-2 -ml-2 border border-t-0 border-l-0 rounded-br-md border-gray-gold">
             {/* // order of the order maker */}
             {makerRealm.order && <OrderIcon order={orderNameDict[makerRealm.order]} size="xs" className="mr-1" />}
-            {realmsData["features"][makerRealm.realmId - 1].name}
+            {realmsData["features"][Number(makerRealm.realmId) - 1]?.name || ""}
           </div>
         )}
         <div className=" text-gold flex">
@@ -63,7 +82,9 @@ export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferPr
             variant="outline"
             onMouseLeave={() => setTooltip(null)}
             className="text-gold/50 relative group ml-2"
-            onClick={onBuildRoad}
+            onClick={() => {
+              if (!hasRoad) onBuildRoad();
+            }}
           >
             {hasRoad ? "x2 speed" : "Normal speed"}
           </Button>
@@ -74,8 +95,8 @@ export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferPr
           <div className="flex-1 text-gold flex justify-center items-center flex-wrap">
             {resourcesGive &&
               resourcesGive.map(({ resourceId, amount }) => (
-                <div className="flex flex-col items-center mx-2 my-0.5" key={resourceId}>
-                  <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="xs" className="mb-1" />
+                <div className="flex flex-col items-center mx-1 my-0.5" key={resourceId}>
+                  <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="sm" className="mb-1" />
                   {currencyFormat(amount, 0)}
                 </div>
               ))}
@@ -87,46 +108,35 @@ export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferPr
           <div className="flex-1 text-gold flex justify-center items-center flex-wrap">
             {resourcesGet &&
               resourcesGet.map(({ resourceId, amount }) => (
-                <div className="flex flex-col items-center mx-2 my-0.5" key={resourceId}>
-                  <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="xs" />
+                <div className="flex flex-col items-center mx-1 my-0.5" key={resourceId}>
+                  <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="sm" />
                   {currencyFormat(amount, 0)}
                 </div>
               ))}
           </div>
         </div>
-        {!isLoading && (
-          <div className="flex flex-col justify-center relative">
-            <Button
-              disabled={!canAccept}
-              onClick={() => {
-                onAccept();
-              }}
-              variant={canAccept ? "success" : "danger"}
-              className={clsx("ml-auto p-2 !h-4 text-xxs !rounded-md", !canAccept && "mb-4")}
-            >{`Accept`}</Button>
-            {!canAccept && (
-              <div className="text-xxs text-order-giants/70 w-min absolute whitespace-nowrap right-0 bottom-0">
-                Insufficient resources
-              </div>
-            )}
-          </div>
-        )}
-        {isLoading && (
+        <div className="flex flex-col justify-center relative">
           <Button
-            isLoading={true}
-            onClick={() => {}}
-            variant="danger"
-            className="ml-auto p-2 !h-4 text-xxs !rounded-md"
-          >
-            {}
-          </Button>
-        )}
+            isLoading={isLoading}
+            disabled={!canAccept}
+            onClick={() => {
+              onAccept();
+            }}
+            variant={canAccept ? "success" : "danger"}
+            className={clsx("ml-auto p-2 !h-4 text-xxs !rounded-md", !canAccept && "mb-4")}
+          >{`Accept`}</Button>
+          {!canAccept && (
+            <div className="text-xxs text-order-giants/70 w-min absolute whitespace-nowrap right-0 bottom-0">
+              Insufficient resources
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
-export const calculateRatio = (resourcesGive: ResourcesOffer[], resourcesGet: ResourcesOffer[]) => {
+export const calculateRatio = (resourcesGive: Resource[], resourcesGet: Resource[]) => {
   let quantityGive = 0;
   for (let i = 0; i < resourcesGive.length; i++) {
     quantityGive += resourcesGive[i].amount;

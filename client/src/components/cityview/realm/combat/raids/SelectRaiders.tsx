@@ -1,33 +1,40 @@
 import React from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
-import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import useUIStore from "../../../../../hooks/store/useUIStore";
 import { getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
+import { CombatInfo } from "@bibliothecadao/eternum";
 
-type RoadBuildPopupProps = {
+type SelectRaidersProps = {
   selectedRaiders: CombatInfo[];
   attackingRaiders: CombatInfo[];
   setSelectedRaiders: (raiders: CombatInfo[]) => void;
 };
 
-export const SelectRaiders = ({ attackingRaiders, selectedRaiders, setSelectedRaiders }: RoadBuildPopupProps) => {
+export const SelectRaiders = ({ attackingRaiders, selectedRaiders, setSelectedRaiders }: SelectRaidersProps) => {
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  return attackingRaiders
-    .filter((raider) => {
-      return raider.arrivalTime <= nextBlockTimestamp;
-    })
-    .map((raider, i) => (
-      <SelectableRaider
-        key={i}
-        raider={raider}
-        selectedRaiders={selectedRaiders}
-        setSelectedRaiders={setSelectedRaiders}
-      ></SelectableRaider>
-    ));
+  return (
+    <div className={"w-full mt-2"}>
+      {attackingRaiders
+        .filter((raider) => {
+          // either the ones that never moved or have arrived
+          return nextBlockTimestamp
+            ? raider.arrivalTime === undefined || raider.arrivalTime <= nextBlockTimestamp
+            : false;
+        })
+        .map((raider, i) => (
+          <SelectableRaider
+            key={i}
+            raider={raider}
+            selectedRaiders={selectedRaiders}
+            setSelectedRaiders={setSelectedRaiders}
+          ></SelectableRaider>
+        ))}
+    </div>
+  );
 };
 
 type SelectableRaiderProps = {
@@ -42,8 +49,8 @@ export const SelectableRaider = ({ raider, selectedRaiders, setSelectedRaiders, 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const isTraveling = arrivalTime ? arrivalTime > nextBlockTimestamp : false;
-  const originRealmName = originRealmId ? getRealmNameById(raider.originRealmId) : undefined;
+  const isTraveling = nextBlockTimestamp && arrivalTime ? arrivalTime > nextBlockTimestamp : false;
+  const originRealmName = originRealmId ? getRealmNameById(originRealmId) : undefined;
 
   return (
     <div
@@ -61,13 +68,13 @@ export const SelectableRaider = ({ raider, selectedRaiders, setSelectedRaiders, 
       }}
     >
       <div className="flex items-center text-xxs">
-        {entityId && (
+        {entityId.toString() && (
           <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
-            #{entityId}
+            #{entityId.toString()}
           </div>
         )}
         <div className="flex items-center ml-1 -mt-2">
-          {isTraveling && originRealmId && (
+          {isTraveling && originRealmId?.toString() && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Traveling from</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
@@ -77,7 +84,7 @@ export const SelectableRaider = ({ raider, selectedRaiders, setSelectedRaiders, 
               </div>
             </div>
           )}
-          {!isTraveling && originRealmId && (
+          {!isTraveling && originRealmId?.toString() && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Arrived from</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
@@ -100,7 +107,7 @@ export const SelectableRaider = ({ raider, selectedRaiders, setSelectedRaiders, 
               <img src="/images/units/troop-icon.png" className="h-[28px]" />
               <div className="flex ml-1 text-center">
                 <div className="bold mr-1">x{quantity}</div>
-                Battalions
+                Raiders
               </div>
             </div>
           </div>

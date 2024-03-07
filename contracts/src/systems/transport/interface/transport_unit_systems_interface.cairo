@@ -8,4 +8,6 @@ trait ITransportUnitSystems<TContractState> {
         self: @TContractState, world: IWorldDispatcher, 
         entity_id: u128, quantity: u128
     ) -> ID;
+    fn return_free_units(self: @TContractState, world: IWorldDispatcher, unit_ids: Span<u128>);
+
 }

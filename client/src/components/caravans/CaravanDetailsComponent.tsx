@@ -4,11 +4,11 @@ import Button from "../../elements/Button";
 import { OrderIcon } from "../../elements/OrderIcon";
 import { ResourceCost } from "../../elements/ResourceCost";
 import useBlockchainStore from "../../hooks/store/useBlockchainStore";
-import { CaravanInterface } from "../../hooks/graphql/useGraphQLQueries";
 import { useTrade } from "../../hooks/helpers/useTrade";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 import useRealmStore from "../../hooks/store/useRealmStore";
 import { divideByPrecision } from "../../utils/utils";
+import { CaravanInterface } from "@bibliothecadao/eternum";
 
 type CaravanDetailsProps = {
   caravan: CaravanInterface;
@@ -16,24 +16,25 @@ type CaravanDetailsProps = {
 };
 
 export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
-  const { resourcesChestId, destination, arrivalTime, capacity, pickupArrivalTime } = caravan;
+  const { resourcesChestId, intermediateDestination, arrivalTime, capacity, pickupArrivalTime } = caravan;
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
-  const { getTradeResources, getTradeIdFromResourcesChestId } = useTrade();
+  const { getTradeResourcesFromEntityViewpoint, getTradeIdFromResourcesChestId } = useTrade();
 
   let tradeId = resourcesChestId ? getTradeIdFromResourcesChestId(resourcesChestId) : undefined;
 
   let { resourcesGive, resourcesGet } = tradeId
-    ? getTradeResources(realmEntityId, tradeId)
+    ? getTradeResourcesFromEntityViewpoint(realmEntityId, tradeId)
     : { resourcesGive: [], resourcesGet: [] };
 
   let resourceWeight = 0;
 
-  const destinationRealmId = useMemo(() => {
-    return destination && getRealmIdByPosition(destination);
-  }, [destination]);
-  const destinationRealmName = destinationRealmId && getRealmNameById(destinationRealmId);
+  const intermediateDestinationRealmId = useMemo(() => {
+    return intermediateDestination && getRealmIdByPosition(intermediateDestination);
+  }, [intermediateDestination]);
+  const intermediateDestinationRealmName =
+    intermediateDestinationRealmId && getRealmNameById(intermediateDestinationRealmId);
   const hasArrivedPickupPosition =
     pickupArrivalTime !== undefined && nextBlockTimestamp !== undefined && pickupArrivalTime <= nextBlockTimestamp;
 
@@ -44,18 +45,23 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
         <div className="flex items-center space-x-1">
           {capacity && (
             <div className="mr-0.5">
-              Caravan #{caravan.caravanId} {divideByPrecision(resourceWeight)} / {divideByPrecision(capacity)}
+              Caravan #{caravan.caravanId.toString()} {divideByPrecision(resourceWeight)} /{" "}
+              {divideByPrecision(capacity)}
             </div>
           )}
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body>
-        {isTravelling && destinationRealmName && (
+        {isTravelling?.toString() && intermediateDestinationRealmName?.toString() && (
           <div className="flex items-center mt-2 ml-2 text-xxs">
             <span className="italic text-light-pink">Traveling {hasArrivedPickupPosition ? "from" : "to"}</span>
             <div className="flex items-center ml-1 mr-1 text-gold">
-              <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xs" />
-              {destinationRealmName}
+              <OrderIcon
+                order={getRealmOrderNameById(intermediateDestinationRealmId || 0n)}
+                className="mr-1"
+                size="xs"
+              />
+              {intermediateDestinationRealmName.toString()}
             </div>
             <span className="italic text-light-pink">{hasArrivedPickupPosition ? "with" : "to pick up"}</span>
           </div>
@@ -67,7 +73,7 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
                 <ResourceCost
                   key={resource.resourceId}
                   resourceId={resource.resourceId}
-                  amount={divideByPrecision(resource.amount)}
+                  amount={divideByPrecision(Number(resource.amount))}
                 />
               ),
           )}
@@ -84,7 +90,7 @@ export const CaravanDetails = ({ caravan, onClose }: CaravanDetailsProps) => {
                 <ResourceCost
                   key={resource.resourceId}
                   resourceId={resource.resourceId}
-                  amount={divideByPrecision(resource.amount)}
+                  amount={divideByPrecision(Number(resource.amount))}
                 />
               ),
           )}

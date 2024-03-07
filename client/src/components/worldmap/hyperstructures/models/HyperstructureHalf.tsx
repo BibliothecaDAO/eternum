@@ -7,7 +7,7 @@ Files: public/models/models/hyperstructure-half.glb [570.8KB] > hyperstructure-h
 import * as THREE from "three";
 import { Html, useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
-import { HyperStructureInterface } from "../../../../hooks/helpers/useHyperstructure";
+import { HyperStructureInterface } from "@bibliothecadao/eternum";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -25,17 +25,17 @@ type GLTFResult = GLTF & {
 export default function HyperstructureHalfFinished(
   props: JSX.IntrinsicElements["group"] & { hyperstructure?: HyperStructureInterface },
 ) {
-  const { nodes, materials } = useGLTF("/models/hyperstructure-half-transformed.glb") as GLTFResult;
+  const { nodes, materials } = useGLTF("/models/hyperstructure3_half-finished_LOW-transformed.glb") as GLTFResult;
+
   return (
     <group {...props} dispose={null}>
       <group name="Scene">
-        {props.hyperstructure?.initialized && (
-          <Html position={[0, -1.1, 0]} distanceFactor={10}>
-            <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
-              Progress: {props.hyperstructure?.progress.toFixed(2)}%
-            </div>
-          </Html>
-        )}
+        <Html position={[0, -1.1, 0]} distanceFactor={10}>
+          <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
+            {/* <div> Level {currentLevel}</div>
+            <div> Progress: {hyperstructure?.progress.toFixed(2)}%</div> */}
+          </div>
+        </Html>
         <group name="tower_half-finished">
           <mesh
             name="tower_half-finished_1"
@@ -58,4 +58,4 @@ export default function HyperstructureHalfFinished(
   );
 }
 
-useGLTF.preload("/models/hyperstructure-half-transformed.glb");
+useGLTF.preload("/models/hyperstructure3_half-finished_LOW-transformed.glb.glb");

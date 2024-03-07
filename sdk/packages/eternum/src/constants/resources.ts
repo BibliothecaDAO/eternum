@@ -1,12 +1,4 @@
-export interface Resources {
-  trait: string;
-  value: number;
-  colour: string;
-  colourClass: string;
-  id: number;
-  description: string;
-  img: string;
-}
+import { Resources } from "../types";
 
 export const findResourceById = (value: number) => {
   return resources.find((e) => e.id === value);
@@ -19,12 +11,12 @@ export const findResourceIdByTrait = (trait: string) => {
 
 export const resources: Array<Resources> = [
   {
-    trait: "Shekels",
+    trait: "Lords",
     value: 253,
     colour: "#ec4899",
     colourClass: "",
     id: 253,
-    description: "Shekels.",
+    description: "Lords.",
     img: "",
   },
   {
@@ -291,10 +283,50 @@ export enum ResourcesIds {
   Adamantine = 20,
   Mithral = 21,
   Dragonhide = 22,
-  Shekels = 253,
+  Lords = 253,
   Wheat = 254,
   Fish = 255,
 }
+
+export const Guilds = ["Harvesters", "Miners", "Collectors", "Hunters"];
+
+export const resourcesByGuild = {
+  [Guilds[0]]: [
+    ResourcesIds.Wood,
+    ResourcesIds.Stone,
+    ResourcesIds.Coal,
+    ResourcesIds.Ironwood,
+    ResourcesIds.Hartwood,
+    ResourcesIds.TrueIce,
+  ],
+  [Guilds[1]]: [
+    ResourcesIds.Copper,
+    ResourcesIds.Silver,
+    ResourcesIds.Gold,
+    ResourcesIds.ColdIron,
+    ResourcesIds.AlchemicalSilver,
+    ResourcesIds.Adamantine,
+  ],
+  [Guilds[2]]: [
+    ResourcesIds.Diamonds,
+    ResourcesIds.Sapphire,
+    ResourcesIds.Ruby,
+    ResourcesIds.DeepCrystal,
+    ResourcesIds.TwilightQuartz,
+  ],
+  [Guilds[3]]: [
+    ResourcesIds.Obsidian,
+    ResourcesIds.Ignium,
+    ResourcesIds.EtherealSilica,
+    ResourcesIds.Mithral,
+    ResourcesIds.Dragonhide,
+  ],
+};
+
+// if it's labor, then remove 28 to get the icon resource id
+export const getIconResourceId = (resourceId: number, isLabor: boolean) => {
+  return isLabor ? resourceId - 28 : resourceId;
+};
 
 export const initialResources = [
   872.17, 685.39, 666.61, 459.65, 385.39, 302.78, 205.04, 166.43, 158.96, 103.3, 52.17, 42.96, 41.57, 41.57, 29.91,
@@ -306,3 +338,103 @@ export const resourceProb = [
   0.0120724, 0.0099396, 0.0096177, 0.0096177, 0.0069215, 0.0065191, 0.0055936, 0.0044668, 0.0037425, 0.0022133,
   0.0014889, 0.0009256,
 ];
+
+// (1247400000 / 43608500) * 0.2018109
+// (415800000 / 43608500) * 0.2018109
+export const foodProb = [5.7727, 1.9242];
+
+const LEVELING_COST_MULTIPLIER = 1.25;
+
+// guild 1, 2, 3, 4
+export const getBuildingsCost = (guild: number) => {
+  const costs = [
+    [1, 126000, 2, 99016, 3, 96303, 7, 29622, 10, 14924, 17, 3492, 254, 1890000, 255, 630000], // guild 1
+    [4, 66404, 6, 43742, 8, 24044, 9, 22964, 19, 2337, 20, 1382, 254, 1890000, 255, 630000], // guild 2
+    [11, 7537, 12, 6206, 13, 6005, 14, 6005, 18, 2789, 254, 1890000, 255, 630000], // guild 3
+    [5, 55676, 15, 4321, 16, 4070, 21, 930, 22, 578, 254, 1890000, 255, 630000], // guild 4
+  ];
+
+  const baseAmounts = costs[guild - 1];
+
+  const costResources = [];
+  for (let i = 0; i < baseAmounts.length; i = i + 2) {
+    costResources.push({
+      resourceId: baseAmounts[i],
+      amount: Math.floor(baseAmounts[i + 1]),
+    });
+  }
+  return costResources;
+};
+
+export const getLevelingCost = (newLevel: number): { resourceId: number; amount: number }[] => {
+  const costMultiplier = LEVELING_COST_MULTIPLIER ** Math.floor((newLevel - 1) / 4);
+
+  const rem = newLevel % 4;
+
+  const baseAmounts =
+    rem === 0
+      ? // level 4 (resource tier 3)
+        [16, 24421, 17, 20954, 18, 16733, 19, 14020, 20, 8291, 21, 5578, 22, 3467]
+      : rem === 1
+      ? // level 1 (food)
+        [254, 11340000, 255, 3780000]
+      : rem === 2
+      ? // level 2 (resource tier 1)
+        [1, 756000, 2, 594097, 3, 577816, 4, 398426, 5, 334057, 6, 262452, 7, 177732]
+      : rem === 3
+      ? // level 3 (resource tier 2)
+        [8, 144266, 9, 137783, 10, 89544, 11, 45224, 12, 37235, 13, 36029, 14, 36029, 15, 25929]
+      : [];
+
+  const costResources = [];
+  for (let i = 0; i < baseAmounts.length; i = i + 2) {
+    costResources.push({
+      resourceId: baseAmounts[i],
+      amount: Math.floor(baseAmounts[i + 1] * costMultiplier),
+    });
+  }
+  return costResources;
+};
+
+// min number of realms that would be needed to collaborate to build a hyperstructure
+const HYPERSTRUCTURE_LEVELING_MULTIPLIER = 25;
+
+export const getHyperstructureResources = (currentLevel: number): { resourceId: number; amount: number }[] => {
+  let resourcesList = getLevelingCost(currentLevel + 1);
+  return resourcesList.map(({ resourceId, amount }) => ({
+    resourceId,
+    amount: Math.floor(amount * HYPERSTRUCTURE_LEVELING_MULTIPLIER),
+  }));
+};
+
+interface WeightMap {
+  [key: number]: number;
+}
+// weight in kg
+export const WEIGHTS: WeightMap = {
+  1: 1,
+  2: 1,
+  3: 1,
+  4: 1,
+  5: 1,
+  6: 1,
+  7: 1,
+  8: 1,
+  9: 1,
+  10: 1,
+  11: 1,
+  12: 1,
+  13: 1,
+  14: 1,
+  15: 1,
+  16: 1,
+  17: 1,
+  18: 1,
+  19: 1,
+  20: 1,
+  21: 1,
+  22: 1,
+  253: 0.001,
+  254: 0.1,
+  255: 0.1,
+};

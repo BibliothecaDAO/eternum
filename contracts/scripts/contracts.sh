@@ -1,17 +1,68 @@
 #!/bin/bash
 
-export WORLD_ADDRESS="0x4d79c99ce9b489b77461e3491970ea5ede1f1966f4d2ff65ee76cd8701d6dad"
-export CONFIG_SYSTEMS="0x74c3dd7b64a0c8ad6a27276b9ec6a628774028734ea46cf3970ef185e35247d"
-export LABOR_SYSTEMS="0x5b3b02ba50cfb46af86c20d1eca1bbff5fe82ff2f8985aefc413267a5d05b00"
-export TRADE_SYSTEMS="0x7b54643f42a1c4298fe5e465105ccbee30ba505f3bedaa90f4951f9f15be8f0"
-export HYPERSTRUCTURE_SYSTEMS="0xfdcafc26f1d866ad585cadfb0fb177e4512d03f6020e67adadb5c66690d9c2"
-export RESOURCE_SYSTEMS="0x2dab8013b2dea3f5b37f31db94a5136843408efa04a966a6587f65056b1ef40"
-export CARAVAN_SYSTEMS="0x384fd2bf241ffc48425ed1fed389495e8066079cdb16865a73e6d3849d32c4f"
-export ROAD_SYSTEMS="0x46e8cc4deb048fed25465e134ebbfa962137daaf0bb52a63d41940af3638e4d"
-export TRANSPORT_UNIT_SYSTEMS="0x75eb7b6012dbb91d59aa20808de28666f8207478e08f4e4ee101bdb0ac89e63"
-export TRAVEL_SYSTEMS="0x8fa2df40a28c2ffb7a99267c1a67318451da3a5d39cadb18577a2d09856b0e"
-export TEST_REALM_SYSTEMS="0x141b54c5560368787c28e61f9c9542e3aaf26a3f426263cb0dcde36339eec30"
-export TEST_RESOURCE_SYSTEMS="0x5e2e8d20bc9f4c02050b2b6b7442a1ce06bbd9c0729716a7c5a478069c9b354"
-export COMBAT_SYSTEMS="0x778fd3e137dc0e58d94d599167aa431332b8529f9bfc8efd70a7ea4e9c74247"
-export LEVELING_SYSTEMS="0x81edcebc0097b53ae8db567565eb5c5d9e8a9190a8a80411547676f24361ca"
-export NAME_SYSTEMS="0x2a9ee652fb9ce9812e9d06ec05429b6e27254b37d0ef0eaca6a1e4533d5c244"
+KATANA_TOML_PATH="./manifests/deployments/KATANA.toml"
+
+get_contract_address() {
+    local contract_name="$1"
+    awk -v name="$contract_name" '
+    $1 == "address" { last_address = $3 }  # Store the last seen address
+    $1 == "name" && $3 == "\"" name "\"" { print last_address; exit; }  # When name matches, print the last stored address
+    ' "$KATANA_TOML_PATH"
+}
+
+export SOZO_WORLD=$(get_contract_address "dojo::world::world")
+
+export CONFIG_SYSTEMS=$(get_contract_address "eternum::systems::config::contracts::config_systems")
+
+export LABOR_SYSTEMS=$(get_contract_address "eternum::systems::labor::contracts::labor_systems")
+
+export TRADE_SYSTEMS=$(get_contract_address "eternum::systems::trade::contracts::trade_systems::trade_systems")
+
+export RESOURCE_SYSTEMS=$(get_contract_address "eternum::systems::resources::contracts::resource_systems")
+
+export CARAVAN_SYSTEMS=$(get_contract_address "eternum::systems::transport::contracts::caravan_systems::caravan_systems")
+
+export ROAD_SYSTEMS=$(get_contract_address "eternum::systems::transport::contracts::road_systems::road_systems")
+
+export TRANSPORT_UNIT_SYSTEMS=$(get_contract_address "eternum::systems::transport::contracts::transport_unit_systems::transport_unit_systems")
+
+export TRAVEL_SYSTEMS=$(get_contract_address "eternum::systems::transport::contracts::travel_systems::travel_systems")
+
+export REALM_SYSTEMS=$(get_contract_address "eternum::systems::realm::contracts::realm_systems")
+
+export TEST_RESOURCE_SYSTEMS=$(get_contract_address "eternum::systems::test::contracts::resource::test_resource_systems")
+
+export COMBAT_SYSTEMS=$(get_contract_address "eternum::systems::combat::contracts::combat_systems")
+
+export LEVELING_SYSTEMS=$(get_contract_address "eternum::systems::leveling::contracts::leveling_systems")
+
+export NAME_SYSTEMS=$(get_contract_address "eternum::systems::name::contracts::name_systems")
+
+export BANK_SYSTEMS=$(get_contract_address "eternum::systems::bank::contracts::bank_systems")
+
+export HYPERSTRUCTURE_SYSTEMS=$(get_contract_address "eternum::systems::hyperstructure::contracts::hyperstructure_systems")
+
+export BUILDINGS_SYSTEMS=$(get_contract_address "eternum::systems::buildings::contracts::buildings_systems")
+
+export MAP_SYSTEMS=$(get_contract_address "eternum::systems::map::contracts::map_systems")
+
+# Display the addresses
+echo "-------------------------ADDRESS----------------------------------------"
+echo world : $SOZO_WORLD
+echo config : $CONFIG_SYSTEMS
+echo labor : $LABOR_SYSTEMS
+echo trade : $TRADE_SYSTEMS
+echo resource : $RESOURCE_SYSTEMS
+echo caravan : $CARAVAN_SYSTEMS
+echo road : $ROAD_SYSTEMS
+echo transport_unit : $TRANSPORT_UNIT_SYSTEMS
+echo travel : $TRAVEL_SYSTEMS
+echo realm : $REALM_SYSTEMS
+echo test_resource : $TEST_RESOURCE_SYSTEMS
+echo combat : $COMBAT_SYSTEMS
+echo leveling : $LEVELING_SYSTEMS
+echo name : $NAME_SYSTEMS
+echo bank : $BANK_SYSTEMS
+echo hyperstructure : $HYPERSTRUCTURE_SYSTEMS
+echo buildings : $BUILDINGS_SYSTEMS
+echo maps : $MAP_SYSTEMS

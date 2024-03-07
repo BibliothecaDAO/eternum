@@ -2,12 +2,23 @@ import { useMemo, useState } from "react";
 import { Tabs } from "../../elements/tab";
 import { RealmsListComponent } from "./RealmsListComponent";
 import useUIStore from "../../hooks/store/useUIStore";
+import { RaidsPanel } from "../cityview/realm/combat/raids/RaidsPanel";
+import { useCombat } from "../../hooks/helpers/useCombat";
+import useRealmStore from "../../hooks/store/useRealmStore";
 
 type RealmsListPanelProps = {};
 
 export const RealmsListPanel = ({}: RealmsListPanelProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const { getRealmRaidersIds } = useCombat();
+  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
+
+  const realmRaiders = useMemo(() => {
+    return realmEntityIds.flatMap((realmEntityId) => {
+      return getRealmRaidersIds(realmEntityId.realmEntityId);
+    });
+  }, [realmEntityIds]);
 
   const tabs = useMemo(
     () => [
@@ -54,6 +65,28 @@ export const RealmsListPanel = ({}: RealmsListPanelProps) => {
           </div>
         ),
         component: <RealmsListComponent onlyMyRealms />,
+      },
+      {
+        key: "my-raiders",
+        label: (
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Browse your raiders.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex group relative flex-col items-center"
+          >
+            <div>My Raiders</div>
+          </div>
+        ),
+        component: <RaidsPanel raiderIds={realmRaiders} showCreateButton={false} />,
       },
     ],
     [selectedTab],

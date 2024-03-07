@@ -3,25 +3,24 @@ import { Tabs } from "../../../elements/tab";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useRoute, useLocation } from "wouter";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { BattalionsPanel } from "./combat/battalions/BattalionsPanel";
 import { RaidsPanel } from "./combat/raids/RaidsPanel";
 import { DefencePanel } from "./combat/defence/DefencePanel";
+import { useLevel } from "../../../hooks/helpers/useLevel";
+import { useCombat } from "../../../hooks/helpers/useCombat";
 
-export type Order = {
-  orderId: number;
-  counterpartyOrderId: number;
-  tradeId: number;
-};
+type RealmCombatComponentProps = {};
 
-type RealmTradeComponentProps = {};
-
-export const RealmCombatComponent = ({}: RealmTradeComponentProps) => {
+export const RealmCombatComponent = ({}: RealmCombatComponentProps) => {
   const [selectedTab, setSelectedTab] = useState(1);
   const { realmEntityId } = useRealmStore();
+  const { useRealmRaiders } = useCombat();
 
   const moveCameraToMarketView = useUIStore((state) => state.moveCameraToMarketView);
   const moveCameraToCaravansView = useUIStore((state) => state.moveCameraToCaravansView);
   const setTooltip = useUIStore((state) => state.setTooltip);
+
+  // @note: useOwnerRaiders would be useful for a all realms management window
+  const raiderIds = useRealmRaiders(realmEntityId);
 
   // @ts-ignore
   const [location, setLocation] = useLocation();
@@ -62,32 +61,10 @@ export const RealmCombatComponent = ({}: RealmTradeComponentProps) => {
             onMouseLeave={() => setTooltip(null)}
             className="flex relative group flex-col items-center"
           >
-            <div>Raids</div>
+            <div>Raiders</div>
           </div>
         ),
-        component: <RaidsPanel></RaidsPanel>,
-      },
-      {
-        key: "battalions",
-        label: (
-          <div
-            onMouseEnter={() =>
-              setTooltip({
-                position: "bottom",
-                content: (
-                  <>
-                    <p className="whitespace-nowrap">Check your Raiders</p>
-                  </>
-                ),
-              })
-            }
-            onMouseLeave={() => setTooltip(null)}
-            className="flex relative group flex-col items-center"
-          >
-            <div>Battalions</div>
-          </div>
-        ),
-        component: <BattalionsPanel />,
+        component: <RaidsPanel raiderIds={raiderIds} showCreateButton={true} className=" pb-3 min-h-[120px]" />,
       },
       {
         key: "defence",
@@ -109,31 +86,38 @@ export const RealmCombatComponent = ({}: RealmTradeComponentProps) => {
             <div>Defence</div>
           </div>
         ),
-        component: <DefencePanel></DefencePanel>,
+        component: <DefencePanel />,
       },
     ],
-    [selectedTab],
+    [selectedTab, raiderIds],
   );
+
+  const { getEntityLevel } = useLevel();
+  const realm_level = getEntityLevel(realmEntityId)?.level;
 
   return (
     <>
-      <Tabs
-        selectedIndex={selectedTab}
-        onChange={(index: any) => setLocation(`/realm/${realmEntityId}/${tabs[index].key}`)}
-        variant="default"
-        className="h-full"
-      >
-        <Tabs.List>
-          {tabs.map((tab, index) => (
-            <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-          ))}
-        </Tabs.List>
-        <Tabs.Panels className="overflow-hidden">
-          {tabs.map((tab, index) => (
-            <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
-          ))}
-        </Tabs.Panels>
-      </Tabs>
+      {realm_level === undefined || realm_level < 3 ? (
+        <div className="text-gold p-4 border rounded border-gold m-2">Combat Locked until level 3</div>
+      ) : (
+        <Tabs
+          selectedIndex={selectedTab}
+          onChange={(index: any) => setLocation(`/realm/${realmEntityId}/${tabs[index].key}`)}
+          variant="default"
+          className="h-full"
+        >
+          <Tabs.List>
+            {tabs.map((tab, index) => (
+              <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
+            ))}
+          </Tabs.List>
+          <Tabs.Panels className="overflow-hidden">
+            {tabs.map((tab, index) => (
+              <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
+            ))}
+          </Tabs.Panels>
+        </Tabs>
+      )}
     </>
   );
 };

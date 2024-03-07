@@ -1,9 +1,10 @@
 import { create } from "zustand";
 import { createPopupsSlice, PopupsStore } from "./_popups";
-import realmsJson from "../../geodata/realms.json";
 import { Vector3 } from "three";
 import { createDataStoreSlice, DataStore } from "./_dataStore";
+import { createMapStoreSlice, MapStore } from "./_mapStore";
 import React from "react";
+import { getRealmUIPosition } from "../../utils/utils";
 export type Background = "map" | "realmView" | "combat" | "bastion";
 
 interface UIStore {
@@ -11,6 +12,8 @@ interface UIStore {
   setTheme: (theme: string) => void;
   showBlurOverlay: boolean;
   setShowBlurOverlay: (show: boolean) => void;
+  showBlankOverlay: boolean;
+  setShowBlankOverlay: (show: boolean) => void;
   isSideMenuOpened: boolean;
   toggleSideMenu: () => void;
   isSoundOn: boolean;
@@ -44,11 +47,13 @@ interface UIStore {
   setIsLoadingScreenEnabled: (enabled: boolean) => void;
 }
 
-const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
+const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) => ({
   theme: "light",
   setTheme: (theme) => set({ theme }),
-  showBlurOverlay: true,
+  showBlurOverlay: false,
   setShowBlurOverlay: (show) => set({ showBlurOverlay: show }),
+  showBlankOverlay: true,
+  setShowBlankOverlay: (show) => set({ showBlankOverlay: show }),
   isSideMenuOpened: true,
   toggleSideMenu: () => set((state) => ({ isSideMenuOpened: !state.isSideMenuOpened })),
   isSoundOn: false,
@@ -80,35 +85,44 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   mouseCoords: { x: 0, y: 0 },
   setMouseCoords: (coords) => set({ mouseCoords: coords }),
   moveCameraToRealm: (realmId) => {
-    const x = realmsJson.features[realmId - 1].xy[0] * -1;
-    const y = realmsJson.features[realmId - 1].xy[1] * -1;
-    const targetPos = new Vector3(x, 0.7, y);
-    const cameraPos = new Vector3(x + 25 * (Math.random() < 0.5 ? 1 : -1), 25, y + 25 * (Math.random() < 0.5 ? 1 : -1));
+    const pos = getRealmUIPosition(BigInt(realmId));
+    const x = pos.x;
+    const y = pos.y * -1;
+    const targetPos = new Vector3(x, 0, y);
+    const cameraPos = new Vector3(
+      x + 125 * (Math.random() < 0.5 ? 1 : -1),
+      100,
+      y + 75 * (Math.random() < 0.5 ? 1 : -1),
+    );
     set({ cameraPosition: cameraPos });
     set({ cameraTarget: targetPos });
   },
-  moveCameraToTarget: (target, distance = 25) => {
+  moveCameraToTarget: (target) => {
+    const x = target.x;
+    const y = target.y * -1;
+    const targetPos = new Vector3(x, 0, y);
     const cameraPos = new Vector3(
-      target.x + distance * (Math.random() < 0.5 ? 1 : -1),
-      distance / 2,
-      target.y + distance * (Math.random() < 0.5 ? 1 : -1),
+      x + 125 * (Math.random() < 0.5 ? 1 : -1),
+      100,
+      y + 75 * (Math.random() < 0.5 ? 1 : -1),
     );
     set({ cameraPosition: cameraPos });
-    set({ cameraTarget: target });
+    set({ cameraTarget: targetPos });
   },
-  showRealmsFlags: false,
+  showRealmsFlags: true,
   setShowRealmsFlags: (show) => set({ showRealmsFlags: show }),
   moveCameraToWorldMapView: () => {
     const pos = {
-      x: -17.044911069418,
-      y: 118.38408187955699,
-      z: 204.31967964950695,
+      x: 298.2009515928887,
+      y: 113.9047011776059,
+      z: -26.116329229297378,
       transitionDuration: 0.01,
     };
+    // does not work
     const target = {
-      x: -0.26346999995776943,
-      y: 0.027105,
-      z: 0.007405999987503547,
+      x: 302,
+      y: 20,
+      z: -209,
       transitionDuration: 0.01,
     };
     set({ cameraPosition: pos, cameraTarget: target });
@@ -116,14 +130,14 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   moveCameraToRealmView: () => {
     const pos = {
       x: 520.4138155171775,
-      y: 1962.1390819999998,
-      z: 1976.0299115304658,
+      y: 1084.1390819999998,
+      z: 1357.0299115304658,
       transitionDuration: 0.01,
     };
     const target = {
-      x: 188.3221210638067,
+      x: 40.3221210638067,
       y: 0.1390819999999989,
-      z: 6.35675413789002,
+      z: -33.35675413789002,
       transitionDuration: 0.01,
     };
     set({ cameraPosition: pos, cameraTarget: target });
@@ -131,13 +145,13 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   moveCameraToMarketView: () => {
     const pos = {
       x: 520.4138155171775,
-      y: 1962.1390819999998,
-      z: 1976.0299115304658,
+      y: 500.1390819999998,
+      z: 1357.0299115304658,
     };
     const target = {
-      x: 188.3221210638067,
+      x: 40.3221210638067,
       y: 0.1390819999999989,
-      z: 6.35675413789002,
+      z: -33.35675413789002,
     };
     set({ cameraPosition: pos, cameraTarget: target });
   },
@@ -184,6 +198,7 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
   ...createPopupsSlice(set),
   ...createDataStoreSlice(set),
+  ...createMapStoreSlice(set),
 }));
 
 export default useUIStore;

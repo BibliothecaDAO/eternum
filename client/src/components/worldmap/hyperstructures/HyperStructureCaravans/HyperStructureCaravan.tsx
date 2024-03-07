@@ -1,23 +1,28 @@
 import React, { useMemo, useState } from "react";
 import clsx from "clsx";
-import { CaravanInterface } from "../../../../hooks/graphql/useGraphQLQueries";
 import { ReactComponent as Pen } from "../../../../assets/icons/common/pen.svg";
 import { ReactComponent as CaretDownFill } from "../../../../assets/icons/common/caret-down-fill.svg";
 import { ReactComponent as DonkeyIcon } from "../../../../assets/icons/units/donkey-circle.svg";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
-import { getTotalResourceWeight } from "../../../cityview/realm/trade/TradeUtils";
-import { displayAddress, divideByPrecision, getEntityIdFromKeys, numberToHex } from "../../../../utils/utils";
+import { getTotalResourceWeight } from "../../../cityview/realm/trade/utils";
+import {
+  displayAddress,
+  divideByPrecision,
+  getEntityIdFromKeys,
+  getForeignKeyEntityId,
+  numberToHex,
+} from "../../../../utils/utils";
 import { formatSecondsInHoursMinutes } from "../../../cityview/realm/labor/laborUtils";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import ProgressBar from "../../../../elements/ProgressBar";
 import { Dot } from "../../../../elements/Dot";
-import { CAPACITY_PER_DONKEY } from "@bibliothecadao/eternum";
-import { getComponentValue } from "@latticexyz/recs";
+import { CAPACITY_PER_DONKEY, CaravanInterface, HyperStructureInterface } from "@bibliothecadao/eternum";
+import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../../../DojoContext";
 import Button from "../../../../elements/Button";
-import { Resource } from "../../../../types";
-import { HyperStructureInterface, useHyperstructure } from "../../../../hooks/helpers/useHyperstructure";
-import useUIStore from "../../../../hooks/store/useUIStore";
+import { useResources } from "../../../../hooks/helpers/useResources";
+import { EventType, useNotificationsStore } from "../../../../hooks/store/useNotificationsStore";
+import { useRefreshHyperstructure } from "../../../../hooks/store/useRefreshHyperstructure";
 
 type CaravanProps = {
   caravan: CaravanInterface;
@@ -28,31 +33,29 @@ type CaravanProps = {
 
 export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }: CaravanProps) => {
   const { isMine, owner, arrivalTime, capacity } = caravan;
+  const deleteNotification = useNotificationsStore((state) => state.deleteNotification);
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const hyperstructures = useUIStore((state) => state.hyperstructures);
-  const setHyperstructures = useUIStore((state) => state.setHyperstructures);
-  const { getHyperstructure } = useHyperstructure();
+  const { refreshHyperstructure } = useRefreshHyperstructure();
 
   const [isLoading, setIsLoading] = useState(false);
   const hasArrived = arrivalTime !== undefined && nextBlockTimestamp !== undefined && arrivalTime <= nextBlockTimestamp;
-  const isInitialized = hyperstructureData.initialized;
 
   const {
     account: { account },
     setup: {
-      systemCalls: { initialize_hyperstructure_and_travel_back, feed_hyperstructure_and_travel_back },
-      components: { Resource, CaravanMembers, EntityOwner, ForeignKey, Position },
+      systemCalls: { feed_hyperstructure_and_travel_back },
+      components: { CaravanMembers, EntityOwner, ForeignKey, Position },
     },
   } = useDojo();
 
   const returnPosition = useMemo(() => {
     const caravanMembers = getComponentValue(CaravanMembers, getEntityIdFromKeys([BigInt(caravan.caravanId)]));
     if (caravanMembers && caravanMembers.count > 0) {
-      let entity_id = getEntityIdFromKeys([BigInt(caravan.caravanId), BigInt(caravanMembers.key), BigInt(0)]);
+      let entity_id = getForeignKeyEntityId(caravan.caravanId, caravanMembers.key, 0n);
       let foreignKey = getComponentValue(ForeignKey, entity_id);
       if (foreignKey) {
         // @note: temp fix until we don't use entity_id as field name in foreign key
-        let ownerRealmEntityId = getComponentValue(EntityOwner, getEntityIdFromKeys([BigInt(caravan.caravanId - 2)]));
+        let ownerRealmEntityId = getComponentValue(EntityOwner, getEntityIdFromKeys([caravan.caravanId - 2n]));
         let homePosition = ownerRealmEntityId
           ? getComponentValue(Position, getEntityIdFromKeys([BigInt(ownerRealmEntityId.entity_owner_id)]))
           : undefined;
@@ -62,30 +65,20 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
   }, [caravan]);
 
   const transferAndReturn = async () => {
-    if (isInitialized) {
-      await feed_hyperstructure_and_travel_back({
-        signer: account,
-        entity_id: caravan.caravanId,
-        hyperstructure_id: hyperstructureData.hyperstructureId,
-        resources: resources.flatMap((resource) => Object.values(resource)),
-        destination_coord_x: returnPosition?.x || 0,
-        destination_coord_y: returnPosition?.y || 0,
-      });
-    } else {
-      await initialize_hyperstructure_and_travel_back({
-        signer: account,
-        entity_id: caravan.caravanId,
-        hyperstructure_id: hyperstructureData.hyperstructureId,
-        destination_coord_x: returnPosition?.x || 0,
-        destination_coord_y: returnPosition?.y || 0,
-      });
-    }
+    await feed_hyperstructure_and_travel_back({
+      signer: account,
+      entity_id: caravan.caravanId,
+      hyperstructure_id: hyperstructureData.hyperstructureId,
+      inventoryIndex: 0,
+      resources: resources.flatMap((resource) => Object.values(resource)),
+      destination_coord_x: returnPosition?.x || 0,
+      destination_coord_y: returnPosition?.y || 0,
+    });
+    deleteNotification([caravan.caravanId.toString()], EventType.ArrivedAtHyperstructure);
   };
 
   const updateHyperStructure = () => {
-    const newHyperstructure = getHyperstructure(hyperstructureData.orderId, hyperstructureData.uiPosition);
-    hyperstructures[hyperstructureData.orderId - 1] = newHyperstructure;
-    setHyperstructures([...hyperstructures]);
+    refreshHyperstructure(hyperstructureData.hyperstructureId);
   };
 
   const onClick = async () => {
@@ -95,20 +88,11 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
     setIsLoading(false);
   };
 
+  const { getResourcesFromInventory } = useResources();
+
   const resources = useMemo(() => {
-    return Array(22)
-      .fill(0)
-      .map((_, i: number) => {
-        const resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(caravan.caravanId), BigInt(i + 1)]));
-        if (resource && resource.balance > 0) {
-          return {
-            resourceId: i + 1,
-            amount: resource?.balance,
-          };
-        }
-      })
-      .filter(Boolean) as Resource[];
-  }, [caravan]);
+    return getResourcesFromInventory(caravan.caravanId)?.resources || [];
+  }, [caravan.caravanId]);
 
   // capacity
   let resourceWeight = useMemo(() => {
@@ -121,7 +105,7 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
     >
       <div className="flex items-center text-xxs">
         <div className="flex items-center p-1 -mt-2 -ml-2 italic border border-t-0 border-l-0 text-light-pink rounded-br-md border-gray-gold">
-          {isMine ? "You" : displayAddress(owner || numberToHex(0))}
+          {isMine ? "You" : displayAddress(owner?.toString() || numberToHex(0))}
         </div>
         <div className="flex items-center ml-1 -mt-2">
           {capacity && resourceWeight !== undefined && capacity && (
@@ -161,24 +145,15 @@ export const HyperStructureCaravan = ({ caravan, hyperstructureData, ...props }:
                 ),
             )}
         </div>
-        {!isLoading && isMine && (
+        {isMine && (
           <Button
             onClick={onClick}
+            isLoading={isLoading}
             disabled={!hasArrived}
             variant={hasArrived ? "success" : "danger"}
             className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
           >
-            {hasArrived ? (isInitialized ? `Transfer And Return` : `Initialize And Return`) : "On the way"}
-          </Button>
-        )}
-        {isLoading && isMine && (
-          <Button
-            isLoading={true}
-            onClick={() => {}}
-            variant="danger"
-            className="ml-auto mt-auto p-2 !h-4 text-xxs !rounded-md"
-          >
-            {}
+            {hasArrived ? `Transfer And Return` : "On the way"}
           </Button>
         )}
       </div>

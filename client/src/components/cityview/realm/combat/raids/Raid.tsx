@@ -6,111 +6,146 @@ import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../../hooks/store/useBlockchainStore";
 import { getRealmIdByPosition, getRealmNameById, getRealmOrderNameById } from "../../../../../utils/realms";
 import { ReactComponent as Pen } from "../../../../../assets/icons/common/pen.svg";
+import { ReactComponent as Map } from "../../../../../assets/icons/common/map.svg";
 import { ReactComponent as CaretDownFill } from "../../../../../assets/icons/common/caret-down-fill.svg";
-import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import { formatSecondsLeftInDaysHours } from "../../labor/laborUtils";
 import { useDojo } from "../../../../../DojoContext";
 import { useResources } from "../../../../../hooks/helpers/useResources";
-import { getTotalResourceWeight } from "../../trade/TradeUtils";
-import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
-import { divideByPrecision } from "../../../../../utils/utils";
+import { getTotalResourceWeight } from "../../trade/utils";
+import { divideByPrecision, getUIPositionFromColRow } from "../../../../../utils/utils";
 import { ResourceCost } from "../../../../../elements/ResourceCost";
 import useUIStore from "../../../../../hooks/store/useUIStore";
+import { CombatInfo, UIPosition } from "@bibliothecadao/eternum";
+import { useCombat } from "../../../../../hooks/helpers/useCombat";
+import { useLocation } from "wouter";
 
 type RaidProps = {
   raider: CombatInfo;
+  isSelected: boolean;
   setShowTravelRaid: (show: boolean) => void;
   setShowAttackRaid: (show: boolean) => void;
   setShowManageRaid: (show: boolean) => void;
+  setShowHealRaid: (show: boolean) => void;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const Raid = ({ raider, ...props }: RaidProps) => {
+export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
   const { entityId, health, quantity, capacity, attack, defence } = raider;
-  const { setShowAttackRaid, setShowManageRaid, setShowTravelRaid } = props;
+  const { setShowAttackRaid, setShowManageRaid, setShowTravelRaid, setShowHealRaid } = props;
 
   const {
     account: { account },
     setup: {
-      systemCalls: { travel },
+      systemCalls: { travel, merge_soldiers },
     },
   } = useDojo();
+
+  const { getDefenceOnPosition } = useCombat();
 
   const { realmId, realmEntityId } = useRealmStore();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { getResourcesFromInventory, offloadChest } = useResources();
-  const { getInventoryResourcesChestId } = useCaravan();
+  const { getResourcesFromInventory, offloadChests } = useResources();
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const inventoryResources = raider.entityId ? getResourcesFromInventory(raider.entityId) : undefined;
-  const resourceChestId = raider.entityId ? getInventoryResourcesChestId(raider.entityId) : undefined;
 
   // capacity
   let resourceWeight = useMemo(() => {
-    return getTotalResourceWeight([...inventoryResources]);
+    return getTotalResourceWeight([...(inventoryResources?.resources || [])]);
   }, [inventoryResources]);
+
+  const watchTowerId = useMemo(() => {
+    const defence = raider?.position ? getDefenceOnPosition(raider.position) : undefined;
+    return defence?.entityId;
+  }, [raider]);
 
   // offload
   const onOffload = async () => {
     setIsLoading(true);
-    await offloadChest(realmEntityId, raider.entityId, resourceChestId, 0, inventoryResources);
+    if (raider?.entityId && inventoryResources) {
+      // await offloadChests(realmEntityId, raider.entityId, inventoryResources.indices, inventoryResources.resources);
+      await offloadChests(realmEntityId, raider.entityId, inventoryResources.indices);
+    }
+    setIsLoading(false);
   };
 
-  const onReturn = async () => {
-    if (raider.homePosition) {
+  // get entity on which they are
+  const onDefend = async () => {
+    if (watchTowerId) {
       setIsLoading(true);
-      await travel({
+      await merge_soldiers({
         signer: account,
-        travelling_entity_id: raider.entityId,
-        destination_coord_x: raider.homePosition.x,
-        destination_coord_y: raider.homePosition.y,
+        merge_into_unit_id: watchTowerId,
+        units: [raider.entityId, raider.quantity],
       });
       setIsLoading(false);
     }
   };
 
-  const hasResources = inventoryResources && inventoryResources.length > 0;
-  const isTraveling = raider.arrivalTime ? raider.arrivalTime > nextBlockTimestamp : false;
+  const onReturn = async () => {
+    if (raider.homePosition) {
+      setIsLoading(true);
+      if (raider.entityId) {
+        await travel({
+          signer: account,
+          travelling_entity_id: raider.entityId,
+          destination_coord_x: raider.homePosition.x,
+          destination_coord_y: raider.homePosition.y,
+        });
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const isYours = raider.owner === BigInt(account.address);
+  const hasResources = inventoryResources && inventoryResources.resources.length > 0;
+  const isTraveling = raider.arrivalTime && nextBlockTimestamp ? raider.arrivalTime > nextBlockTimestamp : false;
+  const hasMaxHealth = health === 10 * quantity;
   const destinationRealmId = raider.position ? getRealmIdByPosition(raider.position) : undefined;
-  const destinationRealmName = destinationRealmId ? getRealmNameById(destinationRealmId) : undefined;
+  const destinationName = destinationRealmId ? getRealmNameById(destinationRealmId) : "Hyperstructure";
   const isHome = destinationRealmId === realmId;
 
+  // get info about the destination defence
   // const destinationDefence = getDefenceOnPosition(raider.position);
 
   return (
     <div
       className={clsx(
-        "flex flex-col relative p-2 border rounded-md border-gray-gold text-xxs text-gray-gold",
+        `flex flex-col relative p-2 border rounded-md ${
+          isSelected ? "border-order-brilliance" : "border-gray-gold"
+        } text-xxs text-gray-gold`,
         props.className,
       )}
       onClick={props.onClick}
     >
       <div className="flex absolute w-full -left-[1px] -top-[1px] items-center text-xxs">
-        {entityId && (
+        {entityId.toString() && (
           <div
             className={clsx(
-              "flex items-center p-1 border text-light-pink rounded-br-md rounded-tl-md border-gray-gold",
+              `flex items-center p-1 border text-light-pink rounded-br-md rounded-tl-md border-gray-gold`,
               isTraveling && "!border-orange !text-orange",
               !isTraveling && isHome && "!text-order-brilliance !border-order-brilliance",
-              !isTraveling && destinationRealmName && !isHome && "!text-order-giants !border-order-giants",
+              !isTraveling && destinationName && !isHome && "!text-order-giants !border-order-giants",
             )}
           >
-            {isTraveling && destinationRealmName && !isHome && "Outgoing"}
+            {isTraveling && destinationName && !isHome && "Outgoing"}
             {isTraveling && isHome && "Incoming"}
             {!isTraveling && isHome && "At the base"}
-            {!isTraveling && destinationRealmName && !isHome && "Ready for attack"}
+            {!isTraveling && destinationName && !isHome && "Ready for attack"}
           </div>
         )}
         <div className="flex items-center ml-1">
-          {isTraveling && destinationRealmName && !isHome && (
+          {isTraveling && destinationName && !isHome && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Traveling to</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
-                <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xxs" />
-                {destinationRealmName}
+                {destinationRealmId?.toString() && (
+                  <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xxs" />
+                )}
+                {destinationName}
                 <span className="italic text-light-pink ml-1">with</span>
               </div>
             </div>
@@ -128,12 +163,14 @@ export const Raid = ({ raider, ...props }: RaidProps) => {
               <span className="italic text-light-pink">Home</span>
             </div>
           )}
-          {!isTraveling && destinationRealmName && !isHome && (
+          {!isTraveling && destinationName && !isHome && (
             <div className="flex items-center ml-1">
               <span className="italic text-light-pink">Waiting on</span>
               <div className="flex items-center ml-1 mr-1 text-gold">
-                <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xxs" />
-                {destinationRealmName}
+                {destinationRealmId?.toString() && (
+                  <OrderIcon order={getRealmOrderNameById(destinationRealmId)} className="mr-1" size="xxs" />
+                )}
+                {destinationName}
                 <span className="italic text-light-pink ml-1">with</span>
               </div>
             </div>
@@ -147,16 +184,16 @@ export const Raid = ({ raider, ...props }: RaidProps) => {
             </div>
           )}
         </div>
-        {!isTraveling && (
-          <div className="flex ml-auto italic text-gold mr-1">
-            Idle
-            <Pen className="ml-1 fill-gold" />
-          </div>
-        )}
+        {!isTraveling && <div className="flex ml-auto italic text-gold mr-1">Idle</div>}
         {raider.arrivalTime && isTraveling && nextBlockTimestamp && (
           <div className="flex ml-auto italic text-light-pink mr-1">
             {formatSecondsLeftInDaysHours(raider.arrivalTime - nextBlockTimestamp)}
           </div>
+        )}
+        {raider.position && (
+          <ShowOnMapButton
+            uIPosition={{ ...getUIPositionFromColRow(raider.position.x, raider.position.y), z: 0 }}
+          ></ShowOnMapButton>
         )}
       </div>
       <div className="flex flex-col mt-6 space-y-2">
@@ -166,7 +203,7 @@ export const Raid = ({ raider, ...props }: RaidProps) => {
               <img src="/images/units/troop-icon.png" className="h-[28px]" />
               <div className="flex ml-1 text-center">
                 <div className="bold mr-1">x{quantity}</div>
-                Battalions
+                Raiders
               </div>
             </div>
           </div>
@@ -226,7 +263,7 @@ export const Raid = ({ raider, ...props }: RaidProps) => {
         <div className="flex items-center justify-between mt-[8px] text-xxs">
           {inventoryResources && (
             <div className="flex justify-center items-center space-x-1 flex-wrap">
-              {inventoryResources.map(
+              {inventoryResources.resources.map(
                 (resource) =>
                   resource && (
                     <ResourceCost
@@ -234,79 +271,150 @@ export const Raid = ({ raider, ...props }: RaidProps) => {
                       type="vertical"
                       color="text-order-brilliance"
                       resourceId={resource.resourceId}
-                      amount={divideByPrecision(resource.amount)}
+                      amount={divideByPrecision(Number(resource.amount))}
                     />
                   ),
               )}
             </div>
           )}
-          <div className="flex space-x-2">
-            {!hasResources && !isTraveling && isHome && (
-              <Button
-                size="xs"
-                className="ml-auto"
-                onClick={() => {
-                  setShowTravelRaid(true);
-                }}
-                variant="outline"
-                withoutSound
-              >
-                {`Travel`}
-              </Button>
-            )}
-            {!isTraveling && !isHome && !isLoading && (
-              <Button size="xs" className="ml-auto" onClick={onReturn} variant="outline" withoutSound>
-                {`Return`}
-              </Button>
-            )}
-            {!isTraveling && !isHome && isLoading && (
-              <Button size="xs" className="ml-auto" onClick={() => {}} isLoading={true} variant="outline" withoutSound>
-                {`Return`}
-              </Button>
-            )}
-            {!isTraveling && !isHome && !isLoading && (
-              <Button
-                size="xs"
-                className="ml-auto"
-                disabled={false}
-                onClick={() => {
-                  setShowAttackRaid(true);
-                }}
-                variant="outline"
-                withoutSound
-              >
-                {`Attack`}
-              </Button>
-            )}
-            {!hasResources && !isTraveling && isHome && (
-              <Button
-                size="xs"
-                className="ml-auto"
-                disabled={false}
-                onClick={() => {
-                  setShowManageRaid(true);
-                }}
-                variant="outline"
-                withoutSound
-              >
-                {`Manage`}
-              </Button>
-            )}
-            {hasResources && isHome && (
-              <Button
-                size="xs"
-                className="ml-auto"
-                disabled={isTraveling}
-                onClick={onOffload}
-                variant={isTraveling ? "danger" : "success"}
-                withoutSound
-              >
-                {`Claim`}
-              </Button>
-            )}
-          </div>
+          {isYours && (
+            <div className="flex space-x-2">
+              {!hasResources && !isTraveling && isHome && (
+                <Button
+                  size="xs"
+                  className="ml-auto"
+                  onClick={() => {
+                    setShowTravelRaid(true);
+                  }}
+                  variant="outline"
+                  withoutSound
+                >
+                  {`Travel`}
+                </Button>
+              )}
+              {!isTraveling && !isHome && (
+                <Button
+                  size="xs"
+                  className="ml-auto"
+                  isLoading={isLoading}
+                  onClick={onReturn}
+                  variant="outline"
+                  withoutSound
+                >
+                  {`Return`}
+                </Button>
+              )}
+              {!isTraveling && !isHome && !isLoading && (
+                <Button
+                  size="xs"
+                  className="ml-auto"
+                  disabled={false}
+                  onClick={() => {
+                    setShowAttackRaid(true);
+                  }}
+                  variant="outline"
+                  withoutSound
+                >
+                  {`Attack`}
+                </Button>
+              )}
+              {!isTraveling && !hasResources && (
+                <Button
+                  size="xs"
+                  className="ml-auto"
+                  disabled={false}
+                  isLoading={isLoading}
+                  onClick={onDefend}
+                  variant="outline"
+                  withoutSound
+                >
+                  {`Defend`}
+                </Button>
+              )}
+              {!hasResources && !isTraveling && isHome && (
+                <Button
+                  size="xs"
+                  className="ml-auto"
+                  disabled={false}
+                  onClick={() => {
+                    setShowManageRaid(true);
+                  }}
+                  variant="outline"
+                  withoutSound
+                >
+                  {`Manage`}
+                </Button>
+              )}
+              {!isTraveling && isHome && !hasMaxHealth && (
+                <Button
+                  size="xs"
+                  className="ml-auto"
+                  disabled={false}
+                  onClick={() => {
+                    setShowHealRaid(true);
+                  }}
+                  variant="success"
+                  withoutSound
+                >
+                  {`Heal`}
+                </Button>
+              )}
+              {hasResources && isHome && (
+                <Button
+                  size="xs"
+                  className="ml-auto"
+                  isLoading={isLoading}
+                  disabled={isTraveling}
+                  onClick={onOffload}
+                  variant={isTraveling ? "danger" : "success"}
+                  withoutSound
+                >
+                  {`Claim`}
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
+    </div>
+  );
+};
+
+type ShowOnMapButtonProps = {
+  className?: string;
+  uIPosition: UIPosition;
+};
+
+const ShowOnMapButton = ({ className, uIPosition }: ShowOnMapButtonProps) => {
+  const [location, setLocation] = useLocation();
+  const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const moveCameraToWorldMapView = useUIStore((state) => state.moveCameraToWorldMapView);
+  const moveCameraToTarget = useUIStore((state) => state.moveCameraToTarget);
+
+  const [color, setColor] = useState("gold");
+
+  const onHover = () => {
+    setColor("white");
+  };
+
+  const onHoverOut = () => {
+    setColor("gold");
+  };
+
+  const showOnMap = () => {
+    // if location does not have map in it, then set it to map
+    if (!location.includes("/map")) {
+      setLocation("/map");
+      setIsLoadingScreenEnabled(true);
+    }
+    setTimeout(() => {
+      moveCameraToTarget(uIPosition);
+    }, 300);
+  };
+
+  return (
+    <div className="mr-1 cursor-pointer" onPointerEnter={onHover} onPointerLeave={onHoverOut} onClick={showOnMap}>
+      <Map className={clsx(`ml-1 fill-${color}`, className)} />
     </div>
   );
 };

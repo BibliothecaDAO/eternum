@@ -1,29 +1,56 @@
 import React from "react";
 import clsx from "clsx";
-import { CombatInfo } from "../../../../../hooks/helpers/useCombat";
 import ProgressBar from "../../../../../elements/ProgressBar";
 import Button from "../../../../../elements/Button";
+import { CombatInfo } from "@bibliothecadao/eternum";
 
 type DefenceProps = {
   watchTower: CombatInfo;
+  levelBonus: number;
+  conqueredHyperstructures: number;
   onReinforce?: () => void;
-  onHeal?: () => void;
+  setShowHeal?: (show: boolean) => void;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const Defence = ({ watchTower, onReinforce, onHeal, ...props }: DefenceProps) => {
+export const Defence = ({
+  watchTower,
+  levelBonus,
+  conqueredHyperstructures,
+  onReinforce,
+  setShowHeal,
+  ...props
+}: DefenceProps) => {
   const { health, quantity, attack, defence } = watchTower;
 
   return (
     <div className={clsx("flex flex-1 w-full", props.className)}>
       <img src={`/images/buildings/defence_tower.png`} className="object-cover rounded-md w-[107px]" />
       <div className="flex flex-col w-full min-w-[244px] h-full ml-2">
-        <div className="flex  text-white items-center mb-2">
-          <div className="font-bold text-xs">City Tower</div>
+        <div className="font-bold text-white text-xs mb-1">Defence Tower</div>
+        <div className="flex text-white items-end mb-2">
+          <div className="flex flex-col items-start">
+            <div className="flex flex-row text-xxs justify-center">
+              <span className="mr-1 text-gold">{`Realm Bonus: `}</span>
+              <span className="text-order-brilliance">{`+${levelBonus - 100}%`}</span>
+            </div>
+            <div className="flex flex-row text-xxs justify-center">
+              <span className="mr-1 text-gold">{`HyperStructure Bonus: `}</span>
+              <span className="text-order-brilliance">{`+${conqueredHyperstructures * 25}%`}</span>
+            </div>
+          </div>
           <div className="flex items-center text-xxs ml-auto">
             <div className="text-order-brilliance">{health && health.toLocaleString()}</div>&nbsp;/ {10 * quantity} HP
           </div>
-          {onHeal && (
-            <Button onClick={onHeal} className="ml-2" variant="success" size="xs">
+          {setShowHeal && (
+            <Button
+              onClick={() => {
+                watchTower.quantity > 0 && setShowHeal(true);
+              }}
+              disabled={watchTower.quantity === 0 || watchTower.health === 10 * watchTower.quantity}
+              className="ml-2"
+              variant="success"
+              size="xs"
+            >
               Heal
             </Button>
           )}

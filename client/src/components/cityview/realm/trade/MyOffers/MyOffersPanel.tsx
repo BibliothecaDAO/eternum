@@ -1,35 +1,30 @@
 import { useMemo, useState } from "react";
 import { FiltersPanel } from "../../../../../elements/FiltersPanel";
-import { FilterButton } from "../../../../../elements/FilterButton";
 import { SortPanel } from "../../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../../elements/SortButton";
-import { ResourceFilter } from "../../../../ResourceFilterComponent";
-import { OrdersFilter } from "../../../../OrdersFilterComponent";
-import { CreateOfferPopup } from "../CreateOffer";
 import Button from "../../../../../elements/Button";
 import { MyOffer } from "./MyOffer";
 import { sortTrades, useGetMyOffers } from "../../../../../hooks/helpers/useTrade";
 import { IncomingOrder } from "../Caravans/IncomingOrder";
-import { useGetCaravansWithResourcesChest } from "../../../../../hooks/helpers/useResources";
+import { useResources } from "../../../../../hooks/helpers/useResources";
 import { RoadBuildPopup } from "../Roads/RoadBuildPopup";
+import { FastCreateOfferPopup } from "../FastCreateOffer";
 
 type MarketPanelProps = {};
 
 export const MyOffersPanel = ({}: MarketPanelProps) => {
-  const [activeFilter, setActiveFilter] = useState(false);
   const [showCreateOffer, setShowCreateOffer] = useState(false);
-  const [selectedResources, setSelectedResources] = useState<string[]>([]);
-  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
-  const [buildRoadToEntityId, setBuildRoadToEntityId] = useState<number | undefined>(undefined);
+  const [buildRoadToEntityId, setBuildRoadToEntityId] = useState<bigint | undefined>(undefined);
 
   const [activeSort, setActiveSort] = useState<SortInterface>({
     sortKey: "number",
     sort: "none",
   });
 
-  const myOffers = useGetMyOffers({ selectedResources, selectedOrders });
+  const myOffers = useGetMyOffers();
 
-  const { caravansAtPositionWithInventory: caravanIds } = useGetCaravansWithResourcesChest();
+  const { getCaravansWithResourcesChest } = useResources();
+  const caravanIds = getCaravansWithResourcesChest();
 
   const sortingParams = useMemo(() => {
     return [
@@ -43,13 +38,7 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
 
   return (
     <div className="relative flex flex-col pb-3 min-h-[120px]">
-      <FiltersPanel className="px-3 py-2">
-        <FilterButton active={activeFilter} onClick={() => setActiveFilter(!activeFilter)}>
-          Filter
-        </FilterButton>
-        <ResourceFilter selectedResources={selectedResources} setSelectedResources={setSelectedResources} />
-        <OrdersFilter selectedOrders={selectedOrders} setSelectedOrders={setSelectedOrders} />
-      </FiltersPanel>
+      <FiltersPanel className="px-3 py-2"></FiltersPanel>
       <SortPanel className="px-3 py-2">
         {sortingParams.map(({ label, sortKey, className }) => (
           <SortButton
@@ -68,8 +57,8 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
         ))}
       </SortPanel>
       {/* // TODO: need to filter on only trades that are relevant (status, not expired, etc) */}
-      {showCreateOffer && <CreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
-      {buildRoadToEntityId && (
+      {showCreateOffer && <FastCreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
+      {buildRoadToEntityId !== undefined && (
         <RoadBuildPopup onClose={() => setBuildRoadToEntityId(undefined)} toEntityId={buildRoadToEntityId} />
       )}
       <div className="flex flex-col p-2 space-y-2">

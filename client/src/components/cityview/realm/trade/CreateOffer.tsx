@@ -5,25 +5,25 @@ import { Headline } from "../../../../elements/Headline";
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../elements/NumberInput";
 import { SelectableResource } from "../../../../elements/SelectableResource";
-import { resources } from "@bibliothecadao/eternum";
+import { ONE_MONTH, WEIGHTS, resources } from "@bibliothecadao/eternum";
 import { ReactComponent as ArrowSeparator } from "../../../../assets/icons/common/arrow-separator.svg";
 import { ReactComponent as Danger } from "../../../../assets/icons/common/danger.svg";
 import { ReactComponent as Donkey } from "../../../../assets/icons/units/donkey-circle.svg";
 import { Caravan } from "./Caravans/Caravan";
 import { Steps } from "../../../../elements/Steps";
-import { CaravanInterface } from "../../../../hooks/graphql/useGraphQLQueries";
+import { CaravanInterface } from "@bibliothecadao/eternum";
 import { useDojo } from "../../../../DojoContext";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
-import { useCaravan, useGetPositionCaravans } from "../../../../hooks/helpers/useCaravans";
-import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../../utils/utils";
-import { getComponentValue } from "@latticexyz/recs";
+import { useCaravan } from "../../../../hooks/helpers/useCaravans";
+import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
 import { useGetRealm } from "../../../../hooks/helpers/useRealm";
 import { useTrade } from "../../../../hooks/helpers/useTrade";
 import { SelectRealmPanel } from "../SelectRealmPanel";
 import clsx from "clsx";
 import { DONKEYS_PER_CITY, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 import { useResources } from "../../../../hooks/helpers/useResources";
+import { getTotalResourceWeight } from "./utils";
 
 type CreateOfferPopupProps = {
   onClose: () => void;
@@ -36,10 +36,10 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
   const [selectedResourceIdsGet, setSelectedResourceIdsGet] = useState<number[]>([]);
   const [selectedResourcesGiveAmounts, setSelectedResourcesGiveAmounts] = useState<{ [key: number]: number }>({});
   const [selectedResourcesGetAmounts, setSelectedResourcesGetAmounts] = useState<{ [key: number]: number }>({});
-  const [selectedCaravan, setSelectedCaravan] = useState<number>(0);
-  const [selectedRealmEntityId, setSelectedRealmEntityId] = useState<number | undefined>();
-  const [selectedRealmId, setSelectedRealmId] = useState<number | undefined>();
-  const [isNewCaravan, setIsNewCaravan] = useState(false);
+  const [selectedCaravan, setSelectedCaravan] = useState<bigint>(0n);
+  const [selectedRealmEntityId, setSelectedRealmEntityId] = useState<bigint | undefined>();
+  const [selectedRealmId, setSelectedRealmId] = useState<bigint | undefined>();
+  const [isNewCaravan, setIsNewCaravan] = useState(true);
   const [donkeysCount, setDonkeysCount] = useState(1);
   const [resourceWeight, setResourceWeight] = useState(0);
   const [hasEnoughDonkeys, setHasEnoughDonkeys] = useState(false);
@@ -55,29 +55,33 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+
   const { getRealmEntityIdFromRealmId } = useTrade();
 
-  const onSelectRealmId = (realmId: number) => {
+  const onSelectRealmId = (realmId: bigint) => {
     const entityId = getRealmEntityIdFromRealmId(realmId);
     entityId && setSelectedRealmEntityId(entityId);
   };
 
   const createOrder = async () => {
     setIsLoading(true);
+    if (!nextBlockTimestamp) return;
     if (isNewCaravan) {
       await optimisticCreateOrder(create_order)({
         signer: account,
         maker_id: realmEntityId,
         maker_gives_resource_types: selectedResourceIdsGive,
         maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
-          multiplyByPrecision(selectedResourcesGiveAmounts[id]),
+          multiplyByPrecision(Number(selectedResourcesGiveAmounts[id])),
         ),
         taker_id: selectedRealmEntityId || 0,
         taker_gives_resource_types: selectedResourceIdsGet,
         taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
-          multiplyByPrecision(selectedResourcesGetAmounts[id]),
+          multiplyByPrecision(Number(selectedResourcesGetAmounts[id])),
         ),
         donkeys_quantity: donkeysCount,
+        expires_at: nextBlockTimestamp + ONE_MONTH,
       });
     } else {
       await optimisticCreateOrder(create_order)({
@@ -85,14 +89,15 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
         maker_id: realmEntityId,
         maker_gives_resource_types: selectedResourceIdsGive,
         maker_gives_resource_amounts: selectedResourceIdsGive.map((id) =>
-          multiplyByPrecision(selectedResourcesGiveAmounts[id]),
+          multiplyByPrecision(Number(selectedResourcesGiveAmounts[id])),
         ),
         taker_id: selectedRealmEntityId || 0,
         maker_transport_id: selectedCaravan,
         taker_gives_resource_types: selectedResourceIdsGet,
         taker_gives_resource_amounts: selectedResourceIdsGet.map((id) =>
-          multiplyByPrecision(selectedResourcesGetAmounts[id]),
+          multiplyByPrecision(Number(selectedResourcesGetAmounts[id])),
         ),
+        expires_at: nextBlockTimestamp + ONE_MONTH,
       });
     }
     onClose();
@@ -102,7 +107,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
     if (step === 1) {
       return selectedResourceIdsGive.length > 0 && selectedResourceIdsGet.length > 0;
     } else if (step === 3) {
-      return selectedCaravan !== 0 || (hasEnoughDonkeys && isNewCaravan);
+      return selectedCaravan !== 0n || (hasEnoughDonkeys && isNewCaravan);
     } else {
       return true;
     }
@@ -222,11 +227,7 @@ const SelectResourcesPanel = ({
   selectedResourceIdsGet: number[];
   setSelectedResourceIdsGet: (selectedResourceIds: number[]) => void;
 }) => {
-  const {
-    setup: {
-      components: { Resource },
-    },
-  } = useDojo();
+  const { getBalance } = useResources();
 
   const { realmEntityId } = useRealmStore();
 
@@ -236,7 +237,7 @@ const SelectResourcesPanel = ({
         <Headline className="mb-2">You Give</Headline>
         <div className="grid grid-cols-4 gap-2">
           {resources.map(({ id, trait: _name }) => {
-            let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
+            let resource = getBalance(realmEntityId, id);
             return (
               <SelectableResource
                 key={id}
@@ -263,7 +264,7 @@ const SelectResourcesPanel = ({
         <Headline className="mb-2">You Get</Headline>
         <div className="grid grid-cols-4 gap-2">
           {resources.map(({ id, trait: _name }) => {
-            let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
+            let resource = getBalance(realmEntityId, id);
             return (
               <SelectableResource
                 key={id}
@@ -307,24 +308,22 @@ const SelectResourcesAmountPanel = ({
   setSelectedResourcesGiveAmounts: (selectedResourcesGiveAmounts: { [key: number]: number }) => void;
   setSelectedResourcesGetAmounts: (selectedResourcesGetAmounts: { [key: number]: number }) => void;
   setResourceWeight: (resourceWeight: number) => void;
-  selectedRealmId: number | undefined;
-  setSelectedRealmId: (selectedRealmId: number) => void;
+  selectedRealmId: bigint | undefined;
+  setSelectedRealmId: (selectedRealmId: bigint) => void;
 }) => {
-  const {
-    setup: {
-      components: { Resource },
-    },
-  } = useDojo();
-
   const { realmEntityId } = useRealmStore();
+
+  const { getBalance } = useResources();
 
   useEffect(() => {
     // set resource weight in kg
-    let weight = 0;
-    for (const [_resourceId, amount] of Object.entries(selectedResourcesGetAmounts)) {
-      weight += amount * 1;
-    }
-    setResourceWeight(multiplyByPrecision(weight));
+    let resourcesGet = Object.keys(selectedResourcesGetAmounts).map((resourceId) => {
+      return {
+        resourceId: Number(resourceId),
+        amount: selectedResourcesGetAmounts[Number(resourceId)],
+      };
+    });
+    setResourceWeight(multiplyByPrecision(getTotalResourceWeight(resourcesGet)));
   }, [selectedResourcesGetAmounts]);
 
   return (
@@ -333,13 +332,13 @@ const SelectResourcesAmountPanel = ({
         <div className="flex flex-col items-center col-span-4 space-y-2">
           <Headline className="mb-2">You Give</Headline>
           {selectedResourceIdsGive.map((id) => {
-            let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
+            let resource = getBalance(realmEntityId, id);
             return (
               <div key={id} className="flex items-center w-full">
                 <NumberInput
-                  max={divideByPrecision(resource?.balance || 0)}
+                  max={divideByPrecision(Number(resource?.balance) || 0)}
                   min={1}
-                  value={selectedResourcesGiveAmounts[id]}
+                  value={Number(selectedResourcesGiveAmounts[id].toString())}
                   onChange={(value) => {
                     setSelectedResourcesGiveAmounts({
                       ...selectedResourcesGiveAmounts,
@@ -369,7 +368,7 @@ const SelectResourcesAmountPanel = ({
         <div className="flex flex-col items-center col-span-4 space-y-2">
           <Headline className="mb-2">You Get</Headline>
           {selectedResourceIdsGet.map((id) => {
-            let resource = getComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(id)]));
+            let resource = getBalance(realmEntityId, id);
 
             return (
               <div key={id} className="flex items-center w-full">
@@ -392,8 +391,22 @@ const SelectResourcesAmountPanel = ({
           })}
         </div>
       </div>
-      <div className="flex text-xs text-center text-white">
-        Items Weight <div className="ml-1 text-gold">{`${divideByPrecision(resourceWeight)}kg`}</div>
+      <div className="flex text-xs mt-2 text-center text-white">
+        Total Items Weight <div className="ml-1 text-gold">{`${divideByPrecision(resourceWeight)}kg`}</div>
+      </div>
+      <div className="flex my-1 flex-row text-xxs text-center text-white">
+        <div className="flex flex-col mx-1">
+          <div> Food</div>
+          <div className="ml-1 text-gold">{`${WEIGHTS[254]}kg/unit`}</div>
+        </div>
+        <div className="flex flex-col mx-1">
+          <div> Resource</div>
+          <div className="ml-1 text-gold">{`${WEIGHTS[1]}kg/unit`}</div>
+        </div>
+        <div className="flex flex-col mx-1">
+          <div> Lords</div>
+          <div className="ml-1 text-gold">{`${WEIGHTS[253]}kg/unit`}</div>
+        </div>
       </div>
       <SelectRealmPanel selectedRealmId={selectedRealmId} setSelectedRealmId={setSelectedRealmId}></SelectRealmPanel>
     </>
@@ -420,8 +433,8 @@ export const SelectCaravanPanel = ({
   setDonkeysCount: (donkeysCount: number) => void;
   isNewCaravan: boolean;
   setIsNewCaravan: (isNewCaravan: boolean) => void;
-  selectedCaravan: number;
-  setSelectedCaravan: (selectedCaravanId: number) => void;
+  selectedCaravan: bigint;
+  setSelectedCaravan: (selectedCaravanId: bigint) => void;
   selectedResourceIdsGet: number[];
   selectedResourceIdsGive: number[];
   selectedResourcesGetAmounts: { [key: number]: number };
@@ -435,19 +448,22 @@ export const SelectCaravanPanel = ({
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const { getRealmDonkeysCount } = useCaravan();
+  const { useRealmDonkeysCount, useGetPositionCaravans } = useCaravan();
   const { getResourcesFromInventory } = useResources();
   const { realm } = useGetRealm(realmEntityId);
   const { caravans: realmCaravans } = useGetPositionCaravans(realm?.position.x || 0, realm?.position.y || 0);
 
-  const donkeysLeft = useMemo(() => {
-    const realmDonkeysCount = getRealmDonkeysCount(realmEntityId);
-    if (realmDonkeysCount && realm) {
-      return realm?.cities * DONKEYS_PER_CITY - realmDonkeysCount;
-    } else {
-      return (realm?.cities || 0) * DONKEYS_PER_CITY;
+  const [donkeysLeft, setDonkeysLeft] = useState<number>(0);
+  const realmDonkeysCount = useRealmDonkeysCount(realmEntityId);
+  useEffect(() => {
+    if (realm) {
+      setDonkeysLeft(realm.cities * DONKEYS_PER_CITY - (Number(realmDonkeysCount?.count) || 0));
     }
-  }, [realm]);
+  }, [realmDonkeysCount]);
+
+  useEffect(() => {
+    setDonkeysCount(Math.min(donkeysLeft || 0, Math.ceil(divideByPrecision(resourceWeight) / WEIGHT_PER_DONKEY_KG)));
+  }, [resourceWeight, donkeysLeft]);
 
   const canCarry = (caravan: CaravanInterface, resourceWeight: number) => {
     return caravan.capacity ? caravan.capacity >= resourceWeight : false;
@@ -464,7 +480,7 @@ export const SelectCaravanPanel = ({
                 nextBlockTimestamp &&
                 !caravan.blocked &&
                 (!caravan.arrivalTime || caravan.arrivalTime <= nextBlockTimestamp) &&
-                resourcesCarried.length == 0;
+                resourcesCarried.resources.length == 0;
               // capacity in gr (1kg = 1000gr)
               if (isIdle && canCarry(caravan, resourceWeight)) {
                 return caravan;
@@ -487,9 +503,7 @@ export const SelectCaravanPanel = ({
                   selectedResourceIdsGet.length > 0 ? "col-span-4" : "col-span-9",
                 )}
               >
-                <Headline className="mb-2" size="big">
-                  {headline}
-                </Headline>
+                <Headline className="mb-2">{headline}</Headline>
                 <div className="flex items-center justify-center w-full flex-wrap">
                   {selectedResourceIdsGive.map((id) => (
                     <ResourceCost
@@ -511,16 +525,14 @@ export const SelectCaravanPanel = ({
                 <ArrowSeparator className="sticky top-1/2 -translate-y-1/2" />
               </div>
               <div className="flex flex-col items-center col-span-4 space-y-2 h-min">
-                <Headline className="mb-2" size="big">
-                  You Get
-                </Headline>
+                <Headline className="mb-2">You Get</Headline>
                 <div className="flex items-center justify-center w-full flex-wrap">
                   {selectedResourceIdsGet.map((id) => (
                     <ResourceCost
                       key={id}
                       className="!w-min  mb-2 mx-1"
                       type="vertical"
-                      color="text-brilliance"
+                      color="text-order-brilliance"
                       resourceId={id}
                       amount={selectedResourcesGetAmounts[id]}
                     />
@@ -531,15 +543,27 @@ export const SelectCaravanPanel = ({
           )}
         </div>
       ) : null}
-      <div className="flex my-3 text-xs text-center text-white">
-        Items Weight <div className="ml-1 text-gold">{`${divideByPrecision(resourceWeight)}kg`}</div>
+      <div className="flex text-xs mt-2 text-center text-white">
+        Total Items Weight <div className="ml-1 text-gold">{`${divideByPrecision(resourceWeight)}kg`}</div>
+      </div>
+      <div className="flex my-1 flex-row text-xxs text-center text-white">
+        <div className="flex flex-col mx-1">
+          <div> Food</div>
+          <div className="ml-1 text-gold">{`${WEIGHTS[254]}kg/unit`}</div>
+        </div>
+        <div className="flex flex-col mx-1">
+          <div> Resource</div>
+          <div className="ml-1 text-gold">{`${WEIGHTS[1]}kg/unit`}</div>
+        </div>
+        <div className="flex flex-col mx-1 mb-2">
+          <div> Lords</div>
+          <div className="ml-1 text-gold">{`${WEIGHTS[253]}kg/unit`}</div>
+        </div>
       </div>
       {isNewCaravan && (
         <>
           <div className="flex flex-col">
-            <Headline className="mb-2" size="big">
-              Summon a New Caravan
-            </Headline>
+            <Headline className="mb-2">Summon a New Caravan</Headline>
             <div className="grid grid-cols-9 gap-2 p-2">
               <div className="flex items-center col-span-3">
                 <NumberInput
@@ -561,12 +585,28 @@ export const SelectCaravanPanel = ({
               donkeysCount * WEIGHT_PER_DONKEY_KG
             }kg`}</div>
           </div>
+          <div className="w-1/2 flex flex-cols justify-between mb-2 ">
+            <div className="flex flex-col items-center">
+              <div className="flex text-xxs text-center text-white">Donkeys per city </div>
+              <div className="flex text-xxs text-center text-gold"> 10 </div>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="flex text-xxs text-center text-white">Capacity per donkey </div>
+              <div className="flex text-xxs text-center text-gold"> 100kg </div>
+            </div>
+          </div>
           {!hasEnoughDonkeys && (
             <div className="flex items-center mb-1 text-xs text-center text-white">
               <Danger />
               <div className="ml-1 uppercase text-danger">Increase the amount of units</div>
             </div>
           )}
+          <div className="flex items-center mb-1 text-xxs text-center text-white wrap-text">
+            <div className="ml-1 text-danger">
+              Warning: Once you have created a caravan of donkeys, they cannot be ungrouped. Please plan your strategy
+              accordingly
+            </div>
+          </div>
         </>
       )}
       {!isNewCaravan && (

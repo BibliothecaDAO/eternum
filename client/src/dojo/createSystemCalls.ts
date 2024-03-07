@@ -1,13 +1,14 @@
-import { Components, Schema, setComponent } from "@latticexyz/recs";
+import { Components, Schema, setComponent } from "@dojoengine/recs";
 import { SetupNetworkResult } from "./setupNetwork";
 import { Event } from "starknet";
 import { getEntityIdFromKeys } from "../utils/utils";
 import {
+  DisassembleCaravanAndReturnFreeUnitsProps,
+  SwapBankAndTravelBackProps,
   AcceptOrderProps,
   AttachCaravanProps,
   BuildLaborProps,
   CancelFungibleOrderProps,
-  CompleteHyperStructureProps,
   CreateCaravanProps,
   CreateFreeTransportUnitProps,
   CreateOrderProps,
@@ -15,21 +16,29 @@ import {
   CreateRoadProps,
   FeedHyperstructureAndTravelBackPropos,
   HarvestLaborProps,
-  InitializeHyperstructuresAndTravelProps,
-  MintResourcesProps,
+  HarvestAllLaborProps,
   PurchaseLaborProps,
-  SendResourcesToHyperstructureProps,
+  SendResourcesToLocationProps,
   TransferResourcesProps,
   TravelProps,
-  OffloadResourcesProps,
+  TransferItemsProps,
   CreateSoldiersProps,
-  GroupAndDeploySoldiersProps,
-  UngroupAndRegroupSoldiersProps,
-  UngroupSoldiersProps,
+  DetachSoldiersProps,
   AttackProps,
   StealProps,
-  LevelUpProps,
+  LevelUpRealmProps,
+  ControlHyperstructureProps,
+  CompleteHyperstructureProps,
   SetAddressNameProps,
+  MergeSoldiersProps,
+  CreateAndMergeSoldiersProps,
+  HealSoldiersProps,
+  CreateMultipleRealmsProps,
+  TransferItemsFromMultipleProps,
+  CreateLaborBuildingProps,
+  DestroyLaborBuildingProps,
+  ExploreProps,
+  TravelHexProps,
 } from "@bibliothecadao/eternum";
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -37,123 +46,156 @@ export type SystemCalls = ReturnType<typeof createSystemCalls>;
 // NOTE: need to add waitForTransaction when connected to rinnigan
 export function createSystemCalls({ provider, contractComponents }: SetupNetworkResult) {
   const purchase_labor = async (props: PurchaseLaborProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.purchase_labor(props)));
+    await provider.purchase_labor(props);
+  };
+
+  const uuid = async () => {
+    return provider.uuid();
   };
 
   // Refactor the functions using the interfaces
   const build_labor = async (props: BuildLaborProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.build_labor(props)));
+    await provider.build_labor(props);
   };
 
   const harvest_labor = async (props: HarvestLaborProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.harvest_labor(props)));
+    await provider.harvest_labor(props);
   };
 
-  const mint_resources = async (props: MintResourcesProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.mint_resources(props)));
+  const harvest_all_labor = async (props: HarvestAllLaborProps) => {
+    await provider.harvest_all_labor(props);
   };
 
   const create_order = async (props: CreateOrderProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.create_order(props)));
+    await provider.create_order(props);
   };
 
   const accept_order = async (props: AcceptOrderProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.accept_order(props)));
+    await provider.accept_order(props);
   };
 
   const cancel_fungible_order = async (props: CancelFungibleOrderProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.cancel_fungible_order(props)));
-  };
-
-  const offload_chest = async (props: OffloadResourcesProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.offload_chest(props)));
+    await provider.cancel_fungible_order(props);
   };
 
   const create_free_transport_unit = async (props: CreateFreeTransportUnitProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.create_free_transport_unit(props)));
+    await provider.create_free_transport_unit(props);
   };
 
   const create_caravan = async (props: CreateCaravanProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.create_caravan(props)));
+    await provider.create_caravan(props);
+  };
+
+  const disassemble_caravan_and_return_free_units = async (props: DisassembleCaravanAndReturnFreeUnitsProps) => {
+    await provider.disassemble_caravan_and_return_free_units(props);
   };
 
   const attach_caravan = async (props: AttachCaravanProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.attach_caravan(props)));
+    await provider.attach_caravan(props);
   };
 
   const purchase_and_build_labor = async (props: PurchaseLaborProps & BuildLaborProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.purchase_and_build_labor(props)));
+    await provider.purchase_and_build_labor(props);
   };
 
   const create_realm = async (props: CreateRealmProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.create_realm(props)));
+    await provider.create_realm(props);
+  };
+
+  const create_multiple_realms = async (props: CreateMultipleRealmsProps) => {
+    await provider.create_multiple_realms(props);
   };
 
   const create_road = async (props: CreateRoadProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.create_road(props)));
+    await provider.create_road(props);
   };
 
   const transfer_resources = async (props: TransferResourcesProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.transfer_resources(props)));
+    await provider.transfer_resources(props);
   };
 
   const feed_hyperstructure_and_travel_back = async (props: FeedHyperstructureAndTravelBackPropos) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.feed_hyperstructure_and_travel_back(props)));
+    await provider.feed_hyperstructure_and_travel_back(props);
   };
 
-  const initialize_hyperstructure_and_travel_back = async (props: InitializeHyperstructuresAndTravelProps) => {
-    setComponentsFromEvents(
-      contractComponents,
-      getEvents(await provider.initialize_hyperstructure_and_travel_back(props)),
-    );
-  };
-
-  const initialize_hyperstructure = async (props: InitializeHyperstructuresAndTravelProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.initialize_hyperstructure(props)));
-  };
-
-  const complete_hyperstructure = async (props: CompleteHyperStructureProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.complete_hyperstructure(props)));
-  };
-
-  const send_resources_to_hyperstructure = async (props: SendResourcesToHyperstructureProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.send_resources_to_hyperstructure(props)));
+  const send_resources_to_location = async (props: SendResourcesToLocationProps) => {
+    await provider.send_resources_to_location(props);
   };
 
   const travel = async (props: TravelProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.travel(props)));
+    await provider.travel(props);
+  };
+
+  const travel_hex = async (props: TravelHexProps) => {
+    await provider.travel_hex(props);
   };
 
   const create_soldiers = async (props: CreateSoldiersProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.create_soldiers(props)));
-  };
-
-  const group_and_deploy_soldiers = async (props: GroupAndDeploySoldiersProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.group_and_deploy_soldiers(props)));
-  };
-
-  const ungroup_soldiers = async (props: UngroupSoldiersProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.ungroup_soldiers(props)));
+    await provider.create_soldiers(props);
   };
 
   const attack = async (props: AttackProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.attack(props)));
+    await provider.attack(props);
   };
 
   const steal = async (props: StealProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.steal(props)));
+    await provider.steal(props);
   };
 
-  const ungroup_and_regroup_soldiers = async (props: UngroupAndRegroupSoldiersProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.ungroup_and_regroup_soldiers(props)));
+  const detach_soldiers = async (props: DetachSoldiersProps) => {
+    await provider.detach_soldiers(props);
   };
 
-  const level_up = async (props: LevelUpProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.level_up(props)));
+  const level_up_realm = async (props: LevelUpRealmProps) => {
+    await provider.level_up_realm(props);
+  };
+
+  const control_hyperstructure = async (props: ControlHyperstructureProps) => {
+    await provider.control_hyperstructure(props);
+  };
+
+  const complete_hyperstructure = async (props: CompleteHyperstructureProps) => {
+    await provider.complete_hyperstructure(props);
   };
 
   const set_address_name = async (props: SetAddressNameProps) => {
-    setComponentsFromEvents(contractComponents, getEvents(await provider.set_address_name(props)));
+    await provider.set_address_name(props);
+  };
+
+  const merge_soldiers = async (props: MergeSoldiersProps) => {
+    await provider.merge_soldiers(props);
+  };
+
+  const create_and_merge_soldiers = async (props: CreateAndMergeSoldiersProps) => {
+    await provider.create_and_merge_soldiers(props);
+  };
+
+  const heal_soldiers = async (props: HealSoldiersProps) => {
+    await provider.heal_soldiers(props);
+  };
+
+  const swap_bank_and_travel_back = async (props: SwapBankAndTravelBackProps) => {
+    await provider.swap_bank_and_travel_back(props);
+  };
+
+  const transfer_items = async (props: TransferItemsProps) => {
+    await provider.transfer_items(props);
+  };
+
+  const transfer_items_from_multiple = async (props: TransferItemsFromMultipleProps) => {
+    await provider.transfer_items_from_multiple(props);
+  };
+
+  const create_labor_building = async (props: CreateLaborBuildingProps) => {
+    await provider.create_labor_building(props);
+  };
+
+  const destroy_labor_building = async (props: DestroyLaborBuildingProps) => {
+    await provider.destroy_labor_building(props);
+  };
+
+  const explore = async (props: ExploreProps) => {
+    await provider.explore(props);
   };
 
   const isLive = async () => {
@@ -166,36 +208,45 @@ export function createSystemCalls({ provider, contractComponents }: SetupNetwork
   };
 
   return {
+    explore,
+    create_labor_building,
+    destroy_labor_building,
+    control_hyperstructure,
+    complete_hyperstructure,
+    disassemble_caravan_and_return_free_units,
+    swap_bank_and_travel_back,
     set_address_name,
-    level_up,
+    create_and_merge_soldiers,
+    level_up_realm,
     isLive,
     create_soldiers,
-    group_and_deploy_soldiers,
-    ungroup_soldiers,
+    detach_soldiers,
     attack,
     steal,
     purchase_labor,
     build_labor,
     purchase_and_build_labor,
     harvest_labor,
-    mint_resources,
+    harvest_all_labor,
     create_order,
     accept_order,
     cancel_fungible_order,
-    offload_chest,
+    transfer_items,
+    transfer_items_from_multiple,
     create_free_transport_unit,
     create_caravan,
     attach_caravan,
     create_realm,
+    create_multiple_realms,
     create_road,
     transfer_resources,
-    send_resources_to_hyperstructure,
+    send_resources_to_location,
     feed_hyperstructure_and_travel_back,
-    initialize_hyperstructure_and_travel_back,
-    initialize_hyperstructure,
-    complete_hyperstructure,
     travel,
-    ungroup_and_regroup_soldiers,
+    travel_hex,
+    merge_soldiers,
+    heal_soldiers,
+    uuid,
   };
 }
 
@@ -215,6 +266,7 @@ export function setComponentFromEvent(components: Components, eventData: string[
 
   // retrieve the component from name
   const component = components[componentName];
+  if (!component) return;
 
   // get keys
   const keysNumber = parseInt(eventData[1]);
@@ -238,17 +290,43 @@ export function setComponentFromEvent(components: Components, eventData: string[
   const values =
     valuesFromEventData.length < componentFields.length ? [...keys, ...valuesFromEventData] : valuesFromEventData;
 
+  const metadata = component.metadata as { types: string[]; name: string };
+
   // create component object from values with schema
   const componentValues = componentFields.reduce((acc: Schema, key, index) => {
     const value = values[index];
+    const type = metadata.types[index];
     // @ts-ignore
-    acc[key] = key === "address" ? value : Number(value);
+    acc[key] = setType(type, value);
     return acc;
   }, {});
 
   // set component
   setComponent(component, entityIndex, componentValues);
 }
+
+const setType = (type: string, value: string) => {
+  switch (type) {
+    case "u8":
+      return Number(value);
+    case "u16":
+      return Number(value);
+    case "u32":
+      return Number(value);
+    case "u64":
+      return Number(value);
+    case "u128":
+      return BigInt(value);
+    case "felt252":
+      return BigInt(value);
+    case "bool":
+      return parseInt(value) === 1;
+    case "contractaddress":
+      return BigInt(value);
+    default:
+      return BigInt(value);
+  }
+};
 
 function hexToAscii(hex: string) {
   var str = "";

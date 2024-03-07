@@ -3,34 +3,27 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import { useTrade } from "../../../hooks/helpers/useTrade";
 import { useCaravan } from "../../../hooks/helpers/useCaravans";
 import { getRealm } from "../../../utils/realms";
-import { getOrderName } from "@bibliothecadao/eternum";
+import { SelectableRealmInterface, getOrderName } from "@bibliothecadao/eternum";
 import { OrderIcon } from "../../../elements/OrderIcon";
 import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
-import { Has, getComponentValue, runQuery } from "@latticexyz/recs";
+import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
 import { useDojo } from "../../../DojoContext";
 import { ReactComponent as CaretDownFill } from "../../../assets/icons/common/caret-down-fill.svg";
 import TextInput from "../../../elements/TextInput";
-
-export interface SelectRealmInterface {
-  entityId: number;
-  realmId: number;
-  name: string;
-  order: string;
-  distance: number;
-}
+import { useRealm } from "../../../hooks/helpers/useRealm";
 
 export const SelectRealmPanel = ({
   selectedRealmId,
   setSelectedRealmId,
 }: {
-  selectedRealmId: number | undefined;
-  setSelectedRealmId: (selectedRealmId: number) => void;
+  selectedRealmId: bigint | undefined;
+  setSelectedRealmId: (selectedRealmId: bigint) => void;
 }) => {
   const [specifyRealmId, setSpecifyRealmId] = useState(false);
   const [nameFilter, setNameFilter] = useState("");
-  const [originalRealms, setOriginalRealms] = useState<SelectRealmInterface[]>([]);
-  const [sortedRealms, setSortedRealms] = useState<SelectRealmInterface[]>([]);
+  const [originalRealms, setOriginalRealms] = useState<SelectableRealmInterface[]>([]);
+  const [sortedRealms, setSortedRealms] = useState<SelectableRealmInterface[]>([]);
   const deferredNameFilter = useDeferredValue(nameFilter);
 
   const {
@@ -38,6 +31,8 @@ export const SelectRealmPanel = ({
       components: { Realm },
     },
   } = useDojo();
+
+  const { getRealmAddressName } = useRealm();
 
   const { realmId, realmEntityId } = useRealmStore();
 
@@ -49,7 +44,8 @@ export const SelectRealmPanel = ({
     return [
       { label: "Order", sortKey: "order" },
       { label: "Realm ID", sortKey: "id", className: "ml-4" },
-      { label: "Name", sortKey: "name", className: "ml-4 mr-4" },
+      { label: "Realm", sortKey: "name", className: "ml-4 mr-4" },
+      { label: "Name", sortKey: "addressName", className: "ml-4 mr-4" },
       { label: "Distance", sortKey: "distance", className: "ml-auto" },
     ];
   }, []);
@@ -66,19 +62,23 @@ export const SelectRealmPanel = ({
         .map((entityId) => {
           const realm = getComponentValue(Realm, entityId);
           if (realm) {
-            const { name, order, realm_id: takerRealmId } = getRealm(realm.realm_id);
+            const realmData = getRealm(realm.realm_id);
+            if (!realmData) return undefined;
+            const { name, order, realmId: takerRealmId } = realmData;
             const takerEntityId = getRealmEntityIdFromRealmId(takerRealmId);
             const distance = takerEntityId ? calculateDistance(realmEntityId, takerEntityId) ?? 0 : 0;
+            const addressName = takerEntityId ? getRealmAddressName(takerEntityId) : "";
             return {
-              entityId,
+              entityId: realm.entity_id,
               realmId: realm.realm_id,
               name,
               order: getOrderName(order),
               distance,
+              addressName,
             };
           }
         })
-        .filter((realm) => realm && realm.realmId !== realmId && realm.realmId !== 1) as SelectRealmInterface[];
+        .filter((realm) => realm && realm.realmId !== realmId) as SelectableRealmInterface[];
       setOriginalRealms(realms);
     };
     buildSelectableRealms();
@@ -98,18 +98,30 @@ export const SelectRealmPanel = ({
     setSortedRealms(sorted);
   }, [originalRealms, activeSort, deferredNameFilter]);
 
+  const selectedRealm = useMemo(() => {
+    return sortedRealms.find((realm) => realm.realmId === selectedRealmId);
+  }, [sortedRealms, selectedRealmId]);
+
   return (
     <div className="flex flex-col items-center w-full p-2">
       {!specifyRealmId && (
         <div
           onClick={() => setSpecifyRealmId(true)}
-          className="w-full mx-4 h-8 py-[7px] bg-dark-brown cursor-pointer rounded justify-center items-center"
+          className="relative w-full mx-4 h-8 py-[7px] bg-dark-brown cursor-pointer rounded justify-center items-center box-border"
         >
-          <div className="text-xs text-center text-gold"> + Make Direct Offer</div>
+          {!selectedRealmId ? (
+            <div className="text-xs text-center text-gold"> + Make Direct Offer</div>
+          ) : (
+            <div className="text-xs text-center text-gold">
+              Direct offer for:
+              <span className="text-light-pink"> {selectedRealm?.name}</span>
+            </div>
+          )}
+          <CaretDownFill className="ml-1 fill-gold absolute top-1/2 right-2 -translate-y-1/2" />
         </div>
       )}
       {specifyRealmId && (
-        <div className="flex flex-col p-1 rounded border-gold border w-full">
+        <div className="flex flex-col p-1 rounded border-gold border w-full box-content">
           <div
             onClick={() => setSpecifyRealmId(false)}
             className="w-full p-2 mb-1 -mt-1 relative cursor-pointer rounded justify-center items-center"
@@ -117,10 +129,10 @@ export const SelectRealmPanel = ({
             <div className="text-xs text-center text-gold">Make Direct Offer</div>
             <CaretDownFill className="ml-1 fill-gold absolute top-1/2 right-2 -translate-y-1/2 rotate-180" />
           </div>
-          {realmEntityId && (
+          {realmEntityId.toString() && (
             <div className="flex flex-col">
               <TextInput
-                className="border border-gold mx-1 !w-auto !text-light-pink"
+                className="border border-gold mx-1 !w-auto !text-light-pink text-xs"
                 placeholder="Search by ID or name"
                 value={nameFilter}
                 onChange={setNameFilter}
@@ -143,7 +155,7 @@ export const SelectRealmPanel = ({
                 ))}
               </SortPanel>
               <div className="flex flex-col px-1 mb-1 space-y-2 max-h-40 overflow-y-auto">
-                {sortedRealms.map(({ order, name, realmId: takerRealmId, distance }, i) => {
+                {sortedRealms.map(({ order, name, addressName, realmId: takerRealmId, distance }, i) => {
                   return (
                     <div
                       key={i}
@@ -154,18 +166,20 @@ export const SelectRealmPanel = ({
                         if (selectedRealmId !== takerRealmId) {
                           setSelectedRealmId(takerRealmId);
                         } else {
-                          setSelectedRealmId(0);
+                          setSelectedRealmId(0n);
                         }
                       }}
                     >
                       <div className="flex items-center justify-between text-xxs">
-                        <div className="flex-none mr-10">
+                        <div className="flex-none text-left w-20">
                           <OrderIcon order={order} size="xs" />
                         </div>
 
-                        <div className="flex-none w-20">{takerRealmId}</div>
+                        <div className="flex-none w-10">{Number(takerRealmId)}</div>
 
-                        <div className="flex-grow">{name}</div>
+                        <div className="flex-none text-left w-20">{name}</div>
+
+                        <div className="flex-grow">{addressName}</div>
 
                         <div className="flex-none w-16 text-right">{`${distance.toFixed(0)} km`}</div>
                       </div>
@@ -184,16 +198,16 @@ export const SelectRealmPanel = ({
 /**
  * sort realms based on active filters
  */
-export function sortRealms(realms: SelectRealmInterface[], activeSort: SortInterface): SelectRealmInterface[] {
+export function sortRealms(realms: SelectableRealmInterface[], activeSort: SortInterface): SelectableRealmInterface[] {
   const sortedRealms = [...realms]; // Making a copy of the realms array
 
   if (activeSort.sort !== "none") {
     if (activeSort.sortKey === "id") {
       return sortedRealms.sort((a, b) => {
         if (activeSort.sort === "asc") {
-          return a.realmId - b.realmId;
+          return Number(a.realmId - b.realmId);
         } else {
-          return b.realmId - a.realmId;
+          return Number(b.realmId - a.realmId);
         }
       });
     } else if (activeSort.sortKey === "name") {
@@ -202,6 +216,14 @@ export function sortRealms(realms: SelectRealmInterface[], activeSort: SortInter
           return a.name.localeCompare(b.name);
         } else {
           return b.name.localeCompare(a.name);
+        }
+      });
+    } else if (activeSort.sortKey === "addressName") {
+      return sortedRealms.sort((a, b) => {
+        if (activeSort.sort === "asc") {
+          return a.addressName.localeCompare(b.addressName);
+        } else {
+          return b.addressName.localeCompare(a.addressName);
         }
       });
     } else if (activeSort.sortKey === "distance") {
@@ -224,6 +246,6 @@ export function sortRealms(realms: SelectRealmInterface[], activeSort: SortInter
       return sortedRealms;
     }
   } else {
-    return sortedRealms.sort((a, b) => b.realmId - a.realmId);
+    return sortedRealms.sort((a, b) => Number(b.realmId - a.realmId));
   }
 }

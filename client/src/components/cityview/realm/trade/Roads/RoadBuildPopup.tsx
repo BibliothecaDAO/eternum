@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
 import Button from "../../../../../elements/Button";
 import { Headline } from "../../../../../elements/Headline";
@@ -6,14 +6,14 @@ import { ResourceCost } from "../../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../../elements/NumberInput";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../DojoContext";
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
 import * as realmsData from "../../../../../geodata/realms.json";
 import { ROAD_COST_PER_USAGE } from "@bibliothecadao/eternum";
 
 type RoadBuildPopupProps = {
-  toEntityId: number;
+  toEntityId: bigint;
   onClose: () => void;
 };
 
@@ -38,18 +38,18 @@ export const RoadBuildPopup = ({ toEntityId, onClose }: RoadBuildPopupProps) => 
 
   // TODO: get info from contract config file
   // calculate the costs of building/buying tools
-  let costResources: { resourceId: number; amount: number }[] = [];
-
-  for (const resourceIdCost of [2]) {
-    const totalAmount = ROAD_COST_PER_USAGE * usageAmount;
-    costResources.push({ resourceId: resourceIdCost, amount: totalAmount });
-  }
+  const costResources = useMemo(() => {
+    return ROAD_COST_PER_USAGE.map(({ resourceId, amount }) => ({ resourceId, amount: amount * usageAmount }));
+  }, [usageAmount]);
 
   const onBuild = () => {
     if (realm && toRealm) {
       const start_position = realm.position;
       const end_position = toRealm.position;
-      optimisticBuildRoad(create_road)({
+      optimisticBuildRoad(
+        costResources,
+        create_road,
+      )({
         signer: account,
         creator_id: realmEntityId,
         start_coord: start_position,
@@ -71,7 +71,7 @@ export const RoadBuildPopup = ({ toEntityId, onClose }: RoadBuildPopupProps) => 
         setCanBuild(true);
       }
     });
-  }, [usageAmount]);
+  }, [costResources]);
 
   return (
     <SecondaryPopup>
@@ -83,7 +83,7 @@ export const RoadBuildPopup = ({ toEntityId, onClose }: RoadBuildPopupProps) => 
       <SecondaryPopup.Body width={"376px"}>
         <div className="flex flex-col items-center p-2">
           {toRealm && (
-            <Headline size="big">Build road to {toRealm && realmsData["features"][toRealm.realmId - 1].name}</Headline>
+            <Headline>Build road to {toRealm && realmsData["features"][Number(toRealm.realmId - 1n)]?.name}</Headline>
           )}
           <div className={"relative w-full mt-3"}>
             <img src={`/images/road.jpg`} className="object-cover w-full h-full rounded-[10px]" />

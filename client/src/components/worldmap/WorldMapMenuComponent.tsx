@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { ReactComponent as Relic } from "../../assets/icons/common/relic.svg";
+import { ReactComponent as Bank } from "../../assets/icons/common/bank.svg";
+import { ReactComponent as Leaderboard } from "../../assets/icons/common/leaderboard.svg";
 import { ReactComponent as City } from "../../assets/icons/common/city.svg";
 import { ReactComponent as World } from "../../assets/icons/common/world.svg";
 import { useLocation } from "wouter";
@@ -7,6 +9,10 @@ import { Tabs } from "../../elements/tab";
 import RealmsListPanel from "./RealmsListPanel";
 import { HyperstructuresPanel } from "./hyperstructures/HyperstructuresPanel";
 import useUIStore from "../../hooks/store/useUIStore";
+import { BanksPanel } from "./banks/BanksPanel";
+import useRealmStore from "../../hooks/store/useRealmStore";
+import { useLevel } from "../../hooks/helpers/useLevel";
+import { LeaderboardPanel } from "./leaderboard/LeaderboardPanel";
 
 const WorldMapMenuComponent = () => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -14,6 +20,20 @@ const WorldMapMenuComponent = () => {
 
   // @ts-ignore
   const [_location, setLocation] = useLocation();
+
+  const { realmEntityIds } = useRealmStore();
+  const { getEntityLevel } = useLevel();
+
+  const minimumRealmLevel = useMemo(() => {
+    let min = 0;
+    realmEntityIds.forEach((realmEntityId) => {
+      const realm_level = getEntityLevel(realmEntityId.realmEntityId)?.level;
+      if (realm_level && realm_level > min) {
+        min = realm_level;
+      }
+    });
+    return min;
+  }, [realmEntityIds]);
 
   const tabs = useMemo(
     () => [
@@ -62,7 +82,52 @@ const WorldMapMenuComponent = () => {
             <Relic className="mb-2 fill-gold" /> <div>Hyperstructures</div>
           </div>
         ),
-        component: <HyperstructuresPanel />,
+        component: <HyperstructuresPanel minimumRealmLevel={minimumRealmLevel} />,
+      },
+      {
+        key: "banks",
+        label: (
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Swap food for</p>
+                    <p className="whitespace-nowrap">Lords.</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex relative group flex-col items-center"
+          >
+            <Bank className="mb-2 fill-gold" /> <div>Banks</div>
+          </div>
+        ),
+        component: <BanksPanel minimumRealmLevel={minimumRealmLevel} />,
+      },
+      {
+        key: "leaderboard",
+        label: (
+          <div
+            onMouseEnter={() =>
+              setTooltip({
+                position: "bottom",
+                content: (
+                  <>
+                    <p className="whitespace-nowrap">Lords Leaderboard</p>
+                  </>
+                ),
+              })
+            }
+            onMouseLeave={() => setTooltip(null)}
+            className="flex relative group flex-col items-center"
+          >
+            <Leaderboard className="mb-2 fill-gold" /> <div>Leaderboard</div>
+          </div>
+        ),
+        component: <LeaderboardPanel />,
       },
     ],
     [selectedTab],

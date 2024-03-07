@@ -1,27 +1,40 @@
-import { getComponentValue } from "@latticexyz/recs";
+import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
-import { getEntityIdFromKeys } from "../../utils/utils";
+import { getEntityIdFromKeys, getPosition, getZone } from "../../utils/utils";
 import { unpackResources } from "../../utils/packedData";
 import useBlockchainStore from "../store/useBlockchainStore";
 import { useComponentValue } from "@dojoengine/react";
 import { useEffect, useState } from "react";
-import { PRICE_UPDATE_INTERVAL } from "@bibliothecadao/eternum";
+import { PRICE_UPDATE_INTERVAL, RealmInterface } from "@bibliothecadao/eternum";
+import { Resource } from "@bibliothecadao/eternum";
+import useRealmStore from "../store/useRealmStore";
 
-export interface LaborCostInterface {
-  resourceId: number;
-  amount: number;
+// todo: move this to sdk
+const DECAY = 0.1;
+const UNITS_PER_DAY = 960;
+const SECONDS_PER_DAY = 86400;
+const FOOD_LABOR_UNITS = 12;
+
+export enum FoodType {
+  Wheat = 254,
+  Fish = 255,
 }
 
 export function useLabor() {
   const {
+    account: { account },
     setup: {
-      components: { LaborCostResources, LaborCostAmount, LaborAuction },
+      optimisticSystemCalls: { optimisticBuildLabor },
+      systemCalls: { purchase_and_build_labor },
+      components: { LaborCostResources, LaborCostAmount, LaborAuction, Labor },
     },
   } = useDojo();
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const getLaborCost = (resourceId: number): LaborCostInterface[] => {
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+
+  const getLaborCost = (resourceId: number): Resource[] => {
     const laborCostResources = getComponentValue(LaborCostResources, getEntityIdFromKeys([BigInt(resourceId)]));
 
     const resourceIds = laborCostResources
@@ -33,7 +46,24 @@ export function useLabor() {
         LaborCostAmount,
         getEntityIdFromKeys([BigInt(resourceId), BigInt(costResourceId)]),
       );
-      let amount = laborCostAmount?.value || 0;
+      let amount = Number(laborCostAmount?.value) || 0;
+      return { resourceId: costResourceId, amount };
+    });
+  };
+
+  const getProductionCost = (resourceId: number): Resource[] => {
+    const laborCostResources = getComponentValue(LaborCostResources, getEntityIdFromKeys([BigInt(resourceId)]));
+
+    const resourceIds = laborCostResources
+      ? unpackResources(BigInt(laborCostResources.resource_types_packed), laborCostResources.resource_types_count)
+      : [];
+
+    return resourceIds.map((costResourceId) => {
+      const laborCostAmount = getComponentValue(
+        LaborCostAmount,
+        getEntityIdFromKeys([BigInt(resourceId), BigInt(costResourceId)]),
+      );
+      let amount = Number(laborCostAmount?.value) || 0;
       return { resourceId: costResourceId, amount };
     });
   };
@@ -42,7 +72,12 @@ export function useLabor() {
     let laborAuction = getComponentValue(LaborAuction, getEntityIdFromKeys([BigInt(zone)]));
 
     if (laborAuction && nextBlockTimestamp) {
-      return computeAverageCoefficient(laborAuction.start_time, nextBlockTimestamp, laborAuction.sold, laborUnits);
+      return computeAverageCoefficient(
+        laborAuction.start_time,
+        nextBlockTimestamp,
+        Number(laborAuction.sold),
+        laborUnits,
+      );
     }
   };
 
@@ -50,7 +85,7 @@ export function useLabor() {
     let laborAuction = getComponentValue(LaborAuction, getEntityIdFromKeys([BigInt(zone)]));
 
     if (laborAuction && nextBlockTimestamp) {
-      return computeCoefficient(laborAuction.start_time, nextBlockTimestamp, laborAuction.sold);
+      return computeCoefficient(laborAuction.start_time, nextBlockTimestamp, Number(laborAuction.sold));
     }
   };
 
@@ -58,7 +93,11 @@ export function useLabor() {
     let laborAuction = getComponentValue(LaborAuction, getEntityIdFromKeys([BigInt(zone)]));
 
     if (laborAuction && nextBlockTimestamp) {
-      return computeCoefficient(laborAuction.start_time, nextBlockTimestamp, laborAuction.sold + laborUnits);
+      return computeCoefficient(
+        laborAuction.start_time,
+        nextBlockTimestamp,
+        Number(laborAuction.sold + BigInt(laborUnits)),
+      );
     }
   };
 
@@ -69,25 +108,66 @@ export function useLabor() {
 
     useEffect(() => {
       if (laborAuction && nextBlockTimestamp) {
-        setLaborCoefficient(computeCoefficient(laborAuction.start_time, nextBlockTimestamp, laborAuction.sold));
+        setLaborCoefficient(computeCoefficient(laborAuction.start_time, nextBlockTimestamp, Number(laborAuction.sold)));
       }
     }, [laborAuction, nextBlockTimestamp]);
 
     return laborCoefficient;
   };
 
+  const onBuildFood = async (foodType: FoodType, realm: RealmInterface) => {
+    const position = getPosition(realm.realmId);
+    const zone = getZone(position.x);
+
+    // match multiplier by food type
+    let multiplier = undefined;
+    switch (foodType) {
+      case FoodType.Wheat:
+        multiplier = realm.rivers;
+        break;
+      case FoodType.Fish:
+        multiplier = realm.harbors;
+        break;
+    }
+
+    let coefficient = zone ? getLaborAuctionAverageCoefficient(zone, FOOD_LABOR_UNITS * multiplier) : undefined;
+
+    if (coefficient) {
+      await optimisticBuildLabor(
+        nextBlockTimestamp || 0,
+        [],
+        coefficient,
+        purchase_and_build_labor,
+      )({
+        signer: account,
+        entity_id: realmEntityId,
+        resource_type: foodType,
+        labor_units: FOOD_LABOR_UNITS,
+        multiplier: multiplier,
+      });
+    }
+  };
+
+  const getLatestRealmActivity = (realmEntityId: bigint) => {
+    // proxy to get latest activity through wheat balance
+    const labor = getComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(254)]));
+
+    if (labor && nextBlockTimestamp) {
+      return nextBlockTimestamp - (labor.balance - 86400);
+    }
+  };
+
   return {
+    getLatestRealmActivity,
     getLaborCost,
     getLaborAuctionCoefficient,
     useLaborAuctionCoefficient,
     getLaborAuctionAverageCoefficient,
     getNextLaborAuctionCoefficient,
+    onBuildFood,
+    getProductionCost,
   };
 }
-
-const DECAY = 0.1;
-const UNITS_PER_DAY = 960;
-const SECONDS_PER_DAY = 86400;
 
 function computeCoefficient(startTimestamp: number, nextBlockTimestamp: number, sold: number) {
   return Math.exp(

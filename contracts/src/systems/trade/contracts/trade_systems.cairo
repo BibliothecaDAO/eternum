@@ -5,7 +5,7 @@ mod trade_systems {
     use eternum::models::resources::Resource;
     use eternum::models::resources::{ResourceChest, DetachedResource};
     use eternum::models::owner::Owner;
-    use eternum::models::position::{Position, PositionTrait, Coord, CoordTrait};
+    use eternum::models::position::{Position, PositionTrait, Coord, TravelTrait};
     use eternum::models::realm::Realm;
     use eternum::models::weight::Weight;
     use eternum::models::trade::{Trade, Status, TradeStatus};
@@ -34,6 +34,23 @@ mod trade_systems {
 
     use core::poseidon::poseidon_hash_span;
 
+    #[derive(Drop, starknet::Event)]
+    struct CreateOrder {
+        #[key]
+        taker_id: u128,
+        #[key]
+        maker_id: u128,
+        trade_id: u128,
+        maker_gives_resources: Span<(u8, u128)>,
+        taker_gives_resources: Span<(u8, u128)>
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        CreateOrder: CreateOrder,
+    }
+
 
     #[external(v0)]
     impl TradeSystemsImpl of ITradeSystems<ContractState> {
@@ -42,12 +59,10 @@ mod trade_systems {
             self: @ContractState,
             world: IWorldDispatcher,
             maker_id: u128,
-            maker_gives_resource_types: Span<u8>,
-            maker_gives_resource_amounts: Span<u128>,
+            maker_gives_resources: Span<(u8, u128)>,
             maker_transport_id: ID,
             taker_id: u128,
-            taker_gives_resource_types: Span<u8>,
-            taker_gives_resource_amounts: Span<u128>,
+            taker_gives_resources: Span<(u8, u128)>,
             expires_at: u64
         ) -> ID {
             let caller = starknet::get_caller_address();
@@ -66,7 +81,7 @@ mod trade_systems {
             // create resource chest that maker will collect
             let (maker_resource_chest, maker_resources_weight) 
                 = resource_chest::create(
-                    world, taker_gives_resource_types, taker_gives_resource_amounts
+                    world, taker_gives_resources
                 );
 
             // check that maker's transport can carry 
@@ -79,7 +94,7 @@ mod trade_systems {
             // create resource chest that taker will collect
             let (taker_resource_chest, _) 
                 = resource_chest::create(
-                    world, maker_gives_resource_types, maker_gives_resource_amounts
+                    world, maker_gives_resources
                 );
 
             // fill the taker's chest with the maker's resources
@@ -107,6 +122,14 @@ mod trade_systems {
                     }
                 ),
             );
+
+            emit!(world, CreateOrder { 
+                taker_id,
+                maker_id,
+                trade_id,
+                maker_gives_resources,
+                taker_gives_resources
+            });
 
             trade_id
         }
@@ -164,12 +187,12 @@ mod trade_systems {
                 );
                 // give traded resources to maker
                 resource_chest::offload(
-                    world, trade.maker_resource_chest_id, trade.maker_id
+                    world, trade.taker_id, trade.maker_resource_chest_id, trade.maker_id
                 );
 
                 // give traded resources to taker
                 resource_chest::offload(
-                    world, trade.taker_resource_chest_id, taker_id
+                    world,  trade.maker_id, trade.taker_resource_chest_id, taker_id
                 );
                 
             } else {
@@ -190,7 +213,8 @@ mod trade_systems {
                 // get maker travel time
                 let (maker_transport_round_trip_time, maker_transport_one_way_trip_time) 
                     = caravan::get_travel_time(
-                        world, trade.maker_transport_id, maker_position, taker_position
+                        world, trade.maker_transport_id, maker_position, 
+                        taker_position
                         ); 
             
 
@@ -222,13 +246,16 @@ mod trade_systems {
                 let mut maker_transport_movable = get!(world, trade.maker_transport_id, Movable);
                 maker_transport_movable.intermediate_coord_x = taker_position.x;
                 maker_transport_movable.intermediate_coord_y = taker_position.y;
+                // start position should be the maker's current position
+                maker_transport_movable.start_coord_x = maker_position.x;
+                maker_transport_movable.start_coord_y = maker_position.y;
                 maker_transport_movable.round_trip = true;
                 
                 set!(world, (maker_transport_movable));
                 set!(world, (
                     ArrivalTime {
                         entity_id: trade.maker_transport_id,
-                        arrives_at: ts + maker_transport_round_trip_time
+                        arrives_at: ts.into() + maker_transport_round_trip_time
                     },
                     Position {
                         entity_id: trade.maker_transport_id,
@@ -263,13 +290,16 @@ mod trade_systems {
                 let mut taker_transport_movable = get!(world, taker_transport_id, Movable);
                 taker_transport_movable.intermediate_coord_x = maker_position.x;
                 taker_transport_movable.intermediate_coord_y = maker_position.y;
+                // start position should be the taker's current position
+                taker_transport_movable.start_coord_x = taker_position.x;
+                taker_transport_movable.start_coord_y = taker_position.y;
                 taker_transport_movable.round_trip = true;
                 
                 set!(world, (taker_transport_movable));
                 set!(world, (
                     ArrivalTime {
                         entity_id: taker_transport_id,
-                        arrives_at: ts + taker_transport_round_trip_time
+                        arrives_at: ts.into() + taker_transport_round_trip_time
                     },
                     Position {
                         entity_id: taker_transport_id,
@@ -308,7 +338,7 @@ mod trade_systems {
 
             // return resources to maker
             resource_chest::offload(
-                world, trade.taker_resource_chest_id, trade.maker_id
+                world, 0, trade.taker_resource_chest_id, trade.maker_id
             );
             // unblock maker's caravan
             caravan::unblock(world, trade.maker_transport_id);

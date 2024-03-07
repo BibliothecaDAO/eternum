@@ -1,0 +1,23 @@
+kind = "DojoModel"
+class_hash = "0x14a11ca730a812923608188550dea7f44600908aba3be63adbaa59e493582a7"
+name = "eternum::models::config::labor_building_cost"
+
+[[members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "labor_category"
+type = "u8"
+key = true
+
+[[members]]
+name = "resource_cost_id"
+type = "u128"
+key = false
+
+[[members]]
+name = "resource_cost_count"
+type = "u32"
+key = false

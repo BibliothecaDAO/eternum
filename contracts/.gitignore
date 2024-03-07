@@ -1,0 +1,4 @@
+target/*
+!target/dev/manifest.json
+!target/release/manifest.json
+torii.db

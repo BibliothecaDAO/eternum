@@ -12,67 +12,63 @@ import ContentContainer from "../containers/ContentContainer";
 import RealmManagementModule from "../modules/RealmManagementModule";
 import RealmResourcesComponent from "../components/cityview/realm/RealmResourcesComponent";
 import { useFetchBlockchainData } from "../hooks/store/useBlockchainStore";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import clsx from "clsx";
 import { Redirect, Route, Switch, useLocation } from "wouter";
 import { useProgress } from "@react-three/drei";
 import { BlurOverlayContainer } from "../containers/BlurOverlayContainer";
-import { SignUpComponent } from "../components/SignUpComponent";
 import useSound from "use-sound";
 import { NotificationsComponent } from "../components/NotificationsComponent";
-import { useSyncWorld } from "../hooks/graphql/useGraphQLQueries";
 import WorldMapMenuModule from "../modules/WorldMapMenuModule";
-import hyperStructures from "../data/hyperstructures.json";
-import { useHyperstructure } from "../hooks/helpers/useHyperstructure";
 import { Tooltip } from "../elements/Tooltip";
-import useLeaderBoardStore from "../hooks/store/useLeaderBoardStore";
 import useCombatHistoryStore from "../hooks/store/useCombatHistoryStore";
-import { useDojo } from "../DojoContext";
 import useRealmStore from "../hooks/store/useRealmStore";
+import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
+import { Onboarding } from "../plugins/onboarding/components/Onboarding";
+import { useComputeMarket } from "../hooks/store/useMarketStore";
+import { useRefreshHyperstructure } from "../hooks/store/useRefreshHyperstructure";
+import { WorldPopups } from "./WorldPopups";
+import EpochCountdown from "../components/network/EpochCountdown";
 
 export const World = () => {
-  const {
-    setup: {
-      systemCalls: { isLive },
-    },
-  } = useDojo();
-
-  const [isWorldLive, setIsWorldLive] = useState(false);
-
-  useEffect(() => {
-    const checkWorldLive = async () => {
-      setIsWorldLive(await isLive());
-    };
-    checkWorldLive();
-  }, []);
-
-  const { loading: worldLoading, progress: worldProgress } = useSyncWorld();
-
-  useFetchBlockchainData();
-
-  const { progress } = useProgress();
-
-  const isSoundOn = useUIStore((state) => state.isSoundOn);
-  const musicLevel = useUIStore((state) => state.musicLevel);
-
+  const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
-  const setHyperstructures = useUIStore((state) => state.setHyperstructures);
   const setMouseCoords = useUIStore((state) => state.setMouseCoords);
-
-  const { getHyperstructureIds } = useHyperstructure();
-  const syncData = useLeaderBoardStore((state) => state.syncData);
   const syncCombatHistory = useCombatHistoryStore((state) => state.syncData);
+  const isSoundOn = useUIStore((state) => state.isSoundOn);
+  const musicLevel = useUIStore((state) => state.musicLevel);
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
+
+  const { refreshAllHyperstructures } = useRefreshHyperstructure();
+
+  // only for dev
+  // useEffect(() => {
+  //   const printUuid = async () => {
+  //     let nextUuid = await uuid();
+  //     console.log({ nextUuid });
+  //   };
+  //   printUuid();
+  // });
+
+  useFetchBlockchainData();
+  useComputeMarket();
+
+  const progress = useProgress((state) => state.progress);
 
   useEffect(() => {
-    let ids = getHyperstructureIds();
-    syncData(ids);
-  }, [worldLoading]);
+    if (realmEntityIds.length > 4) {
+      setBlankOverlay(false);
+    } else {
+      setBlankOverlay(true);
+    }
+  }, []);
 
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
   useEffect(() => {
     syncCombatHistory(realmEntityId);
-  }, [worldLoading, realmEntityId]);
+  }, [realmEntityId]);
 
   const [playBackground, { stop }] = useSound("/sound/music/happy_realm.mp3", {
     soundEnabled: isSoundOn,
@@ -88,25 +84,17 @@ export const World = () => {
     }
   }, [isSoundOn]);
 
-  const { getHyperstructure } = useHyperstructure();
+  useEffect(() => {
+    refreshAllHyperstructures();
+  }, [realmEntityIds]);
 
   useEffect(() => {
-    if (!worldLoading) {
-      setHyperstructures(
-        hyperStructures.map((hyperstructure, index) =>
-          getHyperstructure(index + 1, { x: hyperstructure.x, y: hyperstructure.y, z: hyperstructure.z }),
-        ),
-      );
-    }
-  }, [worldLoading]);
-
-  useEffect(() => {
-    if (progress === 100 && !worldLoading) {
+    if (progress === 100) {
       setIsLoadingScreenEnabled(false);
     } else {
       setIsLoadingScreenEnabled(true);
     }
-  }, [progress, worldLoading]);
+  }, [progress]);
 
   const [location] = useLocation();
   // location type
@@ -128,9 +116,12 @@ export const World = () => {
       }
       className="fixed antialiased top-0 left-0 z-0 w-screen h-screen p-2 overflow-hidden"
     >
+      <WorldPopups />
       <BackgroundContainer className="border-2 border-[#E0AF65] rounded-xl relative">
         <div className="absolute top-0 left-0 z-10 w-full pointer-events-none rounded-xl h-44 bg-gradient-to-b from-black to-transparent opacity-90" />
-        <MainScene />
+        <div className="h-full w-full main-scene">
+          <MainScene />
+        </div>
         <div className="absolute bottom-0 left-0 z-10 w-full pointer-events-none rounded-xl h-44 bg-gradient-to-t from-black to-transparent opacity-90" />
         <div
           className={clsx(
@@ -141,16 +132,17 @@ export const World = () => {
           <img src="/images/eternum-logo_animated.png" className=" invert scale-50" />
         </div>
       </BackgroundContainer>
-      <TopContainer>
-        <NetworkModule />
-        <div className="flex">
-          <NavigationModule />
-          <RealmResourcesComponent className="ml-20 -mt-1" />
-          <NotificationsComponent className="ml-auto" />
-        </div>
-
-        {/* <ContextsModule /> */}
-      </TopContainer>
+      {!showBlankOverlay && (
+        <TopContainer>
+          <NetworkModule />
+          <div className="flex">
+            <NavigationModule />
+            <NotificationsComponent className="" />
+          </div>
+          <RealmResourcesComponent />
+          {/* <ContextsModule /> */}
+        </TopContainer>
+      )}
       <ContentContainer>
         <Switch location={locationType}>
           <Route path="map">
@@ -161,18 +153,22 @@ export const World = () => {
           </Route>
         </Switch>
       </ContentContainer>
-      <BottomMiddleContainer>{/* <WolrdMapLayersModule /> */}</BottomMiddleContainer>
+      {/* <BottomMiddleContainer><WolrdMapLayersModule /></BottomMiddleContainer> */}
+      <BottomMiddleContainer>{<></>}</BottomMiddleContainer>
       <BottomRightContainer>
         <ChatModule />
       </BottomRightContainer>
+      <BlankOverlayContainer open={showBlankOverlay}>
+        <Onboarding />
+      </BlankOverlayContainer>
       <BlurOverlayContainer>
-        <SignUpComponent isWorldLive={isWorldLive} worldLoading={worldLoading} worldProgress={worldProgress} />
+        {/* <SignUpComponent isWorldLive={isWorldLive} worldLoading={worldLoading} worldProgress={worldProgress} /> */}
       </BlurOverlayContainer>
       <Leva hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU} />
       <Tooltip />
       <Redirect to="/map" />
       <div className="absolute bottom-4 right-6 text-white text-xs text-white/60">v0.3.0</div>
-      {/* <div className="absolute h-screen w-screen bg-black top-0"></div> */}
+      <EpochCountdown />
     </div>
   );
 };
