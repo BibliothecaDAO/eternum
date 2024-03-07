@@ -43,17 +43,23 @@ import { Call } from "starknet";
 const UUID_OFFSET_CREATE_CARAVAN = 2;
 
 export const getContractByName = (manifest: any, name: string) => {
-  return (
-    manifest.contracts.find((contract: any) => {
-      const nameParts = contract.name.split("::");
-      return nameParts[nameParts.length - 1] === name;
-    })?.address || ""
-  );
+  const contract = manifest.contracts.find((contract: any) => contract.name.includes("::" + name));
+  if (contract) {
+    return contract.address;
+  } else {
+    return "";
+  }
 };
 
 export class EternumProvider extends DojoProvider {
-  constructor(url?: string, manifest: any = undefined) {
+  constructor(katana: any, url?: string, manifest: any = undefined) {
     super(manifest, url);
+    this.manifest = katana;
+
+    this.getWorldAddress = function () {
+      const worldAddress = this.manifest.world.address;
+      return worldAddress;
+    };
   }
 
   public async purchase_labor(props: PurchaseLaborProps): Promise<any> {
@@ -281,6 +287,7 @@ export class EternumProvider extends DojoProvider {
       };
     });
     const tx = await this.executeMulti(signer, calldata);
+
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
     });

@@ -66,7 +66,8 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
   const onOffload = async () => {
     setIsLoading(true);
     if (raider?.entityId && inventoryResources) {
-      await offloadChests(realmEntityId, raider.entityId, inventoryResources.indices, inventoryResources.resources);
+      // await offloadChests(realmEntityId, raider.entityId, inventoryResources.indices, inventoryResources.resources);
+      await offloadChests(realmEntityId, raider.entityId, inventoryResources.indices);
     }
     setIsLoading(false);
   };
