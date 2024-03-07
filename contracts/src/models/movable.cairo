@@ -8,6 +8,8 @@ struct Movable {
     sec_per_km: u16,
     blocked: bool,
     round_trip: bool,
+    start_coord_x: u128,
+    start_coord_y: u128,
     intermediate_coord_x: u128,
     intermediate_coord_y: u128
 }

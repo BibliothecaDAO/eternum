@@ -949,7 +949,7 @@
     {
       "name": "eternum::systems::bank::contracts::bank_systems",
       "address": "0x193936374e972c355f2246c66c62860c986dea275ce8fbd03d7d7a1d853a572",
-      "class_hash": "0x59830dc8272c77116f255dbf5aef76243fc5201df8ddcf230ad2e95cac63817",
+      "class_hash": "0xefad37f87c76a0add94964e771219e45d1e96ac33e773246e927814dc91dfc",
       "abi": [
         {
           "type": "impl",
@@ -1285,7 +1285,7 @@
     {
       "name": "eternum::systems::combat::contracts::combat_systems",
       "address": "0x1b0a83a27a357e0574393ab06c0c774db7312a0993538cc0186d054f75ee84e",
-      "class_hash": "0x232597c9c9280e73a4544245fe658953c14939a26dd56396cc4a94a7820ca2",
+      "class_hash": "0x5e375bcc589c62d0fc1c8dcd616211b29f3598685398b3faec352aa70b4d0eb",
       "abi": [
         {
           "type": "impl",
@@ -3086,7 +3086,7 @@
     {
       "name": "eternum::systems::map::contracts::map_systems",
       "address": "0x3fda5d1f7500f799eb30aa1293b2b6c354d350ed359593eb75390893cc7ec3d",
-      "class_hash": "0x31698d54138398ee153f95a8df762ff5932c7a13c67dec14b8644de48a95cec",
+      "class_hash": "0x182dcb08ba3f5465ffafcdd29360f83c8708c19436c44cc90c6fadea2035e4c",
       "abi": [
         {
           "type": "impl",
@@ -3542,7 +3542,7 @@
     {
       "name": "eternum::systems::realm::contracts::realm_systems",
       "address": "0x25df90992b8eebca69f08035ceda822dee73028e828ceb8421895814eacd3d",
-      "class_hash": "0x401fcd33234c05249d84cc5182b71ddc9d21bd22e14072fccb65df550a3ab3c",
+      "class_hash": "0x2c1d9e86e956db523187bb2543cc61e47971f9e8f97583510e626595266d40",
       "abi": [
         {
           "type": "impl",
@@ -3750,7 +3750,7 @@
     {
       "name": "eternum::systems::resources::contracts::resource_systems",
       "address": "0x406b259886beb36b2474c7a85ad8298b948eeca68b3a185ee7ba870dbc025c8",
-      "class_hash": "0x1b3d6c112240eaeb749320df26452c96d56c468786874108c9b5e60c51b0704",
+      "class_hash": "0x6e7263d373667be797acf83a42942792edd8afbef0361b4f621d08c102e045",
       "abi": [
         {
           "type": "impl",
@@ -4201,7 +4201,7 @@
     {
       "name": "eternum::systems::trade::contracts::trade_systems::trade_systems",
       "address": "0x63cbe849cf6325e727a8d6f82f25fad7dc7eb9433767f5c1b8c59189e36c9b6",
-      "class_hash": "0x27ae1e424104954e898f7a80a43c96cfa701fcb60f6b65c01f235bdbf906718",
+      "class_hash": "0x766df3ce262a9966b18bd0f9093ab1e19d5442bc403e42ad9a3d76fd55331c9",
       "abi": [
         {
           "type": "impl",
@@ -4462,7 +4462,7 @@
     {
       "name": "eternum::systems::transport::contracts::caravan_systems::caravan_systems",
       "address": "0x3f8d39786c3f984482b25a770fc85fd2a4f45725e74fdd385c5c38e9f5681c6",
-      "class_hash": "0x1de32fb293b49589f80a44467c05aa0006eed8e20a8832f8d93bc75cd6dfc57",
+      "class_hash": "0x6c0937f24f35317746aed1a150ad047477fbfad7a4d15730ce4cbad50e1b506",
       "abi": [
         {
           "type": "impl",
@@ -4822,7 +4822,7 @@
     {
       "name": "eternum::systems::transport::contracts::transport_unit_systems::transport_unit_systems",
       "address": "0x4146e12ea99aeb071b29776bd591bbc74174817dad41521650e9164e226b5eb",
-      "class_hash": "0x24c825b7e38769344489d603b762abd98cb02c52b6a69cfdc58ed7cd3383b01",
+      "class_hash": "0x6ed26371636e628cdc025127dde0b4a634a36e104fc92451d50b1ebe5bd6a4",
       "abi": [
         {
           "type": "impl",
@@ -5006,7 +5006,7 @@
     {
       "name": "eternum::systems::transport::contracts::travel_systems::travel_systems",
       "address": "0x740ea95e67b0b7533ee4891524c5c7edfd7fefc09297c0304b21515cc1223ec",
-      "class_hash": "0x3a48d0189820e4fdec91806de4bb4b723a8a7792271da176136db7715b615aa",
+      "class_hash": "0xeeb2f00c0c30cd94e91e6eb9da08e94d0a6d5402662e0de36cdcc4f7e7487e",
       "abi": [
         {
           "type": "impl",
@@ -15137,6 +15137,16 @@
           "key": false
         },
         {
+          "name": "start_coord_x",
+          "type": "u128",
+          "key": false
+        },
+        {
+          "name": "start_coord_y",
+          "type": "u128",
+          "key": false
+        },
+        {
           "name": "intermediate_coord_x",
           "type": "u128",
           "key": false
@@ -15147,7 +15157,7 @@
           "key": false
         }
       ],
-      "class_hash": "0x106a54cc04f17c6cdc12d87f6bf154ce2e3c8e9b612ee316e79243e08e54e83",
+      "class_hash": "0x3e876e40038ef00a22df2e8c8905aa33613ca504542cf53faa0a07297da0c3c",
       "abi": [
         {
           "type": "impl",
@@ -15351,6 +15361,14 @@
             {
               "name": "round_trip",
               "type": "core::bool"
+            },
+            {
+              "name": "start_coord_x",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "start_coord_y",
+              "type": "core::integer::u128"
             },
             {
               "name": "intermediate_coord_x",

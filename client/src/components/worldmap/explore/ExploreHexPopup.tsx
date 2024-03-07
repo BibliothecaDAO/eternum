@@ -2,100 +2,101 @@ import { Dispatch, useEffect, useMemo, useState } from "react";
 import React from "react";
 import { Resource, findResourceById } from "@bibliothecadao/eternum";
 import useRealmStore from "../../../hooks/store/useRealmStore";
-import { useResources } from "../../../hooks/helpers/useResources";
 import { useDojo } from "../../../DojoContext";
-import { Headline } from "../../../elements/Headline";
-import { SecondaryPopup } from "../../../elements/SecondaryPopup";
 import { ResourceCost } from "../../../elements/ResourceCost";
-import { divideByPrecision } from "../../../utils/utils";
+import { divideByPrecision, findDirection, getEntityIdFromKeys } from "../../../utils/utils";
 import Button from "../../../elements/Button";
 import { ResourceIcon } from "../../../elements/ResourceIcon";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { useExplore } from "../../../hooks/helpers/useExplore";
+import { useResources } from "../../../hooks/helpers/useResources";
+import { getComponentValue } from "@dojoengine/recs";
 
-type RoadBuildPopupProps = {
-  onClose: () => void;
-};
+type ExploreMapPopupProps = {};
 
-export const ExploreMapPopup = ({ onClose }: RoadBuildPopupProps) => {
+export const ExploreMapPopup = ({}: ExploreMapPopupProps) => {
   const [step, setStep] = useState(1);
 
-  const clickedHex = useUIStore((state) => state.clickedHex);
+  const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
+  const setSelectedPath = useUIStore((state) => state.setSelectedPath);
+  const selectedPath = useUIStore((state) => state.selectedPath);
   const hexData = useUIStore((state) => state.hexData);
-
-  const { getExplorationInput } = useExplore();
-
-  const explorationInfo = useMemo(() => {
-    if (clickedHex) {
-      return getExplorationInput(clickedHex.col, clickedHex.row);
-    }
-  }, [clickedHex]);
+  const setIsExploreMode = useUIStore((state) => state.setIsExploreMode);
 
   const { useFoundResources } = useExplore();
-  let foundResource = useFoundResources(explorationInfo?.exploration.explored_by_id);
+  let foundResource = useFoundResources(selectedPath?.id);
 
   const biome = useMemo(() => {
-    if (clickedHex && hexData) {
-      const hexIndex = hexData.findIndex((h) => h.col === clickedHex.col && h.row === clickedHex.row);
-      return hexData[hexIndex]?.biome;
+    if (selectedPath?.path.length === 2 && hexData) {
+      const hexIndex = hexData.findIndex((h) => h.col === selectedPath?.path[1].x && h.row === selectedPath?.path[1].y);
+      return hexData[hexIndex].biome;
     }
-  }, [clickedHex, hexData]);
+  }, [selectedPath, hexData]);
 
-  if (!explorationInfo || !biome) return null;
+  const onClose = () => {
+    setSelectedEntity(undefined);
+    setSelectedPath(undefined);
+    setIsExploreMode(false);
+  };
+
+  const direction =
+    selectedPath?.path.length === 2
+      ? findDirection(
+          { col: selectedPath.path[0].x, row: selectedPath.path[0].y },
+          { col: selectedPath.path[1].x, row: selectedPath.path[1].y },
+        )
+      : undefined;
 
   return (
-    <SecondaryPopup name="explore">
-      <SecondaryPopup.Head onClose={onClose}>
-        <div className="flex items-center space-x-1">
-          <div className="mr-0.5">Explore the map</div>
+    <div>
+      {step === 1 && (
+        <ExplorePanel
+          explorerId={selectedPath?.id}
+          explorationStart={selectedPath?.path[0]}
+          direction={direction}
+          foundResource={foundResource}
+          setStep={setStep}
+          onClose={onClose}
+        />
+      )}
+      {step === 2 && biome && (
+        <div className="flex flex-col items-center p-2">
+          <ExploreResultPanel biome={biome} foundResource={foundResource} onClose={onClose} />
         </div>
-      </SecondaryPopup.Head>
-      <SecondaryPopup.Body width={"800px"} height={"550px"}>
-        {step === 1 && (
-          <div className="flex flex-col items-center p-2">
-            <ExplorePanel
-              explorationStart={explorationInfo}
-              foundResource={foundResource}
-              setStep={setStep}
-              onClose={onClose}
-            />
-          </div>
-        )}
-        {step === 2 && (
-          <div className="flex flex-col items-center p-2">
-            <ExploreResultPanel biome={biome} foundResource={foundResource} onClose={onClose} />
-          </div>
-        )}
-      </SecondaryPopup.Body>
-    </SecondaryPopup>
+      )}
+    </div>
   );
 };
 
 type ExplorePanelProps = {
-  explorationStart: { exploration: any; direction: number | undefined };
+  explorerId: bigint | undefined;
+  explorationStart: { x: number; y: number } | undefined;
+  direction: number | undefined;
   foundResource: Resource | undefined;
   targetHex?: { col: number; row: number };
   setStep: Dispatch<React.SetStateAction<number>>;
   onClose: () => void;
 };
 
-export const ExplorePanel = ({ explorationStart, foundResource, onClose, setStep }: ExplorePanelProps) => {
+export const ExplorePanel = ({
+  explorerId,
+  explorationStart,
+  direction,
+  foundResource,
+  onClose,
+  setStep,
+}: ExplorePanelProps) => {
   const {
     setup: {
+      components: { EntityOwner },
       systemCalls: { explore },
     },
     account: { account },
   } = useDojo();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedEntityId, setSelectedEntityId] = useState<bigint>();
-  const [idsCanExplore, setIdsCanExplore] = useState<bigint[]>([]);
-  const { getFoodResources } = useResources();
-
-  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
-  const clickedHex = useUIStore((state) => state.clickedHex);
-
-  const clickedHexMemoized = useMemo(() => clickedHex, []);
+  const setSelectedPath = useUIStore((state) => state.setSelectedPath);
+  const setIsExploreMode = useUIStore((state) => state.setIsExploreMode);
 
   const explorationCost: Resource[] = [
     {
@@ -106,41 +107,21 @@ export const ExplorePanel = ({ explorationStart, foundResource, onClose, setStep
   ];
 
   useEffect(() => {
-    let ids: bigint[] = [];
-    const wheatCost = explorationCost.find((resource) => resource.resourceId === 254)?.amount || 0;
-    const fishCost = explorationCost.find((resource) => resource.resourceId === 255)?.amount || 0;
-    realmEntityIds.forEach(({ realmEntityId }) => {
-      const food = getFoodResources(realmEntityId);
-      const wheatBalance = food.find((resource) => resource.resourceId === 254)?.amount || 0;
-      const fishBalance = food.find((resource) => resource.resourceId === 255)?.amount || 0;
-
-      if (wheatBalance && wheatBalance >= wheatCost && fishBalance && fishBalance >= fishCost) {
-        ids.push(realmEntityId);
-      }
-    });
-    setIdsCanExplore(ids);
-  }, [realmEntityIds]);
-
-  useEffect(() => {
-    setSelectedEntityId(explorationStart.exploration.explored_by_id);
-  }, [explorationStart]);
-
-  const onClick = () => {
-    // do something
-    onExplore();
-  };
+    if (!explorerId) return;
+    // get the food resources
+    const entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([explorerId]));
+    if (!entityOwner) return;
+  }, [explorerId]);
 
   const onExplore = async () => {
     setIsLoading(true);
-    if (!selectedEntityId || !clickedHexMemoized || !explorationStart.direction) return;
+    if (!explorerId || !explorationStart || direction === undefined) return;
     await explore({
-      //   realm_entity_id: selectedEntityId,
-      realm_entity_id: explorationStart.exploration.explored_by_id,
-      col: explorationStart.exploration.col,
-      row: explorationStart.exploration.row,
-      direction: explorationStart.direction,
+      unit_id: explorerId,
+      direction,
       signer: account,
     });
+    // setStep(2);
   };
 
   useEffect(() => {
@@ -152,103 +133,63 @@ export const ExplorePanel = ({ explorationStart, foundResource, onClose, setStep
 
   // do a use component value to wait for the exploration tx to be finished
   // then go to next step
+  const onCancelSelection = () => {
+    setSelectedPath(undefined);
+  };
+
+  const onCancelExplore = () => {
+    setIsExploreMode(false);
+  };
+
+  const canExplore = explorerId !== undefined && explorationStart !== undefined && direction !== undefined;
 
   return (
     <>
-      <div className="flex flex-col items-center p-2">
-        <Headline> Explore the map</Headline>
-        <div className={"relative w-full mt-3"}>
-          <img src={`/images/biomes/exploration.png`} className="object-cover w-full h-full rounded-[10px]" />
-          <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
-            <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
-            <div className="grid grid-cols-4 gap-2">
-              {explorationCost.map(({ resourceId, amount }) => (
-                <ResourceCost
-                  key={resourceId}
-                  type="vertical"
-                  resourceId={resourceId}
-                  amount={divideByPrecision(amount)}
-                />
-              ))}
-            </div>
+      <div className={"relative w-full mt-3"}>
+        <img src={`/images/biomes/exploration.png`} className="object-cover w-full h-[200px] rounded-[10px]" />
+        <div className="flex flex-col p-2 absolute left-2 bottom-2 rounded-[10px] bg-black/60">
+          <div className="mb-1 ml-1 italic text-light-pink text-xxs">Price:</div>
+          <div className="grid grid-cols-4 gap-2">
+            {explorationCost.map(({ resourceId, amount }) => (
+              <ResourceCost
+                key={resourceId}
+                type="vertical"
+                resourceId={resourceId}
+                amount={divideByPrecision(amount)}
+              />
+            ))}
           </div>
         </div>
       </div>
       <div className="w-full flex flex-col m-2 items-center text-xxs">
-        {/* <div className="flex w-[80%] justify-between items-center mb-2">
-          <SelectEntityId
-            entityIds={realmEntityIds.map((realmEntityId) => realmEntityId.realmEntityId)}
-            selectedEntityId={selectedEntityId}
-            idsCanExplore={idsCanExplore}
-            setSelectedEntityId={setSelectedEntityId}
-          ></SelectEntityId>
-        </div> */}
-        <div className="flex flex-col items-center justify-center">
-          <div className="flex">
-            {/* <Button
-              className="!px-[6px] mr-2 !py-[2px] text-xxs ml-auto"
-              onClick={onClose}
-              variant="outline"
-              withoutSound
-            >
-              {`Cancel`}
-            </Button> */}
+        <div className="flex w-full items-center justify-center">
+          <div className="flex mt-1 w-[85%] items-center justify-center">
             <Button
-              className="!px-[8px] !py-[5px] ml-auto text-lg h-7 "
+              variant="primary"
               size="md"
-              disabled={idsCanExplore.find((id) => id === selectedEntityId) ? false : true}
               isLoading={isLoading}
-              onClick={onClick}
-              variant="outline"
-              withoutSound
+              disabled={!canExplore}
+              onClick={onExplore}
+              className="mr-3"
             >
-              {`Explore`}
+              Explore
             </Button>
+            {canExplore && (
+              <Button variant="primary" size="md" onClick={onCancelSelection} className="mr-3">
+                Cancel Selection
+              </Button>
+            )}
+            {!canExplore && (
+              <Button variant="primary" size="md" onClick={onCancelExplore} className="mr-3">
+                Cancel
+              </Button>
+            )}
           </div>
         </div>
       </div>
     </>
   );
 };
-
-// type SelectEntityIdProps = {
-//   entityIds: bigint[];
-//   idsCanExplore: bigint[];
-//   setSelectedEntityId: (id: bigint) => void;
-//   selectedEntityId: bigint | undefined;
-// };
-
-// const SelectEntityId = ({ entityIds, idsCanExplore, setSelectedEntityId, selectedEntityId }: SelectEntityIdProps) => {
-//   const {
-//     setup: {
-//       components: { Realm },
-//     },
-//   } = useDojo();
-
-//   const names = entityIds.map((entityId) => {
-//     // get the name
-//     const realm = getComponentValue(Realm, getEntityIdFromKeys([entityId]));
-//     return { entityId, name: realm ? getRealm(realm?.realm_id)?.name : "" };
-//   });
-
-//   return (
-//     <div className="w-full flex flex-row justify-between">
-//       {names.map((name, index) => (
-//         <Button
-//           variant={selectedEntityId === name.entityId ? "primary" : "outline"}
-//           size="xs"
-//           className={""}
-//           disabled={!idsCanExplore.find((id) => id === BigInt(name.entityId))}
-//           onClick={() => setSelectedEntityId(name.entityId)}
-//           key={index}
-//         >
-//           {name.name}
-//         </Button>
-//       ))}
-//       ;
-//     </div>
-//   );
-// };
 
 type ExploreResultPanelProps = {
   biome: string;
@@ -265,7 +206,7 @@ const ExploreResultPanel = ({ biome, foundResource, onClose }: ExploreResultPane
     <div className="flex flex-col items-center w-full">
       {success && (
         <>
-          <div className="flex w-full items-center">
+          {/* <div className="flex w-full items-center">
             <svg width="132" height="12" viewBox="0 0 132 12" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
                 d="M131.887 6L129 8.88675L126.113 6L129 3.11325L131.887 6ZM129 6.5L1.23874 6.50001L1.23874 5.50001L129 5.5L129 6.5Z"
@@ -280,11 +221,6 @@ const ExploreResultPanel = ({ biome, foundResource, onClose }: ExploreResultPane
               <circle cx="17.5" cy="6" r="1.5" fill="#1B1B1B" />
               <circle cx="6" cy="6" r="1" fill="#1B1B1B" />
             </svg>
-
-            {step === 1 && (
-              <div className="text-[#86C16A] text-xs mx-2 flex-1 text-center">You discovered a new environment !</div>
-            )}
-            {step !== 1 && <div className="text-[#86C16A] text-xs mx-2 flex-1 text-center">You found a chess!</div>}
             <svg width="132" height="12" viewBox="0 0 132 12" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
                 d="M0.113249 6L3 8.88675L5.88675 6L3 3.11325L0.113249 6ZM3 6.5L130.761 6.50001L130.761 5.50001L3 5.5L3 6.5Z"
@@ -299,23 +235,23 @@ const ExploreResultPanel = ({ biome, foundResource, onClose }: ExploreResultPane
               <circle cx="1.5" cy="1.5" r="1.5" transform="matrix(-1 0 0 1 116 4.5)" fill="#1B1B1B" />
               <circle cx="1" cy="1" r="1" transform="matrix(-1 0 0 1 127 5)" fill="#1B1B1B" />
             </svg>
-          </div>
-          {step === 1 && (
+          </div> */}
+          {/* {step === 1 && (
             <div className="italic text-light-pink text-xxs my-2 uppercase"> {biome.split("_").join(" ")} </div>
           )}
-          {step !== 1 && <div className="italic text-light-pink text-xxs my-2">You’ve got a golden chest:</div>}
+          {step !== 1 && <div className="italic text-light-pink text-xxs my-2">You’ve got a golden chest:</div>} */}
           {step === 1 && (
             <div className="flex relative">
               <img
                 src={`/images/biomes/${biome.toLowerCase()}.png`}
-                className="object-cover w-full h-full rounded-[10px]"
+                className="object-cover w-full h-[230px] rounded-[10px]"
               />
             </div>
           )}
-          {step === 2 && <img src={`/images/chest.png`} className="object-contain w-full h-[450px] rounded-[10px]" />}
+          {step === 2 && <img src={`/images/chest.png`} className="object-cover rounded-[10px]" />}
           {step === 3 && (
             <div className="flex relative">
-              <img src={`/images/opened_chest.png`} className="object-contain w-full h-[450px] rounded-[10px]" />
+              <img src={`/images/opened_chest.png`} className="object-cover rounded-[10px]" />
               {foundResource && (
                 <div className="flex justify-center items-center space-x-1 flex-wrap p-2 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                   <div className="text-light-pink text-lg w-full mb-2 text-center italic">You won!</div>

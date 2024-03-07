@@ -2,10 +2,9 @@ import { create } from "zustand";
 import { createPopupsSlice, PopupsStore } from "./_popups";
 import { Vector3 } from "three";
 import { createDataStoreSlice, DataStore } from "./_dataStore";
+import { createMapStoreSlice, MapStore } from "./_mapStore";
 import React from "react";
 import { getRealmUIPosition } from "../../utils/utils";
-import { HyperStructureInterface } from "@bibliothecadao/eternum";
-import { Hexagon } from "../../components/worldmap/HexGrid";
 export type Background = "map" | "realmView" | "combat" | "bastion";
 
 interface UIStore {
@@ -46,15 +45,9 @@ interface UIStore {
   moveCameraToFoodView: () => void;
   isLoadingScreenEnabled: boolean;
   setIsLoadingScreenEnabled: (enabled: boolean) => void;
-  clickedHex: { col: number; row: number; hexIndex: number } | undefined;
-  setClickedHex: (hex: { col: number; row: number; hexIndex: number } | undefined) => void;
-  setClickedHyperstructure: (hyperstructure: HyperStructureInterface | undefined) => void;
-  clickedHyperstructure: HyperStructureInterface | undefined;
-  hexData: Hexagon[] | undefined;
-  setHexData: (hexData: Hexagon[]) => void;
 }
 
-const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
+const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) => ({
   theme: "light",
   setTheme: (theme) => set({ theme }),
   showBlurOverlay: false,
@@ -104,18 +97,17 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
     set({ cameraPosition: cameraPos });
     set({ cameraTarget: targetPos });
   },
-  moveCameraToTarget: (target, distance = 25) => {
+  moveCameraToTarget: (target) => {
     const x = target.x;
     const y = target.y * -1;
-    const z = target.z;
-    const trueTarget = { x, y, z };
+    const targetPos = new Vector3(x, 0, y);
     const cameraPos = new Vector3(
-      x + distance * (Math.random() < 0.5 ? 1 : -1),
-      distance / 2,
-      y + distance * (Math.random() < 0.5 ? 1 : -1),
+      x + 125 * (Math.random() < 0.5 ? 1 : -1),
+      100,
+      y + 75 * (Math.random() < 0.5 ? 1 : -1),
     );
     set({ cameraPosition: cameraPos });
-    set({ cameraTarget: trueTarget });
+    set({ cameraTarget: targetPos });
   },
   showRealmsFlags: true,
   setShowRealmsFlags: (show) => set({ showRealmsFlags: show }),
@@ -206,16 +198,7 @@ const useUIStore = create<UIStore & PopupsStore & DataStore>((set) => ({
   setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
   ...createPopupsSlice(set),
   ...createDataStoreSlice(set),
-  clickedHex: undefined,
-  setClickedHex: (hex) => {
-    set({ clickedHex: hex });
-  },
-  setClickedHyperstructure: (hyperstructure) => set({ clickedHyperstructure: hyperstructure }),
-  clickedHyperstructure: undefined,
-  hexData: undefined,
-  setHexData: (hexData) => {
-    set({ hexData });
-  },
+  ...createMapStoreSlice(set),
 }));
 
 export default useUIStore;

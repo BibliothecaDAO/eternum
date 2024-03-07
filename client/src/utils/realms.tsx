@@ -18,7 +18,6 @@ let realms: {
 export const loadRealms = async () => {
   const response = await fetch("/jsons/realms.json");
   realms = await response.json();
-  console.log("realms loaded");
 };
 
 loadRealms();

@@ -82,7 +82,8 @@
         "ArrivalTime",
         "Position",
         "Road",
-        "Movable"
+        "Movable",
+        "TickMove"
     ],
     "COMBAT_SYSTEMS": [
         "Resource",
@@ -136,6 +137,17 @@
     "MAP_SYSTEMS": [
         "Tile",
         "Resource",
-        "OwnedResourcesTracker"
+        "ResourceAllowance",
+        "Owner",
+        "OwnedResourcesTracker",
+        "Inventory",
+        "ForeignKey",
+        "ResourceChest",
+        "DetachedResource",
+        "Weight",
+        "Movable",
+        "Position",
+        "ArrivalTime",
+        "TickMove"
     ]
 }

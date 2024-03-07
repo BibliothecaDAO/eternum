@@ -28,6 +28,7 @@ import { Onboarding } from "../plugins/onboarding/components/Onboarding";
 import { useComputeMarket } from "../hooks/store/useMarketStore";
 import { useRefreshHyperstructure } from "../hooks/store/useRefreshHyperstructure";
 import { WorldPopups } from "./WorldPopups";
+import EpochCountdown from "../components/network/EpochCountdown";
 
 export const World = () => {
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
@@ -167,6 +168,7 @@ export const World = () => {
       <Tooltip />
       <Redirect to="/map" />
       <div className="absolute bottom-4 right-6 text-white text-xs text-white/60">v0.3.0</div>
+      <EpochCountdown />
     </div>
   );
 };

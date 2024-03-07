@@ -195,6 +195,8 @@ mod combat_systems {
                     sec_per_km: individual_speed, 
                     blocked: false,
                     round_trip: false,
+                    start_coord_x: 0,
+                    start_coord_y: 0,
                     intermediate_coord_x: 0,  
                     intermediate_coord_y: 0,  
                 }
@@ -318,6 +320,8 @@ mod combat_systems {
                     sec_per_km: combat_unit_speed, 
                     blocked: unit_movable.blocked,
                     round_trip: unit_movable.round_trip,
+                    start_coord_x: unit_movable.start_coord_x,
+                    start_coord_y: unit_movable.start_coord_y,
                     intermediate_coord_x: unit_movable.intermediate_coord_x,  
                     intermediate_coord_y: unit_movable.intermediate_coord_y,  
                 }

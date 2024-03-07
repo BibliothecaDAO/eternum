@@ -570,6 +570,8 @@ export function defineContractComponents(world: World) {
           sec_per_km: RecsType.Number,
           blocked: RecsType.Boolean,
           round_trip: RecsType.Boolean,
+          start_coord_x: RecsType.Number,
+          start_coord_y: RecsType.Number,
           intermediate_coord_x: RecsType.Number,
           intermediate_coord_y: RecsType.Number,
         },
@@ -855,6 +857,23 @@ export function defineContractComponents(world: World) {
           metadata: {
             name: "Tile",
             types: ["u128", "u128", "u128", "u128", "u128", "u64", "u8"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    TickMove: (() => {
+      return defineComponent(
+        world,
+        {
+          entity_id: RecsType.BigInt,
+          tick: RecsType.Number,
+          count: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: "TickMove",
+            types: ["u128", "u64", "u8"],
             customTypes: [],
           },
         },

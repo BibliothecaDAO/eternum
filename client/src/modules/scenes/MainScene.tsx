@@ -94,7 +94,7 @@ export const MainScene = () => {
       },
     },
     legacyLights: { value: false },
-    fog: "#fff",
+    // fog: "#fff",
     encoding: {
       options: {
         rgb: THREE.sRGBEncoding,

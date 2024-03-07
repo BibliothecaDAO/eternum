@@ -17,6 +17,7 @@ import {
   SendResourcesToLocationProps,
   TransferResourcesProps,
   TravelProps,
+  TravelHexProps,
   TransferItemsProps,
   TransferItemsFromMultipleProps,
   CreateSoldiersProps,
@@ -602,6 +603,18 @@ export class EternumProvider extends DojoProvider {
     });
   }
 
+  public async travel_hex(props: TravelHexProps) {
+    const { travelling_entity_id, directions, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "travel_systems"),
+      entrypoint: "travel_hex",
+      calldata: [this.getWorldAddress(), travelling_entity_id, directions],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
   public async create_soldiers(props: CreateSoldiersProps) {
     const { realm_entity_id, quantity, signer } = props;
     const tx = await this.executeMulti(signer, {
@@ -773,12 +786,12 @@ export class EternumProvider extends DojoProvider {
   }
 
   public async explore(props: ExploreProps) {
-    const { realm_entity_id, col, row, direction, signer } = props;
+    const { unit_id, direction, signer } = props;
 
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "map_systems"),
       entrypoint: "explore",
-      calldata: [this.getWorldAddress(), realm_entity_id, col, row, direction],
+      calldata: [this.getWorldAddress(), unit_id, direction],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,

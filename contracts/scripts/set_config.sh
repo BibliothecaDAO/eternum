@@ -55,6 +55,14 @@ commands=(
     "sozo execute $CONFIG_SYSTEMS set_bank_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,45,2,253,0,253,1,1844674407370955161,100000,100000"
 )
 
+
+## set tick config
+commands+=(
+    # max_moves_per_tick = 4
+    # tick_interval_in_seconds = 60
+    "sozo execute $CONFIG_SYSTEMS set_tick_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,4,60"
+)
+
 ## set exploration config
 commands+=(
     # wheat_burn_amount = 300000
