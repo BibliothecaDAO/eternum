@@ -1,0 +1,28 @@
+kind = "DojoModel"
+class_hash = "0x9da89003971eabeb8ca303dd30251046d119aed72457c14a62e18970898745"
+name = "eternum::models::labor::labor"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "resource_type"
+type = "u8"
+key = true
+
+[[members]]
+name = "balance"
+type = "u64"
+key = false
+
+[[members]]
+name = "last_harvest"
+type = "u64"
+key = false
+
+[[members]]
+name = "multiplier"
+type = "u64"
+key = false

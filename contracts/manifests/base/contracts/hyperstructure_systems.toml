@@ -1,0 +1,7 @@
+kind = "DojoContract"
+class_hash = "0x200c668b25c849bb5ecb4c0e6e3f04e9f5036b696b0aae7efb9aaba91b50a4c"
+abi = "abis/base/contracts/hyperstructure_systems.json"
+reads = []
+writes = []
+computed = []
+name = "eternum::systems::hyperstructure::contracts::hyperstructure_systems"

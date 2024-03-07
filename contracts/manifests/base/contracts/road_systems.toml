@@ -1,0 +1,7 @@
+kind = "DojoContract"
+class_hash = "0x5b1aa5a7534aee9b99730e491e8100fba01494264aed1e2b8f9e0019e273f2"
+abi = "abis/base/contracts/road_systems.json"
+reads = []
+writes = []
+computed = []
+name = "eternum::systems::transport::contracts::road_systems::road_systems"

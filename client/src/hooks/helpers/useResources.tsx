@@ -41,7 +41,7 @@ export function useResources() {
     }
 
     // todo: switch back to items_count when working
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < inventory.items_count; i++) {
       let foreignKey = inventory
         ? getComponentValue(ForeignKey, getForeignKeyEntityId(entityId, inventory.items_key, BigInt(i)))
         : undefined;

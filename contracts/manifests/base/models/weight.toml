@@ -1,0 +1,13 @@
+kind = "DojoModel"
+class_hash = "0x3ac70871f7eda114b8038aeaf25a7f2d6f8b5dd4921a8c5c02af8527d9a7a3d"
+name = "eternum::models::weight::weight"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "value"
+type = "u128"
+key = false

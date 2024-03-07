@@ -1,0 +1,28 @@
+kind = "DojoModel"
+class_hash = "0x25123f2c3875b4692de7e44e0be0d197bcd08b5e5b11d9bc5e1cd313fd2a750"
+name = "eternum::models::config::soldier_config"
+
+[[members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "resource_cost_id"
+type = "u128"
+key = false
+
+[[members]]
+name = "resource_cost_count"
+type = "u32"
+key = false
+
+[[members]]
+name = "wheat_burn_per_soldier"
+type = "u128"
+key = false
+
+[[members]]
+name = "fish_burn_per_soldier"
+type = "u128"
+key = false

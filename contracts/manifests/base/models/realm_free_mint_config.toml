@@ -1,0 +1,18 @@
+kind = "DojoModel"
+class_hash = "0x46369b421bd9090505595fc31da2187ba6c12890972c487e22d47212fc785eb"
+name = "eternum::models::config::realm_free_mint_config"
+
+[[members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "detached_resource_id"
+type = "u128"
+key = false
+
+[[members]]
+name = "detached_resource_count"
+type = "u32"
+key = false
