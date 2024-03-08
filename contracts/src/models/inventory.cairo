@@ -41,10 +41,7 @@ impl InventoryImpl of InventoryTrait {
     }
 
     fn next_item_fk(self: Inventory, world: IWorldDispatcher) -> ForeignKey {
-        // next_item_fk.entity_id should always be 0
         let next_fk = self.item_fk(world, self.items_count);
-        assert(next_fk.entity_id == 0, 'wrong next item fk');
-
         next_fk
     }       
 }
