@@ -139,14 +139,6 @@
             "type": "dojo::world::IWorldDispatcher"
           },
           {
-            "name": "wheat_burn_amount",
-            "type": "core::integer::u128"
-          },
-          {
-            "name": "fish_burn_amount",
-            "type": "core::integer::u128"
-          },
-          {
             "name": "reward_resource_amount",
             "type": "core::integer::u128"
           }
