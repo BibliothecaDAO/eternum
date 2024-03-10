@@ -51,7 +51,7 @@ mod map_systems {
     }
 
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl MapSystemsImpl of IMapSystems<ContractState> {
 
 
@@ -89,8 +89,12 @@ mod map_systems {
             // let unit_inventory = get!(world, unit_id, Inventory);
             // assert(unit_inventory.items_count == 0, 'unit inventory not empty');
 
-            // explore coordinate and mint reward
-            let exploration_reward = InternalMapSystemsImpl::get_explore_reward(world);
+
+            // explore coordinate, burn food and mint reward
+            let exploration_reward 
+                = InternalMapSystemsImpl::burn_food_and_get_explore_reward(
+                        world, unit_entity_owner.entity_owner_id 
+                    );
             InternalResourceSystemsImpl::transfer(world, 0, unit_id, exploration_reward);
 
             let current_coord: Coord = get!(world, unit_id, Position).into();
@@ -145,9 +149,16 @@ mod map_systems {
             tile
         }
 
-        fn get_explore_reward(world: IWorldDispatcher) -> Span<(u8, u128)> {
+        fn burn_food_and_get_explore_reward(world: IWorldDispatcher, realm_entity_id: u128) -> Span<(u8, u128)> {
             
             let explore_config: MapExploreConfig = get!(world, WORLD_CONFIG_ID, MapExploreConfig);
+            let mut wheat_burn_amount = explore_config.wheat_burn_amount;
+            let mut fish_burn_amount = explore_config.fish_burn_amount;
+            ResourceFoodImpl::burn_food(
+                world, realm_entity_id, wheat_burn_amount, 
+                fish_burn_amount, check_balance: true
+            );
+
             let (resource_types, resources_probs) = split_resources_and_probs();
             let reward_resource_id: u8 
                 = *random::choices(resource_types, resources_probs, array![].span(), 1, true).at(0);

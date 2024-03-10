@@ -11,7 +11,6 @@ use eternum::models::realm::Realm;
 use eternum::models::inventory::{Inventory, InventoryTrait};
 use eternum::models::weight::Weight;
 
-
 use eternum::models::map::Tile;
 
 use eternum::systems::map::interface::{
@@ -48,9 +47,16 @@ use eternum::utils::testing::{spawn_eternum, deploy_system};
 use dojo::world::{ IWorldDispatcher, IWorldDispatcherTrait};
 use starknet::contract_address_const;
 
-const TIMESTAMP: u64 = 10000;
+const INITIAL_WHEAT_BALANCE : u128 = 7000;
+const INITIAL_FISH_BALANCE : u128 = 2000;
+const MAP_EXPLORE_WHEAT_BURN_AMOUNT : u128 = 1000;
+const MAP_EXPLORE_FISH_BURN_AMOUNT: u128 = 500;
+
 const MAP_EXPLORE_RANDOM_MINT_AMOUNT: u128 = 3;
 const MAP_EXPLORE_PRECOMPUTED_RANDOM_MINT_RESOURCE : u8 = 6; // silver
+
+const TIMESTAMP: u64 = 10000;
+
 const MAX_MOVES_PER_TICK : u8 = 12;
 const TICK_INTERVAL_IN_SECONDS : u64= 3;
 
@@ -63,6 +69,16 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
     let config_systems_address 
         = deploy_system(config_systems::TEST_CLASS_HASH);    
 
+    // set initial food resources
+    let initial_resources = array![
+        (ResourceTypes::WHEAT, INITIAL_WHEAT_BALANCE),
+        (ResourceTypes::FISH, INITIAL_FISH_BALANCE),
+    ];
+
+    IRealmFreeMintConfigDispatcher {
+        contract_address: config_systems_address
+    }.set_mint_config(world, initial_resources.span());
+
     // set weight configuration for rewarded resource (silver)
     IWeightConfigDispatcher {
             contract_address: config_systems_address
@@ -72,7 +88,11 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
     // set map exploration config
     IMapConfigDispatcher {
         contract_address: config_systems_address
-    }.set_exploration_config(world, MAP_EXPLORE_RANDOM_MINT_AMOUNT);
+    }.set_exploration_config(world,
+        MAP_EXPLORE_WHEAT_BURN_AMOUNT,
+        MAP_EXPLORE_FISH_BURN_AMOUNT, 
+        MAP_EXPLORE_RANDOM_MINT_AMOUNT
+    );
 
     // set tick config
     let tick_config = TickConfig {
@@ -153,6 +173,8 @@ fn setup() -> (IWorldDispatcher, u128, u128, IMapSystemsDispatcher) {
             sec_per_km: 1, 
             blocked: false,
             round_trip: false,
+            start_coord_x: 0,
+            start_coord_y: 0,
             intermediate_coord_x: 0,  
             intermediate_coord_y: 0,  
         }
@@ -200,6 +222,13 @@ fn test_map_explore() {
     assert_eq!(explored_tile.explored_by_id, realm_army_unit_id, "wrong realm owner");
     assert_eq!(explored_tile.explored_at, TIMESTAMP, "wrong exploration time");
 
+    // ensure that the right amount of food was burnt 
+    let expected_wheat_balance = INITIAL_WHEAT_BALANCE - MAP_EXPLORE_WHEAT_BURN_AMOUNT;
+    let expected_fish_balance = INITIAL_FISH_BALANCE - MAP_EXPLORE_FISH_BURN_AMOUNT;
+    let (realm_wheat, realm_fish) = ResourceFoodImpl::get_food(world, realm_entity_id);
+    assert_eq!(realm_wheat.balance, expected_wheat_balance, "wrong wheat balance");
+    assert_eq!(realm_fish.balance, expected_fish_balance, "wrong wheat balance");
+
     // ensure that item was added to realm_army's inventory
     let realm_army_inventory: Inventory = get!(world, realm_army_unit_id, Inventory);
     assert_eq!(realm_army_inventory.items_count, 1);
@@ -209,11 +238,13 @@ fn test_map_explore() {
     army_coord = expected_explored_coord;
 }
 
+
+
 #[test]
 #[should_panic(expected: ("max moves per tick exceeded",'ENTRYPOINT_FAILED' ))]
 fn test_map_explore__ensure_explorer_cant_hex_travel_till_next_tick() {
 
-    let (world, realm_entity_id,realm_army_unit_id, map_systems_dispatcher) = setup();
+    let (world, _,realm_army_unit_id, map_systems_dispatcher) = setup();
 
     starknet::testing::set_contract_address(
         contract_address_const::<'realm_owner'>()
@@ -221,7 +252,6 @@ fn test_map_explore__ensure_explorer_cant_hex_travel_till_next_tick() {
 
     starknet::testing::set_transaction_hash('hellothash');
 
-    let mut army_coord: Coord = get!(world, realm_army_unit_id, Position).into();
     let explore_tile_direction: Direction = Direction::West;
 
     map_systems_dispatcher

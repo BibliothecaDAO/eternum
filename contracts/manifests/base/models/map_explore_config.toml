@@ -1,11 +1,21 @@
 kind = "DojoModel"
-class_hash = "0x239780f3145ed140e45e72cc45c3d04fec26e560c4874181e5604e427ca030a"
+class_hash = "0x7621b4c09bb68492df8125ae6c697ea2d71247860a80769360b539c12a6c4a6"
 name = "eternum::models::config::map_explore_config"
 
 [[members]]
 name = "config_id"
 type = "u128"
 key = true
+
+[[members]]
+name = "wheat_burn_amount"
+type = "u128"
+key = false
+
+[[members]]
+name = "fish_burn_amount"
+type = "u128"
+key = false
 
 [[members]]
 name = "reward_resource_amount"
