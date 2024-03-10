@@ -65,9 +65,10 @@ commands+=(
 
 ## set exploration config
 commands+=(
-
+    # wheat_burn_amount = 100000
+    # fish_burn_amount = 50000
     # reward_resource_amount = 20000
-    "sozo execute $CONFIG_SYSTEMS set_exploration_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,20000"
+    "sozo execute $CONFIG_SYSTEMS set_exploration_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,100000,50000,20000"
 )
 
 commands+=(
