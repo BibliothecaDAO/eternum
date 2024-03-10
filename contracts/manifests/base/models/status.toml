@@ -1,0 +1,13 @@
+kind = "DojoModel"
+class_hash = "0x4926b74eeecab95bed7f19b29f700ddf4ba06b4b77276255c30ce38dd9b741f"
+name = "eternum::models::trade::status"
+
+[[members]]
+name = "trade_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "value"
+type = "u128"
+key = false

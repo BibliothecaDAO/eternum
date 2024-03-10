@@ -1,0 +1,23 @@
+kind = "DojoModel"
+class_hash = "0x722a04091940e82cbf5f12cca4d6a68dc9bf8fdc4b5a9aa29e468a96051623f"
+name = "eternum::models::config::speed_config"
+
+[[members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "speed_config_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "entity_type"
+type = "u128"
+key = false
+
+[[members]]
+name = "sec_per_km"
+type = "u16"
+key = false

@@ -2,28 +2,14 @@ import { HyperStructureInterface } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
 import { FeedHyperstructurePopup } from "../components/worldmap/hyperstructures/FeedHyperstructure";
 import useUIStore from "../hooks/store/useUIStore";
-import { ExploreMapPopup } from "../components/worldmap/explore/ExploreHexPopup";
+import { ChooseActionPopup } from "../components/worldmap/ChooseActionPopup";
 
 export const WorldPopups = () => {
-  const setClickedHex = useUIStore((state) => state.setClickedHex);
   const [showFeedPopup, setShowFeedPopup] = useState(false);
   const [selectedHyperstructure, setSelectedHyperstructure] = useState<HyperStructureInterface | undefined>(undefined);
-  const [showExplore, setShowExplore] = useState(false);
 
-  const clickedHex = useUIStore((state) => state.clickedHex);
-
-  useEffect(() => {
-    if (clickedHex) {
-      // check if hex is unexplored
-
-      setShowExplore(true);
-    }
-  }, [clickedHex]);
-
-  const onCloseExplore = () => {
-    setShowExplore(false);
-    setClickedHex(undefined);
-  };
+  // no more interaction when clicking on hex for now
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
 
   const clickedHyperstructure = useUIStore((state) => state.clickedHyperstructure);
   const setClickedHyperstructure = useUIStore((state) => state.setClickedHyperstructure);
@@ -46,7 +32,7 @@ export const WorldPopups = () => {
       {showFeedPopup && selectedHyperstructure && (
         <FeedHyperstructurePopup selectedHyperstructure={selectedHyperstructure} onClose={onCloseHyperstructure} />
       )}
-      {showExplore && <ExploreMapPopup onClose={onCloseExplore}></ExploreMapPopup>}
+      {selectedEntity && <ChooseActionPopup />}
     </div>
   );
 };

@@ -1,0 +1,18 @@
+kind = "DojoModel"
+class_hash = "0x79e44f1821dc86997f7b97c8194bdba0e38c9ed225795363b13663b5d474c78"
+name = "eternum::models::inventory::inventory"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "items_key"
+type = "felt252"
+key = false
+
+[[members]]
+name = "items_count"
+type = "u128"
+key = false

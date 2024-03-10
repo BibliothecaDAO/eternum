@@ -1,0 +1,13 @@
+kind = "DojoModel"
+class_hash = "0x2ebe158013d9a2ff7ad72acb74dba39659073ed3c22c2f6b3ef72c3220a02b8"
+name = "eternum::models::config::defence_config"
+
+[[members]]
+name = "entity_type"
+type = "u128"
+key = true
+
+[[members]]
+name = "max_value"
+type = "u128"
+key = false

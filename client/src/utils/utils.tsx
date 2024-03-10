@@ -3,7 +3,7 @@ import { Vector2 } from "three";
 import { useThree } from "@react-three/fiber";
 import { BlendFunction } from "postprocessing";
 import { Entity, setComponent, Component, Schema, Components } from "@dojoengine/recs";
-import { Position } from "@bibliothecadao/eternum";
+import { Position, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import realmsHexPositions from "../geodata/hex/realmHexPositions.json";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import realmHexPositions from "../geodata/hex/realmHexPositions.json";
@@ -381,12 +381,8 @@ export const getUIPositionFromColRow = (col: number, row: number, log: boolean =
   const hexRadius = 3;
   const hexHeight = hexRadius * 2;
   const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
-
-  // if (log) {
-  //   console.log({ getUiPosColRow: { col, row } });
-  // }
+  const vertDist = hexHeight * 0.75 + 0.2;
+  const horizDist = hexWidth + 0.2;
 
   const colNorm = col - 2147483647;
   const rowNorm = row - 2147483647;
@@ -399,6 +395,25 @@ export const getUIPositionFromColRow = (col: number, row: number, log: boolean =
   };
 };
 
+export const getColRowFromUIPosition = (x: number, y: number): { col: number; row: number } => {
+  const hexRadius = 3;
+  const hexHeight = hexRadius * 2;
+  const hexWidth = Math.sqrt(3) * hexRadius;
+  const vertDist = hexHeight * 0.75 + 0.2;
+  const horizDist = hexWidth + 0.2;
+
+  const rowNorm = Math.round(y / vertDist);
+  const colNorm = Math.round((x - ((rowNorm % 2) * horizDist) / 2) / horizDist);
+
+  const col = colNorm + 2147483647;
+  const row = rowNorm + 2147483647;
+
+  return {
+    col,
+    row,
+  };
+};
+
 export interface HexPositions {
   [key: string]: { col: number; row: number }[];
 }
@@ -406,8 +421,16 @@ export interface HexPositions {
 export const getRealmUIPosition = (realm_id: bigint): Position => {
   const realmPositions = realmHexPositions as HexPositions;
   const colrow = realmPositions[Number(realm_id).toString()][0];
-  // console.log({ Cameracolrow: colrow });
-  // const uiRow = 2147483647 + 300 - (colrow.row - 2147483647);
 
   return getUIPositionFromColRow(colrow.col, colrow.row, true);
+};
+
+export const findDirection = (startPos: { col: number; row: number }, endPos: { col: number; row: number }) => {
+  // give the direction
+  const neighborOffsets = startPos.row % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+  for (let offset of neighborOffsets) {
+    if (startPos.col + offset.i === endPos.col && startPos.row + offset.j === endPos.row) {
+      return offset.direction;
+    }
+  }
 };

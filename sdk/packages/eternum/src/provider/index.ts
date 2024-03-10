@@ -17,6 +17,7 @@ import {
   SendResourcesToLocationProps,
   TransferResourcesProps,
   TravelProps,
+  TravelHexProps,
   TransferItemsProps,
   TransferItemsFromMultipleProps,
   CreateSoldiersProps,
@@ -42,17 +43,23 @@ import { Call } from "starknet";
 const UUID_OFFSET_CREATE_CARAVAN = 2;
 
 export const getContractByName = (manifest: any, name: string) => {
-  return (
-    manifest.contracts.find((contract: any) => {
-      const nameParts = contract.name.split("::");
-      return nameParts[nameParts.length - 1] === name;
-    })?.address || ""
-  );
+  const contract = manifest.contracts.find((contract: any) => contract.name.includes("::" + name));
+  if (contract) {
+    return contract.address;
+  } else {
+    return "";
+  }
 };
 
 export class EternumProvider extends DojoProvider {
-  constructor(url?: string, manifest: any = undefined) {
+  constructor(katana: any, url?: string, manifest: any = undefined) {
     super(manifest, url);
+    this.manifest = katana;
+
+    this.getWorldAddress = function () {
+      const worldAddress = this.manifest.world.address;
+      return worldAddress;
+    };
   }
 
   public async purchase_labor(props: PurchaseLaborProps): Promise<any> {
@@ -280,6 +287,7 @@ export class EternumProvider extends DojoProvider {
       };
     });
     const tx = await this.executeMulti(signer, calldata);
+
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
     });
@@ -602,6 +610,18 @@ export class EternumProvider extends DojoProvider {
     });
   }
 
+  public async travel_hex(props: TravelHexProps) {
+    const { travelling_entity_id, directions, signer } = props;
+    const tx = await this.executeMulti(signer, {
+      contractAddress: getContractByName(this.manifest, "travel_systems"),
+      entrypoint: "travel_hex",
+      calldata: [this.getWorldAddress(), travelling_entity_id, directions],
+    });
+    return await this.provider.waitForTransaction(tx.transaction_hash, {
+      retryInterval: 500,
+    });
+  }
+
   public async create_soldiers(props: CreateSoldiersProps) {
     const { realm_entity_id, quantity, signer } = props;
     const tx = await this.executeMulti(signer, {
@@ -773,12 +793,12 @@ export class EternumProvider extends DojoProvider {
   }
 
   public async explore(props: ExploreProps) {
-    const { realm_entity_id, col, row, direction, signer } = props;
+    const { unit_id, direction, signer } = props;
 
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "map_systems"),
       entrypoint: "explore",
-      calldata: [this.getWorldAddress(), realm_entity_id, col, row, direction],
+      calldata: [this.getWorldAddress(), unit_id, direction],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,

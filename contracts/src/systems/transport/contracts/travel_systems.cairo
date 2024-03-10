@@ -241,6 +241,8 @@ mod travel_systems {
             let travel_time = RoadImpl::use_road(
                 world, travel_time, from_coord, to_coord
                 );            
+
+            let current_position = get!(world, transport_id, Position);
     
             set!(world,(
                 ArrivalTime {
@@ -257,6 +259,8 @@ mod travel_systems {
                     sec_per_km: transport_movable.sec_per_km,
                     blocked: false,
                     round_trip: false,
+                    start_coord_x: current_position.x,
+                    start_coord_y: current_position.y,
                     intermediate_coord_x: 0,
                     intermediate_coord_y: 0,
                 }

@@ -33,15 +33,15 @@ const CameraControls = ({ position, target }: Props) => {
   const [isMapView] = useRoute("/map");
 
   const maxDistance = useMemo(() => {
-    return isMapView ? 200 : 1800;
+    return isMapView ? 1000 : 1800;
   }, [isMapView]);
 
   const minDistance = useMemo(() => {
     return isMapView ? 100 : 1000;
   }, [isMapView]);
 
-  var minPan = isMapView ? new THREE.Vector3(0, -Infinity, -1300) : new THREE.Vector3(-175, -Infinity, -150);
-  var maxPan = isMapView ? new THREE.Vector3(1500, Infinity, -80) : new THREE.Vector3(300, Infinity, 100);
+  var minPan = isMapView ? new THREE.Vector3(0, -Infinity, -1400) : new THREE.Vector3(-175, -Infinity, -150);
+  var maxPan = isMapView ? new THREE.Vector3(2700, Infinity, 0) : new THREE.Vector3(300, Infinity, 100);
   var _v = new THREE.Vector3();
 
   useControls({
@@ -94,16 +94,16 @@ const CameraControls = ({ position, target }: Props) => {
       ref={ref}
       args={[camera, domElement]}
       panSpeed={2}
-      // enableRotate={!isMapView} // Disable rotation
+      //enableRotate={!isMapView} // Disable rotation
       enableRotate={true}
-      // maxDistance={maxDistance}
-      // minDistance={minDistance}
-      // maxPolarAngle={Math.PI / 3}
+      maxDistance={maxDistance}
+      minDistance={minDistance}
+      maxPolarAngle={Math.PI / 3}
       makeDefault
       onChange={(e) => {
         const controls = e?.target;
         _v.copy(controls.target);
-        // controls.target.clamp(minPan, maxPan);
+        controls.target.clamp(minPan, maxPan);
         _v.sub(controls.target);
         camera.position.sub(_v);
       }}

@@ -5,7 +5,7 @@ import useUIStore from "../../hooks/store/useUIStore";
 import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
 import { a } from "@react-spring/three";
-import { Sky, AdaptiveDpr, useHelper, Clouds, Cloud, CameraShake } from "@react-three/drei";
+import { Sky, AdaptiveDpr, useHelper, Clouds, Cloud, CameraShake, Bvh } from "@react-three/drei";
 import { Suspense, useMemo, useRef } from "react";
 import { EffectComposer, Bloom, Noise, SMAA } from "@react-three/postprocessing";
 // @ts-ignore
@@ -24,6 +24,14 @@ export const Camera = () => {
   // const camera2 = { x: 100, y: 30, z: -500 }
   const cameraTarget = useUIStore((state) => state.cameraTarget);
 
+  return (
+    <>
+      <CameraControls position={cameraPosition} target={cameraTarget} />
+    </>
+  );
+};
+
+export const DirectionalLightAndHelper = ({ locationType }: { locationType: string }) => {
   const dLightRef = useRef<any>();
   if (import.meta.env.DEV) {
     useHelper(dLightRef, THREE.DirectionalLightHelper, 50, "hotpink");
@@ -31,7 +39,7 @@ export const Camera = () => {
 
   const { lightPosition, bias } = useControls({
     lightPosition: {
-      value: { x: 0, y: 1000, z: 0 }, // Adjust y value to position the light above
+      value: { x: 0, y: 100, z: 200 }, // Adjust y value to position the light above
       step: 0.01,
     },
     bias: {
@@ -42,23 +50,24 @@ export const Camera = () => {
     },
   });
 
+  const yPos = useMemo(() => {
+    return locationType === "map" ? 100 : 300;
+  }, [locationType]);
+
   return (
-    <>
-      <CameraControls position={cameraPosition} target={cameraTarget} />
-      <directionalLight
-        ref={dLightRef}
-        castShadow
-        shadow-mapSize={[4096, 4096]}
-        shadow-camera-far={3000}
-        shadow-camera-left={-3000}
-        shadow-camera-right={3000}
-        shadow-camera-top={3000}
-        shadow-camera-bottom={-3000}
-        shadow-bias={bias}
-        position={[lightPosition.x, lightPosition.y, lightPosition.z]}
-        intensity={1}
-      ></directionalLight>
-    </>
+    <directionalLight
+      ref={dLightRef}
+      castShadow
+      shadow-mapSize={[4096, 4096]}
+      shadow-camera-far={3000}
+      shadow-camera-left={-3000}
+      shadow-camera-right={3000}
+      shadow-camera-top={3000}
+      shadow-camera-bottom={-3000}
+      shadow-bias={bias}
+      position={[lightPosition.x, yPos, lightPosition.z]}
+      intensity={2}
+    ></directionalLight>
   );
 };
 
@@ -74,7 +83,7 @@ export const MainScene = () => {
   }, [location]);
 
   const data = useControls("GL", {
-    exposure: { value: 0.4, min: -5, max: 5 },
+    exposure: { value: 0.9, min: -5, max: 5 },
     toneMapping: {
       options: {
         filmic: THREE.ACESFilmicToneMapping,
@@ -85,7 +94,7 @@ export const MainScene = () => {
       },
     },
     legacyLights: { value: false },
-    fog: "#fff",
+    // fog: "#fff",
     encoding: {
       options: {
         rgb: THREE.sRGBEncoding,
@@ -108,28 +117,35 @@ export const MainScene = () => {
     [],
   );
 
+  const { mapFogNear, mapFogFar, realmFogNear, realmFogFar } = useControls("Fog", {
+    mapFogNear: { value: 831, min: 0, max: 3000, step: 1 },
+    mapFogFar: { value: 1426, min: 0, max: 3000, step: 1 },
+    realmFogNear: { value: 1885, min: 0, max: 1000, step: 1 },
+    realmFogFar: { value: 2300, min: 0, max: 1000, step: 1 },
+  });
+
   const fogDistance = useMemo(
     () =>
       locationType === "map"
         ? {
-            near: 507,
-            far: 725,
+            near: mapFogNear,
+            far: mapFogFar,
           }
         : {
             near: 1885,
             far: 2300,
           },
-    [locationType],
+    [locationType, mapFogFar, mapFogNear, realmFogFar, realmFogNear],
   );
 
   const cloudsConfig = useMemo(
     () =>
       locationType === "map"
         ? {
-            position: [0, 75, 50],
+            position: [1250, 400, -650],
             opacity: 0.05,
-            bounds: [200, 1, 100],
-            volume: 50,
+            bounds: [1500, 1, 700],
+            volume: 700,
           }
         : {
             position: [0, 255, -250],
@@ -140,12 +156,24 @@ export const MainScene = () => {
     [locationType],
   );
 
+  const { ambientColor, ambientIntensity } = useControls("Ambient Light", {
+    ambientColor: { value: "#fff", label: "Color" },
+    ambientIntensity: { value: 1, min: 0, max: 1, step: 0.01 },
+  });
+
+  const { azimuth, inclination, distance, sunPosition } = useControls("Sky", {
+    azimuth: { value: 0.1, min: 0, max: 1, step: 0.01 },
+    inclination: { value: 0.6, min: 0, max: 1, step: 0.01 },
+    distance: { value: 3000, min: 0, max: 10000, step: 100 },
+    sunPosition: { value: { x: 0, y: 0, z: 0 } },
+  });
+
   return (
     <Canvas
       frameloop="demand" // for fps limiter
       raycaster={{ params: { Points: { threshold: 0.2 } } }}
       className="rounded-xl"
-      camera={{ fov: 15, position: [0, 700, 0], far: 3500 }}
+      camera={{ fov: 15, position: [0, 700, 0], far: 10000 }}
       dpr={[0.5, 1]}
       performance={{
         min: 0.1,
@@ -169,10 +197,10 @@ export const MainScene = () => {
     >
       {import.meta.env.DEV && <Perf position="bottom-left" />}
       <FPSLimiter>
-        <Sky azimuth={1} inclination={0.6} distance={3000} />
-        <ambientLight />
+        {/* <Sky azimuth={azimuth} inclination={inclination} distance={distance} /> */}
+        <ambientLight color={ambientColor} intensity={ambientIntensity} />
         <Camera />
-        <CameraShake {...shakeConfig} />
+        <DirectionalLightAndHelper locationType={locationType} />
         <Suspense fallback={null}>
           <a.group>
             <Switch location={locationType}>
@@ -180,7 +208,32 @@ export const MainScene = () => {
                 <WorldMapScene />
               </Route>
               <Route path="realm">
+                <CameraShake {...shakeConfig} />
                 <RealmCityViewScene />
+                <Clouds position={cloudsConfig.position as any} material={THREE.MeshBasicMaterial}>
+                  <Cloud
+                    concentrate="random"
+                    seed={7331}
+                    speed={0.06}
+                    segments={100}
+                    castShadow={true}
+                    opacity={cloudsConfig.opacity}
+                    bounds={cloudsConfig.bounds as any}
+                    volume={cloudsConfig.volume}
+                    color="white"
+                  />
+                  <Cloud
+                    concentrate="random"
+                    seed={1337}
+                    castShadow={true}
+                    speed={0.03}
+                    segments={100}
+                    opacity={cloudsConfig.opacity}
+                    bounds={cloudsConfig.bounds as any}
+                    volume={cloudsConfig.volume}
+                    color="white"
+                  />
+                </Clouds>
               </Route>
             </Switch>
           </a.group>
@@ -191,31 +244,6 @@ export const MainScene = () => {
           <SMAA />
         </EffectComposer>
         <AdaptiveDpr pixelated />
-        <Clouds position={cloudsConfig.position as any} material={THREE.MeshBasicMaterial}>
-          <Cloud
-            concentrate="random"
-            seed={7331}
-            speed={0.06}
-            segments={100}
-            castShadow={true}
-            opacity={cloudsConfig.opacity}
-            bounds={cloudsConfig.bounds as any}
-            volume={cloudsConfig.volume}
-            color="white"
-          />
-          <Cloud
-            concentrate="random"
-            seed={1337}
-            castShadow={true}
-            speed={0.03}
-            segments={100}
-            opacity={cloudsConfig.opacity}
-            bounds={cloudsConfig.bounds as any}
-            volume={cloudsConfig.volume}
-            color="white"
-          />
-        </Clouds>
-        <fog attach="fog" color={data.fog} near={fogDistance.near} far={fogDistance.far} />
       </FPSLimiter>
     </Canvas>
   );

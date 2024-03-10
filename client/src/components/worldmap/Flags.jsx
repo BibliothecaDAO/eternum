@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useGLTF, Html } from "@react-three/drei";
 import realmsJson from "../../geodata/realms.json";
-import realmHexPositions from "../../geodata/hex/realmHexPositions.json"
+import realmHexPositions from "../../geodata/hex/realmHexPositions.json";
 import flagsHeights from "../../geodata/flags_heights.json";
 import realmsOrders from "../../geodata/realms_raw.json";
 import * as THREE from "three";
@@ -142,7 +142,7 @@ export function Flags(props) {
 
     const defaultTransform = new THREE.Matrix4()
       .makeRotationX(-Math.PI / 2)
-      .multiply(new THREE.Matrix4().makeScale(0.3, 0.3, 0.3));
+      .multiply(new THREE.Matrix4().makeScale(0.1, 0.1, 0.1));
 
     woodGeometry.applyMatrix4(defaultTransform);
     flagGeometry.applyMatrix4(defaultTransform);
@@ -163,10 +163,10 @@ export function Flags(props) {
 
     ordersRealms.forEach((orderRealms, index) => {
       orderRealms.forEach((realm, i) => {
-        const {x, y} = getRealmUIPosition(realm.realmId);
+        const { x, y } = getRealmUIPosition(realm.realmId);
         const z = -0 - flagsHeights[Number(realm.realmId) - 1];
         // _position.set(-y, -x, -20);
-        _position.set(-x, y, -20);
+        _position.set(-x, y, -15);
         dummy.position.copy(_position);
         dummy.rotateZ(
           //random
@@ -201,16 +201,17 @@ export function Flags(props) {
     }
   };
 
+  const posVector = new THREE.Vector3();
   const hoverHandler = (e, index) => {
     if (e.intersections.length > 0) {
       const instanceId = e.intersections[0].instanceId;
-      const point = e.intersections[0].point;
-      // const tooltipPos = new THREE.Vector3(
-      //   ordersRealms[index][instanceId].xy[0] * -1,
-      //   2,
-      //   ordersRealms[index][instanceId].xy[1] * -1,
-      // );
-      const tooltipPos = new THREE.Vector3(point.x, 2, point.z);
+      const point = getUIPositionFromColRow(
+        ordersRealms[index][instanceId].position.x,
+        ordersRealms[index][instanceId].position.y,
+        true,
+      );
+
+      const tooltipPos = posVector.set(point.x, 22, -point.y);
       setTooltipPosition(tooltipPos);
       setHoveredRealm(ordersRealms[index][instanceId]);
     }
@@ -218,7 +219,7 @@ export function Flags(props) {
 
   return (
     <>
-      <Html position={tooltipPosition} distanceFactor={10}>
+      <Html position={tooltipPosition} distanceFactor={100}>
         <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
           {hoveredRealm && hoveredRealm.name}
         </div>
@@ -226,7 +227,15 @@ export function Flags(props) {
       <group {...props} dispose={null} position={[-0.38, 0, -0.04]} rotation={[-Math.PI / 2, Math.PI, 0]}>
         {woodInstances.map((woodInstance, index) => {
           return (
-            <group key={index} onClick={(e) => clickHandler(e, index)} onPointerEnter={(e) => hoverHandler(e, index)}>
+            <group
+              key={index}
+              onClick={(e) => clickHandler(e, index)}
+              onPointerEnter={(e) => hoverHandler(e, index)}
+              onPointerLeave={() => {
+                posVector.set(0, 0, 0);
+                setTooltipPosition(posVector);
+              }}
+            >
               <primitive object={woodInstance} />
               <primitive object={flagInstances[index]} />
             </group>

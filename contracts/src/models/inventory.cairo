@@ -11,18 +11,12 @@ struct Inventory {
 
 #[generate_trait]
 impl InventoryImpl of InventoryTrait {
-
     fn item_fk(self: Inventory, world: IWorldDispatcher, item_index: u128) -> ForeignKey {
-        let foreign_key_arr : Array<felt252>
-            = array![
-                self.entity_id.into(), 
-                self.items_key.into(), 
-                item_index.into()
-            ];
-        let foreign_key_id: felt252 = 
-            core::poseidon::poseidon_hash_span(foreign_key_arr.span());
-        let foreign_key: ForeignKey = 
-                get!(world, foreign_key_id, ForeignKey);
+        let foreign_key_arr: Array<felt252> = array![
+            self.entity_id.into(), self.items_key.into(), item_index.into()
+        ];
+        let foreign_key_id: felt252 = core::poseidon::poseidon_hash_span(foreign_key_arr.span());
+        let foreign_key: ForeignKey = get!(world, foreign_key_id, ForeignKey);
 
         return foreign_key;
     }

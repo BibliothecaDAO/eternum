@@ -62,6 +62,11 @@ export interface TravelProps extends SystemSigner {
   destination_coord_y: num.BigNumberish;
 }
 
+export interface TravelHexProps extends SystemSigner {
+  travelling_entity_id: num.BigNumberish;
+  directions: num.BigNumberish[];
+}
+
 export interface CreateOrderProps {
   maker_id: num.BigNumberish;
   maker_gives_resource_types: num.BigNumberish[];
@@ -107,9 +112,7 @@ export interface PurchaseLaborProps extends SystemSigner {
 }
 
 export interface ExploreProps extends SystemSigner {
-  realm_entity_id: num.BigNumberish;
-  col: num.BigNumberish;
-  row: num.BigNumberish;
+  unit_id: num.BigNumberish;
   direction: num.BigNumberish;
 }
 

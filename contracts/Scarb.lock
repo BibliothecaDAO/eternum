@@ -42,7 +42,7 @@ source = "git+https://github.com/akhercha/cubit?rev=d3869a3f0c47e5ed229bbbfe2fce
 [[package]]
 name = "dojo"
 version = "0.5.1"
-source = "git+https://github.com/dojoengine/dojo?tag=v0.5.1#4a6cad5f21d8da71714ae6ff48c9cc6ecaae642a"
+source = "git+https://github.com/dojoengine/dojo?tag=v0.6.0-alpha.4#8bfd5ada1a0263df155d0848a9a3c0996d8967bd"
 dependencies = [
  "dojo_plugin",
 ]

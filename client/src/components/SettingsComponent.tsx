@@ -21,6 +21,16 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
     account: { accountDisplay, account },
   } = useDojo();
 
+  const flatMode = localStorage.getItem("flatMode");
+  const toggleFlatMode = () => {
+    if (flatMode) {
+      localStorage.removeItem("flatMode");
+    } else {
+      localStorage.setItem("flatMode", "true");
+    }
+    window.location.reload();
+  };
+
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
 
   const { getAddressName } = useRealm();
@@ -73,6 +83,13 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
               >
                 <Checkbox enabled={fullScreen} />
                 <div>Fullscreen</div>
+              </div>
+              <div
+                className="flex text-xs text-gray-gold space-x-2 items-center cursor-pointer"
+                onClick={toggleFlatMode}
+              >
+                <Checkbox enabled={flatMode === "true"} />
+                <div>Flat Hexagons (Light mode)</div>
               </div>
               <Headline>Sound</Headline>
               <RangeInput value={musicLevel} fromTitle="Mute" onChange={setMusicLevel} title="Music" />

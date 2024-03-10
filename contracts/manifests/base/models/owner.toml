@@ -1,0 +1,13 @@
+kind = "DojoModel"
+class_hash = "0x797005d746988c99fb9ba19fef354f41ecef3a58b864594dd1c3570fe0e284d"
+name = "eternum::models::owner::owner"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "address"
+type = "ContractAddress"
+key = false

@@ -1,0 +1,18 @@
+kind = "DojoModel"
+class_hash = "0x6da9b882c5e1f8e9dffdf57c116c4dc71c4cee891a37df47be03e3993577bd"
+name = "eternum::models::config::world_config"
+
+[[members]]
+name = "config_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "admin_address"
+type = "ContractAddress"
+key = false
+
+[[members]]
+name = "realm_l2_contract"
+type = "ContractAddress"
+key = false

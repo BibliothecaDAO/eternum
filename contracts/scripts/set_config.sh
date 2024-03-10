@@ -55,6 +55,14 @@ commands=(
     "sozo execute $CONFIG_SYSTEMS set_bank_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,45,2,253,0,253,1,1844674407370955161,100000,100000"
 )
 
+
+## set tick config
+commands+=(
+    # max_moves_per_tick = 4
+    # tick_interval_in_seconds = 60
+    "sozo execute $CONFIG_SYSTEMS set_tick_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,4,60"
+)
+
 ## set exploration config
 commands+=(
 
@@ -365,19 +373,6 @@ commands+=(
 )
 
 
-# Read the System to Components JSON file
-system_models_json=$(cat ./scripts/system_models.json)
-
-# Loop through each system
-for system in $(echo $system_models_json | jq -r 'keys[]'); do
-    # Loop through each component that the system writes to
-    for model in $(echo $system_models_json | jq -r ".$system[]"); do
-        system_var="${system}"
-        contract_address="${!system_var}"
-        # make the system a writer of the component
-        commands+=("sozo auth writer --world "$SOZO_WORLD" $model $contract_address")
-    done
-done
 
 ### STARTING REALM RESOURCE BALANCES
 # Check if the first argument is provided and set it to "dev" or "prod"

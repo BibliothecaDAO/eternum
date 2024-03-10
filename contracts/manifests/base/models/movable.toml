@@ -1,0 +1,43 @@
+kind = "DojoModel"
+class_hash = "0x3f162ddc0aad74ffbfb6ea300618c676858ab06f6c9df620a26fc58a4be8bb0"
+name = "eternum::models::movable::movable"
+
+[[members]]
+name = "entity_id"
+type = "u128"
+key = true
+
+[[members]]
+name = "sec_per_km"
+type = "u16"
+key = false
+
+[[members]]
+name = "blocked"
+type = "bool"
+key = false
+
+[[members]]
+name = "round_trip"
+type = "bool"
+key = false
+
+[[members]]
+name = "start_coord_x"
+type = "u128"
+key = false
+
+[[members]]
+name = "start_coord_y"
+type = "u128"
+key = false
+
+[[members]]
+name = "intermediate_coord_x"
+type = "u128"
+key = false
+
+[[members]]
+name = "intermediate_coord_y"
+type = "u128"
+key = false

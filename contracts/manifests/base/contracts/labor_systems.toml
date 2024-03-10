@@ -1,0 +1,7 @@
+kind = "DojoContract"
+class_hash = "0x47f6df3f110faa3db948702713ce075d69328fd976a0b6c053d02bbda054406"
+abi = "abis/base/contracts/labor_systems.json"
+reads = []
+writes = []
+computed = []
+name = "eternum::systems::labor::contracts::labor_systems"
