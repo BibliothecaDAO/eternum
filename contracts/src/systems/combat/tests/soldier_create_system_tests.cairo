@@ -120,7 +120,7 @@ fn setup() -> (IWorldDispatcher, u128, ISoldierSystemsDispatcher) {
         harbors, rivers, regions, wonder, order,caller_position.clone(),
     );
 
-    starknet::testing::set_contract_address(world.executor());
+    
 
     
     set!(world, (Owner { entity_id: realm_entity_id, address: contract_address_const::<'caller'>()}));

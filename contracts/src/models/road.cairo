@@ -69,7 +69,7 @@ mod tests {
     fn test_get_road() {
         let world = spawn_eternum();
 
-        starknet::testing::set_contract_address(world.executor());
+        
         let start_coord = Coord { x: 20, y: 30};
         let end_coord = Coord { x: 40, y: 50};
         let usage_count = 44;

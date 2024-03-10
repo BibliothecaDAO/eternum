@@ -91,7 +91,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, IBankSystemsDispatcher,) {
 
     // create caravan for swap
 
-    starknet::testing::set_contract_address(world.executor());
+    
     let transport_id = 44;
     set!(world, (
         Owner {
@@ -260,7 +260,7 @@ fn test_bank_swap__wrong_caller() {
 fn test_bank_swap__wrong_transport_position() {
     let (world, bank_id, transport_id, bank_systems_dispatcher) = setup();
 
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(world, (
         Position {
             entity_id: transport_id,
@@ -287,7 +287,7 @@ fn test_bank_swap__wrong_transport_position() {
 fn test_bank_swap__wrong_transport_arrival_time() {
     let (world, bank_id, transport_id, bank_systems_dispatcher) = setup();
 
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(world, (
         ArrivalTime {
             entity_id: transport_id,

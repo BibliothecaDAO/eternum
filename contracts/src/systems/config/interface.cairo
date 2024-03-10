@@ -210,7 +210,8 @@ trait IBuildingsConfig<TContractState> {
 #[starknet::interface]
 trait IMapConfig<TContractState> {
     fn set_exploration_config(
-        self: @TContractState, world: IWorldDispatcher, reward_resource_amount: u128
+        self: @TContractState, world: IWorldDispatcher, 
+        wheat_burn_amount: u128, fish_burn_amount: u128, reward_resource_amount: u128
     );
 }
 

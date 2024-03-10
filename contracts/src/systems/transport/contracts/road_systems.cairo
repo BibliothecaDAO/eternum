@@ -13,7 +13,7 @@ mod road_systems {
     };
 
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl RoadSystemsImpl of IRoadSystems<ContractState> {
 
         /// Create a road between two coordinates on the map.

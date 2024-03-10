@@ -79,7 +79,7 @@ mod internal_leveling_systems {
             ResourceTypes::STONE, ResourceTypes::COAL, ResourceTypes::COPPER,
             ResourceTypes::OBSIDIAN, ResourceTypes::SILVER,
         ];
-        starknet::testing::set_contract_address(world.executor());
+        
         loop {
             match resources.pop_front() {
                 Option::Some(resource_type) => {

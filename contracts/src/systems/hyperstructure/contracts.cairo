@@ -13,7 +13,7 @@ mod hyperstructure_systems {
 
 
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl HyperstructureSystemsImpl of IHyperstructureSystems<ContractState> {
 
         fn control(

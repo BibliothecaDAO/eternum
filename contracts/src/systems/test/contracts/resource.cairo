@@ -6,7 +6,7 @@ mod test_resource_systems {
     use eternum::constants::ResourceTypes;
     use eternum::alias::ID;
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl ResourceSystemsImpl of IResourceSystems<ContractState> {
         fn mint(
             self: @ContractState,

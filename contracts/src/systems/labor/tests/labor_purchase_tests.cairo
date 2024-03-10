@@ -36,7 +36,7 @@ fn setup(labor_cost_resource_type: u8) -> (IWorldDispatcher, u128, ILaborSystems
         contract_address: config_systems_address
     };
 
-    starknet::testing::set_contract_address(world.executor());
+    
 
     // set labor building config
     let buildingConfig = LaborBuildingsConfig {
@@ -55,7 +55,6 @@ fn setup(labor_cost_resource_type: u8) -> (IWorldDispatcher, u128, ILaborSystems
     set!(world, (buildingConfig));
 
     // set labor auction
-    let zone: u8 = 5;
     let decay_constant: u128 = _0_1;
     let per_time_unit: u128 = 50;
     let price_update_interval: u128 = 20;

@@ -78,7 +78,7 @@ use eternum::alias::ID;
 
 
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl SoldierSystemsImpl of ISoldierSystems<ContractState> {
         /// Create a raider unit for a realm
         /// 
@@ -411,8 +411,6 @@ use eternum::alias::ID;
             let mut merge_into_unit_quantity = get!(world, merge_into_unit_id, Quantity);
 
             let merge_into_unit_position = get!(world, merge_into_unit_id, Position);
-
-            let mut added_inventory_items: Array<u128> = array![];
             
             let mut index = 0; 
             loop {
@@ -574,7 +572,7 @@ use eternum::alias::ID;
 
 
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl CombatSystemsImpl of ICombatSystems<ContractState> {
 
         /// Attack an entity
@@ -802,7 +800,6 @@ use eternum::alias::ID;
             
 
             let mut attacker_attack = get!(world, attacker_id, Attack);
-            let mut attacker_defence = get!(world, attacker_id, Defence);
             
 
             let target_realm_entity_id = get!(world, target_entity_id, EntityOwner).entity_owner_id;

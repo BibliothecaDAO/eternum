@@ -36,7 +36,7 @@ mod config_systems {
         }
     }
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl WorldConfigImpl of IWorldConfig<ContractState> {
         fn set_world_config(
             self: @ContractState,
@@ -53,7 +53,7 @@ mod config_systems {
         }
     }
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl RealmFreeMintConfigImpl of IRealmFreeMintConfig<ContractState> {
         fn set_mint_config(
             self: @ContractState, world: IWorldDispatcher, resources: Span<(u8, u128)>
@@ -104,10 +104,11 @@ mod config_systems {
     }
 
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl MapConfigImpl of IMapConfig<ContractState> {
         fn set_exploration_config(
-            self: @ContractState, world: IWorldDispatcher, reward_resource_amount: u128
+            self: @ContractState, world: IWorldDispatcher, 
+            wheat_burn_amount: u128, fish_burn_amount: u128, reward_resource_amount: u128
         ) {
             assert_caller_is_admin(world);
 
@@ -115,6 +116,8 @@ mod config_systems {
                 world,
                 (MapExploreConfig {
                     config_id: WORLD_CONFIG_ID,
+                    wheat_burn_amount,
+                    fish_burn_amount,
                     reward_resource_amount
                 })
             );
@@ -122,7 +125,7 @@ mod config_systems {
     }
 
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl CapacityConfigImpl of ICapacityConfig<ContractState> {
         fn set_capacity_config(
             self: @ContractState, world: IWorldDispatcher, entity_type: u128, weight_gram: u128
@@ -141,7 +144,7 @@ mod config_systems {
         }
     }
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl WeightConfigImpl of IWeightConfig<ContractState> {
         fn set_weight_config(
             self: @ContractState, world: IWorldDispatcher, entity_type: u128, weight_gram: u128
@@ -160,7 +163,7 @@ mod config_systems {
         }
     }
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl TickConfigImpl of ITickConfig<ContractState> {
         fn set_tick_config(
             self: @ContractState,
@@ -182,7 +185,7 @@ mod config_systems {
     }
 
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl CombatConfigImpl of ICombatConfig<ContractState> {
         fn set_combat_config(
             self: @ContractState,
@@ -293,7 +296,7 @@ mod config_systems {
         }
     }
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl LevelingConfigImpl of ILevelingConfig<ContractState> {
         fn set_leveling_config(
             self: @ContractState,
@@ -386,7 +389,7 @@ mod config_systems {
     }
 
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl LaborConfigImpl of ILaborConfig<ContractState> {
         fn set_labor_cost_resources(
             self: @ContractState,
@@ -485,7 +488,7 @@ mod config_systems {
     }
 
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl TransportConfigImpl of ITransportConfig<ContractState> {
         fn set_road_config(
             self: @ContractState,
@@ -551,7 +554,7 @@ mod config_systems {
     }
 
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl HyperstructureConfigImpl of IHyperstructureConfig<ContractState> {
         fn create_hyperstructure(
             self: @ContractState,
@@ -618,7 +621,7 @@ mod config_systems {
     }
 
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl BankConfigImpl of IBankConfig<ContractState> {
         fn create_bank(
             self: @ContractState,
@@ -740,7 +743,7 @@ mod config_systems {
         }
     }
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl BuildingsConfigImpl of IBuildingsConfig<ContractState> {
         fn set_labor_buildings_config(
             self: @ContractState,

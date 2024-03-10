@@ -29,7 +29,7 @@ mod caravan_systems {
     use core::poseidon::poseidon_hash_span;
 
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl CaravanSystemsImpl of ICaravanSystems<ContractState>{
         /// Create a caravan entity
         ///

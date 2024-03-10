@@ -188,7 +188,6 @@ trait TravelTrait<T> {
 impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
 
     fn calculate_distance(self: T, destination: T) -> u128 {
-        let cube: Cube = self.into();
        CubeImpl::distance(self.into(), destination.into())
     }
 

@@ -14,7 +14,7 @@ mod leveling_systems {
     use eternum::systems::leveling::contracts::leveling_systems::{InternalLevelingSystemsImpl as leveling};
     use eternum::systems::leveling::interface::ILevelingSystems;
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl LevelingSystemsImpl of ILevelingSystems<ContractState> {
 
         fn level_up_realm(
