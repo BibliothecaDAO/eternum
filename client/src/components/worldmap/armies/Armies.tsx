@@ -78,12 +78,7 @@ export const Armies = ({ hexData }: ArmiesProps) => {
           const position = getComponentValue(Position, armyId);
           // if animated army dont display
           if (!position || animationPath?.id === position.entity_id) return;
-          const hexIndex = hexData.findIndex((h) => h.col === position.x && h.row === position.y);
-          const hex = hexData[hexIndex];
-          let z = DEPTH;
-          if (hexIndex !== -1 && isExplored(position.x, position.y)) {
-            z = 0.32;
-          }
+          let z = 0.32;
           return {
             contractPos: { x: position.x, y: position.y },
             uiPos: { ...getUIPositionFromColRow(position.x, position.y), z: z },
@@ -203,9 +198,7 @@ export const TravelingArmies = ({ hexData }: TravelingArmiesProps) => {
         y: currentPath[0].y + (currentPath[1].y - currentPath[0].y) * progressBetweenPoints,
       };
 
-      const currentColRow = getColRowFromUIPosition(currentPos.x, currentPos.y);
-      const hex = hexData.find((h) => h.col === currentColRow.col && h.row === currentColRow.row);
-      const z = DEPTH + (hex ? BIOMES[hex.biome].depth * DEPTH : 0);
+      const z = 0.32;
 
       animatedArmyRef.current.position.set(currentPos.x, z, -currentPos.y);
     }
@@ -224,12 +217,7 @@ export const TravelingArmies = ({ hexData }: TravelingArmiesProps) => {
         .map((armyId) => {
           const position = getComponentValue(Position, armyId);
           if (!position) return;
-          const hexIndex = hexData.findIndex((h) => h.col === position.x && h.row === position.y);
-          const hex = hexData[hexIndex];
-          let z = DEPTH;
-          if (hexIndex !== -1 && isExplored(position.x, position.y)) {
-            z += BIOMES[hex.biome].depth * DEPTH;
-          }
+          let z = 0.32;
           return {
             contractPos: { x: position.x, y: position.y },
             uiPos: { ...getUIPositionFromColRow(position.x, position.y), z: z },
