@@ -67,7 +67,7 @@ const getNpcs = (realmEntityId: BigInt, NpcComponent: any): Npc[] => {
   let npcs: Npc[] = Array.from(entityIds).map((entityId) => {
     let npc = getComponentValue(NpcComponent, entityId);
     return {
-      entityId: entityId,
+      entityId: npc!.entity_id,
       realmEntityId: BigInt(npc!.realm_entity_id),
       characteristics: unpackCharacteristics(npc!.characteristics),
       characterTrait: shortString.decodeShortString(npc!.character_trait.toString()),

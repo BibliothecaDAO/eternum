@@ -21,6 +21,7 @@ use eternum::models::resources::{resource, Resource};
 use eternum::models::resources::{resource_cost, ResourceCost};
 use eternum::models::road::{road, Road};
 use eternum::models::trade::{status, Status, trade, Trade,};
+use eternum::models::npc::{npc, Npc,};
 
 use starknet::{syscalls::deploy_syscall, ClassHash, ContractAddress};
 
@@ -49,6 +50,8 @@ fn spawn_eternum() -> IWorldDispatcher {
         road::TEST_CLASS_HASH,
         road_config::TEST_CLASS_HASH,
         hyper_structure::TEST_CLASS_HASH,
+        npc_config::TEST_CLASS_HASH,
+        npc::TEST_CLASS_HASH,
     ];
 
     spawn_test_world(models)

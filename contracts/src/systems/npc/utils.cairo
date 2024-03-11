@@ -4,6 +4,8 @@ use starknet::ContractAddress;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 use eternum::models::realm::{Realm, RealmTrait};
 use eternum::models::owner::Owner;
+use eternum::models::npc::Characteristics;
+
 
 fn assert_ownership(world: IWorldDispatcher, realm_id: u128) {
     let player_id: ContractAddress = starknet::get_caller_address();
@@ -28,4 +30,21 @@ fn pedersen_hash_many(data: Span<felt252>) -> felt252 {
         i += 1;
     };
     pedersen(current_hash, data.len().into())
+}
+
+fn format_args_to_span(nonce: felt252, characs: Characteristics, character_trait: felt252, full_name: felt252) ->Span<felt252> {
+    let mut arr = ArrayTrait::new();
+
+    let age: felt252 = characs.age.into();
+    let role: felt252 = characs.role.into();
+    let sex: felt252 = characs.sex.into();
+
+    arr.append(nonce);
+    arr.append(age);
+    arr.append(role);
+    arr.append(sex);
+    arr.append(character_trait);
+    arr.append(full_name);
+
+    return arr.span();
 }

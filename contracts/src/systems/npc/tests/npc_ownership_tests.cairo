@@ -24,6 +24,11 @@ use eternum::{
     utils::testing::{spawn_eternum, deploy_system}
 };
 
+
+const pub_key: felt252 = 0x141a26313bd3355fe4c4f3dda7e40dfb77ce54aea5f62578b4ec5aad8dd63b1;
+const spawn_delay: u128 = 100;
+
+
 #[test]
 #[should_panic(expected: ('Realm does not belong to player', 'ENTRYPOINT_FAILED',))]
 #[available_gas(3000000000)]

@@ -2,16 +2,22 @@
 mod npc_systems {
     use starknet::{get_caller_address};
     use starknet::info::BlockInfo;
+    use starknet::info::v2::ExecutionInfo;
+    use starknet::info::get_execution_info;
 
     use eternum::constants::NPC_CONFIG_ID;
     use eternum::models::realm::{Realm, RealmTrait};
-    use eternum::models::npc::{Npc};
     use eternum::models::last_spawned::{LastSpawned, ShouldSpawnImpl};
-    use eternum::systems::npc::utils::assert_ownership;
-    use eternum::models::config::NpcConfig;
+    use eternum::models::npc::{Npc, unpack_characs};
+    use eternum::systems::npc::utils::{assert_ownership, pedersen_hash_many, format_args_to_span};
     use eternum::systems::npc::interface::INpc;
+    use eternum::models::config::NpcConfig;
 
     use core::Into;
+    use core::ecdsa::check_ecdsa_signature;
+
+    use box::BoxTrait;
+
 
     #[derive(Drop, starknet::Event)]
     struct NpcSpawned {
@@ -71,9 +77,20 @@ mod npc_systems {
 
             assert_ownership(world, realm_entity_id);
 
-            let last_spawned = get!(world, realm_entity_id, (LastSpawned));
-
             let npc_config = get!(world, NPC_CONFIG_ID, (NpcConfig));
+        
+            let hash = pedersen_hash_many(
+                format_args_to_span(
+                    get_execution_info().unbox().tx_info.unbox().nonce, 
+                    unpack_characs(characteristics),
+                    character_trait, 
+                    full_name
+                )
+            );
+
+            assert(check_ecdsa_signature(hash, npc_config.pub_key, *signature.at(0), *signature.at(1)), 'Invalid signature');
+           
+            let last_spawned = get!(world, realm_entity_id, (LastSpawned));
 
             let should_spawn = last_spawned.should_spawn(npc_config.spawn_delay);
 

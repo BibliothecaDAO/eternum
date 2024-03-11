@@ -1,2 +1,2 @@
-mod npc_spawn_test;
+mod npc_spawn_tests;
 mod npc_ownership_tests;

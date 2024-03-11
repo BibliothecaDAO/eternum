@@ -2140,6 +2140,10 @@
                 {
                   "name": "reward_resource_amount",
                   "type": "core::integer::u128"
+                },
+                {
+                  "name": "pub_key",
+                  "type": "core::felt252"
                 }
               ],
               "outputs": [],
@@ -10385,6 +10389,11 @@
         {
           "name": "reward_resource_amount",
           "type": "u128",
+          "key": false
+        },
+        {
+          "name": "pub_key",
+          "type": "felt252",
           "key": false
         }
       ],
