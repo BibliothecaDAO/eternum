@@ -116,19 +116,22 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
 
   const biomeHexes = useMemo(() => {
     const biomeHexes = {
-      grassland: [],
-      snow: [],
-      bare: [],
-      taiga: [],
-      deciduous_forest: [],
-      ocean: [],
       deep_ocean: [],
-      temperate_desert: [],
+      ocean: [],
       beach: [],
       scorched: [],
+      bare: [],
+      tundra: [],
+      snow: [],
+      temperate_desert: [],
       shrubland: [],
-      subtropical_desert: [],
+      taiga: [],
+      grassland: [],
       temperate_deciduous_forest: [],
+      temperate_rain_forest: [],
+      subtropical_desert: [],
+      tropical_seasonal_forest: [],
+      tropical_rain_forest: [],
     } as Record<string, Hexagon[]>;
     explored.forEach((rowSet, col) => {
       if (col < startCol || col > endCol) return;
