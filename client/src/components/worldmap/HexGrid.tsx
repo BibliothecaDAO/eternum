@@ -25,6 +25,18 @@ import { Position, biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibl
 import { Armies, TravelingArmies } from "./armies/Armies";
 import { throttle } from "lodash";
 import * as THREE from "three";
+import { DesertBiome } from "./biomes/DesertBiome";
+import { SnowBiome } from "./biomes/SnowBiome";
+import { GrasslandBiome } from "./biomes/GrasslandBiome";
+import { TaigaBiome } from "./biomes/TaigaBiome";
+import { OceanBiome } from "./biomes/OceanBiome";
+import { DeepOceanBiome } from "./biomes/DeepOceanBiome";
+import { TemperateDesertBiome } from "./biomes/TemperateDesertBiome";
+import { BeachBiome } from "./biomes/BeachBiome";
+import { ScorchedBiome } from "./biomes/ScorchedBiome";
+import { ShrublandBiome } from "./biomes/ShrublandBiome";
+import { SubtropicalDesertBiome } from "./biomes/SubtropicalDesertBiome";
+import { DeciduousForestBiome } from "./biomes/DeciduousForestBiome";
 
 export const DEPTH = 10;
 export const HEX_RADIUS = 3;
@@ -52,6 +64,7 @@ type HexagonGridProps = {
 const color = new Color();
 
 export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: HexagonGridProps) => {
+  const flatMode = localStorage.getItem("flatMode");
   const hexData = useUIStore((state) => state.hexData);
 
   const { group, colors } = useMemo(() => {
@@ -83,7 +96,6 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
     const hexMaterial = new THREE.MeshPhysicalMaterial({
       color: 0xffffff,
       vertexColors: false,
-      wireframe: false,
     });
 
     const instancedMesh = new InstancedMesh(hexagonGeometry, hexMaterial, group.length);
@@ -92,15 +104,15 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
     group.forEach((hex) => {
       const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
       // set the z position with math.random to have a random height
-      matrix.setPosition(x, y, BIOMES[hex.biome].depth * 10);
+      matrix.setPosition(x, y, flatMode ? 0.31 : BIOMES[hex.biome].depth * 10);
       // set height of hex
       // matrix.setPosition(x, y, BIOMES[hex.biome].depth);
 
       instancedMesh.setMatrixAt(idx, matrix);
 
       color.setStyle(BIOMES[hex.biome].color);
-      const luminance = getGrayscaleColor(color);
-      color.setRGB(luminance, luminance, luminance);
+      // const luminance = getGrayscaleColor(color);
+      // color.setRGB(luminance, luminance, luminance);
       instancedMesh.setColorAt(idx, color);
       idx++;
     });
@@ -111,6 +123,28 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
     instancedMesh.frustumCulled = true;
     return instancedMesh;
   }, [group, colors]);
+
+  //biomes: grassland, snow, temperate_desert, taiga, deciduous_forest
+  const biomes = [
+    "grassland",
+    "snow",
+    "bare",
+    "taiga",
+    "temperate_deciduous_forest",
+    "ocean",
+    "deep_ocean",
+    "temperate_desert",
+    "beach",
+    "scorched",
+    "shrubland",
+    "subtropical_desert",
+  ];
+  const biomeHexes = useMemo(() => {
+    return biomes.reduce((acc, biome) => {
+      acc[biome] = group.filter((hex) => hex.biome === biome);
+      return acc;
+    }, {} as Record<string, typeof group>);
+  }, [group]);
 
   useEffect(() => {
     explored.forEach((rowSet, col) => {
@@ -131,7 +165,24 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
 
   return (
     <>
-      <primitive object={mesh} />
+      {!flatMode && <primitive object={mesh} />}
+      {flatMode && (
+        <>
+          <DesertBiome hexes={biomeHexes["bare"]} />
+          <SnowBiome hexes={biomeHexes["snow"]} />
+          <GrasslandBiome hexes={biomeHexes["grassland"]} />
+          <TaigaBiome hexes={biomeHexes["taiga"]} />
+          <OceanBiome hexes={biomeHexes["ocean"]} />
+          <DeepOceanBiome hexes={biomeHexes["deep_ocean"]} />
+          <TemperateDesertBiome hexes={biomeHexes["temperate_desert"]} />
+          {/* beach = 5millions triangles */}
+          <BeachBiome hexes={biomeHexes["beach"]} />
+          <ScorchedBiome hexes={biomeHexes["scorched"]} />
+          <ShrublandBiome hexes={biomeHexes["shrubland"]} />
+          <SubtropicalDesertBiome hexes={biomeHexes["subtropical_desert"]} />
+          <DeciduousForestBiome hexes={biomeHexes["temperate_deciduous_forest"]} />
+        </>
+      )}
     </>
   );
 };
@@ -147,6 +198,7 @@ export const WorldMap = () => {
 
   const hexData = useUIStore((state) => state.hexData);
   const setHexData = useUIStore((state) => state.setHexData);
+  const flatMode = localStorage.getItem("flatMode");
   const isTravelMode = useUIStore((state) => state.isTravelMode);
   const isExploreMode = useUIStore((state) => state.isExploreMode);
   const isAttackMode = useUIStore((state) => state.isAttackMode);
@@ -290,7 +342,6 @@ export const WorldMap = () => {
   };
 
   const throttledHoverHandler = useMemo(() => throttle(hoverHandler, 50), []);
-  const flatMode = localStorage.getItem("flatMode");
 
   useEffect(() => {
     let subscription: Subscription | undefined;
@@ -347,9 +398,9 @@ export const WorldMap = () => {
           <mesh
             geometry={hexagonGeometry}
             rotation={[Math.PI / -2, 0, 0]}
-            position={[highlightPosition[0], highlightPosition[2] + 10.3, highlightPosition[1]]}
+            position={[highlightPosition[0], flatMode ? 0.32 : highlightPosition[2] + 10.3, highlightPosition[1]]}
           >
-            <meshMatcapMaterial color={highlightColor} transparent opacity={0.75} />
+            <meshMatcapMaterial color={highlightColor} transparent opacity={0.75} depthTest={false} />
           </mesh>
         );
       })}
