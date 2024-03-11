@@ -48,13 +48,14 @@ export const DojoProvider = ({ children, value }: DojoProviderProps) => {
   const masterAddress = import.meta.env.VITE_PUBLIC_MASTER_ADDRESS;
   const privateKey = import.meta.env.VITE_PUBLIC_MASTER_PRIVATE_KEY;
   const accountClassHash = import.meta.env.VITE_PUBLIC_ACCOUNT_CLASS_HASH;
+  const feeTokenAddress = import.meta.env.VITE_NETWORK_FEE_TOKEN;
   const masterAccount: any = useMemo(
     () => new Account(rpcProvider, masterAddress, privateKey),
     [rpcProvider, masterAddress, privateKey],
   );
 
   return (
-    <BurnerProvider initOptions={{ masterAccount, accountClassHash, rpcProvider }}>
+    <BurnerProvider initOptions={{ masterAccount, accountClassHash, rpcProvider, feeTokenAddress }}>
       <DojoContextProvider value={value}>{children}</DojoContextProvider>
     </BurnerProvider>
   );
