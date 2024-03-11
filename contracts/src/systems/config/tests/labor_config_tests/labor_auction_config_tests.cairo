@@ -25,7 +25,7 @@ fn test_set_labor_auction() {
         contract_address: config_systems_address
     };
 
-    starknet::testing::set_contract_address(world.executor());
+    
 
     let zone: u8 = 5;
     let decay_constant: u128 = _0_1;

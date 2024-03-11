@@ -28,7 +28,7 @@ use eternum::systems::labor::interface::{ILaborSystemsDispatcher, ILaborSystemsD
 
 const _0_1: u128 = 1844674407370955161; // 0.1
 
-fn setup(resource_type: u8) -> (IWorldDispatcher, u128, ILaborSystemsDispatcher) {
+fn setup(labor_cost_resource_type: u8) -> (IWorldDispatcher, u128, ILaborSystemsDispatcher) {
     let world = spawn_eternum();
 
     let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
@@ -36,7 +36,7 @@ fn setup(resource_type: u8) -> (IWorldDispatcher, u128, ILaborSystemsDispatcher)
         contract_address: config_systems_address
     };
 
-    starknet::testing::set_contract_address(world.executor());
+    
 
     // set labor building config
     let buildingConfig = LaborBuildingsConfig {
@@ -55,7 +55,6 @@ fn setup(resource_type: u8) -> (IWorldDispatcher, u128, ILaborSystemsDispatcher)
     set!(world, (buildingConfig));
 
     // set labor auction
-    let zone: u8 = 5;
     let decay_constant: u128 = _0_1;
     let per_time_unit: u128 = 50;
     let price_update_interval: u128 = 20;
@@ -82,8 +81,8 @@ fn setup(resource_type: u8) -> (IWorldDispatcher, u128, ILaborSystemsDispatcher)
             5, // regions
             1, // wonder
             1, // order
-            Position { x: 500200, y: 1, entity_id: 1_u128 }, // position  
-        // x needs to be > 470200 to get zone
+            Position { x: 2147483648, y: 1, entity_id: 1_u128 }, // position  
+        // x needs to be > 2147483647 to get zone
         );
 
     // set labor configuration entity
@@ -99,18 +98,18 @@ fn setup(resource_type: u8) -> (IWorldDispatcher, u128, ILaborSystemsDispatcher)
     labor_config_dispatcher
         .set_labor_cost_resources(
             world,
-            resource_type.into(),
+            labor_cost_resource_type.into(),
             0x203, // resource_types_packed // 2,3 // stone and coal
             2, // resource_types_count // stone and coal
         );
 
     // set cost for gold in coal 
     labor_config_dispatcher
-        .set_labor_cost_amount(world, resource_type.into(), ResourceTypes::COAL.into(), 1_000,);
+        .set_labor_cost_amount(world, labor_cost_resource_type.into(), ResourceTypes::COAL.into(), 1_000,);
 
     // set cost for gold in stone
     labor_config_dispatcher
-        .set_labor_cost_amount(world, resource_type.into(), ResourceTypes::STONE.into(), 1_000,);
+        .set_labor_cost_amount(world, labor_cost_resource_type.into(), ResourceTypes::STONE.into(), 1_000,);
 
     // mint 100_000 coal for the realm;
     set!(

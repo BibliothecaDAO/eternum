@@ -49,7 +49,7 @@ fn test_create() {
 
     let entity_id: u128 = 44;
 
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(world, ( 
         Owner { 
             entity_id: entity_id, 
@@ -102,7 +102,7 @@ fn test_create() {
 fn test_not_entity() {
     let (world, road_systems_dispatcher) = setup();
 
-    starknet::testing::set_contract_address(world.executor());
+    
     let entity_id: u128 = 44;
     let start_coord = Coord { x: 20, y: 30};
     let end_coord = Coord { x: 40, y: 50};
@@ -141,7 +141,7 @@ fn test_insufficient_balance() {
 
     let entity_id: u128 = 44;
 
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(world, ( 
         Owner { entity_id: entity_id, address: contract_address_const::<'entity'>()},
         Resource {
@@ -186,7 +186,7 @@ fn test_insufficient_balance() {
 fn test_already_exists() {
     let (world, road_systems_dispatcher) = setup();
 
-    starknet::testing::set_contract_address(world.executor());
+    
     let entity_id: u128 = 44;
     let start_coord = Coord { x: 20, y: 30};
     let end_coord = Coord { x: 40, y: 50};

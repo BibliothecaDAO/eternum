@@ -120,7 +120,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, ISoldierSystemsDispatcher) {
         harbors, rivers, regions, wonder, order, caller_position.clone(),
     );
 
-    starknet::testing::set_contract_address(world.executor());
+    
 
     let caller_id = caller_realm_entity_id;
     
@@ -162,7 +162,7 @@ fn test_heal_soldier() {
 
     let (world, caller_id, new_unit_id, soldier_systems_dispatcher) = setup();
 
-    starknet::testing::set_contract_address(world.executor());
+    
 
     // reduce the health of the first soldier by 40
 
@@ -205,7 +205,7 @@ fn test_heal_soldier() {
 #[should_panic(expected: ('not unit owner','ENTRYPOINT_FAILED' ))]
 fn test_not_unit_owner() {
 
-    let (world, caller_id, new_unit_id, soldier_systems_dispatcher) = setup();
+    let (world, _, new_unit_id, soldier_systems_dispatcher) = setup();
 
     // set unknown caller
     starknet::testing::set_contract_address(
@@ -226,7 +226,7 @@ fn test_not_unit_owner() {
 #[should_panic(expected: ('max health exceeeded','ENTRYPOINT_FAILED' ))]
 fn test_purchase_exceeds_max_health() {
 
-    let (world, caller_id, new_unit_id, soldier_systems_dispatcher) = setup();
+    let (world, _, new_unit_id, soldier_systems_dispatcher) = setup();
 
     // set unknown caller
     starknet::testing::set_contract_address(

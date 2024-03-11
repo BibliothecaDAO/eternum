@@ -117,7 +117,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, ISoldierSystemsDispatcher) {
         harbors, rivers, regions, wonder, order, caller_position.clone(),
     );
 
-    starknet::testing::set_contract_address(world.executor());
+    
 
     let caller_id = caller_realm_entity_id;
     
@@ -269,7 +269,7 @@ fn test_detach_unit() {
 #[should_panic(expected: ('not unit owner','ENTRYPOINT_FAILED' ))]
 fn test_not_owner() {
 
-    let (world, caller_id, unit_id, soldier_systems_dispatcher) 
+    let (world, _, unit_id, soldier_systems_dispatcher) 
         = setup();
 
     // set unknown caller
@@ -279,8 +279,7 @@ fn test_not_owner() {
 
     // detach 7 soldiers from unit
     let num_detached_soldiers = 7;
-    let new_unit_id 
-        = soldier_systems_dispatcher
+    soldier_systems_dispatcher
             .detach_soldiers(
                 world, unit_id, 
                 num_detached_soldiers
@@ -298,10 +297,10 @@ fn test_not_owner() {
 #[should_panic(expected: ('not enough quantity','ENTRYPOINT_FAILED' ))]
 fn test_single_soldier_detach() {
     
-        let (world, caller_id, unit_id, soldier_systems_dispatcher) 
+        let (world, _, unit_id, soldier_systems_dispatcher) 
             = setup();
 
-        starknet::testing::set_contract_address(world.executor());
+        
         set!(world, (
             Quantity { 
                 entity_id: unit_id, 
@@ -317,8 +316,7 @@ fn test_single_soldier_detach() {
 
         // detach 7 soldiers from unit
         let num_detached_soldiers = 7;
-        let new_unit_id 
-            = soldier_systems_dispatcher
+        soldier_systems_dispatcher
                 .detach_soldiers(
                     world, unit_id, 
                     num_detached_soldiers
@@ -334,10 +332,10 @@ fn test_single_soldier_detach() {
 #[should_panic(expected: ('unit inventory not empty','ENTRYPOINT_FAILED' ))]
 fn test_unit_has_items_in_inventory() {
             
-    let (world, caller_id, unit_id, soldier_systems_dispatcher) 
+    let (world, _, unit_id, soldier_systems_dispatcher) 
         = setup();
 
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(world, (
         Inventory {
             entity_id: unit_id,
@@ -353,8 +351,7 @@ fn test_unit_has_items_in_inventory() {
 
     // detach 7 soldiers from unit
     let num_detached_soldiers = 7;
-    let new_unit_id 
-        = soldier_systems_dispatcher
+    soldier_systems_dispatcher
             .detach_soldiers(
                 world, unit_id, 
                 num_detached_soldiers

@@ -103,7 +103,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     );
 
 
-    starknet::testing::set_contract_address(world.executor());
+    
 
     let maker_id = realm_entity_id;
     let taker_id = 12_u128;
@@ -257,7 +257,7 @@ fn test_caller_not_maker() {
     starknet::testing::set_contract_address(
         contract_address_const::<'some_unknown'>()
     );
-    let trade_id = trade_systems_dispatcher.create_order(
+    trade_systems_dispatcher.create_order(
             world,
             maker_id,
             array![
@@ -279,7 +279,7 @@ fn test_caller_not_maker() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('not caravan owner', 'ENTRYPOINT_FAILED' ))]
 fn test_caller_not_owner_of_transport_id() {
-    let (world, maker_id, maker_transport_id, taker_id,trade_systems_dispatcher) 
+    let (world, maker_id, _, taker_id,trade_systems_dispatcher) 
         = setup();
     
     let maker_transport_id = 99999; // set some arbitray value
@@ -287,7 +287,7 @@ fn test_caller_not_owner_of_transport_id() {
     starknet::testing::set_contract_address(
         contract_address_const::<'maker'>()
     );
-    let trade_id = trade_systems_dispatcher.create_order(
+    trade_systems_dispatcher.create_order(
             world,
             maker_id,
             array![
@@ -313,7 +313,7 @@ fn test_different_transport_position() {
         = setup();
 
     // set an arbitrary position
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(world, Position {
         entity_id: maker_id,
         x: 999,
@@ -324,7 +324,7 @@ fn test_different_transport_position() {
     starknet::testing::set_contract_address(
         contract_address_const::<'maker'>()
     );
-    let trade_id = trade_systems_dispatcher.create_order(
+    trade_systems_dispatcher.create_order(
             world,
             maker_id,
             array![
@@ -351,7 +351,7 @@ fn test_transport_in_transit() {
         = setup();
 
     // set arrival time to some time in future
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(world, ArrivalTime {
         entity_id: maker_transport_id,
         arrives_at: starknet::get_block_timestamp() + 40
@@ -361,7 +361,7 @@ fn test_transport_in_transit() {
     starknet::testing::set_contract_address(
         contract_address_const::<'maker'>()
     );
-    let trade_id = trade_systems_dispatcher.create_order(
+    trade_systems_dispatcher.create_order(
             world,
             maker_id,
             array![
@@ -436,7 +436,7 @@ fn test_transport_not_enough_capacity() {
         = caravan_systems_dispatcher.create(world, maker_transport_units);
 
     
-    let trade_id = trade_systems_dispatcher.create_order(
+    trade_systems_dispatcher.create_order(
             world,
             maker_id,
             array![

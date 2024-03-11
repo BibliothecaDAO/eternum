@@ -188,7 +188,6 @@ trait TravelTrait<T> {
 impl TravelImpl<T, +Into<T, Cube>, +Copy<T>, +Drop<T>> of TravelTrait<T> {
 
     fn calculate_distance(self: T, destination: T) -> u128 {
-        let cube: Cube = self.into();
        CubeImpl::distance(self.into(), destination.into())
     }
 
@@ -374,7 +373,7 @@ mod tests {
                 
                 assert_eq!(
                     start.neighbor(Direction::NorthEast), 
-                    Coord{x: start.x , y: start.y - 1}
+                    Coord{x: start.x + 1 , y: start.y + 1}
                 );
             }
 
@@ -384,7 +383,7 @@ mod tests {
                 
                 assert_eq!(
                     start.neighbor(Direction::NorthWest), 
-                    Coord{x: start.x - 1, y: start.y - 1}
+                    Coord{x: start.x , y: start.y + 1}
                 );
             }
 
@@ -405,7 +404,7 @@ mod tests {
                 
                 assert_eq!(
                     start.neighbor(Direction::SouthWest), 
-                    Coord{x: start.x - 1, y: start.y + 1}
+                    Coord{x: start.x, y: start.y - 1}
                 );
             }
 
@@ -416,7 +415,7 @@ mod tests {
                 
                 assert_eq!(
                     start.neighbor(Direction::SouthEast), 
-                    Coord{x: start.x, y: start.y + 1 }
+                    Coord{x: start.x + 1, y: start.y - 1 }
                 );
             }
 
@@ -439,7 +438,7 @@ mod tests {
                 
                 assert_eq!(
                     start.neighbor(Direction::NorthEast), 
-                    Coord{x: start.x + 1 , y: start.y - 1}
+                    Coord{x: start.x , y: start.y + 1}
                 );
             }
 
@@ -449,7 +448,7 @@ mod tests {
                 
                 assert_eq!(
                     start.neighbor(Direction::NorthWest), 
-                    Coord{x: start.x, y: start.y - 1}
+                    Coord{x: start.x -1 , y: start.y + 1}
                 );
             }
 
@@ -470,7 +469,7 @@ mod tests {
                 
                 assert_eq!(
                     start.neighbor(Direction::SouthWest), 
-                    Coord{x: start.x, y: start.y + 1}
+                    Coord{x: start.x - 1 , y: start.y - 1}
                 );
             }
 
@@ -481,7 +480,7 @@ mod tests {
                 
                 assert_eq!(
                     start.neighbor(Direction::SouthEast), 
-                    Coord{x: start.x + 1, y: start.y + 1 }
+                    Coord{x: start.x, y: start.y - 1 }
                 );
             }
 

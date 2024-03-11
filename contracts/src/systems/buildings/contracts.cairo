@@ -10,7 +10,7 @@ mod buildings_systems {
     use eternum::models::config::{LaborBuildingsConfig, LaborBuildingCost};
     use eternum::models::resources::{Resource, ResourceTrait, ResourceCost};
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl BuildingsSystemsImpl of IBuildingsSystems<ContractState> {
         fn create(
             self: @ContractState, world: IWorldDispatcher, realm_entity_id: u128, building_type: u8
@@ -22,7 +22,6 @@ mod buildings_systems {
             // assert building type is between 1 and 4 (inclusive)
             assert(building_type >= 1 && building_type <= 4, 'invalid building type');
 
-            let building = get!(world, (realm_entity_id), LaborBuilding);
 
             // remove the cost from the realm balance
             let buildings_cost: LaborBuildingCost = get!(

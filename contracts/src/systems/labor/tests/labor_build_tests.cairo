@@ -102,7 +102,7 @@ fn test_build_labor_non_food() {
     let labor_resource_type = get_labor_resource_type(resource_type);
 
     // switch to executor to set storage directly
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(
         world,
         Resource {
@@ -150,7 +150,7 @@ fn test_build_labor_food() {
     let labor_resource_type = get_labor_resource_type(resource_type);
 
     // switch to executor to set storage directly
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(
         world,
         Resource {
@@ -245,7 +245,7 @@ fn test_build_labor_after_completed() {
     let labor_resource_type = get_labor_resource_type(resource_type);
 
     // switch to executor to set storage directly
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(
         world,
         Resource {

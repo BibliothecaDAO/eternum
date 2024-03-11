@@ -240,6 +240,6 @@ mod tests {
 
     #[test]
     fn test_noisy() {
-        let x = get_biome(1128, 389);
+        get_biome(1128, 389);
     }
 }

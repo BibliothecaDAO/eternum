@@ -35,20 +35,7 @@ impl InventoryImpl of InventoryTrait {
     }
 
     fn next_item_fk(self: Inventory, world: IWorldDispatcher) -> ForeignKey {
-        // next_item_fk.entity_id should always be 0
-        self.item_fk(world, self.items_count)
-    }
-
-    fn set_next_item(ref self: Inventory, world: IWorldDispatcher, item_id: u128) {
-        // next_item_fk.entity_id should always be 0
-        let mut next_item_fk = self.next_item_fk(world);
-        // assert(next_item_fk.entity_id == 0, 'wrong next item fk');
-        next_item_fk.entity_id = item_id;
-
-        set!(world, (next_item_fk));
-
-        // update inventory item count
-        self.items_count += 1;
-        set!(world, (self));
-    }
+        let next_fk = self.item_fk(world, self.items_count);
+        next_fk
+    }       
 }

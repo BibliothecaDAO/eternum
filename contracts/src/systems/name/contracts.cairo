@@ -5,7 +5,7 @@ mod name_systems {
     
     use traits::Into; 
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl NameSystemsImpl of INameSystems<ContractState> {
         fn set_address_name(self: @ContractState, world: IWorldDispatcher, name: felt252) {
             let caller = starknet::get_caller_address();

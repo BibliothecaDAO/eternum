@@ -23,7 +23,7 @@ mod bank_systems {
     use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl BankSystemsImpl of IBankSystems<ContractState> {
 
         fn swap(
@@ -53,7 +53,6 @@ mod bank_systems {
             let mut bank_auction_time_since_start_fixed 
                 = bank_auction.get_time_since_start_fixed();
 
-            let zero_fixed = Fixed {sign: false, mag: 0};
             let swap_cost_resources 
                 = get!(world, (bought_resource_type, bank_swap_resource_cost_index), BankSwapResourceCost);
 

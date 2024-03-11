@@ -135,7 +135,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     );
 
 
-    starknet::testing::set_contract_address(world.executor());
+    
 
     let maker_id = maker_realm_entity_id;
     let taker_id = taker_realm_entity_id;
@@ -222,7 +222,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
 #[available_gas(3000000000000)]
 fn test_cancel() {
 
-    let (world, trade_id, maker_id, taker_id, trade_systems_dispatcher) 
+    let (world, trade_id, maker_id, _, trade_systems_dispatcher) 
         = setup();
 
 
@@ -264,11 +264,11 @@ fn test_cancel() {
 #[should_panic(expected: ('trade must be open', 'ENTRYPOINT_FAILED' ))]
 fn test_cancel_after_acceptance() {
 
-    let (world, trade_id, maker_id, taker_id, trade_systems_dispatcher) 
+    let (world, trade_id,_, _, trade_systems_dispatcher) 
         = setup();
 
     // accept order 
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(world, (
             Status {
                 trade_id,
@@ -285,7 +285,7 @@ fn test_cancel_after_acceptance() {
         .cancel_order(world, trade_id);
 
 }
-
+ 
 
 
 #[test]
@@ -293,7 +293,7 @@ fn test_cancel_after_acceptance() {
 #[should_panic(expected: ('caller must be trade maker', 'ENTRYPOINT_FAILED' ))]
 fn test_cancel_caller_not_maker() {
 
-    let (world, trade_id, maker_id, taker_id, trade_systems_dispatcher) 
+    let (world, trade_id, _, _, trade_systems_dispatcher) 
         = setup();
 
     // set caller to an unknown address

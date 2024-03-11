@@ -69,7 +69,7 @@ mod resource_transfer_system_tests {
     fn make_owner_and_receiver(
         world: IWorldDispatcher, sender_entity_id: u64, receiver_entity_id: u64
     ) {
-        starknet::testing::set_contract_address(world.executor());
+        
 
         let sender_entity_position = Position { 
             x: 100_000, 
@@ -175,7 +175,7 @@ mod resource_transfer_system_tests {
 
     #[test]
     #[available_gas(30000000000000)]
-    #[should_panic(expected: ('capacity is not enough','ENTRYPOINT_FAILED' ))]
+    #[should_panic(expected: ('not enough capacity','ENTRYPOINT_FAILED' ))]
     fn test_transfer__not_enough_capacity() {
         
         let (world, resource_systems_dispatcher) = setup();
@@ -186,7 +186,7 @@ mod resource_transfer_system_tests {
             world, sender_entity_id, receiver_entity_id
         );
 
-        starknet::testing::set_contract_address(world.executor());
+        
 
         // set receiving entity capacity, and weight config 
         set!(world, (
@@ -263,7 +263,7 @@ mod resource_transfer_system_tests {
         let (world, resource_systems_dispatcher) = setup();
 
         // call as executor
-        starknet::testing::set_contract_address(world.executor());
+        
         
         
         let sender_entity_id = 11_u64;
@@ -361,7 +361,7 @@ mod resource_transfer_system_tests {
         );
 
         let approved_entity_id = 13_u64;
-        starknet::testing::set_contract_address(world.executor());
+        
         set!(world, (
             Owner { 
                 address: contract_address_const::<'approved_entity'>(), 
@@ -447,7 +447,7 @@ mod resource_transfer_system_tests {
         );
 
         let approved_entity_id = 13_u64;
-        starknet::testing::set_contract_address(world.executor());
+        
         set!(world, (
             Owner { 
                 address: contract_address_const::<'approved_entity'>(), 

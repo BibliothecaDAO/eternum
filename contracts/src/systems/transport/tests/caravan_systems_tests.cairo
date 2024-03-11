@@ -183,7 +183,7 @@ fn test_create_caravan() {
 #[should_panic(expected: ('entity is not owned by caller','ENTRYPOINT_FAILED' ))]
 fn test_create_caravan__not_owner() {
 
-    let (world, transport_units, caravan_systems_dispatcher, realm_entity_id) 
+    let (world, transport_units, caravan_systems_dispatcher, _) 
         = setup();
     
     // create caravan
@@ -196,7 +196,7 @@ fn test_create_caravan__not_owner() {
 #[available_gas(300000000000)]
 #[should_panic(expected: ('entity is blocked','ENTRYPOINT_FAILED' ))]
 fn test_create_caravan__blocked_entity() {
-    let (world, mut transport_units, caravan_systems_dispatcher, realm_entity_id) 
+    let (world, mut transport_units, caravan_systems_dispatcher, _) 
         = setup();
     
     
@@ -228,7 +228,7 @@ fn test_create_caravan__blocked_entity() {
 #[available_gas(300000000000)]
 fn test_disassemble_caravan() {
 
-    let (world, transport_units, caravan_systems_dispatcher, realm_entity_id) 
+    let (world, transport_units, caravan_systems_dispatcher, _) 
         = setup();
     
     // create caravan
@@ -295,7 +295,7 @@ fn test_disassemble_caravan() {
 #[should_panic(expected: ('caller not owner','ENTRYPOINT_FAILED' ))]
 fn test_disassemble_caravan__caller_not_owner() {
 
-    let (world, transport_units, caravan_systems_dispatcher, realm_entity_id) 
+    let (world, transport_units, caravan_systems_dispatcher, _) 
         = setup();
     
     // create caravan
@@ -305,8 +305,7 @@ fn test_disassemble_caravan__caller_not_owner() {
 
     // disassemble caravan
     starknet::testing::set_contract_address(contract_address_const::<0x99>());
-    let disassembled_transport_ids 
-        = caravan_systems_dispatcher.disassemble(world, caravan_id);
+    caravan_systems_dispatcher.disassemble(world, caravan_id);
 }
 
 
@@ -317,7 +316,7 @@ fn test_disassemble_caravan__caller_not_owner() {
 #[should_panic(expected: ('not a caravan','ENTRYPOINT_FAILED' ))]
 fn test_disassemble_caravan__not_caravan() {
 
-    let (world, transport_units, caravan_systems_dispatcher, realm_entity_id) 
+    let (world, _, caravan_systems_dispatcher, _) 
         = setup();
     
     let caravan_id = 0x1234567890; // fictituous id
@@ -332,7 +331,7 @@ fn test_disassemble_caravan__not_caravan() {
 #[should_panic(expected: ('inventory not empty','ENTRYPOINT_FAILED' ))]
 fn test_disassemble_caravan__non_empty_inventory() {
 
-    let (world, transport_units, caravan_systems_dispatcher, realm_entity_id) 
+    let (world, transport_units, caravan_systems_dispatcher, _) 
         = setup();
     
     // create caravan
@@ -340,7 +339,7 @@ fn test_disassemble_caravan__non_empty_inventory() {
         = caravan_systems_dispatcher.create(world, transport_units.clone());
 
     // add item to inventory
-    starknet::testing::set_contract_address(world.executor());
+    
     let mut inventory = get!(world, caravan_id, Inventory);
     inventory.items_count = 1;
     set!(world, (inventory));
@@ -356,7 +355,7 @@ fn test_disassemble_caravan__non_empty_inventory() {
 #[should_panic(expected: ('caravan is blocked','ENTRYPOINT_FAILED' ))]
 fn test_disassemble_caravan__blocked_caravan() {
 
-    let (world, transport_units, caravan_systems_dispatcher, realm_entity_id) 
+    let (world, transport_units, caravan_systems_dispatcher, _) 
         = setup();
     
     // create caravan
@@ -364,7 +363,7 @@ fn test_disassemble_caravan__blocked_caravan() {
         = caravan_systems_dispatcher.create(world, transport_units.clone());
 
     // block caravan
-    starknet::testing::set_contract_address(world.executor());
+    
     let mut movable = get!(world, caravan_id, Movable);
     movable.blocked = true;
     set!(world, (movable));
@@ -380,7 +379,7 @@ fn test_disassemble_caravan__blocked_caravan() {
 #[should_panic(expected: ('caravan in transit','ENTRYPOINT_FAILED' ))]
 fn test_disassemble_caravan__caravan_in_transit() {
 
-    let (world, transport_units, caravan_systems_dispatcher, realm_entity_id) 
+    let (world, transport_units, caravan_systems_dispatcher, _) 
         = setup();
     
     // create caravan
@@ -388,7 +387,7 @@ fn test_disassemble_caravan__caravan_in_transit() {
         = caravan_systems_dispatcher.create(world, transport_units.clone());
 
     // update arrival time
-    starknet::testing::set_contract_address(world.executor());
+    
     let mut arrival_time = get!(world, caravan_id, ArrivalTime);
     arrival_time.arrives_at = 1;
     set!(world, (arrival_time));
@@ -404,7 +403,7 @@ fn test_disassemble_caravan__caravan_in_transit() {
 #[should_panic(expected: ('mismatched positions','ENTRYPOINT_FAILED' ))]
 fn test_disassemble_caravan__not_at_realm() {
 
-    let (world, transport_units, caravan_systems_dispatcher, realm_entity_id) 
+    let (world, transport_units, caravan_systems_dispatcher, _) 
         = setup();
     
     // create caravan
@@ -412,7 +411,7 @@ fn test_disassemble_caravan__not_at_realm() {
         = caravan_systems_dispatcher.create(world, transport_units.clone());
 
     // update position
-    starknet::testing::set_contract_address(world.executor());
+    
     let mut position = get!(world, caravan_id, Position);
     position.x = 1;
     set!(world, (position));
