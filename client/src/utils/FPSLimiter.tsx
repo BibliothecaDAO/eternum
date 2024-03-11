@@ -5,7 +5,7 @@ import { useEffect, useMemo } from "react";
 const FPSLimiter = ({ children }: { children: any }) => {
   const invalidate = useThree((state) => state.invalidate);
   const clock = useMemo(() => new THREE.Clock(), []);
-  const fps = 25;
+  const fps = 30;
 
   useEffect(() => {
     let rq: any = null;

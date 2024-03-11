@@ -1,7 +1,6 @@
 import * as THREE from "three";
 
 export const createHexagonGeometry = (radius: number, depth: number) => {
-  const flatMode = localStorage.getItem("flatMode");
   const shape = new THREE.Shape();
   for (let i = 0; i < 6; i++) {
     // Adjust the angle to start the first point at the top
@@ -27,10 +26,7 @@ export const createHexagonGeometry = (radius: number, depth: number) => {
   };
 
   // Create a geometry by extruding the shape
-  if (flatMode) {
-    return new THREE.ShapeGeometry(shape);
-  }
-  return new THREE.ExtrudeGeometry(shape, extrudeSettings);
+  return new THREE.ShapeGeometry(shape);
 };
 
 export const createHexagonShape = (radius: number) => {

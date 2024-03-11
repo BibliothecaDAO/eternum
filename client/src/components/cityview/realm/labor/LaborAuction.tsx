@@ -124,7 +124,7 @@ export const LaborAuction = ({ className }: LaborAuctionProps) => {
           cy="145"
           r="120"
           stroke="currentColor"
-          stroke-width="10"
+          strokeWidth="10"
           fill="transparent"
           strokeDasharray={((2 * 22) / 7) * 120}
           strokeDashoffset={((2 * 22) / 7) * 120 - (((progress / 100) * 2 * 22) / 7) * 120}

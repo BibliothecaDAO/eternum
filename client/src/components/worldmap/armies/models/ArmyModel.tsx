@@ -49,4 +49,4 @@ export const ArmyModel = forwardRef((props: JSX.IntrinsicElements["group"], ref)
   );
 });
 
-useGLTF.preload("/unit-transformed.glb");
+useGLTF.preload("/models/unit-transformed.glb");

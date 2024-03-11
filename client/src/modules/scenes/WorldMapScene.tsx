@@ -1,4 +1,3 @@
-// @ts-nocheck
 // import WorldMap from "../../components/worldmap/WorldMap.jsx";
 // @ts-ignore
 import { Flags } from "../../components/worldmap/Flags.jsx";
@@ -14,9 +13,11 @@ import { useCaravan } from "../../hooks/helpers/useCaravans.js";
 import useRealmStore from "../../hooks/store/useRealmStore.js";
 import { useGetRealm } from "../../hooks/helpers/useRealm.js";
 import { getUIPositionFromContractPosition } from "../../utils/utils.js";
-import { WorldMap } from "../../components/worldmap/HexGrid.js";
+import { HEX_RADIUS, WorldMap } from "../../components/worldmap/HexGrid.js";
 import { useRoute } from "wouter";
 import * as THREE from "three";
+import { createHexagonShape } from "../../components/worldmap/components/three/HexagonBackground.js";
+import HighlightedHexes from "../../components/worldmap/HighlightedHexes.js";
 
 const StarsSky = () => {
   const particlesGeometry = new THREE.BufferGeometry();
@@ -56,25 +57,25 @@ export const WorldMapScene = () => {
     }, 300);
   }, []);
 
-  const { getCaravanInfo } = useCaravan();
-  const caravanIds = getCaravansWithResourcesChest();
-  const { realmEntityId } = useRealmStore();
-  const { realm } = useGetRealm(realmEntityId);
+  // const { getCaravanInfo } = useCaravan();
+  // const caravanIds = getCaravansWithResourcesChest();
+  // const { realmEntityId } = useRealmStore();
+  // const { realm } = useGetRealm(realmEntityId);
 
-  const destinations = useMemo(() => {
-    if (!realm) return [];
-    return caravanIds
-      .map((caravanId) => {
-        const { destination: from } = getCaravanInfo(caravanId);
-        if (from) {
-          return {
-            from: getUIPositionFromContractPosition(from),
-            to: getUIPositionFromContractPosition(realm.position),
-          };
-        }
-      })
-      .filter(Boolean);
-  }, [caravanIds, realm]);
+  // const destinations = useMemo(() => {
+  //   if (!realm) return [];
+  //   return caravanIds
+  //     .map((caravanId) => {
+  //       const { destination: from } = getCaravanInfo(caravanId);
+  //       if (from) {
+  //         return {
+  //           from: getUIPositionFromContractPosition(from),
+  //           to: getUIPositionFromContractPosition(realm.position),
+  //         };
+  //       }
+  //     })
+  //     .filter(Boolean);
+  // }, [caravanIds, realm]);
 
   return (
     <>
@@ -89,10 +90,12 @@ export const WorldMapScene = () => {
       {/* <HyperstructureStarted /> */}
       {!showBlankOverlay && isMapView && <WorldMap />}
       <StarsSky />
+      <HighlightedHexes />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.1, -695.175]}>
         <planeGeometry args={[2668, 1390.35]} />
         <meshBasicMaterial color="black" transparent opacity={1} />
       </mesh>
+
       {/* {hyperstructures.map((hyperstructure, i) => {
         if (hyperstructure) {
           if (hyperstructure.completed) {

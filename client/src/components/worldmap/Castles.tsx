@@ -140,7 +140,7 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
             geometry={nodes.castle.geometry}
             material={materials.PaletteMaterial011}
             rotation={[0, pseudoRandom(position.x, position.y) * 2 * Math.PI, 0]}
-            position={[position.x, depth * 10 + 10.3, -position.y]}
+            position={[position.x, 0.31, -position.y]}
           />
         );
       })}
@@ -187,7 +187,7 @@ export const MyCastles = ({ hexData }: CastlesProps) => {
             material={materials.PaletteMaterial004}
             // rotate the castle in a random manner based on a seed
             rotation={[0, pseudoRandom(position.x, position.y) * 2 * Math.PI, 0]}
-            position={[position.x, depth * 10 + 10.3, -position.y]}
+            position={[position.x, 0.31, -position.y]}
             // position={[position.x, height + 1, -position.y]}
           />
         );

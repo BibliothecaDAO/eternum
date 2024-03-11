@@ -166,7 +166,7 @@ export function Flags(props) {
         const { x, y } = getRealmUIPosition(realm.realmId);
         const z = -0 - flagsHeights[Number(realm.realmId) - 1];
         // _position.set(-y, -x, -20);
-        _position.set(-x, y, -15);
+        _position.set(-x, y, -3.5);
         dummy.position.copy(_position);
         dummy.rotateZ(
           //random
@@ -211,7 +211,7 @@ export function Flags(props) {
         true,
       );
 
-      const tooltipPos = posVector.set(point.x, 22, -point.y);
+      const tooltipPos = posVector.set(point.x, 11, -point.y);
       setTooltipPosition(tooltipPos);
       setHoveredRealm(ordersRealms[index][instanceId]);
     }

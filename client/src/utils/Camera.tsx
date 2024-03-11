@@ -100,13 +100,6 @@ const CameraControls = ({ position, target }: Props) => {
       minDistance={minDistance}
       maxPolarAngle={Math.PI / 3}
       makeDefault
-      onChange={(e) => {
-        const controls = e?.target;
-        _v.copy(controls.target);
-        controls.target.clamp(minPan, maxPan);
-        _v.sub(controls.target);
-        camera.position.sub(_v);
-      }}
     />
   );
 };

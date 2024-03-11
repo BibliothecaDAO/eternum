@@ -371,19 +371,13 @@ const Naming = ({ onNext }: { onNext: () => void }) => {
           />
         </div>
       </div>
-      {isWalletSelected && addressName && (
+      {
         <div className="flex space-x-2 mt-8 justify-center">
-          <Button
-            disabled={!isWalletSelected && !addressName}
-            size="md"
-            className="mx-auto"
-            variant="outline"
-            onClick={onNext}
-          >
+          <Button size="md" className="mx-auto" variant="outline" onClick={onNext}>
             <ArrowRight className="w-8" />
           </Button>
         </div>
-      )}
+      }
     </div>
   );
 };
