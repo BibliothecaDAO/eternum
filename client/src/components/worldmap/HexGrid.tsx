@@ -342,6 +342,23 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
 
   const throttledHoverHandler = useMemo(() => throttle(hoverHandler, 50), []);
 
+  useEffect(() => {
+    explored.forEach((rowSet, col) => {
+      if (col < startCol || col > endCol) return;
+      rowSet.forEach((row) => {
+        if (row < startRow || row > endRow) return;
+        const tmpCol = col + 2147483647;
+        const tmpRow = row + 2147483647;
+        const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
+        if (group[hexIndex] && mesh) {
+          color.setStyle(BIOMES[group[hexIndex].biome].color);
+          mesh.setColorAt(hexIndex, color);
+          if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        }
+      });
+    });
+  }, [startRow, startCol, endRow, endCol, explored, group, mesh]);
+
   return (
     <Bvh firstHitOnly>
       <group onPointerEnter={(e) => throttledHoverHandler(e)} onClick={clickHandler}>
