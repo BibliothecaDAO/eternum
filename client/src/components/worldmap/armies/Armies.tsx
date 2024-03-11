@@ -63,8 +63,6 @@ export const Armies = ({ hexData }: ArmiesProps) => {
   const [hoveredArmy, setHoveredArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
   const [selectedArmy, setSelectedArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
 
-  const flatMode = localStorage.getItem("flatMode");
-
   const onHover = (armyId: bigint, position: UIPosition) => {
     setHoveredArmy({ id: armyId, position });
   };
@@ -84,11 +82,7 @@ export const Armies = ({ hexData }: ArmiesProps) => {
           const hex = hexData[hexIndex];
           let z = DEPTH;
           if (hexIndex !== -1 && isExplored(position.x, position.y)) {
-            if (flatMode) {
-              z = 0.32;
-            } else {
-              z += BIOMES[hex.biome].depth * DEPTH;
-            }
+            z = 0.32;
           }
           return {
             contractPos: { x: position.x, y: position.y },

@@ -1,4 +1,4 @@
-import { Environment } from "@react-three/drei";
+import { Bvh, Environment } from "@react-three/drei";
 import { MutableRefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BufferAttribute,
@@ -63,11 +63,10 @@ type HexagonGridProps = {
 
 const color = new Color();
 
-export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: HexagonGridProps) => {
-  const flatMode = localStorage.getItem("flatMode");
+export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: HexagonGridProps) => {
   const hexData = useUIStore((state) => state.hexData);
 
-  const { group, colors } = useMemo(() => {
+  const { group } = useMemo(() => {
     if (!hexData) return { group: [], colors: [] };
     const filteredGroup = hexData.filter((hex) => {
       const col = hex.col - 2147483647;
@@ -76,53 +75,11 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
     });
 
     let colorValues: number[] = [];
-    let idx = 0;
-
-    // filteredGroup.forEach((hex) => {
-    //   // const color = new Color("#202124");
-    //   color.setStyle(BIOMES[hex.biome].color);
-    //   const grayScaleColor = color; //getGrayscaleColor(color);
-    //   // color.toArray(colorValues, idx * 3);
-    //   grayScaleColor.toArray(colorValues, idx * 3);
-    //   idx++;
-    // });
 
     return { group: filteredGroup, colors: colorValues };
   }, [startRow, endRow, startCol, endCol, HEX_RADIUS, hexData]);
 
   // Create the mesh only once when the component is mounted
-  const mesh: InstancedMesh = useMemo(() => {
-    const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
-    const hexMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,
-      vertexColors: false,
-    });
-
-    const instancedMesh = new InstancedMesh(hexagonGeometry, hexMaterial, group.length);
-    let idx = 0;
-    let matrix = new Matrix4();
-    group.forEach((hex) => {
-      const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
-      // set the z position with math.random to have a random height
-      matrix.setPosition(x, y, flatMode ? 0.31 : BIOMES[hex.biome].depth * 10);
-      // set height of hex
-      // matrix.setPosition(x, y, BIOMES[hex.biome].depth);
-
-      instancedMesh.setMatrixAt(idx, matrix);
-
-      color.setStyle(BIOMES[hex.biome].color);
-      // const luminance = getGrayscaleColor(color);
-      // color.setRGB(luminance, luminance, luminance);
-      instancedMesh.setColorAt(idx, color);
-      idx++;
-    });
-
-    // const colorAttribute = new InstancedBufferAttribute(new Float32Array(colors), 3);
-    // instancedMesh.geometry.setAttribute("color", colorAttribute);
-    instancedMesh.computeBoundingSphere();
-    instancedMesh.frustumCulled = true;
-    return instancedMesh;
-  }, [group, colors]);
 
   //biomes: grassland, snow, temperate_desert, taiga, deciduous_forest
   const biomes = [
@@ -139,14 +96,40 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
     "shrubland",
     "subtropical_desert",
   ];
-  const biomeHexes = useMemo(() => {
-    return biomes.reduce((acc, biome) => {
-      acc[biome] = group.filter((hex) => hex.biome === biome);
-      return acc;
-    }, {} as Record<string, typeof group>);
-  }, [group]);
 
-  useEffect(() => {
+  // useEffect(() => {
+  //   explored.forEach((rowSet, col) => {
+  //     if (col < startCol || col > endCol) return;
+  //     rowSet.forEach((row) => {
+  //       if (row < startRow || row > endRow) return;
+  //       const tmpCol = col + 2147483647;
+  //       const tmpRow = row + 2147483647;
+  //       const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
+  //       if (group[hexIndex] && mesh) {
+  //         color.setStyle(BIOMES[group[hexIndex].biome].color);
+  //         mesh.setColorAt(hexIndex, color);
+  //         if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  //       }
+  //     });
+  //   });
+  // }, [startRow, startCol, endRow, endCol, explored, group, mesh]);
+
+  const biomeHexes = useMemo(() => {
+    const biomeHexes = {
+      grassland: [],
+      snow: [],
+      bare: [],
+      taiga: [],
+      deciduous_forest: [],
+      ocean: [],
+      deep_ocean: [],
+      temperate_desert: [],
+      beach: [],
+      scorched: [],
+      shrubland: [],
+      subtropical_desert: [],
+      temperate_deciduous_forest: [],
+    } as Record<string, Hexagon[]>;
     explored.forEach((rowSet, col) => {
       if (col < startCol || col > endCol) return;
       rowSet.forEach((row) => {
@@ -154,86 +137,54 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
         const tmpCol = col + 2147483647;
         const tmpRow = row + 2147483647;
         const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
-        if (group[hexIndex] && mesh) {
-          color.setStyle(BIOMES[group[hexIndex].biome].color);
-          mesh.setColorAt(hexIndex, color);
-          if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        if (group[hexIndex]) {
+          biomeHexes[group[hexIndex].biome].push(group[hexIndex]);
         }
       });
     });
-  }, [startRow, startCol, endRow, endCol, explored, group, mesh]);
+    return biomeHexes;
+  }, [explored]);
 
   return (
     <>
-      {!flatMode && <primitive object={mesh} />}
-      {flatMode && (
-        <>
-          <DesertBiome hexes={biomeHexes["bare"]} />
-          <SnowBiome hexes={biomeHexes["snow"]} />
-          <GrasslandBiome hexes={biomeHexes["grassland"]} />
-          <TaigaBiome hexes={biomeHexes["taiga"]} />
-          <OceanBiome hexes={biomeHexes["ocean"]} />
-          <DeepOceanBiome hexes={biomeHexes["deep_ocean"]} />
-          <TemperateDesertBiome hexes={biomeHexes["temperate_desert"]} />
-          {/* beach = 5millions triangles */}
-          <BeachBiome hexes={biomeHexes["beach"]} />
-          <ScorchedBiome hexes={biomeHexes["scorched"]} />
-          <ShrublandBiome hexes={biomeHexes["shrubland"]} />
-          <SubtropicalDesertBiome hexes={biomeHexes["subtropical_desert"]} />
-          <DeciduousForestBiome hexes={biomeHexes["temperate_deciduous_forest"]} />
-        </>
+      {biomeHexes["snow"].length ? <SnowBiome hexes={biomeHexes["snow"]} /> : <></>}
+      {biomeHexes["bare"].length ? <DesertBiome hexes={biomeHexes["bare"]} /> : <></>}
+      {biomeHexes["grassland"].length ? <GrasslandBiome hexes={biomeHexes["grassland"]} /> : <></>}
+      {biomeHexes["taiga"].length ? <TaigaBiome hexes={biomeHexes["taiga"]} /> : <></>}
+      {biomeHexes["ocean"].length ? <OceanBiome hexes={biomeHexes["ocean"]} /> : <></>}
+      {biomeHexes["deep_ocean"].length ? <DeepOceanBiome hexes={biomeHexes["deep_ocean"]} /> : <></>}
+      {biomeHexes["temperate_desert"].length ? <TemperateDesertBiome hexes={biomeHexes["temperate_desert"]} /> : <></>}
+      {biomeHexes["beach"].length ? <BeachBiome hexes={biomeHexes["beach"]} /> : <></>}
+      {biomeHexes["scorched"].length ? <ScorchedBiome hexes={biomeHexes["scorched"]} /> : <></>}
+      {biomeHexes["shrubland"].length ? <ShrublandBiome hexes={biomeHexes["shrubland"]} /> : <></>}
+      {biomeHexes["subtropical_desert"].length ? (
+        <SubtropicalDesertBiome hexes={biomeHexes["subtropical_desert"]} />
+      ) : (
+        <></>
+      )}
+      {biomeHexes["temperate_deciduous_forest"].length ? (
+        <DeciduousForestBiome hexes={biomeHexes["temperate_deciduous_forest"]} />
+      ) : (
+        <></>
       )}
     </>
   );
 };
 
-export const WorldMap = () => {
-  const {
-    setup: {
-      updates: {
-        eventUpdates: { exploreMapEvents },
-      },
-    },
-  } = useDojo();
-
+export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: HexagonGridProps) => {
   const hexData = useUIStore((state) => state.hexData);
-  const setHexData = useUIStore((state) => state.setHexData);
-  const flatMode = localStorage.getItem("flatMode");
+
+  const highlightPositions = useUIStore((state) => state.highlightPositions);
+  const highlightColor = useUIStore((state) => state.highlightColor);
+  const setHighlightColor = useUIStore((state) => state.setHighlightColor);
+  const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
+
   const isTravelMode = useUIStore((state) => state.isTravelMode);
   const isExploreMode = useUIStore((state) => state.isExploreMode);
   const isAttackMode = useUIStore((state) => state.isAttackMode);
   const selectedPath = useUIStore((state) => state.selectedPath);
   const selectedEntity = useUIStore((state) => state.selectedEntity);
   const setSelectedPath = useUIStore((state) => state.setSelectedPath);
-
-  useEffect(() => {
-    fetch("/jsons/hexData.json")
-      .then((response) => response.json())
-      .then((data) => setHexData(data as Hexagon[]));
-  }, []);
-
-  const rows = 300;
-  const cols = 500;
-
-  const hexagonGrids = useMemo(() => {
-    const hexagonGrids = [];
-    for (let i = 0; i < rows; i += 25) {
-      const startRow = i;
-      const endRow = startRow + 25;
-      for (let j = 0; j < cols; j += 25) {
-        const startCol = j;
-        const endCol = startCol + 25;
-        hexagonGrids.push({ startRow, endRow, startCol, endCol });
-      }
-    }
-    return hexagonGrids;
-  }, []);
-
-  const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
-  const [highlightPositions, setHighlightPositions] = useState<[number, number, number][]>([[0, 0, 0]]);
-  const [highlightColor, setHighlightColor] = useState(0xffffff);
-  const [exploredHexes, setExploredHexes] = useState<Map<number, Set<number>>>(new Map());
-
   // refs
   const isTravelModeRef = useRef(false);
   const isExploreModeRef = useRef(false);
@@ -241,7 +192,7 @@ export const WorldMap = () => {
   const selectedPathRef = useRef(selectedPath);
   const selectedEntityRef = useRef(selectedEntity);
   const hexDataRef = useRef(hexData);
-  const exploredHexesRef = useRef(exploredHexes);
+  const exploredHexesRef = useRef(explored);
 
   useEffect(() => {
     isTravelModeRef.current = isTravelMode;
@@ -250,8 +201,53 @@ export const WorldMap = () => {
     selectedPathRef.current = selectedPath;
     selectedEntityRef.current = selectedEntity;
     hexDataRef.current = hexData;
-    exploredHexesRef.current = exploredHexes;
-  }, [isTravelMode, isExploreMode, isAttackMode, selectedPath, selectedEntity, hexData, exploredHexes]);
+    exploredHexesRef.current = explored;
+  }, [isTravelMode, isExploreMode, isAttackMode, selectedPath, selectedEntity, hexData, explored]);
+
+  const { group, colors } = useMemo(() => {
+    if (!hexData) return { group: [], colors: [] };
+    const filteredGroup = hexData.filter((hex) => {
+      const col = hex.col - 2147483647;
+      const row = hex.row - 2147483647;
+      return col >= startCol && col <= endCol && row >= startRow && row <= endRow;
+    });
+
+    return { group: filteredGroup };
+  }, [startRow, endRow, startCol, endCol, HEX_RADIUS, hexData]);
+
+  // Create the mesh only once when the component is mounted
+  const mesh: InstancedMesh = useMemo(() => {
+    const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
+    const hexMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      vertexColors: false,
+    });
+
+    const instancedMesh = new InstancedMesh(hexagonGeometry, hexMaterial, group.length);
+    let idx = 0;
+    let matrix = new Matrix4();
+    group.forEach((hex) => {
+      const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
+      // set the z position with math.random to have a random height
+      matrix.setPosition(x, y, 0.31);
+      // set height of hex
+      // matrix.setPosition(x, y, BIOMES[hex.biome].depth);
+
+      instancedMesh.setMatrixAt(idx, matrix);
+
+      color.setStyle(BIOMES[hex.biome].color);
+      const luminance = getGrayscaleColor(color);
+      color.setRGB(luminance, luminance, luminance);
+      instancedMesh.setColorAt(idx, color);
+      idx++;
+    });
+
+    // const colorAttribute = new InstancedBufferAttribute(new Float32Array(colors), 3);
+    // instancedMesh.geometry.setAttribute("color", colorAttribute);
+    instancedMesh.computeBoundingSphere();
+    instancedMesh.frustumCulled = true;
+    return instancedMesh;
+  }, [group, colors]);
 
   const hoverHandler = (e: any) => {
     const intersect = e.intersections.find((intersect: any) => intersect.object instanceof THREE.InstancedMesh);
@@ -343,6 +339,52 @@ export const WorldMap = () => {
 
   const throttledHoverHandler = useMemo(() => throttle(hoverHandler, 50), []);
 
+  return (
+    <Bvh firstHitOnly>
+      <group onPointerEnter={(e) => throttledHoverHandler(e)} onClick={clickHandler}>
+        <primitive object={mesh} />
+      </group>
+    </Bvh>
+  );
+};
+
+export const WorldMap = () => {
+  const {
+    setup: {
+      updates: {
+        eventUpdates: { exploreMapEvents },
+      },
+    },
+  } = useDojo();
+
+  const hexData = useUIStore((state) => state.hexData);
+  const setHexData = useUIStore((state) => state.setHexData);
+
+  useEffect(() => {
+    fetch("/jsons/hexData.json")
+      .then((response) => response.json())
+      .then((data) => setHexData(data as Hexagon[]));
+  }, []);
+
+  const rows = 300;
+  const cols = 500;
+
+  const hexagonGrids = useMemo(() => {
+    const hexagonGrids = [];
+    for (let i = 0; i < rows; i += 50) {
+      const startRow = i;
+      const endRow = startRow + 50;
+      for (let j = 0; j < cols; j += 50) {
+        const startCol = j;
+        const endCol = startCol + 50;
+        hexagonGrids.push({ startRow, endRow, startCol, endCol });
+      }
+    }
+    return hexagonGrids;
+  }, []);
+
+  const [exploredHexes, setExploredHexes] = useState<Map<number, Set<number>>>(new Map());
+
   useEffect(() => {
     let subscription: Subscription | undefined;
 
@@ -383,30 +425,18 @@ export const WorldMap = () => {
   }, [hexData]);
 
   return (
-    <group onPointerEnter={(e) => throttledHoverHandler(e)}>
-      <mesh rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>
+    <>
+      <group rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>
         {hexagonGrids.map((grid, index) => {
-          return (
-            <group onClick={clickHandler} key={index}>
-              <HexagonGrid {...grid} explored={exploredHexes} />
-            </group>
-          );
+          return <BiomesGrid key={index} {...grid} explored={exploredHexes} />;
         })}
-      </mesh>
-      {highlightPositions.map((highlightPosition) => {
-        return (
-          <mesh
-            geometry={hexagonGeometry}
-            rotation={[Math.PI / -2, 0, 0]}
-            position={[highlightPosition[0], flatMode ? 0.32 : highlightPosition[2] + 10.3, highlightPosition[1]]}
-          >
-            <meshMatcapMaterial color={highlightColor} transparent opacity={0.75} depthTest={false} />
-          </mesh>
-        );
-      })}
+        {hexagonGrids.map((grid, index) => {
+          return <HexagonGrid key={index} {...grid} explored={exploredHexes} />;
+        })}
+      </group>
       {models}
       <Flags></Flags>
-    </group>
+    </>
   );
 };
 

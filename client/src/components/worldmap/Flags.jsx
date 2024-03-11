@@ -45,7 +45,6 @@ realmsJson.features = realmsJson.features.map((feature, index) => {
 
 export function Flags(props) {
   const { nodes, materials } = useGLTF("/models/flags_1-transformed.glb");
-  const flatMode = localStorage.getItem("flatMode");
 
   const setCameraPosition = useUIStore((state) => state.setCameraPosition);
   const setCameraTarget = useUIStore((state) => state.setCameraTarget);
@@ -167,7 +166,7 @@ export function Flags(props) {
         const { x, y } = getRealmUIPosition(realm.realmId);
         const z = -0 - flagsHeights[Number(realm.realmId) - 1];
         // _position.set(-y, -x, -20);
-        _position.set(-x, y, flatMode ? -3.5 : -15);
+        _position.set(-x, y, -3.5);
         dummy.position.copy(_position);
         dummy.rotateZ(
           //random
@@ -212,7 +211,7 @@ export function Flags(props) {
         true,
       );
 
-      const tooltipPos = posVector.set(point.x, flatMode ? 11 : 22, -point.y);
+      const tooltipPos = posVector.set(point.x, 11, -point.y);
       setTooltipPosition(tooltipPos);
       setHoveredRealm(ordersRealms[index][instanceId]);
     }

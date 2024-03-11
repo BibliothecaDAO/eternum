@@ -110,7 +110,6 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
   const realms = useGetRealms();
 
   const realmPositions = realmHexPositions as HexPositions;
-  const flatMode = localStorage.getItem("flatMode");
 
   let castles = useMemo(() => {
     return realms
@@ -141,7 +140,7 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
             geometry={nodes.castle.geometry}
             material={materials.PaletteMaterial011}
             rotation={[0, pseudoRandom(position.x, position.y) * 2 * Math.PI, 0]}
-            position={[position.x, flatMode ? 0.31 : depth * 10 + 10.3, -position.y]}
+            position={[position.x, 0.31, -position.y]}
           />
         );
       })}
@@ -155,8 +154,6 @@ export const MyCastles = ({ hexData }: CastlesProps) => {
   const { nodes, materials } = useGLTF("/models/realm-buildings-transformed.glb") as GLTFResult;
 
   const realmPositions = realmHexPositions as HexPositions;
-
-  const flatMode = localStorage.getItem("flatMode");
 
   let castles = useMemo(() => {
     return realmEntityIds
@@ -190,7 +187,7 @@ export const MyCastles = ({ hexData }: CastlesProps) => {
             material={materials.PaletteMaterial004}
             // rotate the castle in a random manner based on a seed
             rotation={[0, pseudoRandom(position.x, position.y) * 2 * Math.PI, 0]}
-            position={[position.x, flatMode ? 0.31 : depth * 10 + 10.3, -position.y]}
+            position={[position.x, 0.31, -position.y]}
             // position={[position.x, height + 1, -position.y]}
           />
         );

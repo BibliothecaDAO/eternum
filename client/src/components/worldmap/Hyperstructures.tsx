@@ -14,7 +14,6 @@ const BIOMES = biomes as Record<string, { color: string; depth: number }>;
 
 export const Hyperstructures = ({ hexData }: Hyperstructures) => {
   const hyperstructures = useUIStore((state) => state.hyperstructures);
-  const flatMode = localStorage.getItem("flatMode");
 
   return (
     <group>
@@ -33,12 +32,12 @@ export const Hyperstructures = ({ hexData }: Hyperstructures) => {
               <HyperstructureFinished
                 hyperstructure={hyperstructure}
                 scale={6}
-                position={[uiPosition.x, flatMode ? 0.31 : depth * 10 + 10.3, -uiPosition.y]}
+                position={[uiPosition.x, 0.31, -uiPosition.y]}
               />
               <HyperstructureFinishedLowpoly
                 hyperstructure={hyperstructure}
                 scale={6}
-                position={[uiPosition.x, flatMode ? 0.31 : depth * 10 + 10.3, -uiPosition.y]}
+                position={[uiPosition.x, 0.31, -uiPosition.y]}
               />
             </Detailed>
           );

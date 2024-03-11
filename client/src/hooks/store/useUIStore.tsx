@@ -45,6 +45,12 @@ interface UIStore {
   moveCameraToFoodView: () => void;
   isLoadingScreenEnabled: boolean;
   setIsLoadingScreenEnabled: (enabled: boolean) => void;
+  // const [highlightPositions, setHighlightPositions] = useState<[number, number, number][]>([[0, 0, 0]]);
+  // const [highlightColor, setHighlightColor] = useState(0xffffff);
+  highlightPositions: [number, number, number][];
+  setHighlightPositions: (positions: [number, number, number][]) => void;
+  highlightColor: number;
+  setHighlightColor: (color: number) => void;
 }
 
 const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) => ({
@@ -196,6 +202,10 @@ const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) =>
   },
   isLoadingScreenEnabled: true,
   setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
+  highlightPositions: [],
+  setHighlightPositions: (positions) => set({ highlightPositions: positions }),
+  highlightColor: 0xffffff,
+  setHighlightColor: (color) => set({ highlightColor: color }),
   ...createPopupsSlice(set),
   ...createDataStoreSlice(set),
   ...createMapStoreSlice(set),
