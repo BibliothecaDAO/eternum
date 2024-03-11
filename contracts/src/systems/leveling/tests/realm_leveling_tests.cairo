@@ -39,7 +39,7 @@ fn setup() -> (IWorldDispatcher, u128, ILevelingSystemsDispatcher) {
         contract_address: config_systems_address
     };
 
-    starknet::testing::set_contract_address(world.executor());
+    
 
     // set labor auction
     let decay_scaled: u128 = 1844674407370955161;

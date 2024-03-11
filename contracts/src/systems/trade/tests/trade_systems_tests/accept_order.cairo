@@ -152,7 +152,7 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, u128, ITrad
     );
 
 
-    starknet::testing::set_contract_address(world.executor());
+    
 
     let maker_id = maker_realm_entity_id;
     let taker_id = taker_realm_entity_id;
@@ -210,7 +210,7 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, u128, ITrad
     
     // create order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
-    let trade_taker_id = if direct_trade {
+    if direct_trade {
         taker_id
     } else {
         0
@@ -273,7 +273,7 @@ fn test_accept_without_taker_transport_id() {
         = setup(false);
 
     // let maker and taker be at the same location
-    starknet::testing::set_contract_address(world.executor());
+    
     let maker_position = get!(world, maker_id, Position);
     set!(world, (
         Position {
@@ -345,7 +345,7 @@ fn test_accept_without_taker_transport_id() {
 fn test_accept_without_taker_transport_id_wrong_position() {
     // when there is no provided taker_tansport_id, 
     // maker and taker must be in the same position
-    let (world, trade_id, maker_id, taker_id, _, trade_systems_dispatcher) 
+    let (world, trade_id, _, taker_id, _, trade_systems_dispatcher) 
         = setup(false);
 
     // accept order 
@@ -670,7 +670,7 @@ fn test_accept_order_with_realm_travel_bonus() {
         = setup(true);
 
     let caller_address = starknet::get_contract_address();
-    starknet::testing::set_contract_address(world.executor());
+    
 
     // set maker and taker levels
     set!(world, (
@@ -863,7 +863,7 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
         = setup(true);
 
     let caller_address = starknet::get_contract_address();
-    starknet::testing::set_contract_address(world.executor());
+    
 
     // set maker and taker realm level
     set!(world, (
@@ -1115,14 +1115,14 @@ fn test_accept_order_with_road() {
 fn test_not_trade_taker_id() {
 
 
-    let (world, trade_id, maker_id, taker_id, taker_transport_id, trade_systems_dispatcher) 
+    let (world, trade_id, _, _, taker_transport_id, trade_systems_dispatcher) 
         = setup(true);
     
     // the setup states the trade is a direct offer
     // so here we are checking to see that the person 
     // who wants to accept is the intended recepient
 
-    starknet::testing::set_contract_address(world.executor());
+    
 
     let taker_id = 9999; // set arbitrarily
     set!(world, (
@@ -1148,7 +1148,7 @@ fn test_not_trade_taker_id() {
 #[should_panic(expected: ('not owned by caller', 'ENTRYPOINT_FAILED' ))]
 fn test_caller_not_taker() {
 
-    let (world, trade_id, maker_id, taker_id, taker_transport_id, trade_systems_dispatcher) 
+    let (world, trade_id, _, taker_id, taker_transport_id, trade_systems_dispatcher) 
         = setup(true);
 
     // create order with a caller that isnt the owner of taker_id
@@ -1167,7 +1167,7 @@ fn test_caller_not_taker() {
 #[should_panic(expected: ('not caravan owner', 'ENTRYPOINT_FAILED' ))]
 fn test_caller_not_owner_of_transport_id() {
 
-    let (world, trade_id, maker_id, taker_id, taker_transport_id, trade_systems_dispatcher) 
+    let (world, trade_id, _, taker_id, _, trade_systems_dispatcher) 
         = setup(true);
 
     let taker_transport_id = 9999; // set arbitrarily
@@ -1187,11 +1187,11 @@ fn test_caller_not_owner_of_transport_id() {
 #[should_panic(expected: ('mismatched positions', 'ENTRYPOINT_FAILED' ))]
 fn test_different_transport_position() {
 
-    let (world, trade_id, maker_id, taker_id, taker_transport_id, trade_systems_dispatcher) 
+    let (world, trade_id, _, taker_id, taker_transport_id, trade_systems_dispatcher) 
         = setup(true);
 
     // set an arbitrary position
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(world, Position {
         entity_id: taker_id,
         x: 999,
@@ -1215,12 +1215,12 @@ fn test_different_transport_position() {
 #[should_panic(expected: ('transport has not arrived', 'ENTRYPOINT_FAILED' ))]
 fn test_transport_in_transit() {
 
-    let (world, trade_id, maker_id, taker_id, taker_transport_id, trade_systems_dispatcher) 
+    let (world, trade_id, _, taker_id, taker_transport_id, trade_systems_dispatcher) 
         = setup(true);
 
 
     // set arrival time to some time in future
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(world, ArrivalTime {
         entity_id: taker_transport_id,
         arrives_at: starknet::get_block_timestamp() + 40
@@ -1241,7 +1241,7 @@ fn test_transport_in_transit() {
 #[should_panic(expected: ('not enough capacity', 'ENTRYPOINT_FAILED' ))]
 fn test_transport_not_enough_capacity() {
 
-    let (world, trade_id, maker_id, taker_id, _, trade_systems_dispatcher) 
+    let (world, trade_id, _, taker_id, _, trade_systems_dispatcher) 
         = setup(true);
 
     //          note

@@ -204,7 +204,6 @@ impl OwnedResourcesTrackerImpl of OwnedResourcesTrackerTrait {
 
             let (resource_type, probability) = *zipped.at(index);
             if self.owns_resource_type(resource_type) {
-                let rcd = (*self).resource_types;
                 owned_resource_types.append(resource_type);
                 owned_resource_probabilities.append(probability);
             }

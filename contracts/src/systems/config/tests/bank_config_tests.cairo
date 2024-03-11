@@ -94,7 +94,7 @@ fn test_set_bank_auction() {
     };
 
     let caller = starknet::get_caller_address();
-    starknet::testing::set_contract_address(world.executor());
+    
 
     let bank_id: u128 = 1;
     set!(world, Bank {

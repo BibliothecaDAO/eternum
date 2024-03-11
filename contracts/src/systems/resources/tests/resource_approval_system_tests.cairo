@@ -45,7 +45,7 @@ mod resource_approval_system_tests {
     fn make_owner_and_receiver(
         world: IWorldDispatcher, owner_entity_id: u64, receiver_entity_id: u64
     ) {
-        starknet::testing::set_contract_address(world.executor());
+        
 
         let owner_entity_position = Position { 
             x: 100_000, 
@@ -107,7 +107,7 @@ mod resource_approval_system_tests {
         );
 
         let approved_entity_id = 13_u64;
-        starknet::testing::set_contract_address(world.executor());
+        
         set!(world, (
             Owner { 
                 address: contract_address_const::<'approved_entity'>(), 
@@ -157,7 +157,7 @@ mod resource_approval_system_tests {
         );
 
         let approved_entity_id = 13_u64;
-        starknet::testing::set_contract_address(world.executor());
+        
         set!(world, (
             Owner { 
                 address: contract_address_const::<'approved_entity'>(), 
@@ -207,7 +207,7 @@ mod resource_approval_system_tests {
         );
 
         let approved_entity_id = 13_u64;
-        starknet::testing::set_contract_address(world.executor());
+        
         set!(world, (
             Owner { 
                 address: contract_address_const::<'approved_entity'>(), 

@@ -199,8 +199,7 @@ fn test_return_free_transport_unit() {
         = transport_unit_systems_dispatcher.create_free_unit(
             world, realm_entity_id, 10
         );
-    let free_transport_unit_id_2
-        = transport_unit_systems_dispatcher.create_free_unit(
+    transport_unit_systems_dispatcher.create_free_unit(
             world, realm_entity_id, 10
         );
 
@@ -218,7 +217,7 @@ fn test_return_free_transport_unit() {
     
 
     // check that the free transport unit 1 has been returned
-    let (quantity, position, metadata, owner, capacity, movable, arrival_time) 
+    let (quantity, position, metadata, owner, capacity, movable, _) 
     = get!(world, free_transport_unit_id_1, (Quantity, Position, EntityMetadata, Owner, Capacity, Movable, ArrivalTime));
 
     assert(quantity.value == 0, 'unit not returnd');
@@ -255,7 +254,7 @@ fn test_return__wrong_unit_type() {
 
     
     // set the entity type to 0
-    starknet::testing::set_contract_address(world.executor());
+    
     let mut metadata = get!(world, free_transport_unit_id, EntityMetadata);
     metadata.entity_type = 0;
     set!(world, (metadata));
@@ -306,7 +305,7 @@ fn test_return__movable_blocked() {
         );
 
     // set the unit as blocked
-    starknet::testing::set_contract_address(world.executor());
+    
     let mut unit_movable = get!(world, free_transport_unit_id, Movable);
     unit_movable.blocked = true;
     set!(world, (unit_movable));
@@ -336,7 +335,7 @@ fn test_return__no_quantity() {
         );
 
     // set the quantity to 0
-    starknet::testing::set_contract_address(world.executor());
+    
     let mut unit_quantity = get!(world, free_transport_unit_id, Quantity);
     unit_quantity.value = 0;
     set!(world, (unit_quantity));

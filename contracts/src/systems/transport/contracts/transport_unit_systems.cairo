@@ -22,7 +22,7 @@ mod transport_unit_systems {
 
 
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl TransportUnitSystemsImpl of ITransportUnitSystems<ContractState>{
 
         /// Creates a new free transport unit.

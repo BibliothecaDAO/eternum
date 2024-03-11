@@ -122,7 +122,7 @@ fn setup() -> (IWorldDispatcher, u128, Span<u128>, ISoldierSystemsDispatcher) {
         harbors, rivers, regions, wonder, order, caller_position.clone(),
     );
 
-    starknet::testing::set_contract_address(world.executor());
+    
 
     let caller_id = caller_realm_entity_id;
     
@@ -387,7 +387,7 @@ fn test_merge_to_raider() {
 
 //     let (world, caller_id, new_units, soldier_systems_dispatcher) = setup();
 
-//     starknet::testing::set_contract_address(world.executor());
+//     
 //     set!(world, (
 //         EntityOwner {
 //             entity_id: *new_units.at(0),
@@ -417,9 +417,9 @@ fn test_merge_to_raider() {
 #[should_panic(expected: ('unit is travelling','ENTRYPOINT_FAILED' ))]
 fn test_travelling_unit() {
 
-    let (world, caller_id, new_units, soldier_systems_dispatcher) = setup();
+    let (world, _, new_units, soldier_systems_dispatcher) = setup();
 
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(world, (
         ArrivalTime {
             entity_id: *new_units.at(0),

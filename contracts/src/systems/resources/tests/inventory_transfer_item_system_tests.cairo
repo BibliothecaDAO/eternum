@@ -117,7 +117,7 @@ mod inventory_transfer_system_tests {
     #[available_gas(30000000000000)]
     fn test_inventory_transfer_item() {
 
-        let (world, chest_id, donor_id, donor_transport_id, inventory_systems_dispatcher) 
+        let (world, chest_id, _, donor_transport_id, inventory_systems_dispatcher) 
             = setup();
 
 
@@ -166,7 +166,7 @@ mod inventory_transfer_system_tests {
     #[available_gas(30000000000000)]
     fn test_inventory_transfer_item_to_self() {
 
-        let (world, chest_id, donor_id, donor_transport_id, inventory_systems_dispatcher) 
+        let (world, chest_id, _, donor_transport_id, inventory_systems_dispatcher) 
             = setup();
 
 
@@ -223,7 +223,7 @@ mod inventory_transfer_system_tests {
     #[should_panic(expected: ('not caravan owner','ENTRYPOINT_FAILED' ))]
     fn test_inventory_transfer_item_not_transport_owner() {
 
-        let (world, chest_id, donor_id, donor_transport_id, inventory_systems_dispatcher) 
+        let (world, _, _, donor_transport_id, inventory_systems_dispatcher) 
             = setup();
 
         // set caller to arbitrary address
@@ -244,7 +244,7 @@ mod inventory_transfer_system_tests {
     #[should_panic(expected: ('mismatched positions','ENTRYPOINT_FAILED' ))]
     fn test_inventory_transfer_item_wrong_position() {
 
-        let (world, chest_id, donor_id, donor_transport_id, inventory_systems_dispatcher) 
+        let (world, _,_, donor_transport_id, inventory_systems_dispatcher) 
             = setup();
 
         // receiver is not in the same position as donor transport
@@ -278,7 +278,7 @@ mod inventory_transfer_system_tests {
     #[should_panic(expected: ('transport has not arrived','ENTRYPOINT_FAILED' ))]
     fn test_inventory_transfer_item_wrong_arrival_time() {
 
-        let (world, chest_id, donor_id, donor_transport_id, inventory_systems_dispatcher) 
+        let (world, _, _, donor_transport_id, inventory_systems_dispatcher) 
             = setup();
 
         // receiver is not in the same position as donor transport
@@ -305,7 +305,7 @@ mod inventory_transfer_system_tests {
     #[should_panic(expected: ('inventory is empty','ENTRYPOINT_FAILED' ))]
     fn test_inventory_transfer_item_from_empty_inventory() {
 
-        let (world, chest_id, donor_id, donor_transport_id, inventory_systems_dispatcher) 
+        let (world, _, _, donor_transport_id, inventory_systems_dispatcher) 
             = setup();
         starknet::testing::set_contract_address(
             contract_address_const::<'donor'>()

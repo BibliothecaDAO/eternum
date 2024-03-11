@@ -44,7 +44,7 @@ use eternum::alias::ID;
         Transfer: Transfer,
     }
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl ResourceSystemsImpl of IResourceSystems<ContractState> {
         
         /// Approve an entity to spend resources.
@@ -263,7 +263,6 @@ use eternum::alias::ID;
             ) -> bool {
             // ensure that receiver has enough weight capacity
             if entity_capacity.is_capped() {
-                let entity_id = entity_current_weight.entity_id;
                 entity_current_weight.value += additional_weight;
 
                 let can_carry 
@@ -287,7 +286,7 @@ use eternum::alias::ID;
 
 
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl InventorySystemsImpl of IInventorySystems<ContractState> {
 
 
@@ -599,9 +598,7 @@ use eternum::alias::ID;
             let mut entity_weight = get!(world, entity_id, Weight);
             let entity_capacity = get!(world, entity_id, Capacity); 
             let entity_quantity = get!(world, entity_id, Quantity);
-            let entity_total_capacity 
-                = entity_capacity.weight_gram * entity_quantity.get_value();
-            
+     
             let mut inventory = get!(world, entity_id, Inventory);
             assert(inventory.items_key != 0, 'entity has no inventory');
 
@@ -686,8 +683,6 @@ use eternum::alias::ID;
 
             let sender_id = sender_inventory.entity_id;
             let receiver_id = receiver_inventory.entity_id;
-
-            let sender_inventory_items_count = sender_inventory.items_count;
 
             let mut last_selected_index = sender_inventory.items_count;
             let mut sender_weight = get!(world, sender_id, Weight);

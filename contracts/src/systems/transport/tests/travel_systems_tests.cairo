@@ -43,7 +43,7 @@ fn setup() -> (IWorldDispatcher, u64, Position, Coord, ITravelSystemsDispatcher)
     let world = spawn_eternum();
 
     // set as executor
-    starknet::testing::set_contract_address(world.executor());
+    
 
 
     let travelling_entity_id = 11_u64;
@@ -104,6 +104,8 @@ fn test_travel() {
             sec_per_km: 10,
             blocked: false,
             round_trip: false,
+            start_coord_x: 0,
+            start_coord_y: 0,
             intermediate_coord_x: 0,  
             intermediate_coord_y: 0,          
         }
@@ -145,7 +147,7 @@ fn test_travel_with_realm_bonus() {
     ///////////////////////////////
 
     let realm_entity_id = 99;
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(world, (
         EntityOwner {
             entity_id: travelling_entity_id.into(),
@@ -192,6 +194,8 @@ fn test_travel_with_realm_bonus() {
             sec_per_km: 10,
             blocked: false,
             round_trip: false,
+            start_coord_x: 0,
+            start_coord_y: 0,
             intermediate_coord_x: 0,  
             intermediate_coord_y: 0,          
         }
@@ -233,7 +237,7 @@ fn test_travel_with_realm_and_order_bonus() {
 
     let realm_entity_id = 99;
     let realm_order_id: u8 = 1;
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(world, (
         EntityOwner {
             entity_id: travelling_entity_id.into(),
@@ -279,7 +283,7 @@ fn test_travel_with_realm_and_order_bonus() {
     //  set order level
     ///////////////////////////////////////
 
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(world, (
         EntityOwner {
             entity_id: travelling_entity_id.into(),
@@ -297,6 +301,8 @@ fn test_travel_with_realm_and_order_bonus() {
             sec_per_km: 10,
             blocked: false,
             round_trip: false,
+            start_coord_x: 0,
+            start_coord_y: 0,
             intermediate_coord_x: 0,  
             intermediate_coord_y: 0,          
         }
@@ -359,6 +365,8 @@ fn test_travel_with_road(){
             sec_per_km: 10,
             blocked: false,
             round_trip: false,
+            start_coord_x: 0,
+            start_coord_y: 0,
             intermediate_coord_x: 0,  
             intermediate_coord_y: 0  
         }
@@ -449,6 +457,8 @@ fn test_blocked() {
             sec_per_km: 10,
             blocked: true,
             round_trip: false,
+            start_coord_x: 0,
+            start_coord_y: 0,
             intermediate_coord_x: 0,  
             intermediate_coord_y: 0,  
         }
@@ -480,7 +490,9 @@ fn test_in_transit() {
             sec_per_km: 10,
             blocked: false,
             round_trip: false,
-              intermediate_coord_x: 0,  
+            start_coord_x: 0,
+            start_coord_y: 0,
+            intermediate_coord_x: 0,  
             intermediate_coord_y: 0,  
         },
         ArrivalTime {
@@ -527,7 +539,7 @@ fn setup_hex_travel() -> (IWorldDispatcher, u64, Position, ITravelSystemsDispatc
     let world = spawn_eternum();
 
     // set as executor
-    starknet::testing::set_contract_address(world.executor());
+    
 
     // set tick config
     let tick_config = TickConfig {
@@ -565,6 +577,8 @@ fn setup_hex_travel() -> (IWorldDispatcher, u64, Position, ITravelSystemsDispatc
             sec_per_km: 10,
             blocked: false,
             round_trip: false,
+            start_coord_x: 0,
+            start_coord_y: 0,
             intermediate_coord_x: 0,  
             intermediate_coord_y: 0,  
         })
@@ -657,7 +671,7 @@ fn test_travel_hex__destination_tile_not_explored() {
 
     let (
         world, travelling_entity_id,
-         travelling_entity_position, travel_systems_dispatcher
+         _, travel_systems_dispatcher
     ) = setup_hex_travel();
 
     let travel_directions = array![Direction::East].span();
@@ -687,8 +701,10 @@ fn test_travel_hex__exceed_max_tick_moves() {
         Direction::East, Direction::East 
     ].span();
     let current_coord: Coord = travelling_entity_position.into();
-    let destination_coord: Coord 
-        = get_and_explore_destination_tiles(world, current_coord, travel_directions);
+    // explore destination coord
+    get_and_explore_destination_tiles(
+        world, current_coord, travel_directions
+    );
 
 
     // travelling entity travels

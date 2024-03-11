@@ -41,7 +41,7 @@ mod travel_systems {
         Travel: Travel,
     }
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl TravelSystemsImpl of ITravelSystems<ContractState> {
 
         /// Travel to a destination

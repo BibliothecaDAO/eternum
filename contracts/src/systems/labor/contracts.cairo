@@ -32,7 +32,7 @@ mod labor_systems {
 
     use eternum::constants::{REALM_LEVELING_CONFIG_ID, HYPERSTRUCTURE_LEVELING_CONFIG_ID};
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl LaborSystemsImpl of ILaborSystems<ContractState> {
         /// Builds labor for a particular resource on a realm
         ///
@@ -212,7 +212,7 @@ mod labor_systems {
 
             // generated labor
             // TODO: don't retrive labor_unharvested
-            let (labor_generated, is_complete, labor_unharvested) = labor.get_labor_generated(ts);
+            let (labor_generated, is_complete, _) = labor.get_labor_generated(ts);
 
             // assert base labor units not zero
             assert(labor_config.base_labor_units != 0, 'Base labor units cannot be zero');
@@ -351,9 +351,6 @@ mod labor_systems {
                 set!(world, (building));
             }
 
-            // Get Config
-            let labor_config: LaborConfig = get!(world, LABOR_CONFIG_ID, LaborConfig);
-
             // pay for labor 
             let labor_cost_resources = get!(world, resource_type, LaborCostResources);
             let labor_cost_resource_types: Span<u8> = unpack_resource_types(
@@ -369,7 +366,6 @@ mod labor_systems {
 
             assert(labor_auction.per_time_unit != 0, 'Labor auction not found');
 
-            let zero_fixed = Fixed { sign: false, mag: 0 };
 
             let mut index = 0_usize;
             loop {

@@ -180,7 +180,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
         harbors, rivers, regions, wonder, 0, target_realm_entity_position.clone(),
     );
 
-    starknet::testing::set_contract_address(world.executor());
+    
 
     starknet::testing::set_block_timestamp(1000);
 
@@ -296,8 +296,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
         contract_address_const::<'attacker'>()
     );
 
-    let attacker_combat = get!(world, attacker_realm_entity_id, TownWatch);
-    let attacker_town_watch_id = attacker_combat.town_watch_id;
     
 
     // buy soldiers for attacker
@@ -308,7 +306,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
 
     // set attacker unit position to be at target realm
 
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(world, (
         Position { 
             entity_id: attacker_unit_id, 
@@ -373,7 +371,7 @@ fn test_steal_success() {
         combat_systems_dispatcher
     ) = setup();
     
-    starknet::testing::set_contract_address(world.executor());
+    
 
     // make the target completely defenceless 
     // so that the attacker's victory is assured
@@ -395,7 +393,6 @@ fn test_steal_success() {
             );
 
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
-    let target_unit_health = get!(world, target_town_watch_id, Health);
 
     // ensure attacker's health is intact
     assert(
@@ -485,7 +482,7 @@ fn test_steal_success_with_order_boost() {
         combat_systems_dispatcher
     ) = setup();
     
-    starknet::testing::set_contract_address(world.executor());
+    
 
     // make the target completely defenceless 
     // so that the attacker's victory is assured
@@ -515,7 +512,6 @@ fn test_steal_success_with_order_boost() {
             );
 
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
-    let target_unit_health = get!(world, target_town_watch_id, Health);
 
     // ensure attacker's health is intact
     assert(
@@ -606,8 +602,8 @@ fn test_not_owner() {
 
     let (
         world, 
-        attacker_realm_entity_id, attacker_unit_id,
-        target_realm_entity_id, target_town_watch_id, 
+        _, attacker_unit_id,
+        _, target_town_watch_id, 
         combat_systems_dispatcher
     ) = setup();
 
@@ -633,13 +629,13 @@ fn test_attacker_in_transit() {
 
     let (
         world, 
-        attacker_realm_entity_id, attacker_unit_id,
-        target_realm_entity_id, target_town_watch_id, 
+        _, attacker_unit_id,
+        _, target_town_watch_id, 
         combat_systems_dispatcher
     ) = setup();
 
     // set arrival time a future time
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(world, (
         ArrivalTime { 
             entity_id: attacker_unit_id, 
@@ -669,13 +665,13 @@ fn test_attacker_dead() {
 
     let (
         world, 
-        attacker_realm_entity_id, attacker_unit_id,
-        target_realm_entity_id, target_town_watch_id, 
+        _, attacker_unit_id,
+        _, target_town_watch_id, 
         combat_systems_dispatcher
     ) = setup();
 
     // set attacker health to 0
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(world, (
         Health { 
             entity_id: attacker_unit_id, 
@@ -709,13 +705,13 @@ fn test_wrong_position() {
 
     let (
         world, 
-        attacker_realm_entity_id, attacker_unit_id,
-        target_realm_entity_id, target_town_watch_id, 
+        _, attacker_unit_id,
+        _, target_town_watch_id, 
         combat_systems_dispatcher
     ) = setup();
 
     // set attacker position to a different position
-    starknet::testing::set_contract_address(world.executor());
+    
     set!(world, (
         Position { 
             entity_id: attacker_unit_id, 
@@ -750,7 +746,7 @@ fn test_steal_success_army_to_army() {
     let (world, attacker_realm_entity_id, attacker_unit_id, _, _ ,combat_systems_dispatcher ) 
         = setup();
     
-    starknet::testing::set_contract_address(world.executor());
+    
 
 
     let target_unit_id = 48445;
