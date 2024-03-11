@@ -2,6 +2,8 @@ import { useGLTF } from "@react-three/drei";
 import { getUIPositionFromColRow } from "../../../utils/utils";
 import * as THREE from "three";
 import { useMemo } from "react";
+import { Hexagon } from "../HexGrid";
+import { GLTF } from "three-stdlib";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -15,7 +17,7 @@ type GLTFResult = GLTF & {
     ["Cactus.001Shrub"]: THREE.MeshStandardMaterial;
   };
 };
-export function ShrublandBiome({ hexes }) {
+export function ShrublandBiome({ hexes }: { hexes: Hexagon[] }) {
   const { nodes, materials } = useGLTF("/models/shrubland.glb") as GLTFResult;
 
   const defaultTransform = new THREE.Matrix4()
@@ -38,7 +40,7 @@ export function ShrublandBiome({ hexes }) {
 
     let idx = 0;
     let matrix = new THREE.Matrix4();
-    hexes.forEach((hex) => {
+    hexes.forEach((hex: Hexagon) => {
       const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
       // rotate hex randomly on 60 * n degrees
       matrix.makeRotationZ((Math.PI / 3) * Math.floor(Math.random() * 6));
