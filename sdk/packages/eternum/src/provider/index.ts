@@ -286,11 +286,26 @@ export class EternumProvider extends DojoProvider {
         calldata: [this.getWorldAddress(), sender_id, index, receiver_id],
       };
     });
-    const tx = await this.executeMulti(signer, calldata);
 
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    // send request to transfer items in batches of `BATCH_SIZE`
+
+    const BATCH_SIZE = 3;
+    let batchCalldata = [];
+
+    for(let i = 1; i <= calldata.length; i++) {
+      
+      batchCalldata.push(calldata[i - 1]);
+      if (i % BATCH_SIZE == 0 || i == calldata.length ) {
+
+          const tx = await this.executeMulti(signer, batchCalldata);
+          await this.provider.waitForTransaction(tx.transaction_hash, {
+            retryInterval: 500,
+          });
+          
+          // reset batchCalldata
+          batchCalldata = [];
+      }
+    }
   }
 
   public async create_free_transport_unit(props: CreateFreeTransportUnitProps) {
