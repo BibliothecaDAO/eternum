@@ -1,17 +1,17 @@
 import { BurnerProvider, useBurner } from "@dojoengine/create-burner";
 import { ReactNode, createContext, useContext, useMemo } from "react";
-import { Account, RpcProvider } from "starknet";
+import { Account, AccountInterface, RpcProvider } from "starknet";
 import { SetupResult } from "./dojo/setup";
 import { displayAddress } from "./utils/utils";
 
 interface DojoContextType extends SetupResult {
-  masterAccount: Account;
+  masterAccount: Account | AccountInterface;
   account: {
     create: () => void;
     list: () => any[];
     get: (id: string) => any;
     select: (id: string) => void;
-    account: Account;
+    account: Account | AccountInterface;
     isDeploying: boolean;
     clear: () => void;
     accountDisplay: string;

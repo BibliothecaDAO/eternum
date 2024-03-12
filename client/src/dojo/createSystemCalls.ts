@@ -1,6 +1,6 @@
 import { Components, Schema, setComponent } from "@dojoengine/recs";
 import { SetupNetworkResult } from "./setupNetwork";
-import { Event } from "starknet";
+
 import { getEntityIdFromKeys } from "../utils/utils";
 import {
   DisassembleCaravanAndReturnFreeUnitsProps,
@@ -256,7 +256,7 @@ export function getEvents(receipt: any): any[] {
   });
 }
 
-export function setComponentsFromEvents(components: Components, events: Event[]) {
+export function setComponentsFromEvents(components: Components, events: any[]) {
   events.forEach((event) => setComponentFromEvent(components, event.data));
 }
 
