@@ -410,3 +410,4 @@ for cmd in "${commands[@]}"; do
     fi
 done
 
+./scripts/set_writer.sh --interval $delay

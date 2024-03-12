@@ -1,7 +1,7 @@
-import { Account, num } from "starknet";
+import { Account, AccountInterface, num } from "starknet";
 
 interface SystemSigner {
-  signer: Account;
+  signer: AccountInterface | Account;
 }
 
 export interface CreateSoldiersProps extends SystemSigner {
