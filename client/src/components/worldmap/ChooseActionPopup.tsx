@@ -93,7 +93,7 @@ export const ChooseActionPopup = ({}: ChooseActionPopupProps) => {
               <Button
                 variant="primary"
                 size="md"
-                disabled={hasResources || isTraveling}
+                disabled={isTraveling}
                 onClick={onExplore}
                 className=""
               >
