@@ -1,12 +1,15 @@
 import { useState, useEffect, RefObject } from "react";
 import { useNpcContext } from "./NpcContext";
 import { scrollToElement } from "./utils";
+import Avatar from "../../../../elements/Avatar";
+import { NpcPopup } from "./NpcPopup";
+import { Npc } from "./types";
 
 const INTERKEY_STROKEN_DURATION_MS = 35;
 const CHARACTER_NUMBER_PER_LINE = 64;
 
 export interface NpcChatMessageProps {
-  npcName: string;
+  fullName: string;
   dialogueSegment: string;
   msgIndex: number;
   wasAlreadyViewed: boolean;
@@ -49,9 +52,10 @@ export function useTypingEffect(
 }
 
 export const NpcChatMessage = (props: NpcChatMessageProps) => {
-  const { msgIndex, npcName, dialogueSegment, bottomRef, wasAlreadyViewed } = props;
-  const { setLastMessageDisplayedIndex } = useNpcContext();
+  const { msgIndex, fullName, dialogueSegment, bottomRef, wasAlreadyViewed } = props;
+  const { setLastMessageDisplayedIndex, npcs } = useNpcContext();
   const [typingCompleted, setTypingComplete] = useState(false);
+  const [showNpcStats, setShowNpcStats] = useState(false);
 
   const displayedDialogSegment = useTypingEffect(bottomRef, dialogueSegment, setTypingComplete, wasAlreadyViewed);
 
@@ -66,11 +70,16 @@ export const NpcChatMessage = (props: NpcChatMessageProps) => {
     <div className="flex flex-col px-2 mb-3 py-1">
       <div className="flex items-center">
         <div className="flex flex-col w-full">
-          <div className="flex text-[10px] justify-between">
-            <div className="flex">
-              <div style={{ userSelect: "text" }} className="text-white/50">
-                {npcName}
-              </div>
+          <div className="flex flex-row items-end h-5">
+            <div onClick={() => setShowNpcStats(true)}>
+              <Avatar src="/images/npc/default-npc.svg" className="p-1 w-4 h-4 mr-1" />
+            </div>
+            <div
+              onClick={() => setShowNpcStats(true)}
+              style={{ userSelect: "text" }}
+              className="relative text-white/50 text-[10px]"
+            >
+              {fullName}
             </div>
           </div>
           <div style={{ userSelect: "text" }} className="mt-1 text-xs text-white/70">
@@ -78,6 +87,11 @@ export const NpcChatMessage = (props: NpcChatMessageProps) => {
           </div>
         </div>
       </div>
+      {showNpcStats && <NpcPopup onClose={() => setShowNpcStats(false)} npc={getNpcByName(fullName, npcs)} />}
     </div>
   );
+};
+
+const getNpcByName = (name: string, npcs: Npc[]): Npc | undefined => {
+  return npcs.find((npc: Npc) => npc.fullName === name);
 };

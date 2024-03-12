@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import useWebSocket from "react-use-websocket";
 import Button from "../../../../elements/Button";
 import NpcChat from "./NpcChat";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
@@ -17,24 +16,14 @@ import {
   ErrorResponse,
 } from "./types";
 import { getRealm } from "../../../../utils/realms";
-import { packCharacteristics } from "./utils";
+import { packCharacteristics, keysSnakeToCamel } from "./utils";
 import { BigNumberish, shortString } from "starknet";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 type NpcPanelProps = {
   type?: "all" | "farmers" | "miners";
 };
 
 export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
-  const {
-    sendJsonMessage: sendWsMsg,
-    lastJsonMessage: lastWsMsg,
-    readyState: wsReadyState,
-  } = useWebSocket(import.meta.env.VITE_OVERLORE_WS_URL, {
-    share: false,
-    shouldReconnect: () => true,
-  });
-
   const {
     setup: {
       systemCalls: { spawn_npc },
@@ -44,15 +33,13 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
 
   const { realmId, realmEntityId } = useRealmStore();
 
-  useEffect(() => {
-    console.log(`Connection state changed ${wsReadyState}`);
-  }, [wsReadyState]);
-
   const realm = useMemo(() => {
     return realmEntityId ? getRealm(realmId!) : undefined;
   }, [realmEntityId]);
 
   const {
+    sendWsMsg,
+    lastWsMsg,
     selectedTownhall,
     setSelectedTownhall,
     setLastMessageDisplayedIndex,
@@ -106,6 +93,7 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
   useEffect(() => {
     const lastKey = getLastStorageTownhallKey(LOCAL_STORAGE_ID);
     if (lastKey == -1) {
+      setSelectedTownhall(null);
       return;
     }
     setSelectedTownhall(lastKey);
@@ -123,10 +111,11 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
       signer: account,
       realm_entity_id: realmEntityId,
       characteristics: packCharacteristics(response.npc.characteristics),
-      character_trait: shortString.encodeShortString(response.npc.character_trait),
-      full_name: shortString.encodeShortString(response.npc.full_name),
+      character_trait: shortString.encodeShortString(response.npc.characterTrait),
+      full_name: shortString.encodeShortString(response.npc.fullName),
       signature: response.signature as BigNumberish[],
     });
+    console.log(npcId);
     setSpawned(spawned + 1);
   };
 
@@ -134,14 +123,15 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
     if (lastWsMsg === null || lastWsMsg === undefined || Object.is(lastWsMsg, {})) {
       return;
     }
-    const response = lastWsMsg as WsResponse;
-    const msg_type = response.msg_type;
+
+    const response = keysSnakeToCamel(lastWsMsg) as WsResponse;
+    const msg_type = response.msgType;
     if (msg_type === WsMsgType.SPAWN_NPC) {
       treatSpawnNpcResponse(response.data as NpcSpawnResponse);
     } else if (msg_type === WsMsgType.TOWNHALL) {
       treatTownhallResponse(response.data as TownhallResponse);
     } else if (msg_type === WsMsgType.ERROR) {
-      console.log(`Failure in lore machine: ${(lastWsMsg as ErrorResponse).reason}`);
+      console.log(`Failure in lore machine: ${(response.data as ErrorResponse).reason}`);
     }
   }, [lastWsMsg]);
 
@@ -156,7 +146,7 @@ export const NpcPanel = ({ type = "all" }: NpcPanelProps) => {
           onClick={gatherVillagers}
           variant={loadingTownhall ? "default" : "primary"}
         >
-          Gather villagers
+          Ring the town bell
         </Button>
 
         <div className="flex relative">
@@ -208,19 +198,12 @@ const getLastStorageTownhallKey = (localStorageId: string): number => {
 };
 
 const addTownHallToStorage = (message: TownhallResponse, localStorageId: string): number => {
-  const townhallKey = message["townhall_id"];
-  const townhallDiscussion: string[] = message["townhall"].split(/\n+/);
+  const townhallKey = message.townhallId;
 
-  if (townhallDiscussion[townhallDiscussion.length - 1] === "") {
-    townhallDiscussion.pop();
-  }
-
-  const discussionsByNpc = townhallDiscussion.map((msg) => {
-    const splitMessage = msg.split(":");
-    return { npcName: splitMessage[0], dialogueSegment: splitMessage[1] === undefined ? "" : splitMessage[1] };
-  });
-
-  const newEntry: StorageTownhall = { viewed: false, discussion: discussionsByNpc };
+  const newEntry: StorageTownhall = {
+    viewed: false,
+    dialogue: message.dialogue,
+  };
 
   const townhallsInLocalStorage = localStorage.getItem(localStorageId);
   const storedTownhalls: StorageTownhalls = JSON.parse(townhallsInLocalStorage ?? "{}");

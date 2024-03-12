@@ -15,7 +15,7 @@ trait INpc<TContractState> {
         self: @TContractState,
         world: IWorldDispatcher,
         realm_entity_id: u128,
-        npc_id: u128,
+        entity_id: u128,
         character_trait: felt252,
     );
 }

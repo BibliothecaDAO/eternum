@@ -1,12 +1,17 @@
-import { createContext, useContext, ReactNode, useState, useMemo } from "react";
+import { createContext, useContext, ReactNode, useState, useMemo, useEffect } from "react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { Npc } from "./types";
+import { Npc, WsResponse } from "./types";
 import { HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { unpackCharacteristics } from "./utils";
 import { shortString } from "starknet";
 import { useDojo } from "../../../../DojoContext";
+import useWebSocket from "react-use-websocket";
+import { SendJsonMessage } from "react-use-websocket/dist/lib/types";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 type NpcContextProps = {
+  sendWsMsg: SendJsonMessage;
+  lastWsMsg: WsResponse;
   selectedTownhall: number | null;
   setSelectedTownhall: (newIndex: number | null) => void;
   lastMessageDisplayedIndex: number;
@@ -31,9 +36,18 @@ export const NpcProvider = ({ children }: Props) => {
 
   const {
     setup: {
-      components: { Npc: NpcComponent },
+      components: { Npc: NpcComponent, Npcs: NpcsComponent },
     },
   } = useDojo();
+
+  const {
+    sendJsonMessage: sendWsMsg,
+    lastJsonMessage: lastWsMsg,
+    readyState: wsReadyState,
+  } = useWebSocket(import.meta.env.VITE_OVERLORE_WS_URL, {
+    share: false,
+    shouldReconnect: () => true,
+  });
 
   const { realmEntityId, realmId } = useRealmStore();
   const LOCAL_STORAGE_ID: string = `npc_chat_${realmId}`;
@@ -44,10 +58,16 @@ export const NpcProvider = ({ children }: Props) => {
   const [spawned, setSpawned] = useState(0);
 
   const npcs = useMemo(() => {
-    return getNpcs(realmEntityId, NpcComponent);
+    return getNpcs(realmEntityId, NpcComponent, NpcsComponent);
   }, [realmEntityId, spawned]);
 
+  useEffect(() => {
+    console.log(`Connection state changed ${wsReadyState}`);
+  }, [wsReadyState]);
+
   const contextValue: NpcContextProps = {
+    sendWsMsg,
+    lastWsMsg: lastWsMsg as WsResponse,
     selectedTownhall,
     setSelectedTownhall,
     lastMessageDisplayedIndex,
@@ -62,18 +82,26 @@ export const NpcProvider = ({ children }: Props) => {
   return <NpcContext.Provider value={contextValue}>{children}</NpcContext.Provider>;
 };
 
-const getNpcs = (realmEntityId: BigInt, NpcComponent: any): Npc[] => {
-  const entityIds = runQuery([HasValue(NpcComponent, { realm_entity_id: realmEntityId })]);
-  let npcs: Npc[] = Array.from(entityIds).map((entityId) => {
-    let npc = getComponentValue(NpcComponent, entityId);
-    return {
-      entityId: npc!.entity_id,
-      realmEntityId: BigInt(npc!.realm_entity_id),
-      characteristics: unpackCharacteristics(npc!.characteristics),
-      characterTrait: shortString.decodeShortString(npc!.character_trait.toString()),
-      fullName: shortString.decodeShortString(npc!.full_name.toString()),
-    };
-  });
+const getNpcs = (realmEntityId: BigInt, NpcComponent: any, NpcsComponent: any): Npc[] => {
+  const npcsEntityId = runQuery([HasValue(NpcsComponent, { realm_entity_id: realmEntityId })]);
+  const npcsEntity = getComponentValue(NpcsComponent, npcsEntityId.values().next().value);
+  if (npcsEntity === undefined) {
+    return [];
+  }
+
+  let npcs: Npc[] = [];
+  for (let i = 0; i < 5; i++) {
+    let npcKey = `npc_${i}`;
+    if (npcsEntity[npcKey] !== 0n) {
+      const npcEntity = getComponentValue(NpcComponent, getEntityIdFromKeys([npcsEntity[npcKey]]));
+      npcs.push({
+        entityId: npcEntity!.entity_id,
+        characteristics: unpackCharacteristics(npcEntity!.characteristics),
+        characterTrait: shortString.decodeShortString(npcEntity!.character_trait.toString()),
+        fullName: shortString.decodeShortString(npcEntity!.full_name.toString()),
+      });
+    }
+  }
   return npcs;
 };
 

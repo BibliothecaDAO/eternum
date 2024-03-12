@@ -1,9 +1,5 @@
 use core::traits::Into;
 
-const TWO_POW_2: u256 = 0x4;
-const TWO_POW_8: u256 = 0x100;
-const TWO_POW_16: u256 = 0x10000;
-
 #[derive(Serde, Copy, Drop, Print)]
 struct Characteristics {
     age: u8,
@@ -11,29 +7,23 @@ struct Characteristics {
     sex: u8,
 }
 
-
-fn pack_characs(value: Characteristics) -> felt252 {
-    (value.age.into() + (value.role.into() * TWO_POW_8) + (value.sex.into() * TWO_POW_16))
-        .try_into()
-        .unwrap()
-}
-
-fn unpack_characs(value: felt252) -> Characteristics {
-    let packed = value.into();
-    let (packed, age) = integer::U256DivRem::div_rem(packed, TWO_POW_8.try_into().unwrap());
-    let (packed, role) = integer::U256DivRem::div_rem(packed, TWO_POW_8.try_into().unwrap());
-    let (packed, sex) = integer::U256DivRem::div_rem(packed, TWO_POW_2.try_into().unwrap());
-    Characteristics {
-        age: age.try_into().unwrap(), role: role.try_into().unwrap(), sex: sex.try_into().unwrap()
-    }
-}
-
 #[derive(Model, Serde, Copy, Drop, Print)]
 struct Npc {
     #[key]
     entity_id: u128,
-    realm_entity_id: u128,
     characteristics: felt252,
     character_trait: felt252,
     full_name: felt252,
+}
+
+#[derive(Model, Serde, Copy, Drop, Print)]
+struct Npcs {
+    #[key]
+    realm_entity_id: u128,
+    num_npcs: u8,
+    npc_0: u128, // entity_id: points to the relevant entity
+    npc_1: u128,
+    npc_2: u128,
+    npc_3: u128,
+    npc_4: u128
 }

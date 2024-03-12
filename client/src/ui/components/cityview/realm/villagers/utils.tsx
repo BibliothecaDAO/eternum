@@ -34,3 +34,22 @@ export const packCharacteristics = ({ age, role, sex }: any): BigNumberish => {
   const packed = age + role * TWO_POW_8 + sex * TWO_POW_16;
   return packed;
 };
+
+function snakeToCamel(s: string): string {
+  return s.replace(/(_\w)/g, (m) => m[1].toUpperCase());
+}
+
+export function keysSnakeToCamel(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map((item) => (typeof item === "object" && item !== null ? keysSnakeToCamel(item) : item));
+  } else if (typeof obj === "object" && obj !== null) {
+    const newObj: Record<string, any> = {};
+    Object.keys(obj).forEach((key) => {
+      const camelCaseKey = snakeToCamel(key);
+      newObj[camelCaseKey] = keysSnakeToCamel(obj[key]); // Apply conversion recursively
+    });
+    return newObj;
+  }
+  // Return the value directly if it's neither an object nor an array
+  return obj;
+}

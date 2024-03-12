@@ -8,7 +8,6 @@ export type Characteristics = {
 
 export type Npc = {
   entityId: BigNumberish;
-  realmEntityId: BigInt;
   characteristics: Characteristics;
   characterTrait: string;
   fullName: string;
@@ -21,7 +20,7 @@ export type NpcTownhallMessage = {
 
 export type StorageTownhall = {
   viewed: boolean;
-  discussion: NpcTownhallMessage[];
+  dialogue: NpcTownhallMessage[];
 };
 
 export type StorageTownhalls = {
@@ -31,15 +30,15 @@ export type StorageTownhalls = {
 export type NpcChatProps = {};
 
 export type TownhallResponse = {
-  townhall_id: number;
-  townhall: string;
+  townhallId: number;
+  dialogue: NpcTownhallMessage[];
 };
 
 export type NpcSpawnResponse = {
   npc: {
     characteristics: { age: number; role: number; sex: number };
-    character_trait: string;
-    full_name: string;
+    characterTrait: string;
+    fullName: string;
     description: string;
   };
   signature: BigInt[];
@@ -50,7 +49,7 @@ export type ErrorResponse = {
 };
 
 export type WsResponse = {
-  msg_type: WsMsgType;
+  msgType: WsMsgType;
   data: NpcSpawnResponse | TownhallResponse | ErrorResponse;
 };
 

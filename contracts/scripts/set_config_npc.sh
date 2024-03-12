@@ -2,11 +2,11 @@
 
 source ./scripts/contracts.sh
 
-declare -a NPC_MODELS=("Npc" "NpcConfig" "LastSpawned")
+declare -a NPC_MODELS=("Npc" "Npcs" "NpcConfig" "LastSpawned" "Owner" "EntityOwner" "Position")
 
 NPC_SYSTEMS=$(cat ./target/dev/manifest.json | jq -r '.contracts[] | select(.name == "eternum::systems::npc::contracts::npc_systems" ).address')
 
-LORE_MACHINE_PUB_KEY=0x141a26313bd3355fe4c4f3dda7e40dfb77ce54aea5f62578b4ec5aad8dd63b1
+LORE_MACHINE_PUB_KEY=0x175436af24aa0b0c720ebd341dd6c396fa03a02dd8379041191c773f5460e0b
 
 commands=(
     "sozo execute $CONFIG_SYSTEMS set_npc_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,100,$LORE_MACHINE_PUB_KEY"

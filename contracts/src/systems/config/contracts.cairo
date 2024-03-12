@@ -203,7 +203,7 @@ mod config_systems {
 
     #[external(v0)]
     impl NpcConfigImpl of INpcConfig<ContractState> {
-        fn set_npc_config(self: @ContractState, world: IWorldDispatcher, spawn_delay: u128, pub_key: felt252) {
+        fn set_npc_config(self: @ContractState, world: IWorldDispatcher, spawn_delay: u64, pub_key: felt252) {
             assert(pub_key != 0, 'Empty pub_key received');
             assert(spawn_delay != 0, 'Empty spawn_delay received');
 
