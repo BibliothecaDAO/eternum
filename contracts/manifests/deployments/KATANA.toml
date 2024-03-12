@@ -32,7 +32,7 @@ name = "eternum::systems::test::contracts::resource::test_resource_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x62ebd901967e87dde96da3e297e0c65623f5cb7c4b6cfc1b1766d660ee3cca1"
-class_hash = "0x1d33a01a175ea9d046f6e254999a81313fdbeb6885e4b7a1fbcc3eb5fcdc212"
+class_hash = "0x73cc9238488d651eb395329ef31247188c8c63ec2430d9563d83e728b94beb2"
 abi = "abis/deployments/KATANA/contracts/trade_systems.json"
 reads = []
 writes = []
@@ -52,7 +52,7 @@ name = "eternum::systems::transport::contracts::road_systems::road_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x1054af867855ba7dd1c2351c59cf0543e02faceeb554fc7b95160eeea7a355b"
-class_hash = "0x3478a2a4e81174672cda3f13730ae39b0f7154d19fe746831518e66c149eb80"
+class_hash = "0xa0fdeb0a797a85de9b72007552a89c6c2c01712959c3061b6208f94708382"
 abi = "abis/deployments/KATANA/contracts/map_systems.json"
 reads = []
 writes = []
@@ -62,7 +62,7 @@ name = "eternum::systems::map::contracts::map_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x3d166d0646d4dac27c1cdbed6289c386ba3ca616925438fc1334ba98241eb42"
-class_hash = "0x596077fc9115693131311f7fce61008907e5282ccee45f0593772c31decf49a"
+class_hash = "0x458b477b3b29e46652c9fed7d2c6d36eac2cadf155b051ba374d13e9cf92a01"
 abi = "abis/deployments/KATANA/contracts/combat_systems.json"
 reads = []
 writes = []
@@ -92,7 +92,7 @@ name = "eternum::systems::transport::contracts::transport_unit_systems::transpor
 [[contracts]]
 kind = "DojoContract"
 address = "0xbe771ffeadeaa291cc4b09a592f3d77ae837e64c1b7d71559084a8734277b5"
-class_hash = "0x19a05b262d22a4d2dda54aa78385131f4366387f6bf61d962ba87567b586909"
+class_hash = "0x5e96d58056c87d0d20abc610dfb5c2278f656516cb149e48e59b62c5bdeeeb3"
 abi = "abis/deployments/KATANA/contracts/travel_systems.json"
 reads = []
 writes = []
@@ -142,7 +142,7 @@ name = "eternum::systems::name::contracts::name_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x28af36343da64931975f7100dbd18c7632d571f207d8418c3df07d1b4c3ca18"
-class_hash = "0x5694a0d4df4c9728fdaeb79e2da34b81b8be2ebdcb8bb48f682d966f1231ad6"
+class_hash = "0x1da1d4f89a9b862a01a9ef5c15bb7eed2d2467b6cf9e82054f7b2b08810f0b7"
 abi = "abis/deployments/KATANA/contracts/resource_systems.json"
 reads = []
 writes = []
@@ -152,7 +152,7 @@ name = "eternum::systems::resources::contracts::resource_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0xbec90d167e0831347b7cdd21817342dbbb66b0f8e08676e1b02e8d29c21ee3"
-class_hash = "0x47f6df3f110faa3db948702713ce075d69328fd976a0b6c053d02bbda054406"
+class_hash = "0x75d008d8780b27a9c93ccebb4d76ccb8f99cb4dc74aaa542c8c399dd0ac93c6"
 abi = "abis/deployments/KATANA/contracts/labor_systems.json"
 reads = []
 writes = []
@@ -162,7 +162,7 @@ name = "eternum::systems::labor::contracts::labor_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x4a3e0da2cc518cc75d8a5c7fbb5e18a7e3d188401463e517c194c256ec3d593"
-class_hash = "0x389abe222e817088adf097fb6b6bae924eee2b3a9dae88b0a0f2627512a14d3"
+class_hash = "0x1ea75213d31c666460b6b84bc87135239df5da93f674bc9675cb68d409b430c"
 abi = "abis/deployments/KATANA/contracts/buildings_systems.json"
 reads = []
 writes = []
@@ -172,7 +172,7 @@ name = "eternum::systems::buildings::contracts::buildings_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x14569fcc0420bf7e7843261d4defe508a19dd4e7db5bc2aadc1487f0fe148c9"
-class_hash = "0x2924bb3ca1cf1e73103b38bca6017e00e6ef54c4a9691b4d59ab740f0056f30"
+class_hash = "0x2b00ccd8064896a8cfa6c5c9caed3ed6ed29b64e862282bf62971a674991323"
 abi = "abis/deployments/KATANA/contracts/bank_systems.json"
 reads = []
 writes = []

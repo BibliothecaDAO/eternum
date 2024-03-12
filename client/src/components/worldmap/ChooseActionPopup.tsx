@@ -1,23 +1,25 @@
-import { useMemo, useState } from "react";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import useUIStore from "../../hooks/store/useUIStore";
 import { useDojo } from "../../DojoContext";
-import { formatTimeLeftDaysHoursMinutes, getUIPositionFromColRow } from "../../utils/utils";
+import { divideByPrecision, formatTimeLeftDaysHoursMinutes, getUIPositionFromColRow, multiplyByPrecision } from "../../utils/utils";
 import { SecondaryPopup } from "../../elements/SecondaryPopup";
 import Button from "../../elements/Button";
 import { TravelPopup } from "./traveling/TravelPopup";
 import { ExploreMapPopup } from "./explore/ExploreHexPopup";
-import { useResources } from "../../hooks/helpers/useResources";
 import useBlockchainStore from "../../hooks/store/useBlockchainStore";
 import { TIME_PER_TICK } from "../network/EpochCountdown";
+import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
+import { Resource, ResourcesIds, WEIGHTS } from "@bibliothecadao/eternum";
+
+const EXPLORATION_REWARD_RESOURCE_AMOUNT: number = 20;
 
 type ChooseActionPopupProps = {};
 
 export const ChooseActionPopup = ({}: ChooseActionPopupProps) => {
   const {
     setup: {
-      components: { TickMove, ArrivalTime },
+      components: { TickMove, ArrivalTime, Weight, Quantity, Capacity },
     },
   } = useDojo();
 
@@ -48,6 +50,20 @@ export const ChooseActionPopup = ({}: ChooseActionPopupProps) => {
   const arrivalTime = selectedEntity
     ? getComponentValue(ArrivalTime, getEntityIdFromKeys([selectedEntity.id]))
     : undefined;
+
+  const weight = selectedEntity
+    ? getComponentValue(Weight, getEntityIdFromKeys([selectedEntity.id]))
+    : undefined;
+
+  const quantity = selectedEntity
+    ? getComponentValue(Quantity, getEntityIdFromKeys([selectedEntity.id]))
+    : undefined;
+
+  const capacity = selectedEntity
+    ? getComponentValue(Capacity, getEntityIdFromKeys([selectedEntity.id]))
+    : undefined;
+  
+  const totalCapacityInKg = divideByPrecision(Number(capacity?.weight_gram)) * Number(quantity?.value);
   const tickMove = selectedEntity ? getComponentValue(TickMove, getEntityIdFromKeys([selectedEntity.id])) : undefined;
   const isPassiveTravel = arrivalTime && nextBlockTimestamp ? arrivalTime.arrives_at > nextBlockTimestamp : false;
 
@@ -56,9 +72,12 @@ export const ChooseActionPopup = ({}: ChooseActionPopupProps) => {
 
   const isTraveling = isPassiveTravel || isActiveTravel;
 
-  const { getResourcesFromInventory } = useResources();
-  const inventoryResources = selectedEntity ? getResourcesFromInventory(selectedEntity.id) : undefined;
-  const hasResources = inventoryResources && inventoryResources.resources.length > 0;
+  const sampleRewardResource: Resource = {resourceId: ResourcesIds.Ignium, amount: multiplyByPrecision(EXPLORATION_REWARD_RESOURCE_AMOUNT)};
+  const sampleRewardResourceWeightKg = getTotalResourceWeight([sampleRewardResource]);
+  const entityWeightInKg = divideByPrecision(Number(weight?.value || 0));
+  const canCarryNewReward 
+      =  totalCapacityInKg 
+          >= entityWeightInKg + sampleRewardResourceWeightKg;
 
   const onTravel = () => setIsTravelMode(true);
   const onExplore = () => setIsExploreMode(true);
@@ -93,7 +112,7 @@ export const ChooseActionPopup = ({}: ChooseActionPopupProps) => {
               <Button
                 variant="primary"
                 size="md"
-                disabled={hasResources || isTraveling}
+                disabled={isTraveling || !canCarryNewReward}
                 onClick={onExplore}
                 className=""
               >
