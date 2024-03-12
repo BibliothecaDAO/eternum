@@ -12,6 +12,8 @@ import { TIME_PER_TICK } from "../network/EpochCountdown";
 import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
 import { Resource, ResourcesIds, WEIGHTS } from "@bibliothecadao/eternum";
 
+const EXPLORATION_REWARD_RESOURCE_AMOUNT: number = 20;
+
 type ChooseActionPopupProps = {};
 
 export const ChooseActionPopup = ({}: ChooseActionPopupProps) => {
@@ -70,7 +72,7 @@ export const ChooseActionPopup = ({}: ChooseActionPopupProps) => {
 
   const isTraveling = isPassiveTravel || isActiveTravel;
 
-  const sampleRewardResource: Resource = {resourceId: ResourcesIds.Ignium, amount: multiplyByPrecision(20)};
+  const sampleRewardResource: Resource = {resourceId: ResourcesIds.Ignium, amount: multiplyByPrecision(EXPLORATION_REWARD_RESOURCE_AMOUNT)};
   const sampleRewardResourceWeightKg = getTotalResourceWeight([sampleRewardResource]);
   const entityWeightInKg = divideByPrecision(Number(weight?.value || 0));
   const canCarryNewReward 
