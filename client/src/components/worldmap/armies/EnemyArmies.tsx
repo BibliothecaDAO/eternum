@@ -6,13 +6,8 @@ import useRealmStore from "../../../hooks/store/useRealmStore";
 import useUIStore from "../../../hooks/store/useUIStore";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { ArmyModel } from "./models/ArmyModel";
-import {
-  divideByPrecision,
-  getColRowFromUIPosition,
-  getEntityIdFromKeys,
-  getUIPositionFromColRow,
-} from "../../../utils/utils";
-import { CombatInfo, Position, Resource, UIPosition, biomes } from "@bibliothecadao/eternum";
+import { divideByPrecision, getEntityIdFromKeys, getUIPositionFromColRow } from "../../../utils/utils";
+import { CombatInfo, Position, Resource, UIPosition } from "@bibliothecadao/eternum";
 // @ts-ignore
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Html } from "@react-three/drei";
@@ -22,50 +17,36 @@ import { OrderIcon } from "../../../elements/OrderIcon";
 import { formatSecondsLeftInDaysHours } from "../../cityview/realm/labor/laborUtils";
 import ProgressBar from "../../../elements/ProgressBar";
 import { useRealm } from "../../../hooks/helpers/useRealm";
-import { DEPTH, Hexagon } from "../HexGrid";
-import { useExplore } from "../../../hooks/helpers/useExplore";
+import { Hexagon } from "../HexGrid";
 import { useFrame } from "@react-three/fiber";
 import { Group } from "three";
 import { useResources } from "../../../hooks/helpers/useResources";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import { TIME_PER_TICK } from "../../network/EpochCountdown";
-import { get } from "lodash";
 
-type ArmiesProps = {
-  props?: any;
-  hexData: Hexagon[];
-};
+const ENEMY_ARMY_MODEL_DEFAULT_COLOR: string = "red";
+const ENEMY_ARMY_MODEL_HOVER_COLOR: string = "orange";
+const ENEMY_ARMY_MODEL_SCALE: number = 2;
 
-const BIOMES = biomes as Record<string, { color: string; depth: number }>;
-
-const FRIENDLY_ARMY_MODEL_DEFAULT_COLOR: string = "green";
-const FRIENDLY_ARMY_MODEL_HOVER_COLOR: string = "black";
-const FRIENDLY_ARMY_MODEL_SCALE: number = 2;
-
-export const Armies = ({ hexData }: ArmiesProps) => {
+export const EnemyArmies = () => {
   const {
     setup: {
       components: { Position },
     },
   } = useDojo();
 
-  const selectedEntity = useUIStore((state) => state.selectedEntity);
-  const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
   const animationPath = useUIStore((state) => state.animationPath);
-
   const positionOffset: Record<string, number> = {};
 
   // stary only by showing your armies for now
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
-  const { getStationaryRealmRaiders } = useCombat();
-  const { isExplored } = useExplore();
+  const { getStationaryEnemyRaiders } = useCombat();
 
-  const armies = realmEntityIds.flatMap(({ realmEntityId }) => {
-    return getStationaryRealmRaiders(realmEntityId);
-  });
+  const realmEntityIdsFlat = realmEntityIds.flatMap(({ realmEntityId }) => realmEntityId);
+  const stationaryEnemyArmies = getStationaryEnemyRaiders(realmEntityIdsFlat);
 
   const [hoveredArmy, setHoveredArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
-  const [selectedArmy, setSelectedArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
+  const [selectedArmy, _] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
 
   const onHover = (armyId: bigint, position: UIPosition) => {
     setHoveredArmy({ id: armyId, position });
@@ -77,7 +58,7 @@ export const Armies = ({ hexData }: ArmiesProps) => {
 
   const positions = useMemo(
     () =>
-      armies
+      stationaryEnemyArmies
         .map((armyId) => {
           const position = getComponentValue(Position, armyId);
           // if animated army dont display
@@ -90,19 +71,8 @@ export const Armies = ({ hexData }: ArmiesProps) => {
           };
         })
         .filter(Boolean) as { contractPos: Position; uiPos: UIPosition; id: bigint }[],
-    [armies],
+    [stationaryEnemyArmies],
   );
-
-  // clickable
-  const onClick = (id: bigint, position: Position) => {
-    setSelectedEntity({ id, position });
-  };
-
-  // useEffect(() => {
-  //   const army = positions.find((army) => army.id === selectedEntity?.id);
-  //   if (!selectedEntity) setSelectedArmy(undefined);
-  //   if (army) setSelectedArmy({ id: army.id, position: army.uiPos });
-  // }, [selectedEntity, positions]);
 
   return (
     <group>
@@ -122,12 +92,11 @@ export const Armies = ({ hexData }: ArmiesProps) => {
           <ArmyModel
             onPointerOver={() => onHover(id, uiPos)}
             onPointerOut={onUnhover}
-            onClick={() => onClick(id, contractPos)}
             key={i}
-            scale={FRIENDLY_ARMY_MODEL_SCALE}
+            scale={ENEMY_ARMY_MODEL_SCALE}
             position={[uiPos.x + offset, uiPos.z, -uiPos.y]}
-            defaultColor={FRIENDLY_ARMY_MODEL_DEFAULT_COLOR}
-            hoverColor={FRIENDLY_ARMY_MODEL_HOVER_COLOR}
+            defaultColor={ENEMY_ARMY_MODEL_DEFAULT_COLOR}
+            hoverColor={ENEMY_ARMY_MODEL_HOVER_COLOR}
           ></ArmyModel>
         );
       })}
@@ -137,25 +106,18 @@ export const Armies = ({ hexData }: ArmiesProps) => {
   );
 };
 
-type TravelingArmiesProps = {
-  props?: any;
-  hexData: Hexagon[];
-};
-
-export const TravelingArmies = ({ hexData }: TravelingArmiesProps) => {
+export const EnemyTravelingArmies = () => {
   const {
     setup: {
       components: { Position },
     },
   } = useDojo();
-  // stary only by showing your armies for now
+
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const animationPath = useUIStore((state) => state.animationPath);
   const setAnimationPath = useUIStore((state) => state.setAnimationPath);
-  // const selectedEntity = useUIStore((state) => state.selectedEntity);
 
-  const { getMovingRealmRaiders } = useCombat();
-  const { isExplored } = useExplore();
+  const { getMovingEnemyRaiders } = useCombat();
 
   const startAnimationTimeRef = useRef<number | undefined>(undefined);
   const animatedArmyRef = useRef<Group | null>(null);
@@ -163,9 +125,8 @@ export const TravelingArmies = ({ hexData }: TravelingArmiesProps) => {
   const [hoveredArmy, setHoveredArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
   const [selectedArmy, setSelectedArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
 
-  const armies = realmEntityIds.flatMap(({ realmEntityId }) => {
-    return getMovingRealmRaiders(realmEntityId);
-  });
+  const realmEntityIdsFlat = realmEntityIds.flatMap(({ realmEntityId }) => realmEntityId);
+  const movingEnemyArmies = getMovingEnemyRaiders(realmEntityIdsFlat);
 
   const onHover = (armyId: bigint, position: UIPosition) => {
     setHoveredArmy({ id: armyId, position });
@@ -219,7 +180,7 @@ export const TravelingArmies = ({ hexData }: TravelingArmiesProps) => {
 
   const positions = useMemo(
     () =>
-      armies
+      movingEnemyArmies
         .map((armyId) => {
           const position = getComponentValue(Position, armyId);
           if (!position) return;
@@ -231,7 +192,7 @@ export const TravelingArmies = ({ hexData }: TravelingArmiesProps) => {
           };
         })
         .filter(Boolean) as { contractPos: Position; uiPos: UIPosition; id: bigint }[],
-    [armies],
+    [movingEnemyArmies],
   );
 
   // useEffect(() => {
@@ -249,19 +210,19 @@ export const TravelingArmies = ({ hexData }: TravelingArmiesProps) => {
               onPointerOver={() => onHover(id, uiPos)}
               onPointerOut={onUnhover}
               key={i}
-              scale={FRIENDLY_ARMY_MODEL_SCALE}
+              scale={ENEMY_ARMY_MODEL_SCALE}
               position={[uiPos.x, uiPos.z, -uiPos.y]}
-              defaultColor={FRIENDLY_ARMY_MODEL_DEFAULT_COLOR}
-              hoverColor={FRIENDLY_ARMY_MODEL_HOVER_COLOR}
+              defaultColor={ENEMY_ARMY_MODEL_DEFAULT_COLOR}
+              hoverColor={ENEMY_ARMY_MODEL_HOVER_COLOR}
             ></ArmyModel>
           );
         })}
       {animationPath && (
         <ArmyModel
           ref={animatedArmyRef}
-          scale={FRIENDLY_ARMY_MODEL_SCALE}
-          defaultColor={FRIENDLY_ARMY_MODEL_DEFAULT_COLOR}
-          hoverColor={FRIENDLY_ARMY_MODEL_HOVER_COLOR}
+          scale={ENEMY_ARMY_MODEL_SCALE}
+          defaultColor={ENEMY_ARMY_MODEL_DEFAULT_COLOR}
+          hoverColor={ENEMY_ARMY_MODEL_HOVER_COLOR}
         ></ArmyModel>
       )}
       {hoveredArmy && <ArmyInfoLabel position={hoveredArmy.position} armyId={hoveredArmy.id} />}
