@@ -55,6 +55,26 @@ export function useCombat() {
     });
   };
 
+  const getStationaryEnemyRaiders = (realmEntityIds: bigint[]) => {
+    if (!nextBlockTimestamp) return [];
+    return getEnemyRaidersEntities(realmEntityIds).filter((id) => {
+      const arrivalTime = getComponentValue(ArrivalTime, id);
+      if (!arrivalTime || arrivalTime.arrives_at <= nextBlockTimestamp) {
+        return id;
+      }
+    });
+  };
+
+  const getMovingEnemyRaiders = (realmEntityIds: bigint[]) => {
+    if (!nextBlockTimestamp) return [];
+    return getEnemyRaidersEntities(realmEntityIds).filter((id) => {
+      const arrivalTime = getComponentValue(ArrivalTime, id);
+      if (arrivalTime && arrivalTime.arrives_at > nextBlockTimestamp) {
+        return id;
+      }
+    });
+  };
+
   const getStationaryRealmRaiders = (realmEntityId: bigint) => {
     if (!nextBlockTimestamp) return [];
     return getRealmRaidersEntities(realmEntityId).filter((id) => {
@@ -84,6 +104,21 @@ export function useCombat() {
         NotValue(Movable, { sec_per_km: 0 }),
       ]),
     );
+  };
+
+  const getEnemyRaidersEntities = (playerRealmEntityIds: bigint[]) => {
+    let query = [
+      Has(Attack),
+      NotValue(Health, { value: 0n }),
+      NotValue(Movable, { sec_per_km: 0 }),
+      NotValue(EntityOwner, { entity_owner_id: 0n })
+    ]
+    while (playerRealmEntityIds.length > 0) {
+      query.push(
+        NotValue(EntityOwner, { entity_owner_id: playerRealmEntityIds.pop() })
+      )
+    }
+    return Array.from(runQuery(query));
   };
 
   const getRealmRaidersIds = (realmEntityId: bigint) => {
@@ -290,6 +325,8 @@ export function useCombat() {
     getRealmRaidersIds,
     getStationaryRealmRaiders,
     getMovingRealmRaiders,
+    getStationaryEnemyRaiders,
+    getMovingEnemyRaiders,
     useRealmRaiders,
     useOwnerRaiders,
     useRealmRaidersOnPosition,

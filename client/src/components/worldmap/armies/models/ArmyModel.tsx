@@ -18,14 +18,17 @@ type GLTFResult = GLTF & {
   };
 };
 
-type ContextType = Record<string, React.ForwardRefExoticComponent<JSX.IntrinsicElements["mesh"]>>;
+type ArmyModelProps = JSX.IntrinsicElements["group"] & {
+  defaultColor: string;
+  hoverColor: string;
+};
 
-export const ArmyModel = forwardRef((props: JSX.IntrinsicElements["group"], ref) => {
+export const ArmyModel = forwardRef((props: ArmyModelProps, ref) => {
   const { nodes, materials } = useGLTF("/models/unit-transformed.glb") as GLTFResult;
-  const [color, setColor] = useState("red");
+  const [color, setColor] = useState(props.defaultColor);
 
-  const onPointerEnter = () => setColor("blue");
-  const onPointerLeave = () => setColor("red");
+  const onPointerEnter = () => setColor(props.hoverColor);
+  const onPointerLeave = () => setColor(props.defaultColor);
 
   // Create a new material with selected properties from materials.Unit
   // @ts-ignore

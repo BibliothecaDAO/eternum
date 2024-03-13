@@ -37,6 +37,7 @@ import { ScorchedBiome } from "./biomes/ScorchedBiome";
 import { ShrublandBiome } from "./biomes/ShrublandBiome";
 import { SubtropicalDesertBiome } from "./biomes/SubtropicalDesertBiome";
 import { DeciduousForestBiome } from "./biomes/DeciduousForestBiome";
+import { EnemyArmies } from "./armies/EnemyArmies";
 
 export const DEPTH = 10;
 export const HEX_RADIUS = 3;
@@ -439,7 +440,8 @@ export const WorldMap = () => {
         {hexData && <OtherCastles hexData={hexData} />}
         {hexData && <Hyperstructures hexData={hexData} />}
         {hexData && <Armies hexData={hexData} />}
-        {hexData && <TravelingArmies hexData={hexData} />}
+        {hexData && <EnemyArmies />}
+        {/* {hexData && <TravelingArmies hexData={hexData} />} */}
       </>
     );
   }, [hexData]);
