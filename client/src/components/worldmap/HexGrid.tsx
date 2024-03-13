@@ -443,7 +443,6 @@ export const WorldMap = () => {
         {hexData && <EnemyTravelingArmies />}
         {hexData && <Armies hexData={hexData} />}
         {hexData && <TravelingArmies hexData={hexData} />}
-        {hexData && <TravelingArmies hexData={hexData} />}
       </>
     );
   }, [hexData]);
