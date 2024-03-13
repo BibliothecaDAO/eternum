@@ -2,7 +2,6 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { HyperStructureInterface, SelectableRealmInterface, getOrderName } from "@bibliothecadao/eternum";
 import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
-import { useTrade } from "../../../../../hooks/helpers/useTrade";
 import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
 import { SortButton, SortInterface } from "../../../../../elements/SortButton";
 import { getRealm } from "../../../../../utils/realms";
@@ -38,9 +37,8 @@ export const SelectRealmForCombatPanel = ({
   const { realmId, realmEntityId } = useRealmStore();
   const { getDefenceOnRealm } = useCombat();
 
-  const { getRealmEntityIdFromRealmId } = useTrade();
   const { getEntityLevel } = useLevel();
-  const { getRealmAddressName } = useRealm();
+  const { getRealmEntityIdFromRealmId, getRealmAddressName } = useRealm();
 
   const { calculateDistance } = useCaravan();
 

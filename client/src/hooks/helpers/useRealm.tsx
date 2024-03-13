@@ -49,6 +49,19 @@ export function useRealm() {
     }
   };
 
+  const getRealmEntityIdFromRealmId = (realmId: bigint): bigint | undefined => {
+    const realmEntityIds = runQuery([HasValue(Realm, { realm_id: realmId })]);
+    if (realmEntityIds.size > 0) {
+      const realm = getComponentValue(Realm, realmEntityIds.values().next().value);
+      return realm!.entity_id;
+    }
+  };
+
+  const getRealmIdFromRealmEntityId = (realmEntityId: bigint) => {
+    const realm = getComponentValue(Realm, getEntityIdFromKeys([realmEntityId]));
+    return realm?.realm_id;
+  };
+
   const getRealmIdForOrderAfter = (order: number, realmId: bigint) => {
     const orderName = getOrderName(order);
 
@@ -85,6 +98,8 @@ export function useRealm() {
     getAddressName,
     getRealmAddressName,
     getRealmIdForOrderAfter,
+    getRealmIdFromRealmEntityId,
+    getRealmEntityIdFromRealmId,
   };
 }
 

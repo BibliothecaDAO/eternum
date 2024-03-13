@@ -13,14 +13,13 @@ import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useCaravan } from "../../../../hooks/helpers/useCaravans";
 import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
-import { useGetRealm } from "../../../../hooks/helpers/useRealm";
+import { useGetRealm, useRealm } from "../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { DONKEYS_PER_CITY, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 import { useResources } from "../../../../hooks/helpers/useResources";
 import ListSelect from "../../../../elements/ListSelect";
 import { getTotalResourceWeight } from "./utils";
-import { SelectRealmPanel } from "../SelectRealmPanel";
-import { useTrade } from "../../../../hooks/helpers/useTrade";
+import { TradeRealmSelector } from "./TradeRealmSelector";
 
 type FastCreateOfferPopupProps = {
   resourceId?: number;
@@ -61,7 +60,7 @@ export const FastCreateOfferPopup = ({
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
-  const { getRealmEntityIdFromRealmId } = useTrade();
+  const { getRealmEntityIdFromRealmId } = useRealm();
 
   useEffect(() => {
     if (isBuy) {
@@ -477,7 +476,7 @@ const SelectResourcesAmountPanel = ({
         </div>
       </div>
       {!marketplaceMode && (
-        <SelectRealmPanel selectedRealmId={selectedRealmId} setSelectedRealmId={setSelectedRealmId} />
+        <TradeRealmSelector selectedRealmId={selectedRealmId} setSelectedRealmId={setSelectedRealmId} />
       )}
     </>
   );

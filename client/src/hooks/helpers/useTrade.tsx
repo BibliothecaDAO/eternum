@@ -149,21 +149,12 @@ export function useTrade() {
     return canAccept;
   };
 
-  const getRealmEntityIdFromRealmId = (realmId: bigint): bigint | undefined => {
-    const realmEntityIds = runQuery([HasValue(Realm, { realm_id: realmId })]);
-    if (realmEntityIds.size > 0) {
-      const realm = getComponentValue(Realm, realmEntityIds.values().next().value);
-      return realm!.entity_id;
-    }
-  };
-
   return {
     getTradeResources,
     getTradeResourcesFromEntityViewpoint,
     getTradeIdFromResourcesChestId,
     getChestResources,
     canAcceptOffer,
-    getRealmEntityIdFromRealmId,
     computeTrades,
     getTradeResourcesFromTakerViewpoint,
   };

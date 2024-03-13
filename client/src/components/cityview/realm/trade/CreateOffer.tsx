@@ -17,13 +17,12 @@ import useRealmStore from "../../../../hooks/store/useRealmStore";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { useCaravan } from "../../../../hooks/helpers/useCaravans";
 import { divideByPrecision, multiplyByPrecision } from "../../../../utils/utils";
-import { useGetRealm } from "../../../../hooks/helpers/useRealm";
-import { useTrade } from "../../../../hooks/helpers/useTrade";
-import { SelectRealmPanel } from "../SelectRealmPanel";
+import { useGetRealm, useRealm } from "../../../../hooks/helpers/useRealm";
 import clsx from "clsx";
 import { DONKEYS_PER_CITY, WEIGHT_PER_DONKEY_KG } from "@bibliothecadao/eternum";
 import { useResources } from "../../../../hooks/helpers/useResources";
 import { getTotalResourceWeight } from "./utils";
+import { TradeRealmSelector } from "./TradeRealmSelector";
 
 type CreateOfferPopupProps = {
   onClose: () => void;
@@ -57,7 +56,7 @@ export const CreateOfferPopup = ({ onClose }: CreateOfferPopupProps) => {
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
-  const { getRealmEntityIdFromRealmId } = useTrade();
+  const { getRealmEntityIdFromRealmId } = useRealm();
 
   const onSelectRealmId = (realmId: bigint) => {
     const entityId = getRealmEntityIdFromRealmId(realmId);
@@ -408,7 +407,10 @@ const SelectResourcesAmountPanel = ({
           <div className="ml-1 text-gold">{`${WEIGHTS[253]}kg/unit`}</div>
         </div>
       </div>
-      <SelectRealmPanel selectedRealmId={selectedRealmId} setSelectedRealmId={setSelectedRealmId}></SelectRealmPanel>
+      <TradeRealmSelector
+        selectedRealmId={selectedRealmId}
+        setSelectedRealmId={setSelectedRealmId}
+      ></TradeRealmSelector>
     </>
   );
 };

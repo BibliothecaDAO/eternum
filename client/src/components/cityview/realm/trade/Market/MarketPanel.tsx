@@ -19,6 +19,7 @@ import { hasResources } from "../utils";
 import { Checkbox } from "../../../../../elements/Checkbox";
 import { DirectOffersExplorerPopup } from "../DirectOffers/DirectOffersExplorerPopup";
 import { FastCreateOfferPopup } from "../FastCreateOffer";
+import { useGetRoads } from "../../../../../hooks/helpers/useRoads";
 
 type MarketPanelProps = {
   directOffers: boolean;
@@ -71,6 +72,9 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
   // Use an intersection observer to detect when the sentinel element is visible
   const sentinelRef = useRef(null);
 
+  // rerender if new roads
+  const { roads } = useGetRoads(realmEntityId);
+
   const renderedMarketOffers = useMemo(() => {
     if (!market) return null;
 
@@ -94,6 +98,7 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
             <MarketOffer
               key={trade.tradeId}
               marketOffer={trade}
+              roads={roads}
               onAccept={() => setSelectedTrade(trade)}
               onBuildRoad={() => setBuildRoadToEntityId(trade.makerId)}
             />

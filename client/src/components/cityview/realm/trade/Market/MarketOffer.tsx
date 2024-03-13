@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
-import { MarketInterface, Resource, findResourceById, orderNameDict } from "@bibliothecadao/eternum";
+import { MarketInterface, Resource, RoadInterface, findResourceById, orderNameDict } from "@bibliothecadao/eternum";
 import { ReactComponent as RatioIcon } from "../../../../../assets/icons/common/ratio.svg";
 import * as realmsData from "../../../../../geodata/realms.json";
 import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
@@ -15,12 +15,13 @@ import { useRoads } from "../../../../../hooks/helpers/useRoads";
 import { useTrade } from "../../../../../hooks/helpers/useTrade";
 
 type TradeOfferProps = {
+  roads: RoadInterface[];
   marketOffer: MarketInterface;
   onAccept: () => void;
   onBuildRoad: () => void;
 };
 
-export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferProps) => {
+export const MarketOffer = ({ marketOffer, roads, onAccept, onBuildRoad }: TradeOfferProps) => {
   const { makerId, takerGets: resourcesGet, makerGets: resourcesGive, ratio } = marketOffer;
 
   let { realm: makerRealm } = useGetRealm(marketOffer.makerId);
@@ -39,7 +40,7 @@ export const MarketOffer = ({ marketOffer, onAccept, onBuildRoad }: TradeOfferPr
 
   const hasRoad = useMemo(() => {
     return getHasRoad(realmEntityId, makerId);
-  }, [realmEntityId, makerId]);
+  }, [realmEntityId, makerId, roads]);
 
   const canAccept = useMemo(() => {
     return canAcceptOffer({ realmEntityId, resourcesGive });
