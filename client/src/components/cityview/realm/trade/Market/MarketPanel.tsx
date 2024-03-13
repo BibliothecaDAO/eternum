@@ -73,7 +73,7 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
   const sentinelRef = useRef(null);
 
   // rerender if new roads
-  const roads = useGetRoads(realmEntityId);
+  const { roads } = useGetRoads(realmEntityId);
 
   const renderedMarketOffers = useMemo(() => {
     if (!market) return null;
