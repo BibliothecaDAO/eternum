@@ -124,7 +124,18 @@ export function useGetRoads(entityId: bigint) {
         }
       })
       .filter(Boolean) as RoadInterface[];
-    setRoads(roads);
+
+    // Group roads by destinationRealmName and keep the one with the highest usageLeft for each destination
+    const uniqueRoads = Object.values(
+      roads.reduce((acc, road) => {
+        if (!acc[road.destinationRealmName] || acc[road.destinationRealmName].usageLeft < road.usageLeft) {
+          acc[road.destinationRealmName] = road;
+        }
+        return acc;
+      }, {} as { [key: string]: RoadInterface }),
+    );
+
+    setRoads(uniqueRoads);
   }, [entityIds]);
 
   return {

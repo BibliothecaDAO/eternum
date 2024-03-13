@@ -30,7 +30,7 @@ export const RoadBuildPopup = ({ toEntityId, onClose }: RoadBuildPopupProps) => 
   const [canBuild, setCanBuild] = useState(true);
   const [usageAmount, setUsageAmount] = useState(2);
 
-  let { realmEntityId } = useRealmStore();
+  let realmEntityId = useRealmStore((state) => state.realmEntityId);
 
   // @ts-ignore
   const { realm } = useGetRealm(realmEntityId);
@@ -61,16 +61,24 @@ export const RoadBuildPopup = ({ toEntityId, onClose }: RoadBuildPopupProps) => 
   };
 
   useEffect(() => {
-    setCanBuild(false);
+    // Assume can build initially
+    let canBuild = true;
+
+    // Check each resource requirement
     costResources.forEach(({ resourceId, amount }) => {
       const realmResource = getComponentValue(
         Resource,
         getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]),
       );
-      if (realmResource && realmResource.balance >= amount) {
-        setCanBuild(true);
+
+      // If any resource is not sufficient, set canBuild to false
+      if (!realmResource || realmResource.balance < amount) {
+        canBuild = false;
       }
     });
+
+    // Update state based on the final canBuild value
+    setCanBuild(canBuild);
   }, [costResources]);
 
   return (

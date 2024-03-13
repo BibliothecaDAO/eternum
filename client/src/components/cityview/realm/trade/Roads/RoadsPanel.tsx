@@ -7,6 +7,7 @@ import { SortPanel } from "../../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../../elements/SortButton";
 import { FilterButton } from "../../../../../elements/FilterButton";
 import { FiltersPanel } from "../../../../../elements/FiltersPanel";
+import { RoadRealmSelector } from "./RoadRealmSelector";
 
 type RoadsPanelProps = {} & React.HTMLAttributes<HTMLDivElement>;
 
@@ -31,8 +32,16 @@ export const RoadsPanel = (props: RoadsPanelProps) => {
     ];
   }, []);
 
+  const onClose = () => {
+    setBuildRoadToEntityId(undefined);
+  };
+
   return (
     <>
+      <RoadRealmSelector
+        selectedRealmEntityId={buildRoadToEntityId}
+        setSelectedRealmEntityId={setBuildRoadToEntityId}
+      />
       <FiltersPanel className="px-3 py-2">
         <FilterButton active={activeFilter} onClick={() => setActiveFilter(!activeFilter)}>
           Filter
@@ -55,9 +64,7 @@ export const RoadsPanel = (props: RoadsPanelProps) => {
           />
         ))}
       </SortPanel>
-      {buildRoadToEntityId && (
-        <RoadBuildPopup onClose={() => setBuildRoadToEntityId(undefined)} toEntityId={buildRoadToEntityId} />
-      )}
+      {buildRoadToEntityId && <RoadBuildPopup onClose={onClose} toEntityId={buildRoadToEntityId} />}
       <div className="flex flex-col p-2 space-y-2 relative">
         {roads
           // filter out roads that are not connected to a realm

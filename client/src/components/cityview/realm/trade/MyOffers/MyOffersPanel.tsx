@@ -9,6 +9,8 @@ import { IncomingOrder } from "../Caravans/IncomingOrder";
 import { useResources } from "../../../../../hooks/helpers/useResources";
 import { RoadBuildPopup } from "../Roads/RoadBuildPopup";
 import { FastCreateOfferPopup } from "../FastCreateOffer";
+import { useGetRoads } from "../../../../../hooks/helpers/useRoads";
+import useRealmStore from "../../../../../hooks/store/useRealmStore";
 
 type MarketPanelProps = {};
 
@@ -21,7 +23,11 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
     sort: "none",
   });
 
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+
   const myOffers = useGetMyOffers();
+
+  const { roads } = useGetRoads(realmEntityId);
 
   const { getCaravansWithResourcesChest } = useResources();
   const caravanIds = getCaravansWithResourcesChest();
@@ -70,6 +76,7 @@ export const MyOffersPanel = ({}: MarketPanelProps) => {
             <MyOffer
               key={myOffer.tradeId}
               myOffer={myOffer}
+              roads={roads}
               onBuildRoad={() => setBuildRoadToEntityId(myOffer.takerId)}
             />
           ))}

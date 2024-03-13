@@ -1,19 +1,20 @@
 import { useEffect, useState } from "react";
-import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { useDojo } from "../../../../DojoContext";
+import useRealmStore from "../../../../../hooks/store/useRealmStore";
+import { useDojo } from "../../../../../DojoContext";
 import { Has, getComponentValue, runQuery } from "@dojoengine/recs";
-import { RealmList } from "../RealmList";
 import { SelectableRealmInterface, getOrderName } from "@bibliothecadao/eternum";
-import { useRealm } from "../../../../hooks/helpers/useRealm";
-import { useCaravan } from "../../../../hooks/helpers/useCaravans";
-import { getRealm } from "../../../../utils/realms";
+import { useGetRoads, useRoads } from "../../../../../hooks/helpers/useRoads";
+import { useRealm } from "../../../../../hooks/helpers/useRealm";
+import { useCaravan } from "../../../../../hooks/helpers/useCaravans";
+import { getRealm } from "../../../../../utils/realms";
+import { RealmList } from "../../RealmList";
 
-export const TradeRealmSelector = ({
-  selectedRealmId,
-  setSelectedRealmId,
+export const RoadRealmSelector = ({
+  selectedRealmEntityId,
+  setSelectedRealmEntityId,
 }: {
-  selectedRealmId: bigint | undefined;
-  setSelectedRealmId: (selectedRealmId: bigint) => void;
+  selectedRealmEntityId: bigint | undefined;
+  setSelectedRealmEntityId: (selectRealmEntityId: bigint) => void;
 }) => {
   const {
     setup: {
@@ -21,21 +22,18 @@ export const TradeRealmSelector = ({
     },
   } = useDojo();
 
-  const { getRealmAddressName, getRealmIdFromRealmEntityId, getRealmEntityIdFromRealmId } = useRealm();
-  const { realmId, realmEntityId } = useRealmStore();
-  const { calculateDistance } = useCaravan();
+  const { getRealmEntityIdFromRealmId, getRealmAddressName } = useRealm();
 
   const [selectableRealms, setSelectableRealms] = useState<SelectableRealmInterface[]>([]);
-  const [selectedRealmEntityId, setSelectedRealmEntityId] = useState<bigint | undefined>();
 
-  useEffect(() => {
-    if (selectedRealmEntityId) {
-      const realmId = getRealmIdFromRealmEntityId(selectedRealmEntityId);
-      if (realmId) {
-        setSelectedRealmId(realmId);
-      }
-    }
-  }, [selectedRealmEntityId]);
+  const realmId = useRealmStore((state) => state.realmId);
+  const realmEntityId = useRealmStore((state) => state.realmEntityId);
+
+  const { calculateDistance } = useCaravan();
+
+  const { getHasRoad } = useRoads();
+
+  const { roads } = useGetRoads(realmEntityId);
 
   useEffect(() => {
     const buildSelectableRealms = () => {
@@ -43,7 +41,8 @@ export const TradeRealmSelector = ({
       let realms = Array.from(entityIds)
         .map((entityId) => {
           const realm = getComponentValue(Realm, entityId);
-          if (realm) {
+          const hasRoad = getHasRoad(realmEntityId, realm?.entity_id);
+          if (realm && !hasRoad) {
             const realmData = getRealm(realm.realm_id);
             if (!realmData) return undefined;
             const { name, order, realmId: takerRealmId } = realmData;
@@ -64,14 +63,14 @@ export const TradeRealmSelector = ({
       setSelectableRealms(realms);
     };
     buildSelectableRealms();
-  }, []);
+  }, [roads]);
 
   return (
     <RealmList
       selectableRealms={selectableRealms}
       selectedRealmEntityId={selectedRealmEntityId}
       setSelectedRealmEntityId={setSelectedRealmEntityId}
-      title="Make Direct Offer"
+      title="Create New Road"
     />
   );
 };

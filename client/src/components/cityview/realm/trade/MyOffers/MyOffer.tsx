@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { OrderIcon } from "../../../../../elements/OrderIcon";
 import Button from "../../../../../elements/Button";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
-import { MarketInterface, findResourceById, orderNameDict } from "@bibliothecadao/eternum";
+import { MarketInterface, RoadInterface, findResourceById, orderNameDict } from "@bibliothecadao/eternum";
 import { ReactComponent as RatioIcon } from "../../../../../assets/icons/common/ratio.svg";
 import { useDojo } from "../../../../../DojoContext";
 import * as realmsData from "../../../../../geodata/realms.json";
@@ -15,10 +15,11 @@ import useRealmStore from "../../../../../hooks/store/useRealmStore";
 
 type TradeOfferProps = {
   myOffer: MarketInterface;
+  roads: RoadInterface[];
   onBuildRoad: () => void;
 };
 
-export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
+export const MyOffer = ({ myOffer, roads, onBuildRoad }: TradeOfferProps) => {
   // todo: make hasRoad reactive
   // @note: in myoffers, player is always maker, so resourcesGet is always makerGets, resourcesGive is always takerGets
   const { takerId, makerGets: resourcesGet, takerGets: resourcesGive, ratio } = myOffer;
@@ -37,7 +38,7 @@ export const MyOffer = ({ myOffer, onBuildRoad }: TradeOfferProps) => {
 
   const hasRoad = useMemo(() => {
     return getHasRoad(realmEntityId, takerId);
-  }, [realmEntityId, takerId]);
+  }, [realmEntityId, takerId, roads]);
 
   useEffect(() => {
     setIsLoading(false);
