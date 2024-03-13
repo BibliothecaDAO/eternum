@@ -441,7 +441,7 @@ export const WorldMap = () => {
         {hexData && <Hyperstructures hexData={hexData} />}
         {hexData && <Armies hexData={hexData} />}
         {hexData && <EnemyArmies />}
-        {/* {hexData && <TravelingArmies hexData={hexData} />} */}
+        {hexData && <TravelingArmies hexData={hexData} />}
       </>
     );
   }, [hexData]);
