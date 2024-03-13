@@ -106,12 +106,7 @@ export const EnemyArmies = () => {
   );
 };
 
-type TravelingArmiesProps = {
-  props?: any;
-  hexData: Hexagon[];
-};
-
-export const TravelingArmies = ({ hexData }: TravelingArmiesProps) => {
+export const EnemyTravelingArmies = () => {
   const {
     setup: {
       components: { Position },
