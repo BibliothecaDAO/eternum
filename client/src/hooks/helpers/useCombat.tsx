@@ -268,7 +268,7 @@ export function useCombat() {
         defence: Number(defence?.value) || 0,
         sec_per_km: movable?.sec_per_km || 0,
         blocked: movable?.blocked,
-        capacity: divideByPrecision(Number(capacity?.weight_gram) || 0),
+        capacity: divideByPrecision(Number(capacity?.weight_gram) * Number(quantity?.value)  || 0),
         arrivalTime: arrivalTime?.arrives_at,
         position: position ? { x: position.x, y: position.y } : undefined,
         entityOwnerId: entityOwner?.entity_owner_id,
