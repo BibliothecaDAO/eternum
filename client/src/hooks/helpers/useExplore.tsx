@@ -11,7 +11,7 @@ export function useExplore() {
     setup: {
       components: { Tile },
       updates: {
-        eventUpdates: { exploreEntityMapEvents },
+        eventUpdates: { createExploreEntityMapEvents: exploreEntityMapEvents },
       },
     },
   } = useDojo();

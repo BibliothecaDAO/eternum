@@ -38,6 +38,7 @@ export const ArmyModel = forwardRef((props: ArmyModelProps, ref) => {
   return (
     // @ts-ignore
     <group {...props} ref={ref} dispose={null}>
+      {/* <group {...props} position={ref?.current[Number(props.id)]} dispose={null}> */}
       <group name="Scene">
         <mesh
           name="unit"

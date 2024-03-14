@@ -9,7 +9,7 @@ import { ArmyModel } from "./models/ArmyModel";
 import { divideByPrecision, getEntityIdFromKeys, getUIPositionFromColRow } from "../../../utils/utils";
 import { CombatInfo, Position, Resource, UIPosition } from "@bibliothecadao/eternum";
 // @ts-ignore
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Html } from "@react-three/drei";
 import { getRealmNameById, getRealmOrderNameById } from "../../../utils/realms";
 import clsx from "clsx";
@@ -17,16 +17,13 @@ import { OrderIcon } from "../../../elements/OrderIcon";
 import { formatSecondsLeftInDaysHours } from "../../cityview/realm/labor/laborUtils";
 import ProgressBar from "../../../elements/ProgressBar";
 import { useRealm } from "../../../hooks/helpers/useRealm";
-import { Hexagon } from "../HexGrid";
-import { useFrame } from "@react-three/fiber";
-import { Group } from "three";
 import { useResources } from "../../../hooks/helpers/useResources";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import { TIME_PER_TICK } from "../../network/EpochCountdown";
 
-const ENEMY_ARMY_MODEL_DEFAULT_COLOR: string = "red";
-const ENEMY_ARMY_MODEL_HOVER_COLOR: string = "orange";
-const ENEMY_ARMY_MODEL_SCALE: number = 2;
+export const ENEMY_ARMY_MODEL_DEFAULT_COLOR: string = "red";
+export const ENEMY_ARMY_MODEL_HOVER_COLOR: string = "orange";
+export const ENEMY_ARMY_MODEL_SCALE: number = 2;
 
 export const EnemyArmies = () => {
   const {
@@ -35,7 +32,7 @@ export const EnemyArmies = () => {
     },
   } = useDojo();
 
-  const animationPath = useUIStore((state) => state.animationPath);
+  const animationPaths = useUIStore((state) => state.animationPaths);
   const positionOffset: Record<string, number> = {};
 
   // stary only by showing your armies for now
@@ -62,7 +59,8 @@ export const EnemyArmies = () => {
         .map((armyId) => {
           const position = getComponentValue(Position, armyId);
           // if animated army dont display
-          if (!position || animationPath?.id === position.entity_id) return;
+          const isTraveling = animationPaths.find((path) => path.id === position?.entity_id);
+          if (!position || isTraveling) return;
           let z = 0.32;
           return {
             contractPos: { x: position.x, y: position.y },
@@ -100,131 +98,6 @@ export const EnemyArmies = () => {
           ></ArmyModel>
         );
       })}
-      {hoveredArmy && <ArmyInfoLabel position={hoveredArmy.position} armyId={hoveredArmy.id} />}
-      {selectedArmy && <ArmyInfoLabel position={selectedArmy.position} armyId={selectedArmy.id} />}
-    </group>
-  );
-};
-
-export const EnemyTravelingArmies = () => {
-  const {
-    setup: {
-      components: { Position },
-    },
-  } = useDojo();
-
-  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
-  const animationPath = useUIStore((state) => state.animationPath);
-  const setAnimationPath = useUIStore((state) => state.setAnimationPath);
-
-  const { getMovingEnemyRaiders } = useCombat();
-
-  const startAnimationTimeRef = useRef<number | undefined>(undefined);
-  const animatedArmyRef = useRef<Group | null>(null);
-
-  const [hoveredArmy, setHoveredArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
-  const [selectedArmy, setSelectedArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
-
-  const realmEntityIdsFlat = realmEntityIds.flatMap(({ realmEntityId }) => realmEntityId);
-  const movingEnemyArmies = getMovingEnemyRaiders(realmEntityIdsFlat);
-
-  const onHover = (armyId: bigint, position: UIPosition) => {
-    setHoveredArmy({ id: armyId, position });
-  };
-
-  const onUnhover = () => {
-    setHoveredArmy(undefined);
-  };
-
-  useFrame(() => {
-    // animate
-    if (animationPath && animatedArmyRef.current && startAnimationTimeRef.current) {
-      const uiPath = animationPath.path.map((pos) => getUIPositionFromColRow(pos.x, pos.y));
-      const now = Date.now();
-      const timeElapsed = now - startAnimationTimeRef.current!;
-      const timeToComplete = uiPath.length * 1000;
-      const progress = Math.min(timeElapsed / timeToComplete, 1);
-
-      const pathIndex = Math.floor(progress * uiPath.length);
-      const currentPath: Position[] = uiPath.slice(pathIndex, pathIndex + 2);
-
-      // stop if progress is >= 1
-      if (progress >= 1 || currentPath.length < 2) {
-        // reset all
-        startAnimationTimeRef.current = undefined;
-        setAnimationPath(undefined);
-        animatedArmyRef.current = null;
-        return;
-      }
-
-      // calculate progress between 2 points
-      const progressBetweenPoints = (progress - (1 / uiPath.length) * pathIndex) / (1 / uiPath.length);
-
-      const currentPos = {
-        x: currentPath[0].x + (currentPath[1].x - currentPath[0].x) * progressBetweenPoints,
-        y: currentPath[0].y + (currentPath[1].y - currentPath[0].y) * progressBetweenPoints,
-      };
-
-      const z = 0.32;
-
-      animatedArmyRef.current.position.set(currentPos.x, z, -currentPos.y);
-    }
-  });
-
-  useEffect(() => {
-    if (animationPath) {
-      // animate
-      startAnimationTimeRef.current = Date.now();
-    }
-  }, [animationPath]);
-
-  const positions = useMemo(
-    () =>
-      movingEnemyArmies
-        .map((armyId) => {
-          const position = getComponentValue(Position, armyId);
-          if (!position) return;
-          let z = 0.32;
-          return {
-            contractPos: { x: position.x, y: position.y },
-            uiPos: { ...getUIPositionFromColRow(position.x, position.y), z: z },
-            id: position.entity_id,
-          };
-        })
-        .filter(Boolean) as { contractPos: Position; uiPos: UIPosition; id: bigint }[],
-    [movingEnemyArmies],
-  );
-
-  // useEffect(() => {
-  //   const army = positions.find((army) => army.id === selectedEntity?.id);
-  //   if (army) setSelectedArmy({ id: army.id, position: army.uiPos });
-  // }, [selectedEntity, positions]);
-
-  return (
-    <group>
-      {positions
-        .filter(({ id }) => id !== animationPath?.id)
-        .map(({ uiPos, id }, i) => {
-          return (
-            <ArmyModel
-              onPointerOver={() => onHover(id, uiPos)}
-              onPointerOut={onUnhover}
-              key={i}
-              scale={ENEMY_ARMY_MODEL_SCALE}
-              position={[uiPos.x, uiPos.z, -uiPos.y]}
-              defaultColor={ENEMY_ARMY_MODEL_DEFAULT_COLOR}
-              hoverColor={ENEMY_ARMY_MODEL_HOVER_COLOR}
-            ></ArmyModel>
-          );
-        })}
-      {animationPath && (
-        <ArmyModel
-          ref={animatedArmyRef}
-          scale={ENEMY_ARMY_MODEL_SCALE}
-          defaultColor={ENEMY_ARMY_MODEL_DEFAULT_COLOR}
-          hoverColor={ENEMY_ARMY_MODEL_HOVER_COLOR}
-        ></ArmyModel>
-      )}
       {hoveredArmy && <ArmyInfoLabel position={hoveredArmy.position} armyId={hoveredArmy.id} />}
       {selectedArmy && <ArmyInfoLabel position={selectedArmy.position} armyId={selectedArmy.id} />}
     </group>
