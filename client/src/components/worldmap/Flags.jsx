@@ -206,8 +206,8 @@ export function Flags(props) {
     if (e.intersections.length > 0) {
       const instanceId = e.intersections[0].instanceId;
       const point = getUIPositionFromColRow(
-        ordersRealms[index][instanceId].position.x,
-        ordersRealms[index][instanceId].position.y,
+        ordersRealms[index][instanceId]?.position?.x,
+        ordersRealms[index][instanceId]?.position?.y,
         true,
       );
 
@@ -219,7 +219,7 @@ export function Flags(props) {
 
   return (
     <>
-      <Html position={tooltipPosition} distanceFactor={100}>
+      <Html position={tooltipPosition} distanceFactor={50}>
         <div className="p-2 text-white -translate-x-1/2 bg-black rounded-lg whitespace-nowrap">
           {hoveredRealm && hoveredRealm.name}
         </div>
