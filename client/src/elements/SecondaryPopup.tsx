@@ -72,23 +72,25 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
 
   return (
     <>
-      {loaded && (
-        <Draggable
-          handle=".handle"
-          defaultPosition={position}
-          nodeRef={nodeRef}
-          onDrag={handleDrag}
-          onStop={handleStop}
-        >
-          <div
-            onClick={handleClick}
-            ref={nodeRef}
-            className={clsx("popup fixed z-50 flex flex-col translate-x-6 top-[200px] left-[450px]", className)}
+      <div className="fixed top-0 left-0 z-[100]">
+        {loaded && (
+          <Draggable
+            handle=".handle"
+            defaultPosition={position}
+            nodeRef={nodeRef}
+            onDrag={handleDrag}
+            onStop={handleStop}
           >
-            {children}
-          </div>
-        </Draggable>
-      )}
+            <div
+              onClick={handleClick}
+              ref={nodeRef}
+              className={clsx("popup fixed z-50 flex flex-col translate-x-6 top-[200px] left-[450px]", className)}
+            >
+              {children}
+            </div>
+          </Draggable>
+        )}
+      </div>
     </>
   );
 };
