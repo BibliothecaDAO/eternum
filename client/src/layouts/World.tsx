@@ -17,7 +17,6 @@ import clsx from "clsx";
 import { Redirect, Route, Switch, useLocation } from "wouter";
 import { useProgress } from "@react-three/drei";
 import { BlurOverlayContainer } from "../containers/BlurOverlayContainer";
-import useSound from "use-sound";
 import { NotificationsComponent } from "../components/NotificationsComponent";
 import WorldMapMenuModule from "../modules/WorldMapMenuModule";
 import { Tooltip } from "../elements/Tooltip";
@@ -37,8 +36,6 @@ export const World = () => {
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const setMouseCoords = useUIStore((state) => state.setMouseCoords);
   const syncCombatHistory = useCombatHistoryStore((state) => state.syncData);
-  const isSoundOn = useUIStore((state) => state.isSoundOn);
-  const musicLevel = useUIStore((state) => state.musicLevel);
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
 
@@ -69,20 +66,6 @@ export const World = () => {
   useEffect(() => {
     syncCombatHistory(realmEntityId);
   }, [realmEntityId]);
-
-  const [playBackground, { stop }] = useSound("/sound/music/happy_realm.mp3", {
-    soundEnabled: isSoundOn,
-    volume: musicLevel / 100,
-    loop: true,
-  });
-
-  useEffect(() => {
-    if (isSoundOn) {
-      playBackground();
-    } else {
-      stop();
-    }
-  }, [isSoundOn]);
 
   useEffect(() => {
     refreshAllHyperstructures();

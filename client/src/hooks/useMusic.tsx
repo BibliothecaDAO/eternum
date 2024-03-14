@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import useSound from "use-sound";
+import useUIStore from "./store/useUIStore";
 
 // Define a type for your tracks
 type Track = {
@@ -24,36 +25,42 @@ const tracks: Track[] = [
 ];
 
 export const useMusicPlayer = () => {
-  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
-  const [trackName, setTrackName] = useState(tracks[0].name);
-  const [isPlaying, setIsPlaying] = useState(false); // Added state to track if music is playing
+  const isPlaying = useUIStore((state) => state.isPlaying);
+  const setIsPlaying = useUIStore((state) => state.setIsPlaying);
+
+  const musicLevel = useUIStore((state) => state.musicLevel);
+
+  const trackIndex = useUIStore((state) => state.trackIndex);
+  const setTrackIndex = useUIStore((state) => state.setTrackIndex);
+  const trackName = useUIStore((state) => state.trackName);
+  const setTrackName = useUIStore((state) => state.setTrackName);
 
   const goToNextTrack = () => {
-    setCurrentTrackIndex((prevIndex) => {
-      const nextIndex = (prevIndex + 1) % tracks.length;
-      setTrackName(tracks[nextIndex].name);
-      return nextIndex;
-    });
+    const nextIndex = (trackIndex + 1) % tracks.length;
+    setTrackIndex(nextIndex);
+    setTrackName(tracks[nextIndex].name);
   };
 
-  const next = () => {
+  const next = async () => {
+    stop();
     goToNextTrack();
-    play();
   };
 
-  const [play, { stop }] = useSound(tracks[currentTrackIndex].url, {
-    onplay: () => setIsPlaying(true), // Set isPlaying to true when the track starts playing
-    onstop: () => setIsPlaying(false), // Set isPlaying to false when the track stops
+  const [play, { stop }] = useSound(tracks[trackIndex].url, {
+    onplay: () => setIsPlaying(true),
+    onstop: () => setIsPlaying(false),
+    volume: musicLevel / 100,
     onend: () => {
-      setIsPlaying(false); // Also set isPlaying to false when the track ends
+      setIsPlaying(false);
       goToNextTrack();
     },
   });
 
   useEffect(() => {
     play();
-    return () => stop();
-  }, [currentTrackIndex, play, stop]);
 
-  return { play, stop, trackName, next, isPlaying }; // Include checkIsPlaying in the returned object
+    return () => stop();
+  }, [trackIndex, play, stop]);
+
+  return { play, stop, trackName, next, isPlaying };
 };
