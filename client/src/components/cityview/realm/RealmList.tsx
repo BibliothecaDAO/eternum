@@ -48,6 +48,13 @@ export const RealmList = ({
         const name = removeAccents(realm.name.toLowerCase());
         return name.includes(deferredNameFilter.toLowerCase()) || realm.realmId.toString().includes(deferredNameFilter);
       });
+      // sort Realms by index of the name filter
+      filtered.sort((a, b) => {
+        const nameA = removeAccents(a.name.toLowerCase());
+        const nameB = removeAccents(b.name.toLowerCase());
+        const filter = deferredNameFilter.toLowerCase();
+        return nameA.indexOf(filter) - nameB.indexOf(filter);
+      });
       setSortedRealms(filtered);
       return;
     }
