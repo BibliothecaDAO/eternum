@@ -34,6 +34,7 @@ const FRIENDLY_ARMY_MODEL_SCALE: number = 2;
 
 export const Armies = ({}: ArmiesProps) => {
   const {
+    account: { account },
     setup: {
       components: { Position },
     },
@@ -44,13 +45,9 @@ export const Armies = ({}: ArmiesProps) => {
 
   const positionOffset: Record<string, number> = {};
 
-  // stary only by showing your armies for now
-  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
-  const { getStationaryRealmRaiders } = useCombat();
+  const { useOwnerRaiders } = useCombat();
 
-  const armies = realmEntityIds.flatMap(({ realmEntityId }) => {
-    return getStationaryRealmRaiders(realmEntityId);
-  });
+  const armies = useOwnerRaiders(BigInt(account.address));
 
   const [hoveredArmy, setHoveredArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
   const [selectedArmy, setSelectedArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
@@ -67,7 +64,7 @@ export const Armies = ({}: ArmiesProps) => {
     () =>
       armies
         .map((armyId) => {
-          const position = getComponentValue(Position, armyId);
+          const position = getComponentValue(Position, getEntityIdFromKeys([armyId]));
           // if animated army dont display
           if (!position || animationPaths.find((path) => path.id === position.entity_id)) return;
           let z = 0.32;
@@ -227,9 +224,9 @@ const useUpdateAnimationPaths = () => {
       const sub = observable.subscribe((event) => {
         if (event) {
           const path = [];
-          const realmEntityId = BigInt(event.keys[2]);
-          const enemy = realmEntityIds.find((realm) => realm.realmEntityId === realmEntityId) ? false : true;
-          console.log({ enemy });
+          const realmEntityId = BigInt(event.keys[3]);
+          const myArmy = realmEntityIds.find((realm) => realm.realmEntityId === realmEntityId);
+          const enemy = myArmy ? false : true;
           const id = BigInt(event.data[0]);
           const len = Number(event.data[2]);
           for (let i = 3; i < 3 + len * 2; i += 2) {

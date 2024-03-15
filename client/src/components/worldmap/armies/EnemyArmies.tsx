@@ -2,7 +2,6 @@ import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../../DojoContext";
 import { useCombat } from "../../../hooks/helpers/useCombat";
 import { ReactComponent as Pen } from "../../../assets/icons/common/pen.svg";
-import useRealmStore from "../../../hooks/store/useRealmStore";
 import useUIStore from "../../../hooks/store/useUIStore";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { ArmyModel } from "./models/ArmyModel";
@@ -27,6 +26,7 @@ export const ENEMY_ARMY_MODEL_SCALE: number = 2;
 
 export const EnemyArmies = () => {
   const {
+    account: { account },
     setup: {
       components: { Position },
     },
@@ -36,11 +36,9 @@ export const EnemyArmies = () => {
   const positionOffset: Record<string, number> = {};
 
   // stary only by showing your armies for now
-  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
-  const { getStationaryEnemyRaiders } = useCombat();
+  const { useEnemeyRaiders } = useCombat();
 
-  const realmEntityIdsFlat = realmEntityIds.flatMap(({ realmEntityId }) => realmEntityId);
-  const stationaryEnemyArmies = getStationaryEnemyRaiders(realmEntityIdsFlat);
+  const stationaryEnemyArmies = useEnemeyRaiders(BigInt(account.address));
 
   const [hoveredArmy, setHoveredArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
   const [selectedArmy, _] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
@@ -57,7 +55,7 @@ export const EnemyArmies = () => {
     () =>
       stationaryEnemyArmies
         .map((armyId) => {
-          const position = getComponentValue(Position, armyId);
+          const position = getComponentValue(Position, getEntityIdFromKeys([armyId]));
           // if animated army dont display
           const isTraveling = animationPaths.find((path) => path.id === position?.entity_id);
           if (!position || isTraveling) return;
