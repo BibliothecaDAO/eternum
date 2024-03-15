@@ -26,7 +26,7 @@ export const Defence = ({
     <div className={clsx("flex flex-1 w-full", props.className)}>
       <img src={`/images/buildings/defence_tower.png`} className="object-cover rounded-md w-[107px]" />
       <div className="flex flex-col w-full min-w-[244px] h-full ml-2">
-        <div className="font-bold text-white text-xs mb-1">Defence Tower</div>
+        <div className="font-bold text-white text-xs mb-1">Defender</div>
         <div className="flex text-white items-end mb-2">
           <div className="flex flex-col items-start">
             <div className="flex flex-row text-xxs justify-center">

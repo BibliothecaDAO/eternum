@@ -29,14 +29,15 @@ type ArmiesProps = {
 };
 
 const FRIENDLY_ARMY_MODEL_DEFAULT_COLOR: string = "green";
-const FRIENDLY_ARMY_MODEL_HOVER_COLOR: string = "black";
+const FRIENDLY_ARMY_MODEL_HOVER_COLOR: string = "yellow";
 const FRIENDLY_ARMY_MODEL_SCALE: number = 2;
+const FRIENDLY_ARMY_MODEL_DEAD_COLOR: string = "black";
 
 export const Armies = ({}: ArmiesProps) => {
   const {
     account: { account },
     setup: {
-      components: { Position },
+      components: { Position, Health },
     },
   } = useDojo();
 
@@ -65,6 +66,9 @@ export const Armies = ({}: ArmiesProps) => {
       armies
         .map((armyId) => {
           const position = getComponentValue(Position, getEntityIdFromKeys([armyId]));
+          const health = getComponentValue(Health, getEntityIdFromKeys([armyId]));
+          const isDead = health?.value ? false : true;
+
           // if animated army dont display
           if (!position || animationPaths.find((path) => path.id === position.entity_id)) return;
           let z = 0.32;
@@ -72,15 +76,18 @@ export const Armies = ({}: ArmiesProps) => {
             contractPos: { x: position.x, y: position.y },
             uiPos: { ...getUIPositionFromColRow(position.x, position.y), z: z },
             id: position.entity_id,
+            isDead,
           };
         })
-        .filter(Boolean) as { contractPos: Position; uiPos: UIPosition; id: bigint }[],
+        .filter(Boolean) as { contractPos: Position; uiPos: UIPosition; id: bigint; isDead: Boolean }[],
     [armies],
   );
 
   // clickable
-  const onClick = (id: bigint, position: Position) => {
-    setSelectedEntity({ id, position });
+  const onClick = (id: bigint, position: Position, isDead: Boolean) => {
+    if (!isDead) {
+      setSelectedEntity({ id, position });
+    }
   };
 
   // useEffect(() => {
@@ -91,7 +98,7 @@ export const Armies = ({}: ArmiesProps) => {
 
   return (
     <group>
-      {positions.map(({ contractPos, uiPos, id }, i) => {
+      {positions.map(({ contractPos, uiPos, id, isDead }, i) => {
         let offset = 0;
         if (positionOffset[JSON.stringify(uiPos)]) {
           positionOffset[JSON.stringify(uiPos)] += 1;
@@ -107,11 +114,11 @@ export const Armies = ({}: ArmiesProps) => {
           <ArmyModel
             onPointerOver={() => onHover(id, uiPos)}
             onPointerOut={onUnhover}
-            onClick={() => onClick(id, contractPos)}
+            onClick={() => onClick(id, contractPos, isDead)}
             key={id}
             scale={FRIENDLY_ARMY_MODEL_SCALE}
-            position={[uiPos.x + offset, uiPos.z, -uiPos.y]}
-            defaultColor={FRIENDLY_ARMY_MODEL_DEFAULT_COLOR}
+            position={[uiPos.x + offset + 0.7, uiPos.z, -uiPos.y]}
+            defaultColor={!isDead ? FRIENDLY_ARMY_MODEL_DEFAULT_COLOR : FRIENDLY_ARMY_MODEL_DEAD_COLOR}
             hoverColor={FRIENDLY_ARMY_MODEL_HOVER_COLOR}
           ></ArmyModel>
         );
@@ -417,15 +424,15 @@ const RaiderInfo = ({
             <div className="text-order-brilliance">{health && health.toLocaleString()}</div>&nbsp;/ {10 * quantity} HP
           </div>
         </div>
-        {health && (
-          <div className="grid grid-cols-12 gap-0.5">
-            <ProgressBar
-              containerClassName="col-span-12 !bg-order-giants"
-              rounded
-              progress={(health / (10 * quantity)) * 100}
-            />
-          </div>
-        )}
+
+        <div className="grid grid-cols-12 gap-0.5">
+          <ProgressBar
+            containerClassName="col-span-12 !bg-order-giants"
+            rounded
+            progress={(health / (10 * quantity)) * 100}
+          />
+        </div>
+
         <div className="flex items-center justify-between mt-[8px] text-xxs">
           {inventoryResources && (
             <div className="flex justify-center items-center space-x-1 flex-wrap">

@@ -2,7 +2,12 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import useUIStore from "../../hooks/store/useUIStore";
 import { useDojo } from "../../DojoContext";
-import { divideByPrecision, formatTimeLeftDaysHoursMinutes, getUIPositionFromColRow, multiplyByPrecision } from "../../utils/utils";
+import {
+  divideByPrecision,
+  formatTimeLeftDaysHoursMinutes,
+  getUIPositionFromColRow,
+  multiplyByPrecision,
+} from "../../utils/utils";
 import { SecondaryPopup } from "../../elements/SecondaryPopup";
 import Button from "../../elements/Button";
 import { TravelPopup } from "./traveling/TravelPopup";
@@ -11,6 +16,10 @@ import useBlockchainStore from "../../hooks/store/useBlockchainStore";
 import { TIME_PER_TICK } from "../network/EpochCountdown";
 import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
 import { Resource, ResourcesIds, WEIGHTS } from "@bibliothecadao/eternum";
+import useRealmStore from "../../hooks/store/useRealmStore";
+import { useEffect, useState } from "react";
+import { AttackRaidsPopup } from "../cityview/realm/combat/raids/AttackRaidsPopup";
+import { useCombat } from "../../hooks/helpers/useCombat";
 
 const EXPLORATION_REWARD_RESOURCE_AMOUNT: number = 20;
 
@@ -19,9 +28,16 @@ type ChooseActionPopupProps = {};
 export const ChooseActionPopup = ({}: ChooseActionPopupProps) => {
   const {
     setup: {
-      components: { TickMove, ArrivalTime, Weight, Quantity, Capacity },
+      components: { TickMove, ArrivalTime, Weight, Quantity, Capacity, EntityOwner, Position, Health },
     },
   } = useDojo();
+  const [playerOwnsSelectedEntity, setPlayerOwnsSelectedEntity] = useState(false);
+  const [playerRaidersOnPosition, setPlayerRaidersOnPosition] = useState([{}]);
+  const [selectedEntityIsDead, setSelectedEntityIsDead] = useState(true);
+  const [enemyRaidersOnPosition, setEnemyRaidersOnPosition] = useState([{}]);
+
+  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
+  const { getEntitiesCombatInfo, getOwnerRaidersOnPosition, getDefenceOnPosition } = useCombat();
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
@@ -35,10 +51,37 @@ export const ChooseActionPopup = ({}: ChooseActionPopupProps) => {
   const setIsAttackMode = useUIStore((state) => state.setIsAttackMode);
   const isAttackMode = useUIStore((state) => state.isAttackMode);
 
+  useEffect(() => {
+    const checkPlayerOwnsSelectedEntity = () => {
+      if (selectedEntity?.id) {
+        let entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([selectedEntity.id])) || undefined;
+        let realmEntityIdsFlat = realmEntityIds.map((realmEntityId) => realmEntityId.realmEntityId);
+        return realmEntityIdsFlat.includes(entityOwner?.entity_owner_id!) ? true : false;
+      }
+      return false;
+    };
+    if (!checkPlayerOwnsSelectedEntity()) {
+      const selectedEntityPosition = getComponentValue(Position, getEntityIdFromKeys([selectedEntity!.id!]));
+      let playerRaidersOnPosition = getOwnerRaidersOnPosition({
+        x: selectedEntityPosition!.x!,
+        y: selectedEntityPosition!.y,
+      });
+      console.log({ agame: getEntitiesCombatInfo(playerRaidersOnPosition) });
+      setPlayerOwnsSelectedEntity(false);
+      setPlayerRaidersOnPosition(getEntitiesCombatInfo(playerRaidersOnPosition));
+      setEnemyRaidersOnPosition(getEntitiesCombatInfo([selectedEntity!.id]));
+    } else {
+      setPlayerOwnsSelectedEntity(true);
+    }
+
+    const entityHealth = getComponentValue(Health, getEntityIdFromKeys([selectedEntity?.id!]));
+    const selectedEntityIsDead = entityHealth?.value ? false : true;
+    setSelectedEntityIsDead(selectedEntityIsDead);
+  }, [selectedEntity]);
+
   const getTitle = () => {
     if (isTravelMode) return "Travel";
     if (isExploreMode) return "Explore";
-    if (isAttackMode) return "Attack";
     return "Select Action";
   };
 
@@ -51,18 +94,12 @@ export const ChooseActionPopup = ({}: ChooseActionPopupProps) => {
     ? getComponentValue(ArrivalTime, getEntityIdFromKeys([selectedEntity.id]))
     : undefined;
 
-  const weight = selectedEntity
-    ? getComponentValue(Weight, getEntityIdFromKeys([selectedEntity.id]))
-    : undefined;
+  const weight = selectedEntity ? getComponentValue(Weight, getEntityIdFromKeys([selectedEntity.id])) : undefined;
 
-  const quantity = selectedEntity
-    ? getComponentValue(Quantity, getEntityIdFromKeys([selectedEntity.id]))
-    : undefined;
+  const quantity = selectedEntity ? getComponentValue(Quantity, getEntityIdFromKeys([selectedEntity.id])) : undefined;
 
-  const capacity = selectedEntity
-    ? getComponentValue(Capacity, getEntityIdFromKeys([selectedEntity.id]))
-    : undefined;
-  
+  const capacity = selectedEntity ? getComponentValue(Capacity, getEntityIdFromKeys([selectedEntity.id])) : undefined;
+
   const totalCapacityInKg = divideByPrecision(Number(capacity?.weight_gram)) * Number(quantity?.value);
   const tickMove = selectedEntity ? getComponentValue(TickMove, getEntityIdFromKeys([selectedEntity.id])) : undefined;
   const isPassiveTravel = arrivalTime && nextBlockTimestamp ? arrivalTime.arrives_at > nextBlockTimestamp : false;
@@ -72,12 +109,13 @@ export const ChooseActionPopup = ({}: ChooseActionPopupProps) => {
 
   const isTraveling = isPassiveTravel || isActiveTravel;
 
-  const sampleRewardResource: Resource = {resourceId: ResourcesIds.Ignium, amount: multiplyByPrecision(EXPLORATION_REWARD_RESOURCE_AMOUNT)};
+  const sampleRewardResource: Resource = {
+    resourceId: ResourcesIds.Ignium,
+    amount: multiplyByPrecision(EXPLORATION_REWARD_RESOURCE_AMOUNT),
+  };
   const sampleRewardResourceWeightKg = getTotalResourceWeight([sampleRewardResource]);
   const entityWeightInKg = divideByPrecision(Number(weight?.value || 0));
-  const canCarryNewReward 
-      =  totalCapacityInKg 
-          >= entityWeightInKg + sampleRewardResourceWeightKg;
+  const canCarryNewReward = totalCapacityInKg >= entityWeightInKg + sampleRewardResourceWeightKg;
 
   const onTravel = () => setIsTravelMode(true);
   const onExplore = () => setIsExploreMode(true);
@@ -91,40 +129,75 @@ export const ChooseActionPopup = ({}: ChooseActionPopupProps) => {
   };
 
   return (
-    <SecondaryPopup className={"absolute !left-1/2 !top-[70px]"} name="explore">
-      <SecondaryPopup.Head onClose={onClose}>
-        <div className="flex items-center space-x-1">
-          <div className="mr-0.5">{getTitle()}</div>
-        </div>
-      </SecondaryPopup.Head>
-      <SecondaryPopup.Body width={"250px"} height={isExploreMode ? "280px" : "80px"}>
-        {/* <div className="flex flex-col items-center mr-2">
+    <>
+      {isAttackMode && (
+        <AttackRaidsPopup
+          selectedRaider={playerRaidersOnPosition[0]}
+          enemyRaider={enemyRaidersOnPosition[0]}
+          onClose={onClose}
+        />
+      )}
+
+      {!isAttackMode && (
+        <SecondaryPopup className={"absolute !left-1/2 !top-[70px]"} name="explore">
+          <SecondaryPopup.Head onClose={onClose}>
+            <div className="flex items-center space-x-1">
+              <div className="mr-0.5">{getTitle()}</div>
+            </div>
+          </SecondaryPopup.Head>
+          <SecondaryPopup.Body width={"250px"} height={isExploreMode ? "280px" : "80px"}>
+            {/* <div className="flex flex-col items-center mr-2">
           <div className="text-gold">{getHeadline()}</div>
         </div> */}
-        {isTravelMode && <TravelPopup />}
-        {isExploreMode && <ExploreMapPopup />}
-        {!isTravelMode && !isExploreMode && !isAttackMode && (
-          <div className="flex w-full items-center justify-center h-full mb-2">
-            <div className="flex mt-1 w-[80%] items-center justify-between">
-              <Button variant="primary" size="md" onClick={onTravel} disabled={isTraveling} className="">
-                Travel
-              </Button>
-              <Button
-                variant="primary"
-                size="md"
-                disabled={isTraveling || !canCarryNewReward}
-                onClick={onExplore}
-                className=""
-              >
-                Explore
-              </Button>
-              <Button variant="primary" size="md" disabled={true} onClick={onAttack} className="">
-                Attack
-              </Button>
-            </div>
-          </div>
-        )}
-      </SecondaryPopup.Body>
-    </SecondaryPopup>
+            {isTravelMode && <TravelPopup />}
+            {isExploreMode && <ExploreMapPopup />}
+
+            {playerOwnsSelectedEntity && !isTravelMode && !isExploreMode && !isAttackMode && (
+              <div className="flex w-full items-center justify-center h-full mb-2">
+                <div className="flex mt-1 w-[80%] items-center justify-between">
+                  <Button variant="primary" size="md" onClick={onTravel} disabled={isTraveling} className="">
+                    Travel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="md"
+                    disabled={isTraveling || !canCarryNewReward}
+                    onClick={onExplore}
+                    className=""
+                  >
+                    Explore
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {!playerOwnsSelectedEntity && !isTravelMode && !isExploreMode && !isAttackMode && (
+              <>
+                {playerRaidersOnPosition.length == 0 && (
+                  <div className="text-xxs text-order-giants/70 mb-3">
+                    You need to bring your army to the enemy army's position before you can attack or steal
+                  </div>
+                )}
+                <div className="flex w-full items-center justify-center h-full mb-2">
+                  <div className="flex mt-1 items-center justify-between">
+                    <Button
+                      variant="primary"
+                      size="md"
+                      aria-label="you can only bleh"
+                      disabled={playerRaidersOnPosition.length == 0}
+                      onClick={onAttack}
+                      className=""
+                    >
+                      {selectedEntityIsDead ? "Steal from " : "Attack "}
+                      Army (#{selectedEntity?.id?.toString()})
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </SecondaryPopup.Body>
+        </SecondaryPopup>
+      )}
+    </>
   );
 };

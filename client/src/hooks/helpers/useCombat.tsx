@@ -27,6 +27,7 @@ export function useCombat() {
         ArrivalTime,
         TownWatch,
         Realm,
+        Inventory,
       },
     },
   } = useDojo();
@@ -55,46 +56,6 @@ export function useCombat() {
     });
   };
 
-  const getStationaryEnemyRaiders = (realmEntityIds: bigint[]) => {
-    if (!nextBlockTimestamp) return [];
-    return getEnemyRaidersEntities(realmEntityIds).filter((id) => {
-      const arrivalTime = getComponentValue(ArrivalTime, id);
-      if (!arrivalTime || arrivalTime.arrives_at <= nextBlockTimestamp) {
-        return id;
-      }
-    });
-  };
-
-  const getMovingEnemyRaiders = (realmEntityIds: bigint[]) => {
-    if (!nextBlockTimestamp) return [];
-    return getEnemyRaidersEntities(realmEntityIds).filter((id) => {
-      const arrivalTime = getComponentValue(ArrivalTime, id);
-      if (arrivalTime && arrivalTime.arrives_at > nextBlockTimestamp) {
-        return id;
-      }
-    });
-  };
-
-  const getStationaryRealmRaiders = (realmEntityId: bigint) => {
-    if (!nextBlockTimestamp) return [];
-    return getRealmRaidersEntities(realmEntityId).filter((id) => {
-      const arrivalTime = getComponentValue(ArrivalTime, id);
-      if (!arrivalTime || arrivalTime.arrives_at <= nextBlockTimestamp) {
-        return id;
-      }
-    });
-  };
-
-  const getMovingRealmRaiders = (realmEntityId: bigint) => {
-    if (!nextBlockTimestamp) return [];
-    return getRealmRaidersEntities(realmEntityId).filter((id) => {
-      const arrivalTime = getComponentValue(ArrivalTime, id);
-      if (arrivalTime && arrivalTime.arrives_at > nextBlockTimestamp) {
-        return id;
-      }
-    });
-  };
-
   const getRealmRaidersEntities = (realmEntityId: bigint) => {
     return Array.from(
       runQuery([
@@ -106,19 +67,6 @@ export function useCombat() {
     );
   };
 
-  const getEnemyRaidersEntities = (playerRealmEntityIds: bigint[]) => {
-    let query = [
-      Has(Attack),
-      NotValue(Health, { value: 0n }),
-      NotValue(Movable, { sec_per_km: 0 }),
-      NotValue(EntityOwner, { entity_owner_id: 0n }),
-    ];
-    while (playerRealmEntityIds.length > 0) {
-      query.push(NotValue(EntityOwner, { entity_owner_id: playerRealmEntityIds.pop() }));
-    }
-    return Array.from(runQuery(query));
-  };
-
   const getRealmRaidersIds = (realmEntityId: bigint) => {
     return getRealmRaidersEntities(realmEntityId).map((id) => {
       const attack = getComponentValue(Attack, id);
@@ -127,12 +75,22 @@ export function useCombat() {
   };
 
   const useOwnerRaiders = (owner: bigint) => {
-    const entityIds = useEntityQuery([
+    let entityIds = useEntityQuery([
       Has(Attack),
       HasValue(Owner, { address: owner }),
       NotValue(Health, { value: 0n }),
       NotValue(Movable, { sec_per_km: 0 }),
     ]);
+
+    const deadEntitiesWithResources = useEntityQuery([
+      Has(Attack),
+      HasValue(Owner, { address: owner }),
+      HasValue(Health, { value: 0n }),
+      NotValue(Inventory, { items_count: 0n }),
+      NotValue(Movable, { sec_per_km: 0 }),
+    ]);
+
+    entityIds = entityIds.concat(deadEntitiesWithResources);
 
     return entityIds.map((id) => {
       const attack = getComponentValue(Attack, id);
@@ -163,12 +121,23 @@ export function useCombat() {
   };
 
   const useEnemeyRaiders = (owner: bigint) => {
-    const entityIds = useEntityQuery([
+    let entityIds = useEntityQuery([
       Has(Attack),
       Has(Movable),
       NotValue(Health, { value: 0n }),
       NotValue(Owner, { address: owner }),
     ]);
+
+    // find dead enemy entities with items in inventory
+    const deadEntitiesWithResources = useEntityQuery([
+      Has(Attack),
+      Has(Movable),
+      HasValue(Health, { value: 0n }),
+      NotValue(Inventory, { items_count: 0n }),
+      NotValue(Owner, { address: owner }),
+    ]);
+
+    entityIds = entityIds.concat(deadEntitiesWithResources);
 
     return entityIds.map((id) => {
       const attack = getComponentValue(Attack, id);
@@ -335,10 +304,6 @@ export function useCombat() {
     getDefenceOnPosition,
     getRealmRaidersEntities,
     getRealmRaidersIds,
-    getStationaryRealmRaiders,
-    getMovingRealmRaiders,
-    getStationaryEnemyRaiders,
-    getMovingEnemyRaiders,
     useRealmRaiders,
     useOwnerRaiders,
     useRealmRaidersOnPosition,

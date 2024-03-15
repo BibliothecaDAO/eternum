@@ -23,10 +23,11 @@ import useUIStore from "../../../../../hooks/store/useUIStore";
 
 type AttackRaidsPopupProps = {
   selectedRaider: CombatInfo;
+  enemyRaider?: CombatInfo;
   onClose: () => void;
 };
 
-export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupProps) => {
+export const AttackRaidsPopup = ({ selectedRaider, enemyRaider, onClose }: AttackRaidsPopupProps) => {
   const { position: attackPosition } = selectedRaider;
 
   const [step, setStep] = useState<number>(1);
@@ -37,7 +38,6 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
   const { getFoodResources } = useResources();
 
   const attackingEntities = attackPosition ? getOwnerRaidersOnPosition(attackPosition) : [];
-
   const attackingRaiders = useMemo(() => {
     return getEntitiesCombatInfo(attackingEntities.map((id) => BigInt(id)));
   }, [attackingEntities]);
@@ -50,7 +50,10 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
     }
   }, [selectedRaider]);
 
-  const watchTower = useMemo(() => {
+  const defence = useMemo(() => {
+    if (enemyRaider) {
+      return enemyRaider;
+    }
     return attackPosition ? getDefenceOnPosition(attackPosition) : undefined;
   }, [attackPosition]);
 
@@ -64,23 +67,34 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
   }, [attackPosition]);
 
   const defendingRealmName = useMemo(() => {
+    if (enemyRaider) {
+      return getRealmNameById(enemyRaider.originRealmId);
+    }
     return defendingRealmId ? getRealmNameById(defendingRealmId) : undefined;
   }, [defendingRealmId]);
+
+  const popUpHeader = useMemo(() => {
+    if (enemyRaider) {
+      return `Attacking Raider #${enemyRaider.entityId} from ${defendingRealmName}`;
+    } else if (defendingRealmId) {
+      return `Attacking ${defendingRealmName} (#${defendingRealmId?.toString()})`;
+    } else {
+      return "Attacking Hyperstructure";
+    }
+  }, [defendingRealmId, enemyRaider]);
 
   return (
     <SecondaryPopup name="attack">
       <SecondaryPopup.Head onClose={onClose}>
         <div className="flex items-center space-x-1">
-          <div className="mr-0.5">
-            Attacking {defendingRealmName || "Hyperstructure"} (#{defendingRealmId?.toString()}):
-          </div>
+          <div className="mr-0.5">{popUpHeader}</div>
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"410px"}>
         <div className="flex flex-col items-center p-2">
           {step == 1 && (
             <SelectRaidersPanel
-              watchTower={watchTower}
+              defence={defence}
               setStep={setStep}
               onClose={onClose}
               attackingRaiders={attackingRaiders}
@@ -88,9 +102,9 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
               setSelectedRaiders={setSelectedRaiders}
             ></SelectRaidersPanel>
           )}
-          {watchTower && step == 2 && (
+          {defence && step == 2 && (
             <AttackResultPanel
-              watchTower={watchTower}
+              defence={defence}
               onClose={onClose}
               selectedRaiders={selectedRaiders}
             ></AttackResultPanel>
@@ -110,11 +124,11 @@ export const AttackRaidsPopup = ({ selectedRaider, onClose }: AttackRaidsPopupPr
 };
 
 const AttackResultPanel = ({
-  watchTower,
+  defence,
   selectedRaiders,
   onClose,
 }: {
-  watchTower: CombatInfo;
+  defence: CombatInfo;
   selectedRaiders: CombatInfo[];
   onClose: () => void;
 }) => {
@@ -124,10 +138,10 @@ const AttackResultPanel = ({
     },
   } = useDojo();
 
-  const newWatchTowerHealth = watchTower?.entityId
-    ? useComponentValue(Health, getEntityIdFromKeys([BigInt(watchTower.entityId)]))
+  const newWatchTowerHealth = defence?.entityId
+    ? useComponentValue(Health, getEntityIdFromKeys([BigInt(defence.entityId)]))
     : undefined;
-  const success = newWatchTowerHealth ? newWatchTowerHealth.value !== BigInt(watchTower.health) : false;
+  const success = newWatchTowerHealth ? newWatchTowerHealth.value !== BigInt(defence.health) : false;
 
   return (
     <div className="flex flex-col items-center w-full">
@@ -174,7 +188,7 @@ const AttackResultPanel = ({
             <div className="text-light-pink text-xs">{"Damage dealt:"}</div>
             <div className="p-2 mb-2 rounded flex bg-black/20 text-white text-xxs space-x-2">
               <div>{"Watchtower Old Health:"}</div>
-              <div className="text-order-brilliance">{watchTower.health}</div>
+              <div className="text-order-brilliance">{defence.health}</div>
               <div>{"Watchtower New Health:"}</div>
               <div className="text-order-giants">{newWatchTowerHealth.value.toString()}</div>
             </div>
@@ -446,14 +460,14 @@ const StealResultPanel = ({
 };
 
 const SelectRaidersPanel = ({
-  watchTower,
+  defence,
   attackingRaiders,
   selectedRaiders,
   setSelectedRaiders,
   onClose,
   setStep,
 }: {
-  watchTower: CombatInfo | undefined;
+  defence: CombatInfo | undefined;
   attackingRaiders: CombatInfo[];
   selectedRaiders: CombatInfo[];
   setSelectedRaiders: (raiders: CombatInfo[]) => void;
@@ -466,6 +480,8 @@ const SelectRaidersPanel = ({
       systemCalls: { attack, steal },
     },
   } = useDojo();
+
+  const { getResourcesFromInventory } = useResources();
 
   if (attackingRaiders.length === 0) return null;
 
@@ -487,7 +503,7 @@ const SelectRaidersPanel = ({
     ];
   }, [selectedRaiders]);
 
-  const hasWatchTower = watchTower && watchTower.health > 0;
+  const hasWatchTower = defence && defence.health > 0;
 
   const [attackerLevelBonus, attackerHyperstructureLevelBonus] = useMemo(() => {
     let level = getEntityLevel(realmEntityId)?.level || 0;
@@ -496,23 +512,23 @@ const SelectRaidersPanel = ({
   }, [realmEntityId]);
 
   const conqueredHyperstructures = useMemo(() => {
-    if (watchTower) {
-      return getConqueredHyperstructures(watchTower.order).length;
+    if (defence) {
+      return getConqueredHyperstructures(defence.order).length;
     } else {
       return 0;
     }
   }, []);
 
   const [defenderLevelBonus, defenderHyperstructureLevelBonus] = useMemo(() => {
-    if (watchTower) {
-      let level = watchTower.entityOwnerId ? getEntityLevel(watchTower.entityOwnerId)?.level || 0 : 0;
+    if (defence) {
+      let level = defence.entityOwnerId ? getEntityLevel(defence.entityOwnerId)?.level || 0 : 0;
       let levelBonus = getRealmLevelBonus(level, LevelIndex.COMBAT);
       let hyperstructureLevelBonus = conqueredHyperstructures * 25 + 100;
       return [levelBonus, hyperstructureLevelBonus];
     } else {
       return [100, 100];
     }
-  }, [watchTower, conqueredHyperstructures]);
+  }, [defence, conqueredHyperstructures]);
 
   const succesProb = useMemo(() => {
     return calculateSuccess(
@@ -520,10 +536,10 @@ const SelectRaidersPanel = ({
         attack: attackerTotalAttack * (attackerLevelBonus / 100) * (attackerHyperstructureLevelBonus / 100),
         health: attackerTotalHealth,
       },
-      watchTower
+      defence
         ? {
-            defence: watchTower.defence * (defenderLevelBonus / 100) * (defenderHyperstructureLevelBonus / 100),
-            health: watchTower.health,
+            defence: defence.defence * (defenderLevelBonus / 100) * (defenderHyperstructureLevelBonus / 100),
+            health: defence.health,
           }
         : undefined,
     );
@@ -536,12 +552,13 @@ const SelectRaidersPanel = ({
     // set is loading
     setLoading(true);
 
+    console.log({ defence });
     // call contract
-    if (watchTower?.locationEntityId) {
+    if (defence?.entityId) {
       await attack({
         signer: account,
         attacker_ids: selectedRaiders.map((raider) => Number(raider.entityId)).filter(Boolean) as number[],
-        target_id: watchTower.locationEntityId,
+        target_id: defence.entityId,
       });
       // when contract finished setloading false
       setLoading(false);
@@ -552,15 +569,18 @@ const SelectRaidersPanel = ({
 
   const onSteal = async () => {
     // only 1 raider can steal at a time
-    if (!selectedRaiders[0]?.entityId || !selectedRaiders[0]?.locationEntityId) return;
-    // set is loading
+    console.log({ selectedRaiders }, "ahh");
+    console.log(!selectedRaiders[0]?.entityId, !selectedRaiders[0]?.locationEntityId);
+
+    if (!selectedRaiders[0]?.entityId) return;
+
     setLoading(true);
 
     // call contract
     await steal({
       signer: account,
       attacker_id: selectedRaiders[0].entityId,
-      target_id: selectedRaiders[0].locationEntityId,
+      target_id: defence.entityId,
     });
     // when contract finished setloading false
     setLoading(false);
@@ -571,18 +591,46 @@ const SelectRaidersPanel = ({
   const [resoureBalances, hasResources] = useMemo(() => {
     let resourceBalances: { resourceId: number; balance: number }[] = [];
     let hasResources = false;
-    if (watchTower?.locationEntityId) {
+    if (defence?.locationEntityId) {
       for (const resource of resources) {
-        const balance = getBalance(watchTower?.locationEntityId, resource.id);
+        const balance = getBalance(defence?.locationEntityId, resource.id);
         if (balance && balance.balance > 0) {
           hasResources = true;
           resourceBalances.push({ resourceId: balance.resource_type, balance: balance.balance });
         }
       }
     }
+    if (defence?.entityId) {
+      let resources = getResourcesFromInventory(defence.entityId).resources;
+      console.log({ resources });
+      for (const resource of resources) {
+        if (resource.amount > 0) {
+          hasResources = true;
+          resourceBalances.push({ resourceId: resource.resourceId, balance: resource.amount });
+        }
+      }
+    }
+
     return [resourceBalances, hasResources];
   }, []);
-
+  // <div className="flex items-center justify-between mt-[8px] text-xxs">
+  //   {inventoryResources && (
+  //     <div className="flex justify-center items-center space-x-1 flex-wrap">
+  //       {inventoryResources.resources.map(
+  //         (resource) =>
+  //           resource && (
+  //             <ResourceCost
+  //               key={resource.resourceId}
+  //               type="vertical"
+  //               color="text-order-brilliance"
+  //               resourceId={resource.resourceId}
+  //               amount={divideByPrecision(Number(resource.amount))}
+  //             />
+  //           ),
+  //       )}
+  //     </div>
+  //   )}
+  // </div>;
   return (
     <>
       <div className="flex flex-col items-center w-full">
@@ -591,14 +639,14 @@ const SelectRaidersPanel = ({
             <Defence
               conqueredHyperstructures={conqueredHyperstructures}
               levelBonus={defenderLevelBonus}
-              watchTower={watchTower}
+              watchTower={defence}
             ></Defence>
           ) : (
             <div className="text-xxs text-gold">No Defences</div>
           )}
           <div className="flex mt-2 flex-col items-center w-full text-xxs">
             <div className="text-light-pink italic w-full">{`${
-              hasResources ? "Available resources:" : "No Resources"
+              hasResources ? "Available resources:" : "Defender does not own any resource"
             }`}</div>
             <div className="grid grid-cols-12 text-lightest gap-2 w-full mt-1 flex-wrap">
               {resoureBalances.map((resource) => (
@@ -613,6 +661,14 @@ const SelectRaidersPanel = ({
             </div>
           </div>
           <div className="flex my-2 flex-col items-center justify-center w-full">
+            {!hasResources && (
+              <div className="text-xxs text-order-giants/70 mb-3">
+                Cannot pillage if there are no resources to steal
+              </div>
+            )}
+            {selectedRaiders.length > 0 && selectedRaiders.length !== 1 && (
+              <div className="text-xxs text-order-giants/70">Can only pillage with 1 Raiders Group</div>
+            )}
             <div className={`grid mb-1 grid-cols-${hasWatchTower ? "2" : "1"} gap-2 w-full`}>
               <div>
                 <Button
@@ -639,7 +695,7 @@ const SelectRaidersPanel = ({
                 <div>
                   <Button
                     className="w-full text-xxs h-[18px]"
-                    disabled={!(selectedRaiders.length > 0 && watchTower?.health > 0)}
+                    disabled={!(selectedRaiders.length > 0 && defence?.health > 0)}
                     onClick={onAttack}
                     isLoading={loading}
                     variant="outline"
@@ -662,10 +718,6 @@ const SelectRaidersPanel = ({
 
             {!(selectedRaiders.length > 0) && (
               <div className="text-xxs text-order-giants/70">Select at least 1 Raiders Group</div>
-            )}
-            {!hasResources && <div className="text-xxs text-order-giants/70">Cannot pillage if no resources</div>}
-            {selectedRaiders.length > 0 && selectedRaiders.length !== 1 && (
-              <div className="text-xxs text-order-giants/70">Can only pillage with 1 Raiders Group</div>
             )}
           </div>
           {/* // note: add more combat info once combat system is more mature */}

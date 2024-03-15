@@ -7,6 +7,7 @@ mod map_systems {
     use eternum::models::owner::{Owner, EntityOwner};
     use eternum::models::hyperstructure::HyperStructure;
     use eternum::models::quantity::Quantity;
+    use eternum::models::combat::Health;
     use eternum::models::movable::{Movable,ArrivalTime};
     use eternum::models::inventory::Inventory;
     use eternum::models::map::Tile;
@@ -65,6 +66,10 @@ mod map_systems {
             let unit_owner = get!(world, unit_id, Owner);
             assert(unit_owner.address == caller, 'not unit owner');
 
+            // ensure unit is alive
+            let unit_health = get!(world, unit_id, Health);      
+            assert(unit_health.value != 0, 'entity is dead');  
+
             // check that entity owner is a realm
             let unit_entity_owner = get!(world, unit_id, EntityOwner);
             let unit_realm = get!(world, unit_entity_owner.entity_owner_id, Realm);
@@ -72,12 +77,13 @@ mod map_systems {
 
             // check that there is more than one entity in unit
             let mut unit_quantity = get!(world, unit_id, Quantity);
-            assert(unit_quantity.value > 1, 'not enough quantity');
+            assert(unit_quantity.value > 0, 'not enough quantity');
 
             // ensure unit can move
             let unit_movable = get!(world, unit_id, Movable);      
             assert(unit_movable.sec_per_km != 0, 'entity cant move');  
             assert(unit_movable.blocked == false, 'entity is blocked');  
+
 
             // ensure unit is not in transit
             let unit_arrival_time = get!(world, unit_id, ArrivalTime);
