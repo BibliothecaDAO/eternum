@@ -164,7 +164,7 @@ const StepOne = ({ onNext }: { onNext: () => void }) => {
       <div className="flex space-x-2 mt-8 justify-center">
         <Button size="md" className="mx-auto" variant="outline" onClick={onNext}>
           Choose your Leader
-          <ArrowRight className="w-8" />
+          <ArrowRight className="w-2 ml-2" />
         </Button>
       </div>
     </div>
@@ -374,7 +374,7 @@ const Naming = ({ onNext }: { onNext: () => void }) => {
       {
         <div className="flex space-x-2 mt-8 justify-center">
           <Button size="md" className="mx-auto" variant="outline" onClick={onNext}>
-            <ArrowRight className="w-8" />
+            <ArrowRight className="w-2" />
           </Button>
         </div>
       }
@@ -387,7 +387,7 @@ const StepTwo = ({ onPrev }: { onPrev: () => void; onNext: () => void }) => {
       <SettleRealmComponent />
       <div className="flex space-x-2 mt-8 justify-start">
         <Button variant="outline" onClick={onPrev}>
-          <ArrowLeft className="w-6" />
+          <ArrowLeft className="w-2" />
         </Button>
         {/* <Button variant="outline" onClick={onNext}>
           continue
