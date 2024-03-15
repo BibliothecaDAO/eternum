@@ -111,12 +111,10 @@ export function useCombat() {
       Has(Attack),
       NotValue(Health, { value: 0n }),
       NotValue(Movable, { sec_per_km: 0 }),
-      NotValue(EntityOwner, { entity_owner_id: 0n })
-    ]
+      NotValue(EntityOwner, { entity_owner_id: 0n }),
+    ];
     while (playerRealmEntityIds.length > 0) {
-      query.push(
-        NotValue(EntityOwner, { entity_owner_id: playerRealmEntityIds.pop() })
-      )
+      query.push(NotValue(EntityOwner, { entity_owner_id: playerRealmEntityIds.pop() }));
     }
     return Array.from(runQuery(query));
   };
@@ -162,6 +160,20 @@ export function useCombat() {
         return watchTowerInfo[0];
       }
     }
+  };
+
+  const useEnemeyRaiders = (owner: bigint) => {
+    const entityIds = useEntityQuery([
+      Has(Attack),
+      Has(Movable),
+      NotValue(Health, { value: 0n }),
+      NotValue(Owner, { address: owner }),
+    ]);
+
+    return entityIds.map((id) => {
+      const attack = getComponentValue(Attack, id);
+      return attack!.entity_id;
+    });
   };
 
   const useEnemyRaidersOnPosition = (owner: bigint, position: Position) => {
@@ -303,7 +315,7 @@ export function useCombat() {
         defence: Number(defence?.value) || 0,
         sec_per_km: movable?.sec_per_km || 0,
         blocked: movable?.blocked,
-        capacity: divideByPrecision(Number(capacity?.weight_gram) * Number(quantity?.value)  || 0),
+        capacity: divideByPrecision(Number(capacity?.weight_gram) * Number(quantity?.value) || 0),
         arrivalTime: arrivalTime?.arrives_at,
         position: position ? { x: position.x, y: position.y } : undefined,
         entityOwnerId: entityOwner?.entity_owner_id,
@@ -332,6 +344,7 @@ export function useCombat() {
     useRealmRaidersOnPosition,
     getRealmRaidersOnPosition,
     getOwnerRaidersOnPosition,
+    useEnemeyRaiders,
     useEnemyRaidersOnPosition,
     useOwnerRaidersOnPosition,
     getEntitiesCombatInfo,

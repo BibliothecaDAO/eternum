@@ -37,7 +37,7 @@ import { ScorchedBiome } from "./biomes/ScorchedBiome";
 import { ShrublandBiome } from "./biomes/ShrublandBiome";
 import { SubtropicalDesertBiome } from "./biomes/SubtropicalDesertBiome";
 import { DeciduousForestBiome } from "./biomes/DeciduousForestBiome";
-import { EnemyArmies, EnemyTravelingArmies } from "./armies/EnemyArmies";
+import { EnemyArmies } from "./armies/EnemyArmies";
 
 export const DEPTH = 10;
 export const HEX_RADIUS = 3;
@@ -373,7 +373,7 @@ export const WorldMap = () => {
   const {
     setup: {
       updates: {
-        eventUpdates: { exploreMapEvents },
+        eventUpdates: { createExploreMapEvents: exploreMapEvents },
       },
     },
   } = useDojo();
@@ -439,10 +439,9 @@ export const WorldMap = () => {
         {hexData && <MyCastles hexData={hexData} />}
         {hexData && <OtherCastles hexData={hexData} />}
         {hexData && <Hyperstructures hexData={hexData} />}
-        {hexData && <EnemyArmies />}
-        {hexData && <EnemyTravelingArmies />}
-        {hexData && <Armies hexData={hexData} />}
-        {hexData && <TravelingArmies hexData={hexData} />}
+        <EnemyArmies />
+        <Armies />
+        <TravelingArmies />
       </>
     );
   }, [hexData]);
