@@ -233,7 +233,8 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
     group.forEach((hex) => {
       const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
       // set the z position with math.random to have a random height
-      matrix.setPosition(x, y, 0.31);
+      const zPos = hex.biome === "ocean" ? 0.31 : 0.31 + Math.random() * 0.15;
+      matrix.setPosition(x, y, zPos);
       // set height of hex
       // matrix.setPosition(x, y, BIOMES[hex.biome].depth);
 
