@@ -20,24 +20,27 @@ import useRealmStore from "../../hooks/store/useRealmStore";
 import { useEffect, useState } from "react";
 import { AttackRaidsPopup } from "../cityview/realm/combat/raids/AttackRaidsPopup";
 import { useCombat } from "../../hooks/helpers/useCombat";
+import { getRealmIdByPosition, getRealmNameById } from "../../utils/realms";
 
 const EXPLORATION_REWARD_RESOURCE_AMOUNT: number = 20;
 
-type ChooseActionPopupProps = {};
+type ChooseArmyActionPopupProps = {};
 
-export const ChooseActionPopup = ({}: ChooseActionPopupProps) => {
+export const ChooseArmyActionPopup = ({}: ChooseArmyActionPopupProps) => {
   const {
     setup: {
-      components: { TickMove, ArrivalTime, Weight, Quantity, Capacity, EntityOwner, Position, Health },
+      components: { TickMove, ArrivalTime, Weight, Quantity, Capacity, EntityOwner, Position, Health, Realm },
     },
   } = useDojo();
   const [playerOwnsSelectedEntity, setPlayerOwnsSelectedEntity] = useState(false);
   const [playerRaidersOnPosition, setPlayerRaidersOnPosition] = useState([{}]);
   const [selectedEntityIsDead, setSelectedEntityIsDead] = useState(true);
+  const [selectedEntityIsRealm, setSelectedEntityIsRealm] = useState(false);
+  const [selectedEntityRealmId, setSelectedEntityRealmId] = useState(0n);
   const [enemyRaidersOnPosition, setEnemyRaidersOnPosition] = useState([{}]);
 
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
-  const { getEntitiesCombatInfo, getOwnerRaidersOnPosition, getDefenceOnPosition } = useCombat();
+  const { getEntitiesCombatInfo, getOwnerRaidersOnPosition, getEntityWatchTowerId } = useCombat();
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
@@ -56,22 +59,37 @@ export const ChooseActionPopup = ({}: ChooseActionPopupProps) => {
       if (selectedEntity?.id) {
         let entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([selectedEntity.id])) || undefined;
         let realmEntityIdsFlat = realmEntityIds.map((realmEntityId) => realmEntityId.realmEntityId);
-        return realmEntityIdsFlat.includes(entityOwner?.entity_owner_id!) ? true : false;
+        if (
+          realmEntityIdsFlat.includes(entityOwner?.entity_owner_id!) ||
+          realmEntityIdsFlat.includes(selectedEntity.id)
+        ) {
+          return true;
+        }
       }
       return false;
     };
+
     if (!checkPlayerOwnsSelectedEntity()) {
       const selectedEntityPosition = getComponentValue(Position, getEntityIdFromKeys([selectedEntity!.id!]));
       let playerRaidersOnPosition = getOwnerRaidersOnPosition({
         x: selectedEntityPosition!.x!,
         y: selectedEntityPosition!.y,
       });
-      console.log({ agame: getEntitiesCombatInfo(playerRaidersOnPosition) });
       setPlayerOwnsSelectedEntity(false);
       setPlayerRaidersOnPosition(getEntitiesCombatInfo(playerRaidersOnPosition));
-      setEnemyRaidersOnPosition(getEntitiesCombatInfo([selectedEntity!.id]));
     } else {
       setPlayerOwnsSelectedEntity(true);
+    }
+
+    // check if selected entity is a realm
+    const realm = selectedEntity ? getComponentValue(Realm, getEntityIdFromKeys([selectedEntity.id])) : undefined;
+    if (realm?.realm_id) {
+      setSelectedEntityIsRealm(true);
+      setSelectedEntityRealmId(realm!.realm_id!);
+      setEnemyRaidersOnPosition([]);
+    } else {
+      setSelectedEntityIsRealm(false);
+      setEnemyRaidersOnPosition(getEntitiesCombatInfo([selectedEntity!.id]));
     }
 
     const entityHealth = getComponentValue(Health, getEntityIdFromKeys([selectedEntity?.id!]));
@@ -139,64 +157,90 @@ export const ChooseActionPopup = ({}: ChooseActionPopupProps) => {
       )}
 
       {!isAttackMode && (
-        <SecondaryPopup className={"absolute !left-1/2 !top-[70px]"} name="explore">
-          <SecondaryPopup.Head onClose={onClose}>
-            <div className="flex items-center space-x-1">
-              <div className="mr-0.5">{getTitle()}</div>
-            </div>
-          </SecondaryPopup.Head>
-          <SecondaryPopup.Body width={"250px"} height={isExploreMode ? "280px" : "80px"}>
-            {/* <div className="flex flex-col items-center mr-2">
+        <>
+          <SecondaryPopup className={"absolute !left-1/2 !top-[70px]"} name="explore">
+            <SecondaryPopup.Head onClose={onClose}>
+              <div className="flex items-center space-x-1">
+                <div className="mr-0.5">{getTitle()}</div>
+              </div>
+            </SecondaryPopup.Head>
+            <SecondaryPopup.Body width={"250px"} height={isExploreMode ? "280px" : "80px"}>
+              {/* <div className="flex flex-col items-center mr-2">
           <div className="text-gold">{getHeadline()}</div>
         </div> */}
-            {isTravelMode && <TravelPopup />}
-            {isExploreMode && <ExploreMapPopup />}
+              {isTravelMode && <TravelPopup />}
+              {isExploreMode && <ExploreMapPopup />}
 
-            {playerOwnsSelectedEntity && !isTravelMode && !isExploreMode && !isAttackMode && (
-              <div className="flex w-full items-center justify-center h-full mb-2">
-                <div className="flex mt-1 w-[80%] items-center justify-between">
-                  <Button variant="primary" size="md" onClick={onTravel} disabled={isTraveling} className="">
-                    Travel
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="md"
-                    disabled={isTraveling || !canCarryNewReward}
-                    onClick={onExplore}
-                    className=""
-                  >
-                    Explore
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {!playerOwnsSelectedEntity && !isTravelMode && !isExploreMode && !isAttackMode && (
-              <>
-                {playerRaidersOnPosition.length == 0 && (
-                  <div className="text-xxs text-order-giants/70 mb-3">
-                    You need to bring your army to the enemy army's position before you can attack or steal
-                  </div>
-                )}
+              {!selectedEntityIsRealm && playerOwnsSelectedEntity && !isTravelMode && !isExploreMode && (
                 <div className="flex w-full items-center justify-center h-full mb-2">
-                  <div className="flex mt-1 items-center justify-between">
+                  <div className="flex mt-1 w-[80%] items-center justify-between">
+                    <Button variant="primary" size="md" onClick={onTravel} disabled={isTraveling} className="">
+                      Travel
+                    </Button>
                     <Button
                       variant="primary"
                       size="md"
-                      aria-label="you can only bleh"
-                      disabled={playerRaidersOnPosition.length == 0}
-                      onClick={onAttack}
+                      disabled={isTraveling || !canCarryNewReward}
+                      onClick={onExplore}
                       className=""
                     >
-                      {selectedEntityIsDead ? "Steal from " : "Attack "}
-                      Army (#{selectedEntity?.id?.toString()})
+                      Explore
                     </Button>
                   </div>
                 </div>
-              </>
-            )}
-          </SecondaryPopup.Body>
-        </SecondaryPopup>
+              )}
+
+              {!playerOwnsSelectedEntity && !selectedEntityIsRealm && !isTravelMode && !isExploreMode && (
+                <>
+                  {playerRaidersOnPosition.length == 0 && (
+                    <div className="text-xxs text-order-giants/70 mb-3">
+                      You need to bring your army to the enemy army's position before you can attack or steal
+                    </div>
+                  )}
+                  <div className="flex w-full items-center justify-center h-full mb-2">
+                    <div className="flex mt-1 items-center justify-between">
+                      <Button
+                        variant="primary"
+                        size="md"
+                        aria-label="you can only bleh"
+                        disabled={playerRaidersOnPosition.length == 0}
+                        onClick={onAttack}
+                        className=""
+                      >
+                        {selectedEntityIsDead ? "Steal from " : "Attack "}
+                        Army (#{selectedEntity?.id?.toString()})
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {!playerOwnsSelectedEntity && selectedEntityIsRealm && !isTravelMode && !isExploreMode && (
+                <>
+                  {playerRaidersOnPosition.length == 0 && (
+                    <div className="text-xxs text-order-giants/70 mb-3">
+                      You need to bring your army the realm's position before you can attack
+                    </div>
+                  )}
+                  <div className="flex w-full items-center justify-center h-full mb-2">
+                    <div className="flex mt-1 items-center justify-between">
+                      <Button
+                        variant="primary"
+                        size="md"
+                        aria-label="you can only bleh"
+                        disabled={playerRaidersOnPosition.length == 0}
+                        onClick={onAttack}
+                        className=""
+                      >
+                        Attack {getRealmNameById(selectedEntityRealmId)}
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </SecondaryPopup.Body>
+          </SecondaryPopup>
+        </>
       )}
     </>
   );

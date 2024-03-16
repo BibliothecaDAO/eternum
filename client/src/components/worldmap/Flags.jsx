@@ -50,6 +50,7 @@ export function Flags(props) {
   const setCameraTarget = useUIStore((state) => state.setCameraTarget);
   const showRealmsFlags = useUIStore((state) => state.showRealmsFlags);
   const setShowRealmsFlags = useUIStore((state) => state.setShowRealmsFlags);
+  const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
 
   const [tooltipPosition, setTooltipPosition] = useState([0, 0, 0]);
   const [hoveredRealm, setHoveredRealm] = useState(null);
@@ -185,6 +186,11 @@ export function Flags(props) {
   const clickHandler = (e, index) => {
     e.stopPropagation();
     if (e.intersections.length > 0) {
+      setSelectedEntity({
+        id: hoveredRealm.entity_id,
+        position: hoveredRealm.position,
+      });
+
       const instanceId = e.intersections[0].instanceId;
       const point = e.intersections[0].point;
       // updateFlagScale(instanceId, 2);

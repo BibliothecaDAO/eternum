@@ -78,12 +78,14 @@ export function useCombat() {
     let entityIds = useEntityQuery([
       Has(Attack),
       HasValue(Owner, { address: owner }),
+      NotValue(Movable, { sec_per_km: 0 }), // exclude town watch
       NotValue(Health, { value: 0n }),
       NotValue(Movable, { sec_per_km: 0 }),
     ]);
 
     const deadEntitiesWithResources = useEntityQuery([
       Has(Attack),
+      NotValue(Movable, { sec_per_km: 0 }), // exclude town watch
       HasValue(Owner, { address: owner }),
       HasValue(Health, { value: 0n }),
       NotValue(Inventory, { items_count: 0n }),
@@ -125,6 +127,7 @@ export function useCombat() {
       Has(Attack),
       Has(Movable),
       NotValue(Health, { value: 0n }),
+      NotValue(Movable, { sec_per_km: 0 }), // exclude town watch
       NotValue(Owner, { address: owner }),
     ]);
 
@@ -132,6 +135,7 @@ export function useCombat() {
     const deadEntitiesWithResources = useEntityQuery([
       Has(Attack),
       Has(Movable),
+      NotValue(Movable, { sec_per_km: 0 }), // exclude town watch
       HasValue(Health, { value: 0n }),
       NotValue(Inventory, { items_count: 0n }),
       NotValue(Owner, { address: owner }),

@@ -23,6 +23,9 @@ import useUIStore from "../../../../../hooks/store/useUIStore";
 
 type AttackRaidsPopupProps = {
   selectedRaider: CombatInfo;
+  // enemy raider is only expected to be set
+  // when the attacked entity is a raider else
+  // we assume it is a realm or hyperstructure
   enemyRaider?: CombatInfo;
   onClose: () => void;
 };
@@ -68,7 +71,7 @@ export const AttackRaidsPopup = ({ selectedRaider, enemyRaider, onClose }: Attac
 
   const defendingRealmName = useMemo(() => {
     if (enemyRaider) {
-      return getRealmNameById(enemyRaider.originRealmId);
+      return getRealmNameById(enemyRaider!.originRealmId!);
     }
     return defendingRealmId ? getRealmNameById(defendingRealmId) : undefined;
   }, [defendingRealmId]);
@@ -77,7 +80,7 @@ export const AttackRaidsPopup = ({ selectedRaider, enemyRaider, onClose }: Attac
     if (enemyRaider) {
       return `Attacking Raider #${enemyRaider.entityId} from ${defendingRealmName}`;
     } else if (defendingRealmId) {
-      return `Attacking ${defendingRealmName} (#${defendingRealmId?.toString()})`;
+      return `Attacking ${defendingRealmName}`;
     } else {
       return "Attacking Hyperstructure";
     }
@@ -179,7 +182,7 @@ const AttackResultPanel = ({
               <circle cx="1" cy="1" r="1" transform="matrix(-1 0 0 1 127 5)" fill="#1B1B1B" />
             </svg>
           </div>
-          <div className="italic text-light-pink text-xxs my-2">Watch tower was damaged by your raid group!</div>
+          <div className="italic text-light-pink text-xxs my-2">Enemy was damaged by your raid group!</div>
           <img
             src={`/images/lost_raid.png`}
             className="object-cover  border border-gold w-full h-full rounded-[10px]"
@@ -187,9 +190,9 @@ const AttackResultPanel = ({
           <div className="flex flex-col mt-2 w-full">
             <div className="text-light-pink text-xs">{"Damage dealt:"}</div>
             <div className="p-2 mb-2 rounded flex bg-black/20 text-white text-xxs space-x-2">
-              <div>{"Watchtower Old Health:"}</div>
+              <div>{"Old Health:"}</div>
               <div className="text-order-brilliance">{defence.health}</div>
-              <div>{"Watchtower New Health:"}</div>
+              <div>{"New Health:"}</div>
               <div className="text-order-giants">{newWatchTowerHealth.value.toString()}</div>
             </div>
           </div>
@@ -551,8 +554,6 @@ const SelectRaidersPanel = ({
   const onAttack = async () => {
     // set is loading
     setLoading(true);
-
-    console.log({ defence });
     // call contract
     if (defence?.entityId) {
       await attack({
@@ -569,8 +570,6 @@ const SelectRaidersPanel = ({
 
   const onSteal = async () => {
     // only 1 raider can steal at a time
-    console.log({ selectedRaiders }, "ahh");
-    console.log(!selectedRaiders[0]?.entityId, !selectedRaiders[0]?.locationEntityId);
 
     if (!selectedRaiders[0]?.entityId) return;
 
@@ -580,7 +579,7 @@ const SelectRaidersPanel = ({
     await steal({
       signer: account,
       attacker_id: selectedRaiders[0].entityId,
-      target_id: defence.entityId,
+      target_id: defence!.entityId,
     });
     // when contract finished setloading false
     setLoading(false);
@@ -602,7 +601,6 @@ const SelectRaidersPanel = ({
     }
     if (defence?.entityId) {
       let resources = getResourcesFromInventory(defence.entityId).resources;
-      console.log({ resources });
       for (const resource of resources) {
         if (resource.amount > 0) {
           hasResources = true;
@@ -613,24 +611,6 @@ const SelectRaidersPanel = ({
 
     return [resourceBalances, hasResources];
   }, []);
-  // <div className="flex items-center justify-between mt-[8px] text-xxs">
-  //   {inventoryResources && (
-  //     <div className="flex justify-center items-center space-x-1 flex-wrap">
-  //       {inventoryResources.resources.map(
-  //         (resource) =>
-  //           resource && (
-  //             <ResourceCost
-  //               key={resource.resourceId}
-  //               type="vertical"
-  //               color="text-order-brilliance"
-  //               resourceId={resource.resourceId}
-  //               amount={divideByPrecision(Number(resource.amount))}
-  //             />
-  //           ),
-  //       )}
-  //     </div>
-  //   )}
-  // </div>;
   return (
     <>
       <div className="flex flex-col items-center w-full">

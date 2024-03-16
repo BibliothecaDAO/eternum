@@ -305,6 +305,11 @@
         "kind": "key"
       },
       {
+        "name": "target_realm_entity_id",
+        "type": "core::integer::u128",
+        "kind": "key"
+      },
+      {
         "name": "target_entity_id",
         "type": "core::integer::u128",
         "kind": "key"

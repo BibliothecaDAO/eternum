@@ -61,6 +61,8 @@ use eternum::alias::ID;
         #[key]
         attacker_realm_entity_id: u128,
         #[key]
+        target_realm_entity_id: u128,
+        #[key]
         target_entity_id: u128,
         attacking_entity_ids: Span<u128>,
         stolen_resources: Span<(u8, u128)>,
@@ -752,6 +754,7 @@ use eternum::alias::ID;
                 = get!(world, *attacker_ids.at(0), EntityOwner).entity_owner_id;
             emit!(world, CombatOutcome { 
                     attacker_realm_entity_id,
+                    target_realm_entity_id,
                     attacking_entity_ids: attacker_ids,
                     target_entity_id,
                     stolen_resources: array![].span(),
@@ -891,6 +894,7 @@ use eternum::alias::ID;
                     = get!(world, attacker_id, EntityOwner).entity_owner_id;
                 emit!(world, CombatOutcome { 
                         attacker_realm_entity_id,
+                        target_realm_entity_id,
                         attacking_entity_ids: array![attacker_id].span(),
                         target_entity_id,
                         stolen_resources: stolen_resources,
@@ -920,6 +924,7 @@ use eternum::alias::ID;
                     = get!(world, attacker_id, EntityOwner).entity_owner_id;
                 emit!(world, CombatOutcome { 
                         attacker_realm_entity_id,
+                        target_realm_entity_id,    
                         attacking_entity_ids: array![attacker_id].span(),
                         target_entity_id,
                         stolen_resources: array![].span(),
@@ -931,14 +936,16 @@ use eternum::alias::ID;
             }    
 
 
-            // send attacker back to home realm
-            let attacker_movable = get!(world, attacker_id, Movable);
-            let attacker_home_position 
-                = get!(world, attacker_realm_entity_id, Position);
-            InternalTravelSystemsImpl::travel(
-                world, attacker_id, attacker_movable, 
-                attacker_position.into(), attacker_home_position.into()
-            );
+            // send attacker back to home realm if alive
+            if attacker_health.value > 0 {
+                let attacker_movable = get!(world, attacker_id, Movable);
+                let attacker_home_position 
+                    = get!(world, attacker_realm_entity_id, Position);
+                InternalTravelSystemsImpl::travel(
+                    world, attacker_id, attacker_movable, 
+                    attacker_position.into(), attacker_home_position.into()
+                );
+            }
         }
     }
 
