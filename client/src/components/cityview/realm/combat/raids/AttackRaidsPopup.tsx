@@ -98,6 +98,7 @@ export const AttackRaidsPopup = ({ selectedRaider, enemyRaider, onClose }: Attac
           {step == 1 && (
             <SelectRaidersPanel
               defence={defence}
+              isTargetRealm={enemyRaider === undefined}
               setStep={setStep}
               onClose={onClose}
               attackingRaiders={attackingRaiders}
@@ -464,6 +465,7 @@ const StealResultPanel = ({
 
 const SelectRaidersPanel = ({
   defence,
+  isTargetRealm,
   attackingRaiders,
   selectedRaiders,
   setSelectedRaiders,
@@ -471,6 +473,7 @@ const SelectRaidersPanel = ({
   setStep,
 }: {
   defence: CombatInfo | undefined;
+  isTargetRealm: boolean;
   attackingRaiders: CombatInfo[];
   selectedRaiders: CombatInfo[];
   setSelectedRaiders: (raiders: CombatInfo[]) => void;
@@ -484,8 +487,6 @@ const SelectRaidersPanel = ({
     },
   } = useDojo();
 
-  const { getResourcesFromInventory } = useResources();
-
   if (attackingRaiders.length === 0) return null;
 
   const [loading, setLoading] = useState(false);
@@ -495,7 +496,7 @@ const SelectRaidersPanel = ({
 
   const { getEntityLevel, getRealmLevelBonus } = useLevel();
   const { getConqueredHyperstructures } = useHyperstructure();
-  const { getBalance } = useResources();
+  const { getBalance, getResourcesFromInventory } = useResources();
 
   const [attackerTotalAttack, attackerTotalHealth] = useMemo(() => {
     // sum attack of the list
@@ -590,25 +591,32 @@ const SelectRaidersPanel = ({
   const [resoureBalances, hasResources] = useMemo(() => {
     let resourceBalances: { resourceId: number; balance: number }[] = [];
     let hasResources = false;
-    if (defence?.locationEntityId) {
-      for (const resource of resources) {
-        const balance = getBalance(defence?.locationEntityId, resource.id);
-        if (balance && balance.balance > 0) {
-          hasResources = true;
-          resourceBalances.push({ resourceId: balance.resource_type, balance: balance.balance });
+    if (isTargetRealm) {
+      if (defence?.locationEntityId) {
+        for (const resource of resources) {
+          const balance = getBalance(defence?.locationEntityId, resource.id);
+          if (balance && balance.balance > 0) {
+            hasResources = true;
+            resourceBalances.push({ resourceId: balance.resource_type, balance: balance.balance });
+          }
         }
       }
-    }
-    if (defence?.entityId) {
-      let resources = getResourcesFromInventory(defence.entityId).resources;
-      for (const resource of resources) {
-        if (resource.amount > 0) {
-          hasResources = true;
-          resourceBalances.push({ resourceId: resource.resourceId, balance: resource.amount });
+      if (defence?.entityId) {
+        let resources = getResourcesFromInventory(defence.entityId).resources;
+        for (const resource of resources) {
+          if (resource.amount > 0) {
+            hasResources = true;
+            resourceBalances.push({ resourceId: resource.resourceId, balance: resource.amount });
+          }
         }
       }
+    } else {
+      const inventoryResources = getResourcesFromInventory(defence!.entityId);
+      resourceBalances = inventoryResources.resources.map(({ amount, resourceId }) => {
+        return { balance: amount, resourceId };
+      });
+      if (resourceBalances.length > 0) hasResources = true;
     }
-
     return [resourceBalances, hasResources];
   }, []);
   return (
@@ -620,6 +628,7 @@ const SelectRaidersPanel = ({
               conqueredHyperstructures={conqueredHyperstructures}
               levelBonus={defenderLevelBonus}
               watchTower={defence}
+              isWatchTower={isTargetRealm}
             ></Defence>
           ) : (
             <div className="text-xxs text-gold">No Defences</div>
