@@ -31,7 +31,9 @@ export const Defence = ({
       )}
       {!isWatchTower && <img src={`/images/units/troop.png`} className="object-cover rounded-md w-[107px]" />}
       <div className="flex flex-col w-full min-w-[244px] h-full ml-2">
-        <div className="font-bold text-white text-xs mb-1">{`${isWatchTower ? "Defender" : "Enemy Raiders"}`}</div>
+        <div className="font-bold text-white text-xs mb-1">{`${
+          isWatchTower ? "Realm Watch Tower" : "Enemy Raiders"
+        }`}</div>
         <div className="flex text-white items-end mb-2">
           <div className="flex flex-col items-start">
             <div className="flex flex-row text-xxs justify-center">

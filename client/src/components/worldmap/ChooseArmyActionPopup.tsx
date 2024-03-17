@@ -156,7 +156,7 @@ export const ChooseArmyActionPopup = ({}: ChooseArmyActionPopupProps) => {
         />
       )}
 
-      {!isAttackMode && (
+      {!isAttackMode && !(selectedEntityIsRealm && playerOwnsSelectedEntity) && (
         <>
           <SecondaryPopup className={"absolute !left-1/2 !top-[70px]"} name="explore">
             <SecondaryPopup.Head onClose={onClose}>
@@ -193,9 +193,10 @@ export const ChooseArmyActionPopup = ({}: ChooseArmyActionPopupProps) => {
               {!playerOwnsSelectedEntity && !selectedEntityIsRealm && !isTravelMode && !isExploreMode && (
                 <>
                   {playerRaidersOnPosition.length == 0 && (
-                    <div className="text-xxs text-order-giants/70 mb-3">
-                      You need to bring your army to the enemy army's position before you can attack or steal
-                    </div>
+                    <div className="text-xxs text-order-giants/70 mb-1">Your army must be on same position</div>
+                  )}
+                  {isTraveling && (
+                    <div className="text-xxs text-order-giants/70 mb-1">The enemy raider is still traveling</div>
                   )}
                   <div className="flex w-full items-center justify-center h-full mb-2">
                     <div className="flex mt-1 items-center justify-between">
@@ -203,12 +204,12 @@ export const ChooseArmyActionPopup = ({}: ChooseArmyActionPopupProps) => {
                         variant="primary"
                         size="md"
                         aria-label="you can only bleh"
-                        disabled={playerRaidersOnPosition.length == 0}
+                        disabled={playerRaidersOnPosition.length == 0 || isTraveling}
                         onClick={onAttack}
                         className=""
                       >
                         {selectedEntityIsDead ? "Steal from " : "Attack "}
-                        Army (#{selectedEntity?.id?.toString()})
+                        Enemy Raider (#{selectedEntity?.id?.toString()})
                       </Button>
                     </div>
                   </div>
@@ -218,9 +219,7 @@ export const ChooseArmyActionPopup = ({}: ChooseArmyActionPopupProps) => {
               {!playerOwnsSelectedEntity && selectedEntityIsRealm && !isTravelMode && !isExploreMode && (
                 <>
                   {playerRaidersOnPosition.length == 0 && (
-                    <div className="text-xxs text-order-giants/70 mb-3">
-                      You need to bring your army the realm's position before you can attack
-                    </div>
+                    <div className="text-xxs text-order-giants/70 mb-3">Your army must be on same position</div>
                   )}
                   <div className="flex w-full items-center justify-center h-full mb-2">
                     <div className="flex mt-1 items-center justify-between">
@@ -228,7 +227,7 @@ export const ChooseArmyActionPopup = ({}: ChooseArmyActionPopupProps) => {
                         variant="primary"
                         size="md"
                         aria-label="you can only bleh"
-                        disabled={playerRaidersOnPosition.length == 0}
+                        disabled={playerRaidersOnPosition.length == 0 || isTraveling}
                         onClick={onAttack}
                         className=""
                       >
