@@ -591,14 +591,20 @@ use eternum::alias::ID;
 
             let mut target_health = get!(world, target_entity_id, Health);
             assert(target_health.value > 0, 'target is dead');
-
+            
             let ts = starknet::get_block_timestamp();
+            let target_arrival = get!(world, target_entity_id, ArrivalTime);
+            assert(
+                target_arrival.arrives_at <= ts.into(),
+                    'target is travelling'
+            );
 
             let mut index = 0;
             let mut attackers_total_attack = 0;
             let mut attackers_total_defence = 0;
             let mut attackers_total_health = 0;
             let target_position = get!(world, target_entity_id, Position);
+            
             loop {
                 if index == attacker_ids.len() {
                     break;
@@ -790,6 +796,13 @@ use eternum::alias::ID;
             assert(
                 attacker_arrival.arrives_at <= ts.into(),
                     'attacker is travelling'
+            );
+            
+
+            let target_arrival = get!(world, target_entity_id, ArrivalTime);
+            assert(
+                target_arrival.arrives_at <= ts.into(),
+                    'target is travelling'
             );
             
             let attacker_position = get!(world, attacker_id, Position);
