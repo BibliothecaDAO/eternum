@@ -19,8 +19,10 @@ import { useRealm } from "../../../hooks/helpers/useRealm";
 import { useResources } from "../../../hooks/helpers/useResources";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import { TIME_PER_TICK } from "../../network/EpochCountdown";
+import Button from "../../../elements/Button";
 
 export const ENEMY_ARMY_MODEL_DEFAULT_COLOR: string = "red";
+export const ENEMY_ARMY_MODEL_DEAD_COLOR: string = "black";
 export const ENEMY_ARMY_MODEL_HOVER_COLOR: string = "orange";
 export const ENEMY_ARMY_MODEL_SCALE: number = 2;
 
@@ -28,10 +30,11 @@ export const EnemyArmies = () => {
   const {
     account: { account },
     setup: {
-      components: { Position },
+      components: { Position, Health },
     },
   } = useDojo();
 
+  const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
   const animationPaths = useUIStore((state) => state.animationPaths);
   const positionOffset: Record<string, number> = {};
 
@@ -51,11 +54,18 @@ export const EnemyArmies = () => {
     setHoveredArmy(undefined);
   };
 
+  // clickable
+  const onClick = (id: bigint, position: Position) => {
+    setSelectedEntity({ id, position });
+  };
+
   const positions = useMemo(
     () =>
       stationaryEnemyArmies
         .map((armyId) => {
           const position = getComponentValue(Position, getEntityIdFromKeys([armyId]));
+          const health = getComponentValue(Health, getEntityIdFromKeys([armyId]));
+          const isDead = health?.value ? false : true;
           // if animated army dont display
           const isTraveling = animationPaths.find((path) => path.id === position?.entity_id);
           if (!position || isTraveling) return;
@@ -64,15 +74,16 @@ export const EnemyArmies = () => {
             contractPos: { x: position.x, y: position.y },
             uiPos: { ...getUIPositionFromColRow(position.x, position.y), z: z },
             id: position.entity_id,
+            isDead,
           };
         })
-        .filter(Boolean) as { contractPos: Position; uiPos: UIPosition; id: bigint }[],
+        .filter(Boolean) as { contractPos: Position; uiPos: UIPosition; id: bigint; isDead: Boolean }[],
     [stationaryEnemyArmies],
   );
 
   return (
     <group>
-      {positions.map(({ contractPos, uiPos, id }, i) => {
+      {positions.map(({ contractPos, uiPos, id, isDead }, i) => {
         let offset = 0;
         if (positionOffset[JSON.stringify(uiPos)]) {
           positionOffset[JSON.stringify(uiPos)] += 1;
@@ -90,8 +101,9 @@ export const EnemyArmies = () => {
             onPointerOut={onUnhover}
             key={i}
             scale={ENEMY_ARMY_MODEL_SCALE}
-            position={[uiPos.x + offset, uiPos.z, -uiPos.y]}
-            defaultColor={ENEMY_ARMY_MODEL_DEFAULT_COLOR}
+            onClick={() => onClick(id, contractPos)}
+            position={[uiPos.x + offset - 0.7, uiPos.z, -uiPos.y]}
+            defaultColor={!isDead ? ENEMY_ARMY_MODEL_DEFAULT_COLOR : ENEMY_ARMY_MODEL_DEAD_COLOR}
             hoverColor={ENEMY_ARMY_MODEL_HOVER_COLOR}
           ></ArmyModel>
         );
@@ -273,15 +285,15 @@ const RaiderInfo = ({
             <div className="text-order-brilliance">{health && health.toLocaleString()}</div>&nbsp;/ {10 * quantity} HP
           </div>
         </div>
-        {health && (
-          <div className="grid grid-cols-12 gap-0.5">
-            <ProgressBar
-              containerClassName="col-span-12 !bg-order-giants"
-              rounded
-              progress={(health / (10 * quantity)) * 100}
-            />
-          </div>
-        )}
+
+        <div className="grid grid-cols-12 gap-0.5">
+          <ProgressBar
+            containerClassName="col-span-12 !bg-order-giants"
+            rounded
+            progress={(health / (10 * quantity)) * 100}
+          />
+        </div>
+
         <div className="flex items-center justify-between mt-[8px] text-xxs">
           {inventoryResources && (
             <div className="flex justify-center items-center space-x-1 flex-wrap">

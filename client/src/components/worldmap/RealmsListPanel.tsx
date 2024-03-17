@@ -4,21 +4,19 @@ import { RealmsListComponent } from "./RealmsListComponent";
 import useUIStore from "../../hooks/store/useUIStore";
 import { RaidsPanel } from "../cityview/realm/combat/raids/RaidsPanel";
 import { useCombat } from "../../hooks/helpers/useCombat";
-import useRealmStore from "../../hooks/store/useRealmStore";
+import { useDojo } from "../../DojoContext";
 
 type RealmsListPanelProps = {};
 
 export const RealmsListPanel = ({}: RealmsListPanelProps) => {
+  const {
+    account: { account },
+  } = useDojo();
   const [selectedTab, setSelectedTab] = useState(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const { getRealmRaidersIds } = useCombat();
-  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
+  const { useOwnerRaiders } = useCombat();
 
-  const realmRaiders = useMemo(() => {
-    return realmEntityIds.flatMap((realmEntityId) => {
-      return getRealmRaidersIds(realmEntityId.realmEntityId);
-    });
-  }, [realmEntityIds]);
+  const ownerRaiders = useOwnerRaiders(BigInt(account.address));
 
   const tabs = useMemo(
     () => [
@@ -86,10 +84,10 @@ export const RealmsListPanel = ({}: RealmsListPanelProps) => {
             <div>My Raiders</div>
           </div>
         ),
-        component: <RaidsPanel raiderIds={realmRaiders} showCreateButton={false} />,
+        component: <RaidsPanel raiderIds={ownerRaiders} showCreateButton={false} />,
       },
     ],
-    [selectedTab],
+    [selectedTab, ownerRaiders],
   );
 
   return (

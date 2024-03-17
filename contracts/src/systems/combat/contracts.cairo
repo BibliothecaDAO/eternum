@@ -61,6 +61,8 @@ use eternum::alias::ID;
         #[key]
         attacker_realm_entity_id: u128,
         #[key]
+        target_realm_entity_id: u128,
+        #[key]
         target_entity_id: u128,
         attacking_entity_ids: Span<u128>,
         stolen_resources: Span<(u8, u128)>,
@@ -589,14 +591,20 @@ use eternum::alias::ID;
 
             let mut target_health = get!(world, target_entity_id, Health);
             assert(target_health.value > 0, 'target is dead');
-
+            
             let ts = starknet::get_block_timestamp();
+            let target_arrival = get!(world, target_entity_id, ArrivalTime);
+            assert(
+                target_arrival.arrives_at <= ts.into(),
+                    'target is travelling'
+            );
 
             let mut index = 0;
             let mut attackers_total_attack = 0;
             let mut attackers_total_defence = 0;
             let mut attackers_total_health = 0;
             let target_position = get!(world, target_entity_id, Position);
+            
             loop {
                 if index == attacker_ids.len() {
                     break;
@@ -752,6 +760,7 @@ use eternum::alias::ID;
                 = get!(world, *attacker_ids.at(0), EntityOwner).entity_owner_id;
             emit!(world, CombatOutcome { 
                     attacker_realm_entity_id,
+                    target_realm_entity_id,
                     attacking_entity_ids: attacker_ids,
                     target_entity_id,
                     stolen_resources: array![].span(),
@@ -787,6 +796,13 @@ use eternum::alias::ID;
             assert(
                 attacker_arrival.arrives_at <= ts.into(),
                     'attacker is travelling'
+            );
+            
+
+            let target_arrival = get!(world, target_entity_id, ArrivalTime);
+            assert(
+                target_arrival.arrives_at <= ts.into(),
+                    'target is travelling'
             );
             
             let attacker_position = get!(world, attacker_id, Position);
@@ -891,6 +907,7 @@ use eternum::alias::ID;
                     = get!(world, attacker_id, EntityOwner).entity_owner_id;
                 emit!(world, CombatOutcome { 
                         attacker_realm_entity_id,
+                        target_realm_entity_id,
                         attacking_entity_ids: array![attacker_id].span(),
                         target_entity_id,
                         stolen_resources: stolen_resources,
@@ -920,6 +937,7 @@ use eternum::alias::ID;
                     = get!(world, attacker_id, EntityOwner).entity_owner_id;
                 emit!(world, CombatOutcome { 
                         attacker_realm_entity_id,
+                        target_realm_entity_id,    
                         attacking_entity_ids: array![attacker_id].span(),
                         target_entity_id,
                         stolen_resources: array![].span(),
@@ -931,14 +949,16 @@ use eternum::alias::ID;
             }    
 
 
-            // send attacker back to home realm
-            let attacker_movable = get!(world, attacker_id, Movable);
-            let attacker_home_position 
-                = get!(world, attacker_realm_entity_id, Position);
-            InternalTravelSystemsImpl::travel(
-                world, attacker_id, attacker_movable, 
-                attacker_position.into(), attacker_home_position.into()
-            );
+            // send attacker back to home realm if alive
+            if attacker_health.value > 0 {
+                let attacker_movable = get!(world, attacker_id, Movable);
+                let attacker_home_position 
+                    = get!(world, attacker_realm_entity_id, Position);
+                InternalTravelSystemsImpl::travel(
+                    world, attacker_id, attacker_movable, 
+                    attacker_position.into(), attacker_home_position.into()
+                );
+            }
         }
     }
 

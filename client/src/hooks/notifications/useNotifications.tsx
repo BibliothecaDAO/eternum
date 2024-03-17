@@ -53,7 +53,7 @@ export const useNotifications = () => {
   // }, [hyperstructureId]);
 
   const { getEntityLevel, getHyperstructureLevelBonus, getRealmLevelBonus } = useLevel();
-  const { getResourcesFromInventory } = useResources();
+  const { getResourcesFromInventory, getResourcesFromResourceChestIds } = useResources();
   const { getEntitiesCombatInfo } = useCombat();
 
   const { notifications, addUniqueNotifications } = useNotificationsStore();
@@ -184,7 +184,11 @@ export const useNotifications = () => {
         const observable = await createCombatEvents(realmEntityId);
         const subscription = observable.subscribe((event) => {
           if (event) {
-            const newNotification = createCombatNotification(parseCombatEvent(event));
+            let parsedEvent = parseCombatEvent(event);
+            parsedEvent.stolenResources = parsedEvent.stolenResources.concat(
+              getResourcesFromResourceChestIds(parsedEvent.stolenChestsIds),
+            );
+            const newNotification = createCombatNotification(parsedEvent);
             addUniqueNotifications([newNotification]);
           }
         });
