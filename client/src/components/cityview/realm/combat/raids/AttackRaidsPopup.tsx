@@ -26,7 +26,7 @@ type AttackRaidsPopupProps = {
   // enemy raider is only expected to be set
   // when the attacked entity is a raider else
   // we assume it is a realm or hyperstructure
-  enemyRaider?: CombatInfo;
+  enemyRaider?: CombatInfo | undefined;
   onClose: () => void;
 };
 

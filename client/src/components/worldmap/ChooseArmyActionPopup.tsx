@@ -15,7 +15,7 @@ import { ExploreMapPopup } from "./explore/ExploreHexPopup";
 import useBlockchainStore from "../../hooks/store/useBlockchainStore";
 import { TIME_PER_TICK } from "../network/EpochCountdown";
 import { getTotalResourceWeight } from "../cityview/realm/trade/utils";
-import { Resource, ResourcesIds, WEIGHTS } from "@bibliothecadao/eternum";
+import { CombatInfo, Resource, ResourcesIds, WEIGHTS } from "@bibliothecadao/eternum";
 import useRealmStore from "../../hooks/store/useRealmStore";
 import { useEffect, useState } from "react";
 import { AttackRaidsPopup } from "../cityview/realm/combat/raids/AttackRaidsPopup";
@@ -33,11 +33,11 @@ export const ChooseArmyActionPopup = ({}: ChooseArmyActionPopupProps) => {
     },
   } = useDojo();
   const [playerOwnsSelectedEntity, setPlayerOwnsSelectedEntity] = useState(false);
-  const [playerRaidersOnPosition, setPlayerRaidersOnPosition] = useState([{}]);
+  const [playerRaidersOnPosition, setPlayerRaidersOnPosition] = useState<CombatInfo[]>([]);
   const [selectedEntityIsDead, setSelectedEntityIsDead] = useState(true);
   const [selectedEntityIsRealm, setSelectedEntityIsRealm] = useState(false);
   const [selectedEntityRealmId, setSelectedEntityRealmId] = useState(0n);
-  const [enemyRaidersOnPosition, setEnemyRaidersOnPosition] = useState([{}]);
+  const [enemyRaidersOnPosition, setEnemyRaidersOnPosition] = useState<CombatInfo[]>([]);
 
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
   const { getEntitiesCombatInfo, getOwnerRaidersOnPosition, getEntityWatchTowerId } = useCombat();
