@@ -19,7 +19,6 @@ export const TravelPopup = ({}: TravelPopupProps) => {
   const setIsTravelMode = useUIStore((state) => state.setIsTravelMode);
   const travelingEntity = useUIStore((state) => state.selectedEntity);
   const setTravelingEntity = useUIStore((state) => state.setSelectedEntity);
-  const setAnimationPath = useUIStore((state) => state.setAnimationPath);
   const selectedPath = useUIStore((state) => state.selectedPath);
   const setSelectedPath = useUIStore((state) => state.setSelectedPath);
 
@@ -51,7 +50,6 @@ export const TravelPopup = ({}: TravelPopupProps) => {
       travelling_entity_id: travelingEntity.id,
       directions,
     });
-    selectedPath && setAnimationPath({ id: selectedPath.id, path: selectedPath.path });
     // reset the state
     setTravelingEntity(undefined);
     setSelectedPath(undefined);

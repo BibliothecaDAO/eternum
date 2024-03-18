@@ -77,6 +77,35 @@ export function useResources() {
     };
   };
 
+  const getResourcesFromResourceChestIds = (entityIds: bigint[]): Resource[] => {
+    let resources: Record<number, number> = {};
+
+    // todo: switch back to items_count when working
+    for (let i = 0; i < entityIds.length; i++) {
+      let resourcesChest = getComponentValue(ResourceChest, getEntityIdFromKeys([entityIds[i]]));
+
+      if (resourcesChest) {
+        let { resources_count } = resourcesChest;
+        for (let i = 0; i < resources_count; i++) {
+          let entityId = getEntityIdFromKeys([entityIds[i], BigInt(i)]);
+          const resource = getComponentValue(DetachedResource, entityId);
+          if (resource) {
+            resources[resource.resource_type] =
+              (resources[resource.resource_type] || 0) + Number(resource.resource_amount);
+          }
+        }
+      }
+      if (!resourcesChest) {
+        break;
+      }
+    }
+
+    return Object.keys(resources).map((resourceId: string) => ({
+      resourceId: Number(resourceId),
+      amount: resources[Number(resourceId)],
+    }));
+  };
+
   const getResourceChestIdFromInventoryIndex = (entityId: bigint, index: number): bigint | undefined => {
     let inventory = getComponentValue(Inventory, getEntityIdFromKeys([BigInt(entityId)]));
     let foreignKey = inventory
@@ -207,6 +236,7 @@ export function useResources() {
   return {
     getRealmsWithSpecificResource,
     getResourcesFromInventory,
+    getResourcesFromResourceChestIds,
     offloadChests,
     getFoodResources,
     getResourceChestIdFromInventoryIndex,

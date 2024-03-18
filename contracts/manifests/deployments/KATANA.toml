@@ -52,7 +52,7 @@ name = "eternum::systems::transport::contracts::road_systems::road_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x1054af867855ba7dd1c2351c59cf0543e02faceeb554fc7b95160eeea7a355b"
-class_hash = "0xa0fdeb0a797a85de9b72007552a89c6c2c01712959c3061b6208f94708382"
+class_hash = "0x2b58a8de68df822d696fce344ef1efeb0ab6f1d9ef6fa4f49a15f9d75bb5c8b"
 abi = "abis/deployments/KATANA/contracts/map_systems.json"
 reads = []
 writes = []
@@ -62,7 +62,7 @@ name = "eternum::systems::map::contracts::map_systems"
 [[contracts]]
 kind = "DojoContract"
 address = "0x3d166d0646d4dac27c1cdbed6289c386ba3ca616925438fc1334ba98241eb42"
-class_hash = "0x458b477b3b29e46652c9fed7d2c6d36eac2cadf155b051ba374d13e9cf92a01"
+class_hash = "0x1bf3185cf3c04c927ad2fd47126527d0b29b1b5d2c592d9690879f202f00052"
 abi = "abis/deployments/KATANA/contracts/combat_systems.json"
 reads = []
 writes = []

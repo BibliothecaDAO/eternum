@@ -79,6 +79,7 @@ export const DefencePanel = ({}: DefencePanelProps) => {
             conqueredHyperstructures={conqueredHyperstructures}
             setShowHeal={setShowHeal}
             watchTower={watchTower}
+            isWatchTower={true}
           />
         )}
       </div>

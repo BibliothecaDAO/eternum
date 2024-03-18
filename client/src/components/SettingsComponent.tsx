@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ReactComponent as Crown } from "../assets/icons/common/crown-circle-outline.svg";
 import { ReactComponent as Settings } from "../assets/icons/common/settings.svg";
 import { ReactComponent as Muted } from "../assets/icons/common/muted.svg";
 import { ReactComponent as Unmuted } from "../assets/icons/common/unmuted.svg";
 import { ReactComponent as DojoMark } from "../assets/icons/dojo-mark-full-dark.svg";
 import { ReactComponent as RealmsWorld } from "../assets/icons/rw-logo.svg";
+import { ReactComponent as Next } from "../assets/icons/common/arrow-right.svg";
 import { SecondaryPopup } from "../elements/SecondaryPopup";
 import { Headline } from "../elements/Headline";
 import Button from "../elements/Button";
@@ -14,6 +15,7 @@ import useUIStore from "../hooks/store/useUIStore";
 import useScreenOrientation from "../hooks/useScreenOrientation";
 import { useDojo } from "../DojoContext";
 import { useRealm } from "../hooks/helpers/useRealm";
+import { useMusicPlayer } from "../hooks/useMusic";
 type SettingsComponentProps = {};
 
 export const SettingsComponent = ({}: SettingsComponentProps) => {
@@ -24,6 +26,7 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
 
   const { getAddressName } = useRealm();
+
   const addressName = getAddressName(account.address);
 
   // const addressName = useAddressStore((state) => state.addressName);
@@ -32,8 +35,6 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
   const effectsLevel = useUIStore((state) => state.effectsLevel);
   const setMusicLevel = useUIStore((state) => state.setMusicLevel);
   const setEffectsLevel = useUIStore((state) => state.setEffectsLevel);
-  const isSoundOn = useUIStore((state) => state.isSoundOn);
-  const toggleSound = useUIStore((state) => state.toggleSound);
 
   const { toggleFullScreen, isFullScreen } = useScreenOrientation();
   const [fullScreen, setFullScreen] = useState<boolean>(isFullScreen());
@@ -43,20 +44,35 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
     toggleFullScreen();
   };
 
+  const { trackName, stop, play, isPlaying, next } = useMusicPlayer();
+
   return (
     <div className="flex items-center text-white">
-      <Crown className="mr-[6px] fill-current" />
-      <div className="text-xs font-bold mr-2">{accountDisplay}</div>
-      {addressName && <div className="text-xs font-bold">{addressName}</div>}
-      <Settings
-        onClick={() => setShowSettings(!showSettings)}
-        className="ml-[6px] cursor-pointer fill-gold translate-y-1"
-      />
-      {isSoundOn ? (
-        <Unmuted onClick={() => toggleSound()} className="ml-[6px] cursor-pointer fill-gold" />
-      ) : (
-        <Muted onClick={() => toggleSound()} className="ml-[6px] cursor-pointer fill-gold" />
-      )}
+      <div className="flex space-x-2">
+        <Crown className="mr-[6px] fill-current  w-8" />
+        <div className="text-xs font-bold mr-2 self-center">{accountDisplay}</div>
+        {addressName && <div className="text-xs font-bold  self-center">{addressName}</div>}
+
+        <Button onClick={() => setShowSettings(!showSettings)}>
+          <Settings className="ml-[6px] cursor-pointer stroke-gold w-4" />
+        </Button>
+
+        {isPlaying ? (
+          <Button onClick={() => stop()}>
+            <Unmuted className="ml-[6px] cursor-pointer fill-gold  w-4" />
+          </Button>
+        ) : (
+          <Button onClick={play}>
+            <Muted className="ml-[6px] cursor-pointer fill-gold  w-4" />
+          </Button>
+        )}
+
+        <Button onClick={next}>
+          <Next className="ml-[6px] cursor-pointer fill-gold  h-4" />
+        </Button>
+      </div>
+
+      <ScrollingTrackName trackName={trackName} />
       {showSettings && (
         <SecondaryPopup className="top-1/3" name="settings">
           <SecondaryPopup.Head onClose={() => setShowSettings(!showSettings)}>
@@ -116,6 +132,29 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
           </SecondaryPopup.Body>
         </SecondaryPopup>
       )}
+    </div>
+  );
+};
+
+const ScrollingTrackName = ({ trackName }: { trackName: string }) => {
+  const trackNameRef = useRef<any>(null);
+
+  useEffect(() => {
+    const trackNameElement = trackNameRef.current;
+    const trackNameWidth = trackNameElement.offsetWidth;
+    const containerWidth = trackNameElement.parentElement.offsetWidth;
+
+    if (trackNameWidth > containerWidth) {
+      trackNameElement.style.animationDuration = `${trackNameWidth / 20}s`;
+      trackNameElement.classList.add("scrolling");
+    }
+  }, []);
+
+  return (
+    <div className="overflow-hidden w-full text-xs">
+      <div className="track-name" ref={trackNameRef}>
+        {trackName} - Casey Wescot
+      </div>
     </div>
   );
 };

@@ -17,7 +17,13 @@ interface UIStore {
   isSideMenuOpened: boolean;
   toggleSideMenu: () => void;
   isSoundOn: boolean;
+  trackName: string;
+  setTrackName: (name: string) => void;
+  trackIndex: number;
+  setTrackIndex: (index: number) => void;
   toggleSound: () => void;
+  isPlaying: boolean;
+  setIsPlaying: (playing: boolean) => void;
   musicLevel: number;
   setMusicLevel: (level: number) => void;
   effectsLevel: number;
@@ -63,11 +69,17 @@ const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) =>
   isSideMenuOpened: true,
   toggleSideMenu: () => set((state) => ({ isSideMenuOpened: !state.isSideMenuOpened })),
   isSoundOn: false,
+  trackName: "Day Break",
+  setTrackName: (name) => set({ trackName: name }),
+  trackIndex: 1,
+  setTrackIndex: (index) => set({ trackIndex: index }),
   toggleSound: () =>
     set((state) => {
       localStorage.setItem("soundEnabled", String(!state.isSoundOn));
       return { isSoundOn: !state.isSoundOn };
     }),
+  isPlaying: false,
+  setIsPlaying: (playing) => set({ isPlaying: playing }),
   musicLevel: localStorage.getItem("musicLevel") ? parseInt(localStorage.getItem("musicLevel") as string) : 50,
   setMusicLevel: (level) => {
     set({ musicLevel: level });

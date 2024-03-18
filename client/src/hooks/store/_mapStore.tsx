@@ -9,8 +9,8 @@ export interface MapStore {
   setHexData: (hexData: Hexagon[]) => void;
   selectedEntity: { id: bigint; position: Position } | undefined;
   setSelectedEntity: (entity: { id: bigint; position: Position } | undefined) => void;
-  animationPath: { id: bigint; path: Position[] } | undefined;
-  setAnimationPath: (path: { id: bigint; path: Position[] } | undefined) => void;
+  animationPaths: { id: bigint; path: Position[]; enemy: boolean }[];
+  setAnimationPaths: (path: { id: bigint; path: Position[]; enemy: boolean }[]) => void;
   selectedPath: { id: bigint; path: Position[] } | undefined;
   setSelectedPath: (path: { id: bigint; path: Position[] } | undefined) => void;
   isTravelMode: boolean;
@@ -34,8 +34,8 @@ export const createMapStoreSlice = (set: any) => ({
   },
   selectedEntity: undefined,
   setSelectedEntity: (entity: { id: bigint; position: Position } | undefined) => set({ selectedEntity: entity }),
-  animationPath: undefined,
-  setAnimationPath: (animationPath: { id: bigint; path: Position[] } | undefined) => set({ animationPath }),
+  animationPaths: [],
+  setAnimationPaths: (animationPaths: { id: bigint; path: Position[]; enemy: boolean }[]) => set({ animationPaths }),
   selectedPath: undefined,
   setSelectedPath: (selectedPath: { id: bigint; path: Position[] } | undefined) => set({ selectedPath }),
   isTravelMode: false,

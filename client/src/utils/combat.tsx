@@ -1,5 +1,7 @@
 import { CombatResultInterface, Resource, Winner } from "@bibliothecadao/eternum";
 import { Event } from "../services/eventPoller";
+import { useResources } from "../hooks/helpers/useResources";
+import { getComponentValue } from "@dojoengine/recs";
 
 // note: placeholder
 export const calculateSuccess = (
@@ -43,6 +45,16 @@ export const parseCombatEvent = (event: Event): CombatResultInterface => {
     });
     nextIndex += 1;
   }
+
+  const stolenChestIdsLen = parseInt(event.data[nextIndex]);
+  let stolenChestsIds: bigint[] = [];
+  for (let i = 0; i < stolenChestIdsLen; i++) {
+    let chest_id = event.data[nextIndex + i + 1];
+    stolenChestsIds.push(BigInt(chest_id));
+  }
+
+  nextIndex += 1 + stolenChestIdsLen;
+
   const winner = parseInt(event.data[nextIndex]) === 0 ? Winner.Attacker : Winner.Target;
   nextIndex += 1;
   let damage: number | undefined;
@@ -59,5 +71,6 @@ export const parseCombatEvent = (event: Event): CombatResultInterface => {
     stolenResources: stolen_resources,
     damage,
     attackTimestamp,
+    stolenChestsIds,
   };
 };

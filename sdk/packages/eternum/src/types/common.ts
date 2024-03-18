@@ -19,6 +19,7 @@ export interface CombatResultInterface {
   stolenResources: Resource[];
   damage: number;
   attackTimestamp: number;
+  stolenChestsIds: bigint[];
 }
 
 export interface CombatInfo {
