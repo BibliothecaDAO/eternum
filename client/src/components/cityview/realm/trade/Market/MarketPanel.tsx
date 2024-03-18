@@ -128,22 +128,20 @@ export const MarketPanel = ({ directOffers }: MarketPanelProps) => {
 
   return (
     <>
-      <div className="fixed top-0 left-0">
-        {showCreateOffer && <FastCreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
-        {showMarketplace && <MarketPopup onClose={() => setShowMarketplace(false)} />}
-        {showDirectOffersExplorer && <DirectOffersExplorerPopup onClose={() => setShowDirectOffersExplorer(false)} />}
-        {buildRoadToEntityId !== undefined && (
-          <RoadBuildPopup onClose={() => setBuildRoadToEntityId(undefined)} toEntityId={buildRoadToEntityId} />
-        )}
-        {selectedTrade && (
-          <AcceptOfferPopup
-            onClose={() => {
-              setSelectedTrade(undefined);
-            }}
-            selectedTrade={selectedTrade}
-          />
-        )}
-      </div>
+      {showCreateOffer && <FastCreateOfferPopup onClose={() => setShowCreateOffer(false)} onCreate={() => {}} />}
+      {showMarketplace && <MarketPopup onClose={() => setShowMarketplace(false)} />}
+      {showDirectOffersExplorer && <DirectOffersExplorerPopup onClose={() => setShowDirectOffersExplorer(false)} />}
+      {buildRoadToEntityId !== undefined && (
+        <RoadBuildPopup onClose={() => setBuildRoadToEntityId(undefined)} toEntityId={buildRoadToEntityId} />
+      )}
+      {selectedTrade && (
+        <AcceptOfferPopup
+          onClose={() => {
+            setSelectedTrade(undefined);
+          }}
+          selectedTrade={selectedTrade}
+        />
+      )}
       <div className="flex flex-col min-h-[125px] relative pb-3">
         <div className="flex justify-between">
           <FiltersPanel className="px-3 py-2">

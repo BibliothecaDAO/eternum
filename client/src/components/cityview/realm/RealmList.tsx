@@ -6,6 +6,7 @@ import { SortButton, SortInterface } from "../../../elements/SortButton";
 import { SortPanel } from "../../../elements/SortPanel";
 import { ReactComponent as CaretDownFill } from "../../../assets/icons/common/caret-down-fill.svg";
 import TextInput from "../../../elements/TextInput";
+import { removeAccents } from "../../../utils/utils";
 
 export const RealmList = ({
   selectedRealmEntityId,
@@ -43,11 +44,17 @@ export const RealmList = ({
   useEffect(() => {
     const sorted = sortRealms(selectableRealms, activeSort);
     if (nameFilter.length > 0) {
-      const filtered = sorted.filter(
-        (realm) =>
-          realm.name.toLowerCase().includes(deferredNameFilter.toLowerCase()) ||
-          realm.realmId.toString().includes(deferredNameFilter),
-      );
+      const filtered = sorted.filter((realm) => {
+        const name = removeAccents(realm.name.toLowerCase());
+        return name.includes(deferredNameFilter.toLowerCase()) || realm.realmId.toString().includes(deferredNameFilter);
+      });
+      // sort Realms by index of the name filter
+      filtered.sort((a, b) => {
+        const nameA = removeAccents(a.name.toLowerCase());
+        const nameB = removeAccents(b.name.toLowerCase());
+        const filter = deferredNameFilter.toLowerCase();
+        return nameA.indexOf(filter) - nameB.indexOf(filter);
+      });
       setSortedRealms(filtered);
       return;
     }

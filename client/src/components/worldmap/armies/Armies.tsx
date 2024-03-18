@@ -114,7 +114,10 @@ export const Armies = ({}: ArmiesProps) => {
           <ArmyModel
             onPointerOver={() => onHover(id, uiPos)}
             onPointerOut={onUnhover}
-            onClick={() => onClick(id, contractPos, isDead)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick(id, contractPos, isDead)
+            }}
             key={id}
             scale={FRIENDLY_ARMY_MODEL_SCALE}
             position={[uiPos.x + offset + 0.7, uiPos.z, -uiPos.y]}
