@@ -40,7 +40,7 @@ import { DeciduousForestBiome } from "./biomes/DeciduousForestBiome";
 import { EnemyArmies } from "./armies/EnemyArmies";
 import { TropicalRainforestBiome } from "./biomes/TropicalRainforestBiome";
 import { TropicalSeasonalForestBiome } from "./biomes/TropicalSeasonalForestBiome";
-import { TundraBiome } from "./biomes/TropicalSeasonalForestBiome copy";
+import { TundraBiome } from "./biomes/TundraBiome";
 import { TemperateRainforestBiome } from "./biomes/TemperateRainforestBiome";
 
 export const DEPTH = 10;
