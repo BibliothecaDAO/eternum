@@ -5,9 +5,7 @@ import { useRefreshHyperstructure } from "../hooks/store/useRefreshHyperstructur
 import useRealmStore from "../hooks/store/useRealmStore";
 import useCombatHistoryStore from "../hooks/store/useCombatHistoryStore";
 
-type HooksComponentProps = {};
-
-export const HooksComponent = ({}: HooksComponentProps) => {
+export const HooksComponent = () => {
   useFetchBlockchainData();
   useComputeMarket();
   const syncCombatHistory = useCombatHistoryStore((state) => state.syncData);
