@@ -13,6 +13,7 @@ import { LevelIndex } from "../helpers/useLevel";
 import { getLordsAmountFromBankAuction } from "../../components/worldmap/banks/utils";
 import { BANK_AUCTION_DECAY, targetPrices } from "../helpers/useBanks";
 import { realmsPosition } from "./utils";
+import { TIME_PER_TICK } from "../../components/network/EpochCountdown";
 
 export type UpdatedEntity = {
   entityKeys: string[];
@@ -435,6 +436,9 @@ export const generateYourRaidersHaveArrivedNotifications = (
     );
 
     for (const id of entityIds) {
+      const tickMove = getComponentValue(components["TickMove"], id) as
+        | { entity_id: bigint; tick: number; count: number }
+        | undefined;
       const arrivalTime = getComponentValue(components["ArrivalTime"], id) as
         | { entity_id: bigint; arrives_at: number }
         | undefined;
@@ -444,7 +448,12 @@ export const generateYourRaidersHaveArrivedNotifications = (
       // check that arrival is bigger than current block timestamp
       // and also that notfication close is smaller than arrival (not seen yet by user)
       const timestamps = getLastLoginTimestamp();
+
+      const currentTick = nextBlockTimestamp ? Math.floor(nextBlockTimestamp / TIME_PER_TICK) : 0;
+      const isActiveTravel = tickMove !== undefined ? tickMove.tick >= currentTick : false;
+
       const hasArrivedAndNotSeen =
+        !isActiveTravel &&
         raiders?.arrivalTime &&
         raiders.arrivalTime > timestamps.lastLoginBlockTimestamp &&
         raiders.arrivalTime < nextBlockTimestamp;

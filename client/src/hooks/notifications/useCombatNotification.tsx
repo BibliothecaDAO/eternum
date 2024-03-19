@@ -3,8 +3,14 @@ import { OrderIcon } from "../../elements/OrderIcon";
 import { Badge } from "../../elements/Badge";
 import { getRealmNameById, getRealmOrderNameById } from "../../utils/realms";
 import { ResourceCost } from "../../elements/ResourceCost";
-import { divideByPrecision, formatTimeLeftDaysHoursMinutes, getEntityIdFromKeys } from "../../utils/utils";
-import { CombatResultInterface, Winner } from "@bibliothecadao/eternum";
+import { ReactComponent as Map } from "../../assets/icons/common/map.svg";
+import {
+  divideByPrecision,
+  formatTimeLeftDaysHoursMinutes,
+  getEntityIdFromKeys,
+  getUIPositionFromColRow,
+} from "../../utils/utils";
+import { CombatResultInterface, UIPosition, Winner } from "@bibliothecadao/eternum";
 import { getComponentValue } from "@dojoengine/recs";
 import { useDojo } from "../../DojoContext";
 import useBlockchainStore from "../store/useBlockchainStore";
@@ -24,6 +30,7 @@ export const useGoToMilitary = () => {
   const { setRealmId, setRealmEntityId } = useRealmStore();
   const [location, setLocation] = useLocation();
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const moveCameraToTarget = useUIStore((state) => state.moveCameraToTarget);
 
   const goToMilitary = (realmId: bigint, realmEntityId: bigint, militaryLocation: MilitaryLocation) => {
     setIsLoadingScreenEnabled(true);
@@ -37,8 +44,20 @@ export const useGoToMilitary = () => {
     }, 500);
   };
 
+  const goToMilitaryMap = (position: UIPosition) => {
+    if (location.includes("/realm")) {
+      setIsLoadingScreenEnabled(true);
+      setLocation("/map");
+    }
+    moveCameraToTarget(position);
+    setTimeout(() => {
+      setIsLoadingScreenEnabled(false);
+    }, 1500);
+  };
+
   return {
     goToMilitary,
+    goToMilitaryMap,
   };
 };
 
@@ -375,7 +394,7 @@ export const useYourRaidersHaveArrivedNotification = (
 
   const data = notification.data as RaidersData;
 
-  const { goToMilitary } = useGoToMilitary();
+  const { goToMilitary, goToMilitaryMap } = useGoToMilitary();
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
@@ -390,6 +409,11 @@ export const useYourRaidersHaveArrivedNotification = (
   const targetRealmOrderName = targetRealmId ? getRealmOrderNameById(targetRealmId) : "";
   const targetRealmName = targetRealmId ? getRealmNameById(targetRealmId) : "";
   const attackerRealmName = attackerRealmId ? getRealmNameById(attackerRealmId) : "";
+
+  let uiPosition: UIPosition | undefined;
+  if (raiders.position) {
+    uiPosition = { ...getUIPositionFromColRow(raiders.position.x, raiders.position.y), z: 0 };
+  }
 
   const time =
     nextBlockTimestamp && raiders?.arrivalTime
@@ -406,10 +430,12 @@ export const useYourRaidersHaveArrivedNotification = (
           {`Your Raiders Have Arrived`}
         </Badge>
 
-        <div className="flex items-center">
-          on <OrderIcon size="xs" className="mx-1" order={targetRealmOrderName} />{" "}
-          <div className="inline-block text-gold">{targetRealmName}</div>
-        </div>
+        {targetRealmOrderName && targetRealmName && (
+          <div className="flex items-center">
+            on <OrderIcon size="xs" className="mx-1" order={targetRealmOrderName} />{" "}
+            <div className="inline-block text-gold">{targetRealmName}</div>
+          </div>
+        )}
       </div>
     ),
     content: (onClose: () => void) => (
@@ -418,16 +444,26 @@ export const useYourRaidersHaveArrivedNotification = (
           <OrderIcon size="xs" className="mx-1" order={attackerRealmOrderName} />{" "}
           <span className="text-white"> {`${raiders.attack / 10} raiders from ${attackerRealmName} have arrived`}</span>
         </div>
-        <Button
-          onClick={() => {
-            goToMilitary(attackerRealmId || 0n, raiders.entityOwnerId || 0n, MilitaryLocation.Attack);
-          }}
-          className="mt-2 w-full"
-          variant="success"
-          size="xs"
-        >
-          Go to realm
-        </Button>
+        <div className="flex flex-row mt-2">
+          <Button
+            onClick={() => {
+              goToMilitary(attackerRealmId || 0n, raiders.entityOwnerId || 0n, MilitaryLocation.Attack);
+            }}
+            className=" w-full mr-2"
+            variant="success"
+            size="xs"
+          >
+            Go to realm
+          </Button>
+          <Button
+            onClick={() => uiPosition && goToMilitaryMap(uiPosition)}
+            variant="outline"
+            className="p-1 !h-4 text-xxs w-[80%] !rounded-md"
+          >
+            <Map className="mr-1 fill-current" />
+            Show on map
+          </Button>
+        </div>
       </div>
     ),
   };
