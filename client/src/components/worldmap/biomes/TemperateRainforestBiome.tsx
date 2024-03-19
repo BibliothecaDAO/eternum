@@ -43,6 +43,7 @@ export function TemperateRainforestBiome({ hexes }: { hexes: Hexagon[] }) {
       _materials["Temperate Rainforest Dirt"],
       _materials["Temperate Rainforest Leaves"],
       _materials["Temperate Rainforest Wood"],
+      _materials["Temperate Rainforest Leaves"],
     ];
   }, [_materials]);
 

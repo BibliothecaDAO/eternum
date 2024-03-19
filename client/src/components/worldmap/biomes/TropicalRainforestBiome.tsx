@@ -43,6 +43,7 @@ export function TropicalRainforestBiome({ hexes }: { hexes: Hexagon[] }) {
       _materials["Tropical Rainforest Dirt"],
       _materials["Tropical Rainforest Leaves"],
       _materials["Tropical Seasonal Forest Wood"],
+      _materials["Tropical Rainforest Leaves"],
     ];
   }, [_materials]);
 

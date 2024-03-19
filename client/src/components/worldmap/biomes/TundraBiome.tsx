@@ -52,6 +52,7 @@ export function TundraBiome({ hexes }: { hexes: Hexagon[] }) {
       _materials["Tundra Dirt"],
       _materials["Tundra Green Grass"],
       _materials["Tundra Shrub"],
+      _materials["Tundra Shrub"],
       _materials["Tundra Rock"],
       _materials["Tundra Snow"],
     ];
