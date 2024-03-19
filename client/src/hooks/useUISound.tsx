@@ -9,6 +9,7 @@ export const soundSelector = {
   sign: "ui/sign.mp3",
   harvest: "ui/harvest.mp3",
   fly: "ui/whoosh.mp3",
+  buildLabor: "buildings/workhuts.mp3",
   buildMilitary: "buildings/military.mp3",
   buildCastle: "buildings/castle.mp3",
   buildBarracks: "buildings/barracks.mp3",
@@ -58,8 +59,8 @@ export const useUiSounds = (selector: string) => {
 };
 
 export const usePlayResourceSound = () => {
-  const { play: playFarm } = useUiSounds(soundSelector.buildFarm);
-  const { play: playFishingVillage } = useUiSounds(soundSelector.buildFishingVillage);
+  const { play: playFarm } = useUiSounds(soundSelector.addWheat);
+  const { play: playFishingVillage } = useUiSounds(soundSelector.addFish);
   const { play: playAddWood } = useUiSounds(soundSelector.addWood);
   const { play: playAddStone } = useUiSounds(soundSelector.addStone);
   const { play: playAddCoal } = useUiSounds(soundSelector.addCoal);

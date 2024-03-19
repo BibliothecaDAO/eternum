@@ -70,8 +70,6 @@ export const LaborComponent = ({
     return undefined;
   }, [labor, nextBlockTimestamp]);
 
-  const { play: playHarvest } = useUiSounds(soundSelector.harvest);
-
   const { onBuildFood } = useLabor();
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
@@ -102,7 +100,7 @@ export const LaborComponent = ({
 
   const onHarvest = () => {
     if (hyperstructureLevelBonus) {
-      playHarvest();
+      playResourceSound(resourceId);
       optimisticHarvestLabor(
         nextBlockTimestamp || 0,
         levelBonus,

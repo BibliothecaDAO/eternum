@@ -22,7 +22,7 @@ import clsx from "clsx";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../DojoContext";
 import { formatSecondsLeftInDaysHours } from "./laborUtils";
-import { usePlayResourceSound } from "../../../../hooks/useUISound";
+import { soundSelector, usePlayResourceSound, useUiSounds } from "../../../../hooks/useUISound";
 import { getComponentValue } from "@dojoengine/recs";
 import { divideByPrecision, getEntityIdFromKeys, getPosition, getZone } from "../../../../utils/utils";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
@@ -60,7 +60,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   const [withLabor, setWithLabor] = useState(false);
 
   const setTooltip = useUIStore((state) => state.setTooltip);
-  const { playResourceSound } = usePlayResourceSound();
+  const { play: playLabor } = useUiSounds(soundSelector.buildLabor);
 
   useEffect(() => {
     setMultiplier(1); // Reset the multiplier to 1 when the resourceId changes
@@ -201,7 +201,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
           multiplier,
           signer: account,
         }),
-      playResourceSound(resourceId);
+      playLabor();
     setIsLoading(false);
     onClose();
   };
