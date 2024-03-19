@@ -6,7 +6,7 @@ import { Vector3 } from "three";
 import { useControls, button } from "leva";
 import { useRoute } from "wouter";
 import { soundSelector, useUiSounds } from "../hooks/useUISound";
-
+import * as THREE from "three";
 interface Props {
   position: {
     x: number;
@@ -91,6 +91,10 @@ const CameraControls = ({ position, target }: Props) => {
     playFly();
   }, [target, position]);
 
+  var minPan = isMapView ? new THREE.Vector3(0, -Infinity, -1400) : new THREE.Vector3(-175, -Infinity, -150);
+  var maxPan = isMapView ? new THREE.Vector3(2700, Infinity, 0) : new THREE.Vector3(300, Infinity, 100);
+  var _v = new THREE.Vector3();
+
   return (
     <MapControls
       ref={ref}
@@ -103,6 +107,13 @@ const CameraControls = ({ position, target }: Props) => {
       minPolarAngle={minPolarAngle}
       zoomToCursor
       makeDefault
+      onChange={(e) => {
+        const controls = e?.target;
+        _v.copy(controls.target);
+        controls.target.clamp(minPan, maxPan);
+        _v.sub(controls.target);
+        camera.position.sub(_v);
+      }}
     />
   );
 };

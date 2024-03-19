@@ -42,7 +42,7 @@ export const NumberInput = ({ value, onChange, className, step = 1, max, min = 0
           playClick();
         }}
       >
-        <ArrowRight />
+        <ArrowRight width={"6px"} height={"8px"} />
       </div>
     </div>
   );

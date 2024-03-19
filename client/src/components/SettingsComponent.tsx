@@ -54,21 +54,21 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
         {addressName && <div className="text-xs font-bold  self-center">{addressName}</div>}
 
         <Button onClick={() => setShowSettings(!showSettings)}>
-          <Settings className="ml-[6px] cursor-pointer stroke-gold w-4" />
+          <Settings className=" cursor-pointer stroke-gold w-4" />
         </Button>
 
         {isPlaying ? (
           <Button onClick={() => stop()}>
-            <Unmuted className="ml-[6px] cursor-pointer fill-gold  w-4" />
+            <Unmuted className=" cursor-pointer fill-gold  w-4" />
           </Button>
         ) : (
           <Button onClick={play}>
-            <Muted className="ml-[6px] cursor-pointer fill-gold  w-4" />
+            <Muted className=" cursor-pointer fill-gold  w-4" />
           </Button>
         )}
 
         <Button onClick={next}>
-          <Next className="ml-[6px] cursor-pointer fill-gold  h-4" />
+          <Next className="cursor-pointer fill-gold  h-4" />
         </Button>
       </div>
 

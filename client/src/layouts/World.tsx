@@ -11,7 +11,6 @@ import NavigationModule from "../modules/NavigationModule";
 import ContentContainer from "../containers/ContentContainer";
 import RealmManagementModule from "../modules/RealmManagementModule";
 import RealmResourcesComponent from "../components/cityview/realm/RealmResourcesComponent";
-import { useFetchBlockchainData } from "../hooks/store/useBlockchainStore";
 import { useEffect, useMemo } from "react";
 import clsx from "clsx";
 import { Redirect, Route, Switch, useLocation } from "wouter";
@@ -24,22 +23,14 @@ import useCombatHistoryStore from "../hooks/store/useCombatHistoryStore";
 import useRealmStore from "../hooks/store/useRealmStore";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
 import { Onboarding } from "../plugins/onboarding/components/Onboarding";
-import { useComputeMarket } from "../hooks/store/useMarketStore";
-import { useRefreshHyperstructure } from "../hooks/store/useRefreshHyperstructure";
 import { WorldPopups } from "./WorldPopups";
 import EpochCountdown from "../components/network/EpochCountdown";
+import { HooksComponent } from "../components/HooksComponent";
 
 export const World = () => {
-  const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
-  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const isLoadingScreenEnabled = useUIStore((state) => state.isLoadingScreenEnabled);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const setMouseCoords = useUIStore((state) => state.setMouseCoords);
-  const syncCombatHistory = useCombatHistoryStore((state) => state.syncData);
-  const realmEntityId = useRealmStore((state) => state.realmEntityId);
-  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
-
-  const { refreshAllHyperstructures } = useRefreshHyperstructure();
 
   // only for dev
   // useEffect(() => {
@@ -49,27 +40,7 @@ export const World = () => {
   //   };
   //   printUuid();
   // });
-
-  useFetchBlockchainData();
-  useComputeMarket();
-
   const progress = useProgress((state) => state.progress);
-
-  useEffect(() => {
-    if (realmEntityIds.length > 4) {
-      setBlankOverlay(false);
-    } else {
-      setBlankOverlay(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    syncCombatHistory(realmEntityId);
-  }, [realmEntityId]);
-
-  useEffect(() => {
-    refreshAllHyperstructures();
-  }, [realmEntityIds]);
 
   useEffect(() => {
     if (progress === 100) {
@@ -115,17 +86,15 @@ export const World = () => {
           <img src="/images/eternum-logo_animated.png" className=" invert scale-50" />
         </div>
       </BackgroundContainer>
-      {!showBlankOverlay && (
-        <TopContainer>
-          <NetworkModule />
-          <div className="flex">
-            <NavigationModule />
-            <NotificationsComponent className="" />
-          </div>
-          <RealmResourcesComponent />
-          {/* <ContextsModule /> */}
-        </TopContainer>
-      )}
+      <TopContainer>
+        <NetworkModule />
+        <div className="flex">
+          <NavigationModule />
+          <NotificationsComponent className="" />
+        </div>
+        <RealmResourcesComponent />
+        {/* <ContextsModule /> */}
+      </TopContainer>
       <ContentContainer>
         <Switch location={locationType}>
           <Route path="map">
@@ -141,7 +110,7 @@ export const World = () => {
       <BottomRightContainer>
         <ChatModule />
       </BottomRightContainer>
-      <BlankOverlayContainer open={showBlankOverlay}>
+      <BlankOverlayContainer>
         <Onboarding />
       </BlankOverlayContainer>
       <BlurOverlayContainer>
@@ -152,6 +121,7 @@ export const World = () => {
       <Redirect to="/map" />
       <div className="absolute bottom-4 right-6 text-white text-xs text-white/60">v0.3.0</div>
       <EpochCountdown />
+      <HooksComponent />
     </div>
   );
 };
