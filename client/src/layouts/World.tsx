@@ -92,7 +92,7 @@ export const World = () => {
           <NavigationModule />
           <NotificationsComponent className="" />
         </div>
-        <RealmResourcesComponent />
+        {/* <RealmResourcesComponent /> */}
         {/* <ContextsModule /> */}
       </TopContainer>
       <ContentContainer>
