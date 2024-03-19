@@ -68,7 +68,7 @@ const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) =>
   setShowBlankOverlay: (show) => set({ showBlankOverlay: show }),
   isSideMenuOpened: true,
   toggleSideMenu: () => set((state) => ({ isSideMenuOpened: !state.isSideMenuOpened })),
-  isSoundOn: false,
+  isSoundOn: true,
   trackName: "Day Break",
   setTrackName: (name) => set({ trackName: name }),
   trackIndex: 1,

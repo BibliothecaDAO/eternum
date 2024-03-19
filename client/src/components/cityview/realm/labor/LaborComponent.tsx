@@ -8,7 +8,7 @@ import { useDojo } from "../../../../DojoContext";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { calculateNextHarvest, calculateProductivity, formatSecondsInHoursMinutes } from "./laborUtils";
 import { useMemo } from "react";
-import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
+import { playResourceSound, soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useComponentValue } from "@dojoengine/react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
@@ -88,8 +88,10 @@ export const LaborComponent = ({
 
   const onBuild = async () => {
     if (resourceId == ResourcesIds["Wheat"]) {
+      playResourceSound(resourceId);
       await onBuildFood(FoodType.Wheat, realm);
     } else if (resourceId == ResourcesIds["Fish"]) {
+      playResourceSound(resourceId);
       await onBuildFood(FoodType.Fish, realm);
     } else {
       setBuildResource(resourceId);

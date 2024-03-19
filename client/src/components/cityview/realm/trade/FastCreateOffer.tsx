@@ -20,6 +20,7 @@ import { useResources } from "../../../../hooks/helpers/useResources";
 import ListSelect from "../../../../elements/ListSelect";
 import { getTotalResourceWeight } from "./utils";
 import { TradeRealmSelector } from "./TradeRealmSelector";
+import { usePlayResourceSound } from "../../../../hooks/useUISound";
 
 type FastCreateOfferPopupProps = {
   resourceId?: number;
@@ -221,6 +222,7 @@ const SelectResourcesAmountPanel = ({
   const { realmEntityId } = useRealmStore();
 
   const { getBalance } = useResources();
+  const { playResourceSound } = usePlayResourceSound();
 
   const swapResources = () => {
     const tmpGet = [...selectedResourceIdsGet];
@@ -245,6 +247,7 @@ const SelectResourcesAmountPanel = ({
       ...selectedResourcesGiveAmounts,
       [unselectedResources[0].id]: 1,
     });
+    playResourceSound(unselectedResources[0].id);
   };
 
   const addResourceGet = () => {
@@ -253,6 +256,7 @@ const SelectResourcesAmountPanel = ({
       ...selectedResourcesGetAmounts,
       [unselectedResources[0].id]: 1,
     });
+    playResourceSound(unselectedResources[0].id);
   };
 
   useEffect(() => {
