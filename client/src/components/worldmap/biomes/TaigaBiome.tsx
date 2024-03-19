@@ -19,7 +19,7 @@ type GLTFResult = GLTF & {
 };
 
 export function TaigaBiome({ hexes }: { hexes: Hexagon[] }) {
-  const { nodes, materials } = useGLTF("/models/taiga_merged.glb") as GLTFResult;
+  const { nodes, materials } = useGLTF("/models/biomes/taiga_merged.glb") as GLTFResult;
 
   const defaultTransform = new THREE.Matrix4()
     .makeRotationX(Math.PI / 2)

@@ -18,7 +18,7 @@ type GLTFResult = GLTF & {
   };
 };
 export function ShrublandBiome({ hexes }: { hexes: Hexagon[] }) {
-  const { nodes, materials } = useGLTF("/models/shrubland.glb") as GLTFResult;
+  const { nodes, materials } = useGLTF("/models/biomes/shrubland.glb") as GLTFResult;
 
   const defaultTransform = new THREE.Matrix4()
     .makeRotationX(Math.PI / 2)
