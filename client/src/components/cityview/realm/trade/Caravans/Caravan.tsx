@@ -110,8 +110,8 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
                 {destinationType === DESTINATION_TYPE.BANK
                   ? "bank"
                   : destinationType === DESTINATION_TYPE.HYPERSTRUCTURE
-                  ? "hyperstructure"
-                  : "home"}
+                    ? "hyperstructure"
+                    : "home"}
                 <span className="italic text-light-pink ml-1">with</span>
               </div>
             </div>
@@ -137,8 +137,8 @@ export const Caravan = ({ caravan, ...props }: CaravanProps) => {
                 {destinationType === DESTINATION_TYPE.BANK
                   ? "bank"
                   : destinationType === DESTINATION_TYPE.HYPERSTRUCTURE
-                  ? "hyperstructure"
-                  : "home"}
+                    ? "hyperstructure"
+                    : "home"}
                 <span className="italic text-light-pink ml-1">with</span>
               </div>
             </div>

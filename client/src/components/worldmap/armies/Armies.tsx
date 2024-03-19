@@ -116,7 +116,7 @@ export const Armies = ({}: ArmiesProps) => {
             onPointerOut={onUnhover}
             onClick={(e) => {
               e.stopPropagation();
-              onClick(id, contractPos, isDead)
+              onClick(id, contractPos, isDead);
             }}
             key={id}
             scale={FRIENDLY_ARMY_MODEL_SCALE}

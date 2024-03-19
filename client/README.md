@@ -25,14 +25,14 @@ Run this at the root of this repo (not in this folder)
 
 - **Dependencies:** Install all required dependencies by running the command:
   ```bash
-  bun install
+  pnpm install
   ```
 
 ### Running the Development Server
 
 - **Development Server:** Start the development server with:
   ```bash
-  bun dev
+  pnpm dev
   ```
 
 ### Setting Up and Running Locally on Katana
@@ -75,15 +75,15 @@ To build and preview the project, follow these steps:
 
 1. **Generate GraphQL Code:**
    ```bash
-   bun run codegen
+   pnpm run codegen
    ```
 2. **Build the Project:**
    ```bash
-   bun run build
+   pnpm run build
    ```
 3. **Preview the Project:**
    ```bash
-   bun run preview
+   pnpm run preview
    ```
 
 ---
