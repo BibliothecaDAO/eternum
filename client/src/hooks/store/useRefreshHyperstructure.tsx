@@ -54,7 +54,6 @@ export const useRefreshHyperstructure = () => {
   );
 
   const refreshAllHyperstructures = () => {
-    setIsLoading(true);
     setTimeout(() => {
       const newHyperstructures = Object.values(hyperstructuresHex).map((hyperstructure) =>
         getHyperstructure(hyperstructure[0].col, hyperstructure[0].row),
@@ -63,9 +62,7 @@ export const useRefreshHyperstructure = () => {
         (struct) => struct?.completed && struct.orderId === playerOrder,
       ).length;
       setHyperstructures(newHyperstructures, conqueredHyperstructureNumber);
-      setIsLoading(false);
     }, 1000);
-    setIsLoading(false);
   };
 
   return { refreshHyperstructure, refreshAllHyperstructures, isLoading };
