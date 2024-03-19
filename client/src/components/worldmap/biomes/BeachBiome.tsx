@@ -19,7 +19,7 @@ type GLTFResult = GLTF & {
 };
 
 export function BeachBiome({ hexes }: { hexes: Hexagon[] }) {
-  const { nodes, materials } = useGLTF("/models/beach.glb") as GLTFResult;
+  const { nodes, materials } = useGLTF("/models/biomes/beach.glb") as GLTFResult;
 
   const defaultTransform = new THREE.Matrix4()
     .makeRotationX(Math.PI / 2)

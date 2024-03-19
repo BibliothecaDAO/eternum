@@ -38,6 +38,10 @@ import { ShrublandBiome } from "./biomes/ShrublandBiome";
 import { SubtropicalDesertBiome } from "./biomes/SubtropicalDesertBiome";
 import { DeciduousForestBiome } from "./biomes/DeciduousForestBiome";
 import { EnemyArmies } from "./armies/EnemyArmies";
+import { TropicalRainforestBiome } from "./biomes/TropicalRainforestBiome";
+import { TropicalSeasonalForestBiome } from "./biomes/TropicalSeasonalForestBiome";
+import { TundraBiome } from "./biomes/TropicalSeasonalForestBiome copy";
+import { TemperateRainforestBiome } from "./biomes/TemperateRainforestBiome";
 
 export const DEPTH = 10;
 export const HEX_RADIUS = 3;
@@ -96,6 +100,10 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
     "scorched",
     "shrubland",
     "subtropical_desert",
+    "tropical_rain_forest",
+    "tropical_seasonal_forest",
+    "tundra",
+    "temperate_rain_forest",
   ];
 
   // useEffect(() => {
@@ -168,6 +176,22 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
       )}
       {biomeHexes["temperate_deciduous_forest"].length ? (
         <DeciduousForestBiome hexes={biomeHexes["temperate_deciduous_forest"]} />
+      ) : (
+        <></>
+      )}
+      {biomeHexes["tropical_rain_forest"].length ? (
+        <TropicalRainforestBiome hexes={biomeHexes["tropical_rain_forest"]} />
+      ) : (
+        <></>
+      )}
+      {biomeHexes["tropical_seasonal_forest"].length ? (
+        <TropicalSeasonalForestBiome hexes={biomeHexes["tropical_seasonal_forest"]} />
+      ) : (
+        <></>
+      )}
+      {biomeHexes["tundra"].length ? <TundraBiome hexes={biomeHexes["tundra"]} /> : <></>}
+      {biomeHexes["temperate_rain_forest"].length ? (
+        <TemperateRainforestBiome hexes={biomeHexes["temperate_rain_forest"]} />
       ) : (
         <></>
       )}

@@ -17,7 +17,7 @@ type SnowBiomeGLTF = GLTF & {
 };
 
 export function SnowBiome({ hexes }: { hexes: Hexagon[] }) {
-  const { nodes, materials } = useGLTF("/models/snow.glb") as SnowBiomeGLTF;
+  const { nodes, materials } = useGLTF("/models/biomes/snow.glb") as SnowBiomeGLTF;
 
   const snowMaterial = new THREE.MeshMatcapMaterial({
     color: 0xffffff,

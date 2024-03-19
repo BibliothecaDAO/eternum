@@ -19,7 +19,7 @@ type GLTFResult = GLTF & {
 };
 
 export function DeciduousForestBiome({ hexes }: { hexes: Hexagon[] }) {
-  const { nodes, materials } = useGLTF("/models/deciduousForest.glb") as GLTFResult;
+  const { nodes, materials } = useGLTF("/models/biomes/deciduousForest.glb") as GLTFResult;
 
   const defaultTransform = new THREE.Matrix4()
     .makeRotationX(Math.PI / 2)

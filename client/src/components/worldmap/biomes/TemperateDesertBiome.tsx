@@ -16,7 +16,7 @@ type GLTFResult = GLTF & {
   };
 };
 export function TemperateDesertBiome({ hexes }: { hexes: Hexagon[] }) {
-  const { nodes, materials } = useGLTF("/models/temperateDesert.glb") as GLTFResult;
+  const { nodes, materials } = useGLTF("/models/biomes/temperateDesert.glb") as GLTFResult;
 
   const defaultTransform = new THREE.Matrix4()
     .makeRotationX(Math.PI / 2)

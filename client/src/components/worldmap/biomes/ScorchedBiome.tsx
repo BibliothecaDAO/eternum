@@ -17,7 +17,7 @@ type GLTFResult = GLTF & {
 };
 
 export function ScorchedBiome({ hexes }: { hexes: Hexagon[] }) {
-  const { nodes, materials } = useGLTF("/models/scorched.glb") as GLTFResult;
+  const { nodes, materials } = useGLTF("/models/biomes/scorched.glb") as GLTFResult;
 
   const defaultTransform = new THREE.Matrix4()
     .makeRotationX(Math.PI / 2)
