@@ -105,7 +105,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
   const isTraveling = raider.arrivalTime && nextBlockTimestamp ? raider.arrivalTime > nextBlockTimestamp : false;
   const hasMaxHealth = health === 10 * quantity;
   const destinationRealmId = raider.position ? getRealmIdByPosition(raider.position) : undefined;
-  const destinationName = destinationRealmId ? getRealmNameById(destinationRealmId) : "Hyperstructure";
+  const destinationName = destinationRealmId ? getRealmNameById(destinationRealmId) : "Map";
   const isHome = destinationRealmId === realmId;
 
   // get info about the destination defence
