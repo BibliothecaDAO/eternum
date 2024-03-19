@@ -341,6 +341,7 @@ const SelectResourcesAmountPanel = ({
                       }
                       const tmp = [...selectedResourceIdsGive];
                       tmp[index] = value;
+                      playResourceSound(value);
                       setSelectedResourceIdsGive(tmp);
                       setSelectedResourcesGiveAmounts({
                         ...selectedResourcesGiveAmounts,
@@ -442,6 +443,7 @@ const SelectResourcesAmountPanel = ({
                       }
                       const tmp = [...selectedResourceIdsGet];
                       tmp[index] = value;
+                      playResourceSound(value);
                       setSelectedResourceIdsGet(tmp);
                       setSelectedResourcesGetAmounts({
                         ...selectedResourcesGetAmounts,

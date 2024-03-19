@@ -13,6 +13,7 @@ import { getRealm } from "../../utils/realms";
 import { useDojo } from "../../DojoContext";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
 import { useEntityQuery } from "@dojoengine/react";
+import { soundSelector, useUiSounds } from "../../hooks/useUISound";
 
 type RealmSwitchProps = {} & ComponentPropsWithRef<"div">;
 
@@ -61,6 +62,8 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
   const [location, setLocation] = useLocation();
 
   const realm = useMemo(() => (realmId ? getRealm(realmId) : undefined), [realmId]);
+
+  const { play: playFly } = useUiSounds(soundSelector.fly);
 
   useEffect(() => {
     if (location.includes("/map")) {
@@ -118,6 +121,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
               setTimeout(() => {
                 if (location.includes(`/realm`)) {
                   setIsLoadingScreenEnabled(false);
+                  playFly();
                 }
                 setLocation(`/realm/${Number(realm.realmId)}`);
                 setRealmEntityId(realm.id);
