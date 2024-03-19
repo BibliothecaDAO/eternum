@@ -70,14 +70,15 @@ const WorldMapMenuComponent = () => {
                 position: "bottom",
                 content: (
                   <>
-                    <p className="whitespace-nowrap">See, build or feed</p>
-                    <p className="whitespace-nowrap">Hyperstructures.</p>
+                    {/* <p className="whitespace-nowrap">See, build or feed</p>
+                    <p className="whitespace-nowrap">Hyperstructures.</p> */}
+                    <p className="whitespace-nowrap">Coming Soon</p>
                   </>
                 ),
               })
             }
             onMouseLeave={() => setTooltip(null)}
-            className="flex relative group flex-col items-center"
+            className="flex relative group flex-col items-center blur-sm"
           >
             <Relic className="mb-2 fill-gold" /> <div>Hyperstructures</div>
           </div>
@@ -93,14 +94,15 @@ const WorldMapMenuComponent = () => {
                 position: "bottom",
                 content: (
                   <>
-                    <p className="whitespace-nowrap">Swap food for</p>
-                    <p className="whitespace-nowrap">Lords.</p>
+                    {/* <p className="whitespace-nowrap">Swap food for</p>
+                    <p className="whitespace-nowrap">Lords.</p> */}
+                    <p className="whitespace-nowrap">Coming Soon</p>
                   </>
                 ),
               })
             }
             onMouseLeave={() => setTooltip(null)}
-            className="flex relative group flex-col items-center"
+            className="flex relative group flex-col items-center blur-sm"
           >
             <Bank className="mb-2 fill-gold" /> <div>Banks</div>
           </div>
@@ -116,13 +118,14 @@ const WorldMapMenuComponent = () => {
                 position: "bottom",
                 content: (
                   <>
-                    <p className="whitespace-nowrap">Lords Leaderboard</p>
+                    {/* <p className="whitespace-nowrap">Lords Leaderboard</p> */}
+                    <p className="whitespace-nowrap">Coming Soon</p>
                   </>
                 ),
               })
             }
             onMouseLeave={() => setTooltip(null)}
-            className="flex relative group flex-col items-center"
+            className="flex relative group flex-col items-center blur-sm"
           >
             <Leaderboard className="mb-2 fill-gold" /> <div>Leaderboard</div>
           </div>
@@ -145,7 +148,7 @@ const WorldMapMenuComponent = () => {
       </div>
       <Tabs
         selectedIndex={selectedTab}
-        onChange={(index: number) => setSelectedTab(index)}
+        onChange={(index: number) => setSelectedTab(0)}
         variant="primary"
         className="flex-1 mt-4 overflow-hidden"
       >

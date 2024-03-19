@@ -41,8 +41,8 @@ export const Defence = ({
               <span className="text-order-brilliance">{`+${levelBonus - 100}%`}</span>
             </div>
             <div className="flex flex-row text-xxs justify-center">
-              <span className="mr-1 text-gold">{`HyperStructure Bonus: `}</span>
-              <span className="text-order-brilliance">{`+${conqueredHyperstructures * 25}%`}</span>
+              {/* <span className="mr-1 text-gold">{`Hyperstructure Bonus: `}</span> */}
+              {/* <span className="text-order-brilliance">{`+${conqueredHyperstructures * 25}%`}</span> */}
             </div>
           </div>
           <div className="flex items-center text-xxs ml-auto">

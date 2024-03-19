@@ -722,8 +722,8 @@ const SelectRaidersPanel = ({
             <span className="text-order-brilliance">{`+${attackerLevelBonus - 100}%`}</span>
           </div>
           <div className="flex flex-row mb-3 text-xs items-center justify-center">
-            <span className="mr-1 text-gold">{`Hyperstructure Bonus: `}</span>
-            <span className="text-order-brilliance">{`+${attackerHyperstructureLevelBonus - 100}%`}</span>
+            {/* <span className="mr-1 text-gold">{`Hyperstructure Bonus: `}</span> */}
+            {/* <span className="text-order-brilliance">{`+${attackerHyperstructureLevelBonus - 100}%`}</span> */}
           </div>
           <SelectRaiders
             attackingRaiders={attackingRaiders}
