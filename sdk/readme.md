@@ -6,7 +6,6 @@ These packages are designed to allow for easy client integration into the Eternu
 
 - [eternum](./packages/eternum)
 
-
 ### Enviroment setup
 
 We are using [bun](https://bun.sh/) in this repo install it by:
@@ -18,13 +17,15 @@ curl -fsSL https://bun.sh/install | bash
 ### Development
 
 From the root to install all the packages deps
+
 ```
 bun install
-``` 
+```
 
 ### Building packages
 
-Navigate to a package and run the following. This will launch bun and watch for local changes, automatically compiling and updating.
+Navigate to a package and run the following. This will launch bun and watch for local changes, automatically compiling
+and updating.
 
 ```
 bun run build --watch

@@ -12,31 +12,20 @@ const {
 } = require("./constants.js");
 
 const realmWheatAmount =
-  AVERAGE_DAILY_AMOUNT_OF_WHEAT_PRODUCTION *
-  NUMBER_OF_DAYS_OF_WOOD_PRODUCTION *
-  FOOD_COEFFICIENT *
-  1000;
+  AVERAGE_DAILY_AMOUNT_OF_WHEAT_PRODUCTION * NUMBER_OF_DAYS_OF_WOOD_PRODUCTION * FOOD_COEFFICIENT * 1000;
 
 // amount of fish to first level up a realm
 const realmFishAmount =
-  AVERAGE_DAILY_AMOUNT_OF_FISH_PRODUCTION *
-  NUMBER_OF_DAYS_OF_WOOD_PRODUCTION *
-  FOOD_COEFFICIENT *
-  1000;
+  AVERAGE_DAILY_AMOUNT_OF_FISH_PRODUCTION * NUMBER_OF_DAYS_OF_WOOD_PRODUCTION * FOOD_COEFFICIENT * 1000;
 
 const getResourceAmount = (resources, multiplier) => {
   let amounts = [];
 
-  const baseAmount =
-    NUMBER_OF_DAYS_OF_WOOD_PRODUCTION * 24 * PRODUCTION_PER_HOUR;
+  const baseAmount = NUMBER_OF_DAYS_OF_WOOD_PRODUCTION * 24 * PRODUCTION_PER_HOUR;
 
   for (const resourceId of resources) {
-    const resourceWeight =
-      RESOURCE_WEIGHTS[resourceId - 1][1] / RESOURCE_WEIGHTS[0][1];
-    amounts.push([
-      resourceId,
-      Math.round(baseAmount * resourceWeight * multiplier * 1000),
-    ]);
+    const resourceWeight = RESOURCE_WEIGHTS[resourceId - 1][1] / RESOURCE_WEIGHTS[0][1];
+    amounts.push([resourceId, Math.round(baseAmount * resourceWeight * multiplier * 1000)]);
   }
   return amounts;
 };

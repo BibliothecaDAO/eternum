@@ -6,9 +6,7 @@ function packResources(numbers) {
   const maxValues = Math.floor(MAX_BITS / MAX_NUMBER_SIZE);
 
   if (numbers.length > maxValues) {
-    throw new Error(
-      `Exceeded maximum number of values that can be packed: ${maxValues}`
-    );
+    throw new Error(`Exceeded maximum number of values that can be packed: ${maxValues}`);
   }
 
   let packedValue = BigInt(0);
@@ -17,9 +15,7 @@ function packResources(numbers) {
     const number = BigInt(numbers[i]);
 
     if (number >= 1 << MAX_NUMBER_SIZE) {
-      throw new Error(
-        `Number ${number} exceeds maximum size of ${MAX_NUMBER_SIZE} bits`
-      );
+      throw new Error(`Number ${number} exceeds maximum size of ${MAX_NUMBER_SIZE} bits`);
     }
 
     packedValue = (packedValue << BigInt(MAX_NUMBER_SIZE)) | number;

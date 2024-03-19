@@ -1,14 +1,6 @@
-const {
-  INITIAL_FOOD_COEFFICIENT,
-  MAXIMUM_REALMS_LEVEL,
-  RESOURCE_IDS,
-} = require("./constants.js");
+const { INITIAL_FOOD_COEFFICIENT, MAXIMUM_REALMS_LEVEL, RESOURCE_IDS } = require("./constants.js");
 
-const {
-  getResourceAmount,
-  realmFishAmount,
-  realmWheatAmount,
-} = require("./generateLevelingCommands.js");
+const { getResourceAmount, realmFishAmount, realmWheatAmount } = require("./generateLevelingCommands.js");
 
 // realms should be able to level up to first level when settled
 
@@ -27,15 +19,7 @@ resourcesProd = resourcesProd += [
 ];
 
 let resourcesDev = Array.from({ length: 22 }, (_, i) => [i + 1, 1000000000]);
-resourcesDev = resourcesDev += [
-  ,
-  253,
-  1000000000,
-  254,
-  1000000000,
-  255,
-  1000000000,
-];
+resourcesDev = resourcesDev += [, 253, 1000000000, 254, 1000000000, 255, 1000000000];
 
 let commandProd = `"sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,24,${resourcesProd}"`;
 console.log("\n");

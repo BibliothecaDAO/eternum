@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "scripts": {
     "build-packages": "bun run --cwd sdk/packages/eternum build",
-    "build-client": "bun run --cwd ./client build"
+    "build-client": "bun run --cwd ./client build",
+    "prettier-check": "bun x prettier --check .",
+    "prettier": "bun x prettier --write ."
   }
 }
