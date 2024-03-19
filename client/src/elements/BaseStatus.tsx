@@ -12,7 +12,7 @@ const STYLES = {
   good: "text-order-vitriol",
 };
 export const BaseStatus = ({ state, children }: BaseStatusProps) => {
-  useEffect(() => { }, []);
+  useEffect(() => {}, []);
 
   return <div className={`${STYLES.base} ${STYLES[state]}`}>{children}</div>;
 };

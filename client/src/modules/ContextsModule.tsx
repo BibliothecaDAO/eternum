@@ -1,11 +1,11 @@
-import ContextComponent from "../components/ContextComponent"
+import ContextComponent from "../components/ContextComponent";
 
 const ContextsModule = () => {
-    return (
-        <div className="flex space-x-2 mt-0.5">
-            <ContextComponent />
-        </div>
-    )
-}
+  return (
+    <div className="flex space-x-2 mt-0.5">
+      <ContextComponent />
+    </div>
+  );
+};
 
-export default ContextsModule
+export default ContextsModule;
