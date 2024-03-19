@@ -8,7 +8,7 @@ import { useDojo } from "../../../../DojoContext";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
 import { calculateNextHarvest, calculateProductivity, formatSecondsInHoursMinutes } from "./laborUtils";
 import { useMemo } from "react";
-import { playResourceSound, soundSelector, useUiSounds } from "../../../../hooks/useUISound";
+import { usePlayResourceSound, soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 import { useComponentValue } from "@dojoengine/react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
@@ -46,6 +46,8 @@ export const LaborComponent = ({
     },
     account: { account },
   } = useDojo();
+
+  const { playResourceSound } = usePlayResourceSound();
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
