@@ -53,13 +53,13 @@ for (let row = 1; row < rows.length; row++) {
     console.log(`# resourceId: ${resourceId}`);
     console.log(
       `"sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,${resourceId},${packResources(
-        resource_list
-      )},${number_of_resources}"`
+        resource_list,
+      )},${number_of_resources}"`,
     );
 
     for (let i = 0; i < resource_list.length; i++) {
       console.log(
-        `"sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,${resourceId},${resource_list[i]},${resource_amounts[i]}"`
+        `"sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,${resourceId},${resource_list[i]},${resource_amounts[i]}"`,
       );
     }
   }

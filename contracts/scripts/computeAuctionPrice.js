@@ -6,23 +6,19 @@ function getTotalPrice(
   num_days,
   sold,
   labor_multiplier,
-  price_update_interval
+  price_update_interval,
 ) {
   let new_sold = sold;
   let total_price = 0;
 
-  let multiplier = Math.exp(
-    Math.log(1 - decay) * (num_days - new_sold / units_per_day)
-  );
+  let multiplier = Math.exp(Math.log(1 - decay) * (num_days - new_sold / units_per_day));
   for (let i = 0; i < units; i++) {
     let price = target_price * multiplier * labor_multiplier;
 
     total_price += parseInt(price);
     new_sold += 1;
     if (new_sold % price_update_interval == 0) {
-      multiplier = Math.exp(
-        Math.log(1 - decay) * (num_days - new_sold / units_per_day)
-      );
+      multiplier = Math.exp(Math.log(1 - decay) * (num_days - new_sold / units_per_day));
     }
   }
 
@@ -41,19 +37,11 @@ const SECONDS_PER_DAY = 86400;
 
 function computeCoefficient(startTimestamp, nextBlockTimestamp, sold) {
   return Math.exp(
-    Math.log(1 - DECAY) *
-      (Math.floor((nextBlockTimestamp - startTimestamp) / SECONDS_PER_DAY) -
-        sold / UNITS_PER_DAY)
+    Math.log(1 - DECAY) * (Math.floor((nextBlockTimestamp - startTimestamp) / SECONDS_PER_DAY) - sold / UNITS_PER_DAY),
   );
 }
 
-function computeAverageCoefficient(
-  startTimestamp,
-  nextBlockTimestamp,
-  sold,
-  laborUnits,
-  interval
-) {
+function computeAverageCoefficient(startTimestamp, nextBlockTimestamp, sold, laborUnits, interval) {
   let sum = 0;
   let multiplier = computeCoefficient(startTimestamp, nextBlockTimestamp, sold);
   // start at number of units already sold and add 1 everytime
@@ -75,24 +63,16 @@ function getLordsAmountFromBankAuction(
   startTimestamp,
   nextBlockTimestamp,
   sold,
-  price_update_interval
+  price_update_interval,
 ) {
   let unitsBought = 0;
   let cost = 0;
 
-  let coefficient = computeCoefficient(
-    startTimestamp,
-    nextBlockTimestamp,
-    sold
-  );
+  let coefficient = computeCoefficient(startTimestamp, nextBlockTimestamp, sold);
 
   while (cost <= totalCost) {
     if (sold % price_update_interval == 0) {
-      coefficient = computeCoefficient(
-        startTimestamp,
-        nextBlockTimestamp,
-        sold
-      );
+      coefficient = computeCoefficient(startTimestamp, nextBlockTimestamp, sold);
     }
     let priceForNextUnit = target_price * coefficient;
 
@@ -117,7 +97,7 @@ let laborUnits = getLordsAmountFromBankAuction(
   1701420311, // startTimestamp
   1701456643, // nextBlockTimestamp
   0, // initially sold
-  100000 // price_update_interval
+  100000, // price_update_interval
 );
 
 // console.log("Labor Units that can be bought: ", laborUnits);

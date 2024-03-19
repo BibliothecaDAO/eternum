@@ -10,18 +10,8 @@ const FISH_AMOUNT = 15000000;
 const weightArray = [];
 for (let i = 0; i < RESOURCE_WEIGHTS.length; i += 2) {
   const combinedElement = [
-    [
-      i + 1,
-      Math.round(
-        (RESOURCE_WEIGHTS[i][1] * WOOD_BASE_AMOUNT) / RESOURCE_WEIGHTS[0][1]
-      ),
-    ],
-    [
-      i + 2,
-      Math.round(
-        (RESOURCE_WEIGHTS[i + 1][1] * WOOD_BASE_AMOUNT) / RESOURCE_WEIGHTS[0][1]
-      ),
-    ],
+    [i + 1, Math.round((RESOURCE_WEIGHTS[i][1] * WOOD_BASE_AMOUNT) / RESOURCE_WEIGHTS[0][1])],
+    [i + 2, Math.round((RESOURCE_WEIGHTS[i + 1][1] * WOOD_BASE_AMOUNT) / RESOURCE_WEIGHTS[0][1])],
   ];
   weightArray.push(combinedElement);
 }

@@ -292,18 +292,16 @@ export class EternumProvider extends DojoProvider {
     const BATCH_SIZE = 3;
     let batchCalldata = [];
 
-    for(let i = 1; i <= calldata.length; i++) {
-      
+    for (let i = 1; i <= calldata.length; i++) {
       batchCalldata.push(calldata[i - 1]);
-      if (i % BATCH_SIZE == 0 || i == calldata.length ) {
+      if (i % BATCH_SIZE == 0 || i == calldata.length) {
+        const tx = await this.executeMulti(signer, batchCalldata);
+        await this.provider.waitForTransaction(tx.transaction_hash, {
+          retryInterval: 500,
+        });
 
-          const tx = await this.executeMulti(signer, batchCalldata);
-          await this.provider.waitForTransaction(tx.transaction_hash, {
-            retryInterval: 500,
-          });
-          
-          // reset batchCalldata
-          batchCalldata = [];
+        // reset batchCalldata
+        batchCalldata = [];
       }
     }
   }
