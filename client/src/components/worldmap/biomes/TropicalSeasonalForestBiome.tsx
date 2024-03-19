@@ -47,6 +47,7 @@ export function TropicalSeasonalForestBiome({ hexes }: { hexes: Hexagon[] }) {
       _materials["Tropical Seasonal Forest Leaves"],
       _materials["Tropical Seasonal Forest Wood"],
       _materials["Tropical Seasonal Brown Forest Leaves"],
+      _materials["Tropical Seasonal Forest Leaves"],
     ];
   }, [_materials]);
 
