@@ -23,15 +23,16 @@ import { ResourceCost } from "../../../elements/ResourceCost";
 import { TIME_PER_TICK } from "../../network/EpochCountdown";
 import { Subscription } from "rxjs";
 import { ENEMY_ARMY_MODEL_DEFAULT_COLOR, ENEMY_ARMY_MODEL_HOVER_COLOR, ENEMY_ARMY_MODEL_SCALE } from "./EnemyArmies";
+import { WarriorModel, WarriorModels } from "./models/WarriorModel";
 
 type ArmiesProps = {
   props?: any;
 };
 
-const FRIENDLY_ARMY_MODEL_DEFAULT_COLOR: string = "green";
-const FRIENDLY_ARMY_MODEL_HOVER_COLOR: string = "yellow";
-const FRIENDLY_ARMY_MODEL_SCALE: number = 2;
-const FRIENDLY_ARMY_MODEL_DEAD_COLOR: string = "black";
+export const FRIENDLY_ARMY_MODEL_DEFAULT_COLOR: string = "green";
+export const FRIENDLY_ARMY_MODEL_HOVER_COLOR: string = "yellow";
+export const FRIENDLY_ARMY_MODEL_SCALE: number = 2;
+export const FRIENDLY_ARMY_MODEL_DEAD_COLOR: string = "black";
 
 export const Armies = ({}: ArmiesProps) => {
   const {
@@ -44,22 +45,9 @@ export const Armies = ({}: ArmiesProps) => {
   const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
   const animationPaths = useUIStore((state) => state.animationPaths);
 
-  const positionOffset: Record<string, number> = {};
-
   const { useOwnerRaiders } = useCombat();
 
   const armies = useOwnerRaiders(BigInt(account.address));
-
-  const [hoveredArmy, setHoveredArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
-  const [selectedArmy, setSelectedArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
-
-  const onHover = (armyId: bigint, position: UIPosition) => {
-    setHoveredArmy({ id: armyId, position });
-  };
-
-  const onUnhover = () => {
-    setHoveredArmy(undefined);
-  };
 
   const positions = useMemo(
     () =>
@@ -69,8 +57,8 @@ export const Armies = ({}: ArmiesProps) => {
           const health = getComponentValue(Health, getEntityIdFromKeys([armyId]));
           const isDead = health?.value ? false : true;
 
-          // if animated army dont display
-          if (!position || animationPaths.find((path) => path.id === position.entity_id)) return;
+          // // if animated army dont display
+          if (!position) return;
           let z = 0.32;
           return {
             contractPos: { x: position.x, y: position.y },
@@ -79,7 +67,7 @@ export const Armies = ({}: ArmiesProps) => {
             isDead,
           };
         })
-        .filter(Boolean) as { contractPos: Position; uiPos: UIPosition; id: bigint; isDead: Boolean }[],
+        .filter(Boolean) as { contractPos: Position; uiPos: UIPosition; id: bigint; isDead: boolean }[],
     [armies],
   );
 
@@ -98,36 +86,7 @@ export const Armies = ({}: ArmiesProps) => {
 
   return (
     <group>
-      {positions.map(({ contractPos, uiPos, id, isDead }, i) => {
-        let offset = 0;
-        if (positionOffset[JSON.stringify(uiPos)]) {
-          positionOffset[JSON.stringify(uiPos)] += 1;
-          if (positionOffset[JSON.stringify(uiPos)] % 2 === 0) {
-            offset = positionOffset[JSON.stringify(uiPos)] * -0.3;
-          } else {
-            offset = positionOffset[JSON.stringify(uiPos)] * 0.3;
-          }
-        } else {
-          positionOffset[JSON.stringify(uiPos)] = 1;
-        }
-        return (
-          <ArmyModel
-            onPointerOver={() => onHover(id, uiPos)}
-            onPointerOut={onUnhover}
-            onClick={(e) => {
-              e.stopPropagation();
-              onClick(id, contractPos, isDead)
-            }}
-            key={id}
-            scale={FRIENDLY_ARMY_MODEL_SCALE}
-            position={[uiPos.x + offset + 0.7, uiPos.z, -uiPos.y]}
-            defaultColor={!isDead ? FRIENDLY_ARMY_MODEL_DEFAULT_COLOR : FRIENDLY_ARMY_MODEL_DEAD_COLOR}
-            hoverColor={FRIENDLY_ARMY_MODEL_HOVER_COLOR}
-          ></ArmyModel>
-        );
-      })}
-      {hoveredArmy && <ArmyInfoLabel position={hoveredArmy.position} armyId={hoveredArmy.id} />}
-      {selectedArmy && <ArmyInfoLabel position={selectedArmy.position} armyId={selectedArmy.id} />}
+      <WarriorModels warriorsInfo={positions}></WarriorModels>
     </group>
   );
 };
@@ -213,7 +172,7 @@ export const TravelingArmies = ({}: TravelingArmiesProps) => {
   );
 };
 
-const useUpdateAnimationPaths = () => {
+export const useUpdateAnimationPaths = () => {
   const {
     setup: {
       updates: {
@@ -261,7 +220,7 @@ type ArmyInfoLabelProps = {
   armyId: bigint;
 };
 
-const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
+export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
   const { getEntitiesCombatInfo } = useCombat();
 
   const {
