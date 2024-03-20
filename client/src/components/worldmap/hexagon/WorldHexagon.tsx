@@ -9,7 +9,7 @@ import { MyCastles, OtherCastles } from "../Castles";
 import { Armies, TravelingArmies } from "../armies/Armies";
 import { EnemyArmies } from "../armies/EnemyArmies";
 import { Hexagon } from "../../../types";
-import { BiomesGrid, HexagonGrid } from "./HexLayers.js";
+import { BiomesGrid, HexagonGrid } from "./HexLayers";
 
 export const DEPTH = 10;
 export const HEX_RADIUS = 3;
