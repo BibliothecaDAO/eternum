@@ -9,6 +9,7 @@ export const soundSelector = {
   sign: "ui/sign.mp3",
   harvest: "ui/harvest.mp3",
   fly: "ui/whoosh.mp3",
+  levelUp: "ui/level-up.mp3",
   buildLabor: "buildings/workhuts.mp3",
   buildMilitary: "buildings/military.mp3",
   buildCastle: "buildings/castle.mp3",
