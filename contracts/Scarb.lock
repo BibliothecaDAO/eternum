@@ -4,7 +4,7 @@ version = 1
 [[package]]
 name = "alexandria_data_structures"
 version = "0.2.0"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=98aadc7e3f12dbb026e853604fe2cc061451cc8a#98aadc7e3f12dbb026e853604fe2cc061451cc8a"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=cairo-v2.5.4#e7b69575f92076e96a83a76efa6bed3c32a15f9f"
 dependencies = [
  "alexandria_encoding",
 ]
@@ -12,7 +12,7 @@ dependencies = [
 [[package]]
 name = "alexandria_encoding"
 version = "0.1.0"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=98aadc7e3f12dbb026e853604fe2cc061451cc8a#98aadc7e3f12dbb026e853604fe2cc061451cc8a"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=cairo-v2.5.4#e7b69575f92076e96a83a76efa6bed3c32a15f9f"
 dependencies = [
  "alexandria_math",
  "alexandria_numeric",
@@ -21,7 +21,7 @@ dependencies = [
 [[package]]
 name = "alexandria_math"
 version = "0.2.0"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=98aadc7e3f12dbb026e853604fe2cc061451cc8a#98aadc7e3f12dbb026e853604fe2cc061451cc8a"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=cairo-v2.5.4#e7b69575f92076e96a83a76efa6bed3c32a15f9f"
 dependencies = [
  "alexandria_data_structures",
 ]
@@ -29,7 +29,7 @@ dependencies = [
 [[package]]
 name = "alexandria_numeric"
 version = "0.1.0"
-source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=98aadc7e3f12dbb026e853604fe2cc061451cc8a#98aadc7e3f12dbb026e853604fe2cc061451cc8a"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?rev=cairo-v2.5.4#e7b69575f92076e96a83a76efa6bed3c32a15f9f"
 dependencies = [
  "alexandria_math",
 ]
@@ -37,7 +37,7 @@ dependencies = [
 [[package]]
 name = "cubit"
 version = "1.3.0"
-source = "git+https://github.com/akhercha/cubit?rev=d3869a3f0c47e5ed229bbbfe2fce3fc0510cbc8a#d3869a3f0c47e5ed229bbbfe2fce3fc0510cbc8a"
+source = "git+https://github.com/ponderingdemocritus/cubit#82be92f4c296143bbb5721c4d7b88328925fd236"
 
 [[package]]
 name = "dojo"
