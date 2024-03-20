@@ -1,9 +1,9 @@
-import { SettingsComponent } from "../components/SettingsComponent";
+import { SettingsNavigation } from "../components/navigation/SettingsNavigation";
 
 const NetworkModule = () => {
   return (
     <div className="flex mb-3">
-      <SettingsComponent />
+      <SettingsNavigation />
     </div>
   );
 };

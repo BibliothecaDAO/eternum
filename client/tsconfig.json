@@ -18,7 +18,8 @@
     // "noUnusedParameters": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["vite-plugin-svgr/client"]
+    "types": ["vite-plugin-svgr/client"],
+    "baseUrl": "."
   },
   "include": ["src/*"],
   "exclude": ["node_modules", "./node_modules", "./node_modules/*", "src/node_modules", "dist", "**/*.spec.ts"],

@@ -15,12 +15,9 @@ import { useEffect, useMemo } from "react";
 import clsx from "clsx";
 import { Redirect, Route, Switch, useLocation } from "wouter";
 import { useProgress } from "@react-three/drei";
-import { BlurOverlayContainer } from "../containers/BlurOverlayContainer";
-import { NotificationsComponent } from "../components/NotificationsComponent";
+import { NotificationsComponent } from "../components/notifications/NotificationsComponent";
 import WorldMapMenuModule from "../modules/WorldMapMenuModule";
 import { Tooltip } from "../elements/Tooltip";
-import useCombatHistoryStore from "../hooks/store/useCombatHistoryStore";
-import useRealmStore from "../hooks/store/useRealmStore";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
 import { Onboarding } from "../plugins/onboarding/components/Onboarding";
 import { WorldPopups } from "./WorldPopups";
@@ -93,7 +90,6 @@ export const World = () => {
           <NotificationsComponent className="" />
         </div>
         <RealmResourcesComponent />
-        {/* <ContextsModule /> */}
       </TopContainer>
       <ContentContainer>
         <Switch location={locationType}>
@@ -105,7 +101,6 @@ export const World = () => {
           </Route>
         </Switch>
       </ContentContainer>
-      {/* <BottomMiddleContainer><WolrdMapLayersModule /></BottomMiddleContainer> */}
       <BottomMiddleContainer>{<></>}</BottomMiddleContainer>
       <BottomRightContainer>
         <ChatModule />
@@ -113,13 +108,10 @@ export const World = () => {
       <BlankOverlayContainer>
         <Onboarding />
       </BlankOverlayContainer>
-      <BlurOverlayContainer>
-        {/* <SignUpComponent isWorldLive={isWorldLive} worldLoading={worldLoading} worldProgress={worldProgress} /> */}
-      </BlurOverlayContainer>
       <Leva hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU} />
       <Tooltip />
       <Redirect to="/map" />
-      <div className="absolute bottom-4 right-6 text-white text-xs text-white/60">v0.3.0</div>
+      <div className="absolute bottom-4 right-6 text-white text-xs text-white/60">v0.4.0</div>
       <EpochCountdown />
       <HooksComponent />
     </div>
