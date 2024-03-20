@@ -74,9 +74,9 @@ function myMain() {
   console.log(
     `\n"sozo execute $CONFIG_SYSTEMS set_leveling_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,999999999999999993,604800,1000,1844674407370955161,4611686018427387904,25,${realmWheatAmount},${realmFishAmount},${formatResources(
       getResourceAmount(RESOURCE_TIER_1, 1),
-    )},${formatResources(
-      getResourceAmount(RESOURCE_TIER_2, 1),
-    )},${formatResources(getResourceAmount(RESOURCE_TIER_3, 1))}"\n`,
+    )},${formatResources(getResourceAmount(RESOURCE_TIER_2, 1))},${formatResources(
+      getResourceAmount(RESOURCE_TIER_3, 1),
+    )}"\n`,
   );
 
   const hyperstructureMuliplier = MINIMUM_NUMBER_OF_PLAYERS * NUMBER_OF_REALMS_PER_PLAYER;
