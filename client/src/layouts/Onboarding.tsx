@@ -1,28 +1,27 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Button from "../../../elements/Button";
-import useUIStore from "../../../hooks/store/useUIStore";
-import SettleRealmComponent, { MAX_REALMS } from "../../../components/cityview/realm/SettleRealmComponent";
-import { useAddressStore } from "../../../hooks/store/useAddressStore";
-import { useDojo } from "../../../DojoContext";
-import TextInput from "../../../elements/TextInput";
-import ListSelect from "../../../elements/ListSelect";
-import { addressToNumber, displayAddress } from "../../../utils/utils";
-import { ReactComponent as Copy } from "../../../assets/icons/common/copy.svg";
-import { ReactComponent as Import } from "../../../assets/icons/common/import.svg";
-import { ReactComponent as Cross } from "../../../assets/icons/common/cross.svg";
-import { ReactComponent as ArrowRight } from "../../../assets/icons/common/arrow-right.svg";
-import { ReactComponent as ArrowLeft } from "../../../assets/icons/common/arrow-left.svg";
-import Avatar from "../../../elements/Avatar";
-import useRealmStore from "../../../hooks/store/useRealmStore";
-
-import realmsNames from "../../../geodata/realms.json";
+import Button from "../elements/Button";
+import useUIStore from "../hooks/store/useUIStore";
+import SettleRealmComponent, { MAX_REALMS } from "../components/cityview/realm/SettleRealmComponent";
+import { useAddressStore } from "../hooks/store/useAddressStore";
+import { useDojo } from "../DojoContext";
+import TextInput from "../elements/TextInput";
+import ListSelect from "../elements/ListSelect";
+import { addressToNumber, displayAddress } from "../utils/utils";
+import { ReactComponent as Copy } from "../assets/icons/common/copy.svg";
+import { ReactComponent as Import } from "../assets/icons/common/import.svg";
+import { ReactComponent as Cross } from "../assets/icons/common/cross.svg";
+import { ReactComponent as ArrowRight } from "../assets/icons/common/arrow-right.svg";
+import { ReactComponent as ArrowLeft } from "../assets/icons/common/arrow-left.svg";
+import Avatar from "../elements/Avatar";
+import useRealmStore from "../hooks/store/useRealmStore";
+import realmsNames from "../geodata/realms.json";
 import { useLocation } from "wouter";
 import { orderNameDict } from "@bibliothecadao/eternum";
-import { getRealm } from "../../../utils/realms";
+import { getRealm } from "../utils/realms";
 import { Has, HasValue, getComponentValue } from "@dojoengine/recs";
-import { RealmBubble } from "../../../components/cityview/RealmSwitch";
+import { RealmBubble } from "../components/cityview/RealmSwitch";
 import { useEntityQuery } from "@dojoengine/react";
-import { useRealm } from "../../../hooks/helpers/useRealm";
+import { useRealm } from "../hooks/helpers/useRealm";
 
 export const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState(1);

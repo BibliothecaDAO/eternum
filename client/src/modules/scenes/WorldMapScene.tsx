@@ -1,23 +1,12 @@
-// import WorldMap from "../../components/worldmap/WorldMap.jsx";
-// @ts-ignore
-import { Flags } from "../../components/worldmap/Flags.jsx";
-import HyperstructureStarted from "../../components/worldmap/hyperstructures/models/HyperstructureStarted";
-import HyperstructureHalf from "../../components/worldmap/hyperstructures/models/HyperstructureHalf";
-import HyperstructureFinished from "../../components/worldmap/hyperstructures/models/HyperstructureFinished";
-import useUIStore from "../../hooks/store/useUIStore.js";
-// @ts-ignore
-// import Arcs from "../../components/worldmap/Arcs.jsx";
-import { useResources } from "../../hooks/helpers/useResources.js";
-import { useEffect, useMemo, useRef } from "react";
-import { useCaravan } from "../../hooks/helpers/useCaravans.js";
-import useRealmStore from "../../hooks/store/useRealmStore.js";
-import { useGetRealm } from "../../hooks/helpers/useRealm.js";
-import { getUIPositionFromContractPosition } from "../../utils/utils.js";
-import { HEX_RADIUS, WorldMap } from "../../components/worldmap/HexGrid.js";
+import { useEffect, useRef } from "react";
 import { useRoute } from "wouter";
 import * as THREE from "three";
-import { createHexagonShape } from "../../components/worldmap/components/three/HexagonBackground.js";
-import HighlightedHexes from "../../components/worldmap/HighlightedHexes.js";
+
+import useUIStore from "../../hooks/store/useUIStore.js";
+import { useResources } from "../../hooks/helpers/useResources.js";
+
+import HighlightedHexes from "../../components/worldmap/hexagon/HighlightedHexes.js";
+import { WorldMap } from "../../components/worldmap/hexagon/WorldHexagon";
 
 const StarsSky = () => {
   const particlesGeometry = new THREE.BufferGeometry();

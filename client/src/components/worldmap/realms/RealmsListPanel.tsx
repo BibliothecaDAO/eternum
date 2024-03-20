@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
-import { Tabs } from "../../elements/tab";
+import { Tabs } from "../../../elements/tab";
 import { RealmsListComponent } from "./RealmsListComponent";
-import useUIStore from "../../hooks/store/useUIStore";
-import { RaidsPanel } from "../cityview/realm/combat/raids/RaidsPanel";
-import { useCombat } from "../../hooks/helpers/useCombat";
-import { useDojo } from "../../DojoContext";
+import useUIStore from "../../../hooks/store/useUIStore";
+import { RaidsPanel } from "../../cityview/realm/combat/raids/RaidsPanel";
+import { useCombat } from "../../../hooks/helpers/useCombat";
+import { useDojo } from "../../../DojoContext";
 
 type RealmsListPanelProps = {};
 

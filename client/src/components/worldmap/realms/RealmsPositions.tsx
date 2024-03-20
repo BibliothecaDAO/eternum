@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import { useState, useEffect, useMemo } from "react";
 import { useControls } from "leva";
-import realmsJson from "../../geodata/realms.json";
-import useUIStore from "../../hooks/store/useUIStore";
+import realmsJson from "../../../geodata/realms.json";
+import useUIStore from "../../../hooks/store/useUIStore";
 
 const RealmsPositions = () => {
   const [bufferGeometry, setBufferGeometry] = useState(new THREE.BufferGeometry());

@@ -1,5 +1,6 @@
 import { HyperStructureInterface, Position } from "@bibliothecadao/eternum";
-import { Hexagon } from "../../components/worldmap/HexGrid";
+import { Hexagon } from "src/types";
+
 export interface MapStore {
   clickedHex: { col: number; row: number; hexIndex: number } | undefined;
   setClickedHex: (hex: { col: number; row: number; hexIndex: number } | undefined) => void;

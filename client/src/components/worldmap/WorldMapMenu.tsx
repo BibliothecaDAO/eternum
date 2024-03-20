@@ -6,7 +6,7 @@ import { ReactComponent as City } from "../../assets/icons/common/city.svg";
 import { ReactComponent as World } from "../../assets/icons/common/world.svg";
 import { useLocation } from "wouter";
 import { Tabs } from "../../elements/tab";
-import RealmsListPanel from "./RealmsListPanel";
+import RealmsListPanel from "./realms/RealmsListPanel";
 import { HyperstructuresPanel } from "./hyperstructures/HyperstructuresPanel";
 import useUIStore from "../../hooks/store/useUIStore";
 import { BanksPanel } from "./banks/BanksPanel";

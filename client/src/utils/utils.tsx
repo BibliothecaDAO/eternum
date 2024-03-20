@@ -250,3 +250,8 @@ export const findDirection = (startPos: { col: number; row: number }, endPos: { 
 export function removeAccents(str: string) {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
+
+export const pseudoRandom = (x: number, y: number) => {
+  let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
+  return n - Math.floor(n);
+};

@@ -19,8 +19,8 @@ import { NotificationsComponent } from "../components/notifications/Notification
 import WorldMapMenuModule from "../modules/WorldMapMenuModule";
 import { Tooltip } from "../elements/Tooltip";
 import { BlankOverlayContainer } from "../containers/BlankOverlayContainer";
-import { Onboarding } from "../plugins/onboarding/components/Onboarding";
-import { WorldPopups } from "./WorldPopups";
+import { Onboarding } from "./Onboarding";
+import { WorldPopups } from "../components/worldmap/WorldPopups";
 import EpochCountdown from "../components/network/EpochCountdown";
 import { HooksComponent } from "../components/HooksComponent";
 
