@@ -6,5 +6,8 @@
     "build-client": "bun run --cwd ./client build",
     "prettier-check": "bun x prettier --check .",
     "prettier": "bun x prettier --write ."
+  },
+  "dependencies": {
+    "tsup": "^7.2.0"
   }
 }

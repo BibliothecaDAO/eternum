@@ -96,7 +96,7 @@ export const useAttackedNotification = (
         </div>
       </div>
     ),
-    content: (onClose: () => void) => (
+    content: () => (
       <div className="flex flex-col">
         {damage && damage > 0 && (
           <div className="flex mt-2 ml-2 mb-1 items-center space-x-1 flex-wrap">
@@ -171,7 +171,7 @@ export const useStolenResourcesNotification = (
         </div>
       </div>
     ),
-    content: (onClose: () => void) => (
+    content: () => (
       <div className="flex flex-col">
         <div className="flex mt-2 w-full items-center flex-wrap space-x-2 space-y-1">
           <OrderIcon size="xs" className="mx-1" order={attackerRealmOrderName} />{" "}
@@ -258,7 +258,7 @@ export const useEnemyRaidersHaveArrivedNotification = (
         </div>
       </div>
     ),
-    content: (onClose: () => void) => (
+    content: () => (
       <div className="flex flex-col">
         <div className="flex mt-2 w-full items-center flex-wrap space-x-2 space-y-1">
           <OrderIcon size="xs" className="mx-1" order={attackerRealmOrderName} />{" "}
@@ -335,7 +335,7 @@ export const useEnemyRaidersAreTravelingNotification = (
         </div>
       </div>
     ),
-    content: (onClose: () => void) => (
+    content: () => (
       <div className="flex flex-col">
         <div className="flex mt-2 w-full items-center flex-wrap space-x-2 space-y-1">
           <OrderIcon size="xs" className="mx-1" order={attackerRealmOrderName} />{" "}
@@ -412,7 +412,7 @@ export const useYourRaidersHaveArrivedNotification = (
         </div>
       </div>
     ),
-    content: (onClose: () => void) => (
+    content: () => (
       <div className="flex flex-col">
         <div className="flex mt-2 w-full items-center flex-wrap space-x-2 space-y-1">
           <OrderIcon size="xs" className="mx-1" order={attackerRealmOrderName} />{" "}

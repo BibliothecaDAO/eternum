@@ -137,19 +137,7 @@ export const SelectRealmForCombatPanel = ({
           </SortPanel>
           <div className="flex flex-col px-1 mb-1 space-y-2 max-h-40 overflow-y-auto">
             {sortedRealms.map(
-              (
-                {
-                  order,
-                  name,
-                  addressName,
-                  realmId: destinationRealmId,
-                  distance,
-                  level,
-                  entityId: destinationEntityId,
-                  defence,
-                },
-                i,
-              ) => {
+              ({ order, name, addressName, distance, level, entityId: destinationEntityId, defence }, i) => {
                 return (
                   <div
                     key={i}

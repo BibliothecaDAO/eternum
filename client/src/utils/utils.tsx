@@ -2,7 +2,7 @@ import { forwardRef, useMemo, useLayoutEffect } from "react";
 import { Vector2 } from "three";
 import { useThree } from "@react-three/fiber";
 import { BlendFunction } from "postprocessing";
-import { Entity, setComponent, Component, Schema, Components } from "@dojoengine/recs";
+import { Entity } from "@dojoengine/recs";
 import { Position, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import realmsHexPositions from "../geodata/hex/realmHexPositions.json";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -83,59 +83,6 @@ export function extractAndCleanKey(keys: string | null | undefined | string[]): 
   }
 }
 
-export type NodeEntity = {
-  __typename?: "Entity";
-  // keys?: (string | null)[] | null | undefined;
-  keys?: string | null | undefined | string[];
-  models?: any | null[];
-};
-
-export function setComponentsFromEntity(entity: NodeEntity, components: Components) {
-  if (!entity || !entity.models) return;
-
-  // Pre-calculate these to avoid redundancy
-  const keys = entity?.keys ? extractAndCleanKey(entity.keys) : [];
-  const entityId = getEntityIdFromKeys(keys);
-
-  for (const rawComponentValues of entity.models) {
-    if (rawComponentValues?.__typename) {
-      const component = components[rawComponentValues.__typename];
-      const componentValues = Object.keys(component.schema).reduce((acc: Schema, key) => {
-        const value = rawComponentValues[key];
-        // TODO: better way to do this? check the recs type
-        acc[key] = key === "address" ? value : Number(value);
-        return acc;
-      }, {});
-
-      setComponent(component, entityId, componentValues);
-    }
-  }
-}
-
-export function setComponentFromEntity(entity: NodeEntity, componentName: string, components: Components) {
-  if (entity) {
-    let component = components[componentName];
-    let rawComponentValues = entity?.models?.find((component: any) => {
-      return component?.__typename === componentName;
-    });
-    if (rawComponentValues) {
-      // setting the component values
-      let keys = entity?.keys ? extractAndCleanKey(entity.keys) : [];
-      let entityId = getEntityIdFromKeys(keys);
-      // TODO: issue is that torii returns all numbers as strings, need to fix in torii
-      // so here i am transforming to a number each time (but it will cause problem for fields that are not numbers)
-      const componentValues = Object.keys(component.schema).reduce((acc: Schema, key) => {
-        const value = rawComponentValues[key];
-        // TODO: better way to do this? check the recs type
-        acc[key] = key === "address" ? value : Number(value);
-        return acc;
-      }, {});
-
-      setComponent(component, entityId, componentValues);
-    }
-  }
-}
-
 export const numberToHex = (num: number) => {
   return "0x" + num.toString(16);
 };
@@ -152,141 +99,6 @@ export const hexToAscii = (str1: string) => {
   }
   return str;
 };
-
-export const padAddress = (address: string) => {
-  return "0x" + address.substring(2).padStart(64, "0");
-};
-
-export function getFirstComponentByType(entities: NodeEntity[] | null | undefined, typename: string): any | null {
-  if (!isValidArray(entities)) return null;
-
-  for (let entity of entities) {
-    if (isValidArray(entity?.models)) {
-      const foundComponent = entity.models.find((comp: any) => comp.__typename === typename);
-      if (foundComponent) return foundComponent;
-    }
-  }
-
-  return null;
-}
-
-export function strTofelt252Felt(str: string): string {
-  const encoder = new TextEncoder();
-  const strB = encoder.encode(str);
-  return BigInt(
-    strB.reduce((memo, byte) => {
-      memo += byte.toString(16);
-      return memo;
-    }, "0x"),
-  ).toString();
-}
-
-export function getAllComponentNames(manifest: any): any {
-  return manifest.components.map((component: any) => component.name);
-}
-
-export function getAllComponentNamesAsFelt(manifest: any): any {
-  return manifest.components.map((component: any) => strTofelt252Felt(component.name));
-}
-
-export function getAllSystemNames(manifest: any): any {
-  return manifest.systems.map((system: any) => system.name);
-}
-
-export function getAllSystemNamesAsFelt(manifest: any): any {
-  return manifest.systems.map((system: any) => strTofelt252Felt(system.name));
-}
-
-export function setComponentFromEntitiesQuery(component: Component, entities: bigint[]) {
-  let index = 0;
-
-  // Retrieve the number of entityIds
-  const numEntityIds = Number(entities[index++]);
-
-  // Retrieve entityIds
-  const entityIds = entities.slice(index, index + numEntityIds);
-  index += numEntityIds;
-
-  // Retrieve the number of entities with component values
-  const numEntities = Number(entities[index++]);
-
-  for (let i = 0; i < numEntities; i++) {
-    // Retrieve the number of component values for the current entity
-    const numValues = Number(entities[index++]);
-
-    // Retrieve entity's component values
-    const valueArray = entities.slice(index, index + numValues);
-    const componentValues = Object.keys(component.schema).reduce((acc: Schema, key, index) => {
-      const value = valueArray[index];
-      acc[key] = Number(value);
-      return acc;
-    }, {});
-
-    const entityIndex = entityIds[i].toString() as Entity;
-    setComponent(component, entityIndex, componentValues);
-
-    index += numValues;
-  }
-}
-
-export function setComponentFromEntitiesGraphqlQuery(component: Component, entities: NodeEntity[]) {
-  entities.forEach((entity) => {
-    const keys = extractAndCleanKey(entity.keys);
-    const entityIndex = getEntityIdFromKeys(keys);
-    entity.models.forEach((comp: any) => {
-      if (comp.__typename === component.metadata?.name) {
-        const componentValues = Object.keys(component.schema).reduce((acc: Schema, key) => {
-          const value = comp[key];
-          acc[key] = key === "address" ? value : Number(value);
-          return acc;
-        }, {});
-        setComponent(component, entityIndex, componentValues);
-      }
-    });
-  });
-}
-
-export function setComponentFromEvent(components: Components, eventData: string[]) {
-  // retrieve the component name
-  const componentName = hex_to_ascii(eventData[0]);
-
-  // retrieve the component from name
-  const component = components[componentName];
-
-  // get keys
-  const keysNumber = parseInt(eventData[1]);
-  let index = 2 + keysNumber + 1;
-
-  const keys = eventData.slice(2, 2 + keysNumber).map((key) => BigInt(key));
-
-  // get entityIndex from keys
-  const entityIndex = getEntityIdFromKeys(keys);
-
-  // get values
-  let numberOfValues = parseInt(eventData[index++]);
-
-  // get values
-  const values = eventData.slice(index, index + numberOfValues);
-
-  // create component object from values with schema
-  const componentValues = Object.keys(component.schema).reduce((acc: Schema, key, index) => {
-    const value = values[index];
-    // @ts-ignore
-    acc[key] = key === "address" ? value : Number(value);
-    return acc;
-  }, {});
-
-  // set component
-  setComponent(component, entityIndex, componentValues);
-}
-
-function hex_to_ascii(hex: string) {
-  var str = "";
-  for (var n = 2; n < hex.length; n += 2) {
-    str += String.fromCharCode(parseInt(hex.substr(n, 2), 16));
-  }
-  return str;
-}
 
 export const formatTimeLeft = (seconds: number) => {
   const hours = Math.floor(seconds / 3600);
@@ -377,7 +189,7 @@ export const calculateDistance = (start: Position, destination: Position): numbe
   return distance;
 };
 
-export const getUIPositionFromColRow = (col: number, row: number, log: boolean = false): Position => {
+export const getUIPositionFromColRow = (col: number, row: number, _log: boolean = false): Position => {
   const hexRadius = 3;
   const hexHeight = hexRadius * 2;
   const hexWidth = Math.sqrt(3) * hexRadius;

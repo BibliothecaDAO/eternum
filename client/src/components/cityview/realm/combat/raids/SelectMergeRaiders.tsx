@@ -46,12 +46,7 @@ type SelectableRaiderProps = {
   setSelectedRaiders: React.Dispatch<React.SetStateAction<Record<string, number>>>;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const SelectableMergeRaider = ({
-  raider,
-  selectedRaiders,
-  setSelectedRaiders,
-  ...props
-}: SelectableRaiderProps) => {
+export const SelectableMergeRaider = ({ raider, selectedRaiders, setSelectedRaiders }: SelectableRaiderProps) => {
   const { entityId, health, quantity, attack, defence, originRealmId, arrivalTime } = raider;
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);

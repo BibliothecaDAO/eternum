@@ -33,7 +33,6 @@ export const LaborComponent = ({
   resourceId,
   realm,
   setBuildResource,
-  setBuildLoadingStates,
   buildLoadingStates,
   className,
   locked,

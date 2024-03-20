@@ -98,7 +98,7 @@ export const Armies = ({}: ArmiesProps) => {
 
   return (
     <group>
-      {positions.map(({ contractPos, uiPos, id, isDead }, i) => {
+      {positions.map(({ contractPos, uiPos, id, isDead }) => {
         let offset = 0;
         if (positionOffset[JSON.stringify(uiPos)]) {
           positionOffset[JSON.stringify(uiPos)] += 1;

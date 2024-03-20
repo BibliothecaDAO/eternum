@@ -44,7 +44,7 @@ import {
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
 
 // NOTE: need to add waitForTransaction when connected to rinnigan
-export function createSystemCalls({ provider, contractComponents }: SetupNetworkResult) {
+export function createSystemCalls({ provider }: SetupNetworkResult) {
   const purchase_labor = async (props: PurchaseLaborProps) => {
     await provider.purchase_labor(props);
   };
@@ -254,84 +254,4 @@ export function getEvents(receipt: any): any[] {
   return receipt.events.filter((event: any) => {
     return event.keys.length === 1 && event.keys[0] === import.meta.env.VITE_EVENT_KEY;
   });
-}
-
-export function setComponentsFromEvents(components: Components, events: any[]) {
-  events.forEach((event) => setComponentFromEvent(components, event.data));
-}
-
-export function setComponentFromEvent(components: Components, eventData: string[]) {
-  // retrieve the component name
-  const componentName = hexToAscii(eventData[0]);
-
-  // retrieve the component from name
-  const component = components[componentName];
-  if (!component) return;
-
-  // get keys
-  const keysNumber = parseInt(eventData[1]);
-  let index = 2 + keysNumber + 1;
-
-  const keys = eventData.slice(2, 2 + keysNumber).map((key) => BigInt(key));
-
-  // get entityIndex from keys
-  const entityIndex = getEntityIdFromKeys(keys);
-
-  // get values
-  let numberOfValues = parseInt(eventData[index++]);
-
-  // get values
-  const valuesFromEventData = eventData.slice(index, index + numberOfValues);
-
-  // get component files
-  let componentFields = Object.keys(component.schema);
-
-  // Add keys to values if there are extra fields in the component schema (in case we want to add keys to the field values)
-  const values =
-    valuesFromEventData.length < componentFields.length ? [...keys, ...valuesFromEventData] : valuesFromEventData;
-
-  const metadata = component.metadata as { types: string[]; name: string };
-
-  // create component object from values with schema
-  const componentValues = componentFields.reduce((acc: Schema, key, index) => {
-    const value = values[index];
-    const type = metadata.types[index];
-    // @ts-ignore
-    acc[key] = setType(type, value);
-    return acc;
-  }, {});
-
-  // set component
-  setComponent(component, entityIndex, componentValues);
-}
-
-const setType = (type: string, value: string) => {
-  switch (type) {
-    case "u8":
-      return Number(value);
-    case "u16":
-      return Number(value);
-    case "u32":
-      return Number(value);
-    case "u64":
-      return Number(value);
-    case "u128":
-      return BigInt(value);
-    case "felt252":
-      return BigInt(value);
-    case "bool":
-      return parseInt(value) === 1;
-    case "contractaddress":
-      return BigInt(value);
-    default:
-      return BigInt(value);
-  }
-};
-
-function hexToAscii(hex: string) {
-  var str = "";
-  for (var n = 2; n < hex.length; n += 2) {
-    str += String.fromCharCode(parseInt(hex.substr(n, 2), 16));
-  }
-  return str;
 }

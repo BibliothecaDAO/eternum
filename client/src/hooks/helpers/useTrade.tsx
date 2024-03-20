@@ -241,7 +241,7 @@ export function useSetDirectOffers() {
 /**
  * sort trades based on active filters
  */
-export function sortTrades(trades: MarketInterface[], activeSort: SortInterface): MarketInterface[] {
+export function sortTrades(trades: MarketInterface[], _activeSort: SortInterface): MarketInterface[] {
   // todo: find a way to sort even though not in marketinterface anymore
 
   // if (activeSort.sort !== "none") {

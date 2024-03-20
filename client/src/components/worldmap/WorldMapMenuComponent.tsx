@@ -148,7 +148,7 @@ const WorldMapMenuComponent = () => {
       </div>
       <Tabs
         selectedIndex={selectedTab}
-        onChange={(index: number) => setSelectedTab(0)}
+        onChange={() => setSelectedTab(0)}
         variant="primary"
         className="flex-1 mt-4 overflow-hidden"
       >
