@@ -23,6 +23,7 @@ import { ResourceCost } from "../../../elements/ResourceCost";
 import { TIME_PER_TICK } from "../../network/EpochCountdown";
 import { Subscription } from "rxjs";
 import { ENEMY_ARMY_MODEL_DEFAULT_COLOR, ENEMY_ARMY_MODEL_HOVER_COLOR, ENEMY_ARMY_MODEL_SCALE } from "./EnemyArmies";
+import { ArmyMenu } from "./ArmyMenu";
 
 type ArmiesProps = {
   props?: any;
@@ -90,12 +91,6 @@ export const Armies = ({}: ArmiesProps) => {
     }
   };
 
-  // useEffect(() => {
-  //   const army = positions.find((army) => army.id === selectedEntity?.id);
-  //   if (!selectedEntity) setSelectedArmy(undefined);
-  //   if (army) setSelectedArmy({ id: army.id, position: army.uiPos });
-  // }, [selectedEntity, positions]);
-
   return (
     <group>
       {positions.map(({ contractPos, uiPos, id, isDead }) => {
@@ -111,21 +106,26 @@ export const Armies = ({}: ArmiesProps) => {
           positionOffset[JSON.stringify(uiPos)] = 1;
         }
         return (
-          <ArmyModel
-            onPointerOver={() => onHover(id, uiPos)}
-            onPointerOut={onUnhover}
-            onClick={(e) => {
-              e.stopPropagation();
-              onClick(id, contractPos, isDead);
-            }}
-            key={id}
-            scale={FRIENDLY_ARMY_MODEL_SCALE}
-            position={[uiPos.x + offset + 0.7, uiPos.z, -uiPos.y]}
-            defaultColor={!isDead ? FRIENDLY_ARMY_MODEL_DEFAULT_COLOR : FRIENDLY_ARMY_MODEL_DEAD_COLOR}
-            hoverColor={FRIENDLY_ARMY_MODEL_HOVER_COLOR}
-          ></ArmyModel>
+          <group position={[uiPos.x + offset + 0.7, uiPos.z, -uiPos.y]}>
+            <Html position={[0, 7, 0]}>
+              <ArmyMenu entityId={id} />
+            </Html>
+            <ArmyModel
+              onPointerOver={() => onHover(id, uiPos)}
+              onPointerOut={onUnhover}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick(id, contractPos, isDead);
+              }}
+              key={id}
+              scale={FRIENDLY_ARMY_MODEL_SCALE}
+              defaultColor={!isDead ? FRIENDLY_ARMY_MODEL_DEFAULT_COLOR : FRIENDLY_ARMY_MODEL_DEAD_COLOR}
+              hoverColor={FRIENDLY_ARMY_MODEL_HOVER_COLOR}
+            ></ArmyModel>
+          </group>
         );
       })}
+
       {hoveredArmy && <ArmyInfoLabel position={hoveredArmy.position} armyId={hoveredArmy.id} />}
       {selectedArmy && <ArmyInfoLabel position={selectedArmy.position} armyId={selectedArmy.id} />}
     </group>

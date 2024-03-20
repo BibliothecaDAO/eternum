@@ -218,10 +218,19 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
 };
 
 const useEventHandlers = (explored: Map<number, Set<number>>) => {
-  const store = useUIStore();
-  const { hexData, highlightPositions, isTravelMode, isExploreMode, selectedPath, selectedEntity, isAttackMode } =
-    store;
-
+  const {
+    hexData,
+    highlightPositions,
+    isTravelMode,
+    isExploreMode,
+    selectedPath,
+    selectedEntity,
+    isAttackMode,
+    setIsAttackMode,
+    setIsTravelMode,
+    setIsExploreMode,
+    setSelectedEntity,
+  } = useUIStore();
   const setHighlightColor = useUIStore((state) => state.setHighlightColor);
   const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
   const setSelectedPath = useUIStore((state) => state.setSelectedPath);
@@ -337,11 +346,20 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
               return { x: colRow.col, y: colRow.row };
             });
             console.log({ path });
-            if (path.length > 1)
+            if (path.length > 1) {
               setSelectedPath({
                 id: selectedEntityRef.current.id,
                 path,
               });
+            } else {
+              setSelectedEntity(undefined);
+              setIsAttackMode(false);
+              setIsTravelMode(false);
+              setIsExploreMode(false);
+              setSelectedPath(undefined);
+            }
+          } else {
+            setSelectedEntity(undefined);
           }
         }
       }
