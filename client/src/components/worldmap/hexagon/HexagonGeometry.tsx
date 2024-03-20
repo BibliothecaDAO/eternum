@@ -15,17 +15,6 @@ export const createHexagonGeometry = (radius: number, depth: number) => {
   }
   shape.closePath();
 
-  // Extrude settings
-  const extrudeSettings = {
-    steps: 1,
-    depth,
-    bevelEnabled: true,
-    bevelSegments: 1,
-    //bevelSize: 0.4,
-    //bevelThickness: 1,
-  };
-
-  // Create a geometry by extruding the shape
   return new THREE.ShapeGeometry(shape);
 };
 
@@ -44,6 +33,5 @@ export const createHexagonShape = (radius: number) => {
   }
   shape.closePath();
 
-  // Create a geometry by extruding the shape
   return shape;
 };

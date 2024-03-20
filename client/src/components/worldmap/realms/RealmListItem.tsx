@@ -1,13 +1,13 @@
-import { OrderIcon } from "../../elements/OrderIcon";
-import Button from "../../elements/Button";
-import { ResourceIcon } from "../../elements/ResourceIcon";
+import { OrderIcon } from "../../../elements/OrderIcon";
+import Button from "../../../elements/Button";
+import { ResourceIcon } from "../../../elements/ResourceIcon";
 import { findResourceById, orderNameDict } from "@bibliothecadao/eternum";
-import { ReactComponent as Map } from "../../assets/icons/common/map.svg";
-import * as realmsData from "../../geodata/realms.json";
+import { ReactComponent as Map } from "../../../assets/icons/common/map.svg";
+import * as realmsData from "../../../geodata/realms.json";
 import clsx from "clsx";
-import useUIStore from "../../hooks/store/useUIStore";
-import { displayAddress } from "../../utils/utils";
-import { RealmExtended, useRealm } from "../../hooks/helpers/useRealm";
+import useUIStore from "../../../hooks/store/useUIStore";
+import { displayAddress } from "../../../utils/utils";
+import { RealmExtended, useRealm } from "../../../hooks/helpers/useRealm";
 
 type RealmListItemProps = {
   realm: RealmExtended;

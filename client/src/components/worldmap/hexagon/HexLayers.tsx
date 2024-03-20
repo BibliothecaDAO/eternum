@@ -1,62 +1,38 @@
-import { Bvh, Environment } from "@react-three/drei";
-import { MutableRefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  BufferAttribute,
-  Color,
-  ExtrudeGeometry,
-  InstancedBufferAttribute,
-  InstancedMesh,
-  Matrix4,
-  MeshBasicMaterial,
-  Vector2,
-  Vector3,
-} from "three";
-import { useThree } from "@react-three/fiber";
-import { createHexagonGeometry, createHexagonShape } from "./components/three/HexagonBackground";
-// @ts-ignore
-import { Flags } from "../../components/worldmap/Flags.jsx";
-import useUIStore from "../../hooks/store/useUIStore";
-import { useDojo } from "../../DojoContext";
-import { Subscription } from "rxjs";
-import { getColRowFromUIPosition, getUIPositionFromColRow } from "../../utils/utils";
-import { MyCastles, OtherCastles } from "./Castles";
-import { Hyperstructures } from "./Hyperstructures";
-import { Position, biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
-import { Armies, TravelingArmies } from "./armies/Armies";
+import { Bvh } from "@react-three/drei";
+import { useEffect, useMemo, useRef } from "react";
+import { Color, InstancedMesh, Matrix4 } from "three";
+import { biomes } from "@bibliothecadao/eternum";
+import { createHexagonGeometry } from "./HexagonGeometry.js";
+
+import useUIStore from "../../../hooks/store/useUIStore.js";
+
+import { getColRowFromUIPosition, getUIPositionFromColRow } from "../../../utils/utils.js";
 import { throttle } from "lodash";
 import * as THREE from "three";
-import { DesertBiome } from "./biomes/DesertBiome";
-import { SnowBiome } from "./biomes/SnowBiome";
-import { GrasslandBiome } from "./biomes/GrasslandBiome";
-import { TaigaBiome } from "./biomes/TaigaBiome";
-import { OceanBiome } from "./biomes/OceanBiome";
-import { DeepOceanBiome } from "./biomes/DeepOceanBiome";
-import { TemperateDesertBiome } from "./biomes/TemperateDesertBiome";
-import { BeachBiome } from "./biomes/BeachBiome";
-import { ScorchedBiome } from "./biomes/ScorchedBiome";
-import { ShrublandBiome } from "./biomes/ShrublandBiome";
-import { SubtropicalDesertBiome } from "./biomes/SubtropicalDesertBiome";
-import { DeciduousForestBiome } from "./biomes/DeciduousForestBiome";
-import { EnemyArmies } from "./armies/EnemyArmies";
-import { TropicalRainforestBiome } from "./biomes/TropicalRainforestBiome";
-import { TropicalSeasonalForestBiome } from "./biomes/TropicalSeasonalForestBiome";
-import { TundraBiome } from "./biomes/TundraBiome";
-import { TemperateRainforestBiome } from "./biomes/TemperateRainforestBiome";
+import { DesertBiome } from "../biomes/DesertBiome.js";
+import { SnowBiome } from "../biomes/SnowBiome.js";
+import { GrasslandBiome } from "../biomes/GrasslandBiome.js";
+import { TaigaBiome } from "../biomes/TaigaBiome.js";
+import { OceanBiome } from "../biomes/OceanBiome.js";
+import { DeepOceanBiome } from "../biomes/DeepOceanBiome.js";
+import { TemperateDesertBiome } from "../biomes/TemperateDesertBiome.js";
+import { BeachBiome } from "../biomes/BeachBiome.js";
+import { ScorchedBiome } from "../biomes/ScorchedBiome.js";
+import { ShrublandBiome } from "../biomes/ShrublandBiome.js";
+import { SubtropicalDesertBiome } from "../biomes/SubtropicalDesertBiome.js";
+import { DeciduousForestBiome } from "../biomes/DeciduousForestBiome.js";
+import { TropicalRainforestBiome } from "../biomes/TropicalRainforestBiome.js";
+import { TropicalSeasonalForestBiome } from "../biomes/TropicalSeasonalForestBiome.js";
+import { TundraBiome } from "../biomes/TundraBiome.js";
+import { TemperateRainforestBiome } from "../biomes/TemperateRainforestBiome.js";
+import { Hexagon } from "../../../types/index.js";
+
+import { findShortestPathBFS, getGrayscaleColor, getPositionsAtIndex, isNeighbor } from "./utils.js";
 
 export const DEPTH = 10;
 export const HEX_RADIUS = 3;
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
-
-export interface Hexagon {
-  idx: number;
-  col: number;
-  row: number;
-  biome: string;
-  explored: boolean | undefined;
-  // address
-  exploredBy: bigint | undefined;
-}
 
 type HexagonGridProps = {
   startRow: number;
@@ -392,225 +368,4 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
       </group>
     </Bvh>
   );
-};
-
-export const WorldMap = () => {
-  const {
-    setup: {
-      updates: {
-        eventUpdates: { createExploreMapEvents: exploreMapEvents },
-      },
-    },
-  } = useDojo();
-
-  const hexData = useUIStore((state) => state.hexData);
-  const setHexData = useUIStore((state) => state.setHexData);
-
-  useEffect(() => {
-    fetch("/jsons/hexData.json")
-      .then((response) => response.json())
-      .then((data) => setHexData(data as Hexagon[]));
-  }, []);
-
-  const rows = 300;
-  const cols = 500;
-
-  const hexagonGrids = useMemo(() => {
-    const hexagonGrids = [];
-    for (let i = 0; i < rows; i += 50) {
-      const startRow = i;
-      const endRow = startRow + 50;
-      for (let j = 0; j < cols; j += 50) {
-        const startCol = j;
-        const endCol = startCol + 50;
-        hexagonGrids.push({ startRow, endRow, startCol, endCol });
-      }
-    }
-    return hexagonGrids;
-  }, []);
-
-  const [exploredHexes, setExploredHexes] = useState<Map<number, Set<number>>>(new Map());
-
-  useEffect(() => {
-    let subscription: Subscription | undefined;
-
-    const subscribeToExploreEvents = async () => {
-      const observable = await exploreMapEvents();
-      const sub = observable.subscribe((event) => {
-        if (event && hexData) {
-          const col = Number(event.keys[2]) - 2147483647;
-          const row = Number(event.keys[3]) - 2147483647;
-          setExploredHexes((prev) => {
-            const newMap = new Map(prev);
-            const rowSet = newMap.get(col) || new Set();
-            rowSet.add(row);
-            newMap.set(col, rowSet);
-            return newMap;
-          });
-        }
-      });
-      subscription = sub;
-    };
-    subscribeToExploreEvents();
-
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, [hexData]);
-
-  const models = useMemo(() => {
-    return (
-      <>
-        {hexData && <MyCastles hexData={hexData} />}
-        {hexData && <OtherCastles hexData={hexData} />}
-        {/* {hexData && <Hyperstructures hexData={hexData} />} */}
-        <EnemyArmies />
-        <Armies />
-        <TravelingArmies />
-      </>
-    );
-  }, [hexData]);
-
-  return (
-    <>
-      <group rotation={[Math.PI / -2, 0, 0]} frustumCulled={true}>
-        {hexagonGrids.map((grid, index) => {
-          return <BiomesGrid key={index} {...grid} explored={exploredHexes} />;
-        })}
-        {hexagonGrids.map((grid, index) => {
-          return <HexagonGrid key={index} {...grid} explored={exploredHexes} />;
-        })}
-      </group>
-      {models}
-      <Flags></Flags>
-    </>
-  );
-};
-
-const matrix = new Matrix4();
-const positions = new Vector3();
-
-export const getPositionsAtIndex = (mesh: InstancedMesh<any, any>, index: number) => {
-  if (!mesh || !mesh.isInstancedMesh) {
-    console.error("The provided mesh is not an InstancedMesh.");
-    return null;
-  }
-
-  mesh.getMatrixAt(index, matrix);
-  positions.setFromMatrixPosition(matrix);
-
-  return positions;
-};
-
-const findShortestPathBFS = (
-  startPos: Position,
-  endPos: Position,
-  hexData: Hexagon[],
-  exploredHexes: Map<number, Set<number>>,
-  maxHex: number,
-) => {
-  const queue: { position: Position; distance: number }[] = [{ position: startPos, distance: 0 }];
-  const visited = new Set<string>();
-  const path = new Map<string, Position>();
-
-  const posKey = (pos: Position) => `${pos.x},${pos.y}`;
-
-  while (queue.length > 0) {
-    const { position: current, distance } = queue.shift()!;
-    if (current.x === endPos.x && current.y === endPos.y) {
-      // Reconstruct the path upon reaching the end position
-      let temp = current;
-      const result = [];
-      while (temp) {
-        result.unshift(temp); // Add to the beginning of the result array
-        //@ts-ignore:
-        temp = path.get(posKey(temp)); // Move backwards through the path
-      }
-      return result;
-    }
-
-    if (distance > maxHex) {
-      break; // Stop processing if the current distance exceeds maxHex
-    }
-
-    const currentKey = posKey(current);
-    if (!visited.has(currentKey)) {
-      visited.add(currentKey);
-      const neighbors = getNeighbors(current, hexData); // Assuming getNeighbors is defined elsewhere
-      for (const neighbor of neighbors) {
-        const neighborKey = posKey(neighbor);
-        const isExplored = exploredHexes.get(neighbor.x - 2147483647)?.has(neighbor.y - 2147483647);
-        if (!visited.has(neighborKey) && !queue.some((e) => posKey(e.position) === neighborKey) && isExplored) {
-          path.set(neighborKey, current); // Map each neighbor back to the current position
-          queue.push({ position: neighbor, distance: distance + 1 });
-        }
-      }
-    }
-  }
-
-  return []; // Return empty array if no path is found within maxHex distance
-};
-
-const findShortestPathDFS = (startPos: Position, endPos: Position, hexData: Hexagon[], maxHex: number) => {
-  const stack = [startPos];
-  const visited = new Set<Position>();
-  const path = new Map<string, Position>();
-  let count = 0;
-
-  const posKey = (pos: Position) => `${pos.x},${pos.y}`; // Create a unique string key for each position
-
-  while (stack.length > 0 && count <= maxHex) {
-    const current = stack.pop() as Position; // Use pop to take from the stack
-    if (current.x === endPos.x && current.y === endPos.y) {
-      const result = [current];
-      let next = path.get(posKey(current));
-      while (next) {
-        result.push(next);
-        next = path.get(posKey(next));
-      }
-      return result.reverse();
-    }
-
-    if (!visited.has(current)) {
-      visited.add(current);
-      const neighbors = getNeighbors(current, hexData);
-      count++;
-      for (const neighbor of neighbors) {
-        if (!visited.has(neighbor)) {
-          path.set(posKey(neighbor), current);
-          stack.push(neighbor); // Push neighbors onto the stack
-        }
-      }
-    }
-  }
-
-  return [];
-};
-
-const isNeighbor = (pos1: Position, pos2: Position) => {
-  const neighborOffsets = pos1.y % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
-  for (const { i, j } of neighborOffsets) {
-    if (pos1.x + i === pos2.x && pos1.y + j === pos2.y) {
-      return true;
-    }
-  }
-  return false;
-};
-
-const getNeighbors = (pos: Position, hexData: Hexagon[]) => {
-  const neighborOffsets = pos.y % 2 === 0 ? neighborOffsetsEven : neighborOffsetsOdd;
-
-  return neighborOffsets
-    .map((offset) => {
-      const col = pos.x + offset.i;
-      const row = pos.y + offset.j;
-      const hex = hexData.find((h) => h.col === col && h.row === row);
-      return hex ? { x: hex.col, y: hex.row } : null;
-    })
-    .filter(Boolean) as Position[];
-};
-
-const getGrayscaleColor = (color: Color) => {
-  const luminance = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
-  return luminance;
 };

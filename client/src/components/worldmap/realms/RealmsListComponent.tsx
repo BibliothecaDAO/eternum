@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { RealmListItem } from "./RealmListItem";
-import { useGetRealms } from "../../hooks/helpers/useRealm";
-import useRealmStore from "../../hooks/store/useRealmStore";
+import { useGetRealms } from "../../../hooks/helpers/useRealm";
+import useRealmStore from "../../../hooks/store/useRealmStore";
 
 type RealmsListComponentProps = {
   onlyMyRealms?: boolean;

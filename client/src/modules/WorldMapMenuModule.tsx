@@ -1,4 +1,4 @@
-import WorldMapMenuComponent from "../components/worldmap/WorldMapMenuComponent";
+import WorldMapMenuComponent from "../components/worldmap/WorldMapMenu";
 import { BaseContainer } from "../containers/BaseContainer";
 import { Transition } from "@headlessui/react";
 import { Fragment, useEffect, useState } from "react";
