@@ -210,8 +210,12 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
   const isTravelMode = useUIStore((state) => state.isTravelMode);
   const isExploreMode = useUIStore((state) => state.isExploreMode);
   const isAttackMode = useUIStore((state) => state.isAttackMode);
+  const setIsAttackMode = useUIStore((state) => state.setIsAttackMode);
+  const setIsTravelMode = useUIStore((state) => state.setIsTravelMode);
+  const setIsExploreMode = useUIStore((state) => state.setIsExploreMode);
   const selectedPath = useUIStore((state) => state.selectedPath);
   const selectedEntity = useUIStore((state) => state.selectedEntity);
+  const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
   const setSelectedPath = useUIStore((state) => state.setSelectedPath);
   // refs
   const isTravelModeRef = useRef(false);
@@ -356,11 +360,20 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
             const colRow = getColRowFromUIPosition(p[0], -p[1]);
             return { x: colRow.col, y: colRow.row };
           });
-          if (path.length > 1)
+          if (path.length > 1) {
             setSelectedPath({
               id: selectedEntityRef.current.id,
               path,
             });
+          } else {
+            setSelectedEntity(undefined);
+            setIsAttackMode(false);
+            setIsTravelMode(false);
+            setIsExploreMode(false);
+            setSelectedPath(undefined);
+          }
+        } else {
+          setSelectedEntity(undefined);
         }
       }
     }
