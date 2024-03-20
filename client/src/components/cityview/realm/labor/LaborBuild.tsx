@@ -6,7 +6,6 @@ import { ReactComponent as DonkeyIcon } from "../../../../assets/icons/units/don
 import { ResourceCost } from "../../../../elements/ResourceCost";
 import { NumberInput } from "../../../../elements/NumberInput";
 import {
-  ResourcesIds,
   findResourceById,
   PurchaseLaborProps,
   BuildLaborProps,
@@ -23,7 +22,7 @@ import clsx from "clsx";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../DojoContext";
 import { formatSecondsLeftInDaysHours } from "./laborUtils";
-import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
+import { soundSelector, usePlayResourceSound, useUiSounds } from "../../../../hooks/useUISound";
 import { getComponentValue } from "@dojoengine/recs";
 import { divideByPrecision, getEntityIdFromKeys, getPosition, getZone } from "../../../../utils/utils";
 import useBlockchainStore from "../../../../hooks/store/useBlockchainStore";
@@ -43,7 +42,7 @@ type LaborBuildPopupProps = {
   onClose: () => void;
 };
 
-export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: LaborBuildPopupProps) => {
+export const LaborBuildPopup = ({ resourceId, onClose }: LaborBuildPopupProps) => {
   const {
     setup: {
       components: { Resource, Labor },
@@ -61,6 +60,7 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
   const [withLabor, setWithLabor] = useState(false);
 
   const setTooltip = useUIStore((state) => state.setTooltip);
+  const { play: playLabor } = useUiSounds(soundSelector.buildLabor);
 
   useEffect(() => {
     setMultiplier(1); // Reset the multiplier to 1 when the resourceId changes
@@ -201,115 +201,9 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
           multiplier,
           signer: account,
         }),
-      playLaborSound(resourceId);
+      playLabor();
     setIsLoading(false);
     onClose();
-  };
-
-  const { play: playFarm } = useUiSounds(soundSelector.buildFarm);
-  const { play: playFishingVillage } = useUiSounds(soundSelector.buildFishingVillage);
-  const { play: playAddWood } = useUiSounds(soundSelector.addWood);
-  const { play: playAddStone } = useUiSounds(soundSelector.addStone);
-  const { play: playAddCoal } = useUiSounds(soundSelector.addCoal);
-  const { play: playAddCopper } = useUiSounds(soundSelector.addCopper);
-  const { play: playAddObsidian } = useUiSounds(soundSelector.addObsidian);
-  const { play: playAddSilver } = useUiSounds(soundSelector.addSilver);
-  const { play: playAddIronwood } = useUiSounds(soundSelector.addIronwood);
-  const { play: playAddColdIron } = useUiSounds(soundSelector.addColdIron);
-  const { play: playAddGold } = useUiSounds(soundSelector.addGold);
-  const { play: playAddHartwood } = useUiSounds(soundSelector.addHartwood);
-  const { play: playAddDiamonds } = useUiSounds(soundSelector.addDiamonds);
-  const { play: playAddSapphire } = useUiSounds(soundSelector.addSapphire);
-  const { play: playAddRuby } = useUiSounds(soundSelector.addRuby);
-  const { play: playAddDeepCrystal } = useUiSounds(soundSelector.addDeepCrystal);
-  const { play: playAddIgnium } = useUiSounds(soundSelector.addIgnium);
-  const { play: playAddEtherealSilica } = useUiSounds(soundSelector.addEtherealSilica);
-
-  const { play: playAddTrueIce } = useUiSounds(soundSelector.addTrueIce);
-  const { play: playAddTwilightQuartz } = useUiSounds(soundSelector.addTwilightQuartz);
-  const { play: playAddAlchemicalSilver } = useUiSounds(soundSelector.addAlchemicalSilver);
-  const { play: playAddAdamantine } = useUiSounds(soundSelector.addAdamantine);
-  const { play: playAddMithral } = useUiSounds(soundSelector.addMithral);
-  const { play: playAddDragonhide } = useUiSounds(soundSelector.addDragonhide);
-
-  const playLaborSound = (resourceId: ResourcesIds) => {
-    // eslint-disable-next-line sonarjs/no-small-switch
-    switch (resourceId) {
-      case ResourcesIds.Fish:
-        playFishingVillage();
-        break;
-      case ResourcesIds.Wheat:
-        playFarm();
-        break;
-      case ResourcesIds.Wood:
-        playAddWood();
-        break;
-      case ResourcesIds.Stone:
-        playAddStone();
-        break;
-      case ResourcesIds.Coal:
-        playAddCoal();
-        break;
-      case ResourcesIds.Copper:
-        playAddCopper();
-        break;
-      case ResourcesIds.Obsidian:
-        playAddObsidian();
-        break;
-      case ResourcesIds.Silver:
-        playAddSilver();
-        break;
-      case ResourcesIds.Ironwood:
-        playAddIronwood();
-        break;
-      case ResourcesIds.ColdIron:
-        playAddColdIron();
-        break;
-      case ResourcesIds.Gold:
-        playAddGold();
-        break;
-      case ResourcesIds.Hartwood:
-        playAddHartwood();
-        break;
-      case ResourcesIds.Diamonds:
-        playAddDiamonds();
-        break;
-      case ResourcesIds.Sapphire:
-        playAddSapphire();
-        break;
-      case ResourcesIds.Ruby:
-        playAddRuby();
-        break;
-      case ResourcesIds.DeepCrystal:
-        playAddDeepCrystal();
-        break;
-      case ResourcesIds.Ignium:
-        playAddIgnium();
-        break;
-      case ResourcesIds.EtherealSilica:
-        playAddEtherealSilica();
-        break;
-      case ResourcesIds.TrueIce:
-        playAddTrueIce();
-        break;
-      case ResourcesIds.TwilightQuartz:
-        playAddTwilightQuartz();
-        break;
-      case ResourcesIds.AlchemicalSilver:
-        playAddAlchemicalSilver();
-        break;
-      case ResourcesIds.Adamantine:
-        playAddAdamantine();
-        break;
-      case ResourcesIds.Mithral:
-        playAddMithral();
-        break;
-      case ResourcesIds.Dragonhide:
-        playAddDragonhide();
-        break;
-      default:
-        break;
-    }
   };
 
   return (
@@ -423,17 +317,15 @@ export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: 
                       )
                     : amount * laborAmount;
                   return (
-                    <>
-                      <ResourceCost
-                        isLabor={withLabor}
-                        withTooltip
-                        key={resourceId}
-                        type="vertical"
-                        resourceId={getIconResourceId(resourceId, withLabor)}
-                        className={missingResource ? "text-order-giants" : ""}
-                        amount={finalAmount}
-                      />
-                    </>
+                    <ResourceCost
+                      isLabor={withLabor}
+                      withTooltip
+                      key={resourceId}
+                      type="vertical"
+                      resourceId={getIconResourceId(resourceId, withLabor)}
+                      className={missingResource ? "text-order-giants" : ""}
+                      amount={finalAmount}
+                    />
                   );
                 })}
               </div>

@@ -1,0 +1,8 @@
+**/*/target
+**/*/dist
+
+# ignore lock files
+**/*-lock.yaml
+
+# ignore node_modules
+**/node_modules

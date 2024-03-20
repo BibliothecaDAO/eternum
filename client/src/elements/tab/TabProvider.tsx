@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import { createContext } from 'react';
-import type { VARIANTS } from './tabs';
+import type { ReactNode } from "react";
+import { createContext } from "react";
+import type { VARIANTS } from "./tabs";
 
 interface TabContextType {
   variant: keyof typeof VARIANTS;
@@ -13,7 +13,5 @@ interface Props extends TabContextType {
 }
 
 export const TabProvider = ({ children, variant }: Props) => {
-  return (
-    <TabContext.Provider value={{ variant }}>{children}</TabContext.Provider>
-  );
+  return <TabContext.Provider value={{ variant }}>{children}</TabContext.Provider>;
 };

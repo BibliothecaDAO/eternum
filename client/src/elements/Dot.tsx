@@ -1,7 +1,5 @@
 type DotProps = {
-    colorClass: string;
-}
+  colorClass: string;
+};
 
-export const Dot = ({ colorClass }: DotProps) => (
-    <div className={`w-1 h-1 rounded-full ${colorClass}`} />
-);
+export const Dot = ({ colorClass }: DotProps) => <div className={`w-1 h-1 rounded-full ${colorClass}`} />;

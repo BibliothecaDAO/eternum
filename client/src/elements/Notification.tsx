@@ -45,14 +45,7 @@ const STYLES = {
   success: "border-order-brilliance",
   primary: "border-gold",
 };
-export const Notification = ({
-  notification,
-  id,
-  closedNotifications,
-  className,
-  onClose,
-  type = "primary",
-}: NotificationProps) => {
+export const Notification = ({ notification, className, onClose, type = "primary" }: NotificationProps) => {
   // todo: find a better way to handle close notifications
   // useEffect(() => {
   //   if (!closedNotifications[id]) {

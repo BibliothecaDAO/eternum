@@ -1,8 +1,8 @@
 import { EternumProvider } from "@bibliothecadao/eternum";
-import dev_manifest from "../../target/dev/manifest.json" with {type: "json"};
-import prod_manifest from "../../target/release/manifest.json" with {type: "json"};
-import {Account, RpcProvider} from 'starknet'
-import {RESOURCE_WEIGHTS} from '../config/constants.js'
+import dev_manifest from "../../target/dev/manifest.json" with { type: "json" };
+import prod_manifest from "../../target/release/manifest.json" with { type: "json" };
+import { Account, RpcProvider } from "starknet";
+import { RESOURCE_WEIGHTS } from "../config/constants.js";
 
 // determine the wood price of lords, then create buy/sell orders for that price
 // use the weight of other resources
@@ -14,26 +14,22 @@ const REALM_ENTITY_ID = 2306;
 const CURRENT_BLOCKTIME = undefined;
 // one week
 const VALIDITY_TIME = 604800;
-const BASE_WOOD_AMOUNT = 252
+const BASE_WOOD_AMOUNT = 252;
 const BASE_LORDS_PER_WOOD = 3;
 const PRECISION = 1000;
 
 // get the uuid
-const eternumProvider = new EternumProvider(
-  process.env.SOZO_WORLD,
-  process.env.STARKNET_RPC_URL,
-  dev_manifest
-);
+const eternumProvider = new EternumProvider(process.env.SOZO_WORLD, process.env.STARKNET_RPC_URL, dev_manifest);
 
 const provider = new RpcProvider({
-  nodeUrl: process.env.STARKNET_RPC_URL
+  nodeUrl: process.env.STARKNET_RPC_URL,
 });
-
 
 const account = new Account(provider, process.env.DOJO_ACCOUNT_ADDRESS, process.env.DOJO_PRIVATE_KEY);
 
 const mintNewRealm = async () => {
-  await eternumProvider.create_realm({realm_id: 8001,
+  await eternumProvider.create_realm({
+    realm_id: 8001,
     resource_types_packed: 0,
     resource_types_count: 0,
     cities: 255,
@@ -42,32 +38,34 @@ const mintNewRealm = async () => {
     regions: 0,
     wonder: 0,
     order: 17,
-    order_hyperstructure_id: 0, 
+    order_hyperstructure_id: 0,
     position: {
-        x: 1814620,
-        y: 1799232,
-    }, signer: account})
+      x: 1814620,
+      y: 1799232,
+    },
+    signer: account,
+  });
   await new Promise((resolve) => setTimeout(resolve, 2000));
 };
 
 const mintAllResources = async (entityId) => {
-    let resources = Array.from({length: 21}, (_, i) => i + 1);
-    resources.push(253);
-    resources.push(254);
-    resources.push(255);
+  let resources = Array.from({ length: 21 }, (_, i) => i + 1);
+  resources.push(253);
+  resources.push(254);
+  resources.push(255);
 
-    await eternumProvider.mint_resources({
-      receiver_id: entityId,
-      resources: resources.flatMap((resourceId) => [resourceId, 1000000000000n]),
-      signer: account,
-    });
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+  await eternumProvider.mint_resources({
+    receiver_id: entityId,
+    resources: resources.flatMap((resourceId) => [resourceId, 1000000000000n]),
+    signer: account,
+  });
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 };
 
-const createOrders  = async () => {
+const createOrders = async () => {
   let uuid = await eternumProvider.uuid();
   if (MINT_NEW_REALM) await mintNewRealm();
-  let maker_id = MINT_NEW_REALM? uuid: REALM_ENTITY_ID;
+  let maker_id = MINT_NEW_REALM ? uuid : REALM_ENTITY_ID;
   if (MINT_ALL_RESOURCES) await mintAllResources(maker_id);
 
   if (!CREATE_ORDERS) return;
@@ -83,17 +81,16 @@ const createOrders  = async () => {
         resourceId: i + 1,
         resourceAmount: Math.round(resourceAmount),
         lordsAmounts: [Math.round(lordsAmount * multiplier), Math.round(lordsAmount / multiplier)],
-      }
-      resourceOrders.push(order)
+      };
+      resourceOrders.push(order);
     }
     return resourceOrders;
-  })
-
+  });
 
   for (const order of orders) {
-    console.log({order})
+    console.log({ order });
     await eternumProvider.create_order({
-      maker_id, 
+      maker_id,
       maker_gives_resource_types: [order.resourceId],
       maker_gives_resource_amounts: [order.resourceAmount],
       taker_id: 0,
@@ -106,7 +103,7 @@ const createOrders  = async () => {
     // wait 2 seconds between orders
     await new Promise((resolve) => setTimeout(resolve, 2000));
     await eternumProvider.create_order({
-      maker_id, 
+      maker_id,
       maker_gives_resource_types: [253],
       maker_gives_resource_amounts: [order.lordsAmounts[1]],
       taker_id: 0,
@@ -115,11 +112,9 @@ const createOrders  = async () => {
       signer: account,
       donkeys_quantity: Math.ceil(order.resourceAmount / (1000 * 100)),
       expires_at: (CURRENT_BLOCKTIME || Date.now()) + VALIDITY_TIME,
-  })
+    });
     await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 };
 
 createOrders();
-
-

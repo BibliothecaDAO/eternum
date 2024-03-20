@@ -100,7 +100,7 @@ const dummyMessages: ChatMessageProps[] = [
   },
 ];
 
-export const ChatTabs = ({ }: ChatTabsProps) => {
+export const ChatTabs = ({}: ChatTabsProps) => {
   const [selectedTab, setSelectedTab] = useState(0);
 
   const tabs = useMemo(

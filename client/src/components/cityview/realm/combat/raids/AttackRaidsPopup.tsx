@@ -236,7 +236,7 @@ const AttackResultPanel = ({
           <img src={`/images/lost_raid.png`} className="object-cover w-full h-full rounded-[10px]" />
           <div className="flex flex-col mt-2 w-full">
             <div className="text-light-pink text-xs">{"Battle losses:"}</div>
-            {selectedRaiders.map((raider, i) => (
+            {selectedRaiders.map((raider) => (
               <AttackerHealthChange selectedRaider={raider} key={raider.entityId} />
             ))}
           </div>
@@ -722,8 +722,8 @@ const SelectRaidersPanel = ({
             <span className="text-order-brilliance">{`+${attackerLevelBonus - 100}%`}</span>
           </div>
           <div className="flex flex-row mb-3 text-xs items-center justify-center">
-            <span className="mr-1 text-gold">{`Hyperstructure Bonus: `}</span>
-            <span className="text-order-brilliance">{`+${attackerHyperstructureLevelBonus - 100}%`}</span>
+            {/* <span className="mr-1 text-gold">{`Hyperstructure Bonus: `}</span> */}
+            {/* <span className="text-order-brilliance">{`+${attackerHyperstructureLevelBonus - 100}%`}</span> */}
           </div>
           <SelectRaiders
             attackingRaiders={attackingRaiders}

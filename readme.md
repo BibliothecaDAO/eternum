@@ -10,88 +10,140 @@
 
 # Realms: Eternum
 
-## Table of Contents
+Eternum is built on Cairo smart contracts and runs on the [Dojo game engine](https://dojoengine.org). It's open-source,
+licensed under both MIT for software freedom and CC0 for public domain use, ensuring wide accessibility and
+community-driven development.
 
-1. [Introduction to Eternum](#what-is-eternum)
-2. [Open World Philosophy](#open-world-philosophy)
-3. [Roadmap](#eternum-roadmap)
-4. [Prerequisites for Getting Started](#prerequisites-for-getting-started)
-5. [Project Structure](#project-structure)
-6. [Local Client Building Instructions](#local-client-building-instructions)
-7. [Local Contracts Building Instructions](#local-contracts-building-instructions)
+Eternum represents the culmination of two years of dedicated effort, aimed at crafting a world that transcends the
+bounds of its creators. It's not just a game; it's a sophisticated fusion of economic and social frameworks, forming the
+backbone of a burgeoning digital society. Eternum is designed to evolve and grow, offering a dynamic experience far
+removed from the conventional notion of a 'finished game' like Civilization 6. Think of it as a living, breathing
+digital ecosystem, constantly evolving and inviting endless exploration.
 
-## What is Eternum
+<details>
+<summary> Click to expand</summary>
 
-Eternum represents the culmination of two years of dedicated effort, aimed at crafting a world that transcends the bounds of its creators. It's not just a game; it's a sophisticated fusion of economic and social frameworks, forming the backbone of a burgeoning digital society. Eternum is designed to evolve and grow, offering a dynamic experience far removed from the conventional notion of a 'finished game' like Civilization 6. Think of it as a living, breathing digital ecosystem, constantly evolving and inviting endless exploration.
-
-Eternum is built on Cairo smart contracts and runs on the [Dojo game engine](https://dojoengine.org). It's open-source, licensed under both MIT for software freedom and CC0 for public domain use, ensuring wide accessibility and community-driven development.
-
-## L3 Network
+### L3 Network
 
 Eternum will exist on the Realms World L3 network. Read the documentation here: [dev](https://dev.realms.world/)
 
-## Open World Philosophy
+### Open World Philosophy
 
-Emphasizing the concept of a truly Autonomous World is pivotal. In our vision, it must embody two key characteristics: radical openness and persistence. But what exactly does this entail? Let's delve into both theoretical and mechanical perspectives.
+Emphasizing the concept of a truly Autonomous World is pivotal. In our vision, it must embody two key characteristics:
+radical openness and persistence. But what exactly does this entail? Let's delve into both theoretical and mechanical
+perspectives.
 
-From a theoretical standpoint, radical openness signifies an inclusive world accessible to everyone. This openness transcends traditional barriers - there are no gatekeepers, no singular entities exerting control. Instead, it's a space where anyone can contribute, build, and actively participate without restrictions.
+From a theoretical standpoint, radical openness signifies an inclusive world accessible to everyone. This openness
+transcends traditional barriers - there are no gatekeepers, no singular entities exerting control. Instead, it's a space
+where anyone can contribute, build, and actively participate without restrictions.
 
-Mechanically, radical openness is reflected in the flexibility and adaptability of the world's underlying structures. The contracts that define this world are not rigid; they are designed to be extended, forked, and maintained by anyone with the willingness and capability to do so.
+Mechanically, radical openness is reflected in the flexibility and adaptability of the world's underlying structures.
+The contracts that define this world are not rigid; they are designed to be extended, forked, and maintained by anyone
+with the willingness and capability to do so.
 
-Envision Eternum as akin to the original cellular structure in a primordial soup. Over time, this basic form dissolves, giving rise to a more complex organism. Eternum is the genesis, the starting point from which an intricate and expansive world emerges, constantly evolving and reshaping itself in response to the contributions and interactions of its inhabitants.
+Envision Eternum as akin to the original cellular structure in a primordial soup. Over time, this basic form dissolves,
+giving rise to a more complex organism. Eternum is the genesis, the starting point from which an intricate and expansive
+world emerges, constantly evolving and reshaping itself in response to the contributions and interactions of its
+inhabitants.
 
-## Eternum Roadmap
-
-Below are the key goals for Eternum, but they're adaptable:
-
-1. [x] Trading
-2. [ ] Banking & AMM
-3. [ ] Combat
-4. [ ] World Governance
-
-## Prerequisites for Getting Started
-
-To begin, familiarize yourself with the [dojo](https://book.dojoengine.org) and react.
+</details>
 
 ## Project Structure
 
-- [Client](./client/)
-- [Contracts](./contracts/)
-
-## Local Client Building Instructions
-
-To build the client locally:
-
-1. Clone the repo.
-2. Install dependencies with `pnpm`.
-3. From the main directory:
-   - Install dependencies: `pnpm install`
-   - Build the packages: `pnpm run build-packages`
-   - Run the client: `cd client && pnpm run dev`
-
-## Local Contracts Building Instructions
-
-To build contracts locally:
-
-1. **Terminal 1 - Katana**:
-
-```console
-cd contracts && katana --disable-fee
-```
-
-2. **Terminal 2 - Contracts**:
-
-```console
-cd contracts && sozo build && sozo migrate
-```
-
-3. **Terminal 3 - Indexer**:
-
-```console
-torii --world <world printout from previous step>
-```
+- [Client Readme](./client/readme.md)
+- [Contracts Readme](./contracts/readme.md)
 
 ---
+
+## Development of Eternum
+
+Development of Eternum is open-source. All efforts are funded via OnlyDust. If you would like to contribute comment on
+an open issue.
+
+## Prerequisites
+
+- [Dojo onchain game engine](https://book.dojoengine.org)
+- React
+
+# Setup
+
+Install dojo via
+
+`curl -L https://install.dojoengine.org | bash`
+
+Eternum uses a pnpm workspace to allow easy npm packages to be created. So you will need pnpm install also.
+
+`npm install -g pnpm`
+
+## Easy Method (3 commands)
+
+We have bundled up three scripts to run in three different CLI terminals. Run the scripts in order and leave the window
+open.
+
+### Terminal 1 - Client setup
+
+This will set the client up, however you **must** run the other scripts otherwise it will not work
+
+```
+sh scripts/client.sh
+```
+
+### Terminal 2 - Build the contracts and run the sequencer
+
+```
+sh scripts/contracts.sh
+```
+
+### Terminal 3 - Migrate the contracts and start the indexer
+
+```
+sh scripts/indexer.sh
+```
+
+## Manual Method
+
+### Terminal 1 - Client Setup
+
+- **Dependencies:** Install deps
+  ```bash
+  # @dev: Client will not work until the next step is also complete
+  pnpm i && pnpm build-packages && pnpm dev
+  ```
+
+### Contracts, Katana and Indexing
+
+For local setup and execution on Katana, follow these steps:
+
+1. **Navigate to Contracts Directory:**
+   ```bash
+   cd contracts
+   ```
+2. **Build Contracts:**
+   ```bash
+   sozo build
+   ```
+3. **Run Katana:**
+   ```bash
+   katana --disable-fee
+   ```
+4. **Apply Migrations:**
+   ```bash
+   sozo migrate
+   ```
+5. **Run Indexer (in another cli window):**
+   ```bash
+   torii --world <WORLD ADDRESS>
+   ```
+6. **Set Environment Variables:**
+   ```bash
+   source scripts/env_variables.sh
+   ```
+7. **Configure Settings:**
+
+   ```bash
+   # Make sure to set a delay in seconds of at least 0.1 seconds between each transaction
+   ./scripts/set_config.sh
+   ```
 
 ## License
 

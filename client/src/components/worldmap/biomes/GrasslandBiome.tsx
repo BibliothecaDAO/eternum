@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { Hexagon } from "../HexGrid";
 
 export function GrasslandBiome({ hexes }: { hexes: Hexagon[] }) {
-  const { nodes, materials } = useGLTF("/models/grassland.glb") as any;
+  const { nodes, materials } = useGLTF("/models/biomes/grassland.glb") as any;
 
   const defaultTransform = new THREE.Matrix4()
     .makeRotationX(Math.PI / 2)

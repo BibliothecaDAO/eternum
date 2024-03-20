@@ -22,9 +22,7 @@ const NUMBER_OF_REALMS_PER_PLAYER = 5;
 const AVERAGE_DAILY_AMOUNT_OF_WHEAT_PRODUCTION = 7560;
 const AVERAGE_DAILY_AMOUNT_OF_FISH_PRODUCTION = 2520;
 
-const RESOURCE_IDS = [
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
-];
+const RESOURCE_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
 
 // weights of each resource
 const RESOURCE_WEIGHTS = [

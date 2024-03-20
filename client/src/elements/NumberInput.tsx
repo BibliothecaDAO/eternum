@@ -12,23 +12,11 @@ type NumberInputProps = {
   max: number;
 };
 
-export const NumberInput = ({
-  value,
-  onChange,
-  className,
-  step = 1,
-  max,
-  min = 0,
-}: NumberInputProps) => {
+export const NumberInput = ({ value, onChange, className, step = 1, max, min = 0 }: NumberInputProps) => {
   const { play: playClick } = useUiSounds(soundSelector.click);
 
   return (
-    <div
-      className={clsx(
-        "flex items-center border rounded-lg w-22 h-7 border-gold",
-        className,
-      )}
-    >
+    <div className={clsx("flex items-center border rounded-lg w-22 h-7 border-gold", className)}>
       <div
         className="flex items-center justify-center h-full px-1 border-r cursor-pointer border-gold"
         onClick={() => {
@@ -54,7 +42,7 @@ export const NumberInput = ({
           playClick();
         }}
       >
-        <ArrowRight />
+        <ArrowRight width={"6px"} height={"8px"} />
       </div>
     </div>
   );

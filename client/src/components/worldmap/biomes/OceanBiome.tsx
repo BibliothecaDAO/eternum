@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { Hexagon } from "../HexGrid";
 
 export function OceanBiome({ hexes }: { hexes: Hexagon[] }) {
-  const { nodes, materials } = useGLTF("/models/ocean.glb") as any;
+  const { nodes, materials } = useGLTF("/models/biomes/ocean.glb") as any;
 
   const defaultTransform = new THREE.Matrix4()
     .makeRotationX(Math.PI / 2)

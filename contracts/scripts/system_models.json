@@ -1,153 +1,121 @@
-{ 
-    "TEST_RESOURCE_SYSTEMS": [
-        "Resource",
-        "OwnedResourcesTracker"
-    ],
-    "REALM_SYSTEMS": [
-        "Owner",
-        "Realm",
-        "Position",
-        "EntityMetadata",
-        "TownWatch",
-        "EntityOwner",
-        "Capacity",
-        "Movable",
-        "QuantityTracker",
-        "Resource",
-        "OwnedResourcesTracker",
-        "Tile"
-    ],
-    "CARAVAN_SYSTEMS": [
-        "Movable",
-        "Capacity",
-        "CaravanMembers",
-        "Position",
-        "Owner",
-        "EntityOwner",
-        "ForeignKey",
-        "Inventory"
-    ],
-    "TRANSPORT_UNIT_SYSTEMS": [
-        "Owner",
-        "Position",
-        "EntityOwner",
-        "EntityMetadata",
-        "Quantity",
-        "Movable",
-        "ArrivalTime",
-        "Capacity",
-        "QuantityTracker"
-    ],
-    "LABOR_SYSTEMS": [
-        "Labor",
-        "Resource",
-        "OwnedResourcesTracker",
-        "LaborAuction",
-        "LaborBuilding"
-    ],
-    "TRADE_SYSTEMS": [
-        "Caravan",
-        "Movable",
-        "Trade",
-        "Resource",
-        "OwnedResourcesTracker",
-        "Status",
-        "ArrivalTime",
-        "Position",
-        "Road",
-        "Inventory",
-        "ForeignKey",
-        "ResourceChest",
-        "DetachedResource",
-        "Weight",
-        "Owner"
-    ],
-    "ROAD_SYSTEMS": [
-        "Road",
-        "Resource",
-        "OwnedResourcesTracker"
-    ],
-    "RESOURCE_SYSTEMS": [
-        "Resource",
-        "OwnedResourcesTracker",
-        "ResourceAllowance",
-        "Owner",
-        "Weight",
-        "ResourceChest",
-        "DetachedResource",
-        "ForeignKey",
-        "Inventory"
-    ],
-    "TRAVEL_SYSTEMS": [
-        "ArrivalTime",
-        "Position",
-        "Road",
-        "Movable",
-        "TickMove"
-    ],
-    "COMBAT_SYSTEMS": [
-        "Resource",
-        "OwnedResourcesTracker",
-        "Owner",
-        "EntityOwner",
-        "Health",
-        "Attack",
-        "Defence",
-        "Quantity",
-        "Position",
-        "Inventory",
-        "Movable",
-        "Capacity",
-        "ArrivalTime",
-        "Weight",
-        "ResourceChest",
-        "DetachedResource",
-        "ForeignKey",
-        "Inventory"
-    ],
-    "LEVELING_SYSTEMS": [
-        "Level",
-        "Resource",
-        "OwnedResourcesTracker"
-    ],
-    "NAME_SYSTEMS": [
-        "AddressName"
-    ],
-    "BANK_SYSTEMS": [
-        "BankAuction",
-        "Resource",
-        "OwnedResourcesTracker",
-        "ResourceAllowance",
-        "Owner",
-        "Weight",
-        "ResourceChest",
-        "DetachedResource",
-        "ForeignKey",
-        "Inventory"
-    ],
-    "HYPERSTRUCTURE_SYSTEMS": [
-        "Orders",
-        "HyperStructure"
-    ],
-    "BUILDINGS_SYSTEMS": [
-        "Resource",
-        "OwnedResourcesTracker",
-        "LaborBuilding"
-    ],
-    "MAP_SYSTEMS": [
-        "Tile",
-        "Resource",
-        "ResourceAllowance",
-        "Owner",
-        "OwnedResourcesTracker",
-        "Inventory",
-        "ForeignKey",
-        "ResourceChest",
-        "DetachedResource",
-        "Weight",
-        "Movable",
-        "Position",
-        "ArrivalTime",
-        "TickMove"
-    ]
+{
+  "TEST_RESOURCE_SYSTEMS": ["Resource", "OwnedResourcesTracker"],
+  "REALM_SYSTEMS": [
+    "Owner",
+    "Realm",
+    "Position",
+    "EntityMetadata",
+    "TownWatch",
+    "EntityOwner",
+    "Capacity",
+    "Movable",
+    "QuantityTracker",
+    "Resource",
+    "OwnedResourcesTracker",
+    "Tile"
+  ],
+  "CARAVAN_SYSTEMS": [
+    "Movable",
+    "Capacity",
+    "CaravanMembers",
+    "Position",
+    "Owner",
+    "EntityOwner",
+    "ForeignKey",
+    "Inventory"
+  ],
+  "TRANSPORT_UNIT_SYSTEMS": [
+    "Owner",
+    "Position",
+    "EntityOwner",
+    "EntityMetadata",
+    "Quantity",
+    "Movable",
+    "ArrivalTime",
+    "Capacity",
+    "QuantityTracker"
+  ],
+  "LABOR_SYSTEMS": ["Labor", "Resource", "OwnedResourcesTracker", "LaborAuction", "LaborBuilding"],
+  "TRADE_SYSTEMS": [
+    "Caravan",
+    "Movable",
+    "Trade",
+    "Resource",
+    "OwnedResourcesTracker",
+    "Status",
+    "ArrivalTime",
+    "Position",
+    "Road",
+    "Inventory",
+    "ForeignKey",
+    "ResourceChest",
+    "DetachedResource",
+    "Weight",
+    "Owner"
+  ],
+  "ROAD_SYSTEMS": ["Road", "Resource", "OwnedResourcesTracker"],
+  "RESOURCE_SYSTEMS": [
+    "Resource",
+    "OwnedResourcesTracker",
+    "ResourceAllowance",
+    "Owner",
+    "Weight",
+    "ResourceChest",
+    "DetachedResource",
+    "ForeignKey",
+    "Inventory"
+  ],
+  "TRAVEL_SYSTEMS": ["ArrivalTime", "Position", "Road", "Movable", "TickMove"],
+  "COMBAT_SYSTEMS": [
+    "Resource",
+    "OwnedResourcesTracker",
+    "Owner",
+    "EntityOwner",
+    "Health",
+    "Attack",
+    "Defence",
+    "Quantity",
+    "Position",
+    "Inventory",
+    "Movable",
+    "Capacity",
+    "ArrivalTime",
+    "Weight",
+    "ResourceChest",
+    "DetachedResource",
+    "ForeignKey",
+    "Inventory"
+  ],
+  "LEVELING_SYSTEMS": ["Level", "Resource", "OwnedResourcesTracker"],
+  "NAME_SYSTEMS": ["AddressName"],
+  "BANK_SYSTEMS": [
+    "BankAuction",
+    "Resource",
+    "OwnedResourcesTracker",
+    "ResourceAllowance",
+    "Owner",
+    "Weight",
+    "ResourceChest",
+    "DetachedResource",
+    "ForeignKey",
+    "Inventory"
+  ],
+  "HYPERSTRUCTURE_SYSTEMS": ["Orders", "HyperStructure"],
+  "BUILDINGS_SYSTEMS": ["Resource", "OwnedResourcesTracker", "LaborBuilding"],
+  "MAP_SYSTEMS": [
+    "Tile",
+    "Resource",
+    "ResourceAllowance",
+    "Owner",
+    "OwnedResourcesTracker",
+    "Inventory",
+    "ForeignKey",
+    "ResourceChest",
+    "DetachedResource",
+    "Weight",
+    "Movable",
+    "Position",
+    "ArrivalTime",
+    "TickMove"
+  ]
 }

@@ -1,24 +1,24 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ReactComponent as Crown } from "../assets/icons/common/crown-circle-outline.svg";
-import { ReactComponent as Settings } from "../assets/icons/common/settings.svg";
-import { ReactComponent as Muted } from "../assets/icons/common/muted.svg";
-import { ReactComponent as Unmuted } from "../assets/icons/common/unmuted.svg";
-import { ReactComponent as DojoMark } from "../assets/icons/dojo-mark-full-dark.svg";
-import { ReactComponent as RealmsWorld } from "../assets/icons/rw-logo.svg";
-import { ReactComponent as Next } from "../assets/icons/common/arrow-right.svg";
-import { SecondaryPopup } from "../elements/SecondaryPopup";
-import { Headline } from "../elements/Headline";
-import Button from "../elements/Button";
-import { Checkbox } from "../elements/Checkbox";
-import { RangeInput } from "../elements/RangeInput";
-import useUIStore from "../hooks/store/useUIStore";
-import useScreenOrientation from "../hooks/useScreenOrientation";
-import { useDojo } from "../DojoContext";
-import { useRealm } from "../hooks/helpers/useRealm";
-import { useMusicPlayer } from "../hooks/useMusic";
+import { useEffect, useRef, useState } from "react";
+import { ReactComponent as Crown } from "../../assets/icons/common/crown-circle-outline.svg";
+import { ReactComponent as Settings } from "../../assets/icons/common/settings.svg";
+import { ReactComponent as Muted } from "../../assets/icons/common/muted.svg";
+import { ReactComponent as Unmuted } from "../../assets/icons/common/unmuted.svg";
+import { ReactComponent as DojoMark } from "../../assets/icons/dojo-mark-full-dark.svg";
+import { ReactComponent as RealmsWorld } from "../../assets/icons/rw-logo.svg";
+import { ReactComponent as Next } from "../../assets/icons/common/arrow-right.svg";
+import { SecondaryPopup } from "../../elements/SecondaryPopup";
+import { Headline } from "../../elements/Headline";
+import Button from "../../elements/Button";
+import { Checkbox } from "../../elements/Checkbox";
+import { RangeInput } from "../../elements/RangeInput";
+import useUIStore from "../../hooks/store/useUIStore";
+import useScreenOrientation from "../../hooks/useScreenOrientation";
+import { useDojo } from "../../DojoContext";
+import { useRealm } from "../../hooks/helpers/useRealm";
+import { useMusicPlayer } from "../../hooks/useMusic";
 type SettingsComponentProps = {};
 
-export const SettingsComponent = ({}: SettingsComponentProps) => {
+export const SettingsNavigation = ({}: SettingsComponentProps) => {
   const {
     account: { accountDisplay, account },
   } = useDojo();
@@ -54,21 +54,21 @@ export const SettingsComponent = ({}: SettingsComponentProps) => {
         {addressName && <div className="text-xs font-bold  self-center">{addressName}</div>}
 
         <Button onClick={() => setShowSettings(!showSettings)}>
-          <Settings className="ml-[6px] cursor-pointer stroke-gold w-4" />
+          <Settings className=" cursor-pointer stroke-gold w-4" />
         </Button>
 
         {isPlaying ? (
           <Button onClick={() => stop()}>
-            <Unmuted className="ml-[6px] cursor-pointer fill-gold  w-4" />
+            <Unmuted className=" cursor-pointer fill-gold  w-4" />
           </Button>
         ) : (
           <Button onClick={play}>
-            <Muted className="ml-[6px] cursor-pointer fill-gold  w-4" />
+            <Muted className=" cursor-pointer fill-gold  w-4" />
           </Button>
         )}
 
         <Button onClick={next}>
-          <Next className="ml-[6px] cursor-pointer fill-gold  h-4" />
+          <Next className="cursor-pointer fill-gold  h-4" />
         </Button>
       </div>
 

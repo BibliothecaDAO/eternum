@@ -1,15 +1,27 @@
 import { Transition } from "@headlessui/react";
-import React, { Fragment } from "react";
+import React, { Fragment, useEffect, useState } from "react";
+import useRealmStore from "../hooks/store/useRealmStore";
+import useUIStore from "../hooks/store/useUIStore";
 
 type BlurOverlayContainerProps = {
   children?: React.ReactNode;
-  open?: boolean;
 } & React.HTMLAttributes<HTMLDivElement>;
 
-export const BlankOverlayContainer = ({ children, open }: BlurOverlayContainerProps) => {
+export const BlankOverlayContainer = ({ children }: BlurOverlayContainerProps) => {
+  const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
+  const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
+  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
+  useEffect(() => {
+    if (realmEntityIds.length > 4) {
+      setBlankOverlay(false);
+    } else {
+      setBlankOverlay(true);
+    }
+  }, []);
+
   return (
     <Transition
-      show={open}
+      show={showBlankOverlay}
       as={Fragment}
       enter="transition-opacity duration-300"
       enterFrom="opacity-0"

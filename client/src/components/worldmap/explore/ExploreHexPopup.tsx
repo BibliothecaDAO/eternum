@@ -83,7 +83,6 @@ export const ExplorePanel = ({
   explorationStart,
   direction,
   foundResource,
-  onClose,
   setStep,
 }: ExplorePanelProps) => {
   const {

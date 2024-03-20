@@ -1,9 +1,9 @@
 #[dojo::contract]
 mod realm_systems {
-
     use core::traits::Into;
     use eternum::models::realm::Realm;
     use eternum::models::movable::Movable;
+    use eternum::models::map::Tile;
     use eternum::models::quantity::QuantityTracker;
     use eternum::models::capacity::Capacity;
     use eternum::models::owner::{Owner, EntityOwner};
@@ -135,12 +135,13 @@ mod realm_systems {
                 index += 1;
             };
 
-
-            // set realm's position tile to explored
-            InternalMapSystemsImpl::explore(
-                world, entity_id.into(), position.into(), array![].span()
-            );
-            
+            let mut tile: Tile = get!(world, (position.x, position.y), Tile);
+            if tile.explored_at == 0 {
+                // set realm's position tile to explored
+                InternalMapSystemsImpl::explore(
+                    world, entity_id.into(), position.into(), array![].span()
+                );
+            }
 
             entity_id.into()
         }

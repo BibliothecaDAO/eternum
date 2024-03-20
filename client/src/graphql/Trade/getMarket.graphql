@@ -1,8 +1,5 @@
 query getMarket {
-  tradeComponents(
-    where: { claimed_by_maker: 0, claimed_by_taker: 0 }
-    last: 30
-  ) {
+  tradeComponents(where: { claimed_by_maker: 0, claimed_by_taker: 0 }, last: 30) {
     edges {
       node {
         entity {

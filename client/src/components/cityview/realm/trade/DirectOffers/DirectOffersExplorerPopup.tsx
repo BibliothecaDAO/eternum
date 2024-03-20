@@ -235,10 +235,10 @@ const RealmResourceRow = ({
     latestActivity === undefined
       ? "offline"
       : latestActivity < 86400
-      ? "online"
-      : latestActivity < 259200
-      ? "recently"
-      : "offline";
+        ? "online"
+        : latestActivity < 259200
+          ? "recently"
+          : "offline";
 
   return (
     <div className="grid rounded-md hover:bg-white/10 items-center border-b h-8 border-black grid-cols-[250px,1fr,1fr] text-lightest text-xxs">

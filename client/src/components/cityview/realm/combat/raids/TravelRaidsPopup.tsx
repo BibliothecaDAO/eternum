@@ -59,17 +59,17 @@ export const TravelRaidsPopup = ({ selectedRaider, onClose }: TravelRaidsPopupPr
           ></SelectRealmForCombatPanel>
         ),
       },
-      {
-        key: "hyprestructures",
-        label: <div>Hyperstructures</div>,
-        component: (
-          <SelectHyperstructureForCombat
-            selectedEntityId={selectedEntityId}
-            setSelectedEntityId={setSelectedEntityId}
-            setCanAttack={setCanAttack}
-          ></SelectHyperstructureForCombat>
-        ),
-      },
+      // {
+      //   key: "hyprestructures",
+      //   label: <div>Hyperstructures</div>,
+      //   component: (
+      //     <SelectHyperstructureForCombat
+      //       selectedEntityId={selectedEntityId}
+      //       setSelectedEntityId={setSelectedEntityId}
+      //       setCanAttack={setCanAttack}
+      //     ></SelectHyperstructureForCombat>
+      //   ),
+      // },
     ],
     [selectedTab, selectedEntityId],
   );
