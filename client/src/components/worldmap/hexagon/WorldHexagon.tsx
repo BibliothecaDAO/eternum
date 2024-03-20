@@ -6,8 +6,8 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import { useDojo } from "../../../DojoContext";
 import { Subscription } from "rxjs";
 import { MyCastles, OtherCastles } from "../Castles";
-import { Armies, TravelingArmies } from "../armies/Armies";
-import { EnemyArmies } from "../armies/EnemyArmies";
+import { Armies } from "../armies/Armies";
+import { EnemyArmies } from "../armies/EnemyArmies.js";
 import { Hexagon } from "../../../types";
 import { BiomesGrid, HexagonGrid } from "./HexLayers";
 
@@ -86,9 +86,8 @@ export const WorldMap = () => {
         {hexData && <MyCastles hexData={hexData} />}
         {hexData && <OtherCastles hexData={hexData} />}
         {/* {hexData && <Hyperstructures hexData={hexData} />} */}
-        <EnemyArmies />
         <Armies />
-        <TravelingArmies />
+        <EnemyArmies />
       </>
     );
   }, [hexData]);

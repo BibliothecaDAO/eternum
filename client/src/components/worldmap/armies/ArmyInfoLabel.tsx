@@ -4,11 +4,10 @@ import { useCombat } from "../../../hooks/helpers/useCombat";
 import { ReactComponent as Pen } from "../../../assets/icons/common/pen.svg";
 import useUIStore from "../../../hooks/store/useUIStore";
 import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
-import { ArmyModel } from "./models/ArmyModel";
-import { divideByPrecision, getEntityIdFromKeys, getUIPositionFromColRow } from "../../../utils/utils";
-import { CombatInfo, Position, Resource, UIPosition } from "@bibliothecadao/eternum";
+import { divideByPrecision, getEntityIdFromKeys } from "../../../utils/utils";
+import { CombatInfo, Resource, UIPosition } from "@bibliothecadao/eternum";
 // @ts-ignore
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Html } from "@react-three/drei";
 import { getRealmNameById, getRealmOrderNameById } from "../../../utils/realms";
 import clsx from "clsx";
@@ -20,105 +19,12 @@ import { useResources } from "../../../hooks/helpers/useResources";
 import { ResourceCost } from "../../../elements/ResourceCost";
 import { TIME_PER_TICK } from "../../network/EpochCountdown";
 
-export const ENEMY_ARMY_MODEL_DEFAULT_COLOR: string = "red";
-export const ENEMY_ARMY_MODEL_DEAD_COLOR: string = "black";
-export const ENEMY_ARMY_MODEL_HOVER_COLOR: string = "orange";
-export const ENEMY_ARMY_MODEL_SCALE: number = 2;
-
-export const EnemyArmies = () => {
-  const {
-    account: { account },
-    setup: {
-      components: { Position, Health },
-    },
-  } = useDojo();
-
-  const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
-  const animationPaths = useUIStore((state) => state.animationPaths);
-  const positionOffset: Record<string, number> = {};
-
-  // stary only by showing your armies for now
-  const { useEnemeyRaiders } = useCombat();
-
-  const stationaryEnemyArmies = useEnemeyRaiders(BigInt(account.address));
-
-  const [hoveredArmy, setHoveredArmy] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
-  const [selectedArmy, _] = useState<{ id: bigint; position: UIPosition } | undefined>(undefined);
-
-  const onHover = (armyId: bigint, position: UIPosition) => {
-    setHoveredArmy({ id: armyId, position });
-  };
-
-  const onUnhover = () => {
-    setHoveredArmy(undefined);
-  };
-
-  // clickable
-  const onClick = (id: bigint, position: Position) => {
-    setSelectedEntity({ id, position });
-  };
-
-  const positions = useMemo(
-    () =>
-      stationaryEnemyArmies
-        .map((armyId) => {
-          const position = getComponentValue(Position, getEntityIdFromKeys([armyId]));
-          const health = getComponentValue(Health, getEntityIdFromKeys([armyId]));
-          const isDead = health?.value ? false : true;
-          // if animated army dont display
-          const isTraveling = animationPaths.find((path) => path.id === position?.entity_id);
-          if (!position || isTraveling) return;
-          let z = 0.32;
-          return {
-            contractPos: { x: position.x, y: position.y },
-            uiPos: { ...getUIPositionFromColRow(position.x, position.y), z: z },
-            id: position.entity_id,
-            isDead,
-          };
-        })
-        .filter(Boolean) as { contractPos: Position; uiPos: UIPosition; id: bigint; isDead: Boolean }[],
-    [stationaryEnemyArmies],
-  );
-
-  return (
-    <group>
-      {positions.map(({ contractPos, uiPos, id, isDead }, i) => {
-        let offset = 0;
-        if (positionOffset[JSON.stringify(uiPos)]) {
-          positionOffset[JSON.stringify(uiPos)] += 1;
-          if (positionOffset[JSON.stringify(uiPos)] % 2 === 0) {
-            offset = positionOffset[JSON.stringify(uiPos)] * -0.3;
-          } else {
-            offset = positionOffset[JSON.stringify(uiPos)] * 0.3;
-          }
-        } else {
-          positionOffset[JSON.stringify(uiPos)] = 1;
-        }
-        return (
-          <ArmyModel
-            onPointerOver={() => onHover(id, uiPos)}
-            onPointerOut={onUnhover}
-            key={i}
-            scale={ENEMY_ARMY_MODEL_SCALE}
-            onClick={() => onClick(id, contractPos)}
-            position={[uiPos.x + offset - 0.7, uiPos.z, -uiPos.y]}
-            defaultColor={!isDead ? ENEMY_ARMY_MODEL_DEFAULT_COLOR : ENEMY_ARMY_MODEL_DEAD_COLOR}
-            hoverColor={ENEMY_ARMY_MODEL_HOVER_COLOR}
-          ></ArmyModel>
-        );
-      })}
-      {hoveredArmy && <ArmyInfoLabel position={hoveredArmy.position} armyId={hoveredArmy.id} />}
-      {selectedArmy && <ArmyInfoLabel position={selectedArmy.position} armyId={selectedArmy.id} />}
-    </group>
-  );
-};
-
 type ArmyInfoLabelProps = {
   position: UIPosition;
   armyId: bigint;
 };
 
-const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
+export const ArmyInfoLabel = ({ position, armyId }: ArmyInfoLabelProps) => {
   const { getEntitiesCombatInfo } = useCombat();
 
   const {

@@ -5,16 +5,11 @@ Files: client/public/models/Warrior.gltf [3.04MB] > /Users/aymericdelabrousse/Pr
 */
 
 import * as THREE from "three";
-import React, { forwardRef, useEffect, useMemo, useRef, useState } from "react";
-import { useGLTF, useAnimations, Clone } from "@react-three/drei";
+import React, { useEffect, useMemo, useRef } from "react";
+import { useGLTF, useAnimations } from "@react-three/drei";
 import { GLTF, SkeletonUtils } from "three-stdlib";
-import { Position, UIPosition } from "@bibliothecadao/eternum";
-import { Vector3, useFrame, useGraph } from "@react-three/fiber";
-import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
-import useUIStore from "../../../../hooks/store/useUIStore";
-import { ENEMY_ARMY_MODEL_HOVER_COLOR } from "../EnemyArmies";
-import { ArmyInfoLabel, FRIENDLY_ARMY_MODEL_HOVER_COLOR, useUpdateAnimationPaths } from "../Armies";
-import { getUIPositionFromColRow } from "../../../../utils/utils";
+import { Vector3, useGraph } from "@react-three/fiber";
+import { FRIENDLY_ARMY_MODEL_HOVER_COLOR } from "../Armies";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -59,177 +54,89 @@ type ContextType = Record<
   >
 >;
 
-type WarriorModelsProps = {
-  warriorsInfo: { contractPos: Position; uiPos: UIPosition; id: bigint; isDead: boolean }[];
-};
-
-// Ensure WarriorModels receives props correctly
-export function WarriorModels({ warriorsInfo }: WarriorModelsProps) {
-  // const animationPaths = useUIStore((state) => state.animationPaths);
-
-  useUpdateAnimationPaths();
-
-  return (
-    <group>
-      {warriorsInfo.map((info, index) => {
-        // Calculate offset based on index
-        const offset = {
-          x: ((index % 3) - 1) * 0.8, // This will create an offset of -0.1, 0, or 0.1
-          z: Math.floor(index / 3) * 0.8 - 0.8, // This creates a row offset
-        };
-
-        return (
-          <WarriorModel
-            info={{ ...info, uiPos: { x: info.uiPos.x + offset.x, y: info.uiPos.y + offset.z, z: info.uiPos.z } }}
-            // Assuming you want to use uiPos for positioning
-          />
-        );
-      })}
-    </group>
-  );
-}
-
 type WarriorModelProps = {
-  info: { contractPos: Position; uiPos: UIPosition; id: bigint; isDead: boolean };
+  position: Vector3;
+  rotationY: number;
+  onClick: () => void;
+  onPointerEnter: () => void;
+  onPointerOut: () => void;
+  hovered: boolean;
+  isRunning: boolean;
+  isDead: boolean;
 };
 
-export function WarriorModel({ info, ...props }: WarriorModelProps & JSX.IntrinsicElements["group"]) {
-  const { play: playBuildMilitary } = useUiSounds(soundSelector.buildMilitary);
-  const animationPaths = useUIStore((state) => state.animationPaths);
-  const setAnimationPaths = useUIStore((state) => state.setAnimationPaths);
-  const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
-
-  const animationPath = useMemo(() => {
-    return animationPaths.find((path) => path.id === info.id);
-  }, [animationPaths]);
-
-  const startAnimationTimeRef = useRef<number | null>(null);
-  const [hovered, setHovered] = useState(false);
-  const [position, setPosition] = useState([info.uiPos.x, 0.32, -info.uiPos.y]);
-
-  useFrame(() => {
-    // animate
-    if (animationPath) {
-      const uiPath = animationPath.path.map((pos) => getUIPositionFromColRow(pos.x, pos.y));
-      const now = Date.now();
-      let timeElapsed = 0;
-      const startTime = startAnimationTimeRef.current;
-      const timeToComplete = uiPath.length * 1000;
-      if (!startTime) {
-        actions.Run?.play();
-        startAnimationTimeRef.current = now;
-      } else {
-        timeElapsed = now - startTime;
-      }
-      const progress = Math.min(timeElapsed / timeToComplete, 1);
-
-      const pathIndex = Math.floor(progress * uiPath.length);
-      const currentPath: Position[] = uiPath.slice(pathIndex, pathIndex + 2);
-
-      // stop if progress is >= 1
-      if (progress >= 1 || currentPath.length < 2) {
-        actions.Run?.stop();
-        // reset all
-        const paths = [...animationPaths];
-        const index = paths.indexOf(animationPath);
-        if (index > -1) {
-          paths.splice(index, 1);
-        }
-        setAnimationPaths(paths);
-        return;
-      }
-
-      // calculate progress between 2 points
-      const progressBetweenPoints = (progress - (1 / uiPath.length) * pathIndex) / (1 / uiPath.length);
-
-      const currentPos = {
-        x: currentPath[0].x + (currentPath[1].x - currentPath[0].x) * progressBetweenPoints,
-        y: currentPath[0].y + (currentPath[1].y - currentPath[0].y) * progressBetweenPoints,
-      };
-
-      // Determine the direction of movement
-      const direction = new THREE.Vector3(
-        currentPath[1].x - currentPath[0].x,
-        0,
-        -(currentPath[1].y - currentPath[0].y), // Negate Y to match the Three.js coordinate system
-      ).normalize();
-
-      const z = 0.32;
-      setPosition([currentPos.x, z, -currentPos.y]);
-
-      // Calculate and update rotation to face the direction of movement
-      if (!direction.equals(new THREE.Vector3(0, 0, 0))) {
-        const angle = Math.atan2(direction.x, direction.z);
-        if (groupRef.current) groupRef.current.rotation.y = angle;
-      }
-    }
-  });
-
+export function WarriorModel({
+  position,
+  rotationY,
+  onClick,
+  onPointerEnter,
+  onPointerOut,
+  hovered,
+  isRunning,
+  isDead,
+  ...props
+}: WarriorModelProps) {
   const groupRef = useRef<THREE.Group>(null);
-
   const { scene, animations } = useGLTF("/models/Warrior-transformed.glb") as GLTFResult;
   const { actions } = useAnimations(animations, groupRef);
-
-  // Skinned meshes cannot be re-used in threejs without cloning them
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
-  // useGraph creates two flat object collections for nodes and materials
   const { nodes, materials } = useGraph(clone);
 
-  const onClick = () => {
-    if (!info.isDead) {
-      setSelectedEntity({ id: info.id, position: info.contractPos });
-      const action = actions["Sword_Attack"];
-      if (action) {
-        // play sound
-        playBuildMilitary();
-        action.reset();
-        action.setLoop(THREE.LoopOnce, 1);
-        action.clampWhenFinished = true;
-        action.play();
-      }
+  useEffect(() => {
+    nodes.Root.rotation.y = rotationY;
+  }, [rotationY]);
+
+  // add actions to onClick
+  const onClickAction = () => {
+    const action = actions["Sword_Attack"];
+    if (action) {
+      action.reset();
+      action.setLoop(THREE.LoopOnce, 1);
+      action.clampWhenFinished = true;
+      action.play();
+    }
+    if (onClick) {
+      onClick();
     }
   };
 
-  const onPointerIn = () => setHovered(true);
-  const onPointerOut = () => setHovered(false);
+  useEffect(() => {
+    if (isRunning) {
+      actions["Run"]?.play();
+    } else {
+      actions["Run"]?.stop();
+    }
+  }, [isRunning]);
 
   const hoverMaterial = useMemo(() => {
-    // @ts-ignore
     const material = new THREE.MeshStandardMaterial();
     material.color.set(FRIENDLY_ARMY_MODEL_HOVER_COLOR);
     return material;
-  }, [materials.Warrior_Texture]);
+  }, []);
 
   return (
-    <>
-      {hovered && <ArmyInfoLabel position={info.uiPos} armyId={info.id} />}
-      <group
-        {...props}
-        position={position as Vector3}
-        // scale={0.5}
-        ref={groupRef}
-        onClick={onClick}
-        onPointerEnter={onPointerIn}
-        onPointerOut={onPointerOut}
-        dispose={null}
-      >
-        <group name="Scene">
-          <group name="CharacterArmature">
-            <primitive object={nodes.Root} />
-          </group>
-          {
-            <skinnedMesh
-              name="Warrior_Body"
-              // @ts-ignore
-              geometry={nodes.Warrior_Body.geometry}
-              material={hovered ? hoverMaterial : materials.Warrior_Texture}
-              // @ts-ignore
-              skeleton={nodes.Warrior_Body.skeleton}
-            />
-          }
+    <group
+      {...props}
+      position={position}
+      ref={groupRef}
+      onClick={onClickAction}
+      onPointerEnter={onPointerEnter}
+      onPointerOut={onPointerOut}
+    >
+      <group name="Scene">
+        <group name="CharacterArmature">
+          <primitive object={nodes.Root} />
         </group>
+        <skinnedMesh
+          name="Warrior_Body"
+          // @ts-ignore
+          geometry={nodes.Warrior_Body.geometry}
+          material={hovered ? hoverMaterial : materials.Warrior_Texture}
+          // @ts-ignore
+          skeleton={nodes.Warrior_Body.skeleton}
+        />
       </group>
-    </>
+    </group>
   );
 }
 
