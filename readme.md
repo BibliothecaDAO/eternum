@@ -21,7 +21,7 @@ removed from the conventional notion of a 'finished game' like Civilization 6. T
 digital ecosystem, constantly evolving and inviting endless exploration.
 
 <details>
-<summary> More</summary>
+<summary> Click to expand</summary>
 
 ### L3 Network
 
