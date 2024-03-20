@@ -390,7 +390,7 @@ fi
 
 
 # Ask the user for the desired delay between commands
-read -p "Specify a delay in seconds between each command (or press Enter for no delay): " delay
+read -p "Specify a delay in seconds between each command (or press Enter for no delay - if development 0.1s is fine): " delay
 
 # Check if the delay is a valid number (integer or floating point)
 if [[ ! "$delay" =~ ^[0-9]*\.?[0-9]+$ ]]; then

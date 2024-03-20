@@ -2,6 +2,7 @@
   "name": "eternum",
   "version": "0.1.0",
   "scripts": {
+    "dev": "bun run --cwd ./client dev",
     "build-packages": "bun run --cwd sdk/packages/eternum build",
     "build-client": "bun run --cwd ./client build",
     "prettier-check": "bun x prettier --check .",

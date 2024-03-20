@@ -19,7 +19,7 @@ curl -fsSL https://bun.sh/install | bash
 From the root to install all the packages deps
 
 ```
-bun install
+pnpm install
 ```
 
 ### Building packages
@@ -28,7 +28,7 @@ Navigate to a package and run the following. This will launch bun and watch for 
 and updating.
 
 ```
-bun run build --watch
+pnpm run build --watch
 ```
 
 ### Examples
