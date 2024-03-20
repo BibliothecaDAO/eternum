@@ -1,13 +1,9 @@
-import { createContext, useContext, ReactNode, useState, useMemo, useEffect } from "react";
+import { createContext, useContext, ReactNode, useState, useEffect } from "react";
 import useRealmStore from "../../../../hooks/store/useRealmStore";
-import { Npc, WsResponse } from "./types";
-import { HasValue, getComponentValue, runQuery } from "@dojoengine/recs";
-import { unpackCharacteristics } from "./utils";
-import { shortString } from "starknet";
-import { useDojo } from "../../../../DojoContext";
+import { WsResponse, WsMsgType, ErrorResponse } from "./types";
 import useWebSocket from "react-use-websocket";
 import { SendJsonMessage } from "react-use-websocket/dist/lib/types";
-import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { keysSnakeToCamel } from "./utils";
 
 type NpcContextProps = {
   sendWsMsg: SendJsonMessage;
@@ -18,9 +14,6 @@ type NpcContextProps = {
   setLastMessageDisplayedIndex: (newIndex: number) => void;
   loadingTownhall: boolean;
   setLoadingTownhall: (newValue: boolean) => void;
-  npcs: Npc[];
-  spawned: number;
-  setSpawned: (newNumber: number) => void;
   LOCAL_STORAGE_ID: string;
 };
 
@@ -35,12 +28,6 @@ export const NpcProvider = ({ children }: Props) => {
   if (currentContext) throw new Error("NpcProvider can only be used once");
 
   const {
-    setup: {
-      components: { Npc: NpcComponent, Npcs: NpcsComponent },
-    },
-  } = useDojo();
-
-  const {
     sendJsonMessage: sendWsMsg,
     lastJsonMessage: lastWsMsg,
     readyState: wsReadyState,
@@ -49,17 +36,23 @@ export const NpcProvider = ({ children }: Props) => {
     shouldReconnect: () => true,
   });
 
-  const { realmEntityId, realmId } = useRealmStore();
+  const { realmId } = useRealmStore();
   const LOCAL_STORAGE_ID: string = `npc_chat_${realmId}`;
 
   const [selectedTownhall, setSelectedTownhall] = useState<number | null>(null);
   const [lastMessageDisplayedIndex, setLastMessageDisplayedIndex] = useState(0);
   const [loadingTownhall, setLoadingTownhall] = useState<boolean>(false);
-  const [spawned, setSpawned] = useState(0);
 
-  const npcs = useMemo(() => {
-    return getNpcs(realmEntityId, NpcComponent, NpcsComponent);
-  }, [realmEntityId, spawned]);
+  useEffect(() => {
+    if (lastWsMsg === null || lastWsMsg === undefined || Object.is(lastWsMsg, {})) {
+      return;
+    }
+    const response = keysSnakeToCamel(lastWsMsg) as WsResponse;
+    const msg_type = response.msgType;
+    if (msg_type === WsMsgType.ERROR) {
+      console.log(`Failure in lore machine: ${(response.data as ErrorResponse).reason}`);
+    }
+  }, [lastWsMsg]);
 
   useEffect(() => {
     console.log(`Connection state changed ${wsReadyState}`);
@@ -74,35 +67,9 @@ export const NpcProvider = ({ children }: Props) => {
     setLastMessageDisplayedIndex,
     loadingTownhall,
     setLoadingTownhall,
-    npcs,
-    spawned,
-    setSpawned,
     LOCAL_STORAGE_ID,
   };
   return <NpcContext.Provider value={contextValue}>{children}</NpcContext.Provider>;
-};
-
-const getNpcs = (realmEntityId: BigInt, NpcComponent: any, NpcsComponent: any): Npc[] => {
-  const npcsEntityId = runQuery([HasValue(NpcsComponent, { realm_entity_id: realmEntityId })]);
-  const npcsEntity = getComponentValue(NpcsComponent, npcsEntityId.values().next().value);
-  if (npcsEntity === undefined) {
-    return [];
-  }
-
-  let npcs: Npc[] = [];
-  for (let i = 0; i < 5; i++) {
-    let npcKey = `npc_${i}`;
-    if (npcsEntity[npcKey] !== 0n) {
-      const npcEntity = getComponentValue(NpcComponent, getEntityIdFromKeys([npcsEntity[npcKey]]));
-      npcs.push({
-        entityId: npcEntity!.entity_id,
-        characteristics: unpackCharacteristics(npcEntity!.characteristics),
-        characterTrait: shortString.decodeShortString(npcEntity!.character_trait.toString()),
-        fullName: shortString.decodeShortString(npcEntity!.full_name.toString()),
-      });
-    }
-  }
-  return npcs;
 };
 
 export const useNpcContext = () => {

@@ -1,7 +1,7 @@
 use eternum::{
     models::{
         owner::{Owner, EntityOwner}, config::NpcConfig,
-        last_spawned::{LastSpawned, ShouldSpawnImpl}, npc::{Npcs}
+        last_spawned::{LastSpawned, ShouldSpawnImpl}, npc::{RealmRegistry}
     },
     systems::npc::constants::MAX_NUM_NPCS, constants::NPC_CONFIG_ID
 };
@@ -15,23 +15,29 @@ mod npc_systems {
 
     use starknet::{get_caller_address, info::{BlockInfo, v2::ExecutionInfo, get_execution_info}};
 
-    use super::{assert_is_allowed_to_spawn, set_npc_to_free_slot};
+    use super::{assert_is_allowed_to_spawn};
 
     use eternum::{
         models::{
-            npc::{Npc, Npcs}, position::Position, movable::Movable, owner::{Owner, EntityOwner},
-            last_spawned::{LastSpawned, ShouldSpawnImpl}, config::NpcConfig
+            npc::{Npc, RealmRegistry}, position::{Position, PositionImpl, PositionIntoCoord, Coord},
+            movable::{Movable, ArrivalTime}, owner::{Owner, EntityOwner},
+            last_spawned::{LastSpawned, ShouldSpawnImpl}, config::{NpcConfig, SpeedConfig},
+            realm::{Realm},
         },
-        constants::NPC_CONFIG_ID,
-        systems::npc::{
-            utils::{
-                assert_existance_and_ownership, pedersen_hash_many, format_args_to_span,
-                unpack_characs
+        constants::{WORLD_CONFIG_ID, NPC_CONFIG_ID, NPC_ENTITY_TYPE},
+        systems::{
+            npc::{
+                utils::{
+                    assert_realm_existance_and_ownership, assert_realm_existance,
+                    pedersen_hash_many, format_args_to_span, unpack_characs
+                },
+                interface::INpc
             },
-            interface::INpc
+            transport::contracts::travel_systems::travel_systems::InternalTravelSystemsImpl,
         }
     };
 
+    use debug::PrintTrait;
 
     #[derive(Drop, starknet::Event)]
     struct NpcSpawned {
@@ -55,7 +61,7 @@ mod npc_systems {
             entity_id: u128,
             characteristics: felt252
         ) {
-            assert_existance_and_ownership(world, realm_entity_id);
+            assert_realm_existance_and_ownership(world, realm_entity_id);
 
             assert(entity_id != 0, 'entity id is zero');
 
@@ -66,6 +72,7 @@ mod npc_systems {
                 world,
                 (Npc {
                     entity_id,
+                    current_realm_entity_id: old_npc.current_realm_entity_id,
                     characteristics,
                     character_trait: old_npc.character_trait,
                     full_name: old_npc.full_name
@@ -85,7 +92,7 @@ mod npc_systems {
             full_name: felt252,
             signature: Span<felt252>
         ) -> u128 {
-            assert_existance_and_ownership(world, realm_entity_id);
+            assert_realm_existance_and_ownership(world, realm_entity_id);
 
             let npc_config = get!(world, NPC_CONFIG_ID, (NpcConfig));
 
@@ -103,33 +110,61 @@ mod npc_systems {
                 'Invalid signature'
             );
 
-            let npcs = get!(world, realm_entity_id, (Npcs));
-
-            assert_is_allowed_to_spawn(world, realm_entity_id, npcs.num_npcs);
+            assert_is_allowed_to_spawn(world, realm_entity_id);
 
             let entity_id: u128 = world.uuid().into();
 
-            set!(world, (Npc { entity_id, characteristics, character_trait, full_name, },));
+            set!(
+                world,
+                (
+                    Npc {
+                        entity_id,
+                        current_realm_entity_id: realm_entity_id,
+                        characteristics,
+                        character_trait,
+                        full_name,
+                    },
+                )
+            );
 
             let realm_position = get!(world, realm_entity_id, (Position));
             set!(
                 world, (Position { entity_id: entity_id, x: realm_position.x, y: realm_position.y })
             );
 
-            // our travel flow calls their travel function which asserts
-            // that caller is owner, so we need this contract to be owner of every NPC
+            let speed = get!(world, (WORLD_CONFIG_ID, NPC_ENTITY_TYPE), SpeedConfig).sec_per_km;
+
             set!(
-                world, (Owner { entity_id: entity_id, address: starknet::get_contract_address() })
+                world,
+                (Movable {
+                    entity_id: entity_id,
+                    sec_per_km: speed,
+                    blocked: false,
+                    round_trip: false,
+                    intermediate_coord_x: 0,
+                    intermediate_coord_y: 0,
+                })
             );
 
-            set!(world, (EntityOwner { entity_id: entity_id, entity_owner_id: realm_entity_id }));
+            set!(world, (Owner { entity_id: entity_id, address: starknet::get_caller_address() }));
 
-            set_npc_to_free_slot(world, npcs, entity_id);
+            set!(world, (EntityOwner { entity_id: entity_id, entity_owner_id: realm_entity_id }));
 
             set!(
                 world,
                 (LastSpawned { realm_entity_id, last_spawned_ts: starknet::get_block_timestamp() })
             );
+
+            let realm_registry = get!(world, realm_entity_id, (RealmRegistry));
+            set!(
+                world,
+                RealmRegistry {
+                    realm_entity_id: realm_registry.realm_entity_id,
+                    num_resident_npcs: realm_registry.num_resident_npcs + 1,
+                    num_native_npcs: realm_registry.num_native_npcs + 1
+                }
+            );
+
             emit!(world, NpcSpawned { realm_entity_id, entity_id });
 
             entity_id
@@ -142,7 +177,7 @@ mod npc_systems {
             entity_id: u128,
             character_trait: felt252,
         ) {
-            assert_existance_and_ownership(world, realm_entity_id);
+            assert_realm_existance_and_ownership(world, realm_entity_id);
             assert(entity_id != 0, 'npc inexistant');
 
             let caller_address = get_caller_address();
@@ -157,93 +192,86 @@ mod npc_systems {
                 world,
                 (Npc {
                     entity_id,
+                    current_realm_entity_id: old_npc.current_realm_entity_id,
                     characteristics: old_npc.characteristics,
                     character_trait,
                     full_name: old_npc.full_name
                 })
             );
         }
+
+        fn npc_travel(
+            self: @ContractState,
+            world: IWorldDispatcher,
+            npc_entity_id: u128,
+            to_realm_entity_id: u128
+        ) {
+            assert(npc_entity_id != 0, 'npc_entity_id is 0');
+            assert(to_realm_entity_id != 0, 'to_realm_entity_id is 0');
+
+            assert_realm_existance(world, to_realm_entity_id);
+
+            let npc_entity_owner = get!(world, npc_entity_id, (EntityOwner));
+            let npc_original_realm = get!(world, npc_entity_owner.entity_owner_id, (Realm));
+            assert_realm_existance_and_ownership(world, npc_original_realm.entity_id);
+
+            let npc = get!(world, npc_entity_id, (Npc));
+            assert(npc.full_name != 0, 'invalid npc_entity_id');
+
+            let npc_movable = get!(world, npc_entity_id, (Movable));
+            assert(npc_movable.blocked == false, 'npc is blocked');
+            assert(npc_movable.sec_per_km != 0, 'speed of 0');
+
+            let npc_arrival = get!(world, npc_entity_id, (ArrivalTime));
+            assert(npc_arrival.arrives_at <= starknet::get_block_timestamp(), 'npc is traveling');
+
+            let npc_position = get!(world, npc_entity_id, (Position));
+            let to_position = get!(world, to_realm_entity_id, (Position));
+            let to_coord: Coord = to_position.into();
+            assert(npc_position.into() != to_coord, 'already in dest realm');
+
+            InternalTravelSystemsImpl::travel(
+                world, npc_entity_id, npc_movable, npc_position.into(), to_position.into()
+            );
+            if (npc.current_realm_entity_id != 0) {
+                let current_realm_registry = get!(
+                    world, npc.current_realm_entity_id, (RealmRegistry)
+                );
+                set!(
+                    world,
+                    RealmRegistry {
+                        realm_entity_id: current_realm_registry.realm_entity_id,
+                        num_resident_npcs: current_realm_registry.num_resident_npcs - 1,
+                        num_native_npcs: current_realm_registry.num_native_npcs
+                    }
+                );
+            }
+
+            set!(
+                world,
+                Npc {
+                    entity_id: npc.entity_id,
+                    current_realm_entity_id: 0,
+                    characteristics: npc.characteristics,
+                    character_trait: npc.character_trait,
+                    full_name: npc.full_name
+                }
+            );
+        }
+        fn welcome_npc(self: @ContractState, world: IWorldDispatcher, npc_entity_id: u128) {}
+        fn kick_out_npc(self: @ContractState, world: IWorldDispatcher, npc_entity_id: u128) {}
     }
 }
 
-fn assert_is_allowed_to_spawn(world: IWorldDispatcher, realm_entity_id: u128, npcs_num: u8) {
-    let last_spawned = get!(world, realm_entity_id, (LastSpawned));
-
+fn assert_is_allowed_to_spawn(world: IWorldDispatcher, realm_entity_id: u128) {
     let npc_config = get!(world, NPC_CONFIG_ID, (NpcConfig));
+    let can_spawn_time_related = get!(world, realm_entity_id, (LastSpawned))
+        .can_spawn(npc_config.spawn_delay);
 
-    let can_spawn = last_spawned.can_spawn(npc_config.spawn_delay);
+    assert(can_spawn_time_related == true, 'too early to spawn');
 
-    assert(can_spawn == true, 'too early to spawn');
+    let realm_registry = get!(world, realm_entity_id, (RealmRegistry));
 
-    assert(npcs_num < MAX_NUM_NPCS, 'max num npcs reached');
-}
-
-fn set_npc_to_free_slot(world: IWorldDispatcher, npcs: Npcs, entity_id: u128) {
-    let num_npcs = npcs.num_npcs + 1;
-    if (npcs.npc_0 == 0) {
-        set!(
-            world,
-            Npcs {
-                realm_entity_id: npcs.realm_entity_id,
-                num_npcs,
-                npc_0: entity_id,
-                npc_1: npcs.npc_1,
-                npc_2: npcs.npc_2,
-                npc_3: npcs.npc_3,
-                npc_4: npcs.npc_4,
-            }
-        );
-    } else if (npcs.npc_1 == 0) {
-        set!(
-            world,
-            Npcs {
-                realm_entity_id: npcs.realm_entity_id,
-                num_npcs,
-                npc_0: npcs.npc_0,
-                npc_1: entity_id,
-                npc_2: npcs.npc_2,
-                npc_3: npcs.npc_3,
-                npc_4: npcs.npc_4,
-            }
-        );
-    } else if (npcs.npc_2 == 0) {
-        set!(
-            world,
-            Npcs {
-                realm_entity_id: npcs.realm_entity_id,
-                num_npcs,
-                npc_0: npcs.npc_0,
-                npc_1: npcs.npc_1,
-                npc_2: entity_id,
-                npc_3: npcs.npc_3,
-                npc_4: npcs.npc_4,
-            }
-        );
-    } else if (npcs.npc_3 == 0) {
-        set!(
-            world,
-            Npcs {
-                realm_entity_id: npcs.realm_entity_id,
-                num_npcs,
-                npc_0: npcs.npc_0,
-                npc_1: npcs.npc_1,
-                npc_2: npcs.npc_2,
-                npc_3: entity_id,
-                npc_4: npcs.npc_4,
-            }
-        );
-    } else if (npcs.npc_4 == 0) {
-        set!(
-            world,
-            Npcs {
-                realm_entity_id: npcs.realm_entity_id,
-                num_npcs,
-                npc_0: npcs.npc_0,
-                npc_1: npcs.npc_1,
-                npc_2: npcs.npc_2,
-                npc_3: npcs.npc_3,
-                npc_4: entity_id,
-            }
-        );
-    }
+    assert(realm_registry.num_native_npcs < MAX_NUM_NPCS, 'max num npcs spawned');
+    assert(realm_registry.num_native_npcs < MAX_NUM_NPCS, 'already hosting max num npcs');
 }

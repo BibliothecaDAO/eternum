@@ -1,7 +1,7 @@
 import React from "react";
 import { soundSelector, useUiSounds } from "../../hooks/useUISound";
 
-type ButtonProps = {
+export type ButtonProps = {
   onClick: () => void;
   children: React.ReactNode;
   className?: string;

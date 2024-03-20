@@ -1,12 +1,82 @@
-import { BigNumberish } from "starknet";
-import { Characteristics } from "./types";
+import { BigNumberish, shortString } from "starknet";
+import { AtGates, Characteristics, Npc, Residents, Travelers } from "./types";
 import { SEX, ROLES } from "./constants";
+import { Entity, Has, HasValue, NotValue, QueryFragment, getComponentValue, runQuery } from "@dojoengine/recs";
+import { useEntityQuery } from "@dojoengine/react";
+import { getPosition } from "../../../../utils/utils";
 
 const U2_MASK: bigint = BigInt(0x3);
 const U8_MASK: bigint = BigInt(0xff);
 
 const TWO_POW_8 = 0x100;
 const TWO_POW_16 = 0x10000;
+
+export const NPC_CONFIG_ID = BigInt("999999999999999990");
+
+export const getTravelersNpcs = (realmEntityId: bigint, NpcComponent: any, EntityOwnerComponent: any) => {
+  let travelers: Travelers = getNpcsFromQuery(
+    [
+      Has(NpcComponent),
+      HasValue(EntityOwnerComponent, { entity_owner_id: realmEntityId }),
+      NotValue(NpcComponent, { current_realm_entity_id: realmEntityId }),
+    ],
+    NpcComponent,
+  );
+  return travelers;
+};
+
+export const getAtGatesNpcs = (
+  realmId: bigint,
+  realmEntityId: bigint,
+  NpcComponent: any,
+  EntityOwnerComponent: any,
+  PositionComponent: any,
+): AtGates => {
+  const realmPosition = getPosition(realmId);
+  let atGates: AtGates = getNpcsFromQuery(
+    [
+      HasValue(PositionComponent, { x: realmPosition.x, y: realmPosition.y }),
+      NotValue(EntityOwnerComponent, { entity_owner_id: realmEntityId }),
+      HasValue(NpcComponent, { current_realm_entity_id: 0 }),
+    ],
+    NpcComponent,
+  );
+  return atGates;
+};
+
+export const getResidentNpcs = (realmEntityId: bigint, NpcComponent: any, EntityOwner: any): Residents => {
+  let residents: Residents = { foreigners: [], natives: [] };
+  residents.foreigners = getNpcsFromQuery(
+    [
+      HasValue(NpcComponent, { current_realm_entity_id: realmEntityId }),
+      HasValue(EntityOwner, { entity_owner_id: realmEntityId }),
+    ],
+    NpcComponent,
+  );
+  residents.natives = getNpcsFromQuery(
+    [
+      HasValue(NpcComponent, { current_realm_entity_id: realmEntityId }),
+      NotValue(EntityOwner, { entity_owner_id: realmEntityId }),
+    ],
+    NpcComponent,
+  );
+  return residents;
+};
+
+export const getNpcsFromQuery = (query: QueryFragment[], NpcComponent: any): Npc[] => {
+  return Array.from(useEntityQuery(query)).map((npcEntityId) => getNpcFromEntityId(npcEntityId, NpcComponent));
+};
+
+const getNpcFromEntityId = (npcEntityId: Entity, NpcComponent: any): Npc => {
+  const npcEntity = getComponentValue(NpcComponent, npcEntityId);
+  return {
+    entityId: npcEntity!.entity_id,
+    currentRealmEntityId: npcEntity!.current_realm_entity_id,
+    characteristics: unpackCharacteristics(npcEntity!.characteristics),
+    characterTrait: shortString.decodeShortString(npcEntity!.character_trait.toString()),
+    fullName: shortString.decodeShortString(npcEntity!.full_name.toString()),
+  };
+};
 
 export const scrollToElement = (bottomRef: React.RefObject<HTMLDivElement>) => {
   setTimeout(() => {
@@ -35,10 +105,6 @@ export const packCharacteristics = ({ age, role, sex }: any): BigNumberish => {
   return packed;
 };
 
-function snakeToCamel(s: string): string {
-  return s.replace(/(_\w)/g, (m) => m[1].toUpperCase());
-}
-
 export function keysSnakeToCamel(obj: any): any {
   if (Array.isArray(obj)) {
     return obj.map((item) => (typeof item === "object" && item !== null ? keysSnakeToCamel(item) : item));
@@ -52,4 +118,8 @@ export function keysSnakeToCamel(obj: any): any {
   }
   // Return the value directly if it's neither an object nor an array
   return obj;
+}
+
+function snakeToCamel(s: string): string {
+  return s.replace(/(_\w)/g, (m) => m[1].toUpperCase());
 }

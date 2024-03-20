@@ -1,20 +1,30 @@
 import { BigNumberish } from "starknet";
 
+export type Npc = {
+  entityId: BigNumberish;
+  currentRealmEntityId: BigNumberish;
+  characteristics: Characteristics;
+  characterTrait: string;
+  fullName: string;
+};
+
 export type Characteristics = {
   age: number;
   role: string;
   sex: string;
 };
 
-export type Npc = {
-  entityId: BigNumberish;
-  characteristics: Characteristics;
-  characterTrait: string;
-  fullName: string;
+export type Residents = {
+  natives: Npc[];
+  foreigners: Npc[];
 };
 
+export type Travelers = Npc[];
+
+export type AtGates = Npc[];
+
 export type NpcTownhallMessage = {
-  npcName: string;
+  fullName: string;
   dialogueSegment: string;
 };
 
@@ -26,8 +36,6 @@ export type StorageTownhall = {
 export type StorageTownhalls = {
   [key: number]: StorageTownhall;
 };
-
-export type NpcChatProps = {};
 
 export type TownhallResponse = {
   townhallId: number;

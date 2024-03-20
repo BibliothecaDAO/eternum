@@ -11,19 +11,16 @@ struct Characteristics {
 struct Npc {
     #[key]
     entity_id: u128,
+    current_realm_entity_id: u128,
     characteristics: felt252,
     character_trait: felt252,
     full_name: felt252,
 }
 
 #[derive(Model, Serde, Copy, Drop, Print)]
-struct Npcs {
+struct RealmRegistry {
     #[key]
     realm_entity_id: u128,
-    num_npcs: u8,
-    npc_0: u128, // entity_id: points to the relevant entity
-    npc_1: u128,
-    npc_2: u128,
-    npc_3: u128,
-    npc_4: u128
+    num_resident_npcs: u8,
+    num_native_npcs: u8,
 }

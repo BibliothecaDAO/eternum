@@ -3,17 +3,26 @@ use starknet::ContractAddress;
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-use eternum::models::{owner::Owner, realm::{Realm, RealmTrait}, npc::{Characteristics}};
+use eternum::models::{owner::Owner, realm::{Realm}, npc::{Characteristics}};
 
 const TWO_POW_2: u256 = 0x4;
 const TWO_POW_8: u256 = 0x100;
 const TWO_POW_16: u256 = 0x10000;
 
-fn assert_existance_and_ownership(world: IWorldDispatcher, realm_entity_id: u128) {
-    let (realm, owner) = get!(world, realm_entity_id, (Realm, Owner));
-    let player_address: ContractAddress = starknet::get_caller_address();
+fn assert_realm_existance(world: IWorldDispatcher, realm_entity_id: u128) {
+    let realm = get!(world, realm_entity_id, (Realm));
     assert(realm.realm_id != 0, 'not a realm');
+}
+
+fn assert_realm_ownership(world: IWorldDispatcher, realm_entity_id: u128) {
+    let owner = get!(world, realm_entity_id, (Owner));
+    let player_address: ContractAddress = starknet::get_caller_address();
     assert(owner.address == player_address, 'Realm does not belong to player');
+}
+
+fn assert_realm_existance_and_ownership(world: IWorldDispatcher, realm_entity_id: u128) {
+    assert_realm_existance(world, realm_entity_id);
+    assert_realm_ownership(world, realm_entity_id);
 }
 
 fn pedersen_hash_many(data: Span<felt252>) -> felt252 {

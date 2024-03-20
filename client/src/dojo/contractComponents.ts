@@ -527,28 +527,41 @@ export function defineContractComponents(world: World) {
         {
           metadata: {
             name: "Npc",
-            types: ["u128", "felt252", "felt252", "felt252"],
+            types: ["u128", "u128", "felt252", "felt252", "felt252"],
             customTypes: [],
           },
         },
       );
     })(),
-    Npcs: (() => {
+    NpcConfig: (() => {
+      return defineComponent(
+        world,
+        {
+          config_id: RecsType.BigInt,
+          spawn_delay: RecsType.BigInt,
+          pub_key: RecsType.BigInt,
+        },
+        {
+          metadata: {
+            name: "NpcConfig",
+            types: ["u128", "u64", "felt252"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
+    RealmRegistry: (() => {
       return defineComponent(
         world,
         {
           realm_entity_id: RecsType.BigInt,
-          num_npcs: RecsType.BigInt,
-          npc_0: RecsType.BigInt,
-          npc_1: RecsType.BigInt,
-          npc_2: RecsType.BigInt,
-          npc_3: RecsType.BigInt,
-          npc_4: RecsType.BigInt,
+          num_resident_npcs: RecsType.BigInt,
+          num_native_npcs: RecsType.BigInt,
         },
         {
           metadata: {
-            name: "Npcs",
-            types: ["u128", "u8", "u128", "u128", "u128", "u128", "u128"],
+            name: "RealmRegistry",
+            types: ["u128", "u8", "u8"],
             customTypes: [],
           },
         },
