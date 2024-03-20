@@ -1,13 +1,13 @@
-import Avatar from "../elements/Avatar";
-import CircleButton from "../elements/CircleButton";
-import { ReactComponent as WorldIcon } from "../assets/icons/common/world.svg";
-import { ReactComponent as ForwardBurgerIcon } from "../assets/icons/common/forward-burger.svg";
+import Avatar from "../../elements/Avatar";
+import CircleButton from "../../elements/CircleButton";
+import { ReactComponent as WorldIcon } from "../../assets/icons/common/world.svg";
+import { ReactComponent as ForwardBurgerIcon } from "../../assets/icons/common/forward-burger.svg";
 import clsx from "clsx";
-import { RealmSwitch } from "./cityview/RealmSwitch";
+import { RealmSwitch } from "../cityview/RealmSwitch";
 import { Link, useLocation } from "wouter";
-import useUIStore from "../hooks/store/useUIStore";
-import { useDojo } from "../DojoContext";
-import { addressToNumber } from "../utils/utils";
+import useUIStore from "../../hooks/store/useUIStore";
+import { useDojo } from "../../DojoContext";
+import { addressToNumber } from "../../utils/utils";
 
 const NavgationComponent = () => {
   const moveCameraToWorldMapView = useUIStore((state) => state.moveCameraToWorldMapView);

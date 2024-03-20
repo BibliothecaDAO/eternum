@@ -1,4 +1,4 @@
-import NavgationComponent from "../components/NavigationComponents";
+import NavgationComponent from "../components/navigation/NavigationBubbles";
 
 const NavigationModule = () => {
   return <NavgationComponent />;

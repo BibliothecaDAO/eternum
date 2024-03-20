@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Notification } from "../elements/Notification";
+import { Notification } from "../../elements/Notification";
 import clsx from "clsx";
-import Button from "../elements/Button";
-import { useNotifications } from "../hooks/notifications/useNotifications";
-import { useDojo } from "../DojoContext";
+import Button from "../../elements/Button";
+import { useNotifications } from "../../hooks/notifications/useNotifications";
+import { useDojo } from "../../DojoContext";
 import {
   EmptyChestData,
   EventType,
@@ -11,8 +11,8 @@ import {
   generateUniqueId,
   setLastLoginTimestamp,
   useNotificationsStore,
-} from "../hooks/store/useNotificationsStore";
-import useBlockchainStore from "../hooks/store/useBlockchainStore";
+} from "../../hooks/store/useNotificationsStore";
+import useBlockchainStore from "../../hooks/store/useBlockchainStore";
 
 // dev:max number of notifications before reach step limit
 const MAX_HARVEST_NOTIFICATIONS = 5;
