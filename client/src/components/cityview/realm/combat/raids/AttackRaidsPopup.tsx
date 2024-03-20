@@ -236,7 +236,7 @@ const AttackResultPanel = ({
           <img src={`/images/lost_raid.png`} className="object-cover w-full h-full rounded-[10px]" />
           <div className="flex flex-col mt-2 w-full">
             <div className="text-light-pink text-xs">{"Battle losses:"}</div>
-            {selectedRaiders.map((raider, i) => (
+            {selectedRaiders.map((raider) => (
               <AttackerHealthChange selectedRaider={raider} key={raider.entityId} />
             ))}
           </div>

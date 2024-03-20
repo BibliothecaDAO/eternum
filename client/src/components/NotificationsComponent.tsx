@@ -221,7 +221,7 @@ export const NotificationsComponent = ({ className }: NotificationsComponentProp
       </div>
       <div className="overflow-auto">
         {showNotifications &&
-          getUniqueNotifications(notifications).map((notification: NotificationType, i) => {
+          getUniqueNotifications(notifications).map((notification: NotificationType) => {
             let id = generateUniqueId(notification.keys, notification.eventType);
             return (
               <Notification

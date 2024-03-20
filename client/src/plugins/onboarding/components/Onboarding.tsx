@@ -34,7 +34,7 @@ export const Onboarding = () => {
 
   const step_headings = [
     <span>
-      The Battle of the orders has <span className="text-white">begun</span>....
+      The Age Of Exploration has <span className="text-white">begun</span>....
     </span>,
     "Create Your Leader ",
     "Choose Your Allegiance",
@@ -125,7 +125,7 @@ export const Onboarding = () => {
             {currentStep === 1 && <StepOne onNext={nextStep} />}
             {currentStep === 2 && <Naming onNext={handleNamingNext} />}
             {currentStep === 3 && <StepTwo onPrev={prevStep} onNext={nextStep} />}
-            {currentStep === 4 && <StepThree onPrev={prevStep} />}
+            {currentStep === 4 && <StepThree />}
           </div>
           {currentStep === 4 && (
             <div className="flex w-full justify-center">
@@ -156,11 +156,7 @@ export const Onboarding = () => {
 const StepOne = ({ onNext }: { onNext: () => void }) => {
   return (
     <div>
-      <p className="leading-loose pt-4">
-        Amidst the ruins of colossal hyperstructures, the Orders bear the grim task of reconstruction in a world
-        forgotten by time. Here, unity is overshadowed by survival, as factions vie to forge empires from the remnants
-        of a shattered past.
-      </p>
+      <p className="leading-loose pt-4"></p>
       <div className="flex space-x-2 mt-8 justify-center">
         <Button size="md" className="mx-auto" variant="outline" onClick={onNext}>
           Choose your Leader
@@ -397,7 +393,7 @@ const StepTwo = ({ onPrev }: { onPrev: () => void; onNext: () => void }) => {
   );
 };
 
-const StepThree = ({ onPrev }: { onPrev: () => void }) => {
+const StepThree = () => {
   return (
     <div>
       <p className="leading-loose text-2xl">

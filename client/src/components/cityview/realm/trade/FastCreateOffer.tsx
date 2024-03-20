@@ -495,13 +495,8 @@ export const SelectCaravanPanel = ({
   setIsNewCaravan,
   selectedCaravan,
   setSelectedCaravan,
-  selectedResourceIdsGet,
-  selectedResourceIdsGive,
-  selectedResourcesGetAmounts,
-  selectedResourcesGiveAmounts,
   resourceWeight,
   hasEnoughDonkeys,
-  headline = "You Give",
   className,
 }: {
   donkeysCount: number;

@@ -34,7 +34,7 @@ interface LeaderboardStore {
   ) => void;
 }
 
-const useLeaderBoardStore = create<LeaderboardStore>((set, get) => {
+const useLeaderBoardStore = create<LeaderboardStore>((set) => {
   return {
     loading: false,
     realmLordsLeaderboard: [],

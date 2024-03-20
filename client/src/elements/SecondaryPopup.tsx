@@ -15,13 +15,13 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [loaded, setLoaded] = useState(false);
 
-  const handleStop = (e: any, data: any) => {
+  const handleStop = (data: any) => {
     if (name) {
       localStorage.setItem(name, JSON.stringify({ x: data.x, y: data.y }));
     }
   };
 
-  const handleDrag = (e: any, data: any) => {
+  const handleDrag = (data: any) => {
     if (data.y < -200 || data.y > window.innerHeight - 220 || data.x < -450 || data.x > window.innerWidth - 520) {
       return false as false;
     }

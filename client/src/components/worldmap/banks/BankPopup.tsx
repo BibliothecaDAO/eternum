@@ -194,7 +194,6 @@ const SwapResourcesPanel = ({
   onClose,
   onSendCaravan,
   bank,
-  bankPrice: number,
 }: {
   onClose: () => void;
   onSendCaravan: () => void;

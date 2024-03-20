@@ -9,7 +9,6 @@ import { useCaravan } from "../../../../hooks/helpers/useCaravans";
 import { getRealm } from "../../../../utils/realms";
 
 export const TradeRealmSelector = ({
-  selectedRealmId,
   setSelectedRealmId,
 }: {
   selectedRealmId: bigint | undefined;

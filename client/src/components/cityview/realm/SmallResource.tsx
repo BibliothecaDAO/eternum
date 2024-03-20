@@ -9,7 +9,6 @@ export const SmallResource = ({
   balance,
   vertical,
   intlFormat,
-  hideIfZero,
 }: {
   resourceId: number;
   balance: number;

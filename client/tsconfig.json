@@ -13,14 +13,15 @@
     "moduleResolution": "Node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    // "noUnusedLocals": true,
-    "noUnusedLocals": false,
+    // "noUnusedLocals": false,
+    "strictNullChecks": true,
     // "noUnusedParameters": true,
     "noEmit": true,
     "jsx": "react-jsx",
     "types": ["vite-plugin-svgr/client"]
   },
-  "include": ["src"],
+  "include": ["src/*"],
+  "exclude": ["node_modules", "./node_modules", "./node_modules/*", "src/node_modules", "dist", "**/*.spec.ts"],
   "references": [
     {
       "path": "./tsconfig.node.json"

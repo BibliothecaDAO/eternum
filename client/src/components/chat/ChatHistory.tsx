@@ -8,7 +8,7 @@ interface ChatHistoryProps {
   messages: ChatMessageProps[];
 }
 
-const ChatHistory = (props: ChatHistoryProps) => {
+const ChatHistory = (_props: ChatHistoryProps) => {
   const [messageList, setMessageList] = useState<ChatMessageProps[]>([]);
 
   // this should be moved

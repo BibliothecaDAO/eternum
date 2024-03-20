@@ -42,7 +42,7 @@ type LaborBuildPopupProps = {
   onClose: () => void;
 };
 
-export const LaborBuildPopup = ({ resourceId, setBuildLoadingStates, onClose }: LaborBuildPopupProps) => {
+export const LaborBuildPopup = ({ resourceId, onClose }: LaborBuildPopupProps) => {
   const {
     setup: {
       components: { Resource, Labor },
