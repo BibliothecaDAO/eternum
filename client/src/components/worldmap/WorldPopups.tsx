@@ -1,8 +1,8 @@
 import { HyperStructureInterface } from "@bibliothecadao/eternum";
 import { useEffect, useState } from "react";
-import { FeedHyperstructurePopup } from "../components/worldmap/hyperstructures/FeedHyperstructure";
-import useUIStore from "../hooks/store/useUIStore";
-import { ChooseArmyActionPopup } from "../components/worldmap/ChooseArmyActionPopup";
+import { FeedHyperstructurePopup } from "./hyperstructures/FeedHyperstructure";
+import useUIStore from "../../hooks/store/useUIStore";
+import { ChooseArmyActionPopup } from "./ChooseArmyActionPopup";
 
 export const WorldPopups = () => {
   const [showFeedPopup, setShowFeedPopup] = useState(false);

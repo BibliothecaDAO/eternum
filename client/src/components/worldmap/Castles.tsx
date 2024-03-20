@@ -3,10 +3,10 @@ import realmHexPositions from "../../geodata/hex/realmHexPositions.json";
 import { useMemo } from "react";
 import { useGetRealms } from "../../hooks/helpers/useRealm";
 import useRealmStore from "../../hooks/store/useRealmStore";
-import { HexPositions, getRealmUIPosition } from "../../utils/utils";
+import { HexPositions, getRealmUIPosition, pseudoRandom } from "../../utils/utils";
 import { GLTF } from "three-stdlib";
-import { DEPTH, Hexagon } from "./HexGrid";
 import { biomes } from "@bibliothecadao/eternum";
+import { Hexagon } from "src/types";
 
 // @ts-nocheck
 type GLTFResult = GLTF & {
@@ -194,9 +194,4 @@ export const MyCastles = ({ hexData }: CastlesProps) => {
       })}
     </group>
   );
-};
-
-const pseudoRandom = (x: number, y: number) => {
-  let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
-  return n - Math.floor(n);
 };

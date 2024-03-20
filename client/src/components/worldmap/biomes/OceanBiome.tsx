@@ -2,7 +2,7 @@ import { useGLTF } from "@react-three/drei";
 import { getUIPositionFromColRow } from "../../../utils/utils";
 import * as THREE from "three";
 import { useMemo } from "react";
-import { Hexagon } from "../HexGrid";
+import { Hexagon } from "src/types";
 
 export function OceanBiome({ hexes }: { hexes: Hexagon[] }) {
   const { nodes, materials } = useGLTF("/models/biomes/ocean.glb") as any;

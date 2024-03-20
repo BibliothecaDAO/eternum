@@ -1,9 +1,0 @@
-query getRealmIds {
-  realmComponents(first: 100) {
-    edges {
-      node {
-        realm_id
-      }
-    }
-  }
-}
