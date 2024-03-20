@@ -11,6 +11,7 @@ import useUIStore from "../../../../hooks/store/useUIStore";
 import { LevelIndex, useLevel } from "../../../../hooks/helpers/useLevel";
 import { Resource, getLevelingCost } from "@bibliothecadao/eternum";
 import BlurryLoadingImage from "../../../../elements/BlurryLoadingImage";
+import { soundSelector, useUiSounds } from "../../../../hooks/useUISound";
 
 type LevelingPopupProps = {
   onClose: () => void;
@@ -44,6 +45,7 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
 
   const [missingResources, setMissingResources] = useState<Resource[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { play: playLevelUp } = useUiSounds(soundSelector.levelUp);
 
   const [newLevel, newIndex, newBonus] = useMemo(() => {
     // don't update if click on level_up
@@ -64,6 +66,7 @@ export const LevelingPopup = ({ onClose }: LevelingPopupProps) => {
   const onBuild = async () => {
     if (realmEntityId) {
       setIsLoading(true);
+      playLevelUp();
       await level_up_realm({ realm_entity_id: realmEntityId, signer: account });
       onClose();
     }

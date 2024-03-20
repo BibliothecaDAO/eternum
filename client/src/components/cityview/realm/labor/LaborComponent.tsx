@@ -47,6 +47,8 @@ export const LaborComponent = ({
   } = useDojo();
 
   const { playResourceSound } = usePlayResourceSound();
+  const { play: playBuildFarm } = useUiSounds(soundSelector.buildFarm);
+  const { play: playBuildFishingVillage } = useUiSounds(soundSelector.buildFishingVillage);
 
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
@@ -87,10 +89,10 @@ export const LaborComponent = ({
 
   const onBuild = async () => {
     if (resourceId == ResourcesIds["Wheat"]) {
-      playResourceSound(resourceId);
+      playBuildFarm();
       await onBuildFood(FoodType.Wheat, realm);
     } else if (resourceId == ResourcesIds["Fish"]) {
-      playResourceSound(resourceId);
+      playBuildFishingVillage();
       await onBuildFood(FoodType.Fish, realm);
     } else {
       setBuildResource(resourceId);
