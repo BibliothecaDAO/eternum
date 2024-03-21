@@ -1,11 +1,11 @@
 import { Bvh } from "@react-three/drei";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Color, InstancedMesh, Matrix4 } from "three";
-import { biomes } from "@bibliothecadao/eternum";
+import { biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { createHexagonGeometry } from "./HexagonGeometry";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { getColRowFromUIPosition, getUIPositionFromColRow } from "../../../utils/utils";
-import { add, throttle } from "lodash";
+import { throttle } from "lodash";
 import * as THREE from "three";
 import { DesertBiome } from "../biomes/DesertBiome";
 import { SnowBiome } from "../biomes/SnowBiome";
@@ -25,7 +25,7 @@ import { TundraBiome } from "../biomes/TundraBiome.js";
 import { TemperateRainforestBiome } from "../biomes/TemperateRainforestBiome";
 import { Hexagon } from "../../../types/index";
 
-import { findShortestPathBFS, getGrayscaleColor, getPositionsAtIndex, isNeighbor } from "./utils";
+import { findShortestPathBFS, getPositionsAtIndex, isNeighbor } from "./utils";
 import { DEPTH, FELT_CENTER, HEX_RADIUS } from "./WorldHexagon";
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
@@ -48,15 +48,6 @@ interface BiomeComponentsMap {
 }
 
 const color = new Color();
-
-export const neighborOffsets = [
-  [1, 0], // East
-  [0, 1], // South-East
-  [-1, 1], // South-West
-  [-1, 0], // West
-  [-1, -1], // North-West
-  [0, -1], // North-East
-];
 
 export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: HexagonGridProps) => {
   const hexData = useUIStore((state) => state.hexData);
@@ -162,12 +153,13 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
         const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
         if (group[hexIndex]) {
           revealed.push(group[hexIndex]);
-          neighborOffsets.forEach(([dCol, dRow]) => {
-            const tmpCol = col + dCol + FELT_CENTER;
-            const tmpRow = row + dRow + FELT_CENTER;
-            const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
-            if (group[hexIndex]) {
-              revealed.push(group[hexIndex]);
+          const neighborOffsets = row % 2 !== 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+          neighborOffsets.forEach((neighbor: { i: number; j: number; direction: number }) => {
+            const tmpCol = col + neighbor.i + FELT_CENTER;
+            const tmpRow = row + neighbor.j + FELT_CENTER;
+            const ind = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
+            if (group[ind]) {
+              revealed.push(group[ind]);
             }
           });
         }
@@ -179,9 +171,11 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
   // Create the mesh only once when the component is mounted
   const mesh: InstancedMesh = useMemo(() => {
     const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
-    const hexMaterial = new THREE.MeshPhysicalMaterial({
+    const hexMaterial = new THREE.MeshStandardMaterial({
       color: "darkgrey",
       vertexColors: false,
+      transparent: true,
+      opacity: 0.5,
     });
 
     const instancedMesh = new InstancedMesh(hexagonGeometry, hexMaterial, revealedHexes.length);
@@ -194,9 +188,8 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
 
       instancedMesh.setMatrixAt(idx, matrix);
 
-      color.setStyle(BIOMES[hex.biome].color);
-      const luminance = getGrayscaleColor(color);
-      color.setRGB(luminance, luminance, luminance);
+      // color.setStyle(BIOMES[hex.biome].color);
+      color.setRGB(0.4, 0.4, 0.4);
       instancedMesh.setColorAt(idx, color);
       idx++;
     });

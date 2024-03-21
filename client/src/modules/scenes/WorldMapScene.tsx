@@ -6,6 +6,7 @@ import useUIStore from "../../hooks/store/useUIStore.js";
 
 import HighlightedHexes from "../../components/worldmap/hexagon/HighlightedHexes.js";
 import { WorldMap } from "../../components/worldmap/hexagon/WorldHexagon";
+import { useTexture } from "@react-three/drei";
 
 const StarsSky = () => {
   const particlesGeometry = new THREE.BufferGeometry();
@@ -35,6 +36,13 @@ export const WorldMapScene = () => {
 
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
+  const texture = useTexture({
+    map: "/textures/paper/paper-color.jpg",
+    displacementMap: "/textures/paper/paper-height.jpg",
+    roughnessMap: "/textures/paper/paper-roughness.jpg",
+    normalMap: "/textures/paper/paper-normal.jpg",
+  });
+
   useEffect(() => {
     setTimeout(() => {
       setIsLoadingScreenEnabled(false);
@@ -44,11 +52,11 @@ export const WorldMapScene = () => {
   return (
     <>
       {!showBlankOverlay && isMapView && <WorldMap />}
-      {/* <StarsSky /> */}
+      <StarsSky />
       <HighlightedHexes />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.1, -695.175]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.05, -695.175]}>
         <planeGeometry args={[2668, 1390.35]} />
-        <meshBasicMaterial color="#fff" transparent opacity={1} />
+        <meshStandardMaterial {...texture} />
       </mesh>
     </>
   );
