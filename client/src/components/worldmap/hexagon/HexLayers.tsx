@@ -113,8 +113,8 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
       if (col < startCol || col > endCol) return;
       rowSet.forEach((row) => {
         if (row < startRow || row > endRow) return;
-        const tmpCol = col + 2147483647;
-        const tmpRow = row + 2147483647;
+        const tmpCol = col + FELT_CENTER;
+        const tmpRow = row + FELT_CENTER;
         const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
         if (group[hexIndex]) {
           addHexToBiomeAccumulator(group[hexIndex]);
@@ -143,8 +143,8 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
   const { group } = useMemo(() => {
     if (!hexData) return { group: [], colors: [] };
     const filteredGroup = hexData.filter((hex) => {
-      const col = hex.col - 2147483647;
-      const row = hex.row - 2147483647;
+      const col = hex.col - FELT_CENTER;
+      const row = hex.row - FELT_CENTER;
       return col >= startCol && col <= endCol && row >= startRow && row <= endRow;
     });
 
@@ -157,14 +157,14 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
       if (col < startCol || col > endCol) return;
       rowSet.forEach((row) => {
         if (row < startRow || row > endRow) return;
-        const tmpCol = col + 2147483647;
-        const tmpRow = row + 2147483647;
+        const tmpCol = col + FELT_CENTER;
+        const tmpRow = row + FELT_CENTER;
         const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
         if (group[hexIndex]) {
           revealed.push(group[hexIndex]);
           neighborOffsets.forEach(([dCol, dRow]) => {
-            const tmpCol = col + dCol + 2147483647;
-            const tmpRow = row + dRow + 2147483647;
+            const tmpCol = col + dCol + FELT_CENTER;
+            const tmpRow = row + dRow + FELT_CENTER;
             const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
             if (group[hexIndex]) {
               revealed.push(group[hexIndex]);
@@ -180,7 +180,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
   const mesh: InstancedMesh = useMemo(() => {
     const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
     const hexMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,
+      color: "darkgrey",
       vertexColors: false,
     });
 
@@ -213,8 +213,8 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
       if (col < startCol || col > endCol) return;
       rowSet.forEach((row) => {
         if (row < startRow || row > endRow) return;
-        const tmpCol = col + 2147483647;
-        const tmpRow = row + 2147483647;
+        const tmpCol = col + FELT_CENTER;
+        const tmpRow = row + FELT_CENTER;
         const hexIndex = revealedHexes.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
         if (revealedHexes[hexIndex] && mesh) {
           color.setStyle(BIOMES[revealedHexes[hexIndex].biome].color);

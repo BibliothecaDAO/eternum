@@ -78,12 +78,12 @@ export const WorldMapScene = () => {
       {/* <WorldMap ref={worldRef} /> */}
       {/* <HyperstructureStarted /> */}
       {!showBlankOverlay && isMapView && <WorldMap />}
-      <StarsSky />
+      {/* <StarsSky /> */}
       <HighlightedHexes />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.1, -695.175]}>
+      {/* <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1334.1, 0.1, -695.175]}>
         <planeGeometry args={[2668, 1390.35]} />
         <meshBasicMaterial color="black" transparent opacity={1} />
-      </mesh>
+      </mesh> */}
 
       {/* {hyperstructures.map((hyperstructure, i) => {
         if (hyperstructure) {
