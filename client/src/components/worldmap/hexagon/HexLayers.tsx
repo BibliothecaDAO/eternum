@@ -30,6 +30,9 @@ import { DEPTH, FELT_CENTER, HEX_RADIUS } from "./WorldHexagon";
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
 
+const EXPLORE_COLOUR = 0x3cb93c;
+const TRAVEL_COLOUR = 0xbc85e1;
+
 type HexagonGridProps = {
   startRow: number;
   endRow: number;
@@ -145,8 +148,6 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
 export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: HexagonGridProps) => {
   const hexData = useUIStore((state) => state.hexData);
 
-  const { hoverHandler, clickHandler } = useEventHandlers(explored);
-
   // Helper function to check if a hex is a neighbor of any explored hex
   const isNextToExplored = useCallback(
     (col: number, row: number): boolean => {
@@ -154,14 +155,14 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
         const neighborCol = col + dCol;
         const neighborRow = row + dRow;
         // Check if the neighbor is explored, indicating the original hex is next to an explored one
-        if (explored.get(neighborCol)?.has(neighborRow)) {
+        if (explored.has(neighborCol) && explored.get(neighborCol)?.has(neighborRow)) {
           return true;
         }
         // Now check the neighbors of the neighbor to see if any of those are explored
         return neighborOffsets.some(([ddCol, ddRow]) => {
           const nextNeighborCol = neighborCol + ddCol;
           const nextNeighborRow = neighborRow + ddRow;
-          return explored.get(nextNeighborCol)?.has(nextNeighborRow);
+          return explored.has(nextNeighborCol) && explored.get(nextNeighborCol)?.has(nextNeighborRow);
         });
       });
     },
@@ -187,7 +188,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
   // Create the mesh for only unexplored hexes that are adjacent to explored hexes
   const mesh: InstancedMesh = useMemo(() => {
     const hexMaterial = new THREE.MeshPhysicalMaterial({
-      color: "gray",
+      color: "black",
       vertexColors: false,
       opacity: 0.5,
       transparent: true,
@@ -205,9 +206,6 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
       instancedMesh.setMatrixAt(idx, matrix);
 
       color.setStyle(BIOMES[hex.biome].color);
-      // const luminance = getGrayscaleColor(color);
-      // color.setRGB(luminance, luminance, luminance);
-      instancedMesh.setColorAt(idx, color);
       idx++;
     });
 
@@ -216,11 +214,9 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
     return instancedMesh;
   }, [group]);
 
-  const throttledHoverHandler = useMemo(() => throttle(hoverHandler, 50), [hoverHandler]);
-
   return (
     <Bvh firstHitOnly>
-      <group onPointerEnter={(e) => throttledHoverHandler(e)} onClick={clickHandler}>
+      <group>
         <primitive object={mesh} />
       </group>
     </Bvh>
@@ -228,17 +224,14 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
 };
 
 const useEventHandlers = (explored: Map<number, Set<number>>) => {
-  const hexData = useUIStore((state) => state.hexData);
-  const highlightPositions = useUIStore((state) => state.highlightPositions);
+  const store = useUIStore();
+  const { hexData, highlightPositions, isTravelMode, isExploreMode, selectedPath, selectedEntity, isAttackMode } =
+    store;
+
   const setHighlightColor = useUIStore((state) => state.setHighlightColor);
   const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
-
-  const isTravelMode = useUIStore((state) => state.isTravelMode);
-  const isExploreMode = useUIStore((state) => state.isExploreMode);
-  const isAttackMode = useUIStore((state) => state.isAttackMode);
-  const selectedPath = useUIStore((state) => state.selectedPath);
-  const selectedEntity = useUIStore((state) => state.selectedEntity);
   const setSelectedPath = useUIStore((state) => state.setSelectedPath);
+
   // refs
   const isTravelModeRef = useRef(false);
   const isExploreModeRef = useRef(false);
@@ -260,74 +253,80 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
 
   const hoverHandler = useCallback(
     (e: any) => {
-      // Logic for hover event
       const intersect = e.intersections.find((intersect: any) => intersect.object instanceof THREE.InstancedMesh);
-      if (intersect) {
-        const instanceId = intersect.instanceId;
-        const mesh = intersect.object;
-        const pos = getPositionsAtIndex(mesh, instanceId);
-        if (pos && hexDataRef.current && exploredHexesRef.current) {
-          if (selectedEntityRef.current) {
-            const selectedEntityPosition = getUIPositionFromColRow(
-              selectedEntityRef.current.position.x,
-              selectedEntityRef.current.position.y,
-            );
-            const selectedEntityHex = hexDataRef.current.find(
-              (h) =>
-                h.col === selectedEntityRef!.current!.position.x && h.row === selectedEntityRef!.current!.position.y,
-            );
-            // travel mode
-            if (isTravelModeRef.current) {
-              setHighlightColor(0x3cb93c);
-              if (!selectedPathRef.current) {
-                const colRow = getColRowFromUIPosition(pos.x, pos.y);
-                let start = selectedEntityRef!.current!.position;
-                let end = { x: colRow.col, y: colRow.row };
-                let path = findShortestPathBFS(start, end, hexDataRef.current, exploredHexesRef.current, 3);
-                const uiPath = path.map(({ x, y }) => {
-                  const pos = getUIPositionFromColRow(x, y);
-                  const hex = hexDataRef!.current!.find((h) => h.col === x && h.row === y);
-                  return [pos.x, -pos.y, hex ? BIOMES[hex.biome].depth * 10 : 0];
-                }) as [number, number, number][];
-                setHighlightPositions(uiPath);
-              }
-            } else if (isExploreModeRef.current) {
-              setHighlightColor(0xbc85e1);
-              if (!selectedPathRef.current) {
-                // needs to be neighbor and not explored
-                const colRow = getColRowFromUIPosition(pos.x, pos.y);
-                if (
-                  selectedEntityRef.current.position &&
-                  isNeighbor(
-                    { x: colRow.col, y: colRow.row },
-                    {
-                      x: selectedEntityRef.current.position.x,
-                      y: selectedEntityRef.current.position.y,
-                    },
-                  ) &&
-                  !exploredHexesRef.current.get(colRow.col - 2147483647)?.has(colRow.row - 2147483647)
-                ) {
-                  setHighlightPositions([
-                    [selectedEntityPosition.x, -selectedEntityPosition.y, BIOMES[selectedEntityHex!.biome].depth * 10],
-                    [pos.x, -pos.y, pos.z],
-                  ]);
-                }
-              }
-            } else {
-              setHighlightColor(0xffffff);
-              setHighlightPositions([
-                [selectedEntityPosition.x, -selectedEntityPosition.y, BIOMES[selectedEntityHex!.biome].depth * 10],
-              ]);
-            }
-          } else {
-            setHighlightColor(0xffffff);
-            setHighlightPositions([[pos.x, -pos.y, pos.z]]);
-          }
-        }
+      if (!intersect) return;
+
+      const instanceId = intersect.instanceId;
+      const mesh = intersect.object;
+      const pos = getPositionsAtIndex(mesh, instanceId);
+      if (!pos || !hexDataRef.current || !exploredHexesRef.current) return;
+
+      if (!selectedEntityRef.current) {
+        setHighlightColor(0xffffff);
+        setHighlightPositions([[pos.x, -pos.y, pos.z]]);
+        return;
+      }
+
+      const selectedEntityPosition = getUIPositionFromColRow(
+        selectedEntityRef.current.position.x,
+        selectedEntityRef.current.position.y,
+      );
+      const selectedEntityHex = hexDataRef.current.find(
+        (h) => h.col === selectedEntityRef?.current?.position.x && h.row === selectedEntityRef.current.position.y,
+      );
+
+      if (isTravelModeRef.current) {
+        handleTravelMode({ pos });
+      } else if (isExploreModeRef.current) {
+        handleExploreMode({ pos, selectedEntityPosition, selectedEntityHex });
+      } else {
+        setHighlightColor(0xffffff);
+        setHighlightPositions([
+          [selectedEntityPosition.x, -selectedEntityPosition.y, BIOMES[selectedEntityHex!.biome].depth * 10],
+        ]);
       }
     },
     [setHighlightPositions, setHighlightColor],
   );
+
+  function handleTravelMode({ pos }: any) {
+    setHighlightColor(EXPLORE_COLOUR);
+    if (!selectedPathRef.current) {
+      const colRow = getColRowFromUIPosition(pos.x, pos.y);
+      let start = selectedEntityRef!.current!.position;
+      let end = { x: colRow.col, y: colRow.row };
+      let path = findShortestPathBFS(start, end, hexDataRef.current || [], exploredHexesRef.current, 3);
+      const uiPath = path.map(({ x, y }) => {
+        const pos = getUIPositionFromColRow(x, y);
+        const hex = hexDataRef?.current?.find((h) => h.col === x && h.row === y);
+        return [pos.x, -pos.y, hex ? BIOMES[hex.biome].depth * 10 : 0];
+      }) as [number, number, number][];
+      setHighlightPositions(uiPath);
+    }
+  }
+
+  function handleExploreMode({ pos, selectedEntityPosition, selectedEntityHex }: any) {
+    setHighlightColor(TRAVEL_COLOUR);
+    if (!selectedPathRef.current) {
+      const colRow = getColRowFromUIPosition(pos.x, pos.y);
+      if (
+        selectedEntityRef?.current?.position &&
+        isNeighbor(
+          { x: colRow.col, y: colRow.row },
+          {
+            x: selectedEntityRef.current.position.x,
+            y: selectedEntityRef.current.position.y,
+          },
+        ) &&
+        !exploredHexesRef.current.get(colRow.col - 2147483647)?.has(colRow.row - 2147483647)
+      ) {
+        setHighlightPositions([
+          [selectedEntityPosition.x, -selectedEntityPosition.y, BIOMES[selectedEntityHex!.biome].depth * 10],
+          [pos.x, -pos.y, pos.z],
+        ]);
+      }
+    }
+  }
 
   const clickHandler = useCallback(
     (e: any) => {
