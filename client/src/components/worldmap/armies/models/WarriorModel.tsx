@@ -87,6 +87,7 @@ export function WarriorModel({
 
   // add actions to onClick
   const onClickAction = useCallback(() => {
+    if (isDead) return;
     const action = actions["Sword_Attack"];
     if (action) {
       action.reset();
@@ -97,7 +98,7 @@ export function WarriorModel({
     if (onClick) {
       onClick();
     }
-  }, []);
+  }, [isDead]);
 
   useEffect(() => {
     if (isRunning) {
