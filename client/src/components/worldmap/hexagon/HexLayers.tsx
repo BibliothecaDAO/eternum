@@ -208,23 +208,6 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
 
   const throttledHoverHandler = useMemo(() => throttle(hoverHandler, 50), []);
 
-  useEffect(() => {
-    explored.forEach((rowSet, col) => {
-      if (col < startCol || col > endCol) return;
-      rowSet.forEach((row) => {
-        if (row < startRow || row > endRow) return;
-        const tmpCol = col + FELT_CENTER;
-        const tmpRow = row + FELT_CENTER;
-        const hexIndex = revealedHexes.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
-        if (revealedHexes[hexIndex] && mesh) {
-          color.setStyle(BIOMES[revealedHexes[hexIndex].biome].color);
-          mesh.setColorAt(hexIndex, color);
-          if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-        }
-      });
-    });
-  }, [startRow, startCol, endRow, endCol, explored, revealedHexes, mesh]);
-
   return (
     <Bvh firstHitOnly>
       <group onPointerEnter={(e) => throttledHoverHandler(e)} onClick={clickHandler}>
