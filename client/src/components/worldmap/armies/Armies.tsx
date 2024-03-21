@@ -93,7 +93,7 @@ export const Armies = ({}: ArmiesProps) => {
 
   return (
     <group>
-      {positions.map(({ contractPos, uiPos, id, isDead }) => {
+      {positions.map(({ contractPos, uiPos, id, isDead }, i) => {
         let offset = 0;
         if (positionOffset[JSON.stringify(uiPos)]) {
           positionOffset[JSON.stringify(uiPos)] += 1;
@@ -106,7 +106,7 @@ export const Armies = ({}: ArmiesProps) => {
           positionOffset[JSON.stringify(uiPos)] = 1;
         }
         return (
-          <group position={[uiPos.x + offset + 0.7, uiPos.z, -uiPos.y]}>
+          <group position={[uiPos.x + offset + 0.7, uiPos.z, -uiPos.y]} key={i}>
             <Html position={[0, 7, 0]}>
               <ArmyMenu entityId={id} />
             </Html>
