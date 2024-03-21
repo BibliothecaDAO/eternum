@@ -62,7 +62,6 @@ body {
 
 * {
   user-select: none;
-  scrollbar-width: thin;
 }
 
 *::-webkit-scrollbar-track {
