@@ -5,7 +5,7 @@ Files: client/public/models/Warrior.gltf [3.04MB] > /Users/aymericdelabrousse/Pr
 */
 
 import * as THREE from "three";
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { useGLTF, useAnimations } from "@react-three/drei";
 import { GLTF, SkeletonUtils } from "three-stdlib";
 import { Vector3, useGraph } from "@react-three/fiber";
@@ -55,8 +55,8 @@ type WarriorModelProps = {
   position: Vector3;
   rotationY: number;
   onClick: () => void;
-  onPointerEnter: () => void;
-  onPointerOut: () => void;
+  onPointerEnter: (e: any) => void;
+  onPointerOut: (e: any) => void;
   hovered: boolean;
   isRunning: boolean;
   isDead: boolean;
@@ -80,11 +80,13 @@ export function WarriorModel({
   const { nodes, materials } = useGraph(clone);
 
   useEffect(() => {
-    nodes.Root.rotation.y = rotationY;
+    if (!isDead) {
+      nodes.Root.rotation.y = rotationY;
+    }
   }, [rotationY]);
 
   // add actions to onClick
-  const onClickAction = () => {
+  const onClickAction = useCallback(() => {
     const action = actions["Sword_Attack"];
     if (action) {
       action.reset();
@@ -95,7 +97,7 @@ export function WarriorModel({
     if (onClick) {
       onClick();
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (isRunning) {
@@ -105,6 +107,25 @@ export function WarriorModel({
     }
   }, [isRunning]);
 
+  useEffect(() => {
+    if (isDead) {
+      const action = actions["Death"];
+      if (action) {
+        action.play();
+        action.paused = true; // Immediately pause the action
+        action.time = action.getClip().duration; // Set to the last frame
+        action.enabled = true;
+        // // Ensure the action's transformations are applied
+        requestAnimationFrame(() => {
+          action.getMixer().update(0);
+          // Apply the random rotation after the animation has been updated
+          const randomRotation = Math.random() * 2 * Math.PI;
+          nodes.Root.rotation.y = randomRotation;
+        });
+      }
+    }
+  }, [isDead]);
+
   const hoverMaterial = useMemo(() => {
     const material = new THREE.MeshStandardMaterial();
     material.color.set(FRIENDLY_ARMY_MODEL_HOVER_COLOR);
@@ -113,10 +134,15 @@ export function WarriorModel({
 
   useEffect(() => {
     const targetMaterial = hovered ? hoverMaterial : materials.Warrior_Texture;
+    // @ts-ignore
     nodes.Warrior_Body.material = targetMaterial;
+    // @ts-ignore
     nodes.ShoulderPadL.material = targetMaterial;
+    // @ts-ignore
     nodes.ShoulderPadR.material = targetMaterial;
+    // @ts-ignore
     nodes.Warrior_Sword.material = targetMaterial;
+    // @ts-ignore
     nodes.Face.material = targetMaterial;
   }, [hovered, hoverMaterial, nodes, materials.Warrior_Texture]);
 

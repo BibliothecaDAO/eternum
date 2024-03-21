@@ -92,8 +92,14 @@ export function Army({ info, ...props }: ArmyProps & JSX.IntrinsicElements["grou
     }
   };
 
-  const onPointerIn = () => setHovered(true);
-  const onPointerOut = () => setHovered(false);
+  const onPointerIn = (e: any) => {
+    e.stopPropagation();
+    setHovered(true);
+  };
+  const onPointerOut = (e: any) => {
+    e.stopPropagation();
+    setHovered(false);
+  };
 
   return (
     <>
