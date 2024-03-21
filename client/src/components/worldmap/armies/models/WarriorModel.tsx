@@ -98,7 +98,7 @@ export function WarriorModel({
     if (onClick) {
       onClick();
     }
-  }, [isDead]);
+  }, [isDead, onClick]);
 
   useEffect(() => {
     if (isRunning) {

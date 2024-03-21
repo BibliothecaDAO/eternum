@@ -75,6 +75,7 @@ export const Armies = ({}: ArmiesProps) => {
 
         return (
           <Army
+            key={info.id}
             info={{
               ...info,
               order: realmOrder,
