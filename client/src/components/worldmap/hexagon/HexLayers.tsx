@@ -5,7 +5,7 @@ import { biomes } from "@bibliothecadao/eternum";
 import { createHexagonGeometry } from "./HexagonGeometry";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { getColRowFromUIPosition, getUIPositionFromColRow } from "../../../utils/utils";
-import { throttle } from "lodash";
+import { add, throttle } from "lodash";
 import * as THREE from "three";
 import { DesertBiome } from "../biomes/DesertBiome";
 import { SnowBiome } from "../biomes/SnowBiome";
@@ -109,37 +109,27 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
       }
     };
 
-    group.forEach((hex) => {
-      const col = hex.col - FELT_CENTER;
-      const row = hex.row - FELT_CENTER;
-      // Check if the hex is within the specified range
-      if (col >= startCol && col <= endCol && row >= startRow && row <= endRow) {
-        // Check if the hex or any of its neighbors are explored
-        if (
-          explored.get(col)?.has(row) ||
-          neighborOffsets.some(([dCol, dRow]) => explored.get(col + dCol)?.has(row + dRow))
-        ) {
-          addHexToBiomeAccumulator(hex);
+    explored.forEach((rowSet, col) => {
+      if (col < startCol || col > endCol) return;
+      rowSet.forEach((row) => {
+        if (row < startRow || row > endRow) return;
+        const tmpCol = col + 2147483647;
+        const tmpRow = row + 2147483647;
+        const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
+        if (group[hexIndex]) {
+          addHexToBiomeAccumulator(group[hexIndex]);
         }
-      }
+      });
     });
 
     return biomesAccumulator;
-  }, [explored, group, biomeComponents, neighborOffsets, startCol, endCol, startRow, endRow]);
-
-  const { hoverHandler, clickHandler } = useEventHandlers(explored);
-
-  const throttledHoverHandler = useMemo(() => throttle(hoverHandler, 50), []);
+  }, [explored]);
 
   return (
     <>
       {Object.entries(biomeHexes).map(([biome, hexes]: any) => {
         const BiomeComponent = biomeComponents[biome];
-        return hexes.length ? (
-          <mesh onPointerEnter={(e) => throttledHoverHandler(e)} onClick={clickHandler}>
-            <BiomeComponent key={biome} hexes={hexes} />
-          </mesh>
-        ) : null;
+        return hexes.length ? <BiomeComponent key={biome} hexes={hexes} /> : null;
       })}
     </>
   );
@@ -148,75 +138,96 @@ export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: Hex
 export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: HexagonGridProps) => {
   const hexData = useUIStore((state) => state.hexData);
 
-  // Helper function to check if a hex is a neighbor of any explored hex
-  const isNextToExplored = useCallback(
-    (col: number, row: number): boolean => {
-      return neighborOffsets.some(([dCol, dRow]) => {
-        const neighborCol = col + dCol;
-        const neighborRow = row + dRow;
-        // Check if the neighbor is explored, indicating the original hex is next to an explored one
-        if (explored.has(neighborCol) && explored.get(neighborCol)?.has(neighborRow)) {
-          return true;
-        }
-        // Now check the neighbors of the neighbor to see if any of those are explored
-        return neighborOffsets.some(([ddCol, ddRow]) => {
-          const nextNeighborCol = neighborCol + ddCol;
-          const nextNeighborRow = neighborRow + ddRow;
-          return explored.has(nextNeighborCol) && explored.get(nextNeighborCol)?.has(nextNeighborRow);
-        });
-      });
-    },
-    [explored],
-  );
+  const { hoverHandler, clickHandler } = useEventHandlers(explored);
 
-  // Filter to include only unexplored hexes that are next to explored ones
   const { group } = useMemo(() => {
-    if (!hexData) return { group: [] };
-
+    if (!hexData) return { group: [], colors: [] };
     const filteredGroup = hexData.filter((hex) => {
-      const col = hex.col - FELT_CENTER;
-      const row = hex.row - FELT_CENTER;
-      const isExplored = explored.get(col)?.has(row);
-      const isAdjacentToExplored = isNextToExplored(col, row);
-      // Include hexes that are not explored but are adjacent to explored hexes or one step further
-      return !isExplored && isAdjacentToExplored;
+      const col = hex.col - 2147483647;
+      const row = hex.row - 2147483647;
+      return col >= startCol && col <= endCol && row >= startRow && row <= endRow;
     });
 
     return { group: filteredGroup };
-  }, [hexData, explored, isNextToExplored]);
+  }, [startRow, endRow, startCol, endCol, HEX_RADIUS, hexData]);
 
-  // Create the mesh for only unexplored hexes that are adjacent to explored hexes
-  const mesh: InstancedMesh = useMemo(() => {
-    const hexMaterial = new THREE.MeshPhysicalMaterial({
-      color: "black",
-      vertexColors: false,
-      opacity: 0.5,
-      transparent: true,
+  const revealedHexes = useMemo(() => {
+    const revealed: Hexagon[] = [];
+    explored.forEach((rowSet, col) => {
+      if (col < startCol || col > endCol) return;
+      rowSet.forEach((row) => {
+        if (row < startRow || row > endRow) return;
+        const tmpCol = col + 2147483647;
+        const tmpRow = row + 2147483647;
+        const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
+        if (group[hexIndex]) {
+          revealed.push(group[hexIndex]);
+          neighborOffsets.forEach(([dCol, dRow]) => {
+            const tmpCol = col + dCol + 2147483647;
+            const tmpRow = row + dRow + 2147483647;
+            const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
+            if (group[hexIndex]) {
+              revealed.push(group[hexIndex]);
+            }
+          });
+        }
+      });
     });
-    const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
+    return revealed;
+  }, [group, explored]);
 
-    const instancedMesh = new InstancedMesh(hexagonGeometry, hexMaterial, group.length);
+  // Create the mesh only once when the component is mounted
+  const mesh: InstancedMesh = useMemo(() => {
+    const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
+    const hexMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      vertexColors: false,
+    });
+
+    const instancedMesh = new InstancedMesh(hexagonGeometry, hexMaterial, revealedHexes.length);
     let idx = 0;
     let matrix = new Matrix4();
-    group.forEach((hex) => {
+    revealedHexes.forEach((hex) => {
       const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
-      const zPos = 0.5;
-      matrix.setPosition(x, y, zPos);
+      // set the z position with math.random to have a random height
+      matrix.setPosition(x, y, 0.31);
 
       instancedMesh.setMatrixAt(idx, matrix);
 
       color.setStyle(BIOMES[hex.biome].color);
+      const luminance = getGrayscaleColor(color);
+      color.setRGB(luminance, luminance, luminance);
+      instancedMesh.setColorAt(idx, color);
       idx++;
     });
 
     instancedMesh.computeBoundingSphere();
     instancedMesh.frustumCulled = true;
     return instancedMesh;
-  }, [group]);
+  }, [revealedHexes]);
+
+  const throttledHoverHandler = useMemo(() => throttle(hoverHandler, 50), []);
+
+  useEffect(() => {
+    explored.forEach((rowSet, col) => {
+      if (col < startCol || col > endCol) return;
+      rowSet.forEach((row) => {
+        if (row < startRow || row > endRow) return;
+        const tmpCol = col + 2147483647;
+        const tmpRow = row + 2147483647;
+        const hexIndex = revealedHexes.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
+        if (revealedHexes[hexIndex] && mesh) {
+          color.setStyle(BIOMES[revealedHexes[hexIndex].biome].color);
+          mesh.setColorAt(hexIndex, color);
+          if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        }
+      });
+    });
+  }, [startRow, startCol, endRow, endCol, explored, revealedHexes, mesh]);
 
   return (
     <Bvh firstHitOnly>
-      <group>
+      <group onPointerEnter={(e) => throttledHoverHandler(e)} onClick={clickHandler}>
         <primitive object={mesh} />
       </group>
     </Bvh>
