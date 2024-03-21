@@ -87,7 +87,6 @@ export const SettleRealmComponent = () => {
       signer: account,
       realms: [calldata[3]],
     });
-    calldata[4].position = { x: 2147484061, y: 2147483701 };
     await create_multiple_realms({
       signer: account,
       realms: [calldata[4]],
