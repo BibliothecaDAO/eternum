@@ -9,6 +9,7 @@ import { Position, UIPosition } from "@bibliothecadao/eternum";
 import { useEffect, useMemo } from "react";
 import { Subscription } from "rxjs";
 import { Army } from "./Army";
+import { getRealmOrderNameById } from "../../../utils/realms";
 
 type ArmiesProps = {
   props?: any;
@@ -27,11 +28,19 @@ export const Armies = ({}: ArmiesProps) => {
     },
   } = useDojo();
 
+  const realms = useRealmStore((state) => state.realmEntityIds);
+
   const { useOwnerRaiders } = useCombat();
 
   const armies = useOwnerRaiders(BigInt(account.address));
 
   useUpdateAnimationPaths();
+
+  const realmOrder = useMemo(() => {
+    const realmId = realms[0].realmId;
+    const orderName = getRealmOrderNameById(realmId);
+    return orderName.charAt(0).toUpperCase() + orderName.slice(1);
+  }, []);
 
   const armyInfo = useMemo(
     () =>
@@ -66,7 +75,11 @@ export const Armies = ({}: ArmiesProps) => {
 
         return (
           <Army
-            info={{ ...info, uiPos: { x: info.uiPos.x + offset.x, y: info.uiPos.y + offset.z, z: info.uiPos.z } }}
+            info={{
+              ...info,
+              order: realmOrder,
+              uiPos: { x: info.uiPos.x + offset.x, y: info.uiPos.y + offset.z, z: info.uiPos.z },
+            }}
           />
         );
       })}

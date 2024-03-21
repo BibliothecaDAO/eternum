@@ -7,9 +7,10 @@ import { WarriorModel } from "./models/WarriorModel";
 import { Vector3 } from "three";
 import { getUIPositionFromColRow } from "../../../utils/utils";
 import { ArmyInfoLabel } from "./ArmyInfoLabel";
+import { Flag } from "../Flag";
 
 type ArmyProps = {
-  info: { contractPos: Position; uiPos: UIPosition; id: bigint; isDead: boolean };
+  info: { contractPos: Position; uiPos: UIPosition; id: bigint; isDead: boolean; order: string };
 };
 
 export function Army({ info, ...props }: ArmyProps & JSX.IntrinsicElements["group"]) {
@@ -104,6 +105,7 @@ export function Army({ info, ...props }: ArmyProps & JSX.IntrinsicElements["grou
   return (
     <>
       {hovered && <ArmyInfoLabel position={info.uiPos} armyId={info.id} />}
+      {!info.isDead && <Flag angle={rotationY} order={info.order} position={position}></Flag>}
       <WarriorModel
         {...props}
         position={position}
