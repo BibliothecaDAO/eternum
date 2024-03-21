@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { biomes } from "@bibliothecadao/eternum";
 // @ts-ignore
 import { Flags } from "../Flags.jsx";
 import useUIStore from "../../../hooks/store/useUIStore";
@@ -13,8 +12,9 @@ import { BiomesGrid, HexagonGrid } from "./HexLayers";
 
 export const DEPTH = 10;
 export const HEX_RADIUS = 3;
-
-const BIOMES = biomes as Record<string, { color: string; depth: number }>;
+export const ROWS = 300;
+export const COLS = 500;
+export const FELT_CENTER = 2147483647;
 
 export const WorldMap = () => {
   const {
@@ -34,15 +34,12 @@ export const WorldMap = () => {
       .then((data) => setHexData(data as Hexagon[]));
   }, []);
 
-  const rows = 300;
-  const cols = 500;
-
   const hexagonGrids = useMemo(() => {
     const hexagonGrids = [];
-    for (let i = 0; i < rows; i += 50) {
+    for (let i = 0; i < ROWS; i += 50) {
       const startRow = i;
       const endRow = startRow + 50;
-      for (let j = 0; j < cols; j += 50) {
+      for (let j = 0; j < COLS; j += 50) {
         const startCol = j;
         const endCol = startCol + 50;
         hexagonGrids.push({ startRow, endRow, startCol, endCol });
@@ -60,8 +57,8 @@ export const WorldMap = () => {
       const observable = await exploreMapEvents();
       const sub = observable.subscribe((event) => {
         if (event && hexData) {
-          const col = Number(event.keys[2]) - 2147483647;
-          const row = Number(event.keys[3]) - 2147483647;
+          const col = Number(event.keys[2]) - FELT_CENTER;
+          const row = Number(event.keys[3]) - FELT_CENTER;
           setExploredHexes((prev) => {
             const newMap = new Map(prev);
             const rowSet = newMap.get(col) || new Set();
@@ -104,7 +101,7 @@ export const WorldMap = () => {
         })}
       </group>
       {models}
-      <Flags></Flags>
+      <Flags />
     </>
   );
 };

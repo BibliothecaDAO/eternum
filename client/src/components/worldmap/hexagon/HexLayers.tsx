@@ -3,9 +3,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Color, InstancedMesh, Matrix4 } from "three";
 import { biomes } from "@bibliothecadao/eternum";
 import { createHexagonGeometry } from "./HexagonGeometry";
-
 import useUIStore from "../../../hooks/store/useUIStore";
-
 import { getColRowFromUIPosition, getUIPositionFromColRow } from "../../../utils/utils";
 import { throttle } from "lodash";
 import * as THREE from "three";
@@ -28,9 +26,7 @@ import { TemperateRainforestBiome } from "../biomes/TemperateRainforestBiome";
 import { Hexagon } from "../../../types/index";
 
 import { findShortestPathBFS, getGrayscaleColor, getPositionsAtIndex, isNeighbor } from "./utils";
-
-export const DEPTH = 10;
-export const HEX_RADIUS = 3;
+import { DEPTH, FELT_CENTER, HEX_RADIUS } from "./WorldHexagon";
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
 
@@ -42,135 +38,106 @@ type HexagonGridProps = {
   explored: Map<number, Set<number>>;
 };
 
+type BiomeComponentType = React.ComponentType<{ hexes: Hexagon[] }>;
+
+interface BiomeComponentsMap {
+  [key: string]: BiomeComponentType;
+}
+
 const color = new Color();
+
+export const neighborOffsets = [
+  [1, 0], // East
+  [0, 1], // South-East
+  [-1, 1], // South-West
+  [-1, 0], // West
+  [-1, -1], // North-West
+  [0, -1], // North-East
+];
 
 export const BiomesGrid = ({ startRow, endRow, startCol, endCol, explored }: HexagonGridProps) => {
   const hexData = useUIStore((state) => state.hexData);
 
   const { group } = useMemo(() => {
     if (!hexData) return { group: [], colors: [] };
-    const filteredGroup = hexData.filter((hex) => {
-      const col = hex.col - 2147483647;
-      const row = hex.row - 2147483647;
-      return col >= startCol && col <= endCol && row >= startRow && row <= endRow;
-    });
 
-    let colorValues: number[] = [];
+    return {
+      group: hexData.filter(({ col, row }) => {
+        const adjustedCol = col - FELT_CENTER;
+        const adjustedRow = row - FELT_CENTER;
+        return adjustedCol >= startCol && adjustedCol <= endCol && adjustedRow >= startRow && adjustedRow <= endRow;
+      }),
+      colors: [],
+    };
+  }, [startRow, endRow, startCol, endCol, hexData]);
 
-    return { group: filteredGroup, colors: colorValues };
-  }, [startRow, endRow, startCol, endCol, HEX_RADIUS, hexData]);
-
-  // Create the mesh only once when the component is mounted
-
-  //biomes: grassland, snow, temperate_desert, taiga, deciduous_forest
-  const biomes = [
-    "grassland",
-    "snow",
-    "bare",
-    "taiga",
-    "temperate_deciduous_forest",
-    "ocean",
-    "deep_ocean",
-    "temperate_desert",
-    "beach",
-    "scorched",
-    "shrubland",
-    "subtropical_desert",
-    "tropical_rain_forest",
-    "tropical_seasonal_forest",
-    "tundra",
-    "temperate_rain_forest",
-  ];
-
-  // useEffect(() => {
-  //   explored.forEach((rowSet, col) => {
-  //     if (col < startCol || col > endCol) return;
-  //     rowSet.forEach((row) => {
-  //       if (row < startRow || row > endRow) return;
-  //       const tmpCol = col + 2147483647;
-  //       const tmpRow = row + 2147483647;
-  //       const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
-  //       if (group[hexIndex] && mesh) {
-  //         color.setStyle(BIOMES[group[hexIndex].biome].color);
-  //         mesh.setColorAt(hexIndex, color);
-  //         if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  //       }
-  //     });
-  //   });
-  // }, [startRow, startCol, endRow, endCol, explored, group, mesh]);
+  const biomeComponents: BiomeComponentsMap = useMemo(
+    () => ({
+      snow: SnowBiome,
+      bare: DesertBiome,
+      grassland: GrasslandBiome,
+      taiga: TaigaBiome,
+      ocean: OceanBiome,
+      deep_ocean: DeepOceanBiome,
+      temperate_desert: TemperateDesertBiome,
+      beach: BeachBiome,
+      scorched: ScorchedBiome,
+      shrubland: ShrublandBiome,
+      subtropical_desert: SubtropicalDesertBiome,
+      temperate_deciduous_forest: DeciduousForestBiome,
+      tropical_rain_forest: TropicalRainforestBiome,
+      tropical_seasonal_forest: TropicalSeasonalForestBiome,
+      tundra: TundraBiome,
+      temperate_rain_forest: TemperateRainforestBiome,
+    }),
+    [],
+  );
 
   const biomeHexes = useMemo(() => {
-    const biomeHexes = {
-      deep_ocean: [],
-      ocean: [],
-      beach: [],
-      scorched: [],
-      bare: [],
-      tundra: [],
-      snow: [],
-      temperate_desert: [],
-      shrubland: [],
-      taiga: [],
-      grassland: [],
-      temperate_deciduous_forest: [],
-      temperate_rain_forest: [],
-      subtropical_desert: [],
-      tropical_seasonal_forest: [],
-      tropical_rain_forest: [],
-    } as Record<string, Hexagon[]>;
-    explored.forEach((rowSet, col) => {
-      if (col < startCol || col > endCol) return;
-      rowSet.forEach((row) => {
-        if (row < startRow || row > endRow) return;
-        const tmpCol = col + 2147483647;
-        const tmpRow = row + 2147483647;
-        const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
-        if (group[hexIndex]) {
-          biomeHexes[group[hexIndex].biome].push(group[hexIndex]);
+    const biomesAccumulator = Object.keys(biomeComponents).reduce((acc: any, biome) => {
+      acc[biome] = [];
+      return acc;
+    }, {});
+
+    // Function to safely add a hex to the accumulator without duplicates
+    const addHexToBiomeAccumulator = (hex: any) => {
+      if (!biomesAccumulator[hex.biome].includes(hex)) {
+        biomesAccumulator[hex.biome].push(hex);
+      }
+    };
+
+    group.forEach((hex) => {
+      const col = hex.col - FELT_CENTER;
+      const row = hex.row - FELT_CENTER;
+      // Check if the hex is within the specified range
+      if (col >= startCol && col <= endCol && row >= startRow && row <= endRow) {
+        // Check if the hex or any of its neighbors are explored
+        if (
+          explored.get(col)?.has(row) ||
+          neighborOffsets.some(([dCol, dRow]) => explored.get(col + dCol)?.has(row + dRow))
+        ) {
+          addHexToBiomeAccumulator(hex);
         }
-      });
+      }
     });
-    return biomeHexes;
-  }, [explored]);
+
+    return biomesAccumulator;
+  }, [explored, group, biomeComponents, neighborOffsets, startCol, endCol, startRow, endRow]);
+
+  const { hoverHandler, clickHandler } = useEventHandlers(explored);
+
+  const throttledHoverHandler = useMemo(() => throttle(hoverHandler, 50), []);
 
   return (
     <>
-      {biomeHexes["snow"].length ? <SnowBiome hexes={biomeHexes["snow"]} /> : <></>}
-      {biomeHexes["bare"].length ? <DesertBiome hexes={biomeHexes["bare"]} /> : <></>}
-      {biomeHexes["grassland"].length ? <GrasslandBiome hexes={biomeHexes["grassland"]} /> : <></>}
-      {biomeHexes["taiga"].length ? <TaigaBiome hexes={biomeHexes["taiga"]} /> : <></>}
-      {biomeHexes["ocean"].length ? <OceanBiome hexes={biomeHexes["ocean"]} /> : <></>}
-      {biomeHexes["deep_ocean"].length ? <DeepOceanBiome hexes={biomeHexes["deep_ocean"]} /> : <></>}
-      {biomeHexes["temperate_desert"].length ? <TemperateDesertBiome hexes={biomeHexes["temperate_desert"]} /> : <></>}
-      {biomeHexes["beach"].length ? <BeachBiome hexes={biomeHexes["beach"]} /> : <></>}
-      {biomeHexes["scorched"].length ? <ScorchedBiome hexes={biomeHexes["scorched"]} /> : <></>}
-      {biomeHexes["shrubland"].length ? <ShrublandBiome hexes={biomeHexes["shrubland"]} /> : <></>}
-      {biomeHexes["subtropical_desert"].length ? (
-        <SubtropicalDesertBiome hexes={biomeHexes["subtropical_desert"]} />
-      ) : (
-        <></>
-      )}
-      {biomeHexes["temperate_deciduous_forest"].length ? (
-        <DeciduousForestBiome hexes={biomeHexes["temperate_deciduous_forest"]} />
-      ) : (
-        <></>
-      )}
-      {biomeHexes["tropical_rain_forest"].length ? (
-        <TropicalRainforestBiome hexes={biomeHexes["tropical_rain_forest"]} />
-      ) : (
-        <></>
-      )}
-      {biomeHexes["tropical_seasonal_forest"].length ? (
-        <TropicalSeasonalForestBiome hexes={biomeHexes["tropical_seasonal_forest"]} />
-      ) : (
-        <></>
-      )}
-      {biomeHexes["tundra"].length ? <TundraBiome hexes={biomeHexes["tundra"]} /> : <></>}
-      {biomeHexes["temperate_rain_forest"].length ? (
-        <TemperateRainforestBiome hexes={biomeHexes["temperate_rain_forest"]} />
-      ) : (
-        <></>
-      )}
+      {Object.entries(biomeHexes).map(([biome, hexes]: any) => {
+        const BiomeComponent = biomeComponents[biome];
+        return hexes.length ? (
+          <mesh onPointerEnter={(e) => throttledHoverHandler(e)} onClick={clickHandler}>
+            <BiomeComponent key={biome} hexes={hexes} />
+          </mesh>
+        ) : null;
+      })}
     </>
   );
 };
@@ -180,39 +147,66 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
 
   const { hoverHandler, clickHandler } = useEventHandlers(explored);
 
-  const { group, colors } = useMemo(() => {
-    if (!hexData) return { group: [], colors: [] };
+  // Helper function to check if a hex is a neighbor of any explored hex
+  const isNextToExplored = useCallback(
+    (col: number, row: number): boolean => {
+      return neighborOffsets.some(([dCol, dRow]) => {
+        const neighborCol = col + dCol;
+        const neighborRow = row + dRow;
+        // Check if the neighbor is explored, indicating the original hex is next to an explored one
+        if (explored.get(neighborCol)?.has(neighborRow)) {
+          return true;
+        }
+        // Now check the neighbors of the neighbor to see if any of those are explored
+        return neighborOffsets.some(([ddCol, ddRow]) => {
+          const nextNeighborCol = neighborCol + ddCol;
+          const nextNeighborRow = neighborRow + ddRow;
+          return explored.get(nextNeighborCol)?.has(nextNeighborRow);
+        });
+      });
+    },
+    [explored],
+  );
+
+  // Filter to include only unexplored hexes that are next to explored ones
+  const { group } = useMemo(() => {
+    if (!hexData) return { group: [] };
+
     const filteredGroup = hexData.filter((hex) => {
-      const col = hex.col - 2147483647;
-      const row = hex.row - 2147483647;
-      return col >= startCol && col <= endCol && row >= startRow && row <= endRow;
+      const col = hex.col - FELT_CENTER;
+      const row = hex.row - FELT_CENTER;
+      const isExplored = explored.get(col)?.has(row);
+      const isAdjacentToExplored = isNextToExplored(col, row);
+      // Include hexes that are not explored but are adjacent to explored hexes or one step further
+      return !isExplored && isAdjacentToExplored;
     });
 
     return { group: filteredGroup };
-  }, [startRow, endRow, startCol, endCol, HEX_RADIUS, hexData]);
+  }, [hexData, explored, isNextToExplored]);
 
-  // Create the mesh only once when the component is mounted
+  // Create the mesh for only unexplored hexes that are adjacent to explored hexes
   const mesh: InstancedMesh = useMemo(() => {
-    const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
     const hexMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,
+      color: "gray",
       vertexColors: false,
+      opacity: 0.5,
+      transparent: true,
     });
+    const hexagonGeometry = createHexagonGeometry(HEX_RADIUS, DEPTH);
 
     const instancedMesh = new InstancedMesh(hexagonGeometry, hexMaterial, group.length);
     let idx = 0;
     let matrix = new Matrix4();
     group.forEach((hex) => {
       const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
-      // set the z position with math.random to have a random height
-      const zPos = hex.biome === "ocean" ? 0.31 : 0.31 + Math.random() * 0.15;
+      const zPos = 0.5;
       matrix.setPosition(x, y, zPos);
 
       instancedMesh.setMatrixAt(idx, matrix);
 
       color.setStyle(BIOMES[hex.biome].color);
-      const luminance = getGrayscaleColor(color);
-      color.setRGB(luminance, luminance, luminance);
+      // const luminance = getGrayscaleColor(color);
+      // color.setRGB(luminance, luminance, luminance);
       instancedMesh.setColorAt(idx, color);
       idx++;
     });
@@ -220,26 +214,9 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
     instancedMesh.computeBoundingSphere();
     instancedMesh.frustumCulled = true;
     return instancedMesh;
-  }, [group, colors]);
+  }, [group]);
 
-  const throttledHoverHandler = useMemo(() => throttle(hoverHandler, 50), []);
-
-  useEffect(() => {
-    explored.forEach((rowSet, col) => {
-      if (col < startCol || col > endCol) return;
-      rowSet.forEach((row) => {
-        if (row < startRow || row > endRow) return;
-        const tmpCol = col + 2147483647;
-        const tmpRow = row + 2147483647;
-        const hexIndex = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
-        if (group[hexIndex] && mesh) {
-          color.setStyle(BIOMES[group[hexIndex].biome].color);
-          mesh.setColorAt(hexIndex, color);
-          if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-        }
-      });
-    });
-  }, [startRow, startCol, endRow, endCol, explored, group, mesh]);
+  const throttledHoverHandler = useMemo(() => throttle(hoverHandler, 50), [hoverHandler]);
 
   return (
     <Bvh firstHitOnly>
