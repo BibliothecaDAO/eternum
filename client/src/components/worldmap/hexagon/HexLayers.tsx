@@ -158,7 +158,7 @@ export const HexagonGrid = ({ startRow, endRow, startCol, endCol, explored }: He
             const tmpCol = col + neighbor.i + FELT_CENTER;
             const tmpRow = row + neighbor.j + FELT_CENTER;
             const ind = group.findIndex((hex) => hex.col === tmpCol && hex.row === tmpRow);
-            if (group[ind]) {
+            if (group[ind] && !revealed.some((hex) => hex.col === tmpCol && hex.row === tmpRow)) {
               revealed.push(group[ind]);
             }
           });

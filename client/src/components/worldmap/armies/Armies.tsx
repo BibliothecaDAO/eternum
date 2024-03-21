@@ -199,9 +199,10 @@ export const TravelingArmies = ({}: TravelingArmiesProps) => {
 
   return (
     <group>
-      {armyInfo.map(({ pos, enemy }) => {
+      {armyInfo.map(({ pos, enemy }, i) => {
         return (
           <ArmyModel
+            key={i}
             position={[pos.x, pos.z, pos.y]}
             scale={enemy ? ENEMY_ARMY_MODEL_SCALE : FRIENDLY_ARMY_MODEL_SCALE}
             defaultColor={enemy ? ENEMY_ARMY_MODEL_DEFAULT_COLOR : FRIENDLY_ARMY_MODEL_DEFAULT_COLOR}
