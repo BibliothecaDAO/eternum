@@ -6,7 +6,7 @@ import useUIStore from "../../../hooks/store/useUIStore";
 import { getEntityIdFromKeys, getUIPositionFromColRow } from "../../../utils/utils";
 import { Position, UIPosition } from "@bibliothecadao/eternum";
 // @ts-ignore
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Subscription } from "rxjs";
 import { Army } from "./Army";
 import { getRealmOrderNameById } from "../../../utils/realms";
@@ -14,11 +14,6 @@ import { getRealmOrderNameById } from "../../../utils/realms";
 type ArmiesProps = {
   props?: any;
 };
-
-export const FRIENDLY_ARMY_MODEL_DEFAULT_COLOR: string = "green";
-export const FRIENDLY_ARMY_MODEL_HOVER_COLOR: string = "yellow";
-export const FRIENDLY_ARMY_MODEL_SCALE: number = 2;
-export const FRIENDLY_ARMY_MODEL_DEAD_COLOR: string = "black";
 
 export const Armies = ({}: ArmiesProps) => {
   const {
@@ -76,12 +71,13 @@ export const Armies = ({}: ArmiesProps) => {
 
   return (
     <group>
-      {armyInfo.map((info, index) => {
-        // Calculate offset based on index
-        const offset = {
-          x: ((index % 3) - 1) * 0.8, // This will create an offset of -0.1, 0, or 0.1
-          z: Math.floor(index / 3) * 0.8 - 0.8, // This creates a row offset
-        };
+      {armyInfo.map((info) => {
+        const key = `${info.contractPos.x},${info.contractPos.y}`;
+        // Find the index of this army within its own group
+        const index = Number(info.id) % 12;
+        const offset = calculateOffset(index, 12);
+        // add random offset to avoid overlapping
+        offset.y += Math.random() * 1 - 0.5;
 
         return (
           <Army
@@ -89,13 +85,33 @@ export const Armies = ({}: ArmiesProps) => {
             info={{
               ...info,
               order: realmOrder,
-              uiPos: { x: info.uiPos.x + offset.x, y: info.uiPos.y + offset.z, z: info.uiPos.z },
             }}
+            offset={offset}
           />
         );
       })}
     </group>
   );
+};
+
+const calculateOffset = (index: number, total: number) => {
+  if (total === 1) return { x: 0, y: 0 };
+
+  const radius = 1.5; // Radius where the armies will be placed
+  const angleIncrement = (2 * Math.PI) / 6; // Maximum 6 points on the circumference for the first layer
+  let angle = angleIncrement * (index % 6);
+  let offsetRadius = radius;
+
+  if (index >= 6) {
+    // Adjustments for more than 6 armies, placing them in another layer
+    offsetRadius += 0.5; // Increase radius for each new layer
+    angle += angleIncrement / 2; // Offset angle to interleave with previous layer
+  }
+
+  return {
+    x: offsetRadius * Math.cos(angle),
+    y: offsetRadius * Math.sin(angle),
+  };
 };
 
 const useUpdateAnimationPaths = () => {

@@ -1,5 +1,5 @@
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 import { Position, UIPosition } from "@bibliothecadao/eternum";
@@ -11,9 +11,10 @@ import { Flag } from "../Flag";
 
 type ArmyProps = {
   info: { contractPos: Position; uiPos: UIPosition; id: bigint; isDead: boolean; order: string; isMine: boolean };
+  offset: { x: number; y: number };
 };
 
-export function Army({ info, ...props }: ArmyProps & JSX.IntrinsicElements["group"]) {
+export function Army({ info, offset, ...props }: ArmyProps & JSX.IntrinsicElements["group"]) {
   const { play: playBuildMilitary } = useUiSounds(soundSelector.buildMilitary);
   const animationPaths = useUIStore((state) => state.animationPaths);
   const setAnimationPaths = useUIStore((state) => state.setAnimationPaths);
@@ -24,7 +25,9 @@ export function Army({ info, ...props }: ArmyProps & JSX.IntrinsicElements["grou
   const startAnimationTimeRef = useRef<number | null>(null);
 
   const [hovered, setHovered] = useState(false);
-  const [position, setPosition] = useState<Vector3>(new Vector3(info.uiPos.x, 0.32, -info.uiPos.y));
+  const [position, setPosition] = useState<Vector3>(
+    new Vector3(info.uiPos.x + offset.x, 0.32, -info.uiPos.y - offset.y),
+  );
   const [rotationY, setRotationY] = useState<number>(0);
   const [isRunning, setIsRunning] = useState(false);
 
@@ -65,6 +68,18 @@ export function Army({ info, ...props }: ArmyProps & JSX.IntrinsicElements["grou
       // calculate progress between 2 points
       const progressBetweenPoints = (progress - (1 / uiPath.length) * pathIndex) / (1 / uiPath.length);
 
+      // add offset if currentPath[1] is the last point
+      if (pathIndex === uiPath.length - 2) {
+        currentPath[1].x += offset.x;
+        currentPath[1].y += offset.y;
+      }
+
+      // add offset if currentPath[0] is the first point
+      if (pathIndex === 0) {
+        currentPath[0].x += offset.x;
+        currentPath[0].y += offset.y;
+      }
+
       const currentPos = {
         x: currentPath[0].x + (currentPath[1].x - currentPath[0].x) * progressBetweenPoints,
         y: currentPath[0].y + (currentPath[1].y - currentPath[0].y) * progressBetweenPoints,
@@ -88,21 +103,21 @@ export function Army({ info, ...props }: ArmyProps & JSX.IntrinsicElements["grou
     }
   });
 
-  const onClick = () => {
-    if (!info.isDead) {
-      setSelectedEntity({ id: info.id, position: info.contractPos });
+  const onClick = useCallback(() => {
+    if (!info.isDead && !isRunning && info.isMine) {
       playBuildMilitary();
     }
-  };
+    setSelectedEntity({ id: info.id, position: info.contractPos });
+  }, [info.isDead, info.id, info.contractPos, playBuildMilitary, setSelectedEntity]);
 
-  const onPointerIn = (e: any) => {
+  const onPointerIn = useCallback((e: any) => {
     e.stopPropagation();
     setHovered(true);
-  };
-  const onPointerOut = (e: any) => {
+  }, []);
+  const onPointerOut = useCallback((e: any) => {
     e.stopPropagation();
     setHovered(false);
-  };
+  }, []);
 
   return (
     <>
@@ -110,6 +125,7 @@ export function Army({ info, ...props }: ArmyProps & JSX.IntrinsicElements["grou
       {!info.isDead && info.isMine && <Flag angle={rotationY} order={info.order} position={position}></Flag>}
       <WarriorModel
         {...props}
+        id={Number(info.id)}
         position={position}
         rotationY={rotationY}
         onClick={onClick}
@@ -118,6 +134,7 @@ export function Army({ info, ...props }: ArmyProps & JSX.IntrinsicElements["grou
         isRunning={isRunning}
         hovered={hovered}
         isDead={info.isDead}
+        isFriendly={info.isMine}
       />
     </>
   );

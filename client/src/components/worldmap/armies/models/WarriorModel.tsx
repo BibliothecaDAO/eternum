@@ -9,7 +9,9 @@ import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { useGLTF, useAnimations } from "@react-three/drei";
 import { GLTF, SkeletonUtils } from "three-stdlib";
 import { Vector3, useGraph } from "@react-three/fiber";
-import { FRIENDLY_ARMY_MODEL_HOVER_COLOR } from "../Armies";
+
+const FRIENDLY_ARMY_MODEL_HOVER_COLOR: string = "yellow";
+const ENEMY_ARMY_MODEL_HOVER_COLOR: string = "orange";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -52,6 +54,7 @@ type ContextType = Record<
 >;
 
 type WarriorModelProps = {
+  id: number;
   position: Vector3;
   rotationY: number;
   onClick: () => void;
@@ -60,9 +63,11 @@ type WarriorModelProps = {
   hovered: boolean;
   isRunning: boolean;
   isDead: boolean;
+  isFriendly: boolean;
 };
 
 export function WarriorModel({
+  id,
   position,
   rotationY,
   onClick,
@@ -71,6 +76,7 @@ export function WarriorModel({
   hovered,
   isRunning,
   isDead,
+  isFriendly,
   ...props
 }: WarriorModelProps) {
   const groupRef = useRef<THREE.Group>(null);
@@ -79,21 +85,29 @@ export function WarriorModel({
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   const { nodes, materials } = useGraph(clone);
 
+  // Deterministic rotation based on the id
+  const deterministicRotation = useMemo(() => {
+    return Number(id % 360) * (Math.PI / 180); // Convert degrees to radians
+  }, [id]);
+
   useEffect(() => {
-    if (!isDead) {
+    if (isDead) {
+      nodes.Root.rotation.y = deterministicRotation;
+    } else {
       nodes.Root.rotation.y = rotationY;
     }
-  }, [rotationY]);
+  }, [deterministicRotation, rotationY, nodes.Root, isDead]);
 
   // add actions to onClick
   const onClickAction = useCallback(() => {
-    if (isDead) return;
-    const action = actions["Sword_Attack"];
-    if (action) {
-      action.reset();
-      action.setLoop(THREE.LoopOnce, 1);
-      action.clampWhenFinished = true;
-      action.play();
+    if (!isDead && isFriendly) {
+      const action = actions["Sword_Attack"];
+      if (action) {
+        action.reset();
+        action.setLoop(THREE.LoopOnce, 1);
+        action.clampWhenFinished = true;
+        action.play();
+      }
     }
     if (onClick) {
       onClick();
@@ -101,12 +115,13 @@ export function WarriorModel({
   }, [isDead, onClick]);
 
   useEffect(() => {
+    const runAction = actions["Run"];
     if (isRunning) {
-      actions["Run"]?.play();
+      runAction?.play();
     } else {
-      actions["Run"]?.stop();
+      runAction?.stop();
     }
-  }, [isRunning]);
+  }, [isRunning, actions]);
 
   useEffect(() => {
     if (isDead) {
@@ -125,26 +140,21 @@ export function WarriorModel({
         });
       }
     }
-  }, [isDead]);
+  }, [isDead, isDead, actions, nodes.Root]);
 
   const hoverMaterial = useMemo(() => {
     const material = new THREE.MeshStandardMaterial();
-    material.color.set(FRIENDLY_ARMY_MODEL_HOVER_COLOR);
+    material.color.set(isFriendly ? FRIENDLY_ARMY_MODEL_HOVER_COLOR : ENEMY_ARMY_MODEL_HOVER_COLOR);
     return material;
   }, []);
 
   useEffect(() => {
     const targetMaterial = hovered ? hoverMaterial : materials.Warrior_Texture;
-    // @ts-ignore
-    nodes.Warrior_Body.material = targetMaterial;
-    // @ts-ignore
-    nodes.ShoulderPadL.material = targetMaterial;
-    // @ts-ignore
-    nodes.ShoulderPadR.material = targetMaterial;
-    // @ts-ignore
-    nodes.Warrior_Sword.material = targetMaterial;
-    // @ts-ignore
-    nodes.Face.material = targetMaterial;
+    Object.values(nodes).forEach((node) => {
+      if (node instanceof THREE.Mesh || node instanceof THREE.SkinnedMesh) {
+        node.material = targetMaterial;
+      }
+    });
   }, [hovered, hoverMaterial, nodes, materials.Warrior_Texture]);
 
   return (
