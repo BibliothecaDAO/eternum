@@ -43,7 +43,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
         <TravelIcon />
         <div
           className={clsx(
-            "absolute left-1/2 -bottom-1 opacity-0 transition-all translate-y-[200%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
+            "absolute left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
             "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
             isTravelMode && "opacity-100 !translate-y-full",
           )}
@@ -62,7 +62,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
       >
         <div
           className={clsx(
-            "absolute left-1/2 -top-1 opacity-0 transition-all -translate-y-[200%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
+            "absolute left-1/2 -top-1 opacity-0 transition-all -translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
             "group-hover/icon:opacity-100 group-hover/icon:-translate-y-full",
             isAttackMode && "opacity-100 -translate-y-full",
           )}
@@ -92,7 +92,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
         <ExploreIcon />
         <div
           className={clsx(
-            "absolute left-1/2 -bottom-1 opacity-0 transition-all translate-y-[200%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
+            "absolute left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
             "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
             isAttackMode && "opacity-100 translate-y-full",
           )}
