@@ -24,15 +24,16 @@ export const Armies = ({}: ArmiesProps) => {
   const {
     account: { account },
     setup: {
-      components: { Position, Health },
+      components: { Position, Health, Owner },
     },
   } = useDojo();
 
   const realms = useRealmStore((state) => state.realmEntityIds);
 
-  const { useOwnerRaiders } = useCombat();
+  const { useOwnerRaiders, useEnemeyRaiders } = useCombat();
 
-  const armies = useOwnerRaiders(BigInt(account.address));
+  const myArmies = useOwnerRaiders(BigInt(account.address));
+  const enemyArmies = useEnemeyRaiders(BigInt(account.address));
 
   useUpdateAnimationPaths();
 
@@ -44,11 +45,13 @@ export const Armies = ({}: ArmiesProps) => {
 
   const armyInfo = useMemo(
     () =>
-      armies
+      [...myArmies, ...enemyArmies]
         .map((armyId) => {
           const position = getComponentValue(Position, getEntityIdFromKeys([armyId]));
           const health = getComponentValue(Health, getEntityIdFromKeys([armyId]));
           const isDead = health?.value ? false : true;
+          const owner = getComponentValue(Owner, getEntityIdFromKeys([armyId]));
+          const isMine = owner?.address === BigInt(account.address);
 
           // // if animated army dont display
           if (!position) return;
@@ -58,10 +61,17 @@ export const Armies = ({}: ArmiesProps) => {
             uiPos: { ...getUIPositionFromColRow(position.x, position.y), z: z },
             id: position.entity_id,
             isDead,
+            isMine,
           };
         })
-        .filter(Boolean) as { contractPos: Position; uiPos: UIPosition; id: bigint; isDead: boolean }[],
-    [armies],
+        .filter(Boolean) as {
+        contractPos: Position;
+        uiPos: UIPosition;
+        id: bigint;
+        isDead: boolean;
+        isMine: boolean;
+      }[],
+    [myArmies, enemyArmies],
   );
 
   return (

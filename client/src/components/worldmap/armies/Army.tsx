@@ -10,7 +10,7 @@ import { ArmyInfoLabel } from "./ArmyInfoLabel";
 import { Flag } from "../Flag";
 
 type ArmyProps = {
-  info: { contractPos: Position; uiPos: UIPosition; id: bigint; isDead: boolean; order: string };
+  info: { contractPos: Position; uiPos: UIPosition; id: bigint; isDead: boolean; order: string; isMine: boolean };
 };
 
 export function Army({ info, ...props }: ArmyProps & JSX.IntrinsicElements["group"]) {
@@ -57,6 +57,8 @@ export function Army({ info, ...props }: ArmyProps & JSX.IntrinsicElements["grou
           paths.splice(index, 1);
         }
         setAnimationPaths(paths);
+        // reset time
+        startAnimationTimeRef.current = null;
         return;
       }
 
@@ -105,7 +107,7 @@ export function Army({ info, ...props }: ArmyProps & JSX.IntrinsicElements["grou
   return (
     <>
       {hovered && <ArmyInfoLabel position={info.uiPos} armyId={info.id} />}
-      {!info.isDead && <Flag angle={rotationY} order={info.order} position={position}></Flag>}
+      {!info.isDead && info.isMine && <Flag angle={rotationY} order={info.order} position={position}></Flag>}
       <WarriorModel
         {...props}
         position={position}
