@@ -21,10 +21,7 @@ type GLTFResult = GLTF & {
     Root: THREE.Bone;
   };
   materials: {
-    // @ts-ignore
-    Warrior_Texture: THREE.MeshBasicMaterial;
     Warrior_Sword_Texture: THREE.MeshBasicMaterial;
-    // @ts-ignore
     Warrior_Texture: THREE.MeshBasicMaterial;
   };
   animations: GLTFAction[];
@@ -113,6 +110,15 @@ export function WarriorModel({
     material.color.set(FRIENDLY_ARMY_MODEL_HOVER_COLOR);
     return material;
   }, []);
+
+  useEffect(() => {
+    const targetMaterial = hovered ? hoverMaterial : materials.Warrior_Texture;
+    nodes.Warrior_Body.material = targetMaterial;
+    nodes.ShoulderPadL.material = targetMaterial;
+    nodes.ShoulderPadR.material = targetMaterial;
+    nodes.Warrior_Sword.material = targetMaterial;
+    nodes.Face.material = targetMaterial;
+  }, [hovered, hoverMaterial, nodes, materials.Warrior_Texture]);
 
   return (
     <group
