@@ -1,5 +1,5 @@
 [package]
-cairo-version = "2.4.0"
+cairo-version = "2.5.0"
 name = "eternum"
 version = "0.3.0"
 
@@ -8,10 +8,8 @@ sierra-replace-ids = true
 
 [dependencies]
 dojo = { git = "https://github.com/dojoengine/dojo", tag = "v0.6.0-alpha.4" }
-alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "98aadc7e3f12dbb026e853604fe2cc061451cc8a" }
-cubit = { git = "https://github.com/akhercha/cubit", rev = "d3869a3f0c47e5ed229bbbfe2fce3fc0510cbc8a" }
-# TODO: use dojo_defi when works with latest nightly
-#dojo_defi = { git = "https://github.com/dojoengine/dojo" }
+alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "cairo-v2.5.4" }
+cubit = { git = "https://github.com/ponderingdemocritus/cubit" }
 
 [tool.dojo.env]
 world_address = "0x18fd848cbc9e4bb4742dfcfaf03c820421e70ee25916dbd6ca9cfc88f0336e2"
