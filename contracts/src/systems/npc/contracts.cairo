@@ -3,7 +3,7 @@ use eternum::{
         owner::{Owner, EntityOwner}, config::NpcConfig,
         last_spawned::{LastSpawned, ShouldSpawnImpl}, npc::{RealmRegistry}
     },
-    systems::npc::constants::MAX_NUM_NPCS, constants::NPC_CONFIG_ID
+    constants::NPC_CONFIG_ID
 };
 
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
@@ -258,7 +258,49 @@ mod npc_systems {
                 }
             );
         }
-        fn welcome_npc(self: @ContractState, world: IWorldDispatcher, npc_entity_id: u128) {}
+
+        fn welcome_npc(
+            self: @ContractState,
+            world: IWorldDispatcher,
+            npc_entity_id: u128,
+            into_realm_entity_id: u128,
+        ) {
+            assert(npc_entity_id != 0, 'npc_entity_id is 0');
+            assert(into_realm_entity_id != 0, 'into_realm_entity_id is 0');
+
+            assert_realm_existance_and_ownership(world, into_realm_entity_id);
+
+            let npc = get!(world, npc_entity_id, (Npc));
+            assert(npc.full_name != 0, 'invalid npc_entity_id');
+
+            let npc_position = get!(world, npc_entity_id, (Position));
+            let into_realm_position = get!(world, into_realm_entity_id, (Position));
+            let into_realm_coord: Coord = into_realm_position.into();
+            assert(npc_position.into() == into_realm_coord, 'npc not in into realm');
+
+            let npc_arrival = get!(world, npc_entity_id, (ArrivalTime));
+            assert(npc_arrival.arrives_at <= starknet::get_block_timestamp(), 'npc is traveling');
+
+            assert(npc.current_realm_entity_id == 0, 'npc is not at the gates');
+
+            let npc_config = get!(world, NPC_CONFIG_ID, (NpcConfig));
+            let into_realm_registry = get!(world, into_realm_entity_id, RealmRegistry);
+            assert(
+                into_realm_registry.num_resident_npcs < npc_config.max_num_resident_npcs,
+                'too many npcs'
+            );
+
+            set!(
+                world,
+                RealmRegistry {
+                    realm_entity_id: into_realm_registry.realm_entity_id,
+                    num_resident_npcs: into_realm_registry.num_resident_npcs + 1,
+                    num_native_npcs: into_realm_registry.num_native_npcs,
+                }
+            );
+
+            set!(world, Npc {entity_id: npc_entity_id, current_realm_entity_id: into_realm_entity_id, characteristics: npc.characteristics, character_trait: npc.character_trait, full_name: npc.full_name});
+        }
         fn kick_out_npc(self: @ContractState, world: IWorldDispatcher, npc_entity_id: u128) {}
     }
 }
@@ -272,6 +314,9 @@ fn assert_is_allowed_to_spawn(world: IWorldDispatcher, realm_entity_id: u128) {
 
     let realm_registry = get!(world, realm_entity_id, (RealmRegistry));
 
-    assert(realm_registry.num_native_npcs < MAX_NUM_NPCS, 'max num npcs spawned');
-    assert(realm_registry.num_native_npcs < MAX_NUM_NPCS, 'already hosting max num npcs');
+    assert(realm_registry.num_native_npcs < npc_config.max_num_native_npcs, 'max num npcs spawned');
+    assert(
+        realm_registry.num_resident_npcs < npc_config.max_num_resident_npcs,
+        'already hosting max num npcs'
+    );
 }

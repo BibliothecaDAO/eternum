@@ -24,6 +24,11 @@ trait INpc<TContractState> {
         npc_entity_id: u128,
         to_realm_entity_id: u128
     );
-    fn welcome_npc(self: @TContractState, world: IWorldDispatcher, npc_entity_id: u128);
+    fn welcome_npc(
+        self: @TContractState,
+        world: IWorldDispatcher,
+        npc_entity_id: u128,
+        into_realm_entity_id: u128
+    );
     fn kick_out_npc(self: @TContractState, world: IWorldDispatcher, npc_entity_id: u128);
 }

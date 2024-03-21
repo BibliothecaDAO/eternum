@@ -50,7 +50,7 @@ export const Traveler = ({ npc }: NpcComponentProps) => {
     >
       {`Details`}
     </Button>,
-    <Button isLoading={loading} size="xs" className="ml-auto" onClick={() => bringBack} variant="outline" withoutSound>
+    <Button isLoading={loading} size="xs" className="ml-auto" onClick={bringBack} variant="outline" withoutSound>
       {`Bring back`}
     </Button>,
   ];

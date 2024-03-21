@@ -2144,6 +2144,14 @@
                 {
                   "name": "pub_key",
                   "type": "core::felt252"
+                },
+                {
+                  "name": "max_num_resident_npcs",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "max_num_native_npcs",
+                  "type": "core::integer::u8"
                 }
               ],
               "outputs": [],
@@ -10393,6 +10401,16 @@
         {
           "name": "pub_key",
           "type": "felt252",
+          "key": false
+        },
+        {
+          "name": "max_num_native_npcs",
+          "type": "u8",
+          "key": false
+        },
+        {
+          "name": "max_num_resident_npcs",
+          "type": "u8",
           "key": false
         }
       ],

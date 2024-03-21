@@ -203,9 +203,18 @@ mod config_systems {
 
     #[external(v0)]
     impl NpcConfigImpl of INpcConfig<ContractState> {
-        fn set_npc_config(self: @ContractState, world: IWorldDispatcher, spawn_delay: u64, pub_key: felt252) {
+        fn set_npc_config(
+            self: @ContractState,
+            world: IWorldDispatcher,
+            spawn_delay: u64,
+            pub_key: felt252,
+            max_num_resident_npcs: u8,
+            max_num_native_npcs: u8
+        ) {
             assert(pub_key != 0, 'Empty pub_key received');
             assert(spawn_delay != 0, 'Empty spawn_delay received');
+            assert(max_num_resident_npcs != 0, 'max_num_resident_npcs == 0');
+            assert(max_num_native_npcs != 0, 'max_num_native_npcs == 0');
 
             let stored_pub_key = get!(world, (NPC_CONFIG_ID), NpcConfig).pub_key;
 
@@ -215,7 +224,16 @@ mod config_systems {
                 assert(world.is_owner(caller, stored_pub_key), 'Not owner');
             }
 
-            set!(world, (NpcConfig { config_id: NPC_CONFIG_ID, spawn_delay, pub_key}));
+            set!(
+                world,
+                (NpcConfig {
+                    config_id: NPC_CONFIG_ID,
+                    spawn_delay,
+                    pub_key,
+                    max_num_resident_npcs,
+                    max_num_native_npcs
+                })
+            );
         }
     }
 

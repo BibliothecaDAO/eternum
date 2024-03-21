@@ -21,9 +21,11 @@ export const ResidentsPanel = () => {
     },
     account: { account },
   } = useDojo();
+
   const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const { realmEntityId } = useRealmStore();
+
   const { sendWsMsg, lastWsMsg } = useNpcContext();
 
   const residents = getResidentNpcs(realmEntityId, NpcComponent, EntityOwner);
@@ -111,14 +113,14 @@ export const ResidentsPanel = () => {
         ))}
       </SortPanel>
 
-      {residents.foreigners.map((npc) => (
-        <div className="flex flex-col p-2" key={npc.entityId}>
-          <Resident npc={npc} />
-        </div>
-      ))}
       {residents.natives.map((npc) => (
         <div className="flex flex-col p-2" key={npc.entityId}>
-          <Resident npc={npc} />
+          <Resident npc={npc} native={true} />
+        </div>
+      ))}
+      {residents.foreigners.map((npc) => (
+        <div className="flex flex-col p-2" key={npc.entityId}>
+          <Resident npc={npc} native={false} />
         </div>
       ))}
       <div className="flex justify-center">

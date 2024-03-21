@@ -5,26 +5,42 @@ import { TravelNpcPopup } from "./TravelNpcPopup";
 import { NpcComponent } from "../../NpcComponent";
 type NpcComponentProps = {
   npc: Npc;
+  native: boolean;
 };
 
-export const Resident = ({ npc }: NpcComponentProps) => {
+export const Resident = ({ npc, native }: NpcComponentProps) => {
   const [showTravel, setShowTravel] = useState(false);
 
   const onClose = (): void => {
     setShowTravel(false);
   };
+
   const extraButtons: any = [
-    <Button
-      size="xs"
-      className="ml-auto"
-      onClick={() => {
-        setShowTravel(true);
-      }}
-      variant="outline"
-      withoutSound
-    >
-      {`Travel`}
-    </Button>,
+    native ? (
+      <Button
+        size="xs"
+        className="ml-auto"
+        onClick={() => {
+          setShowTravel(true);
+        }}
+        variant="outline"
+        withoutSound
+      >
+        {`Travel`}
+      </Button>
+    ) : (
+      <Button
+        size="xs"
+        className="ml-auto"
+        onClick={() => {
+          setShowTravel(true);
+        }}
+        variant="outline"
+        withoutSound
+      >
+        {`Kick Out`}
+      </Button>
+    ),
   ];
   return (
     <>

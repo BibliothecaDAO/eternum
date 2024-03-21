@@ -21,7 +21,10 @@ export type Residents = {
 
 export type Travelers = Npc[];
 
-export type AtGates = Npc[];
+export type AtGates = {
+  natives: Npc[];
+  foreigners: Npc[];
+};
 
 export type NpcTownhallMessage = {
   fullName: string;

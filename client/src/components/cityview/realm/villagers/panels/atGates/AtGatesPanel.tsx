@@ -1,20 +1,30 @@
 import { useMemo, useState } from "react";
-import { Traveler } from "./Traveler";
+import { AtGatesNpc } from "./AtGatesNpc";
 import { SortPanel } from "../../../../../../elements/SortPanel";
 import { SortButton, SortInterface } from "../../../../../../elements/SortButton";
 import useRealmStore from "../../../../../../hooks/store/useRealmStore";
-import { getTravelersNpcs } from "../../utils";
+import { getAtGatesNpcs } from "../../utils";
 import { useDojo } from "../../../../../../DojoContext";
+import useBlockchainStore from "../../../../../../hooks/store/useBlockchainStore";
 
-export const TravelersPanel = () => {
+export const AtGatesPanel = () => {
   const {
     setup: {
-      components: { Npc: NpcComponent, EntityOwner, Position},
+      components: { Npc: NpcComponent, Position, ArrivalTime, EntityOwner },
     },
   } = useDojo();
+  const { nextBlockTimestamp } = useBlockchainStore();
   const { realmId, realmEntityId } = useRealmStore();
 
-  const travelers = getTravelersNpcs(realmId!, realmEntityId, NpcComponent, EntityOwner, Position);
+  const atGatesNpcs = getAtGatesNpcs(
+    realmId!,
+    realmEntityId!,
+    nextBlockTimestamp!,
+    NpcComponent,
+    Position,
+    ArrivalTime,
+    EntityOwner,
+  );
 
   const sortingParams = useMemo(() => {
     return [
@@ -48,9 +58,14 @@ export const TravelersPanel = () => {
         ))}
       </SortPanel>
 
-      {travelers.map((npc) => (
+      {atGatesNpcs.foreigners.map((npc) => (
         <div className="flex flex-col p-2" key={npc.entityId}>
-          <Traveler npc={npc} />
+          <AtGatesNpc npc={npc} native={false} />
+        </div>
+      ))}
+      {atGatesNpcs.natives.map((npc) => (
+        <div className="flex flex-col p-2" key={npc.entityId}>
+          <AtGatesNpc npc={npc} native={true} />
         </div>
       ))}
     </div>

@@ -66,10 +66,10 @@ export const TravelerDetailsPopup = ({ npc, onClose }: TravelerDetailsPopupProps
           <div className="mr-0.5">{npc.fullName}</div>
         </div>
       </SecondaryPopup.Head>
-      <SecondaryPopup.Body height={"340px"}>
+      <SecondaryPopup.Body width={"250px"} height={"100px"}>
         <div className="flex flex-col items-center p-2">
           <Headline className="mb-3">Traveler</Headline>
-          <div className="flex flex-col text-gold text-xxs w-1/2">{getDisplayedInfo()}</div>
+          <div className="flex flex-col text-gold text-xxs">{getDisplayedInfo()}</div>
         </div>
       </SecondaryPopup.Body>
     </SecondaryPopup>
