@@ -1,7 +1,7 @@
 import useUIStore from "../../../hooks/store/useUIStore";
 import * as THREE from "three";
 import { createHexagonShape } from "./HexagonGeometry";
-import { HEX_RADIUS } from "./HexLayers";
+import { HEX_RADIUS } from "./WorldHexagon";
 
 const HighlightedHexes = () => {
   const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
