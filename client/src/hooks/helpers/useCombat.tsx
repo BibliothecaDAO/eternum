@@ -33,7 +33,6 @@ export function useCombat() {
   } = useDojo();
 
   const realmEntityId = useRealmStore((state) => state.realmEntityId);
-  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
 
   const getEntityWatchTowerId = (entityId: bigint): bigint | undefined => {
     // find realm watchtower
@@ -82,17 +81,6 @@ export function useCombat() {
       NotValue(Health, { value: 0n }),
       NotValue(Movable, { sec_per_km: 0 }),
     ]);
-
-    const deadEntitiesWithResources = useEntityQuery([
-      Has(Attack),
-      NotValue(Movable, { sec_per_km: 0 }), // exclude town watch
-      HasValue(Owner, { address: owner }),
-      HasValue(Health, { value: 0n }),
-      NotValue(Inventory, { items_count: 0n }),
-      NotValue(Movable, { sec_per_km: 0 }),
-    ]);
-
-    entityIds = entityIds.concat(deadEntitiesWithResources);
 
     return entityIds.map((id) => {
       const attack = getComponentValue(Attack, id);

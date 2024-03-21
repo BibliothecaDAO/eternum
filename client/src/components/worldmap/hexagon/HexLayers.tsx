@@ -336,7 +336,6 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
               const colRow = getColRowFromUIPosition(p[0], -p[1]);
               return { x: colRow.col, y: colRow.row };
             });
-            console.log({ path });
             if (path.length > 1)
               setSelectedPath({
                 id: selectedEntityRef.current.id,
