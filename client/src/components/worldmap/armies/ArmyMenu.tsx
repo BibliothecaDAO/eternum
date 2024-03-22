@@ -1,13 +1,23 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import useUIStore from "../../../hooks/store/useUIStore";
 import clsx from "clsx";
-import { Resource } from "@bibliothecadao/eternum";
+import { CombatInfo, Resource, ResourcesIds } from "@bibliothecadao/eternum";
 import { ResourceCost } from "../../../elements/ResourceCost";
-import { divideByPrecision } from "../../../utils/utils";
+import { divideByPrecision, getEntityIdFromKeys, multiplyByPrecision } from "../../../utils/utils";
+import { useDojo } from "../../../DojoContext";
+import { getComponentValue } from "@dojoengine/recs";
+import useRealmStore from "../../../hooks/store/useRealmStore";
+import { useCombat } from "../../../hooks/helpers/useCombat";
+import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
+import { getTotalResourceWeight } from "../../cityview/realm/trade/utils";
+import { TIME_PER_TICK } from "../../network/EpochCountdown";
+import { Html } from "@react-three/drei";
 
 type ArmyMenuProps = {
   entityId: bigint;
 };
+
+const EXPLORATION_REWARD_RESOURCE_AMOUNT: number = 20;
 
 const explorationCost: Resource[] = [
   {
@@ -18,6 +28,14 @@ const explorationCost: Resource[] = [
 ];
 
 export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
+  const {
+    setup: {
+      components: { TickMove, ArrivalTime, Weight, Quantity, Capacity, EntityOwner, Position, Health, Realm },
+    },
+  } = useDojo();
+
+  const [appeared, setAppeared] = useState(false);
+
   const selectedEntity = useUIStore((state) => state.selectedEntity);
   const setIsTravelMode = useUIStore((state) => state.setIsTravelMode);
   const isTravelMode = useUIStore((state) => state.isTravelMode);
@@ -25,105 +43,196 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   const isExploreMode = useUIStore((state) => state.isExploreMode);
   const setIsAttackMode = useUIStore((state) => state.setIsAttackMode);
   const isAttackMode = useUIStore((state) => state.isAttackMode);
+  const [playerOwnsSelectedEntity, setPlayerOwnsSelectedEntity] = useState(false);
+  const [playerRaidersOnPosition, setPlayerRaidersOnPosition] = useState<CombatInfo[]>([]);
+  const [selectedEntityIsDead, setSelectedEntityIsDead] = useState(true);
+  const [selectedEntityIsRealm, setSelectedEntityIsRealm] = useState(false);
+  const [selectedEntityRealmId, setSelectedEntityRealmId] = useState(0n);
+  const [enemyRaidersOnPosition, setEnemyRaidersOnPosition] = useState<CombatInfo[]>([]);
+  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
+  const { getEntitiesCombatInfo, getOwnerRaidersOnPosition, getEntityWatchTowerId } = useCombat();
+  const nextBlockTimestamp = useBlockchainStore((state) => state.nextBlockTimestamp);
+
+  useEffect(() => {
+    if (!selectedEntity) return;
+    const checkPlayerOwnsSelectedEntity = () => {
+      if (selectedEntity?.id) {
+        let entityOwner = getComponentValue(EntityOwner, getEntityIdFromKeys([selectedEntity.id])) || undefined;
+        let realmEntityIdsFlat = realmEntityIds.map((realmEntityId) => realmEntityId.realmEntityId);
+        if (
+          realmEntityIdsFlat.includes(entityOwner?.entity_owner_id!) ||
+          realmEntityIdsFlat.includes(selectedEntity.id)
+        ) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    if (!checkPlayerOwnsSelectedEntity()) {
+      const selectedEntityPosition = getComponentValue(Position, getEntityIdFromKeys([selectedEntity!.id!]));
+      let playerRaidersOnPosition = getOwnerRaidersOnPosition({
+        x: selectedEntityPosition!.x!,
+        y: selectedEntityPosition!.y,
+      });
+      setPlayerOwnsSelectedEntity(false);
+      setPlayerRaidersOnPosition(getEntitiesCombatInfo(playerRaidersOnPosition));
+    } else {
+      setPlayerOwnsSelectedEntity(true);
+    }
+
+    // check if selected entity is a realm
+    const realm = selectedEntity ? getComponentValue(Realm, getEntityIdFromKeys([selectedEntity.id])) : undefined;
+    if (realm?.realm_id) {
+      setSelectedEntityIsRealm(true);
+      setSelectedEntityRealmId(realm!.realm_id!);
+      setEnemyRaidersOnPosition([]);
+    } else {
+      setSelectedEntityIsRealm(false);
+      setEnemyRaidersOnPosition(getEntitiesCombatInfo([selectedEntity!.id]));
+    }
+
+    const entityHealth = getComponentValue(Health, getEntityIdFromKeys([selectedEntity?.id!]));
+    const selectedEntityIsDead = entityHealth?.value ? false : true;
+    setSelectedEntityIsDead(selectedEntityIsDead);
+  }, [selectedEntity]);
+
+  const arrivalTime = selectedEntity
+    ? getComponentValue(ArrivalTime, getEntityIdFromKeys([selectedEntity.id]))
+    : undefined;
+
+  const weight = selectedEntity ? getComponentValue(Weight, getEntityIdFromKeys([selectedEntity.id])) : undefined;
+
+  const quantity = selectedEntity ? getComponentValue(Quantity, getEntityIdFromKeys([selectedEntity.id])) : undefined;
+
+  const capacity = selectedEntity ? getComponentValue(Capacity, getEntityIdFromKeys([selectedEntity.id])) : undefined;
+
+  const totalCapacityInKg = divideByPrecision(Number(capacity?.weight_gram)) * Number(quantity?.value);
+  const tickMove = selectedEntity ? getComponentValue(TickMove, getEntityIdFromKeys([selectedEntity.id])) : undefined;
+  const isPassiveTravel = arrivalTime && nextBlockTimestamp ? arrivalTime.arrives_at > nextBlockTimestamp : false;
+
+  const currentTick = nextBlockTimestamp ? Math.floor(nextBlockTimestamp / TIME_PER_TICK) : 0;
+  const isActiveTravel = tickMove !== undefined && tickMove.tick >= currentTick;
+
+  const isTraveling = isPassiveTravel || isActiveTravel;
+
+  const sampleRewardResource: Resource = {
+    resourceId: ResourcesIds.Ignium,
+    amount: multiplyByPrecision(EXPLORATION_REWARD_RESOURCE_AMOUNT),
+  };
+  const sampleRewardResourceWeightKg = getTotalResourceWeight([sampleRewardResource]);
+  const entityWeightInKg = divideByPrecision(Number(weight?.value || 0));
+  const canCarryNewReward = totalCapacityInKg >= entityWeightInKg + sampleRewardResourceWeightKg;
+
+  useEffect(() => {
+    setTimeout(() => {
+      setAppeared(true);
+    }, 150);
+    return () => {
+      setAppeared(false);
+    };
+  }, []);
 
   return (
-    <div
-      className={clsx(
-        "flex space-x-0.5 -translate-x-1/2 transition-all duration-200",
-        selectedEntity?.id === entityId ? "opacity-100" : "opacity-0 translate-y-1/2",
-      )}
-    >
+    <Html position={[0, 7, 0]}>
       <div
         className={clsx(
-          "relative group/icon transition-opacity duration-200",
-          isAttackMode || isExploreMode ? "opacity-30" : "opacity-100",
+          "flex space-x-0.5 -translate-x-1/2 transition-all duration-200",
+          appeared ? "opacity-100" : "opacity-0 translate-y-1/2",
         )}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (isTravelMode) {
-            setIsTravelMode(false);
-            setIsExploreMode(false);
-            setIsAttackMode(false);
-          } else {
-            setIsTravelMode(true);
-            setIsExploreMode(false);
-            setIsAttackMode(false);
-          }
-        }}
       >
-        <TravelIcon />
         <div
           className={clsx(
-            "absolute left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
-            "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
-            isTravelMode && "opacity-100 !translate-y-full",
+            "relative group/icon transition-opacity duration-200",
+            isAttackMode || isExploreMode ? "opacity-30" : "opacity-100",
           )}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isTravelMode) {
+              setIsTravelMode(false);
+              setIsExploreMode(false);
+              setIsAttackMode(false);
+            } else {
+              setIsTravelMode(true);
+              setIsExploreMode(false);
+              setIsAttackMode(false);
+            }
+          }}
         >
-          Travel
+          <TravelIcon />
+          <div
+            className={clsx(
+              "absolute left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
+              "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
+              isTravelMode && "opacity-100 !translate-y-full",
+            )}
+          >
+            Travel
+          </div>
         </div>
-      </div>
-      <div
-        className={clsx(
-          "-translate-y-1/2 relative group/icon transition-opacity duration-200",
-          isTravelMode || isExploreMode ? "opacity-30" : "opacity-100",
-        )}
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-      >
         <div
           className={clsx(
-            "absolute left-1/2 -top-1 opacity-0 transition-all -translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
-            "group-hover/icon:opacity-100 group-hover/icon:-translate-y-full",
-            isAttackMode && "opacity-100 -translate-y-full",
+            "-translate-y-1/2 relative group/icon transition-opacity duration-200",
+            isTravelMode || isExploreMode ? "opacity-30" : "opacity-100",
           )}
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
         >
-          Attack
+          <div
+            className={clsx(
+              "absolute left-1/2 -top-1 opacity-0 transition-all -translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
+              "group-hover/icon:opacity-100 group-hover/icon:-translate-y-full",
+              isAttackMode && "opacity-100 -translate-y-full",
+            )}
+          >
+            Attack
+          </div>
+          <AttackIcon />
         </div>
-        <AttackIcon />
-      </div>
-      <div
-        className={clsx(
-          "relative group/icon transition-opacity duration-200",
-          isAttackMode || isTravelMode ? "opacity-30" : "opacity-100",
-        )}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (isExploreMode) {
-            setIsTravelMode(false);
-            setIsExploreMode(false);
-            setIsAttackMode(false);
-          } else {
-            setIsTravelMode(false);
-            setIsExploreMode(true);
-            setIsAttackMode(false);
-          }
-        }}
-      >
-        <ExploreIcon />
         <div
           className={clsx(
-            "absolute flex flex-col items-center justify-center left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
-            "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
-            isAttackMode && "opacity-100 translate-y-full",
+            "relative group/icon transition-opacity duration-200",
+            isAttackMode || isTravelMode ? "opacity-30" : "opacity-100",
           )}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isExploreMode) {
+              setIsTravelMode(false);
+              setIsExploreMode(false);
+              setIsAttackMode(false);
+            } else {
+              setIsTravelMode(false);
+              setIsExploreMode(true);
+              setIsAttackMode(false);
+            }
+          }}
         >
-          Explore
-          <div className="flex space-x-1 mt-1">
-            {explorationCost.map((res) => {
-              return (
-                <ResourceCost
-                  key={res.resourceId}
-                  type="vertical"
-                  resourceId={res.resourceId}
-                  amount={divideByPrecision(res.amount)}
-                />
-              );
-            })}
+          <ExploreIcon />
+          <div
+            className={clsx(
+              "absolute flex flex-col items-center justify-center left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm pointer-events-none",
+              "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
+              isAttackMode && "opacity-100 translate-y-full",
+            )}
+          >
+            Explore
+            <div className="flex space-x-1 mt-1">
+              {explorationCost.map((res) => {
+                return (
+                  <ResourceCost
+                    key={res.resourceId}
+                    type="vertical"
+                    resourceId={res.resourceId}
+                    amount={divideByPrecision(res.amount)}
+                  />
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </Html>
   );
 };
 

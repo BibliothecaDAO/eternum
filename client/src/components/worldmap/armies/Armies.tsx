@@ -43,6 +43,7 @@ export const Armies = ({}: ArmiesProps) => {
   } = useDojo();
 
   const setSelectedEntity = useUIStore((state) => state.setSelectedEntity);
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
   const animationPaths = useUIStore((state) => state.animationPaths);
 
   const positionOffset: Record<string, number> = {};
@@ -107,9 +108,7 @@ export const Armies = ({}: ArmiesProps) => {
         }
         return (
           <group position={[uiPos.x + offset + 0.7, uiPos.z, -uiPos.y]} key={i}>
-            <Html position={[0, 7, 0]}>
-              <ArmyMenu entityId={id} />
-            </Html>
+            {selectedEntity && selectedEntity.id === id && <ArmyMenu entityId={id} />}
             <ArmyModel
               onPointerOver={() => onHover(id, uiPos)}
               onPointerOut={onUnhover}
