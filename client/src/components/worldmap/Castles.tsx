@@ -1,12 +1,14 @@
 import { useGLTF } from "@react-three/drei";
 import realmHexPositions from "../../geodata/hex/realmHexPositions.json";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useGetRealms } from "../../hooks/helpers/useRealm";
 import useRealmStore from "../../hooks/store/useRealmStore";
 import { HexPositions, getRealmUIPosition, pseudoRandom } from "../../utils/utils";
 import { GLTF } from "three-stdlib";
 import { biomes } from "@bibliothecadao/eternum";
 import { Hexagon } from "src/types";
+import useUIStore from "../../hooks/store/useUIStore";
+import { ArmyMenu } from "./armies/ArmyMenu";
 
 // @ts-nocheck
 type GLTFResult = GLTF & {
@@ -109,10 +111,17 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
   const { nodes, materials } = useGLTF("/models/realm-buildings-transformed.glb") as GLTFResult;
   const realms = useGetRealms();
 
+  const selectedEntity = useUIStore((state) => state.selectedEntity);
+  const setSelectedEnttiy = useUIStore((state) => state.setSelectedEntity);
+  const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
+
+  const [hoveredCastleId, setHoveredCastleId] = useState<bigint | null>(null);
+
   const realmPositions = realmHexPositions as HexPositions;
 
   let castles = useMemo(() => {
     return realms
+      .filter((realm) => !realmEntityIds.map((r) => r.realmEntityId).includes(realm.entity_id))
       .map((realm) => {
         const colrow = realmPositions[Number(realm.realmId).toString()][0];
         const hexIndex = hexData.findIndex((h) => h.col === colrow.col && h.row === colrow.row);
@@ -121,27 +130,45 @@ export const OtherCastles = ({ hexData }: CastlesProps) => {
           position: getRealmUIPosition(realm.realmId),
           index: hexIndex,
           depth: BIOMES[hexData[hexIndex].biome].depth,
+          id: realm.entity_id,
         };
       })
       .filter(Boolean);
   }, []);
+
+  const onClick = (e: any, castle: any) => {
+    e.stopPropagation();
+    setSelectedEnttiy({ id: castle.id, position: castle.position });
+  };
+
+  const hoverMaterial = materials.PaletteMaterial011.clone();
+  hoverMaterial.color.set("red");
 
   return (
     <group>
       {castles.map((castle) => {
         const { position, index, depth } = castle;
         if (index === -1) return null;
+        const isHovered = hoveredCastleId === castle.id;
         return (
-          <mesh
-            key={index}
-            scale={0.03}
-            name="castle"
-            castShadow
-            geometry={nodes.castle.geometry}
-            material={materials.PaletteMaterial011}
-            rotation={[0, pseudoRandom(position.x, position.y) * 2 * Math.PI, 0]}
-            position={[position.x, 0.31, -position.y]}
-          />
+          <group key={index} position={[position.x, 0.31, -position.y]}>
+            {selectedEntity && selectedEntity.id == castle.id && <ArmyMenu entityId={castle.id} />}
+            <mesh
+              scale={0.03}
+              name="castle"
+              castShadow
+              onClick={(e) => onClick(e, castle)}
+              onPointerEnter={() => {
+                setHoveredCastleId(castle.id);
+              }}
+              onPointerOut={() => {
+                setHoveredCastleId(null);
+              }}
+              geometry={nodes.castle.geometry}
+              material={isHovered ? hoverMaterial : materials.PaletteMaterial011}
+              rotation={[0, pseudoRandom(position.x, position.y) * 2 * Math.PI, 0]}
+            />
+          </group>
         );
       })}
     </group>

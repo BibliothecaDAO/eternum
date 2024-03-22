@@ -141,95 +141,105 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
           appeared ? "opacity-100" : "opacity-0 translate-y-1/2",
         )}
       >
-        <div
-          className={clsx(
-            "relative group/icon transition-opacity duration-200",
-            isAttackMode || isExploreMode || isTraveling ? "opacity-30 pointer-events-none" : "opacity-100",
-          )}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (isTravelMode) {
-              setIsTravelMode(false);
-              setIsExploreMode(false);
-              setIsAttackMode(false);
-            } else {
-              setIsTravelMode(true);
-              setIsExploreMode(false);
-              setIsAttackMode(false);
-            }
-          }}
-        >
-          <TravelIcon />
+        {playerOwnsSelectedEntity && (
           <div
             className={clsx(
-              "absolute left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
-              "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
+              "relative group/icon transition-opacity duration-200",
+              isAttackMode || isExploreMode || isTraveling ? "opacity-30 pointer-events-none" : "opacity-100",
             )}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isTravelMode) {
+                setIsTravelMode(false);
+                setIsExploreMode(false);
+                setIsAttackMode(false);
+              } else {
+                setIsTravelMode(true);
+                setIsExploreMode(false);
+                setIsAttackMode(false);
+              }
+            }}
           >
-            Travel
-          </div>
-        </div>
-        <div
-          className={clsx(
-            "-translate-y-1/2 relative group/icon transition-opacity duration-200",
-            isTravelMode || isExploreMode ? "opacity-30" : "opacity-100",
-          )}
-          onClick={(e) => {
-            e.stopPropagation();
-          }}
-        >
-          <div
-            className={clsx(
-              "absolute left-1/2 -top-1 opacity-0 transition-all -translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
-              "group-hover/icon:opacity-100 group-hover/icon:-translate-y-full",
-            )}
-          >
-            Attack
-          </div>
-          <AttackIcon />
-        </div>
-        <div
-          className={clsx(
-            "relative group/icon transition-opacity duration-200",
-            isAttackMode || isTravelMode || isTraveling || !canCarryNewReward
-              ? "opacity-30  pointer-events-none"
-              : "opacity-100",
-          )}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (isExploreMode) {
-              setIsTravelMode(false);
-              setIsExploreMode(false);
-              setIsAttackMode(false);
-            } else {
-              setIsTravelMode(false);
-              setIsExploreMode(true);
-              setIsAttackMode(false);
-            }
-          }}
-        >
-          <ExploreIcon />
-          <div
-            className={clsx(
-              "absolute flex flex-col items-center justify-center left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm pointer-events-none",
-              "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
-            )}
-          >
-            Explore
-            <div className="flex space-x-1 mt-1">
-              {explorationCost.map((res) => {
-                return (
-                  <ResourceCost
-                    key={res.resourceId}
-                    type="vertical"
-                    resourceId={res.resourceId}
-                    amount={divideByPrecision(res.amount)}
-                  />
-                );
-              })}
+            <TravelIcon />
+            <div
+              className={clsx(
+                "absolute left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
+                "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
+              )}
+            >
+              Travel
             </div>
           </div>
-        </div>
+        )}
+        {!playerOwnsSelectedEntity && (
+          <div
+            className={clsx(
+              "relative group/icon transition-opacity duration-200",
+              isTravelMode || isExploreMode || playerRaidersOnPosition.length === 0
+                ? "opacity-30 pointer-events-none"
+                : "opacity-100",
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsAttackMode(true);
+            }}
+          >
+            <div
+              className={clsx(
+                "absolute left-1/2 -top-1 opacity-0 transition-all -translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
+                "group-hover/icon:opacity-100 group-hover/icon:-translate-y-full",
+              )}
+            >
+              Attack
+            </div>
+
+            <AttackIcon />
+          </div>
+        )}
+        {playerOwnsSelectedEntity && (
+          <div
+            className={clsx(
+              "relative group/icon transition-opacity duration-200",
+              isAttackMode || isTravelMode || isTraveling || !canCarryNewReward
+                ? "opacity-30  pointer-events-none"
+                : "opacity-100",
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isExploreMode) {
+                setIsTravelMode(false);
+                setIsExploreMode(false);
+                setIsAttackMode(false);
+              } else {
+                setIsTravelMode(false);
+                setIsExploreMode(true);
+                setIsAttackMode(false);
+              }
+            }}
+          >
+            <ExploreIcon />
+            <div
+              className={clsx(
+                "absolute flex flex-col items-center justify-center left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm pointer-events-none",
+                "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
+              )}
+            >
+              Explore
+              <div className="flex space-x-1 mt-1">
+                {explorationCost.map((res) => {
+                  return (
+                    <ResourceCost
+                      key={res.resourceId}
+                      type="vertical"
+                      resourceId={res.resourceId}
+                      amount={divideByPrecision(res.amount)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Html>
   );
