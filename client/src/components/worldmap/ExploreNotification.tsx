@@ -7,6 +7,7 @@ import { divideByPrecision } from "../../utils/utils";
 import clsx from "clsx";
 import { useNotificationsStore } from "../../hooks/store/useNotificationsStore";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
+import { biomeNames } from "../../geodata/hex/biomes";
 
 export const ExploreNotifications = () => {
   const {
@@ -66,9 +67,10 @@ export const ExploreNotifications = () => {
             <img src="/images/blobert.png" className="w-[78px] h-[78px]" />
             <div className="px-4">
               <div>
-                You found <span className="">Jungle biome!</span>
+                You found{" "}
+                <span className={` text-biome-${biome.toLowerCase()}`}>{biomeNames[biome.toLowerCase()]}!</span>
               </div>
-              <div className="flex text-biome-temperate_desert">
+              <div className="flex">
                 and
                 <div className="text-gold ml-2">
                   +
