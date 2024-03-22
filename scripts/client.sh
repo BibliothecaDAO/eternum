@@ -5,4 +5,7 @@ echo "Installing dependencies..."
 
 pnpm i && pnpm build-packages
 
+# Copy .env.sample to .env.local
+cp client/.env.sample client/.env.local
+
 pnpm dev

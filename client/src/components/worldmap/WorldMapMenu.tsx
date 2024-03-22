@@ -138,14 +138,11 @@ const WorldMapMenuComponent = () => {
 
   return (
     <>
-      <div className="relative rounded-t-xl transition-colors duration-300 text-sm shadow-lg shadow-black/25 flex items-center px-4 py-2 text-white min-h-[50px]">
-        <div className="flex flex-col leading-4">
-          <div className="font-bold">Eternum Map</div>
-        </div>
+      {/* <div className="relative rounded-t-xl transition-colors duration-300 text-sm shadow-lg shadow-black/25 flex items-center px-4 py-2 text-white min-h-[50px]">
         <div className="flex items-center ml-auto capitalize">
           <World className="w-4 h-4 fill-white" />
         </div>
-      </div>
+      </div> */}
       <Tabs
         selectedIndex={selectedTab}
         onChange={() => setSelectedTab(0)}

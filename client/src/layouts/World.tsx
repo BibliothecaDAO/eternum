@@ -84,7 +84,7 @@ export const World = () => {
         </div>
       </BackgroundContainer>
       <TopContainer>
-        <NetworkModule />
+        {/* <NetworkModule /> */}
         <div className="flex">
           <NavigationModule />
           <NotificationsComponent className="" />

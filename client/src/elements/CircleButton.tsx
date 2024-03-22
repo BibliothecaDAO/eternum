@@ -18,7 +18,7 @@ const CircleButton = ({ children, className, size, ...props }: CircleButtonProps
   return (
     <button
       className={clsx(
-        "flex outline-1 outline outline-gold hover:scale-105 transition-transform duration-100 cursor-pointer items-center justify-center text-gold hover:text-white rounded-full shadow-md border-4 border-black shadow-black/50",
+        "flex outline-1 outline outline-gold hover:scale-105 transition-transform duration-100 cursor-pointer items-center justify-center text-gold hover:text-white rounded-full shadow-md border-4 border-black shadow-black/50 ",
         className,
         sizes[size],
       )}

@@ -1,11 +1,7 @@
 import { SettingsNavigation } from "../components/navigation/SettingsNavigation";
 
 const NetworkModule = () => {
-  return (
-    <div className="flex mb-3">
-      <SettingsNavigation />
-    </div>
-  );
+  return <SettingsNavigation />;
 };
 
 export default NetworkModule;
