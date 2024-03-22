@@ -31,7 +31,6 @@ export const WorldPopups = () => {
       {showFeedPopup && selectedHyperstructure && (
         <FeedHyperstructurePopup selectedHyperstructure={selectedHyperstructure} onClose={onCloseHyperstructure} />
       )}
-      {selectedEntity && <ChooseArmyActionPopup />}
     </div>
   );
 };
