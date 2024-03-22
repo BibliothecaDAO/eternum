@@ -6,12 +6,14 @@ import { Resource, findResourceById } from "@bibliothecadao/eternum";
 import { divideByPrecision } from "../../utils/utils";
 import clsx from "clsx";
 import { useNotificationsStore } from "../../hooks/store/useNotificationsStore";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 
 export const ExploreNotifications = () => {
   const { hexData, selectedPath, setSelectedEntity, setSelectedPath, setIsExploreMode } = useUIStore();
   const exploreNotifications = useNotificationsStore((state) => state.exploreNotifications);
   const addExploreNotification = useNotificationsStore((state) => state.addExploreNotification);
   const setExploreNotifications = useNotificationsStore((state) => state.setExploreNotifications);
+  const [parent] = useAutoAnimate(/* optional config */);
 
   const { useFoundResources } = useExplore();
   let foundResource: Resource | undefined = useFoundResources(selectedPath?.id);
@@ -39,14 +41,15 @@ export const ExploreNotifications = () => {
   }, [biome, foundResource]);
 
   return (
-    <div className="fixed left-1/2 top-1/4 -translate-x-1/2 -translate-y-1/2 z-10">
+    <div
+      className="fixed top-[250px] left-0 flex justify-center items-start w-screen h-screen !pointer-events-none"
+      ref={parent}
+    >
       {exploreNotifications.map(({ biome, foundResource }, i) => {
         return (
           <div
             key={i}
-            className={clsx(
-              "bg-black/80 border border-white rounded-xl font-bold p-0.5 text-white flex items-center transition-all duration-500",
-            )}
+            className={clsx("bg-black/80 border border-white rounded-xl font-bold p-0.5 text-white flex items-center")}
           >
             <img src="/images/blobert.png" className="w-[78px] h-[78px]" />
             <div className="px-4">
