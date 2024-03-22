@@ -28,6 +28,7 @@ import { Hexagon } from "../../../types/index";
 import { findShortestPathBFS, getPositionsAtIndex, isNeighbor } from "./utils";
 import { DEPTH, FELT_CENTER, HEX_RADIUS } from "./WorldHexagon";
 import { useExplore } from "../../../hooks/helpers/useExplore";
+import { useTravel } from "../../../hooks/helpers/useTravel";
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
 
@@ -228,7 +229,7 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const setHighlightColor = useUIStore((state) => state.setHighlightColor);
   const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
   const setSelectedPath = useUIStore((state) => state.setSelectedPath);
-
+  const setTravelingEntity = useUIStore((state) => state.setSelectedEntity);
   // refs
   const isTravelModeRef = useRef(false);
   const isExploreModeRef = useRef(false);
@@ -239,6 +240,7 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const highlightPositionsRef = useRef(highlightPositions);
 
   const { exploreHex } = useExplore();
+  const { travelToHex } = useTravel();
 
   useEffect(() => {
     isTravelModeRef.current = isTravelMode;
@@ -346,10 +348,17 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
                 id: selectedEntityRef.current.id,
                 path,
               });
-              handleExploreModeClick({
-                id: selectedEntityRef.current.id,
-                path,
-              });
+              if (isExploreModeRef.current) {
+                handleExploreModeClick({
+                  id: selectedEntityRef.current.id,
+                  path,
+                });
+              } else {
+                handleTravelModeClick({
+                  travelingEntityId: selectedEntityRef.current.id,
+                  path,
+                });
+              }
             } else {
               setSelectedEntity(undefined);
               setIsAttackMode(false);
@@ -365,6 +374,22 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
     },
     [setHighlightPositions],
   );
+
+  async function handleTravelModeClick({ travelingEntityId, path }: { travelingEntityId: bigint; path: any[] }) {
+    // travelingEntity
+    if (!travelingEntityId) return;
+    const directions = path
+      .map((_, i) => {
+        if (path[i + 1] === undefined) return undefined;
+        return findDirection({ col: path[i].x, row: path[i].y }, { col: path[i + 1].x, row: path[i + 1].y });
+      })
+      .filter((d) => d !== undefined) as number[];
+    await travelToHex({ travelingEntityId, directions });
+    // reset the state
+    setTravelingEntity(undefined);
+    setSelectedPath(undefined);
+    setIsTravelMode(false);
+  }
 
   async function handleExploreModeClick({ id, path }: { id: bigint; path: any[] }) {
     if (!selectedPathRef) return;
