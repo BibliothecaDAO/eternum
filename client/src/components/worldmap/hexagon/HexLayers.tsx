@@ -330,6 +330,13 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
       }
     }
   }
+  const clearSelection = () => {
+    setIsAttackMode(false);
+    setIsExploreMode(false);
+    setIsTravelMode(false);
+    setSelectedEntity(undefined);
+    setSelectedPath(undefined);
+  };
 
   const clickHandler = useCallback(
     (e: any) => {
@@ -362,11 +369,7 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
                 });
               }
             } else {
-              setSelectedEntity(undefined);
-              setIsAttackMode(false);
-              setIsTravelMode(false);
-              setIsExploreMode(false);
-              setSelectedPath(undefined);
+              clearSelection();
             }
           } else {
             setSelectedEntity(undefined);
@@ -388,9 +391,7 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
       .filter((d) => d !== undefined) as number[];
     await travelToHex({ travelingEntityId, directions });
     // reset the state
-    setTravelingEntity(undefined);
-    setSelectedPath(undefined);
-    setIsTravelMode(false);
+    clearSelection();
   }
 
   async function handleExploreModeClick({ id, path }: { id: bigint; path: any[] }) {
@@ -409,9 +410,7 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
       entityId: id,
       biome,
     });
-    setSelectedEntity(undefined);
-    setSelectedPath(undefined);
-    setIsExploreMode(false);
+    clearSelection();
   }
 
   return { hoverHandler, clickHandler };
