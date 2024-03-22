@@ -1,10 +1,10 @@
 import { Bvh } from "@react-three/drei";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Color, InstancedMesh, Matrix4 } from "three";
-import { biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { Resource, biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import { createHexagonGeometry } from "./HexagonGeometry";
 import useUIStore from "../../../hooks/store/useUIStore";
-import { getColRowFromUIPosition, getUIPositionFromColRow } from "../../../utils/utils";
+import { findDirection, getColRowFromUIPosition, getUIPositionFromColRow } from "../../../utils/utils";
 import { throttle } from "lodash";
 import * as THREE from "three";
 import { DesertBiome } from "../biomes/DesertBiome";
@@ -27,6 +27,7 @@ import { Hexagon } from "../../../types/index";
 
 import { findShortestPathBFS, getPositionsAtIndex, isNeighbor } from "./utils";
 import { DEPTH, FELT_CENTER, HEX_RADIUS } from "./WorldHexagon";
+import { useExplore } from "../../../hooks/helpers/useExplore";
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
 
@@ -237,6 +238,8 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const exploredHexesRef = useRef(explored);
   const highlightPositionsRef = useRef(highlightPositions);
 
+  const { exploreHex } = useExplore();
+
   useEffect(() => {
     isTravelModeRef.current = isTravelMode;
     isExploreModeRef.current = isExploreMode;
@@ -338,9 +341,12 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
               const colRow = getColRowFromUIPosition(p[0], -p[1]);
               return { x: colRow.col, y: colRow.row };
             });
-            console.log({ path });
             if (path.length > 1) {
               setSelectedPath({
+                id: selectedEntityRef.current.id,
+                path,
+              });
+              handleExploreModeClick({
                 id: selectedEntityRef.current.id,
                 path,
               });
@@ -359,6 +365,18 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
     },
     [setHighlightPositions],
   );
+
+  async function handleExploreModeClick({ id, path }: { id: bigint; path: any[] }) {
+    if (!selectedPathRef) return;
+    const direction =
+      path.length === 2
+        ? findDirection({ col: path[0].x, row: path[0].y }, { col: path[1].x, row: path[1].y })
+        : undefined;
+    await exploreHex({
+      explorerId: id,
+      direction,
+    });
+  }
 
   return { hoverHandler, clickHandler };
 };

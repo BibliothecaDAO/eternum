@@ -1,10 +1,21 @@
 import React from "react";
 import useUIStore from "../../../hooks/store/useUIStore";
 import clsx from "clsx";
+import { Resource } from "@bibliothecadao/eternum";
+import { ResourceCost } from "../../../elements/ResourceCost";
+import { divideByPrecision } from "../../../utils/utils";
 
 type ArmyMenuProps = {
   entityId: bigint;
 };
+
+const explorationCost: Resource[] = [
+  {
+    resourceId: 254,
+    amount: 300000,
+  },
+  { resourceId: 255, amount: 150000 },
+];
 
 export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   const selectedEntity = useUIStore((state) => state.selectedEntity);
@@ -92,12 +103,19 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
         <ExploreIcon />
         <div
           className={clsx(
-            "absolute left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
+            "absolute flex flex-col items-center justify-center left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
             "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
             isAttackMode && "opacity-100 translate-y-full",
           )}
         >
           Explore
+          <div className="flex space-x-1 mt-1">
+            {explorationCost.map((res) => {
+              return (
+                <ResourceCost type="vertical" resourceId={res.resourceId} amount={divideByPrecision(res.amount)} />
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
