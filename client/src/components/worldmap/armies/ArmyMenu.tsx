@@ -144,7 +144,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
         <div
           className={clsx(
             "relative group/icon transition-opacity duration-200",
-            isAttackMode || isExploreMode ? "opacity-30" : "opacity-100",
+            isAttackMode || isExploreMode || isTraveling ? "opacity-30 pointer-events-none" : "opacity-100",
           )}
           onClick={(e) => {
             e.stopPropagation();
@@ -164,7 +164,6 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
             className={clsx(
               "absolute left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
               "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
-              isTravelMode && "opacity-100 !translate-y-full",
             )}
           >
             Travel
@@ -183,7 +182,6 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
             className={clsx(
               "absolute left-1/2 -top-1 opacity-0 transition-all -translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm",
               "group-hover/icon:opacity-100 group-hover/icon:-translate-y-full",
-              isAttackMode && "opacity-100 -translate-y-full",
             )}
           >
             Attack
@@ -193,7 +191,9 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
         <div
           className={clsx(
             "relative group/icon transition-opacity duration-200",
-            isAttackMode || isTravelMode ? "opacity-30" : "opacity-100",
+            isAttackMode || isTravelMode || isTraveling || !canCarryNewReward
+              ? "opacity-30  pointer-events-none"
+              : "opacity-100",
           )}
           onClick={(e) => {
             e.stopPropagation();
@@ -213,7 +213,6 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
             className={clsx(
               "absolute flex flex-col items-center justify-center left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm pointer-events-none",
               "group-hover/icon:opacity-100 group-hover/icon:translate-y-full",
-              isAttackMode && "opacity-100 translate-y-full",
             )}
           >
             Explore

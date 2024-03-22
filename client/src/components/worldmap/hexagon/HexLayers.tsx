@@ -29,7 +29,6 @@ import { findShortestPathBFS, getPositionsAtIndex, isNeighbor } from "./utils";
 import { DEPTH, FELT_CENTER, HEX_RADIUS } from "./WorldHexagon";
 import { useExplore } from "../../../hooks/helpers/useExplore";
 import { useTravel } from "../../../hooks/helpers/useTravel";
-import { useNotificationsStore } from "../../../hooks/store/useNotificationsStore";
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
 
@@ -231,7 +230,6 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const setHighlightPositions = useUIStore((state) => state.setHighlightPositions);
   const setSelectedPath = useUIStore((state) => state.setSelectedPath);
   const setTravelingEntity = useUIStore((state) => state.setSelectedEntity);
-  const setExploreNotification = useNotificationsStore((state) => state.setExploreNotification);
   // refs
   const isTravelModeRef = useRef(false);
   const isExploreModeRef = useRef(false);
@@ -377,6 +375,16 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
     [setHighlightPositions],
   );
 
+  const clearSelection = () => {
+    setTravelingEntity(undefined);
+    setSelectedPath(undefined);
+    setIsAttackMode(false);
+    setIsExploreMode(false);
+    setIsTravelMode(false);
+    setSelectedEntity(undefined);
+    setSelectedPath(undefined);
+  };
+
   async function handleTravelModeClick({ travelingEntityId, path }: { travelingEntityId: bigint; path: any[] }) {
     // travelingEntity
     if (!travelingEntityId) return;
@@ -388,30 +396,19 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
       .filter((d) => d !== undefined) as number[];
     await travelToHex({ travelingEntityId, directions });
     // reset the state
-    setTravelingEntity(undefined);
-    setSelectedPath(undefined);
-    setIsTravelMode(false);
+    clearSelection();
   }
 
   async function handleExploreModeClick({ id, path }: { id: bigint; path: any[] }) {
-    if (!selectedPathRef || !hexData) return;
+    if (!selectedPathRef) return;
     const direction =
       path.length === 2
         ? findDirection({ col: path[0].x, row: path[0].y }, { col: path[1].x, row: path[1].y })
         : undefined;
-    const hexIndex = hexData.findIndex((h) => h.col === path[1].x && h.row === path[1].y);
-    const biome = hexData[hexIndex].biome;
     await exploreHex({
       explorerId: id,
       direction,
     });
-    setExploreNotification({
-      entityId: id,
-      biome,
-    });
-    setSelectedEntity(undefined);
-    setSelectedPath(undefined);
-    setIsExploreMode(false);
   }
 
   return { hoverHandler, clickHandler };

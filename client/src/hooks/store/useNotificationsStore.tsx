@@ -78,8 +78,8 @@ export type NotificationType = {
 };
 
 export type exploreNotification = {
-  entityId: bigint;
   biome: string;
+  foundResource: Resource;
 };
 interface NotificationsStore {
   notifications: NotificationType[];
@@ -87,8 +87,9 @@ interface NotificationsStore {
   addUniqueNotifications: (notifications: NotificationType[]) => void;
   deleteNotification: (keys: string | string[] | undefined, eventType: EventType) => void;
   deleteAllNotifications: () => void;
-  exploreNotification: exploreNotification | null;
-  setExploreNotification: (notification: exploreNotification | null) => void;
+  exploreNotifications: exploreNotification[];
+  setExploreNotifications: (notifications: exploreNotification[]) => void;
+  addExploreNotification: (notification: exploreNotification) => void;
 }
 
 export const useNotificationsStore = create<NotificationsStore>((set) => ({
@@ -111,8 +112,14 @@ export const useNotificationsStore = create<NotificationsStore>((set) => ({
   deleteAllNotifications: () => {
     set({ notifications: [] });
   },
-  exploreNotification: null,
-  setExploreNotification: (notification: exploreNotification) => set({ exploreNotification: notification }),
+  exploreNotifications: [],
+  setExploreNotifications: (notifications: exploreNotification[]) => set({ exploreNotifications: notifications }),
+  addExploreNotification: (notification: exploreNotification) => {
+    set((state) => {
+      const newNotifications = [...state.exploreNotifications, notification];
+      return { exploreNotifications: newNotifications };
+    });
+  },
 }));
 
 /**
