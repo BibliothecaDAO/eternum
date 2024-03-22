@@ -4,6 +4,7 @@ interface AvatarProps {
   src: string;
   className?: string;
   size?: "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
+  onClick?: () => void;
 }
 
 const sizes = {
@@ -15,14 +16,15 @@ const sizes = {
   xxl: "w-[100px] h-[100px]",
 } as const;
 
-const Avatar = ({ src, className, size }: AvatarProps) => {
+const Avatar = ({ src, className, size, onClick }: AvatarProps) => {
   return (
     <img
+      onClick={onClick}
       draggable={false}
       src={src}
       alt="avatar"
       className={clsx(
-        "object-contain rounded-full border border-white/40 border-solid",
+        "object-contain rounded-full border border-gold p-1 border-solid transform hover:scale-105 transition-transform duration-100 cursor-pointer hover:opacity-90",
         className,
         size ? sizes[size] : "",
       )}

@@ -1,11 +1,12 @@
+// UNUSED - can deprecated when ready
+
 import { useEffect, useRef, useState } from "react";
-import { ReactComponent as Crown } from "../../assets/icons/common/crown-circle-outline.svg";
 import { ReactComponent as Settings } from "../../assets/icons/common/settings.svg";
 import { ReactComponent as Muted } from "../../assets/icons/common/muted.svg";
 import { ReactComponent as Unmuted } from "../../assets/icons/common/unmuted.svg";
 import { ReactComponent as DojoMark } from "../../assets/icons/dojo-mark-full-dark.svg";
 import { ReactComponent as RealmsWorld } from "../../assets/icons/rw-logo.svg";
-import { ReactComponent as Next } from "../../assets/icons/common/arrow-right.svg";
+import { ReactComponent as Next } from "../../assets/icons/common/fast-forward.svg";
 import { SecondaryPopup } from "../../elements/SecondaryPopup";
 import { Headline } from "../../elements/Headline";
 import Button from "../../elements/Button";
@@ -47,36 +48,29 @@ export const SettingsNavigation = ({}: SettingsComponentProps) => {
   const { trackName, stop, play, isPlaying, next } = useMusicPlayer();
 
   return (
-    <div className="flex items-center text-white">
-      <div className="flex space-x-2">
-        <Crown className="mr-[6px] fill-current  w-8" />
-        <div className="text-xs font-bold mr-2 self-center">{accountDisplay}</div>
-        {addressName && <div className="text-xs font-bold  self-center">{addressName}</div>}
-
-        <Button onClick={() => setShowSettings(!showSettings)}>
-          <Settings className=" cursor-pointer stroke-gold w-4" />
-        </Button>
+    <div className="flex items-center text-gold w-96 mb-2">
+      <div className="flex space-x-1">
+        {addressName && <div className=" self-center text-xl px-4 border rounded border-gold">{addressName}</div>}
 
         {isPlaying ? (
-          <Button onClick={() => stop()}>
+          <Button variant="outline" onClick={() => stop()}>
             <Unmuted className=" cursor-pointer fill-gold  w-4" />
           </Button>
         ) : (
-          <Button onClick={play}>
+          <Button variant="outline" onClick={play}>
             <Muted className=" cursor-pointer fill-gold  w-4" />
           </Button>
         )}
 
-        <Button onClick={next}>
-          <Next className="cursor-pointer fill-gold  h-4" />
+        <Button variant="outline" onClick={next}>
+          <Next className="cursor-pointer fill-gold stroke-gold  h-4" />
         </Button>
       </div>
 
-      <ScrollingTrackName trackName={trackName} />
       {showSettings && (
         <SecondaryPopup className="top-1/3" name="settings">
           <SecondaryPopup.Head onClose={() => setShowSettings(!showSettings)}>
-            <div className="flex items-center">
+            <div className="flex items-center ">
               <div className="mr-0.5">Settings</div>
             </div>
           </SecondaryPopup.Head>
@@ -91,6 +85,7 @@ export const SettingsNavigation = ({}: SettingsComponentProps) => {
                 <div>Fullscreen</div>
               </div>
               <Headline>Sound</Headline>
+              <ScrollingTrackName trackName={trackName} />
               <RangeInput value={musicLevel} fromTitle="Mute" onChange={setMusicLevel} title="Music" />
               <RangeInput value={effectsLevel} fromTitle="Mute" onChange={setEffectsLevel} title="Effects" />
               <Button onClick={() => setShowSettings(false)} variant="outline" className="text-xxs !py-1 !px-2 mr-auto">
@@ -151,7 +146,7 @@ const ScrollingTrackName = ({ trackName }: { trackName: string }) => {
   }, []);
 
   return (
-    <div className="overflow-hidden w-full text-xs">
+    <div className="overflow-hidden w-full text-xs border border-gold p-1">
       <div className="track-name" ref={trackNameRef}>
         {trackName} - Casey Wescot
       </div>
