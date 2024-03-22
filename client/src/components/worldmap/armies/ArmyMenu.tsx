@@ -112,7 +112,12 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
           <div className="flex space-x-1 mt-1">
             {explorationCost.map((res) => {
               return (
-                <ResourceCost type="vertical" resourceId={res.resourceId} amount={divideByPrecision(res.amount)} />
+                <ResourceCost
+                  key={res.resourceId}
+                  type="vertical"
+                  resourceId={res.resourceId}
+                  amount={divideByPrecision(res.amount)}
+                />
               );
             })}
           </div>
