@@ -273,7 +273,7 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
         selectedEntityRef.current.position.y,
       );
       const selectedEntityHex = hexDataRef.current.find(
-        (h) => h.col === selectedEntityRef?.current?.position.x && h.row === selectedEntityRef.current.position.y,
+        (h) => h.col === selectedEntityRef?.current?.position.x && h.row === selectedEntityRef?.current?.position.y,
       );
 
       if (isTravelModeRef.current) {

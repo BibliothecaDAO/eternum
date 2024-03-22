@@ -10,8 +10,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Subscription } from "rxjs";
 import { Army } from "./Army";
 import { getRealmOrderNameById } from "../../../utils/realms";
-import { ENEMY_ARMY_MODEL_DEFAULT_COLOR, ENEMY_ARMY_MODEL_HOVER_COLOR, ENEMY_ARMY_MODEL_SCALE } from "./EnemyArmies";
-import { ArmyMenu } from "./ArmyMenu";
 
 type ArmiesProps = {
   props?: any;

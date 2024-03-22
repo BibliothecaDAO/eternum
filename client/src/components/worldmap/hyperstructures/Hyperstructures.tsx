@@ -1,5 +1,5 @@
 import HyperstructureFinished from "./models/HyperstructureFinished";
-import { Hexagon } from "src/types";
+import { Hexagon } from "../../../types";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { getUIPositionFromColRow } from "../../../utils/utils";
 import { biomes } from "@bibliothecadao/eternum";

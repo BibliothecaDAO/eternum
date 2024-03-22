@@ -6,9 +6,9 @@ import useRealmStore from "../../hooks/store/useRealmStore";
 import { HexPositions, getRealmUIPosition, pseudoRandom } from "../../utils/utils";
 import { GLTF } from "three-stdlib";
 import { biomes } from "@bibliothecadao/eternum";
-import { Hexagon } from "src/types";
 import useUIStore from "../../hooks/store/useUIStore";
 import { ArmyMenu } from "./armies/ArmyMenu";
+import { Hexagon } from "../../types";
 
 // @ts-nocheck
 type GLTFResult = GLTF & {
