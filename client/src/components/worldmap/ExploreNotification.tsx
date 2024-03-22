@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect } from "react";
 import { ResourceIcon } from "../../elements/ResourceIcon";
-import useUIStore from "../../hooks/store/useUIStore";
 import { useExplore } from "../../hooks/helpers/useExplore";
-import { Resource, findResourceById } from "@bibliothecadao/eternum";
+import { biomes, findResourceById } from "@bibliothecadao/eternum";
 import { divideByPrecision } from "../../utils/utils";
 import clsx from "clsx";
 import { useNotificationsStore } from "../../hooks/store/useNotificationsStore";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { biomeNames } from "../../geodata/hex/biomes";
+
+const BIOMES = biomes as Record<string, { color: string; depth: number; name: string }>;
 
 export const ExploreNotifications = () => {
   const exploreNotification = useNotificationsStore((state) => state.exploreNotification);
@@ -40,7 +40,7 @@ export const ExploreNotifications = () => {
             <div>
               You found{" "}
               <span className={`text-biome-${exploreNotification.biome}`}>
-                {biomeNames[exploreNotification.biome]}!
+                {BIOMES[exploreNotification.biome].name}!
               </span>
             </div>
             <div className="flex ">
