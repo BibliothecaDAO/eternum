@@ -35,7 +35,7 @@ export const RealmsListPanel = ({}: RealmsListPanelProps) => {
               })
             }
             onMouseLeave={() => setTooltip(null)}
-            className="flex relative group flex-col items-center"
+            className="flex relative group flex-col items-center "
           >
             <div>All Realms</div>
           </div>

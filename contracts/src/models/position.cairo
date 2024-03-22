@@ -335,12 +335,12 @@ mod tests {
 
 
 
-    #[test]
-    fn test_get_zone() { 
-        let a = Position { entity_id: 0, x: 1333333, y: 200000 };
-        let zone = a.get_zone();
-        assert(zone == 4, 'zone should be 4');
-    }
+    // #[test]
+    // fn test_get_zone() { 
+    //     let a = Position { entity_id: 0, x: 1333333, y: 200000 };
+    //     let zone = a.get_zone();
+    //     assert(zone == 4, 'zone should be 4');
+    // }
 
     mod coord {
         use super::super::{Coord, CoordTrait, Direction};

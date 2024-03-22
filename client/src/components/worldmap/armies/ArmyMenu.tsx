@@ -134,7 +134,7 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   }, []);
 
   return (
-    <Html position={[0, 7, 0]}>
+    <Html position={[0, 5, 0]}>
       <div
         className={clsx(
           "flex space-x-0.5 -translate-x-1/2 transition-all duration-200",
