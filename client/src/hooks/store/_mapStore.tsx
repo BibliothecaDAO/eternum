@@ -1,5 +1,5 @@
 import { HyperStructureInterface, Position } from "@bibliothecadao/eternum";
-import { Hexagon } from "src/types";
+import { Hexagon } from "../../types";
 
 export interface MapStore {
   clickedHex: { col: number; row: number; hexIndex: number } | undefined;

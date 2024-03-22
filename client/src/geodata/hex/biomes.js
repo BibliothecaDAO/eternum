@@ -51,6 +51,25 @@ export const biomes = {
   tropical_rain_forest: { color: "#4f6123", depth: 0.6, name: "tropical_rain_forest" },
 };
 
+export const biomeNames = {
+  deep_ocean: "Deep Ocean",
+  ocean: "Ocean",
+  beach: "Beach",
+  scorched: "Scorched",
+  bare: "Bare",
+  tundra: "Tundra",
+  snow: "Snow",
+  temperate_desert: "Temperate Desert",
+  shrubland: "Shrubland",
+  taiga: "Taiga",
+  grassland: "Grassland",
+  temperate_deciduous_forest: "Temperate Deciduous Forest",
+  temperate_rain_forest: "Temperate Rain Forest",
+  subtropical_desert: "Subtropical Desert",
+  tropical_seasonal_forest: "Tropical Seasonal Forest",
+  tropical_rain_forest: "Tropical Rain Forest",
+};
+
 // bmd
 
 // export const biomes = {
