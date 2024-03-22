@@ -377,7 +377,7 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
         }
       }
     },
-    [setHighlightPositions],
+    [setHighlightPositions, hexData],
   );
 
   async function handleTravelModeClick({ travelingEntityId, path }: { travelingEntityId: bigint; path: any[] }) {
@@ -402,13 +402,13 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
         : undefined;
     const hexIndex = hexData.findIndex((h) => h.col === path[1].x && h.row === path[1].y);
     const biome = hexData[hexIndex].biome;
-    await exploreHex({
-      explorerId: id,
-      direction,
-    });
     setExploreNotification({
       entityId: id,
       biome,
+    });
+    await exploreHex({
+      explorerId: id,
+      direction,
     });
     clearSelection();
   }

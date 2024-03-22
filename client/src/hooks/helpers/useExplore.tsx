@@ -77,7 +77,7 @@ export function useExplore() {
       };
     }, [entityId]);
 
-    return foundResources;
+    return { foundResources, setFoundResources };
   };
 
   const getExplorationInput = (col: number, row: number) => {
