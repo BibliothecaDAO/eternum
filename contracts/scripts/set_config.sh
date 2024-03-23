@@ -4,58 +4,6 @@ source ./scripts/contracts.sh
 
 resource_precision=1000
 
-## set banks
-commands=(
-    "sozo execute $CONFIG_SYSTEMS create_bank --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2147483838,2147483685,2,253,1,254,10,253,1,255,5"
-    "sozo execute $CONFIG_SYSTEMS set_bank_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,0,2,253,0,253,1,1844674407370955161,100000,100000"
-
-    "sozo execute $CONFIG_SYSTEMS create_bank --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2147484007,2147483693,2,253,1,254,10,253,1,255,5"
-    "sozo execute $CONFIG_SYSTEMS set_bank_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,3,2,253,0,253,1,1844674407370955161,100000,100000"
-
-    "sozo execute $CONFIG_SYSTEMS create_bank --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2147483763,2147483697,2,253,1,254,10,253,1,255,5"
-    "sozo execute $CONFIG_SYSTEMS set_bank_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,6,2,253,0,253,1,1844674407370955161,100000,100000"
-
-    "sozo execute $CONFIG_SYSTEMS create_bank --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2147483672,2147483703,2,253,1,254,10,253,1,255,5"
-    "sozo execute $CONFIG_SYSTEMS set_bank_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,9,2,253,0,253,1,1844674407370955161,100000,100000"
-
-    "sozo execute $CONFIG_SYSTEMS create_bank --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2147484102,2147483710,2,253,1,254,10,253,1,255,5"
-    "sozo execute $CONFIG_SYSTEMS set_bank_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,12,2,253,0,253,1,1844674407370955161,100000,100000"
-
-    "sozo execute $CONFIG_SYSTEMS create_bank --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2147483912,2147483723,2,253,1,254,10,253,1,255,5"
-    "sozo execute $CONFIG_SYSTEMS set_bank_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,15,2,253,0,253,1,1844674407370955161,100000,100000"
-
-    "sozo execute $CONFIG_SYSTEMS create_bank --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2147484118,2147483793,2,253,1,254,10,253,1,255,5"
-    "sozo execute $CONFIG_SYSTEMS set_bank_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,18,2,253,0,253,1,1844674407370955161,100000,100000"
-
-    "sozo execute $CONFIG_SYSTEMS create_bank --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2147483693,2147483799,2,253,1,254,10,253,1,255,5"
-    "sozo execute $CONFIG_SYSTEMS set_bank_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,21,2,253,0,253,1,1844674407370955161,100000,100000"
-
-    "sozo execute $CONFIG_SYSTEMS create_bank --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2147484020,2147483806,2,253,1,254,10,253,1,255,5"
-    "sozo execute $CONFIG_SYSTEMS set_bank_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,24,2,253,0,253,1,1844674407370955161,100000,100000"
-
-    "sozo execute $CONFIG_SYSTEMS create_bank --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2147483835,2147483811,2,253,1,254,10,253,1,255,5"
-    "sozo execute $CONFIG_SYSTEMS set_bank_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,27,2,253,0,253,1,1844674407370955161,100000,100000"
-
-    "sozo execute $CONFIG_SYSTEMS create_bank --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2147483939,2147483831,2,253,1,254,10,253,1,255,5"
-    "sozo execute $CONFIG_SYSTEMS set_bank_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,30,2,253,0,253,1,1844674407370955161,100000,100000"
-
-    "sozo execute $CONFIG_SYSTEMS create_bank --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2147483789,2147483879,2,253,1,254,10,253,1,255,5"
-    "sozo execute $CONFIG_SYSTEMS set_bank_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,33,2,253,0,253,1,1844674407370955161,100000,100000"
-
-    "sozo execute $CONFIG_SYSTEMS create_bank --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2147483695,2147483895,2,253,1,254,10,253,1,255,5"
-    "sozo execute $CONFIG_SYSTEMS set_bank_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,36,2,253,0,253,1,1844674407370955161,100000,100000"
-
-    "sozo execute $CONFIG_SYSTEMS create_bank --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2147484101,2147483896,2,253,1,254,10,253,1,255,5"
-    "sozo execute $CONFIG_SYSTEMS set_bank_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,39,2,253,0,253,1,1844674407370955161,100000,100000"
-
-    "sozo execute $CONFIG_SYSTEMS create_bank --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2147483879,2147483900,2,253,1,254,10,253,1,255,5"
-    "sozo execute $CONFIG_SYSTEMS set_bank_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,42,2,253,0,253,1,1844674407370955161,100000,100000"
-
-    "sozo execute $CONFIG_SYSTEMS create_bank --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,2147484008,2147483906,2,253,1,254,10,253,1,255,5"
-    "sozo execute $CONFIG_SYSTEMS set_bank_auction --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,45,2,253,0,253,1,1844674407370955161,100000,100000"
-)
-
-
 ## set tick config
 commands+=(
     # max_moves_per_tick = 4
@@ -200,17 +148,6 @@ commands+=(
 
 ## LABOR COSTS
 commands+=(
-    ## food is free now
-    #resourceId: 254
-    #"sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,254,66051,3"
-    #"sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,254,1,171"
-    #"sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,254,2,134"
-    #"sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,254,3,131"
-    # resourceId: 255
-    #"sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,255,263430,3"
-    #"sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,255,4,289"
-    #"sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,255,5,242"
-    #"sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,255,6,190"
     # resourceId: 1
     "sozo execute $CONFIG_SYSTEMS set_labor_cost_resources --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,33816319,4"
     "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2,3274"
@@ -345,22 +282,6 @@ commands+=(
     "sozo execute $CONFIG_SYSTEMS set_labor_cost_amount --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,22,255,5500"
 )
 
-commands+=(
-    # create hyperstructures
-    # @dev generated using data/hyperstructures/generateCommands.js
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2147483844,2147483687,4,1,9450000,2,7426208,254,45000000,255,15000000"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2147483983,2147483692,4,3,7222702,4,4980326,254,45000000,255,15000000"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2147483704,2147483695,4,5,4175714,6,3280649,254,45000000,255,15000000"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2147484088,2147483709,4,7,2221646,8,1803321,254,45000000,255,15000000"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2147483755,2147483771,4,9,1722294,10,1119301,254,45000000,255,15000000"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2147483900,2147483804,4,11,565302,12,465432,254,45000000,255,15000000"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2147484004,2147483837,4,13,450359,14,450359,254,45000000,255,15000000"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2147483691,2147483856,4,15,324106,16,305263,254,45000000,255,15000000"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2147484101,2147483858,4,17,261926,18,209162,254,45000000,255,15000000"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2147483822,2147483875,4,19,175246,20,103640,254,45000000,255,15000000"
-    "sozo execute $CONFIG_SYSTEMS create_hyperstructure --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,1,2147483953,2147483914,4,21,69719,22,43342,254,45000000,255,15000000"
-)
-
 #### SET LABOR AUCTIONS ####
 
 commands+=(
@@ -374,27 +295,65 @@ commands+=(
 )
 
 
+# Initialize variables
+mode=""
+delay=0
 
-### STARTING REALM RESOURCE BALANCES
-# Check if the first argument is provided and set it to "dev" or "prod"
-if [[ "$1" == "prod" ]]; then
+# Function to show usage
+usage() {
+    echo "Usage: $0 --mode [prod|dev] [--interval delay]"
+    echo "  --mode: Specify the environment mode (prod or dev)."
+    echo "  --interval: Specify a delay in seconds between each command."
+    exit 1
+}
+
+# Check if at least one argument is provided
+if [ $# -eq 0 ]; then
+    usage
+fi
+
+# Parse command-line arguments
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --mode)
+            if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+                mode=$2
+                shift 2
+            else
+                echo "Error: --mode requires an argument (prod or dev)."
+                usage
+            fi
+            ;;
+        --interval)
+            if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+                delay=$2
+                shift 2
+            else
+                echo "Error: --interval requires a numeric argument."
+                usage
+            fi
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+
+# Validate mode
+if [ "$mode" != "prod" ] && [ "$mode" != "dev" ]; then
+    echo "Error: Invalid mode specified. Please use prod or dev."
+    usage
+fi
+
+# Initialize commands based on mode
+if [[ "$mode" == "prod" ]]; then
     commands+=(
         "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,24,1,378000,2,297049,3,288908,4,199213,5,167029,6,131226,7,88866,8,72133,9,68892,10,44772,11,22612,12,18618,13,18015,14,18015,15,12965,16,12211,17,10477,18,8367,19,7010,20,4146,21,2789,22,1734,254,12474000,255,4158000"
     )
 else
-    # Add command for no argument case, which is also treated as dev
     commands+=(
         "sozo execute $CONFIG_SYSTEMS set_mint_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,25,1,1000000000,2,1000000000,3,1000000000,4,1000000000,5,1000000000,6,1000000000,7,1000000000,8,1000000000,9,1000000000,10,1000000000,11,1000000000,12,1000000000,13,1000000000,14,1000000000,15,1000000000,16,1000000000,17,1000000000,18,1000000000,19,1000000000,20,1000000000,21,1000000000,22,1000000000,253,1000000000,254,1000000000,255,1000000000"
     )
-fi
-
-
-# Ask the user for the desired delay between commands
-read -p "Specify a delay in seconds between each command (or press Enter for no delay - if development 0.1s is fine): " delay
-
-# Check if the delay is a valid number (integer or floating point)
-if [[ ! "$delay" =~ ^[0-9]*\.?[0-9]+$ ]]; then
-    delay=0
 fi
 
 for cmd in "${commands[@]}"; do
