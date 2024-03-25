@@ -35,7 +35,7 @@ export const AttackRaidsPopup = ({ selectedRaider, enemyRaider, onClose }: Attac
 
   const [step, setStep] = useState<number>(1);
   const [selectedRaiders, setSelectedRaiders] = useState<CombatInfo[]>([]);
-  const [targetRealmEntityId, setTargetRealmEntityId] = useState<bigint | null>(null);
+  const [targetEntityId, setTargetEntityId] = useState<bigint | null>(null);
 
   const { getEntitiesCombatInfo, getOwnerRaidersOnPosition, getDefenceOnPosition } = useCombat();
   const { getFoodResources } = useResources();
@@ -46,12 +46,12 @@ export const AttackRaidsPopup = ({ selectedRaider, enemyRaider, onClose }: Attac
   }, [attackingEntities]);
 
   useEffect(() => {
-    // This effect runs only when selectedRaider changes.
-    // Check if selectedRaider is defined and targetRealmEntityId is not already set.
-    if (selectedRaider?.locationEntityId && targetRealmEntityId === null) {
-      setTargetRealmEntityId(selectedRaider.locationEntityId);
+    if (enemyRaider) {
+      setTargetEntityId(enemyRaider.entityId);
+    } else if (selectedRaider?.locationEntityId && targetEntityId === null) {
+      setTargetEntityId(selectedRaider.locationEntityId);
     }
-  }, [selectedRaider]);
+  }, [selectedRaider, enemyRaider]);
 
   const defence = useMemo(() => {
     if (enemyRaider) {
@@ -61,9 +61,9 @@ export const AttackRaidsPopup = ({ selectedRaider, enemyRaider, onClose }: Attac
   }, [attackPosition]);
 
   const targetFoodBalance = useMemo(() => {
-    if (targetRealmEntityId === null) return [];
-    return getFoodResources(targetRealmEntityId);
-  }, [targetRealmEntityId]);
+    if (targetEntityId === null) return [];
+    return getFoodResources(targetEntityId);
+  }, [targetEntityId]);
 
   const defendingRealmId = useMemo(() => {
     return attackPosition ? getRealmIdByPosition(attackPosition) : undefined;
@@ -113,10 +113,10 @@ export const AttackRaidsPopup = ({ selectedRaider, enemyRaider, onClose }: Attac
               selectedRaiders={selectedRaiders}
             ></AttackResultPanel>
           )}
-          {targetRealmEntityId?.toString() && step == 3 && (
+          {targetEntityId?.toString() && step == 3 && (
             <StealResultPanel
               targetFoodBalance={targetFoodBalance}
-              targetRealmEntityId={targetRealmEntityId}
+              targetEntityId={targetEntityId}
               onClose={onClose}
               selectedRaiders={selectedRaiders}
             />
@@ -275,12 +275,12 @@ const AttackerHealthChange = ({ selectedRaider }: { selectedRaider: CombatInfo }
 
 const StealResultPanel = ({
   targetFoodBalance,
-  targetRealmEntityId,
+  targetEntityId,
   selectedRaiders,
   onClose,
 }: {
   targetFoodBalance: Resource[];
-  targetRealmEntityId: bigint;
+  targetEntityId: bigint;
   selectedRaiders: CombatInfo[];
   onClose: () => void;
 }) => {
@@ -291,17 +291,23 @@ const StealResultPanel = ({
   } = useDojo();
 
   const { getResourcesFromInventory, getFoodResources } = useResources();
-  const [step, setStep] = useState(1);
   const attackerHealth = selectedRaiders[0].entityId
     ? useComponentValue(Health, getEntityIdFromKeys([BigInt(selectedRaiders[0].entityId)]))
     : undefined;
-  const newFoodBalance = getFoodResources(targetRealmEntityId);
+  const newFoodBalance = getFoodResources(targetEntityId);
 
   const burnFood = useMemo(() => {
     return targetFoodBalance.map((resource, index) => {
       return { resourceId: resource.resourceId, burntAmount: resource.amount - newFoodBalance[index].amount };
     });
   }, [newFoodBalance]);
+
+  // Determine if all burnt amounts are 0 to adjust the initial step.
+  const initialStep = useMemo(() => {
+    return burnFood.every((burnt) => burnt.burntAmount === 0) ? 2 : 1;
+  }, [burnFood]);
+
+  const [step, setStep] = useState(initialStep);
 
   const inventoryResources = useMemo(() => {
     return selectedRaiders[0].entityId ? getResourcesFromInventory(selectedRaiders[0].entityId) : undefined;
