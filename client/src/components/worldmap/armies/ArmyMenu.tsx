@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import useUIStore from "../../../hooks/store/useUIStore";
 import clsx from "clsx";
 import { CombatInfo, Resource, ResourcesIds } from "@bibliothecadao/eternum";
@@ -12,6 +12,7 @@ import useBlockchainStore from "../../../hooks/store/useBlockchainStore";
 import { getTotalResourceWeight } from "../../cityview/realm/trade/utils";
 import { TIME_PER_TICK } from "../../network/EpochCountdown";
 import { Html } from "@react-three/drei";
+import { useResources } from "../../../hooks/helpers/useResources";
 
 type ArmyMenuProps = {
   entityId: bigint;
@@ -19,7 +20,7 @@ type ArmyMenuProps = {
 
 const EXPLORATION_REWARD_RESOURCE_AMOUNT: number = 20;
 
-const explorationCost: Resource[] = [
+const EXPLORATION_COSTS: Resource[] = [
   {
     resourceId: 254,
     amount: 300000,
@@ -107,6 +108,10 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
 
   const capacity = selectedEntity ? getComponentValue(Capacity, getEntityIdFromKeys([selectedEntity.id])) : undefined;
 
+  const entityOwner = selectedEntity
+    ? getComponentValue(EntityOwner, getEntityIdFromKeys([selectedEntity.id]))
+    : undefined;
+
   const totalCapacityInKg = divideByPrecision(Number(capacity?.weight_gram)) * Number(quantity?.value);
   const tickMove = selectedEntity ? getComponentValue(TickMove, getEntityIdFromKeys([selectedEntity.id])) : undefined;
   const isPassiveTravel = arrivalTime && nextBlockTimestamp ? arrivalTime.arrives_at > nextBlockTimestamp : false;
@@ -123,6 +128,20 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
   const sampleRewardResourceWeightKg = getTotalResourceWeight([sampleRewardResource]);
   const entityWeightInKg = divideByPrecision(Number(weight?.value || 0));
   const canCarryNewReward = totalCapacityInKg >= entityWeightInKg + sampleRewardResourceWeightKg;
+
+  const { getFoodResources } = useResources();
+
+  const explorationCosts = useMemo(() => {
+    const foodBalance = entityOwner ? getFoodResources(entityOwner.entity_owner_id) : [];
+    return EXPLORATION_COSTS.map((res) => {
+      return {
+        ...res,
+        hasEnough: (foodBalance.find((food) => food.resourceId === res.resourceId)?.amount || 0) >= res.amount,
+      };
+    });
+  }, [entityOwner]);
+
+  const hasEnoughResourcesToExplore = explorationCosts.every((res) => res.hasEnough);
 
   useEffect(() => {
     setTimeout(() => {
@@ -198,26 +217,31 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
         )}
         {playerOwnsSelectedEntity && (
           <div
-            className={clsx(
-              "relative group/icon transition-opacity duration-200",
-              isAttackMode || isTravelMode || isTraveling || !canCarryNewReward
-                ? "opacity-30  pointer-events-none"
-                : "opacity-100",
-            )}
+            className={clsx("relative group/icon transition-opacity duration-200")}
             onClick={(e) => {
               e.stopPropagation();
-              if (isExploreMode) {
-                setIsTravelMode(false);
-                setIsExploreMode(false);
-                setIsAttackMode(false);
-              } else {
-                setIsTravelMode(false);
-                setIsExploreMode(true);
-                setIsAttackMode(false);
+              if (!isAttackMode && !isTravelMode && !isTraveling && canCarryNewReward && hasEnoughResourcesToExplore) {
+                if (isExploreMode) {
+                  setIsTravelMode(false);
+                  setIsExploreMode(false);
+                  setIsAttackMode(false);
+                } else {
+                  setIsTravelMode(false);
+                  setIsExploreMode(true);
+                  setIsAttackMode(false);
+                }
               }
             }}
           >
-            <ExploreIcon />
+            <div
+              className={
+                isAttackMode || isTravelMode || isTraveling || !canCarryNewReward || !hasEnoughResourcesToExplore
+                  ? "opacity-30 "
+                  : "opacity-100"
+              }
+            >
+              <ExploreIcon />
+            </div>
             <div
               className={clsx(
                 "absolute flex flex-col items-center justify-center left-1/2 -bottom-1 opacity-0 transition-all translate-y-[150%] duration-200 -translate-x-1/2 rounded-lg bg-black text-white border border-white p-2 text-sm pointer-events-none",
@@ -226,12 +250,13 @@ export const ArmyMenu = ({ entityId }: ArmyMenuProps) => {
             >
               Explore
               <div className="flex space-x-1 mt-1">
-                {explorationCost.map((res) => {
+                {explorationCosts.map((res) => {
                   return (
                     <ResourceCost
                       key={res.resourceId}
                       type="vertical"
                       resourceId={res.resourceId}
+                      className={res.hasEnough ? "text-white" : "text-order-giants"}
                       amount={divideByPrecision(res.amount)}
                     />
                   );
