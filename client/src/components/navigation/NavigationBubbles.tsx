@@ -23,8 +23,9 @@ import { RangeInput } from "../../elements/RangeInput";
 
 import useScreenOrientation from "../../hooks/useScreenOrientation";
 
-import { useRealm } from "../../hooks/helpers/useRealm";
+import { useGetRealm, useRealm } from "../../hooks/helpers/useRealm";
 import { useMusicPlayer } from "../../hooks/useMusic";
+import useRealmStore from "../../hooks/store/useRealmStore";
 
 const NavgationComponent = () => {
   const {
@@ -39,11 +40,17 @@ const NavgationComponent = () => {
   const effectsLevel = useUIStore((state) => state.effectsLevel);
   const setMusicLevel = useUIStore((state) => state.setMusicLevel);
   const setEffectsLevel = useUIStore((state) => state.setEffectsLevel);
+  const isSoundOn = useUIStore((state) => state.isSoundOn);
+  const toggleSound = useUIStore((state) => state.toggleSound);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const isSideMenuOpened = useUIStore((state) => state.isSideMenuOpened);
   const toggleSideMenu = useUIStore((state) => state.toggleSideMenu);
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
-  const [location] = useLocation();
+  const { moveCameraToRealm } = useUIStore();
+  const [location, setLocation] = useLocation();
+
+  const { realmEntityId } = useRealmStore();
+  const { realm } = useGetRealm(realmEntityId);
 
   const { getAddressName } = useRealm();
 
@@ -67,11 +74,17 @@ const NavgationComponent = () => {
         />
       </div>
 
-      <Link
-        href="/map"
+      <div
         onClick={() => {
-          if (location !== "/map") setIsLoadingScreenEnabled(true);
-          moveCameraToWorldMapView();
+          if (location !== "/map") {
+            setIsLoadingScreenEnabled(true);
+            setTimeout(() => {
+              setLocation("/map");
+              moveCameraToRealm(Number(realm?.realmId), 0.01);
+            }, 100);
+          } else {
+            moveCameraToRealm(Number(realm?.realmId));
+          }
         }}
       >
         <CircleButton
@@ -80,7 +93,7 @@ const NavgationComponent = () => {
         >
           <WorldIcon className="fill-gold" />
         </CircleButton>
-      </Link>
+      </div>
 
       <CircleButton
         onClick={() => toggleSideMenu()}
@@ -115,13 +128,13 @@ const NavgationComponent = () => {
               </div>
               <Headline>Sound</Headline>
 
-              <div className="flex p-1">
-                {isPlaying ? (
-                  <Button variant="outline" onClick={() => stop()}>
+              <div className="flex space-x-2">
+                {isSoundOn ? (
+                  <Button variant="outline" onClick={() => toggleSound()}>
                     <Unmuted className=" cursor-pointer fill-gold  w-4" />
                   </Button>
                 ) : (
-                  <Button variant="outline" onClick={play}>
+                  <Button variant="outline" onClick={() => toggleSound()}>
                     <Muted className=" cursor-pointer fill-gold  w-4" />
                   </Button>
                 )}

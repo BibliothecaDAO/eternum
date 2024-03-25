@@ -404,12 +404,14 @@ const ShowOnMapButton = ({ className, uIPosition }: ShowOnMapButtonProps) => {
   const showOnMap = () => {
     // if location does not have map in it, then set it to map
     if (!location.includes("/map")) {
-      setLocation("/map");
       setIsLoadingScreenEnabled(true);
-    }
-    setTimeout(() => {
+      setTimeout(() => {
+        setLocation("/map");
+        moveCameraToTarget(uIPosition, 0.01);
+      }, 100);
+    } else {
       moveCameraToTarget(uIPosition);
-    }, 300);
+    }
   };
 
   return (
