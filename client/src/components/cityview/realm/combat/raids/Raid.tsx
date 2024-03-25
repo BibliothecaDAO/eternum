@@ -103,6 +103,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
   const isYours = raider.owner === BigInt(account.address);
   const hasResources = inventoryResources && inventoryResources.resources.length > 0;
   const isTraveling = raider.arrivalTime && nextBlockTimestamp ? raider.arrivalTime > nextBlockTimestamp : false;
+  const isOnWatchTower = watchTowerId !== undefined;
   const hasMaxHealth = health === 10 * quantity;
   const destinationRealmId = raider.position ? getRealmIdByPosition(raider.position) : undefined;
   const destinationName = destinationRealmId ? getRealmNameById(destinationRealmId) : "Map";
@@ -304,7 +305,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
                   {`Return`}
                 </Button>
               )}
-              {!isTraveling && !isHome && !isLoading && (
+              {!isTraveling && !isHome && !isLoading && isOnWatchTower && (
                 <Button
                   size="xs"
                   className="ml-auto"
@@ -315,7 +316,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
                   variant="outline"
                   withoutSound
                 >
-                  {`Attack`}
+                  {`Attack Realm`}
                 </Button>
               )}
               {!isTraveling && !hasResources && (

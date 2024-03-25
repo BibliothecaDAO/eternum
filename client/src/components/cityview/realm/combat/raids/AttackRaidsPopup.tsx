@@ -82,7 +82,7 @@ export const AttackRaidsPopup = ({ selectedRaider, enemyRaider, onClose }: Attac
     } else if (defendingRealmId) {
       return `Attacking ${defendingRealmName}`;
     } else {
-      return "Attacking Hyperstructure";
+      return "Attacking";
     }
   }, [defendingRealmId, enemyRaider]);
 
