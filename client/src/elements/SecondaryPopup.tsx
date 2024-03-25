@@ -42,7 +42,7 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
         popup.removeAttribute("data-old-z-index");
       });
       let parent = nodeRef.current.parentElement;
-      while (parent && getComputedStyle(parent).position !== "absolute") {
+      while (parent && getComputedStyle(parent).position !== "fixed") {
         parent = parent.parentElement;
       }
       if (parent) {
@@ -72,7 +72,7 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
 
   return (
     <>
-      <div className="fixed top-0 left-0 z-[100]">
+      <div className="fixed top-0 left-0 z-10 popup">
         {loaded && (
           <Draggable
             handle=".handle"
@@ -84,7 +84,7 @@ export const SecondaryPopup = ({ children, className, name }: FilterPopupProps) 
             <div
               onClick={handleClick}
               ref={nodeRef}
-              className={clsx("popup fixed z-50 flex flex-col translate-x-6 top-[200px] left-[450px]", className)}
+              className={clsx("fixed z-50 flex flex-col translate-x-6 top-[200px] left-[450px]", className)}
             >
               {children}
             </div>
