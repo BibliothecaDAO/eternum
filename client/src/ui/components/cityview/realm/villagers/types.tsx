@@ -22,9 +22,10 @@ export type Residents = {
 export type Travelers = Npc[];
 
 export type AtGates = {
-  natives: Npc[];
-  foreigners: Npc[];
-};
+  npc: Npc;
+  arrival_time: bigint;
+  native: boolean;
+}[];
 
 export type NpcTownhallMessage = {
   fullName: string;

@@ -42,9 +42,9 @@ export const getAtGatesNpcs = (
   ArrivalTime: any,
   EntityOwnerComponent: any,
 ): AtGates => {
-  let atGatesNpcs: AtGates = { foreigners: [], natives: [] };
   const realmPosition = getPosition(realmId);
-  atGatesNpcs.natives = getNpcsFromQuery(
+
+  const potentialNatives = getNpcsFromQuery(
     [
       Has(NpcComponent),
       HasValue(PositionComponent, { x: realmPosition.x, y: realmPosition.y }),
@@ -53,10 +53,10 @@ export const getAtGatesNpcs = (
     ],
     NpcComponent,
   );
-  atGatesNpcs.natives = atGatesNpcs.natives.filter((npc) =>
-    filterAlreadyArrivedAtGates(npc, nextBlockTimestamp, ArrivalTime),
-  );
-  atGatesNpcs.foreigners = getNpcsFromQuery(
+
+  const natives: AtGates = getNpcsOnlyIfArrivedAtGates(potentialNatives, nextBlockTimestamp, true, ArrivalTime);
+
+  const potentialForeigners = getNpcsFromQuery(
     [
       Has(NpcComponent),
       HasValue(PositionComponent, { x: realmPosition.x, y: realmPosition.y }),
@@ -65,24 +65,37 @@ export const getAtGatesNpcs = (
     ],
     NpcComponent,
   );
-  atGatesNpcs.foreigners = atGatesNpcs.foreigners.filter((npc) =>
-    filterAlreadyArrivedAtGates(npc, nextBlockTimestamp, ArrivalTime),
-  );
-  return atGatesNpcs;
+  const foreigners: AtGates = getNpcsOnlyIfArrivedAtGates(potentialForeigners, nextBlockTimestamp, false, ArrivalTime);
+
+  return natives.concat(foreigners).sort((a, b) => Number(b!.arrival_time - a!.arrival_time));
 };
 
-export const filterAlreadyArrivedAtGates = (
+export const alreadyArrivedAtGates = (
   npc: Npc,
   nextBlockTimestamp: number,
   ArrivalTimeComponent: any,
-): Npc | undefined => {
-  const npcArrivalTimeEntityId = runQuery([
-    HasValue(ArrivalTimeComponent, { entity_id: BigInt(npc.entityId.toString()) }),
-  ]);
+): { npc: Npc; arrival_time: bigint } | undefined => {
+  const npcArrivalTimeEntityId = runQuery([HasValue(ArrivalTimeComponent, { entity_id: BigInt(npc.entityId) })]);
   const npcArrivalTime = getComponentValue(ArrivalTimeComponent, npcArrivalTimeEntityId.values().next().value);
   if (npcArrivalTime!.arrives_at <= nextBlockTimestamp) {
-    return npc;
+    return { npc, arrival_time: npcArrivalTime!.arrives_at };
   }
+};
+
+const getNpcsOnlyIfArrivedAtGates = (
+  tempNpcs: Npc[],
+  nextBlockTimestamp: number,
+  native: boolean,
+  ArrivalTime: any,
+): AtGates => {
+  const npcs: AtGates = tempNpcs.reduce((acc: AtGates, npc: Npc) => {
+    const npcWithArrivalTimeAlreadyAtGate = alreadyArrivedAtGates(npc, nextBlockTimestamp, ArrivalTime);
+    if (npcWithArrivalTimeAlreadyAtGate !== undefined) {
+      acc.push({ ...npcWithArrivalTimeAlreadyAtGate, native });
+    }
+    return acc;
+  }, []);
+  return npcs;
 };
 
 export const getResidentNpcs = (realmEntityId: bigint, NpcComponent: any, EntityOwnerComponent: any): Residents => {
@@ -117,6 +130,12 @@ const getNpcFromEntityId = (npcEntityId: Entity, NpcComponent: any): Npc => {
     characterTrait: shortString.decodeShortString(npcEntity!.character_trait.toString()),
     fullName: shortString.decodeShortString(npcEntity!.full_name.toString()),
   };
+};
+
+export const useArrivalTimeByEntityId = (entityId: BigNumberish, ArrivalTime: any): number => {
+  const npcArrivalTimeEntityId = useEntityQuery([HasValue(ArrivalTime, { entity_id: BigInt(entityId) })]);
+  const npcArrivalTime = getComponentValue(ArrivalTime, npcArrivalTimeEntityId.values().next().value);
+  return npcArrivalTime!.arrives_at;
 };
 
 export const scrollToElement = (bottomRef: React.RefObject<HTMLDivElement>) => {

@@ -5,6 +5,8 @@ import { TravelerDetailsPopup } from "./TravelerDetailsPopup";
 import { NpcComponent } from "../../NpcComponent";
 import { useDojo } from "../../../../../../DojoContext";
 import useRealmStore from "../../../../../../hooks/store/useRealmStore";
+import useBlockchainStore from "../../../../../../hooks/store/useBlockchainStore";
+import { useArrivalTimeByEntityId } from "../../utils";
 type NpcComponentProps = {
   npc: Npc;
 };
@@ -14,12 +16,17 @@ export const Traveler = ({ npc }: NpcComponentProps) => {
   const [loading, setLoading] = useState(false);
   const {
     setup: {
+      components: { ArrivalTime },
       systemCalls: { npc_travel },
     },
     account: { account },
   } = useDojo();
 
   const { realmEntityId } = useRealmStore();
+
+  const { nextBlockTimestamp } = useBlockchainStore();
+
+  const arrivalTime = useArrivalTimeByEntityId(npc.entityId, ArrivalTime);
 
   const onClose = (): void => {
     setShowDetails(false);
@@ -50,7 +57,15 @@ export const Traveler = ({ npc }: NpcComponentProps) => {
     >
       {`Details`}
     </Button>,
-    <Button isLoading={loading} size="xs" className="ml-auto" onClick={bringBack} variant="outline" withoutSound>
+    <Button
+      disabled={arrivalTime > nextBlockTimestamp!}
+      isLoading={loading}
+      size="xs"
+      className="ml-auto"
+      onClick={bringBack}
+      variant="outline"
+      withoutSound
+    >
       {`Bring back`}
     </Button>,
   ];

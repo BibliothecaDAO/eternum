@@ -299,9 +299,56 @@ mod npc_systems {
                 }
             );
 
-            set!(world, Npc {entity_id: npc_entity_id, current_realm_entity_id: into_realm_entity_id, characteristics: npc.characteristics, character_trait: npc.character_trait, full_name: npc.full_name});
+            set!(
+                world,
+                Npc {
+                    entity_id: npc.entity_id,
+                    current_realm_entity_id: into_realm_entity_id,
+                    characteristics: npc.characteristics,
+                    character_trait: npc.character_trait,
+                    full_name: npc.full_name
+                }
+            );
         }
-        fn kick_out_npc(self: @ContractState, world: IWorldDispatcher, npc_entity_id: u128) {}
+
+        fn kick_out_npc(self: @ContractState, world: IWorldDispatcher, npc_entity_id: u128) {
+            assert(npc_entity_id != 0, 'npc_entity_id is 0');
+
+            let npc = get!(world, npc_entity_id, (Npc));
+            assert(npc.full_name != 0, 'invalid npc_entity_id');
+
+            assert(npc.current_realm_entity_id != 0, 'npc wasnt welcomed in any realm');
+            assert_realm_existance_and_ownership(world, npc.current_realm_entity_id);
+
+            let npc_arrival = get!(world, npc_entity_id, (ArrivalTime));
+            assert(
+                npc_arrival.arrives_at <= starknet::get_block_timestamp(), 'npc is still traveling'
+            );
+
+            let kicking_out_realm_registry = get!(
+                world, npc.current_realm_entity_id, (RealmRegistry)
+            );
+
+            set!(
+                world,
+                RealmRegistry {
+                    realm_entity_id: npc.current_realm_entity_id,
+                    num_resident_npcs: kicking_out_realm_registry.num_resident_npcs - 1,
+                    num_native_npcs: kicking_out_realm_registry.num_native_npcs
+                }
+            );
+
+            set!(
+                world,
+                Npc {
+                    entity_id: npc.entity_id,
+                    current_realm_entity_id: 0,
+                    characteristics: npc.characteristics,
+                    character_trait: npc.character_trait,
+                    full_name: npc.full_name
+                }
+            );
+        }
     }
 }
 
