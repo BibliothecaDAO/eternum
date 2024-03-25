@@ -40,7 +40,7 @@ interface UIStore {
   setMouseCoords: (coords: { x: number; y: number }) => void;
   setCameraTarget: (target: any) => void;
   moveCameraToRealm: (realmId: number, speed?: number | undefined) => void;
-  moveCameraToTarget: (target: { x: number; y: number; z: number }, distance?: number) => void;
+  moveCameraToTarget: (target: { x: number; y: number; z: number }, speed?: number | undefined) => void;
   showRealmsFlags: boolean;
   setShowRealmsFlags: (show: boolean) => void;
   moveCameraToWorldMapView: () => void;
@@ -115,7 +115,7 @@ const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) =>
     set({ cameraPosition: speed ? { ...cameraPos, transitionDuration: speed } : cameraPos });
     set({ cameraTarget: speed ? { ...targetPos, transitionDuration: speed } : targetPos });
   },
-  moveCameraToTarget: (target) => {
+  moveCameraToTarget: (target, speed = undefined) => {
     const x = target.x;
     const y = target.y * -1;
     const targetPos = new Vector3(x, 0, y);
@@ -124,8 +124,8 @@ const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) =>
       100,
       y + 75 * (Math.random() < 0.5 ? 1 : -1),
     );
-    set({ cameraPosition: cameraPos });
-    set({ cameraTarget: targetPos });
+    set({ cameraPosition: speed ? { ...cameraPos, transitionDuration: speed } : cameraPos });
+    set({ cameraTarget: speed ? { ...targetPos, transitionDuration: speed } : targetPos });
   },
   showRealmsFlags: true,
   setShowRealmsFlags: (show) => set({ showRealmsFlags: show }),
