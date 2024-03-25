@@ -23,8 +23,9 @@ import { RangeInput } from "../../elements/RangeInput";
 
 import useScreenOrientation from "../../hooks/useScreenOrientation";
 
-import { useRealm } from "../../hooks/helpers/useRealm";
+import { useGetRealm, useRealm } from "../../hooks/helpers/useRealm";
 import { useMusicPlayer } from "../../hooks/useMusic";
+import useRealmStore from "../../hooks/store/useRealmStore";
 
 const NavgationComponent = () => {
   const {
@@ -45,7 +46,11 @@ const NavgationComponent = () => {
   const isSideMenuOpened = useUIStore((state) => state.isSideMenuOpened);
   const toggleSideMenu = useUIStore((state) => state.toggleSideMenu);
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
-  const [location] = useLocation();
+  const { moveCameraToRealm } = useUIStore();
+  const [location, setLocation] = useLocation();
+
+  const { realmEntityId } = useRealmStore();
+  const { realm } = useGetRealm(realmEntityId);
 
   const { getAddressName } = useRealm();
 
@@ -69,11 +74,17 @@ const NavgationComponent = () => {
         />
       </div>
 
-      <Link
-        href="/map"
+      <div
         onClick={() => {
-          if (location !== "/map") setIsLoadingScreenEnabled(true);
-          moveCameraToWorldMapView();
+          if (location !== "/map") {
+            setIsLoadingScreenEnabled(true);
+            setTimeout(() => {
+              setLocation("/map");
+              moveCameraToRealm(Number(realm?.realmId), 0.01);
+            }, 100);
+          } else {
+            moveCameraToRealm(Number(realm?.realmId));
+          }
         }}
       >
         <CircleButton
@@ -82,7 +93,7 @@ const NavgationComponent = () => {
         >
           <WorldIcon className="fill-gold" />
         </CircleButton>
-      </Link>
+      </div>
 
       <CircleButton
         onClick={() => toggleSideMenu()}

@@ -61,7 +61,11 @@ const CameraControls = ({ position, target }: Props) => {
   camera.up = new Vector3(0, 1, 0);
   function cameraAnimate(): void {
     if (ref.current) {
+      gsap.killTweensOf(camera.position);
+      gsap.killTweensOf(ref.current.target);
+
       const duration = position.transitionDuration || 2;
+
       gsap.timeline().to(camera.position, {
         duration,
         repeat: 0,
