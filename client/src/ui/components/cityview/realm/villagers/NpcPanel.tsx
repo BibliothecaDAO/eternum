@@ -1,14 +1,15 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Button from "../../../../../../elements/Button";
 import NpcChat from "./NpcChat";
 import useRealmStore from "../../../../../../hooks/store/useRealmStore";
 import { ReactComponent as ArrowPrev } from "../../../../../../assets/icons/common/arrow-left.svg";
 import { ReactComponent as ArrowNext } from "../../../../../../assets/icons/common/arrow-right.svg";
-import { useDojo } from "../../../../../../DojoContext";
 import { useNpcContext } from "../../NpcContext";
 import { StorageTownhalls, WsMsgType, TownhallResponse, StorageTownhall, WsResponse } from "../../types";
 import { getRealm } from "../../../../../../utils/realms";
-import { keysSnakeToCamel, getResidentNpcs } from "../../utils";
+import { keysSnakeToCamel } from "../../utils";
+import TextInput from "../../../../../../elements/TextInput";
+import { MAX_TOWNHALL_INPUT_LENGTH } from "../../constants";
 
 type TownhallPanelProps = {
   type?: "all" | "farmers" | "miners";
@@ -16,6 +17,8 @@ type TownhallPanelProps = {
 
 export const TownhallPanel = ({ type = "all" }: TownhallPanelProps) => {
   const { realmId, realmEntityId } = useRealmStore();
+  const [townhallInput, setTownhallInput] = useState('');
+
 
   const realm = useMemo(() => {
     return realmEntityId ? getRealm(realmId!) : undefined;
@@ -66,7 +69,9 @@ export const TownhallPanel = ({ type = "all" }: TownhallPanelProps) => {
       msg_type: WsMsgType.TOWNHALL,
       data: {
         realm_id: realmId!.toString(),
+        realm_entity_id: realmEntityId!.toString(),
         order_id: realm!.order,
+        townhall_input: townhallInput,
       },
     });
     setLoadingTownhall(true);
@@ -81,17 +86,15 @@ export const TownhallPanel = ({ type = "all" }: TownhallPanelProps) => {
     setSelectedTownhall(lastKey);
   }, [realmId]);
 
+  const handleUserMessageChange = (inputValue: string) => {
+    if (inputValue.length <= MAX_TOWNHALL_INPUT_LENGTH) {
+      setTownhallInput(inputValue);
+    }
+  };
+
   return (
     <div className="flex flex-col h-[250px] relative pb-3">
       <div className="flex flex-row w-[100%] items-center justify-between" style={{ position: "relative", top: "2%" }}>
-        <Button
-          className="mx-2 w-32 bottom-2 !rounded-full"
-          onClick={gatherVillagers}
-          variant={loadingTownhall ? "default" : "primary"}
-        >
-          Ring the town bell
-        </Button>
-
         <div className="flex relative">
           <Button onClick={() => setSelectedTownhallFromDirection(-1)}>
             <ArrowPrev />
@@ -103,6 +106,17 @@ export const TownhallPanel = ({ type = "all" }: TownhallPanelProps) => {
         </div>
       </div>
       <NpcChat />
+
+      <div className="flex my-2">
+        <TextInput placeholder="Write something..." value={townhallInput} onChange={handleUserMessageChange} />
+        <Button
+            className="mx-2 w-32 bottom-2 !rounded-full"
+            onClick={gatherVillagers}
+            variant={loadingTownhall ? "default" : "primary"}
+          >
+            Ring the town bell
+        </Button>
+      </div>
     </div>
   );
 };
