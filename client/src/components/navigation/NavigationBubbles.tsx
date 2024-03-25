@@ -39,6 +39,8 @@ const NavgationComponent = () => {
   const effectsLevel = useUIStore((state) => state.effectsLevel);
   const setMusicLevel = useUIStore((state) => state.setMusicLevel);
   const setEffectsLevel = useUIStore((state) => state.setEffectsLevel);
+  const isSoundOn = useUIStore((state) => state.isSoundOn);
+  const toggleSound = useUIStore((state) => state.toggleSound);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const isSideMenuOpened = useUIStore((state) => state.isSideMenuOpened);
   const toggleSideMenu = useUIStore((state) => state.toggleSideMenu);
@@ -115,13 +117,13 @@ const NavgationComponent = () => {
               </div>
               <Headline>Sound</Headline>
 
-              <div className="flex p-1">
-                {isPlaying ? (
-                  <Button variant="outline" onClick={() => stop()}>
+              <div className="flex space-x-2">
+                {isSoundOn ? (
+                  <Button variant="outline" onClick={() => toggleSound()}>
                     <Unmuted className=" cursor-pointer fill-gold  w-4" />
                   </Button>
                 ) : (
-                  <Button variant="outline" onClick={play}>
+                  <Button variant="outline" onClick={() => toggleSound()}>
                     <Muted className=" cursor-pointer fill-gold  w-4" />
                   </Button>
                 )}
