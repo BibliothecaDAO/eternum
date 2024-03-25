@@ -1,5 +1,5 @@
 import { useGLTF } from "@react-three/drei";
-import { getUIPositionFromColRow } from "../../../utils/utils";
+import { getUIPositionFromColRow, pseudoRandom } from "../../../utils/utils";
 import * as THREE from "three";
 import { useMemo } from "react";
 import { Hexagon } from "../../../types";
@@ -21,7 +21,8 @@ export function OceanBiome({ hexes }: { hexes: Hexagon[] }) {
     hexes.forEach((hex: Hexagon) => {
       const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
       // rotate hex randomly on 60 * n degrees
-      matrix.makeRotationZ((Math.PI / 3) * Math.floor(Math.random() * 6));
+      const seededRandom = pseudoRandom(hex.col, hex.row);
+      matrix.makeRotationZ((Math.PI / 3) * Math.floor(seededRandom * 6));
       matrix.setPosition(x, y, 0.33);
       instancedMesh.setMatrixAt(idx, matrix);
       idx++;
