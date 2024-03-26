@@ -30,6 +30,7 @@ import { DEPTH, FELT_CENTER, HEX_RADIUS } from "./WorldHexagon";
 import { useExplore } from "../../../hooks/helpers/useExplore";
 import { useTravel } from "../../../hooks/helpers/useTravel";
 import { useNotificationsStore } from "../../../hooks/store/useNotificationsStore";
+import { soundSelector, useUiSounds } from "../../../hooks/useUISound";
 
 const BIOMES = biomes as Record<string, { color: string; depth: number }>;
 
@@ -232,6 +233,7 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
   const setSelectedPath = useUIStore((state) => state.setSelectedPath);
   const setTravelingEntity = useUIStore((state) => state.setSelectedEntity);
   const setExploreNotification = useNotificationsStore((state) => state.setExploreNotification);
+  const { play: playExplore } = useUiSounds(soundSelector.explore);
   // refs
   const isTravelModeRef = useRef(false);
   const isExploreModeRef = useRef(false);
@@ -410,6 +412,7 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
       explorerId: id,
       direction,
     });
+    playExplore();
     clearSelection();
   }
 

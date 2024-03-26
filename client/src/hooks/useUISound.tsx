@@ -10,6 +10,7 @@ export const soundSelector = {
   harvest: "ui/harvest.mp3",
   fly: "ui/whoosh.mp3",
   levelUp: "ui/level-up.mp3",
+  explore: "ui/explore.mp3",
   buildLabor: "buildings/workhuts.mp3",
   buildMilitary: "buildings/military.mp3",
   buildCastle: "buildings/castle.mp3",
@@ -44,6 +45,7 @@ export const soundSelector = {
   addAdamantine: "resources/adamantine.mp3",
   addMithral: "resources/mithral.mp3",
   addDragonhide: "resources/dragonhide.mp3",
+  addLords: "resources/lords.mp3",
 };
 
 export const useUiSounds = (selector: string) => {
@@ -84,6 +86,7 @@ export const usePlayResourceSound = () => {
   const { play: playAddAdamantine } = useUiSounds(soundSelector.addAdamantine);
   const { play: playAddMithral } = useUiSounds(soundSelector.addMithral);
   const { play: playAddDragonhide } = useUiSounds(soundSelector.addDragonhide);
+  const { play: playAddLords } = useUiSounds(soundSelector.addLords);
   // eslint-disable-next-line sonarjs/no-small-switch
   const playResourceSound = (resourceId: ResourcesIds) => {
     switch (resourceId) {
@@ -158,6 +161,9 @@ export const usePlayResourceSound = () => {
         break;
       case ResourcesIds.Dragonhide:
         playAddDragonhide();
+        break;
+      case ResourcesIds.Lords:
+        playAddLords();
         break;
       default:
         break;
