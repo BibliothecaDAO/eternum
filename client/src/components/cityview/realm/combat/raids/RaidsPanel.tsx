@@ -47,7 +47,13 @@ export const RaidsPanel = ({ raiderIds, showCreateButton, className }: RaidsPane
       {selectedRaider && showManageRaid && (
         <ManageSoldiersPopupTabs headline={"Manage Raiders"} selectedRaider={selectedRaider} onClose={onClose} />
       )}
-      {selectedRaider && showAttackRaid && <AttackRaidsPopup selectedRaider={selectedRaider} onClose={onClose} />}
+      {selectedRaider?.position !== undefined && selectedRaider?.locationEntityId !== undefined && showAttackRaid && (
+        <AttackRaidsPopup
+          attackPosition={selectedRaider.position}
+          targetEntityId={selectedRaider.locationEntityId}
+          onClose={onClose}
+        />
+      )}
       {selectedRaider && showTravelRaid && <TravelRaidsPopup selectedRaider={selectedRaider} onClose={onClose} />}
       {selectedRaider && showHealRaid && <HealPopup selectedRaider={selectedRaider} onClose={onClose} />}
       <div className="flex flex-col p-2 space-y-2">

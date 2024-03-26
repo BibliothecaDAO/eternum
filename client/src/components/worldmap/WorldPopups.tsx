@@ -1,16 +1,14 @@
 import { HyperStructureInterface } from "@bibliothecadao/eternum";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { FeedHyperstructurePopup } from "./hyperstructures/FeedHyperstructure";
 import useUIStore from "../../hooks/store/useUIStore";
 import { AttackRaidsPopup } from "../cityview/realm/combat/raids/AttackRaidsPopup";
 import { useCombat } from "../../hooks/helpers/useCombat";
-import { useRealm } from "../../hooks/helpers/useRealm";
+import { getColRowFromUIPosition } from "../../utils/utils";
 
 export const WorldPopups = () => {
   const [showFeedPopup, setShowFeedPopup] = useState(false);
   const [selectedHyperstructure, setSelectedHyperstructure] = useState<HyperStructureInterface | undefined>(undefined);
-
-  const { getEntitiesCombatInfo } = useCombat();
 
   // no more interaction when clicking on hex for now
   const selectedEntity = useUIStore((state) => state.selectedEntity);
@@ -32,12 +30,6 @@ export const WorldPopups = () => {
     }
   }, [clickedHyperstructure]);
 
-  const { isEntityIdRealm } = useRealm();
-
-  const selectedEntityIdIsRealm = useMemo(() => {
-    return selectedEntity && isEntityIdRealm(selectedEntity.id) ? true : false;
-  }, [selectedEntity]);
-
   return (
     <div className="z-[100]">
       {showFeedPopup && selectedHyperstructure && (
@@ -45,8 +37,8 @@ export const WorldPopups = () => {
       )}
       {isAttackMode && selectedEntity && (
         <AttackRaidsPopup
-          selectedRaider={getEntitiesCombatInfo([selectedEntity.id])[0]}
-          enemyRaider={selectedEntityIdIsRealm ? undefined : getEntitiesCombatInfo([selectedEntity.id])[0]}
+          attackPosition={selectedEntity.position}
+          targetEntityId={selectedEntity.id}
           onClose={() => setIsAttackMode(false)}
         />
       )}
