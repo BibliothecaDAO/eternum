@@ -21,6 +21,11 @@ export function useRealm() {
     },
   } = useDojo();
 
+  const isRealmIdSettled = (realmId: bigint) => {
+    const entityIds = runQuery([HasValue(Realm, { realm_id: realmId })]);
+    return entityIds.size > 0;
+  };
+
   const getNextRealmIdForOrder = (order: number) => {
     const orderName = getOrderName(order);
 
@@ -94,6 +99,7 @@ export function useRealm() {
   };
 
   return {
+    isRealmIdSettled,
     getNextRealmIdForOrder,
     getAddressName,
     getRealmAddressName,
