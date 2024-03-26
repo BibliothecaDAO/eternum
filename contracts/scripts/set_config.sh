@@ -58,9 +58,9 @@ commands=(
 
 ## set tick config
 commands+=(
-    # max_moves_per_tick = 4
+    # max_moves_per_tick = 3
     # tick_interval_in_seconds = 60
-    "sozo execute $CONFIG_SYSTEMS set_tick_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,4,60"
+    "sozo execute $CONFIG_SYSTEMS set_tick_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,3,60"
 )
 
 ## set exploration config
