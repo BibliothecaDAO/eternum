@@ -267,6 +267,8 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
       if (!pos || !hexDataRef.current || !exploredHexesRef.current) return;
 
       if (!selectedEntityRef.current) {
+        setHighlightColor(0xffffff);
+        setHighlightPositions([[pos.x, -pos.y, pos.z]]);
         return;
       }
 
