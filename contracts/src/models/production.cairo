@@ -1,5 +1,5 @@
 use starknet::get_block_timestamp;
-
+use eternum::models::resources::Resource;
 // This exists a model per realm per resource
 
 // This is a model that represents the production of a resource
@@ -10,8 +10,10 @@ use starknet::get_block_timestamp;
 
 #[derive(Model, Copy, Drop, Serde)]
 struct Production {
-    quantity: u64, // this needs to be the entities balance
-    resource_id: u64,
+    #[key]
+    entity_id: u128,
+    #[key]
+    resource_type: u8,
     production_rate: u64, // per tick
     consumed_rate: u64, // per tick
     last_updated: u64,
@@ -22,18 +24,35 @@ struct Production {
 // Then maintaining logic in client will be easy
 #[generate_trait]
 impl ProductionRateImpl of ProductionRateTrait {
-    fn start_production(ref self: Production) {
-        self.update();
+    fn start_production(ref self: Production, ref resource: Resource) {
+        self.update(ref resource);
         self.active = true;
     }
-    fn stop_production(ref self: Production) {
-        self.update();
+    fn stop_production(ref self: Production, ref resource: Resource) {
+        self.update(ref resource);
         self.active = false;
     }
-    fn update(ref self: Production) {
-        self.quantity += self.generated() - self.consumed();
+    fn increase_production_rate(ref self: Production, amount: u64, ref resource: Resource) {
+        self.update(ref resource);
+        self.production_rate += amount;
+    }
+    fn decrease_production_rate(ref self: Production, amount: u64, ref resource: Resource) {
+        self.update(ref resource);
+        self.production_rate -= amount;
+    }
+    fn increase_consumed_rate(ref self: Production, amount: u64, ref resource: Resource) {
+        self.update(ref resource);
+        self.consumed_rate += amount;
+    }
+    fn decrease_consumed_rate(ref self: Production, amount: u64, ref resource: Resource) {
+        self.update(ref resource);
+        self.consumed_rate -= amount;
+    }
+    fn update(ref self: Production, ref resource: Resource) {
+        resource.balance += (self.generated() - self.consumed()).into();
         self.last_updated = get_block_timestamp();
     }
+    // ticks until the resource is depleted
     fn until_depleted(self: Production) -> u64 {
         self.balance() / self.net_rate()
     }

@@ -3,6 +3,8 @@ use eternum::constants::get_resource_probabilities;
 use eternum::constants::ResourceTypes;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
+use eternum::models::production::{Production, ProductionRateTrait};
+
 // Used as helper struct throughout the world
 #[derive(Model, Copy, Drop, Serde)]
 struct Resource {
@@ -22,23 +24,41 @@ impl ResourceFoodImpl of ResourceFoodTrait {
         (wheat, fish)
     }
 
-    fn burn_food(world: IWorldDispatcher, entity_id: u128, wheat_amount: u128, fish_amount: u128, check_balance: bool) {
+    fn burn_food(
+        world: IWorldDispatcher,
+        entity_id: u128,
+        wheat_amount: u128,
+        fish_amount: u128,
+        check_balance: bool
+    ) {
         let mut wheat: Resource = get!(world, (entity_id, ResourceTypes::WHEAT), Resource);
-        let mut fish : Resource = get!(world, (entity_id, ResourceTypes::FISH), Resource);
+        let mut fish: Resource = get!(world, (entity_id, ResourceTypes::FISH), Resource);
         wheat.deduct(world, wheat_amount, check_balance);
         fish.deduct(world, fish_amount, check_balance);
     }
 }
 
 
-
 #[generate_trait]
 impl ResourceImpl of ResourceTrait {
+    // This will update the production balance of the resource
+
+    fn balance(ref self: Resource, world: IWorldDispatcher) -> u128 {
+        let mut production_balance: Production = get!(
+            world, (self.entity_id, self.resource_type), Production
+        );
+
+        // take the balance from the production balance and the physical 
+
+        self.balance += production_balance.balance().into();
+
+        self.balance
+    }
 
     fn deduct(ref self: Resource, world: IWorldDispatcher, amount: u128, check_balance: bool) {
         let mut amount = amount;
         if check_balance {
-            assert(self.balance >= amount, 'insufficient balance');
+            assert(self.balance(world) >= amount, 'insufficient balance');
         } else {
             if amount > self.balance {
                 amount = self.balance
@@ -54,39 +74,43 @@ impl ResourceImpl of ResourceTrait {
         self.save(world);
     }
 
-    fn save(ref self: Resource, world: IWorldDispatcher, ) {
-
+    fn save(ref self: Resource, world: IWorldDispatcher) {
         // Save the resource
         set!(world, (self));
 
         // Update the entity's owned resources
 
-        let mut entity_owned_resources 
-            = get!(world, self.entity_id, OwnedResourcesTracker);
+        let mut entity_owned_resources = get!(world, self.entity_id, OwnedResourcesTracker);
+
+        self.update_production(world);
 
         if self._is_regular_resource(self.resource_type) {
             if self.balance == 0 {
                 if entity_owned_resources.owns_resource_type(self.resource_type) {
-                    entity_owned_resources.set_resource_ownership(
-                        self.resource_type, false
-                    );
+                    entity_owned_resources.set_resource_ownership(self.resource_type, false);
                     set!(world, (entity_owned_resources));
                 }
             } else {
                 if !entity_owned_resources.owns_resource_type(self.resource_type) {
-                    entity_owned_resources.set_resource_ownership(
-                        self.resource_type, true
-                    );
+                    entity_owned_resources.set_resource_ownership(self.resource_type, true);
                     set!(world, (entity_owned_resources));
                 }
             }
         }
     }
 
+    fn update_production(ref self: Resource, world: IWorldDispatcher) {
+        let mut production_balance: Production = get!(
+            world, (self.entity_id, self.resource_type), Production
+        );
+
+        production_balance.update(ref self);
+
+        set!(world, (production_balance));
+    }
 
 
     fn _is_regular_resource(self: @Resource, _type: u8) -> bool {
-        
         let mut position = _type;
         if position == 255 {
             return true;
@@ -98,7 +122,6 @@ impl ResourceImpl of ResourceTrait {
 
         return position <= 28;
     }
-
 }
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -141,7 +164,6 @@ struct DetachedResource {
 }
 
 
-
 #[derive(Model, Copy, Drop, Serde)]
 struct OwnedResourcesTracker {
     #[key]
@@ -152,8 +174,6 @@ struct OwnedResourcesTracker {
 
 #[generate_trait]
 impl OwnedResourcesTrackerImpl of OwnedResourcesTrackerTrait {
-
-    
     /// Check whether an entity owns a resource
     ///
     /// # Arguments
@@ -176,7 +196,7 @@ impl OwnedResourcesTrackerImpl of OwnedResourcesTrackerTrait {
     /// * `resource_id` - The resource id to set
     /// * `value` - Whether the entity owns the resource
     ///
-    fn set_resource_ownership(ref self: OwnedResourcesTracker, resource_type: u8, value: bool){
+    fn set_resource_ownership(ref self: OwnedResourcesTracker, resource_type: u8, value: bool) {
         let pos = self._resource_type_to_position(resource_type);
 
         self.resource_types = set_u32_bit(self.resource_types, pos.into(), value);
@@ -240,22 +260,18 @@ impl OwnedResourcesTrackerImpl of OwnedResourcesTrackerTrait {
 
         return position; // since resource types start from 1
     }
-
 }
-
-
 
 
 #[cfg(test)]
 mod owned_resources_tracker_tests {
-
     use super::{OwnedResourcesTracker, OwnedResourcesTrackerTrait};
     use eternum::constants::ResourceTypes;
 
 
     #[test]
-    fn test_resource_type_to_position(){
-        let ort = OwnedResourcesTracker{entity_id:0, resource_types: 0};
+    fn test_resource_type_to_position() {
+        let ort = OwnedResourcesTracker { entity_id: 0, resource_types: 0 };
         assert!(ort._resource_type_to_position(255) == 31, " wrong ans");
         assert!(ort._resource_type_to_position(254) == 30, " wrong ans");
         assert!(ort._resource_type_to_position(253) == 29, " wrong ans");
@@ -266,22 +282,19 @@ mod owned_resources_tracker_tests {
 
 
     #[test]
-    fn test_get_and_set_resource_ownership(){
-        let mut ort = OwnedResourcesTracker{entity_id:0, resource_types: 0};
+    fn test_get_and_set_resource_ownership() {
+        let mut ort = OwnedResourcesTracker { entity_id: 0, resource_types: 0 };
         ort.set_resource_ownership(ResourceTypes::WOOD, true);
         ort.set_resource_ownership(ResourceTypes::COAL, true);
         ort.set_resource_ownership(ResourceTypes::LORDS, true);
         ort.set_resource_ownership(ResourceTypes::WHEAT, true);
-
 
         assert!(ort.owns_resource_type(ResourceTypes::WOOD), "should be true");
         assert!(ort.owns_resource_type(ResourceTypes::COAL), "should be true");
         assert!(ort.owns_resource_type(ResourceTypes::LORDS), "should be true");
         assert!(ort.owns_resource_type(ResourceTypes::WHEAT), "should be true");
 
-
         assert!(ort.owns_resource_type(ResourceTypes::DRAGONHIDE) == false, "should be false");
         assert!(ort.owns_resource_type(ResourceTypes::DEMONHIDE) == false, "should be false");
-        
     }
 }
