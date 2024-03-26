@@ -49,9 +49,7 @@ impl ResourceImpl of ResourceTrait {
         );
 
         // take the balance from the production balance and the physical 
-
         self.balance += production_balance.balance().into();
-
         self.balance
     }
 
@@ -64,12 +62,14 @@ impl ResourceImpl of ResourceTrait {
                 amount = self.balance
             }
         }
+        self.update_production(world);
         self.balance -= amount;
         self.save(world);
     }
 
 
     fn add(ref self: Resource, world: IWorldDispatcher, amount: u128) {
+        self.update_production(world);
         self.balance += amount;
         self.save(world);
     }
@@ -81,8 +81,6 @@ impl ResourceImpl of ResourceTrait {
         // Update the entity's owned resources
 
         let mut entity_owned_resources = get!(world, self.entity_id, OwnedResourcesTracker);
-
-        self.update_production(world);
 
         if self._is_regular_resource(self.resource_type) {
             if self.balance == 0 {
@@ -99,6 +97,7 @@ impl ResourceImpl of ResourceTrait {
         }
     }
 
+    // This will lazily update the resources
     fn update_production(ref self: Resource, world: IWorldDispatcher) {
         let mut production_balance: Production = get!(
             world, (self.entity_id, self.resource_type), Production
