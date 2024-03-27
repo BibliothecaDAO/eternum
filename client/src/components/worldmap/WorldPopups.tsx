@@ -4,12 +4,11 @@ import { FeedHyperstructurePopup } from "./hyperstructures/FeedHyperstructure";
 import useUIStore from "../../hooks/store/useUIStore";
 import { AttackRaidsPopup } from "../cityview/realm/combat/raids/AttackRaidsPopup";
 import { useCombat } from "../../hooks/helpers/useCombat";
+import { getColRowFromUIPosition } from "../../utils/utils";
 
 export const WorldPopups = () => {
   const [showFeedPopup, setShowFeedPopup] = useState(false);
   const [selectedHyperstructure, setSelectedHyperstructure] = useState<HyperStructureInterface | undefined>(undefined);
-
-  const { getEntitiesCombatInfo } = useCombat();
 
   // no more interaction when clicking on hex for now
   const selectedEntity = useUIStore((state) => state.selectedEntity);
@@ -38,8 +37,8 @@ export const WorldPopups = () => {
       )}
       {isAttackMode && selectedEntity && (
         <AttackRaidsPopup
-          selectedRaider={getEntitiesCombatInfo([selectedEntity.id])[0]}
-          enemyRaider={getEntitiesCombatInfo([selectedEntity.id])[0]}
+          attackPosition={selectedEntity.position}
+          targetEntityId={selectedEntity.id}
           onClose={() => setIsAttackMode(false)}
         />
       )}

@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { SecondaryPopup } from "../../../../../elements/SecondaryPopup";
 import Button from "../../../../../elements/Button";
 import useRealmStore from "../../../../../hooks/store/useRealmStore";
 import { useDojo } from "../../../../../DojoContext";
 import { divideByPrecision, getEntityIdFromKeys } from "../../../../../utils/utils";
-import { useGetRealm } from "../../../../../hooks/helpers/useRealm";
+import { useGetRealm, useRealm } from "../../../../../hooks/helpers/useRealm";
 import { calculateSuccess } from "../../../../../utils/combat";
 import { useCombat } from "../../../../../hooks/helpers/useCombat";
 import { Defence } from "../defence/Defence";
@@ -13,31 +13,28 @@ import { SelectRaiders } from "./SelectRaiders";
 import { useResources } from "../../../../../hooks/helpers/useResources";
 import clsx from "clsx";
 import { ResourceIcon } from "../../../../../elements/ResourceIcon";
-import { CombatInfo, Resource, findResourceById, resources } from "@bibliothecadao/eternum";
-import { getRealmIdByPosition, getRealmNameById } from "../../../../../utils/realms";
+import { CombatInfo, Position, Resource, findResourceById, resources } from "@bibliothecadao/eternum";
+import { getRealmNameById } from "../../../../../utils/realms";
 import { SmallResource } from "../../SmallResource";
 import { LevelIndex, useLevel } from "../../../../../hooks/helpers/useLevel";
 import { useHyperstructure } from "../../../../../hooks/helpers/useHyperstructure";
 import useUIStore from "../../../../../hooks/store/useUIStore";
-// import { ReactComponent as Equation } from "../../../../../assets/icons/formula/equation.svg";
 
 type AttackRaidsPopupProps = {
-  selectedRaider: CombatInfo;
-  // enemy raider is only expected to be set
-  // when the attacked entity is a raider else
-  // we assume it is a realm or hyperstructure
-  enemyRaider?: CombatInfo | undefined;
+  attackPosition: Position;
+  targetEntityId: bigint;
   onClose: () => void;
 };
 
-export const AttackRaidsPopup = ({ selectedRaider, enemyRaider, onClose }: AttackRaidsPopupProps) => {
-  const { position: attackPosition } = selectedRaider;
+export const AttackRaidsPopup = ({ attackPosition, targetEntityId, onClose }: AttackRaidsPopupProps) => {
+  const { getEntitiesCombatInfo, getOwnerRaidersOnPosition, getDefenceOnPosition } = useCombat();
+  const { isEntityIdRealm } = useRealm();
+
+  const isTargetRealm = isEntityIdRealm(targetEntityId);
 
   const [step, setStep] = useState<number>(1);
   const [selectedRaiders, setSelectedRaiders] = useState<CombatInfo[]>([]);
-  const [targetEntityId, setTargetEntityId] = useState<bigint | null>(null);
 
-  const { getEntitiesCombatInfo, getOwnerRaidersOnPosition, getDefenceOnPosition } = useCombat();
   const { getFoodResources } = useResources();
 
   const attackingEntities = attackPosition ? getOwnerRaidersOnPosition(attackPosition) : [];
@@ -45,19 +42,11 @@ export const AttackRaidsPopup = ({ selectedRaider, enemyRaider, onClose }: Attac
     return getEntitiesCombatInfo(attackingEntities.map((id) => BigInt(id)));
   }, [attackingEntities]);
 
-  useEffect(() => {
-    if (enemyRaider) {
-      setTargetEntityId(enemyRaider.entityId);
-    } else if (selectedRaider?.locationEntityId && targetEntityId === null) {
-      setTargetEntityId(selectedRaider.locationEntityId);
+  const targetCombatInfo = useMemo(() => {
+    if (!isTargetRealm) {
+      return getEntitiesCombatInfo([targetEntityId])[0];
     }
-  }, [selectedRaider, enemyRaider]);
-
-  const defence = useMemo(() => {
-    if (enemyRaider) {
-      return enemyRaider;
-    }
-    return attackPosition ? getDefenceOnPosition(attackPosition) : undefined;
+    return getDefenceOnPosition(attackPosition);
   }, [attackPosition]);
 
   const targetFoodBalance = useMemo(() => {
@@ -65,26 +54,57 @@ export const AttackRaidsPopup = ({ selectedRaider, enemyRaider, onClose }: Attac
     return getFoodResources(targetEntityId);
   }, [targetEntityId]);
 
-  const defendingRealmId = useMemo(() => {
-    return attackPosition ? getRealmIdByPosition(attackPosition) : undefined;
-  }, [attackPosition]);
-
-  const defendingRealmName = useMemo(() => {
-    if (enemyRaider) {
-      return getRealmNameById(enemyRaider!.originRealmId!);
-    }
-    return defendingRealmId ? getRealmNameById(defendingRealmId) : undefined;
-  }, [defendingRealmId]);
+  const targetRealmName = useMemo(() => {
+    return targetCombatInfo?.originRealmId ? getRealmNameById(targetCombatInfo.originRealmId) : undefined;
+  }, [targetCombatInfo]);
 
   const popUpHeader = useMemo(() => {
-    if (enemyRaider) {
-      return `Attacking Raider #${enemyRaider.entityId} from ${defendingRealmName}`;
-    } else if (defendingRealmId) {
-      return `Attacking ${defendingRealmName}`;
+    if (!isTargetRealm) {
+      return `Attacking Raider #${targetCombatInfo?.entityId} from ${targetRealmName}`;
     } else {
-      return "Attacking";
+      return `Attacking ${targetRealmName}`;
     }
-  }, [defendingRealmId, enemyRaider]);
+  }, [targetCombatInfo]);
+
+  const renderStepConstent = () => {
+    switch (step) {
+      case 1:
+        return (
+          <SelectRaidersPanel
+            defence={targetCombatInfo}
+            isTargetRealm={isTargetRealm}
+            setStep={setStep}
+            onClose={onClose}
+            attackingRaiders={attackingRaiders}
+            selectedRaiders={selectedRaiders}
+            setSelectedRaiders={setSelectedRaiders}
+          ></SelectRaidersPanel>
+        );
+      case 2:
+        return (
+          <>
+            {targetCombatInfo && (
+              <AttackResultPanel
+                defence={targetCombatInfo}
+                selectedRaiders={selectedRaiders}
+                onClose={onClose}
+              ></AttackResultPanel>
+            )}
+          </>
+        );
+      case 3:
+        return (
+          <StealResultPanel
+            targetFoodBalance={targetFoodBalance}
+            targetEntityId={targetEntityId}
+            onClose={onClose}
+            selectedRaiders={selectedRaiders}
+          ></StealResultPanel>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <SecondaryPopup name="attack">
@@ -94,34 +114,7 @@ export const AttackRaidsPopup = ({ selectedRaider, enemyRaider, onClose }: Attac
         </div>
       </SecondaryPopup.Head>
       <SecondaryPopup.Body width={"410px"}>
-        <div className="flex flex-col items-center p-2">
-          {step == 1 && (
-            <SelectRaidersPanel
-              defence={defence}
-              isTargetRealm={enemyRaider === undefined}
-              setStep={setStep}
-              onClose={onClose}
-              attackingRaiders={attackingRaiders}
-              selectedRaiders={selectedRaiders}
-              setSelectedRaiders={setSelectedRaiders}
-            ></SelectRaidersPanel>
-          )}
-          {defence && step == 2 && (
-            <AttackResultPanel
-              defence={defence}
-              onClose={onClose}
-              selectedRaiders={selectedRaiders}
-            ></AttackResultPanel>
-          )}
-          {targetEntityId?.toString() && step == 3 && (
-            <StealResultPanel
-              targetFoodBalance={targetFoodBalance}
-              targetEntityId={targetEntityId}
-              onClose={onClose}
-              selectedRaiders={selectedRaiders}
-            />
-          )}
-        </div>
+        <div className="flex flex-col items-center p-2">{renderStepConstent()}</div>
       </SecondaryPopup.Body>
     </SecondaryPopup>
   );

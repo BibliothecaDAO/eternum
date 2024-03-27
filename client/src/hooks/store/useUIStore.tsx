@@ -51,8 +51,6 @@ interface UIStore {
   moveCameraToFoodView: () => void;
   isLoadingScreenEnabled: boolean;
   setIsLoadingScreenEnabled: (enabled: boolean) => void;
-  // const [highlightPositions, setHighlightPositions] = useState<[number, number, number][]>([[0, 0, 0]]);
-  // const [highlightColor, setHighlightColor] = useState(0xffffff);
   highlightPositions: [number, number, number][];
   setHighlightPositions: (positions: [number, number, number][]) => void;
   highlightColor: number;

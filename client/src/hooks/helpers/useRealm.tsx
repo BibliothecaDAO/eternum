@@ -93,6 +93,11 @@ export function useRealm() {
     }
   };
 
+  const isEntityIdRealm = (entityId: bigint) => {
+    const realm = getComponentValue(Realm, getEntityIdFromKeys([entityId]));
+    return realm ? true : false;
+  };
+
   return {
     getNextRealmIdForOrder,
     getAddressName,
@@ -100,6 +105,7 @@ export function useRealm() {
     getRealmIdForOrderAfter,
     getRealmIdFromRealmEntityId,
     getRealmEntityIdFromRealmId,
+    isEntityIdRealm,
   };
 }
 
