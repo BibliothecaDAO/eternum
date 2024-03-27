@@ -19,6 +19,7 @@ import useUIStore from "../../../../../hooks/store/useUIStore";
 import { CombatInfo, UIPosition } from "@bibliothecadao/eternum";
 import { useCombat } from "../../../../../hooks/helpers/useCombat";
 import { useLocation } from "wouter";
+import { useRealm } from "../../../../../hooks/helpers/useRealm";
 
 type RaidProps = {
   raider: CombatInfo;
@@ -41,6 +42,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
   } = useDojo();
 
   const { getDefenceOnPosition } = useCombat();
+  const { isRealmIdSettled } = useRealm();
 
   const { realmId, realmEntityId } = useRealmStore();
   const [isLoading, setIsLoading] = useState(false);
@@ -105,7 +107,14 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
   const isTraveling = raider.arrivalTime && nextBlockTimestamp ? raider.arrivalTime > nextBlockTimestamp : false;
   const isOnWatchTower = watchTowerId !== undefined;
   const hasMaxHealth = health === 10 * quantity;
-  const destinationRealmId = raider.position ? getRealmIdByPosition(raider.position) : undefined;
+
+  // get destination realm info
+  const destinationRealmId = useMemo(() => {
+    const realmId = raider.position ? getRealmIdByPosition(raider.position) : undefined;
+    const isRealmSettled = realmId ? isRealmIdSettled(realmId) : false;
+    return isRealmSettled ? realmId : undefined;
+  }, [raider.position]);
+
   const destinationName = destinationRealmId ? getRealmNameById(destinationRealmId) : "Map";
   const isHome = destinationRealmId === realmId;
 
