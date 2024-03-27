@@ -30,21 +30,13 @@ const CameraControls = ({ position, target }: Props) => {
 
   const [isMapView] = useRoute("/map");
 
-  const maxDistance = useMemo(() => {
-    return isMapView ? 1000 : 1800;
-  }, [isMapView]);
+  const maxDistance = 1000;
 
-  const minDistance = useMemo(() => {
-    return isMapView ? 100 : 1000;
-  }, [isMapView]);
+  const minDistance = 100;
 
-  const maxPolarAngle = useMemo(() => {
-    return isMapView ? Math.PI / 3 : Math.PI / 4;
-  }, [isMapView]);
+  const maxPolarAngle = Math.PI / 3;
 
-  const minPolarAngle = useMemo(() => {
-    return isMapView ? Math.PI / 3 : Math.PI / 4;
-  }, [isMapView]);
+  const minPolarAngle = 0;
 
   useControls({
     saveCameraPosition: button(() => {
