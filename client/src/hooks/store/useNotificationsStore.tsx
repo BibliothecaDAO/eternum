@@ -77,12 +77,18 @@ export type NotificationType = {
     | DirectOfferData;
 };
 
+export type exploreNotification = {
+  entityId: bigint;
+  biome: string;
+};
 interface NotificationsStore {
   notifications: NotificationType[];
   setNotifications: (notifications: NotificationType[]) => void;
   addUniqueNotifications: (notifications: NotificationType[]) => void;
   deleteNotification: (keys: string | string[] | undefined, eventType: EventType) => void;
   deleteAllNotifications: () => void;
+  exploreNotification: exploreNotification | null;
+  setExploreNotification: (notification: exploreNotification | null) => void;
 }
 
 export const useNotificationsStore = create<NotificationsStore>((set) => ({
@@ -105,6 +111,8 @@ export const useNotificationsStore = create<NotificationsStore>((set) => ({
   deleteAllNotifications: () => {
     set({ notifications: [] });
   },
+  exploreNotification: null,
+  setExploreNotification: (notification: exploreNotification | null) => set({ exploreNotification: notification }),
 }));
 
 /**

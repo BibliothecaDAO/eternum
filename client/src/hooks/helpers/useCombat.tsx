@@ -98,7 +98,7 @@ export function useCombat() {
     }
   };
 
-  const getDefenceOnPosition = (position: Position): CombatInfo | undefined => {
+  const getWatchTowerOnPosition = (position: Position): CombatInfo | undefined => {
     const { x, y } = position;
     const realmEntityIds = Array.from(runQuery([HasValue(Position, { x, y }), Has(TownWatch)]));
     const watchTower = realmEntityIds.length === 1 ? getComponentValue(TownWatch, realmEntityIds[0]) : undefined;
@@ -293,7 +293,7 @@ export function useCombat() {
   return {
     getEntityWatchTowerId,
     getDefenceOnRealm,
-    getDefenceOnPosition,
+    getDefenceOnPosition: getWatchTowerOnPosition,
     getRealmRaidersEntities,
     getRealmRaidersIds,
     useRealmRaiders,

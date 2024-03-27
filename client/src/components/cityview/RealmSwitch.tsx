@@ -126,7 +126,7 @@ export const RealmSwitch = ({ className }: RealmSwitchProps) => {
                 setLocation(`/realm/${Number(realm.realmId)}`);
                 setRealmEntityId(realm.id);
                 setRealmId(realm.realmId);
-              }, 500);
+              }, 300);
             }}
           >
             <RealmBadge key={realm.id} realm={realm} active={realmEntityId === realm.id} />

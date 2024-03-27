@@ -77,9 +77,7 @@ const STYLES = {
 
 export const ResourceIcon = ({ isLabor = false, withTooltip = true, ...props }: Props) => {
   const Icon = (
-    <div
-      className={`flex self-center paper relative group rounded-xl justify-center w-full ${props.containerClassName}`}
-    >
+    <div className={`flex self-center paper relative group rounded-xl justify-center ${props.containerClassName}`}>
       <div className={`relative mx-auto ${clsx(STYLES.size[props.size], props.className)} `}>
         {Components[props.resource.replace(" ", "").replace("'", "")]?.component}
         {isLabor && <People className="absolute left-4 h-2.5 top-3"></People>}

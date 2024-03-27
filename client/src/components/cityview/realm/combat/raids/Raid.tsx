@@ -19,6 +19,7 @@ import useUIStore from "../../../../../hooks/store/useUIStore";
 import { CombatInfo, UIPosition } from "@bibliothecadao/eternum";
 import { useCombat } from "../../../../../hooks/helpers/useCombat";
 import { useLocation } from "wouter";
+import { useRealm } from "../../../../../hooks/helpers/useRealm";
 
 type RaidProps = {
   raider: CombatInfo;
@@ -41,6 +42,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
   } = useDojo();
 
   const { getDefenceOnPosition } = useCombat();
+  const { isRealmIdSettled } = useRealm();
 
   const { realmId, realmEntityId } = useRealmStore();
   const [isLoading, setIsLoading] = useState(false);
@@ -103,8 +105,16 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
   const isYours = raider.owner === BigInt(account.address);
   const hasResources = inventoryResources && inventoryResources.resources.length > 0;
   const isTraveling = raider.arrivalTime && nextBlockTimestamp ? raider.arrivalTime > nextBlockTimestamp : false;
+  const isOnWatchTower = watchTowerId !== undefined;
   const hasMaxHealth = health === 10 * quantity;
-  const destinationRealmId = raider.position ? getRealmIdByPosition(raider.position) : undefined;
+
+  // get destination realm info
+  const destinationRealmId = useMemo(() => {
+    const realmId = raider.position ? getRealmIdByPosition(raider.position) : undefined;
+    const isRealmSettled = realmId ? isRealmIdSettled(realmId) : false;
+    return isRealmSettled ? realmId : undefined;
+  }, [raider.position]);
+
   const destinationName = destinationRealmId ? getRealmNameById(destinationRealmId) : "Map";
   const isHome = destinationRealmId === realmId;
 
@@ -304,7 +314,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
                   {`Return`}
                 </Button>
               )}
-              {!isTraveling && !isHome && !isLoading && (
+              {!isTraveling && !isHome && !isLoading && isOnWatchTower && (
                 <Button
                   size="xs"
                   className="ml-auto"
@@ -315,7 +325,7 @@ export const Raid = ({ raider, isSelected, ...props }: RaidProps) => {
                   variant="outline"
                   withoutSound
                 >
-                  {`Attack`}
+                  {`Attack Realm`}
                 </Button>
               )}
               {!isTraveling && !hasResources && (
@@ -404,12 +414,14 @@ const ShowOnMapButton = ({ className, uIPosition }: ShowOnMapButtonProps) => {
   const showOnMap = () => {
     // if location does not have map in it, then set it to map
     if (!location.includes("/map")) {
-      setLocation("/map");
       setIsLoadingScreenEnabled(true);
-    }
-    setTimeout(() => {
+      setTimeout(() => {
+        setLocation("/map");
+        moveCameraToTarget(uIPosition, 0.01);
+      }, 100);
+    } else {
       moveCameraToTarget(uIPosition);
-    }, 300);
+    }
   };
 
   return (

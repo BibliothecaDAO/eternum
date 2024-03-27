@@ -6,6 +6,11 @@ import { Resource, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecad
 import useRealmStore from "../store/useRealmStore";
 import { findDirection } from "../../utils/utils";
 
+interface ExploreHexProps {
+  explorerId: bigint | undefined;
+  direction: number | undefined;
+}
+
 export function useExplore() {
   const {
     setup: {
@@ -13,7 +18,9 @@ export function useExplore() {
       updates: {
         eventUpdates: { createExploreEntityMapEvents: exploreEntityMapEvents },
       },
+      systemCalls: { explore },
     },
+    account: { account },
   } = useDojo();
 
   const realmEntityIds = useRealmStore((state) => state.realmEntityIds);
@@ -70,7 +77,7 @@ export function useExplore() {
       };
     }, [entityId]);
 
-    return foundResources;
+    return { foundResources, setFoundResources };
   };
 
   const getExplorationInput = (col: number, row: number) => {
@@ -96,5 +103,13 @@ export function useExplore() {
     }
   };
 
-  return { isExplored, exploredColsRows, useFoundResources, getExplorationInput };
+  const exploreHex = async ({ explorerId, direction }: ExploreHexProps) => {
+    if (!explorerId || direction === undefined) return;
+    await explore({
+      unit_id: explorerId,
+      direction,
+      signer: account,
+    });
+  };
+  return { isExplored, exploredColsRows, useFoundResources, getExplorationInput, exploreHex };
 }

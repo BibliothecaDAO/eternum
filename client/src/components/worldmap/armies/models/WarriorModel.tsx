@@ -55,7 +55,7 @@ type ContextType = Record<
 
 type WarriorModelProps = {
   id: number;
-  position: Vector3;
+  position?: Vector3;
   rotationY: number;
   onClick: () => void;
   onPointerEnter: (e: any) => void;
@@ -160,7 +160,6 @@ export function WarriorModel({
   return (
     <group
       {...props}
-      position={position}
       ref={groupRef}
       onClick={onClickAction}
       onPointerEnter={onPointerEnter}

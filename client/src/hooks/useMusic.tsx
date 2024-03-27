@@ -28,8 +28,9 @@ export const useMusicPlayer = () => {
   const isPlaying = useUIStore((state) => state.isPlaying);
   const setIsPlaying = useUIStore((state) => state.setIsPlaying);
 
-  const musicLevel = useUIStore((state) => state.musicLevel);
+  const isSoundOn = useUIStore((state) => state.isSoundOn);
 
+  const musicLevel = useUIStore((state) => state.musicLevel);
   const trackIndex = useUIStore((state) => state.trackIndex);
   const setTrackIndex = useUIStore((state) => state.setTrackIndex);
   const trackName = useUIStore((state) => state.trackName);
@@ -57,10 +58,14 @@ export const useMusicPlayer = () => {
   });
 
   useEffect(() => {
-    play();
+    if (isSoundOn) {
+      play();
+    } else {
+      stop();
+    }
 
     return () => stop();
-  }, [trackIndex, play, stop]);
+  }, [trackIndex, play, stop, isSoundOn]);
 
   return { play, stop, trackName, next, isPlaying };
 };

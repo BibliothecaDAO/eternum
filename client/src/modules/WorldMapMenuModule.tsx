@@ -1,4 +1,5 @@
 import WorldMapMenuComponent from "../components/worldmap/WorldMapMenu";
+import { ExploreNotifications } from "../components/worldmap/ExploreNotification";
 import { BaseContainer } from "../containers/BaseContainer";
 import { Transition } from "@headlessui/react";
 import { Fragment, useEffect, useState } from "react";
@@ -35,6 +36,7 @@ const WorldMapMenuModule = () => {
           </BaseContainer>
         </Transition>
       }
+      <ExploreNotifications />
     </>
   );
 };
