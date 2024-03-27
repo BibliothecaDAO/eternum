@@ -2,13 +2,13 @@
 
 echo "Migrating World and Indexing"
 cd contracts
-sozo migrate
+sozo migrate --name eternum4
 
 
 echo "Auth and World Contracts: Set 0.1s"
-source scripts/env_variables.sh
-./scripts/set_config.sh
+source scripts/env_variables.sh dev
+./scripts/set_config.sh --interval 0.1 --mode dev
 
 
 echo "Started indexer"
-torii --world 0x18fd848cbc9e4bb4742dfcfaf03c820421e70ee25916dbd6ca9cfc88f0336e2
+torii --world 0xa92287241cfe50996a7d5b1af3ab036b99528e97a77980ac36c34dfda28562

@@ -2,7 +2,7 @@
   "contracts": [
     {
       "abi": "abis/deployments/KATANA/contracts/leveling_systems.json",
-      "address": "0x529004c210bef39e277b4a285b3fbb6aa6aa872dec205934f7cbee24e61e703",
+      "address": "0x5ae7021b09ad389d76923737db197762b240c2c2177a54f093276e5a4b8dfab",
       "class_hash": "0x404c1cb5ea153bd3051d3fbc7da5a5687c06c31e7e4e96cf844a02583f69085",
       "computed": [],
       "kind": "DojoContract",
@@ -12,7 +12,7 @@
     },
     {
       "abi": "abis/deployments/KATANA/contracts/test_resource_systems.json",
-      "address": "0x27eb0fa92be18d1ec2054add0c1ef33cd82171311638fde92cb1d7966c12b1a",
+      "address": "0x98df066ba3e28456eeabbcdf18b94a981cb838f06061aa8a5e4901ab9a39dc",
       "class_hash": "0x2435eaad9b52f9cec0a87bd8b173e54a6f42cef7baddc2985756441dc02a28b",
       "computed": [],
       "kind": "DojoContract",
@@ -22,8 +22,8 @@
     },
     {
       "abi": "abis/deployments/KATANA/contracts/trade_systems.json",
-      "address": "0x62ebd901967e87dde96da3e297e0c65623f5cb7c4b6cfc1b1766d660ee3cca1",
-      "class_hash": "0x1d33a01a175ea9d046f6e254999a81313fdbeb6885e4b7a1fbcc3eb5fcdc212",
+      "address": "0x73bf8e3338313640aefd32e58f0d8a62c277ec9b4fe82e352f82568c13effa0",
+      "class_hash": "0x73cc9238488d651eb395329ef31247188c8c63ec2430d9563d83e728b94beb2",
       "computed": [],
       "kind": "DojoContract",
       "name": "eternum::systems::trade::contracts::trade_systems::trade_systems",
@@ -32,7 +32,7 @@
     },
     {
       "abi": "abis/deployments/KATANA/contracts/road_systems.json",
-      "address": "0x264bac9c4d64f597b23a5ce90ea046e7f6f28d12a817ecfa85bb4eeb1db911a",
+      "address": "0x533d6fe8f9cf750cbbca5007ef90defb0e0b43b774f721f247915547a564a24",
       "class_hash": "0x5b1aa5a7534aee9b99730e491e8100fba01494264aed1e2b8f9e0019e273f2",
       "computed": [],
       "kind": "DojoContract",
@@ -42,8 +42,8 @@
     },
     {
       "abi": "abis/deployments/KATANA/contracts/map_systems.json",
-      "address": "0x1054af867855ba7dd1c2351c59cf0543e02faceeb554fc7b95160eeea7a355b",
-      "class_hash": "0x3478a2a4e81174672cda3f13730ae39b0f7154d19fe746831518e66c149eb80",
+      "address": "0x194130c32e41daf8d15b665cc6a2c622b840b9d3c458b862b6ae40a09c2df1c",
+      "class_hash": "0x2b58a8de68df822d696fce344ef1efeb0ab6f1d9ef6fa4f49a15f9d75bb5c8b",
       "computed": [],
       "kind": "DojoContract",
       "name": "eternum::systems::map::contracts::map_systems",
@@ -52,8 +52,8 @@
     },
     {
       "abi": "abis/deployments/KATANA/contracts/combat_systems.json",
-      "address": "0x3d166d0646d4dac27c1cdbed6289c386ba3ca616925438fc1334ba98241eb42",
-      "class_hash": "0x596077fc9115693131311f7fce61008907e5282ccee45f0593772c31decf49a",
+      "address": "0x62b8197cc473467f77a49020571595351943993b86ac73684115bdcf810a05b",
+      "class_hash": "0x1bf3185cf3c04c927ad2fd47126527d0b29b1b5d2c592d9690879f202f00052",
       "computed": [],
       "kind": "DojoContract",
       "name": "eternum::systems::combat::contracts::combat_systems",
@@ -62,7 +62,7 @@
     },
     {
       "abi": "abis/deployments/KATANA/contracts/config_systems.json",
-      "address": "0x62a955e60d08c1b5cf1ecd6fadce18f4fa2578dc5b28f4de0960b86212e2c10",
+      "address": "0x719712aac7df6bd04419f991de3c0df036049d3ebc7ac935cc2880ce96eee34",
       "class_hash": "0x1734fd268fca6a343e7751adf138e30d36865d8a5e4a3c67d9692b7c02cda6a",
       "computed": [],
       "kind": "DojoContract",
@@ -72,7 +72,7 @@
     },
     {
       "abi": "abis/deployments/KATANA/contracts/transport_unit_systems.json",
-      "address": "0x50117a7c042e99c2ff5fddbf1b50f4d358a5aafccab64f2230a96a26783897b",
+      "address": "0x4e73d1905a643c05021307875d29626581a1e6016fedbbd74abb4aeb37b694e",
       "class_hash": "0x785767ab18408824aeba77b7cdaa3db387a3f7ccfb9d92606314d1c0c0cc886",
       "computed": [],
       "kind": "DojoContract",
@@ -82,8 +82,8 @@
     },
     {
       "abi": "abis/deployments/KATANA/contracts/travel_systems.json",
-      "address": "0xbe771ffeadeaa291cc4b09a592f3d77ae837e64c1b7d71559084a8734277b5",
-      "class_hash": "0x19a05b262d22a4d2dda54aa78385131f4366387f6bf61d962ba87567b586909",
+      "address": "0x2ca3212e937354d2673caafa3f216088e2c5e432ce896122a258b6cd9facea2",
+      "class_hash": "0x5e96d58056c87d0d20abc610dfb5c2278f656516cb149e48e59b62c5bdeeeb3",
       "computed": [],
       "kind": "DojoContract",
       "name": "eternum::systems::transport::contracts::travel_systems::travel_systems",
@@ -92,8 +92,8 @@
     },
     {
       "abi": "abis/deployments/KATANA/contracts/realm_systems.json",
-      "address": "0x4bc2d381c41b0769c99c769cc2f7cae42f753449d83b98b8e2a1789382d2b9f",
-      "class_hash": "0x2ac9c47dc7cef9a4f7823a6b0566a1ed1adc9c980c75f80b848efeaf65df2e8",
+      "address": "0x33d7bdde068731793957f7739be2cd43cb2ecc15427b556af21915187508d43",
+      "class_hash": "0x524c743435e6daebf5ba878ac986e1807db730ea2f446a64aa0f72f334e0e4c",
       "computed": [],
       "kind": "DojoContract",
       "name": "eternum::systems::realm::contracts::realm_systems",
@@ -102,7 +102,7 @@
     },
     {
       "abi": "abis/deployments/KATANA/contracts/caravan_systems.json",
-      "address": "0x4eccd6513a6cb6aa4a97c1bf7055a0585d563be462d3e849c2aed4ac4442988",
+      "address": "0x5bafa2cb63b4f65bad9cae3e909e5e3931e28f20ee302ff6c1de4ea6305ee00",
       "class_hash": "0x700f0deec8ad23e3dd6dd66045489930d1dc7febc7aebb583a6f54d1ec2161b",
       "computed": [],
       "kind": "DojoContract",
@@ -112,7 +112,7 @@
     },
     {
       "abi": "abis/deployments/KATANA/contracts/hyperstructure_systems.json",
-      "address": "0x4db27db7417d27e7b11d73b60ae490a31a83b907938c11e16fe408be80b391f",
+      "address": "0x3ff1a2426d5892dcd37cabd9c55502fbfad54655e22c5be40b6b70209af115",
       "class_hash": "0x200c668b25c849bb5ecb4c0e6e3f04e9f5036b696b0aae7efb9aaba91b50a4c",
       "computed": [],
       "kind": "DojoContract",
@@ -122,7 +122,7 @@
     },
     {
       "abi": "abis/deployments/KATANA/contracts/name_systems.json",
-      "address": "0x157792266e146e80f17de3f5c5cdaebe346da495636a872c8ce1945d20a8c49",
+      "address": "0x7dec3f07f332cd64900e78dd76bec5c447a9a805054e25e590f1ed412cb4439",
       "class_hash": "0x5075b39c0dca2bc2c3f855ea5ccd58bc728597cbbc4f2d87c43e1302c7df711",
       "computed": [],
       "kind": "DojoContract",
@@ -132,8 +132,8 @@
     },
     {
       "abi": "abis/deployments/KATANA/contracts/resource_systems.json",
-      "address": "0x28af36343da64931975f7100dbd18c7632d571f207d8418c3df07d1b4c3ca18",
-      "class_hash": "0x5694a0d4df4c9728fdaeb79e2da34b81b8be2ebdcb8bb48f682d966f1231ad6",
+      "address": "0x4bf10e03a7da7a3b3b40fa90b2076a06c6408b8009144dde9a6f0e911d7ba1f",
+      "class_hash": "0x1da1d4f89a9b862a01a9ef5c15bb7eed2d2467b6cf9e82054f7b2b08810f0b7",
       "computed": [],
       "kind": "DojoContract",
       "name": "eternum::systems::resources::contracts::resource_systems",
@@ -142,8 +142,8 @@
     },
     {
       "abi": "abis/deployments/KATANA/contracts/labor_systems.json",
-      "address": "0xbec90d167e0831347b7cdd21817342dbbb66b0f8e08676e1b02e8d29c21ee3",
-      "class_hash": "0x47f6df3f110faa3db948702713ce075d69328fd976a0b6c053d02bbda054406",
+      "address": "0x223ce3e36fd6ddb5acd4e9d5f6683b6e1f15fb7bc1f58e5cea2d0e86441c30b",
+      "class_hash": "0x75d008d8780b27a9c93ccebb4d76ccb8f99cb4dc74aaa542c8c399dd0ac93c6",
       "computed": [],
       "kind": "DojoContract",
       "name": "eternum::systems::labor::contracts::labor_systems",
@@ -152,8 +152,8 @@
     },
     {
       "abi": "abis/deployments/KATANA/contracts/buildings_systems.json",
-      "address": "0x4a3e0da2cc518cc75d8a5c7fbb5e18a7e3d188401463e517c194c256ec3d593",
-      "class_hash": "0x389abe222e817088adf097fb6b6bae924eee2b3a9dae88b0a0f2627512a14d3",
+      "address": "0x297d80775fcead9eedaae527fb271416749fac44d7f2d70082d15b0fc4f8bad",
+      "class_hash": "0x1ea75213d31c666460b6b84bc87135239df5da93f674bc9675cb68d409b430c",
       "computed": [],
       "kind": "DojoContract",
       "name": "eternum::systems::buildings::contracts::buildings_systems",
@@ -162,8 +162,8 @@
     },
     {
       "abi": "abis/deployments/KATANA/contracts/bank_systems.json",
-      "address": "0x14569fcc0420bf7e7843261d4defe508a19dd4e7db5bc2aadc1487f0fe148c9",
-      "class_hash": "0x2924bb3ca1cf1e73103b38bca6017e00e6ef54c4a9691b4d59ab740f0056f30",
+      "address": "0x4335f7a62ef1aa88bff0bca25c158a2c8060ef4e21c7312515e3988ee4f448a",
+      "class_hash": "0x2b00ccd8064896a8cfa6c5c9caed3ed6ed29b64e862282bf62971a674991323",
       "computed": [],
       "kind": "DojoContract",
       "name": "eternum::systems::bank::contracts::bank_systems",
@@ -1754,7 +1754,7 @@
     "name": "dojo::base::base"
   },
   "world": {
-    "address": "0x18fd848cbc9e4bb4742dfcfaf03c820421e70ee25916dbd6ca9cfc88f0336e2",
+    "address": "0xa92287241cfe50996a7d5b1af3ab036b99528e97a77980ac36c34dfda28562",
     "class_hash": "0x5ad96ceea29160aa7305bb078d1ade41f73b487363ae12778dbea6393cc00b2",
     "kind": "Contract",
     "name": "dojo::world::world"

@@ -54,7 +54,7 @@ source = "git+https://github.com/dojoengine/dojo?tag=v0.3.11#1e651b5d4d3b79b14a7
 
 [[package]]
 name = "eternum"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "alexandria_math",
  "cubit",
