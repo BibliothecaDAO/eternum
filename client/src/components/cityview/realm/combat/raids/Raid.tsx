@@ -430,3 +430,10 @@ const ShowOnMapButton = ({ className, uIPosition }: ShowOnMapButtonProps) => {
     </div>
   );
 };
+// Hypothetical function to handle 3D model click for attacking a realm
+const handle3DModelClickForAttack = (realmId) => {
+  // Assuming `setShowAttackRaid` is a function to show the attack UI, similar to the button click
+  setShowAttackRaid(true);
+  // Additional logic might be required here to ensure the attack is directed at the correct realm
+  // This could involve setting the target realm ID or other necessary state
+};
