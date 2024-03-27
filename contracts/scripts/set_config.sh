@@ -7,8 +7,8 @@ resource_precision=1000
 ## set tick config
 commands+=(
     # max_moves_per_tick = 3
-    # tick_interval_in_seconds = 60
-    "sozo execute $CONFIG_SYSTEMS set_tick_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,3,60"
+    # tick_interval_in_seconds = 900
+    "sozo execute $CONFIG_SYSTEMS set_tick_config --account-address $DOJO_ACCOUNT_ADDRESS --calldata $SOZO_WORLD,3,900"
 )
 
 ## set exploration config
