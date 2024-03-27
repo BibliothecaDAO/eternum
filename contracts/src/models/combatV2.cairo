@@ -57,9 +57,9 @@ impl BattleImpl of BattleTrait {
             entity_id: self.entity_id,
             attacking_side: attacking_army,
             defending_side: defending_army,
-            advantage_multiplier: 1,
-            disadvantage_multiplier: 1,
-            last_updated: self.since_last_update(),
+            advantage_multiplier: 1, // if the attacking side has an advantage
+            disadvantage_multiplier: 1, // if the defending side has an advantage - a Realm for example would have defence bonus
+            last_updated: get_block_timestamp(),
             active: true,
         }
     }
@@ -75,15 +75,9 @@ impl BattleImpl of BattleTrait {
             },
             health: self.attacking_side.health + new_army.health,
         };
-        Battle {
-            entity_id: self.entity_id,
-            attacking_side: new_attacking_army,
-            defending_side: self.defending_side,
-            advantage_multiplier: self.advantage_multiplier,
-            disadvantage_multiplier: self.disadvantage_multiplier,
-            last_updated: get_block_timestamp(),
-            active: self.active,
-        }
+
+        self.attacking_side = new_attacking_army;
+        self
     }
 
     fn reinforce_defending_army(ref self: Battle, new_army: Army) -> Battle {
@@ -98,15 +92,9 @@ impl BattleImpl of BattleTrait {
             },
             health: self.defending_side.health + new_army.health,
         };
-        Battle {
-            entity_id: self.entity_id,
-            attacking_side: self.attacking_side,
-            defending_side: new_defending_army,
-            advantage_multiplier: self.advantage_multiplier,
-            disadvantage_multiplier: self.disadvantage_multiplier,
-            last_updated: get_block_timestamp(),
-            active: self.active,
-        }
+
+        self.defending_side = new_defending_army;
+        self
     }
     fn calculate_delta(self: Battle) -> (u32, u32) {
         // Assuming troop 'a' is strong against 'b', 'b' is strong against 'c', and 'c' is strong against 'a'.
