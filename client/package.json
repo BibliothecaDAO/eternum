@@ -41,6 +41,7 @@
     "react-blurhash": "^0.3.0",
     "react-dom": "^18.2.0",
     "react-draggable": "^4.4.6",
+    "react-toastify": "^10.0.5",
     "rxjs": "^7.8.1",
     "three": "^0.151.3",
     "three-stdlib": "^2.29.5",
