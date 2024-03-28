@@ -1,6 +1,7 @@
 import useSound from "use-sound";
 import useUIStore from "./store/useUIStore";
 import { ResourcesIds } from "@bibliothecadao/eternum";
+import { useCallback, useState } from "react";
 
 const dir = "/sound/";
 
@@ -46,18 +47,26 @@ export const soundSelector = {
   addMithral: "resources/mithral.mp3",
   addDragonhide: "resources/dragonhide.mp3",
   addLords: "resources/lords.mp3",
+  unitRunning: "units/running.mp3",
+  unitRunningAlternative: "units/running_2.mp3",
 };
 
 export const useUiSounds = (selector: string) => {
   const effectsLevel = useUIStore((state) => state.effectsLevel);
   const isSoundOn = useUIStore((state) => state.isSoundOn);
 
-  const [play] = useSound(dir + selector, {
+  const [play, { stop, sound }] = useSound(dir + selector, {
     volume: isSoundOn ? effectsLevel / 100 : 0,
   });
 
+  const fade = useCallback(() => {
+    sound && sound.fade(isSoundOn ? effectsLevel / 100 : 0, 0, 250);
+  }, [effectsLevel, isSoundOn, sound]);
+
   return {
     play,
+    stop,
+    fade,
   };
 };
 
@@ -172,5 +181,30 @@ export const usePlayResourceSound = () => {
 
   return {
     playResourceSound,
+  };
+};
+
+export const useRunningSound = () => {
+  const { play: playFirst, fade: fadeFirst } = useUiSounds(soundSelector.unitRunning);
+  const { play: playSecond, fade: fadeSecond } = useUiSounds(soundSelector.unitRunningAlternative);
+  const [isFirst, setIsFirst] = useState(true);
+
+  const play = useCallback(() => {
+    if (isFirst) {
+      playFirst();
+    } else {
+      playSecond();
+    }
+    setIsFirst((prev) => !prev);
+  }, [isFirst, playFirst, playSecond]);
+
+  const stop = useCallback(() => {
+    fadeFirst();
+    fadeSecond();
+  }, [fadeFirst, fadeSecond, isFirst]);
+
+  return {
+    play,
+    stop,
   };
 };
