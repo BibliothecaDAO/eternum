@@ -12,6 +12,7 @@ const HexInsideView = ({ center }: { center: { col: number; row: number } }) => 
   const color = new THREE.Color();
 
   const generateHexPositions = (center: { col: number; row: number }) => {
+    const addOffset = center.row % 2 === 0 ? 0 : 1;
     const radius = 4;
     const positions = [] as any[];
     const normalizedCenter = { col: 4, row: 4 };
@@ -20,7 +21,10 @@ const HexInsideView = ({ center }: { center: { col: number; row: number } }) => 
       const basicCount = 9;
       const decrease = Math.abs(_row - radius);
       const colsCount = basicCount - decrease;
-      const startOffset = _row % 2 === 0 ? (decrease > 0 ? Math.floor(decrease / 2) : 0) : Math.floor(decrease / 2);
+      let startOffset = _row % 2 === 0 ? (decrease > 0 ? Math.floor(decrease / 2) : 0) : Math.floor(decrease / 2);
+      if (addOffset > 0 && _row % 2 !== 0) {
+        startOffset += 1;
+      }
       for (
         let _col = startOffset + normalizedCenter.col - radius;
         _col < normalizedCenter.col - radius + colsCount + startOffset;
