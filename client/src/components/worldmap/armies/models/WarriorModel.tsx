@@ -9,6 +9,7 @@ import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { useGLTF, useAnimations } from "@react-three/drei";
 import { GLTF, SkeletonUtils } from "three-stdlib";
 import { Vector3, useGraph } from "@react-three/fiber";
+import { useRunningSound } from "../../../../hooks/useUISound";
 
 const FRIENDLY_ARMY_MODEL_HOVER_COLOR: string = "yellow";
 const ENEMY_ARMY_MODEL_HOVER_COLOR: string = "orange";
@@ -84,6 +85,7 @@ export function WarriorModel({
   const { actions } = useAnimations(animations, groupRef);
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   const { nodes, materials } = useGraph(clone);
+  const { play: playRunningSoud, stop: stopRunningSound } = useRunningSound();
 
   // Deterministic rotation based on the id
   const deterministicRotation = useMemo(() => {
@@ -119,9 +121,11 @@ export function WarriorModel({
     const idleAction = actions["Idle_Attacking"];
     if (isRunning) {
       runAction?.play();
+      playRunningSoud();
       idleAction?.stop();
     } else {
       runAction?.stop();
+      stopRunningSound();
       const randomDelay = Math.random() * 2; // Generate a random delay between 0 and 2 seconds
       setTimeout(() => {
         idleAction?.play();

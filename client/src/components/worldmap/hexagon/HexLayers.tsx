@@ -408,11 +408,11 @@ const useEventHandlers = (explored: Map<number, Set<number>>) => {
       entityId: id,
       biome,
     });
+    playExplore();
     await exploreHex({
       explorerId: id,
       direction,
     });
-    playExplore();
     clearSelection();
   }
 
