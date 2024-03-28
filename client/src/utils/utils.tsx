@@ -189,7 +189,7 @@ export const calculateDistance = (start: Position, destination: Position): numbe
   return distance;
 };
 
-export const getUIPositionFromColRow = (col: number, row: number, normalized: boolean = false): Position => {
+export const getUIPositionFromColRow = (col: number, row: number, normalized?: boolean): Position => {
   const hexRadius = 3;
   const hexHeight = hexRadius * 2;
   const hexWidth = Math.sqrt(3) * hexRadius;
@@ -207,7 +207,7 @@ export const getUIPositionFromColRow = (col: number, row: number, normalized: bo
   };
 };
 
-export const getColRowFromUIPosition = (x: number, y: number, normalized: boolean): { col: number; row: number } => {
+export const getColRowFromUIPosition = (x: number, y: number, normalized?: boolean): { col: number; row: number } => {
   const hexRadius = 3;
   const hexHeight = hexRadius * 2;
   const hexWidth = Math.sqrt(3) * hexRadius;

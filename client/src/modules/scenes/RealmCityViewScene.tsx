@@ -22,6 +22,7 @@ export const RealmCityViewScene = () => {
 
   return (
     <>
+      {/* <HexInsideView center={{ col: 4, row: 4 }} /> */}
       <HexInsideView center={{ col: 4, row: 4 }} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
         <planeGeometry args={[2668, 1390.35]} />

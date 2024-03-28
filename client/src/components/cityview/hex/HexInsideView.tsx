@@ -19,7 +19,7 @@ const HexInsideView = ({ center }: { center: { col: number; row: number } }) => 
       const decrease = Math.abs(_row - radius);
       const colsCount = basicCount - decrease;
       const startOffset = _row % 2 === 0 ? (decrease > 0 ? Math.floor(decrease / 2) : 0) : Math.floor(decrease / 2);
-      for (let _col = startOffset; _col < colsCount + startOffset; _col++) {
+      for (let _col = startOffset + center.col - radius; _col < center.col - radius + colsCount + startOffset; _col++) {
         positions.push({
           ...getUIPositionFromColRow(_col, _row, true),
           z: 0.32,
@@ -37,10 +37,10 @@ const HexInsideView = ({ center }: { center: { col: number; row: number } }) => 
   const hexPositions = generateHexPositions();
 
   return (
-    <group>
+    <group rotation={[Math.PI / -2, 0, 0]}>
       {hexPositions.map((hexPosition, index) => {
         return (
-          <group key={index} position={[hexPosition.x, hexPosition.z, hexPosition.y]} rotation={[Math.PI / -2, 0, 0]}>
+          <group key={index} position={[hexPosition.x, hexPosition.y, hexPosition.z]}>
             <mesh geometry={hexagonGeometry}>
               <meshMatcapMaterial color={hexPosition.color} />
             </mesh>
