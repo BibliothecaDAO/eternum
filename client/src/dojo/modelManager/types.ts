@@ -15,3 +15,13 @@ export type ResourceType = {
   resource_type: Type.Number;
   balance: Type.BigInt;
 };
+
+export type BuildingType = {
+  outer_col: Type.BigInt;
+  outer_row: Type.BigInt;
+  inner_col: Type.BigInt;
+  inner_row: Type.BigInt;
+  id: Type.BigInt;
+  // todo: check if works with enum
+  category: Type.Number;
+};

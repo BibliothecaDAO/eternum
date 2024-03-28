@@ -183,6 +183,28 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    Building: (() => {
+      return defineComponent(
+        world,
+        {
+          outer_col: RecsType.BigInt,
+          outer_row: RecsType.BigInt,
+          inner_col: RecsType.BigInt,
+          inner_row: RecsType.BigInt,
+          id: RecsType.BigInt,
+          // todo: check if works with enum
+          category: RecsType.Number,
+        },
+        {
+          metadata: {
+            name: "Building",
+            // todo: check if need cutom types for building category
+            types: ["u128", "u128", "u128", "u128", "u128", "u8"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     LaborBuilding: (() => {
       return defineComponent(
         world,
