@@ -116,10 +116,16 @@ export function WarriorModel({
 
   useEffect(() => {
     const runAction = actions["Run"];
+    const idleAction = actions["Idle_Attacking"];
     if (isRunning) {
       runAction?.play();
+      idleAction?.stop();
     } else {
       runAction?.stop();
+      const randomDelay = Math.random() * 2; // Generate a random delay between 0 and 2 seconds
+      setTimeout(() => {
+        idleAction?.play();
+      }, randomDelay * 1000); // Convert the delay to milliseconds
     }
   }, [isRunning, actions]);
 
