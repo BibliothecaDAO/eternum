@@ -38,7 +38,7 @@ impl ResourceImpl of ResourceTrait {
     fn deduct(ref self: Resource, world: IWorldDispatcher, amount: u128, check_balance: bool) {
         let mut amount = amount;
         if check_balance {
-            assert(self.balance >= amount, 'insufficient balance');
+            assert!(self.balance >= amount, "insufficient balance");
         } else {
             if amount > self.balance {
                 amount = self.balance
