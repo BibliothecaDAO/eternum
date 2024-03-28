@@ -4,6 +4,27 @@ import { defineComponent, Type as RecsType, World } from "@dojoengine/recs";
 
 export function defineContractComponents(world: World) {
   return {
+    Production: (() => {
+      return defineComponent(
+        world,
+        {
+          entity_id: RecsType.BigInt,
+          resource_type: RecsType.Number,
+          production_rate: RecsType.Number,
+          production_boost_rate: RecsType.Number,
+          consumed_rate: RecsType.Number,
+          last_updated: RecsType.Number,
+          active: RecsType.Boolean,
+        },
+        {
+          metadata: {
+            name: "Production",
+            types: ["u128", "u8", "u64", "u64", "u64", "u64", "bool"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     Age: (() => {
       return defineComponent(
         world,
