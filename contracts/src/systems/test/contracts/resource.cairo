@@ -9,7 +9,6 @@ mod test_resource_systems {
     #[abi(embed_v0)]
     impl ResourceSystemsImpl of IResourceSystems<ContractState> {
         fn mint(
-            self: @ContractState,
             world: IWorldDispatcher,
             entity_id: u128,
             resources: Span<(u8, u128)>,
