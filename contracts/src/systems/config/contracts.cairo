@@ -32,7 +32,7 @@ mod config_systems {
     fn assert_caller_is_admin(world: IWorldDispatcher) {
         let admin_address = get!(world, WORLD_CONFIG_ID, WorldConfig).admin_address;
         if admin_address != Zeroable::zero() {
-            assert(starknet::get_caller_address() == admin_address, 'caller not admin');
+            assert!(starknet::get_caller_address() == admin_address, "caller not admin");
         }
     }
 
@@ -70,7 +70,7 @@ mod config_systems {
                         resource_type, resource_amount
                     )) => {
                         let (resource_type, resource_amount) = (*resource_type, *resource_amount);
-                        assert(resource_amount > 0, 'amount must not be 0');
+                        assert!(resource_amount > 0, "amount must not be 0");
 
                         set!(
                             world,
@@ -86,9 +86,7 @@ mod config_systems {
 
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 };
             };
 
@@ -107,8 +105,11 @@ mod config_systems {
     #[abi(embed_v0)]
     impl MapConfigImpl of IMapConfig<ContractState> {
         fn set_exploration_config(
-            self: @ContractState, world: IWorldDispatcher, 
-            wheat_burn_amount: u128, fish_burn_amount: u128, reward_resource_amount: u128
+            self: @ContractState,
+            world: IWorldDispatcher,
+            wheat_burn_amount: u128,
+            fish_burn_amount: u128,
+            reward_resource_amount: u128
         ) {
             assert_caller_is_admin(world);
 
@@ -173,13 +174,11 @@ mod config_systems {
         ) {
             assert_caller_is_admin(world);
 
-            set!( world,(
-                TickConfig { 
-                    config_id: WORLD_CONFIG_ID, 
-                    max_moves_per_tick, 
-                    tick_interval_in_seconds
-                }
-            )
+            set!(
+                world,
+                (TickConfig {
+                    config_id: WORLD_CONFIG_ID, max_moves_per_tick, tick_interval_in_seconds
+                })
             );
         }
     }
@@ -577,7 +576,7 @@ mod config_systems {
                     Option::Some((
                         resource_type, resource_amount
                     )) => {
-                        assert(*resource_amount > 0, 'amount must not be 0');
+                        assert!(*resource_amount > 0, "amount must not be 0");
 
                         set!(
                             world,
@@ -591,9 +590,7 @@ mod config_systems {
 
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 };
             };
 
@@ -650,7 +647,7 @@ mod config_systems {
                                 Option::Some((
                                     resource_type, resource_amount
                                 )) => {
-                                    assert(*resource_amount > 0, 'amount must not be 0');
+                                    assert!(*resource_amount > 0, "amount must not be 0");
 
                                     set!(
                                         world,
@@ -664,9 +661,7 @@ mod config_systems {
 
                                     jndex += 1;
                                 },
-                                Option::None => {
-                                    break;
-                                }
+                                Option::None => { break; }
                             };
                         };
 
@@ -682,9 +677,7 @@ mod config_systems {
 
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 }
             };
 
@@ -711,7 +704,7 @@ mod config_systems {
             let start_time = starknet::get_block_timestamp();
 
             let bank = get!(world, (bank_id), Bank);
-            assert(bank.exists == true, 'no bank');
+            assert!(bank.exists == true, "no bank");
 
             let mut index = 0;
             loop {
@@ -818,9 +811,7 @@ mod config_systems {
                         );
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 }
             };
 
@@ -857,9 +848,7 @@ mod config_systems {
                         );
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 }
             };
 
@@ -896,9 +885,7 @@ mod config_systems {
                         );
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 }
             };
 
@@ -935,9 +922,7 @@ mod config_systems {
                         );
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 }
             };
         }

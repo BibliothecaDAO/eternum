@@ -27,7 +27,7 @@ impl AgeImpl of AgeTrait {
 // fn test_get_age_difference() {
 //     let age = Age { born_at: 100,  };
 //     let age_difference = age.get_age_difference(200);
-//     assert(age_difference == 100, 'Age difference should be 100');
+//     assert!(age_difference == 100, "Age difference should be 100");
 // }
 
 // #[test]
@@ -36,7 +36,7 @@ impl AgeImpl of AgeTrait {
 //     let age = Age { born_at: 100,  };
 //     starknet::testing::set_block_timestamp(200);
 //     let current_age = age.get_current_age();
-//     assert(current_age == 100, 'Current age should be 100');
+//     assert!(current_age == 100, "Current age should be 100");
 // }
 
 

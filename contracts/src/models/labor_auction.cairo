@@ -74,7 +74,7 @@ mod tests {
 
     fn assert_rel_approx_eq(a: Fixed, b: Fixed, max_percent_delta: Fixed) {
         if b == FixedTrait::ZERO() {
-            assert(a == b, 'a should eq ZERO');
+            assert!(a == b, "a should eq ZERO");
         }
         let percent_delta = if a > b {
             (a - b) / b
@@ -82,7 +82,7 @@ mod tests {
             (b - a) / b
         };
 
-        assert(percent_delta < max_percent_delta, 'a ~= b not satisfied');
+        assert!(percent_delta < max_percent_delta, "a ~= b not satisfied");
     }
 
     #[test]

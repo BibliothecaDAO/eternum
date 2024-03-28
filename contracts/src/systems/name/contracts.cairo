@@ -2,8 +2,8 @@
 mod name_systems {
     use eternum::models::name::{AddressName};
     use eternum::systems::name::interface::{INameSystems};
-    
-    use traits::Into; 
+
+    use traits::Into;
 
     #[abi(embed_v0)]
     impl NameSystemsImpl of INameSystems<ContractState> {
@@ -13,7 +13,7 @@ mod name_systems {
 
             // assert that name not set
             let mut address_name = get!(world, (caller_felt252), AddressName);
-            assert(address_name.name == 0, 'Name already set');
+            assert!(address_name.name == 0, "Name already set");
             address_name.name = name;
 
             set!(world, (address_name));

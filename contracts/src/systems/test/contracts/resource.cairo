@@ -23,15 +23,13 @@ mod test_resource_systems {
                         resource_type, amount
                     )) => {
                         let (resource_type, amount) = (*resource_type, *amount);
-                        assert(amount > 0, 'amount must not be 0');
+                        assert!(amount > 0, "amount must not be 0");
 
                         let mut resource = get!(world, (entity_id, resource_type), Resource);
                         resource.balance += amount;
                         resource.save(world);
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 };
             };
         }

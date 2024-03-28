@@ -53,9 +53,9 @@ mod realm_systems {
             let mut caller_realms_quantity = get!(
                 world, caller_realm_quantity_key, QuantityTracker
             );
-            assert(
+            assert!(
                 caller_realms_quantity.count < MAX_REALMS_PER_ADDRESS.into(),
-                'max num of realms settled'
+                "max num of realms settled"
             );
 
             caller_realms_quantity.count += 1;

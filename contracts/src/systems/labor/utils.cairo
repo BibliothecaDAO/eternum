@@ -5,7 +5,7 @@ fn assert_harvestable_resource(resource_type: u8) {
 
     let is_minable_resource = (resource_type > 0) & (resource_type <= 28);
 
-    assert(is_food | is_minable_resource, 'Invalid resource type');
+    assert!(is_food | is_minable_resource, "Invalid resource type");
 }
 
 fn get_labor_resource_type(resource_type: u8) -> u8 {

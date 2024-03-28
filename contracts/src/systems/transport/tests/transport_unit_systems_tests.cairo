@@ -120,27 +120,27 @@ fn test_create_free_transport_unit() {
     let (quantity, position, metadata, owner, capacity, movable, arrival_time) 
     = get!(world, free_transport_unit_id, (Quantity, Position, EntityMetadata, Owner, Capacity, Movable, ArrivalTime));
 
-    assert(quantity.value == 10_u128, 'free transport unit not created');
+    assert!(quantity.value == 10_u128, "free transport unit not created");
 
-    assert(position.x == 20, 'position not set');
-    assert(position.y == 30, 'position not set');
+    assert!(position.x == 20, "position not set");
+    assert!(position.y == 30, "position not set");
 
-    assert(metadata.entity_type == FREE_TRANSPORT_ENTITY_TYPE.into(), 'entity type not set');
+    assert!(metadata.entity_type == FREE_TRANSPORT_ENTITY_TYPE.into(), "entity type not set");
 
-    assert(owner.address == starknet::get_caller_address(), 'owner not set');
+    assert!(owner.address == starknet::get_caller_address(), "owner not set");
 
-    assert(capacity.weight_gram == 200_000, 'capacity not set');
+    assert!(capacity.weight_gram == 200_000, "capacity not set");
 
-    assert(movable.sec_per_km == 10, 'sec_per_km not set');
-    assert(movable.blocked == false, 'entity is blocked');
+    assert!(movable.sec_per_km == 10, "sec_per_km not set");
+    assert!(movable.blocked == false, "entity is blocked");
 
-    assert(arrival_time.arrives_at == 0, 'arrival time should be 0');
+    assert!(arrival_time.arrives_at == 0, "arrival time should be 0");
 
     // check that the quantity tracker has been updated
     let quantity_tracker_arr = array![realm_entity_id.into(), FREE_TRANSPORT_ENTITY_TYPE.into()];
     let quantity_tracker_key = poseidon_hash_span(quantity_tracker_arr.span());
     let quantity_tracker = get!(world, quantity_tracker_key, QuantityTracker);
-    assert(quantity_tracker.count == 10, 'quantity tracker not updated');
+    assert!(quantity_tracker.count == 10, "quantity tracker not updated");
 
 
     // create another free transport unit and confirm 
@@ -150,7 +150,7 @@ fn test_create_free_transport_unit() {
     );
 
     let quantity_tracker = get!(world, quantity_tracker_key, QuantityTracker);
-    assert(quantity_tracker.count == 20, 'quantity tracker not updated'); 
+    assert!(quantity_tracker.count == 20, "quantity tracker not updated"); 
 }
 
 
@@ -207,7 +207,7 @@ fn test_return_free_transport_unit() {
     let quantity_tracker_arr = array![realm_entity_id.into(), FREE_TRANSPORT_ENTITY_TYPE.into()];
     let quantity_tracker_key = poseidon_hash_span(quantity_tracker_arr.span());
     let quantity_tracker = get!(world, quantity_tracker_key, QuantityTracker);
-    assert(quantity_tracker.count == 20, 'quantity tracker not updated 1');
+    assert!(quantity_tracker.count == 20, "quantity tracker not updated 1");
 
 
     // return free transport unit 1
@@ -220,22 +220,22 @@ fn test_return_free_transport_unit() {
     let (quantity, position, metadata, owner, capacity, movable, _) 
     = get!(world, free_transport_unit_id_1, (Quantity, Position, EntityMetadata, Owner, Capacity, Movable, ArrivalTime));
 
-    assert(quantity.value == 0, 'unit not returnd');
+    assert!(quantity.value == 0, "unit not returnd");
 
-    assert(position.x == 0, 'position is set');
-    assert(position.y == 0, 'position is set');
+    assert!(position.x == 0, "position is set");
+    assert!(position.y == 0, "position is set");
 
-    assert(metadata.entity_type == 0, 'entity type is set');
+    assert!(metadata.entity_type == 0, "entity type is set");
 
-    assert(owner.address == Zeroable::zero(), 'owner is set');
+    assert!(owner.address == Zeroable::zero(), "owner is set");
 
-    assert(capacity.weight_gram == 0, 'capacity is set');
+    assert!(capacity.weight_gram == 0, "capacity is set");
 
-    assert(movable.sec_per_km == 0, 'speed is set');
+    assert!(movable.sec_per_km == 0, "speed is set");
 
     // check that the number of transport units in the realm == 10 after deletion
     let quantity_tracker = get!(world, quantity_tracker_key, QuantityTracker);
-    assert(quantity_tracker.count == 10, 'quantity tracker not updated 2');
+    assert!(quantity_tracker.count == 10, "quantity tracker not updated 2");
 }
 
 

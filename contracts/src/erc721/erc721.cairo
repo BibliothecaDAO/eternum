@@ -180,12 +180,12 @@ mod ERC721 {
     #[external]
     fn approve(approved: ContractAddress, token_id: u128) {
         let owner = owner(token_id);
-        assert(owner != approved, 'approval to owner');
+        assert!(owner != approved, "approval to owner");
 
         let token: felt252 = get_contract_address().into();
         // TODO: get origin contract address when available
         // let caller = get_caller_address();
-        // assert(caller == owner, 'not approved');
+        // assert!(caller == owner, "not approved");
 
         let mut calldata = ArrayTrait::new();
         calldata.append(token);
@@ -202,7 +202,7 @@ mod ERC721 {
 
     #[external]
     fn mint(to: ContractAddress) {
-        assert(to.is_non_zero(), 'minting to zero address');
+        assert!(to.is_non_zero(), "minting to zero address");
         // TODO: assert can mint
 
         let token = get_contract_address();
@@ -227,7 +227,7 @@ mod ERC721 {
     }
 
     fn assert_valid_address(address: ContractAddress) {
-        assert(address.is_non_zero(), 'invalid address');
+        assert!(address.is_non_zero(), "invalid address");
     }
 
     #[inline(always)]
@@ -244,15 +244,15 @@ mod ERC721 {
     //     let approved = world().entity(
     //         'TokenApproval'.into(), (contract_address, token_id.into(), 0_u8, 0_usize
     //     );
-    //     assert(operator == owner | operator.into() == *approved[0], 'operation not allowed');
+    //     assert!(operator == owner | operator.into() == *approved[0], "operation not allowed");
     // }
 
     fn transfer(from: ContractAddress, to: ContractAddress, token_id: u128) {
         let token = get_contract_address();
         let owner = owner(token_id);
 
-        assert(owner == from, 'source not owner');
-        assert(to.is_non_zero(), 'transferring to zero');
+        assert!(owner == from, "source not owner");
+        assert!(to.is_non_zero(), "transferring to zero");
 
         // TODO: use approval when we have final ERC721
         // assert_approved_or_owner(owner, get_caller_address(), token_id);
