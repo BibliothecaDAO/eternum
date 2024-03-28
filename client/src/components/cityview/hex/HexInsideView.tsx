@@ -6,12 +6,12 @@ import { getUIPositionFromColRow } from "../../../utils/utils";
 import { get } from "lodash";
 import { Html } from "@react-three/drei";
 
-const HexInsideView = () => {
+const HexInsideView = ({ center }: { center: { col: number; row: number } }) => {
   const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
 
+  const color = new THREE.Color();
+
   const generateHexPositions = () => {
-    const OFFSET = 2147483647;
-    const center = { col: 4, row: 4 };
     const radius = 4;
     const positions = [] as any[];
     for (let _row = center.row - radius; _row <= center.row + radius; _row++) {
@@ -21,9 +21,9 @@ const HexInsideView = () => {
       const startOffset = _row % 2 === 0 ? (decrease > 0 ? Math.floor(decrease / 2) : 0) : Math.floor(decrease / 2);
       for (let _col = startOffset; _col < colsCount + startOffset; _col++) {
         positions.push({
-          ...getUIPositionFromColRow(_col + OFFSET, _row + OFFSET),
+          ...getUIPositionFromColRow(_col, _row, true),
           z: 0.32,
-          color: [Math.random(), Math.random(), Math.random()],
+          color: [0.33, 0.33, 0.33],
           col: _col,
           row: _row,
           startOffset: startOffset,
@@ -44,7 +44,7 @@ const HexInsideView = () => {
             <mesh geometry={hexagonGeometry}>
               <meshMatcapMaterial color={hexPosition.color} />
             </mesh>
-            <Html>
+            <Html distanceFactor={50}>
               <div className="flex -translate-y-1/2 -translate-x-1/2">
                 {hexPosition.col},{hexPosition.row}
               </div>

@@ -31,7 +31,7 @@ const RealmManagementComponent = () => {
     if (selectedTab == 0) {
       // moveCameraToLaborView();
     } else {
-      moveCameraToMarketView();
+      // moveCameraToMarketView();
     }
   }, [selectedTab]);
 

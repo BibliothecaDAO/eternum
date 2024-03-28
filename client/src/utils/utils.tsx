@@ -189,15 +189,15 @@ export const calculateDistance = (start: Position, destination: Position): numbe
   return distance;
 };
 
-export const getUIPositionFromColRow = (col: number, row: number, _log: boolean = false): Position => {
+export const getUIPositionFromColRow = (col: number, row: number, normalized: boolean = false): Position => {
   const hexRadius = 3;
   const hexHeight = hexRadius * 2;
   const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
+  const vertDist = hexHeight * 0.75 + 0.075;
+  const horizDist = hexWidth + 0.075;
 
-  const colNorm = col - 2147483647;
-  const rowNorm = row - 2147483647;
+  const colNorm = col - (!normalized ? 2147483647 : 0);
+  const rowNorm = row - (!normalized ? 2147483647 : 0);
   const x = colNorm * horizDist + ((rowNorm % 2) * horizDist) / 2;
   const y = rowNorm * vertDist;
 
@@ -207,18 +207,18 @@ export const getUIPositionFromColRow = (col: number, row: number, _log: boolean 
   };
 };
 
-export const getColRowFromUIPosition = (x: number, y: number): { col: number; row: number } => {
+export const getColRowFromUIPosition = (x: number, y: number, normalized: boolean): { col: number; row: number } => {
   const hexRadius = 3;
   const hexHeight = hexRadius * 2;
   const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
+  const vertDist = hexHeight * 0.75 + 0.075;
+  const horizDist = hexWidth + 0.075;
 
   const rowNorm = Math.round(y / vertDist);
   const colNorm = Math.round((x - ((rowNorm % 2) * horizDist) / 2) / horizDist);
 
-  const col = colNorm + 2147483647;
-  const row = rowNorm + 2147483647;
+  const col = colNorm + (!normalized ? 2147483647 : 0);
+  const row = rowNorm + (!normalized ? 2147483647 : 0);
 
   return {
     col,
@@ -234,7 +234,7 @@ export const getRealmUIPosition = (realm_id: bigint): Position => {
   const realmPositions = realmHexPositions as HexPositions;
   const colrow = realmPositions[Number(realm_id).toString()][0];
 
-  return getUIPositionFromColRow(colrow.col, colrow.row, true);
+  return getUIPositionFromColRow(colrow.col, colrow.row, false);
 };
 
 export const findDirection = (startPos: { col: number; row: number }, endPos: { col: number; row: number }) => {

@@ -45,10 +45,6 @@ interface UIStore {
   setShowRealmsFlags: (show: boolean) => void;
   moveCameraToWorldMapView: () => void;
   moveCameraToRealmView: () => void;
-  moveCameraToMarketView: () => void;
-  moveCameraToCaravansView: () => void;
-  moveCameraToLaborView: () => void;
-  moveCameraToFoodView: () => void;
   isLoadingScreenEnabled: boolean;
   setIsLoadingScreenEnabled: (enabled: boolean) => void;
   highlightPositions: [number, number, number][];
@@ -145,15 +141,15 @@ const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) =>
   },
   moveCameraToRealmView: () => {
     const pos = {
-      x: 520.4138155171775,
-      y: 1084.1390819999998,
-      z: 1357.0299115304658,
+      x: 24.826045870033695,
+      y: 190.04590297953212,
+      z: 218.5857365651534,
       transitionDuration: 0.01,
     };
     const target = {
-      x: 40.3221210638067,
-      y: 0.1390819999999989,
-      z: -33.35675413789002,
+      x: 27.402896384918723,
+      y: -0.05917184885787834,
+      z: 19.38041234366002,
       transitionDuration: 0.01,
     };
     set({ cameraPosition: pos, cameraTarget: target });
