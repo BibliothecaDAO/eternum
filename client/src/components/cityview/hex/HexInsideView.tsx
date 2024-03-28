@@ -11,21 +11,27 @@ const HexInsideView = ({ center }: { center: { col: number; row: number } }) => 
 
   const color = new THREE.Color();
 
-  const generateHexPositions = () => {
+  const generateHexPositions = (center: { col: number; row: number }) => {
     const radius = 4;
     const positions = [] as any[];
-    for (let _row = center.row - radius; _row <= center.row + radius; _row++) {
+    const normalizedCenter = { col: 4, row: 4 };
+    const shifted = { col: center.col - normalizedCenter.col, row: center.row - normalizedCenter.row };
+    for (let _row = normalizedCenter.row - radius; _row <= normalizedCenter.row + radius; _row++) {
       const basicCount = 9;
       const decrease = Math.abs(_row - radius);
       const colsCount = basicCount - decrease;
       const startOffset = _row % 2 === 0 ? (decrease > 0 ? Math.floor(decrease / 2) : 0) : Math.floor(decrease / 2);
-      for (let _col = startOffset + center.col - radius; _col < center.col - radius + colsCount + startOffset; _col++) {
+      for (
+        let _col = startOffset + normalizedCenter.col - radius;
+        _col < normalizedCenter.col - radius + colsCount + startOffset;
+        _col++
+      ) {
         positions.push({
-          ...getUIPositionFromColRow(_col, _row, true),
+          ...getUIPositionFromColRow(_col + shifted.col, _row + shifted.row, true),
           z: 0.32,
           color: [0.33, 0.33, 0.33],
-          col: _col,
-          row: _row,
+          col: _col + shifted.col,
+          row: _row + shifted.row,
           startOffset: startOffset,
         });
       }
@@ -34,7 +40,7 @@ const HexInsideView = ({ center }: { center: { col: number; row: number } }) => 
     return positions;
   };
 
-  const hexPositions = generateHexPositions();
+  const hexPositions = generateHexPositions(center);
 
   return (
     <group rotation={[Math.PI / -2, 0, 0]}>
