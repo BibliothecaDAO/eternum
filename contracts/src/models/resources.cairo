@@ -50,6 +50,10 @@ impl ResourceImpl of ResourceTrait {
 
         // take the balance from the production balance and the physical 
         self.balance += production_balance.balance().into();
+
+        // todo@credence we also need to deduct from balance if resource is
+        //              being used to produce another resource
+
         self.balance
     }
 

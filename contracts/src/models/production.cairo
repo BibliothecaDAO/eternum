@@ -15,6 +15,7 @@ struct Production {
     #[key]
     resource_type: u8,
     production_rate: u64, // per tick
+    production_boost_rate: u64, // per tick
     consumed_rate: u64, // per tick
     last_updated: u64,
     active: bool,
@@ -40,6 +41,14 @@ impl ProductionRateImpl of ProductionRateTrait {
         self.update(ref resource);
         self.production_rate -= amount;
     }
+    fn increase_production_boost_rate(ref self: Production, amount: u64, ref resource: Resource) {
+        self.update(ref resource);
+        self.production_boost_rate += amount;
+    }
+    fn decrease_production_rate(ref self: Production, amount: u64, ref resource: Resource) {
+        self.update(ref resource);
+        self.production_boost_rate -= amount;
+    }
     fn increase_consumed_rate(ref self: Production, amount: u64, ref resource: Resource) {
         self.update(ref resource);
         self.consumed_rate += amount;
@@ -60,13 +69,16 @@ impl ProductionRateImpl of ProductionRateTrait {
         self.generated() - self.consumed()
     }
     fn generated(self: Production) -> u64 {
-        self.production_rate * self.since_last_update()
+        if !self.active {return 0;}
+        (self.production_rate + self.production_boost_rate) *  self.since_last_update()
     }
     fn consumed(self: Production) -> u64 {
+        if !self.active {return 0;}
         self.consumed_rate * self.since_last_update()
     }
     fn net_rate(self: Production) -> u64 {
-        self.production_rate - self.consumed_rate
+        if !self.active {return 0;}
+        self.production_rate + self.production_boost_rate - self.consumed_rate
     }
     fn since_last_update(self: Production) -> u64 {
         get_block_timestamp() - self.last_updated
