@@ -38,7 +38,7 @@ import {
   CreateLaborBuildingProps,
   DestroyLaborBuildingProps,
 } from "../types/provider";
-import { Call } from "starknet";
+import { Call, TransactionExecutionStatus } from "starknet";
 
 const UUID_OFFSET_CREATE_CARAVAN = 2;
 
@@ -62,6 +62,20 @@ export class EternumProvider extends DojoProvider {
     };
   }
 
+  // Wrapper function to check for transaction errors
+  async waitForTransactionWithCheck(transactionHash: string) {
+    const receipt = await this.provider.waitForTransaction(transactionHash, {
+      retryInterval: 500,
+    });
+
+    // Check if the transaction was reverted and throw an error if it was
+    if (receipt.execution_status === TransactionExecutionStatus.REVERTED) {
+      throw new Error(`Transaction failed with reason: ${receipt.revert_reason}`);
+    }
+
+    return receipt;
+  }
+
   public async purchase_labor(props: PurchaseLaborProps): Promise<any> {
     const { signer, entity_id, resource_type, labor_units, multiplier } = props;
 
@@ -76,9 +90,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "purchase",
     });
 
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   // Refactor the functions using the interfaces
@@ -90,9 +102,7 @@ export class EternumProvider extends DojoProvider {
       calldata: [this.getWorldAddress(), entity_id, resource_type, labor_units, multiplier],
     });
 
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async harvest_labor(props: HarvestLaborProps) {
@@ -102,9 +112,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "harvest",
       calldata: [this.getWorldAddress(), realm_id, resource_type],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async harvest_all_labor(props: HarvestAllLaborProps) {
@@ -119,9 +127,7 @@ export class EternumProvider extends DojoProvider {
     });
 
     const tx = await this.executeMulti(signer, calldata);
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async create_order(props: CreateOrderProps) {
@@ -186,9 +192,7 @@ export class EternumProvider extends DojoProvider {
     });
 
     const tx = await this.executeMulti(signer, transactions);
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async mint_resources(props: MintResourcesProps) {
@@ -200,9 +204,7 @@ export class EternumProvider extends DojoProvider {
       calldata: [this.getWorldAddress(), receiver_id, resources.length / 2, ...resources],
     });
 
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async accept_order(props: AcceptOrderProps) {
@@ -240,9 +242,7 @@ export class EternumProvider extends DojoProvider {
     }
 
     const tx = await this.executeMulti(signer, transactions);
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async cancel_fungible_order(props: CancelFungibleOrderProps) {
@@ -252,9 +252,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "cancel_order",
       calldata: [this.getWorldAddress(), trade_id],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async transfer_items_from_multiple(props: TransferItemsFromMultipleProps) {
@@ -271,9 +269,7 @@ export class EternumProvider extends DojoProvider {
     });
 
     const tx = await this.executeMulti(signer, calldata);
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async transfer_items(props: TransferItemsProps) {
@@ -296,9 +292,7 @@ export class EternumProvider extends DojoProvider {
       batchCalldata.push(calldata[i - 1]);
       if (i % BATCH_SIZE == 0 || i == calldata.length) {
         const tx = await this.executeMulti(signer, batchCalldata);
-        await this.provider.waitForTransaction(tx.transaction_hash, {
-          retryInterval: 500,
-        });
+        await this.waitForTransactionWithCheck(tx.transaction_hash);
 
         // reset batchCalldata
         batchCalldata = [];
@@ -313,9 +307,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "create_free_unit",
       calldata: [this.getWorldAddress(), realm_id, quantity],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async create_caravan(props: CreateCaravanProps) {
@@ -325,9 +317,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "create",
       calldata: [this.getWorldAddress(), entity_ids.length, ...entity_ids],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async disassemble_caravan_and_return_free_units(props: DisassembleCaravanAndReturnFreeUnitsProps) {
@@ -344,9 +334,7 @@ export class EternumProvider extends DojoProvider {
         calldata: [this.getWorldAddress(), unit_ids.length, ...unit_ids],
       },
     ]);
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async attach_caravan(props: AttachCaravanProps) {
@@ -356,9 +344,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "attach_caravan",
       calldata: [this.getWorldAddress(), realm_id, trade_id, caravan_id],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async purchase_and_build_labor(props: PurchaseLaborProps & BuildLaborProps) {
@@ -375,9 +361,7 @@ export class EternumProvider extends DojoProvider {
         calldata: [this.getWorldAddress(), entity_id, resource_type, labor_units, multiplier],
       },
     ]);
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async create_realm(props: CreateRealmProps) {
@@ -416,9 +400,7 @@ export class EternumProvider extends DojoProvider {
         ],
       },
     ]);
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   create_multiple_realms = async (props: CreateMultipleRealmsProps) => {
@@ -464,9 +446,7 @@ export class EternumProvider extends DojoProvider {
     });
 
     const tx = await this.executeMulti(signer, calldata);
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   };
 
   public async create_road(props: CreateRoadProps) {
@@ -484,9 +464,7 @@ export class EternumProvider extends DojoProvider {
         usage_count,
       ],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async transfer_resources(props: TransferResourcesProps) {
@@ -496,9 +474,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "transfer",
       calldata: [this.getWorldAddress(), sending_entity_id, receiving_entity_id, resources.length / 2, ...resources],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async send_resources_to_location(props: SendResourcesToLocationProps) {
@@ -551,9 +527,7 @@ export class EternumProvider extends DojoProvider {
     }
 
     const tx = await this.executeMulti(signer, transactions);
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public swap_bank_and_travel_back = async (props: SwapBankAndTravelBackProps) => {
@@ -586,9 +560,7 @@ export class EternumProvider extends DojoProvider {
         calldata: [this.getWorldAddress(), sender_id, destination_coord_x, destination_coord_y],
       },
     ]);
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   };
 
   public feed_hyperstructure_and_travel_back = async (props: FeedHyperstructureAndTravelBackPropos) => {
@@ -606,9 +578,7 @@ export class EternumProvider extends DojoProvider {
         calldata: [this.getWorldAddress(), entity_id, destination_coord_x, destination_coord_y],
       },
     ]);
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   };
 
   public async travel(props: TravelProps) {
@@ -618,9 +588,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "travel",
       calldata: [this.getWorldAddress(), travelling_entity_id, destination_coord_x, destination_coord_y],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async travel_hex(props: TravelHexProps) {
@@ -630,9 +598,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "travel_hex",
       calldata: [this.getWorldAddress(), travelling_entity_id, directions],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async create_soldiers(props: CreateSoldiersProps) {
@@ -642,9 +608,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "create_soldiers",
       calldata: [this.getWorldAddress(), realm_entity_id, quantity],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async detach_soldiers(props: DetachSoldiersProps) {
@@ -654,9 +618,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "detach_soldiers",
       calldata: [this.getWorldAddress(), unit_id, detached_quantity],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async attack(props: AttackProps) {
@@ -666,9 +628,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "attack",
       calldata: [this.getWorldAddress(), attacker_ids.length, ...attacker_ids, target_id],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async steal(props: StealProps) {
@@ -678,9 +638,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "steal",
       calldata: [this.getWorldAddress(), attacker_id, target_id],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async control_hyperstructure(props: ControlHyperstructureProps) {
@@ -690,9 +648,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "control",
       calldata: [this.getWorldAddress(), hyperstructure_id, order_id],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async complete_hyperstructure(props: CompleteHyperstructureProps) {
@@ -702,9 +658,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "complete",
       calldata: [this.getWorldAddress(), hyperstructure_id],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async level_up_realm(props: LevelUpRealmProps) {
@@ -714,9 +668,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "level_up_realm",
       calldata: [this.getWorldAddress(), realm_entity_id],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async merge_soldiers(props: MergeSoldiersProps) {
@@ -726,9 +678,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "merge_soldiers",
       calldata: [this.getWorldAddress(), merge_into_unit_id, units.length / 2, ...units],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async create_and_merge_soldiers(props: CreateAndMergeSoldiersProps) {
@@ -748,9 +698,7 @@ export class EternumProvider extends DojoProvider {
         calldata: [this.getWorldAddress(), merge_into_unit_id, units.length / 2, ...units],
       },
     ]);
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async heal_soldiers(props: HealSoldiersProps) {
@@ -762,9 +710,7 @@ export class EternumProvider extends DojoProvider {
       calldata: [this.getWorldAddress(), unit_id, health_amount],
     });
 
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async set_address_name(props: SetAddressNameProps) {
@@ -774,9 +720,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "set_address_name",
       calldata: [this.getWorldAddress(), name],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async create_labor_building(props: CreateLaborBuildingProps) {
@@ -787,9 +731,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "create",
       calldata: [this.getWorldAddress(), realm_entity_id, building_type],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async destroy_labor_building(props: DestroyLaborBuildingProps) {
@@ -800,9 +742,7 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "destroy",
       calldata: [this.getWorldAddress(), realm_entity_id],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 
   public async explore(props: ExploreProps) {
@@ -813,8 +753,6 @@ export class EternumProvider extends DojoProvider {
       entrypoint: "explore",
       calldata: [this.getWorldAddress(), unit_id, direction],
     });
-    return await this.provider.waitForTransaction(tx.transaction_hash, {
-      retryInterval: 500,
-    });
+    return await this.waitForTransactionWithCheck(tx.transaction_hash);
   }
 }
