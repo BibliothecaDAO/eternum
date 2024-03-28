@@ -6,13 +6,13 @@ import { getUIPositionFromColRow } from "../../../utils/utils";
 import { get } from "lodash";
 import { Html } from "@react-three/drei";
 
-const HexInsideView = ({ center }: { center: { col: number; row: number } }) => {
+const HexInsideView = ({ center, color }: { center: { col: number; row: number }; color: string }) => {
   const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
 
-  const color = new THREE.Color();
+  const _color = new THREE.Color(color);
 
   const generateHexPositions = (center: { col: number; row: number }) => {
-    const addOffset = center.row % 2 === 0 ? 0 : 1;
+    const addOffset = center.row % 2 === 0 && center.row > 0 ? 0 : 1;
     const radius = 4;
     const positions = [] as any[];
     const normalizedCenter = { col: 4, row: 4 };
@@ -23,7 +23,7 @@ const HexInsideView = ({ center }: { center: { col: number; row: number } }) => 
       const colsCount = basicCount - decrease;
       let startOffset = _row % 2 === 0 ? (decrease > 0 ? Math.floor(decrease / 2) : 0) : Math.floor(decrease / 2);
       if (addOffset > 0 && _row % 2 !== 0) {
-        startOffset += 1;
+        if (center.row < 0 && center.row % 2 === 0) startOffset += 1;
       }
       for (
         let _col = startOffset + normalizedCenter.col - radius;
@@ -33,7 +33,7 @@ const HexInsideView = ({ center }: { center: { col: number; row: number } }) => 
         positions.push({
           ...getUIPositionFromColRow(_col + shifted.col, _row + shifted.row, true),
           z: 0.32,
-          color: [0.33, 0.33, 0.33],
+          color: _color,
           col: _col + shifted.col,
           row: _row + shifted.row,
           startOffset: startOffset,
@@ -47,18 +47,18 @@ const HexInsideView = ({ center }: { center: { col: number; row: number } }) => 
   const hexPositions = generateHexPositions(center);
 
   return (
-    <group rotation={[Math.PI / -2, 0, 0]}>
+    <group rotation={[Math.PI / -2, 0, 0]} position={[0, 0, 0]}>
       {hexPositions.map((hexPosition, index) => {
         return (
           <group key={index} position={[hexPosition.x, hexPosition.y, hexPosition.z]}>
             <mesh geometry={hexagonGeometry}>
-              <meshMatcapMaterial color={hexPosition.color} />
+              <meshMatcapMaterial color={_color} />
             </mesh>
-            <Html distanceFactor={50}>
+            {/* <Html distanceFactor={50}>
               <div className="flex -translate-y-1/2 -translate-x-1/2">
                 {hexPosition.col},{hexPosition.row}
               </div>
-            </Html>
+            </Html> */}
           </group>
         );
       })}
