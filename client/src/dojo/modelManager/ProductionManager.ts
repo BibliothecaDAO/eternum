@@ -1,30 +1,28 @@
-import { Component, getComponentValue, Type } from "@dojoengine/recs";
+import { Component, OverridableComponent, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "../../utils/utils";
-
-type ProductionType = {
-  entity_id: Type.BigInt;
-  resource_type: Type.Number;
-  production_rate: Type.Number; // per tick
-  production_boost_rate: Type.Number; // per tick
-  consumed_rate: Type.Number; // per tick
-  last_updated: Type.Number;
-  active: Type.Boolean;
-};
+import { ProductionType, ResourceType } from "./types";
 
 export class ProductionManager {
-  model: Component<ProductionType>;
+  productionModel: Component<ProductionType> | OverridableComponent<ProductionType>;
+  resourceModel: Component<ResourceType> | OverridableComponent<ResourceType>;
   entityId: bigint;
   resourceId: bigint;
 
-  constructor(model: Component<ProductionType>, entityId: bigint, resourceId: bigint) {
-    this.model = model;
+  constructor(
+    productionModel: Component<ProductionType> | OverridableComponent<ProductionType>,
+    resourceModel: Component<ResourceType> | OverridableComponent<ResourceType>,
+    entityId: bigint,
+    resourceId: bigint,
+  ) {
+    this.productionModel = productionModel;
     this.entityId = entityId;
     this.resourceId = resourceId;
+    this.resourceModel = resourceModel;
   }
 
   // Retrieves the production data for the current entity
   private getProduction() {
-    return getComponentValue(this.model, getEntityIdFromKeys([this.entityId, this.resourceId]));
+    return getComponentValue(this.productionModel, getEntityIdFromKeys([this.entityId, this.resourceId]));
   }
 
   // Calculates the time elapsed since the last update
@@ -57,7 +55,8 @@ export class ProductionManager {
 
   // Public method to calculate the remaining balance of resources
   balance() {
-    return this.generated() - this.consumed();
+    const resource = getComponentValue(this.resourceModel, getEntityIdFromKeys([this.entityId, this.resourceId]));
+    return (Number(resource?.balance) || 0) + this.generated() - this.consumed();
   }
 
   // Public method to estimate the time until resources are depleted
