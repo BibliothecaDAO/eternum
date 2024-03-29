@@ -4,7 +4,6 @@ import useUIStore from "../hooks/store/useUIStore";
 import { Leva } from "leva";
 import { BottomRightContainer } from "../containers/BottomRightContainer";
 import ChatModule from "../modules/ChatModule";
-import NetworkModule from "../modules/NetworkModule";
 import BottomMiddleContainer from "../containers/BottomMiddleContainer";
 import TopContainer from "../containers/TopContainer";
 import NavigationModule from "../modules/NavigationModule";
@@ -29,14 +28,6 @@ export const World = () => {
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
   const setMouseCoords = useUIStore((state) => state.setMouseCoords);
 
-  // only for dev
-  // useEffect(() => {
-  //   const printUuid = async () => {
-  //     let nextUuid = await uuid();
-  //     console.log({ nextUuid });
-  //   };
-  //   printUuid();
-  // });
   const progress = useProgress((state) => state.progress);
 
   useEffect(() => {

@@ -101,6 +101,9 @@ importers:
       react-draggable:
         specifier: ^4.4.6
         version: 4.4.6(react-dom@18.2.0)(react@18.2.0)
+      react-toastify:
+        specifier: ^10.0.5
+        version: 10.0.5(react-dom@18.2.0)(react@18.2.0)
       rxjs:
         specifier: ^7.8.1
         version: 7.8.1
@@ -4804,6 +4807,11 @@ packages:
     engines: {node: '>=6'}
     dev: false
 
+  /clsx@2.1.0:
+    resolution: {integrity: sha512-m3iNNWpd9rl3jvvcBnu70ylMdrXt8Vlq4HYadnU5fwcOtvkSQWPmj7amUcDT2qYI7risszBjI5AUIUox9D16pg==}
+    engines: {node: '>=6'}
+    dev: false
+
   /color-convert@1.9.3:
     resolution: {integrity: sha512-QfAUtd+vFdAtFQcC8CCyYt1fYWxSqAiK2cSD6zDB8N3cpsEBAvRxp9zOGg6G/SHHJYAT88/az/IuDGALsNVbGg==}
     dependencies:
@@ -7809,6 +7817,17 @@ packages:
     resolution: {integrity: sha512-wViHqhAd8OHeLS/IRMJjTSDHF3U9eWi62F/MledQGPdJGDhodXJ9PBLNGr6WWL7qlH12Mt3TyTpbS+hGXMjCzQ==}
     engines: {node: '>=0.10.0'}
     dev: true
+
+  /react-toastify@10.0.5(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-mNKt2jBXJg4O7pSdbNUfDdTsK9FIdikfsIE/yUCxbAEXl4HMyJaivrVFcn3Elvt5xvCQYhUZm+hqTIu1UXM3Pw==}
+    peerDependencies:
+      react: '>=18'
+      react-dom: '>=18'
+    dependencies:
+      clsx: 2.1.0
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+    dev: false
 
   /react-use-measure@2.1.1(react-dom@18.2.0)(react@18.2.0):
     resolution: {integrity: sha512-nocZhN26cproIiIduswYpV5y5lQpSQS1y/4KuvUCjSKmw7ZWIS/+g3aFnX3WdBkyuGUtTLif3UTqnLLhbDoQig==}
