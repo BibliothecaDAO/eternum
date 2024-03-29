@@ -1,10 +1,8 @@
 use dojo::world::IWorldDispatcher;
 
-#[starknet::interface]
-trait IBankSystems<TContractState> {
+#[dojo::interface]
+trait IBankSystems {
     fn swap(
-        self: @TContractState, 
-        world: IWorldDispatcher, 
         bank_id: u128, 
         bank_swap_resource_cost_index: u8, 
         entity_id: u128, 

@@ -55,7 +55,6 @@ mod internal_leveling_systems {
         };
 
         level_config_dispatcher.set_leveling_config(
-            world,
             LEVELING_CONFIG_ID,
             decay_interval,
             max_level,

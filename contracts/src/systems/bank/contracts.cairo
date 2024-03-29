@@ -27,7 +27,6 @@ mod bank_systems {
     impl BankSystemsImpl of IBankSystems<ContractState> {
 
         fn swap(
-            self: @ContractState, 
             world: IWorldDispatcher, 
             bank_id: u128, 
             bank_swap_resource_cost_index: u8, 

@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x76601e82bc597e5485558932d765102aa4ee8d67aebca1dc8a5d65eace131c1"
+class_hash = "0x2b154d60b6326109f1452137d28e1974c8bee3ee9035e1b3c0eae1f5a8616cf"
+abi = "abis/base/models/level.json"
 name = "eternum::models::level::level"
 
 [[members]]

@@ -86,7 +86,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     };
 
     combat_config_dispatcher.set_combat_config(
-        world,
         COMBAT_CONFIG_ID,
         ATTACKER_STOLEN_RESOURCE_COUNT,
         WHEAT_BURN_PER_SOLDIER_DURING_ATTACK,
@@ -94,7 +93,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     );
 
     combat_config_dispatcher.set_soldier_config(
-        world,
         array![ 
             // pay for each soldier with the following
             (ResourceTypes::DRAGONHIDE, 40),
@@ -106,37 +104,37 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
 
     // set soldiers starting attack, defence and health
     combat_config_dispatcher.set_attack_config(
-        world, SOLDIER_ENTITY_TYPE, 100
+        SOLDIER_ENTITY_TYPE, 100
     );
     combat_config_dispatcher.set_defence_config(
-        world, SOLDIER_ENTITY_TYPE, 100
+        SOLDIER_ENTITY_TYPE, 100
     );
     combat_config_dispatcher.set_health_config(
-        world, SOLDIER_ENTITY_TYPE, array![].span(), 100
+        SOLDIER_ENTITY_TYPE, array![].span(), 100
     );
 
     // set soldier speed configuration 
     ITransportConfigDispatcher {
         contract_address: config_systems_address
-    }.set_speed_config(world, SOLDIER_ENTITY_TYPE, 55); // 10km per sec
+    }.set_speed_config(SOLDIER_ENTITY_TYPE, 55); // 10km per sec
     
 
     // set soldier carry capacity configuration 
     ICapacityConfigDispatcher {
         contract_address: config_systems_address
-    }.set_capacity_config(world, SOLDIER_ENTITY_TYPE, 440_000); 
+    }.set_capacity_config(SOLDIER_ENTITY_TYPE, 440_000); 
 
 
     // set weight configuration for stolen resources
     IWeightConfigDispatcher {
         contract_address: config_systems_address
     }.set_weight_config(
-        world, TYPE_ONE_RESOURCE_TO_BE_STOLEN_FROM_TARGET.into(), 200); 
+        TYPE_ONE_RESOURCE_TO_BE_STOLEN_FROM_TARGET.into(), 200); 
 
     IWeightConfigDispatcher {
         contract_address: config_systems_address
     }.set_weight_config(
-        world, TYPE_TWO_RESOURCE_TO_BE_STOLEN_FROM_TARGET.into(), 200); 
+        TYPE_TWO_RESOURCE_TO_BE_STOLEN_FROM_TARGET.into(), 200); 
       
     let realm_systems_address 
         = deploy_system(realm_systems::TEST_CLASS_HASH);
@@ -163,7 +161,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
         contract_address_const::<'attacker'>()
     );
     let attacker_realm_entity_id = realm_systems_dispatcher.create(
-        world, realm_id,
+        realm_id,
         resource_types_packed, resource_types_count, cities,
         harbors, rivers, regions, wonder, order, attacker_realm_entity_position.clone(),
         
@@ -175,7 +173,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     );
 
     let target_realm_entity_id = realm_systems_dispatcher.create(
-        world, realm_id,
+        realm_id,
         resource_types_packed, resource_types_count, cities,
         harbors, rivers, regions, wonder, 0, target_realm_entity_position.clone(),
     );
@@ -300,7 +298,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
 
     // buy soldiers for attacker
     let attacker_unit_id = soldier_systems_dispatcher.create_soldiers(
-         world, attacker_realm_entity_id, ATTACKER_SOLDIER_COUNT
+         attacker_realm_entity_id, ATTACKER_SOLDIER_COUNT
     );
 
 
@@ -326,14 +324,13 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
     
     // buy soldiers for target
     let target_unit_id = soldier_systems_dispatcher.create_soldiers(
-         world, target_realm_entity_id, TARGET_SOLDIER_COUNT
+         target_realm_entity_id, TARGET_SOLDIER_COUNT
     );
 
 
     // add target unit to town watch
     soldier_systems_dispatcher
         .merge_soldiers(
-            world, 
             target_town_watch_id, 
             array![
                 (target_unit_id, TARGET_SOLDIER_COUNT),
@@ -389,7 +386,7 @@ fn test_steal_success() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, target_town_watch_id
+            attacker_unit_id, target_town_watch_id
             );
 
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
@@ -508,7 +505,7 @@ fn test_steal_success_with_order_boost() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, target_town_watch_id
+            attacker_unit_id, target_town_watch_id
             );
 
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
@@ -601,7 +598,7 @@ fn test_steal_success_with_order_boost() {
 fn test_not_owner() {
 
     let (
-        world, 
+        _, 
         _, attacker_unit_id,
         _, target_town_watch_id, 
         combat_systems_dispatcher
@@ -615,7 +612,7 @@ fn test_not_owner() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, target_town_watch_id
+            attacker_unit_id, target_town_watch_id
             );
 
 }
@@ -652,7 +649,7 @@ fn test_attacker_in_transit() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, target_town_watch_id
+            attacker_unit_id, target_town_watch_id
             );
 
 }
@@ -688,7 +685,7 @@ fn test_attacker_dead() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, target_town_watch_id
+            attacker_unit_id, target_town_watch_id
             );
 
 }
@@ -728,7 +725,7 @@ fn test_wrong_position() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, target_town_watch_id
+            attacker_unit_id, target_town_watch_id
             );
 
 }
@@ -809,7 +806,7 @@ fn test_steal_success_army_to_army() {
     // steal from target
     combat_systems_dispatcher
         .steal(
-            world, attacker_unit_id, target_unit_id
+            attacker_unit_id, target_unit_id
             );
 
     let attacker_unit_health = get!(world, attacker_unit_id, Health);

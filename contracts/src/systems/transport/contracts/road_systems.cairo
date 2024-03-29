@@ -28,7 +28,7 @@ mod road_systems {
         /// * `end_coord` - The ending coordinate of the road.
         /// * `usage_count` - The number of times the road can be used.
         fn create(
-            self:@ContractState, world: IWorldDispatcher, 
+            world: IWorldDispatcher, 
             entity_id: u128, start_coord: Coord, end_coord: Coord, usage_count: usize
         ) {
 

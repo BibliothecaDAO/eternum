@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x19b4ffea3cd1e74320cbf417592bc1ca5af16d9f0fc83d2dfc072372573bbc6"
+class_hash = "0x504ed6ae73d71dc09633dc6593771e3948147598a1d8bf00475d02db3ff9f3d"
+abi = "abis/base/models/caravan_members.json"
 name = "eternum::models::caravan::caravan_members"
 
 [[members]]

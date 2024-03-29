@@ -42,7 +42,6 @@ fn setup() -> (IWorldDispatcher, ID, ILaborSystemsDispatcher) {
     };
 
     labor_config_dispatcher.set_labor_config(
-        world,
         7200, // base_labor_units
         250, // base_resources_per_cycle
         21_000_000_000_000_000_000, // base_food_per_cycle
@@ -57,8 +56,7 @@ fn setup() -> (IWorldDispatcher, ID, ILaborSystemsDispatcher) {
     };
 
     // create realm
-    let realm_entity_id = realm_systems_dispatcher.create(
-        world,
+    let realm_entity_id = realm_systems_dispatcher.create( 
         1, // realm id
         0x20309, // resource_types_packed // 2,3,9 // stone, coal, gold
         3, // resource_types_count
@@ -115,7 +113,6 @@ fn test_build_labor_non_food() {
 
     // build labor for gold
     labor_systems_dispatcher.build(
-        world,
         realm_entity_id,
         resource_type,
         20, // labor_units
@@ -163,7 +160,6 @@ fn test_build_labor_food() {
 
     // build labor for wheat
     labor_systems_dispatcher.build(
-        world,
         realm_entity_id,
         resource_type,
         20, // labor_units
@@ -193,7 +189,6 @@ fn test_build_labor_food() {
     // build labor again but with different multiplier
     // call build labor system
     labor_systems_dispatcher.build(
-        world,
         realm_entity_id,
         resource_type,
         20, // labor_units
@@ -269,7 +264,6 @@ fn test_build_labor_after_completed() {
 
     // build labor for gold
     labor_systems_dispatcher.build(
-        world,
         realm_entity_id,
         resource_type,
         20, // labor_units

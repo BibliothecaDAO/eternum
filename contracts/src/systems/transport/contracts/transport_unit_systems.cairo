@@ -36,7 +36,7 @@ mod transport_unit_systems {
         /// * `quantity` - The number of transport units to create.
         ///
         fn create_free_unit(
-            self: @ContractState, world: IWorldDispatcher,
+            world: IWorldDispatcher,
              entity_id: u128, quantity: u128
         ) -> ID {
             // Ensure that the entity is a realm
@@ -133,7 +133,7 @@ mod transport_unit_systems {
         ///
         /// * `unit_ids` - The ids of the transport units to return.
         ///
-        fn return_free_units(self: @ContractState, world: IWorldDispatcher, unit_ids: Span<u128>) {
+        fn return_free_units(world: IWorldDispatcher, unit_ids: Span<u128>) {
             let mut unit_ids = unit_ids;
             loop {
                 match unit_ids.pop_front() {

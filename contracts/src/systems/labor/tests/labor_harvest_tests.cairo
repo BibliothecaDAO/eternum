@@ -62,7 +62,6 @@ fn test_harvest_labor_non_food() {
     let base_resources_per_cycle = 250;
     let base_food_per_cycle = 21_000_000_000_000_000_000;
     labor_config_dispatcher.set_labor_config(
-        world,
         base_labor_units,
         base_resources_per_cycle,
         base_food_per_cycle
@@ -78,7 +77,6 @@ fn test_harvest_labor_non_food() {
 
     // create realm
     let realm_entity_id = realm_systems_dispatcher.create(
-        world,
         1, // realm id
         0x209, // resource_types_packed // 2,9 // stone and gold
         2, // resource_types_count
@@ -123,7 +121,6 @@ fn test_harvest_labor_non_food() {
 
     // build labor for gold
     labor_systems_dispatcher.build(
-        world,
         realm_entity_id,
         resource_type,
         20, // labor_units
@@ -138,7 +135,6 @@ fn test_harvest_labor_non_food() {
 
     // harvest labor for gold
     labor_systems_dispatcher.harvest(
-        world,
         realm_entity_id,
         resource_type
     );
@@ -186,7 +182,6 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
     let base_resources_per_cycle = 250;
     let base_food_per_cycle = 21_000_000_000_000_000_000;
     labor_config_dispatcher.set_labor_config(
-        world,
         base_labor_units,
         base_resources_per_cycle,
         base_food_per_cycle
@@ -203,7 +198,6 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
     // create realm
     let order_id = 1;
     let realm_entity_id = realm_systems_dispatcher.create(
-        world,
         1, // realm id
         0x209, // resource_types_packed // 2,9 // stone and gold
         2, // resource_types_count
@@ -276,7 +270,6 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
 
     // build labor for gold
     labor_systems_dispatcher.build(
-        world,
         realm_entity_id,
         resource_type,
         20, // labor_units
@@ -291,7 +284,6 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
 
     // harvest labor for gold
     labor_systems_dispatcher.harvest(
-        world,
         realm_entity_id,
         resource_type
     );
@@ -344,7 +336,6 @@ fn test_harvest_labor_food() {
     let base_resources_per_cycle = 250;
     let base_food_per_cycle = 21_000_000_000_000_000_000;
     labor_config_dispatcher.set_labor_config(
-        world,
         base_labor_units,
         base_resources_per_cycle,
         base_food_per_cycle
@@ -360,7 +351,6 @@ fn test_harvest_labor_food() {
 
     // create realm
     let realm_entity_id = realm_systems_dispatcher.create(
-        world,
         1, // realm id
         0x1, // resource_types_packed // 1 // wheat
         1, // resource_types_count
@@ -407,7 +397,6 @@ fn test_harvest_labor_food() {
 
     // build labor for wheat
     labor_systems_dispatcher.build(
-        world,
         realm_entity_id,
         resource_type,
         20, // labor_units
@@ -420,7 +409,6 @@ fn test_harvest_labor_food() {
 
     // harvest labor for wheat
     labor_systems_dispatcher.harvest(
-        world,
         realm_entity_id,
         resource_type
     );
@@ -470,7 +458,6 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
     let base_resources_per_cycle = 250;
     let base_food_per_cycle = 21_000_000_000_000_000_000;
     labor_config_dispatcher.set_labor_config(
-        world,
         base_labor_units,
         base_resources_per_cycle,
         base_food_per_cycle
@@ -487,7 +474,6 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
     // create realm
     let order_id = 99;
     let realm_entity_id = realm_systems_dispatcher.create(
-        world,
         1, // realm id
         0x209, // resource_types_packed // 2,9 // stone and gold
         2, // resource_types_count
@@ -562,7 +548,6 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
 
     // build labor for wheat
     labor_systems_dispatcher.build(
-        world,
         realm_entity_id,
         resource_type,
         20, // labor_units
@@ -575,7 +560,6 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
 
     // harvest labor for wheat
     labor_systems_dispatcher.harvest(
-        world,
         realm_entity_id,
         resource_type
     );

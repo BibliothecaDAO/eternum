@@ -121,7 +121,6 @@ mod resource_approval_system_tests {
             contract_address_const::<'owner_entity'>()
         );
         resource_systems_dispatcher.approve(
-            world,
             owner_entity_id.into(),
             approved_entity_id.into(),
             array![
@@ -171,7 +170,6 @@ mod resource_approval_system_tests {
             contract_address_const::<'owner_entity'>()
         );
         resource_systems_dispatcher.approve(
-            world,
             owner_entity_id.into(),
             approved_entity_id.into(),
             array![
@@ -221,7 +219,6 @@ mod resource_approval_system_tests {
             contract_address_const::<'unknown_entity'>()
         );
         resource_systems_dispatcher.approve(
-            world,
             owner_entity_id.into(),
             approved_entity_id.into(),
             array![

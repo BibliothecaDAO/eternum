@@ -85,10 +85,6 @@
         "name": "create",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "realm_id",
             "type": "core::integer::u128"
           },

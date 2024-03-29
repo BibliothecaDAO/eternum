@@ -67,10 +67,6 @@
         "name": "build",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "realm_id",
             "type": "core::integer::u128"
           },
@@ -95,10 +91,6 @@
         "name": "harvest",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "realm_id",
             "type": "core::integer::u128"
           },
@@ -114,10 +106,6 @@
         "type": "function",
         "name": "purchase",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "entity_id",
             "type": "core::integer::u128"

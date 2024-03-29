@@ -4,15 +4,13 @@ use eternum::models::position::Direction;
 
 use dojo::world::IWorldDispatcher;
 
-#[starknet::interface]
-trait ITravelSystems<TContractState> {
+#[dojo::interface]
+trait ITravelSystems {
     fn travel(
-        self: @TContractState, world: IWorldDispatcher, 
         travelling_entity_id: ID, destination_coord: Coord
     );
 
     fn travel_hex(
-        self: @TContractState, world: IWorldDispatcher, 
         travelling_entity_id: ID, directions: Span<Direction>
     );
 }

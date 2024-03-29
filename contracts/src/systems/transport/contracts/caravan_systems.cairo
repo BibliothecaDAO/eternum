@@ -37,7 +37,7 @@ mod caravan_systems {
         ///
         /// * `entity_ids` - The list of transport units used to create the caravan
         ///
-        fn create(self: @ContractState, world: IWorldDispatcher, entity_ids: Array<ID>) -> ID {
+        fn create(world: IWorldDispatcher, entity_ids: Array<ID>) -> ID {
             // speed
             let mut total_speed: u128 = 0_u128;
             let mut total_quantity: u128 = 0_u128;
@@ -187,7 +187,7 @@ mod caravan_systems {
         ///
         /// * `transport_ids` - The id of transport units used to form the caravan
         ///
-        fn disassemble(self: @ContractState, world: IWorldDispatcher, caravan_id: ID) -> Span<ID> {
+        fn disassemble(world: IWorldDispatcher, caravan_id: ID) -> Span<ID> {
             // ensure that caller is the owner
             let caravan_owner = get!(world, caravan_id, Owner);
             let caller = starknet::get_caller_address();

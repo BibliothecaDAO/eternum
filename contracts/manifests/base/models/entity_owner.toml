@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x5407e40ae02a1a2b528f43b36f276088ef49e4b7a11a78513ac01041818bce8"
+class_hash = "0x45dc71c64264ed6d98a00e64cf82d3fa83d6a333444578d9bf9d37af4255cbb"
+abi = "abis/base/models/entity_owner.json"
 name = "eternum::models::owner::entity_owner"
 
 [[members]]

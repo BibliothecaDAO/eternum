@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x750179a6e753a69d4be20c9365866bc647ceac150e1eb4f3b4542d3f7d305a5"
+class_hash = "0x433f214aacb38f1a1ddb61fa2fc72881e9a1d3d4dcd70ec3216d9b9210efec4"
+abi = "abis/base/models/tile.json"
 name = "eternum::models::map::tile"
 
 [[members]]

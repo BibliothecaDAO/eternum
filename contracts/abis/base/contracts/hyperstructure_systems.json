@@ -67,10 +67,6 @@
         "name": "control",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "hyperstructure_id",
             "type": "core::integer::u128"
           },
@@ -86,10 +82,6 @@
         "type": "function",
         "name": "complete",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "hyperstructure_id",
             "type": "core::integer::u128"

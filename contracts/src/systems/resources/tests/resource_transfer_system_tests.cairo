@@ -44,13 +44,13 @@ mod resource_transfer_system_tests {
         // set weight configuration for stone
         IWeightConfigDispatcher {
             contract_address: config_systems_address
-        }.set_weight_config(world, ResourceTypes::STONE.into(), 200); 
+        }.set_weight_config(ResourceTypes::STONE.into(), 200); 
         
 
         // set weight configuration for gold
         IWeightConfigDispatcher {
             contract_address: config_systems_address
-        }.set_weight_config(world, ResourceTypes::WOOD.into(), 200); 
+        }.set_weight_config(ResourceTypes::WOOD.into(), 200); 
 
 
         let resource_systems_address 
@@ -137,7 +137,6 @@ mod resource_transfer_system_tests {
         starknet::testing::set_contract_address(contract_address_const::<'owner_entity'>());
 
         resource_systems_dispatcher.transfer(
-            world, 
             sender_entity_id.into(), 
             receiver_entity_id.into(), 
             array![
@@ -216,7 +215,6 @@ mod resource_transfer_system_tests {
         // should fail because total capacity 
         // is 10,000 and total weight is 11,000 
         resource_systems_dispatcher.transfer(
-            world, 
             sender_entity_id.into(), 
             receiver_entity_id.into(), 
             array![
@@ -237,13 +235,12 @@ mod resource_transfer_system_tests {
     #[should_panic(expected: ('not owner of entity id','ENTRYPOINT_FAILED' ))]
     fn test_transfer__not_owner() {
             
-        let (world, resource_systems_dispatcher) = setup();
+        let (_, resource_systems_dispatcher) = setup();
             
         // transfer resources 
         starknet::testing::set_contract_address(contract_address_const::<'unknown'>());
 
         resource_systems_dispatcher.transfer(
-            world, 
             1, 
             2, 
             array![
@@ -295,7 +292,6 @@ mod resource_transfer_system_tests {
         starknet::testing::set_contract_address(contract_address_const::<'owner_entity'>());
 
         resource_systems_dispatcher.transfer(
-            world, 
             sender_entity_id.into(), 
             receiver_entity_id.into(), 
             array![
@@ -327,7 +323,6 @@ mod resource_transfer_system_tests {
         starknet::testing::set_contract_address(contract_address_const::<'owner_entity'>());
 
         resource_systems_dispatcher.transfer(
-            world, 
             sender_entity_id.into(), 
             receiver_entity_id.into(), 
             array![
@@ -375,7 +370,6 @@ mod resource_transfer_system_tests {
             contract_address_const::<'owner_entity'>()
         );
         resource_systems_dispatcher.approve(
-            world,
             owner_entity_id.into(),
             approved_entity_id.into(),
             array![
@@ -391,7 +385,6 @@ mod resource_transfer_system_tests {
         
 
         resource_systems_dispatcher.transfer_from(
-            world, 
             approved_entity_id.into(),
             owner_entity_id.into(), 
             receiver_entity_id.into(), 
@@ -461,7 +454,6 @@ mod resource_transfer_system_tests {
             contract_address_const::<'owner_entity'>()
         );
         resource_systems_dispatcher.approve(
-            world,
             owner_entity_id.into(),
             approved_entity_id.into(),
             array![
@@ -477,7 +469,6 @@ mod resource_transfer_system_tests {
         
 
         resource_systems_dispatcher.transfer_from(
-            world, 
             approved_entity_id.into(),
             owner_entity_id.into(), 
             receiver_entity_id.into(), 

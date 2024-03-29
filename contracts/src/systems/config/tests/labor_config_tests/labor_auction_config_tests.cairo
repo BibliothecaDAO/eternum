@@ -33,7 +33,6 @@ fn test_set_labor_auction() {
     let price_update_interval: u128 = 10;
 
     labor_config_dispatcher.set_labor_auction(
-        world,
         decay_constant,
         per_time_unit,
         price_update_interval

@@ -61,7 +61,6 @@ fn test_create_hyperstructure() {
     
     let hyperstructure_id 
         = hyperstructure_config_dispatcher.create_hyperstructure(
-            world,
             hyperstructure_type,
             hyperstructure_coord,
             completion_cost,

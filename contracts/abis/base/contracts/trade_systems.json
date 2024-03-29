@@ -77,10 +77,6 @@
         "name": "create_order",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "maker_id",
             "type": "core::integer::u128"
           },
@@ -117,10 +113,6 @@
         "name": "accept_order",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "taker_id",
             "type": "core::integer::u128"
           },
@@ -140,10 +132,6 @@
         "type": "function",
         "name": "cancel_order",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "trade_id",
             "type": "core::integer::u128"

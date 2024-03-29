@@ -121,10 +121,6 @@
         "name": "travel",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "travelling_entity_id",
             "type": "core::integer::u128"
           },
@@ -140,10 +136,6 @@
         "type": "function",
         "name": "travel_hex",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "travelling_entity_id",
             "type": "core::integer::u128"

@@ -49,7 +49,7 @@ fn setup() -> IWorldDispatcher {
 
     IRealmFreeMintConfigDispatcher {
         contract_address: config_systems_address
-    }.set_mint_config(world, initial_resources.span());
+    }.set_mint_config(initial_resources.span());
 
     world
 }
@@ -87,7 +87,7 @@ fn test_realm_create() {
     );
 
     let realm_entity_id = realm_systems_dispatcher.create(
-        world, realm_id,
+        realm_id,
         resource_types_packed, resource_types_count, cities,
         harbors, rivers, regions, wonder, order, position.clone(),
     );
@@ -129,7 +129,7 @@ fn test_realm_create() {
 #[available_gas(3000000000000)]
 fn test_realm_create_equal_max_realms_per_address() {
 
-    let world = setup();
+    setup();
 
      // create realm
     let realm_systems_address 
@@ -158,7 +158,7 @@ fn test_realm_create_equal_max_realms_per_address() {
             break;
         }
         realm_systems_dispatcher.create(
-            world, realm_id,
+            realm_id,
             resource_types_packed, resource_types_count, cities,
             harbors, rivers, regions, wonder, order, position.clone(),
         );
@@ -176,7 +176,7 @@ fn test_realm_create_equal_max_realms_per_address() {
 #[should_panic(expected: ('max num of realms settled','ENTRYPOINT_FAILED' ))]
 fn test_realm_create_greater_than_max_realms_per_address() {
 
-    let world = setup();
+    setup();
 
      // create realm
     let realm_systems_address 
@@ -208,7 +208,7 @@ fn test_realm_create_greater_than_max_realms_per_address() {
             break;
         }
         realm_systems_dispatcher.create(
-            world, realm_id,
+            realm_id,
             resource_types_packed, resource_types_count, cities,
             harbors, rivers, regions, wonder, order, position.clone(),
         );

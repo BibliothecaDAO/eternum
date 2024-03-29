@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x41e36fe1bb5bc9aa0c2e6ccb1e6aead3b0801e5d043d016f60edfa7d5bcbf7c"
+class_hash = "0x66888cfe8af4665b7c766827c3516f2b22fea7ed95b53dadce351d60ef3716f"
+abi = "abis/base/models/address_name.json"
 name = "eternum::models::name::address_name"
 
 [[members]]

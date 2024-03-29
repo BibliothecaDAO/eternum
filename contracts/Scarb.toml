@@ -7,7 +7,7 @@ version = "0.4.0"
 sierra-replace-ids = true
 
 [dependencies]
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v0.6.0-alpha.7" }
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v0.6.0-alpha.13" }
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "cairo-v2.5.4" }
 cubit = { git = "https://github.com/ponderingdemocritus/cubit" }
 

@@ -13,7 +13,7 @@ mod buildings_systems {
     #[abi(embed_v0)]
     impl BuildingsSystemsImpl of IBuildingsSystems<ContractState> {
         fn create(
-            self: @ContractState, world: IWorldDispatcher, realm_entity_id: u128, building_type: u8
+            world: IWorldDispatcher, realm_entity_id: u128, building_type: u8
         ) {
             // assert owner of the realm
             let owner = get!(world, realm_entity_id, Owner);
@@ -53,7 +53,7 @@ mod buildings_systems {
             );
         }
 
-        fn destroy(self: @ContractState, world: IWorldDispatcher, realm_entity_id: u128) {
+        fn destroy(world: IWorldDispatcher, realm_entity_id: u128) {
             // assert owner of the realm
             let owner = get!(world, realm_entity_id, Owner);
             assert(owner.address == starknet::get_caller_address(), 'caller must be owner');

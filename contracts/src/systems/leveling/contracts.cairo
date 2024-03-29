@@ -18,7 +18,7 @@ mod leveling_systems {
     impl LevelingSystemsImpl of ILevelingSystems<ContractState> {
 
         fn level_up_realm(
-            self: @ContractState, world: IWorldDispatcher, 
+            world: IWorldDispatcher, 
             realm_entity_id: ID,
         ) {
 

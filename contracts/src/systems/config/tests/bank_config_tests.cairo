@@ -30,7 +30,6 @@ fn test_create_bank() {
 
 
     let bank_id = bank_config_dispatcher.create_bank(
-        world,
         Coord {x: 30, y :800},
         array![
             (
@@ -109,7 +108,6 @@ fn test_set_bank_auction() {
     let price_update_interval: u128 = 10;
 
     bank_config_dispatcher.set_bank_auction(
-        world,
         bank_id,
         array![
             (ResourceTypes::LORDS, 0),

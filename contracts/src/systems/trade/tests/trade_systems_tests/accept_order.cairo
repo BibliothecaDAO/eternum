@@ -74,18 +74,18 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, u128, ITrad
     // set travel configuration
     ITransportConfigDispatcher {
         contract_address: config_systems_address
-    }.set_travel_config(world, 10); // 10 free transport per city
+    }.set_travel_config(10); // 10 free transport per city
 
 
     // set speed configuration 
     ITransportConfigDispatcher {
         contract_address: config_systems_address
-    }.set_speed_config(world, FREE_TRANSPORT_ENTITY_TYPE, 10); // 10km per sec
+    }.set_speed_config(FREE_TRANSPORT_ENTITY_TYPE, 10); // 10km per sec
 
     // set road config
     ITransportConfigDispatcher {
         contract_address: config_systems_address
-    }.set_road_config(world, 
+    }.set_road_config( 
         array![ 
             // pay for each soldier with the following
             (ResourceTypes::STONE, 9000),
@@ -96,24 +96,24 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, u128, ITrad
     // set weight configuration for stone
     IWeightConfigDispatcher {
         contract_address: config_systems_address
-    }.set_weight_config(world, ResourceTypes::STONE.into(), 200); 
+    }.set_weight_config(ResourceTypes::STONE.into(), 200); 
     
 
     // set weight configuration for gold
     IWeightConfigDispatcher {
         contract_address: config_systems_address
-    }.set_weight_config(world, ResourceTypes::GOLD.into(), 200); 
+    }.set_weight_config(ResourceTypes::GOLD.into(), 200); 
 
 
     // set weight configuration for wood
     IWeightConfigDispatcher {
         contract_address: config_systems_address
-    }.set_weight_config(world, ResourceTypes::WOOD.into(), 200); 
+    }.set_weight_config(ResourceTypes::WOOD.into(), 200); 
 
     // set weight configuration for silver
     IWeightConfigDispatcher {
         contract_address: config_systems_address
-    }.set_weight_config(world, ResourceTypes::SILVER.into(), 200); 
+    }.set_weight_config(ResourceTypes::SILVER.into(), 200); 
 
 
 
@@ -139,13 +139,13 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, u128, ITrad
 
     // create maker's realm
     let maker_realm_entity_id = realm_systems_dispatcher.create(
-        world, realm_id,
+        realm_id,
         resource_types_packed, resource_types_count, cities,
         harbors, rivers, regions, wonder, order, maker_position.clone(),
     );
     // create taker's realm
     let taker_realm_entity_id = realm_systems_dispatcher.create(
-        world, realm_id,
+        realm_id,
         resource_types_packed, resource_types_count, cities,
         harbors, rivers, regions, wonder, order, taker_position.clone(),
         
@@ -179,11 +179,11 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, u128, ITrad
     };
     let maker_first_free_transport_unit_id 
         = transport_unit_systems_dispatcher.create_free_unit(
-            world, maker_id, 10
+            maker_id, 10
         );
     let maker_second_free_transport_unit_id 
         = transport_unit_systems_dispatcher.create_free_unit(
-            world, maker_id, 10
+            maker_id, 10
         );
     let maker_transport_units: Array<u128> = array![
         maker_first_free_transport_unit_id,
@@ -198,7 +198,7 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, u128, ITrad
         contract_address: caravan_systems_address
     };
     let maker_transport_id 
-        = caravan_systems_dispatcher.create(world, maker_transport_units);
+        = caravan_systems_dispatcher.create(maker_transport_units);
 
 
 
@@ -218,7 +218,6 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, u128, ITrad
 
     // trade 100 stone and 100 gold for 200 wood and 200 silver
     let trade_id = trade_systems_dispatcher.create_order(
-            world,
             maker_id,
             array![
                 (ResourceTypes::STONE, 100), 
@@ -242,11 +241,11 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, u128, ITrad
     // create two free transport unit for taker realm
     let taker_first_free_transport_unit_id 
         = transport_unit_systems_dispatcher.create_free_unit(
-            world, taker_id, 10
+            taker_id, 10
         );
     let taker_second_free_transport_unit_id 
         = transport_unit_systems_dispatcher.create_free_unit(
-            world, taker_id, 10
+            taker_id, 10
         );
     let taker_transport_units: Array<u128> = array![
         taker_first_free_transport_unit_id,
@@ -255,7 +254,7 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, u128, ITrad
 
     // create taker caravan
     let taker_transport_id 
-        = caravan_systems_dispatcher.create(world, taker_transport_units);
+        = caravan_systems_dispatcher.create(taker_transport_units);
 
 
     (world, trade_id, maker_id, taker_id, taker_transport_id, trade_systems_dispatcher)
@@ -289,7 +288,7 @@ fn test_accept_without_taker_transport_id() {
         contract_address_const::<'taker'>()
     );
     trade_systems_dispatcher
-        .accept_order(world, taker_id, 0, trade_id);
+        .accept_order(taker_id, 0, trade_id);
 
     // check that maker balance is correct
     let maker_stone_resource = get!(world, (maker_id, ResourceTypes::STONE), Resource);
@@ -345,12 +344,12 @@ fn test_accept_without_taker_transport_id() {
 fn test_accept_without_taker_transport_id_wrong_position() {
     // when there is no provided taker_tansport_id, 
     // maker and taker must be in the same position
-    let (world, trade_id, _, taker_id, _, trade_systems_dispatcher) 
+    let (_, trade_id, _, taker_id, _, trade_systems_dispatcher) 
         = setup(false);
 
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, 0, trade_id);
+        .accept_order(taker_id, 0, trade_id);
 }
 
 
@@ -363,7 +362,7 @@ fn test_accept_order_free_trade() {
 
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, taker_transport_id, trade_id);
+        .accept_order(taker_id, taker_transport_id, trade_id);
 
     // check that taker balance is correct
     let taker_wood_resource = get!(world, (taker_id, ResourceTypes::WOOD), Resource);
@@ -519,7 +518,7 @@ fn test_accept_order_direct_trade() {
 
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, taker_transport_id, trade_id);
+        .accept_order(taker_id, taker_transport_id, trade_id);
 
     // check that taker balance is correct
     let taker_wood_resource = get!(world, (taker_id, ResourceTypes::WOOD), Resource);
@@ -709,7 +708,7 @@ fn test_accept_order_with_realm_travel_bonus() {
 
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, taker_transport_id, trade_id);
+        .accept_order(taker_id, taker_transport_id, trade_id);
     
 
     // check that taker balance is correct
@@ -913,7 +912,7 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
 
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, taker_transport_id, trade_id);
+        .accept_order(taker_id, taker_transport_id, trade_id);
     
 
     // check that taker balance is correct
@@ -1082,7 +1081,7 @@ fn test_accept_order_with_road() {
 
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, taker_transport_id, trade_id);
+        .accept_order(taker_id, taker_transport_id, trade_id);
 
     let trade = get!(world, trade_id, Trade);
     assert(trade.taker_id == taker_id, 'wrong taker id');
@@ -1139,7 +1138,7 @@ fn test_not_trade_taker_id() {
 
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, taker_transport_id, trade_id);
+        .accept_order(taker_id, taker_transport_id, trade_id);
 }
 
 
@@ -1148,7 +1147,7 @@ fn test_not_trade_taker_id() {
 #[should_panic(expected: ('not owned by caller', 'ENTRYPOINT_FAILED' ))]
 fn test_caller_not_taker() {
 
-    let (world, trade_id, _, taker_id, taker_transport_id, trade_systems_dispatcher) 
+    let (_, trade_id, _, taker_id, taker_transport_id, trade_systems_dispatcher) 
         = setup(true);
 
     // create order with a caller that isnt the owner of taker_id
@@ -1158,7 +1157,7 @@ fn test_caller_not_taker() {
 
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, taker_transport_id, trade_id);
+        .accept_order(taker_id, taker_transport_id, trade_id);
 }
 
 
@@ -1167,7 +1166,7 @@ fn test_caller_not_taker() {
 #[should_panic(expected: ('not caravan owner', 'ENTRYPOINT_FAILED' ))]
 fn test_caller_not_owner_of_transport_id() {
 
-    let (world, trade_id, _, taker_id, _, trade_systems_dispatcher) 
+    let (_, trade_id, _, taker_id, _, trade_systems_dispatcher) 
         = setup(true);
 
     let taker_transport_id = 9999; // set arbitrarily
@@ -1178,7 +1177,7 @@ fn test_caller_not_owner_of_transport_id() {
 
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, taker_transport_id, trade_id);
+        .accept_order(taker_id, taker_transport_id, trade_id);
 }
 
 
@@ -1205,7 +1204,7 @@ fn test_different_transport_position() {
 
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, taker_transport_id, trade_id);
+        .accept_order(taker_id, taker_transport_id, trade_id);
 }
 
 
@@ -1232,7 +1231,7 @@ fn test_transport_in_transit() {
     );
     // accept order 
     trade_systems_dispatcher
-        .accept_order(world, taker_id, taker_transport_id, trade_id);
+        .accept_order(taker_id, taker_transport_id, trade_id);
 }
 
 
@@ -1241,7 +1240,7 @@ fn test_transport_in_transit() {
 #[should_panic(expected: ('not enough capacity', 'ENTRYPOINT_FAILED' ))]
 fn test_transport_not_enough_capacity() {
 
-    let (world, trade_id, _, taker_id, _, trade_systems_dispatcher) 
+    let (_, trade_id, _, taker_id, _, trade_systems_dispatcher) 
         = setup(true);
 
     //          note
@@ -1254,7 +1253,7 @@ fn test_transport_not_enough_capacity() {
         = deploy_system(config_systems::TEST_CLASS_HASH); 
     ICapacityConfigDispatcher {
         contract_address: config_systems_address
-    }.set_capacity_config(world, FREE_TRANSPORT_ENTITY_TYPE, 1); 
+    }.set_capacity_config(FREE_TRANSPORT_ENTITY_TYPE, 1); 
 
     // create two free transport unit for taker realm
     let transport_unit_systems_address 
@@ -1264,11 +1263,11 @@ fn test_transport_not_enough_capacity() {
     };
     let taker_first_free_transport_unit_id 
         = transport_unit_systems_dispatcher.create_free_unit(
-            world, taker_id, 10
+            taker_id, 10
         );
     let taker_second_free_transport_unit_id 
         = transport_unit_systems_dispatcher.create_free_unit(
-            world, taker_id, 10
+            taker_id, 10
         );
 
     let taker_transport_units: Array<u128> = array![
@@ -1288,11 +1287,11 @@ fn test_transport_not_enough_capacity() {
     };
 
     let taker_transport_id 
-        = caravan_systems_dispatcher.create(world, taker_transport_units);
+        = caravan_systems_dispatcher.create(taker_transport_units);
 
     // accept order 
     trade_systems_dispatcher
         .accept_order(
-            world, taker_id, taker_transport_id, trade_id
+            taker_id, taker_transport_id, trade_id
             );
 }

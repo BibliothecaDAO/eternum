@@ -67,35 +67,35 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     // set travel configuration
     ITransportConfigDispatcher {
         contract_address: config_systems_address
-    }.set_travel_config(world, 10); // 10 free transport per city
+    }.set_travel_config(10); // 10 free transport per city
 
 
     // set speed configuration 
     ITransportConfigDispatcher {
         contract_address: config_systems_address
-    }.set_speed_config(world, FREE_TRANSPORT_ENTITY_TYPE, 10); // 10km per sec
+    }.set_speed_config(FREE_TRANSPORT_ENTITY_TYPE, 10); // 10km per sec
 
 
     // set weight configuration for stone
     IWeightConfigDispatcher {
         contract_address: config_systems_address
-    }.set_weight_config(world, ResourceTypes::STONE.into(), 200); 
+    }.set_weight_config(ResourceTypes::STONE.into(), 200); 
     
 
     // set weight configuration for gold
     IWeightConfigDispatcher {
         contract_address: config_systems_address
-    }.set_weight_config(world, ResourceTypes::GOLD.into(), 200); 
+    }.set_weight_config(ResourceTypes::GOLD.into(), 200); 
 
     // set weight configuration for wood
     IWeightConfigDispatcher {
         contract_address: config_systems_address
-    }.set_weight_config(world, ResourceTypes::WOOD.into(), 200); 
+    }.set_weight_config(ResourceTypes::WOOD.into(), 200); 
 
     // set weight configuration for silver
     IWeightConfigDispatcher {
         contract_address: config_systems_address
-    }.set_weight_config(world, ResourceTypes::SILVER.into(), 200); 
+    }.set_weight_config(ResourceTypes::SILVER.into(), 200); 
 
 
 
@@ -123,13 +123,13 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
 
     // create maker's realm
     let maker_realm_entity_id = realm_systems_dispatcher.create(
-        world, realm_id, 
+        realm_id, 
         resource_types_packed, resource_types_count, cities,
         harbors, rivers, regions, wonder, order, maker_position.clone(),
     );
     // create taker's realm
     let taker_realm_entity_id = realm_systems_dispatcher.create(
-        world, realm_id,
+        realm_id,
         resource_types_packed, resource_types_count, cities,
         harbors, rivers, regions, wonder, order, taker_position.clone(),
     );
@@ -162,11 +162,11 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     };
     let maker_first_free_transport_unit_id 
         = transport_unit_systems_dispatcher.create_free_unit(
-            world, maker_id, 10
+            maker_id, 10
         );
     let maker_second_free_transport_unit_id 
         = transport_unit_systems_dispatcher.create_free_unit(
-            world, maker_id, 10
+            maker_id, 10
         );
     let maker_transport_units: Array<u128> = array![
         maker_first_free_transport_unit_id,
@@ -181,7 +181,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
         contract_address: caravan_systems_address
     };
     let maker_transport_id 
-        = caravan_systems_dispatcher.create(world, maker_transport_units);
+        = caravan_systems_dispatcher.create(maker_transport_units);
 
 
 
@@ -196,7 +196,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
 
     // trade 100 stone and 100 gold for 200 wood and 200 silver
     let trade_id = trade_systems_dispatcher.create_order(
-            world,
             maker_id,
             array![
                 (ResourceTypes::STONE, 100), 
@@ -231,7 +230,7 @@ fn test_cancel() {
         contract_address_const::<'maker'>()
     );
     trade_systems_dispatcher
-        .cancel_order(world, trade_id);
+        .cancel_order(trade_id);
 
     let trade = get!(world, trade_id, Trade);
 
@@ -282,7 +281,7 @@ fn test_cancel_after_acceptance() {
         contract_address_const::<'maker'>()
     );
     trade_systems_dispatcher
-        .cancel_order(world, trade_id);
+        .cancel_order(trade_id);
 
 }
  
@@ -293,7 +292,7 @@ fn test_cancel_after_acceptance() {
 #[should_panic(expected: ('caller must be trade maker', 'ENTRYPOINT_FAILED' ))]
 fn test_cancel_caller_not_maker() {
 
-    let (world, trade_id, _, _, trade_systems_dispatcher) 
+    let (_, trade_id, _, _, trade_systems_dispatcher) 
         = setup();
 
     // set caller to an unknown address
@@ -303,6 +302,6 @@ fn test_cancel_caller_not_maker() {
 
     // cancel order 
     trade_systems_dispatcher
-        .cancel_order(world, trade_id);
+        .cancel_order(trade_id);
 
 }

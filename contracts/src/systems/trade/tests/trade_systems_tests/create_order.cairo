@@ -64,17 +64,17 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     // set travel configuration
     ITransportConfigDispatcher {
         contract_address: config_systems_address
-    }.set_travel_config(world, 10); // 5 free transport per city
+    }.set_travel_config(10); // 5 free transport per city
 
     // set weight configuration for stone
     IWeightConfigDispatcher {
         contract_address: config_systems_address
-    }.set_weight_config(world, ResourceTypes::STONE.into(), 200); 
+    }.set_weight_config(ResourceTypes::STONE.into(), 200); 
 
     // set weight configuration for gold
     IWeightConfigDispatcher {
         contract_address: config_systems_address
-    }.set_weight_config(world, ResourceTypes::GOLD.into(), 200); 
+    }.set_weight_config(ResourceTypes::GOLD.into(), 200); 
 
 
     // create maker's realm
@@ -97,7 +97,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     let order = 1;
 
     let realm_entity_id = realm_systems_dispatcher.create(
-        world, realm_id,
+        realm_id,
         resource_types_packed, resource_types_count, cities,
         harbors, rivers, regions, wonder, order, position.clone(),
     );
@@ -129,11 +129,11 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
     };
     let first_free_transport_unit_id 
         = transport_unit_systems_dispatcher.create_free_unit(
-            world, maker_id, 10
+            maker_id, 10
         );
     let second_free_transport_unit_id 
         = transport_unit_systems_dispatcher.create_free_unit(
-            world, maker_id, 10
+            maker_id, 10
         );
     let transport_units: Array<u128> = array![
         first_free_transport_unit_id,
@@ -148,7 +148,7 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, ITradeSystemsDispatcher) {
         contract_address: caravan_systems_address
     };
     let maker_transport_id 
-        = caravan_systems_dispatcher.create(world, transport_units);
+        = caravan_systems_dispatcher.create(transport_units);
 
 
 
@@ -174,7 +174,6 @@ fn test_create_order() {
     // create order
     starknet::testing::set_contract_address(contract_address_const::<'maker'>());
     let trade_id = trade_systems_dispatcher.create_order(
-            world,
             maker_id,
             array![
                 (ResourceTypes::STONE, 100), 
@@ -250,7 +249,7 @@ fn test_create_order() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('caller not maker', 'ENTRYPOINT_FAILED' ))]
 fn test_caller_not_maker() {
-    let (world, maker_id, maker_transport_id, taker_id,trade_systems_dispatcher) 
+    let (_, maker_id, maker_transport_id, taker_id,trade_systems_dispatcher) 
         = setup();
 
     // create order with a caller that isnt the owner of maker_id
@@ -258,7 +257,6 @@ fn test_caller_not_maker() {
         contract_address_const::<'some_unknown'>()
     );
     trade_systems_dispatcher.create_order(
-            world,
             maker_id,
             array![
                 (ResourceTypes::STONE, 100), 
@@ -279,7 +277,7 @@ fn test_caller_not_maker() {
 #[available_gas(3000000000000)]
 #[should_panic(expected: ('not caravan owner', 'ENTRYPOINT_FAILED' ))]
 fn test_caller_not_owner_of_transport_id() {
-    let (world, maker_id, _, taker_id,trade_systems_dispatcher) 
+    let (_, maker_id, _, taker_id,trade_systems_dispatcher) 
         = setup();
     
     let maker_transport_id = 99999; // set some arbitray value
@@ -288,7 +286,6 @@ fn test_caller_not_owner_of_transport_id() {
         contract_address_const::<'maker'>()
     );
     trade_systems_dispatcher.create_order(
-            world,
             maker_id,
             array![
                 (ResourceTypes::STONE, 100), 
@@ -325,7 +322,6 @@ fn test_different_transport_position() {
         contract_address_const::<'maker'>()
     );
     trade_systems_dispatcher.create_order(
-            world,
             maker_id,
             array![
                 (ResourceTypes::STONE, 100), 
@@ -362,7 +358,6 @@ fn test_transport_in_transit() {
         contract_address_const::<'maker'>()
     );
     trade_systems_dispatcher.create_order(
-            world,
             maker_id,
             array![
                 (ResourceTypes::STONE, 100), 
@@ -384,7 +379,7 @@ fn test_transport_in_transit() {
 #[should_panic(expected: ('not enough capacity', 'ENTRYPOINT_FAILED' ))]
 fn test_transport_not_enough_capacity() {
 
-    let (world, maker_id, _, taker_id, trade_systems_dispatcher) 
+    let (_, maker_id, _, taker_id, trade_systems_dispatcher) 
         = setup();
 
 
@@ -399,7 +394,7 @@ fn test_transport_not_enough_capacity() {
         = deploy_system(config_systems::TEST_CLASS_HASH); 
     ICapacityConfigDispatcher {
         contract_address: config_systems_address
-    }.set_capacity_config(world, FREE_TRANSPORT_ENTITY_TYPE, 1); 
+    }.set_capacity_config(FREE_TRANSPORT_ENTITY_TYPE, 1); 
 
     // create two free transport unit for maker realm
     let transport_unit_systems_address 
@@ -409,11 +404,11 @@ fn test_transport_not_enough_capacity() {
     };
     let maker_first_free_transport_unit_id 
         = transport_unit_systems_dispatcher.create_free_unit(
-            world, maker_id, 10
+            maker_id, 10
         );
     let maker_second_free_transport_unit_id 
         = transport_unit_systems_dispatcher.create_free_unit(
-            world, maker_id, 10
+            maker_id, 10
         );
 
     let maker_transport_units: Array<u128> = array![
@@ -433,11 +428,10 @@ fn test_transport_not_enough_capacity() {
     };
 
     let maker_transport_id 
-        = caravan_systems_dispatcher.create(world, maker_transport_units);
+        = caravan_systems_dispatcher.create(maker_transport_units);
 
     
     trade_systems_dispatcher.create_order(
-            world,
             maker_id,
             array![
                 (ResourceTypes::STONE, 100), 

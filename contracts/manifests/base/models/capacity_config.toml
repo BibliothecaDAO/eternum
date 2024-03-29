@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x44524012d1ee3570c3df0701973a88b7cd4f2c757e9cf59af53b132137a4e5f"
+class_hash = "0x2f836136a4001ce8df8bdd5a31d773b237cb34eda2fc39dbd2f651d23f6a042"
+abi = "abis/base/models/capacity_config.json"
 name = "eternum::models::config::capacity_config"
 
 [[members]]
