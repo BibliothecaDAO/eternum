@@ -36,6 +36,8 @@ fn setup(labor_cost_resource_type: u8) -> (IWorldDispatcher, u128, ILaborSystems
         contract_address: config_systems_address
     };
 
+    
+
     // set labor building config
     let buildingConfig = LaborBuildingsConfig {
         config_id: BUILDING_CONFIG_ID,
@@ -103,15 +105,11 @@ fn setup(labor_cost_resource_type: u8) -> (IWorldDispatcher, u128, ILaborSystems
 
     // set cost for gold in coal 
     labor_config_dispatcher
-        .set_labor_cost_amount(
-            world, labor_cost_resource_type.into(), ResourceTypes::COAL.into(), 1_000,
-        );
+        .set_labor_cost_amount(world, labor_cost_resource_type.into(), ResourceTypes::COAL.into(), 1_000,);
 
     // set cost for gold in stone
     labor_config_dispatcher
-        .set_labor_cost_amount(
-            world, labor_cost_resource_type.into(), ResourceTypes::STONE.into(), 1_000,
-        );
+        .set_labor_cost_amount(world, labor_cost_resource_type.into(), ResourceTypes::STONE.into(), 1_000,);
 
     // mint 100_000 coal for the realm;
     set!(

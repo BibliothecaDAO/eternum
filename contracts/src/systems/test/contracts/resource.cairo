@@ -29,7 +29,9 @@ mod test_resource_systems {
                         resource.balance += amount;
                         resource.save(world);
                     },
-                    Option::None => { break; }
+                    Option::None => {
+                        break;
+                    }
                 };
             };
         }

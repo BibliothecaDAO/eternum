@@ -1,2 +1,4 @@
 node_modules
 KATANA.toml
+.yarn
+yarn.lock

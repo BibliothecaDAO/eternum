@@ -5,8 +5,10 @@ use eternum::models::position::{Position, Coord};
 use eternum::models::config::LevelingConfig;
 
 use eternum::systems::config::interface::{
-    IHyperstructureConfigDispatcher, IHyperstructureConfigDispatcherTrait,
-    ILevelingConfigDispatcher, ILevelingConfigDispatcherTrait,
+    IHyperstructureConfigDispatcher, 
+    IHyperstructureConfigDispatcherTrait,
+    ILevelingConfigDispatcher,
+    ILevelingConfigDispatcherTrait,
 };
 use eternum::systems::config::contracts::config_systems;
 
@@ -25,32 +27,45 @@ use core::array::{ArrayTrait, SpanTrait};
 fn setup() -> (IWorldDispatcher, IHyperstructureConfigDispatcher) {
     let world = spawn_eternum();
 
-    let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
+    let config_systems_address 
+        = deploy_system(config_systems::TEST_CLASS_HASH);
 
     let hyperstructure_config_dispatcher = IHyperstructureConfigDispatcher {
         contract_address: config_systems_address
     };
 
+
     (world, hyperstructure_config_dispatcher)
 }
 
 
+
 #[test]
-#[available_gas(3000000000000)]
+#[available_gas(3000000000000)]  
 fn test_create_hyperstructure() {
     let (world, hyperstructure_config_dispatcher) = setup();
 
-    starknet::testing::set_contract_address(contract_address_const::<'entity'>());
+    starknet::testing::set_contract_address(
+        contract_address_const::<'entity'>()
+    );
 
     let hyperstructure_type = 1_u8;
-    let hyperstructure_coord = Coord { x: 20, y: 30 };
-    let completion_cost = array![(ResourceTypes::STONE, 10_u128)].span();
+    let hyperstructure_coord = Coord{ x:20, y:30 };
+    let completion_cost = array![
+        (ResourceTypes::STONE, 10_u128)
+     ].span();
+
 
     // let world.uuid start from 1
     world.uuid();
-
-    let hyperstructure_id = hyperstructure_config_dispatcher
-        .create_hyperstructure(world, hyperstructure_type, hyperstructure_coord, completion_cost,);
+    
+    let hyperstructure_id 
+        = hyperstructure_config_dispatcher.create_hyperstructure(
+            world,
+            hyperstructure_type,
+            hyperstructure_coord,
+            completion_cost,
+        );
 
     let hyperstructure = get!(world, hyperstructure_id, HyperStructure);
     assert!(
@@ -77,8 +92,10 @@ fn test_create_hyperstructure() {
     assert!(hyperstructure_town_watch.town_watch_id != 0, "town watch not created");
 
     // check that hyperstructure town watch position is correct
-    let town_watch_position = get!(world, hyperstructure_town_watch.town_watch_id, Position);
+    let town_watch_position 
+        = get!(world, hyperstructure_town_watch.town_watch_id, Position);
     assert!(town_watch_position.x == hyperstructure_coord.x, "wrong hyp x value");
     assert!(town_watch_position.y == hyperstructure_coord.y, "wrong hyp y value");
 }
+
 
