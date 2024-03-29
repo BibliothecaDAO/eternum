@@ -6,7 +6,7 @@ import { Perf } from "r3f-perf";
 import { useLocation, Switch, Route } from "wouter";
 import { a } from "@react-spring/three";
 import { Sky, AdaptiveDpr, useHelper, Clouds, Cloud, CameraShake, Bvh } from "@react-three/drei";
-import { Suspense, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import { EffectComposer, Bloom, Noise, SMAA } from "@react-three/postprocessing";
 // @ts-ignore
 import { Sobel } from "../../utils/effects.jsx";
@@ -15,6 +15,7 @@ import { CameraControls } from "../../utils/Camera";
 import { BlendFunction } from "postprocessing";
 import * as THREE from "three";
 import FPSLimiter from "../../utils/FPSLimiter";
+import { Hexagon } from "../../types";
 
 export const Camera = () => {
   // const [isMapView] = useRoute("/map");
@@ -167,6 +168,14 @@ export const MainScene = () => {
     distance: { value: 3000, min: 0, max: 10000, step: 100 },
     sunPosition: { value: { x: 0, y: 0, z: 0 } },
   });
+
+  const setHexData = useUIStore((state) => state.setHexData);
+
+  useEffect(() => {
+    fetch("/jsons/hexData.json")
+      .then((response) => response.json())
+      .then((data) => setHexData(data as Hexagon[]));
+  }, []);
 
   return (
     <Canvas

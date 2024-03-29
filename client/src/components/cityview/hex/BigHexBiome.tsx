@@ -45,7 +45,7 @@ const BigHexBiome = ({ biome }: { biome: keyof typeof biomes }) => {
         positions.push({
           x,
           y,
-          z: !isBorderHex ? 0.32 + z : 0.32,
+          z: !isBorderHex && !["ocean", "deep_ocean"].includes(biome) ? 0.32 + z : 0.32,
           color: _color,
           col: _col + shifted.col,
           row: _row + shifted.row,
@@ -71,8 +71,8 @@ const BigHexBiome = ({ biome }: { biome: keyof typeof biomes }) => {
           <Instance key={index} position={[hexPosition.x, hexPosition.y, hexPosition.z]} />
         ))}
       </Instances>
-      <group position={[0, 0, 2]}>
-        <BiomeComponent hexes={hexColRows} zOffsets={true} />
+      <group position={[0, 0, 2.01]}>
+        <BiomeComponent hexes={hexColRows} zOffsets={!["ocean", "deep_ocean"].includes(biome)} />
         <BiomeComponent hexes={borderHexes} zOffsets={false} />
       </group>
     </group>

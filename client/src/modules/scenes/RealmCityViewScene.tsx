@@ -1,19 +1,41 @@
-import { Suspense, useEffect, useState } from "react";
-import RealmLandscape from "../../components/cityview/RealmLandscape";
-// import { Model } from "../../components/cityview/CityView";
+import { useEffect, useMemo } from "react";
 import useUIStore from "../../hooks/store/useUIStore";
-import { BakeShadows, Text, Instance, Instances, useTexture } from "@react-three/drei";
-import RealmBuildings from "../../components/cityview/RealmBuildings";
-import * as THREE from "three";
+import { useTexture } from "@react-three/drei";
 import HexInsideView from "../../components/cityview/hex/HexInsideView";
-import { HEX_RADIUS } from "../../components/worldmap/hexagon/WorldHexagon";
-import { get } from "lodash";
-import { getUIPositionFromColRow } from "../../utils/utils";
-import { createHexagonShape } from "../../components/worldmap/hexagon/HexagonGeometry";
+import { HexPositions, getUIPositionFromColRow } from "../../utils/utils";
 import BigHexBiome from "../../components/cityview/hex/BigHexBiome";
+import useRealmStore from "../../hooks/store/useRealmStore";
+import { useGetRealm } from "../../hooks/helpers/useRealm";
+import realmHexPositions from "../../geodata/hex/realmHexPositions.json";
+import { biomes, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 
 export const RealmCityViewScene = () => {
+  const realmPositions = realmHexPositions as HexPositions;
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
+  const { realmEntityId } = useRealmStore();
+  const { realm } = useGetRealm(realmEntityId);
+  const hexData = useUIStore((state) => state.hexData);
+
+  const { neighborHexes, realmHex } = useMemo(() => {
+    if (!realm) return { neighborHexes: [], realmHex: undefined };
+    const realmPosition = realmPositions[Number(realm?.realmId)];
+    const realmHex = hexData?.find((hex) => hex.col === realmPosition[0].col && hex.row === realmPosition[0].row);
+
+    const neighborOffsets = realmPosition[0].row % 2 !== 0 ? neighborOffsetsEven : neighborOffsetsOdd;
+    const neighborHexes = neighborOffsets.map((neighbor: { i: number; j: number; direction: number }) => {
+      const tmpCol = realmPosition[0].col + neighbor.i;
+      const tmpRow = realmPosition[0].row + neighbor.j;
+      return { col: tmpCol, row: tmpRow };
+    });
+    return { neighborHexes, realmHex };
+  }, [realm]);
+
+  const neighborHexesInsideView = useMemo(() => {
+    return hexData?.filter((hex) =>
+      neighborHexes?.some((neighborHex: any) => neighborHex.col === hex.col && neighborHex.row === hex.row),
+    );
+  }, [hexData, neighborHexes]);
+
   useEffect(() => {
     setIsLoadingScreenEnabled(false);
   }, []);
@@ -25,29 +47,7 @@ export const RealmCityViewScene = () => {
     normalMap: "/textures/paper/paper-normal.jpg",
   });
 
-  const [hexes, setHexes] = useState<any[]>([]);
-
-  useEffect(() => {
-    const MAX_SIZE = 5;
-
-    function isInsideHex(q: number, r: number) {
-      // Using axial coordinates (q, r) directly for hex grid
-      return Math.abs(q) <= MAX_SIZE - 1 && Math.abs(r) <= MAX_SIZE - 1 && Math.abs(q + r) <= MAX_SIZE - 1;
-    }
-
-    for (let i = -20; i < 20; i++) {
-      for (let j = -20; j < 20; j++) {
-        if (isInsideHex(i, j)) {
-          hexes.push({ ...getUIPositionFromColRow(i, j, true), col: i, row: j });
-        }
-      }
-    }
-  }, []);
-
-  const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
   const mainPosition = getUIPositionFromColRow(0, 0, true);
-  //   const pos = getUIPositionFromColRow(0, 1, true);
-  //   const mul = 8;
   const pos = getUIPositionFromColRow(7, 4, true);
   const pos2 = getUIPositionFromColRow(-7, 5, true);
   const pos3 = getUIPositionFromColRow(-7, -4, true);
@@ -56,46 +56,35 @@ export const RealmCityViewScene = () => {
   const pos6 = getUIPositionFromColRow(0, -9, true);
   return (
     <>
-      {/* <HexInsideView center={{ col: 4, row: 4 }} /> */}
-      <group position={[mainPosition.x, 0, -mainPosition.y]} rotation={[0, 0, 0]}>
-        <HexInsideView center={{ col: 4, row: 4 }} color="gray" />
-      </group>
-      <group position={[pos.x, 0, -pos.y]} rotation={[0, 0, 0]}>
-        <BigHexBiome biome="taiga" />
-      </group>
-      <group position={[pos2.x, 0, -pos2.y]}>
-        <BigHexBiome biome="beach" />
-      </group>
-      <group position={[pos3.x, 0, -pos3.y]}>
-        <BigHexBiome biome="scorched" />
-      </group>
-      <group position={[pos4.x, 0, -pos4.y]}>
-        <BigHexBiome biome="tundra" />
-      </group>
-      <group position={[pos5.x, 0, -pos5.y]}>
-        <BigHexBiome biome="snow" />
-      </group>
-      <group position={[pos6.x, 0, -pos6.y]}>
-        <BigHexBiome biome="bare" />
-      </group>
-      {/* <group rotation={[Math.PI / -2, 0, 0]}>
-        <Instances
-          limit={1600} // Optional: max amount of items (for calculating buffer size)
-          range={1600} // Optional: draw-range
-          geometry={hexagonGeometry}
-        >
-          <meshMatcapMaterial color="red" />
-          {hexes.map((hex, index) => {
-            return (
-              <Instance key={index} color="red" position={[hex.x, hex.y, 0.31]}>
-                <Text color="black" anchorX="center" anchorY="middle" position={[0, 0, 0.1]}>
-                  {hex.col},{hex.row}
-                </Text>
-              </Instance>
-            );
-          })}
-        </Instances>
-      </group> */}
+      {realmHex && (
+        <group position={[mainPosition.x, 0, -mainPosition.y]} rotation={[0, 0, 0]}>
+          <HexInsideView center={{ col: 4, row: 4 }} color={biomes[realmHex.biome].color} />
+        </group>
+      )}
+
+      {neighborHexesInsideView && neighborHexesInsideView.length > 0 && (
+        <group>
+          <group position={[pos.x, 0, -pos.y]} rotation={[0, 0, 0]}>
+            <BigHexBiome biome={neighborHexesInsideView[0].biome as any} />
+          </group>
+          <group position={[pos2.x, 0, -pos2.y]}>
+            <BigHexBiome biome={neighborHexesInsideView[1].biome as any} />
+          </group>
+          <group position={[pos3.x, 0, -pos3.y]}>
+            <BigHexBiome biome={neighborHexesInsideView[2].biome as any} />
+          </group>
+          <group position={[pos4.x, 0, -pos4.y]}>
+            <BigHexBiome biome={neighborHexesInsideView[3].biome as any} />
+          </group>
+          <group position={[pos5.x, 0, -pos5.y]}>
+            <BigHexBiome biome={neighborHexesInsideView[4].biome as any} />
+          </group>
+          <group position={[pos6.x, 0, -pos6.y]}>
+            <BigHexBiome biome={neighborHexesInsideView[5].biome as any} />
+          </group>
+        </group>
+      )}
+
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
         <planeGeometry args={[2668, 1390.35]} />
         <meshStandardMaterial {...texture} />
