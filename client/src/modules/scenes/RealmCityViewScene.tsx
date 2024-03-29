@@ -10,6 +10,7 @@ import { HEX_RADIUS } from "../../components/worldmap/hexagon/WorldHexagon";
 import { get } from "lodash";
 import { getUIPositionFromColRow } from "../../utils/utils";
 import { createHexagonShape } from "../../components/worldmap/hexagon/HexagonGeometry";
+import BigHexBiome from "../../components/cityview/hex/BigHexBiome";
 
 export const RealmCityViewScene = () => {
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
@@ -48,11 +49,11 @@ export const RealmCityViewScene = () => {
   //   const pos = getUIPositionFromColRow(0, 1, true);
   //   const mul = 8;
   const pos = getUIPositionFromColRow(7, 4, true);
-  const pos2 = getUIPositionFromColRow(-7, 5, true);
-  const pos3 = getUIPositionFromColRow(-7, -4, true);
-  const pos4 = getUIPositionFromColRow(7, -5, true);
-  const pos5 = getUIPositionFromColRow(0, 9, true);
-  const pos6 = getUIPositionFromColRow(0, -9, true);
+  // const pos2 = getUIPositionFromColRow(-7, 5, true);
+  // const pos3 = getUIPositionFromColRow(-7, -4, true);
+  // const pos4 = getUIPositionFromColRow(7, -5, true);
+  // const pos5 = getUIPositionFromColRow(0, 9, true);
+  // const pos6 = getUIPositionFromColRow(0, -9, true);
   return (
     <>
       {/* <HexInsideView center={{ col: 4, row: 4 }} /> */}
@@ -60,9 +61,9 @@ export const RealmCityViewScene = () => {
         <HexInsideView center={{ col: 4, row: 4 }} color="red" />
       </group>
       <group position={[pos.x, 0, -pos.y]} rotation={[0, 0, 0]}>
-        <HexInsideView center={{ col: 4, row: 4 }} color="yellow" />
+        <BigHexBiome biome="ocean" />
       </group>
-      <group position={[pos2.x, 0, -pos2.y]}>
+      {/* <group position={[pos2.x, 0, -pos2.y]}>
         <HexInsideView center={{ col: 4, row: 4 }} color="pink" />
       </group>
       <group position={[pos3.x, 0, -pos3.y]}>
@@ -76,7 +77,7 @@ export const RealmCityViewScene = () => {
       </group>
       <group position={[pos6.x, 0, -pos6.y]}>
         <HexInsideView center={{ col: 4, row: 4 }} color="violet" />
-      </group>
+      </group> */}
       {/* <group rotation={[Math.PI / -2, 0, 0]}>
         <Instances
           limit={1600} // Optional: max amount of items (for calculating buffer size)
