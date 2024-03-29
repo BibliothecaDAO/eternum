@@ -16,6 +16,7 @@ import { EventType, useNotificationsStore } from "../../../../hooks/store/useNot
 import { FoodType, useLabor } from "../../../../hooks/helpers/useLabor";
 import useUIStore from "../../../../hooks/store/useUIStore";
 import { ReactComponent as People } from "../../../../assets/icons/common/people.svg";
+import { useResources } from "../../../../hooks/helpers/useResources";
 
 type LaborComponentProps = {
   hasGuild: boolean;
@@ -46,6 +47,8 @@ export const LaborComponent = ({
     account: { account },
   } = useDojo();
 
+  const { useBalance } = useResources();
+
   const { playResourceSound } = usePlayResourceSound();
   const { play: playBuildFarm } = useUiSounds(soundSelector.buildFarm);
   const { play: playBuildFishingVillage } = useUiSounds(soundSelector.buildFishingVillage);
@@ -56,8 +59,7 @@ export const LaborComponent = ({
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const labor = useComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
-
-  const resource = useComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId), BigInt(resourceId)]));
+  const resource = useBalance(realmEntityId, resourceId);
 
   // time until the next possible harvest (that happens every 7200 seconds (2hrs))
   // if labor balance is less than current time, then there is no time to next harvest
@@ -164,7 +166,7 @@ export const LaborComponent = ({
             <div className="flex items-center mb-2">
               {/* <ResourceIcon resource={findResourceById(resourceId)?.trait as any} size="sm" /> */}
               <div className="ml-2 text-sm font-bold text-white">
-                <span className="opacity-60">{currencyFormat(resource ? Number(resource.balance) : 0, 2)}</span>
+                <span className="opacity-60">{currencyFormat(resource ? Number(resource.amount) : 0, 2)}</span>
 
                 <span className={`ml-3  ${labor && laborLeft > 0 ? "text-gold" : "text-gray-gold"}`}>
                   {hyperstructureLevelBonus && labor && laborLeft > 0

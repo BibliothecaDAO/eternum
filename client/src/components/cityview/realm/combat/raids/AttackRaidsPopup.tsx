@@ -597,7 +597,7 @@ const SelectRaidersPanel = ({
           const balance = getBalance(defence?.locationEntityId, resource.id);
           if (balance && balance.balance > 0) {
             hasResources = true;
-            resourceBalances.push({ resourceId: balance.resource_type, balance: balance.balance });
+            resourceBalances.push({ resourceId: balance.resourceId, balance: balance.balance });
           }
         }
       }

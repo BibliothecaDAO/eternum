@@ -14,6 +14,7 @@ import { useGetRealm } from "../../../hooks/helpers/useRealm";
 import { LABOR_CONFIG } from "@bibliothecadao/eternum";
 import useUIStore from "../../../hooks/store/useUIStore";
 import { LevelIndex, useLevel } from "../../../hooks/helpers/useLevel";
+import { useResources } from "../../../hooks/helpers/useResources";
 
 type RealmResourcesComponentProps = {} & React.ComponentPropsWithRef<"div">;
 
@@ -126,6 +127,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({
   const [productivity, setProductivity] = useState<number>(0);
 
   const { getEntityLevel, getRealmLevelBonus } = useLevel();
+  const { useBalance } = useResources();
 
   const isFood = useMemo(() => [254, 255].includes(resourceId), [resourceId]);
 
@@ -138,7 +140,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({
 
   const labor = useComponentValue(Labor, getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]));
 
-  const resource = useComponentValue(Resource, getEntityIdFromKeys([BigInt(realmEntityId ?? 0), BigInt(resourceId)]));
+  const resource = useBalance(realmEntityId, resourceId);
 
   useEffect(() => {
     let laborLeft: number = 0;
@@ -159,7 +161,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({
     setProductivity(productivity);
   }, [nextBlockTimestamp, labor]);
 
-  return resource && resource.balance > 0 ? (
+  return resource && resource.amount > 0 ? (
     <>
       <div
         onMouseEnter={() =>
@@ -169,7 +171,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({
             content: (
               <div className="flex flex-col items-center justify-center">
                 <div className="font-bold">{findResourceById(resourceId)?.trait}</div>
-                <div>{currencyFormat(resource ? Number(resource.balance) : 0, 2)}</div>
+                <div>{currencyFormat(resource ? Number(resource.amount) : 0, 2)}</div>
               </div>
             ),
           })
@@ -188,7 +190,7 @@ const ResourceComponent: React.FC<ResourceComponentProps> = ({
         />
         <div className="flex text-xs">
           {currencyIntlFormat(
-            resource ? (!isLabor ? divideByPrecision(Number(resource.balance)) : Number(resource.balance)) : 0,
+            resource ? (!isLabor ? divideByPrecision(Number(resource.amount)) : Number(resource.amount)) : 0,
             2,
           )}
           {resourceId !== 253 && canFarm && (

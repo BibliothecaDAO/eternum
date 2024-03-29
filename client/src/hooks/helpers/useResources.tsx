@@ -2,10 +2,12 @@ import { Entity, Has, HasValue, NotValue, getComponentValue, runQuery } from "@d
 import { useDojo } from "../../DojoContext";
 import useRealmStore from "../store/useRealmStore";
 import { getEntityIdFromKeys, getForeignKeyEntityId } from "../../utils/utils";
-import { useEntityQuery } from "@dojoengine/react";
+import { useComponentValue, useEntityQuery } from "@dojoengine/react";
 import { BigNumberish } from "starknet";
 import { Resource } from "@bibliothecadao/eternum";
 import { EventType, useNotificationsStore } from "../store/useNotificationsStore";
+import { ProductionManager } from "../../dojo/modelManager/ProductionManager";
+import { useEffect, useState } from "react";
 
 export function useResources() {
   const {
@@ -21,6 +23,7 @@ export function useResources() {
         Position,
         ResourceCost,
         Realm,
+        Production,
       },
       optimisticSystemCalls: { optimisticOffloadResources },
       systemCalls: { transfer_items },
@@ -127,29 +130,32 @@ export function useResources() {
   };
 
   const getFoodResources = (entityId: bigint): Resource[] => {
-    const wheat = getComponentValue(Resource, getEntityIdFromKeys([entityId, 254n]));
-    const fish = getComponentValue(Resource, getEntityIdFromKeys([entityId, 255n]));
+    const wheatBalance = new ProductionManager(Production, Resource, entityId, 254n).balance();
+    const fishBalance = new ProductionManager(Production, Resource, entityId, 255n).balance();
 
     return [
-      {
-        resourceId: 254,
-        amount: Number(wheat?.balance) || 0,
-      },
-      { resourceId: 255, amount: Number(fish?.balance) || 0 },
+      { resourceId: 254, amount: wheatBalance },
+      { resourceId: 255, amount: fishBalance },
     ];
   };
 
-  const getBalance = (
-    realmEntityId: bigint,
-    resourceId: number,
-  ): { resource_type: number; balance: number } | undefined => {
-    let resource = getComponentValue(Resource, getEntityIdFromKeys([realmEntityId, BigInt(resourceId)]));
-    if (resource) {
-      return {
-        resource_type: resource.resource_type,
-        balance: Number(resource.balance),
-      };
-    }
+  const getBalance = (entityId: bigint, resourceId: number) => {
+    const productionManager = new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
+    return { balance: productionManager.balance(), resourceId };
+  };
+
+  const useBalance = (entityId: bigint, resourceId: number) => {
+    const [resourceBalance, setResourceBalance] = useState<Resource>({ amount: 0, resourceId });
+
+    const resource = useComponentValue(Resource, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
+    const production = useComponentValue(Production, getEntityIdFromKeys([entityId, BigInt(resourceId)]));
+
+    useEffect(() => {
+      const productionManager = new ProductionManager(Production, Resource, entityId, BigInt(resourceId));
+      setResourceBalance({ amount: productionManager.balance(), resourceId });
+    }, [resource, production]);
+
+    return resourceBalance;
   };
 
   const getRealmsWithSpecificResource = (
@@ -241,6 +247,7 @@ export function useResources() {
     getFoodResources,
     getResourceChestIdFromInventoryIndex,
     getBalance,
+    useBalance,
     getCaravansWithResourcesChest,
     getResourceCosts,
   };
