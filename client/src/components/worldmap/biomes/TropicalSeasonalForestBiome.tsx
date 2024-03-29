@@ -21,7 +21,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-export function TropicalSeasonalForestBiome({ hexes }: { hexes: Hexagon[] }) {
+export function TropicalSeasonalForestBiome({ hexes, zOffsets }: { hexes: Hexagon[]; zOffsets?: boolean }) {
   const { nodes, materials: _materials } = useGLTF("/models/biomes/tropicalSeasonalForest.glb") as GLTFResult;
 
   const defaultTransform = new THREE.Matrix4()
@@ -60,11 +60,11 @@ export function TropicalSeasonalForestBiome({ hexes }: { hexes: Hexagon[] }) {
     let idx = 0;
     let matrix = new THREE.Matrix4();
     hexes.forEach((hex: Hexagon) => {
-      const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
+      const { x, y, z } = getUIPositionFromColRow(hex.col, hex.row);
       // rotate hex randomly on 60 * n degrees
       const seededRandom = pseudoRandom(hex.col, hex.row);
       matrix.makeRotationZ((Math.PI / 3) * Math.floor(seededRandom * 6));
-      matrix.setPosition(x, y, 0.33);
+      matrix.setPosition(x, y, zOffsets ? 0.32 + z : 0.32);
       instancedMeshes.forEach((mesh) => {
         mesh.setMatrixAt(idx, matrix);
       });

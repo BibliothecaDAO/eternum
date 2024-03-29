@@ -47,7 +47,7 @@ const HexInsideView = ({ center, color }: { center: { col: number; row: number }
   const hexPositions = generateHexPositions(center);
 
   return (
-    <group rotation={[Math.PI / -2, 0, 0]} position={[0, 0, 0]}>
+    <group rotation={[Math.PI / -2, 0, 0]} position={[0, 2, 0]}>
       {hexPositions.map((hexPosition, index) => {
         return (
           <group key={index} position={[hexPosition.x, hexPosition.y, hexPosition.z]}>

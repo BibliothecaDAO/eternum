@@ -1,19 +1,25 @@
 import * as THREE from "three";
 import { createHexagonShape } from "../../worldmap/hexagon/HexagonGeometry";
-import { HEX_RADIUS } from "../../worldmap/hexagon/WorldHexagon";
+import { FELT_CENTER, HEX_RADIUS } from "../../worldmap/hexagon/WorldHexagon";
 import { getUIPositionFromColRow } from "../../../utils/utils";
 import { Instances, Instance } from "@react-three/drei";
 import { biomes } from "@bibliothecadao/eternum";
+import { Hexagon } from "../../../types";
+import { biomeComponents } from "../../worldmap/hexagon/HexLayers";
 
 const BigHexBiome = ({ biome }: { biome: keyof typeof biomes }) => {
   const biomeData = biomes[biome];
   const hexagonGeometry = new THREE.ExtrudeGeometry(createHexagonShape(HEX_RADIUS), { depth: 2, bevelEnabled: false });
   const _color = new THREE.Color(biomeData.color);
   const center = { col: 4, row: 4 };
+  const BiomeComponent = biomeComponents[biome];
+
   const generateHexPositions = (center: { col: number; row: number }) => {
     const addOffset = center.row % 2 === 0 && center.row > 0 ? 0 : 1;
     const radius = 4;
     const positions = [] as any[];
+    const hexColRows = [] as Hexagon[];
+    const borderHexes = [] as Hexagon[];
     const normalizedCenter = { col: 4, row: 4 };
     const shifted = { col: center.col - normalizedCenter.col, row: center.row - normalizedCenter.row };
     for (let _row = normalizedCenter.row - radius; _row <= normalizedCenter.row + radius; _row++) {
@@ -35,22 +41,28 @@ const BigHexBiome = ({ biome }: { biome: keyof typeof biomes }) => {
           _row === normalizedCenter.row + radius ||
           _col === startOffset + normalizedCenter.col - radius ||
           _col === normalizedCenter.col - radius + colsCount + startOffset - 1;
-        const zIncrease = !isBorderHex ? Math.random() * 2 : 0;
+        const { x, y, z } = getUIPositionFromColRow(_col + shifted.col + FELT_CENTER, _row + shifted.row + FELT_CENTER);
         positions.push({
-          ...getUIPositionFromColRow(_col + shifted.col, _row + shifted.row, true),
-          z: 0.32 + zIncrease,
+          x,
+          y,
+          z: !isBorderHex ? 0.32 + z : 0.32,
           color: _color,
           col: _col + shifted.col,
           row: _row + shifted.row,
           startOffset: startOffset,
         });
+        if (!isBorderHex) {
+          hexColRows.push({ col: _col + shifted.col + FELT_CENTER, row: _row + shifted.row + FELT_CENTER } as Hexagon);
+        } else {
+          borderHexes.push({ col: _col + shifted.col + FELT_CENTER, row: _row + shifted.row + FELT_CENTER } as Hexagon);
+        }
       }
     }
 
-    return positions;
+    return { positions, hexColRows, borderHexes };
   };
 
-  const hexPositions = generateHexPositions(center);
+  const { positions: hexPositions, hexColRows, borderHexes } = generateHexPositions(center);
 
   return (
     <group rotation={[Math.PI / -2, 0, 0]} position={[0, 0, 0]}>
@@ -59,6 +71,10 @@ const BigHexBiome = ({ biome }: { biome: keyof typeof biomes }) => {
           <Instance key={index} position={[hexPosition.x, hexPosition.y, hexPosition.z]} />
         ))}
       </Instances>
+      <group position={[0, 0, 2]}>
+        <BiomeComponent hexes={hexColRows} zOffsets={true} />
+        <BiomeComponent hexes={borderHexes} zOffsets={false} />
+      </group>
     </group>
   );
 };

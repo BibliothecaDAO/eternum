@@ -3,7 +3,7 @@ import { Vector2 } from "three";
 import { useThree } from "@react-three/fiber";
 import { BlendFunction } from "postprocessing";
 import { Entity } from "@dojoengine/recs";
-import { Position, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
+import { Position, UIPosition, neighborOffsetsEven, neighborOffsetsOdd } from "@bibliothecadao/eternum";
 import realmsHexPositions from "../geodata/hex/realmHexPositions.json";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import realmHexPositions from "../geodata/hex/realmHexPositions.json";
@@ -189,7 +189,7 @@ export const calculateDistance = (start: Position, destination: Position): numbe
   return distance;
 };
 
-export const getUIPositionFromColRow = (col: number, row: number, normalized?: boolean): Position => {
+export const getUIPositionFromColRow = (col: number, row: number, normalized?: boolean): UIPosition => {
   const hexRadius = 3;
   const hexHeight = hexRadius * 2;
   const hexWidth = Math.sqrt(3) * hexRadius;
@@ -200,10 +200,11 @@ export const getUIPositionFromColRow = (col: number, row: number, normalized?: b
   const rowNorm = row - (!normalized ? 2147483647 : 0);
   const x = colNorm * horizDist + ((rowNorm % 2) * horizDist) / 2;
   const y = rowNorm * vertDist;
-
+  const z = pseudoRandom(x, y) * 2;
   return {
     x,
     y,
+    z,
   };
 };
 
