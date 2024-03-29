@@ -299,7 +299,6 @@ mod tests {
 
 
     #[test]
-    #[available_gas(30000000)]
     fn test_calculate_distance() {
         let start = Position { entity_id: 0, x: 2, y: 1 };
         let end = Position { entity_id: 0, x: 1, y: 3 };
@@ -310,7 +309,6 @@ mod tests {
 
 
     #[test]
-    #[available_gas(30000000)]
     fn test_calculate_distance_large_values() {
 
         let start = Position { entity_id: 0, x: 432788918, y: 999990130 };
@@ -321,7 +319,6 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(30000000)]
     fn test_calculate_travel_time() {
         let start = Position { entity_id: 0, x: 432788918, y: 999990130 };
         let end = Position { entity_id: 0, x: 81839812, y: 318939024 };        

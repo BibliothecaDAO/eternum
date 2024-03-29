@@ -87,7 +87,6 @@ mod tests {
     };
 
     #[test]
-    #[available_gas(30000000)]
     fn test_get_level() {
         // set level
         let level = Level { entity_id: 1, level: 3, valid_until: 1000 };
@@ -117,7 +116,6 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(30000000)]
     fn test_get_multiplier() {
         let leveling_config = LevelingConfig {
             config_id: 0,
@@ -150,7 +148,6 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(30000000)]
     fn test_get_index_multiplier_for_realm() {
         let leveling_config = LevelingConfig {
             config_id: 0,
@@ -203,7 +200,6 @@ mod tests {
 
 
     #[test]
-    #[available_gas(30000000)]
     fn test_get_cost_multiplier() {
         let level = Level { entity_id: 1, level: 9, valid_until: 1000 };
 

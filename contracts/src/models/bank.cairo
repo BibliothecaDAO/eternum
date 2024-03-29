@@ -104,7 +104,6 @@ mod tests {
     }
 
     #[test]
-    #[available_gas(30000000)]
     fn test_auction_get_price() {
         let auction = BankAuction {
             bank_id: 1,

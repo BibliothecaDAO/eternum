@@ -345,7 +345,6 @@ mod tests {
     use eternum::models::config::{LaborBuildingsConfig, LaborBuildingsConfigTrait};
 
     #[test]
-    #[available_gas(30000000)]
     fn test_get_building_type() {
         let config = LaborBuildingsConfig {
             config_id: 1,
