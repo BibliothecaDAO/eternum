@@ -258,7 +258,6 @@ fn test_cancel() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('trade must be open', 'ENTRYPOINT_FAILED' ))]
 fn test_cancel_after_acceptance() {
 
@@ -287,7 +286,6 @@ fn test_cancel_after_acceptance() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('caller must be trade maker', 'ENTRYPOINT_FAILED' ))]
 fn test_cancel_caller_not_maker() {
 

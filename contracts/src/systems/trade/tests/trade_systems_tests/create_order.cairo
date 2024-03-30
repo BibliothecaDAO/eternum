@@ -241,7 +241,6 @@ fn test_create_order() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('caller not maker', 'ENTRYPOINT_FAILED' ))]
 fn test_caller_not_maker() {
     let (world, maker_id, maker_transport_id, taker_id,trade_systems_dispatcher) 
@@ -270,7 +269,6 @@ fn test_caller_not_maker() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('not caravan owner', 'ENTRYPOINT_FAILED' ))]
 fn test_caller_not_owner_of_transport_id() {
     let (world, maker_id, _, taker_id,trade_systems_dispatcher) 
@@ -300,7 +298,6 @@ fn test_caller_not_owner_of_transport_id() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('mismatched positions', 'ENTRYPOINT_FAILED' ))]
 fn test_different_transport_position() {
     let (world, maker_id, maker_transport_id, taker_id,trade_systems_dispatcher) 
@@ -338,7 +335,6 @@ fn test_different_transport_position() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('transport has not arrived', 'ENTRYPOINT_FAILED' ))]
 fn test_transport_in_transit() {
     let (world, maker_id, maker_transport_id, taker_id, trade_systems_dispatcher) 
@@ -374,7 +370,6 @@ fn test_transport_in_transit() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('not enough capacity', 'ENTRYPOINT_FAILED' ))]
 fn test_transport_not_enough_capacity() {
 

@@ -171,7 +171,6 @@ mod resource_transfer_system_tests {
 
 
     #[test]
-    30000000000000)]
     #[should_panic(expected: ('not enough capacity','ENTRYPOINT_FAILED' ))]
     fn test_transfer__not_enough_capacity() {
         
@@ -230,7 +229,6 @@ mod resource_transfer_system_tests {
 
 
     #[test]
-    30000000000000)]
     #[should_panic(expected: ('not owner of entity id','ENTRYPOINT_FAILED' ))]
     fn test_transfer__not_owner() {
             
@@ -254,7 +252,6 @@ mod resource_transfer_system_tests {
 
 
     #[test]
-    30000000000000)]
     #[should_panic(expected: ('mismatched positions','ENTRYPOINT_FAILED' ))]
     fn test_transfer__entity_position_mismatch() {
         let (world, resource_systems_dispatcher) = setup();
@@ -307,7 +304,6 @@ mod resource_transfer_system_tests {
 
 
     #[test]
-    30000000000000)]
     #[should_panic(expected: ('insufficient balance','ENTRYPOINT_FAILED' ))]
     fn test_transfer__insufficient_balance() {
         
@@ -345,7 +341,6 @@ mod resource_transfer_system_tests {
 
 
     #[test]
-    30000000000000)]
     fn test_transfer_from() {
 
         let (world, resource_systems_dispatcher) = setup();
@@ -431,7 +426,6 @@ mod resource_transfer_system_tests {
 
 
     #[test]
-    30000000000000)]
     fn test_transfer_from__with_infinite_approval() {
 
         let (world, resource_systems_dispatcher) = setup();

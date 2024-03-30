@@ -165,7 +165,6 @@ fn test_purchase_labor_non_food() {
 
 
 #[test]
-300000000000)]
 fn test_purchase_labor_with_building() {
     let resource_type = ResourceTypes::GOLD;
     let (world, realm_entity_id, labor_systems_dispatcher) = setup(resource_type);
@@ -201,7 +200,6 @@ fn test_purchase_labor_with_building() {
 
 
 #[test]
-300000000000)]
 fn test_purchase_labor_food() {
     let resource_type = ResourceTypes::FISH;
     let (world, realm_entity_id, labor_systems_dispatcher) = setup(resource_type);

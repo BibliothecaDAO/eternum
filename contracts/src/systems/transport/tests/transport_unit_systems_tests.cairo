@@ -155,7 +155,6 @@ fn test_create_free_transport_unit() {
 
 
 #[test]
-300000000000)]
 #[should_panic(expected: ('entity is not owned by caller', 'ENTRYPOINT_FAILED' ))]
 fn test_create_unit__not_owner() {
 
@@ -172,7 +171,6 @@ fn test_create_unit__not_owner() {
 
 
 #[test]
-300000000000)]
 #[should_panic(expected: ('not enough free transport unit', 'ENTRYPOINT_FAILED' ))]
 fn test_create_unit__not_enough_free_transport_unit() {
 
@@ -188,7 +186,6 @@ fn test_create_unit__not_enough_free_transport_unit() {
 
 
 #[test]
-300000000000)]
 fn test_return_free_transport_unit() {
 
     let (world, realm_entity_id, transport_unit_systems_dispatcher) = setup();
@@ -239,7 +236,6 @@ fn test_return_free_transport_unit() {
 
 
 #[test]
-300000000000)]
 #[should_panic(expected: ('not a free transport unit', 'ENTRYPOINT_FAILED' ))]
 fn test_return__wrong_unit_type() {
 
@@ -269,7 +265,6 @@ fn test_return__wrong_unit_type() {
 
 
 #[test]
-300000000000)]
 #[should_panic(expected: ('unit not owned by caller', 'ENTRYPOINT_FAILED' ))]
 fn test_return__not_owner() {
 
@@ -291,7 +286,6 @@ fn test_return__not_owner() {
 
 
 #[test]
-300000000000)]
 #[should_panic(expected: ('unit is blocked', 'ENTRYPOINT_FAILED' ))]
 fn test_return__movable_blocked() {
 
@@ -321,7 +315,6 @@ fn test_return__movable_blocked() {
 
 
 #[test]
-300000000000)]
 #[should_panic(expected: ('unit has no quantity', 'ENTRYPOINT_FAILED' ))]
 fn test_return__no_quantity() {
 

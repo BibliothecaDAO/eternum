@@ -251,7 +251,6 @@ fn test_attack() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('not attacker owner','ENTRYPOINT_FAILED' ))]
 fn test_not_owner() {
 
@@ -281,7 +280,6 @@ fn test_not_owner() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('attacker is travelling','ENTRYPOINT_FAILED' ))]
 fn test_attacker_in_transit() {
 
@@ -319,7 +317,6 @@ fn test_attacker_in_transit() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('attacker is dead','ENTRYPOINT_FAILED' ))]
 fn test_attacker_dead() {
 
@@ -357,7 +354,6 @@ fn test_attacker_dead() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('target is dead','ENTRYPOINT_FAILED' ))]
 fn test_target_dead() {
 
@@ -396,7 +392,6 @@ fn test_target_dead() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('position mismatch','ENTRYPOINT_FAILED' ))]
 fn test_wrong_position() {
 

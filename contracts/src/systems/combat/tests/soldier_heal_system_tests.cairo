@@ -198,7 +198,6 @@ fn test_heal_soldier() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('not unit owner','ENTRYPOINT_FAILED' ))]
 fn test_not_unit_owner() {
 
@@ -219,7 +218,6 @@ fn test_not_unit_owner() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('max health exceeeded','ENTRYPOINT_FAILED' ))]
 fn test_purchase_exceeds_max_health() {
 

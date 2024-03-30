@@ -206,7 +206,6 @@ fn test_create_soldier() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('not realm owner','ENTRYPOINT_FAILED' ))]
 fn test_not_owner() {
 
@@ -227,7 +226,6 @@ fn test_not_owner() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('not a realm','ENTRYPOINT_FAILED' ))]
 fn test_not_realm() {
 

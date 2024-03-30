@@ -131,7 +131,6 @@ fn test_travel() {
 }
 
 #[test]
-30000000000000)]
 fn test_travel_with_realm_bonus() {
 
     let (
@@ -219,7 +218,6 @@ fn test_travel_with_realm_bonus() {
 }
 
 #[test]
-30000000000000)]
 fn test_travel_with_realm_and_order_bonus() {
 
     let (
@@ -328,7 +326,6 @@ fn test_travel_with_realm_and_order_bonus() {
 
 
 #[test]
-30000000000000)]
 fn test_travel_with_road(){
 
     let (world, travelling_entity_id, 
@@ -398,7 +395,6 @@ fn test_travel_with_road(){
 
 
 #[test]
-30000000000000)]
 #[should_panic(expected: ('not owner of entity', 'ENTRYPOINT_FAILED' ))]
 fn test_not_owner() {
 
@@ -417,7 +413,6 @@ fn test_not_owner() {
 
 
 #[test]
-30000000000000)]
 #[should_panic(expected: ('entity has no speed', 'ENTRYPOINT_FAILED' ))]
 fn test_no_speed() {
 
@@ -438,7 +433,6 @@ fn test_no_speed() {
 
 
 #[test]
-30000000000000)]
 #[should_panic(expected: ('entity is blocked', 'ENTRYPOINT_FAILED' ))]
 fn test_blocked() {
 
@@ -471,7 +465,6 @@ fn test_blocked() {
 
 
 #[test]
-30000000000000)]
 #[should_panic(expected: ('entity is in transit', 'ENTRYPOINT_FAILED' ))]
 fn test_in_transit() {
 
@@ -623,7 +616,6 @@ fn setup_hex_travel() -> (IWorldDispatcher, u64, Position, ITravelSystemsDispatc
 
 
 #[test]
-30000000000000)]
 fn test_travel_hex() {
 
     let (

@@ -154,7 +154,6 @@ fn test_level_up_realm() {
 
 
 #[test]
-300000000000)]
 #[should_panic(expected: ('not realm owner','ENTRYPOINT_FAILED' ))]
 fn test_level_up__not_realm_owner() {
     let (world, realm_entity_id, leveling_systems_dispatcher) = setup();
@@ -173,7 +172,6 @@ fn test_level_up__not_realm_owner() {
 
 
 #[test]
-300000000000)]
 #[should_panic(expected: ('not a realm','ENTRYPOINT_FAILED' ))]
 fn test_level_up__not_realm() {
     let (world, _, leveling_systems_dispatcher) = setup();

@@ -74,7 +74,6 @@ fn test_create_bank() {
 }
 
 #[test]
-3000000000000)]
 fn test_set_bank_auction() {
     let world = spawn_eternum();
 

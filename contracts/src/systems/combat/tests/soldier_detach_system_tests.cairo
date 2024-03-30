@@ -232,7 +232,6 @@ fn test_detach_unit() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('not unit owner','ENTRYPOINT_FAILED' ))]
 fn test_not_owner() {
 
@@ -260,7 +259,6 @@ fn test_not_owner() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('not enough quantity','ENTRYPOINT_FAILED' ))]
 fn test_single_soldier_detach() {
     
@@ -295,7 +293,6 @@ fn test_single_soldier_detach() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('unit inventory not empty','ENTRYPOINT_FAILED' ))]
 fn test_unit_has_items_in_inventory() {
             

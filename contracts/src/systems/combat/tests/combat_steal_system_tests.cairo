@@ -469,7 +469,6 @@ fn test_steal_success() {
 
 
 #[test]
-3000000000000)]
 fn test_steal_success_with_order_boost() {
 
     // the attacker attacks and successfully steals resources
@@ -590,7 +589,6 @@ fn test_steal_success_with_order_boost() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('not attacker owner','ENTRYPOINT_FAILED' ))]
 fn test_not_owner() {
 
@@ -617,7 +615,6 @@ fn test_not_owner() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('attacker is travelling','ENTRYPOINT_FAILED' ))]
 fn test_attacker_in_transit() {
 
@@ -653,7 +650,6 @@ fn test_attacker_in_transit() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('attacker is dead','ENTRYPOINT_FAILED' ))]
 fn test_attacker_dead() {
 
@@ -693,7 +689,6 @@ fn test_attacker_dead() {
 
 
 #[test]
-3000000000000)]
 #[should_panic(expected: ('position mismatch','ENTRYPOINT_FAILED' ))]
 fn test_wrong_position() {
 
@@ -732,7 +727,6 @@ fn test_wrong_position() {
 
 
 #[test]
-3000000000000)]
 fn test_steal_success_army_to_army() {
 
     // the attacker attacks and successfully steals resources
