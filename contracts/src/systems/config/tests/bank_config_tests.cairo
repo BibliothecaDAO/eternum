@@ -17,7 +17,6 @@ use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 const _0_1: u128 = 1844674407370955161; // 0.1
 
 #[test]
-#[available_gas(3000000000000)]
 fn test_create_bank() {
     let world = spawn_eternum();
 
@@ -75,7 +74,7 @@ fn test_create_bank() {
 }
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 fn test_set_bank_auction() {
     let world = spawn_eternum();
 

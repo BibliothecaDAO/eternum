@@ -42,7 +42,6 @@ fn setup() -> (IWorldDispatcher, IRoadSystemsDispatcher) {
 
 
 #[test]
-#[available_gas(3000000000000)]  
 fn test_create() {
 
     let (world, road_systems_dispatcher) = setup();
@@ -96,7 +95,7 @@ fn test_create() {
 
 
 #[test]
-#[available_gas(3000000000000)]  
+3000000000000)]  
 #[should_panic(expected: ('entity id not owned by caller', 'ENTRYPOINT_FAILED' ))]
 fn test_not_entity() {
     let (world, road_systems_dispatcher) = setup();
@@ -133,7 +132,7 @@ fn test_not_entity() {
 
 
 #[test]
-#[available_gas(3000000000000)]  
+3000000000000)]  
 #[should_panic(expected: ('insufficient resources', 'ENTRYPOINT_FAILED' ))]
 fn test_insufficient_balance() {
     let (world, road_systems_dispatcher) = setup();
@@ -180,7 +179,7 @@ fn test_insufficient_balance() {
 
 
 #[test]
-#[available_gas(3000000000000)]  
+3000000000000)]  
 #[should_panic(expected: ('road already exists', 'ENTRYPOINT_FAILED' ))]
 fn test_already_exists() {
     let (world, road_systems_dispatcher) = setup();

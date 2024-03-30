@@ -46,7 +46,6 @@ use eternum::systems::labor::interface::{
 
 
 #[test]
-#[available_gas(3000000000)]
 fn test_harvest_labor_non_food() {
 
     let world = spawn_eternum();
@@ -170,7 +169,7 @@ fn test_harvest_labor_non_food() {
 
 
 #[test]
-#[available_gas(3000000000)]
+3000000000)]
 fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
 
     let world = spawn_eternum();
@@ -328,7 +327,7 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
 
 
 #[test]
-#[available_gas(3000000000)]
+3000000000)]
 fn test_harvest_labor_food() {
     let world = spawn_eternum();
 
@@ -454,7 +453,7 @@ fn test_harvest_labor_food() {
 
 
 #[test]
-#[available_gas(3000000000)]
+3000000000)]
 fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
 
     let world = spawn_eternum();

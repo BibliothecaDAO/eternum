@@ -138,7 +138,6 @@ fn setup() -> (IWorldDispatcher, Array<u128>, ICaravanSystemsDispatcher, u128) {
 
 
 #[test]
-#[available_gas(300000000000)]
 fn test_create_caravan() {
 
     let (world, transport_units, caravan_systems_dispatcher, realm_entity_id) 
@@ -177,7 +176,7 @@ fn test_create_caravan() {
 
 
 #[test]
-#[available_gas(300000000000)]
+300000000000)]
 #[should_panic(expected: ('entity is not owned by caller','ENTRYPOINT_FAILED' ))]
 fn test_create_caravan__not_owner() {
 
@@ -191,7 +190,7 @@ fn test_create_caravan__not_owner() {
 
 
 #[test]
-#[available_gas(300000000000)]
+300000000000)]
 #[should_panic(expected: ('entity is blocked','ENTRYPOINT_FAILED' ))]
 fn test_create_caravan__blocked_entity() {
     let (world, mut transport_units, caravan_systems_dispatcher, _) 
@@ -223,7 +222,7 @@ fn test_create_caravan__blocked_entity() {
 
 
 #[test]
-#[available_gas(300000000000)]
+300000000000)]
 fn test_disassemble_caravan() {
 
     let (world, transport_units, caravan_systems_dispatcher, _) 
@@ -287,7 +286,7 @@ fn test_disassemble_caravan() {
 
 
 #[test]
-#[available_gas(300000000000)]
+300000000000)]
 #[should_panic(expected: ('caller not owner','ENTRYPOINT_FAILED' ))]
 fn test_disassemble_caravan__caller_not_owner() {
 
@@ -308,7 +307,7 @@ fn test_disassemble_caravan__caller_not_owner() {
 
 
 #[test]
-#[available_gas(300000000000)]
+300000000000)]
 #[should_panic(expected: ('not a caravan','ENTRYPOINT_FAILED' ))]
 fn test_disassemble_caravan__not_caravan() {
 
@@ -323,7 +322,7 @@ fn test_disassemble_caravan__not_caravan() {
 
 
 #[test]
-#[available_gas(300000000000)]
+300000000000)]
 #[should_panic(expected: ('inventory not empty','ENTRYPOINT_FAILED' ))]
 fn test_disassemble_caravan__non_empty_inventory() {
 
@@ -347,7 +346,7 @@ fn test_disassemble_caravan__non_empty_inventory() {
 
 
 #[test]
-#[available_gas(300000000000)]
+300000000000)]
 #[should_panic(expected: ('caravan is blocked','ENTRYPOINT_FAILED' ))]
 fn test_disassemble_caravan__blocked_caravan() {
 
@@ -371,7 +370,7 @@ fn test_disassemble_caravan__blocked_caravan() {
 
 
 #[test]
-#[available_gas(300000000000)]
+300000000000)]
 #[should_panic(expected: ('caravan in transit','ENTRYPOINT_FAILED' ))]
 fn test_disassemble_caravan__caravan_in_transit() {
 
@@ -395,7 +394,7 @@ fn test_disassemble_caravan__caravan_in_transit() {
 
 
 #[test]
-#[available_gas(300000000000)]
+300000000000)]
 #[should_panic(expected: ('mismatched positions','ENTRYPOINT_FAILED' ))]
 fn test_disassemble_caravan__not_at_realm() {
 

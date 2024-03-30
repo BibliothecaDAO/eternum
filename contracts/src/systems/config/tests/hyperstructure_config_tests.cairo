@@ -41,7 +41,6 @@ fn setup() -> (IWorldDispatcher, IHyperstructureConfigDispatcher) {
 
 
 #[test]
-#[available_gas(3000000000000)]  
 fn test_create_hyperstructure() {
     let (world, hyperstructure_config_dispatcher) = setup();
 

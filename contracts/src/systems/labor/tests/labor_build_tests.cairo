@@ -86,7 +86,6 @@ fn setup() -> (IWorldDispatcher, ID, ILaborSystemsDispatcher) {
 
 
 #[test]
-#[available_gas(300000000000)]
 fn test_build_labor_non_food() {
     let (world, realm_entity_id, labor_systems_dispatcher) = setup();
 
@@ -135,7 +134,7 @@ fn test_build_labor_non_food() {
 
 
 #[test]
-#[available_gas(300000000000)]
+300000000000)]
 fn test_build_labor_food() {
     let (world, realm_entity_id, labor_systems_dispatcher) = setup();
 
@@ -228,7 +227,7 @@ fn test_build_labor_food() {
 
 
 #[test]
-#[available_gas(300000000000)]
+300000000000)]
 fn test_build_labor_after_completed() {
     let (world, realm_entity_id, labor_systems_dispatcher) = setup();
 

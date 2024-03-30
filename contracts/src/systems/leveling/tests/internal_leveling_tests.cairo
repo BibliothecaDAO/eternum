@@ -101,7 +101,6 @@ mod internal_leveling_systems {
 
 
     #[test]
-    #[available_gas(300000000000)]
     fn test_level_up() {
         let (world, entity_id) = setup();
 

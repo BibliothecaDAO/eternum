@@ -65,7 +65,6 @@ mod tests {
     use core::serde::Serde;
 
     #[test]
-    #[available_gas(3000000000000)]  
     fn test_get_road() {
         let world = spawn_eternum();
 

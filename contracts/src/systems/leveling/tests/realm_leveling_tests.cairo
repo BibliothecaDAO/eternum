@@ -130,7 +130,6 @@ fn setup() -> (IWorldDispatcher, u128, ILevelingSystemsDispatcher) {
 
 
 #[test]
-#[available_gas(300000000000)]
 fn test_level_up_realm() {
     let (world, realm_entity_id, leveling_systems_dispatcher) = setup();
 
@@ -155,7 +154,7 @@ fn test_level_up_realm() {
 
 
 #[test]
-#[available_gas(300000000000)]
+300000000000)]
 #[should_panic(expected: ('not realm owner','ENTRYPOINT_FAILED' ))]
 fn test_level_up__not_realm_owner() {
     let (world, realm_entity_id, leveling_systems_dispatcher) = setup();
@@ -174,7 +173,7 @@ fn test_level_up__not_realm_owner() {
 
 
 #[test]
-#[available_gas(300000000000)]
+300000000000)]
 #[should_panic(expected: ('not a realm','ENTRYPOINT_FAILED' ))]
 fn test_level_up__not_realm() {
     let (world, _, leveling_systems_dispatcher) = setup();

@@ -146,7 +146,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, IBankSystemsDispatcher,) {
 
 
 #[test]
-#[available_gas(3000000000000)]
 fn test_bank_swap_for_wheat_fish_and_coal() {
     let (world, bank_id, transport_id, bank_systems_dispatcher) = setup();
 
@@ -189,7 +188,7 @@ fn test_bank_swap_for_wheat_fish_and_coal() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 fn test_bank_swap_for_dragonhide() {
     let (world, bank_id, transport_id, bank_systems_dispatcher) = setup();
 
@@ -227,7 +226,7 @@ fn test_bank_swap_for_dragonhide() {
 }
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 #[should_panic(expected: ('not caravan owner','ENTRYPOINT_FAILED' ))]
 fn test_bank_swap__wrong_caller() {
     let (world, bank_id, transport_id, bank_systems_dispatcher) = setup();
@@ -246,7 +245,7 @@ fn test_bank_swap__wrong_caller() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 #[should_panic(expected: ('mismatched positions','ENTRYPOINT_FAILED' ))]
 fn test_bank_swap__wrong_transport_position() {
     let (world, bank_id, transport_id, bank_systems_dispatcher) = setup();
@@ -273,7 +272,7 @@ fn test_bank_swap__wrong_transport_position() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 #[should_panic(expected: ('transport has not arrived','ENTRYPOINT_FAILED' ))]
 fn test_bank_swap__wrong_transport_arrival_time() {
     let (world, bank_id, transport_id, bank_systems_dispatcher) = setup();
@@ -298,7 +297,7 @@ fn test_bank_swap__wrong_transport_arrival_time() {
 }
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 #[should_panic(expected: ('auction not found','ENTRYPOINT_FAILED' ))]
 fn test_bank_swap__no_auction() {
     let (world, bank_id, transport_id, bank_systems_dispatcher) = setup();

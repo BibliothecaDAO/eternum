@@ -157,7 +157,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, ISoldierSystemsDispatcher) {
 
 
 #[test]
-#[available_gas(3000000000000)]
 fn test_heal_soldier() {
 
     let (world, caller_id, new_unit_id, soldier_systems_dispatcher) = setup();
@@ -199,7 +198,7 @@ fn test_heal_soldier() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 #[should_panic(expected: ('not unit owner','ENTRYPOINT_FAILED' ))]
 fn test_not_unit_owner() {
 
@@ -220,7 +219,7 @@ fn test_not_unit_owner() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 #[should_panic(expected: ('max health exceeeded','ENTRYPOINT_FAILED' ))]
 fn test_purchase_exceeds_max_health() {
 

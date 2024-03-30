@@ -216,7 +216,6 @@ fn setup() -> (IWorldDispatcher, u128, u128, u128, u128, ICombatSystemsDispatche
 
 
 #[test]
-#[available_gas(3000000000000)]
 fn test_attack() {
 
     let (
@@ -252,7 +251,7 @@ fn test_attack() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 #[should_panic(expected: ('not attacker owner','ENTRYPOINT_FAILED' ))]
 fn test_not_owner() {
 
@@ -282,7 +281,7 @@ fn test_not_owner() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 #[should_panic(expected: ('attacker is travelling','ENTRYPOINT_FAILED' ))]
 fn test_attacker_in_transit() {
 
@@ -320,7 +319,7 @@ fn test_attacker_in_transit() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 #[should_panic(expected: ('attacker is dead','ENTRYPOINT_FAILED' ))]
 fn test_attacker_dead() {
 
@@ -358,7 +357,7 @@ fn test_attacker_dead() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 #[should_panic(expected: ('target is dead','ENTRYPOINT_FAILED' ))]
 fn test_target_dead() {
 
@@ -397,7 +396,7 @@ fn test_target_dead() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 #[should_panic(expected: ('position mismatch','ENTRYPOINT_FAILED' ))]
 fn test_wrong_position() {
 

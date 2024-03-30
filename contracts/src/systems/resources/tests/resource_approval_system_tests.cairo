@@ -95,7 +95,6 @@ mod resource_approval_system_tests {
 
 
     #[test]
-    #[available_gas(30000000000000)]
     fn test_approve() {
 
         let (world, resource_systems_dispatcher) = setup();
@@ -145,7 +144,7 @@ mod resource_approval_system_tests {
 
 
     #[test]
-    #[available_gas(30000000000000)]
+    30000000000000)]
     fn test_approve__infinite_approval() {
 
         let (world, resource_systems_dispatcher) = setup();
@@ -194,7 +193,7 @@ mod resource_approval_system_tests {
 
 
     #[test]
-    #[available_gas(30000000000000)]
+    30000000000000)]
     #[should_panic(expected: ('not owner of entity id','ENTRYPOINT_FAILED' ))]
     fn test_approve__not_owner() {
 

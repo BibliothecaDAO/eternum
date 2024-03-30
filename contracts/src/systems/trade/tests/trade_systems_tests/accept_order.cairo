@@ -266,7 +266,6 @@ fn setup(direct_trade: bool) -> (IWorldDispatcher, u128, u128, u128, u128, ITrad
 
 
 #[test]
-#[available_gas(3000000000000)]
 fn test_accept_without_taker_transport_id() {
 
     let (world, trade_id, maker_id, taker_id, _, trade_systems_dispatcher) 
@@ -338,7 +337,7 @@ fn test_accept_without_taker_transport_id() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 #[should_panic(expected: ('position mismatch', 'ENTRYPOINT_FAILED' ))]
 fn test_accept_without_taker_transport_id_wrong_position() {
     // when there is no provided taker_tansport_id, 
@@ -353,7 +352,7 @@ fn test_accept_without_taker_transport_id_wrong_position() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 fn test_accept_order_free_trade() {
 
     let (world, trade_id, maker_id, taker_id, taker_transport_id, trade_systems_dispatcher) 
@@ -472,7 +471,7 @@ fn test_accept_order_free_trade() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 fn test_accept_order_direct_trade() {
 
     let (world, trade_id, maker_id, taker_id, taker_transport_id, trade_systems_dispatcher) 
@@ -586,7 +585,7 @@ fn test_accept_order_direct_trade() {
 }
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 fn test_accept_order_with_realm_travel_bonus() {
 
     let (world, trade_id, maker_id, taker_id, taker_transport_id, trade_systems_dispatcher) 
@@ -744,7 +743,7 @@ fn test_accept_order_with_realm_travel_bonus() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 fn test_accept_order_with_realm_and_order_travel_bonus() {
 
     let (world, trade_id, maker_id, taker_id, taker_transport_id, trade_systems_dispatcher) 
@@ -914,7 +913,7 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
 }
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 fn test_accept_order_with_road() {
 
     let (world, trade_id, maker_id, taker_id, taker_transport_id, trade_systems_dispatcher) 
@@ -958,7 +957,7 @@ fn test_accept_order_with_road() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 #[should_panic(expected: ('not the taker', 'ENTRYPOINT_FAILED' ))]
 fn test_not_trade_taker_id() {
 
@@ -992,7 +991,7 @@ fn test_not_trade_taker_id() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 #[should_panic(expected: ('not owned by caller', 'ENTRYPOINT_FAILED' ))]
 fn test_caller_not_taker() {
 
@@ -1011,7 +1010,7 @@ fn test_caller_not_taker() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 #[should_panic(expected: ('not caravan owner', 'ENTRYPOINT_FAILED' ))]
 fn test_caller_not_owner_of_transport_id() {
 
@@ -1031,7 +1030,7 @@ fn test_caller_not_owner_of_transport_id() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 #[should_panic(expected: ('mismatched positions', 'ENTRYPOINT_FAILED' ))]
 fn test_different_transport_position() {
 
@@ -1059,7 +1058,7 @@ fn test_different_transport_position() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 #[should_panic(expected: ('transport has not arrived', 'ENTRYPOINT_FAILED' ))]
 fn test_transport_in_transit() {
 
@@ -1085,7 +1084,7 @@ fn test_transport_in_transit() {
 
 
 #[test]
-#[available_gas(3000000000000)]
+3000000000000)]
 #[should_panic(expected: ('not enough capacity', 'ENTRYPOINT_FAILED' ))]
 fn test_transport_not_enough_capacity() {
 
