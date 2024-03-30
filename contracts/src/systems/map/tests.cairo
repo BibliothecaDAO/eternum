@@ -241,7 +241,7 @@ fn test_map_explore() {
 
 
 #[test]
-#[should_panic(expected: ("max moves per tick exceeded",'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "max moves per tick exceeded")]
 fn test_map_explore__ensure_explorer_cant_hex_travel_till_next_tick() {
 
     let (world, _,realm_army_unit_id, map_systems_dispatcher) = setup();

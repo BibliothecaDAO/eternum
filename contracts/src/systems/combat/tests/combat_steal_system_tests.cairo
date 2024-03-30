@@ -589,7 +589,7 @@ fn test_steal_success_with_order_boost() {
 
 
 #[test]
-#[should_panic(expected: ('not attacker owner','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "not attacker owner" )]
 fn test_not_owner() {
 
     let (
@@ -615,7 +615,7 @@ fn test_not_owner() {
 
 
 #[test]
-#[should_panic(expected: ('attacker is travelling','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "attacker is travelling" )]
 fn test_attacker_in_transit() {
 
     let (
@@ -650,7 +650,7 @@ fn test_attacker_in_transit() {
 
 
 #[test]
-#[should_panic(expected: ('attacker is dead','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "attacker is dead" )]
 fn test_attacker_dead() {
 
     let (
@@ -689,7 +689,7 @@ fn test_attacker_dead() {
 
 
 #[test]
-#[should_panic(expected: ('position mismatch','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "position mismatch" )]
 fn test_wrong_position() {
 
     let (

@@ -206,7 +206,7 @@ fn test_create_soldier() {
 
 
 #[test]
-#[should_panic(expected: ('not realm owner','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "not realm owner" )]
 fn test_not_owner() {
 
     let (world, realm_entity_id, soldier_systems_dispatcher) = setup();
@@ -226,7 +226,7 @@ fn test_not_owner() {
 
 
 #[test]
-#[should_panic(expected: ('not a realm','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "not a realm" )]
 fn test_not_realm() {
 
     let (world, _, soldier_systems_dispatcher) = setup();

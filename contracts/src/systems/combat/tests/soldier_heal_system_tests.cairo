@@ -198,7 +198,7 @@ fn test_heal_soldier() {
 
 
 #[test]
-#[should_panic(expected: ('not unit owner','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "not unit owner" )]
 fn test_not_unit_owner() {
 
     let (world, _, new_unit_id, soldier_systems_dispatcher) = setup();
@@ -218,7 +218,7 @@ fn test_not_unit_owner() {
 
 
 #[test]
-#[should_panic(expected: ('max health exceeeded','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "max health exceeeded" )]
 fn test_purchase_exceeds_max_health() {
 
     let (world, _, new_unit_id, soldier_systems_dispatcher) = setup();

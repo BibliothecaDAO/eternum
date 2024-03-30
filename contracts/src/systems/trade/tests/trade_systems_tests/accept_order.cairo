@@ -337,7 +337,7 @@ fn test_accept_without_taker_transport_id() {
 
 
 #[test]
-#[should_panic(expected: ('position mismatch', 'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "position mismatch")]
 fn test_accept_without_taker_transport_id_wrong_position() {
     // when there is no provided taker_tansport_id, 
     // maker and taker must be in the same position
@@ -951,7 +951,7 @@ fn test_accept_order_with_road() {
 
 
 #[test]
-#[should_panic(expected: ('not the taker', 'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "not the taker")]
 fn test_not_trade_taker_id() {
 
 
@@ -984,7 +984,7 @@ fn test_not_trade_taker_id() {
 
 
 #[test]
-#[should_panic(expected: ('not owned by caller', 'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "not owned by caller")]
 fn test_caller_not_taker() {
 
     let (world, trade_id, _, taker_id, taker_transport_id, trade_systems_dispatcher) 
@@ -1002,7 +1002,7 @@ fn test_caller_not_taker() {
 
 
 #[test]
-#[should_panic(expected: ('not caravan owner', 'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "not caravan owner")]
 fn test_caller_not_owner_of_transport_id() {
 
     let (world, trade_id, _, taker_id, _, trade_systems_dispatcher) 
@@ -1021,7 +1021,7 @@ fn test_caller_not_owner_of_transport_id() {
 
 
 #[test]
-#[should_panic(expected: ('mismatched positions', 'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "mismatched positions")]
 fn test_different_transport_position() {
 
     let (world, trade_id, _, taker_id, taker_transport_id, trade_systems_dispatcher) 
@@ -1048,7 +1048,7 @@ fn test_different_transport_position() {
 
 
 #[test]
-#[should_panic(expected: ('transport has not arrived', 'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "transport has not arrived")]
 fn test_transport_in_transit() {
 
     let (world, trade_id, _, taker_id, taker_transport_id, trade_systems_dispatcher) 
@@ -1073,7 +1073,7 @@ fn test_transport_in_transit() {
 
 
 #[test]
-#[should_panic(expected: ('not enough capacity', 'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "not enough capacity")]
 fn test_transport_not_enough_capacity() {
 
     let (world, trade_id, _, taker_id, _, trade_systems_dispatcher) 

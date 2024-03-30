@@ -212,7 +212,7 @@ mod inventory_transfer_system_tests {
 
 
     #[test]
-    #[should_panic(expected: ('not caravan owner','ENTRYPOINT_FAILED' ))]
+    #[should_panic(expected:  "not caravan owner" )]
     fn test_inventory_transfer_item_not_transport_owner() {
 
         let (world, _, _, donor_transport_id, inventory_systems_dispatcher) 
@@ -232,7 +232,7 @@ mod inventory_transfer_system_tests {
 
 
     #[test]
-    #[should_panic(expected: ('mismatched positions','ENTRYPOINT_FAILED' ))]
+    #[should_panic(expected:  "mismatched positions" )]
     fn test_inventory_transfer_item_wrong_position() {
 
         let (world, _,_, donor_transport_id, inventory_systems_dispatcher) 
@@ -265,7 +265,7 @@ mod inventory_transfer_system_tests {
 
     
     #[test]
-    #[should_panic(expected: ('transport has not arrived','ENTRYPOINT_FAILED' ))]
+    #[should_panic(expected:  "transport has not arrived" )]
     fn test_inventory_transfer_item_wrong_arrival_time() {
 
         let (world, _, _, donor_transport_id, inventory_systems_dispatcher) 
@@ -291,7 +291,7 @@ mod inventory_transfer_system_tests {
 
 
     #[test]
-    #[should_panic(expected: ('inventory is empty','ENTRYPOINT_FAILED' ))]
+    #[should_panic(expected:  "inventory is empty" )]
     fn test_inventory_transfer_item_from_empty_inventory() {
 
         let (world, _, _, donor_transport_id, inventory_systems_dispatcher) 

@@ -345,7 +345,7 @@ mod internal_transfer_between_inventories_tests {
 
 
     #[test]
-    #[should_panic(expected: ('not ascending order',))]
+    #[should_panic(expected:  "not ascending order")]
     fn test_transfer_between_inventories_indexes_not_ascending() {
 
         let world = spawn_eternum();

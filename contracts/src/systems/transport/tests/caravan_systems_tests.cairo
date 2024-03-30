@@ -176,7 +176,7 @@ fn test_create_caravan() {
 
 
 #[test]
-#[should_panic(expected: ('entity is not owned by caller','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "entity is not owned by caller" )]
 fn test_create_caravan__not_owner() {
 
     let (world, transport_units, caravan_systems_dispatcher, _) 
@@ -189,7 +189,7 @@ fn test_create_caravan__not_owner() {
 
 
 #[test]
-#[should_panic(expected: ('entity is blocked','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "entity is blocked" )]
 fn test_create_caravan__blocked_entity() {
     let (world, mut transport_units, caravan_systems_dispatcher, _) 
         = setup();
@@ -283,7 +283,7 @@ fn test_disassemble_caravan() {
 
 
 #[test]
-#[should_panic(expected: ('caller not owner','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "caller not owner" )]
 fn test_disassemble_caravan__caller_not_owner() {
 
     let (world, transport_units, caravan_systems_dispatcher, _) 
@@ -303,7 +303,7 @@ fn test_disassemble_caravan__caller_not_owner() {
 
 
 #[test]
-#[should_panic(expected: ('not a caravan','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "not a caravan" )]
 fn test_disassemble_caravan__not_caravan() {
 
     let (world, _, caravan_systems_dispatcher, _) 
@@ -317,7 +317,7 @@ fn test_disassemble_caravan__not_caravan() {
 
 
 #[test]
-#[should_panic(expected: ('inventory not empty','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "inventory not empty" )]
 fn test_disassemble_caravan__non_empty_inventory() {
 
     let (world, transport_units, caravan_systems_dispatcher, _) 
@@ -340,7 +340,7 @@ fn test_disassemble_caravan__non_empty_inventory() {
 
 
 #[test]
-#[should_panic(expected: ('caravan is blocked','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "caravan is blocked" )]
 fn test_disassemble_caravan__blocked_caravan() {
 
     let (world, transport_units, caravan_systems_dispatcher, _) 
@@ -363,7 +363,7 @@ fn test_disassemble_caravan__blocked_caravan() {
 
 
 #[test]
-#[should_panic(expected: ('caravan in transit','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "caravan in transit" )]
 fn test_disassemble_caravan__caravan_in_transit() {
 
     let (world, transport_units, caravan_systems_dispatcher, _) 
@@ -386,7 +386,7 @@ fn test_disassemble_caravan__caravan_in_transit() {
 
 
 #[test]
-#[should_panic(expected: ('mismatched positions','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "mismatched positions" )]
 fn test_disassemble_caravan__not_at_realm() {
 
     let (world, transport_units, caravan_systems_dispatcher, _) 

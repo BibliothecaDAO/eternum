@@ -258,7 +258,7 @@ fn test_cancel() {
 
 
 #[test]
-#[should_panic(expected: ('trade must be open', 'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "trade must be open")]
 fn test_cancel_after_acceptance() {
 
     let (world, trade_id,_, _, trade_systems_dispatcher) 
@@ -286,7 +286,7 @@ fn test_cancel_after_acceptance() {
 
 
 #[test]
-#[should_panic(expected: ('caller must be trade maker', 'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "caller must be trade maker")]
 fn test_cancel_caller_not_maker() {
 
     let (world, trade_id, _, _, trade_systems_dispatcher) 

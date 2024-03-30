@@ -232,7 +232,7 @@ fn test_detach_unit() {
 
 
 #[test]
-#[should_panic(expected: ('not unit owner','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "not unit owner" )]
 fn test_not_owner() {
 
     let (world, _, unit_id, soldier_systems_dispatcher) 
@@ -259,7 +259,7 @@ fn test_not_owner() {
 
 
 #[test]
-#[should_panic(expected: ('not enough quantity','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "not enough quantity" )]
 fn test_single_soldier_detach() {
     
         let (world, _, unit_id, soldier_systems_dispatcher) 
@@ -293,7 +293,7 @@ fn test_single_soldier_detach() {
 
 
 #[test]
-#[should_panic(expected: ('unit inventory not empty','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "unit inventory not empty" )]
 fn test_unit_has_items_in_inventory() {
             
     let (world, _, unit_id, soldier_systems_dispatcher) 

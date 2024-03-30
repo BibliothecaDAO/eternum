@@ -95,7 +95,7 @@ fn test_create() {
 
 
 #[test]
-#[should_panic(expected: ('entity id not owned by caller', 'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "entity id not owned by caller")]
 fn test_not_entity() {
     let (world, road_systems_dispatcher) = setup();
 
@@ -131,7 +131,7 @@ fn test_not_entity() {
 
 
 #[test]
-#[should_panic(expected: ('insufficient resources', 'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "insufficient resources")]
 fn test_insufficient_balance() {
     let (world, road_systems_dispatcher) = setup();
 
@@ -177,7 +177,7 @@ fn test_insufficient_balance() {
 
 
 #[test]
-#[should_panic(expected: ('road already exists', 'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "road already exists")]
 fn test_already_exists() {
     let (world, road_systems_dispatcher) = setup();
 

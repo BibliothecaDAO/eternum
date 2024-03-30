@@ -169,7 +169,7 @@ fn test_realm_create_equal_max_realms_per_address() {
 
 
 #[test]
-#[should_panic(expected: ('max num of realms settled','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected: "max num of realms settled" )]
 fn test_realm_create_greater_than_max_realms_per_address() {
 
     let world = setup();

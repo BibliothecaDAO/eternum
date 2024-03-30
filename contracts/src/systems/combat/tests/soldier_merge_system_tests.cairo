@@ -329,7 +329,7 @@ fn test_merge_to_raider() {
 
 
 // #[test]
-// #[should_panic(expected: ('not unit owner','ENTRYPOINT_FAILED' ))]
+// #[should_panic(expected:  "not unit owner" )]
 // fn test_not_owner() {
 
 //     let (world, caller_id, new_units, soldier_systems_dispatcher) = setup();
@@ -353,7 +353,7 @@ fn test_merge_to_raider() {
 
 
 // #[test]
-// #[should_panic(expected: ('not owned by realm','ENTRYPOINT_FAILED' ))]
+// #[should_panic(expected:  "not owned by realm" )]
 // fn test_not_realm() {
 
 //     let (world, caller_id, new_units, soldier_systems_dispatcher) = setup();
@@ -384,7 +384,7 @@ fn test_merge_to_raider() {
 
 
 #[test]
-#[should_panic(expected: ('unit is travelling','ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "unit is travelling" )]
 fn test_travelling_unit() {
 
     let (world, _, new_units, soldier_systems_dispatcher) = setup();

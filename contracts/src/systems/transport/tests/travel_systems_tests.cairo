@@ -395,7 +395,7 @@ fn test_travel_with_road(){
 
 
 #[test]
-#[should_panic(expected: ('not owner of entity', 'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "not owner of entity")]
 fn test_not_owner() {
 
     let (
@@ -413,7 +413,7 @@ fn test_not_owner() {
 
 
 #[test]
-#[should_panic(expected: ('entity has no speed', 'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "entity has no speed")]
 fn test_no_speed() {
 
     let (
@@ -433,7 +433,7 @@ fn test_no_speed() {
 
 
 #[test]
-#[should_panic(expected: ('entity is blocked', 'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "entity is blocked")]
 fn test_blocked() {
 
     let (
@@ -465,7 +465,7 @@ fn test_blocked() {
 
 
 #[test]
-#[should_panic(expected: ('entity is in transit', 'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "entity is in transit")]
 fn test_in_transit() {
 
     let (
@@ -651,7 +651,7 @@ fn test_travel_hex() {
 
 
 #[test]
-#[should_panic(expected: ('tile not explored', 'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "tile not explored")]
 fn test_travel_hex__destination_tile_not_explored() {
 
     let (
@@ -671,7 +671,7 @@ fn test_travel_hex__destination_tile_not_explored() {
 
 
 #[test]
-#[should_panic(expected: ("max moves per tick exceeded", 'ENTRYPOINT_FAILED' ))]
+#[should_panic(expected:  "max moves per tick exceeded")]
 fn test_travel_hex__exceed_max_tick_moves() {
 
     let (

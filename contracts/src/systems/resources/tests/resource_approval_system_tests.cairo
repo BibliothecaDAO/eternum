@@ -192,7 +192,7 @@ mod resource_approval_system_tests {
 
 
     #[test]
-    #[should_panic(expected: ('not owner of entity id','ENTRYPOINT_FAILED' ))]
+    #[should_panic(expected:  "not owner of entity id" )]
     fn test_approve__not_owner() {
 
         let (world, resource_systems_dispatcher) = setup();
