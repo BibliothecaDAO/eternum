@@ -220,9 +220,9 @@ fn test_detach_unit() {
     assert_ne!(new_unit_inventory.items_key, 0, "wrong inventory key");
 
     let new_unit_movable = get!(world, new_unit_id, Movable);
-    assert_eq!(new_unit_movable.blocked, false, "unit blocked");
+    assert!(!new_unit_movable.blocked, "unit blocked");
     assert_eq!(new_unit_movable.sec_per_km, 55, "wrong speed");
-    assert_eq!(new_unit_movable.round_trip, false, "wrong round_trip");
+    assert!(!new_unit_movable.round_trip, "wrong round_trip");
     assert_eq!(new_unit_movable.intermediate_coord_x, 0, "wrong coord x");
     assert_eq!(new_unit_movable.intermediate_coord_y, 0, "wrong coord y");
 

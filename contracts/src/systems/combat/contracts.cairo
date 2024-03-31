@@ -453,6 +453,7 @@ use eternum::alias::ID;
                     "wrong position"
                 );
 
+
                 let mut unit_health = get!(world, unit_id, Health);
                 let mut unit_attack = get!(world, unit_id, Attack);
                 let mut unit_defence = get!(world, unit_id, Defence);

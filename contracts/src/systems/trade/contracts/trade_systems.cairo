@@ -165,6 +165,8 @@ mod trade_systems {
             let taker_position = get!(world, taker_id, Position);
             let maker_position = get!(world, trade.maker_id, Position);
 
+
+
             if taker_transport_id == 0 {
                 ///// when the taker does not provide a transport entity, /////
                 ///// it is assumed that the maker and taker are at the   /////

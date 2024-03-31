@@ -58,7 +58,7 @@ mod tests {
         let labor = Labor { entity_id: 0, resource_type: 0, balance: 100, last_harvest: 0, multiplier: 1,  };
         let (labor_generated, is_complete, new_balance) = labor.get_labor_generated(50);
         assert_eq!(labor_generated, 50, "labor_generated is not 50");
-        assert_eq!(is_complete, false, "is_complete is not false");
+        assert!(!is_complete, "is_complete is not false");
         assert_eq!(new_balance, 50, "new_balance is not 50");
     }
 
@@ -67,7 +67,7 @@ mod tests {
         let labor = Labor { entity_id: 0, resource_type: 0, balance: 100, last_harvest: 0, multiplier: 1,  };
         let (labor_generated, is_complete, new_balance) = labor.get_labor_generated(150);
         assert_eq!(labor_generated, 100, "labor_generated is not 100");
-        assert_eq!(is_complete, true, "is_complete is not true");
+        assert!(is_complete, "is_complete is not true");
         assert_eq!(new_balance, 0, "new_balance is not 0");
     }
 
@@ -77,7 +77,7 @@ mod tests {
         let labor = Labor { entity_id: 0, resource_type: 0, balance: 100, last_harvest: 30, multiplier: 1,  };
         let (labor_generated, is_complete, new_balance) = labor.get_labor_generated(150);
         assert_eq!(labor_generated, 70, "labor_generated is not 210");
-        assert_eq!(is_complete, true, "is_complete is not true");
+        assert!(is_complete, "is_complete is not true");
         assert_eq!(new_balance, 0, "new_balance is not 0");
     }
 
