@@ -96,7 +96,7 @@ mod caravan_systems {
                 assert_eq!(caller, owner.address, "entity is not owned by caller");
 
                 // assert that they are not blocked
-                assert_eq!(movable.blocked, false, "entity is blocked");
+                assert!(!movable.blocked, "entity is blocked");
 
                 // set entity in the caravan
                 let foreign_key_arr = array![caravan_id.into(), entities_key.into(), index.into()];
@@ -206,7 +206,7 @@ mod caravan_systems {
 
             // ensure that it is not blocked
             let caravan_movable = get!(world, caravan_id, Movable);
-            assert_eq!(caravan_movable.blocked, false, "caravan is blocked");
+            assert!(!caravan_movable.blocked, "caravan is blocked");
 
             // ensure that it is not in transit
             let caravan_arrival_time = get!(world, caravan_id, ArrivalTime);

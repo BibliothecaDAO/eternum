@@ -154,7 +154,7 @@ mod transport_unit_systems {
 
                         // Ensure that the unit is not blocked by any system
                         let unit_movable = get!(world, unit_id, Movable);
-                        assert_eq!(unit_movable.blocked, false, "unit is blocked");
+                        assert!(!unit_movable.blocked, "unit is blocked");
 
                         // Fetch the quantity of the transport unit
                         let unit_quantity = get!(world, unit_id, Quantity).value;
@@ -169,6 +169,7 @@ mod transport_unit_systems {
                         let mut transport_quantity_tracker = get!(world, transport_quantity_tracker_key, QuantityTracker);
                         transport_quantity_tracker.count -= unit_quantity;
                         set!(world, (transport_quantity_tracker));
+
 
                         // Delete the transport unit
                         set!(world, (

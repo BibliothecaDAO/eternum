@@ -403,7 +403,7 @@ fn test_accept_order_free_trade() {
 
     // check maker transport movable
     let maker_transport_movable = get!(world, trade.maker_transport_id, Movable);
-    assert_eq!(maker_transport_movable.blocked, false, "maker transport not blocked");
+    assert!(!maker_transport_movable.blocked, "maker transport not blocked");
 
     let maker_position = get!(world, maker_id, Position);
     let taker_position = get!(world, taker_id, Position);
@@ -412,7 +412,7 @@ fn test_accept_order_free_trade() {
 
     assert_eq!(maker_transport_movable.intermediate_coord_y, taker_position.y, "wrong position y");
 
-    assert_eq!(maker_transport_movable.round_trip, true, "wrong position y");
+    assert!(maker_transport_movable.round_trip, "wrong position y");
 
     // check maker transport arrival time
     let maker_transport_arrival_time = get!(world, trade.maker_transport_id, ArrivalTime);
@@ -449,13 +449,13 @@ fn test_accept_order_free_trade() {
 
     // check taker transport movable
     let taker_transport_movable = get!(world, trade.taker_transport_id, Movable);
-    assert_eq!(taker_transport_movable.blocked, false, "taker transport not blocked");
+    assert(!taker_transport_movable.blocked, "taker transport not blocked");
 
     assert_eq!(taker_transport_movable.intermediate_coord_x, maker_position.x, "wrong position x");
 
     assert_eq!(taker_transport_movable.intermediate_coord_y, maker_position.y, "wrong position y");
 
-    assert_eq!(taker_transport_movable.round_trip, true, "wrong position y");
+    assert!(taker_transport_movable.round_trip, "wrong position y");
 
     // check taker transport arrival time
     let taker_transport_arrival_time = get!(world, trade.taker_transport_id, ArrivalTime);
@@ -495,6 +495,9 @@ fn test_accept_order_direct_trade() {
     ///// Check Maker Data ///////
     //////////////////////////////
 
+
+
+
     // check that maker resource chest is filled
     let maker_resource_chest_weight
         = get!(world, trade.maker_resource_chest_id, Weight);
@@ -517,7 +520,7 @@ fn test_accept_order_direct_trade() {
 
     // check maker transport movable
     let maker_transport_movable = get!(world, trade.maker_transport_id, Movable);
-    assert_eq!(maker_transport_movable.blocked, false, "maker transport not blocked");
+    assert!(!maker_transport_movable.blocked, "maker transport not blocked");
 
     let maker_position = get!(world, maker_id, Position);
     let taker_position = get!(world, taker_id, Position);
@@ -526,7 +529,7 @@ fn test_accept_order_direct_trade() {
 
     assert_eq!(maker_transport_movable.intermediate_coord_y, taker_position.y, "wrong position y");
 
-    assert_eq!(maker_transport_movable.round_trip, true, "wrong position y");
+    assert!(maker_transport_movable.round_trip, "wrong position y");
 
     // check maker transport arrival time
     let maker_transport_arrival_time = get!(world, trade.maker_transport_id, ArrivalTime);
@@ -563,13 +566,13 @@ fn test_accept_order_direct_trade() {
 
     // check taker transport movable
     let taker_transport_movable = get!(world, trade.taker_transport_id, Movable);
-    assert_eq!(taker_transport_movable.blocked, false, "taker transport not blocked");
+    assert!(!taker_transport_movable.blocked, "taker transport not blocked");
 
     assert_eq!(taker_transport_movable.intermediate_coord_x, maker_position.x, "wrong position x");
 
     assert_eq!(taker_transport_movable.intermediate_coord_y, maker_position.y, "wrong position y");
 
-    assert_eq!(taker_transport_movable.round_trip, true, "wrong position y");
+    assert!(taker_transport_movable.round_trip, "wrong position y");
 
     // check taker transport arrival time
     let taker_transport_arrival_time = get!(world, trade.taker_transport_id, ArrivalTime);
@@ -673,7 +676,7 @@ fn test_accept_order_with_realm_travel_bonus() {
 
     // check maker transport movable
     let maker_transport_movable = get!(world, trade.maker_transport_id, Movable);
-    assert_eq!(maker_transport_movable.blocked, false, "maker transport not blocked");
+    assert!(!maker_transport_movable.blocked, "maker transport not blocked");
 
     let maker_position = get!(world, maker_id, Position);
     let taker_position = get!(world, taker_id, Position);
@@ -682,7 +685,7 @@ fn test_accept_order_with_realm_travel_bonus() {
 
     assert_eq!(maker_transport_movable.intermediate_coord_y, taker_position.y, "wrong position y");
 
-    assert_eq!(maker_transport_movable.round_trip, true, "wrong position y");
+    assert!(maker_transport_movable.round_trip, "wrong position y");
 
     // check maker transport arrival time
     let maker_transport_arrival_time = get!(world, trade.maker_transport_id, ArrivalTime);
@@ -719,13 +722,13 @@ fn test_accept_order_with_realm_travel_bonus() {
 
     // check taker transport movable
     let taker_transport_movable = get!(world, trade.taker_transport_id, Movable);
-    assert_eq!(taker_transport_movable.blocked, false, "taker transport not blocked");
+    assert!(!taker_transport_movable.blocked, "taker transport not blocked");
 
     assert_eq!(taker_transport_movable.intermediate_coord_x, maker_position.x, "wrong position x");
 
     assert_eq!(taker_transport_movable.intermediate_coord_y, maker_position.y, "wrong position y");
 
-    assert_eq!(taker_transport_movable.round_trip, true, "wrong position y");
+    assert!(taker_transport_movable.round_trip, "wrong position y");
 
     // check taker transport arrival time
     let taker_transport_arrival_time = get!(world, trade.taker_transport_id, ArrivalTime);
@@ -842,7 +845,7 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
 
     // check maker transport movable
     let maker_transport_movable = get!(world, trade.maker_transport_id, Movable);
-    assert_eq!(maker_transport_movable.blocked, false, "maker transport not blocked");
+    assert!(!maker_transport_movable.blocked, "maker transport not blocked");
 
     let maker_position = get!(world, maker_id, Position);
     let taker_position = get!(world, taker_id, Position);
@@ -851,7 +854,7 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
 
     assert_eq!(maker_transport_movable.intermediate_coord_y, taker_position.y, "wrong position y");
 
-    assert_eq!(maker_transport_movable.round_trip, true, "wrong position y");
+    assert!(maker_transport_movable.round_trip, "wrong position y");
 
     // check maker transport arrival time
     let maker_transport_arrival_time = get!(world, trade.maker_transport_id, ArrivalTime);
@@ -889,13 +892,13 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
 
     // check taker transport movable
     let taker_transport_movable = get!(world, trade.taker_transport_id, Movable);
-    assert_eq!(taker_transport_movable.blocked, false, "taker transport not blocked");
+    assert!(!taker_transport_movable.blocked, "taker transport not blocked");
 
     assert_eq!(taker_transport_movable.intermediate_coord_x, maker_position.x, "wrong position x");
 
     assert_eq!(taker_transport_movable.intermediate_coord_y, maker_position.y, "wrong position y");
 
-    assert_eq!(taker_transport_movable.round_trip, true, "wrong position y");
+    assert!(taker_transport_movable.round_trip, "wrong position y");
 
     // check taker transport arrival time
     let taker_transport_arrival_time = get!(world, trade.taker_transport_id, ArrivalTime);

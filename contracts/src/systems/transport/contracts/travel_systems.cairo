@@ -71,7 +71,7 @@ mod travel_systems {
 
             let travelling_entity_movable = get!(world, travelling_entity_id, Movable);      
             assert_ne!(travelling_entity_movable.sec_per_km, 0, "entity has no speed");
-            assert_eq!(travelling_entity_movable.blocked, false, "entity is blocked");
+            assert!(!travelling_entity_movable.blocked, "entity is blocked");
 
             let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
             let ts = starknet::get_block_timestamp();
@@ -101,7 +101,7 @@ mod travel_systems {
 
             let travelling_entity_movable = get!(world, travelling_entity_id, Movable);      
             assert_ne!(travelling_entity_movable.sec_per_km, 0, "entity has no speed");
-            assert_eq!(travelling_entity_movable.blocked, false, "entity is blocked");
+            assert!(!travelling_entity_movable.blocked, "entity is blocked");
 
             let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
             let ts = starknet::get_block_timestamp();

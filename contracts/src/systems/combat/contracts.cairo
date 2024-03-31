@@ -248,7 +248,7 @@ use eternum::alias::ID;
             assert_eq!(unit_inventory.items_count, 0, "unit inventory not empty");
 
             let unit_movable = get!(world, unit_id, Movable);
-            assert_eq!(unit_movable.blocked, false, "unit is blocked");
+            assert!(!unit_movable.blocked, "unit is blocked");
 
             let unit_arrival = get!(world, unit_id, ArrivalTime);
             assert!(
@@ -386,7 +386,7 @@ use eternum::alias::ID;
 
             // ensure unit is not blocked
             let merge_into_unit_movable = get!(world, merge_into_unit_id, Movable);
-            assert_eq!(merge_into_unit_movable.blocked, false, "unit is blocked");
+            assert!(!merge_into_unit_movable.blocked, "unit is blocked");
 
             // ensure unit is not travelling 
             let merge_into_unit_arrival = get!(world, merge_into_unit_id, ArrivalTime);
@@ -432,7 +432,10 @@ use eternum::alias::ID;
 
                 // ensure units is not blocked 
                 let unit_movable = get!(world, unit_id, Movable);
-                assert_eq!(unit_movable.blocked, false, "unit is blocked");
+                assert!(
+                    !unit_movable.blocked,
+                        "unit is blocked"
+                );
 
                 // ensure units are not travelling 
                 let unit_arrival = get!(world, unit_id, ArrivalTime);
@@ -607,6 +610,7 @@ use eternum::alias::ID;
                         && attacker_position.y == target_position.y,
                     "position mismatch"
                 );
+                
 
                 attackers_total_attack += get!(world, attacker_id, Attack).value;
                 attackers_total_defence += get!(world, attacker_id, Defence).value;

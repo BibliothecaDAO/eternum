@@ -245,14 +245,18 @@ fn test_merge_to_town_watch() {
 
     let unit_position = get!(world, caller_town_watch_id, Position);
     assert!(
-        unit_position.x == caller_position.x && unit_position.y == caller_position.y,
-        "wrong position"
+            unit_position.x == caller_position.x 
+                && unit_position.y == caller_position.y,
+                    "wrong position"
     );
 
+
     let unit_movable = get!(world, caller_town_watch_id, Movable);
-    assert_eq!( // the speed would still be 0 because town watch can't move
-        unit_movable.sec_per_km, 0, "wrong speed"
-    );
+    assert_eq!(
+        // the speed would still be 0 because town watch can't move 
+        unit_movable.sec_per_km, 0, 
+        "wrong speed"
+        );
 
     let unit_carry_capacity = get!(world, caller_town_watch_id, Capacity);
     assert_eq!(unit_carry_capacity.weight_gram, 44, "wrong capacity");
@@ -315,17 +319,22 @@ fn test_merge_to_raider() {
 
     let unit_position = get!(world, *new_units.at(0), Position);
     assert!(
-        unit_position.x == caller_position.x && unit_position.y == caller_position.y,
-        "wrong position"
+            unit_position.x == caller_position.x 
+                && unit_position.y == caller_position.y,
+                    "wrong position"
     );
 
 
     let unit_movable = get!(world, *new_units.at(0), Movable);
-    assert_eq!(unit_movable.sec_per_km, 55, "wrong speed");
+    assert_eq!(
+        unit_movable.sec_per_km, 55,
+         "wrong speed"
+        );
 
     let unit_carry_capacity = get!(world, *new_units.at(0), Capacity);
     assert_eq!(unit_carry_capacity.weight_gram, 44, "wrong capacity");
 }
+
 
 
 // #[test]

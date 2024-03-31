@@ -456,14 +456,14 @@ fn test_steal_success() {
 
     let attacker_realm_position = get!(world, attacker_realm_entity_id, Position);
     let attacker_unit_position = get!(world, attacker_unit_id, Position);
-    assert!(
-        attacker_realm_position.x == attacker_unit_position.x
+    assert!(attacker_realm_position.x == attacker_unit_position.x
             && attacker_realm_position.y == attacker_unit_position.y,
-        "wrong position"
+                "wrong position"
     );
 
     let attacker_unit_arrival = get!(world, attacker_unit_id, ArrivalTime);
     assert!(attacker_unit_arrival.arrives_at > 0, "wrong arrival time");
+
 }
 
 
@@ -575,14 +575,14 @@ fn test_steal_success_with_order_boost() {
 
     let attacker_realm_position = get!(world, attacker_realm_entity_id, Position);
     let attacker_unit_position = get!(world, attacker_unit_id, Position);
-    assert!(
-        attacker_realm_position.x == attacker_unit_position.x
+    assert!(attacker_realm_position.x == attacker_unit_position.x
             && attacker_realm_position.y == attacker_unit_position.y,
-        "wrong position"
+                "wrong position"
     );
 
     let attacker_unit_arrival = get!(world, attacker_unit_id, ArrivalTime);
     assert!(attacker_unit_arrival.arrives_at > 0, "wrong arrival time");
+
 }
 
 
@@ -803,7 +803,12 @@ fn test_steal_success_army_to_army() {
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
 
     // ensure attacker's health is intact
-    assert_eq!(attacker_unit_health.value, 100 * ATTACKER_SOLDIER_COUNT, "wrong health value");
+    assert_eq!(
+        attacker_unit_health.value, 100 * ATTACKER_SOLDIER_COUNT, 
+        "wrong health value"
+    );
+
+
 
     // ensure stolen resources are added to attacker's inventory
     let attacker_inventory = get!(world, attacker_unit_id, Inventory);
@@ -827,13 +832,13 @@ fn test_steal_success_army_to_army() {
 
     let attacker_realm_position = get!(world, attacker_realm_entity_id, Position);
     let attacker_unit_position = get!(world, attacker_unit_id, Position);
-    assert!(
-        attacker_realm_position.x == attacker_unit_position.x
+    assert!(attacker_realm_position.x == attacker_unit_position.x
             && attacker_realm_position.y == attacker_unit_position.y,
-        "wrong position"
+                "wrong position"
     );
 
     let attacker_unit_arrival = get!(world, attacker_unit_id, ArrivalTime);
     assert!(attacker_unit_arrival.arrives_at > 0, "wrong arrival time");
+
 }
 

@@ -242,11 +242,11 @@ fn test_attack() {
    
 
     assert!(
-        attacker_unit_health.value < 100
-            * ATTACKER_SOLDIER_COUNT || target_unit_health.value < 100
-            * TARGET_SOLDIER_COUNT,
-        "wrong health value"
+        attacker_unit_health.value < 100 * ATTACKER_SOLDIER_COUNT 
+            || target_unit_health.value < 100 * TARGET_SOLDIER_COUNT,
+                "wrong health value"
     );
+
 }
 
 

@@ -131,7 +131,7 @@ fn test_create_free_transport_unit() {
     assert_eq!(capacity.weight_gram, 200_000, "capacity not set");
 
     assert_eq!(movable.sec_per_km, 10, "sec_per_km not set");
-    assert_eq!(movable.blocked, false, "entity is blocked");
+    assert!(!movable.blocked, "entity is blocked");
 
     assert_eq!(arrival_time.arrives_at, 0, "arrival time should be 0");
 

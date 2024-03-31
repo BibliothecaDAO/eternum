@@ -72,7 +72,7 @@ fn test_create_hyperstructure() {
     );
 
     assert_eq!(hyperstructure.controlling_order, 0, "wrong order");
-    assert_eq!(hyperstructure.completed, false, "wrong completed value");
+    assert!(!hyperstructure.completed, "wrong completed value");
     assert_ne!(hyperstructure.completion_cost_id, 0, "wrong completion cost id");
     assert_eq!(hyperstructure.completion_resource_count, 1, "wrong completion resource count");
 

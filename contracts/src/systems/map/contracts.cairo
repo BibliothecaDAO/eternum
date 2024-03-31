@@ -82,7 +82,7 @@ mod map_systems {
             // ensure unit can move
             let unit_movable = get!(world, unit_id, Movable);
             assert_ne!(unit_movable.sec_per_km, 0, "entity cant move");
-            assert_eq!(unit_movable.blocked, false, "entity is blocked");
+            assert!(!unit_movable.blocked, "entity is blocked");
 
             // ensure unit is not in transit
             let unit_arrival_time = get!(world, unit_id, ArrivalTime);

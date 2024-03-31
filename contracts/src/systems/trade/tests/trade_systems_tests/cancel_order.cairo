@@ -249,7 +249,7 @@ fn test_cancel() {
 
     // check that transport is unblocked
     let transport_movable = get!(world, trade.maker_transport_id, Movable);
-    assert_eq!(transport_movable.blocked, false, "wrong movable value");
+    assert!(!transport_movable.blocked, "wrong movable value");
 
     // check that trade status is cancelled
     let trade_status = get!(world, trade_id, Status);

@@ -165,12 +165,12 @@ fn test_create_soldier() {
 
     // check that payment works correctly
     let caller_wheat_resource = get!(world, (realm_entity_id, ResourceTypes::WHEAT), Resource);
-    assert_eq!(
-        caller_wheat_resource.balance, 5000 - 40 * num_soldiers_bought, "wrong wheat balance"
-    );
+    assert_eq!(caller_wheat_resource.balance, 5000 - 40 * num_soldiers_bought, "wrong wheat balance");
 
     let caller_wood_resource = get!(world, (realm_entity_id, ResourceTypes::WOOD), Resource);
     assert_eq!(caller_wood_resource.balance, 5000 - 40 * num_soldiers_bought, "wrong wood balance");
+
+
 
     // check that the soldiers were created correctly
     let caller_position = get!(world, realm_entity_id, Position);
@@ -179,7 +179,11 @@ fn test_create_soldier() {
     assert_eq!(realm_new_unit_owner.address, contract_address_const::<'caller'>(), "wrong owner");
 
     let realm_new_unit_entity_owner = get!(world, new_unit_id, EntityOwner);
-    assert_eq!(realm_new_unit_entity_owner.entity_owner_id, realm_entity_id, "wrong owner");
+    assert_eq!(
+        realm_new_unit_entity_owner.entity_owner_id, realm_entity_id,
+        "wrong owner"
+    );
+
 
     let realm_new_unit_health = get!(world, new_unit_id, Health);
     assert_eq!(realm_new_unit_health.value, 100 * num_soldiers_bought, "wrong health");

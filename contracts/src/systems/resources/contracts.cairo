@@ -66,6 +66,7 @@ use eternum::alias::ID;
             assert_eq!(
                 entity_owner.address, starknet::get_caller_address(), "not owner of entity id"
             );
+            
 
             let mut resources = resources;
             loop {

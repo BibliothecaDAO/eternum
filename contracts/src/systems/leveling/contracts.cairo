@@ -64,7 +64,7 @@ mod leveling_systems {
             let current_level = level.get_level();
 
             assert!(current_level < leveling_config.max_level, "reached max level");
-
+            
             let cost_multiplier = level.get_cost_multiplier(leveling_config.cost_percentage_scaled);
             let next_index: u8 = (current_level % 4 + 1).try_into().unwrap();
 

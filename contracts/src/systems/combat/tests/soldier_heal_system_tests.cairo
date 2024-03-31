@@ -192,8 +192,10 @@ fn test_heal_soldier() {
     let caller_demonhide_balance 
         = get!(world, (caller_id, ResourceTypes::DEMONHIDE), Resource);
     assert_eq!(
-        caller_demonhide_balance.balance, 5000 - (17 * health_bought), "wrong demonhide balance"
+        caller_demonhide_balance.balance, 5000 - (17 * health_bought), 
+        "wrong demonhide balance"
     );
+
 }
 
 

@@ -156,7 +156,7 @@ fn test_create_caravan() {
     assert_eq!(caravan_members.count, 2, "count should be 2");
     assert_ne!(caravan_members.key, 0, "member key should be set");
     assert_eq!(caravan_movable.sec_per_km, 10, "average speed should be 10");
-    assert_eq!(caravan_movable.blocked, false, "should not be blocked");
+    assert!(!caravan_movable.blocked, "should not be blocked");
     assert_eq!(caravan_capacity.weight_gram, 4_000_000, "weight_gram should be 4_000_000");
     assert_eq!(caravan_position.x, 20, "x should be 20");
     assert_eq!(caravan_position.y, 30, "y should be 30");
@@ -249,7 +249,7 @@ fn test_disassemble_caravan() {
 
         // check that transport unit isnt blocked
         let transport_unit = get!(world, *transport_units.at(index), Movable);
-        assert_eq!(transport_unit.blocked, false, "should not be blocked");
+        assert!(!transport_unit.blocked, "should not be blocked");
 
         index += 1;
     };
