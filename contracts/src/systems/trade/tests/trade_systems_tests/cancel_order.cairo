@@ -238,22 +238,22 @@ fn test_cancel() {
     // have been returned to the maker
     let taker_resource_chest_weight
         = get!(world, trade.taker_resource_chest_id, Weight);
-    assert!(taker_resource_chest_weight.value == 0, "chest should be empty");
+    assert_eq!(taker_resource_chest_weight.value, 0, "chest should be empty");
 
     // check that maker balance is correct
     let maker_stone_resource = get!(world, (maker_id, ResourceTypes::STONE), Resource);
-    assert!(maker_stone_resource.balance == 100, "wrong maker balance");
+    assert_eq!(maker_stone_resource.balance, 100, "wrong maker balance");
 
     let maker_gold_resource = get!(world, (maker_id, ResourceTypes::GOLD), Resource);
-    assert!(maker_gold_resource.balance == 100, "wrong maker balance");
+    assert_eq!(maker_gold_resource.balance, 100, "wrong maker balance");
 
     // check that transport is unblocked
     let transport_movable = get!(world, trade.maker_transport_id, Movable);
-    assert!(transport_movable.blocked == false, "wrong movable value");
+    assert_eq!(transport_movable.blocked, false, "wrong movable value");
 
     // check that trade status is cancelled
     let trade_status = get!(world, trade_id, Status);
-    assert!(trade_status.value == TradeStatus::CANCELLED, "wrong trade status");
+    assert_eq!(trade_status.value, TradeStatus::CANCELLED, "wrong trade status");
 }
 
 

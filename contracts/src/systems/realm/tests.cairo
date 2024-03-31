@@ -94,22 +94,22 @@ fn test_realm_create() {
 
     let realm_initial_resource_1
         = get!(world, (realm_entity_id, INITIAL_RESOURCE_1_TYPE), Resource);
-    assert!(realm_initial_resource_1.balance == INITIAL_RESOURCE_1_AMOUNT, "wrong mint 1 amount");
+    assert_eq!(realm_initial_resource_1.balance, INITIAL_RESOURCE_1_AMOUNT, "wrong mint 1 amount");
 
     let realm_initial_resource_2
         = get!(world, (realm_entity_id, INITIAL_RESOURCE_2_TYPE), Resource);
-    assert!(realm_initial_resource_2.balance == INITIAL_RESOURCE_2_AMOUNT, "wrong mint 2 amount");
+    assert_eq!(realm_initial_resource_2.balance, INITIAL_RESOURCE_2_AMOUNT, "wrong mint 2 amount");
 
 
 
     let realm_owner = get!(world, realm_entity_id, Owner);
-    assert!(
-        realm_owner.address == contract_address_const::<'caller'>(),
+    assert_eq!(
+        realm_owner.address, contract_address_const::<'caller'>(),
              "wrong realm owner"
     );
 
     let realm = get!(world, realm_entity_id, Realm);
-    assert!(realm.realm_id == realm_id, "wrong realm id");
+    assert_eq!(realm.realm_id, realm_id, "wrong realm id");
 
     // ensure realm Tile is explored
     let tile: Tile 

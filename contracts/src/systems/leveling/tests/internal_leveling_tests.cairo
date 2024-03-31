@@ -105,7 +105,7 @@ mod internal_leveling_systems {
         let (world, entity_id) = setup();
 
         let level = get!(world, (entity_id), Level);
-        assert!(level.level == 0, "wrong level");
+        assert_eq!(level.level, 0, "wrong level");
 
         // level up 
         leveling::level_up(
@@ -116,35 +116,35 @@ mod internal_leveling_systems {
 
         // assert resources are the right amount
         let wheat_resource = get!(world, (entity_id, ResourceTypes::WHEAT), Resource);
-        assert!(wheat_resource.balance == 96220, "failed resource amount");
+        assert_eq!(wheat_resource.balance, 96220, "failed resource amount");
 
         let fish_resource = get!(world, (entity_id, ResourceTypes::FISH), Resource);
-        assert!(fish_resource.balance == 98740, "failed resource amount");
+        assert_eq!(fish_resource.balance, 98740, "failed resource amount");
 
         let wood_resource = get!(world, (entity_id, ResourceTypes::WOOD), Resource);
-        assert!(wood_resource.balance == 100000, "failed resource amount");
+        assert_eq!(wood_resource.balance, 100000, "failed resource amount");
 
         let level = get!(world, entity_id, Level);
-        assert!(level.level == 1, "wrong level");
+        assert_eq!(level.level, 1, "wrong level");
 
         // level up 
         leveling::level_up(world, entity_id, LEVELING_CONFIG_ID);
 
         // assert resources are the right amount
         let wheat_resource = get!(world, (entity_id, ResourceTypes::WHEAT), Resource);
-        assert!(wheat_resource.balance == 96220, "failed resource amount");
+        assert_eq!(wheat_resource.balance, 96220, "failed resource amount");
 
         let fish_resource = get!(world, (entity_id, ResourceTypes::FISH), Resource);
-        assert!(fish_resource.balance == 98740, "failed resource amount");
+        assert_eq!(fish_resource.balance, 98740, "failed resource amount");
 
         let wood_resource = get!(world, (entity_id, ResourceTypes::WOOD), Resource);
-        assert!(wood_resource.balance == 99000, "failed resource amount");
+        assert_eq!(wood_resource.balance, 99000, "failed resource amount");
 
         let stone_resource = get!(world, (entity_id, ResourceTypes::STONE), Resource);
-        assert!(stone_resource.balance == 99000, "failed resource amount");
+        assert_eq!(stone_resource.balance, 99000, "failed resource amount");
 
         let level = get!(world, entity_id, Level);
-        assert!(level.level == 2, "wrong level");
+        assert_eq!(level.level, 2, "wrong level");
 
         // level up 
         leveling::level_up(
@@ -155,13 +155,13 @@ mod internal_leveling_systems {
 
 
         let coal_resource = get!(world, (entity_id, ResourceTypes::COAL), Resource);
-        assert!(coal_resource.balance == 99000, "failed resource amount");
+        assert_eq!(coal_resource.balance, 99000, "failed resource amount");
 
         let copper_resource = get!(world, (entity_id, ResourceTypes::COPPER), Resource);
-        assert!(copper_resource.balance == 99000, "failed resource amount");
+        assert_eq!(copper_resource.balance, 99000, "failed resource amount");
 
         let level = get!(world, entity_id, Level);
-        assert!(level.level == 3, "wrong level");
+        assert_eq!(level.level, 3, "wrong level");
 
         // level up 
         leveling::level_up(
@@ -171,13 +171,13 @@ mod internal_leveling_systems {
         );
 
         let obsidian_resource = get!(world, (entity_id, ResourceTypes::OBSIDIAN), Resource);
-        assert!(obsidian_resource.balance == 99000, "failed resource amount");
+        assert_eq!(obsidian_resource.balance, 99000, "failed resource amount");
 
         let silver_resource = get!(world, (entity_id, ResourceTypes::SILVER), Resource);
-        assert!(silver_resource.balance == 99000, "failed resource amount");
+        assert_eq!(silver_resource.balance, 99000, "failed resource amount");
 
         let level = get!(world, entity_id, Level);
-        assert!(level.level == 4, "wrong level");
+        assert_eq!(level.level, 4, "wrong level");
 
         // level up 
         leveling::level_up(
@@ -188,10 +188,10 @@ mod internal_leveling_systems {
 
 
         let wheat_resource = get!(world, (entity_id, ResourceTypes::WHEAT), Resource);
-        assert!(wheat_resource.balance == 91495, "failed resource amount");
+        assert_eq!(wheat_resource.balance, 91495, "failed resource amount");
 
         let level = get!(world, entity_id, Level);
-        assert!(level.level == 5, "wrong level");
+        assert_eq!(level.level, 5, "wrong level");
 
         // level up 
         leveling::level_up(
@@ -202,7 +202,7 @@ mod internal_leveling_systems {
 
 
         let level = get!(world, entity_id, Level);
-        assert!(level.level == 6, "wrong level");
+        assert_eq!(level.level, 6, "wrong level");
 
         // level up 
         leveling::level_up(
@@ -213,7 +213,7 @@ mod internal_leveling_systems {
 
 
         let level = get!(world, entity_id, Level);
-        assert!(level.level == 7, "wrong level");
+        assert_eq!(level.level, 7, "wrong level");
 
         // level up 
         leveling::level_up(
@@ -223,7 +223,7 @@ mod internal_leveling_systems {
         );
 
         let level = get!(world, entity_id, Level);
-        assert!(level.level == 8, "wrong level");
+        assert_eq!(level.level, 8, "wrong level");
 
         // level up 
         leveling::level_up(
@@ -233,13 +233,13 @@ mod internal_leveling_systems {
         );
 
         let level = get!(world, entity_id, Level);
-        assert!(level.level == 9, "wrong level");
+        assert_eq!(level.level, 9, "wrong level");
 
         let wheat_resource = get!(world, (entity_id, ResourceTypes::WHEAT), Resource);
-        assert!(wheat_resource.balance == 85599, "failed resource amount");
+        assert_eq!(wheat_resource.balance, 85599, "failed resource amount");
 
         let silver_resource = get!(world, (entity_id, ResourceTypes::SILVER), Resource);
-        assert!(silver_resource.balance == 97750, "failed resource amount");
+        assert_eq!(silver_resource.balance, 97750, "failed resource amount");
     }
 
 }

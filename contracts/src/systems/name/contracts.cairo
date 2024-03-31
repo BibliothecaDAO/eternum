@@ -13,7 +13,7 @@ mod name_systems {
 
             // assert that name not set
             let mut address_name = get!(world, (caller_felt252), AddressName);
-            assert!(address_name.name == 0, "Name already set");
+            assert_eq!(address_name.name, 0, "Name already set");
             address_name.name = name;
 
             set!(world, (address_name));

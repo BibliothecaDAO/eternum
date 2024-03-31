@@ -361,6 +361,6 @@ mod tests {
         };
 
         let building_type = config.get_building_type(16);
-        assert!(building_type == 4, "wrong building typ")
+        assert_eq!(building_type, 4, "wrong building typ")
     }
 }

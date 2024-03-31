@@ -78,13 +78,13 @@ mod caravan_systems {
                 // assert that they are all at the same position when index > 0
                 // if index == 0, then initialize position as the first entity position
                 if index != 0 {
-                    assert!(entity_position.x == position.x, "entities not same position");
-                    assert!(entity_position.y == position.y, "entities not same position");
+                    assert_eq!(entity_position.x, position.x, "entities not same position");
+                    assert_eq!(entity_position.y, position.y, "entities not same position");
 
                     // check owner entity_id is the same for all
                     let entity_owner = get!(world, (entity_id), EntityOwner); 
-                    assert!(
-                        entity_owner_id.entity_owner_id == entity_owner.entity_owner_id,
+                    assert_eq!(
+                        entity_owner_id.entity_owner_id, entity_owner.entity_owner_id,
                         "entities not same entity owner"
                     );
                 } else {
@@ -93,10 +93,10 @@ mod caravan_systems {
 
                 // assert that caller is the owner of the entities
                 let owner = get!(world, (entity_id), Owner);
-                assert!(caller == owner.address, "entity is not owned by caller");
+                assert_eq!(caller, owner.address, "entity is not owned by caller");
 
                 // assert that they are not blocked
-                assert!(movable.blocked == false, "entity is blocked");
+                assert_eq!(movable.blocked, false, "entity is blocked");
 
                 // set entity in the caravan
                 let foreign_key_arr = array![caravan_id.into(), entities_key.into(), index.into()];
@@ -194,7 +194,7 @@ mod caravan_systems {
             // ensure that caller is the owner
             let caravan_owner = get!(world, caravan_id, Owner);
             let caller = starknet::get_caller_address();
-            assert!(caravan_owner.address == caller, "caller not owner");
+            assert_eq!(caravan_owner.address, caller, "caller not owner");
 
             // ensure that it is a caravan
             let caravan_members = get!(world, caravan_id, CaravanMembers);
@@ -202,11 +202,11 @@ mod caravan_systems {
 
             // ensure that its inventory is empty
             let caravan_inventory = get!(world, caravan_id, Inventory);
-            assert!(caravan_inventory.items_count == 0, "inventory not empty");
+            assert_eq!(caravan_inventory.items_count, 0, "inventory not empty");
 
             // ensure that it is not blocked
             let caravan_movable = get!(world, caravan_id, Movable);
-            assert!(caravan_movable.blocked == false, "caravan is blocked");
+            assert_eq!(caravan_movable.blocked, false, "caravan is blocked");
 
             // ensure that it is not in transit
             let caravan_arrival_time = get!(world, caravan_id, ArrivalTime);
@@ -219,8 +219,8 @@ mod caravan_systems {
             let caravan_position = get!(world, caravan_id, Position);
             let owner_entity = get!(world, caravan_id, EntityOwner);
             let owner_position = get!(world, owner_entity.entity_owner_id, Position);
-            assert!(caravan_position.x == owner_position.x, "mismatched positions");
-            assert!(caravan_position.y == owner_position.y, "mismatched positions");
+            assert_eq!(caravan_position.x, owner_position.x, "mismatched positions");
+            assert_eq!(caravan_position.y, owner_position.y, "mismatched positions");
 
             let mut index = 0;
             let mut transport_ids = array![];
@@ -305,15 +305,15 @@ mod caravan_systems {
 
         fn check_owner(world: IWorldDispatcher, transport_id: ID, addr: ContractAddress) {
             let transport_owner = get!(world, transport_id, Owner);
-            assert!(transport_owner.address == addr, "not caravan owner");
+            assert_eq!(transport_owner.address, addr, "not caravan owner");
         }
 
 
         fn check_position(world: IWorldDispatcher, transport_id: ID, owner_id: ID) {
             let transport_position = get!(world, transport_id, Position);
             let owner_position = get!(world, owner_id, Position);
-            assert!(transport_position.x == owner_position.x, "mismatched positions");
-            assert!(transport_position.y == owner_position.y, "mismatched positions");
+            assert_eq!(transport_position.x, owner_position.x, "mismatched positions");
+            assert_eq!(transport_position.y, owner_position.y, "mismatched positions");
         }
 
         fn check_arrival_time(world: IWorldDispatcher, transport_id: ID) {
@@ -377,7 +377,7 @@ mod caravan_systems {
 
         fn block(world: IWorldDispatcher, transport_id: ID) {
             let mut transport_movable = get!(world, transport_id, Movable);
-            assert!(transport_movable.blocked == false, "transport is blocked");
+            assert!(!transport_movable.blocked, "transport is blocked");
 
             let transport_arrival_time = get!(world, transport_id, ArrivalTime);
             assert!(
@@ -395,7 +395,7 @@ mod caravan_systems {
         fn unblock(world: IWorldDispatcher, transport_id: ID) {
 
             let mut transport_movable = get!(world, transport_id, Movable);
-            assert!(transport_movable.blocked == true, "transport not blocked");
+            assert!(transport_movable.blocked, "transport not blocked");
 
             // update transport movable
             transport_movable.blocked = false;

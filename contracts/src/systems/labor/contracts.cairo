@@ -66,14 +66,14 @@ mod labor_systems {
             // assert owner of realm
             let player_id: ContractAddress = starknet::get_caller_address();
             let (realm, owner) = get!(world, realm_id, (Realm, Owner));
-            assert!(owner.address == player_id, "Realm does not belong to player");
+            assert_eq!(owner.address, player_id, "Realm does not belong to player");
 
             // check that resource is on realm
             let realm_has_resource = realm.has_resource(resource_type);
             let is_food = (resource_type == ResourceTypes::FISH)
                 | (resource_type == ResourceTypes::WHEAT);
             if realm_has_resource == false {
-                assert!(is_food == true, "Resource is not on realm");
+                assert!(is_food, "Resource is not on realm");
             }
 
             // Get Config
@@ -112,7 +112,7 @@ mod labor_systems {
                     let harbors: u64 = realm.harbors.into();
                     assert!(harbors >= multiplier, "Not enough harbors")
                 } else {
-                    assert!(resource_type == ResourceTypes::WHEAT, "Resource id is not valid");
+                    assert_eq!(resource_type, ResourceTypes::WHEAT, "Resource id is not valid");
                     // assert that realm can have that many farms
                     let rivers: u64 = realm.rivers.into();
                     assert!(rivers >= multiplier, "Not enough rivers")
@@ -184,14 +184,14 @@ mod labor_systems {
             let player_id: ContractAddress = starknet::get_caller_address();
             let (realm, owner) = get!(world, realm_id, (Realm, Owner));
 
-            assert!(owner.address == player_id, "Realm does not belong to player");
+            assert_eq!(owner.address, player_id, "Realm does not belong to player");
 
             // check that resource is on realm
             let realm_has_resource = realm.has_resource(resource_type);
             let is_food = (resource_type == ResourceTypes::FISH)
                 | (resource_type == ResourceTypes::WHEAT);
             if realm_has_resource == false {
-                assert!(is_food == true, "Resource is not on realm");
+                assert!(is_food, "Resource is not on realm");
             }
 
             // Get Config
@@ -215,13 +215,13 @@ mod labor_systems {
             let (labor_generated, is_complete, _) = labor.get_labor_generated(ts);
 
             // assert base labor units not zero
-            assert!(labor_config.base_labor_units != 0, "Base labor units cannot be zero");
+            assert_ne!(labor_config.base_labor_units, 0, "Base labor units cannot be zero");
 
             // labor units and part units
             let labor_units_generated = labor_generated / labor_config.base_labor_units;
 
             // assert that at least some labor has been generated
-            assert!(labor_units_generated != 0, "Wait end of harvest cycle");
+            assert_ne!(labor_units_generated, 0, "Wait end of harvest cycle");
 
             // remainder is what is left from division by base labor units
             let remainder = labor_generated % labor_config.base_labor_units;
@@ -312,7 +312,7 @@ mod labor_systems {
             // assert owner of realm
             let player_id: ContractAddress = starknet::get_caller_address();
             let (owner, position) = get!(world, entity_id, (Owner, Position));
-            assert!(owner.address == player_id, "Realm does not belong to player");
+            assert_eq!(owner.address, player_id, "Realm does not belong to player");
 
             assert_harvestable_resource(resource_type);
 
@@ -364,7 +364,7 @@ mod labor_systems {
             let mut labor_auction_time_since_start_fixed = labor_auction
                 .get_time_since_start_fixed();
 
-            assert!(labor_auction.per_time_unit != 0, "Labor auction not found");
+            assert_ne!(labor_auction.per_time_unit, 0, "Labor auction not found");
 
             let mut index = 0_usize;
             loop {

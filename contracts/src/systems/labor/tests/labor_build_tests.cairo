@@ -124,12 +124,12 @@ fn test_build_labor_non_food() {
 
     // assert labor is right amount
     let gold_labor = get!(world, (realm_entity_id, resource_type), Labor);
-    assert!(gold_labor.balance == ts + (7_200 * 20), "wrong gold labor balance");
-    assert!(gold_labor.last_harvest == ts, "wrong gold labor last harvest");
-    assert!(gold_labor.multiplier == 1, "wrong gold multiplier");
+    assert_eq!(gold_labor.balance, ts + (7_200 * 20), "wrong gold labor balance");
+    assert_eq!(gold_labor.last_harvest, ts, "wrong gold labor last harvest");
+    assert_eq!(gold_labor.multiplier, 1, "wrong gold multiplier");
 
     let gold_resource_type = get!(world, (realm_entity_id, labor_resource_type), Resource);
-    assert!(gold_resource_type.balance == 20, "wrong labor resource");
+    assert_eq!(gold_resource_type.balance, 20, "wrong labor resource");
 }
 
 
@@ -171,13 +171,13 @@ fn test_build_labor_food() {
     // assert labor is right amount
     let wheat_labor = get!(world, (realm_entity_id, ResourceTypes::WHEAT), Labor);
 
-    assert!(wheat_labor.balance == ts + (7_200 * 20), "wrong wheat labor balance");
-    assert!(wheat_labor.last_harvest == ts, "wrong wheat labor last harvest");
-    assert!(wheat_labor.multiplier == 1, "wrong wheat multiplier");
+    assert_eq!(wheat_labor.balance, ts + (7_200 * 20), "wrong wheat labor balance");
+    assert_eq!(wheat_labor.last_harvest, ts, "wrong wheat labor last harvest");
+    assert_eq!(wheat_labor.multiplier, 1, "wrong wheat multiplier");
 
     let labor_resource = get!(world, (realm_entity_id, labor_resource_type), Resource);
 
-    assert!(labor_resource.balance == 80, "wrong labor resource");
+    assert_eq!(labor_resource.balance, 80, "wrong labor resource");
 
     //------------------------------------------
     //
@@ -199,16 +199,16 @@ fn test_build_labor_food() {
     );
 
     let labor_resource = get!(world, (realm_entity_id, labor_resource_type), Resource);
-    assert!(labor_resource.balance == 40, "wrong labor resource");
+    assert_eq!(labor_resource.balance, 40, "wrong labor resource");
 
     // check food
     let (wheat_resource, wheat_labor) = get!(
         world, (realm_entity_id, ResourceTypes::WHEAT), (Resource, Labor)
     );
-    assert!(wheat_resource.resource_type == ResourceTypes::WHEAT, "failed resource type");
+    assert_eq!(wheat_resource.resource_type, ResourceTypes::WHEAT, "failed resource type");
     // left to harvest = 134_000 / 4 = 33_500
-    assert!(
-        wheat_resource.balance == ((10000_u128 + 33500_u128) / 7200_u128)
+    assert_eq!(
+        wheat_resource.balance, ((10000_u128 + 33500_u128) / 7200_u128)
             * 21000000000000000000_u128,
         "failed wheat resource amount"
     );
@@ -217,11 +217,11 @@ fn test_build_labor_food() {
     // 154000 is previous balance
     // 7200 * 20 is added balance
     // 154000 - 20000 is unharvested balance
-    assert!(
-        wheat_labor.balance == 154000 + 7200 * 20 - (154000 - 20000), "wrong wheat labor balance"
+    assert_eq!(
+        wheat_labor.balance, 154000 + 7200 * 20 - (154000 - 20000), "wrong wheat labor balance"
     );
-    assert!(wheat_labor.last_harvest == 20_000, "wrong wheat labor last harvest");
-    assert!(wheat_labor.multiplier == 2, "wrong wheat multiplier");
+    assert_eq!(wheat_labor.last_harvest, 20_000, "wrong wheat labor last harvest");
+    assert_eq!(wheat_labor.multiplier, 2, "wrong wheat multiplier");
 }
 
 
@@ -275,11 +275,11 @@ fn test_build_labor_after_completed() {
 
     // // assert labor is right amount
     let gold_labor = get!(world, (realm_entity_id, resource_type), Labor);
-    assert!(gold_labor.balance == ts + (7_200 * 20), "wrong gold labor balance");
-    assert!(gold_labor.last_harvest == 2_000, "wrong gold labor last harvest");
-    assert!(gold_labor.multiplier == 1, "wrong gold multiplier");
+    assert_eq!(gold_labor.balance, ts + (7_200 * 20), "wrong gold labor balance");
+    assert_eq!(gold_labor.last_harvest, 2_000, "wrong gold labor last harvest");
+    assert_eq!(gold_labor.multiplier, 1, "wrong gold multiplier");
 
     let gold_resource_type = get!(world, (realm_entity_id, labor_resource_type), Resource);
-    assert!(gold_resource_type.balance == 20, "wrong labor resource");
+    assert_eq!(gold_resource_type.balance, 20, "wrong labor resource");
 }
 

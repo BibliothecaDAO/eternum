@@ -394,27 +394,27 @@ fn test_steal_success() {
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
 
     // ensure attacker's health is intact
-    assert!(
-        attacker_unit_health.value == 100 * ATTACKER_SOLDIER_COUNT,
+    assert_eq!(
+        attacker_unit_health.value, 100 * ATTACKER_SOLDIER_COUNT,
                 "wrong health value"
     );
 
     // ensure that food was burned
     let target_realm_wheat_resource = get!(world, (target_realm_entity_id, ResourceTypes::WHEAT), Resource);
-    assert!(
-        target_realm_wheat_resource.balance == INITIAL_RESOURCE_BALANCE - ( WHEAT_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT),
+    assert_eq!(
+        target_realm_wheat_resource.balance, INITIAL_RESOURCE_BALANCE - ( WHEAT_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT),
                 "wrong wheat value"
     );
 
     let target_realm_fish_resource = get!(world, (target_realm_entity_id, ResourceTypes::FISH), Resource);
-    assert!(
-        target_realm_fish_resource.balance == INITIAL_RESOURCE_BALANCE - ( FISH_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT),
+    assert_eq!(
+        target_realm_fish_resource.balance, INITIAL_RESOURCE_BALANCE - ( FISH_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT),
                 "wrong fish value"
     );
 
     // ensure stolen resources are added to attacker's inventory
     let attacker_inventory = get!(world, attacker_unit_id, Inventory);
-    assert!(attacker_inventory.items_count == 1, "no inventory items");
+    assert_eq!(attacker_inventory.items_count, 1, "no inventory items");
 
     // check that attacker inventory has items
     let attacker_resource_chest_foreign_key
@@ -512,28 +512,28 @@ fn test_steal_success_with_order_boost() {
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
 
     // ensure attacker's health is intact
-    assert!(attacker_unit_health.value == 100 * ATTACKER_SOLDIER_COUNT, "wrong health value");
+    assert_eq!(attacker_unit_health.value, 100 * ATTACKER_SOLDIER_COUNT, "wrong health value");
 
     // ensure that food was burned
     let target_realm_wheat_resource = get!(world, (target_realm_entity_id, ResourceTypes::WHEAT), Resource);
     let wheat_expected_burn = WHEAT_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
 
-    assert!(
-        target_realm_wheat_resource.balance == INITIAL_RESOURCE_BALANCE - wheat_expected_burn,
+    assert_eq!(
+        target_realm_wheat_resource.balance, INITIAL_RESOURCE_BALANCE - wheat_expected_burn,
         "wrong wheat value"
     );
 
     let target_realm_fish_resource = get!(world, (target_realm_entity_id, ResourceTypes::FISH), Resource);
     let fish_expected_burn = FISH_BURN_PER_SOLDIER_DURING_ATTACK * ATTACKER_SOLDIER_COUNT;
 
-    assert!(
-        target_realm_fish_resource.balance == INITIAL_RESOURCE_BALANCE - fish_expected_burn,
+    assert_eq!(
+        target_realm_fish_resource.balance, INITIAL_RESOURCE_BALANCE - fish_expected_burn,
         "wrong fish value"
     );
 
     // ensure stolen resources are added to attacker's inventory
     let attacker_inventory = get!(world, attacker_unit_id, Inventory);
-    assert!(attacker_inventory.items_count == 1, "no inventory items");
+    assert_eq!(attacker_inventory.items_count, 1, "no inventory items");
 
     // check that attacker inventory has items
     let attacker_resource_chest_foreign_key
@@ -803,11 +803,11 @@ fn test_steal_success_army_to_army() {
     let attacker_unit_health = get!(world, attacker_unit_id, Health);
 
     // ensure attacker's health is intact
-    assert!(attacker_unit_health.value == 100 * ATTACKER_SOLDIER_COUNT, "wrong health value");
+    assert_eq!(attacker_unit_health.value, 100 * ATTACKER_SOLDIER_COUNT, "wrong health value");
 
     // ensure stolen resources are added to attacker's inventory
     let attacker_inventory = get!(world, attacker_unit_id, Inventory);
-    assert!(attacker_inventory.items_count == 1, "no inventory items");
+    assert_eq!(attacker_inventory.items_count, 1, "no inventory items");
 
     // check that attacker inventory has items
     let attacker_resource_chest_foreign_key

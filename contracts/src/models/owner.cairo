@@ -61,7 +61,7 @@ mod tests {
         let entity_owner = get!(world, (2), EntityOwner);
         let realm_id = entity_owner.get_realm_id(world);
 
-        assert!(realm_id == 3, "wrong realm id");
+        assert_eq!(realm_id, 3, "wrong realm id");
     }
 
 }

@@ -68,7 +68,7 @@ mod trade_systems {
             let caller = starknet::get_caller_address();
 
             let maker_owner = get!(world, maker_id, Owner);
-            assert!(maker_owner.address == caller, "caller not maker");
+            assert_eq!(maker_owner.address, caller, "caller not maker");
 
             // check that transport id is valid
             caravan::check_owner(world, maker_transport_id, caller);
@@ -147,7 +147,7 @@ mod trade_systems {
             // check that caller is taker
             let caller = starknet::get_caller_address();
             let taker_owner = get!(world, taker_id, Owner);
-            assert!(taker_owner.address == caller, "not owned by caller");
+            assert_eq!(taker_owner.address, caller, "not owned by caller");
 
             let mut trade = get!(world, trade_id, Trade);
             let trade_status = get!(world, trade_id, Status);
@@ -155,11 +155,11 @@ mod trade_systems {
             // check trade expiration and status
             let ts = starknet::get_block_timestamp();
             assert!(trade.expires_at > ts, "trade expired");
-            assert!(trade_status.value == TradeStatus::OPEN, "trade is not open");
+            assert_eq!(trade_status.value, TradeStatus::OPEN, "trade is not open");
 
             // if it's a direct offer, verify that its the correct taker 
             if trade.taker_id != 0 {
-                assert!(trade.taker_id == taker_id, "not the taker");
+                assert_eq!(trade.taker_id, taker_id, "not the taker");
             }
 
             let taker_position = get!(world, taker_id, Position);
@@ -171,8 +171,8 @@ mod trade_systems {
                 ///// same location so the trade is completed immediately /////
                 ///////////////////////////////////////////////////////////////
 
-                assert!(maker_position.x == taker_position.x, "position mismatch");
-                assert!(maker_position.y == taker_position.y, "position mismatch");
+                assert_eq!(maker_position.x, taker_position.x, "position mismatch");
+                assert_eq!(maker_position.y, taker_position.y, "position mismatch");
 
                 // unblock maker's caravan
                 caravan::unblock(world, trade.maker_transport_id);
@@ -329,8 +329,8 @@ mod trade_systems {
             let (trade, trade_status) = get!(world, trade_id, (Trade, Status));
             let owner = get!(world, trade.maker_id, Owner);
 
-            assert!(owner.address == starknet::get_caller_address(), "caller must be trade maker");
-            assert!(trade_status.value == TradeStatus::OPEN, "trade must be open");
+            assert_eq!(owner.address, starknet::get_caller_address(), "caller must be trade maker");
+            assert_eq!(trade_status.value, TradeStatus::OPEN, "trade must be open");
 
             // return resources to maker
             resource_chest::offload(

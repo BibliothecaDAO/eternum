@@ -85,10 +85,10 @@ mod tests {
 
 
         let road = RoadImpl::get(world, start_coord, end_coord);
-        assert!(road.usage_count == usage_count, "usage count should be 33");
+        assert_eq!(road.usage_count, usage_count, "usage count should be 33");
 
         let road = RoadImpl::get(world, end_coord, start_coord); // reverse order
-        assert!(road.usage_count == usage_count, "usage count should be 33");
+        assert_eq!(road.usage_count, usage_count, "usage count should be 33");
     }
 
 }

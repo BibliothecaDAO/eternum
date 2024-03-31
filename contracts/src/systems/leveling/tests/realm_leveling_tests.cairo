@@ -134,7 +134,7 @@ fn test_level_up_realm() {
     let (world, realm_entity_id, leveling_systems_dispatcher) = setup();
 
     let level = get!(world, (realm_entity_id), Level);
-    assert!(level.level == 0, "wrong level");
+    assert_eq!(level.level, 0, "wrong level");
 
     // level up 
     leveling_systems_dispatcher.level_up_realm(
@@ -149,7 +149,7 @@ fn test_level_up_realm() {
     assert!(realm_fish.balance > 0 && realm_fish.balance < 100_000, "wrong fish balance");
 
     let new_level = get!(world, (realm_entity_id), Level);
-    assert!(new_level.level == 1, "wrong level");
+    assert_eq!(new_level.level, 1, "wrong level");
 }
 
 

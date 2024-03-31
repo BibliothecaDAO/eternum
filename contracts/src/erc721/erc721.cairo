@@ -180,7 +180,7 @@ mod ERC721 {
     #[external]
     fn approve(approved: ContractAddress, token_id: u128) {
         let owner = owner(token_id);
-        assert!(owner != approved, "approval to owner");
+        assert_ne!(owner, approved, "approval to owner");
 
         let token: felt252 = get_contract_address().into();
         // TODO: get origin contract address when available
@@ -251,7 +251,7 @@ mod ERC721 {
         let token = get_contract_address();
         let owner = owner(token_id);
 
-        assert!(owner == from, "source not owner");
+        assert_eq!(owner, from, "source not owner");
         assert!(to.is_non_zero(), "transferring to zero");
 
         // TODO: use approval when we have final ERC721

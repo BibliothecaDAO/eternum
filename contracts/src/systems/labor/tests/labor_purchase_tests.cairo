@@ -148,19 +148,19 @@ fn test_purchase_labor_non_food() {
 
     // assert resources are the right amount
     let coal_resource = get!(world, (realm_entity_id, ResourceTypes::COAL), Resource);
-    assert!(coal_resource.resource_type == ResourceTypes::COAL, "failed resource type");
-    assert!(coal_resource.balance == 2_849, "failed resource amount");
+    assert_eq!(coal_resource.resource_type, ResourceTypes::COAL, "failed resource type");
+    assert_eq!(coal_resource.balance, 2_849, "failed resource amount");
 
     let stone_resource = get!(world, (realm_entity_id, ResourceTypes::STONE), Resource);
-    assert!(stone_resource.resource_type == ResourceTypes::STONE, "failed resource type");
-    assert!(stone_resource.balance == 2_849, "failed resource amount");
+    assert_eq!(stone_resource.resource_type, ResourceTypes::STONE, "failed resource type");
+    assert_eq!(stone_resource.balance, 2_849, "failed resource amount");
 
     // assert labor resource is right amount
     let gold_labor_resource = get!(world, (realm_entity_id, resource_type + 28), Resource);
-    assert!(gold_labor_resource.balance == 90, "wrong labor resource balance");
+    assert_eq!(gold_labor_resource.balance, 90, "wrong labor resource balance");
 
     let labor_auction = get!(world, 1, LaborAuction);
-    assert!(labor_auction.sold == 90, "wrong labor auction sold");
+    assert_eq!(labor_auction.sold, 90, "wrong labor auction sold");
 }
 
 
@@ -178,24 +178,24 @@ fn test_purchase_labor_with_building() {
 
     // assert the building was updated
     let labor_building = get!(world, (realm_entity_id), LaborBuilding);
-    assert!(labor_building.labor_count == 30, "wron building labor count");
-    assert!(labor_building.level == 3, "wrong building level");
+    assert_eq!(labor_building.labor_count, 30, "wron building labor count");
+    assert_eq!(labor_building.level, 3, "wrong building level");
 
     // assert resources are the right amount
     let coal_resource = get!(world, (realm_entity_id, ResourceTypes::COAL), Resource);
-    assert!(coal_resource.resource_type == ResourceTypes::COAL, "failed resource type");
-    assert!(coal_resource.balance == 2_849, "failed resource amount");
+    assert_eq!(coal_resource.resource_type, ResourceTypes::COAL, "failed resource type");
+    assert_eq!(coal_resource.balance, 2_849, "failed resource amount");
 
     let stone_resource = get!(world, (realm_entity_id, ResourceTypes::STONE), Resource);
-    assert!(stone_resource.resource_type == ResourceTypes::STONE, "failed resource type");
-    assert!(stone_resource.balance == 2_849, "failed resource amount");
+    assert_eq!(stone_resource.resource_type, ResourceTypes::STONE, "failed resource type");
+    assert_eq!(stone_resource.balance, 2_849, "failed resource amount");
 
     // assert labor resource is right amount
     let gold_labor_resource = get!(world, (realm_entity_id, resource_type + 28), Resource);
-    assert!(gold_labor_resource.balance == 90, "wrong labor resource balance");
+    assert_eq!(gold_labor_resource.balance, 90, "wrong labor resource balance");
 
     let labor_auction = get!(world, 1, LaborAuction);
-    assert!(labor_auction.sold == 90, "wrong labor auction sold");
+    assert_eq!(labor_auction.sold, 90, "wrong labor auction sold");
 }
 
 
@@ -210,17 +210,17 @@ fn test_purchase_labor_food() {
 
     // assert resources are the right amount
     let coal_resource = get!(world, (realm_entity_id, ResourceTypes::COAL), Resource);
-    assert!(coal_resource.resource_type == ResourceTypes::COAL, "failed resource type");
-    assert!(coal_resource.balance == 2_849, "failed resource amount");
+    assert_eq!(coal_resource.resource_type, ResourceTypes::COAL, "failed resource type");
+    assert_eq!(coal_resource.balance, 2_849, "failed resource amount");
 
     let stone_resource = get!(world, (realm_entity_id, ResourceTypes::STONE), Resource);
-    assert!(stone_resource.resource_type == ResourceTypes::STONE, "failed resource type");
-    assert!(stone_resource.balance == 2_849, "failed resource amount");
+    assert_eq!(stone_resource.resource_type, ResourceTypes::STONE, "failed resource type");
+    assert_eq!(stone_resource.balance, 2_849, "failed resource amount");
 
     // assert labor resource is right amount
     let fish_labor_resource = get!(world, (realm_entity_id, resource_type - 3), Resource);
-    assert!(fish_labor_resource.balance == 90, "wrong labor resource balance");
+    assert_eq!(fish_labor_resource.balance, 90, "wrong labor resource balance");
 
     let labor_auction = get!(world, 1, LaborAuction);
-    assert!(labor_auction.sold == 90, "wrong labor auction sold");
+    assert_eq!(labor_auction.sold, 90, "wrong labor auction sold");
 }

@@ -292,46 +292,46 @@ fn test_accept_without_taker_transport_id() {
 
     // check that maker balance is correct
     let maker_stone_resource = get!(world, (maker_id, ResourceTypes::STONE), Resource);
-    assert!(maker_stone_resource.balance == 0, "wrong maker balance");
+    assert_eq!(maker_stone_resource.balance, 0, "wrong maker balance");
 
     let maker_gold_resource = get!(world, (maker_id, ResourceTypes::GOLD), Resource);
-    assert!(maker_gold_resource.balance == 0, "wrong maker balance");
+    assert_eq!(maker_gold_resource.balance, 0, "wrong maker balance");
 
     let maker_wood_resource = get!(world, (maker_id, ResourceTypes::WOOD), Resource);
-    assert!(maker_wood_resource.balance == 200, "wrong maker balance");
+    assert_eq!(maker_wood_resource.balance, 200, "wrong maker balance");
 
     let maker_silver_resource = get!(world, (maker_id, ResourceTypes::SILVER), Resource);
-    assert!(maker_silver_resource.balance == 200, "wrong maker balance");
+    assert_eq!(maker_silver_resource.balance, 200, "wrong maker balance");
 
     // check that taker balance is correct
     let taker_stone_resource = get!(world, (taker_id, ResourceTypes::STONE), Resource);
-    assert!(taker_stone_resource.balance == 100, "wrong taker balance");
+    assert_eq!(taker_stone_resource.balance, 100, "wrong taker balance");
 
     let taker_gold_resource = get!(world, (taker_id, ResourceTypes::GOLD), Resource);
-    assert!(taker_gold_resource.balance == 100, "wrong taker balance");
+    assert_eq!(taker_gold_resource.balance, 100, "wrong taker balance");
 
     let taker_wood_resource = get!(world, (taker_id, ResourceTypes::WOOD), Resource);
-    assert!(taker_wood_resource.balance == 300, "wrong taker balance");
+    assert_eq!(taker_wood_resource.balance, 300, "wrong taker balance");
 
     let taker_silver_resource = get!(world, (taker_id, ResourceTypes::SILVER), Resource);
-    assert!(taker_silver_resource.balance == 300, "wrong taker balance");
+    assert_eq!(taker_silver_resource.balance, 300, "wrong taker balance");
 
     let trade = get!(world, trade_id, Trade);
-    assert!(trade.taker_id == taker_id, "wrong taker id");
-    assert!(trade.taker_transport_id == 0, "wrong taker transport id");
+    assert_eq!(trade.taker_id, taker_id, "wrong taker id");
+    assert_eq!(trade.taker_transport_id, 0, "wrong taker transport id");
 
     let trade_status = get!(world, trade_id, Status);
-    assert!(trade_status.value == TradeStatus::ACCEPTED, "wrong trade status");
+    assert_eq!(trade_status.value, TradeStatus::ACCEPTED, "wrong trade status");
 
     // check that taker resource chest is  empty
     let taker_resource_chest_weight
         = get!(world, trade.taker_resource_chest_id, Weight);
-    assert!(taker_resource_chest_weight.value == 0, "chest should be empty");
+    assert_eq!(taker_resource_chest_weight.value, 0, "chest should be empty");
 
     // check that maker resource chest is  empty
     let maker_resource_chest_weight
         = get!(world, trade.maker_resource_chest_id, Weight);
-    assert!(maker_resource_chest_weight.value == 0, "chest should be empty");
+    assert_eq!(maker_resource_chest_weight.value, 0, "chest should be empty");
 }
 
 
@@ -362,17 +362,17 @@ fn test_accept_order_free_trade() {
 
     // check that taker balance is correct
     let taker_wood_resource = get!(world, (taker_id, ResourceTypes::WOOD), Resource);
-    assert!(taker_wood_resource.balance == 300, "wrong taker balance");
+    assert_eq!(taker_wood_resource.balance, 300, "wrong taker balance");
 
     let taker_silver_resource = get!(world, (taker_id, ResourceTypes::SILVER), Resource);
-    assert!(taker_silver_resource.balance == 300, "wrong taker balance");
+    assert_eq!(taker_silver_resource.balance, 300, "wrong taker balance");
 
     let trade = get!(world, trade_id, Trade);
-    assert!(trade.taker_id == taker_id, "wrong taker id");
-    assert!(trade.taker_transport_id == taker_transport_id, "wrong taker transport id");
+    assert_eq!(trade.taker_id, taker_id, "wrong taker id");
+    assert_eq!(trade.taker_transport_id, taker_transport_id, "wrong taker transport id");
 
     let trade_status = get!(world, trade_id, Status);
-    assert!(trade_status.value == TradeStatus::ACCEPTED, "wrong trade status");
+    assert_eq!(trade_status.value, TradeStatus::ACCEPTED, "wrong trade status");
 
     ///// Check Maker Data ///////
     //////////////////////////////
@@ -383,45 +383,45 @@ fn test_accept_order_free_trade() {
     // check that maker resource chest is filled
     let maker_resource_chest_weight
         = get!(world, trade.maker_resource_chest_id, Weight);
-    assert!(maker_resource_chest_weight.value != 0, "chest should be filled");
+    assert_ne!(maker_resource_chest_weight.value, 0, "chest should be filled");
 
     // check maker resource chest is locked
     let maker_resource_chest 
         = get!(world, trade.maker_resource_chest_id, ResourceChest);
-    assert!(maker_resource_chest.locked_until == 8000000, "wrong chest locked_until");
+    assert_eq!(maker_resource_chest.locked_until, 8000000, "wrong chest locked_until");
 
     // check that the maker's resource chest was 
     // added their transport's inventory
     let maker_transport_inventory 
         = get!(world, trade.maker_transport_id, Inventory);
-    assert!(maker_transport_inventory.items_count == 1, "wrong item count");
+    assert_eq!(maker_transport_inventory.items_count, 1, "wrong item count");
 
     let inventory_resource_chest_key 
         = inventory::get_foreign_key(maker_transport_inventory, 0);
     let foreign_key = get!(world, inventory_resource_chest_key, ForeignKey);
-    assert!(foreign_key.entity_id == trade.maker_resource_chest_id, "chest not in inventory");
+    assert_eq!(foreign_key.entity_id, trade.maker_resource_chest_id, "chest not in inventory");
 
     // check maker transport movable
     let maker_transport_movable = get!(world, trade.maker_transport_id, Movable);
-    assert!(maker_transport_movable.blocked == false, "maker transport not blocked");
+    assert_eq!(maker_transport_movable.blocked, false, "maker transport not blocked");
 
     let maker_position = get!(world, maker_id, Position);
     let taker_position = get!(world, taker_id, Position);
 
-    assert!(maker_transport_movable.intermediate_coord_x == taker_position.x, "wrong position x");
+    assert_eq!(maker_transport_movable.intermediate_coord_x, taker_position.x, "wrong position x");
 
-    assert!(maker_transport_movable.intermediate_coord_y == taker_position.y, "wrong position y");
+    assert_eq!(maker_transport_movable.intermediate_coord_y, taker_position.y, "wrong position y");
 
-    assert!(maker_transport_movable.round_trip == true, "wrong position y");
+    assert_eq!(maker_transport_movable.round_trip, true, "wrong position y");
 
     // check maker transport arrival time
     let maker_transport_arrival_time = get!(world, trade.maker_transport_id, ArrivalTime);
-    assert!(maker_transport_arrival_time.arrives_at == 8000000 * 2, "wrong arrival time");
+    assert_eq!(maker_transport_arrival_time.arrives_at, 8000000 * 2, "wrong arrival time");
 
     // check maker transport position
     let maker_transport_position = get!(world, trade.maker_transport_id, Position);
-    assert!(maker_transport_position.x == maker_position.x, "wrong maker position");
-    assert!(maker_transport_position.y == maker_position.y, "wrong maker position");
+    assert_eq!(maker_transport_position.x, maker_position.x, "wrong maker position");
+    assert_eq!(maker_transport_position.y, maker_position.y, "wrong maker position");
 
     ///// Check Taker Data ///////
     //////////////////////////////
@@ -429,42 +429,42 @@ fn test_accept_order_free_trade() {
     // check that taker resource chest is filled
     let taker_resource_chest_weight
         = get!(world, trade.taker_resource_chest_id, Weight);
-    assert!(taker_resource_chest_weight.value != 0, "chest should be filled");
+    assert_ne!(taker_resource_chest_weight.value, 0, "chest should be filled");
 
     // check taker resource chest is locked
     let taker_resource_chest 
         = get!(world, trade.taker_resource_chest_id, ResourceChest);
-    assert!(taker_resource_chest.locked_until == 8000000, "wrong chest locked_until");
+    assert_eq!(taker_resource_chest.locked_until, 8000000, "wrong chest locked_until");
 
     // check that the taker's resource chest was 
     // added their transport's inventory
     let taker_transport_inventory 
         = get!(world, trade.taker_transport_id, Inventory);
-    assert!(taker_transport_inventory.items_count == 1, "wrong item count");
+    assert_eq!(taker_transport_inventory.items_count, 1, "wrong item count");
 
     let inventory_resource_chest_key 
         = inventory::get_foreign_key(taker_transport_inventory, 0);
     let foreign_key = get!(world, inventory_resource_chest_key, ForeignKey);
-    assert!(foreign_key.entity_id == trade.taker_resource_chest_id, "chest not in inventory");
+    assert_eq!(foreign_key.entity_id, trade.taker_resource_chest_id, "chest not in inventory");
 
     // check taker transport movable
     let taker_transport_movable = get!(world, trade.taker_transport_id, Movable);
-    assert!(taker_transport_movable.blocked == false, "taker transport not blocked");
+    assert_eq!(taker_transport_movable.blocked, false, "taker transport not blocked");
 
-    assert!(taker_transport_movable.intermediate_coord_x == maker_position.x, "wrong position x");
+    assert_eq!(taker_transport_movable.intermediate_coord_x, maker_position.x, "wrong position x");
 
-    assert!(taker_transport_movable.intermediate_coord_y == maker_position.y, "wrong position y");
+    assert_eq!(taker_transport_movable.intermediate_coord_y, maker_position.y, "wrong position y");
 
-    assert!(taker_transport_movable.round_trip == true, "wrong position y");
+    assert_eq!(taker_transport_movable.round_trip, true, "wrong position y");
 
     // check taker transport arrival time
     let taker_transport_arrival_time = get!(world, trade.taker_transport_id, ArrivalTime);
-    assert!(taker_transport_arrival_time.arrives_at == 8000000 * 2, "wrong arrival time");
+    assert_eq!(taker_transport_arrival_time.arrives_at, 8000000 * 2, "wrong arrival time");
 
     // check taker transport position
     let taker_transport_position = get!(world, trade.taker_transport_id, Position);
-    assert!(taker_transport_position.x == taker_position.x, "wrong taker position");
-    assert!(taker_transport_position.y == taker_position.y, "wrong taker position");
+    assert_eq!(taker_transport_position.x, taker_position.x, "wrong taker position");
+    assert_eq!(taker_transport_position.y, taker_position.y, "wrong taker position");
 }
 
 
@@ -480,17 +480,17 @@ fn test_accept_order_direct_trade() {
 
     // check that taker balance is correct
     let taker_wood_resource = get!(world, (taker_id, ResourceTypes::WOOD), Resource);
-    assert!(taker_wood_resource.balance == 300, "wrong taker balance");
+    assert_eq!(taker_wood_resource.balance, 300, "wrong taker balance");
 
     let taker_silver_resource = get!(world, (taker_id, ResourceTypes::SILVER), Resource);
-    assert!(taker_silver_resource.balance == 300, "wrong taker balance");
+    assert_eq!(taker_silver_resource.balance, 300, "wrong taker balance");
 
     let trade = get!(world, trade_id, Trade);
-    assert!(trade.taker_id == taker_id, "wrong taker id");
-    assert!(trade.taker_transport_id == taker_transport_id, "wrong taker transport id");
+    assert_eq!(trade.taker_id, taker_id, "wrong taker id");
+    assert_eq!(trade.taker_transport_id, taker_transport_id, "wrong taker transport id");
 
     let trade_status = get!(world, trade_id, Status);
-    assert!(trade_status.value == TradeStatus::ACCEPTED, "wrong trade status");
+    assert_eq!(trade_status.value, TradeStatus::ACCEPTED, "wrong trade status");
 
     ///// Check Maker Data ///////
     //////////////////////////////
@@ -498,44 +498,44 @@ fn test_accept_order_direct_trade() {
     // check that maker resource chest is filled
     let maker_resource_chest_weight
         = get!(world, trade.maker_resource_chest_id, Weight);
-    assert!(maker_resource_chest_weight.value != 0, "chest should be filled");
+    assert_ne!(maker_resource_chest_weight.value, 0, "chest should be filled");
 
     // check maker resource chest is locked
     let maker_resource_chest = get!(world, trade.maker_resource_chest_id, ResourceChest);
-    assert!(maker_resource_chest.locked_until == 8000000, "wrong chest locked_until");
+    assert_eq!(maker_resource_chest.locked_until, 8000000, "wrong chest locked_until");
 
     // check that the maker's resource chest was 
     // added their transport's inventory
     let maker_transport_inventory 
         = get!(world, trade.maker_transport_id, Inventory);
-    assert!(maker_transport_inventory.items_count == 1, "wrong item count");
+    assert_eq!(maker_transport_inventory.items_count, 1, "wrong item count");
 
     let inventory_resource_chest_key 
         = inventory::get_foreign_key(maker_transport_inventory, 0);
     let foreign_key = get!(world, inventory_resource_chest_key, ForeignKey);
-    assert!(foreign_key.entity_id == trade.maker_resource_chest_id, "chest not in inventory");
+    assert_eq!(foreign_key.entity_id, trade.maker_resource_chest_id, "chest not in inventory");
 
     // check maker transport movable
     let maker_transport_movable = get!(world, trade.maker_transport_id, Movable);
-    assert!(maker_transport_movable.blocked == false, "maker transport not blocked");
+    assert_eq!(maker_transport_movable.blocked, false, "maker transport not blocked");
 
     let maker_position = get!(world, maker_id, Position);
     let taker_position = get!(world, taker_id, Position);
 
-    assert!(maker_transport_movable.intermediate_coord_x == taker_position.x, "wrong position x");
+    assert_eq!(maker_transport_movable.intermediate_coord_x, taker_position.x, "wrong position x");
 
-    assert!(maker_transport_movable.intermediate_coord_y == taker_position.y, "wrong position y");
+    assert_eq!(maker_transport_movable.intermediate_coord_y, taker_position.y, "wrong position y");
 
-    assert!(maker_transport_movable.round_trip == true, "wrong position y");
+    assert_eq!(maker_transport_movable.round_trip, true, "wrong position y");
 
     // check maker transport arrival time
     let maker_transport_arrival_time = get!(world, trade.maker_transport_id, ArrivalTime);
-    assert!(maker_transport_arrival_time.arrives_at == 8000000 * 2, "wrong arrival time");
+    assert_eq!(maker_transport_arrival_time.arrives_at, 8000000 * 2, "wrong arrival time");
 
     // check maker transport position
     let maker_transport_position = get!(world, trade.maker_transport_id, Position);
-    assert!(maker_transport_position.x == maker_position.x, "wrong maker position");
-    assert!(maker_transport_position.y == maker_position.y, "wrong maker position");
+    assert_eq!(maker_transport_position.x, maker_position.x, "wrong maker position");
+    assert_eq!(maker_transport_position.y, maker_position.y, "wrong maker position");
 
     ///// Check Taker Data ///////
     //////////////////////////////
@@ -543,42 +543,42 @@ fn test_accept_order_direct_trade() {
     // check that taker resource chest is filled
     let taker_resource_chest_weight
         = get!(world, trade.taker_resource_chest_id, Weight);
-    assert!(taker_resource_chest_weight.value != 0, "chest should be filled");
+    assert_ne!(taker_resource_chest_weight.value, 0, "chest should be filled");
 
     // check taker resource chest is locked
     let taker_resource_chest 
         = get!(world, trade.taker_resource_chest_id, ResourceChest);
-    assert!(taker_resource_chest.locked_until == 8000000, "wrong chest locked_until");
+    assert_eq!(taker_resource_chest.locked_until, 8000000, "wrong chest locked_until");
 
     // check that the taker's resource chest was 
     // added their transport's inventory
     let taker_transport_inventory 
         = get!(world, trade.taker_transport_id, Inventory);
-    assert!(taker_transport_inventory.items_count == 1, "wrong item count");
+    assert_eq!(taker_transport_inventory.items_count, 1, "wrong item count");
 
     let inventory_resource_chest_key 
         = inventory::get_foreign_key(taker_transport_inventory, 0);
     let foreign_key = get!(world, inventory_resource_chest_key, ForeignKey);
-    assert!(foreign_key.entity_id == trade.taker_resource_chest_id, "chest not in inventory");
+    assert_eq!(foreign_key.entity_id, trade.taker_resource_chest_id, "chest not in inventory");
 
     // check taker transport movable
     let taker_transport_movable = get!(world, trade.taker_transport_id, Movable);
-    assert!(taker_transport_movable.blocked == false, "taker transport not blocked");
+    assert_eq!(taker_transport_movable.blocked, false, "taker transport not blocked");
 
-    assert!(taker_transport_movable.intermediate_coord_x == maker_position.x, "wrong position x");
+    assert_eq!(taker_transport_movable.intermediate_coord_x, maker_position.x, "wrong position x");
 
-    assert!(taker_transport_movable.intermediate_coord_y == maker_position.y, "wrong position y");
+    assert_eq!(taker_transport_movable.intermediate_coord_y, maker_position.y, "wrong position y");
 
-    assert!(taker_transport_movable.round_trip == true, "wrong position y");
+    assert_eq!(taker_transport_movable.round_trip, true, "wrong position y");
 
     // check taker transport arrival time
     let taker_transport_arrival_time = get!(world, trade.taker_transport_id, ArrivalTime);
-    assert!(taker_transport_arrival_time.arrives_at == 8000000 * 2, "wrong arrival time");
+    assert_eq!(taker_transport_arrival_time.arrives_at, 8000000 * 2, "wrong arrival time");
 
     // check taker transport position
     let taker_transport_position = get!(world, trade.taker_transport_id, Position);
-    assert!(taker_transport_position.x == taker_position.x, "wrong taker position");
-    assert!(taker_transport_position.y == taker_position.y, "wrong taker position");
+    assert_eq!(taker_transport_position.x, taker_position.x, "wrong taker position");
+    assert_eq!(taker_transport_position.y, taker_position.y, "wrong taker position");
 }
 
 #[test]
@@ -632,17 +632,17 @@ fn test_accept_order_with_realm_travel_bonus() {
 
     // check that taker balance is correct
     let taker_wood_resource = get!(world, (taker_id, ResourceTypes::WOOD), Resource);
-    assert!(taker_wood_resource.balance == 300, "wrong taker balance");
+    assert_eq!(taker_wood_resource.balance, 300, "wrong taker balance");
 
     let taker_silver_resource = get!(world, (taker_id, ResourceTypes::SILVER), Resource);
-    assert!(taker_silver_resource.balance == 300, "wrong taker balance");
+    assert_eq!(taker_silver_resource.balance, 300, "wrong taker balance");
 
     let trade = get!(world, trade_id, Trade);
-    assert!(trade.taker_id == taker_id, "wrong taker id");
-    assert!(trade.taker_transport_id == taker_transport_id, "wrong taker transport id");
+    assert_eq!(trade.taker_id, taker_id, "wrong taker id");
+    assert_eq!(trade.taker_transport_id, taker_transport_id, "wrong taker transport id");
 
     let trade_status = get!(world, trade_id, Status);
-    assert!(trade_status.value == TradeStatus::ACCEPTED, "wrong trade status");
+    assert_eq!(trade_status.value, TradeStatus::ACCEPTED, "wrong trade status");
 
     ///// Check Maker Data ///////
     //////////////////////////////
@@ -653,45 +653,45 @@ fn test_accept_order_with_realm_travel_bonus() {
     // check that maker resource chest is filled
     let maker_resource_chest_weight
         = get!(world, trade.maker_resource_chest_id, Weight);
-    assert!(maker_resource_chest_weight.value != 0, "chest should be filled");
+    assert_ne!(maker_resource_chest_weight.value, 0, "chest should be filled");
 
     // check maker resource chest is locked
     let maker_resource_chest 
         = get!(world, trade.maker_resource_chest_id, ResourceChest);
-    assert!(maker_resource_chest.locked_until == 5442176, "wrong chest locked_until");
+    assert_eq!(maker_resource_chest.locked_until, 5442176, "wrong chest locked_until");
 
     // check that the maker's resource chest was 
     // added their transport's inventory
     let maker_transport_inventory 
         = get!(world, trade.maker_transport_id, Inventory);
-    assert!(maker_transport_inventory.items_count == 1, "wrong item count");
+    assert_eq!(maker_transport_inventory.items_count, 1, "wrong item count");
 
     let inventory_resource_chest_key 
         = inventory::get_foreign_key(maker_transport_inventory, 0);
     let foreign_key = get!(world, inventory_resource_chest_key, ForeignKey);
-    assert!(foreign_key.entity_id == trade.maker_resource_chest_id, "chest not in inventory");
+    assert_eq!(foreign_key.entity_id, trade.maker_resource_chest_id, "chest not in inventory");
 
     // check maker transport movable
     let maker_transport_movable = get!(world, trade.maker_transport_id, Movable);
-    assert!(maker_transport_movable.blocked == false, "maker transport not blocked");
+    assert_eq!(maker_transport_movable.blocked, false, "maker transport not blocked");
 
     let maker_position = get!(world, maker_id, Position);
     let taker_position = get!(world, taker_id, Position);
 
-    assert!(maker_transport_movable.intermediate_coord_x == taker_position.x, "wrong position x");
+    assert_eq!(maker_transport_movable.intermediate_coord_x, taker_position.x, "wrong position x");
 
-    assert!(maker_transport_movable.intermediate_coord_y == taker_position.y, "wrong position y");
+    assert_eq!(maker_transport_movable.intermediate_coord_y, taker_position.y, "wrong position y");
 
-    assert!(maker_transport_movable.round_trip == true, "wrong position y");
+    assert_eq!(maker_transport_movable.round_trip, true, "wrong position y");
 
     // check maker transport arrival time
     let maker_transport_arrival_time = get!(world, trade.maker_transport_id, ArrivalTime);
-    assert!(maker_transport_arrival_time.arrives_at == 5442176 * 2, "wrong arrival time");
+    assert_eq!(maker_transport_arrival_time.arrives_at, 5442176 * 2, "wrong arrival time");
 
     // check maker transport position
     let maker_transport_position = get!(world, trade.maker_transport_id, Position);
-    assert!(maker_transport_position.x == maker_position.x, "wrong maker position");
-    assert!(maker_transport_position.y == maker_position.y, "wrong maker position");
+    assert_eq!(maker_transport_position.x, maker_position.x, "wrong maker position");
+    assert_eq!(maker_transport_position.y, maker_position.y, "wrong maker position");
 
     ///// Check Taker Data ///////
     //////////////////////////////
@@ -699,42 +699,42 @@ fn test_accept_order_with_realm_travel_bonus() {
     // check that taker resource chest is filled
     let taker_resource_chest_weight
         = get!(world, trade.taker_resource_chest_id, Weight);
-    assert!(taker_resource_chest_weight.value != 0, "chest should be filled");
+    assert_ne!(taker_resource_chest_weight.value, 0, "chest should be filled");
 
     // check taker resource chest is locked
     let taker_resource_chest 
         = get!(world, trade.taker_resource_chest_id, ResourceChest);
-    assert!(taker_resource_chest.locked_until == 5442176, "wrong chest locked_until");
+    assert_eq!(taker_resource_chest.locked_until, 5442176, "wrong chest locked_until");
 
     // check that the taker's resource chest was 
     // added their transport's inventory
     let taker_transport_inventory 
         = get!(world, trade.taker_transport_id, Inventory);
-    assert!(taker_transport_inventory.items_count == 1, "wrong item count");
+    assert_eq!(taker_transport_inventory.items_count, 1, "wrong item count");
 
     let inventory_resource_chest_key 
         = inventory::get_foreign_key(taker_transport_inventory, 0);
     let foreign_key = get!(world, inventory_resource_chest_key, ForeignKey);
-    assert!(foreign_key.entity_id == trade.taker_resource_chest_id, "chest not in inventory");
+    assert_eq!(foreign_key.entity_id, trade.taker_resource_chest_id, "chest not in inventory");
 
     // check taker transport movable
     let taker_transport_movable = get!(world, trade.taker_transport_id, Movable);
-    assert!(taker_transport_movable.blocked == false, "taker transport not blocked");
+    assert_eq!(taker_transport_movable.blocked, false, "taker transport not blocked");
 
-    assert!(taker_transport_movable.intermediate_coord_x == maker_position.x, "wrong position x");
+    assert_eq!(taker_transport_movable.intermediate_coord_x, maker_position.x, "wrong position x");
 
-    assert!(taker_transport_movable.intermediate_coord_y == maker_position.y, "wrong position y");
+    assert_eq!(taker_transport_movable.intermediate_coord_y, maker_position.y, "wrong position y");
 
-    assert!(taker_transport_movable.round_trip == true, "wrong position y");
+    assert_eq!(taker_transport_movable.round_trip, true, "wrong position y");
 
     // check taker transport arrival time
     let taker_transport_arrival_time = get!(world, trade.taker_transport_id, ArrivalTime);
-    assert!(taker_transport_arrival_time.arrives_at == 5442176 * 2, "wrong arrival time");
+    assert_eq!(taker_transport_arrival_time.arrives_at, 5442176 * 2, "wrong arrival time");
 
     // check taker transport position
     let taker_transport_position = get!(world, trade.taker_transport_id, Position);
-    assert!(taker_transport_position.x == taker_position.x, "wrong taker position");
-    assert!(taker_transport_position.y == taker_position.y, "wrong taker position");
+    assert_eq!(taker_transport_position.x, taker_position.x, "wrong taker position");
+    assert_eq!(taker_transport_position.y, taker_position.y, "wrong taker position");
 }
 
 
@@ -800,17 +800,17 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
 
     // check that taker balance is correct
     let taker_wood_resource = get!(world, (taker_id, ResourceTypes::WOOD), Resource);
-    assert!(taker_wood_resource.balance == 300, "wrong taker balance");
+    assert_eq!(taker_wood_resource.balance, 300, "wrong taker balance");
 
     let taker_silver_resource = get!(world, (taker_id, ResourceTypes::SILVER), Resource);
-    assert!(taker_silver_resource.balance == 300, "wrong taker balance");
+    assert_eq!(taker_silver_resource.balance, 300, "wrong taker balance");
 
     let trade = get!(world, trade_id, Trade);
-    assert!(trade.taker_id == taker_id, "wrong taker id");
-    assert!(trade.taker_transport_id == taker_transport_id, "wrong taker transport id");
+    assert_eq!(trade.taker_id, taker_id, "wrong taker id");
+    assert_eq!(trade.taker_transport_id, taker_transport_id, "wrong taker transport id");
 
     let trade_status = get!(world, trade_id, Status);
-    assert!(trade_status.value == TradeStatus::ACCEPTED, "wrong trade status");
+    assert_eq!(trade_status.value, TradeStatus::ACCEPTED, "wrong trade status");
 
     ///// Check Maker Data ///////
     //////////////////////////////
@@ -821,47 +821,47 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
     // check that maker resource chest is filled
     let maker_resource_chest_weight
         = get!(world, trade.maker_resource_chest_id, Weight);
-    assert!(maker_resource_chest_weight.value != 0, "chest should be filled");
+    assert_ne!(maker_resource_chest_weight.value, 0, "chest should be filled");
 
     // check maker resource chest is locked
     let maker_resource_chest 
         = get!(world, trade.maker_resource_chest_id, ResourceChest);
 
-    assert!(maker_resource_chest.locked_until == 4353741, "wrong chest locked_until");
+    assert_eq!(maker_resource_chest.locked_until, 4353741, "wrong chest locked_until");
 
     // check that the maker's resource chest was 
     // added their transport's inventory
     let maker_transport_inventory 
         = get!(world, trade.maker_transport_id, Inventory);
-    assert!(maker_transport_inventory.items_count == 1, "wrong item count");
+    assert_eq!(maker_transport_inventory.items_count, 1, "wrong item count");
 
     let inventory_resource_chest_key 
         = inventory::get_foreign_key(maker_transport_inventory, 0);
     let foreign_key = get!(world, inventory_resource_chest_key, ForeignKey);
-    assert!(foreign_key.entity_id == trade.maker_resource_chest_id, "chest not in inventory");
+    assert_eq!(foreign_key.entity_id, trade.maker_resource_chest_id, "chest not in inventory");
 
     // check maker transport movable
     let maker_transport_movable = get!(world, trade.maker_transport_id, Movable);
-    assert!(maker_transport_movable.blocked == false, "maker transport not blocked");
+    assert_eq!(maker_transport_movable.blocked, false, "maker transport not blocked");
 
     let maker_position = get!(world, maker_id, Position);
     let taker_position = get!(world, taker_id, Position);
 
-    assert!(maker_transport_movable.intermediate_coord_x == taker_position.x, "wrong position x");
+    assert_eq!(maker_transport_movable.intermediate_coord_x, taker_position.x, "wrong position x");
 
-    assert!(maker_transport_movable.intermediate_coord_y == taker_position.y, "wrong position y");
+    assert_eq!(maker_transport_movable.intermediate_coord_y, taker_position.y, "wrong position y");
 
-    assert!(maker_transport_movable.round_trip == true, "wrong position y");
+    assert_eq!(maker_transport_movable.round_trip, true, "wrong position y");
 
     // check maker transport arrival time
     let maker_transport_arrival_time = get!(world, trade.maker_transport_id, ArrivalTime);
 
-    assert!(maker_transport_arrival_time.arrives_at == 4353741 * 2, "wrong arrival time");
+    assert_eq!(maker_transport_arrival_time.arrives_at, 4353741 * 2, "wrong arrival time");
 
     // check maker transport position
     let maker_transport_position = get!(world, trade.maker_transport_id, Position);
-    assert!(maker_transport_position.x == maker_position.x, "wrong maker position");
-    assert!(maker_transport_position.y == maker_position.y, "wrong maker position");
+    assert_eq!(maker_transport_position.x, maker_position.x, "wrong maker position");
+    assert_eq!(maker_transport_position.y, maker_position.y, "wrong maker position");
 
     ///// Check Taker Data ///////
     //////////////////////////////
@@ -869,42 +869,42 @@ fn test_accept_order_with_realm_and_order_travel_bonus() {
     // check that taker resource chest is filled
     let taker_resource_chest_weight
         = get!(world, trade.taker_resource_chest_id, Weight);
-    assert!(taker_resource_chest_weight.value != 0, "chest should be filled");
+    assert_ne!(taker_resource_chest_weight.value, 0, "chest should be filled");
 
     // check taker resource chest is locked
     let taker_resource_chest 
         = get!(world, trade.taker_resource_chest_id, ResourceChest);
-    assert!(taker_resource_chest.locked_until == 4353741, "wrong chest locked_until");
+    assert_eq!(taker_resource_chest.locked_until, 4353741, "wrong chest locked_until");
 
     // check that the taker's resource chest was 
     // added their transport's inventory
     let taker_transport_inventory 
         = get!(world, trade.taker_transport_id, Inventory);
-    assert!(taker_transport_inventory.items_count == 1, "wrong item count");
+    assert_eq!(taker_transport_inventory.items_count, 1, "wrong item count");
 
     let inventory_resource_chest_key 
         = inventory::get_foreign_key(taker_transport_inventory, 0);
     let foreign_key = get!(world, inventory_resource_chest_key, ForeignKey);
-    assert!(foreign_key.entity_id == trade.taker_resource_chest_id, "chest not in inventory");
+    assert_eq!(foreign_key.entity_id, trade.taker_resource_chest_id, "chest not in inventory");
 
     // check taker transport movable
     let taker_transport_movable = get!(world, trade.taker_transport_id, Movable);
-    assert!(taker_transport_movable.blocked == false, "taker transport not blocked");
+    assert_eq!(taker_transport_movable.blocked, false, "taker transport not blocked");
 
-    assert!(taker_transport_movable.intermediate_coord_x == maker_position.x, "wrong position x");
+    assert_eq!(taker_transport_movable.intermediate_coord_x, maker_position.x, "wrong position x");
 
-    assert!(taker_transport_movable.intermediate_coord_y == maker_position.y, "wrong position y");
+    assert_eq!(taker_transport_movable.intermediate_coord_y, maker_position.y, "wrong position y");
 
-    assert!(taker_transport_movable.round_trip == true, "wrong position y");
+    assert_eq!(taker_transport_movable.round_trip, true, "wrong position y");
 
     // check taker transport arrival time
     let taker_transport_arrival_time = get!(world, trade.taker_transport_id, ArrivalTime);
-    assert!(taker_transport_arrival_time.arrives_at == 4353741 * 2, "wrong arrival time");
+    assert_eq!(taker_transport_arrival_time.arrives_at, 4353741 * 2, "wrong arrival time");
 
     // check taker transport position
     let taker_transport_position = get!(world, trade.taker_transport_id, Position);
-    assert!(taker_transport_position.x == taker_position.x, "wrong taker position");
-    assert!(taker_transport_position.y == taker_position.y, "wrong taker position");
+    assert_eq!(taker_transport_position.x, taker_position.x, "wrong taker position");
+    assert_eq!(taker_transport_position.y, taker_position.y, "wrong taker position");
 }
 
 #[test]
@@ -931,22 +931,22 @@ fn test_accept_order_with_road() {
         .accept_order(world, taker_id, taker_transport_id, trade_id);
 
     let trade = get!(world, trade_id, Trade);
-    assert!(trade.taker_id == taker_id, "wrong taker id");
-    assert!(trade.taker_transport_id == taker_transport_id, "wrong taker transport id");
+    assert_eq!(trade.taker_id, taker_id, "wrong taker id");
+    assert_eq!(trade.taker_transport_id, taker_transport_id, "wrong taker transport id");
 
     let trade_status = get!(world, trade_id, Status);
-    assert!(trade_status.value == TradeStatus::ACCEPTED, "wrong trade status");
+    assert_eq!(trade_status.value, TradeStatus::ACCEPTED, "wrong trade status");
 
     // check maker transport arrival time
     let maker_transport_arrival_time = get!(world, trade.maker_transport_id, ArrivalTime);
-    assert!(maker_transport_arrival_time.arrives_at == 8000000, "wrong arrival time");
+    assert_eq!(maker_transport_arrival_time.arrives_at, 8000000, "wrong arrival time");
 
     // check taker transport arrival time
     let taker_transport_arrival_time = get!(world, trade.taker_transport_id, ArrivalTime);
-    assert!(taker_transport_arrival_time.arrives_at == 8000000, "wrong arrival time");
+    assert_eq!(taker_transport_arrival_time.arrives_at, 8000000, "wrong arrival time");
 
     let road = get!(world, (maker_coord.x, maker_coord.y, taker_coord.x, taker_coord.y), Road);
-    assert!(road.usage_count == 0, "wrong usage count");
+    assert_eq!(road.usage_count, 0, "wrong usage count");
 }
 
 

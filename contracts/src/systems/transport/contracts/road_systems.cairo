@@ -34,13 +34,13 @@ mod road_systems {
 
             // assert that entity is owned by caller
             let entity_owner = get!(world, entity_id, Owner);
-            assert!(
-                entity_owner.address == starknet::get_caller_address(),
+            assert_eq!(
+                entity_owner.address, starknet::get_caller_address(),
                 "entity id not owned by caller"
             );
 
             let road = RoadImpl::get(world, start_coord, end_coord);
-            assert!(road.usage_count == 0, "road already exists");
+            assert_eq!(road.usage_count, 0, "road already exists");
 
             let road_config = get!(world, ROAD_CONFIG_ID, RoadConfig);
             let mut index = 0;

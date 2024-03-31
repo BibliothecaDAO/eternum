@@ -97,12 +97,12 @@ use eternum::alias::ID;
 
             // check that entity is a realm
             let realm = get!(world, realm_entity_id, Realm);
-            assert!(realm.realm_id != 0, "not a realm");
+            assert_ne!(realm.realm_id, 0, "not a realm");
 
             // check realm ownership
             let caller = starknet::get_caller_address();
             let realm_owner = get!(world, realm_entity_id, Owner);
-            assert!(realm_owner.address == caller, "not realm owner");
+            assert_eq!(realm_owner.address, caller, "not realm owner");
 
             assert!(quantity > 0, "invalid quantity value");
 
@@ -232,12 +232,12 @@ use eternum::alias::ID;
             // check that caller owns unit
             let caller = starknet::get_caller_address();
             let unit_owner = get!(world, unit_id, Owner);
-            assert!(unit_owner.address == caller, "not unit owner");
+            assert_eq!(unit_owner.address, caller, "not unit owner");
 
             // check that entity owner is a realm
             let unit_entity_owner = get!(world, unit_id, EntityOwner);
             let unit_realm = get!(world, unit_entity_owner.entity_owner_id, Realm);
-            assert!(unit_realm.realm_id != 0, "not owned by realm");
+            assert_ne!(unit_realm.realm_id, 0, "not owned by realm");
 
             // check that there is more than one entity in unit
             let mut unit_quantity = get!(world, unit_id, Quantity);
@@ -245,10 +245,10 @@ use eternum::alias::ID;
 
             // check that unit isn't carrying anything
             let unit_inventory = get!(world, unit_id, Inventory);
-            assert!(unit_inventory.items_count == 0, "unit inventory not empty");
+            assert_eq!(unit_inventory.items_count, 0, "unit inventory not empty");
 
             let unit_movable = get!(world, unit_id, Movable);
-            assert!(unit_movable.blocked == false, "unit is blocked");
+            assert_eq!(unit_movable.blocked, false, "unit is blocked");
 
             let unit_arrival = get!(world, unit_id, ArrivalTime);
             assert!(
@@ -376,7 +376,7 @@ use eternum::alias::ID;
             // // ensure caller owns unit
             let caller = starknet::get_caller_address();
             // let merge_into_unit_owner = get!(world, merge_into_unit_id, Owner);
-            // assert!(merge_into_unit_owner.address == caller, "not unit owner");
+            // assert_eq!(merge_into_unit_owner.address, caller, "not unit owner");
 
             // check that entity owner is a realm
             // let merge_into_unit_entity_owner = get!(world, merge_into_unit_id, EntityOwner);
@@ -386,7 +386,7 @@ use eternum::alias::ID;
 
             // ensure unit is not blocked
             let merge_into_unit_movable = get!(world, merge_into_unit_id, Movable);
-            assert!(merge_into_unit_movable.blocked == false, "unit is blocked");
+            assert_eq!(merge_into_unit_movable.blocked, false, "unit is blocked");
 
             // ensure unit is not travelling 
             let merge_into_unit_arrival = get!(world, merge_into_unit_id, ArrivalTime);
@@ -415,12 +415,12 @@ use eternum::alias::ID;
 
                 // ensure all units are owned by same realm
                 let unit_owner = get!(world, unit_id, Owner);
-                assert!(unit_owner.address == caller, "not unit owner");
+                assert_eq!(unit_owner.address, caller, "not unit owner");
 
                 // let unit_entity_owner = get!(world, unit_id, EntityOwner);
-                // assert!(
+                // assert_eq!(
                 //     unit_entity_owner.entity_owner_id 
-                //         == merge_into_unit_entity_owner.entity_owner_id,
+                //        , merge_into_unit_entity_owner.entity_owner_id,
                 //             "not same entity owner"
                 // );
 
@@ -428,11 +428,11 @@ use eternum::alias::ID;
                 assert!(unit_quantity.value >= amount, "not enough quantity");
 
                 let mut unit_inventory = get!(world, unit_id, Inventory);
-                assert!(unit_inventory.items_count == 0, "inventory not empty");
+                assert_eq!(unit_inventory.items_count, 0, "inventory not empty");
 
                 // ensure units is not blocked 
                 let unit_movable = get!(world, unit_id, Movable);
-                assert!(unit_movable.blocked == false, "unit is blocked");
+                assert_eq!(unit_movable.blocked, false, "unit is blocked");
 
                 // ensure units are not travelling 
                 let unit_arrival = get!(world, unit_id, ArrivalTime);
@@ -507,14 +507,14 @@ use eternum::alias::ID;
             let caller = starknet::get_caller_address();
 
             let unit_owner = get!(world, unit_id, Owner);
-            assert!(unit_owner.address == caller, "not unit owner");
+            assert_eq!(unit_owner.address, caller, "not unit owner");
 
             let unit_realm_entity_id = get!(world, unit_id, EntityOwner).entity_owner_id;
-            assert!(unit_realm_entity_id != 0, "invalid unit id");
+            assert_ne!(unit_realm_entity_id, 0, "invalid unit id");
 
             // check that entity owner is a realm
             let realm = get!(world, unit_realm_entity_id, Realm);
-            assert!(realm.realm_id != 0, "not a realm");
+            assert_ne!(realm.realm_id, 0, "not a realm");
 
             let mut unit_health = get!(world, unit_id, Health);
             let unit_quantity = get!(world, unit_id, Quantity);
@@ -589,10 +589,10 @@ use eternum::alias::ID;
                     break;
                 }
                 let attacker_id = *attacker_ids.at(index);
-                assert!(target_entity_id != attacker_id, "self attack");
+                assert_ne!(target_entity_id, attacker_id, "self attack");
 
                 let attacker_owner = get!(world, attacker_id, Owner);
-                assert!(attacker_owner.address == caller, "not attacker owner");
+                assert_eq!(attacker_owner.address, caller, "not attacker owner");
 
                 let mut attacker_health = get!(world, attacker_id, Health);
                 assert!(attacker_health.value > 0, "attacker is dead");
@@ -761,7 +761,7 @@ use eternum::alias::ID;
             let ts = starknet::get_block_timestamp();
 
             let attacker_owner = get!(world, attacker_id, Owner);
-            assert!(attacker_owner.address == caller, "not attacker owner");
+            assert_eq!(attacker_owner.address, caller, "not attacker owner");
 
             let mut attacker_health = get!(world, attacker_id, Health);
             assert!(attacker_health.value > 0, "attacker is dead");

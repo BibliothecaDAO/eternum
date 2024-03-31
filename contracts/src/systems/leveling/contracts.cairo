@@ -24,12 +24,12 @@ mod leveling_systems {
 
             // check that entity is a realm
             let realm = get!(world, realm_entity_id, Realm);
-            assert!(realm.realm_id != 0, "not a realm");
+            assert_ne!(realm.realm_id, 0, "not a realm");
 
             // check realm ownership
             let caller = starknet::get_caller_address();
             let realm_owner = get!(world, realm_entity_id, Owner);
-            assert!(realm_owner.address == caller, "not realm owner");
+            assert_eq!(realm_owner.address, caller, "not realm owner");
 
             leveling::level_up(world, realm_entity_id, REALM_LEVELING_CONFIG_ID);
         }

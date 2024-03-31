@@ -152,26 +152,26 @@ fn test_create_caravan() {
     let (caravan_members, caravan_movable, caravan_capacity, caravan_position, caravan_owner, caravan_entity_owner) 
     = get!(world, caravan_id, (CaravanMembers, Movable, Capacity, Position, Owner, EntityOwner));
             
-    assert!(caravan_entity_owner.entity_owner_id == realm_entity_id, "not right entity_owner_id");
-    assert!(caravan_members.count == 2, "count should be 2");
-    assert!(caravan_members.key != 0, "member key should be set");
-    assert!(caravan_movable.sec_per_km == 10, "average speed should be 10");
-    assert!(caravan_movable.blocked == false, "should not be blocked");
-    assert!(caravan_capacity.weight_gram == 4_000_000, "weight_gram should be 4_000_000");
-    assert!(caravan_position.x == 20, "x should be 20");
-    assert!(caravan_position.y == 30, "y should be 30");
-    assert!(caravan_owner.address == starknet::get_caller_address(), "owner should be caller");
+    assert_eq!(caravan_entity_owner.entity_owner_id, realm_entity_id, "not right entity_owner_id");
+    assert_eq!(caravan_members.count, 2, "count should be 2");
+    assert_ne!(caravan_members.key, 0, "member key should be set");
+    assert_eq!(caravan_movable.sec_per_km, 10, "average speed should be 10");
+    assert_eq!(caravan_movable.blocked, false, "should not be blocked");
+    assert_eq!(caravan_capacity.weight_gram, 4_000_000, "weight_gram should be 4_000_000");
+    assert_eq!(caravan_position.x, 20, "x should be 20");
+    assert_eq!(caravan_position.y, 30, "y should be 30");
+    assert_eq!(caravan_owner.address, starknet::get_caller_address(), "owner should be caller");
 
     // verify that the caravan has the correct foreign keys
     let foreign_key_1: Array<felt252> = array![caravan_id.into(), caravan_members.key.into(), 0];
     let foreign_key_1: felt252 = poseidon_hash_span(foreign_key_1.span());
     let first_transport = get!(world, foreign_key_1, ForeignKey);
-    assert!(first_transport.entity_id.into() == *transport_units.at(0), "foreign key not set");
+    assert_eq!(first_transport.entity_id.into(), *transport_units.at(0), "foreign key not set");
 
     let foreign_key_2: Array<felt252> = array![caravan_id.into(), caravan_members.key.into(), 1];
     let foreign_key_2: felt252 = poseidon_hash_span(foreign_key_2.span());
     let second_transport = get!(world, foreign_key_2, ForeignKey);
-    assert!(second_transport.entity_id.into() == *transport_units.at(1), "foreign key not set");
+    assert_eq!(second_transport.entity_id.into(), *transport_units.at(1), "foreign key not set");
 }
 
 
@@ -236,20 +236,20 @@ fn test_disassemble_caravan() {
         = caravan_systems_dispatcher.disassemble(world, caravan_id);
 
     // check that disassembled transport units are the same as the original ones
-    assert!(disassembled_transport_ids.len() == transport_units.len(), "not the same length");
+    assert_eq!(disassembled_transport_ids.len(), transport_units.len(), "not the same length");
     let mut index = 0;
     loop {
         if index == transport_units.len() {
             break;
         }
-        assert!(
-            *transport_units.at(index) == *disassembled_transport_ids.at(index),
+        assert_eq!(
+            *transport_units.at(index), *disassembled_transport_ids.at(index),
             "not same transport id"
         );
 
         // check that transport unit isnt blocked
         let transport_unit = get!(world, *transport_units.at(index), Movable);
-        assert!(transport_unit.blocked == false, "should not be blocked");
+        assert_eq!(transport_unit.blocked, false, "should not be blocked");
 
         index += 1;
     };
@@ -258,25 +258,25 @@ fn test_disassemble_caravan() {
     let (caravan_members, caravan_movable, caravan_capacity, caravan_position, caravan_owner, caravan_entity_owner) 
     = get!(world, caravan_id, (CaravanMembers, Movable, Capacity, Position, Owner, EntityOwner));
             
-    assert!(caravan_entity_owner.entity_owner_id == Zeroable::zero(), "wrong entity owner");
-    assert!(caravan_members.count == 0, "wrong count");
-    assert!(caravan_members.key == 0, "key should not be set");
-    assert!(caravan_movable.sec_per_km == 0, "average speed should be 0");
-    assert!(caravan_capacity.weight_gram == 0, "weight_gram should be 0");
-    assert!(caravan_position.x == 0, "x should be 0");
-    assert!(caravan_position.y == 0, "y should be 0");
-    assert!(caravan_owner.address == Zeroable::zero(), "owner should be 0");
+    assert_eq!(caravan_entity_owner.entity_owner_id, Zeroable::zero(), "wrong entity owner");
+    assert_eq!(caravan_members.count, 0, "wrong count");
+    assert_eq!(caravan_members.key, 0, "key should not be set");
+    assert_eq!(caravan_movable.sec_per_km, 0, "average speed should be 0");
+    assert_eq!(caravan_capacity.weight_gram, 0, "weight_gram should be 0");
+    assert_eq!(caravan_position.x, 0, "x should be 0");
+    assert_eq!(caravan_position.y, 0, "y should be 0");
+    assert_eq!(caravan_owner.address, Zeroable::zero(), "owner should be 0");
 
     // verify that the caravan foreign keys have been unset
     let foreign_key_1: Array<felt252> = array![caravan_id.into(), original_caravan_members.key.into(), 0];
     let foreign_key_1: felt252 = poseidon_hash_span(foreign_key_1.span());
     let first_transport = get!(world, foreign_key_1, ForeignKey);
-    assert!(first_transport.entity_id.into() == 0, "foreign key is set");
+    assert_eq!(first_transport.entity_id.into(), 0, "foreign key is set");
 
     let foreign_key_2: Array<felt252> = array![caravan_id.into(), original_caravan_members.key.into(), 1];
     let foreign_key_2: felt252 = poseidon_hash_span(foreign_key_2.span());
     let second_transport = get!(world, foreign_key_2, ForeignKey);
-    assert!(second_transport.entity_id.into() == 0, "foreign key is set");
+    assert_eq!(second_transport.entity_id.into(), 0, "foreign key is set");
 
 }
 

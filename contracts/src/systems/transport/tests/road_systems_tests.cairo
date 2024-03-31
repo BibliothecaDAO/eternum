@@ -87,10 +87,10 @@ fn test_create() {
     
 
     let road = RoadImpl::get(world, *start_coord, *end_coord);
-    assert!(road.usage_count == 33, "usage count should be 33");
+    assert_eq!(road.usage_count, 33, "usage count should be 33");
 
     let entity_fee_resource = get!(world, (entity_id, ResourceTypes::STONE), Resource);
-    assert!(entity_fee_resource.balance == 400 - (33 * 10), "stone balance should be 70");
+    assert_eq!(entity_fee_resource.balance, 400 - (33 * 10), "stone balance should be 70");
 }
 
 

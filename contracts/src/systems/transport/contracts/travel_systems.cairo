@@ -64,14 +64,14 @@ mod travel_systems {
             // only caravans should be able to travel
 
             let travelling_entity_owner = get!(world, travelling_entity_id, Owner);
-            assert!(
-                travelling_entity_owner.address == starknet::get_caller_address(),
+            assert_eq!(
+                travelling_entity_owner.address, starknet::get_caller_address(),
                 "not owner of entity"
             );
 
             let travelling_entity_movable = get!(world, travelling_entity_id, Movable);      
-            assert!(travelling_entity_movable.sec_per_km != 0, "entity has no speed");
-            assert!(travelling_entity_movable.blocked == false, "entity is blocked");
+            assert_ne!(travelling_entity_movable.sec_per_km, 0, "entity has no speed");
+            assert_eq!(travelling_entity_movable.blocked, false, "entity is blocked");
 
             let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
             let ts = starknet::get_block_timestamp();
@@ -79,7 +79,7 @@ mod travel_systems {
 
             let travelling_entity_position = get!(world, travelling_entity_id, Position);
             let travelling_entity_coord: Coord = travelling_entity_position.into();
-            assert!(travelling_entity_coord != destination_coord, "entity is at destination");
+            assert_ne!(travelling_entity_coord, destination_coord, "entity is at destination");
 
             
             InternalTravelSystemsImpl::travel(world,
@@ -94,14 +94,14 @@ mod travel_systems {
             travelling_entity_id: ID, directions: Span<Direction>
         ) {
             let travelling_entity_owner = get!(world, travelling_entity_id, Owner);
-            assert!(
-                travelling_entity_owner.address == starknet::get_caller_address(),
+            assert_eq!(
+                travelling_entity_owner.address, starknet::get_caller_address(),
                 "not owner of entity"
             );
 
             let travelling_entity_movable = get!(world, travelling_entity_id, Movable);      
-            assert!(travelling_entity_movable.sec_per_km != 0, "entity has no speed");
-            assert!(travelling_entity_movable.blocked == false, "entity is blocked");
+            assert_ne!(travelling_entity_movable.sec_per_km, 0, "entity has no speed");
+            assert_eq!(travelling_entity_movable.blocked, false, "entity is blocked");
 
             let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
             let ts = starknet::get_block_timestamp();
@@ -123,7 +123,7 @@ mod travel_systems {
         fn assert_tile_explored(world: IWorldDispatcher, coord: Coord) {
             let mut tile: Tile
                  = get!(world, (coord.x, coord.y), Tile);
-            assert!(tile.explored_by_id != 0, "tile not explored");
+            assert_ne!(tile.explored_by_id, 0, "tile not explored");
         }
 
 

@@ -256,12 +256,12 @@ mod owned_resources_tracker_tests {
     #[test]
     fn test_resource_type_to_position(){
         let ort = OwnedResourcesTracker{entity_id:0, resource_types: 0};
-        assert!(ort._resource_type_to_position(255) == 31, " wrong ans");
-        assert!(ort._resource_type_to_position(254) == 30, " wrong ans");
-        assert!(ort._resource_type_to_position(253) == 29, " wrong ans");
-        assert!(ort._resource_type_to_position(28) == 27, " wrong ans");
-        assert!(ort._resource_type_to_position(2) == 1, " wrong ans");
-        assert!(ort._resource_type_to_position(1) == 0, " wrong ans");
+        assert_eq!(ort._resource_type_to_position(255), 31, " wrong ans");
+        assert_eq!(ort._resource_type_to_position(254), 30, " wrong ans");
+        assert_eq!(ort._resource_type_to_position(253), 29, " wrong ans");
+        assert_eq!(ort._resource_type_to_position(28), 27, " wrong ans");
+        assert_eq!(ort._resource_type_to_position(2), 1, " wrong ans");
+        assert_eq!(ort._resource_type_to_position(1), 0, " wrong ans");
     }
 
 
@@ -280,8 +280,8 @@ mod owned_resources_tracker_tests {
         assert!(ort.owns_resource_type(ResourceTypes::WHEAT), "should be true");
 
 
-        assert!(ort.owns_resource_type(ResourceTypes::DRAGONHIDE) == false, "should be false");
-        assert!(ort.owns_resource_type(ResourceTypes::DEMONHIDE) == false, "should be false");
+        assert!(!ort.owns_resource_type(ResourceTypes::DRAGONHIDE), "should be false");
+        assert!(!ort.owns_resource_type(ResourceTypes::DEMONHIDE), "should be false");
         
     }
 }

@@ -47,7 +47,7 @@ mod bank_systems {
 
             let mut bank_auction 
                 = get!(world, (bank_id, bought_resource_type, bank_swap_resource_cost_index ), BankAuction);
-            assert!(bank_auction.per_time_unit != 0, "auction not found");
+            assert_ne!(bank_auction.per_time_unit, 0, "auction not found");
 
             let mut bank_auction_vrgda = bank_auction.to_LinearVRGDA();
             let mut bank_auction_time_since_start_fixed 

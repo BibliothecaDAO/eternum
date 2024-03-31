@@ -233,7 +233,7 @@ fn test_map_explore() {
     let realm_army_inventory: Inventory = get!(world, realm_army_unit_id, Inventory);
     assert_eq!(realm_army_inventory.items_count, 1);
     let item_id: u128 = realm_army_inventory.item_id(world, 0).into();
-    assert!(item_id != 0, "wrong inventory item id");
+    assert_ne!(item_id, 0, "wrong inventory item id");
 
     army_coord = expected_explored_coord;
 }

@@ -200,48 +200,48 @@ fn test_merge_to_town_watch() {
 
 
     let first_new_unit_health = get!(world, *new_units.at(0), Health);
-    assert!(first_new_unit_health.value == 0, "wrong health");
+    assert_eq!(first_new_unit_health.value, 0, "wrong health");
 
     let first_new_unit_attack = get!(world, *new_units.at(0), Attack);
-    assert!(first_new_unit_attack.value == 0, "wrong attack");
+    assert_eq!(first_new_unit_attack.value, 0, "wrong attack");
 
     let first_new_unit_defence = get!(world, *new_units.at(0), Defence);
-    assert!(first_new_unit_defence.value == 0, "wrong defence");
+    assert_eq!(first_new_unit_defence.value, 0, "wrong defence");
 
     let first_new_unit_quantity = get!(world, *new_units.at(0), Quantity);
-    assert!(first_new_unit_quantity.value == 0, "wrong quantity");
+    assert_eq!(first_new_unit_quantity.value, 0, "wrong quantity");
 
     let second_new_unit_health = get!(world, *new_units.at(1), Health);
-    assert!(second_new_unit_health.value == 0, "wrong health");
+    assert_eq!(second_new_unit_health.value, 0, "wrong health");
 
     let second_new_unit_attack = get!(world, *new_units.at(1), Attack);
-    assert!(second_new_unit_attack.value == 0, "wrong attack");
+    assert_eq!(second_new_unit_attack.value, 0, "wrong attack");
 
     let second_new_unit_defence = get!(world, *new_units.at(1), Defence);
-    assert!(second_new_unit_defence.value == 0, "wrong defence");
+    assert_eq!(second_new_unit_defence.value, 0, "wrong defence");
 
     let second_new_unit_quantity = get!(world, *new_units.at(1), Quantity);
-    assert!(second_new_unit_quantity.value == 0, "wrong quantity");
+    assert_eq!(second_new_unit_quantity.value, 0, "wrong quantity");
 
     // check that the merged unit has the correct values 
     let caller_position = get!(world, caller_id, Position);
     let unit_owner = get!(world, caller_town_watch_id, Owner);
-    assert!(unit_owner.address == contract_address_const::<'caller'>(), "wrong owner");
+    assert_eq!(unit_owner.address, contract_address_const::<'caller'>(), "wrong owner");
 
     let unit_entity_owner = get!(world, caller_town_watch_id, EntityOwner);
-    assert!(unit_entity_owner.entity_owner_id == caller_id, "wrong entity owner");
+    assert_eq!(unit_entity_owner.entity_owner_id, caller_id, "wrong entity owner");
 
     let unit_health = get!(world, caller_town_watch_id, Health);
-    assert!(unit_health.value == 100 * 2 * 2, "wrong health");
+    assert_eq!(unit_health.value, 100 * 2 * 2, "wrong health");
 
     let unit_attack = get!(world, caller_town_watch_id, Attack);
-    assert!(unit_attack.value == 100 * 2 * 2, "wrong attack");
+    assert_eq!(unit_attack.value, 100 * 2 * 2, "wrong attack");
 
     let unit_defence = get!(world, caller_town_watch_id, Defence);
-    assert!(unit_defence.value == 100 * 2 * 2, "wrong defence");
+    assert_eq!(unit_defence.value, 100 * 2 * 2, "wrong defence");
 
     let unit_quantity = get!(world, caller_town_watch_id, Quantity);
-    assert!(unit_quantity.value == 2 * 2, "wrong quantity");
+    assert_eq!(unit_quantity.value, 2 * 2, "wrong quantity");
 
     let unit_position = get!(world, caller_town_watch_id, Position);
     assert!(
@@ -250,12 +250,12 @@ fn test_merge_to_town_watch() {
     );
 
     let unit_movable = get!(world, caller_town_watch_id, Movable);
-    assert!( // the speed would still be 0 because town watch can't move
-        unit_movable.sec_per_km == 0, "wrong speed"
+    assert_eq!( // the speed would still be 0 because town watch can't move
+        unit_movable.sec_per_km, 0, "wrong speed"
     );
 
     let unit_carry_capacity = get!(world, caller_town_watch_id, Capacity);
-    assert!(unit_carry_capacity.weight_gram == 44, "wrong capacity");
+    assert_eq!(unit_carry_capacity.weight_gram, 44, "wrong capacity");
 }
 
 
@@ -282,36 +282,36 @@ fn test_merge_to_raider() {
 
 
     let second_new_unit_health = get!(world, *new_units.at(1), Health);
-    assert!(second_new_unit_health.value == 0, "wrong health");
+    assert_eq!(second_new_unit_health.value, 0, "wrong health");
 
     let second_new_unit_attack = get!(world, *new_units.at(1), Attack);
-    assert!(second_new_unit_attack.value == 0, "wrong attack");
+    assert_eq!(second_new_unit_attack.value, 0, "wrong attack");
 
     let second_new_unit_defence = get!(world, *new_units.at(1), Defence);
-    assert!(second_new_unit_defence.value == 0, "wrong defence");
+    assert_eq!(second_new_unit_defence.value, 0, "wrong defence");
 
     let second_new_unit_quantity = get!(world, *new_units.at(1), Quantity);
-    assert!(second_new_unit_quantity.value == 0, "wrong quantity");
+    assert_eq!(second_new_unit_quantity.value, 0, "wrong quantity");
 
         // check that the merged unit has the correct values 
     let caller_position = get!(world, caller_id, Position);
     let unit_owner = get!(world, *new_units.at(0), Owner);
-    assert!(unit_owner.address == contract_address_const::<'caller'>(), "wrong owner");
+    assert_eq!(unit_owner.address, contract_address_const::<'caller'>(), "wrong owner");
 
     let unit_entity_owner = get!(world, *new_units.at(0), EntityOwner);
-    assert!(unit_entity_owner.entity_owner_id == caller_id, "wrong entity owner");
+    assert_eq!(unit_entity_owner.entity_owner_id, caller_id, "wrong entity owner");
 
     let unit_health = get!(world, *new_units.at(0), Health);
-    assert!(unit_health.value == 100 * 2 * 2, "wrong health");
+    assert_eq!(unit_health.value, 100 * 2 * 2, "wrong health");
 
     let unit_attack = get!(world, *new_units.at(0), Attack);
-    assert!(unit_attack.value == 100 * 2 * 2, "wrong attack");
+    assert_eq!(unit_attack.value, 100 * 2 * 2, "wrong attack");
 
     let unit_defence = get!(world, *new_units.at(0), Defence);
-    assert!(unit_defence.value == 100 * 2 * 2, "wrong defence");
+    assert_eq!(unit_defence.value, 100 * 2 * 2, "wrong defence");
 
     let unit_quantity = get!(world, *new_units.at(0), Quantity);
-    assert!(unit_quantity.value == 2 * 2, "wrong quantity");
+    assert_eq!(unit_quantity.value, 2 * 2, "wrong quantity");
 
     let unit_position = get!(world, *new_units.at(0), Position);
     assert!(
@@ -321,10 +321,10 @@ fn test_merge_to_raider() {
 
 
     let unit_movable = get!(world, *new_units.at(0), Movable);
-    assert!(unit_movable.sec_per_km == 55, "wrong speed");
+    assert_eq!(unit_movable.sec_per_km, 55, "wrong speed");
 
     let unit_carry_capacity = get!(world, *new_units.at(0), Capacity);
-    assert!(unit_carry_capacity.weight_gram == 44, "wrong capacity");
+    assert_eq!(unit_carry_capacity.weight_gram, 44, "wrong capacity");
 }
 
 

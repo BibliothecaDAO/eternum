@@ -147,8 +147,8 @@ fn test_harvest_labor_non_food() {
         world, (realm_entity_id, resource_type), (Labor, Resource)
     );
     // get labor after harvest = current labor balance + remainder from division by 7200
-    assert!(gold_labor_after_harvest.balance == 145000 + 3000, "wrong labor balance");
-    assert!(gold_labor_after_harvest.last_harvest == current_harvest_ts, "wrong last harvest");
+    assert_eq!(gold_labor_after_harvest.balance, 145000 + 3000, "wrong labor balance");
+    assert_eq!(gold_labor_after_harvest.last_harvest, current_harvest_ts, "wrong last harvest");
 
     let last_harvest_ts: u128 = last_harvest_ts.into();
     let current_harvest_ts: u128 = current_harvest_ts.into();
@@ -161,8 +161,8 @@ fn test_harvest_labor_non_food() {
     let generated_resources = generated_units * base_resources_per_cycle;
 
     // verify resource is right amount
-    assert!(
-        gold_resource_after_harvest.balance == generated_resources, "failed resource amount"
+    assert_eq!(
+        gold_resource_after_harvest.balance, generated_resources, "failed resource amount"
     );
 }
 
@@ -299,8 +299,8 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
         world, (realm_entity_id, resource_type), (Labor, Resource)
     );
     // get labor after harvest = current labor balance + remainder from division by 7200
-    assert!(gold_labor_after_harvest.balance == 145000 + 3000, "wrong labor balance");
-    assert!(gold_labor_after_harvest.last_harvest == current_harvest_ts, "wrong last harvest");
+    assert_eq!(gold_labor_after_harvest.balance, 145000 + 3000, "wrong labor balance");
+    assert_eq!(gold_labor_after_harvest.last_harvest, current_harvest_ts, "wrong last harvest");
 
     let last_harvest_ts: u128 = last_harvest_ts.into();
     let current_harvest_ts: u128 = current_harvest_ts.into();
@@ -319,8 +319,8 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_non_food() {
                         + ((normal_generated_resources * order_bonus) / 100);
 
     // verify resource is right amount
-    assert!(
-        gold_resource_after_harvest.balance == boosted_generated_resources, "failed resource amount"
+    assert_eq!(
+        gold_resource_after_harvest.balance, boosted_generated_resources, "failed resource amount"
     );
 }
 
@@ -427,8 +427,8 @@ fn test_harvest_labor_food() {
         world, (realm_entity_id, resource_type), (Labor, Resource)
     );
     // get labor after harvest = current labor balance + remainder from division by 7200
-    assert!(wheat_labor_after_harvest.balance == 145000 + 3000, "wrong labor balance");
-    assert!(wheat_labor_after_harvest.last_harvest == current_harvest_ts, "wrong last harvest");
+    assert_eq!(wheat_labor_after_harvest.balance, 145000 + 3000, "wrong labor balance");
+    assert_eq!(wheat_labor_after_harvest.last_harvest, current_harvest_ts, "wrong last harvest");
 
     let last_harvest_ts: u128 = last_harvest_ts.into();
     let current_harvest_ts: u128 = current_harvest_ts.into();
@@ -441,8 +441,8 @@ fn test_harvest_labor_food() {
     let generated_resources = generated_units * base_food_per_cycle;
 
     // verify resource is right amount
-    assert!(
-        wheat_resource_after_harvest.balance == generated_resources, "failed resource amount"
+    assert_eq!(
+        wheat_resource_after_harvest.balance, generated_resources, "failed resource amount"
     );
 }
 
@@ -581,8 +581,8 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
         world, (realm_entity_id, resource_type), (Labor, Resource)
     );
     // get labor after harvest = current labor balance + remainder from division by 7200
-    assert!(wheat_labor_after_harvest.balance == 145000 + 3000, "wrong labor balance");
-    assert!(wheat_labor_after_harvest.last_harvest == current_harvest_ts, "wrong last harvest");
+    assert_eq!(wheat_labor_after_harvest.balance, 145000 + 3000, "wrong labor balance");
+    assert_eq!(wheat_labor_after_harvest.last_harvest, current_harvest_ts, "wrong last harvest");
 
     let last_harvest_ts: u128 = last_harvest_ts.into();
     let current_harvest_ts: u128 = current_harvest_ts.into();
@@ -601,8 +601,8 @@ fn test_harvest_labor_plus_realm_and_hyperstructure_bonus_for_food() {
                         + ((normal_generated_resources * realm_bonus) / 100)
                         + ((normal_generated_resources * order_bonus) / 100);
     // verify resource is right amount
-    assert!(
-        wheat_resource_after_harvest.balance == boosted_generated_resources, "failed resource amount"
+    assert_eq!(
+        wheat_resource_after_harvest.balance, boosted_generated_resources, "failed resource amount"
     );
 }
 

@@ -190,29 +190,29 @@ fn test_create_order() {
 
     // check maker balances
     let maker_stone_resource = get!(world, (maker_id, ResourceTypes::STONE), Resource);
-    assert!(maker_stone_resource.balance == 0, "Balance should be 0");
+    assert_eq!(maker_stone_resource.balance, 0, "Balance should be 0");
 
     let maker_gold_resource = get!(world, (maker_id, ResourceTypes::GOLD), Resource);
-    assert!(maker_gold_resource.balance == 0, "Balance should be 0");
+    assert_eq!(maker_gold_resource.balance, 0, "Balance should be 0");
 
     // check that taker balance is unmodified
     let taker_stone_resource = get!(world, (taker_id, ResourceTypes::STONE), Resource);
-    assert!(taker_stone_resource.balance == 500, "Balance should be 500");
+    assert_eq!(taker_stone_resource.balance, 500, "Balance should be 500");
 
     let taker_gold_resource = get!(world, (taker_id, ResourceTypes::GOLD), Resource);
-    assert!(taker_gold_resource.balance == 500, "Balance should be 500");
+    assert_eq!(taker_gold_resource.balance, 500, "Balance should be 500");
 
     let trade = get!(world, trade_id, Trade);
-    assert!(trade.maker_id == maker_id, "wrong maker id");
-    assert!(trade.maker_resource_chest_id != 0, "wrong maker chest id");
-    assert!(trade.maker_transport_id != 0, "wrong maker transport id");
-    assert!(trade.taker_id == taker_id, "wrong taker id");
-    assert!(trade.taker_resource_chest_id != 0, "wrong taker chest id");
-    assert!(trade.taker_transport_id == 0, "wrong taker transport id");
-    assert!(trade.expires_at == 100, "expires at is wrong");
+    assert_eq!(trade.maker_id, maker_id, "wrong maker id");
+    assert_ne!(trade.maker_resource_chest_id, 0, "wrong maker chest id");
+    assert_ne!(trade.maker_transport_id, 0, "wrong maker transport id");
+    assert_eq!(trade.taker_id, taker_id, "wrong taker id");
+    assert_ne!(trade.taker_resource_chest_id, 0, "wrong taker chest id");
+    assert_eq!(trade.taker_transport_id, 0, "wrong taker transport id");
+    assert_eq!(trade.expires_at, 100, "expires at is wrong");
 
     let trade_status = get!(world, trade_id, Status);
-    assert!(trade_status.value == TradeStatus::OPEN, "wrong trade status");
+    assert_eq!(trade_status.value, TradeStatus::OPEN, "wrong trade status");
 
     // check that maker transport is blocked
     let caravan_movable = get!(world, maker_transport_id, Movable);
@@ -221,22 +221,22 @@ fn test_create_order() {
     // check maker resource chest resource count
     let maker_resource_chest 
         = get!(world, trade.maker_resource_chest_id, ResourceChest);
-    assert!(maker_resource_chest.resources_count == 2, "wrong resource count");
+    assert_eq!(maker_resource_chest.resources_count, 2, "wrong resource count");
 
     // check that maker resource chest is empty
     let maker_resource_chest_weight
         = get!(world, trade.maker_resource_chest_id, Weight);
-    assert!(maker_resource_chest_weight.value == 0, "chest should be empty");
+    assert_eq!(maker_resource_chest_weight.value, 0, "chest should be empty");
 
     // check taker resource chest resource count
     let taker_resource_chest 
         = get!(world, trade.taker_resource_chest_id, ResourceChest);
-    assert!(taker_resource_chest.resources_count == 2, "wrong resource count");
+    assert_eq!(taker_resource_chest.resources_count, 2, "wrong resource count");
 
     // check that taker resource chest is filled
     let taker_resource_chest_weight
         = get!(world, trade.taker_resource_chest_id, Weight);
-    assert!(taker_resource_chest_weight.value != 0, "chest should be filled");
+    assert_ne!(taker_resource_chest_weight.value, 0, "chest should be filled");
 }
 
 

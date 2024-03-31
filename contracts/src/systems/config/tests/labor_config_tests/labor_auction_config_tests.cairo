@@ -40,10 +40,10 @@ fn test_set_labor_auction() {
 
     let labor_auction = get!(world, (zone), LaborAuction);
 
-    assert!(labor_auction.zone == zone, "zone");
-    assert!(labor_auction.decay_constant_mag == decay_constant, "decay_constant_mag");
-    assert!(labor_auction.per_time_unit == per_time_unit, "per_time_unit");
-    assert!(labor_auction.sold == 0, "sold");
-    assert!(labor_auction.decay_constant_sign == false, "decay_constant_sign");
-    assert!(labor_auction.price_update_interval == 10, "price_update_interval");
+    assert_eq!(labor_auction.zone, zone, "zone");
+    assert_eq!(labor_auction.decay_constant_mag, decay_constant, "decay_constant_mag");
+    assert_eq!(labor_auction.per_time_unit, per_time_unit, "per_time_unit");
+    assert_eq!(labor_auction.sold, 0, "sold");
+    assert_eq!(labor_auction.decay_constant_sign, false, "decay_constant_sign");
+    assert_eq!(labor_auction.price_update_interval, 10, "price_update_interval");
 }

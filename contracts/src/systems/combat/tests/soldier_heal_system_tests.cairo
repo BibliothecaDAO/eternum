@@ -186,13 +186,13 @@ fn test_heal_soldier() {
 
     // check that the soldier's health has been increased
     let soldier_health = get!(world, new_unit_id, Health);
-    assert!(soldier_health.value == 100, "wrong soldier health");
+    assert_eq!(soldier_health.value, 100, "wrong soldier health");
 
     // check that the caller's demonhide balance has been reduced
     let caller_demonhide_balance 
         = get!(world, (caller_id, ResourceTypes::DEMONHIDE), Resource);
-    assert!(
-        caller_demonhide_balance.balance == 5000 - (17 * health_bought), "wrong demonhide balance"
+    assert_eq!(
+        caller_demonhide_balance.balance, 5000 - (17 * health_bought), "wrong demonhide balance"
     );
 }
 

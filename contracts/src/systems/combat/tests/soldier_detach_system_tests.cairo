@@ -176,15 +176,15 @@ fn test_detach_unit() {
     let unit_attack = get!(world, unit_id, Attack);
     let unit_defence = get!(world, unit_id, Defence);
 
-    assert!(unit_owner.address == contract_address_const::<'caller'>(), "wrong owner address");
+    assert_eq!(unit_owner.address, contract_address_const::<'caller'>(), "wrong owner address");
 
-    assert!(unit_quantity.value == 10 - num_detached_soldiers, "wrong quantity value");
+    assert_eq!(unit_quantity.value, 10 - num_detached_soldiers, "wrong quantity value");
 
-    assert!(unit_health.value == 100 * (10 - num_detached_soldiers), "wrong health value");
+    assert_eq!(unit_health.value, 100 * (10 - num_detached_soldiers), "wrong health value");
 
-    assert!(unit_attack.value == 100 * (10 - num_detached_soldiers), "wrong health value");
+    assert_eq!(unit_attack.value, 100 * (10 - num_detached_soldiers), "wrong health value");
 
-    assert!(unit_defence.value == 100 * (10 - num_detached_soldiers), "wrong health value");
+    assert_eq!(unit_defence.value, 100 * (10 - num_detached_soldiers), "wrong health value");
 
     // ensure new unit values are accurate
 
@@ -193,22 +193,22 @@ fn test_detach_unit() {
 
     let caller_position = get!(world, caller_id, Position);
     let new_unit_owner = get!(world, new_unit_id, Owner);
-    assert!(new_unit_owner.address == contract_address_const::<'caller'>(), "wrong owner");
+    assert_eq!(new_unit_owner.address, contract_address_const::<'caller'>(), "wrong owner");
 
     let new_unit_entity_owner = get!(world, new_unit_id, EntityOwner);
-    assert!(new_unit_entity_owner.entity_owner_id == caller_id, "wrong entity owner");
+    assert_eq!(new_unit_entity_owner.entity_owner_id, caller_id, "wrong entity owner");
 
     let new_unit_health = get!(world, new_unit_id, Health);
-    assert!(new_unit_health.value == 100 * num_detached_soldiers.into(), "wrong health");
+    assert_eq!(new_unit_health.value, 100 * num_detached_soldiers.into(), "wrong health");
 
     let new_unit_attack = get!(world, new_unit_id, Attack);
-    assert!(new_unit_attack.value == 100 * num_detached_soldiers.into(), "wrong attack");
+    assert_eq!(new_unit_attack.value, 100 * num_detached_soldiers.into(), "wrong attack");
 
     let new_unit_defence = get!(world, new_unit_id, Defence);
-    assert!(new_unit_defence.value == 100 * num_detached_soldiers.into(), "wrong defence");
+    assert_eq!(new_unit_defence.value, 100 * num_detached_soldiers.into(), "wrong defence");
 
     let new_unit_quantity = get!(world, new_unit_id, Quantity);
-    assert!(new_unit_quantity.value == num_detached_soldiers.into(), "wrong quantity");
+    assert_eq!(new_unit_quantity.value, num_detached_soldiers.into(), "wrong quantity");
 
     let new_unit_position = get!(world, new_unit_id, Position);
     assert!(
@@ -217,17 +217,17 @@ fn test_detach_unit() {
     );
 
     let new_unit_inventory = get!(world, new_unit_id, Inventory);
-    assert!(new_unit_inventory.items_key != 0, "wrong inventory key");
+    assert_ne!(new_unit_inventory.items_key, 0, "wrong inventory key");
 
     let new_unit_movable = get!(world, new_unit_id, Movable);
-    assert!(new_unit_movable.blocked == false, "unit blocked");
-    assert!(new_unit_movable.sec_per_km == 55, "wrong speed");
-    assert!(new_unit_movable.round_trip == false, "wrong round_trip");
-    assert!(new_unit_movable.intermediate_coord_x == 0, "wrong coord x");
-    assert!(new_unit_movable.intermediate_coord_y == 0, "wrong coord y");
+    assert_eq!(new_unit_movable.blocked, false, "unit blocked");
+    assert_eq!(new_unit_movable.sec_per_km, 55, "wrong speed");
+    assert_eq!(new_unit_movable.round_trip, false, "wrong round_trip");
+    assert_eq!(new_unit_movable.intermediate_coord_x, 0, "wrong coord x");
+    assert_eq!(new_unit_movable.intermediate_coord_y, 0, "wrong coord y");
 
     let new_unit_carry_capacity = get!(world, new_unit_id, Capacity);
-    assert!(new_unit_carry_capacity.weight_gram == 44, "wrong capacity");
+    assert_eq!(new_unit_carry_capacity.weight_gram, 44, "wrong capacity");
 }
 
 

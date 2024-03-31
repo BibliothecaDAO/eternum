@@ -67,34 +67,34 @@ fn test_create_hyperstructure() {
         );
 
     let hyperstructure = get!(world, hyperstructure_id, HyperStructure);
-    assert!(
-        hyperstructure.hyperstructure_type == hyperstructure_type, "wrong hyperstructure type value"
+    assert_eq!(
+        hyperstructure.hyperstructure_type, hyperstructure_type, "wrong hyperstructure type value"
     );
 
-    assert!(hyperstructure.controlling_order == 0, "wrong order");
-    assert!(hyperstructure.completed == false, "wrong completed value");
-    assert!(hyperstructure.completion_cost_id != 0, "wrong completion cost id");
-    assert!(hyperstructure.completion_resource_count == 1, "wrong completion resource count");
+    assert_eq!(hyperstructure.controlling_order, 0, "wrong order");
+    assert_eq!(hyperstructure.completed, false, "wrong completed value");
+    assert_ne!(hyperstructure.completion_cost_id, 0, "wrong completion cost id");
+    assert_eq!(hyperstructure.completion_resource_count, 1, "wrong completion resource count");
 
     // check that hyperstructure is in the right position
     let hyperstructure_position = get!(world, hyperstructure_id, Position);
-    assert!(hyperstructure_position.x == hyperstructure_coord.x, "wrong x value");
-    assert!(hyperstructure_position.y == hyperstructure_coord.y, "wrong y value");
+    assert_eq!(hyperstructure_position.x, hyperstructure_coord.x, "wrong x value");
+    assert_eq!(hyperstructure_position.y, hyperstructure_coord.y, "wrong y value");
 
     // check that completion cost is set correctly
     let completion_cost_stone = get!(world, (hyperstructure.completion_cost_id, 0), ResourceCost);
-    assert!(completion_cost_stone.resource_type == ResourceTypes::STONE, "wrong resource type");
-    assert!(completion_cost_stone.amount == 10, "wrong amount");
+    assert_eq!(completion_cost_stone.resource_type, ResourceTypes::STONE, "wrong resource type");
+    assert_eq!(completion_cost_stone.amount, 10, "wrong amount");
 
     // check that hyperstructure town watch was created
     let hyperstructure_town_watch = get!(world, hyperstructure_id, TownWatch);
-    assert!(hyperstructure_town_watch.town_watch_id != 0, "town watch not created");
+    assert_ne!(hyperstructure_town_watch.town_watch_id, 0, "town watch not created");
 
     // check that hyperstructure town watch position is correct
     let town_watch_position 
         = get!(world, hyperstructure_town_watch.town_watch_id, Position);
-    assert!(town_watch_position.x == hyperstructure_coord.x, "wrong hyp x value");
-    assert!(town_watch_position.y == hyperstructure_coord.y, "wrong hyp y value");
+    assert_eq!(town_watch_position.x, hyperstructure_coord.x, "wrong hyp x value");
+    assert_eq!(town_watch_position.y, hyperstructure_coord.y, "wrong hyp y value");
 }
 
 

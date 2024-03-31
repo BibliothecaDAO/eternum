@@ -136,8 +136,8 @@ mod resource_approval_system_tests {
             = get!(world, (owner_entity_id, approved_entity_id, ResourceTypes::STONE), ResourceAllowance );
         let approved_entity_wood_allowance 
             = get!(world, (owner_entity_id, approved_entity_id,ResourceTypes::WOOD), ResourceAllowance );
-        assert!(approved_entity_stone_allowance.amount == 600, "stone allowance mismatch");
-        assert!(approved_entity_wood_allowance.amount == 800, "wood allowance mismatch");
+        assert_eq!(approved_entity_stone_allowance.amount, 600, "stone allowance mismatch");
+        assert_eq!(approved_entity_wood_allowance.amount, 800, "wood allowance mismatch");
     }
 
 
@@ -185,8 +185,8 @@ mod resource_approval_system_tests {
             = get!(world, (owner_entity_id, approved_entity_id, ResourceTypes::STONE), ResourceAllowance );
         let approved_entity_wood_allowance 
             = get!(world, (owner_entity_id, approved_entity_id,ResourceTypes::WOOD), ResourceAllowance );
-        assert!(approved_entity_stone_allowance.amount == BoundedInt::max(), "stone allowance mismatch");
-        assert!(approved_entity_wood_allowance.amount == BoundedInt::max(), "wood allowance mismatch");
+        assert_eq!(approved_entity_stone_allowance.amount, BoundedInt::max(), "stone allowance mismatch");
+        assert_eq!(approved_entity_wood_allowance.amount, BoundedInt::max(), "wood allowance mismatch");
     }
 
 

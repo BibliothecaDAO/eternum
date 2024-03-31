@@ -59,12 +59,12 @@ use eternum::alias::ID;
             self: @ContractState, world: IWorldDispatcher, 
             entity_id: ID, approved_entity_id: ID, resources: Span<(u8, u128)>
         ) {
-            assert!(entity_id != approved_entity_id, "self approval");
-            assert!(resources.len() != 0, "no resource to approve");
+            assert_ne!(entity_id, approved_entity_id, "self approval");
+            assert_ne!(resources.len(), 0, "no resource to approve");
 
             let entity_owner = get!(world, entity_id, Owner);
-            assert!(
-                entity_owner.address == starknet::get_caller_address(), "not owner of entity id"
+            assert_eq!(
+                entity_owner.address, starknet::get_caller_address(), "not owner of entity id"
             );
 
             let mut resources = resources;
@@ -98,12 +98,12 @@ use eternum::alias::ID;
             self: @ContractState, world: IWorldDispatcher, sending_entity_id: ID, 
             receiving_entity_id: ID, resources: Span<(u8, u128)>
         ) {
-            assert!(sending_entity_id != receiving_entity_id, "transfer to self");
-            assert!(resources.len() != 0, "no resource to transfer");
+            assert_ne!(sending_entity_id, receiving_entity_id, "transfer to self");
+            assert_ne!(resources.len(), 0, "no resource to transfer");
 
             let sending_entity_owner = get!(world, sending_entity_id, Owner);
-            assert!(
-                sending_entity_owner.address == starknet::get_caller_address(),
+            assert_eq!(
+                sending_entity_owner.address, starknet::get_caller_address(),
                 "not owner of entity id"
             );
 
@@ -134,12 +134,12 @@ use eternum::alias::ID;
             approved_entity_id: ID, owner_entity_id: ID, 
             receiving_entity_id: ID, resources: Span<(u8, u128)>
         ) {
-            assert!(owner_entity_id != receiving_entity_id, "transfer to owner");
-            assert!(resources.len() != 0, "no resource to transfer");
+            assert_ne!(owner_entity_id, receiving_entity_id, "transfer to owner");
+            assert_ne!(resources.len(), 0, "no resource to transfer");
 
             let approved_entity_owner = get!(world, approved_entity_id, Owner);
-            assert!(
-                approved_entity_owner.address == starknet::get_caller_address(),
+            assert_eq!(
+                approved_entity_owner.address, starknet::get_caller_address(),
                 "not owner of entity"
             );
 
@@ -357,7 +357,7 @@ use eternum::alias::ID;
             
             let resource_chest = get!(world, entity_id, ResourceChest);
             let mut resource_chest_weight = get!(world, entity_id, Weight);
-            assert!(resource_chest_weight.value == 0, "chest is not empty");
+            assert_eq!(resource_chest_weight.value, 0, "chest is not empty");
 
             // create the chest
             let mut index = 0;
@@ -467,7 +467,7 @@ use eternum::alias::ID;
             );
 
             let mut resource_chest_weight = get!(world, chest_id, Weight);
-            assert!(resource_chest_weight.value != 0, "chest is empty");
+            assert_ne!(resource_chest_weight.value, 0, "chest is empty");
 
             // ensure that receiver has enough weight capacity
             let receiver_capacity = get!(world, receiving_entity_id, Capacity);
@@ -552,7 +552,7 @@ use eternum::alias::ID;
         fn add(world: IWorldDispatcher, entity_id: ID, item_id: ID) {
 
                 let mut inventory = get!(world, entity_id, Inventory);
-                assert!(inventory.items_key != 0, "entity has no inventory");
+                assert_ne!(inventory.items_key, 0, "entity has no inventory");
 
                 let item_weight = get!(world, item_id, Weight);
                 assert!(item_weight.value > 0, "no item weight");
@@ -590,7 +590,7 @@ use eternum::alias::ID;
             let entity_quantity = get!(world, entity_id, Quantity);
      
             let mut inventory = get!(world, entity_id, Inventory);
-            assert!(inventory.items_key != 0, "entity has no inventory");
+            assert_ne!(inventory.items_key, 0, "entity has no inventory");
 
             loop {
                 

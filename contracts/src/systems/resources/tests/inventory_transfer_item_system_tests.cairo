@@ -135,26 +135,26 @@ mod inventory_transfer_system_tests {
         let receiver_gold_resource
             = get!(world, (receiver_id, ResourceTypes::GOLD), Resource );
 
-        assert!(receiver_stone_resource.balance == 1000, "stone balance mismatch");
-        assert!(receiver_gold_resource.balance == 1000, "gold balance mismatch");
+        assert_eq!(receiver_stone_resource.balance, 1000, "stone balance mismatch");
+        assert_eq!(receiver_gold_resource.balance, 1000, "gold balance mismatch");
 
         // check chest resource count
         let chest = get!(world, chest_id, ResourceChest);
-        assert!(chest.resources_count == 0, "wrong chest resource count");
+        assert_eq!(chest.resources_count, 0, "wrong chest resource count");
 
         // check chest weight
         let chest_weight = get!(world, chest_id, Weight);
-        assert!(chest_weight.value == 0, "wrong chest weight");
+        assert_eq!(chest_weight.value, 0, "wrong chest weight");
 
         // check donor transport inventory
         let donor_transport_inventory 
             = get!(world, donor_transport_id, Inventory);
-        assert!(donor_transport_inventory.items_count == 0, "wrong donor transport inventory");
+        assert_eq!(donor_transport_inventory.items_count, 0, "wrong donor transport inventory");
 
         // check donor transport weight
         let donor_transport_weight 
             = get!(world, donor_transport_id, Weight);
-        assert!(donor_transport_weight.value == 0, "wrong weight after");
+        assert_eq!(donor_transport_weight.value, 0, "wrong weight after");
     }
 
 
@@ -180,28 +180,28 @@ mod inventory_transfer_system_tests {
         let receiver_gold_resource
             = get!(world, (receiver_id, ResourceTypes::GOLD), Resource );
 
-        assert!(receiver_stone_resource.balance == 1000, "stone balance mismatch");
-        assert!(receiver_gold_resource.balance == 1000, "gold balance mismatch");
+        assert_eq!(receiver_stone_resource.balance, 1000, "stone balance mismatch");
+        assert_eq!(receiver_gold_resource.balance, 1000, "gold balance mismatch");
 
         // check chest resource count
         let chest = get!(world, chest_id, ResourceChest);
-        assert!(chest.resources_count == 0, "wrong chest resource count");
+        assert_eq!(chest.resources_count, 0, "wrong chest resource count");
 
         // check chest weight
         let chest_weight = get!(world, chest_id, Weight);
-        assert!(chest_weight.value == 0, "wrong chest weight");
+        assert_eq!(chest_weight.value, 0, "wrong chest weight");
 
         // check donor transport inventory
         let donor_transport_inventory 
             = get!(world, donor_transport_id, Inventory);
-        assert!(donor_transport_inventory.items_count == 0, "wrong donor transport inventory");
+        assert_eq!(donor_transport_inventory.items_count, 0, "wrong donor transport inventory");
 
 
         // check donor transport weight did not 
         // change because it was a self transfer
         let donor_transport_weight 
             = get!(world, donor_transport_id, Weight);
-        assert!(donor_transport_weight.value != 0, "wrong weight after");
+        assert_ne!(donor_transport_weight.value, 0, "wrong weight after");
     }
 
 

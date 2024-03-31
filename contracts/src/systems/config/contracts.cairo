@@ -32,7 +32,7 @@ mod config_systems {
     fn assert_caller_is_admin(world: IWorldDispatcher) {
         let admin_address = get!(world, WORLD_CONFIG_ID, WorldConfig).admin_address;
         if admin_address != Zeroable::zero() {
-            assert!(starknet::get_caller_address() == admin_address, "caller not admin");
+            assert_eq!(starknet::get_caller_address(), admin_address, "caller not admin");
         }
     }
 
@@ -711,7 +711,7 @@ mod config_systems {
             let start_time = starknet::get_block_timestamp();
 
             let bank = get!(world, (bank_id), Bank);
-            assert!(bank.exists == true, "no bank");
+            assert!(bank.exists, "no bank");
 
             let mut index = 0;
             loop {

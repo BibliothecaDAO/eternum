@@ -124,10 +124,10 @@ fn test_travel() {
     let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
     let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
 
-    assert!(travelling_entity_arrival_time.arrives_at == 8500000, "arrival time not correct");
+    assert_eq!(travelling_entity_arrival_time.arrives_at, 8500000, "arrival time not correct");
 
-    assert!(new_travelling_entity_position.x == destination_coord.x, "coord x is not correct");
-    assert!(new_travelling_entity_position.y == destination_coord.y, "coord y is not correct");
+    assert_eq!(new_travelling_entity_position.x, destination_coord.x, "coord x is not correct");
+    assert_eq!(new_travelling_entity_position.y, destination_coord.y, "coord y is not correct");
 }
 
 #[test]
@@ -211,10 +211,10 @@ fn test_travel_with_realm_bonus() {
     // verify arrival time and position of travelling_entity 
     let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
     let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
-    assert!(travelling_entity_arrival_time.arrives_at == 6800000, "arrival time not correct");
+    assert_eq!(travelling_entity_arrival_time.arrives_at, 6800000, "arrival time not correct");
 
-    assert!(new_travelling_entity_position.x == destination_coord.x, "coord x is not correct");
-    assert!(new_travelling_entity_position.y == destination_coord.y, "coord y is not correct");
+    assert_eq!(new_travelling_entity_position.x, destination_coord.x, "coord x is not correct");
+    assert_eq!(new_travelling_entity_position.y, destination_coord.y, "coord y is not correct");
 }
 
 #[test]
@@ -317,10 +317,10 @@ fn test_travel_with_realm_and_order_bonus() {
     let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
     let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
 
-    assert!(travelling_entity_arrival_time.arrives_at == 5440000, "arrival time not correct");
+    assert_eq!(travelling_entity_arrival_time.arrives_at, 5440000, "arrival time not correct");
 
-    assert!(new_travelling_entity_position.x == destination_coord.x, "coord x is not correct");
-    assert!(new_travelling_entity_position.y == destination_coord.y, "coord y is not correct");
+    assert_eq!(new_travelling_entity_position.x, destination_coord.x, "coord x is not correct");
+    assert_eq!(new_travelling_entity_position.y, destination_coord.y, "coord y is not correct");
 }
 
 
@@ -380,16 +380,16 @@ fn test_travel_with_road(){
     let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
     let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
 
-    assert!(
-        travelling_entity_arrival_time.arrives_at == 8500000_u64 / 2, "arrival time not correct"
+    assert_eq!(
+        travelling_entity_arrival_time.arrives_at, 8500000_u64 / 2, "arrival time not correct"
     );
 
-    assert!(new_travelling_entity_position.x == destination_coord.x, "coord x is not correct");
-    assert!(new_travelling_entity_position.y == destination_coord.y, "coord y is not correct");
+    assert_eq!(new_travelling_entity_position.x, destination_coord.x, "coord x is not correct");
+    assert_eq!(new_travelling_entity_position.y, destination_coord.y, "coord y is not correct");
 
     // verify road usage count
     let road = RoadImpl::get(world, travelling_entity_position.into(), destination_coord);
-    assert!(road.usage_count == 1, "road usage count not correct");
+    assert_eq!(road.usage_count, 1, "road usage count not correct");
 }
 
 
@@ -641,12 +641,12 @@ fn test_travel_hex() {
 
 
     let new_travelling_entity_position = get!(world, travelling_entity_id, Position);
-    assert!(new_travelling_entity_position.x == destination_coord.x, "coord x is not correct");
-    assert!(new_travelling_entity_position.y == destination_coord.y, "coord y is not correct");
+    assert_eq!(new_travelling_entity_position.x, destination_coord.x, "coord x is not correct");
+    assert_eq!(new_travelling_entity_position.y, destination_coord.y, "coord y is not correct");
 
     // arrival time should not change because arrival is immediate
     let travelling_entity_arrival_time = get!(world, travelling_entity_id, ArrivalTime);
-    assert!(travelling_entity_arrival_time.arrives_at == ts(), "arrival time not correct");
+    assert_eq!(travelling_entity_arrival_time.arrives_at, ts(), "arrival time not correct");
 }
 
 

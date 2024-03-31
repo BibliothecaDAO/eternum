@@ -163,27 +163,27 @@ fn test_bank_swap_for_wheat_fish_and_coal() {
     );
 
     let after_transport_weight = get!(world, transport_id, Weight);
-    assert!(after_transport_weight.value != initial_transport_weight.value, "wrong weight value");
+    assert_ne!(after_transport_weight.value, initial_transport_weight.value, "wrong weight value");
 
     let transport_wheat_resource = get!(world, (transport_id, ResourceTypes::WHEAT), Resource);
-    assert!(transport_wheat_resource.balance == 500 - 431, "wrong wheat balance");
+    assert_eq!(transport_wheat_resource.balance, 500 - 431, "wrong wheat balance");
 
     let transport_fish_resource = get!(world, (transport_id, ResourceTypes::FISH), Resource);
-    assert!(transport_fish_resource.balance == 500 - 172, "wrong fish balance");
+    assert_eq!(transport_fish_resource.balance, 500 - 172, "wrong fish balance");
 
     let transport_coal_resource = get!(world, (transport_id, ResourceTypes::COAL), Resource);
-    assert!(transport_coal_resource.balance == 500 - 258, "wrong coal balance");
+    assert_eq!(transport_coal_resource.balance, 500 - 258, "wrong coal balance");
 
     let bank_auction = get!(world, (bank_id, ResourceTypes::LORDS, 0), BankAuction);
-    assert!(bank_auction.sold == lords_bought, "wrong auction sold");
+    assert_eq!(bank_auction.sold, lords_bought, "wrong auction sold");
 
     // ensure no excess shekel was minted
     let bank_shekel_resource = get!(world, (bank_id, ResourceTypes::LORDS), Resource);
-    assert!(bank_shekel_resource.balance == 0, "wrong bank balance");
+    assert_eq!(bank_shekel_resource.balance, 0, "wrong bank balance");
 
     // ensure item was added to transport's inventory
     let transport_inventory = get!(world, (transport_id), Inventory);
-    assert!(transport_inventory.items_count == 1, "wrong inventory count");
+    assert_eq!(transport_inventory.items_count, 1, "wrong inventory count");
 }
 
 
@@ -206,22 +206,22 @@ fn test_bank_swap_for_dragonhide() {
     );
 
     let after_transport_weight = get!(world, transport_id, Weight);
-    assert!(after_transport_weight.value != initial_transport_weight.value, "wrong weight value");
+    assert_ne!(after_transport_weight.value, initial_transport_weight.value, "wrong weight value");
 
     let transport_dragonhide_resource = get!(world, (transport_id, ResourceTypes::DRAGONHIDE), Resource);
-    assert!(transport_dragonhide_resource.balance == 500 - 172, "wrong fish balance");
+    assert_eq!(transport_dragonhide_resource.balance, 500 - 172, "wrong fish balance");
 
 
     let bank_auction = get!(world, (bank_id, ResourceTypes::LORDS, 1), BankAuction);
-    assert!(bank_auction.sold == lords_bought, "wrong auction sold");
+    assert_eq!(bank_auction.sold, lords_bought, "wrong auction sold");
 
     // ensure no excess shekel was minted
     let bank_shekel_resource = get!(world, (bank_id, ResourceTypes::LORDS), Resource);
-    assert!(bank_shekel_resource.balance == 0, "wrong bank balance");
+    assert_eq!(bank_shekel_resource.balance, 0, "wrong bank balance");
 
     // ensure item was added to transport's inventory
     let transport_inventory = get!(world, (transport_id), Inventory);
-    assert!(transport_inventory.items_count == 1, "wrong inventory count");
+    assert_eq!(transport_inventory.items_count, 1, "wrong inventory count");
 }
 
 #[test]

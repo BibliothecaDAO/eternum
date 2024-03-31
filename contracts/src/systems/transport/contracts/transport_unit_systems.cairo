@@ -44,7 +44,7 @@ mod transport_unit_systems {
 
             // Ensure the entity is owned by the caller
             let caller = starknet::get_caller_address();
-            assert!(caller == owner.address, "entity is not owned by caller");
+            assert_eq!(caller, owner.address, "entity is not owned by caller");
 
             // Determine the max number of free transport units available for creation
             let travel_config = get!(world, TRANSPORT_CONFIG_ID, TravelConfig);
@@ -142,19 +142,19 @@ mod transport_unit_systems {
                         // Ensure that the unit is a free transport unit
                         let unit_id = *unit_id;
                         let entity_meta = get!(world, unit_id, EntityMetadata);
-                        assert!(
-                            entity_meta.entity_type == FREE_TRANSPORT_ENTITY_TYPE,
+                        assert_eq!(
+                            entity_meta.entity_type, FREE_TRANSPORT_ENTITY_TYPE,
                             "not a free transport unit"
                         );
 
                         // Ensure the unit is owned by the caller
                         let caller = starknet::get_caller_address();
                         let unit_owner_addr = get!(world, unit_id, Owner).address;
-                        assert!(caller == unit_owner_addr, "unit not owned by caller");
+                        assert_eq!(caller, unit_owner_addr, "unit not owned by caller");
 
                         // Ensure that the unit is not blocked by any system
                         let unit_movable = get!(world, unit_id, Movable);
-                        assert!(unit_movable.blocked == false, "unit is blocked");
+                        assert_eq!(unit_movable.blocked, false, "unit is blocked");
 
                         // Fetch the quantity of the transport unit
                         let unit_quantity = get!(world, unit_id, Quantity).value;

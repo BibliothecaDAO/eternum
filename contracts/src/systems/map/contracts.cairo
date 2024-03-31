@@ -64,16 +64,16 @@ mod map_systems {
             // check that caller owns unit
             let caller = starknet::get_caller_address();
             let unit_owner = get!(world, unit_id, Owner);
-            assert!(unit_owner.address == caller, "not unit owner");
+            assert_eq!(unit_owner.address, caller, "not unit owner");
 
             // ensure unit is alive
             let unit_health = get!(world, unit_id, Health);
-            assert!(unit_health.value != 0, "entity is dead");
+            assert_ne!(unit_health.value, 0, "entity is dead");
 
             // check that entity owner is a realm
             let unit_entity_owner = get!(world, unit_id, EntityOwner);
             let unit_realm = get!(world, unit_entity_owner.entity_owner_id, Realm);
-            assert!(unit_realm.realm_id != 0, "not owned by realm");
+            assert_ne!(unit_realm.realm_id, 0, "not owned by realm");
 
             // check that there is more than one entity in unit
             let mut unit_quantity = get!(world, unit_id, Quantity);
@@ -81,8 +81,8 @@ mod map_systems {
 
             // ensure unit can move
             let unit_movable = get!(world, unit_id, Movable);
-            assert!(unit_movable.sec_per_km != 0, "entity cant move");
-            assert!(unit_movable.blocked == false, "entity is blocked");
+            assert_ne!(unit_movable.sec_per_km, 0, "entity cant move");
+            assert_eq!(unit_movable.blocked, false, "entity is blocked");
 
             // ensure unit is not in transit
             let unit_arrival_time = get!(world, unit_id, ArrivalTime);
@@ -91,7 +91,7 @@ mod map_systems {
 
             // // check that unit isn't carrying anything
             // let unit_inventory = get!(world, unit_id, Inventory);
-            // assert!(unit_inventory.items_count == 0, "unit inventory not empty");
+            // assert_eq!(unit_inventory.items_count, 0, "unit inventory not empty");
 
             // explore coordinate, burn food and mint reward
             let exploration_reward 
@@ -125,7 +125,7 @@ mod map_systems {
 
             let mut tile: Tile
                  = get!(world, (coord.x, coord.y), Tile);
-            assert!(tile.explored_at == 0, "already explored");
+            assert_eq!(tile.explored_at, 0, "already explored");
 
             // set tile as explored
             tile.explored_by_id = entity_id;

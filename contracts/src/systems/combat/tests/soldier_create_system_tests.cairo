@@ -165,43 +165,43 @@ fn test_create_soldier() {
 
     // check that payment works correctly
     let caller_wheat_resource = get!(world, (realm_entity_id, ResourceTypes::WHEAT), Resource);
-    assert!(
-        caller_wheat_resource.balance == 5000 - 40 * num_soldiers_bought, "wrong wheat balance"
+    assert_eq!(
+        caller_wheat_resource.balance, 5000 - 40 * num_soldiers_bought, "wrong wheat balance"
     );
 
     let caller_wood_resource = get!(world, (realm_entity_id, ResourceTypes::WOOD), Resource);
-    assert!(caller_wood_resource.balance == 5000 - 40 * num_soldiers_bought, "wrong wood balance");
+    assert_eq!(caller_wood_resource.balance, 5000 - 40 * num_soldiers_bought, "wrong wood balance");
 
     // check that the soldiers were created correctly
     let caller_position = get!(world, realm_entity_id, Position);
     
     let realm_new_unit_owner = get!(world, new_unit_id, Owner);
-    assert!(realm_new_unit_owner.address == contract_address_const::<'caller'>(), "wrong owner");
+    assert_eq!(realm_new_unit_owner.address, contract_address_const::<'caller'>(), "wrong owner");
 
     let realm_new_unit_entity_owner = get!(world, new_unit_id, EntityOwner);
-    assert!(realm_new_unit_entity_owner.entity_owner_id == realm_entity_id, "wrong owner");
+    assert_eq!(realm_new_unit_entity_owner.entity_owner_id, realm_entity_id, "wrong owner");
 
     let realm_new_unit_health = get!(world, new_unit_id, Health);
-    assert!(realm_new_unit_health.value == 100 * num_soldiers_bought, "wrong health");
+    assert_eq!(realm_new_unit_health.value, 100 * num_soldiers_bought, "wrong health");
 
     let realm_new_unit_attack = get!(world, new_unit_id, Attack);
-    assert!(realm_new_unit_attack.value == 100 * num_soldiers_bought, "wrong attack");
+    assert_eq!(realm_new_unit_attack.value, 100 * num_soldiers_bought, "wrong attack");
 
     let realm_new_unit_defence = get!(world, new_unit_id, Defence);
-    assert!(realm_new_unit_defence.value == 100 * num_soldiers_bought, "wrong defence");
+    assert_eq!(realm_new_unit_defence.value, 100 * num_soldiers_bought, "wrong defence");
 
     let realm_new_unit_quantity = get!(world, new_unit_id, Quantity);
-    assert!(realm_new_unit_quantity.value == num_soldiers_bought, "wrong quantity");
+    assert_eq!(realm_new_unit_quantity.value, num_soldiers_bought, "wrong quantity");
 
     let realm_new_unit_movable = get!(world, new_unit_id, Movable);
-    assert!(realm_new_unit_movable.sec_per_km == 55, "wrong speed");
+    assert_eq!(realm_new_unit_movable.sec_per_km, 55, "wrong speed");
 
     let realm_new_unit_capacity = get!(world, new_unit_id, Capacity);
-    assert!(realm_new_unit_capacity.weight_gram == 44, "wrong capacity");
+    assert_eq!(realm_new_unit_capacity.weight_gram, 44, "wrong capacity");
 
     let realm_new_unit_position = get!(world, new_unit_id, Position);
-    assert!(realm_new_unit_position.x == caller_position.x, "wrong position x");
-    assert!(realm_new_unit_position.y == caller_position.y, "wrong position y");
+    assert_eq!(realm_new_unit_position.x, caller_position.x, "wrong position x");
+    assert_eq!(realm_new_unit_position.y, caller_position.y, "wrong position y");
 }
 
 

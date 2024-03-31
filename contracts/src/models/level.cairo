@@ -92,27 +92,27 @@ mod tests {
         let level = Level { entity_id: 1, level: 3, valid_until: 1000 };
 
         let current_level = level.get_level();
-        assert!(current_level == 3, "level not good 1");
+        assert_eq!(current_level, 3, "level not good 1");
 
         // update block timestamp
         // go 1 week in the future
         starknet::testing::set_block_timestamp(2000);
 
         let current_level = level.get_level();
-        assert!(current_level == 2, "level not good 2");
+        assert_eq!(current_level, 2, "level not good 2");
 
         // update block timestamp
         // go 2 weeks in the future
         starknet::testing::set_block_timestamp(700000);
 
         let current_level = level.get_level();
-        assert!(current_level == 1, "level not good 3");
+        assert_eq!(current_level, 1, "level not good 3");
 
         // go more than 3 weeks in the future
         starknet::testing::set_block_timestamp(1400000);
 
         let current_level = level.get_level();
-        assert!(current_level == 0, "level not good 4");
+        assert_eq!(current_level, 0, "level not good 4");
     }
 
     #[test]
@@ -136,15 +136,15 @@ mod tests {
 
         // tier 2
         let level_multiplier = LevelTrait::get_multiplier(leveling_config, 2);
-        assert!(level_multiplier == 47, "wrong multiplier");
+        assert_eq!(level_multiplier, 47, "wrong multiplier");
 
         // tier 40
         let level_multiplier = LevelTrait::get_multiplier(leveling_config, 40);
-        assert!(level_multiplier == 246, "wrong multi");
+        assert_eq!(level_multiplier, 246, "wrong multi");
 
         // tier 100
         let level_multiplier = LevelTrait::get_multiplier(leveling_config, 100);
-        assert!(level_multiplier == 249, "wrong multi");
+        assert_eq!(level_multiplier, 249, "wrong multi");
     }
 
     #[test]
@@ -171,31 +171,31 @@ mod tests {
         let level = Level { entity_id: 1, level: 1, valid_until: 1000 };
         let multiplier = level
             .get_index_multiplier(leveling_config, LevelIndex::FOOD, REALM_LEVELING_START_TIER);
-        assert!(multiplier == 100, "wrong multiplier");
+        assert_eq!(multiplier, 100, "wrong multiplier");
 
         // tier 2
         let level = Level { entity_id: 1, level: 6, valid_until: 1000 };
         let multiplier = level
             .get_index_multiplier(leveling_config, LevelIndex::FOOD, REALM_LEVELING_START_TIER);
-        assert!(multiplier == 125, "wrong multiplier");
+        assert_eq!(multiplier, 125, "wrong multiplier");
 
         // tier 2
         let level = Level { entity_id: 1, level: 6, valid_until: 1000 };
         let multiplier = level
             .get_index_multiplier(leveling_config, LevelIndex::COMBAT, REALM_LEVELING_START_TIER);
-        assert!(multiplier == 100, "wrong multiplier");
+        assert_eq!(multiplier, 100, "wrong multiplier");
 
         // tier 2
         let level = Level { entity_id: 1, level: 8, valid_until: 1000 };
         let multiplier = level
             .get_index_multiplier(leveling_config, LevelIndex::COMBAT, REALM_LEVELING_START_TIER);
-        assert!(multiplier == 125, "wrong multiplier");
+        assert_eq!(multiplier, 125, "wrong multiplier");
 
         // tier 11
         let level = Level { entity_id: 1, level: 43, valid_until: 1000 };
         let multiplier = level
             .get_index_multiplier(leveling_config, LevelIndex::FOOD, REALM_LEVELING_START_TIER);
-        assert!(multiplier == 262, "wrong multiplier");
+        assert_eq!(multiplier, 262, "wrong multiplier");
     }
 
 
@@ -206,6 +206,6 @@ mod tests {
         // 25% increase each tier
         let cost_multiplier = level.get_cost_multiplier(4611686018427387904);
 
-        assert!(cost_multiplier == 156, "wrong cost_multiplier")
+        assert_eq!(cost_multiplier, 156, "wrong cost_multiplier")
     }
 }
