@@ -449,7 +449,7 @@ fn test_accept_order_free_trade() {
 
     // check taker transport movable
     let taker_transport_movable = get!(world, trade.taker_transport_id, Movable);
-    assert(!taker_transport_movable.blocked, "taker transport not blocked");
+    assert!(!taker_transport_movable.blocked, "taker transport not blocked");
 
     assert_eq!(taker_transport_movable.intermediate_coord_x, maker_position.x, "wrong position x");
 
