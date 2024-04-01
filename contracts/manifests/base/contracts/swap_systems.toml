@@ -1,0 +1,7 @@
+kind = "DojoContract"
+class_hash = "0x4a69b86499ac2cd8fe3e91a90b6d669695988671726347f14d638f14c474293"
+abi = "abis/base/contracts/swap_systems.json"
+reads = []
+writes = []
+computed = []
+name = "eternum::systems::bank::contracts::swap_systems::swap_systems"

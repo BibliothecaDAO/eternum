@@ -1,6 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x6dbdb27adaf95920ee6e3c9e3698e693eb9dd622dffb2fa43181f3696234598"
-name = "eternum::models::bank::bank"
+class_hash = "0x4279f10b49a2ac6bc2eff60991517cd7ee06b7fa461f185be1da77a46d98f68"
+name = "eternum::models::bank::bank::bank"
 
 [[members]]
 name = "entity_id"
@@ -8,6 +8,11 @@ type = "u128"
 key = true
 
 [[members]]
-name = "exists"
-type = "bool"
+name = "owner"
+type = "ContractAddress"
+key = false
+
+[[members]]
+name = "swap_fee"
+type = "u128"
 key = false

@@ -55,16 +55,44 @@
   },
   {
     "type": "impl",
-    "name": "BankSystemsImpl",
-    "interface_name": "eternum::systems::bank::interface::bank::IBankSystems"
+    "name": "LiquiditySystemsImpl",
+    "interface_name": "eternum::systems::bank::interface::liquidity::ILiquiditySystems"
+  },
+  {
+    "type": "enum",
+    "name": "core::bool",
+    "variants": [
+      {
+        "name": "False",
+        "type": "()"
+      },
+      {
+        "name": "True",
+        "type": "()"
+      }
+    ]
+  },
+  {
+    "type": "struct",
+    "name": "cubit::f128::types::fixed::Fixed",
+    "members": [
+      {
+        "name": "mag",
+        "type": "core::integer::u128"
+      },
+      {
+        "name": "sign",
+        "type": "core::bool"
+      }
+    ]
   },
   {
     "type": "interface",
-    "name": "eternum::systems::bank::interface::bank::IBankSystems",
+    "name": "eternum::systems::bank::interface::liquidity::ILiquiditySystems",
     "items": [
       {
         "type": "function",
-        "name": "open_account",
+        "name": "add",
         "inputs": [
           {
             "name": "world",
@@ -73,6 +101,42 @@
           {
             "name": "bank_entity_id",
             "type": "core::integer::u128"
+          },
+          {
+            "name": "resource_type",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "resource_amount",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "lords_amount",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "remove",
+        "inputs": [
+          {
+            "name": "world",
+            "type": "dojo::world::IWorldDispatcher"
+          },
+          {
+            "name": "bank_entity_id",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "resource_type",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "shares",
+            "type": "cubit::f128::types::fixed::Fixed"
           }
         ],
         "outputs": [],
@@ -129,7 +193,7 @@
   },
   {
     "type": "event",
-    "name": "eternum::systems::bank::contracts::bank_systems::bank_systems::Event",
+    "name": "eternum::systems::bank::contracts::liquidity_systems::liquidity_systems::Event",
     "kind": "enum",
     "variants": [
       {

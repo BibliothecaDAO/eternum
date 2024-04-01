@@ -55,16 +55,16 @@
   },
   {
     "type": "impl",
-    "name": "BankSystemsImpl",
-    "interface_name": "eternum::systems::bank::interface::bank::IBankSystems"
+    "name": "SwapSystemsImpl",
+    "interface_name": "eternum::systems::bank::interface::swap::ISwapSystems"
   },
   {
     "type": "interface",
-    "name": "eternum::systems::bank::interface::bank::IBankSystems",
+    "name": "eternum::systems::bank::interface::swap::ISwapSystems",
     "items": [
       {
         "type": "function",
-        "name": "open_account",
+        "name": "buy",
         "inputs": [
           {
             "name": "world",
@@ -72,6 +72,38 @@
           },
           {
             "name": "bank_entity_id",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "resource_type",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "amount",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "sell",
+        "inputs": [
+          {
+            "name": "world",
+            "type": "dojo::world::IWorldDispatcher"
+          },
+          {
+            "name": "bank_entity_id",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "resource_type",
+            "type": "core::integer::u8"
+          },
+          {
+            "name": "amount",
             "type": "core::integer::u128"
           }
         ],
@@ -129,7 +161,7 @@
   },
   {
     "type": "event",
-    "name": "eternum::systems::bank::contracts::bank_systems::bank_systems::Event",
+    "name": "eternum::systems::bank::contracts::swap_systems::swap_systems::Event",
     "kind": "enum",
     "variants": [
       {
