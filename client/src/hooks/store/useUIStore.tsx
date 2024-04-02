@@ -57,7 +57,7 @@ interface UIStore {
   setHighlightColor: (color: number) => void;
 }
 
-const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) => ({
+const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set, get) => ({
   theme: "light",
   setTheme: (theme) => set({ theme }),
   showBlurOverlay: false,
@@ -216,7 +216,7 @@ const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) =>
   setHighlightPositions: (positions) => set({ highlightPositions: positions }),
   highlightColor: 0xffffff,
   setHighlightColor: (color) => set({ highlightColor: color }),
-  ...createPopupsSlice(set),
+  ...createPopupsSlice(set, get),
   ...createDataStoreSlice(set),
   ...createMapStoreSlice(set),
 }));

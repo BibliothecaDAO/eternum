@@ -7,8 +7,12 @@ import ChatModule from "../modules/ChatModule";
 import BottomMiddleContainer from "../containers/BottomMiddleContainer";
 import TopContainer from "../containers/TopContainer";
 import NavigationModule from "../modules/NavigationModule";
+import LeftMiddleContainer from "../containers/LeftMiddleContainer";
 import ContentContainer from "../containers/ContentContainer";
+import RightMiddleContainer from "../containers/RightMiddleContainer";
 import RealmManagementModule from "../modules/RealmManagementModule";
+import { LeftNavigationModule } from "../modules/LeftNavigationModule";
+import { RightNavigationModule } from "../modules/RightNavigationModule";
 import RealmResourcesComponent from "../components/cityview/realm/RealmResourcesComponent";
 import { useEffect, useMemo } from "react";
 import clsx from "clsx";
@@ -60,11 +64,11 @@ export const World = () => {
     >
       <WorldPopups />
       <BackgroundContainer className="border-2 border-[#E0AF65] rounded-xl relative">
-        <div className="absolute top-0 left-0 z-10 w-full pointer-events-none rounded-xl h-44 bg-gradient-to-b from-black to-transparent opacity-90" />
+        <div className="absolute top-0 left-0 z-10 w-full pointer-events-none rounded-xl h-12 bg-gradient-to-b from-black/20 to-transparent opacity-90" />
         <div className="h-full w-full main-scene">
           <MainScene />
         </div>
-        <div className="absolute bottom-0 left-0 z-10 w-full pointer-events-none rounded-xl h-44 bg-gradient-to-t from-black to-transparent opacity-90" />
+        <div className="absolute bottom-0 left-0 z-10 w-full pointer-events-none rounded-xl h-44 bg-gradient-to-t from-black/20 to-transparent opacity-90" />
         <div
           className={clsx(
             "absolute bottom-0 left-0 z-20 w-full pointer-events-none flex items-center text-white justify-center text-3xl rounded-xl h-full bg-black duration-300 transition-opacity",
@@ -80,30 +84,32 @@ export const World = () => {
           <NavigationModule />
           <NotificationsComponent className="" />
         </div>
-        <RealmResourcesComponent />
+        {/* <RealmResourcesComponent /> */}
       </TopContainer>
       <ContentContainer>
         <Switch location={locationType}>
-          <Route path="map">
-            <WorldMapMenuModule />
-          </Route>
+          <Route path="map">{/* <WorldMapMenuModule /> */}</Route>
           <Route path="realm">
             <RealmManagementModule />
           </Route>
         </Switch>
       </ContentContainer>
+      <LeftMiddleContainer>
+        <LeftNavigationModule />
+      </LeftMiddleContainer>
+      <RightMiddleContainer>
+        <RightNavigationModule />
+      </RightMiddleContainer>
       <BottomMiddleContainer>{<></>}</BottomMiddleContainer>
-      <BottomRightContainer>
-        <ChatModule />
-      </BottomRightContainer>
+      <BottomRightContainer>{/* <ChatModule /> */}</BottomRightContainer>
       <BlankOverlayContainer>
         <Onboarding />
       </BlankOverlayContainer>
-      <Leva hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU} />
+      {/* <Leva hidden={import.meta.env.PROD || import.meta.env.HIDE_THREEJS_MENU} /> */}
       <Tooltip />
       <Redirect to="/map" />
       <div className="absolute bottom-4 right-6 text-white text-xs text-white/60">v0.4.0</div>
-      <EpochCountdown />
+      {/* <EpochCountdown /> */}
       <HooksComponent />
     </div>
   );
