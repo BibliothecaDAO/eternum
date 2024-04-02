@@ -1,10 +1,20 @@
 import useUIStore from "../../../hooks/store/useUIStore";
 import * as THREE from "three";
-import { createHexagonShape } from "./HexagonGeometry";
 import { HEX_RADIUS } from "./WorldHexagon";
+import { createHexagonPath } from "./HexagonGeometry";
 
 const HighlightedHexes = () => {
-  const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
+  const tubeRadius = 0.064; // Adjust the tube radius (width) as needed
+  const radialSegments = 8; // Adjust for smoother or sharper corners
+  const tubularSegments = 64; // Adjust for a smoother or more faceted tube
+  const hexagonPath = createHexagonPath(HEX_RADIUS);
+  const hexagonGeometry = new THREE.TubeGeometry(
+    hexagonPath as any,
+    tubularSegments,
+    tubeRadius,
+    radialSegments,
+    false,
+  );
 
   const highlightPositions = useUIStore((state) => state.highlightPositions);
   const highlightColor = useUIStore((state) => state.highlightColor);
@@ -16,15 +26,14 @@ const HighlightedHexes = () => {
           <mesh
             key={index}
             geometry={hexagonGeometry}
-            rotation={[Math.PI / -2, 0, 0]}
+            rotation={[0, 0, 0]}
             position={[highlightPosition[0], 0.32, highlightPosition[1]]}
           >
-            <meshMatcapMaterial color={highlightColor} transparent opacity={0.75} depthTest={false} />
+            <meshBasicMaterial color={highlightColor} />
           </mesh>
         );
       })}
     </>
   );
 };
-
 export default HighlightedHexes;
