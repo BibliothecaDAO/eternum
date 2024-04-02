@@ -672,6 +672,61 @@
   },
   {
     "type": "impl",
+    "name": "BankConfigImpl",
+    "interface_name": "eternum::systems::config::interface::IBankConfig"
+  },
+  {
+    "type": "interface",
+    "name": "eternum::systems::config::interface::IBankConfig",
+    "items": [
+      {
+        "type": "function",
+        "name": "create_bank",
+        "inputs": [
+          {
+            "name": "world",
+            "type": "dojo::world::IWorldDispatcher"
+          },
+          {
+            "name": "coord",
+            "type": "eternum::models::position::Coord"
+          },
+          {
+            "name": "owner_fee_scaled",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u128"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "set_bank_config",
+        "inputs": [
+          {
+            "name": "world",
+            "type": "dojo::world::IWorldDispatcher"
+          },
+          {
+            "name": "lords_cost",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "lp_fee_scaled",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
+      }
+    ]
+  },
+  {
+    "type": "impl",
     "name": "BuildingsConfigImpl",
     "interface_name": "eternum::systems::config::interface::IBuildingsConfig"
   },

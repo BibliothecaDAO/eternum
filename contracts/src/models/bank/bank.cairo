@@ -6,9 +6,7 @@ use cubit::f128::types::fixed::{Fixed, FixedTrait};
 struct Bank {
     #[key]
     entity_id: u128,
-    owner: ContractAddress,
-    // todo use fixed
-    swap_fee: u128,
+    owner_fee_scaled: u128,
 }
 
 // Used as helper struct throughout the world

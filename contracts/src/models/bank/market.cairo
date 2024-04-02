@@ -243,9 +243,12 @@ mod tests {
 
     #[test]
     #[should_panic(expected: ('not enough liquidity',))]
-    fn test_not_enough_quantity() {
+    fn test_market_not_enough_quantity() {
         let market = Market {
-            item_id: 1, lords_amount: SCALING_FACTOR * 1, resource_amount: 1
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: SCALING_FACTOR * 1,
+            resource_amount: 1
         }; // pool 1:1
         let _cost = market.buy(10);
     }
@@ -253,7 +256,10 @@ mod tests {
     #[test]
     fn test_market_buy() {
         let market = Market {
-            item_id: 1, lords_amount: SCALING_FACTOR * 1, resource_amount: 10
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: SCALING_FACTOR * 1,
+            resource_amount: 10
         }; // pool 1:10
         let cost = market.buy(5);
         assert(cost == SCALING_FACTOR * 1, 'wrong cost');
@@ -262,7 +268,10 @@ mod tests {
     #[test]
     fn test_market_sell() {
         let market = Market {
-            item_id: 1, lords_amount: SCALING_FACTOR * 1, resource_amount: 10
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: SCALING_FACTOR * 1,
+            resource_amount: 10
         }; // pool 1:10
         let payout = market.sell(5);
         assert(payout == 3334, 'wrong payout');
@@ -271,7 +280,9 @@ mod tests {
     #[test]
     fn test_market_add_liquidity_no_initial() {
         // Without initial liquidity
-        let market = Market { item_id: 1, lords_amount: 0, resource_amount: 0 };
+        let market = Market {
+            bank_entity_id: 1, resource_type: 1, lords_amount: 0, resource_amount: 0
+        };
 
         // Add liquidity
         let (amount, quantity) = (SCALING_FACTOR * 5, 5); // pool 1:1
@@ -293,7 +304,10 @@ mod tests {
     fn test_market_add_liquidity_optimal() {
         // With initial liquidity
         let market = Market {
-            item_id: 1, lords_amount: SCALING_FACTOR * 1, resource_amount: 10
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: SCALING_FACTOR * 1,
+            resource_amount: 10
         }; // pool 1:10
         let initial_liquidity = market.liquidity();
 
@@ -320,7 +334,10 @@ mod tests {
     fn test_market_add_liquidity_not_optimal() {
         // With initial liquidity
         let market = Market {
-            item_id: 1, lords_amount: SCALING_FACTOR * 1, resource_amount: 10
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: SCALING_FACTOR * 1,
+            resource_amount: 10
         }; // pool 1:10
         let initial_liquidity = market.liquidity();
 
@@ -351,7 +368,10 @@ mod tests {
     #[should_panic(expected: ('insufficient amount',))]
     fn test_market_add_liquidity_insufficient_amount() {
         let market = Market {
-            item_id: 1, lords_amount: SCALING_FACTOR * 1, resource_amount: 10
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: SCALING_FACTOR * 1,
+            resource_amount: 10
         }; // pool 1:10
         // Adding 20 items requires (SCALING_FACTOR * 2) cash amount to maintain the ratio
         // Therefore this should fail
@@ -363,7 +383,10 @@ mod tests {
     fn test_market_remove_liquidity() {
         // With initial liquidity
         let market = Market {
-            item_id: 1, lords_amount: SCALING_FACTOR * 2, resource_amount: 20
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: SCALING_FACTOR * 2,
+            resource_amount: 20
         }; // pool 1:10
         let initial_liquidity = market.liquidity();
 
@@ -393,7 +416,9 @@ mod tests {
     #[should_panic(expected: ('insufficient liquidity',))]
     fn test_market_remove_liquidity_no_initial() {
         // Without initial liquidity
-        let market = Market { item_id: 1, lords_amount: 0, resource_amount: 0 }; // pool 1:10
+        let market = Market {
+            bank_entity_id: 1, resource_type: 1, lords_amount: 0, resource_amount: 0
+        }; // pool 1:10
 
         // Remove liquidity
         let one = FixedTrait::new_unscaled(1, false);
@@ -406,7 +431,10 @@ mod tests {
     fn test_market_remove_liquidity_more_than_available() {
         // With initial liquidity
         let market = Market {
-            item_id: 1, lords_amount: SCALING_FACTOR * 2, resource_amount: 20
+            bank_entity_id: 1,
+            resource_type: 1,
+            lords_amount: SCALING_FACTOR * 2,
+            resource_amount: 20
         }; // pool 1:10
         let initial_liquidity = market.liquidity();
 

@@ -1,18 +1,22 @@
 #[dojo::contract]
 mod bank_systems {
     use eternum::models::bank::bank::{BankAccounts, Bank};
+    use eternum::models::owner::Owner;
     use eternum::systems::bank::interface::bank::IBankSystems;
     use eternum::models::position::Position;
+    use eternum::alias::ID;
+
+    use traits::Into;
 
     #[abi(embed_v0)]
     impl BankSystemsImpl of IBankSystems<ContractState> {
-        fn open_account(self: @ContractState, world: IWorldDispatcher, bank_entity_id: u128) {
+        fn open_account(self: @ContractState, world: IWorldDispatcher, bank_entity_id: u128) -> ID {
             let player = starknet::get_caller_address();
 
             // todo:
             // check if the bank exists
             let bank = get!(world, bank_entity_id, Bank);
-            assert(bank.owner.into() != 0, 'Bank does not exist');
+            assert(bank.owner_fee_scaled != 0, 'Bank does not exist');
 
             // get bank position
             let bank_position = get!(world, bank_entity_id, Position);
@@ -38,6 +42,25 @@ mod bank_systems {
                 world,
                 (Position { entity_id: entity_id.into(), x: bank_position.x, y: bank_position.y })
             );
+
+            entity_id.into()
+        }
+
+        fn change_owner_fee(
+            self: @ContractState,
+            world: IWorldDispatcher,
+            bank_entity_id: u128,
+            new_swap_fee_unscaled: u128
+        ) {
+            let player = starknet::get_caller_address();
+
+            let owner = get!(world, bank_entity_id, Owner);
+            assert(owner.address == player, 'Only owner can change fee');
+
+            let mut bank = get!(world, bank_entity_id, Bank);
+            bank.owner_fee_scaled = new_swap_fee_unscaled;
+
+            set!(world, (bank));
         }
     }
 }

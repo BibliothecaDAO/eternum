@@ -37,7 +37,12 @@ trait ICapacityConfig<TContractState> {
 
 #[starknet::interface]
 trait ITickConfig<TContractState> {
-    fn set_tick_config(self: @TContractState, world: IWorldDispatcher, max_moves_per_tick: u8, tick_interval_in_seconds: u64 );
+    fn set_tick_config(
+        self: @TContractState,
+        world: IWorldDispatcher,
+        max_moves_per_tick: u8,
+        tick_interval_in_seconds: u64
+    );
 }
 
 
@@ -165,21 +170,12 @@ trait ILevelingConfig<TContractState> {
 #[starknet::interface]
 trait IBankConfig<TContractState> {
     fn create_bank(
-        self: @TContractState,
-        world: IWorldDispatcher,
-        coord: Coord,
-        swap_cost_resources: Span<(u8, Span<(u8, u128)>)>
+        self: @TContractState, world: IWorldDispatcher, coord: Coord, owner_fee_scaled: u128
     ) -> ID;
 
 
-    fn set_bank_auction(
-        self: @TContractState,
-        world: IWorldDispatcher,
-        bank_id: u128,
-        bank_swap_resource_cost_keys: Span<(u8, u32)>,
-        decay_constant: u128,
-        per_time_unit: u128,
-        price_update_interval: u128,
+    fn set_bank_config(
+        self: @TContractState, world: IWorldDispatcher, lords_cost: u128, lp_fee_scaled: u128
     );
 }
 
@@ -206,12 +202,14 @@ trait IBuildingsConfig<TContractState> {
 }
 
 
-
 #[starknet::interface]
 trait IMapConfig<TContractState> {
     fn set_exploration_config(
-        self: @TContractState, world: IWorldDispatcher, 
-        wheat_burn_amount: u128, fish_burn_amount: u128, reward_resource_amount: u128
+        self: @TContractState,
+        world: IWorldDispatcher,
+        wheat_burn_amount: u128,
+        fish_burn_amount: u128,
+        reward_resource_amount: u128
     );
 }
 

@@ -13,8 +13,6 @@ use eternum::systems::bank::contracts::liquidity_systems::liquidity_systems;
 use eternum::systems::bank::interface::liquidity::{
     ILiquiditySystemsDispatcher, ILiquiditySystemsDispatcherTrait,
 };
-use eternum::systems::bank::contracts::swap_systems::swap_systems;
-use eternum::systems::bank::interface::swap::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait,};
 
 use eternum::models::position::{Coord};
 use eternum::constants::{ResourceTypes};
@@ -32,7 +30,6 @@ fn setup() -> (
     IWorldDispatcher,
     u128,
     ILiquiditySystemsDispatcher,
-    ISwapSystemsDispatcher,
     IBankSystemsDispatcher,
     IBankConfigDispatcher
 ) {
@@ -56,22 +53,19 @@ fn setup() -> (
         contract_address: liquidity_systems_address
     };
 
-    let swap_systems_address = deploy_system(swap_systems::TEST_CLASS_HASH);
-    let swap_systems_dispatcher = ISwapSystemsDispatcher { contract_address: swap_systems_address };
-
     // add some resources in the bank account
     // wood
     set!(
         world,
         Resource {
-            entity_id: bank_account_entity_id, resource_type: ResourceTypes::WOOD, balance: 10000
+            entity_id: bank_account_entity_id, resource_type: ResourceTypes::WOOD, balance: 1000
         }
     );
     // lords
     set!(
         world,
         Resource {
-            entity_id: bank_account_entity_id, resource_type: ResourceTypes::LORDS, balance: 10000
+            entity_id: bank_account_entity_id, resource_type: ResourceTypes::LORDS, balance: 1000
         }
     );
 
@@ -79,40 +73,37 @@ fn setup() -> (
         world,
         bank_entity_id,
         liquidity_systems_dispatcher,
-        swap_systems_dispatcher,
         bank_systems_dispatcher,
         bank_config_dispatcher
     )
 }
 
 #[test]
-fn test_swap_buy() {
+fn test_liquidity_add() {
     let (
         world,
         bank_entity_id,
         liquidity_systems_dispatcher,
-        swap_systems_dispatcher,
         _bank_systems_dispatcher,
         _bank_config_dispatcher
     ) =
         setup();
 
     liquidity_systems_dispatcher.add(world, bank_entity_id, ResourceTypes::WOOD, 1000, 1000);
-    swap_systems_dispatcher.buy(world, bank_entity_id, ResourceTypes::WOOD, 100);
 }
 
 #[test]
-fn test_swap_sell() {
+fn test_liquidity_remove() {
     let (
         world,
         bank_entity_id,
         liquidity_systems_dispatcher,
-        swap_systems_dispatcher,
         _bank_systems_dispatcher,
         _bank_config_dispatcher
     ) =
         setup();
 
     liquidity_systems_dispatcher.add(world, bank_entity_id, ResourceTypes::WOOD, 1000, 1000);
-    swap_systems_dispatcher.sell(world, bank_entity_id, ResourceTypes::WOOD, 100);
+    let shares = FixedTrait::new(_1, false);
+    liquidity_systems_dispatcher.remove(world, bank_entity_id, ResourceTypes::WOOD, shares);
 }

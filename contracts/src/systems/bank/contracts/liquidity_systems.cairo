@@ -58,7 +58,7 @@ mod liquidity_systems {
             resource.save(world);
 
             // update player liquidity
-            let player_liquidity = get!(world, (player, resource_type), Liquidity);
+            let player_liquidity = get!(world, (bank_entity_id, player, resource_type), Liquidity);
             set!(
                 world,
                 (Liquidity {

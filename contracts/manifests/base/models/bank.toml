@@ -1,5 +1,5 @@
 kind = "DojoModel"
-class_hash = "0x4279f10b49a2ac6bc2eff60991517cd7ee06b7fa461f185be1da77a46d98f68"
+class_hash = "0x7b94d668dc7397b6c6e7702f1c4e593eb73580fa66a0e3d58e5c22589cca5ea"
 name = "eternum::models::bank::bank::bank"
 
 [[members]]
@@ -8,11 +8,6 @@ type = "u128"
 key = true
 
 [[members]]
-name = "owner"
-type = "ContractAddress"
-key = false
-
-[[members]]
-name = "swap_fee"
+name = "owner_fee_scaled"
 type = "u128"
 key = false

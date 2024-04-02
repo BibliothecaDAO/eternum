@@ -77,6 +77,26 @@
         ],
         "outputs": [],
         "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "change_owner_fee",
+        "inputs": [
+          {
+            "name": "world",
+            "type": "dojo::world::IWorldDispatcher"
+          },
+          {
+            "name": "bank_entity_id",
+            "type": "core::integer::u128"
+          },
+          {
+            "name": "new_swap_fee_unscaled",
+            "type": "core::integer::u128"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "view"
       }
     ]
   },
