@@ -46,7 +46,9 @@ mod liquidity_systems {
                     bank_entity_id,
                     resource_type,
                     lords_amount: market.lords_amount + cost_lords,
-                    resource_amount: market.resource_amount + cost_resource_amount
+                    resource_amount: market.resource_amount + cost_resource_amount,
+                    fee_resource_amount: market.fee_resource_amount,
+                    fee_lords_amount: market.fee_lords_amount,
                 })
             );
 
@@ -97,7 +99,9 @@ mod liquidity_systems {
                     bank_entity_id,
                     resource_type,
                     lords_amount: market.lords_amount - payout_lords,
-                    resource_amount: market.resource_amount - payout_resource_amount
+                    resource_amount: market.resource_amount - payout_resource_amount,
+                    fee_resource_amount: market.fee_resource_amount,
+                    fee_lords_amount: market.fee_lords_amount,
                 })
             );
 

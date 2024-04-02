@@ -75,7 +75,11 @@
             "type": "core::integer::u128"
           }
         ],
-        "outputs": [],
+        "outputs": [
+          {
+            "type": "core::integer::u128"
+          }
+        ],
         "state_mutability": "view"
       },
       {
