@@ -193,8 +193,8 @@ export const getUIPositionFromColRow = (col: number, row: number, normalized?: b
   const hexRadius = 3;
   const hexHeight = hexRadius * 2;
   const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
+  const vertDist = hexHeight * 0.75 + 0.1;
+  const horizDist = hexWidth + 0.1;
 
   const colNorm = col - (!normalized ? 2147483647 : 0);
   const rowNorm = row - (!normalized ? 2147483647 : 0);
@@ -212,8 +212,8 @@ export const getColRowFromUIPosition = (x: number, y: number, normalized?: boole
   const hexRadius = 3;
   const hexHeight = hexRadius * 2;
   const hexWidth = Math.sqrt(3) * hexRadius;
-  const vertDist = hexHeight * 0.75;
-  const horizDist = hexWidth;
+  const vertDist = hexHeight * 0.75 + 0.1;
+  const horizDist = hexWidth + 0.1;
 
   const rowNorm = Math.round(y / vertDist);
   const colNorm = Math.round((x - ((rowNorm % 2) * horizDist) / 2) / horizDist);

@@ -3,13 +3,13 @@ import * as THREE from "three";
 import { createHexagonShape } from "../../worldmap/hexagon/HexagonGeometry";
 import { HEX_RADIUS } from "../../worldmap/hexagon/WorldHexagon";
 import { getUIPositionFromColRow } from "../../../utils/utils";
-import { get } from "lodash";
 import { Html } from "@react-three/drei";
 
-const HexInsideView = ({ center, color }: { center: { col: number; row: number }; color: string }) => {
+const HexBuildGrid = () => {
   const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
 
-  const _color = new THREE.Color(color);
+  const _color = new THREE.Color("gray");
+  const center = { col: 4, row: 4 };
 
   const generateHexPositions = (center: { col: number; row: number }) => {
     const addOffset = center.row % 2 === 0 && center.row > 0 ? 0 : 1;
@@ -45,20 +45,39 @@ const HexInsideView = ({ center, color }: { center: { col: number; row: number }
   };
 
   const hexPositions = generateHexPositions(center);
+  const buildMode = useUIStore((state) => state.buildMode);
+  const hoveredBuildHex = useUIStore((state) => state.hoveredBuildHex);
+  const setHoveredBuildHex = useUIStore((state) => state.setHoveredBuildHex);
+  const builtCastles = useUIStore((state) => state.builtCastles);
+  const setBuiltCastles = useUIStore((state) => state.setBuiltCastles);
 
   return (
     <group rotation={[Math.PI / -2, 0, 0]} position={[0, 2, 0]}>
       {hexPositions.map((hexPosition, index) => {
         return (
-          <group key={index} position={[hexPosition.x, hexPosition.y, hexPosition.z]}>
+          <group
+            key={index}
+            position={[hexPosition.x, hexPosition.y, hexPosition.z]}
+            onPointerMove={(e) => {
+              if (buildMode) {
+                setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row });
+              }
+            }}
+            onClick={() => {
+              if (buildMode) {
+                setBuiltCastles([...builtCastles, { col: hexPosition.col, row: hexPosition.row }]);
+              }
+            }}
+          >
             <mesh geometry={hexagonGeometry}>
-              <meshMatcapMaterial color={_color} />
+              <meshMatcapMaterial
+                color={
+                  hoveredBuildHex.col === hexPosition.col && hoveredBuildHex.row === hexPosition.row && buildMode
+                    ? "limegreen"
+                    : _color
+                }
+              />
             </mesh>
-            {/* <Html distanceFactor={50}>
-              <div className="flex -translate-y-1/2 -translate-x-1/2">
-                {hexPosition.col},{hexPosition.row}
-              </div>
-            </Html> */}
           </group>
         );
       })}
@@ -66,4 +85,4 @@ const HexInsideView = ({ center, color }: { center: { col: number; row: number }
   );
 };
 
-export default HexInsideView;
+export default HexBuildGrid;

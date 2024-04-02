@@ -1,9 +1,9 @@
 import { useEffect, useMemo } from "react";
 import useUIStore from "../../hooks/store/useUIStore";
 import { useTexture } from "@react-three/drei";
-import HexInsideView from "../../components/cityview/hex/HexInsideView";
+import BuildArea from "../../components/cityview/hexception/BuildArea";
 import { HexPositions, getUIPositionFromColRow } from "../../utils/utils";
-import BigHexBiome from "../../components/cityview/hex/BigHexBiome";
+import BigHexBiome from "../../components/cityview/hexception/BigHexBiome";
 import useRealmStore from "../../hooks/store/useRealmStore";
 import { useGetRealm } from "../../hooks/helpers/useRealm";
 import realmHexPositions from "../../geodata/hex/realmHexPositions.json";
@@ -58,7 +58,7 @@ export const RealmCityViewScene = () => {
     <>
       {realmHex && (
         <group position={[mainPosition.x, 0, -mainPosition.y]} rotation={[0, 0, 0]}>
-          <HexInsideView center={{ col: 4, row: 4 }} color={biomes[realmHex.biome].color} />
+          <BuildArea />
         </group>
       )}
 

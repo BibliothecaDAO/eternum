@@ -10,6 +10,8 @@ import { useRoute } from "wouter";
 import { getRealm } from "../../../../utils/realms";
 import { useLevel } from "../../../../hooks/helpers/useLevel";
 import { useBuildings } from "../../../../hooks/helpers/useBuildings";
+import Button from "../../../../elements/Button";
+import useUIStore from "../../../../hooks/store/useUIStore";
 
 type LaborPanelProps = {
   type?: "all" | "food" | "mines";
@@ -78,51 +80,14 @@ export const LaborPanel = ({ type = "all" }: LaborPanelProps) => {
   const { getEntityLevel } = useLevel();
   const realm_level = getEntityLevel(realmEntityId)?.level;
 
+  const isBuildMode = useUIStore((state) => state.buildMode);
+  const setBuildMode = useUIStore((state) => state.setBuildMode);
+
   return (
     <div className="flex flex-col">
-      <SortPanel className="px-3 py-2">
-        {sortingParams.map(({ label, sortKey, className }) => (
-          <SortButton
-            className={className}
-            key={sortKey}
-            label={label}
-            sortKey={sortKey}
-            activeSort={activeSort}
-            onChange={(_sortKey, _sort) => {
-              setActiveSort({
-                sortKey: _sortKey,
-                sort: _sort,
-              });
-            }}
-          />
-        ))}
-      </SortPanel>
-      {buildResource && (
-        <LaborBuildPopup
-          resourceId={buildResource}
-          onClose={() => setBuildResource(null)}
-          setBuildLoadingStates={setBuildLoadingStates}
-        />
-      )}
-      {realm &&
-        realmResourceIds.map((resourceId) => {
-          const hasGuild = laborBuilding
-            ? resourcesByGuild[Guilds[laborBuilding.building_type - 1]]?.includes(resourceId) || false
-            : false;
-          return (
-            <div className="flex flex-col p-2" key={resourceId}>
-              <LaborComponent
-                hasGuild={hasGuild}
-                setBuildResource={setBuildResource}
-                resourceId={resourceId}
-                realm={realm}
-                setBuildLoadingStates={setBuildLoadingStates}
-                buildLoadingStates={buildLoadingStates}
-                locked={realm_level == 0 && resourceId <= 22}
-              />
-            </div>
-          );
-        })}
+      <Button onClick={() => setBuildMode(!isBuildMode)} variant="success">
+        {isBuildMode ? "Cancel" : "Build Castle"}
+      </Button>
     </div>
   );
 };
