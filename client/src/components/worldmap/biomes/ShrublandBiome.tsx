@@ -17,7 +17,7 @@ type GLTFResult = GLTF & {
     ["Cactus.001Shrub"]: THREE.MeshStandardMaterial;
   };
 };
-export function ShrublandBiome({ hexes }: { hexes: Hexagon[] }) {
+export function ShrublandBiome({ hexes, zOffsets }: { hexes: Hexagon[]; zOffsets?: boolean }) {
   const { nodes, materials } = useGLTF("/models/biomes/shrubland.glb") as GLTFResult;
 
   const defaultTransform = new THREE.Matrix4()
@@ -41,11 +41,11 @@ export function ShrublandBiome({ hexes }: { hexes: Hexagon[] }) {
     let idx = 0;
     let matrix = new THREE.Matrix4();
     hexes.forEach((hex: Hexagon) => {
-      const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
+      const { x, y, z } = getUIPositionFromColRow(hex.col, hex.row);
       // rotate hex randomly on 60 * n degrees
       const seededRandom = pseudoRandom(hex.col, hex.row);
       matrix.makeRotationZ((Math.PI / 3) * Math.floor(seededRandom * 6));
-      matrix.setPosition(x, y, 0.33);
+      matrix.setPosition(x, y, zOffsets ? 0.32 + z : 0.32);
       instancedMesh1.setMatrixAt(idx, matrix);
       instancedMesh2.setMatrixAt(idx, matrix);
       instancedMesh3.setMatrixAt(idx, matrix);

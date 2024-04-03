@@ -16,7 +16,7 @@ type SnowBiomeGLTF = GLTF & {
   };
 };
 
-export function SnowBiome({ hexes }: { hexes: Hexagon[] }) {
+export function SnowBiome({ hexes, zOffsets }: { hexes: Hexagon[]; zOffsets?: boolean }) {
   const { nodes, materials } = useGLTF("/models/biomes/snow.glb") as SnowBiomeGLTF;
 
   const snowMaterial = new THREE.MeshMatcapMaterial({
@@ -46,11 +46,11 @@ export function SnowBiome({ hexes }: { hexes: Hexagon[] }) {
     let idx = 0;
     let matrix = new THREE.Matrix4();
     hexes.forEach((hex: Hexagon) => {
-      const { x, y } = getUIPositionFromColRow(hex.col, hex.row);
+      const { x, y, z } = getUIPositionFromColRow(hex.col, hex.row);
       // rotate hex randomly on 60 * n degrees
       const seededRandom = pseudoRandom(hex.col, hex.row);
       matrix.makeRotationZ((Math.PI / 3) * Math.floor(seededRandom * 6));
-      matrix.setPosition(x, y, 0.33);
+      matrix.setPosition(x, y, zOffsets ? 0.32 + z : 0.32);
       instancedMeshRock.setMatrixAt(idx, matrix);
       instancedMeshSnow.setMatrixAt(idx, matrix);
       idx++;

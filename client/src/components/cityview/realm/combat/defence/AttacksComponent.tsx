@@ -34,13 +34,13 @@ export const AttacksComponent = ({}: AttacksComponentProps) => {
   // @ts-ignore
   const [match, params]: any = useRoute("/realm/:id/:tab");
 
-  useEffect(() => {
-    if ([0, 1, 2].includes(selectedTab)) {
-      moveCameraToMarketView();
-    } else if ([3, 4].includes(selectedTab)) {
-      moveCameraToCaravansView();
-    }
-  }, [selectedTab]);
+  // useEffect(() => {
+  //   if ([0, 1, 2].includes(selectedTab)) {
+  //     moveCameraToMarketView();
+  //   } else if ([3, 4].includes(selectedTab)) {
+  //     moveCameraToCaravansView();
+  //   }
+  // }, [selectedTab]);
 
   useEffect(() => {
     const tabIndex = tabs.findIndex((tab) => tab.key === params?.tab);
