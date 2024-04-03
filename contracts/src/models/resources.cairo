@@ -3,12 +3,11 @@ use eternum::constants::get_resource_probabilities;
 use eternum::constants::ResourceTypes;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
-use eternum::models::production::{Production, ProductionRateTrait};
+use eternum::models::production::{Production, ProductionRateTrait, ProductionDependencyConfig};
 
-// Used as helper struct throughout the world
+
 #[derive(Model, Copy, Drop, Serde)]
 struct Resource {
-    // This is compound key of entity_id and resource_type
     #[key]
     entity_id: u128,
     #[key]
@@ -34,52 +33,78 @@ impl ResourceFoodImpl of ResourceFoodTrait {
         let mut wheat: Resource = get!(world, (entity_id, ResourceTypes::WHEAT), Resource);
         let mut fish: Resource = get!(world, (entity_id, ResourceTypes::FISH), Resource);
         wheat.deduct(world, wheat_amount, check_balance);
+        wheat.save(world);
+
         fish.deduct(world, fish_amount, check_balance);
+        fish.save(world);
     }
 }
 
+#[generate_trait]
+impl ProductionDependentsImpl of ProductionDependentsTrait {
+    // must be called immediately after balance changes
+
+    // e.g resource is stone..dependents are wood andruby because they each depend on 
+    // stone to be produced
+    fn reestimate_dependents_production_period(ref resource: Resource, world: IWorldDispatcher) {
+        let dependency : ProductionDependencyConfig
+            = get!(world, resource.resource_type, ProductionDependencyConfig);
+        if dependency.produced_resource_type_1 != 0 {
+            let mut production 
+                = get!(world, (resource.entity_id, dependency.produced_resource_type_1), Production);
+            production.harvest(ref resource);
+            production.estimate_stop_time(ref resource);
+            set!(world, (production));
+        }
+
+        if dependency.produced_resource_type_2 != 0 {
+            let mut production 
+                = get!(world, (resource.entity_id, dependency.produced_resource_type_2), Production);
+            production.harvest(ref resource);
+            production.estimate_stop_time(ref resource);
+            set!(world, (production));
+        }
+    }
+}
 
 #[generate_trait]
 impl ResourceImpl of ResourceTrait {
-    // This will update the production balance of the resource
-
-    fn balance(ref self: Resource, world: IWorldDispatcher) -> u128 {
-        let mut production_balance: Production = get!(
-            world, (self.entity_id, self.resource_type), Production
-        );
-
-        // take the balance from the production balance and the physical 
-        self.balance += production_balance.balance().into();
-
-        // todo@credence we also need to deduct from balance if resource is
-        //              being used to produce another resource
-
-        self.balance
+    fn query_key(self: Resource) -> (u128, u8) {
+        (self.entity_id, self.resource_type)
     }
 
-    fn deduct(ref self: Resource, world: IWorldDispatcher, amount: u128, check_balance: bool) {
-        let mut amount = amount;
+
+   
+
+    fn deduct(ref self: Resource, world: IWorldDispatcher, mut amount: u128, check_balance: bool) {
         if check_balance {
-            assert(self.balance(world) >= amount, 'insufficient balance');
+            assert(self.balance >= amount, 'insufficient balance');
         } else {
             if amount > self.balance {
                 amount = self.balance
             }
         }
-        self.update_production(world);
+
+        if amount > self.balance {
+            // claim produced amount before deduction where necessary
+
+            let mut production: Production 
+                = get!(world, self.query_key(), Production);
+            production.harvest(ref self);        
+            set!(world, (production));
+        }
+
         self.balance -= amount;
-        self.save(world);
     }
 
 
-    fn add(ref self: Resource, world: IWorldDispatcher, amount: u128) {
-        self.update_production(world);
+    fn add(ref self: Resource, amount: u128) {
         self.balance += amount;
-        self.save(world);
     }
 
     fn save(ref self: Resource, world: IWorldDispatcher) {
         // Save the resource
+        ProductionDependentsImpl::reestimate_dependents_production_period(ref self, world);
         set!(world, (self));
 
         // Update the entity's owned resources
@@ -99,17 +124,6 @@ impl ResourceImpl of ResourceTrait {
                 }
             }
         }
-    }
-
-    // This will lazily update the resources
-    fn update_production(ref self: Resource, world: IWorldDispatcher) {
-        let mut production_balance: Production = get!(
-            world, (self.entity_id, self.resource_type), Production
-        );
-
-        production_balance.update(ref self);
-
-        set!(world, (production_balance));
     }
 
 
