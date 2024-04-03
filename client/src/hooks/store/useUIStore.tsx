@@ -53,7 +53,7 @@ interface UIStore {
   setHighlightColor: (color: number) => void;
 }
 
-const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) => ({
+const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set, get) => ({
   theme: "light",
   setTheme: (theme) => set({ theme }),
   showBlurOverlay: false,
@@ -210,9 +210,9 @@ const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set) =>
   setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
   highlightPositions: [],
   setHighlightPositions: (positions) => set({ highlightPositions: positions }),
-  highlightColor: 0xffffff,
+  highlightColor: 0xffff00,
   setHighlightColor: (color) => set({ highlightColor: color }),
-  ...createPopupsSlice(set),
+  ...createPopupsSlice(set, get),
   ...createDataStoreSlice(set),
   ...createMapStoreSlice(set),
 }));

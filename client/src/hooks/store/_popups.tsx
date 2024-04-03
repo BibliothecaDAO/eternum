@@ -3,11 +3,22 @@ export interface PopupsStore {
   openPopup: (name: string) => void;
   closePopup: (name: string) => void;
   closeAllPopups: () => void;
+  isPopupOpen: (name: string) => boolean;
+  togglePopup: (name: string) => void;
 }
-export const createPopupsSlice = (set: any) => ({
+export const createPopupsSlice = (set: any, get: any) => ({
   openedPopups: [],
   openPopup: (name: string) => set((state: any) => ({ openedPopups: [...state.openedPopups, name] })),
   closePopup: (name: string) =>
     set((state: any) => ({ openedPopups: state.openedPopups.filter((_name: any) => _name !== name) })),
   closeAllPopups: () => set({ openedPopups: [] }),
+  isPopupOpen: (name: string) => get().openedPopups.includes(name),
+  togglePopup: (name: string) => {
+    const isOpen = get().isPopupOpen(name);
+    if (isOpen) {
+      set((state: any) => ({ openedPopups: state.openedPopups.filter((_name: any) => _name !== name) }));
+    } else {
+      set((state: any) => ({ openedPopups: [...state.openedPopups, name] }));
+    }
+  },
 });

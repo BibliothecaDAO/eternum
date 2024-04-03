@@ -204,7 +204,7 @@ export const MainScene = () => {
         outputEncoding: data.encoding,
       }}
     >
-      {import.meta.env.DEV && <Perf position="bottom-left" />}
+      {/* {import.meta.env.DEV && <Perf position="bottom-left" />} */}
       <FPSLimiter>
         {/* <Sky azimuth={azimuth} inclination={inclination} distance={distance} /> */}
         <ambientLight color={ambientColor} intensity={ambientIntensity} />
