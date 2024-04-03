@@ -16,12 +16,24 @@ use eternum::models::resources::Resource;
 // e.g resource is stone..dependents are wood andruby because they each depend on 
 // stone to be produced
 #[derive(Model, Copy, Drop, Serde)]
+struct ProductionConfig {
+    #[key]
+    resource_type: u8,
+    // production per tick
+    amount_per_tick: u128,
+    cost_resource_type_1: u8,
+    cost_resource_type_1_amount: u128,
+    cost_resource_type_2: u8,
+    cost_resource_type_2_amount: u128,
+}
+
+
+#[derive(Model, Copy, Drop, Serde)]
 struct ProductionDependencyConfig {
     #[key]
     dependent_resource_type: u8,
     produced_resource_type_1: u8,
     produced_resource_type_2: u8,
-
 }
 
 #[derive(Model, Copy, Drop, Serde)]
@@ -30,48 +42,47 @@ struct Production {
     entity_id: u128,
     #[key]
     resource_type: u8,
+    building_count: u128,
     production_rate: u128,
     consumed_rate: u128,
     start_at: u64, 
     stop_at: u64, 
-    active: bool,
+    updated_at: u64, 
 }
 
 // We could make this a nice JS Class with a constructor and everything
 // Then maintaining logic in client will be easy
 #[generate_trait]
 impl ProductionRateImpl of ProductionRateTrait {
-    fn start_production(ref self: Production, ref resource: Resource) {
+
+    fn is_active(self: Production) -> bool {
+        if self.building_count > 0 {return true;}
+        return false;
+    }
+
+    fn set_rate(ref self: Production, production_rate: u128) {
+        self.production_rate = production_rate;
+    }
+
+    fn increase_building_count(ref self: Production, ref resource: Resource) {
         self.harvest(ref resource);
-        self.active = true;
+        self.building_count += 1;
         self.estimate_stop_time(ref resource);
     }
 
-    fn stop_production(ref self: Production, ref resource: Resource) {
+    fn decrease_building_count(ref self: Production, ref resource: Resource) {
         self.harvest(ref resource);
-        self.active = false;
+        self.building_count -= 1;
         self.estimate_stop_time(ref resource);
     }
 
-    fn increase_production_rate(ref self: Production, amount: u128, ref resource: Resource) {
-        self.harvest(ref resource);
-        self.production_rate += amount;
-        self.estimate_stop_time(ref resource);
-    }
-
-    fn decrease_production_rate(ref self: Production, amount: u128, ref resource: Resource) {
-        self.harvest(ref resource);
-        self.production_rate -= amount;
-        self.estimate_stop_time(ref resource);
-    }
-
-    fn increase_consumed_rate(ref self: Production, amount: u128, ref resource: Resource) {
+    fn increase_consumed_rate(ref self: Production, ref resource: Resource, amount: u128) {
         self.harvest(ref resource);
         self.consumed_rate += amount;
         self.estimate_stop_time(ref resource);
     }
     
-    fn decrease_consumed_rate(ref self: Production, amount: u128, ref resource: Resource) {
+    fn decrease_consumed_rate(ref self: Production, ref resource: Resource, amount: u128) {
         self.harvest(ref resource);
         self.consumed_rate -= amount;
         self.estimate_stop_time(ref resource);
@@ -92,15 +103,11 @@ impl ProductionRateImpl of ProductionRateTrait {
         }
         
         let now = get_block_timestamp();
-        if now >= self.stop_at {
-            self.stop_at = now;
-            self.active = false;
-        }
         self.start_at = now;
     }
 
     fn net_rate(self: Production) -> (bool, u128) {
-        if !self.active {return (false, 0);}
+        if !self.is_active() {return (false, 0);}
 
         if self.production_rate > self.consumed_rate {
             (true, self.production_rate - self.consumed_rate)
@@ -110,7 +117,7 @@ impl ProductionRateImpl of ProductionRateTrait {
     }
 
     fn estimate_stop_time(ref self: Production, ref resource: Resource){
-        if self.active {
+        if self.is_active() {
             let (sign, value) = self.net_rate();
 
             // todo check for division by 0 errors
@@ -127,16 +134,19 @@ impl ProductionRateImpl of ProductionRateTrait {
     }
 
     fn generated(self: Production) -> u128 {
-        if !self.active {return 0;}
-        self.production_rate *  self.duration().into()
+        if !self.is_active() {return 0;}
+        self.building_count * self.production_rate *  self.duration().into()
     }
 
     fn consumed(self: Production) -> u128 {
-        if !self.active {return 0;}
+        if !self.is_active() {return 0;}
         self.consumed_rate * self.duration().into()
     }
 
     fn duration(self: Production) -> u64 {
+        if self.start_at > self.stop_at {
+            return 0;
+        }
         let now = get_block_timestamp();
         if now > self.stop_at {
             self.stop_at - self.start_at
@@ -145,20 +155,3 @@ impl ProductionRateImpl of ProductionRateTrait {
         }
     }
 }
-
-// notes
-// we always calculate production value when it is time to claim. 
-
-// if wood, ruby and gold depend on
-//
-// 1. stone
-// 2. coal
-
-
-// the reason that production needs to know if any of the 
-// dependent balances changes is so that we can calculate when 
-// production should end accurately
-
-// to calculate this accurately, we need to know 
-// 1. if dependent resource will ever run out. if it won't ever run out, how many production 
-// // structs will use this perceived balance

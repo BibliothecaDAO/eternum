@@ -79,9 +79,6 @@ impl ResourceImpl of ResourceTrait {
         (self.entity_id, self.resource_type)
     }
 
-
-   
-
     fn deduct(ref self: Resource, world: IWorldDispatcher, mut amount: u128, check_balance: bool) {
         if check_balance {
             assert(self.balance >= amount, 'insufficient balance');
@@ -97,6 +94,7 @@ impl ResourceImpl of ResourceTrait {
             let mut production: Production 
                 = get!(world, self.query_key(), Production);
             production.harvest(ref self);        
+            production.estimate_stop_time(ref self);
             set!(world, (production));
         }
 
