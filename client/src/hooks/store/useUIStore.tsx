@@ -214,7 +214,7 @@ const useUIStore = create<UIStore & PopupsStore & DataStore & MapStore>((set, ge
   setIsLoadingScreenEnabled: (enabled) => set({ isLoadingScreenEnabled: enabled }),
   highlightPositions: [],
   setHighlightPositions: (positions) => set({ highlightPositions: positions }),
-  highlightColor: 0xffffff,
+  highlightColor: 0xffff00,
   setHighlightColor: (color) => set({ highlightColor: color }),
   ...createPopupsSlice(set, get),
   ...createDataStoreSlice(set),

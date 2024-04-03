@@ -6,6 +6,7 @@ import { BottomRightContainer } from "../containers/BottomRightContainer";
 import ChatModule from "../modules/ChatModule";
 import BottomMiddleContainer from "../containers/BottomMiddleContainer";
 import TopContainer from "../containers/TopContainer";
+import TopMiddleContainer from "../containers/TopMiddleContainer";
 import NavigationModule from "../modules/NavigationModule";
 import LeftMiddleContainer from "../containers/LeftMiddleContainer";
 import ContentContainer from "../containers/ContentContainer";
@@ -13,6 +14,8 @@ import RightMiddleContainer from "../containers/RightMiddleContainer";
 import RealmManagementModule from "../modules/RealmManagementModule";
 import { LeftNavigationModule } from "../modules/LeftNavigationModule";
 import { RightNavigationModule } from "../modules/RightNavigationModule";
+import { BottomNavigation } from "../modules/BottomNavigation";
+import { TopMiddleNavigation } from "../modules/TopMiddleNavigation";
 import RealmResourcesComponent from "../components/cityview/realm/RealmResourcesComponent";
 import { useEffect, useMemo } from "react";
 import clsx from "clsx";
@@ -63,7 +66,7 @@ export const World = () => {
       className="fixed antialiased top-0 left-0 z-0 w-screen h-screen p-2 overflow-hidden"
     >
       <WorldPopups />
-      <BackgroundContainer className="border-2 border-[#E0AF65] rounded-xl relative">
+      <BackgroundContainer className="border-2 border-gold rounded-xl relative">
         <div className="absolute top-0 left-0 z-10 w-full pointer-events-none rounded-xl h-12 bg-gradient-to-b from-black/20 to-transparent opacity-90" />
         <div className="h-full w-full main-scene">
           <MainScene />
@@ -80,7 +83,7 @@ export const World = () => {
       </BackgroundContainer>
       <TopContainer>
         {/* <NetworkModule /> */}
-        <div className="flex">
+        <div className="flex w-72">
           <NavigationModule />
           <NotificationsComponent className="" />
         </div>
@@ -89,18 +92,21 @@ export const World = () => {
       <ContentContainer>
         <Switch location={locationType}>
           <Route path="map">{/* <WorldMapMenuModule /> */}</Route>
-          <Route path="realm">
-            <RealmManagementModule />
-          </Route>
+          <Route path="realm">{/* <RealmManagementModule /> */}</Route>
         </Switch>
       </ContentContainer>
+      <TopMiddleContainer>
+        <TopMiddleNavigation />
+      </TopMiddleContainer>
       <LeftMiddleContainer>
         <LeftNavigationModule />
       </LeftMiddleContainer>
       <RightMiddleContainer>
         <RightNavigationModule />
       </RightMiddleContainer>
-      <BottomMiddleContainer>{<></>}</BottomMiddleContainer>
+      <BottomMiddleContainer>
+        <BottomNavigation />
+      </BottomMiddleContainer>
       <BottomRightContainer>{/* <ChatModule /> */}</BottomRightContainer>
       <BlankOverlayContainer>
         <Onboarding />

@@ -4,7 +4,7 @@ import { HexagonInformationPanel } from "../components/worldmap/hexagon/HexagonI
 
 export const RightNavigationModule = () => {
   return (
-    <BaseContainer className="max-h-full   w-[600px] text-gold ">
+    <BaseContainer className="max-h-full w-[400px] text-gold ">
       <HexagonInformationPanel />
     </BaseContainer>
   );

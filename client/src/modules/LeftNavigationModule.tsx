@@ -11,6 +11,7 @@ import {
   leaderboard,
 } from "./EventLogModule";
 import useUIStore from "../hooks/store/useUIStore";
+import CircleButton from "../elements/CircleButton";
 
 export const LeftNavigationModule = () => {
   const { togglePopup, closeAllPopups } = useUIStore();
@@ -18,42 +19,42 @@ export const LeftNavigationModule = () => {
   const navigation = [
     {
       button: (
-        <Button onClick={() => togglePopup(eventLog)} variant="primary">
-          events
-        </Button>
+        <CircleButton size="lg" onClick={() => togglePopup(eventLog)}>
+          E
+        </CircleButton>
       ),
     },
     {
       button: (
-        <Button onClick={() => togglePopup(banks)} variant="primary">
-          bank
-        </Button>
+        <CircleButton size="lg" onClick={() => togglePopup(banks)}>
+          B
+        </CircleButton>
       ),
     },
     {
       button: (
-        <Button onClick={() => togglePopup(hyperstructures)} variant="primary">
-          hyperstructures
-        </Button>
+        <CircleButton size="lg" onClick={() => togglePopup(hyperstructures)}>
+          H
+        </CircleButton>
       ),
     },
     {
       button: (
-        <Button onClick={() => togglePopup(leaderboard)} variant="primary">
-          leaderboard
-        </Button>
+        <CircleButton size="lg" onClick={() => togglePopup(leaderboard)}>
+          L
+        </CircleButton>
       ),
     },
     {
       button: (
-        <Button onClick={() => closeAllPopups()} variant="primary">
-          close all
-        </Button>
+        <CircleButton size="lg" onClick={() => closeAllPopups()}>
+          X
+        </CircleButton>
       ),
     },
   ];
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col bg-brown pr-2 rounded-r-3xl border-r-2 border-y-2 space-y-2 border-gold py-3">
       {navigation.map((a) => a.button)}
 
       <EventLog />
