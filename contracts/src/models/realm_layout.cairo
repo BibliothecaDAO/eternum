@@ -49,10 +49,10 @@ impl BuildingCategoryImpl of BuildingCategoryTrait {
             BuildingCategory::Resource(_type) => _type,
             BuildingCategory::Farm => ResourceTypes::WHEAT,
             BuildingCategory::FishingVillage => ResourceTypes::FISH,
-            BuildingCategory::Barracks => 0,
+            BuildingCategory::Barracks => ResourceTypes::KNIGHT,
             BuildingCategory::Market => 0,
-            BuildingCategory::ArcheryRange => 0,
-            BuildingCategory::Stable => 0,
+            BuildingCategory::ArcheryRange => ResourceTypes::CROSSBOWMAN,
+            BuildingCategory::Stable => ResourceTypes::PALADIN,
         }
     }
 
