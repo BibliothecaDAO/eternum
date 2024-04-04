@@ -11,4 +11,4 @@ source scripts/env_variables.sh dev
 
 
 echo "Started indexer"
-torii --world 0xa92287241cfe50996a7d5b1af3ab036b99528e97a77980ac36c34dfda28562
+torii --world 0x177a3f3d912cf4b55f0f74eccf3b7def7c6144efeba033e9f21d9cdb0230c64
