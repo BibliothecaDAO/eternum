@@ -15,8 +15,6 @@ export const RealmTradeComponent = ({}: RealmTradeComponentProps) => {
   const [selectedTab, setSelectedTab] = useState(1);
   const { realmEntityId } = useRealmStore();
 
-  const moveCameraToMarketView = useUIStore((state) => state.moveCameraToMarketView);
-  const moveCameraToCaravansView = useUIStore((state) => state.moveCameraToCaravansView);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   // @ts-ignore

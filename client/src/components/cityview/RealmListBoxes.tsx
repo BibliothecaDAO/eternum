@@ -107,7 +107,6 @@ export const RealmListBoxes = ({ className }: RealmSwitchProps) => {
               setTimeout(() => {
                 if (location.includes(`/realm`)) {
                   setIsLoadingScreenEnabled(false);
-                  playFly();
                 }
                 setLocation(`/realm/${Number(realm.realmId)}`);
                 setRealmEntityId(realm.id);

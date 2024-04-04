@@ -15,8 +15,6 @@ export const RealmCombatComponent = ({}: RealmCombatComponentProps) => {
   const { realmEntityId } = useRealmStore();
   const { useRealmRaiders } = useCombat();
 
-  const moveCameraToMarketView = useUIStore((state) => state.moveCameraToMarketView);
-  const moveCameraToCaravansView = useUIStore((state) => state.moveCameraToCaravansView);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   // @note: useOwnerRaiders would be useful for a all realms management window
