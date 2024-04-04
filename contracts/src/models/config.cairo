@@ -162,16 +162,14 @@ struct MapExploreConfig {
 #[derive(Model, Copy, Drop, Serde)]
 struct TickConfig {
     #[key]
-    config_id: u128, 
+    config_id: u128,
     max_moves_per_tick: u8,
     tick_interval_in_seconds: u64
 }
 
 
-
 #[generate_trait]
 impl TickConfigImpl of TickConfigTrait {
-
     fn current(self: TickConfig) -> u64 {
         let now = starknet::get_block_timestamp();
         now / self.tick_interval_in_seconds
@@ -257,15 +255,11 @@ impl LaborBuildingsConfigImpl of LaborBuildingsConfigTrait {
         );
         loop {
             match resource_types_1.pop_front() {
-                Option::Some(v) => {
-                    if resource_type == *v {
-                        building_type = 1;
-                        break ();
-                    };
-                },
-                Option::None(_) => {
+                Option::Some(v) => { if resource_type == *v {
+                    building_type = 1;
                     break ();
-                },
+                }; },
+                Option::None(_) => { break (); },
             };
         };
 
@@ -275,15 +269,11 @@ impl LaborBuildingsConfigImpl of LaborBuildingsConfigTrait {
 
         loop {
             match resource_types_2.pop_front() {
-                Option::Some(v) => {
-                    if resource_type == *v {
-                        building_type = 2;
-                        break ();
-                    };
-                },
-                Option::None(_) => {
+                Option::Some(v) => { if resource_type == *v {
+                    building_type = 2;
                     break ();
-                },
+                }; },
+                Option::None(_) => { break (); },
             };
         };
 
@@ -293,15 +283,11 @@ impl LaborBuildingsConfigImpl of LaborBuildingsConfigTrait {
 
         loop {
             match resource_types_3.pop_front() {
-                Option::Some(v) => {
-                    if resource_type == *v {
-                        building_type = 3;
-                        break ();
-                    };
-                },
-                Option::None(_) => {
+                Option::Some(v) => { if resource_type == *v {
+                    building_type = 3;
                     break ();
-                },
+                }; },
+                Option::None(_) => { break (); },
             };
         };
 
@@ -311,15 +297,11 @@ impl LaborBuildingsConfigImpl of LaborBuildingsConfigTrait {
 
         loop {
             match resource_types_4.pop_front() {
-                Option::Some(v) => {
-                    if resource_type == *v {
-                        building_type = 4;
-                        break ();
-                    };
-                },
-                Option::None(_) => {
+                Option::Some(v) => { if resource_type == *v {
+                    building_type = 4;
                     break ();
-                },
+                }; },
+                Option::None(_) => { break (); },
             };
         };
 

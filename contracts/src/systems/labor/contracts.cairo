@@ -56,7 +56,6 @@ mod labor_systems {
         ///     then the multiplier can be 1, 2 or 3. 
         ///
         fn build(
-            self: @ContractState,
             world: IWorldDispatcher,
             realm_id: u128,
             resource_type: u8,
@@ -178,9 +177,7 @@ mod labor_systems {
         /// * `realm_id` - The realm id
         /// * `resource_type` - The resource type (e.g fish, wheat, gold etc)
         ///
-        fn harvest(
-            self: @ContractState, world: IWorldDispatcher, realm_id: u128, resource_type: u8
-        ) {
+        fn harvest(world: IWorldDispatcher, realm_id: u128, resource_type: u8) {
             let player_id: ContractAddress = starknet::get_caller_address();
             let (realm, owner) = get!(world, realm_id, (Realm, Owner));
 
@@ -303,11 +300,7 @@ mod labor_systems {
         /// * `labor_units` - The number of labor units to build
         ///
         fn purchase(
-            self: @ContractState,
-            world: IWorldDispatcher,
-            entity_id: u128,
-            resource_type: u8,
-            labor_units: u128
+            world: IWorldDispatcher, entity_id: u128, resource_type: u8, labor_units: u128
         ) {
             // assert owner of realm
             let player_id: ContractAddress = starknet::get_caller_address();
@@ -365,7 +358,6 @@ mod labor_systems {
                 .get_time_since_start_fixed();
 
             assert(labor_auction.per_time_unit != 0, 'Labor auction not found');
-
 
             let mut index = 0_usize;
             loop {

@@ -97,10 +97,6 @@
         "name": "explore",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "unit_id",
             "type": "core::integer::u128"
           },

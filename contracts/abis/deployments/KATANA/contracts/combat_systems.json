@@ -77,10 +77,6 @@
         "name": "create_soldiers",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "realm_entity_id",
             "type": "core::integer::u128"
           },
@@ -100,10 +96,6 @@
         "type": "function",
         "name": "detach_soldiers",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "unit_id",
             "type": "core::integer::u128"
@@ -125,10 +117,6 @@
         "name": "merge_soldiers",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "merge_into_unit_id",
             "type": "core::integer::u128"
           },
@@ -144,10 +132,6 @@
         "type": "function",
         "name": "heal_soldiers",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "unit_id",
             "type": "core::integer::u128"
@@ -186,10 +170,6 @@
         "name": "attack",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "attacker_ids",
             "type": "core::array::Span::<core::integer::u128>"
           },
@@ -205,10 +185,6 @@
         "type": "function",
         "name": "steal",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "attacker_id",
             "type": "core::integer::u128"

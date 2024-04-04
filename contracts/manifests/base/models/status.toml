@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x4926b74eeecab95bed7f19b29f700ddf4ba06b4b77276255c30ce38dd9b741f"
+class_hash = "0x4c92f4209d4c239c7cf0c3d7c645132b2dafd06db44d69f74be5a12bb8a50fb"
+abi = "abis/base/models/status.json"
 name = "eternum::models::trade::status"
 
 [[members]]

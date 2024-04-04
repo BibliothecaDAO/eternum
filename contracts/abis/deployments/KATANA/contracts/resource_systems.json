@@ -77,10 +77,6 @@
         "name": "approve",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "entity_id",
             "type": "core::integer::u128"
           },
@@ -101,10 +97,6 @@
         "name": "transfer",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "sending_entity_id",
             "type": "core::integer::u128"
           },
@@ -124,10 +116,6 @@
         "type": "function",
         "name": "transfer_from",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "approved_entity_id",
             "type": "core::integer::u128"
@@ -163,10 +151,6 @@
         "type": "function",
         "name": "transfer_item",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "sender_id",
             "type": "core::integer::u128"

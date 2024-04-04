@@ -30,7 +30,6 @@ mod realm_systems {
     #[abi(embed_v0)]
     impl RealmSystemsImpl of IRealmSystems<ContractState> {
         fn create(
-            self: @ContractState,
             world: IWorldDispatcher,
             realm_id: u128,
             resource_types_packed: u128,

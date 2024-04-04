@@ -1,8 +1,7 @@
-
 // copy pasta from https://github.com/gizatechxyz/orion/tree/main/src/operators
 
 trait NumberTrait<T, MAG> {
-    fn abs(self: T) -> T;    
+    fn abs(self: T) -> T;
 }
 
 
@@ -33,7 +32,7 @@ impl i128Div of Div<i128> {
         let rhs_felt: felt252 = rhs_positive.into();
         let lhs_u128: u128 = lhs_felt.try_into().unwrap();
         let rhs_u128: u128 = rhs_felt.try_into().unwrap();
-        let mut result = lhs_u128 / rhs_u128; 
+        let mut result = lhs_u128 / rhs_u128;
         let felt_result: felt252 = result.into();
         let signed_int_result: i128 = felt_result.try_into().unwrap();
         if lhs * rhs < 0 {

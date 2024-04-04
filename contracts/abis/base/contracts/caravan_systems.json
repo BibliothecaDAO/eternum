@@ -77,10 +77,6 @@
         "name": "create",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "entity_ids",
             "type": "core::array::Array::<core::integer::u128>"
           }
@@ -96,10 +92,6 @@
         "type": "function",
         "name": "disassemble",
         "inputs": [
-          {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
           {
             "name": "caravan_id",
             "type": "core::integer::u128"

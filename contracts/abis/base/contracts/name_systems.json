@@ -67,10 +67,6 @@
         "name": "set_address_name",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "name",
             "type": "core::felt252"
           }

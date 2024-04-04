@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x4f05ea809f737a377d363cec4e16ba2b93a00347143852587c9be200fa467ab"
+class_hash = "0x6a94f276c7680df58ea651b5689d748eefe4d99dba6821ebb3864c18b0ec7f2"
+abi = "abis/base/models/road.json"
 name = "eternum::models::road::road"
 
 [[members]]

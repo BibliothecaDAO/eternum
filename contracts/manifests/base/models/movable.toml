@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x3f162ddc0aad74ffbfb6ea300618c676858ab06f6c9df620a26fc58a4be8bb0"
+class_hash = "0x5ceb97f06877d30524f6396add4afc50bf419b749e6832d764c6da66c515c40"
+abi = "abis/base/models/movable.json"
 name = "eternum::models::movable::movable"
 
 [[members]]

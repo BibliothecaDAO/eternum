@@ -1,5 +1,6 @@
 kind = "DojoModel"
-class_hash = "0x7ed6c4aafd9f505c4d6fcd79415b5c9ce0e151d875507f05e2f05b802a953d2"
+class_hash = "0x346c23bd680c75f698a1cb3468e6b74a7d8cf27524075c89e32900f4f131707"
+abi = "abis/base/models/weight_config.json"
 name = "eternum::models::config::weight_config"
 
 [[members]]
