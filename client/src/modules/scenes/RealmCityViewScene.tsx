@@ -62,7 +62,7 @@ export const RealmCityViewScene = () => {
         </group>
       )}
 
-      {/* {neighborHexesInsideView && neighborHexesInsideView.length > 0 && (
+      {neighborHexesInsideView && neighborHexesInsideView.length > 0 && (
         <group>
           <group position={[pos.x, 0, -pos.y]} rotation={[0, 0, 0]}>
             <BigHexBiome biome={neighborHexesInsideView[0].biome as any} />
@@ -83,7 +83,7 @@ export const RealmCityViewScene = () => {
             <BigHexBiome biome={neighborHexesInsideView[5].biome as any} />
           </group>
         </group>
-      )} */}
+      )}
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
         <planeGeometry args={[2668, 1390.35]} />
