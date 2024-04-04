@@ -67,10 +67,6 @@
         "name": "swap",
         "inputs": [
           {
-            "name": "world",
-            "type": "dojo::world::IWorldDispatcher"
-          },
-          {
             "name": "bank_id",
             "type": "core::integer::u128"
           },
