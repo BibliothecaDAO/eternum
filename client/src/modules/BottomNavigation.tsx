@@ -1,54 +1,73 @@
-import Button from "../elements/Button";
-
-import {
-  Banks,
-  EventLog,
-  HyperStructures,
-  Leaderboard,
-  banks,
-  eventLog,
-  hyperstructures,
-  leaderboard,
-} from "./EventLogModule";
 import useUIStore from "../hooks/store/useUIStore";
 import CircleButton from "../elements/CircleButton";
 import { useState } from "react";
 
-export const BottomNavigation = () => {
-  const { togglePopup, closeAllPopups } = useUIStore();
+import { RealmListBoxes } from "../components/cityview/RealmListBoxes";
 
-  const [buildingBar, setBuildingBar] = useState(false);
+export const BottomNavigation = () => {
+  const [activeBar, setActiveBar] = useState<null | "R" | "B" | "A">(null);
+
+  const toggleBar = (barName: "R" | "B" | "A") => {
+    if (activeBar === barName) {
+      setActiveBar(null);
+    } else {
+      setActiveBar(barName);
+    }
+  };
 
   const navigation = [
     {
+      name: "bar1",
       button: (
-        <CircleButton size="lg" onClick={() => setBuildingBar(!buildingBar)}>
-          RE
+        <CircleButton size="lg" onClick={() => toggleBar("R")}>
+          R
         </CircleButton>
       ),
     },
     {
+      name: "bar2",
       button: (
-        <CircleButton size="lg" onClick={() => togglePopup(banks)}>
-          ST
+        <CircleButton size="lg" onClick={() => toggleBar("B")}>
+          B
         </CircleButton>
       ),
     },
     {
+      name: "bar3",
       button: (
-        <CircleButton size="lg" onClick={() => togglePopup(banks)}>
-          BU
+        <CircleButton size="lg" onClick={() => toggleBar("A")}>
+          A
         </CircleButton>
       ),
     },
   ];
+
   return (
     <div className="flex bg-brown rounded-t-3xl border-x-2 border-t border-gold py-3 w-96 justify-center flex-wrap">
-      <div className={`w-full transition-all duration-300 ${buildingBar ? "h-16" : "h-0"}`}>
-        <div></div>
+      {/* Conditionally render bars based on the activeBar state */}
+      <div
+        className={`w-full transition-all duration-300 overflow-auto pb-2 ${
+          activeBar === "R" ? "h-auto" : "h-0 hidden"
+        }`}
+      >
+        <RealmListBoxes />
+      </div>
+      <div
+        className={`w-full transition-all duration-300 overflow-auto pb-2 ${
+          activeBar === "B" ? "h-auto" : "h-0 hidden"
+        }`}
+      >
+        buildings
+      </div>
+      <div
+        className={`w-full transition-all duration-300 overflow-auto pb-2 ${
+          activeBar === "A" ? "h-auto" : "h-0 hidden"
+        }`}
+      >
+        armies
       </div>
       <div className="w-full flex space-x-2 justify-center border-t border-gold pt-2">
-        {navigation.map((a) => a.button)}
+        {navigation.map((item) => item.button)}
       </div>
     </div>
   );

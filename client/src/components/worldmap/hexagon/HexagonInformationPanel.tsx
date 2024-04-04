@@ -13,13 +13,13 @@ export const HexagonInformationPanel = () => {
   const tabs = useMemo(
     () => [
       {
-        key: "hex",
+        key: "overview",
         label: (
           <div className="flex relative group flex-col items-center ">
-            <div>Hex</div>
+            <div>Production</div>
           </div>
         ),
-        component: <FixedHexagonInformation />,
+        component: <div className="p-2">Production</div>,
       },
       {
         key: "combat",
@@ -55,6 +55,7 @@ export const HexagonInformationPanel = () => {
 
   return (
     <>
+      <FixedHexagonInformation />
       <Tabs
         selectedIndex={selectedTab}
         onChange={(index: any) => setSelectedTab(index)}

@@ -95,7 +95,7 @@ const NavgationComponent = () => {
         </CircleButton>
       </div>
 
-      <CircleButton
+      {/* <CircleButton
         onClick={() => toggleSideMenu()}
         size="md"
         className={clsx("absolute z-0 text-[10px]", "top-16 mt-3")}
@@ -103,8 +103,8 @@ const NavgationComponent = () => {
         <ForwardBurgerIcon
           className={clsx("fill-current duration-300 transition-transform", isSideMenuOpened && "rotate-180")}
         />
-      </CircleButton>
-      <RealmSwitch className={clsx("absolute z-0 text-[10px]", "top-20 left-16 -ml-2 -mt-5")} />
+      </CircleButton> */}
+      {/* <RealmSwitch className={clsx("absolute z-0 text-[10px]", "top-20 left-16 -ml-2 -mt-5")} /> */}
 
       {showSettings && (
         <SecondaryPopup className="top-1/3 text-gold" name="settings">
