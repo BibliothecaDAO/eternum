@@ -52,8 +52,8 @@ export const getContractByName = (manifest: any, name: string) => {
 };
 
 export class EternumProvider extends DojoProvider {
-  constructor(katana: any, url?: string, manifest: any = undefined) {
-    super(manifest, url);
+  constructor(katana: any, url?: string) {
+    super(katana, url);
     this.manifest = katana;
 
     this.getWorldAddress = function () {
@@ -87,7 +87,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "labor_systems"),
       entrypoint: "build",
-      calldata: [this.getWorldAddress(), entity_id, resource_type, labor_units, multiplier],
+      calldata: [entity_id, resource_type, labor_units, multiplier],
     });
 
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -100,7 +100,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "labor_systems"),
       entrypoint: "harvest",
-      calldata: [this.getWorldAddress(), realm_id, resource_type],
+      calldata: [realm_id, resource_type],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -114,7 +114,7 @@ export class EternumProvider extends DojoProvider {
       return {
         contractAddress: getContractByName(this.manifest, "labor_systems"),
         entrypoint: "harvest",
-        calldata: [this.getWorldAddress(), ...entity_id],
+        calldata: [...entity_id],
       };
     });
 
@@ -158,12 +158,12 @@ export class EternumProvider extends DojoProvider {
         {
           contractAddress: getContractByName(this.manifest, "transport_unit_systems"),
           entrypoint: "create_free_unit",
-          calldata: [this.getWorldAddress(), maker_id, donkeys_quantity],
+          calldata: [maker_id, donkeys_quantity],
         },
         {
           contractAddress: getContractByName(this.manifest, "caravan_systems"),
           entrypoint: "create",
-          calldata: [this.getWorldAddress(), [uuid].length, ...[uuid]],
+          calldata: [[uuid].length, ...[uuid]],
         },
       );
     }
@@ -197,7 +197,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(props.signer, {
       contractAddress: getContractByName(this.manifest, "test_resource_systems"),
       entrypoint: "mint",
-      calldata: [this.getWorldAddress(), receiver_id, resources.length / 2, ...resources],
+      calldata: [receiver_id, resources.length / 2, ...resources],
     });
 
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -220,12 +220,12 @@ export class EternumProvider extends DojoProvider {
         {
           contractAddress: getContractByName(this.manifest, "transport_unit_systems"),
           entrypoint: "create_free_unit",
-          calldata: [this.getWorldAddress(), taker_id, donkeys_quantity],
+          calldata: [taker_id, donkeys_quantity],
         },
         {
           contractAddress: getContractByName(this.manifest, "caravan_systems"),
           entrypoint: "create",
-          calldata: [this.getWorldAddress(), [transport_unit_ids].length, ...[transport_unit_ids]],
+          calldata: [[transport_unit_ids].length, ...[transport_unit_ids]],
         },
       );
     }
@@ -235,7 +235,7 @@ export class EternumProvider extends DojoProvider {
       transactions.push({
         contractAddress: getContractByName(this.manifest, "trade_systems"),
         entrypoint: "accept_order",
-        calldata: [this.getWorldAddress(), taker_id, final_caravan_id, trade_id],
+        calldata: [taker_id, final_caravan_id, trade_id],
       });
     }
 
@@ -250,7 +250,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "trade_systems"),
       entrypoint: "cancel_order",
-      calldata: [this.getWorldAddress(), trade_id],
+      calldata: [trade_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -265,7 +265,7 @@ export class EternumProvider extends DojoProvider {
         return {
           contractAddress: getContractByName(this.manifest, "resource_systems"),
           entrypoint: "transfer_item",
-          calldata: [this.getWorldAddress(), sender.sender_id, index, sender.receiver_id],
+          calldata: [sender.sender_id, index, sender.receiver_id],
         };
       });
     });
@@ -283,7 +283,7 @@ export class EternumProvider extends DojoProvider {
       return {
         contractAddress: getContractByName(this.manifest, "resource_systems"),
         entrypoint: "transfer_item",
-        calldata: [this.getWorldAddress(), sender_id, index, receiver_id],
+        calldata: [sender_id, index, receiver_id],
       };
     });
 
@@ -311,7 +311,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "transport_unit_systems"),
       entrypoint: "create_free_unit",
-      calldata: [this.getWorldAddress(), realm_id, quantity],
+      calldata: [realm_id, quantity],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -323,7 +323,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "caravan_systems"),
       entrypoint: "create",
-      calldata: [this.getWorldAddress(), entity_ids.length, ...entity_ids],
+      calldata: [entity_ids.length, ...entity_ids],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -336,12 +336,12 @@ export class EternumProvider extends DojoProvider {
       {
         contractAddress: getContractByName(this.manifest, "caravan_systems"),
         entrypoint: "disassemble",
-        calldata: [this.getWorldAddress(), caravan_id],
+        calldata: [caravan_id],
       },
       {
         contractAddress: getContractByName(this.manifest, "transport_unit_systems"),
         entrypoint: "return_free_units",
-        calldata: [this.getWorldAddress(), unit_ids.length, ...unit_ids],
+        calldata: [unit_ids.length, ...unit_ids],
       },
     ]);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -354,7 +354,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "trade_systems"),
       entrypoint: "attach_caravan",
-      calldata: [this.getWorldAddress(), realm_id, trade_id, caravan_id],
+      calldata: [realm_id, trade_id, caravan_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -367,12 +367,12 @@ export class EternumProvider extends DojoProvider {
       {
         contractAddress: getContractByName(this.manifest, "labor_systems"),
         entrypoint: "purchase",
-        calldata: [this.getWorldAddress(), entity_id, resource_type, (labor_units as number) * (multiplier as number)],
+        calldata: [entity_id, resource_type, (labor_units as number) * (multiplier as number)],
       },
       {
         contractAddress: getContractByName(this.manifest, "labor_systems"),
         entrypoint: "build",
-        calldata: [this.getWorldAddress(), entity_id, resource_type, labor_units, multiplier],
+        calldata: [entity_id, resource_type, labor_units, multiplier],
       },
     ]);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -400,7 +400,6 @@ export class EternumProvider extends DojoProvider {
         contractAddress: getContractByName(this.manifest, "realm_systems"),
         entrypoint: "create",
         calldata: [
-          this.getWorldAddress(),
           realm_id,
           resource_types_packed,
           resource_types_count,
@@ -443,7 +442,6 @@ export class EternumProvider extends DojoProvider {
           contractAddress: getContractByName(this.manifest, "realm_systems"),
           entrypoint: "create",
           calldata: [
-            this.getWorldAddress(),
             realm_id,
             resource_types_packed,
             resource_types_count,
@@ -494,7 +492,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "resource_systems"),
       entrypoint: "transfer",
-      calldata: [this.getWorldAddress(), sending_entity_id, receiving_entity_id, resources.length / 2, ...resources],
+      calldata: [sending_entity_id, receiving_entity_id, resources.length / 2, ...resources],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -524,12 +522,12 @@ export class EternumProvider extends DojoProvider {
         {
           contractAddress: getContractByName(this.manifest, "transport_unit_systems"),
           entrypoint: "create_free_unit",
-          calldata: [this.getWorldAddress(), sending_entity_id, donkeys_quantity],
+          calldata: [sending_entity_id, donkeys_quantity],
         },
         {
           contractAddress: getContractByName(this.manifest, "caravan_systems"),
           entrypoint: "create",
-          calldata: [this.getWorldAddress(), [transport_unit_ids].length, ...[transport_unit_ids]],
+          calldata: [[transport_unit_ids].length, ...[transport_unit_ids]],
         },
       );
     }
@@ -540,12 +538,12 @@ export class EternumProvider extends DojoProvider {
         {
           contractAddress: getContractByName(this.manifest, "resource_systems"),
           entrypoint: "transfer",
-          calldata: [this.getWorldAddress(), sending_entity_id, final_caravan_id, resources.length / 2, ...resources],
+          calldata: [sending_entity_id, final_caravan_id, resources.length / 2, ...resources],
         },
         {
           contractAddress: getContractByName(this.manifest, "travel_systems"),
           entrypoint: "travel",
-          calldata: [this.getWorldAddress(), final_caravan_id, destination_coord_x, destination_coord_y],
+          calldata: [final_caravan_id, destination_coord_x, destination_coord_y],
         },
       );
     }
@@ -573,17 +571,17 @@ export class EternumProvider extends DojoProvider {
       {
         contractAddress: getContractByName(this.manifest, "resource_systems"),
         entrypoint: "transfer_item",
-        calldata: [this.getWorldAddress(), sender_id, inventoryIndex, sender_id],
+        calldata: [sender_id, inventoryIndex, sender_id],
       },
       ...indices.map((index, i) => ({
         contractAddress: getContractByName(this.manifest, "bank_systems"),
         entrypoint: "swap",
-        calldata: [this.getWorldAddress(), bank_id, index, sender_id, resource_types[i], resource_amounts[i]],
+        calldata: [bank_id, index, sender_id, resource_types[i], resource_amounts[i]],
       })),
       {
         contractAddress: getContractByName(this.manifest, "travel_systems"),
         entrypoint: "travel",
-        calldata: [this.getWorldAddress(), sender_id, destination_coord_x, destination_coord_y],
+        calldata: [sender_id, destination_coord_x, destination_coord_y],
       },
     ]);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -598,12 +596,12 @@ export class EternumProvider extends DojoProvider {
       {
         contractAddress: getContractByName(this.manifest, "resource_systems"),
         entrypoint: "transfer_item",
-        calldata: [this.getWorldAddress(), entity_id, inventoryIndex, hyperstructure_id],
+        calldata: [entity_id, inventoryIndex, hyperstructure_id],
       },
       {
         contractAddress: getContractByName(this.manifest, "travel_systems"),
         entrypoint: "travel",
-        calldata: [this.getWorldAddress(), entity_id, destination_coord_x, destination_coord_y],
+        calldata: [entity_id, destination_coord_x, destination_coord_y],
       },
     ]);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -616,7 +614,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "travel_systems"),
       entrypoint: "travel",
-      calldata: [this.getWorldAddress(), travelling_entity_id, destination_coord_x, destination_coord_y],
+      calldata: [travelling_entity_id, destination_coord_x, destination_coord_y],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -628,7 +626,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "travel_systems"),
       entrypoint: "travel_hex",
-      calldata: [this.getWorldAddress(), travelling_entity_id, directions],
+      calldata: [travelling_entity_id, directions],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -640,7 +638,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
       entrypoint: "create_soldiers",
-      calldata: [this.getWorldAddress(), realm_entity_id, quantity],
+      calldata: [realm_entity_id, quantity],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -652,7 +650,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
       entrypoint: "detach_soldiers",
-      calldata: [this.getWorldAddress(), unit_id, detached_quantity],
+      calldata: [unit_id, detached_quantity],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -664,7 +662,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
       entrypoint: "attack",
-      calldata: [this.getWorldAddress(), attacker_ids.length, ...attacker_ids, target_id],
+      calldata: [attacker_ids.length, ...attacker_ids, target_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -676,7 +674,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
       entrypoint: "steal",
-      calldata: [this.getWorldAddress(), attacker_id, target_id],
+      calldata: [attacker_id, target_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -688,7 +686,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
       entrypoint: "control",
-      calldata: [this.getWorldAddress(), hyperstructure_id, order_id],
+      calldata: [hyperstructure_id, order_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -700,7 +698,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "hyperstructure_systems"),
       entrypoint: "complete",
-      calldata: [this.getWorldAddress(), hyperstructure_id],
+      calldata: [hyperstructure_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -712,7 +710,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "leveling_systems"),
       entrypoint: "level_up_realm",
-      calldata: [this.getWorldAddress(), realm_entity_id],
+      calldata: [realm_entity_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -724,7 +722,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
       entrypoint: "merge_soldiers",
-      calldata: [this.getWorldAddress(), merge_into_unit_id, units.length / 2, ...units],
+      calldata: [merge_into_unit_id, units.length / 2, ...units],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -740,12 +738,12 @@ export class EternumProvider extends DojoProvider {
       {
         contractAddress: getContractByName(this.manifest, "combat_systems"),
         entrypoint: "create_soldiers",
-        calldata: [this.getWorldAddress(), realm_entity_id, quantity],
+        calldata: [realm_entity_id, quantity],
       },
       {
         contractAddress: getContractByName(this.manifest, "combat_systems"),
         entrypoint: "merge_soldiers",
-        calldata: [this.getWorldAddress(), merge_into_unit_id, units.length / 2, ...units],
+        calldata: [merge_into_unit_id, units.length / 2, ...units],
       },
     ]);
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -759,7 +757,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "combat_systems"),
       entrypoint: "heal_soldiers",
-      calldata: [this.getWorldAddress(), unit_id, health_amount],
+      calldata: [unit_id, health_amount],
     });
 
     return await this.provider.waitForTransaction(tx.transaction_hash, {
@@ -772,7 +770,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "name_systems"),
       entrypoint: "set_address_name",
-      calldata: [this.getWorldAddress(), name],
+      calldata: [name],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -785,7 +783,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(props.signer, {
       contractAddress: getContractByName(this.manifest, "buildings_systems"),
       entrypoint: "create",
-      calldata: [this.getWorldAddress(), realm_entity_id, building_type],
+      calldata: [realm_entity_id, building_type],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -798,7 +796,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(props.signer, {
       contractAddress: getContractByName(this.manifest, "buildings_systems"),
       entrypoint: "destroy",
-      calldata: [this.getWorldAddress(), realm_entity_id],
+      calldata: [realm_entity_id],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,
@@ -811,7 +809,7 @@ export class EternumProvider extends DojoProvider {
     const tx = await this.executeMulti(signer, {
       contractAddress: getContractByName(this.manifest, "map_systems"),
       entrypoint: "explore",
-      calldata: [this.getWorldAddress(), unit_id, direction],
+      calldata: [unit_id, direction],
     });
     return await this.provider.waitForTransaction(tx.transaction_hash, {
       retryInterval: 500,

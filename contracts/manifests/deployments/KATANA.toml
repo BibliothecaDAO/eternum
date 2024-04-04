@@ -3,8 +3,8 @@ kind = "Contract"
 class_hash = "0x799bc4e9da10bfb3dd88e6f223c9cfbf7745435cd14f5d69675ea448e578cd"
 abi = "abis/deployments/KATANA/world.json"
 address = "0x177a3f3d912cf4b55f0f74eccf3b7def7c6144efeba033e9f21d9cdb0230c64"
-transaction_hash = "0x2fee302a555dbb8d21a83cf1a2d6611964619b8287c5bf2c79d871601d38c8b"
-block_number = 275
+transaction_hash = "0x52d225e62111b2912d60d547d09d4f02b6113cf424097ff6078ba1dd3231355"
+block_number = 3
 seed = "eternum"
 name = "dojo::world::world"
 
