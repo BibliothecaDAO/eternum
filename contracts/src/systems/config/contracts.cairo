@@ -86,9 +86,7 @@ mod config_systems {
 
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 };
             };
 
@@ -592,9 +590,7 @@ mod config_systems {
 
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 };
             };
 
@@ -632,7 +628,7 @@ mod config_systems {
             set!(
                 world,
                 (
-                    Bank { entity_id: bank_entity_id, owner_fee_scaled },
+                    Bank { entity_id: bank_entity_id, owner_fee_scaled, exists: true },
                     Position { entity_id: bank_entity_id, x: coord.x, y: coord.y }
                 )
             );
@@ -722,9 +718,7 @@ mod config_systems {
                         );
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 }
             };
 
@@ -761,9 +755,7 @@ mod config_systems {
                         );
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 }
             };
 
@@ -800,9 +792,7 @@ mod config_systems {
                         );
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 }
             };
 
@@ -839,9 +829,7 @@ mod config_systems {
                         );
                         index += 1;
                     },
-                    Option::None => {
-                        break;
-                    }
+                    Option::None => { break; }
                 }
             };
         }

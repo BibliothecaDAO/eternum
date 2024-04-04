@@ -16,6 +16,9 @@ use eternum::systems::bank::interface::liquidity::{
 use eternum::systems::bank::contracts::swap_systems::swap_systems;
 use eternum::systems::bank::interface::swap::{ISwapSystemsDispatcher, ISwapSystemsDispatcherTrait,};
 
+use eternum::models::bank::bank::{BankAccounts};
+use eternum::models::bank::market::{Market};
+use eternum::models::bank::liquidity::{Liquidity};
 use eternum::models::position::{Coord};
 use eternum::constants::{ResourceTypes};
 use eternum::models::resources::Resource;
@@ -25,10 +28,11 @@ use starknet::contract_address_const;
 const _0_1: u128 = 1844674407370955161; // 0.1
 const _1: u128 = 18446744073709551616; // 1
 
-use debug::PrintTrait;
 use traits::Into;
 
-fn setup() -> (
+fn setup(
+    owner_fee_scaled: u128, lp_fee_scaled: u128
+) -> (
     IWorldDispatcher,
     u128,
     ILiquiditySystemsDispatcher,
@@ -41,10 +45,9 @@ fn setup() -> (
     let config_systems_address = deploy_system(config_systems::TEST_CLASS_HASH);
     let bank_config_dispatcher = IBankConfigDispatcher { contract_address: config_systems_address };
 
-    let owner_fee_scaled: u128 = _0_1;
-
     let bank_entity_id = bank_config_dispatcher
         .create_bank(world, Coord { x: 30, y: 800 }, owner_fee_scaled);
+    bank_config_dispatcher.set_bank_config(world, 0, lp_fee_scaled);
 
     let bank_systems_address = deploy_system(bank_systems::TEST_CLASS_HASH);
     let bank_systems_dispatcher = IBankSystemsDispatcher { contract_address: bank_systems_address };
@@ -86,7 +89,7 @@ fn setup() -> (
 }
 
 #[test]
-fn test_swap_buy() {
+fn test_swap_buy_without_fees() {
     let (
         world,
         bank_entity_id,
@@ -95,14 +98,32 @@ fn test_swap_buy() {
         _bank_systems_dispatcher,
         _bank_config_dispatcher
     ) =
-        setup();
+        setup(
+        0, 0
+    );
+
+    let player = starknet::get_caller_address();
 
     liquidity_systems_dispatcher.add(world, bank_entity_id, ResourceTypes::WOOD, 1000, 1000);
     swap_systems_dispatcher.buy(world, bank_entity_id, ResourceTypes::WOOD, 100);
+
+    // player resources
+    let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
+    let wood = get!(world, (bank_account.entity_id, ResourceTypes::WOOD), Resource);
+    let lords = get!(world, (bank_account.entity_id, ResourceTypes::LORDS), Resource);
+
+    let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
+    let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
+
+    assert(market.lords_amount == 1111, 'market.lords_amount');
+    assert(market.resource_amount == 900, 'market.resource_amount');
+    assert(liquidity.shares == FixedTrait::new_unscaled(1000, false), 'liquidity.shares');
+    assert(wood.balance == 9100, 'wood.balance');
+    assert(lords.balance == 8889, 'lords.balance');
 }
 
 #[test]
-fn test_swap_sell() {
+fn test_swap_buy_with_fees() {
     let (
         world,
         bank_entity_id,
@@ -111,8 +132,99 @@ fn test_swap_sell() {
         _bank_systems_dispatcher,
         _bank_config_dispatcher
     ) =
-        setup();
+        setup(
+        _0_1, _0_1
+    );
+
+    let player = starknet::get_caller_address();
+
+    liquidity_systems_dispatcher.add(world, bank_entity_id, ResourceTypes::WOOD, 1000, 1000);
+    swap_systems_dispatcher.buy(world, bank_entity_id, ResourceTypes::WOOD, 100);
+
+    // player resources
+    let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
+    let wood = get!(world, (bank_account.entity_id, ResourceTypes::WOOD), Resource);
+    let lords = get!(world, (bank_account.entity_id, ResourceTypes::LORDS), Resource);
+
+    let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
+    let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
+
+    assert(market.lords_amount == 1120, 'market.lords_amount');
+    assert(market.resource_amount == 900, 'market.resource_amount');
+
+    assert(liquidity.shares == FixedTrait::new_unscaled(1000, false), 'liquidity.shares');
+    assert(wood.balance == 9100, 'wood.balance');
+    assert(lords.balance == 8880, 'lords.balance');
+}
+
+#[test]
+fn test_swap_sell_without_fees() {
+    let (
+        world,
+        bank_entity_id,
+        liquidity_systems_dispatcher,
+        swap_systems_dispatcher,
+        _bank_systems_dispatcher,
+        _bank_config_dispatcher
+    ) =
+        setup(
+        0, 0
+    );
+
+    let player = starknet::get_caller_address();
 
     liquidity_systems_dispatcher.add(world, bank_entity_id, ResourceTypes::WOOD, 1000, 1000);
     swap_systems_dispatcher.sell(world, bank_entity_id, ResourceTypes::WOOD, 100);
+
+    // player resources
+    let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
+    let wood = get!(world, (bank_account.entity_id, ResourceTypes::WOOD), Resource);
+    let lords = get!(world, (bank_account.entity_id, ResourceTypes::LORDS), Resource);
+
+    let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
+    let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
+
+    assert(market.lords_amount == 909, 'market.lords_amount');
+    assert(market.resource_amount == 1100, 'market.resource_amount');
+
+    assert(liquidity.shares == FixedTrait::new_unscaled(1000, false), 'liquidity.shares');
+
+    assert(wood.balance == 8900, 'wood.balance');
+    assert(lords.balance == 9091, 'lords.balance');
+}
+
+#[test]
+fn test_swap_sell_with_fees() {
+    let (
+        world,
+        bank_entity_id,
+        liquidity_systems_dispatcher,
+        swap_systems_dispatcher,
+        _bank_systems_dispatcher,
+        _bank_config_dispatcher
+    ) =
+        setup(
+        _0_1, _0_1
+    );
+
+    let player = starknet::get_caller_address();
+
+    liquidity_systems_dispatcher.add(world, bank_entity_id, ResourceTypes::WOOD, 1000, 1000);
+    swap_systems_dispatcher.sell(world, bank_entity_id, ResourceTypes::WOOD, 100);
+
+    // player resources
+    let bank_account = get!(world, (bank_entity_id, player), BankAccounts);
+    let wood = get!(world, (bank_account.entity_id, ResourceTypes::WOOD), Resource);
+    let lords = get!(world, (bank_account.entity_id, ResourceTypes::LORDS), Resource);
+
+    let market = get!(world, (bank_entity_id, ResourceTypes::WOOD), Market);
+    let liquidity = get!(world, (bank_entity_id, player, ResourceTypes::WOOD), Liquidity);
+
+    assert(market.lords_amount == 924, 'market.lords_amount');
+    assert(market.resource_amount == 1091, 'market.resource_amount');
+
+    assert(liquidity.shares == FixedTrait::new_unscaled(1000, false), 'liquidity.shares');
+
+    assert(wood.balance == 8900 + 9, 'wood.balance');
+    assert(lords.balance == 9076, 'lords.balance');
 }

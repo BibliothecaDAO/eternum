@@ -16,7 +16,7 @@ mod bank_systems {
             // todo:
             // check if the bank exists
             let bank = get!(world, bank_entity_id, Bank);
-            assert(bank.owner_fee_scaled != 0, 'Bank does not exist');
+            assert(bank.exists == true, 'Bank does not exist');
 
             // get bank position
             let bank_position = get!(world, bank_entity_id, Position);

@@ -7,6 +7,7 @@ struct Bank {
     #[key]
     entity_id: u128,
     owner_fee_scaled: u128,
+    exists: bool,
 }
 
 // Used as helper struct throughout the world

@@ -4,7 +4,7 @@ use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
 // Constants
 
-const SCALING_FACTOR: u128 = 10000;
+const SCALING_FACTOR: u128 = 1;
 
 #[derive(Model, Copy, Drop, Serde)]
 struct Market {
@@ -14,8 +14,6 @@ struct Market {
     resource_type: u8,
     lords_amount: u128,
     resource_amount: u128,
-    fee_resource_amount: u128,
-    fee_lords_amount: u128,
 }
 
 #[generate_trait]
@@ -251,8 +249,6 @@ mod tests {
             resource_type: 1,
             lords_amount: SCALING_FACTOR * 1,
             resource_amount: 1,
-            fee_resource_amount: 0,
-            fee_lords_amount: 0,
         }; // pool 1:1
         let _cost = market.buy(10);
     }
@@ -264,8 +260,6 @@ mod tests {
             resource_type: 1,
             lords_amount: SCALING_FACTOR * 1,
             resource_amount: 10,
-            fee_resource_amount: 0,
-            fee_lords_amount: 0,
         }; // pool 1:10
         let cost = market.buy(5);
         assert(cost == SCALING_FACTOR * 1, 'wrong cost');
@@ -278,8 +272,6 @@ mod tests {
             resource_type: 1,
             lords_amount: SCALING_FACTOR * 1,
             resource_amount: 10,
-            fee_resource_amount: 0,
-            fee_lords_amount: 0,
         }; // pool 1:10
         let payout = market.sell(5);
         assert(payout == 3334, 'wrong payout');
@@ -289,12 +281,7 @@ mod tests {
     fn test_market_add_liquidity_no_initial() {
         // Without initial liquidity
         let market = Market {
-            bank_entity_id: 1,
-            resource_type: 1,
-            lords_amount: 0,
-            resource_amount: 0,
-            fee_resource_amount: 0,
-            fee_lords_amount: 0,
+            bank_entity_id: 1, resource_type: 1, lords_amount: 0, resource_amount: 0,
         };
 
         // Add liquidity
@@ -321,8 +308,6 @@ mod tests {
             resource_type: 1,
             lords_amount: SCALING_FACTOR * 1,
             resource_amount: 10,
-            fee_resource_amount: 0,
-            fee_lords_amount: 0,
         }; // pool 1:10
         let initial_liquidity = market.liquidity();
 
@@ -353,8 +338,6 @@ mod tests {
             resource_type: 1,
             lords_amount: SCALING_FACTOR * 1,
             resource_amount: 10,
-            fee_resource_amount: 0,
-            fee_lords_amount: 0,
         }; // pool 1:10
         let initial_liquidity = market.liquidity();
 
@@ -389,8 +372,6 @@ mod tests {
             resource_type: 1,
             lords_amount: SCALING_FACTOR * 1,
             resource_amount: 10,
-            fee_resource_amount: 0,
-            fee_lords_amount: 0,
         }; // pool 1:10
         // Adding 20 items requires (SCALING_FACTOR * 2) cash amount to maintain the ratio
         // Therefore this should fail
@@ -406,8 +387,6 @@ mod tests {
             resource_type: 1,
             lords_amount: SCALING_FACTOR * 2,
             resource_amount: 20,
-            fee_resource_amount: 0,
-            fee_lords_amount: 0,
         }; // pool 1:10
         let initial_liquidity = market.liquidity();
 
@@ -438,12 +417,7 @@ mod tests {
     fn test_market_remove_liquidity_no_initial() {
         // Without initial liquidity
         let market = Market {
-            bank_entity_id: 1,
-            resource_type: 1,
-            lords_amount: 0,
-            resource_amount: 0,
-            fee_resource_amount: 0,
-            fee_lords_amount: 0,
+            bank_entity_id: 1, resource_type: 1, lords_amount: 0, resource_amount: 0,
         }; // pool 1:10
 
         // Remove liquidity
@@ -461,8 +435,6 @@ mod tests {
             resource_type: 1,
             lords_amount: SCALING_FACTOR * 2,
             resource_amount: 20,
-            fee_resource_amount: 0,
-            fee_lords_amount: 0,
         }; // pool 1:10
         let initial_liquidity = market.liquidity();
 

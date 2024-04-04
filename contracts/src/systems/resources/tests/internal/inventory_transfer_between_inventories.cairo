@@ -38,8 +38,6 @@ mod internal_transfer_between_inventories_tests {
 
     use core::traits::Into;
 
-    use debug::PrintTrait;
-
     const ITEM_WEIGHT: u128 = 200;
     const PLAYER_CAPACITY: u128 = 1_200; // 6x ITEM_WEiGHT
 

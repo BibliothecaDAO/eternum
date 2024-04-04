@@ -13,7 +13,6 @@ use eternum::models::bank::bank::BankAccounts;
 
 use starknet::contract_address_const;
 
-use debug::PrintTrait;
 use traits::Into;
 
 const _0_1: u128 = 1844674407370955161; // 0.1

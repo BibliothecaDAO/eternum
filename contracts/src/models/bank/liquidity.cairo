@@ -10,10 +10,6 @@ use dojo::database::introspect::{Struct, Ty, Introspect, Member, serialize_membe
 
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 
-// Constants
-
-const SCALING_FACTOR: u128 = 10000;
-
 impl IntrospectFixed of Introspect<Fixed> {
     #[inline(always)]
     fn size() -> usize {
