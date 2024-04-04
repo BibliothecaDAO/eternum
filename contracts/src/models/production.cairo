@@ -44,11 +44,14 @@ struct Production {
     resource_type: u8,
     building_count: u128,
     production_rate: u128,
+    bonus_percent: u128,
     consumed_rate: u128,
     start_at: u64, 
     stop_at: u64, 
     updated_at: u64, 
 }
+
+const PRODUCTION_BONUS_BASIS : u128 = 10_000;
 
 // We could make this a nice JS Class with a constructor and everything
 // Then maintaining logic in client will be easy
@@ -63,6 +66,19 @@ impl ProductionRateImpl of ProductionRateTrait {
     fn set_rate(ref self: Production, production_rate: u128) {
         self.production_rate = production_rate;
     }
+    fn increase_boost_percentage(ref self: Production, amount: u128) {
+        self.bonus_percent += amount;
+    }
+
+    fn decrease_boost_percentage(ref self: Production, amount: u128) {
+        self.bonus_percent -= amount;
+    }
+
+    fn actual_production_rate(self: Production) -> u128 {
+        (self.production_rate * self.building_count * self.bonus_percent)
+             / PRODUCTION_BONUS_BASIS
+    }
+
 
     fn increase_building_count(ref self: Production, ref resource: Resource) {
         self.harvest(ref resource);
@@ -108,11 +124,11 @@ impl ProductionRateImpl of ProductionRateTrait {
 
     fn net_rate(self: Production) -> (bool, u128) {
         if !self.is_active() {return (false, 0);}
-
-        if self.production_rate > self.consumed_rate {
-            (true, self.production_rate - self.consumed_rate)
+        let production_rate = self.actual_production_rate();
+        if production_rate > self.consumed_rate {
+            (true, production_rate - self.consumed_rate)
         } else {
-            (false, self.consumed_rate - self.production_rate)
+            (false, self.consumed_rate - production_rate)
         }
     }
 
@@ -135,7 +151,7 @@ impl ProductionRateImpl of ProductionRateTrait {
 
     fn generated(self: Production) -> u128 {
         if !self.is_active() {return 0;}
-        self.building_count * self.production_rate *  self.duration().into()
+        self.actual_production_rate() *  self.duration().into()
     }
 
     fn consumed(self: Production) -> u128 {
