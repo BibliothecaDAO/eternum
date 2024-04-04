@@ -6,33 +6,21 @@ import { getUIPositionFromColRow } from "../../../utils/utils";
 import { Html } from "@react-three/drei";
 import { useCallback } from "react";
 
-export const isHexOccupied = (col: number, row: number, builtCastles: any[]) => {
-  return builtCastles.some((castle) => castle.col === col && castle.row === row);
+export const isHexOccupied = (col: number, row: number, buildings: any[]) => {
+  return buildings.some((building) => building.col === col && building.row === row);
 };
 
 const HexBuildGrid = () => {
-  const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
-
   const hexPositions = generateHexPositions();
-  const { buildMode, hoveredBuildHex, setHoveredBuildHex, builtCastles, setBuiltCastles } = useUIStore((state) => ({
-    buildMode: state.buildMode,
-    hoveredBuildHex: state.hoveredBuildHex,
-    setHoveredBuildHex: state.setHoveredBuildHex,
-    builtCastles: state.builtCastles,
-    setBuiltCastles: state.setBuiltCastles,
-  }));
-
-  const getColorForHexagon = (hexPosition: any, buildMode: any, hoveredBuildHex: any) => {
-    if (buildMode) {
-      if (hoveredBuildHex.col === hexPosition.col && hoveredBuildHex.row === hexPosition.row) {
-        if (isHexOccupied(hexPosition.col, hexPosition.row, builtCastles)) {
-          return "red";
-        }
-        return "limegreen";
-      }
-    }
-    return "gray";
-  };
+  const { previewBuilding, hoveredBuildHex, setHoveredBuildHex, existingBuildings, setExistingBuildings } = useUIStore(
+    (state) => ({
+      previewBuilding: state.previewBuilding,
+      hoveredBuildHex: state.hoveredBuildHex,
+      setHoveredBuildHex: state.setHoveredBuildHex,
+      existingBuildings: state.existingBuildings,
+      setExistingBuildings: state.setExistingBuildings,
+    }),
+  );
 
   return (
     <group rotation={[Math.PI / -2, 0, 0]} position={[0, 2, 0]}>
@@ -40,13 +28,14 @@ const HexBuildGrid = () => {
         <Hexagon
           key={index}
           position={hexPosition}
-          geometry={hexagonGeometry}
-          color={getColorForHexagon(hexPosition, buildMode, hoveredBuildHex)}
-          onPointerMove={() => buildMode && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row })}
+          onPointerMove={() => previewBuilding && setHoveredBuildHex({ col: hexPosition.col, row: hexPosition.row })}
           onClick={() =>
-            buildMode &&
-            !isHexOccupied(hexPosition.col, hexPosition.row, builtCastles) &&
-            setBuiltCastles([...builtCastles, { col: hexPosition.col, row: hexPosition.row }])
+            previewBuilding &&
+            !isHexOccupied(hexPosition.col, hexPosition.row, existingBuildings) &&
+            setExistingBuildings([
+              ...existingBuildings,
+              { col: hexPosition.col, row: hexPosition.row, type: previewBuilding },
+            ])
           }
         />
       ))}
@@ -54,28 +43,19 @@ const HexBuildGrid = () => {
   );
 };
 
-const Hexagon = ({
-  position,
-  geometry,
-  color,
-  onPointerMove,
-  onClick,
-}: {
-  position: any;
-  geometry: any;
-  color: any;
-  onPointerMove: any;
-  onClick: any;
-}) => (
-  <mesh
-    position={[position.x, position.y, position.z]}
-    onPointerMove={onPointerMove}
-    onClick={onClick}
-    geometry={geometry}
-  >
-    <meshMatcapMaterial color={color} />
-  </mesh>
-);
+const Hexagon = ({ position, onPointerMove, onClick }: { position: any; onPointerMove: any; onClick: any }) => {
+  const hexagonGeometry = new THREE.ShapeGeometry(createHexagonShape(HEX_RADIUS));
+  return (
+    <mesh
+      position={[position.x, position.y, position.z]}
+      onPointerMove={onPointerMove}
+      onClick={onClick}
+      geometry={hexagonGeometry}
+    >
+      <meshMatcapMaterial color={"gray"} />
+    </mesh>
+  );
+};
 
 const generateHexPositions = () => {
   const _color = new THREE.Color("gray");

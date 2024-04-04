@@ -1,16 +1,31 @@
+export enum BuildingType {
+  Castle,
+  Farm,
+  Fishery,
+  Mine,
+  Stable,
+  Workhut,
+  ArcherRange,
+  Barracks,
+  Market,
+  Storehouse,
+}
+
 export interface BuildModeStore {
-  buildMode: boolean;
-  setBuildMode: (buildMode: boolean) => void;
+  previewBuilding: BuildingType | null;
+  setPreviewBuilding: (previewBuilding: BuildingType) => void;
   hoveredBuildHex: { col: number; row: number };
   setHoveredBuildHex: (hoveredBuildHex: { col: number; row: number }) => void;
-  builtCastles: { col: number; row: number }[];
-  setBuiltCastles: (builtCastles: { col: number; row: number }[]) => void;
+  existingBuildings: { col: number; row: number; type: BuildingType }[];
+  setExistingBuildings: (existingBuildings: { col: number; row: number; type: BuildingType }[]) => void;
 }
 export const createBuildModeStoreSlice = (set: any) => ({
-  buildMode: true,
-  setBuildMode: (buildMode: boolean) => set({ buildMode, hoveredBuildHex: { col: 4, row: 4 } }),
+  previewBuilding: BuildingType.Farm,
+  setPreviewBuilding: (previewBuilding: BuildingType | null) =>
+    set({ previewBuilding, hoveredBuildHex: { col: 4, row: 4 } }),
   hoveredBuildHex: { col: 0, row: 0 },
   setHoveredBuildHex: (hoveredBuildHex: { col: number; row: number }) => set({ hoveredBuildHex }),
-  builtCastles: [],
-  setBuiltCastles: (builtCastles: { col: number; row: number }[]) => set({ builtCastles }),
+  existingBuildings: [{ col: 4, row: 4, type: BuildingType.Castle }],
+  setExistingBuildings: (existingBuildings: { col: number; row: number; type: BuildingType }[]) =>
+    set({ existingBuildings }),
 });
